@@ -39,7 +39,7 @@ interface ResourceModalDialogsProps {
   isSubmitting: boolean;
   showMachineSelection: boolean;
   teamName?: string;
-  machines: Array<{ value: string; label: string; bridgeName: string }>;
+  machines: { value: string; label: string; bridgeName: string }[];
   hiddenParams: string[];
   defaultParams: Record<string, string | number | string[] | undefined>;
   preselectedFunction?: string;

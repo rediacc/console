@@ -57,7 +57,7 @@ export async function withSpinner<T>(
   const spinner = startSpinner(text);
   try {
     const result = await fn();
-    spinner?.succeed(successText || text);
+    spinner?.succeed(successText ?? text);
     return result;
   } catch (error) {
     spinner?.fail();

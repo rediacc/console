@@ -164,13 +164,13 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
       const testMachineVault = JSON.stringify({
         ip,
         user,
-        ssh_password: ssh_password || '',
-        port: port || 22,
-        datastore: datastore || '',
+        ssh_password: ssh_password ?? '',
+        port: port ?? 22,
+        datastore: datastore ?? '',
       });
 
       const teamData = teams?.find((team) => team.teamName === teamName);
-      const teamVaultData = teamData?.vaultContent || '{}';
+      const teamVaultData = teamData?.vaultContent ?? '{}';
 
       const queueVault = await buildQueueVault({
         teamName,
@@ -194,7 +194,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
         },
         {
           onSuccess: (response) => {
-            if (response && response.taskId) {
+            if (response.taskId) {
               setTestTaskId(response.taskId);
               setIsTestingConnection(true);
               message.info('common:vaultEditor.testConnection.testing');
@@ -222,20 +222,9 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
     setIsTestingConnection,
   ]);
 
-  if (!entityDef) {
-    return (
-      <Alert
-        message={t('vaultEditor.unknownEntityType')}
-        description={t('vaultEditor.unknownEntityDescription', { type: entityType })}
-        type="error"
-        showIcon
-      />
-    );
-  }
-
-  const requiredFields = entityDef.required || [];
-  const optionalFields = entityDef.optional || [];
-  const fields = entityDef.fields || {};
+  const requiredFields = entityDef.required ?? [];
+  const optionalFields = entityDef.optional ?? [];
+  const fields = entityDef.fields ?? {};
 
   return (
     <Flex vertical>
@@ -259,7 +248,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
         labelCol={{ xs: { span: 24 }, sm: { span: 8 } }}
         wrapperCol={{ xs: { span: 24 }, sm: { span: 16 } }}
         labelAlign="right"
-        colon={true}
+        colon
         validateTrigger={false}
         preserve={false}
         onValuesChange={(changedValues, _allValues) => {
@@ -277,7 +266,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                 requiredFields={requiredFields}
                 fields={fields}
                 isEditMode={isEditMode}
-                selectedProvider={selectedProvider || undefined}
+                selectedProvider={selectedProvider ?? undefined}
                 form={form}
                 handleFormChange={handleFormChange}
                 t={t}
@@ -288,7 +277,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
                 requiredFields={requiredFields}
                 optionalFields={optionalFields}
                 fields={fields}
-                selectedProvider={selectedProvider || undefined}
+                selectedProvider={selectedProvider ?? undefined}
                 form={form}
                 handleFormChange={handleFormChange}
                 t={t}
@@ -318,8 +307,8 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
           )}
 
           <VaultEditorProviderFields
-            selectedProvider={selectedProvider || undefined}
-            providerFields={providerFields || undefined}
+            selectedProvider={selectedProvider ?? undefined}
+            providerFields={providerFields ?? undefined}
             form={form}
             handleFormChange={handleFormChange}
             t={t}
@@ -329,7 +318,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
 
           <VaultEditorRawJson
             rawJsonValue={rawJsonValue}
-            rawJsonError={rawJsonError || undefined}
+            rawJsonError={rawJsonError ?? undefined}
             uiMode={uiMode}
             onChange={onRawJsonChange}
             t={t}

@@ -123,7 +123,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
             pool_name: pool.poolName,
             image_name: image.imageName,
             snapshot_name: snapshot.snapshotName,
-            clone_name: clone?.cloneName || '',
+            clone_name: clone?.cloneName ?? '',
           },
           priority: 3,
           addedVia: 'Ceph',
@@ -389,7 +389,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               poolName: pool.poolName,
               teamName: pool.teamName,
               vaultContent: data.vaultContent,
-              vaultVersion: cloneModal.state.data?.vaultVersion || 0,
+              vaultVersion: cloneModal.state.data?.vaultVersion ?? 0,
             });
           }
           cloneModal.close();

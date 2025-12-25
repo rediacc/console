@@ -50,8 +50,11 @@ export const store = configureStore({
   },
 });
 
-export type AppDispatch = typeof store.dispatch;
+type AppDispatch = typeof store.dispatch;
 
 // Export typed hooks
-export const useAppDispatch: () => AppDispatch = useDispatch;
+const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+
+// Reserved for future use
+void useAppDispatch;

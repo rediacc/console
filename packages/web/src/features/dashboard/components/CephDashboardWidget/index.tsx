@@ -14,7 +14,7 @@ import { CephDashboardWidgetProps } from './types';
 const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
   const { t } = useTranslation(['common', 'ceph']);
 
-  if (!stats) {
+  if (stats === null || stats === undefined) {
     return null;
   }
 
@@ -54,8 +54,8 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
   );
 
   const renderTeamItem = (item: unknown) => {
-    const team = item as CephTeamBreakdown;
-    if (!team) {
+    const team = item as CephTeamBreakdown | null | undefined;
+    if (team === null || team === undefined) {
       return null;
     }
 
@@ -179,7 +179,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
           </Col>
         </Row>
 
-        {stats.team_breakdown && stats.team_breakdown.length > 0 && (
+        {stats.team_breakdown.length > 0 && (
           <Flex vertical gap={8} data-testid="ds-widget-team-breakdown">
             <Flex align="center" gap={8}>
               <Flex align="center" className="inline-flex">

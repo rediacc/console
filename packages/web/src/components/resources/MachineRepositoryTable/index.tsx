@@ -65,9 +65,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions']);
   const navigate = useNavigate();
   const { confirm, modal, contextHolder } = useConfirmDialog();
-  const userEmail = useAppSelector((state) => state.auth.user?.email || '');
-  const [systemContainers] = useState<Container[]>([]);
-  const [selectedRepository, setSelectedRepo] = useState<Repository | null>(null);
+  const userEmail = useAppSelector((state) => state.auth.user?.email ?? '');
+  // Placeholder for future system containers feature
+  const [systemContainers, setSystemContainers] = useState<Container[]>([]);
+  void systemContainers;
+  void setSystemContainers;
+  const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null);
   const functionModal = useDialogState<void>();
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null);
 
@@ -128,7 +131,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           context.repositoryGuid!,
           context.repositoryGuid,
           teamRepositories
-        ) || '{}';
+        ) ?? '{}';
 
       const repoData = teamRepositories.find((r) => r.repositoryGuid === context.repositoryGuid);
 
@@ -146,7 +149,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         params,
         priority: 4,
         addedVia: 'machine-Repository-list-delete-grand',
-        machineVault: machine.vaultContent || '{}',
+        machineVault: machine.vaultContent ?? '{}',
         repositoryGuid: context.repositoryGuid,
         vaultContent: grandRepoVault,
         repositoryNetworkId: context.repositoryNetworkId,
@@ -157,7 +160,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           showMessage(
             'success',
             t('resources:repositories.deleteGrandQueued', {
-              name: repoData?.repositoryName || 'repository',
+              name: repoData?.repositoryName ?? 'repository',
             })
           );
           if (onQueueItemCreated) {
@@ -168,8 +171,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           showMessage('info', t('resources:repositories.highestPriorityQueued'));
         }
       } else {
-        showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'));
-        throw new Error(result.error || t('resources:repositories.deleteGrandFailed'));
+        showMessage('error', result.error ?? t('resources:repositories.deleteGrandFailed'));
+        throw new Error(result.error ?? t('resources:repositories.deleteGrandFailed'));
       }
     },
   });
@@ -194,8 +197,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
   const handleRunFunction = useCallback(
     (repository: Repository, functionName?: string) => {
-      setSelectedRepo(repository);
-      setSelectedFunction(functionName || null);
+      setSelectedRepository(repository);
+      setSelectedFunction(functionName ?? null);
       functionModal.open();
     },
     [functionModal]
@@ -203,7 +206,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
   const closeModalAndReset = () => {
     functionModal.close();
-    setSelectedRepo(null);
+    setSelectedRepository(null);
   };
 
   const createRepositoryCredential = async (repositoryName: string, tag: string) => {
@@ -278,14 +281,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       if (group.grandTag) {
         tableData.push({
           ...group.grandTag,
-          key: `repo-${group.name}-${group.grandTag.repositoryTag || 'latest'}`,
+          key: `repo-${group.name}-${group.grandTag.repositoryTag ?? 'latest'}`,
         });
       }
 
       group.forkTags.forEach((fork) => {
         tableData.push({
           ...fork,
-          key: `repo-${fork.name}-${fork.repositoryTag || 'latest'}`,
+          key: `repo-${fork.name}-${fork.repositoryTag ?? 'latest'}`,
         });
       });
     });
@@ -445,7 +448,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           loading={loading}
           data={getTableDataSource()}
           columns={columns}
-          rowKey={(record) => record.key || `${record.name}-${record.repositoryTag || 'latest'}`}
+          rowKey={(record) => record.key ?? `${record.name}-${record.repositoryTag ?? 'latest'}`}
           pagination={false}
           emptyDescription={t('resources:repositories.noRepositories')}
           mobileRender={mobileRender}
@@ -473,7 +476,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         isOpen={functionModal.isOpen}
         onCancel={() => {
           functionModal.close();
-          setSelectedRepo(null);
+          setSelectedRepository(null);
           setSelectedFunction(null);
         }}
         onSubmit={handleFunctionSubmit}

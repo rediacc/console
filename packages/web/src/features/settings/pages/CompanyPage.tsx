@@ -66,7 +66,7 @@ const CompanyPage: React.FC = () => {
       setCurrentMasterPassword(password);
       setMasterPasswordOperation(password ? 'update' : 'create');
     };
-    loadMasterPassword();
+    void loadMasterPassword();
   }, []);
 
   const handleOpenMasterPasswordModal = () => {
@@ -81,7 +81,7 @@ const CompanyPage: React.FC = () => {
       }, 1000);
     } else if (countdown === 0) {
       dispatch(logout());
-      navigate('/login');
+      void navigate('/login');
     }
 
     return () => {
@@ -114,7 +114,7 @@ const CompanyPage: React.FC = () => {
             totalVaults: allVaults.length,
             vaultTypes: Object.keys(vaultsByType).map((type) => ({
               type,
-              count: (vaultsByType as Record<string, unknown[]>)[type]?.length || 0,
+              count: (vaultsByType as Record<string, unknown[]>)[type].length,
             })),
           },
         };
@@ -195,17 +195,17 @@ const CompanyPage: React.FC = () => {
 
     try {
       const vaultsResult = await exportVaultsQuery.refetch();
-      if (!vaultsResult.data || !vaultsResult.data.allVaults) {
+      if (!vaultsResult.data?.allVaults) {
         showMessage('error', tSystem('dangerZone.updateMasterPassword.error.noVaults'));
         return;
       }
 
-      const vaultUpdates: Array<{
+      const vaultUpdates: {
         credential: string;
         name: string;
         content: string;
         version: number;
-      }> = [];
+      }[] = [];
       const newPassword = masterPasswordOperation === 'remove' ? '' : values.password!;
 
       for (const vault of vaultsResult.data.allVaults) {
@@ -238,7 +238,7 @@ const CompanyPage: React.FC = () => {
             vaultUpdates.push({
               credential: vault.credential as string,
               name: vault.vaultName as string,
-              content: finalContent as string,
+              content: finalContent,
               version: (vault.version as number) || 1,
             });
           } catch {
@@ -314,8 +314,8 @@ const CompanyPage: React.FC = () => {
         onSave={handleUpdateCompanyVault}
         entityType="COMPANY"
         title={t('company.modalTitle')}
-        initialVault={companyVault?.vault || '{}'}
-        initialVersion={companyVault?.vaultVersion || 1}
+        initialVault={companyVault?.vault ?? '{}'}
+        initialVersion={companyVault?.vaultVersion ?? 1}
         loading={updateCompanyVaultMutation.isPending}
       />
 
@@ -398,7 +398,7 @@ const CompanyPage: React.FC = () => {
                 block
                 onClick={() => {
                   dispatch(logout());
-                  navigate('/login');
+                  void navigate('/login');
                 }}
               >
                 {tSystem('dangerZone.updateMasterPassword.success.loginNow')}

@@ -46,7 +46,7 @@ export function useUnifiedModal<T extends Record<string, unknown> = Record<strin
         resourceType,
         mode,
         data,
-        creationContext: creationContext || initialCreationContext,
+        creationContext: creationContext ?? initialCreationContext,
       });
       if (data && mode !== 'create') {
         setCurrentResource(data as T);

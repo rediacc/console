@@ -18,11 +18,17 @@ export class QueueVaultBuilder {
   constructor(private config: QueueVaultBuilderConfig) {}
 
   getFunctionRequirements(functionName: string): FunctionRequirements {
-    const functionKey = functionName as keyof typeof FUNCTION_REQUIREMENTS;
-    return FUNCTION_REQUIREMENTS[functionKey]?.requirements || {};
+    const entry = FUNCTION_REQUIREMENTS[functionName] as
+      | { requirements: FunctionRequirements }
+      | undefined;
+    return entry?.requirements ?? {};
   }
 
-  async buildQueueVault(context: QueueRequestContext): Promise<string> {
+  buildQueueVault(context: QueueRequestContext): Promise<string> {
+    return Promise.resolve(this.buildQueueVaultSync(context));
+  }
+
+  private buildQueueVaultSync(context: QueueRequestContext): string {
     try {
       const requirements = this.getFunctionRequirements(context.functionName);
       const queueVaultData: {
@@ -33,19 +39,18 @@ export class QueueVaultBuilder {
         contextData: VaultContextData;
       } = {
         function: context.functionName,
-        machine: context.machineName || '',
+        machine: context.machineName ?? '',
         team: context.teamName,
         params: context.params,
         contextData: {
           GENERAL_SETTINGS: this.buildGeneralSettings(context),
-        } as VaultContextData,
+        },
       };
+      const contextData = queueVaultData.contextData;
 
       if (requirements.machine && context.machineVault && context.machineName) {
-        queueVaultData.contextData.MACHINES = queueVaultData.contextData.MACHINES || {};
-        queueVaultData.contextData.MACHINES[context.machineName] = this.extractMachineData(
-          context.machineVault
-        );
+        contextData.MACHINES = contextData.MACHINES ?? {};
+        contextData.MACHINES[context.machineName] = this.extractMachineData(context.machineVault);
         const destinationName = (context.params as Record<string, string>).to;
         if (
           context.functionName === 'deploy' &&
@@ -53,7 +58,7 @@ export class QueueVaultBuilder {
           destinationName !== context.machineName &&
           context.destinationMachineVault
         ) {
-          queueVaultData.contextData.MACHINES[destinationName] = this.extractMachineData(
+          contextData.MACHINES[destinationName] = this.extractMachineData(
             context.destinationMachineVault
           );
         }
@@ -76,41 +81,38 @@ export class QueueVaultBuilder {
       }
 
       if (context.functionName === 'backup') {
-        const targets = getParamArray(context.params as Record<string, unknown>, 'storages');
+        const targets = getParamArray(context.params, 'storages');
         if (!targets.length) {
-          const fallbackTarget = getParamValue(context.params as Record<string, unknown>, 'to');
+          const fallbackTarget = getParamValue(context.params, 'to');
           if (fallbackTarget) {
             targets.push(fallbackTarget);
           }
         }
         if (targets.length > 0) {
-          queueVaultData.contextData.STORAGE_SYSTEMS =
-            queueVaultData.contextData.STORAGE_SYSTEMS || {};
+          contextData.STORAGE_SYSTEMS = contextData.STORAGE_SYSTEMS ?? {};
           targets.forEach((storageName, index) => {
             const storageVault =
-              context.additionalStorageData?.[storageName] ||
+              context.additionalStorageData?.[storageName] ??
               (index === 0 ? context.destinationStorageVault : undefined);
             if (storageVault) {
-              queueVaultData.contextData.STORAGE_SYSTEMS![storageName] =
-                this.buildStorageConfig(storageVault);
+              contextData.STORAGE_SYSTEMS![storageName] = this.buildStorageConfig(storageVault);
             }
           });
         }
       }
 
       if (context.functionName === 'list') {
-        const sourceName = getParamValue(context.params as Record<string, unknown>, 'from');
+        const sourceName = getParamValue(context.params, 'from');
         if (sourceName && context.additionalStorageData?.[sourceName]) {
-          queueVaultData.contextData.STORAGE_SYSTEMS =
-            queueVaultData.contextData.STORAGE_SYSTEMS || {};
-          queueVaultData.contextData.STORAGE_SYSTEMS[sourceName] = this.buildStorageConfig(
+          contextData.STORAGE_SYSTEMS = contextData.STORAGE_SYSTEMS ?? {};
+          contextData.STORAGE_SYSTEMS[sourceName] = this.buildStorageConfig(
             context.additionalStorageData[sourceName]
           );
         }
 
         if (sourceName && context.additionalMachineData?.[sourceName]) {
-          queueVaultData.contextData.MACHINES = queueVaultData.contextData.MACHINES || {};
-          queueVaultData.contextData.MACHINES[sourceName] = this.extractMachineData(
+          contextData.MACHINES = contextData.MACHINES ?? {};
+          contextData.MACHINES[sourceName] = this.extractMachineData(
             context.additionalMachineData[sourceName]
           );
         }
@@ -124,8 +126,8 @@ export class QueueVaultBuilder {
       ) {
         const fromName = (context.params as Record<string, string>).from;
         if (context.additionalMachineData?.[fromName]) {
-          queueVaultData.contextData.MACHINES = queueVaultData.contextData.MACHINES || {};
-          queueVaultData.contextData.MACHINES[fromName] = this.extractMachineData(
+          contextData.MACHINES = contextData.MACHINES ?? {};
+          contextData.MACHINES[fromName] = this.extractMachineData(
             context.additionalMachineData[fromName]
           );
         }
@@ -139,9 +141,8 @@ export class QueueVaultBuilder {
       ) {
         const fromName = (context.params as Record<string, string>).from;
         if (context.additionalStorageData?.[fromName]) {
-          queueVaultData.contextData.STORAGE_SYSTEMS =
-            queueVaultData.contextData.STORAGE_SYSTEMS || {};
-          queueVaultData.contextData.STORAGE_SYSTEMS[fromName] = this.buildStorageConfig(
+          contextData.STORAGE_SYSTEMS = contextData.STORAGE_SYSTEMS ?? {};
+          contextData.STORAGE_SYSTEMS[fromName] = this.buildStorageConfig(
             context.additionalStorageData[fromName]
           );
         }
@@ -156,7 +157,7 @@ export class QueueVaultBuilder {
               : context.repositoryVault;
 
           if (repositoryVault.credential) {
-            queueVaultData.contextData.REPOSITORY_CREDENTIALS = {
+            contextData.REPOSITORY_CREDENTIALS = {
               [context.repositoryGuid]: repositoryVault.credential,
             };
           }
@@ -167,23 +168,23 @@ export class QueueVaultBuilder {
 
       // Add REPOSITORY_NETWORK_ID if repository network ID is provided
       if (requirements.repository && context.repositoryNetworkId !== undefined) {
-        queueVaultData.contextData.REPOSITORY_NETWORK_ID = context.repositoryNetworkId;
+        contextData.REPOSITORY_NETWORK_ID = context.repositoryNetworkId;
       }
 
       // Add REPOSITORY_NETWORK_MODE if repository network mode is provided
       if (requirements.repository && context.repositoryNetworkMode) {
-        queueVaultData.contextData.REPOSITORY_NETWORK_MODE = context.repositoryNetworkMode;
+        contextData.REPOSITORY_NETWORK_MODE = context.repositoryNetworkMode;
       }
 
       // Add REPOSITORY_TAG if repository tag is provided
       if (requirements.repository && context.repositoryTag !== undefined) {
-        queueVaultData.contextData.REPOSITORY_TAG = context.repositoryTag;
+        contextData.REPOSITORY_TAG = context.repositoryTag;
       }
 
       // For functions like 'list' that need all REPOSITORY_CREDENTIALS
       // Repository credentials are passed separately, not from company vault
       if (context.functionName === 'list' && context.allRepositoryCredentials) {
-        queueVaultData.contextData.REPOSITORY_CREDENTIALS = context.allRepositoryCredentials;
+        contextData.REPOSITORY_CREDENTIALS = context.allRepositoryCredentials;
       }
 
       // For 'mount', 'unmount', 'new', and 'up' functions that need PLUGINS
@@ -192,39 +193,37 @@ export class QueueVaultBuilder {
         context.companyVault &&
         (context.companyVault as VaultData).PLUGINS
       ) {
-        queueVaultData.contextData.PLUGINS = (context.companyVault as VaultData)
-          .PLUGINS as VaultData;
+        contextData.PLUGINS = (context.companyVault as VaultData).PLUGINS as VaultData;
       }
 
-      const dataExtractors: Array<[boolean | undefined, keyof VaultContextData, () => VaultData]> =
+      const dataExtractors: [boolean | undefined, keyof VaultContextData, () => VaultData][] = [
+        [requirements.company, 'company', () => this.extractCompanyData(context.companyVault)],
         [
-          [requirements.company, 'company', () => this.extractCompanyData(context.companyVault)],
-          [
-            Boolean(requirements.repository && context.repositoryGuid),
-            'repository',
-            () =>
-              this.extractRepositoryData(
-                context.repositoryVault,
-                context.repositoryGuid ?? '',
-                context.companyVault
-              ),
-          ],
-          [
-            requirements.storage && Boolean(context.storageName),
-            'storage',
-            () => this.extractStorageData(context.storageVault, context.storageName!),
-          ],
-          [
-            requirements.bridge && Boolean(context.bridgeName),
-            'bridge',
-            () => this.extractBridgeData(context.bridgeVault, context.bridgeName!),
-          ],
-          [requirements.plugin, 'plugins', () => this.extractPluginData(context.companyVault)],
-        ];
+          Boolean(requirements.repository && context.repositoryGuid),
+          'repository',
+          () =>
+            this.extractRepositoryData(
+              context.repositoryVault,
+              context.repositoryGuid ?? '',
+              context.companyVault
+            ),
+        ],
+        [
+          requirements.storage && Boolean(context.storageName),
+          'storage',
+          () => this.extractStorageData(context.storageVault, context.storageName!),
+        ],
+        [
+          requirements.bridge && Boolean(context.bridgeName),
+          'bridge',
+          () => this.extractBridgeData(context.bridgeVault, context.bridgeName!),
+        ],
+        [requirements.plugin, 'plugins', () => this.extractPluginData(context.companyVault)],
+      ];
 
       dataExtractors.forEach(([condition, key, extractor]) => {
         if (condition) {
-          queueVaultData.contextData[key] = extractor();
+          contextData[key] = extractor();
         }
       });
 
@@ -322,9 +321,8 @@ export class QueueVaultBuilder {
 
   private extractPluginData(companyVault: VaultData | string | null | undefined): VaultData {
     const company = typeof companyVault === 'string' ? JSON.parse(companyVault) : companyVault;
-    return (company as Record<string, unknown>)?.PLUGINS
-      ? ((company as Record<string, unknown>).PLUGINS as VaultData)
-      : {};
+    const plugins = (company as Record<string, unknown> | null)?.PLUGINS;
+    return plugins ? (plugins as VaultData) : {};
   }
 
   private buildStorageConfig(vault: VaultData | string): StorageSystemContextData {

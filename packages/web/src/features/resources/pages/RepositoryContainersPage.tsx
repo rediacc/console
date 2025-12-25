@@ -44,7 +44,7 @@ const RepoContainersPage: React.FC = () => {
 
   // Fetch machine data if not provided via state
   const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines();
-  const actualMachine = machine || machines?.find((m) => m.machineName === machineName);
+  const actualMachine = machine ?? machines?.find((m) => m.machineName === machineName);
 
   // Fetch repositories to get the repositoryGuid from friendly name
   const { data: teamRepositories = [], isLoading: repositoriesLoading } = useRepositories(
@@ -109,13 +109,13 @@ const RepoContainersPage: React.FC = () => {
 
   // Navigation handlers
   const handleBackToRepos = () => {
-    navigate(`/machines/${machineName}/repositories`, {
+    void navigate(`/machines/${machineName}/repositories`, {
       state: { machine: actualMachine },
     });
   };
 
   const handleBackToMachines = () => {
-    navigate('/machines');
+    void navigate('/machines');
   };
 
   const handleContainerClick = (
@@ -177,7 +177,7 @@ const RepoContainersPage: React.FC = () => {
                 <Flex vertical>
                   <p>
                     {t('machines:repositoryNotFoundDescription', {
-                      repositoryName: repositoryName,
+                      repositoryName,
                       machineName,
                     })}
                   </p>
@@ -298,13 +298,13 @@ const RepoContainersPage: React.FC = () => {
       onClose={handlePanelClose}
       width={panelWidth}
       placement="right"
-      mask={true}
+      mask
       data-testid="repository-containers-drawer"
     >
       {selectedContainer && (
         <ContainerDetailPanel
           container={selectedContainer as unknown as ContainerData}
-          visible={true}
+          visible
           onClose={handlePanelClose}
           splitView
         />
@@ -330,7 +330,7 @@ const RepoContainersPage: React.FC = () => {
           open={queueTrace.state.open}
           onCancel={() => {
             queueTrace.close();
-            handleRefresh();
+            void handleRefresh();
           }}
         />
       )}
@@ -338,13 +338,13 @@ const RepoContainersPage: React.FC = () => {
       <ConnectivityTestModal
         data-testid="repository-containers-connectivity-test-modal"
         open={connectivityTest.isOpen}
-        onTestsComplete={handleRefresh}
+        onTestsComplete={() => void handleRefresh()}
         onClose={() => {
           connectivityTest.close();
-          handleRefresh();
+          void handleRefresh();
         }}
-        machines={actualMachine ? [actualMachine] : []}
-        teamFilter={actualMachine?.teamName ? [actualMachine.teamName] : undefined}
+        machines={[actualMachine]}
+        teamFilter={[actualMachine.teamName]}
       />
     </>
   );

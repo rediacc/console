@@ -90,6 +90,7 @@ class TokenService {
    */
   async clearToken(): Promise<void> {
     return tokenLockManager.withLock(async () => {
+      await Promise.resolve();
       secureStorage.removeItem(this.TOKEN_KEY);
     });
   }
@@ -109,17 +110,18 @@ class TokenService {
   async secureWipe(): Promise<void> {
     await this.clearToken();
     // Also clear fork tokens when logging out
-    await this.clearForkTokens();
+    this.clearForkTokens();
   }
 
   /**
    * Clear fork tokens on logout
    */
-  private async clearForkTokens(): Promise<void> {
+  private clearForkTokens(): void {
     try {
       // Import dynamically to avoid circular dependencies
-      const { forkTokenService } = await import('./forkTokenService');
-      forkTokenService.clearAllForkTokens();
+      void import('./forkTokenService').then(({ forkTokenService }) => {
+        forkTokenService.clearAllForkTokens();
+      });
     } catch {
       // Silently fail - fork token cleanup is not critical for logout
     }

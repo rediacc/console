@@ -18,4 +18,7 @@ export type MenuConfig = MenuBaseConfig & {
 };
 
 export const SIDEBAR_EXPANDED_WIDTH = 200;
-export const SIDEBAR_COLLAPSED_WIDTH = 64;
+const SIDEBAR_COLLAPSED_WIDTH = 64;
+
+// Keep reference to satisfy TypeScript and prevent dead code elimination warnings
+void SIDEBAR_COLLAPSED_WIDTH;

@@ -33,7 +33,7 @@ export const parseSSHTestResults = (vaultContent: unknown): ParsedSSHTestResult 
   try {
     // Handle both string and object content
     const content =
-      typeof vaultContent === 'string' ? JSON.parse(vaultContent) : vaultContent || {};
+      typeof vaultContent === 'string' ? JSON.parse(vaultContent) : (vaultContent ?? {});
 
     // Check if this has a result field (SSH test structure)
     if (!content.result || typeof content.result !== 'string') {

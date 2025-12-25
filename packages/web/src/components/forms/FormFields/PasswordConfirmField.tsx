@@ -54,7 +54,7 @@ export const PasswordConfirmField: React.FC<PasswordConfirmFieldProps> = ({
   if (required) {
     rules.push({
       required: true,
-      message: requiredMessage || `Please confirm ${label.toLowerCase()}`,
+      message: requiredMessage ?? `Please confirm ${label.toLowerCase()}`,
     });
   }
 

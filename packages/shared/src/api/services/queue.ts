@@ -101,7 +101,7 @@ function parseQueueItems(
 ): GetTeamQueueItems_ResultSet1[] {
   return parseResponse(response, {
     extractor: responseExtractors.primaryOrSecondary,
-    filter: (item) => Boolean(item?.taskId),
+    filter: (item) => Boolean(item.taskId),
   });
 }
 
@@ -111,14 +111,14 @@ function parseQueueList(
   let items: GetTeamQueueItems_ResultSet1[] = [];
   let statistics: GetTeamQueueItems_ResultSet2 | null = null;
 
-  response.resultSets?.forEach((set) => {
-    const first = set.data?.[0];
-    if (!first) return;
+  response.resultSets.forEach((set) => {
+    if (set.data.length === 0) return;
+    const first = set.data[0];
 
     if ('taskId' in first) {
       items = set.data as GetTeamQueueItems_ResultSet1[];
     } else if ('totalCount' in first || 'pendingCount' in first) {
-      statistics = first as GetTeamQueueItems_ResultSet2;
+      statistics = first;
     }
   });
 
@@ -156,7 +156,7 @@ function parseVaultSnapshot(snapshot?: QueueVaultSnapshot | null): QueueVaultSna
   if (!snapshot) return null;
 
   return {
-    hasContent: Boolean(snapshot.hasContent ?? snapshot.vaultContent),
+    hasContent: Boolean(snapshot.hasContent) || Boolean(snapshot.vaultContent),
     vaultVersion: snapshot.vaultVersion,
     vaultContent: snapshot.vaultContent,
     updatedAt: snapshot.updatedAt,
@@ -182,18 +182,18 @@ function parseMachineStats(stats?: QueueMachineStats | null): QueueMachineStats 
   if (!stats) return null;
 
   return {
-    currentQueueDepth: stats.currentQueueDepth ?? 0,
-    activeProcessingCount: stats.activeProcessingCount ?? 0,
+    currentQueueDepth: stats.currentQueueDepth,
+    activeProcessingCount: stats.activeProcessingCount,
     maxConcurrentTasks: stats.maxConcurrentTasks,
   };
 }
 
 function getRowsByIndex<T>(response: ApiResponse, index: number): T[] {
-  if (!response.resultSets || !response.resultSets[index]) {
+  if (!response.resultSets[index]) {
     return [];
   }
   const table = response.resultSets[index];
-  return (table?.data as T[]) ?? [];
+  return table.data as T[];
 }
 
 function getRowByIndex<T>(response: ApiResponse, index: number): T | null {

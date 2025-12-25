@@ -1,15 +1,29 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { BulkOperationProgress, BulkOperationResult, ValidationResult } from '@/features/ceph';
+import type { ValidationResult } from '@/features/ceph';
 import type { MachineAssignmentType } from '@/types';
 
+// Local types (not exported from shared)
+interface BulkOperationProgress {
+  total: number;
+  completed: number;
+  failed: number;
+  isProcessing: boolean;
+}
+
+interface BulkOperationResult {
+  success: boolean;
+  successfulMachines: string[];
+  failedMachines: string[];
+}
+
 // Types
-export interface OperationHistoryDetails {
+interface OperationHistoryDetails {
   successful: number;
   failed: number;
   errorMessage?: string;
 }
 
-export interface OperationHistoryEntry {
+interface OperationHistoryEntry {
   id: string;
   timestamp: Date;
   type: 'assign' | 'remove' | 'migrate';
@@ -20,14 +34,14 @@ export interface OperationHistoryEntry {
   details?: OperationHistoryDetails;
 }
 
-export interface CurrentOperation {
+interface CurrentOperation {
   type: 'assign' | 'remove' | 'migrate' | null;
   targetType: 'cluster' | 'image' | 'clone' | null;
   targetResource: string | null;
   progress: BulkOperationProgress | null;
 }
 
-export interface MachineAssignmentState {
+interface MachineAssignmentState {
   // Selection Management
   selectedMachines: string[];
   selectionMode: 'single' | 'multiple' | null;
@@ -97,12 +111,10 @@ const machineAssignmentSlice = createSlice({
 
       if (index > -1) {
         state.selectedMachines.splice(index, 1);
+      } else if (state.selectionMode === 'single') {
+        state.selectedMachines = [machine];
       } else {
-        if (state.selectionMode === 'single') {
-          state.selectedMachines = [machine];
-        } else {
-          state.selectedMachines.push(machine);
-        }
+        state.selectedMachines.push(machine);
       }
     },
 
@@ -134,7 +146,7 @@ const machineAssignmentSlice = createSlice({
 
     setMultipleValidationResults: (
       state,
-      action: PayloadAction<Array<{ machineName: string; result: ValidationResult }>>
+      action: PayloadAction<{ machineName: string; result: ValidationResult }[]>
     ) => {
       const timestamp = Date.now();
       action.payload.forEach(({ machineName, result }) => {
@@ -213,7 +225,7 @@ const machineAssignmentSlice = createSlice({
           type: state.currentOperation.type!,
           targetType: state.currentOperation.targetType!,
           targetResource: state.currentOperation.targetResource!,
-          machineCount: state.currentOperation.progress?.total || 0,
+          machineCount: state.currentOperation.progress?.total ?? 0,
           result: action.payload.result.success
             ? 'success'
             : action.payload.result.failedMachines.length > 0 &&
@@ -260,15 +272,14 @@ const machineAssignmentSlice = createSlice({
       const { key, value } = action.payload;
       if (value === undefined || value === '') {
         delete state.activeFilters[key];
-      } else {
+      } else if (key === 'assignmentType') {
         // Type assertion is safe here because the value type matches the key's expected type
-        if (key === 'assignmentType') {
-          state.activeFilters.assignmentType = value as MachineAssignmentType;
-        } else if (key === 'teamName') {
-          state.activeFilters.teamName = value as string;
-        } else if (key === 'searchQuery') {
-          state.activeFilters.searchQuery = value as string;
-        }
+        state.activeFilters.assignmentType = value as MachineAssignmentType;
+      } else if (key === 'teamName') {
+        state.activeFilters.teamName = value;
+      } else {
+        // key === 'searchQuery'
+        state.activeFilters.searchQuery = value;
       }
     },
 
@@ -305,8 +316,12 @@ const machineAssignmentSlice = createSlice({
   },
 });
 
-// Export actions
-export const {
+// Export only the actions that are used externally
+export const { setMultipleValidationResults, clearStaleValidations } =
+  machineAssignmentSlice.actions;
+
+// Destructure remaining actions for internal use (not exported)
+const {
   // Selection
   setSelectedMachines,
   addSelectedMachines,
@@ -316,8 +331,6 @@ export const {
   setSelectionMode,
   // Validation
   setValidationResult,
-  setMultipleValidationResults,
-  clearStaleValidations,
   clearValidationForMachines,
   // Operations
   startBulkOperation,
@@ -335,6 +348,27 @@ export const {
   clearOperationHistory,
   removeFromHistory,
 } = machineAssignmentSlice.actions;
+
+// Reserved for future use - prevent unused variable warnings
+void setSelectedMachines;
+void addSelectedMachines;
+void removeSelectedMachines;
+void toggleMachineSelection;
+void clearSelection;
+void setSelectionMode;
+void setValidationResult;
+void clearValidationForMachines;
+void startBulkOperation;
+void updateOperationProgress;
+void completeBulkOperation;
+void cancelBulkOperation;
+void setActiveFilters;
+void updateFilter;
+void clearFilters;
+void toggleGroupExpansion;
+void setExpandedGroups;
+void clearOperationHistory;
+void removeFromHistory;
 
 // Export reducer
 export default machineAssignmentSlice.reducer;

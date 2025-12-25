@@ -46,7 +46,7 @@ class TelemetryService {
   private sessionStartTime = Date.now();
   private webVitalsObserver: PerformanceObserver | null = null;
 
-  async initialize(config: TelemetryConfig): Promise<void> {
+  initialize(config: TelemetryConfig): void {
     if (this.isInitialized) return;
 
     this.config = config;
@@ -103,7 +103,7 @@ class TelemetryService {
 
       this.provider = new WebTracerProvider({
         resource,
-        sampler: new TraceIdRatioBasedSampler(config.samplingRate || 0.1),
+        sampler: new TraceIdRatioBasedSampler(config.samplingRate ?? 0.1),
         spanProcessors: [spanProcessor],
       });
 
@@ -161,11 +161,11 @@ class TelemetryService {
   setUserContext(userContext: Partial<UserContext>): void {
     this.userContext = {
       ...this.userContext,
-      sessionId: this.userContext?.sessionId || generateSessionId(),
+      sessionId: this.userContext?.sessionId ?? generateSessionId(),
       ...userContext,
     };
 
-    if (this.isInitialized && this.userContext) {
+    if (this.isInitialized) {
       try {
         const entries: Record<string, { value: string }> = {};
         if (this.userContext.sessionId) {
@@ -220,7 +220,7 @@ class TelemetryService {
   trackPageView(path: string, title?: string): void {
     this.trackEvent('page.view', {
       'page.path': path,
-      'page.title': title || document.title,
+      'page.title': title ?? document.title,
       'page.referrer': document.referrer,
       'navigation.type': getNavigationType(),
       'page.load_time': getPageLoadTime(),
@@ -230,7 +230,7 @@ class TelemetryService {
   trackUserAction(action: string, target?: string, details: TelemetryContext = {}): void {
     this.trackEvent('user.action', {
       'user.action.type': action,
-      'user.action.target': target || 'unknown',
+      'user.action.target': target ?? 'unknown',
       'user.action.timestamp': Date.now(),
       ...Object.fromEntries(
         Object.entries(details).map(([key, value]) => [`user.action.${key}`, String(value)])
@@ -248,9 +248,9 @@ class TelemetryService {
     this.trackEvent('api.call', {
       'http.method': method,
       'http.url': url,
-      'http.status_code': statusCode || 0,
-      'http.duration_ms': duration || 0,
-      'http.error': error || '',
+      'http.status_code': statusCode ?? 0,
+      'http.duration_ms': duration ?? 0,
+      'http.error': error ?? '',
       'http.success': !error && statusCode && statusCode < 400 ? true : false,
       'api.endpoint': extractApiEndpoint(url),
     });
@@ -260,7 +260,7 @@ class TelemetryService {
     this.trackEvent('error.occurred', {
       'error.type': error.constructor.name,
       'error.message': error.message,
-      'error.stack': error.stack || '',
+      'error.stack': error.stack ?? '',
       'error.timestamp': Date.now(),
       ...Object.fromEntries(
         Object.entries(telemetryContext).map(([key, value]) => [
@@ -285,7 +285,7 @@ class TelemetryService {
       'web_vitals.name': metric.name,
       'web_vitals.value': metric.value,
       'web_vitals.rating': metric.rating,
-      'web_vitals.delta': metric.delta || 0,
+      'web_vitals.delta': metric.delta ?? 0,
       'web_vitals.id': metric.id,
     });
   }
@@ -312,27 +312,27 @@ class TelemetryService {
               this.trackPerformance(name, duration);
               return value;
             },
-            (error) => {
+            (error: unknown) => {
               const duration = performance.now() - startTime;
+              const errorMessage = error instanceof Error ? error.message : String(error);
               span.setAttributes({
                 'performance.duration_ms': duration,
                 'performance.success': false,
-                'performance.error': error.message,
+                'performance.error': errorMessage,
               });
-              span.setStatus({ code: 2, message: error.message });
+              span.setStatus({ code: 2, message: errorMessage });
               span.end();
               this.trackPerformance(`${name}.error`, duration);
               throw error;
             }
           );
-        } else {
-          const duration = performance.now() - startTime;
-          span.setAttributes({ 'performance.duration_ms': duration, 'performance.success': true });
-          span.setStatus({ code: 1 });
-          span.end();
-          this.trackPerformance(name, duration);
-          return result;
         }
+        const duration = performance.now() - startTime;
+        span.setAttributes({ 'performance.duration_ms': duration, 'performance.success': true });
+        span.setStatus({ code: 1 });
+        span.end();
+        this.trackPerformance(name, duration);
+        return result;
       } catch (error) {
         const duration = performance.now() - startTime;
         span.setAttributes({
@@ -348,14 +348,14 @@ class TelemetryService {
     });
   }
 
-  async shutdown(): Promise<void> {
+  shutdown(): void {
     if (this.provider && this.isInitialized) {
       this.trackEvent('telemetry.shutdown');
       if (this.webVitalsObserver) {
         this.webVitalsObserver.disconnect();
         this.webVitalsObserver = null;
       }
-      await this.provider.shutdown();
+      void this.provider.shutdown();
       this.isInitialized = false;
     }
   }
@@ -373,7 +373,7 @@ class TelemetryService {
     const attributes: Record<string, string> = {};
     if (this.userContext.sessionId) attributes['user.session_id'] = this.userContext.sessionId;
     if (this.userContext.email)
-      attributes['user.email_domain'] = this.userContext.email.split('@')[1] || '';
+      attributes['user.email_domain'] = this.userContext.email.split('@')[1] ?? '';
     if (this.userContext.company) attributes['user.company'] = this.userContext.company;
     if (this.userContext.teamName) attributes['user.team'] = this.userContext.teamName;
     return attributes;
@@ -397,7 +397,7 @@ export const createTelemetryConfig = (): TelemetryConfig => {
 
   return {
     serviceName: 'rediacc-console',
-    serviceVersion: import.meta.env.VITE_APP_VERSION || '2.0.0',
+    serviceVersion: (import.meta.env.VITE_APP_VERSION as string | undefined) ?? '2.0.0',
     environment: isDev ? 'development' : 'production',
     endpoint: getObsEndpoint(),
     enabledInDevelopment: true,
@@ -407,11 +407,3 @@ export const createTelemetryConfig = (): TelemetryConfig => {
     enableWebVitals: true,
   };
 };
-
-// Re-export types for consumers
-export type {
-  TelemetryConfig,
-  TelemetryContext,
-  UserContext,
-  WebVitalsMetric,
-} from './telemetry/types';

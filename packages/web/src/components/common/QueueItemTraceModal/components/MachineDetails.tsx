@@ -49,7 +49,7 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               <Descriptions.Item label="Created By">
                 <Space>
                   <UserOutlined />
-                  <Typography.Text>{queueDetails.createdBy || 'System'}</Typography.Text>
+                  <Typography.Text>{queueDetails.createdBy ?? 'System'}</Typography.Text>
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Retry Status">
@@ -114,7 +114,7 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
                 <Space>
                   <CodeOutlined />
                   <Typography.Text>Response (Console)</Typography.Text>
-                  {queueDetails?.status === 'PROCESSING' && (
+                  {queueDetails.status === 'PROCESSING' && (
                     <Tag icon={<CodeOutlined />}>Live Output</Tag>
                   )}
                 </Space>

@@ -28,7 +28,7 @@ export function useQueueAction() {
     async (params: QueueActionParams): Promise<QueueActionResult> => {
       try {
         const team = teams.find((t) => t.teamName === params.teamName);
-        const teamVault = params.teamVault || team?.vaultContent || '{}';
+        const teamVault = params.teamVault ?? team?.vaultContent ?? '{}';
         return await service.execute(params, teamVault);
       } catch (error) {
         console.error('Failed to execute queue action:', error);

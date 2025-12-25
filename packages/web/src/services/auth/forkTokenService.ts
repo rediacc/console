@@ -8,7 +8,7 @@
 import { api } from '@/api/client';
 import { secureMemoryStorage as secureStorage } from '@/services/crypto';
 
-export interface ForkTokenInfo {
+interface ForkTokenInfo {
   token: string;
   expiresAt: number;
   parentRequestId: number | null;
@@ -130,7 +130,7 @@ class ForkTokenService {
       }
 
       // Remove the old token
-      await secureStorage.removeItem(storageKey);
+      secureStorage.removeItem(storageKey);
     }
 
     // Create new fork token
@@ -184,7 +184,7 @@ class ForkTokenService {
       expiresInHours: expirationHours,
     });
 
-    if (!credentials?.nextRequestToken) {
+    if (!credentials.nextRequestToken) {
       throw new Error('Fork token data not found in API response');
     }
 
@@ -195,17 +195,6 @@ class ForkTokenService {
 // Export singleton instance
 export const forkTokenService = new ForkTokenService();
 
-// Helper functions
-export const createForkToken = (action: string, expirationHours?: number): Promise<string> =>
-  forkTokenService.createForkToken(action, expirationHours);
-
-export const getForkToken = (action: string): Promise<string | null> =>
-  forkTokenService.getForkToken(action);
-
-export const getOrCreateForkToken = (action: string, expirationHours?: number): Promise<string> =>
-  forkTokenService.getOrCreateForkToken(action, expirationHours);
-
+// Helper function (only createFreshForkToken is used externally)
 export const createFreshForkToken = (action: string, expirationHours?: number): Promise<string> =>
   forkTokenService.createFreshForkToken(action, expirationHours);
-
-export const clearAllForkTokens = (): void => forkTokenService.clearAllForkTokens();

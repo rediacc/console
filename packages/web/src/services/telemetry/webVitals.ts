@@ -1,6 +1,6 @@
 import type { LayoutShiftEntry, WebVitalsMetric } from './types';
 
-export function setupWebVitalsObserver(
+function setupWebVitalsObserver(
   trackWebVitals: (metric: WebVitalsMetric) => void
 ): PerformanceObserver | null {
   if (!('PerformanceObserver' in window)) {

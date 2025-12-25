@@ -25,7 +25,7 @@ interface MachineMobileCardProps {
   t: TFunction;
 }
 
-export const MachineMobileCard: React.FC<MachineMobileCardProps> = ({
+const MachineMobileCard: React.FC<MachineMobileCardProps> = ({
   record,
   onEditMachine,
   onFunctionsMachine,

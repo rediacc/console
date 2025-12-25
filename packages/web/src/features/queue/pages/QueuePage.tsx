@@ -45,7 +45,7 @@ import { useQueueExport } from '../hooks/useQueueExport';
 import type { Dayjs } from 'dayjs';
 
 const getStatusColor = (status: string): string => {
-  switch (status?.toLowerCase()) {
+  switch (status.toLowerCase()) {
     case 'pending':
       return 'blue';
     case 'assigned':
@@ -158,8 +158,9 @@ const QueuePage: React.FC = () => {
     [queueTrace]
   );
 
-  const statistics = queueData?.statistics ?? ({} as Partial<QueueStatistics>);
-  const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0;
+  const emptyStatistics: Partial<QueueStatistics> = {};
+  const statistics = queueData?.statistics ?? emptyStatistics;
+  const totalCount = statistics.totalCount ?? queueData?.items.length ?? 0;
   const activeCount =
     (statistics.pendingCount ?? 0) +
     (statistics.assignedCount ?? 0) +
@@ -190,7 +191,7 @@ const QueuePage: React.FC = () => {
         key: 'teamName',
         value: filters.teamName,
         label:
-          dropdownData?.teams?.find((team) => team.value === filters.teamName)?.label ||
+          dropdownData?.teams.find((team) => team.value === filters.teamName)?.label ??
           filters.teamName,
       },
       {
@@ -286,7 +287,7 @@ const QueuePage: React.FC = () => {
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
     () => (record: QueueItem) => {
-      const canCancel = ['PENDING', 'ASSIGNED'].includes(record.status?.toUpperCase() || '');
+      const canCancel = ['PENDING', 'ASSIGNED'].includes(record.status?.toUpperCase() ?? '');
       const menuItems: MenuProps['items'] = [
         ...(record.taskId
           ? [

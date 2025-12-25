@@ -7,8 +7,6 @@ import { selectCompany } from '@/store/auth/authSelectors';
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import type {
-  CompanyBlockUserRequestsResult,
-  CompanyExportData,
   CompanyImportResult,
   CompanyVaultRecord,
   CompanyVaultUpdateResult,
@@ -44,7 +42,7 @@ export const useUpdateCompanyVault = () => {
     successMessage: () => i18n.t('system:company.success.vaultUpdated'),
     errorMessage: i18n.t('system:company.errors.vaultUpdateFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['company-vault'] });
+      void queryClient.invalidateQueries({ queryKey: ['company-vault'] });
     },
   });
 };
@@ -59,9 +57,9 @@ export const useUpdateCompanyBlockUserRequests = () => {
       return api.company.updateBlockUserRequests(params);
     },
     successMessage: (data, variables) => {
-      const deactivatedCount = (data as CompanyBlockUserRequestsResult)?.deactivatedCount ?? 0;
+      const deactivatedCount = data.deactivatedCount;
 
-      if (variables) {
+      if (variables === true) {
         return deactivatedCount > 0
           ? i18n.t('system:company.success.requestsBlockedWithTerminations', {
               count: deactivatedCount,
@@ -73,8 +71,8 @@ export const useUpdateCompanyBlockUserRequests = () => {
     errorMessage: i18n.t('system:company.errors.blockRequestsFailed'),
     onSuccess: () => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['company'] });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['company'] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };
@@ -99,10 +97,8 @@ export const useCompanyVaults = () => {
             entityType.slice(1) +
             (entityType === 'Company' ? '' : 's');
 
-          if (!vaultsByType[key]) {
-            vaultsByType[key] = [];
-          }
-          vaultsByType[key]!.push(vault);
+          vaultsByType[key] = vaultsByType[key] ?? [];
+          vaultsByType[key].push(vault);
         }
       });
 
@@ -121,7 +117,7 @@ export const useCompanyVaults = () => {
 export const useUpdateCompanyVaults = () => {
   const queryClient = useQueryClient();
 
-  return useMutationWithFeedback<CompanyVaultUpdateResult, Error, Array<Record<string, unknown>>>({
+  return useMutationWithFeedback<CompanyVaultUpdateResult, Error, Record<string, unknown>[]>({
     mutationFn: async (vaultUpdates) => {
       const params: UpdateCompanyVaultsParams = { updates: JSON.stringify(vaultUpdates) };
       return api.company.updateAllVaults(params);
@@ -130,8 +126,8 @@ export const useUpdateCompanyVaults = () => {
     successMessage: () => null,
     errorMessage: i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed'),
     onSuccess: (data) => {
-      const totalUpdated = data.totalUpdated ?? 0;
-      const failedCount = data.failedCount ?? 0;
+      const totalUpdated = data.totalUpdated;
+      const failedCount = data.failedCount;
 
       // Show error for partial failure
       if (failedCount > 0) {
@@ -143,7 +139,7 @@ export const useUpdateCompanyVaults = () => {
       }
 
       // Invalidate all queries to refresh data
-      queryClient.invalidateQueries();
+      void queryClient.invalidateQueries();
     },
   });
 };
@@ -154,10 +150,7 @@ export const useExportCompanyData = () => {
     queryKey: ['company-export-data'],
     queryFn: async () => {
       const exportData = await api.company.exportData();
-      if (!exportData) {
-        throw new Error(i18n.t('system:company.errors.noExportData'));
-      }
-      return exportData as CompanyExportData;
+      return exportData;
     },
     enabled: false, // Only fetch when manually triggered
   });
@@ -175,14 +168,14 @@ export const useImportCompanyData = () => {
     mutationFn: async (data) => {
       const params: ImportCompanyDataParams = {
         companyDataJson: data.companyDataJson,
-        importMode: data.importMode || 'skip',
+        importMode: data.importMode ?? 'skip',
       };
       return api.company.importData(params);
     },
     successMessage: (data) => {
-      const importedCount = data.importedCount ?? 0;
-      const skippedCount = data.skippedCount ?? 0;
-      const errorCount = data.errorCount ?? 0;
+      const importedCount = data.importedCount;
+      const skippedCount = data.skippedCount;
+      const errorCount = data.errorCount;
 
       const parts = [
         i18n.t('system:company.success.importedCount', { count: importedCount }),
@@ -197,7 +190,7 @@ export const useImportCompanyData = () => {
     errorMessage: i18n.t('system:company.errors.importFailed'),
     onSuccess: () => {
       // Invalidate all queries to refresh data
-      queryClient.invalidateQueries();
+      void queryClient.invalidateQueries();
     },
   });
 };

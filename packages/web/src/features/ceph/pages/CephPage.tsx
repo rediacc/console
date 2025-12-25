@@ -150,21 +150,19 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             vaultContent: formValues.vaultContent,
           });
         }
-      } else if (mode === 'edit' || mode === 'vault') {
-        if (type === 'cluster' && !isPoolFormValues(formValues)) {
-          await updateClusterVaultMutation.mutateAsync({
-            clusterName: formValues.clusterName,
-            vaultContent: formValues.vaultContent,
-            vaultVersion: formValues.vaultVersion ?? 0,
-          });
-        } else if (type === 'pool' && isPoolFormValues(formValues)) {
-          await updatePoolVaultMutation.mutateAsync({
-            poolName: formValues.poolName,
-            teamName: formValues.teamName,
-            vaultContent: formValues.vaultContent,
-            vaultVersion: formValues.vaultVersion ?? 0,
-          });
-        }
+      } else if (type === 'cluster' && !isPoolFormValues(formValues)) {
+        await updateClusterVaultMutation.mutateAsync({
+          clusterName: formValues.clusterName,
+          vaultContent: formValues.vaultContent,
+          vaultVersion: formValues.vaultVersion ?? 0,
+        });
+      } else if (isPoolFormValues(formValues)) {
+        await updatePoolVaultMutation.mutateAsync({
+          poolName: formValues.poolName,
+          teamName: formValues.teamName,
+          vaultContent: formValues.vaultContent,
+          vaultVersion: formValues.vaultVersion ?? 0,
+        });
       }
 
       closeModal();
@@ -191,6 +189,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   };
 
   const handleFunctionSubmit = async (_functionData: unknown) => {
+    await Promise.resolve();
     showMessage('info', 'Function execution coming soon');
     closeModal();
   };
@@ -208,7 +207,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
                 <br />
                 <strong>Debug Info:</strong>
                 <br />
-                Current Plan: {planCode || 'No plan detected'}
+                Current Plan: {planCode ?? 'No plan detected'}
                 <br />
                 Has Access: {String(hasCephAccess)}
                 <br />
@@ -298,9 +297,9 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             icon={<ReloadOutlined />}
             onClick={() => {
               if (isClustersView) {
-                refetchClusters();
+                void refetchClusters();
               } else if (isPoolsView) {
-                refetchPools();
+                void refetchPools();
               }
             }}
             data-testid="ds-refresh-button"
@@ -350,24 +349,24 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             existingData={{
               ...modalState.data,
               teamName: primaryTeam,
-              clusters: clusters,
-              pools: pools,
-              vaultContent: (modalState.data?.vaultContent ||
-                modalState.data?.[`${modalState.type}Vault`] ||
+              clusters,
+              pools,
+              vaultContent: (modalState.data?.vaultContent ??
+                modalState.data?.[`${modalState.type}Vault`] ??
                 undefined) as string | undefined,
             }}
             teamFilter={primaryTeam}
             onSubmit={handleModalSubmit}
             onFunctionSubmit={handleFunctionSubmit}
             onUpdateVault={async (vault: string, version: number) => {
-              const data = modalState.data || {};
+              const data = modalState.data ?? {};
               if (modalState.type === 'cluster') {
                 await updateClusterVaultMutation.mutateAsync({
                   clusterName: data.clusterName as string,
                   vaultContent: vault,
                   vaultVersion: version,
                 });
-              } else if (modalState.type === 'pool' && primaryTeam) {
+              } else if (primaryTeam) {
                 await updatePoolVaultMutation.mutateAsync({
                   teamName: primaryTeam,
                   poolName: data.poolName as string,
@@ -408,9 +407,9 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             onCancel={() => {
               queueTrace.close();
               if (isClustersView) {
-                refetchClusters();
+                void refetchClusters();
               } else if (isPoolsView) {
-                refetchPools();
+                void refetchPools();
               }
             }}
           />

@@ -52,7 +52,7 @@ interface FunctionSelectionModalProps {
   loading?: boolean;
   showMachineSelection?: boolean;
   teamName?: string;
-  machines?: Array<{ value: string; label: string; bridgeName: string }>;
+  machines?: { value: string; label: string; bridgeName: string }[];
   hiddenParams?: string[];
   defaultParams?: FunctionParams;
   preselectedFunction?: string;
@@ -170,7 +170,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       const preselected = preselectedFunction ? localizedFunctions[preselectedFunction] : undefined;
 
       if (preselected) {
-        const func = preselected as QueueFunction;
+        const func = preselected;
         startTransition(() => {
           setSelectedFunction(func);
           setFunctionParams(initializeParams(func));
@@ -204,7 +204,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         }
 
         // For other parameters, check the main value
-        return paramValue !== undefined && paramValue !== null && paramValue !== '';
+        return paramValue !== undefined && paramValue !== '';
       });
   }, [selectedFunction, functionParams, hiddenParams, selectedTemplates]);
 
@@ -245,7 +245,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       <SizedModal
         title={
           <Flex vertical>
-            <Typography.Text>{title || t('functions:selectFunction')}</Typography.Text>
+            <Typography.Text>{title ?? t('functions:selectFunction')}</Typography.Text>
             {subtitle && <Typography.Text>{subtitle}</Typography.Text>}
           </Flex>
         }
@@ -295,7 +295,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                     >
                       <Flex>
                         <Typography.Text strong>
-                          {categories[category]?.name || category}
+                          {categories[category].name || category}
                         </Typography.Text>
                       </Flex>
                       {funcs.map((func) => {
@@ -339,80 +339,77 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
                     {/* Show additional info for push function */}
                     {selectedFunction.name === 'push' && functionParams.dest && (
-                      <>
-                        <Flex
-                          // eslint-disable-next-line no-restricted-syntax
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns:
-                              functionParams.state === 'online' ? '1fr 0.8fr' : '1fr',
-                          }}
-                        >
+                      <Flex
+                        // eslint-disable-next-line no-restricted-syntax
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns:
+                            functionParams.state === 'online' ? '1fr 0.8fr' : '1fr',
+                        }}
+                      >
+                        <Alert
+                          type="info"
+                          showIcon
+                          message="Push Operation Details"
+                          description={
+                            <Space direction="vertical" size="small">
+                              <Flex>
+                                <Typography.Text strong>Destination Filename: </Typography.Text>
+                                <Typography.Text code>{functionParams.dest}</Typography.Text>
+                              </Flex>
+                              {additionalContext?.parentRepo && (
+                                <Flex>
+                                  <Typography.Text strong>Repository Lineage: </Typography.Text>
+                                  <Space>
+                                    <Tag>{additionalContext.parentRepo}</Tag>
+                                    <Typography.Text>→</Typography.Text>
+                                    <Tag>{additionalContext.sourceRepo}</Tag>
+                                    <Typography.Text>→</Typography.Text>
+                                    <Tag>{functionParams.dest}</Tag>
+                                  </Space>
+                                </Flex>
+                              )}
+                              {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
+                                <Flex>
+                                  <Typography.Text strong>Source Repository: </Typography.Text>
+                                  <Tag>{additionalContext.sourceRepo}</Tag>
+                                  <Typography.Text> (Original)</Typography.Text>
+                                </Flex>
+                              )}
+                              <Flex>
+                                <Typography.Text>
+                                  {functionParams.state === 'online'
+                                    ? 'The repository will be pushed in online state (mounted).'
+                                    : 'The repository will be pushed in offline state (unmounted).'}
+                                </Typography.Text>
+                              </Flex>
+                            </Space>
+                          }
+                        />
+                        {functionParams.state === 'online' && (
                           <Alert
-                            type="info"
+                            type="warning"
                             showIcon
-                            message="Push Operation Details"
+                            message={t('functions:onlinePushWarningTitle')}
                             description={
                               <Space direction="vertical" size="small">
+                                <Typography.Text>
+                                  {t('functions:onlinePushWarningMessage')}
+                                </Typography.Text>
                                 <Flex>
-                                  <Typography.Text strong>Destination Filename: </Typography.Text>
-                                  <Typography.Text code>{functionParams.dest}</Typography.Text>
-                                </Flex>
-                                {additionalContext?.parentRepo && (
-                                  <Flex>
-                                    <Typography.Text strong>Repository Lineage: </Typography.Text>
-                                    <Space>
-                                      <Tag>{additionalContext.parentRepo}</Tag>
-                                      <Typography.Text>→</Typography.Text>
-                                      <Tag>{additionalContext.sourceRepo}</Tag>
-                                      <Typography.Text>→</Typography.Text>
-                                      <Tag>{functionParams.dest}</Tag>
-                                    </Space>
-                                  </Flex>
-                                )}
-                                {!additionalContext?.parentRepo &&
-                                  additionalContext?.sourceRepo && (
-                                    <Flex>
-                                      <Typography.Text strong>Source Repository: </Typography.Text>
-                                      <Tag>{additionalContext.sourceRepo}</Tag>
-                                      <Typography.Text> (Original)</Typography.Text>
-                                    </Flex>
-                                  )}
-                                <Flex>
-                                  <Typography.Text>
-                                    {functionParams.state === 'online'
-                                      ? 'The repository will be pushed in online state (mounted).'
-                                      : 'The repository will be pushed in offline state (unmounted).'}
-                                  </Typography.Text>
+                                  <a
+                                    href="https://docs.rediacc.com/concepts/repo-push-operations"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {t('functions:onlinePushLearnMore')}
+                                  </a>
                                 </Flex>
                               </Space>
                             }
                           />
-                          {functionParams.state === 'online' && (
-                            <Alert
-                              type="warning"
-                              showIcon
-                              message={t('functions:onlinePushWarningTitle')}
-                              description={
-                                <Space direction="vertical" size="small">
-                                  <Typography.Text>
-                                    {t('functions:onlinePushWarningMessage')}
-                                  </Typography.Text>
-                                  <Flex>
-                                    <a
-                                      href="https://docs.rediacc.com/concepts/repo-push-operations"
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      {t('functions:onlinePushLearnMore')}
-                                    </a>
-                                  </Flex>
-                                </Space>
-                              }
-                            />
-                          )}
-                        </Flex>
-                      </>
+                        )}
+                      </Flex>
                     )}
 
                     {/* Machine Selection */}
@@ -437,11 +434,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           label={
                             paramInfo.help ? (
                               <Space size={4}>
-                                <Typography.Text>{paramInfo.label || paramName}</Typography.Text>
+                                <Typography.Text>{paramInfo.label ?? paramName}</Typography.Text>
                                 {/* Help tooltip removed - handled in FunctionParameterField if needed */}
                               </Space>
                             ) : (
-                              <Typography.Text>{paramInfo.label || paramName}</Typography.Text>
+                              <Typography.Text>{paramInfo.label ?? paramName}</Typography.Text>
                             )
                           }
                           required={paramInfo.required}

@@ -111,8 +111,7 @@ const TOAST_CONFIGS: Record<MessageType, ToastConfig> = {
   info: { isCustom: true, options: TOAST_STYLES.info },
 };
 
-const getToastConfig = (type: MessageType): ToastConfig =>
-  TOAST_CONFIGS[type] ?? { handler: toast, isCustom: false };
+const getToastConfig = (type: MessageType): ToastConfig => TOAST_CONFIGS[type];
 
 function addToNotificationCenter(type: MessageType, content: string): void {
   store.dispatch(

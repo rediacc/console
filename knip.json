@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "exclude": ["types", "duplicates"],
   "workspaces": {
     ".": {
       "entry": ["eslint.config.js"],
@@ -10,21 +11,32 @@
       "project": ["src/**/*.ts"]
     },
     "packages/cli": {
-      "entry": ["src/index.ts"],
+      "entry": ["src/index.ts", "src/types/index.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/web": {
-      "entry": ["src/main.tsx", "index.html"],
-      "project": ["src/**/*.{ts,tsx}"]
+      "entry": [
+        "src/main.tsx",
+        "index.html",
+        "src/types/index.ts",
+        "src/api/queries/*.ts",
+        "src/components/common/columns/index.tsx",
+        "src/components/common/index.ts",
+        "src/utils/cacheUtils.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": [
+        "src/utils/optimizedIcons.ts",
+        "src/utils/queueRenderers.tsx",
+        "src/utils/secureContext.ts",
+        "src/utils/vaultProtocol.ts"
+      ]
     }
   },
   "ignore": ["**/dist/**", "**/node_modules/**", "**/*.d.ts"],
   "ignoreDependencies": [
     "@types/*",
-    "zod",
     "@opentelemetry/instrumentation-*",
-    "prismjs",
-    "refractor",
     "dayjs"
   ],
   "ignoreBinaries": ["rimraf"]

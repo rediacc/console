@@ -16,19 +16,8 @@ export type {
   VersionColumnOptions,
 } from './types';
 
-// Re-export simple column factories
-export {
-  actionsColumn,
-  bridgeNameColumn,
-  countColumn,
-  createdDateColumn,
-  createResourceColumns,
-  machineNameColumn,
-  priorityColumn,
-  statusColumn,
-  teamNameColumn,
-  updatedDateColumn,
-} from './factories/simple';
+// Legacy simple column factories have been removed from ./factories/simple.ts.
+// Use the advanced column factories below which provide better configurability.
 
 // Re-export action column factory
 export { createActionColumn } from './factories/action';
@@ -42,5 +31,5 @@ export {
   createVersionColumn,
 } from './factories/advanced';
 
-// Re-export renderers
-export { createStatusRenderer, renderTimestampElement, type StatusConfig } from './renderers';
+// Re-export renderers (StatusConfig type needed by consumers)
+export { type StatusConfig } from './renderers';

@@ -50,7 +50,7 @@ export function createCompanyService(client: ApiClient) {
         companyCredential?: string | null;
       }>(response, 1);
       return {
-        vault: row?.vaultContent || '{}',
+        vault: row?.vaultContent ?? '{}',
         vaultVersion: row?.vaultVersion ?? 1,
         companyCredential: row?.companyCredential ?? null,
       };
@@ -139,7 +139,7 @@ export function createCompanyService(client: ApiClient) {
 
       if (Array.isArray(parsedValues.bridgesByRegion)) {
         parsedValues.bridgesByRegion = (
-          parsedValues.bridgesByRegion as Array<Record<string, unknown>>
+          parsedValues.bridgesByRegion as Record<string, unknown>[]
         ).map((region) => ({
           ...region,
           bridges: parseJsonField(region, 'bridges'),
@@ -147,17 +147,15 @@ export function createCompanyService(client: ApiClient) {
       }
 
       const baseData = createEmptyDropdownData();
-      const baseRow = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
-      const parsedRecord =
-        parsedValues && typeof parsedValues === 'object'
-          ? (parsedValues as Record<string, unknown>)
-          : {};
+      const baseRow = row;
+      const parsedRecord = parsedValues;
 
-      return {
+      const result: CompanyDropdownData = {
         ...baseData,
         ...baseRow,
         ...parsedRecord,
-      } as CompanyDropdownData;
+      };
+      return result;
     },
 
     registerCompany: (
@@ -239,7 +237,7 @@ function parseDashboard(response: ApiResponse): CompanyDashboardData {
     normalized.allActiveSubscriptions
   );
 
-  if (cephStats && cephStats.team_breakdown) {
+  if (cephStats?.team_breakdown) {
     cephStats.team_breakdown = parseObjectArray<CephTeamBreakdown>(cephStats.team_breakdown);
   }
 
@@ -262,11 +260,11 @@ function parseDashboard(response: ApiResponse): CompanyDashboardData {
 }
 
 function getRowsByIndex<T>(response: ApiResponse, index: number): T[] {
-  if (!response.resultSets || !response.resultSets[index]) {
+  if (!response.resultSets[index]) {
     return [];
   }
   const table = response.resultSets[index];
-  return (table?.data as T[]) ?? [];
+  return table.data as T[];
 }
 
 function getRowByIndex<T>(response: ApiResponse, index: number): T | null {
@@ -317,5 +315,5 @@ function parseJsonField(source: Record<string, unknown>, field: string): unknown
   if (!source[field] || typeof source[field] !== 'string') {
     return source[field];
   }
-  return safeJsonParse(source[field] as string, source[field]);
+  return safeJsonParse(source[field], source[field]);
 }

@@ -32,14 +32,14 @@ export const useCreateBridge = () => {
     mutationFn: (params) =>
       api.bridges.create({
         ...params,
-        vaultContent: params.vaultContent || '{}',
+        vaultContent: params.vaultContent ?? '{}',
       }),
     successMessage: (_, vars) => `Bridge "${vars.bridgeName}" created successfully`,
     errorMessage: 'Failed to create bridge',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] });
-      queryClient.invalidateQueries({ queryKey: ['regions'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+      void queryClient.invalidateQueries({ queryKey: ['bridges'] });
+      void queryClient.invalidateQueries({ queryKey: ['regions'] });
+      void queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
     },
   });
 };
@@ -52,8 +52,8 @@ export const useUpdateBridgeName = () => {
     successMessage: (_, vars) => `Bridge renamed to "${vars.newBridgeName}"`,
     errorMessage: 'Failed to update bridge name',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+      void queryClient.invalidateQueries({ queryKey: ['bridges'] });
+      void queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
     },
   });
 };
@@ -71,7 +71,7 @@ export const useUpdateBridgeVault = () => {
       successMessage: (_, vars) => `Bridge "${vars.bridgeName}" vault updated successfully`,
       errorMessage: 'Failed to update bridge vault',
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['bridges'] });
+        void queryClient.invalidateQueries({ queryKey: ['bridges'] });
       },
     }
   );
@@ -85,8 +85,8 @@ export const useDeleteBridge = () => {
     successMessage: (_, vars) => `Bridge "${vars.bridgeName}" deleted successfully`,
     errorMessage: 'Failed to delete bridge',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] });
-      queryClient.invalidateQueries({ queryKey: ['regions'] });
+      void queryClient.invalidateQueries({ queryKey: ['bridges'] });
+      void queryClient.invalidateQueries({ queryKey: ['regions'] });
     },
   });
 };
@@ -99,7 +99,7 @@ export const useResetBridgeAuthorization = () => {
     successMessage: (_, vars) => `Bridge authorization reset for "${vars.bridgeName}"`,
     errorMessage: 'Failed to reset bridge authorization',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] });
+      void queryClient.invalidateQueries({ queryKey: ['bridges'] });
     },
   });
 };

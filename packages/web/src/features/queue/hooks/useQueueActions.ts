@@ -7,14 +7,14 @@ export const useQueueActions = (modal: HookAPI) => {
   const { t } = useTranslation(['queue', 'common']);
   const cancelQueueItemMutation = useCancelQueueItem();
 
-  const handleCancelQueueItem = async (taskId: string) => {
+  const handleCancelQueueItem = (taskId: string) => {
     confirmAction({
       modal,
-      title: t('queue:cancelConfirm.title') as string,
-      content: t('queue:cancelConfirm.content') as string,
-      okText: t('queue:cancelConfirm.okText') as string,
+      title: t('queue:cancelConfirm.title'),
+      content: t('queue:cancelConfirm.content'),
+      okText: t('queue:cancelConfirm.okText'),
       okType: 'danger',
-      cancelText: t('common:actions.cancel') as string,
+      cancelText: t('common:actions.cancel'),
       onConfirm: async () => {
         await cancelQueueItemMutation.mutateAsync(taskId);
       },

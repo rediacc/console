@@ -57,13 +57,13 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  const activeSubscriptions = dashboard.allActiveSubscriptions || [];
+  const activeSubscriptions = dashboard.allActiveSubscriptions ?? [];
   const queueStats = dashboard.queueStats;
   const teamIssues: QueueTeamIssue[] = Array.isArray(queueStats?.teamIssues)
-    ? (queueStats!.teamIssues as QueueTeamIssue[])
+    ? queueStats.teamIssues
     : [];
   const machineIssues: QueueMachineIssue[] = Array.isArray(queueStats?.machineIssues)
-    ? (queueStats!.machineIssues as QueueMachineIssue[])
+    ? queueStats.machineIssues
     : [];
   const hasQueueDetails = Boolean(
     queueStats && (teamIssues.length > 0 || machineIssues.length > 0)

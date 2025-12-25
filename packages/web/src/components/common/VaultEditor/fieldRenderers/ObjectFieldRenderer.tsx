@@ -11,7 +11,7 @@ export const ObjectFieldRenderer: React.FC<FieldRendererProps> = (props) => {
   const { fieldName, fieldDef, fieldLabel, fieldDescription, rules } = props;
 
   const hasStructure =
-    fieldDef.properties ||
+    fieldDef.properties ??
     (fieldDef.additionalProperties && typeof fieldDef.additionalProperties === 'object');
 
   if (hasStructure) {

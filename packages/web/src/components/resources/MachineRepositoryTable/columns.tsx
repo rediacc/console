@@ -266,7 +266,7 @@ export const useSystemContainerColumns = () => {
       ellipsis: true,
       sorter: createArrayLengthSorter<Container>('port_mappings'),
       render: (portMappings: PortMapping[], record: Container) => {
-        if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
+        if (portMappings.length > 0) {
           return (
             <Space direction="vertical" size={4}>
               {portMappings.map((mapping, index) => (

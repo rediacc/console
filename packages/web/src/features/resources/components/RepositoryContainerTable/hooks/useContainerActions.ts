@@ -47,8 +47,8 @@ export function useContainerActions({
         bridgeName,
         functionName,
         params: {
-          repository: repositoryData?.repositoryGuid || repository.name,
-          repositoryName: repositoryData?.repositoryName || repository.name,
+          repository: repositoryData?.repositoryGuid ?? repository.name,
+          repositoryName: repositoryData?.repositoryName ?? repository.name,
           container: container.id,
         },
         priority: 4,
@@ -71,7 +71,7 @@ export function useContainerActions({
           showMessage('info', t('resources:repositories.highestPriorityQueued'));
         }
       } else {
-        showMessage('error', result.error || t('common:errors.somethingWentWrong'));
+        showMessage('error', result.error ?? t('common:errors.somethingWentWrong'));
       }
     },
     [

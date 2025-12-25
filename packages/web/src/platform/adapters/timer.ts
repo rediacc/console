@@ -21,11 +21,7 @@ export const browserTimerProvider: TimerProvider = {
  */
 export function isExtensionContext(): boolean {
   try {
-    return (
-      typeof chrome !== 'undefined' &&
-      chrome?.runtime !== undefined &&
-      chrome.runtime.id !== undefined
-    );
+    return chrome?.runtime?.id !== undefined;
   } catch {
     return false;
   }

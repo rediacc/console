@@ -1,5 +1,5 @@
 // Runtime configuration from nginx
-export interface RediaccConfig {
+interface RediaccConfig {
   // Instance Information
   instanceName: string;
 
@@ -46,32 +46,9 @@ declare global {
 export type {
   GetTeamMachines_ResultSet1 as Machine,
   GetTeamRepositories_ResultSet1 as Repository,
-  MachineAssignmentStatus,
   MachineAssignmentType,
   PluginContainer,
 } from '@rediacc/shared/types';
 
-// Modal types
-export type {
-  BaseModalProps,
-  FormModalProps,
-  SelectionModalProps,
-  ConfirmationModalProps,
-  DetailModalProps,
-  ModalSize as ModalSizeEnum,
-  ModalSizeValue,
-  ModalConfig,
-  ModalSizeRecommendation,
-} from './modal';
-export { ModalSize, MODAL_SIZE_RECOMMENDATIONS, getModalClassName } from './modal';
-
-// Hook types
-export type {
-  UseModalReturn,
-  UseDialogReturn,
-  UseFormReturn,
-  UsePaginationReturn,
-  UseFiltersReturn,
-  UseSelectionReturn,
-  UseAsyncReturn,
-} from './hooks';
+// Modal types - only export what's actually used
+export type { BaseModalProps } from './modal';

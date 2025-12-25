@@ -39,7 +39,7 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
   const nameColumn = createTruncatedColumn<RemoteFile>({
@@ -113,9 +113,10 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
   ];
 
   const getRowProps: TableProps<RemoteFile>['onRow'] = (record) => {
-    return {
+    const props: React.HTMLAttributes<HTMLElement> & Record<string, string> = {
       'data-testid': `file-browser-row-${record.name}`,
-    } as React.HTMLAttributes<HTMLElement>;
+    };
+    return props;
   };
 
   return (

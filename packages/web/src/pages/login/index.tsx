@@ -31,7 +31,7 @@ import {
   validateMasterPassword,
 } from '@/utils/vaultProtocol';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
-import type { ApiResponse, AuthLoginResult } from '@rediacc/shared/types';
+import type { AuthLoginResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
 import { TFAModal } from './components/TFAModal';
 import { handleProtocolState } from './hooks/useProtocolStateHandler';
@@ -109,7 +109,7 @@ const LoginPage: React.FC = () => {
         window.history.replaceState({}, '', newUrl);
       }
     };
-    checkRegistrationMode();
+    void checkRegistrationMode();
   }, [searchParams]);
 
   // Keyboard shortcut handler for global power mode (Ctrl+Shift+E)
@@ -160,10 +160,12 @@ const LoginPage: React.FC = () => {
       const loginResponse = await apiClient.login(values.email, passwordHash);
 
       if (loginResponse.failure !== 0) {
-        throw new Error(loginResponse.errors?.join('; ') || 'Login failed');
+        const errors = loginResponse.errors;
+        const errorMsg = errors.length > 0 ? errors.join('; ') : 'Login failed';
+        throw new Error(errorMsg);
       }
 
-      const authResult = parseAuthenticationResult(loginResponse as ApiResponse);
+      const authResult = parseAuthenticationResult(loginResponse);
       const isAuthorized = authResult.isAuthorized;
       const authenticationStatus = authResult.authenticationStatus;
 
@@ -223,19 +225,19 @@ const LoginPage: React.FC = () => {
       );
 
       trackUserAction('login_success', 'login_form', {
-        email_domain: values.email.split('@')[1] || 'unknown',
-        company: companyName || 'unknown',
+        email_domain: values.email.split('@')[1] ?? 'unknown',
+        company: companyName ?? 'unknown',
         has_encryption: companyHasEncryption,
-        vault_protocol_state: vaultProtocolState?.toString() || 'none',
+        vault_protocol_state: vaultProtocolState?.toString() ?? 'none',
       });
 
-      navigate('/machines');
+      void navigate('/machines');
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : t('login.errors.invalidCredentials');
       trackUserAction('login_failure', 'login_form', {
-        email_domain: values.email.split('@')[1] || 'unknown',
-        error_message: errorMessage || 'unknown_error',
+        email_domain: values.email.split('@')[1] ?? 'unknown',
+        error_message: errorMessage,
         has_master_password: !!values.masterPassword,
       });
       setError(errorMessage);
@@ -265,7 +267,7 @@ const LoginPage: React.FC = () => {
 
         const { email, authResult: storedAuthResult, masterPassword } = pendingTFAData;
         const vaultCompany = storedAuthResult.vaultCompany;
-        const companyName = storedAuthResult.companyName || storedAuthResult.company || null;
+        const companyName = storedAuthResult.companyName ?? storedAuthResult.company ?? null;
 
         await saveAuthData(email, companyName ?? undefined);
 
@@ -289,7 +291,7 @@ const LoginPage: React.FC = () => {
         );
 
         setShowTFAModal(false);
-        navigate('/machines');
+        void navigate('/machines');
       }
     } catch {
       // Error is handled by the mutation

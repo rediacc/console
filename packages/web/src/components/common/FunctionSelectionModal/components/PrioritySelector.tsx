@@ -10,11 +10,11 @@ import {
 interface PrioritySelectorProps {
   priority: number;
   onPriorityChange: (priority: number) => void;
-  priorityLegendItems: Array<{
+  priorityLegendItems: {
     level: number;
     label: string;
     description: string;
-  }>;
+  }[];
   getPriorityLabel: (priority: number) => string;
 }
 

@@ -40,9 +40,9 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines', 'resources']);
 
-  const getStringParam = (key: string): string => (functionParams[key] as string | undefined) || '';
+  const getStringParam = (key: string): string => (functionParams[key] as string | undefined) ?? '';
   const getArrayParam = (key: string): string[] =>
-    Array.isArray(functionParams[key]) ? (functionParams[key] as string[]) : [];
+    Array.isArray(functionParams[key]) ? functionParams[key] : [];
 
   const isSizeParam = paramInfo.format === 'size' && paramInfo.units;
 
@@ -57,14 +57,14 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
               : undefined
           }
           onChange={(value) => {
-            if (value === null || value === undefined) {
+            if (value === null) {
               onParamChange(`${paramName}_value`, undefined);
               onParamChange(paramName, '');
             } else {
               const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
               if (!Number.isNaN(numValue) && numValue > 0 && paramInfo.units) {
                 const unit =
-                  (functionParams[`${paramName}_unit`] as string | undefined) ||
+                  (functionParams[`${paramName}_unit`] as string | undefined) ??
                   (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]);
                 onParamChange(`${paramName}_value`, numValue);
                 onParamChange(paramName, `${numValue}${unit}`);
@@ -76,9 +76,9 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
             return parsed ? parseInt(parsed, 10) : 0;
           }}
           formatter={(v) => (v ? `${v}` : '')}
-          placeholder={paramInfo.units?.includes('percentage') ? '95' : '100'}
+          placeholder={paramInfo.units.includes('percentage') ? '95' : '100'}
           min={1}
-          max={paramInfo.units?.includes('percentage') ? 100 : undefined}
+          max={paramInfo.units.includes('percentage') ? 100 : undefined}
           keyboard
           step={1}
           precision={0}
@@ -86,11 +86,11 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
         />
         <Select
           value={
-            (functionParams[`${paramName}_unit`] as string | undefined) ||
-            (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0] || '')
+            (functionParams[`${paramName}_unit`] as string | undefined) ??
+            (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
           }
           onChange={(unitValue) => {
-            const unit = String(unitValue ?? '');
+            const unit = String(unitValue);
             const currentValue = functionParams[`${paramName}_value`];
             onParamChange(`${paramName}_unit`, unit);
             onParamChange(
@@ -149,12 +149,10 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
         value={getStringParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
         placeholder={t('resources:repositories.selectRepository')}
-        options={
-          repositories?.map((repository) => ({
-            value: repository.repositoryGuid,
-            label: repository.repositoryName,
-          })) || []
-        }
+        options={repositories.map((repository) => ({
+          value: repository.repositoryGuid,
+          label: repository.repositoryName,
+        }))}
         notFoundContent={t('resources:repositories.noRepositoriesFound')}
         showSearch
         filterOption={(input, option) =>
@@ -179,17 +177,17 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
         }
         options={
           destinationType === 'machine'
-            ? machinesData?.map((machine) => ({
+            ? machinesData.map((machine) => ({
                 value: machine.machineName,
                 label:
                   machine.machineName === currentMachineName
                     ? `${machine.machineName} (${t('machines:currentMachine')})`
                     : machine.machineName,
-              })) || []
-            : storageData?.map((storage) => ({
+              }))
+            : storageData.map((storage) => ({
                 value: storage.storageName,
                 label: storage.storageName,
-              })) || []
+              }))
         }
         notFoundContent={
           destinationType === 'machine'
@@ -220,17 +218,17 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
         }
         options={
           sourceType === 'machine'
-            ? machinesData?.map((machine) => ({
+            ? machinesData.map((machine) => ({
                 value: machine.machineName,
                 label:
                   machine.machineName === currentMachineName
                     ? `${machine.machineName} (${t('machines:currentMachine')})`
                     : machine.machineName,
-              })) || []
-            : storageData?.map((storage) => ({
+              }))
+            : storageData.map((storage) => ({
                 value: storage.storageName,
                 label: storage.storageName,
-              })) || []
+              }))
         }
         notFoundContent={
           sourceType === 'machine'
@@ -255,15 +253,13 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
         value={getArrayParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
         placeholder={t('machines:selectMachines')}
-        options={
-          machinesData?.map((machine) => ({
-            value: machine.machineName,
-            label:
-              machine.machineName === currentMachineName
-                ? `${machine.machineName} (${t('machines:currentMachine')})`
-                : machine.machineName,
-          })) || []
-        }
+        options={machinesData.map((machine) => ({
+          value: machine.machineName,
+          label:
+            machine.machineName === currentMachineName
+              ? `${machine.machineName} (${t('machines:currentMachine')})`
+              : machine.machineName,
+        }))}
         notFoundContent={t('machines:noMachinesFound')}
         showSearch
         filterOption={(input, option) =>
@@ -282,12 +278,10 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
         value={getArrayParam(paramName)}
         onChange={(value) => onParamChange(paramName, value)}
         placeholder={t('resources:storage.selectStorageSystems')}
-        options={
-          storageData?.map((storage) => ({
-            value: storage.storageName,
-            label: storage.storageName,
-          })) || []
-        }
+        options={storageData.map((storage) => ({
+          value: storage.storageName,
+          label: storage.storageName,
+        }))}
         notFoundContent={t('resources:storage.noStorageFound')}
         showSearch
         filterOption={(input, option) =>
@@ -307,7 +301,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
           onTemplatesChange(Array.isArray(templateIds) ? templateIds : []);
         }}
         onViewDetails={(templateName) => onTemplateView(templateName)}
-        multiple={true}
+        multiple
       />
     );
   }

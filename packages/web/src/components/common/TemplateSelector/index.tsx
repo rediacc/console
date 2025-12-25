@@ -40,7 +40,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const { execute, isExecuting: loading, error } = useAsyncAction();
 
   useEffect(() => {
-    fetchTemplates();
+    void fetchTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -183,7 +183,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
       <Row gutter={GRID_GUTTER}>
         {filteredTemplates.map((template) => {
-          const templateId = template.id || template.name;
+          const templateId = template.id ?? template.name;
           const isSelected = multiple
             ? Array.isArray(value) && value.includes(templateId)
             : value === templateId;

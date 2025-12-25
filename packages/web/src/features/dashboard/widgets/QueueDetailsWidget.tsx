@@ -54,10 +54,10 @@ interface QueueDetailsWidgetProps {
 
 const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, featureAccess }) => {
   const teamIssues: QueueTeamIssue[] = Array.isArray(queueStats.teamIssues)
-    ? (queueStats.teamIssues as QueueTeamIssue[])
+    ? queueStats.teamIssues
     : [];
   const machineIssues: QueueMachineIssue[] = Array.isArray(queueStats.machineIssues)
-    ? (queueStats.machineIssues as QueueMachineIssue[])
+    ? queueStats.machineIssues
     : [];
 
   return (
@@ -115,7 +115,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                   dataSource={teamIssues}
                   data-testid="dashboard-list-team-issues"
                   renderItem={(team) => {
-                    const teamIssue = team as QueueTeamIssue;
+                    const teamIssue = team;
                     return (
                       <List.Item>
                         <Flex align="center" justify="space-between">
@@ -166,7 +166,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                     <Flex align="center" justify="space-between">
                       <Typography.Text>Highest Priority</Typography.Text>
                       <Badge
-                        count={queueStats.highestPriorityPending ?? 0}
+                        count={queueStats.highestPriorityPending}
                         showZero
                         data-testid="dashboard-badge-highest-priority"
                       />

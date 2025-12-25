@@ -5,7 +5,7 @@ import type { Repository } from '../types';
 import type { HookAPI } from 'antd/es/modal/useModal';
 
 interface UseConfirmForkDeletionParams {
-  teamRepositories: Array<{
+  teamRepositories: {
     repositoryName: string;
     repositoryTag: string;
     repositoryGuid: string;
@@ -13,7 +13,7 @@ interface UseConfirmForkDeletionParams {
     vaultContent?: string;
     repositoryNetworkId?: number;
     parentGuid?: string;
-  }>;
+  }[];
   machine: {
     teamName: string;
     machineName: string;
@@ -39,7 +39,7 @@ export const useConfirmForkDeletion = ({
   onQueueItemCreated,
   t,
 }: UseConfirmForkDeletionParams) => {
-  const confirmForkDeletion = async (repository: Repository): Promise<void> => {
+  const confirmForkDeletion = (repository: Repository): void => {
     const context = prepareForkDeletion(
       repository.name,
       repository.repositoryTag,
@@ -55,13 +55,13 @@ export const useConfirmForkDeletion = ({
       return;
     }
 
-    const parentName = context.parentName || repository.name;
+    const parentName = context.parentName ?? repository.name;
 
     confirm({
       title: t('resources:repositories.deleteCloneConfirmTitle'),
       content: t('resources:repositories.deleteCloneConfirmMessage', {
         name: repository.name,
-        tag: repository.repositoryTag || 'latest',
+        tag: repository.repositoryTag ?? 'latest',
         parentName,
       }),
       okText: t('common:delete'),
@@ -74,7 +74,7 @@ export const useConfirmForkDeletion = ({
               context.repositoryGuid!,
               context.grandGuid,
               teamRepositories
-            ) || '{}';
+            ) ?? '{}';
 
           const params: Record<string, unknown> = {
             repository: context.repositoryGuid,
@@ -90,7 +90,7 @@ export const useConfirmForkDeletion = ({
             params,
             priority: 4,
             addedVia: 'machine-Repository-list-delete-clone',
-            machineVault: machine.vaultContent || '{}',
+            machineVault: machine.vaultContent ?? '{}',
             repositoryGuid: context.repositoryGuid,
             vaultContent: grandRepoVault,
             repositoryNetworkId: context.repositoryNetworkId,
@@ -102,7 +102,7 @@ export const useConfirmForkDeletion = ({
                 'success',
                 t('resources:repositories.deleteCloneQueued', {
                   name: repository.name,
-                  tag: repository.repositoryTag || 'latest',
+                  tag: repository.repositoryTag ?? 'latest',
                 })
               );
               if (onQueueItemCreated) {
@@ -117,7 +117,7 @@ export const useConfirmForkDeletion = ({
             }
           }
 
-          showMessage('error', result.error || t('resources:repositories.deleteCloneFailed'));
+          showMessage('error', result.error ?? t('resources:repositories.deleteCloneFailed'));
         } catch {
           showMessage('error', t('resources:repositories.deleteCloneFailed'));
         }

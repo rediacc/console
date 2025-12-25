@@ -62,7 +62,7 @@ export function useRepositoryActions({
   onActionComplete,
   t,
 }: UseRepositoryActionsProps) {
-  const handlePromoteToGrand = async (repository: Repository) => {
+  const handlePromoteToGrand = (repository: Repository) => {
     const context = preparePromotion(repository.name, repository.repositoryTag, teamRepositories);
 
     if (context.status === 'error') {
@@ -127,7 +127,7 @@ export function useRepositoryActions({
     });
   };
 
-  const handleRenameRepo = async (repository: Repository) => {
+  const handleRenameRepo = (repository: Repository) => {
     let newName = repository.name;
 
     modal.confirm({
@@ -203,8 +203,8 @@ export function useRepositoryActions({
     });
   };
 
-  const handleRenameTag = async (repository: Repository) => {
-    let newTag = repository.repositoryTag || 'latest';
+  const handleRenameTag = (repository: Repository) => {
+    let newTag = repository.repositoryTag ?? 'latest';
 
     modal.confirm({
       title: t('resources:repositories.renameTagTitle'),
@@ -256,7 +256,7 @@ export function useRepositoryActions({
           await updateRepoTagMutation.mutateAsync({
             teamName,
             repositoryName: repository.name,
-            currentTag: repository.repositoryTag || 'latest',
+            currentTag: repository.repositoryTag ?? 'latest',
             newTag: trimmedTag,
           });
           showMessage(

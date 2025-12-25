@@ -2,7 +2,7 @@ import { showMessage } from './messages';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
 import type { TFunction } from 'i18next';
 
-export interface ConfirmDeleteConfig {
+interface ConfirmDeleteConfig {
   modal: ModalHookAPI;
   t: TFunction;
   resourceType: string;
@@ -37,14 +37,14 @@ export function confirmDelete({
   onSuccess,
   onError,
 }: ConfirmDeleteConfig): void {
-  const ns = translationNamespace || resourceType + 's';
+  const ns = translationNamespace ?? `${resourceType}s`;
 
   modal.confirm({
-    title: t(`${ns}:confirmDelete`) as string,
+    title: t(`${ns}:confirmDelete`),
     content: t(`${ns}:deleteWarning`, {
       name: resourceName,
-      [resourceType + 'Name']: resourceName,
-    }) as string,
+      [`${resourceType}Name`]: resourceName,
+    }),
     okText: t('common:actions.delete'),
     okType: 'danger',
     cancelText: t('common:actions.cancel'),
@@ -61,7 +61,7 @@ export function confirmDelete({
   });
 }
 
-export interface ConfirmActionConfig {
+interface ConfirmActionConfig {
   modal: ModalHookAPI;
   title: string;
   content: string;

@@ -48,7 +48,7 @@ export const buildRbdImageColumns = ({
     width: 300,
     maxLength: 8,
     sorter: createSorter<CephRbdImage>('imageGuid'),
-    renderText: (value) => value || '',
+    renderText: (value) => value ?? '',
   }),
   {
     title: t('images.assignedMachine'),

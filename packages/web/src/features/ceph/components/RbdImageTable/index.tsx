@@ -120,14 +120,14 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     async (functionName: string, image?: CephRbdImage) => {
       try {
         const queueVault = await buildQueueVault({
-          functionName: functionName,
+          functionName,
           teamName: pool.teamName,
           machineName: pool.clusterName,
           bridgeName: 'default',
           params: {
             cluster_name: pool.clusterName,
             pool_name: pool.poolName,
-            image_name: image?.imageName || '',
+            image_name: image?.imageName ?? '',
           },
           priority: 3,
           addedVia: 'Ceph',
@@ -318,7 +318,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
 
   const handleExpand = useCallback(
     (image: CephRbdImage) => {
-      const imageKey = String(image.imageGuid ?? '');
+      const imageKey = String(image.imageGuid || '');
       setExpandedRowKeys((prev) =>
         prev.includes(imageKey) ? prev.filter((k) => k !== imageKey) : [...prev, imageKey]
       );
@@ -361,7 +361,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             {record.vaultContent && <Tag bordered={false}>{t('common.vault')}</Tag>}
           </Space>
           <Typography.Text type="secondary" className="text-xs truncate">
-            {String(record.imageGuid ?? '').substring(0, 8)}...
+            {String(record.imageGuid || '').substring(0, 8)}...
           </Typography.Text>
           {record.machineName ? (
             <Tag icon={<CloudServerOutlined />} bordered={false}>
@@ -442,7 +442,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           poolName: pool.poolName,
           pools: [pool],
           availableMachines: availableMachines.map((machine) => ({
-            machineName: machine.machineName ?? '',
+            machineName: machine.machineName,
             bridgeName: machine.bridgeName ?? '',
             regionName: machine.regionName ?? '',
             status: machine.status,
@@ -465,7 +465,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
               poolName: pool.poolName,
               teamName: pool.teamName,
               vaultContent: imageData.vaultContent,
-              vaultVersion: modalState.data?.vaultVersion || 0,
+              vaultVersion: modalState.data?.vaultVersion ?? 0,
             });
           }
           setModalState({ open: false, mode: 'create' });

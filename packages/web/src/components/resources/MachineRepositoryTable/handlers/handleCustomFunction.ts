@@ -24,7 +24,7 @@ export const handleCustomFunction = async (
       r.repositoryTag === selectedRepository.repositoryTag
   );
 
-  if (!RepoData || !RepoData.vaultContent) {
+  if (!RepoData?.vaultContent) {
     showMessage(
       'error',
       t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
@@ -43,7 +43,7 @@ export const handleCustomFunction = async (
     params: functionData.params,
     priority: functionData.priority,
     addedVia: 'machine-Repository-list',
-    machineVault: machine.vaultContent || '{}',
+    machineVault: machine.vaultContent ?? '{}',
     repositoryGuid: RepoData.repositoryGuid,
     vaultContent: grandRepoVault,
     repositoryNetworkId: RepoData.repositoryNetworkId,
@@ -63,6 +63,6 @@ export const handleCustomFunction = async (
       showMessage('info', t('resources:repositories.highestPriorityQueued'));
     }
   } else {
-    throw new Error(result.error || t('resources:repositories.failedToCreateQueueItem'));
+    throw new Error(result.error ?? t('resources:repositories.failedToCreateQueueItem'));
   }
 };

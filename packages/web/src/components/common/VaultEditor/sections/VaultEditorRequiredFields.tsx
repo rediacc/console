@@ -31,8 +31,7 @@ export const VaultEditorRequiredFields: React.FC<VaultEditorRequiredFieldsProps>
   return (
     <>
       {fieldOrder.map((fieldName) => {
-        const field = fields[fieldName as keyof typeof fields];
-        if (!field) return null;
+        const field = fields[fieldName];
 
         const isRequired = !(
           isEditMode &&

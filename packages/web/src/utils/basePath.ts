@@ -15,7 +15,7 @@ export function getBasePath(): string {
 
   if (versionMatch) {
     // Return the versioned base path with trailing slash
-    return versionMatch[1] + '/';
+    return `${versionMatch[1]}/`;
   }
 
   // Check if the build-time base URL is set and matches the current path

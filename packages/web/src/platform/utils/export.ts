@@ -25,30 +25,10 @@ export function escapeCSVValue(value: unknown): string {
  * @param rows - Array of row arrays
  * @returns CSV formatted string
  */
-export function buildCSVContent(headers: string[], rows: Array<Array<unknown>>): string {
+export function buildCSVContent(headers: string[], rows: unknown[][]): string {
   const headerRow = headers.join(',');
   const dataRows = rows.map((row) => row.map(escapeCSVValue).join(','));
   return [headerRow, ...dataRows].join('\n');
-}
-
-/**
- * Build CSV content from an array of objects
- * @param data - Array of objects to convert
- * @param columns - Array of column definitions with key and optional header
- * @returns CSV formatted string
- */
-export function buildCSVFromObjects<T extends Record<string, unknown>>(
-  data: T[],
-  columns: Array<{ key: keyof T; header?: string; formatter?: (value: T[keyof T]) => string }>
-): string {
-  const headers = columns.map((col) => col.header || String(col.key));
-  const rows = data.map((item) =>
-    columns.map((col) => {
-      const value = item[col.key];
-      return col.formatter ? col.formatter(value) : value;
-    })
-  );
-  return buildCSVContent(headers, rows);
 }
 
 /**
@@ -57,7 +37,7 @@ export function buildCSVFromObjects<T extends Record<string, unknown>>(
  * @param filename - The filename for the download
  * @param mimeType - The MIME type of the content
  */
-export function downloadFile(content: string | Blob, filename: string, mimeType: string): void {
+function downloadFile(content: string | Blob, filename: string, mimeType: string): void {
   const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

@@ -23,7 +23,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
           params?.entityFilter,
           params?.startDate,
           params?.endDate,
-          params?.maxRecords || 100
+          params?.maxRecords ?? 100
         );
       } catch (error) {
         console.error('Failed to fetch audit logs:', error);
@@ -32,7 +32,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
     },
     retry: (failureCount, error) => {
       // Don't retry if it's a 400 Bad Request (user input error)
-      if (error?.message?.includes('400')) {
+      if (error instanceof Error && error.message.includes('400')) {
         return false;
       }
       return failureCount < 2;
@@ -52,7 +52,7 @@ export const useRecentAuditLogs = (maxRecords: number = 10) => {
 };
 
 // Get entity audit trace
-export const getEntityAuditTrace = async (
+const getEntityAuditTrace = async (
   entityType: string,
   entityIdentifier: string
 ): Promise<AuditTraceResponse> => {

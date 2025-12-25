@@ -23,7 +23,7 @@ interface ChromeAPI {
 }
 
 interface QueueMonitoringDebug {
-  getTasks: () => Array<[string, MonitoredTask]>;
+  getTasks: () => [string, MonitoredTask][];
   checkTask: (taskId: string) => void;
 }
 
@@ -111,11 +111,11 @@ class QueueMonitoringService {
     }
 
     // Initial check
-    this.checkAllTasks();
+    void this.checkAllTasks();
 
     // Set up periodic checking
     this.intervalId = setInterval(() => {
-      this.checkAllTasks();
+      void this.checkAllTasks();
     }, this.CHECK_INTERVAL_MS);
   }
 
@@ -170,7 +170,7 @@ class QueueMonitoringService {
 
     // Trigger an immediate check for this new task
     setTimeout(() => {
-      this.checkTask(task);
+      void this.checkTask(task);
     }, 1000); // Check after 1 second to allow backend to update
   }
 
@@ -312,7 +312,7 @@ class QueueMonitoringService {
 
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', {
               taskId: task.taskId,
-              reason: lastFailureReason || '',
+              reason: lastFailureReason ?? '',
               teamName: task.teamName,
               machineName: task.machineName,
             });
@@ -331,19 +331,18 @@ class QueueMonitoringService {
             });
             this.removeTask(task.taskId);
             return; // Stop processing this task
-          } else {
-            // This should be rare as middleware immediately resets to PENDING
-            showTranslatedMessage('warning', 'queue:monitoring.failedWaitingRetry', {
-              taskId: task.taskId,
-              attempt: retryCount,
-              maxAttempts: this.MAX_RETRY_COUNT,
-              teamName: task.teamName,
-              machineName: task.machineName,
-            });
-            // Continue monitoring as it should become PENDING soon
-            this.monitoredTasks.set(task.taskId, task);
-            this.saveToStorage();
           }
+          // This should be rare as middleware immediately resets to PENDING
+          showTranslatedMessage('warning', 'queue:monitoring.failedWaitingRetry', {
+            taskId: task.taskId,
+            attempt: retryCount,
+            maxAttempts: this.MAX_RETRY_COUNT,
+            teamName: task.teamName,
+            machineName: task.machineName,
+          });
+          // Continue monitoring as it should become PENDING soon
+          this.monitoredTasks.set(task.taskId, task);
+          this.saveToStorage();
         } else if (currentStatus === 'PROCESSING' && oldStatus !== 'PROCESSING') {
           showTranslatedMessage('info', 'queue:monitoring.startedProcessing', {
             taskId: task.taskId,
@@ -375,7 +374,7 @@ class QueueMonitoringService {
           if (isPermanentFailure(lastFailureReason)) {
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', {
               taskId: task.taskId,
-              reason: lastFailureReason || '',
+              reason: lastFailureReason ?? '',
               teamName: task.teamName,
               machineName: task.machineName,
             });
@@ -413,7 +412,7 @@ class QueueMonitoringService {
           if (isPermanentFailure(lastFailureReason)) {
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', {
               taskId: task.taskId,
-              reason: lastFailureReason || '',
+              reason: lastFailureReason ?? '',
               teamName: task.teamName,
               machineName: task.machineName,
             });
@@ -506,13 +505,10 @@ if (typeof window !== 'undefined') {
     checkTask: (taskId: string) => {
       const task = queueMonitoringService['monitoredTasks'].get(taskId);
       if (task) {
-        queueMonitoringService['checkTask'](task);
+        void queueMonitoringService['checkTask'](task);
       } else {
         // Task not found in monitoring
       }
     },
   };
 }
-
-// Export type for use in components
-export type { MonitoredTask };

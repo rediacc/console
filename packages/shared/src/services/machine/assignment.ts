@@ -66,10 +66,10 @@ export class MachineAssignmentService {
    */
   static getAssignmentInfo(machine: MachineWithAssignmentStatus): MachineAssignment {
     return {
-      machineId: machine.machineGuid || '',
+      machineId: machine.machineGuid ?? '',
       machineName: machine.machineName,
       assignmentType: this.getMachineAssignmentType(machine),
-      resourceName: machine.cephClusterName || undefined,
+      resourceName: machine.cephClusterName ?? undefined,
     };
   }
 
@@ -92,11 +92,10 @@ export class MachineAssignmentService {
       return true;
     }
 
-    // Cluster and image assignments are exclusive
-    if (
-      (targetType === 'cluster' || targetType === 'image') &&
-      (currentType === 'CLUSTER' || currentType === 'IMAGE')
-    ) {
+    // At this point, targetType is 'cluster' or 'image' (exclusive assignments)
+    // These are exclusive with existing CLUSTER, IMAGE, or CLONE assignments
+    const exclusiveTypes: MachineAssignmentType[] = ['CLUSTER', 'IMAGE', 'CLONE'];
+    if (exclusiveTypes.includes(currentType)) {
       return false;
     }
 
@@ -145,7 +144,7 @@ export class MachineAssignmentService {
     // Group machines
     machines.forEach((machine) => {
       const type = this.getMachineAssignmentType(machine);
-      const group = groups.get(type) || [];
+      const group = groups.get(type) ?? [];
       group.push(machine);
       groups.set(type, group);
     });
@@ -187,10 +186,10 @@ export class MachineAssignmentService {
 
       if (!canAssign) {
         const currentAssignment: MachineAssignment = {
-          machineId: machine.machineGuid || '',
+          machineId: machine.machineGuid ?? '',
           machineName: machine.machineName,
           assignmentType: this.getMachineAssignmentType(machine),
-          resourceName: machine.cephClusterName || undefined,
+          resourceName: machine.cephClusterName ?? undefined,
         };
 
         conflicts.push({
@@ -252,10 +251,10 @@ export class MachineAssignmentService {
 
     return {
       totalMachines: machines.length,
-      availableMachines: groups.get('AVAILABLE')?.length || 0,
-      clusterAssignedMachines: groups.get('CLUSTER')?.length || 0,
-      imageAssignedMachines: groups.get('IMAGE')?.length || 0,
-      cloneAssignedMachines: groups.get('CLONE')?.length || 0,
+      availableMachines: groups.get('AVAILABLE')?.length ?? 0,
+      clusterAssignedMachines: groups.get('CLUSTER')?.length ?? 0,
+      imageAssignedMachines: groups.get('IMAGE')?.length ?? 0,
+      cloneAssignedMachines: groups.get('CLONE')?.length ?? 0,
       assignmentBreakdown: breakdown,
     };
   }
@@ -326,7 +325,7 @@ export class MachineAssignmentService {
           machine,
           machineName: machine.machineName,
           currentAssignment: {
-            machineId: machine.machineGuid || '',
+            machineId: machine.machineGuid ?? '',
             machineName: machine.machineName,
             assignmentType: this.getMachineAssignmentType(machine),
             resourceName: this.getMachineAssignmentDetails(machine)?.split(': ')[1],

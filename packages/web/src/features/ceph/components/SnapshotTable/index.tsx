@@ -112,7 +112,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
             cluster_name: pool.clusterName,
             pool_name: pool.poolName,
             image_name: image.imageName,
-            snapshot_name: snapshot?.snapshotName || '',
+            snapshot_name: snapshot?.snapshotName ?? '',
           },
           priority: 3,
           addedVia: 'Ceph',
@@ -244,9 +244,9 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
     () => (record: CephRbdSnapshot) => {
       const onExpand = () => {
         setExpandedRowKeys((prev) =>
-          prev.includes(record.snapshotGuid || '')
+          prev.includes(record.snapshotGuid ?? '')
             ? prev.filter((k) => k !== record.snapshotGuid)
-            : [...prev, record.snapshotGuid || '']
+            : [...prev, record.snapshotGuid ?? '']
         );
       };
 
@@ -373,7 +373,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               poolName: pool.poolName,
               teamName: pool.teamName,
               vaultContent: snapshotData.vaultContent,
-              vaultVersion: modalState.data?.vaultVersion || 0,
+              vaultVersion: modalState.data?.vaultVersion ?? 0,
             });
           }
           setModalState({ open: false, mode: 'create' });

@@ -7,7 +7,7 @@
 import axios from 'axios';
 import { endpointService } from './endpointService';
 
-export type BuildType = 'DEBUG' | 'RELEASE';
+type BuildType = 'DEBUG' | 'RELEASE';
 
 interface EndpointConfig {
   url: string;
@@ -22,7 +22,8 @@ class ApiConnectionService {
 
   constructor() {
     // Determine build type from environment
-    const envBuildType = import.meta.env.VITE_BUILD_TYPE || import.meta.env.MODE;
+    const envBuildType =
+      (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? import.meta.env.MODE;
     this.buildType =
       envBuildType === 'RELEASE' || import.meta.env.MODE === 'production' ? 'RELEASE' : 'DEBUG';
   }
@@ -31,7 +32,7 @@ class ApiConnectionService {
    * Get localhost API URL
    */
   private getLocalhostUrl(): string {
-    const port = import.meta.env.VITE_HTTP_PORT || '7322';
+    const port = (import.meta.env.VITE_HTTP_PORT as string | undefined) ?? '7322';
     return `http://localhost:${port}/api`;
   }
 
@@ -39,7 +40,10 @@ class ApiConnectionService {
    * Get sandbox API URL
    */
   private getSandboxUrl(): string {
-    return import.meta.env.VITE_SANDBOX_API_URL || 'https://sandbox.rediacc.com/api';
+    return (
+      (import.meta.env.VITE_SANDBOX_API_URL as string | undefined) ??
+      'https://sandbox.rediacc.com/api'
+    );
   }
 
   /**

@@ -22,7 +22,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   const permanentlyFailed = queueDetails
     ? normalizeToBoolean(queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
     : false;
-  const canBeCancelled = queueDetails?.canBeCancelled || false;
+  const canBeCancelled = queueDetails?.canBeCancelled ?? false;
 
   const showCancelButton =
     queueDetails &&

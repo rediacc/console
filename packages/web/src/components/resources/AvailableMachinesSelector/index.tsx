@@ -1,7 +1,6 @@
 import React from 'react';
 import { Empty, Flex, Select, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useAvailableMachinesForClone } from '@/api/queries/ceph';
 import type { Machine } from '@/types';
 import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import type { DefaultOptionType } from 'antd/es/select';
@@ -57,7 +56,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
 
   const renderMachineOption = (machine: Machine) => {
     // assignmentStatus is now a simple string: 'ASSIGNED' | 'UNASSIGNED'
-    const isAssigned = machine.cephClusterName || machine.assignmentStatus === 'ASSIGNED';
+    const isAssigned = machine.cephClusterName ?? machine.assignmentStatus === 'ASSIGNED';
     const isDisabled = !allowSelectAssigned && isAssigned;
 
     return (
@@ -145,7 +144,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       mode="multiple"
       // eslint-disable-next-line no-restricted-syntax
       style={{ width: '100%', ...style }}
-      placeholder={placeholder || t('machines:selectMachines')}
+      placeholder={placeholder ?? t('machines:selectMachines')}
       value={value}
       onChange={handleChange}
       disabled={disabled}
@@ -166,31 +165,5 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
     >
       {machines.map(renderMachineOption)}
     </Select>
-  );
-};
-
-export const SimpleMachineSelector: React.FC<{
-  teamName: string;
-  value?: string[];
-  onChange?: (value: string[]) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  style?: React.CSSProperties;
-}> = ({ teamName, value, onChange, placeholder, disabled, style }) => {
-  const { t: _t } = useTranslation(['machines']);
-  const { data: machines = [], isLoading } = useAvailableMachinesForClone(teamName, !disabled);
-
-  return (
-    <AvailableMachinesSelector
-      // AvailableMachine has subset of Machine properties needed for display
-      machines={machines as unknown as Machine[]}
-      value={value}
-      onChange={onChange}
-      loading={isLoading}
-      placeholder={placeholder}
-      disabled={disabled}
-      // eslint-disable-next-line no-restricted-syntax
-      style={style}
-    />
   );
 };

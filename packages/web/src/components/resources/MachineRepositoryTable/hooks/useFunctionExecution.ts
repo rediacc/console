@@ -5,7 +5,7 @@ import type { Repository } from '../types';
 
 export interface FunctionExecutionContext {
   selectedRepository: Repository | null;
-  teamRepositories: Array<{
+  teamRepositories: {
     repositoryName: string;
     repositoryTag: string;
     repositoryGuid: string;
@@ -14,21 +14,21 @@ export interface FunctionExecutionContext {
     parentGuid?: string;
     repositoryNetworkId?: number;
     repositoryNetworkMode?: string;
-  }>;
+  }[];
   machine: {
     teamName: string;
     machineName: string;
     bridgeName: string;
     vaultContent?: string;
   };
-  teamMachines: Array<{
+  teamMachines: {
     machineName: string;
     vaultContent?: string;
-  }>;
-  teamStorages: Array<{
+  }[];
+  teamStorages: {
     storageName: string;
     vaultContent?: string;
-  }>;
+  }[];
   executeAction: (params: unknown) => Promise<{
     success: boolean;
     taskId?: string;
@@ -63,17 +63,17 @@ export const getGrandRepoVault = (
     grandGuid?: string;
     repositoryGuid: string;
   },
-  teamRepositories: Array<{
+  teamRepositories: {
     repositoryGuid: string;
     vaultContent?: string;
-  }>
+  }[]
 ): string => {
   if (!repoData.grandGuid || !repoData.vaultContent) {
-    return repoData.vaultContent || '{}';
+    return repoData.vaultContent ?? '{}';
   }
 
   const grandRepo = teamRepositories.find((r) => r.repositoryGuid === repoData.grandGuid);
-  return grandRepo?.vaultContent || repoData.vaultContent;
+  return grandRepo?.vaultContent ?? repoData.vaultContent;
 };
 
 export const getRequiredTag = (

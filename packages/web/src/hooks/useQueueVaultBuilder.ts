@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { api } from '@/api/client';
-import { minifyJSON } from '@/platform/utils/json';
 import { type QueueRequestContext, queueService } from '@/services/queue';
 
 /**
@@ -34,12 +33,6 @@ export function useQueueVaultBuilder() {
   const buildQueueVault = useCallback(async (context: QueueVaultBuilderParams): Promise<string> => {
     // Fetch company vault directly from API to ensure we have the latest data
     const companyVaultData = await api.company.getVault();
-
-    if (!companyVaultData) {
-      throw new Error(
-        'Unable to fetch company vault configuration. Please ensure company vault is properly configured.'
-      );
-    }
 
     const {
       repositoryVault,
@@ -101,7 +94,7 @@ export function useQueueVaultBuilder() {
       ...baseContext,
       ...parsedVaults,
       companyCredential: companyVaultData.companyCredential ?? undefined,
-      allRepositoryCredentials: allRepositoryCredentials,
+      allRepositoryCredentials,
     };
 
     // Use the service to build the vault
@@ -109,24 +102,4 @@ export function useQueueVaultBuilder() {
   }, []);
 
   return { buildQueueVault };
-}
-
-/**
- * Simplified hook for components that just need basic queue vault
- * without all the context data injection
- */
-export function useSimpleQueueVault() {
-  const buildSimpleVault = useCallback(
-    (data: { function: string; params: Record<string, unknown> }) => {
-      return minifyJSON(
-        JSON.stringify({
-          function: data.function,
-          params: data.params,
-        })
-      );
-    },
-    []
-  );
-
-  return { buildSimpleVault };
 }

@@ -55,22 +55,22 @@ export const useFunctionSubmission = ({
           // Special handling for template-selector - check selectedTemplates state
           if (paramInfo.ui === 'template-selector') {
             if (selectedTemplates.length === 0) {
-              missingParams.push(paramInfo.label || paramName);
+              missingParams.push(paramInfo.label ?? paramName);
             }
           } else {
             const paramValue = functionParams[paramName];
 
             // Check if parameter has a value
-            if (paramValue === undefined || paramValue === null || paramValue === '') {
-              missingParams.push(paramInfo.label || paramName);
+            if (paramValue === undefined || paramValue === '') {
+              missingParams.push(paramInfo.label ?? paramName);
             }
 
             // For size parameters, also check if the value part is filled
             if (paramInfo.format === 'size' && paramInfo.units) {
               const valueParam = functionParams[`${paramName}_value`];
               if (typeof valueParam !== 'number' || valueParam <= 0) {
-                if (!missingParams.includes(paramInfo.label || paramName)) {
-                  missingParams.push(paramInfo.label || paramName);
+                if (!missingParams.includes(paramInfo.label ?? paramName)) {
+                  missingParams.push(paramInfo.label ?? paramName);
                 }
               }
             }
@@ -96,7 +96,7 @@ export const useFunctionSubmission = ({
     }, {} as FunctionParams);
 
     // Merge visible params with default params
-    const allParams: FunctionParams = { ...(defaultParams || {}), ...cleanedParams };
+    const allParams: FunctionParams = { ...defaultParams, ...cleanedParams };
 
     // Handle template encoding for template-selector parameters
     if (selectedTemplates.length > 0) {
@@ -120,15 +120,15 @@ export const useFunctionSubmission = ({
               // Merge all templates into one structure
               const mergedTemplate = {
                 name: selectedTemplates.join('+'),
-                files: templateDataList.flatMap((template) => template.files || []),
+                files: templateDataList.flatMap((template) => template.files as unknown[]),
               };
 
               // Encode the merged template using the same method as templateService
               const encoder = new TextEncoder();
               const uint8Array = encoder.encode(JSON.stringify(mergedTemplate));
               let binaryString = '';
-              for (let i = 0; i < uint8Array.length; i++) {
-                binaryString += String.fromCharCode(uint8Array[i]);
+              for (const byte of uint8Array) {
+                binaryString += String.fromCharCode(byte);
               }
               const encodedTemplate = btoa(binaryString);
 
@@ -148,7 +148,7 @@ export const useFunctionSubmission = ({
       params: allParams,
       priority: functionPriority,
       description: functionDescription || selectedFunction.description,
-      selectedMachine: selectedMachine || undefined,
+      selectedMachine,
     });
   }, [
     selectedFunction,

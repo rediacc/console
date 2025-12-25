@@ -46,7 +46,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   refreshKey,
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions']);
-  const userEmail = useAppSelector((state) => state.auth.user?.email || '');
+  const userEmail = useAppSelector((state) => state.auth.user?.email ?? '');
   const { executeAction, isExecuting } = useQueueAction();
   const { data: teamRepositories = [] } = useRepositories(machine.teamName);
 
@@ -68,11 +68,11 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 
   // Get grand repository vault
   const grandRepoVault = repositoryData
-    ? getGrandVaultForOperation(
+    ? (getGrandVaultForOperation(
         repositoryData.repositoryGuid,
         repositoryData.grandGuid,
         teamRepositories
-      ) || '{}'
+      ) ?? '{}')
     : '{}';
 
   // Container actions
@@ -83,7 +83,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     repository,
     repositoryData: repositoryData as Parameters<typeof useContainerActions>[0]['repositoryData'],
     grandRepoVault,
-    machineVault: machine.vaultContent || '{}',
+    machineVault: machine.vaultContent ?? '{}',
     executeAction,
     onQueueItemCreated,
     t,
@@ -294,7 +294,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
                       containerId={row.id}
                       containerName={row.name}
                       containerState={row.state}
-                      isContainerMenu={true}
+                      isContainerMenu
                     />
                   ),
                 },

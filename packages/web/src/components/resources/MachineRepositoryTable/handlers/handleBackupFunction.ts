@@ -26,7 +26,7 @@ export const handleBackupFunction = async (
       r.repositoryTag === selectedRepository.repositoryTag
   );
 
-  if (!RepoData || !RepoData.vaultContent) {
+  if (!RepoData?.vaultContent) {
     showMessage(
       'error',
       t('resources:repositories.noCredentialsFound', { name: selectedRepository.name })
@@ -71,13 +71,13 @@ export const handleBackupFunction = async (
           destName: RepoData.repositoryName,
           repository: RepoData.repositoryGuid,
           repositoryName: RepoData.repositoryName,
-          grand: RepoData.grandGuid || RepoData.repositoryGuid || '',
+          grand: RepoData.grandGuid ?? RepoData.repositoryGuid,
           state: selectedRepository.mounted ? 'online' : 'offline',
         },
         priority: functionData.priority,
         addedVia: 'machine-Repository-list',
-        machineVault: machine.vaultContent || '{}',
-        destinationStorageVault: destinationStorage.vaultContent || '{}',
+        machineVault: machine.vaultContent ?? '{}',
+        destinationStorageVault: destinationStorage.vaultContent ?? '{}',
         repositoryGuid: RepoData.repositoryGuid,
         vaultContent: grandRepoVault,
         repositoryNetworkId: RepoData.repositoryNetworkId,

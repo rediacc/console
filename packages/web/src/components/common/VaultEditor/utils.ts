@@ -38,10 +38,7 @@ export const getFieldDefinition = (
 ): FieldDefinition => {
   // Check if the field format matches a common type
   if (field.format && field.format in vaultDefinitionConfig.commonTypes) {
-    const commonType =
-      vaultDefinitionConfig.commonTypes[
-        field.format as keyof typeof vaultDefinitionConfig.commonTypes
-      ];
+    const commonType = vaultDefinitionConfig.commonTypes[field.format];
     return { ...commonType, ...field };
   }
 
@@ -50,10 +47,7 @@ export const getFieldDefinition = (
     (key) => key === field.type || key === field.format
   );
   if (commonTypeKey) {
-    const commonType =
-      vaultDefinitionConfig.commonTypes[
-        commonTypeKey as keyof typeof vaultDefinitionConfig.commonTypes
-      ];
+    const commonType = vaultDefinitionConfig.commonTypes[commonTypeKey];
     return { ...commonType, ...field };
   }
 
@@ -129,7 +123,7 @@ export const processExtraFields = (
 export const formatValidationErrors = (
   errorInfo?: ValidateErrorEntity<VaultFormValues>
 ): string[] =>
-  errorInfo?.errorFields?.map((field) => `${field.name.join('.')}: ${field.errors.join(', ')}`) ??
+  errorInfo?.errorFields.map((field) => `${field.name.join('.')}: ${field.errors.join(', ')}`) ??
   [];
 
 type RuleBuilder = (value: never) => Rule;
@@ -143,7 +137,7 @@ const createRuleBuilderMap = (
       'pattern',
       (value: string) => ({
         pattern: new RegExp(value),
-        message: t('vaultEditor.invalidFormat', { description: field.description || '' }),
+        message: t('vaultEditor.invalidFormat', { description: field.description ?? '' }),
       }),
     ],
     [

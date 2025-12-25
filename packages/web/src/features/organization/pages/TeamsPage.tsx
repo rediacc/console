@@ -69,7 +69,7 @@ const TeamsPage: React.FC = () => {
   const unifiedModal = useFormModal<ExistingResourceData>();
 
   const { data: teamMembers = [], isLoading: membersLoading } = useTeamMembers(
-    manageTeamModal.state.data?.teamName || ''
+    manageTeamModal.state.data?.teamName ?? ''
   );
   const createTeamMutation = useCreateTeam();
   const updateTeamNameMutation = useUpdateTeamName();
@@ -103,7 +103,7 @@ const TeamsPage: React.FC = () => {
 
         if (data.vaultContent && data.vaultContent !== existingData.vaultContent) {
           await updateTeamVaultMutation.mutateAsync({
-            teamName: data.teamName || existingData.teamName,
+            teamName: data.teamName ?? existingData.teamName,
             vaultContent: data.vaultContent,
             vaultVersion: (existingData.vaultVersion ?? 0) + 1,
           });
@@ -228,11 +228,11 @@ const TeamsPage: React.FC = () => {
             </Space>
             <Space size="small">
               <DatabaseOutlined />
-              <Typography.Text>{record.repositoryCount || 0}</Typography.Text>
+              <Typography.Text>{record.repositoryCount ?? 0}</Typography.Text>
             </Space>
             <Space size="small">
               <CloudServerOutlined />
-              <Typography.Text>{record.storageCount || 0}</Typography.Text>
+              <Typography.Text>{record.storageCount ?? 0}</Typography.Text>
             </Space>
           </Flex>
         </MobileCard>
@@ -349,8 +349,8 @@ const TeamsPage: React.FC = () => {
                     <Select
                       showSearch
                       placeholder={t('teams.manageMembers.selectUser')}
-                      value={selectedMemberEmail ?? undefined}
-                      onChange={(value) => setSelectedMemberEmail((value as string) || '')}
+                      value={selectedMemberEmail || undefined}
+                      onChange={(value) => setSelectedMemberEmail(value || '')}
                       className="flex-1"
                       filterOption={(input, option) =>
                         String(option?.label ?? '')
@@ -359,15 +359,15 @@ const TeamsPage: React.FC = () => {
                       }
                       options={
                         dropdownData?.users
-                          ?.filter((user) => user.status === 'active')
-                          ?.map((user) => ({
+                          .filter((user) => user.status === 'active')
+                          .map((user) => ({
                             value: user.value,
                             label: user.label,
                             disabled: teamMembers.some(
                               (member: TeamMember) =>
                                 member.userEmail === user.value && member.isMember
                             ),
-                          })) || []
+                          })) ?? []
                       }
                     />
                     <Tooltip title={tSystem('actions.addMember')}>

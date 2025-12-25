@@ -26,7 +26,7 @@ export interface WebVitalsMetric {
   id: string;
 }
 
-export type TelemetryDetailValue = string | number | boolean | null | undefined;
+type TelemetryDetailValue = string | number | boolean | null | undefined;
 export type TelemetryContext = Record<string, TelemetryDetailValue>;
 
 export interface LayoutShiftEntry extends PerformanceEntry {

@@ -23,4 +23,3 @@ export * from './TemplateSelector';
 export * from './UnifiedResourceModal';
 export * from './VaultEditor';
 export * from './VaultEditorModal';
-export { ExpandIcon } from './ExpandIcon';
