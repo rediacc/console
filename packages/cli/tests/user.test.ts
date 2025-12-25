@@ -78,13 +78,7 @@ describe('user commands', () => {
 
     it('should create a new user', async () => {
       testUserEmail = `test-crud-${Date.now()}@rediacc-test.local`;
-      const result = await runCli([
-        'user',
-        'create',
-        testUserEmail,
-        '-p',
-        'TestPassword123!',
-      ]);
+      const result = await runCli(['user', 'create', testUserEmail, '-p', 'TestPassword123!']);
 
       if (!result.success) {
         console.error('User create failed:', getErrorMessage(result));
@@ -122,13 +116,7 @@ describe('user commands', () => {
       const newEmail = `test-email-new-${timestamp}@rediacc-test.local`;
 
       // Create user first
-      const createResult = await runCli([
-        'user',
-        'create',
-        oldEmail,
-        '-p',
-        'TestPassword123!',
-      ]);
+      const createResult = await runCli(['user', 'create', oldEmail, '-p', 'TestPassword123!']);
       if (!createResult.success) {
         console.error('User create failed:', getErrorMessage(createResult));
       }

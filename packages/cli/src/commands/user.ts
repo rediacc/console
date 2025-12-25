@@ -289,7 +289,9 @@ export function registerUserCommands(program: Command): void {
         }
 
         if (!vaultData) {
-          throw new ValidationError('Vault data required. Use --vault <json> or pipe JSON via stdin.');
+          throw new ValidationError(
+            'Vault data required. Use --vault <json> or pipe JSON via stdin.'
+          );
         }
 
         if (options.vaultVersion === undefined || options.vaultVersion === null) {

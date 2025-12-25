@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { runCli, getErrorMessage } from '../helpers/cli.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
 import { getConfig } from '../helpers/config.js';
+import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
 
 /**
  * Negative test cases for team commands.

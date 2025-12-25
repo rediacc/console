@@ -2,12 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CliApiError } from '../services/api.js';
 import { outputService } from '../services/output.js';
 import { EXIT_CODES } from '../types/index.js';
-import {
-  handleError,
-  setOutputFormat,
-  ValidationError,
-  normalizeError,
-} from '../utils/errors.js';
+import { handleError, setOutputFormat, ValidationError, normalizeError } from '../utils/errors.js';
 
 // Mock the output service
 vi.mock('../services/output.js', () => ({
@@ -52,12 +47,9 @@ describe('Error Handling', () => {
     });
 
     it('should normalize CliApiError', () => {
-      const error = new CliApiError(
-        'Not found',
-        'NOT_FOUND',
-        EXIT_CODES.NOT_FOUND,
-        ['Resource does not exist']
-      );
+      const error = new CliApiError('Not found', 'NOT_FOUND', EXIT_CODES.NOT_FOUND, [
+        'Resource does not exist',
+      ]);
       const result = normalizeError(error);
 
       expect(result.code).toBe('NOT_FOUND');

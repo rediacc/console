@@ -1,7 +1,7 @@
 import { describe, it, beforeAll } from 'vitest';
 import { runCli } from '../helpers/cli.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
 import { getConfig } from '../helpers/config.js';
+import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
 
 /**
  * Negative test cases for user commands.
@@ -10,7 +10,7 @@ import { getConfig } from '../helpers/config.js';
 describe('user error scenarios', () => {
   let currentUserEmail: string;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     // Get current user email for self-deactivation test
     const config = getConfig();
     currentUserEmail = config.email;

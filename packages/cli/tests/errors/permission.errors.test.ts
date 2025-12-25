@@ -7,7 +7,6 @@ import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.j
  * Tests backend error responses from middleware stored procedures.
  */
 describe('permission error scenarios', () => {
-
   // ============================================
   // CreatePermissionGroup Errors
   // ============================================
@@ -21,11 +20,13 @@ describe('permission error scenarios', () => {
       // This test expects Community edition restriction
       // If this fails with a different error, it means we're on a paid plan
       if (!result.success) {
-        expectError(result, { messageContains: ErrorPatterns.PERMISSION_GROUP_COMMUNITY_RESTRICTION });
+        expectError(result, {
+          messageContains: ErrorPatterns.PERMISSION_GROUP_COMMUNITY_RESTRICTION,
+        });
       } else {
         // We're on a paid plan, clean up the created group
         await runCli(['permission', 'group', 'delete', groupName, '--force']);
-        console.log('Note: Test skipped - running on paid plan, not Community edition');
+        console.warn('Note: Test skipped - running on paid plan, not Community edition');
       }
     });
 
@@ -37,14 +38,16 @@ describe('permission error scenarios', () => {
 
       if (!createResult.success) {
         // Community edition - can't test duplicate scenario
-        console.log('Note: Test skipped - Community edition restriction');
+        console.warn('Note: Test skipped - Community edition restriction');
         return;
       }
 
       try {
         // Try to create with same name - should fail
         const duplicateResult = await runCli(['permission', 'group', 'create', groupName]);
-        expectError(duplicateResult, { messageContains: ErrorPatterns.PERMISSION_GROUP_ALREADY_EXISTS });
+        expectError(duplicateResult, {
+          messageContains: ErrorPatterns.PERMISSION_GROUP_ALREADY_EXISTS,
+        });
       } finally {
         // Cleanup
         await runCli(['permission', 'group', 'delete', groupName, '--force']);
@@ -57,7 +60,13 @@ describe('permission error scenarios', () => {
   // ============================================
   describe('DeletePermissionGroup errors', () => {
     it('should fail when deleting non-existent permission group', async () => {
-      const result = await runCli(['permission', 'group', 'delete', nonExistentName('permgroup'), '--force']);
+      const result = await runCli([
+        'permission',
+        'group',
+        'delete',
+        nonExistentName('permgroup'),
+        '--force',
+      ]);
       expectError(result, { messageContains: ErrorPatterns.PERMISSION_GROUP_NOT_FOUND });
     });
 
@@ -108,7 +117,12 @@ describe('permission error scenarios', () => {
   // ============================================
   describe('CreatePermissionInGroup errors', () => {
     it('should fail when adding permission to non-existent group', async () => {
-      const result = await runCli(['permission', 'add', nonExistentName('permgroup'), 'TEAM_CREATE']);
+      const result = await runCli([
+        'permission',
+        'add',
+        nonExistentName('permgroup'),
+        'TEAM_CREATE',
+      ]);
       expectError(result, { messageContains: ErrorPatterns.PERMISSION_GROUP_NOT_FOUND });
     });
 
@@ -128,7 +142,7 @@ describe('permission error scenarios', () => {
       const createResult = await runCli(['permission', 'group', 'create', groupName]);
 
       if (!createResult.success) {
-        console.log('Note: Test skipped - Community edition restriction');
+        console.warn('Note: Test skipped - Community edition restriction');
         return;
       }
 
@@ -147,7 +161,12 @@ describe('permission error scenarios', () => {
   // ============================================
   describe('DeletePermissionFromGroup errors', () => {
     it('should fail when removing permission from non-existent group', async () => {
-      const result = await runCli(['permission', 'remove', nonExistentName('permgroup'), 'TEAM_CREATE']);
+      const result = await runCli([
+        'permission',
+        'remove',
+        nonExistentName('permgroup'),
+        'TEAM_CREATE',
+      ]);
       expectError(result, { messageContains: ErrorPatterns.PERMISSION_GROUP_NOT_FOUND });
     });
 

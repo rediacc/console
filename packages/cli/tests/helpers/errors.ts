@@ -1,6 +1,5 @@
 import { expect } from 'vitest';
-import type { CliResult } from './cli.js';
-import { getErrorMessage } from './cli.js';
+import { getErrorMessage, type CliResult } from './cli.js';
 
 /**
  * Assert that a CLI result represents an error with expected message content

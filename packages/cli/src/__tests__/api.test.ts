@@ -79,11 +79,7 @@ describe('CliApiError', () => {
     });
 
     it('should support INVALID_REQUEST code', () => {
-      const error = new CliApiError(
-        'Bad request',
-        'INVALID_REQUEST',
-        EXIT_CODES.INVALID_ARGUMENTS
-      );
+      const error = new CliApiError('Bad request', 'INVALID_REQUEST', EXIT_CODES.INVALID_ARGUMENTS);
 
       expect(error.code).toBe('INVALID_REQUEST');
       expect(error.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENTS);

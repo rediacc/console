@@ -101,7 +101,7 @@ describe('bridge error scenarios', () => {
 
       // Skip if no default bridge found
       if (!defaultBridge) {
-        console.log('Skipping: No Global bridge found in default region');
+        console.warn('Skipping: No Global bridge found in default region');
         return;
       }
 

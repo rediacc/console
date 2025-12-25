@@ -368,9 +368,7 @@ class CliApiClient implements SharedApiClient {
     // Check resultSets for error messages
     for (const rs of response.resultSets) {
       for (const row of rs.data as Record<string, unknown>[]) {
-        const errorMsg = (row.errorMessage ?? row.ErrorMessage ?? row.error) as
-          | string
-          | undefined;
+        const errorMsg = (row.errorMessage ?? row.ErrorMessage ?? row.error) as string | undefined;
         if (errorMsg && typeof errorMsg === 'string') {
           if (!details.includes(errorMsg)) {
             details.push(errorMsg);

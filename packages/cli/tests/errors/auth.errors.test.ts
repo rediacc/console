@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 import { runCli } from '../helpers/cli.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
+import { expectError, nonExistentName } from '../helpers/errors.js';
 
 /**
  * Negative test cases for auth commands.

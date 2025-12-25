@@ -34,7 +34,9 @@ describe('permission commands', () => {
         const errorMsg = getErrorMessage(result);
         // Check if this is a feature limitation (Community edition)
         if (errorMsg.includes('Community edition') || errorMsg.includes('not available')) {
-          console.log('Skipping permission modification tests - feature not available in this edition');
+          console.log(
+            'Skipping permission modification tests - feature not available in this edition'
+          );
           featureAvailable = false;
           return;
         }
