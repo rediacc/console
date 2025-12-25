@@ -16,13 +16,6 @@ export function setOutputFormat(format: OutputFormat): void {
 }
 
 /**
- * Get the current output format.
- */
-export function getOutputFormat(): OutputFormat {
-  return currentOutputFormat;
-}
-
-/**
  * Handle errors with format-aware output.
  *
  * - JSON mode: outputs structured error JSON to stdout (for piping)

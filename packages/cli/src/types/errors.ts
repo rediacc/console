@@ -1,6 +1,6 @@
 // Unified error types for CLI
 
-export const ERROR_CODES = {
+const _ERROR_CODES = {
   GENERAL_ERROR: 'GENERAL_ERROR',
   INVALID_REQUEST: 'INVALID_REQUEST',
   AUTH_REQUIRED: 'AUTH_REQUIRED',
@@ -11,7 +11,7 @@ export const ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
 } as const;
 
-export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+export type ErrorCode = (typeof _ERROR_CODES)[keyof typeof _ERROR_CODES];
 
 export interface CliError {
   code: ErrorCode;
