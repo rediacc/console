@@ -15,7 +15,6 @@ import type {
 export interface CreateUserOptions {
   passwordHash?: string;
   language?: string;
-  fullName?: string;
 }
 
 export interface CreateUserResult {
@@ -46,7 +45,6 @@ export function createUsersService(client: ApiClient) {
       };
       if (passwordHash) payload.newUserHash = passwordHash;
       if (options.language) payload.languagePreference = options.language;
-      if (options.fullName) payload.fullName = options.fullName;
       const response = await client.post<{ activationCode?: string }>('/CreateNewUser', payload);
       const row = parseFirst<{ activationCode?: string }>(response, {
         extractor: responseExtractors.byIndex(0),

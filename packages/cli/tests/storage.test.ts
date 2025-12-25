@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { runCli } from './helpers/cli.js';
+import { runCli, getErrorMessage } from './helpers/cli.js';
 
 describe('storage commands', () => {
   let teamName: string;
@@ -50,9 +50,9 @@ describe('storage commands', () => {
       const result = await runCli(['storage', 'create', testStorageName, '--team', teamName]);
 
       if (!result.success) {
-        console.error('Storage create failed:', result.stderr || result.stdout);
+        console.error('Storage create failed:', getErrorMessage(result));
       }
-      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
+      expect(result.success, `Failed: ${getErrorMessage(result)}`).toBe(true);
       expect(result.stdout).toContain('created');
     });
 
@@ -60,9 +60,9 @@ describe('storage commands', () => {
       const result = await runCli(['storage', 'list', '--team', teamName]);
 
       if (!result.success) {
-        console.error('Storage list failed:', result.stderr || result.stdout);
+        console.error('Storage list failed:', getErrorMessage(result));
       }
-      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
+      expect(result.success, `Failed: ${getErrorMessage(result)}`).toBe(true);
       expect(Array.isArray(result.json)).toBe(true);
 
       const storages = result.json as { storageName: string }[];
@@ -81,9 +81,9 @@ describe('storage commands', () => {
       ]);
 
       if (!result.success) {
-        console.error('Storage rename failed:', result.stderr || result.stdout);
+        console.error('Storage rename failed:', getErrorMessage(result));
       }
-      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
+      expect(result.success, `Failed: ${getErrorMessage(result)}`).toBe(true);
       expect(result.stdout).toContain('renamed');
     });
 
@@ -98,9 +98,9 @@ describe('storage commands', () => {
       ]);
 
       if (!result.success) {
-        console.error('Storage delete failed:', result.stderr || result.stdout);
+        console.error('Storage delete failed:', getErrorMessage(result));
       }
-      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
+      expect(result.success, `Failed: ${getErrorMessage(result)}`).toBe(true);
       expect(result.stdout).toContain('deleted');
     });
   });

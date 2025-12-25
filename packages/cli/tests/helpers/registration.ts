@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { runCli } from './cli.js';
+import { runCli, getErrorMessage } from './cli.js';
 import { getConfig } from './config.js';
 
 export interface TestAccount {
@@ -42,7 +42,7 @@ export async function registerAndActivate(account: TestAccount): Promise<void> {
   ]);
 
   if (!registerResult.success) {
-    throw new Error(`Registration failed: ${registerResult.stderr || registerResult.stdout}`);
+    throw new Error(`Registration failed: ${getErrorMessage(registerResult)}`);
   }
 
   // 2. Activate with 111111 (CI_MODE activation code)
@@ -60,7 +60,7 @@ export async function registerAndActivate(account: TestAccount): Promise<void> {
   ]);
 
   if (!activateResult.success) {
-    throw new Error(`Activation failed: ${activateResult.stderr || activateResult.stdout}`);
+    throw new Error(`Activation failed: ${getErrorMessage(activateResult)}`);
   }
 
   // 3. Login
@@ -75,6 +75,6 @@ export async function registerAndActivate(account: TestAccount): Promise<void> {
   ]);
 
   if (!loginResult.success) {
-    throw new Error(`Login failed: ${loginResult.stderr || loginResult.stdout}`);
+    throw new Error(`Login failed: ${getErrorMessage(loginResult)}`);
   }
 }

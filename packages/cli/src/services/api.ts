@@ -272,6 +272,23 @@ class CliApiClient implements SharedApiClient {
       return normalizeResponse(responseData);
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        // Check if we have an API response with error details
+        const responseData = error.response?.data as ApiResponse | undefined;
+        if (responseData && typeof responseData === 'object' && 'failure' in responseData) {
+          // Process API error response to extract details
+          throw this.createApiError(responseData);
+        }
+
+        // Check for middleware HTTP error format: { error: "message" }
+        const httpErrorData = error.response?.data as { error?: string } | undefined;
+        if (httpErrorData && typeof httpErrorData === 'object' && 'error' in httpErrorData) {
+          const errorMessage = httpErrorData.error ?? 'Request failed';
+          const statusCode = error.response?.status ?? 400;
+          const { code, exitCode } = this.mapFailureToError(statusCode);
+          throw new CliApiError(errorMessage, code, exitCode, [errorMessage]);
+        }
+
+        // Handle HTTP status codes without API response body
         if (error.response?.status === 401) {
           throw new CliApiError(
             'Authentication required',

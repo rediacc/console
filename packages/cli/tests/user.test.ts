@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { runCli } from './helpers/cli.js';
+import { runCli, getErrorMessage } from './helpers/cli.js';
 
 describe('user commands', () => {
   beforeAll(async () => {
@@ -48,7 +48,13 @@ describe('user commands', () => {
       const timestamp = Date.now();
       testUserEmail = `test-deact-${timestamp}@rediacc-test.local`;
 
-      const createResult = await runCli(['user', 'create', testUserEmail]);
+      const createResult = await runCli([
+        'user',
+        'create',
+        testUserEmail,
+        '-p',
+        'TestPassword123!',
+      ]);
       expect(createResult.success).toBe(true);
     });
 
@@ -72,12 +78,18 @@ describe('user commands', () => {
 
     it('should create a new user', async () => {
       testUserEmail = `test-crud-${Date.now()}@rediacc-test.local`;
-      const result = await runCli(['user', 'create', testUserEmail]);
+      const result = await runCli([
+        'user',
+        'create',
+        testUserEmail,
+        '-p',
+        'TestPassword123!',
+      ]);
 
       if (!result.success) {
-        console.error('User create failed:', result.stderr || result.stdout);
+        console.error('User create failed:', getErrorMessage(result));
       }
-      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
+      expect(result.success, `Failed: ${getErrorMessage(result)}`).toBe(true);
       expect(result.stdout).toContain('User created');
     });
 
@@ -85,9 +97,9 @@ describe('user commands', () => {
       // Get a permission group name
       const groups = await runCli(['permission', 'group', 'list']);
       if (!groups.success) {
-        console.error('Permission group list failed:', groups.stderr || groups.stdout);
+        console.error('Permission group list failed:', getErrorMessage(groups));
       }
-      expect(groups.success, `Failed: ${groups.stderr || groups.stdout}`).toBe(true);
+      expect(groups.success, `Failed: ${getErrorMessage(groups)}`).toBe(true);
 
       const groupList = groups.json as { permissionGroupName: string }[];
       expect(groupList.length).toBeGreaterThan(0);
@@ -96,9 +108,9 @@ describe('user commands', () => {
       const result = await runCli(['user', 'permission', 'assign', testUserEmail, groupName]);
 
       if (!result.success) {
-        console.error('Permission assign failed:', result.stderr || result.stdout);
+        console.error('Permission assign failed:', getErrorMessage(result));
       }
-      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
+      expect(result.success, `Failed: ${getErrorMessage(result)}`).toBe(true);
       expect(result.stdout).toContain('Permission assigned');
     });
   });
@@ -110,20 +122,24 @@ describe('user commands', () => {
       const newEmail = `test-email-new-${timestamp}@rediacc-test.local`;
 
       // Create user first
-      const createResult = await runCli(['user', 'create', oldEmail]);
+      const createResult = await runCli([
+        'user',
+        'create',
+        oldEmail,
+        '-p',
+        'TestPassword123!',
+      ]);
       if (!createResult.success) {
-        console.error('User create failed:', createResult.stderr || createResult.stdout);
+        console.error('User create failed:', getErrorMessage(createResult));
       }
-      expect(createResult.success, `Failed: ${createResult.stderr || createResult.stdout}`).toBe(
-        true
-      );
+      expect(createResult.success, `Failed: ${getErrorMessage(createResult)}`).toBe(true);
 
       // Update email
       const result = await runCli(['user', 'update-email', oldEmail, newEmail]);
       if (!result.success) {
-        console.error('Email update failed:', result.stderr || result.stdout);
+        console.error('Email update failed:', getErrorMessage(result));
       }
-      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
+      expect(result.success, `Failed: ${getErrorMessage(result)}`).toBe(true);
       expect(result.stdout).toContain('Email updated');
     });
   });

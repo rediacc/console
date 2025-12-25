@@ -98,7 +98,7 @@ export async function ensureAuthenticated(): Promise<void> {
   if (!statusResult.stdout.includes('Authenticated')) {
     const loginResult = await login();
     if (!loginResult.success) {
-      throw new Error(`Failed to authenticate: ${loginResult.stderr || loginResult.stdout}`);
+      throw new Error(`Failed to authenticate: ${getErrorMessage(loginResult)}`);
     }
   }
 }
@@ -164,4 +164,29 @@ export function expectJsonObject(result: CliResult): Record<string, unknown> {
     throw new Error(`Expected JSON object, got: ${typeof result.json}`);
   }
   return result.json as Record<string, unknown>;
+}
+
+/**
+ * Extract error message from CLI result.
+ * In JSON mode, errors are returned as structured JSON in stdout.
+ * Returns a human-readable error string for logging.
+ */
+export function getErrorMessage(result: CliResult): string {
+  // Check for JSON error response (new format)
+  if (result.json && typeof result.json === 'object' && !Array.isArray(result.json)) {
+    const jsonResult = result.json as {
+      success?: boolean;
+      error?: { code?: string; message?: string; details?: string[] };
+    };
+    if (jsonResult.success === false && jsonResult.error) {
+      const { code, message, details } = jsonResult.error;
+      let errorMsg = message || 'Unknown error';
+      if (code) errorMsg = `[${code}] ${errorMsg}`;
+      if (details?.length) errorMsg += ` - Details: ${details.join(', ')}`;
+      return errorMsg;
+    }
+  }
+
+  // Fallback to stderr/stdout
+  return result.stderr || result.stdout || 'No error details available';
 }

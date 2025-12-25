@@ -62,7 +62,7 @@ export function handleError(error: unknown): never {
 /**
  * Normalize various error types into a consistent CliError structure.
  */
-function normalizeError(error: unknown): CliError {
+export function normalizeError(error: unknown): CliError {
   if (error instanceof CliApiError) {
     return {
       code: error.code,

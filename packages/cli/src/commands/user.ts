@@ -34,15 +34,31 @@ export function registerUserCommands(program: Command): void {
   user
     .command('create <email>')
     .description('Create a new user')
-    .option('-n, --name <name>', 'User full name')
+    .option('-p, --password <password>', 'Password for the new user')
     .action(async (email, options) => {
       try {
         await authService.requireAuth();
 
+        // Get password - either from option or prompt
+        let password: string;
+        if (options.password) {
+          password = options.password;
+        } else {
+          const { askPassword } = await import('../utils/prompt.js');
+          password = await askPassword('Password for new user:');
+          const confirmPassword = await askPassword('Confirm password:');
+
+          if (password !== confirmPassword) {
+            throw new ValidationError('Passwords do not match');
+          }
+        }
+
+        const { nodeCryptoProvider } = await import('../adapters/crypto.js');
+        const passwordHash = await nodeCryptoProvider.generateHash(password);
+
         const result = await withSpinner(
           `Creating user "${email}"...`,
-          () =>
-            api.users.create(email, undefined, { fullName: options.name ?? email.split('@')[0] }),
+          () => api.users.create(email, passwordHash),
           'User created'
         );
 
