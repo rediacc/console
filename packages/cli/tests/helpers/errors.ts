@@ -105,4 +105,11 @@ export const ErrorPatterns = {
   // General validation
   REQUEST_VALIDATION_FAILED: 'Request validation failed',
   INVALID_EMAIL_FORMAT: 'Invalid email format',
+
+  // TFA errors (from db_middleware_tfa.sql and db_middleware_auth.sql)
+  TFA_ALREADY_ENABLED: 'TFA is already enabled',
+  TFA_NOT_ENABLED: 'TFA is not enabled',
+  TFA_INVALID_CODE: 'Invalid TFA code',
+  TFA_CODE_REQUIRED: 'TFA code is required',
+  TFA_VERIFICATION_FAILED: 'Invalid verification code',
 } as const;

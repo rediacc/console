@@ -282,17 +282,27 @@ export function registerAuthCommands(program: Command): void {
   tfa
     .command('disable')
     .description('Disable two-factor authentication')
-    .action(async () => {
+    .option('--code <code>', 'Current TFA code for verification')
+    .option('-y, --yes', 'Skip confirmation prompt')
+    .action(async (options) => {
       try {
         await authService.requireAuth();
 
-        const confirm = await askConfirm('Are you sure you want to disable TFA?');
-        if (!confirm) {
-          outputService.info('Cancelled');
-          return;
+        if (!options.yes) {
+          const confirm = await askConfirm('Are you sure you want to disable TFA?');
+          if (!confirm) {
+            outputService.info('Cancelled');
+            return;
+          }
         }
 
-        await withSpinner('Disabling TFA...', () => api.auth.disableTfa(), 'TFA disabled');
+        // If code provided, pass it; otherwise use default flow
+        const code = options.code ?? undefined;
+        await withSpinner(
+          'Disabling TFA...',
+          () => api.auth.disableTfa(undefined, code),
+          'TFA disabled'
+        );
       } catch (error) {
         handleError(error);
       }
