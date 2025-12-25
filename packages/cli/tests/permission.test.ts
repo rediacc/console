@@ -34,7 +34,7 @@ describe('permission commands', () => {
         const errorMsg = getErrorMessage(result);
         // Check if this is a feature limitation (Community edition)
         if (errorMsg.includes('Community edition') || errorMsg.includes('not available')) {
-          console.log(
+          console.warn(
             'Skipping permission modification tests - feature not available in this edition'
           );
           featureAvailable = false;
@@ -54,7 +54,7 @@ describe('permission commands', () => {
 
     it('should add a permission to a group', async () => {
       if (!featureAvailable) {
-        console.log('Skipped: feature not available in Community edition');
+        console.warn('Skipped: feature not available in Community edition');
         return;
       }
 
@@ -69,7 +69,7 @@ describe('permission commands', () => {
 
     it('should show permission group with added permission', async () => {
       if (!featureAvailable) {
-        console.log('Skipped: feature not available in Community edition');
+        console.warn('Skipped: feature not available in Community edition');
         return;
       }
 
@@ -84,7 +84,7 @@ describe('permission commands', () => {
 
     it('should remove a permission from a group', async () => {
       if (!featureAvailable) {
-        console.log('Skipped: feature not available in Community edition');
+        console.warn('Skipped: feature not available in Community edition');
         return;
       }
 

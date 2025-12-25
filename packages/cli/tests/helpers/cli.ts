@@ -180,7 +180,7 @@ export function getErrorMessage(result: CliResult): string {
     };
     if (jsonResult.success === false && jsonResult.error) {
       const { code, message, details } = jsonResult.error;
-      let errorMsg = message || 'Unknown error';
+      let errorMsg = message ?? 'Unknown error';
       if (code) errorMsg = `[${code}] ${errorMsg}`;
       if (details?.length) errorMsg += ` - Details: ${details.join(', ')}`;
       return errorMsg;

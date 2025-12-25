@@ -161,7 +161,7 @@ describe('user commands', () => {
       expect(result.success).toBe(false);
       // In JSON mode, error is returned as structured JSON in stdout
       const errorResponse = result.json as { success: false; error: { message: string } } | null;
-      expect(errorResponse?.error?.message).toContain('Passwords do not match');
+      expect(errorResponse?.error.message).toContain('Passwords do not match');
     });
   });
 });
