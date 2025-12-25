@@ -175,6 +175,38 @@ class AuthService {
       throw new AuthError('Not authenticated. Please run: rediacc login', EXIT_CODES.AUTH_REQUIRED);
     }
   }
+
+  async register(
+    companyName: string,
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const passwordHash = await nodeCryptoProvider.generateHash(password);
+
+    try {
+      await apiClient.register(companyName, email, passwordHash);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Registration failed';
+      return { success: false, message };
+    }
+  }
+
+  async activate(
+    email: string,
+    password: string,
+    code: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const passwordHash = await nodeCryptoProvider.generateHash(password);
+
+    try {
+      await apiClient.activateUser(email, code, passwordHash);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Activation failed';
+      return { success: false, message };
+    }
+  }
 }
 
 export class AuthError extends Error {

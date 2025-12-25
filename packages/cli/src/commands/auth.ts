@@ -93,6 +93,71 @@ export function registerAuthCommands(program: Command): void {
       }
     });
 
+  // auth register
+  auth
+    .command('register')
+    .description('Register a new company and user account')
+    .requiredOption('--company <name>', 'Company name')
+    .requiredOption('-e, --email <email>', 'Email address')
+    .requiredOption('-p, --password <password>', 'Password')
+    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .action(async (options) => {
+      try {
+        // Set API endpoint if provided
+        if (options.endpoint) {
+          await apiClient.setApiUrl(options.endpoint);
+        }
+
+        const result = await withSpinner(
+          'Registering account...',
+          () => authService.register(options.company, options.email, options.password),
+          'Registration submitted'
+        );
+
+        if (!result.success) {
+          outputService.error(result.message ?? 'Registration failed');
+          process.exit(1);
+        }
+
+        outputService.success('Registration successful! Check your email for the activation code.');
+        outputService.info('Then run: rdc auth activate -e <email> -p <password> --code <code>');
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // auth activate
+  auth
+    .command('activate')
+    .description('Activate account with verification code')
+    .requiredOption('-e, --email <email>', 'Email address')
+    .requiredOption('-p, --password <password>', 'Password')
+    .requiredOption('--code <code>', 'Activation code from email')
+    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .action(async (options) => {
+      try {
+        // Set API endpoint if provided
+        if (options.endpoint) {
+          await apiClient.setApiUrl(options.endpoint);
+        }
+
+        const result = await withSpinner(
+          'Activating account...',
+          () => authService.activate(options.email, options.password, options.code),
+          'Account activated'
+        );
+
+        if (!result.success) {
+          outputService.error(result.message ?? 'Activation failed');
+          process.exit(1);
+        }
+
+        outputService.success('Account activated! You can now login with: rdc login');
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // auth token subcommand
   const token = auth.command('token').description('Token management');
 

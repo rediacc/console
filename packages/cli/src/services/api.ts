@@ -90,9 +90,14 @@ class CliApiClient implements SharedApiClient {
   }
 
   async setApiUrl(url: string): Promise<void> {
-    this.apiUrl = url;
-    this.client.defaults.baseURL = `${url}${API_PREFIX}`;
-    await nodeStorageAdapter.setItem(STORAGE_KEYS.API_URL, url);
+    // Normalize URL: ensure it ends with /api
+    let normalizedUrl = url.replace(/\/+$/, ''); // Remove trailing slashes
+    if (!normalizedUrl.endsWith('/api')) {
+      normalizedUrl = `${normalizedUrl}/api`;
+    }
+    this.apiUrl = normalizedUrl;
+    this.client.defaults.baseURL = `${normalizedUrl}${API_PREFIX}`;
+    await nodeStorageAdapter.setItem(STORAGE_KEYS.API_URL, normalizedUrl);
   }
 
   getApiUrl(): string {
@@ -136,6 +141,32 @@ class CliApiClient implements SharedApiClient {
     const response = await this.client.post<ApiResponse>(
       '/ActivateUserAccount',
       { activationCode },
+      {
+        headers: {
+          'Rediacc-UserEmail': email,
+          'Rediacc-UserHash': passwordHash,
+        },
+      }
+    );
+
+    return response.data;
+  }
+
+  async register(
+    companyName: string,
+    email: string,
+    passwordHash: string,
+    languagePreference = 'en'
+  ): Promise<ApiResponse> {
+    await this.initialize();
+
+    const response = await this.client.post<ApiResponse>(
+      '/CreateNewCompany',
+      {
+        companyName,
+        userEmailAddress: email,
+        languagePreference,
+      },
       {
         headers: {
           'Rediacc-UserEmail': email,
