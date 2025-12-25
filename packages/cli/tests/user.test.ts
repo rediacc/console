@@ -2,13 +2,9 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { runCli } from './helpers/cli.js';
 
 describe('user commands', () => {
-  let teamName: string;
-
   beforeAll(async () => {
-    // Get a valid team name
-    const teamResult = await runCli(['team', 'list']);
-    const teams = teamResult.json as unknown[];
-    teamName = (teams[0] as Record<string, unknown>).teamName as string;
+    // Ensure we're authenticated
+    await runCli(['team', 'list']);
   });
 
   describe('user list', () => {

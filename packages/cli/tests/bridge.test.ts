@@ -24,7 +24,7 @@ describe('bridge commands', () => {
   describe('bridge inspect', () => {
     it('should inspect a bridge if one exists', async () => {
       const listResult = await runCli(['bridge', 'list']);
-      const bridges = listResult.json as unknown[] ?? [];
+      const bridges = (listResult.json ?? []) as unknown[];
 
       if (bridges.length > 0) {
         const bridgeName = (bridges[0] as Record<string, unknown>).bridgeName as string;
@@ -41,12 +41,25 @@ describe('bridge commands', () => {
     const testBridgeName = `test-bridge-${Date.now()}`;
 
     it('should create a new bridge', async () => {
-      const result = await runCli(['bridge', 'create', testBridgeName, '--region', 'Default Region']);
+      const result = await runCli([
+        'bridge',
+        'create',
+        testBridgeName,
+        '--region',
+        'Default Region',
+      ]);
       expect(result.success).toBe(true);
     });
 
     it('should delete the bridge', async () => {
-      const result = await runCli(['bridge', 'delete', testBridgeName, '--region', 'Default Region', '--force']);
+      const result = await runCli([
+        'bridge',
+        'delete',
+        testBridgeName,
+        '--region',
+        'Default Region',
+        '--force',
+      ]);
       expect(result.success).toBe(true);
     });
   });

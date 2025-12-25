@@ -1,4 +1,4 @@
-import { execa, type Result, type Options } from 'execa';
+import { execa, type Options } from 'execa';
 import { getConfig } from './config.js';
 
 export interface CliResult {
@@ -64,7 +64,11 @@ export async function runCli(args: string[], options: RunCliOptions = {}): Promi
 /**
  * Run login command with test credentials
  */
-export async function login(overrides?: { email?: string; password?: string; endpoint?: string }): Promise<CliResult> {
+export async function login(overrides?: {
+  email?: string;
+  password?: string;
+  endpoint?: string;
+}): Promise<CliResult> {
   const config = getConfig();
 
   return runCli([

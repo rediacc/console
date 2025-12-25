@@ -1,7 +1,11 @@
 import { beforeAll, afterAll } from 'vitest';
 import { logout } from './helpers/cli.js';
 import { getConfig, setTestAccount } from './helpers/config.js';
-import { generateTestAccount, registerAndActivate, type TestAccount } from './helpers/registration.js';
+import {
+  generateTestAccount,
+  registerAndActivate,
+  type TestAccount,
+} from './helpers/registration.js';
 
 /**
  * Global test setup
@@ -19,16 +23,19 @@ let testAccount: TestAccount;
 beforeAll(async () => {
   const config = getConfig();
 
+  // eslint-disable-next-line no-console -- Test setup logging
   console.log(`\n[Setup] Testing against: ${config.apiUrl}`);
 
   // Generate and register a fresh test account
   testAccount = generateTestAccount();
+  // eslint-disable-next-line no-console -- Test setup logging
   console.log(`[Setup] Registering: ${testAccount.email}`);
 
   try {
     await registerAndActivate(testAccount);
     // Store the account in config for use by login helper
     setTestAccount(testAccount);
+    // eslint-disable-next-line no-console -- Test setup logging
     console.log('[Setup] Registration and login complete\n');
   } catch (error) {
     console.error('[Setup] Registration failed:', error);
@@ -39,6 +46,7 @@ beforeAll(async () => {
 afterAll(async () => {
   // Logout after all tests
   await logout();
+  // eslint-disable-next-line no-console -- Test teardown logging
   console.log('\n[Teardown] Logged out');
 });
 

@@ -15,7 +15,7 @@ describe('shortcut commands', () => {
     it('should trace a task if queue items exist', async () => {
       // First get a queue item
       const listResult = await runCli(['queue', 'list', '--limit', '1']);
-      const items = listResult.json as unknown[] ?? [];
+      const items = (listResult.json ?? []) as unknown[];
 
       if (items.length > 0) {
         const taskId = (items[0] as Record<string, unknown>).taskId as string;

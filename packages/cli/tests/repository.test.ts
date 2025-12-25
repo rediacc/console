@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { runCli } from './helpers/cli.js';
 
 describe('repository commands', () => {
@@ -13,7 +13,7 @@ describe('repository commands', () => {
 
     // Get a valid machine name if available
     const machineResult = await runCli(['machine', 'list', '--team', teamName]);
-    const machines = machineResult.json as unknown[] ?? [];
+    const machines = (machineResult.json ?? []) as unknown[];
     if (machines.length > 0) {
       machineName = (machines[0] as Record<string, unknown>).machineName as string;
     }
@@ -29,11 +29,18 @@ describe('repository commands', () => {
 
     it('should list repositories for a machine', async () => {
       if (!machineName) {
-        console.log('Skipping test - no machines available');
+        // Skip test - no machines available
         return;
       }
 
-      const result = await runCli(['repository', 'list', '--team', teamName, '--machine', machineName]);
+      const result = await runCli([
+        'repository',
+        'list',
+        '--team',
+        teamName,
+        '--machine',
+        machineName,
+      ]);
 
       expect(result.success).toBe(true);
       expect(Array.isArray(result.json)).toBe(true);
@@ -43,7 +50,7 @@ describe('repository commands', () => {
   describe('repository inspect', () => {
     it('should inspect a repository if one exists', async () => {
       const listResult = await runCli(['repository', 'list', '--team', teamName]);
-      const repos = listResult.json as unknown[] ?? [];
+      const repos = (listResult.json ?? []) as unknown[];
 
       if (repos.length > 0) {
         const repoName = (repos[0] as Record<string, unknown>).repositoryName as string;
@@ -60,13 +67,7 @@ describe('repository commands', () => {
     const testRepoName = `test-repo-${Date.now()}`;
 
     it('should create a new repository', async () => {
-      const result = await runCli([
-        'repository',
-        'create',
-        testRepoName,
-        '--team',
-        teamName,
-      ]);
+      const result = await runCli(['repository', 'create', testRepoName, '--team', teamName]);
       expect(result.success).toBe(true);
     });
 

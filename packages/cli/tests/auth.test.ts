@@ -47,9 +47,9 @@ describe('auth commands', () => {
         const output = result.stdout + result.stderr;
         expect(
           output.includes('TFA is enabled') ||
-          output.includes('TFA is not enabled') ||
-          output.includes('Error') || // Fresh account may error
-          result.exitCode !== 0
+            output.includes('TFA is not enabled') ||
+            output.includes('Error') || // Fresh account may error
+            result.exitCode !== 0
         ).toBe(true);
       });
     });

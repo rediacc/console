@@ -22,7 +22,16 @@ describe('queue commands', () => {
 
     it('should list queue items with filters', async () => {
       // Team is required, status filter is optional
-      const result = await runCli(['queue', 'list', '--team', teamName, '--status', 'completed', '--limit', '5']);
+      const result = await runCli([
+        'queue',
+        'list',
+        '--team',
+        teamName,
+        '--status',
+        'completed',
+        '--limit',
+        '5',
+      ]);
 
       expect(result.success).toBe(true);
       expect(Array.isArray(result.json)).toBe(true);
@@ -41,7 +50,7 @@ describe('queue commands', () => {
     it('should trace a queue item if one exists', async () => {
       // First get a queue item
       const listResult = await runCli(['queue', 'list', '--limit', '1']);
-      const items = listResult.json as unknown[] ?? [];
+      const items = (listResult.json ?? []) as unknown[];
 
       if (items.length > 0) {
         const taskId = (items[0] as Record<string, unknown>).taskId as string;
