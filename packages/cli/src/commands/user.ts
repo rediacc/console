@@ -150,13 +150,25 @@ export function registerUserCommands(program: Command): void {
   user
     .command('update-password')
     .description('Change your password')
-    .action(async () => {
+    .option('--password <password>', 'New password (non-interactive mode)')
+    .option('--confirm <confirm>', 'Confirm password (non-interactive mode)')
+    .action(async (options) => {
       try {
         await authService.requireAuth();
 
-        const { askPassword } = await import('../utils/prompt.js');
-        const newPassword = await askPassword('New password:');
-        const confirmPassword = await askPassword('Confirm new password:');
+        let newPassword: string;
+        let confirmPassword: string;
+
+        if (options.password) {
+          // Non-interactive mode
+          newPassword = options.password;
+          confirmPassword = options.confirm ?? options.password;
+        } else {
+          // Interactive mode
+          const { askPassword } = await import('../utils/prompt.js');
+          newPassword = await askPassword('New password:');
+          confirmPassword = await askPassword('Confirm new password:');
+        }
 
         if (newPassword !== confirmPassword) {
           outputService.error('Passwords do not match');

@@ -111,10 +111,34 @@ describe('user commands', () => {
     });
   });
 
-  // Note: update-password requires interactive stdin input
-  describe.skip('user update-password', () => {
-    it('should update password', async () => {
-      // Requires interactive password input
+  describe('user update-password', () => {
+    it('should update password with --password flag', async () => {
+      const newPassword = `TestPass${Date.now()}!`;
+      const result = await runCli([
+        'user',
+        'update-password',
+        '--password',
+        newPassword,
+        '--confirm',
+        newPassword,
+      ]);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('Password updated');
+    });
+
+    it('should reject mismatched passwords', async () => {
+      const result = await runCli([
+        'user',
+        'update-password',
+        '--password',
+        'Password123!',
+        '--confirm',
+        'DifferentPassword456!',
+      ]);
+
+      expect(result.success).toBe(false);
+      expect(result.stderr).toContain('Passwords do not match');
     });
   });
 });
