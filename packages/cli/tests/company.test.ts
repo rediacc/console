@@ -21,6 +21,29 @@ describe('company commands', () => {
     });
   });
 
+  describe('company maintenance', () => {
+    it('should enable maintenance mode', async () => {
+      const result = await runCli(['company', 'maintenance', 'enable']);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('Maintenance mode enabled');
+    });
+
+    it('should disable maintenance mode', async () => {
+      const result = await runCli(['company', 'maintenance', 'disable']);
+
+      expect(result.success).toBe(true);
+      expect(result.stdout).toContain('Maintenance mode disabled');
+    });
+
+    it('should reject invalid action', async () => {
+      const result = await runCli(['company', 'maintenance', 'invalid']);
+
+      expect(result.success).toBe(false);
+      expect(result.stderr).toContain('Invalid action');
+    });
+  });
+
   // Note: company update operations are sensitive and skipped
   describe.skip('company update operations', () => {
     it('should update company name', async () => {

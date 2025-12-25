@@ -218,4 +218,30 @@ export function registerCompanyCommands(program: Command): void {
         handleError(error);
       }
     });
+
+  // company maintenance
+  company
+    .command('maintenance <action>')
+    .description('Enable or disable maintenance mode (blocks non-admin logins)')
+    .action(async (action) => {
+      try {
+        await authService.requireAuth();
+
+        const validActions = ['enable', 'disable'];
+        if (!validActions.includes(action)) {
+          outputService.error(`Invalid action "${action}". Use "enable" or "disable".`);
+          process.exit(1);
+        }
+
+        const enable = action === 'enable';
+
+        await withSpinner(
+          `${enable ? 'Enabling' : 'Disabling'} maintenance mode...`,
+          () => api.company.updateBlockUserRequests({ blockUserRequests: enable }),
+          `Maintenance mode ${enable ? 'enabled' : 'disabled'}`
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
 }

@@ -110,6 +110,90 @@ export function registerUserCommands(program: Command): void {
       }
     });
 
+  // user reactivate
+  user
+    .command('reactivate <email>')
+    .description('Reactivate a deactivated user account')
+    .action(async (email) => {
+      try {
+        await authService.requireAuth();
+
+        await withSpinner(
+          `Reactivating user "${email}"...`,
+          () => api.users.activate({ userEmail: email }),
+          'User reactivated'
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // user update-email
+  user
+    .command('update-email <currentEmail> <newEmail>')
+    .description("Change a user's email address")
+    .action(async (currentEmail, newEmail) => {
+      try {
+        await authService.requireAuth();
+
+        await withSpinner(
+          `Updating email for "${currentEmail}"...`,
+          () => api.users.updateEmail({ currentUserEmail: currentEmail, newUserEmail: newEmail }),
+          `Email updated to "${newEmail}"`
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // user update-password
+  user
+    .command('update-password')
+    .description('Change your password')
+    .action(async () => {
+      try {
+        await authService.requireAuth();
+
+        const { askPassword } = await import('../utils/prompt.js');
+        const newPassword = await askPassword('New password:');
+        const confirmPassword = await askPassword('Confirm new password:');
+
+        if (newPassword !== confirmPassword) {
+          outputService.error('Passwords do not match');
+          process.exit(1);
+        }
+
+        const { nodeCryptoProvider } = await import('../adapters/crypto.js');
+        const passwordHash = await nodeCryptoProvider.generateHash(newPassword);
+
+        await withSpinner(
+          'Updating password...',
+          () => api.users.updatePassword({ userNewPass: passwordHash }),
+          'Password updated'
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // user update-language
+  user
+    .command('update-language <language>')
+    .description("Set current user's preferred language")
+    .action(async (language) => {
+      try {
+        await authService.requireAuth();
+
+        await withSpinner(
+          `Updating language preference...`,
+          () => api.users.updateLanguage({ preferredLanguage: language }),
+          `Language updated to "${language}"`
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // user exists
   user
     .command('exists <email>')
