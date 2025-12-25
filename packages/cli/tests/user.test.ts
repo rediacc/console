@@ -74,14 +74,20 @@ describe('user commands', () => {
       testUserEmail = `test-crud-${Date.now()}@rediacc-test.local`;
       const result = await runCli(['user', 'create', testUserEmail]);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('User create failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('User created');
     });
 
     it('should assign permission group to user', async () => {
       // Get a permission group name
       const groups = await runCli(['permission', 'group', 'list']);
-      expect(groups.success).toBe(true);
+      if (!groups.success) {
+        console.error('Permission group list failed:', groups.stderr || groups.stdout);
+      }
+      expect(groups.success, `Failed: ${groups.stderr || groups.stdout}`).toBe(true);
 
       const groupList = groups.json as { permissionGroupName: string }[];
       expect(groupList.length).toBeGreaterThan(0);
@@ -89,7 +95,10 @@ describe('user commands', () => {
       const groupName = groupList[0].permissionGroupName;
       const result = await runCli(['user', 'permission', 'assign', testUserEmail, groupName]);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Permission assign failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('Permission assigned');
     });
   });
@@ -102,11 +111,19 @@ describe('user commands', () => {
 
       // Create user first
       const createResult = await runCli(['user', 'create', oldEmail]);
-      expect(createResult.success).toBe(true);
+      if (!createResult.success) {
+        console.error('User create failed:', createResult.stderr || createResult.stdout);
+      }
+      expect(createResult.success, `Failed: ${createResult.stderr || createResult.stdout}`).toBe(
+        true
+      );
 
       // Update email
       const result = await runCli(['user', 'update-email', oldEmail, newEmail]);
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Email update failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('Email updated');
     });
   });

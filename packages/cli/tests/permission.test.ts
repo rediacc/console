@@ -29,7 +29,10 @@ describe('permission commands', () => {
       testGroupName = `test-group-${Date.now()}`;
       // Create a test permission group
       const result = await runCli(['permission', 'group', 'create', testGroupName]);
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Permission group create failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
     });
 
     afterAll(async () => {
@@ -40,21 +43,30 @@ describe('permission commands', () => {
     it('should add a permission to a group', async () => {
       const result = await runCli(['permission', 'add', testGroupName, 'machine:read']);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Permission add failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('Permission added');
     });
 
     it('should show permission group with added permission', async () => {
       const result = await runCli(['permission', 'group', 'show', testGroupName]);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Permission group show failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.json).not.toBeNull();
     });
 
     it('should remove a permission from a group', async () => {
       const result = await runCli(['permission', 'remove', testGroupName, 'machine:read']);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Permission remove failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('Permission removed');
     });
   });

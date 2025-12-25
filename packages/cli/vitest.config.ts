@@ -13,5 +13,7 @@ export default defineConfig({
     sequence: {
       concurrent: false,
     },
+    // Stop on first failure
+    bail: 1,
   },
 });

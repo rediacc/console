@@ -49,14 +49,20 @@ describe('storage commands', () => {
     it('should create a storage configuration', async () => {
       const result = await runCli(['storage', 'create', testStorageName, '--team', teamName]);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Storage create failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('created');
     });
 
     it('should list storage including created storage', async () => {
       const result = await runCli(['storage', 'list', '--team', teamName]);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Storage list failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(Array.isArray(result.json)).toBe(true);
 
       const storages = result.json as { storageName: string }[];
@@ -74,7 +80,10 @@ describe('storage commands', () => {
         teamName,
       ]);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Storage rename failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('renamed');
     });
 
@@ -88,7 +97,10 @@ describe('storage commands', () => {
         '--force',
       ]);
 
-      expect(result.success).toBe(true);
+      if (!result.success) {
+        console.error('Storage delete failed:', result.stderr || result.stdout);
+      }
+      expect(result.success, `Failed: ${result.stderr || result.stdout}`).toBe(true);
       expect(result.stdout).toContain('deleted');
     });
   });
