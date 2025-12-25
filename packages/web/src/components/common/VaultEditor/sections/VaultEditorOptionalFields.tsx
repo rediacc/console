@@ -31,8 +31,7 @@ export const VaultEditorOptionalFields: React.FC<VaultEditorOptionalFieldsProps>
         {optionalFields
           .filter((fieldName) => fieldName !== 'ssh_key_configured')
           .map((fieldName) => {
-            const field = fields[fieldName as keyof typeof fields];
-            if (!field) return null;
+            const field = fields[fieldName];
 
             return (
               <Col key={fieldName} xs={24} md={12}>
@@ -61,8 +60,7 @@ export const VaultEditorOptionalFields: React.FC<VaultEditorOptionalFieldsProps>
         </Flex>
       )}
       {optionalFields.map((fieldName) => {
-        const field = fields[fieldName as keyof typeof fields];
-        if (!field) return null;
+        const field = fields[fieldName];
 
         if (entityType === 'MACHINE' && fieldName === 'ssh_password') {
           return (

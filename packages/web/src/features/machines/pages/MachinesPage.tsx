@@ -90,7 +90,7 @@ const MachinesPage: React.FC = () => {
   useEffect(() => {
     const state = location.state;
     if (state?.createRepository) {
-      navigate('/credentials', { state, replace: true });
+      void navigate('/credentials', { state, replace: true });
     }
   }, [location, navigate]);
 
@@ -152,7 +152,7 @@ const MachinesPage: React.FC = () => {
                 },
                 priority: 3,
                 addedVia: 'machine-creation-auto-setup',
-                machineVault: formData.vaultContent || '{}',
+                machineVault: formData.vaultContent ?? '{}',
               });
 
               if (result.success) {
@@ -169,7 +169,7 @@ const MachinesPage: React.FC = () => {
           }
 
           closeUnifiedModal();
-          refetchMachines();
+          void refetchMachines();
         } else if (currentResource) {
           const currentName = currentResource.machineName;
           const newName = formData.machineName;
@@ -201,7 +201,7 @@ const MachinesPage: React.FC = () => {
           }
 
           closeUnifiedModal();
-          refetchMachines();
+          void refetchMachines();
         }
       } catch {
         // Errors surfaced via mutation toasts
@@ -233,7 +233,7 @@ const MachinesPage: React.FC = () => {
           vaultVersion: version,
         });
         closeUnifiedModal();
-        refetchMachines();
+        void refetchMachines();
       } catch {
         // Error handled by mutation toast
       }
@@ -262,7 +262,7 @@ const MachinesPage: React.FC = () => {
   };
 
   const handleRefreshMachines = () => {
-    refetchMachines();
+    void refetchMachines();
     setRefreshKeys((prev) => ({
       ...prev,
       _global: Date.now(),
@@ -325,12 +325,10 @@ const MachinesPage: React.FC = () => {
 
           <Flex vertical>
             {selectedTeams.length === 0 ? (
-              <>
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={t('teams.selectTeamPrompt')}
-                />
-              </>
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={t('teams.selectTeamPrompt')}
+              />
             ) : (
               <SplitResourceView
                 type="machine"
@@ -351,7 +349,7 @@ const MachinesPage: React.FC = () => {
                   // This split behavior is intentional - users expect quick actions for specific
                   // functions and full configuration only when clicking "Advanced".
                   if (functionName) {
-                    handleDirectFunctionQueue(machine, functionName);
+                    void handleDirectFunctionQueue(machine, functionName);
                   } else {
                     openUnifiedModal('create', machine as Machine & Record<string, unknown>);
                   }
@@ -363,7 +361,7 @@ const MachinesPage: React.FC = () => {
                   openQueueTrace(taskId, machineName);
                 }}
                 selectedResource={
-                  selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine
+                  selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine
                 }
                 onResourceSelect={handleResourceSelection}
                 isPanelCollapsed={isPanelCollapsed}
@@ -412,7 +410,7 @@ const MachinesPage: React.FC = () => {
               [machineName]: Date.now(),
             }));
           }
-          refetchMachines();
+          void refetchMachines();
         }}
       />
 

@@ -96,6 +96,50 @@ export default tseslint.config(
       'no-debugger': 'warn',
       'max-lines': ['error', { max: 512, skipBlankLines: true, skipComments: true }],
 
+      // === TypeScript Strict Rules (Bug Prevention) ===
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: false }],
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+      '@typescript-eslint/no-unnecessary-condition': 'error',
+      '@typescript-eslint/require-await': 'error',
+      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'error',
+
+      // === TypeScript Stylistic Rules (Modern Patterns) ===
+      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
+      '@typescript-eslint/prefer-includes': 'error',
+      '@typescript-eslint/prefer-for-of': 'error',
+      '@typescript-eslint/prefer-string-starts-ends-with': 'error',
+      '@typescript-eslint/array-type': ['error', { default: 'array' }],
+      '@typescript-eslint/consistent-type-assertions': ['error', {
+        assertionStyle: 'as',
+        objectLiteralTypeAssertions: 'allow-as-parameter'
+      }],
+
+      // === React Rules (Quality & Consistency) ===
+      'react/hook-use-state': 'error',
+      'react/button-has-type': 'error',
+      'react/jsx-no-useless-fragment': ['error', { allowExpressions: true }],
+      'react/self-closing-comp': 'error',
+      'react/jsx-boolean-value': ['error', 'never'],
+      'react/jsx-curly-brace-presence': ['error', {
+        props: 'never',
+        children: 'never',
+        propElementValues: 'always'
+      }],
+
+      // === Core ESLint Rules (JavaScript Quality) ===
+      'eqeqeq': ['error', 'always', { null: 'ignore' }],
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'object-shorthand': ['error', 'always'],
+      'prefer-template': 'error',
+      'prefer-arrow-callback': 'error',
+      'no-else-return': 'error',
+      'no-lonely-if': 'error',
+      'no-implicit-coercion': ['error', { allow: ['!!'] }],
+
       // Import rules - enforce consistent import paths
       // Note: no-relative-parent-imports is not used because @/ aliases resolve to parent
       // directories and the rule cannot distinguish between ../foo and @/foo patterns.
@@ -167,11 +211,17 @@ export default tseslint.config(
     }
   },
 
-  // Disable max-lines for auto-generated files
+  // Disable rules for auto-generated files
   {
     files: ['**/*.generated.ts', '**/*.generated.tsx'],
     rules: {
       'max-lines': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/prefer-optional-chain': 'off',
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/consistent-type-assertions': 'off',
     }
   }
 );

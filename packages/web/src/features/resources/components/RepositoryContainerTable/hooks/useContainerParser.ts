@@ -52,11 +52,7 @@ export function useContainerParser({
         if (parsed.status === 'completed' && parsed.rawResult) {
           const result = JSON.parse(parsed.rawResult) as VaultStatusResult;
 
-          if (
-            result &&
-            result.containers?.containers &&
-            Array.isArray(result.containers.containers)
-          ) {
+          if (result.containers?.containers && Array.isArray(result.containers.containers)) {
             const repoContainers = result.containers.containers.filter((container: Container) => {
               const containerRepoGuid = container.repository;
 
@@ -78,13 +74,9 @@ export function useContainerParser({
               );
             });
 
-            const plugins = repoContainers.filter(
-              (c: Container) => c.name && c.name.startsWith('plugin-')
-            );
+            const plugins = repoContainers.filter((c: Container) => c.name.startsWith('plugin-'));
 
-            const regular = repoContainers.filter(
-              (c: Container) => !c.name || !c.name.startsWith('plugin-')
-            );
+            const regular = repoContainers.filter((c: Container) => !c.name.startsWith('plugin-'));
 
             setPluginContainers(plugins);
             setContainers(regular);

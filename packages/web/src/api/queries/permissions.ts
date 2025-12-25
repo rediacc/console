@@ -46,8 +46,8 @@ export const useCreatePermissionGroup = () => {
       i18n.t('organization:access.success.groupCreated', { group: vars.permissionGroupName }),
     errorMessage: i18n.t('organization:access.errors.createGroupFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+      void queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
+      void queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
     },
   });
 };
@@ -61,8 +61,8 @@ export const useDeletePermissionGroup = () => {
       i18n.t('organization:access.success.groupDeleted', { group: vars.permissionGroupName }),
     errorMessage: i18n.t('organization:access.errors.deleteGroupFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+      void queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
+      void queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
     },
   });
 };
@@ -76,8 +76,10 @@ export const useAddPermissionToGroup = () => {
       i18n.t('organization:access.success.permissionAdded', { permission: vars.permissionName }),
     errorMessage: i18n.t('organization:access.errors.addPermissionFailed'),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
-      queryClient.invalidateQueries({ queryKey: ['permissionGroup', vars.permissionGroupName] });
+      void queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['permissionGroup', vars.permissionGroupName],
+      });
     },
   });
 };
@@ -91,8 +93,10 @@ export const useRemovePermissionFromGroup = () => {
       i18n.t('organization:access.success.permissionRemoved', { permission: vars.permissionName }),
     errorMessage: i18n.t('organization:access.errors.removePermissionFailed'),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
-      queryClient.invalidateQueries({ queryKey: ['permissionGroup', vars.permissionGroupName] });
+      void queryClient.invalidateQueries({ queryKey: ['permissionGroups'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['permissionGroup', vars.permissionGroupName],
+      });
     },
   });
 };
@@ -106,8 +110,10 @@ export const useAssignUserToGroup = () => {
       i18n.t('organization:access.success.userAssigned', { group: vars.permissionGroupName }),
     errorMessage: i18n.t('organization:access.errors.assignUserFailed'),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['permissionGroup', vars.permissionGroupName] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['permissionGroup', vars.permissionGroupName],
+      });
     },
   });
 };

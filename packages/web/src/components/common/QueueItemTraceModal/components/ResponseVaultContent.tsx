@@ -20,7 +20,7 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
   responseVaultContent,
 }) => {
   const renderRequestVault = () => {
-    if (!vaultContent || !vaultContent.hasContent) {
+    if (!vaultContent?.hasContent) {
       return <Empty description="No request vault content" />;
     }
 
@@ -28,17 +28,15 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
       const content =
         typeof vaultContent.vaultContent === 'string'
           ? JSON.parse(vaultContent.vaultContent)
-          : vaultContent.vaultContent || {};
-      return (
-        <SimpleJsonEditor value={JSON.stringify(content, null, 2)} readOnly={true} height="300px" />
-      );
+          : (vaultContent.vaultContent ?? {});
+      return <SimpleJsonEditor value={JSON.stringify(content, null, 2)} readOnly height="300px" />;
     } catch {
       return <Empty description="Invalid request vault content format" />;
     }
   };
 
   const renderResponseVault = () => {
-    if (!responseVaultContent || !responseVaultContent.hasContent) {
+    if (!responseVaultContent?.hasContent) {
       return null;
     }
 
@@ -46,7 +44,7 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
       const content =
         typeof responseVaultContent.vaultContent === 'string'
           ? JSON.parse(responseVaultContent.vaultContent)
-          : responseVaultContent.vaultContent || {};
+          : (responseVaultContent.vaultContent ?? {});
 
       // Try to parse as SSH test result
       const sshTestResult = parseSSHTestResults(content);
@@ -55,9 +53,7 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
       }
 
       // Default JSON display
-      return (
-        <SimpleJsonEditor value={JSON.stringify(content, null, 2)} readOnly={true} height="300px" />
-      );
+      return <SimpleJsonEditor value={JSON.stringify(content, null, 2)} readOnly height="300px" />;
     } catch {
       return <Empty description="Invalid response vault content format" />;
     }

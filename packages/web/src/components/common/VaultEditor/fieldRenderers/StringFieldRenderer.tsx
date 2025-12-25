@@ -100,22 +100,22 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
     }
   };
 
-  return (
-    <Form.Item
-      name={fieldName}
-      label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
-      rules={rules}
-      initialValue={fieldDef.default}
-    >
-      {isGeneratable ? (
+  if (isGeneratable) {
+    return (
+      <Form.Item
+        label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+        required={rules.some((r) => 'required' in r && r.required)}
+      >
         <Space.Compact className="w-full">
-          <Input
-            className="w-full"
-            placeholder={fieldPlaceholder}
-            type={fieldDef.sensitive ? 'password' : 'text'}
-            autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
-            data-testid={`vault-editor-field-${fieldName}`}
-          />
+          <Form.Item name={fieldName} noStyle rules={rules} initialValue={fieldDef.default}>
+            <Input
+              className="w-full"
+              placeholder={fieldPlaceholder}
+              type={fieldDef.sensitive ? 'password' : 'text'}
+              autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
+              data-testid={`vault-editor-field-${fieldName}`}
+            />
+          </Form.Item>
           <FieldGenerator
             fieldType={fieldName === 'credential' ? 'repo_credential' : 'ssh_keys'}
             onGenerate={handleFieldGeneration}
@@ -123,15 +123,24 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
             data-testid={`vault-editor-generate-${fieldName}`}
           />
         </Space.Compact>
-      ) : (
-        <Input
-          className="w-full"
-          placeholder={fieldPlaceholder}
-          type={fieldDef.sensitive ? 'password' : 'text'}
-          autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
-          data-testid={`vault-editor-field-${fieldName}`}
-        />
-      )}
+      </Form.Item>
+    );
+  }
+
+  return (
+    <Form.Item
+      name={fieldName}
+      label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+      rules={rules}
+      initialValue={fieldDef.default}
+    >
+      <Input
+        className="w-full"
+        placeholder={fieldPlaceholder}
+        type={fieldDef.sensitive ? 'password' : 'text'}
+        autoComplete={fieldDef.sensitive ? 'new-password' : 'off'}
+        data-testid={`vault-editor-field-${fieldName}`}
+      />
     </Form.Item>
   );
 };

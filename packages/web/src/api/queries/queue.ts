@@ -8,14 +8,11 @@ import { invalidateAllQueueCaches } from '@/utils/cacheUtils';
 import type {
   CancelQueueItemParams,
   CreateQueueItemParams,
-  DeleteQueueItemParams,
   GetQueueItemTraceParams,
   QueueFilters,
   QueueListResult,
   QueueTrace,
   RetryFailedQueueItemParams,
-  UpdateQueueItemResponseParams,
-  UpdateQueueItemToCompletedParams,
 } from '@rediacc/shared/types';
 
 export type { QueueFilters } from '@rediacc/shared/types';
@@ -30,7 +27,7 @@ export interface QueueFunctionParameter {
   units?: string[];
   options?: string[];
   ui?: string;
-  checkboxOptions?: Array<{ value: string; label: string }>;
+  checkboxOptions?: { value: string; label: string }[];
 }
 
 export interface QueueFunctionRequirements {
@@ -70,27 +67,6 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
   });
 };
 
-// Get next queue items for machine
-export const useNextQueueItems = (machineName: string, itemCount: number = 5) => {
-  return useQuery({
-    queryKey: QUERY_KEYS.queue.next(machineName, itemCount),
-    queryFn: async () => {
-      return api.queue.getNext(machineName, itemCount);
-    },
-    enabled: !!machineName,
-  });
-};
-
-// Get queue items by bridge (using GetTeamQueueItems with bridge filter)
-export const useQueueItemsByBridge = (bridgeName: string, teamName?: string) => {
-  return useQueueItems({
-    teamName: teamName || '',
-    bridgeName,
-    includeCompleted: true,
-    includeCancelled: false, // Don't show cancelled tasks by default
-  });
-};
-
 // Create queue item (direct API call - use useManagedQueueItem for high-priority items)
 export const useCreateQueueItem = () => {
   const queryClient = useQueryClient();
@@ -112,7 +88,7 @@ export const useCreateQueueItem = () => {
       // Minify the vault JSON before sending
       const params: CreateQueueItemParams = {
         teamName: data.teamName,
-        machineName: data.machineName || '',
+        machineName: data.machineName ?? '',
         bridgeName: data.bridgeName,
         vaultContent: minifyJSON(data.queueVault),
         priority,
@@ -122,68 +98,7 @@ export const useCreateQueueItem = () => {
     successMessage: i18n.t('queue:success.created'),
     errorMessage: i18n.t('queue:errors.createFailed'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
-    },
-  });
-};
-
-// Update queue item response
-export const useUpdateQueueItemResponse = () => {
-  const queryClient = useQueryClient();
-  return useMutationWithFeedback<
-    unknown,
-    Error,
-    {
-      taskId: string;
-      responseVault: string;
-    }
-  >({
-    mutationFn: async (data) => {
-      // Minify the vault JSON before sending
-      const params: UpdateQueueItemResponseParams = {
-        taskId: data.taskId,
-        vaultContent: minifyJSON(data.responseVault),
-      };
-      return api.queue.updateResponse(params);
-    },
-    successMessage: (_, vars) => i18n.t('queue:success.responseUpdated', { taskId: vars.taskId }),
-    errorMessage: i18n.t('queue:errors.updateFailed'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
-    },
-  });
-};
-
-// Complete or fail queue item
-export const useCompleteQueueItem = () => {
-  const queryClient = useQueryClient();
-  return useMutationWithFeedback<
-    unknown,
-    Error,
-    {
-      taskId: string;
-      finalVault: string;
-      finalStatus?: 'COMPLETED' | 'FAILED';
-    }
-  >({
-    mutationFn: async (data) => {
-      // Minify the vault JSON before sending
-      const params: UpdateQueueItemToCompletedParams = {
-        taskId: data.taskId,
-        vaultContent: minifyJSON(data.finalVault),
-        finalStatus: data.finalStatus || 'COMPLETED', // Default to COMPLETED for backward compatibility
-      };
-      return api.queue.complete(params);
-    },
-    successMessage: (_, vars) => {
-      const status = vars.finalStatus || 'COMPLETED';
-      return status === 'FAILED'
-        ? i18n.t('queue:success.markedFailed', { taskId: vars.taskId })
-        : i18n.t('queue:success.completed', { taskId: vars.taskId });
-    },
-    errorMessage: i18n.t('queue:errors.updateFailed'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
     },
   });
 };
@@ -204,22 +119,6 @@ export const useCancelQueueItem = () => {
   });
 };
 
-// Delete queue item
-export const useDeleteQueueItem = () => {
-  const queryClient = useQueryClient();
-  return useMutationWithFeedback<unknown, Error, string>({
-    mutationFn: async (taskId) => {
-      const params: DeleteQueueItemParams = { taskId };
-      return api.queue.delete(params);
-    },
-    successMessage: (_, taskId) => i18n.t('queue:success.deleted', { taskId }),
-    errorMessage: i18n.t('queue:errors.deleteFailed'),
-    onSuccess: () => {
-      invalidateAllQueueCaches(queryClient);
-    },
-  });
-};
-
 // Retry failed queue item
 export const useRetryFailedQueueItem = () => {
   const queryClient = useQueryClient();
@@ -231,8 +130,8 @@ export const useRetryFailedQueueItem = () => {
     successMessage: (_, taskId) => i18n.t('queue:success.queuedForRetry', { taskId }),
     errorMessage: i18n.t('queue:errors.retryFailed'),
     onSuccess: (_, taskId) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.itemTrace(taskId) });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.items() });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.queue.itemTrace(taskId) });
     },
   });
 };
@@ -253,7 +152,7 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       const data = query.state.data;
       // Stop refreshing if the task is completed, cancelled, or permanently failed
       const status = data?.queueDetails?.status;
-      const retryCount = data?.queueDetails?.retryCount || 0;
+      const retryCount = data?.queueDetails?.retryCount ?? 0;
       const permanentlyFailed = data?.queueDetails?.permanentlyFailed;
       const lastFailureReason = data?.queueDetails?.lastFailureReason;
 

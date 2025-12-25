@@ -157,9 +157,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     });
 
     // Ensure provider is set if not already
-    if (!storageVault.provider) {
-      storageVault.provider = provider;
-    }
+    storageVault.provider ??= provider;
 
     return storageVault;
   };
@@ -202,8 +200,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     setIsImporting(true);
     const selectedConfigs = parsedConfigs.filter((_, index) => importStatuses[index].selected);
 
-    for (let i = 0; i < selectedConfigs.length; i++) {
-      const config = selectedConfigs[i];
+    for (const config of selectedConfigs) {
       const statusIndex = parsedConfigs.findIndex((c) => c.name === config.name);
 
       try {

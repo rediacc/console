@@ -55,12 +55,12 @@ export const useCreateRepository = () => {
         repositoryGuid,
       }),
     successMessage: (_, vars) =>
-      `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" created successfully`,
+      `Repository "${vars.repositoryName}:${vars.repositoryTag ?? 'latest'}" created successfully`,
     errorMessage: 'Failed to create repository',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-      queryClient.invalidateQueries({ queryKey: ['machines'] });
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      void queryClient.invalidateQueries({ queryKey: ['teams'] });
+      void queryClient.invalidateQueries({ queryKey: ['machines'] });
     },
   });
 };
@@ -73,8 +73,8 @@ export const useUpdateRepositoryName = () => {
     successMessage: (_, vars) => `Repository renamed to "${vars.newRepositoryName}"`,
     errorMessage: 'Failed to update repository name',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      queryClient.invalidateQueries({ queryKey: ['machines'] });
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      void queryClient.invalidateQueries({ queryKey: ['machines'] });
     },
   });
 };
@@ -87,8 +87,8 @@ export const useUpdateRepositoryTag = () => {
     successMessage: (_, vars) => `Tag renamed to "${vars.newTag}"`,
     errorMessage: 'Failed to update tag',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      queryClient.invalidateQueries({ queryKey: ['machines'] });
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      void queryClient.invalidateQueries({ queryKey: ['machines'] });
     },
   });
 };
@@ -105,7 +105,7 @@ export const useUpdateRepositoryVault = () => {
     successMessage: (_, vars) => `Repository vault updated for "${vars.repositoryName}"`,
     errorMessage: 'Failed to update repository vault',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] });
     },
   });
 };
@@ -121,12 +121,12 @@ export const useDeleteRepository = () => {
     mutationFn: ({ teamName, repositoryName, repositoryTag = 'latest' }) =>
       api.repositories.delete({ teamName, repositoryName, repositoryTag }),
     successMessage: (_, vars) =>
-      `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" deleted successfully`,
+      `Repository "${vars.repositoryName}:${vars.repositoryTag ?? 'latest'}" deleted successfully`,
     errorMessage: 'Failed to delete repository',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-      queryClient.invalidateQueries({ queryKey: ['machines'] });
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      void queryClient.invalidateQueries({ queryKey: ['teams'] });
+      void queryClient.invalidateQueries({ queryKey: ['machines'] });
     },
   });
 };
@@ -140,7 +140,7 @@ export const usePromoteRepositoryToGrand = () => {
       `Repository "${vars.repositoryName}" promoted to original successfully`,
     errorMessage: 'Failed to promote repository',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] });
     },
   });
 };

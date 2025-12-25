@@ -56,7 +56,7 @@ class ApiClient implements SharedApiClient {
     });
 
     this.setupInterceptors();
-    this.initializeBaseUrl();
+    void this.initializeBaseUrl();
   }
 
   private async initializeBaseUrl() {
@@ -86,7 +86,7 @@ class ApiClient implements SharedApiClient {
 
     this.client.interceptors.response.use(
       async (response) => {
-        const startTime = response.config.metadata?.startTime || 0;
+        const startTime = response.config.metadata?.startTime ?? 0;
         const duration = performance.now() - startTime;
 
         let responseData = await this.handleResponseDecryption(response.data as ApiResponse);
@@ -95,8 +95,8 @@ class ApiClient implements SharedApiClient {
 
         // Track successful API call
         telemetryService.trackApiCall(
-          response.config.method?.toUpperCase() || 'UNKNOWN',
-          response.config.url || '',
+          response.config.method?.toUpperCase() ?? 'UNKNOWN',
+          response.config.url ?? '',
           response.status,
           duration
         );
@@ -111,13 +111,13 @@ class ApiClient implements SharedApiClient {
         return response;
       },
       (error: AxiosError<ApiResponse>) => {
-        const startTime = error.config?.metadata?.startTime || 0;
+        const startTime = error.config?.metadata?.startTime ?? 0;
         const duration = performance.now() - startTime;
 
         // Track failed API call
         telemetryService.trackApiCall(
-          error.config?.method?.toUpperCase() || 'UNKNOWN',
-          error.config?.url || '',
+          error.config?.method?.toUpperCase() ?? 'UNKNOWN',
+          error.config?.url ?? '',
           error.response?.status,
           duration,
           error.message
@@ -217,7 +217,7 @@ class ApiClient implements SharedApiClient {
   }
 
   private async handleResponseDecryption(responseData: ApiResponse): Promise<ApiResponse> {
-    if (!responseData || !hasVaultFields(responseData)) return responseData;
+    if (!hasVaultFields(responseData)) return responseData;
     try {
       return await decryptResponseData(responseData);
     } catch {
@@ -231,25 +231,22 @@ class ApiClient implements SharedApiClient {
     }
 
     if (this.isApiResponse(error)) {
-      return error.errors?.join('; ') || error.message || 'Request failed';
+      const errorText = error.errors.length > 0 ? error.errors.join('; ') : error.message;
+      return errorText || 'Request failed';
     }
 
     if (isAxiosError<ApiResponse>(error)) {
-      const responseErrors = error.response?.data?.errors?.join('; ');
-      const responseMessage = error.response?.data?.message;
-      const nestedMessageEntry = error.response?.data?.resultSets?.[0]?.data?.[0] as
-        | { message?: string }
-        | undefined;
+      const data = error.response?.data;
+      const responseErrors = data?.errors.join('; ');
+      const responseMessage = data?.message;
+      const nestedMessageEntry = data?.resultSets[0]?.data[0] as { message?: string } | undefined;
       const nestedMessage = nestedMessageEntry?.message;
       const additionalErrors = (error as { errors?: string[] }).errors?.join('; ');
-      return (
-        responseErrors ||
-        responseMessage ||
-        nestedMessage ||
-        additionalErrors ||
-        error.message ||
-        'Request failed'
-      );
+      if (responseErrors) return responseErrors;
+      if (responseMessage) return responseMessage;
+      if (nestedMessage) return nestedMessage;
+      if (additionalErrors) return additionalErrors;
+      return error.message;
     }
 
     if (error instanceof Error) {
@@ -292,7 +289,7 @@ class ApiClient implements SharedApiClient {
   private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
     // For ForkAuthenticationRequest, only rotate the main session token (resultSets[0])
     // Don't use the fork token from the "Credentials" resultSet for main session rotation
-    const rotationSource = responseData.resultSets?.[0]?.data?.[0] as
+    const rotationSource = responseData.resultSets[0]?.data[0] as
       | { nextRequestToken?: string }
       | undefined;
     const newToken = rotationSource?.nextRequestToken;

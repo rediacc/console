@@ -58,9 +58,9 @@ export const useConfirmDialog = () => {
       title: options.title,
       icon: options.icon !== undefined ? options.icon : <ExclamationCircleOutlined />,
       content: options.content,
-      okText: options.okText || t('common:actions.confirm'),
-      cancelText: options.cancelText || t('common:actions.cancel'),
-      okType: options.okType || 'primary',
+      okText: options.okText ?? t('common:actions.confirm'),
+      cancelText: options.cancelText ?? t('common:actions.cancel'),
+      okType: options.okType ?? 'primary',
       okButtonProps: options.testIdPrefix
         ? { 'data-testid': `${options.testIdPrefix}-confirm-btn` }
         : undefined,
@@ -76,7 +76,7 @@ export const useConfirmDialog = () => {
     return confirm({
       ...options,
       okType: 'danger',
-      okText: options.okText || t('common:actions.delete'),
+      okText: options.okText ?? t('common:actions.delete'),
     });
   };
 

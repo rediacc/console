@@ -72,10 +72,11 @@ function ResourceListView<T extends object = Record<string, unknown>>({
 }: ResourceListViewProps<T>) {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.sm;
-  const shouldRenderControls = Boolean(title || onSearch || filters || actions);
-  const resolvedEmptyDescription = emptyDescription || emptyText;
-  const singularResourceType =
-    resourceType && resourceType.endsWith('s') ? resourceType.slice(0, -1) : resourceType;
+  const shouldRenderControls = Boolean(title ?? onSearch ?? filters ?? actions);
+  const resolvedEmptyDescription = emptyDescription ?? emptyText;
+  const singularResourceType = resourceType.endsWith('s')
+    ? resourceType.slice(0, -1)
+    : resourceType;
 
   const resolvedPagination =
     pagination !== false
@@ -92,7 +93,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
 
   const getRowKey = (record: T, index: number): Key => {
     if (typeof rowKey === 'function') return rowKey(record);
-    return ((record as Record<string, unknown>)[rowKey] as Key) ?? index;
+    return ((record as Record<string, unknown>)[rowKey] as Key | undefined) ?? index;
   };
 
   const getRowDataTestId = (record: T): string => {
@@ -145,7 +146,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                     ? `Get started by creating your first ${singularResourceType}`
                     : `No ${resourceType} found. Try adjusting your search criteria.`}
                 </Typography.Text>
-                {(onCreateNew || onRefresh) && (
+                {(onCreateNew ?? onRefresh) && (
                   <Flex align="center" justify="center">
                     {onCreateNew && (
                       <Tooltip title={createButtonText}>
@@ -214,7 +215,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
             expandable={expandable}
             rowClassName={rowClassName}
             scroll={{ x: true }}
-            data-testid={dataTestId || 'resource-list-table'}
+            data-testid={dataTestId ?? 'resource-list-table'}
           />
         )}
       </LoadingWrapper>

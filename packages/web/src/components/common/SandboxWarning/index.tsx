@@ -14,7 +14,7 @@ const SandboxWarning: React.FC = () => {
       // Show warning only for sandbox instances
       setIsVisible(name.toLowerCase() === 'sandbox');
     };
-    loadInstanceName();
+    void loadInstanceName();
   }, []);
 
   useEffect(() => {

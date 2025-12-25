@@ -52,7 +52,7 @@ export function renderQueueStatus(
     ageInMinutes?: number | null;
   }
 ): React.ReactElement {
-  const icon = QUEUE_STATUS_ICONS[healthStatus as QueueHealthStatus] || QUEUE_STATUS_ICONS.UNKNOWN;
+  const icon = QUEUE_STATUS_ICONS[healthStatus as QueueHealthStatus] ?? QUEUE_STATUS_ICONS.UNKNOWN;
 
   // Show actual status alongside health status for active items
   const statusText =
@@ -65,7 +65,7 @@ export function renderQueueStatus(
   if (record.minutesSinceAssigned) {
     tooltipText = `${record.minutesSinceAssigned} minutes since assigned`;
   } else if (healthStatus === 'STALE_PENDING') {
-    const hoursOld = Math.floor((record.ageInMinutes || 0) / 60);
+    const hoursOld = Math.floor((record.ageInMinutes ?? 0) / 60);
     tooltipText = `Pending for ${hoursOld} hours - may need attention`;
   }
 

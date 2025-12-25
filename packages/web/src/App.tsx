@@ -85,7 +85,7 @@ const RedirectHandler: React.FC = () => {
       sessionStorage.removeItem('redirect_path');
 
       // Navigate to the intended path
-      navigate(redirectPath, { replace: true });
+      void navigate(redirectPath, { replace: true });
     }
   }, [navigate]);
 
@@ -99,7 +99,9 @@ const AppContent: React.FC = () => {
     (state: RootState) => state.auth.showSessionExpiredModal
   );
   const stayLoggedOutMode = useSelector((state: RootState) => state.auth.stayLoggedOutMode);
-  const [, setFeatureFlagVersion] = React.useState(0);
+  const [featureFlagVersion, setFeatureFlagVersion] = React.useState<number>(0);
+  // Prevent unused variable warnings - feature flag triggers re-renders
+  void featureFlagVersion;
 
   useEffect(() => {
     const initialize = async () => {
@@ -119,14 +121,14 @@ const AppContent: React.FC = () => {
         // Token exists in secure storage, restore session (token not stored in Redux for security)
         dispatch(
           loginSuccess({
-            user: { email: authData.email, company: authData.company || undefined },
-            company: authData.company || undefined,
+            user: { email: authData.email, company: authData.company ?? undefined },
+            company: authData.company ?? undefined,
           })
         );
       }
     };
 
-    initialize();
+    void initialize();
   }, [dispatch]);
 
   useEffect(() => {

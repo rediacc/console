@@ -99,7 +99,7 @@ export function findCredential(
   }
 
   return (
-    repositories.find((repository) => repository.repositoryGuid === repository.grandGuid) || null
+    repositories.find((repository) => repository.repositoryGuid === repository.grandGuid) ?? null
   );
 }
 

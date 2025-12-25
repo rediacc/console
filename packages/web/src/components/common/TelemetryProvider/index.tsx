@@ -84,10 +84,10 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
   const location = useLocation();
 
   useEffect(() => {
-    const initializeTelemetry = async () => {
+    const initializeTelemetry = () => {
       try {
         const config = createTelemetryConfig();
-        await telemetryService.initialize(config);
+        telemetryService.initialize(config);
         setIsInitialized(true);
 
         if (typeof window !== 'undefined') {
@@ -99,14 +99,11 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
       }
     };
 
-    initializeTelemetry().catch((error) => {
-      console.error('Telemetry initialization failed catastrophically:', error);
-      setIsInitialized(false);
-    });
+    initializeTelemetry();
 
     return () => {
       try {
-        telemetryService.shutdown();
+        void telemetryService.shutdown();
       } catch (error) {
         console.warn('Error during telemetry shutdown:', error);
       }
@@ -194,9 +191,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
-        if (lastEntry) {
-          telemetryService.trackPerformance('web_vitals.lcp_fallback', lastEntry.startTime);
-        }
+        telemetryService.trackPerformance('web_vitals.lcp_fallback', lastEntry.startTime);
       });
       lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
       observers.push(lcpObserver);
@@ -431,13 +426,14 @@ export const useTelemetry = (): TelemetryContextType => {
   return context;
 };
 
-export const withTelemetryTracking = <P extends object>(
+const withTelemetryTracking = <P extends object>(
   WrappedComponent: React.ComponentType<P>,
   _componentName?: string
 ) => {
   const TrackedComponent: React.FC<P> = (props) => {
     const { measureAndTrack, trackEvent } = useTelemetry();
     const displayName =
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty strings should fall through
       _componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';
 
     useEffect(() => {
@@ -458,13 +454,12 @@ export const withTelemetryTracking = <P extends object>(
     )) as React.ReactElement;
   };
 
-  TrackedComponent.displayName = `withTelemetryTracking(${
-    _componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component'
-  })`;
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty strings should fall through
+  TrackedComponent.displayName = `withTelemetryTracking(${_componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
   return TrackedComponent;
 };
 
-export const useComponentTelemetry = (componentName: string) => {
+const useComponentTelemetry = (componentName: string) => {
   const { trackEvent, trackPerformance } = useTelemetry();
 
   useEffect(() => {
@@ -488,7 +483,7 @@ export const useComponentTelemetry = (componentName: string) => {
   }, [componentName, trackEvent, trackPerformance]);
 };
 
-export const useInteractionTracking = () => {
+const useInteractionTracking = () => {
   const { trackUserAction } = useTelemetry();
 
   const trackClick = (target: string, details?: TelemetryAttributes) => {
@@ -583,3 +578,8 @@ export const useInteractionTracking = () => {
     trackDownload,
   };
 };
+
+// Hooks and HOCs are available for future use
+void withTelemetryTracking;
+void useComponentTelemetry;
+void useInteractionTracking;

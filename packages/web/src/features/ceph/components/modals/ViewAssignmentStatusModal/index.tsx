@@ -61,7 +61,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     title: t('ceph:clusters.cluster'),
     dataIndex: 'cephClusterName',
     key: 'cluster',
-    renderText: (cluster?: string | null) => cluster || noneLabel,
+    renderText: (cluster?: string | null) => cluster ?? noneLabel,
     renderWrapper: (content, fullText) =>
       fullText === noneLabel ? (
         <Typography.Text>{fullText}</Typography.Text>

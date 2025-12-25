@@ -89,25 +89,25 @@ export function prepareForkDeletion(
 ): ForkDeletionContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag || 'latest')
+    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
   );
 
   if (!repositoryData) {
-    return {
+    const result: ForkDeletionContext = {
       status: 'error',
       errorCode: 'NOT_FOUND',
-      childClones: [],
-    } as ForkDeletionContext;
+    };
+    return result;
   }
 
   // Validate it's a fork
   const validation = canDeleteFork(repositoryData);
   if (!validation.canDelete) {
-    return {
+    const result: ForkDeletionContext = {
       status: 'error',
       errorCode: 'NOT_A_FORK',
-      childClones: [],
-    } as ForkDeletionContext;
+    };
+    return result;
   }
 
   // Get parent info
@@ -116,7 +116,7 @@ export function prepareForkDeletion(
   return {
     status: 'ready',
     repositoryGuid: repositoryData.repositoryGuid,
-    grandGuid: repositoryData.grandGuid || undefined,
+    grandGuid: repositoryData.grandGuid ?? undefined,
     parentName: parent?.repositoryName,
     repositoryNetworkId: repositoryData.repositoryNetworkId ?? undefined,
     repositoryTag: repositoryData.repositoryTag ?? undefined,
@@ -138,7 +138,7 @@ export function prepareGrandDeletion(
 ): GrandDeletionContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag || 'latest')
+    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
   );
 
   if (!repositoryData) {
@@ -196,7 +196,7 @@ export function preparePromotion(
 ): PromotionContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag || 'latest')
+    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
   );
 
   if (!repositoryData) {
@@ -245,7 +245,7 @@ export function prepareBackup(
 ): BackupContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag || 'latest')
+    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
   );
 
   if (!repositoryData) {
@@ -263,7 +263,7 @@ export function prepareBackup(
   return {
     status: 'ready',
     repositoryGuid: repositoryData.repositoryGuid,
-    grandGuid: repositoryData.grandGuid || repositoryData.repositoryGuid,
+    grandGuid: repositoryData.grandGuid ?? repositoryData.repositoryGuid,
     canBackupToStorage: storageValidation.canBackup,
     canBackupToMachine: true, // Always allowed
     storageBlockReason: storageValidation.reason,
@@ -288,7 +288,7 @@ export function prepareForkCreation(
 ): ForkCreationContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag || 'latest')
+    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
   );
 
   if (!repositoryData) {
@@ -301,7 +301,7 @@ export function prepareForkCreation(
   // Get the grand GUID for the new fork
   // If forking a fork, use the same grand
   // If forking a credential, the credential becomes the grand
-  const grandGuid = repositoryData.grandGuid || repositoryData.repositoryGuid;
+  const grandGuid = repositoryData.grandGuid ?? repositoryData.repositoryGuid;
 
   return {
     status: 'ready',

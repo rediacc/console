@@ -9,7 +9,7 @@ const toFunctionParamValue = (value: unknown): FunctionParamValue | undefined =>
     return value;
   }
   if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
-    return value as string[];
+    return value;
   }
   return undefined;
 };
@@ -76,13 +76,12 @@ export const useFunctionParameters = ({
           // Check if there's a destinationType parameter with value 'machine'
           const destinationTypeParam = func.params['destinationType'];
           const destinationDefault =
-            typeof destinationTypeParam?.default === 'string'
+            typeof destinationTypeParam.default === 'string'
               ? destinationTypeParam.default
               : undefined;
           if (
-            destinationTypeParam &&
-            (defaultInitialParams['destinationType'] === 'machine' ||
-              destinationDefault === 'machine')
+            defaultInitialParams['destinationType'] === 'machine' ||
+            destinationDefault === 'machine'
           ) {
             defaultInitialParams[paramName] = currentMachineName;
           }

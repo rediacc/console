@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   Flex,
@@ -12,7 +11,6 @@ import {
   Typography,
   type MenuProps,
 } from 'antd';
-import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
   PermissionGroup,
@@ -33,8 +31,9 @@ import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import ResourceForm from '@/features/organization/components/ResourceForm';
+import type { FormFieldConfig } from '@/features/organization/components/ResourceForm/types';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import { CreateUserForm, createUserSchema } from '@/platform/utils/validation';
+import type { CreateUserFormValues } from '@/platform/utils/formValidation';
 import {
   CheckCircleOutlined,
   CheckOutlined,
@@ -54,13 +53,7 @@ const UsersPage: React.FC = () => {
   const [selectedUserGroup, setSelectedUserGroup] = useState('');
   const auditTrace = useTraceModal();
 
-  const userForm = useForm<CreateUserForm>({
-    resolver: zodResolver(createUserSchema),
-    defaultValues: {
-      newUserEmail: '',
-      newUserPassword: '',
-    },
-  });
+  const [userForm] = Form.useForm<CreateUserFormValues>();
 
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const createUserMutation = useCreateUser();
@@ -69,37 +62,40 @@ const UsersPage: React.FC = () => {
   const assignUserPermissionsMutation = useAssignUserPermissions();
   const { data: permissionGroups = [] } = usePermissionGroupsQuery();
 
-  const userFormFields: Array<{
-    name: keyof CreateUserForm;
-    label: string;
-    type: 'text' | 'select' | 'password' | 'email' | 'number';
-    placeholder: string;
-    required: boolean;
-  }> = [
+  const userFormFields: FormFieldConfig[] = [
     {
       name: 'newUserEmail',
       label: t('users.form.emailLabel'),
-      type: 'email' as const,
+      type: 'email',
       placeholder: 'user@example.com',
       required: true,
+      rules: [
+        { required: true, message: `${t('users.form.emailLabel')} is required` },
+        { type: 'email', message: 'Invalid email address' },
+      ],
     },
     {
       name: 'newUserPassword',
       label: t('users.form.passwordLabel'),
-      type: 'password' as const,
+      type: 'password',
       placeholder: t('users.form.passwordPlaceholder'),
       required: true,
+      rules: [
+        { required: true, message: `${t('users.form.passwordLabel')} is required` },
+        { min: 8, message: 'Password must be at least 8 characters' },
+      ],
     },
   ];
 
-  const handleCreateUser = async (data: CreateUserForm) => {
+  const handleCreateUser = async (data: Record<string, unknown>) => {
+    const formData = data as unknown as CreateUserFormValues;
     try {
       await createUserMutation.mutateAsync({
-        email: data.newUserEmail,
-        password: data.newUserPassword,
+        email: formData.newUserEmail,
+        password: formData.newUserPassword,
       });
       createUserModal.close();
-      userForm.reset();
+      userForm.resetFields();
     } catch {
       // handled by mutation
     }
@@ -287,7 +283,7 @@ const UsersPage: React.FC = () => {
         open={createUserModal.isOpen}
         onCancel={() => {
           createUserModal.close();
-          userForm.reset();
+          userForm.resetFields();
         }}
         footer={null}
         centered
@@ -300,14 +296,14 @@ const UsersPage: React.FC = () => {
           cancelText={tCommon('actions.cancel')}
           onCancel={() => {
             createUserModal.close();
-            userForm.reset();
+            userForm.resetFields();
           }}
           loading={createUserMutation.isPending}
         />
       </Modal>
 
       <Modal
-        title={`${t('users.modals.assignTitle')} - ${assignPermissionModal.state.data?.userEmail || ''}`}
+        title={`${t('users.modals.assignTitle')} - ${assignPermissionModal.state.data?.userEmail ?? ''}`}
         open={assignPermissionModal.isOpen}
         onCancel={() => {
           assignPermissionModal.close();
@@ -324,9 +320,9 @@ const UsersPage: React.FC = () => {
           <Form.Item label={t('users.modals.permissionGroupLabel')}>
             <Select
               value={selectedUserGroup}
-              onChange={(value) => setSelectedUserGroup((value as string) || '')}
+              onChange={(value) => setSelectedUserGroup(value || '')}
               placeholder={t('users.modals.permissionGroupPlaceholder')}
-              options={permissionGroups?.map((group: PermissionGroup) => ({
+              options={permissionGroups.map((group: PermissionGroup) => ({
                 value: group.permissionGroupName,
                 label: `${group.permissionGroupName} (${group.userCount} ${t('users.modals.usersLabel')}, ${group.permissionCount} ${t('users.modals.permissionsLabel')})`,
               }))}

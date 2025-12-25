@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Collapse, Space, Tag, Typography } from 'antd';
-import { type Resolver, useForm } from 'react-hook-form';
+import { Collapse, Form, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import type { QueueFunction } from '@/api/queries/queue';
@@ -30,7 +28,6 @@ import {
 import { ResourceModalDialogs } from './components/ResourceModalDialogs';
 import { useBridgeSelection } from './hooks/useBridgeSelection';
 import { useResourceDefaults } from './hooks/useResourceDefaults';
-import { useResourceSchema } from './hooks/useResourceSchema';
 import { useTemplateSelection } from './hooks/useTemplateSelection';
 import { getFormFields } from './utils/formFieldGenerators';
 import { parseVaultData } from './utils/parseVaultData';
@@ -120,14 +117,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Import/Export handlers ref
   const importExportHandlers = useRef<ImportExportHandlers | null>(null);
 
-  // Hook: Resource schema and defaults
-  const { getSchema, getDefaultValues } = useResourceSchema({
-    resourceType,
-    mode,
-    uiMode,
-    creationContext,
-    existingData,
-  });
+  // Ant Design Form instance
+  const [form] = Form.useForm<ResourceFormValues>();
 
   // Log when modal opens
   useEffect(() => {
@@ -136,24 +127,82 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     }
   }, [open, resourceType, mode, uiMode, existingData, teamFilter]);
 
-  const schema = useMemo(() => getSchema(), [getSchema]);
-
-  const form = useForm<ResourceFormValues>({
-    resolver: zodResolver(schema) as unknown as Resolver<
-      ResourceFormValues,
-      Record<string, unknown>,
-      ResourceFormValues
-    >,
-    defaultValues: getDefaultValues(),
-  });
-
   const getFormValue = useCallback(
     (field: string): string | undefined => {
-      const rawValue = form.getValues(field as keyof ResourceFormValues);
+      const rawValue = form.getFieldValue(field);
       return typeof rawValue === 'string' ? rawValue : undefined;
     },
     [form]
   );
+
+  // Get default values for form initialization
+  const getDefaultValues = useCallback((): ResourceFormValues => {
+    if (mode === 'edit' && existingData) {
+      return {
+        [`${resourceType}Name`]: existingData[`${resourceType}Name`],
+        ...(resourceType === 'machine' && {
+          regionName: existingData.regionName,
+          bridgeName: existingData.bridgeName,
+        }),
+        ...(resourceType === 'bridge' && { regionName: existingData.regionName }),
+        ...(resourceType === 'pool' && { clusterName: existingData.clusterName }),
+        ...(resourceType === 'image' && { poolName: existingData.poolName }),
+        ...(resourceType === 'snapshot' && {
+          poolName: existingData.poolName,
+          imageName: existingData.imageName,
+        }),
+        ...(resourceType === 'clone' && {
+          poolName: existingData.poolName,
+          imageName: existingData.imageName,
+          snapshotName: existingData.snapshotName,
+        }),
+        vaultContent: existingData.vaultContent ?? '{}',
+      };
+    }
+
+    const baseDefaults: ResourceFormValues = {
+      teamName: uiMode === 'simple' ? 'Private Team' : '',
+      vaultContent: '{}',
+      [`${resourceType}Name`]: '',
+    };
+
+    const resourceDefaults: Record<string, ResourceFormValues> = {
+      machine: {
+        regionName: uiMode === 'simple' ? 'Default Region' : '',
+        bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
+        vaultContent: '{}',
+      },
+      repository: {
+        machineName: '',
+        size: '',
+        repositoryGuid: '',
+        vaultContent: '{}',
+      },
+      team: { teamName: '', vaultContent: '{}' },
+      region: { regionName: '', vaultContent: '{}' },
+      bridge: { regionName: '', bridgeName: '', vaultContent: '{}' },
+      cluster: { clusterName: '', vaultContent: '{}' },
+      pool: { clusterName: '', poolName: '', vaultContent: '{}' },
+      image: { poolName: '', imageName: '', vaultContent: '{}' },
+      snapshot: { poolName: '', imageName: '', snapshotName: '', vaultContent: '{}' },
+      clone: { poolName: '', imageName: '', snapshotName: '', cloneName: '', vaultContent: '{}' },
+    };
+
+    const finalDefaults: ResourceFormValues = {
+      ...baseDefaults,
+      ...resourceDefaults[resourceType],
+    };
+
+    if (existingData) {
+      Object.keys(existingData).forEach((key) => {
+        if (existingData[key] !== undefined) {
+          finalDefaults[key] = existingData[key];
+        }
+      });
+    }
+
+    return finalDefaults;
+  }, [mode, existingData, resourceType, uiMode]);
 
   // Hook: Bridge selection logic
   const { getFilteredBridges } = useBridgeSelection({
@@ -175,38 +224,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     setSelectedTemplate,
   });
 
-  // Reset form values when modal opens in edit mode
+  // Reset form values when modal opens
   useEffect(() => {
-    if (open && mode === 'edit' && existingData) {
-      form.reset({
-        [`${resourceType}Name`]: existingData[`${resourceType}Name`],
-        ...(resourceType === 'machine' && {
-          regionName: existingData.regionName,
-          // NOTE: bridgeName is preserved even when disableBridge is enabled and field is hidden
-          bridgeName: existingData.bridgeName,
-        }),
-        ...(resourceType === 'bridge' && {
-          regionName: existingData.regionName,
-        }),
-        ...(resourceType === 'pool' && {
-          clusterName: existingData.clusterName,
-        }),
-        ...(resourceType === 'image' && {
-          poolName: existingData.poolName,
-        }),
-        ...(resourceType === 'snapshot' && {
-          poolName: existingData.poolName,
-          imageName: existingData.imageName,
-        }),
-        ...(resourceType === 'clone' && {
-          poolName: existingData.poolName,
-          imageName: existingData.imageName,
-          snapshotName: existingData.snapshotName,
-        }),
-        vaultContent: existingData.vaultContent || '{}',
-      });
+    if (open) {
+      form.resetFields();
+      // Type assertion needed: Ant Design expects { [x: string]: {} | undefined }
+      // but ResourceFormValues uses unknown for flexibility
+      form.setFieldsValue(getDefaultValues() as Record<string, {} | undefined>);
     }
-  }, [open, mode, existingData, resourceType, form]);
+  }, [open, form, getDefaultValues]);
 
   // Determine if team is already selected/known
   const isTeamPreselected =
@@ -328,9 +354,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onCancel();
         }}
         entityType={getEntityType()}
-        title={t('general.configureVault', { name: existingData[`${resourceType}Name`] || '' })}
-        initialVault={existingData.vaultContent || '{}'}
-        initialVersion={existingData.vaultVersion || 1}
+        title={t('general.configureVault', { name: existingData[`${resourceType}Name`] ?? '' })}
+        initialVault={existingData.vaultContent ?? '{}'}
+        initialVersion={existingData.vaultVersion ?? 1}
         loading={isUpdatingVault}
       />
     );
@@ -365,10 +391,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           allowedCategories={functionCategories}
           loading={isSubmitting}
           showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
-          teamName={existingData?.teamName}
+          teamName={existingData.teamName}
           machines={(
-            dropdownData?.machinesByTeam?.find((tm) => tm.teamName === existingData?.teamName)
-              ?.machines || []
+            dropdownData?.machinesByTeam.find((tm) => tm.teamName === existingData.teamName)
+              ?.machines ?? []
           ).map((m) => ({ ...m, bridgeName: '' }))}
           hiddenParams={hiddenParams}
           defaultParams={defaultParams}
@@ -405,7 +431,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             onFunctionOpen={() => functionModal.open()}
             onSubmit={() => {
               if (formRef.current) {
-                formRef.current.submit();
+                void formRef.current.submit();
               }
             }}
             importExportHandlers={importExportHandlers}
@@ -421,10 +447,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
           showDefaultsAlert={false}
-          creationContext={creationContext}
           uiMode={uiMode}
           initialVaultData={parseVaultData(resourceType, existingData)}
-          hideImportExport={true}
+          hideImportExport
           isEditMode={mode === 'edit'}
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers;
@@ -494,10 +519,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         vaultModal={vaultModal}
         entityType={getEntityType()}
         vaultTitle={t('general.configureVault', {
-          name: existingData?.[`${resourceType}Name`] || '',
+          name: existingData?.[`${resourceType}Name`] ?? '',
         })}
-        initialVault={existingData?.vaultContent || '{}'}
-        initialVersion={existingData?.vaultVersion || 1}
+        initialVault={existingData?.vaultContent ?? '{}'}
+        initialVersion={existingData?.vaultVersion ?? 1}
         isUpdatingVault={isUpdatingVault}
         onVaultSave={async (vault, version) => {
           if (onUpdateVault) {
@@ -516,8 +541,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
         teamName={existingData?.teamName}
         machines={(
-          dropdownData?.machinesByTeam?.find((tm) => tm.teamName === existingData?.teamName)
-            ?.machines || []
+          dropdownData?.machinesByTeam.find((tm) => tm.teamName === existingData?.teamName)
+            ?.machines ?? []
         ).map((m) => ({ ...m, bridgeName: '' }))}
         hiddenParams={hiddenParams}
         defaultParams={defaultParams}

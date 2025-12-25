@@ -51,7 +51,7 @@ export const syncFormWithJson = (
 ): VaultFormValues => {
   const encodedData = { ...formData };
 
-  Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
+  Object.entries(entityDef.fields ?? {}).forEach(([key, field]) => {
     if (
       field.format === 'base64' &&
       encodedData[key] !== undefined &&

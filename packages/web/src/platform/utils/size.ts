@@ -10,7 +10,7 @@
  * @param sizeStr - Size string with optional unit
  * @returns Size in bytes, or 0 if invalid
  */
-export const parseMemorySize = (sizeStr: string): number => {
+const parseMemorySize = (sizeStr: string): number => {
   if (!sizeStr || typeof sizeStr !== 'string') return 0;
 
   // Extract number and unit from string like "685Mi", "3.8Gi", "2.5 G", "15GB" etc.
@@ -89,48 +89,4 @@ export const calculateResourcePercent = (
 
   const percentage = Math.round((usedBytes / totalBytes) * 100);
   return Math.min(100, Math.max(0, percentage));
-};
-
-/**
- * Formats bytes to human-readable size
- *
- * @param bytes - Size in bytes
- * @param binary - Use binary units (1024) vs decimal units (1000)
- * @returns Formatted string like "1.5 GiB" or "1.5 GB"
- */
-export const formatBytes = (bytes: number, binary = true): string => {
-  if (bytes === 0) return '0 B';
-
-  const k = binary ? 1024 : 1000;
-  const sizes = binary
-    ? ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
-    : ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const size = parseFloat((bytes / Math.pow(k, i)).toFixed(2));
-
-  return `${size} ${sizes[i]}`;
-};
-
-/**
- * Parses a percentage string to a number
- * @param percentStr - Percentage string like "45%", "45", or "45.5%"
- * @returns Numeric percentage value or 0 if invalid
- */
-export const parsePercent = (percentStr: string | undefined): number => {
-  if (!percentStr) return 0;
-  const cleaned = percentStr.replace('%', '').trim();
-  const value = parseFloat(cleaned);
-  return isNaN(value) ? 0 : Math.min(100, Math.max(0, value));
-};
-
-/**
- * Formats a percentage value with optional decimal places
- * @param value - Percentage value (0-100)
- * @param decimals - Number of decimal places (default 0)
- * @returns Formatted percentage string like "45%" or "45.5%"
- */
-export const formatPercent = (value: number, decimals = 0): string => {
-  const clamped = Math.min(100, Math.max(0, value));
-  return `${clamped.toFixed(decimals)}%`;
 };

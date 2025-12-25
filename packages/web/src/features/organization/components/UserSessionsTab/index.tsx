@@ -71,9 +71,9 @@ const UserSessionsTab: React.FC = () => {
     const searchLower = searchTerm.toLowerCase();
     return (
       session.userEmail.toLowerCase().includes(searchLower) ||
-      (session.ipAddress && session.ipAddress.toLowerCase().includes(searchLower)) ||
+      (session.ipAddress?.toLowerCase().includes(searchLower) ?? false) ||
       session.sessionName.toLowerCase().includes(searchLower) ||
-      (session.userAgent && session.userAgent.toLowerCase().includes(searchLower))
+      session.userAgent?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -232,7 +232,7 @@ const UserSessionsTab: React.FC = () => {
       key: 'ipAddress',
       width: 140,
       render: (ip: string | null) => (
-        <Typography.Text>{ip || t('userSessions.notAvailable')}</Typography.Text>
+        <Typography.Text>{ip ?? t('userSessions.notAvailable')}</Typography.Text>
       ),
     },
     userAgentColumn,
@@ -317,7 +317,7 @@ const UserSessionsTab: React.FC = () => {
             )}
           </Space>
           <Typography.Text type="secondary" className="text-xs">
-            IP: {record.ipAddress || t('userSessions.notAvailable')}
+            IP: {record.ipAddress ?? t('userSessions.notAvailable')}
           </Typography.Text>
           <Typography.Text type="secondary" className="text-xs">
             {t('userSessions.columns.lastActivity')}: {dayjs(record.lastActivity).fromNow()}
@@ -456,11 +456,12 @@ const UserSessionsTab: React.FC = () => {
               <Typography.Text>{t('userSessions.totalCount', { count: total })}</Typography.Text>
             ),
           }}
-          onRow={(record) =>
-            ({
+          onRow={(record) => {
+            const props: React.HTMLAttributes<HTMLElement> & Record<string, string> = {
               'data-testid': `sessions-row-${record.requestId}`,
-            }) as React.HTMLAttributes<HTMLTableRowElement>
-          }
+            };
+            return props;
+          }}
         />
       </Card>
     </Flex>

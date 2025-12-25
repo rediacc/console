@@ -36,7 +36,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   const handleChange = (value: string) => {
-    i18n.changeLanguage(value);
+    void i18n.changeLanguage(value);
     // Force a re-render of the entire app by updating the document direction for RTL languages
     // eslint-disable-next-line react-hooks/immutability
     document.documentElement.dir = value === 'ar' ? 'rtl' : 'ltr';
@@ -46,7 +46,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
       en: 'en',
       es: 'es',
     };
-    dayjs.locale(dayjsLocaleMap[value] || 'en');
+    dayjs.locale(dayjsLocaleMap[value] ?? 'en');
 
     // Save to backend if authenticated
     if (isAuthenticated) {
@@ -79,7 +79,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
   return (
     <Select
       value={i18n.language}
-      onChange={(value) => handleChange(value as string)}
+      onChange={(value) => handleChange(value)}
       suffixIcon={<GlobalOutlined />}
       popupMatchSelectWidth={false}
       options={languages.map((lang) => ({

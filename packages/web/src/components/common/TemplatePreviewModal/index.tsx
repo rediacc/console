@@ -73,7 +73,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   const codeTheme = vscDarkPlus as SyntaxHighlighterProps['style'];
 
   const markdownComponents: MarkdownComponents = {
-    code({ inline, className, children }: CodeRendererProps) {
+    code: function CodeRenderer({ inline, className, children }: CodeRendererProps) {
       const match = /language-(\w+)/.exec(className ?? '');
 
       if (!inline && match) {
@@ -91,7 +91,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   // Support both template object and templateName for backward compatibility
   const effectiveTemplate =
-    loadedTemplate || template || (templateName ? { name: templateName, readme: '' } : null);
+    loadedTemplate ?? template ?? (templateName ? { name: templateName, readme: '' } : null);
 
   useEffect(() => {
     if (!open) {
@@ -105,7 +105,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     }
 
     const fetchTemplateDetails = async () => {
-      let baseTemplate = template || (templateName ? { name: templateName, readme: '' } : null);
+      let baseTemplate = template ?? (templateName ? { name: templateName, readme: '' } : null);
       if (!baseTemplate) return;
 
       try {
@@ -148,7 +148,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       }
     };
 
-    fetchTemplateDetails();
+    void fetchTemplateDetails();
     setActiveTab('overview');
     setSelectedFileIndex(0);
   }, [open, template, templateName, context]);
@@ -236,7 +236,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           >
             {/* eslint-disable-next-line no-restricted-syntax */}
             <Flex style={{ lineHeight: 1.5 }}>
-              <ReactMarkdown>{templateDetails?.readme || effectiveTemplate.readme}</ReactMarkdown>
+              <ReactMarkdown>{templateDetails?.readme ?? effectiveTemplate.readme}</ReactMarkdown>
             </Flex>
           </Card>
         </Col>
@@ -446,15 +446,13 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       title={
         <Flex gap={16} align="center">
           {effectiveTemplate.iconUrl && !iconFailed ? (
-            <>
-              <img
-                src={effectiveTemplate.iconUrl}
-                alt={effectiveTemplate.name}
-                onError={() => setIconFailed(true)}
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ objectFit: 'contain' }}
-              />
-            </>
+            <img
+              src={effectiveTemplate.iconUrl}
+              alt={effectiveTemplate.name}
+              onError={() => setIconFailed(true)}
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ objectFit: 'contain' }}
+            />
           ) : (
             getTemplateIcon()
           )}
@@ -466,7 +464,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             {context === 'marketplace' && effectiveTemplate.difficulty && (
               <Tag>
                 {t(
-                  `difficulty${effectiveTemplate.difficulty?.charAt(0).toUpperCase()}${effectiveTemplate.difficulty?.slice(
+                  `difficulty${effectiveTemplate.difficulty.charAt(0).toUpperCase()}${effectiveTemplate.difficulty.slice(
                     1
                   )}`
                 )}

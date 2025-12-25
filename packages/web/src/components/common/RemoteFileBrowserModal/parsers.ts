@@ -74,12 +74,12 @@ export function parseJsonFileList(
       originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
       repositoryName: repoInfo?.repositoryName,
       repositoryTag: repoInfo?.repositoryTag,
-      isUnmapped: repoInfo?.isUnmapped || false,
+      isUnmapped: repoInfo?.isUnmapped ?? false,
       size: getNumberValue(file.size ?? file.Size ?? 0),
       isDirectory: isDirectoryFlag,
       modTime: file.date && file.time ? `${file.date} ${file.time}` : getStringValue(file.ModTime),
       path:
-        getStringValue(file.Path) ||
+        getStringValue(file.Path) ??
         (currentPath && fileName ? `${currentPath}/${fileName}` : fileName),
     };
   });
@@ -93,7 +93,7 @@ export function parseRcloneFileList(
   const entries = Array.isArray(data.entries) ? data.entries : [];
 
   return entries.map((file) => {
-    const fileName = getStringValue(file.Name) || '';
+    const fileName = getStringValue(file.Name) ?? '';
     const isGuid = isGuidFormat(fileName);
 
     let displayName = fileName;
@@ -110,13 +110,13 @@ export function parseRcloneFileList(
       originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
       repositoryName: repoInfo?.repositoryName,
       repositoryTag: repoInfo?.repositoryTag,
-      isUnmapped: repoInfo?.isUnmapped || false,
+      isUnmapped: repoInfo?.isUnmapped ?? false,
       size: getNumberValue(file.Size),
       isDirectory: isDirectoryFlag,
       modTime: getStringValue(file.ModTime),
       mimeType: getStringValue(file.MimeType),
       path:
-        getStringValue(file.Path) ||
+        getStringValue(file.Path) ??
         (currentPath && fileName ? `${currentPath}/${fileName}` : fileName),
     };
   });
@@ -166,12 +166,12 @@ export function parseFallbackFormats(dataToProcess: string, currentPath: string)
           try {
             const file = JSON.parse(jsonStr);
             return {
-              name: file.Name || '',
-              size: file.Size || 0,
-              isDirectory: file.IsDir || false,
+              name: file.Name ?? '',
+              size: file.Size ?? 0,
+              isDirectory: file.IsDir ?? false,
               modTime: file.ModTime,
               mimeType: file.MimeType,
-              path: file.Path || (currentPath ? `${currentPath}/${file.Name}` : file.Name),
+              path: file.Path ?? (currentPath ? `${currentPath}/${file.Name}` : file.Name),
             };
           } catch {
             return null;

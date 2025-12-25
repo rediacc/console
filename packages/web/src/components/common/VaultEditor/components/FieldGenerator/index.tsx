@@ -22,7 +22,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const [keyOptions, setKeyOptions] = useState<GenerationOptions>({
     keyType: 'rsa',
     keySize: 2048,
-    comment: `${entityType || 'generated'}-${new Date().toISOString().split('T')[0]}`,
+    comment: `${entityType ?? 'generated'}-${new Date().toISOString().split('T')[0]}`,
   });
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -66,16 +66,16 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       .catch(() => message.error('common:fieldGenerator.copyError'));
   };
 
-  const keyTypeOptions: ReadonlyArray<{
+  const keyTypeOptions: readonly {
     value: 'rsa' | 'ed25519';
     label: string;
     disabled?: boolean;
-  }> = [
+  }[] = [
     { value: 'rsa', label: 'RSA' },
     { value: 'ed25519', label: `Ed25519 ${t('fieldGenerator.comingSoon')}`, disabled: true },
   ];
 
-  const keySizeOptions: ReadonlyArray<{ value: 2048 | 4096; label: string; disabled?: boolean }> = [
+  const keySizeOptions: readonly { value: 2048 | 4096; label: string; disabled?: boolean }[] = [
     { value: 2048, label: '2048 bits' },
     { value: 4096, label: `4096 bits (${t('fieldGenerator.moreSecure')})` },
   ];
@@ -83,7 +83,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const renderRadioGroup = <T extends string | number>(
     label: string,
     value: T,
-    options: ReadonlyArray<{ value: T; label: string; disabled?: boolean }>,
+    options: readonly { value: T; label: string; disabled?: boolean }[],
     onChange: (val: T) => void
   ) => (
     <Flex vertical>
@@ -282,7 +282,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             </Typography.Text>
           }
           aria-label={t('fieldGenerator.tooltip')}
-          data-testid={props['data-testid'] || 'vault-editor-field-generator'}
+          data-testid={props['data-testid'] ?? 'vault-editor-field-generator'}
         />
       </Tooltip>
     </Popover>

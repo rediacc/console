@@ -87,12 +87,12 @@ class NodeCryptoProvider implements ICryptoProvider {
     );
   }
 
-  async generateHash(data: string): Promise<string> {
+  generateHash(data: string): Promise<string> {
     // Password hashing with salt - must match desktop CLI (api_client.py)
     const salted = data + PASSWORD_SALT;
     const hash = createHash(ENCRYPTION_CONFIG.HASH);
     hash.update(salted);
-    return '0x' + hash.digest('hex');
+    return Promise.resolve(`0x${hash.digest('hex')}`);
   }
 }
 

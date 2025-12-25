@@ -31,8 +31,8 @@ class TemplateService {
 
     // Convert Uint8Array to binary string
     let binaryString = '';
-    for (let i = 0; i < uint8Array.length; i++) {
-      binaryString += String.fromCharCode(uint8Array[i]);
+    for (const byte of uint8Array) {
+      binaryString += String.fromCharCode(byte);
     }
 
     // Convert binary string to base64
@@ -70,7 +70,7 @@ class TemplateService {
     }
 
     // Prefer id over name
-    const identifier = template.id || template.name;
+    const identifier = template.id ?? template.name;
 
     // Standard pattern: templates/{identifier}.json
     return `${this.getTemplatesBaseUrl()}/${identifier}.json`;
@@ -100,8 +100,9 @@ class TemplateService {
       }
 
       const data = await response.json();
-      this.templatesCache = data.templates || [];
-      return this.templatesCache || [];
+      const templates: Template[] = data.templates ?? [];
+      this.templatesCache = templates;
+      return templates;
     } catch (error) {
       console.error('Failed to fetch templates:', error);
       throw error;
@@ -114,7 +115,7 @@ class TemplateService {
    */
   async findTemplateById(templateId: string): Promise<Template | null> {
     const templates = await this.fetchTemplates();
-    return templates.find((t) => t.id === templateId || t.name === templateId) || null;
+    return templates.find((t) => t.id === templateId || t.name === templateId) ?? null;
   }
 
   /**

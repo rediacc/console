@@ -41,7 +41,9 @@ class ConfigService {
         apiUrl: rConfig.apiUrl || undefined,
         domain: rConfig.domain || undefined,
         httpPort: rConfig.httpPort ? parseInt(rConfig.httpPort) : undefined,
-        environment: (rConfig.environment as 'development' | 'production') || undefined,
+        environment: rConfig.environment
+          ? (rConfig.environment as 'development' | 'production')
+          : undefined,
         enableDebug: rConfig.enableDebug === 'true',
         enableAnalytics: rConfig.enableAnalytics === 'true',
         enableMaintenance: rConfig.enableMaintenance === 'true',
@@ -79,18 +81,19 @@ class ConfigService {
     // Then fall back to Vite environment variables
     const viteConfig = {
       apiUrl: selectedEndpoint.url,
-      domain: import.meta.env.VITE_SYSTEM_DOMAIN || 'localhost',
-      httpPort: parseInt(import.meta.env.VITE_HTTP_PORT || '7322'),
+      domain: (import.meta.env.VITE_SYSTEM_DOMAIN as string | undefined) ?? 'localhost',
+      httpPort: parseInt((import.meta.env.VITE_HTTP_PORT as string | undefined) ?? '7322'),
       environment: import.meta.env.MODE as 'development' | 'production',
       buildType: apiConnectionService.getBuildType(),
     };
 
     // Merge configs: runtime config takes precedence over vite config
-    this.config = {
+    const mergedConfig: AppConfig = {
       ...this.getDefaultConfig(),
       ...viteConfig,
       ...runtimeConfig,
-    } as AppConfig;
+    };
+    this.config = mergedConfig;
 
     // Log configuration source in debug mode
     if (this.config.enableDebug || this.config.buildType === 'DEBUG') {
@@ -139,7 +142,7 @@ class ConfigService {
   // Extended config getters
   async getInstanceName(): Promise<string> {
     const config = await this.getConfig();
-    return config.instanceName || 'default';
+    return config.instanceName ?? 'default';
   }
 
   async getVersion(): Promise<string | undefined> {
@@ -149,32 +152,32 @@ class ConfigService {
 
   async isDebugEnabled(): Promise<boolean> {
     const config = await this.getConfig();
-    return config.enableDebug || false;
+    return config.enableDebug ?? false;
   }
 
   async isMaintenanceMode(): Promise<boolean> {
     const config = await this.getConfig();
-    return config.enableMaintenance || false;
+    return config.enableMaintenance ?? false;
   }
 
   async getMaxUploadSize(): Promise<number> {
     const config = await this.getConfig();
-    return config.maxUploadSize || 10485760; // Default 10MB
+    return config.maxUploadSize ?? 10485760; // Default 10MB
   }
 
   async getSessionTimeout(): Promise<number> {
     const config = await this.getConfig();
-    return config.sessionTimeout || 3600; // Default 1 hour
+    return config.sessionTimeout ?? 3600; // Default 1 hour
   }
 
   async getDefaultLanguage(): Promise<string> {
     const config = await this.getConfig();
-    return config.defaultLanguage || 'en';
+    return config.defaultLanguage ?? 'en';
   }
 
   async getTemplatesUrl(): Promise<string> {
     const config = await this.getConfig();
-    return config.templatesUrl || CONFIG_URLS.TEMPLATES;
+    return config.templatesUrl ?? CONFIG_URLS.TEMPLATES;
   }
 
   // Check if configuration is from runtime (nginx) or build-time (vite)

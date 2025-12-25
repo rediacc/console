@@ -180,9 +180,7 @@ describe('ProtocolUrlService', () => {
         (call: [string, EventListener]) => call[0] === 'blur'
       )?.[1] as EventListener;
 
-      if (blurHandler) {
-        blurHandler(new Event('blur'));
-      }
+      blurHandler(new Event('blur'));
 
       const result = await promise;
       expect(result.success).toBe(true);

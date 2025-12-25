@@ -127,7 +127,7 @@ export const buildQueueColumns = ({
     dataIndex: 'createdBy',
     key: 'createdBy',
     width: 150,
-    render: (createdBy: string | undefined) => createdBy || <Typography.Text>-</Typography.Text>,
+    render: (createdBy: string | undefined) => createdBy ?? <Typography.Text>-</Typography.Text>,
   },
   {
     title: t('queue:columns.created'),

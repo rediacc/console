@@ -1,21 +1,19 @@
 import { useCallback, useEffect } from 'react';
-import { UseFormReturn } from 'react-hook-form';
 import { featureFlags } from '@/config/featureFlags';
 import type { ResourceType } from '../index';
-
-type ResourceFormValues = Record<string, unknown>;
+import type { FormInstance } from 'antd/es/form';
 
 interface DropdownData {
-  bridgesByRegion?: Array<{
+  bridgesByRegion?: {
     regionName: string;
-    bridges: Array<{ value: string; label: string }>;
-  }>;
+    bridges: { value: string; label: string }[];
+  }[];
 }
 
 interface UseBridgeSelectionProps {
   resourceType: ResourceType;
   dropdownData?: DropdownData;
-  form: UseFormReturn<ResourceFormValues>;
+  form: FormInstance;
   getFormValue: (field: string) => string | undefined;
 }
 
@@ -27,7 +25,7 @@ export const useBridgeSelection = ({
 }: UseBridgeSelectionProps) => {
   // Get filtered bridges based on selected region
   const getFilteredBridges = useCallback(
-    (regionName: string | null): Array<{ value: string; label: string }> => {
+    (regionName: string | null): { value: string; label: string }[] => {
       if (!regionName || !dropdownData?.bridgesByRegion) return [];
 
       const bridgesByRegion = dropdownData.bridgesByRegion ?? [];
@@ -43,31 +41,30 @@ export const useBridgeSelection = ({
 
   // Clear bridge selection when region changes, or auto-select if bridge disabled
   useEffect(() => {
-    if (resourceType === 'machine') {
-      const subscription = form.watch((value, { name }) => {
-        if (name === 'regionName') {
-          const regionValue = typeof value.regionName === 'string' ? value.regionName : null;
-          if (!regionValue) {
-            return;
-          }
-          const currentBridge = getFormValue('bridgeName');
-          const filteredBridges = getFilteredBridges(regionValue);
+    if (resourceType !== 'machine') return;
 
-          // If bridge feature is disabled, auto-select first available bridge
-          if (featureFlags.isEnabled('disableBridge')) {
-            if (filteredBridges.length > 0) {
-              form.setValue('bridgeName', filteredBridges[0].value);
-            }
-          } else {
-            // Normal behavior: clear bridge if it's not valid for the new region
-            if (currentBridge && !filteredBridges.find((b) => b.value === currentBridge)) {
-              form.setValue('bridgeName', '');
-            }
-          }
+    // For Ant Design Form, we use onValuesChange in the parent component instead
+    // This effect is kept for the auto-select behavior when bridge feature is disabled
+    const handleRegionChange = () => {
+      const regionValue = getFormValue('regionName');
+      if (!regionValue) return;
+
+      const currentBridge = getFormValue('bridgeName');
+      const filteredBridges = getFilteredBridges(regionValue);
+
+      // If bridge feature is disabled, auto-select first available bridge
+      if (featureFlags.isEnabled('disableBridge')) {
+        if (filteredBridges.length > 0) {
+          form.setFieldValue('bridgeName', filteredBridges[0].value);
         }
-      });
-      return () => subscription.unsubscribe();
-    }
+      } else if (currentBridge && !filteredBridges.find((b) => b.value === currentBridge)) {
+        // Normal behavior: clear bridge if it's not valid for the new region
+        form.setFieldValue('bridgeName', '');
+      }
+    };
+
+    // Initial check
+    handleRegionChange();
   }, [form, resourceType, getFilteredBridges, getFormValue]);
 
   return {

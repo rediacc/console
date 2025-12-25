@@ -41,7 +41,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   }, [machines]);
 
   const handleRefresh = () => {
-    refetch();
+    void refetch();
     onRefresh?.();
   };
 
@@ -137,5 +137,3 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
     </Card>
   );
 };
-
-export default MachineAvailabilitySummary;

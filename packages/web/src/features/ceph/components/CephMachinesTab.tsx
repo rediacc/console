@@ -49,8 +49,8 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
 
   // Filter machines based on search and assignment status
   const filteredMachines = React.useMemo(() => {
-    // Ensure allMachines is always an array
-    if (!allMachines || !Array.isArray(allMachines)) {
+    // Ensure allMachines is always an array (already guaranteed by default value)
+    if (!Array.isArray(allMachines)) {
       return [];
     }
 
@@ -93,7 +93,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
 
   // Handlers
   const handleRefresh = () => {
-    refetch();
+    void refetch();
     setRefreshKeys({});
   };
 
@@ -105,7 +105,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
         machine.teamName,
         machine.bridgeName,
         machine.cephClusterName ? 'Cluster' : 'Available',
-        machine.cephClusterName || '',
+        machine.cephClusterName ?? '',
       ]),
     ]
       .map((row) => row.join(','))
@@ -244,7 +244,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
         }}
         machine={assignClusterModal.state.data}
         machines={
-          bulkAssignClusterModal && allMachines && Array.isArray(allMachines)
+          bulkAssignClusterModal
             ? allMachines.filter((m) => selectedMachines.includes(m.machineName))
             : undefined
         }
@@ -252,7 +252,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
           assignClusterModal.close();
           setBulkAssignClusterModal(false);
           setSelectedMachines([]);
-          refetch();
+          void refetch();
         }}
       />
 
@@ -264,7 +264,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
         onSuccess={() => {
           setRemoveFromClusterModal(false);
           setSelectedMachines([]);
-          refetch();
+          void refetch();
         }}
       />
 

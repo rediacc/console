@@ -54,13 +54,14 @@ const FilterTagDisplay: React.FC<FilterTagDisplayProps> = ({
 }) => {
   // Filter out empty/inactive filters
   const activeFilters = filters.filter((filter) => {
-    if (filter.value === null || filter.value === undefined || filter.value === '') {
+    const value = filter.value;
+    if (value === null || value === '') {
       return false;
     }
-    if (Array.isArray(filter.value) && filter.value.length === 0) {
+    if (Array.isArray(value) && value.length === 0) {
       return false;
     }
-    if (typeof filter.value === 'boolean' && !filter.value) {
+    if (typeof value === 'boolean' && !value) {
       return false;
     }
     return true;

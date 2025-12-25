@@ -8,10 +8,10 @@ import type { TFunction } from 'i18next';
 
 interface UseMachineFunctionHandlersProps {
   currentResource: Machine | null;
-  teams: Array<{ teamName: string; vaultContent?: string | null }>;
+  teams: { teamName: string; vaultContent?: string | null }[];
   machines: Machine[];
-  repositories: Array<{ repositoryGuid: string; vaultContent?: string | null }>;
-  storages: Array<{ storageName: string; vaultContent?: string | null }>;
+  repositories: { repositoryGuid: string; vaultContent?: string | null }[];
+  storages: { storageName: string; vaultContent?: string | null }[];
   executeAction: (params: QueueActionParams) => Promise<{
     success: boolean;
     taskId?: string;
@@ -57,15 +57,15 @@ export function useMachineFunctionHandlers({
           params: functionData.params,
           priority: functionData.priority,
           addedVia: 'machine-table',
-          teamVault: teamData?.vaultContent || '{}',
-          machineVault: currentResource.vaultContent || '{}',
+          teamVault: teamData?.vaultContent ?? '{}',
+          machineVault: currentResource.vaultContent ?? '{}',
           vaultContent: '{}',
         };
 
         if (repositoryParam) {
           const repository = repositories.find((item) => item.repositoryGuid === repositoryParam);
-          queuePayload.repositoryGuid = repository?.repositoryGuid || repositoryParam;
-          queuePayload.vaultContent = repository?.vaultContent || '{}';
+          queuePayload.repositoryGuid = repository?.repositoryGuid ?? repositoryParam;
+          queuePayload.vaultContent = repository?.vaultContent ?? '{}';
         }
 
         if (functionData.function.name === 'pull') {
@@ -109,7 +109,7 @@ export function useMachineFunctionHandlers({
             );
           }
         } else {
-          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'));
+          showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
         }
       } catch {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'));
@@ -130,8 +130,10 @@ export function useMachineFunctionHandlers({
 
   const handleDirectFunctionQueue = useCallback(
     async (machine: Machine, functionName: string) => {
-      const funcDef = FUNCTION_DEFINITIONS[functionName];
-      if (!funcDef) {
+      const funcDef = FUNCTION_DEFINITIONS[functionName] as
+        | (typeof FUNCTION_DEFINITIONS)[keyof typeof FUNCTION_DEFINITIONS]
+        | undefined;
+      if (funcDef === undefined) {
         showMessage('error', t('resources:errors.functionNotFound'));
         return;
       }
@@ -156,8 +158,8 @@ export function useMachineFunctionHandlers({
         params: defaultParams,
         priority: 4, // Normal priority
         addedVia: 'machine-table-quick',
-        teamVault: teamData?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}',
+        teamVault: teamData?.vaultContent ?? '{}',
+        machineVault: machine.vaultContent ?? '{}',
         vaultContent: '{}',
       };
 
@@ -175,7 +177,7 @@ export function useMachineFunctionHandlers({
             );
           }
         } else {
-          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'));
+          showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
         }
 
         setRefreshKeys((prev) => ({

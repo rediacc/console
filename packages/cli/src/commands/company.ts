@@ -50,11 +50,7 @@ export function registerCompanyCommands(program: Command): void {
 
         const format = program.opts().output as OutputFormat;
 
-        if (dashboard) {
-          outputService.print(dashboard, format);
-        } else {
-          outputService.info('No dashboard data found');
-        }
+        outputService.print(dashboard, format);
       } catch (error) {
         handleError(error);
       }
@@ -79,7 +75,7 @@ export function registerCompanyCommands(program: Command): void {
 
         const format = program.opts().output as OutputFormat;
 
-        if (vaultData?.vault) {
+        if (vaultData.vault) {
           outputService.print(vaultData, format);
         } else {
           outputService.info('No company vault found');

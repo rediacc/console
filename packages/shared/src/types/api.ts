@@ -8,7 +8,7 @@ export interface ApiResponse<T = unknown> {
   failure: number;
   errors: string[];
   message: string;
-  resultSets: Array<ApiResultSet<T>>;
+  resultSets: ApiResultSet<T>[];
   status?: number;
   isTFAEnabled?: boolean;
   isAuthorized?: boolean;

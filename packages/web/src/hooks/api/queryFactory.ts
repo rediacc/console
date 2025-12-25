@@ -59,7 +59,7 @@ export const createResourceQuery =
         }
       },
       enabled: enabled && (!config.enabledCheck || config.enabledCheck(teamFilter)),
-      staleTime: config.staleTime || 30 * 1000,
+      staleTime: config.staleTime ?? 30 * 1000,
       meta: {
         telemetry: {
           resourceType: config.queryKey,

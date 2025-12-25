@@ -6,7 +6,6 @@ import type {
   CreateRegionParams,
   DeleteRegionParams,
   GetCompanyRegions_ResultSet1,
-  GetRegionBridges_ResultSet1,
   UpdateRegionNameParams,
   UpdateRegionVaultParams,
   WithOptionalVault,
@@ -24,17 +23,6 @@ export const useRegions = (enabled: boolean = true) => {
   });
 };
 
-// Get bridges for a region
-export const useRegionBridges = (regionName: string) => {
-  return useQuery<GetRegionBridges_ResultSet1[]>({
-    queryKey: ['region-bridges', regionName],
-    queryFn: async () => {
-      return api.regions.getBridges({ regionName });
-    },
-    enabled: !!regionName,
-  });
-};
-
 export type {
   GetCompanyRegions_ResultSet1,
   GetCompanyRegions_ResultSet1 as Region,
@@ -47,12 +35,12 @@ export const useCreateRegion = () => {
     mutationFn: (params) =>
       api.regions.create({
         ...params,
-        vaultContent: params.vaultContent || '{}',
+        vaultContent: params.vaultContent ?? '{}',
       }),
     successMessage: (_, vars) => `Region "${vars.regionName}" created successfully`,
     errorMessage: 'Failed to create region',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['regions'] });
+      void queryClient.invalidateQueries({ queryKey: ['regions'] });
     },
   });
 };
@@ -65,8 +53,8 @@ export const useUpdateRegionName = () => {
     successMessage: (_, vars) => `Region renamed to "${vars.newRegionName}"`,
     errorMessage: 'Failed to update region name',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['regions'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+      void queryClient.invalidateQueries({ queryKey: ['regions'] });
+      void queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
     },
   });
 };
@@ -84,7 +72,7 @@ export const useUpdateRegionVault = () => {
       successMessage: (_, vars) => `Region "${vars.regionName}" vault updated successfully`,
       errorMessage: 'Failed to update region vault',
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['regions'] });
+        void queryClient.invalidateQueries({ queryKey: ['regions'] });
       },
     }
   );
@@ -98,8 +86,8 @@ export const useDeleteRegion = () => {
     successMessage: (_, vars) => `Region "${vars.regionName}" deleted successfully`,
     errorMessage: 'Failed to delete region',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['regions'] });
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
+      void queryClient.invalidateQueries({ queryKey: ['regions'] });
+      void queryClient.invalidateQueries({ queryKey: ['dropdown-data'] });
     },
   });
 };

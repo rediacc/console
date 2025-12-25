@@ -67,7 +67,7 @@ export const useTraceState = ({
         const vaultContent =
           typeof traceData.responseVaultContent.vaultContent === 'string'
             ? JSON.parse(traceData.responseVaultContent.vaultContent)
-            : traceData.responseVaultContent.vaultContent || {};
+            : (traceData.responseVaultContent.vaultContent ?? {});
 
         if (vaultContent.status === 'completed') {
           // For completed status, replace accumulated output with final result
@@ -76,7 +76,7 @@ export const useTraceState = ({
             try {
               const result = JSON.parse(vaultContent.result);
               // Extract command output from the cleaned response structure
-              finalOutput = result.command_output || '';
+              finalOutput = result.command_output ?? '';
 
               // If no command output but we have a message, show it
               if (!finalOutput && result.message) {
@@ -101,10 +101,9 @@ export const useTraceState = ({
               if (newMessage.startsWith(currentOutput)) {
                 const newContent = newMessage.substring(currentOutput.length);
                 return currentOutput + newContent;
-              } else {
-                // Otherwise, replace the entire content
-                return newMessage;
               }
+              // Otherwise, replace the entire content
+              return newMessage;
             });
             setLastOutputStatus('in_progress');
           }
@@ -115,7 +114,7 @@ export const useTraceState = ({
             try {
               const result = JSON.parse(vaultContent.result);
               // Extract command output from the cleaned response structure
-              initialOutput = result.command_output || '';
+              initialOutput = result.command_output ?? '';
 
               // If no command output but we have a message, show it
               if (!initialOutput && result.message) {
@@ -130,7 +129,7 @@ export const useTraceState = ({
           } else if (vaultContent.result && typeof vaultContent.result === 'object') {
             const result = vaultContent.result;
             // Same logic for object format
-            initialOutput = result.command_output || '';
+            initialOutput = result.command_output ?? '';
             if (!initialOutput && result.message) {
               initialOutput = `[${result.status}] ${result.message}`;
               if (result.exit_code !== undefined) {

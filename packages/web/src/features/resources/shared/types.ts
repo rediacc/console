@@ -7,12 +7,12 @@ export interface ContainerData {
   status: string;
   state: string;
   ports: string;
-  port_mappings?: Array<{
+  port_mappings?: {
     host?: string;
     host_port?: string;
     container_port: string;
     protocol: string;
-  }>;
+  }[];
   labels: string;
   mounts: string;
   networks: string;

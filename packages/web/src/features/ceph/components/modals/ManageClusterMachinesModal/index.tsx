@@ -102,21 +102,21 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       if (failedCount === 0) {
         message.success('machines:bulkOperations.assignmentSuccess', { count: successCount });
         setSelectedMachines([]);
-        refetchClusterMachines();
+        void refetchClusterMachines();
         if (onSuccess) onSuccess();
       } else {
         message.warning('machines:bulkOperations.assignmentPartial', {
           success: successCount,
           total: results.length,
         });
-        refetchClusterMachines();
+        void refetchClusterMachines();
       }
     } finally {
       setAssigningMachines(false);
     }
   };
 
-  const handleRemoveMachines = async () => {
+  const handleRemoveMachines = () => {
     if (selectedRemoveMachines.length === 0) {
       message.warning('machines:validation.noMachinesSelected');
       return;
@@ -124,13 +124,13 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
 
     confirmAction({
       modal: confirmModal,
-      title: t('machines:removeFromCluster') as string,
+      title: t('machines:removeFromCluster'),
       content: t('machines:removeFromClusterWarning', {
         count: selectedRemoveMachines.length,
-      }) as string,
-      okText: t('common:actions.remove') as string,
+      }),
+      okText: t('common:actions.remove'),
       okType: 'danger',
-      cancelText: t('common:actions.cancel') as string,
+      cancelText: t('common:actions.cancel'),
       onConfirm: async () => {
         setRemovingMachines(true);
 
@@ -149,14 +149,14 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           if (successCount === selectedRemoveMachines.length) {
             message.success('machines:bulkOperations.removalSuccess', { count: successCount });
             setSelectedRemoveMachines([]);
-            refetchClusterMachines();
+            void refetchClusterMachines();
             if (onSuccess) onSuccess();
           } else {
             message.warning('machines:bulkOperations.assignmentPartial', {
               success: successCount,
               total: results.length,
             });
-            refetchClusterMachines();
+            void refetchClusterMachines();
           }
         } finally {
           setRemovingMachines(false);

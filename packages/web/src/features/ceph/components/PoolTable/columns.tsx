@@ -39,7 +39,7 @@ export const buildPoolColumns = ({
     ellipsis: true,
     sorter: createSorter<CephPool>('poolName'),
     render: (name: string, record: CephPool) => {
-      const isExpanded = expandedRowKeys.includes(record.poolGuid || '');
+      const isExpanded = expandedRowKeys.includes(record.poolGuid ?? '');
       return (
         <Flex align="center" gap={8} className="inline-flex">
           <RightOutlined className={`expand-icon ${isExpanded ? 'expand-icon-rotated' : ''}`} />

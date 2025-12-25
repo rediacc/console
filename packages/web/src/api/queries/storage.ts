@@ -33,13 +33,13 @@ export const useCreateStorage = () => {
     mutationFn: (params) =>
       api.storage.create({
         ...params,
-        vaultContent: params.vaultContent || '{}',
+        vaultContent: params.vaultContent ?? '{}',
       }),
     successMessage: (_, vars) => `Storage "${vars.storageName}" created successfully`,
     errorMessage: 'Failed to create storage',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      void queryClient.invalidateQueries({ queryKey: ['storage'] });
+      void queryClient.invalidateQueries({ queryKey: ['teams'] });
     },
   });
 };
@@ -52,7 +52,7 @@ export const useUpdateStorageName = () => {
     successMessage: (_, vars) => `Storage renamed to "${vars.newStorageName}"`,
     errorMessage: 'Failed to update storage name',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] });
+      void queryClient.invalidateQueries({ queryKey: ['storage'] });
     },
   });
 };
@@ -73,7 +73,7 @@ export const useUpdateStorageVault = () => {
     successMessage: (_, vars) => `Storage "${vars.storageName}" vault updated successfully`,
     errorMessage: 'Failed to update storage vault',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] });
+      void queryClient.invalidateQueries({ queryKey: ['storage'] });
     },
   });
 };
@@ -86,8 +86,8 @@ export const useDeleteStorage = () => {
     successMessage: (_, vars) => `Storage "${vars.storageName}" deleted successfully`,
     errorMessage: 'Failed to delete storage',
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      void queryClient.invalidateQueries({ queryKey: ['storage'] });
+      void queryClient.invalidateQueries({ queryKey: ['teams'] });
     },
   });
 };

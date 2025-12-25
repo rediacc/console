@@ -96,45 +96,6 @@ export function createSorter<T>(field: NestedKeyOf<T>) {
 }
 
 /**
- * Creates a string sorter with locale-aware comparison.
- */
-export function createStringSorter<T>(field: NestedKeyOf<T>) {
-  return (a: T, b: T): SortOrder => {
-    const valA = getNestedValue(a, field);
-    const valB = getNestedValue(b, field);
-
-    if (valA == null && valB == null) return 0;
-    if (valA == null) return 1;
-    if (valB == null) return -1;
-
-    return String(valA).localeCompare(String(valB));
-  };
-}
-
-/**
- * Creates a number sorter that handles numbers, numeric strings, and nullish values.
- */
-export function createNumberSorter<T>(field: NestedKeyOf<T>) {
-  return (a: T, b: T): SortOrder => {
-    const valA = getNestedValue(a, field);
-    const valB = getNestedValue(b, field);
-
-    if (valA == null && valB == null) return 0;
-    if (valA == null) return 1;
-    if (valB == null) return -1;
-
-    const numA = Number(valA);
-    const numB = Number(valB);
-
-    if (isNaN(numA) && isNaN(numB)) return String(valA).localeCompare(String(valB));
-    if (isNaN(numA)) return 1;
-    if (isNaN(numB)) return -1;
-
-    return numA - numB;
-  };
-}
-
-/**
  * Creates a date sorter that handles Date objects, ISO strings, and timestamps.
  */
 export function createDateSorter<T>(field: NestedKeyOf<T>) {
@@ -147,25 +108,6 @@ export function createDateSorter<T>(field: NestedKeyOf<T>) {
     if (valB == null) return -1;
 
     return toTimestamp(valA) - toTimestamp(valB);
-  };
-}
-
-/**
- * Creates a boolean sorter. By default, true values sort before false.
- */
-export function createBooleanSorter<T>(field: NestedKeyOf<T>, trueFirst = true) {
-  return (a: T, b: T): SortOrder => {
-    const valA = getNestedValue(a, field);
-    const valB = getNestedValue(b, field);
-
-    if (valA == null && valB == null) return 0;
-    if (valA == null) return 1;
-    if (valB == null) return -1;
-
-    const numA = valA ? 1 : 0;
-    const numB = valB ? 1 : 0;
-
-    return trueFirst ? numB - numA : numA - numB;
   };
 }
 
@@ -199,30 +141,4 @@ export function createArrayLengthSorter<T>(field: NestedKeyOf<T>) {
 
     return lenA - lenB;
   };
-}
-
-/**
- * Namespace for explicit sorter factories when auto-detection isn't preferred.
- */
-export const sorters = {
-  string: createStringSorter,
-  number: createNumberSorter,
-  date: createDateSorter,
-  boolean: createBooleanSorter,
-  custom: createCustomSorter,
-  arrayLength: createArrayLengthSorter,
-  auto: createSorter,
-};
-
-/**
- * Sort an array by a field with type-safe accessor
- * @param items - Array to sort
- * @param field - Field path to sort by
- * @param ascending - Sort direction (default true)
- * @returns New sorted array
- */
-export function sortBy<T>(items: T[], field: NestedKeyOf<T>, ascending = true): T[] {
-  const sorter = createSorter<T>(field);
-  const sorted = [...items].sort(sorter);
-  return ascending ? sorted : sorted.reverse();
 }

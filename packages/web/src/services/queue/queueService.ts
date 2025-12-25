@@ -19,7 +19,8 @@ const coreQueueService = new QueueService({
         event.data.bridgeName,
         event.data.priority
       );
-    } else if (event.type === 'task-status') {
+    } else {
+      // event.type === 'task-status'
       queueMonitoringService.handleStatusUpdate(event.taskId, event.status);
     }
   },

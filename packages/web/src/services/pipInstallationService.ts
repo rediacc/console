@@ -10,26 +10,20 @@ export interface InstallOptions {
   upgrade?: boolean;
 }
 
-export interface PlatformInstructions {
+interface PlatformInstructions {
   platform: 'windows' | 'macos' | 'linux';
   pipInstallCommand: string;
   pythonCheckCommand: string;
   notes: string[];
 }
 
-export interface InstallationCommands {
+interface InstallationCommands {
   install: string;
   postInstall: string[];
   verify: string[];
 }
 
-export type InstallationStatus =
-  | 'not-installed'
-  | 'installed'
-  | 'protocol-not-registered'
-  | 'ready';
-
-export type ErrorType = 'pip-not-found' | 'permission-denied' | 'python-version' | 'unknown';
+type ErrorType = 'pip-not-found' | 'permission-denied' | 'python-version' | 'unknown';
 
 class PipInstallationService {
   /**
@@ -149,16 +143,15 @@ class PipInstallationService {
               '# Or download get-pip.py from https://pip.pypa.io/en/stable/installation/',
             ],
           };
-        } else {
-          return {
-            description: 'Pip is not installed. Install it with:',
-            commands: [
-              'python3 -m ensurepip --upgrade',
-              '# Or on Ubuntu/Debian: sudo apt install python3-pip',
-              '# Or on macOS with Homebrew: brew install python3',
-            ],
-          };
         }
+        return {
+          description: 'Pip is not installed. Install it with:',
+          commands: [
+            'python3 -m ensurepip --upgrade',
+            '# Or on Ubuntu/Debian: sudo apt install python3-pip',
+            '# Or on macOS with Homebrew: brew install python3',
+          ],
+        };
       }
 
       case 'permission-denied':
@@ -260,9 +253,8 @@ class PipInstallationService {
       return 'windows';
     } else if (userAgent.includes('mac')) {
       return 'macos';
-    } else {
-      return 'linux';
     }
+    return 'linux';
   }
 
   /**
@@ -270,7 +262,7 @@ class PipInstallationService {
    */
   formatCommandsForDisplay(
     commands: string[]
-  ): Array<{ text: string; isCommand: boolean; isComment: boolean }> {
+  ): { text: string; isCommand: boolean; isComment: boolean }[] {
     return commands.map((cmd) => {
       const trimmed = cmd.trim();
       const isComment = trimmed.startsWith('#');

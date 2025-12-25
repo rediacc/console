@@ -200,7 +200,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       title={
         <Space>
           <HistoryOutlined />
-          {t('audit.title', { name: entityName || entityIdentifier })}
+          {t('audit.title', { name: entityName ?? entityIdentifier })}
         </Space>
       }
       open={open}
@@ -233,58 +233,56 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       ) : data ? (
         <>
           {/* Summary Section */}
-          {data.summary && (
-            <Flex vertical className="w-full" data-testid="audit-trace-summary">
-              <Flex align="center" justify="space-between" wrap>
-                <Flex gap={24} wrap>
-                  <Flex vertical data-testid="audit-trace-total-records">
-                    <AntText type="secondary">{t('audit.totalRecords')}</AntText>
-                    <Typography.Text strong>{data.summary.totalAuditRecords}</Typography.Text>
-                  </Flex>
-                  <Flex vertical data-testid="audit-trace-visible-records">
-                    <AntText type="secondary">{t('audit.visibleRecords')}</AntText>
-                    <Typography.Text strong>{data.summary.visibleAuditRecords}</Typography.Text>
-                  </Flex>
-                  {data.summary.lastActivity && (
-                    <Flex vertical data-testid="audit-trace-last-activity">
-                      <AntText type="secondary">{t('audit.lastActivity')}</AntText>
-                      <AntText strong>
-                        {new Date(data.summary.lastActivity).toLocaleDateString()}
-                      </AntText>
-                    </Flex>
-                  )}
+          <Flex vertical className="w-full" data-testid="audit-trace-summary">
+            <Flex align="center" justify="space-between" wrap>
+              <Flex gap={24} wrap>
+                <Flex vertical data-testid="audit-trace-total-records">
+                  <AntText type="secondary">{t('audit.totalRecords')}</AntText>
+                  <Typography.Text strong>{data.summary.totalAuditRecords}</Typography.Text>
                 </Flex>
-
-                {/* Export Button */}
-                <Dropdown
-                  menu={{
-                    items: [
-                      {
-                        key: 'csv',
-                        label: t('audit.exportCSV'),
-                        icon: <FileExcelOutlined />,
-                        onClick: exportToCSV,
-                        'data-testid': 'audit-trace-export-csv',
-                      },
-                      {
-                        key: 'json',
-                        label: t('audit.exportJSON'),
-                        icon: <FileTextOutlined />,
-                        onClick: exportToJSON,
-                        'data-testid': 'audit-trace-export-json',
-                      },
-                    ],
-                  }}
-                  placement="bottomRight"
-                  data-testid="audit-trace-export-dropdown"
-                >
-                  <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
-                    {t('audit.export')}
-                  </Button>
-                </Dropdown>
+                <Flex vertical data-testid="audit-trace-visible-records">
+                  <AntText type="secondary">{t('audit.visibleRecords')}</AntText>
+                  <Typography.Text strong>{data.summary.visibleAuditRecords}</Typography.Text>
+                </Flex>
+                {data.summary.lastActivity && (
+                  <Flex vertical data-testid="audit-trace-last-activity">
+                    <AntText type="secondary">{t('audit.lastActivity')}</AntText>
+                    <AntText strong>
+                      {new Date(data.summary.lastActivity).toLocaleDateString()}
+                    </AntText>
+                  </Flex>
+                )}
               </Flex>
+
+              {/* Export Button */}
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'csv',
+                      label: t('audit.exportCSV'),
+                      icon: <FileExcelOutlined />,
+                      onClick: exportToCSV,
+                      'data-testid': 'audit-trace-export-csv',
+                    },
+                    {
+                      key: 'json',
+                      label: t('audit.exportJSON'),
+                      icon: <FileTextOutlined />,
+                      onClick: exportToJSON,
+                      'data-testid': 'audit-trace-export-json',
+                    },
+                  ],
+                }}
+                placement="bottomRight"
+                data-testid="audit-trace-export-dropdown"
+              >
+                <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
+                  {t('audit.export')}
+                </Button>
+              </Dropdown>
             </Flex>
-          )}
+          </Flex>
 
           {/* Records Table */}
           <Table<AuditTraceRecord>

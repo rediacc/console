@@ -69,13 +69,13 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
     (cluster: CephCluster) => {
       confirmAction({
         modal,
-        title: t('clusters.confirmDelete') as string,
-        content: t('clusters.deleteWarning', { name: cluster.clusterName }) as string,
-        okText: t('common:actions.delete') as string,
+        title: t('clusters.confirmDelete'),
+        content: t('clusters.deleteWarning', { name: cluster.clusterName }),
+        okText: t('common:actions.delete'),
         okType: 'danger',
-        cancelText: t('common:actions.cancel') as string,
+        cancelText: t('common:actions.cancel'),
         onConfirm: async () => {
-          onDeleteCluster(cluster);
+          await Promise.resolve(onDeleteCluster(cluster));
         },
       });
     },
@@ -261,7 +261,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
         <ManageClusterMachinesModal
           open={manageMachinesModal.isOpen}
           clusterName={manageMachinesModal.state.data.clusterName}
-          teamName={manageMachinesModal.state.data.teamName || ''}
+          teamName={manageMachinesModal.state.data.teamName ?? ''}
           onCancel={() => {
             manageMachinesModal.close();
           }}

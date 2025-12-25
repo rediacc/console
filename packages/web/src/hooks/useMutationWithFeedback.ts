@@ -91,7 +91,7 @@ export function useMutationWithFeedback<
         const message =
           typeof errorMessage === 'function'
             ? errorMessage(error, variables)
-            : extractErrorMessage(error, errorMessage || 'Operation failed');
+            : extractErrorMessage(error, errorMessage ?? 'Operation failed');
         showMessage('error', message);
       }
       // Call user's callback

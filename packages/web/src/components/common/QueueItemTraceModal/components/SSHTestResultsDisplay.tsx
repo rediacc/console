@@ -16,8 +16,8 @@ interface SSHTestResultsDisplayProps {
 export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ result }) => {
   const { t } = useTranslation(['queue', 'common']);
   const compatibility = result.kernel_compatibility;
-  const osInfo = compatibility.os_info || {};
-  const status = compatibility.compatibility_status || 'unknown';
+  const osInfo = compatibility.os_info;
+  const status = compatibility.compatibility_status;
 
   const statusConfig = {
     compatible: {
@@ -38,7 +38,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
     },
   };
 
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown;
+  const config = statusConfig[status];
 
   return (
     <Flex vertical gap={16} className="w-full">
@@ -48,7 +48,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
           <Descriptions.Item label="Status">
             <Tag>{result.status}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Machine">{result.machine || 'N/A'}</Descriptions.Item>
+          <Descriptions.Item label="Machine">{result.machine ?? 'N/A'}</Descriptions.Item>
           <Descriptions.Item label="IP Address">{result.ip}</Descriptions.Item>
           <Descriptions.Item label="User">{result.user}</Descriptions.Item>
           <Descriptions.Item label="Auth Method">
@@ -64,19 +64,19 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
       <Card size="small" title={t('trace.systemInfo')}>
         <Descriptions column={1} size="small">
           <Descriptions.Item label="Operating System">
-            {osInfo.pretty_name || 'Unknown'}
+            {osInfo?.pretty_name ?? 'Unknown'}
           </Descriptions.Item>
           <Descriptions.Item label="Kernel Version">
-            <Typography.Text code>{compatibility.kernel_version || 'Unknown'}</Typography.Text>
+            <Typography.Text code>{compatibility.kernel_version}</Typography.Text>
           </Descriptions.Item>
-          <Descriptions.Item label="OS ID">{osInfo.id || 'Unknown'}</Descriptions.Item>
-          <Descriptions.Item label="Version">{osInfo.version_id || 'Unknown'}</Descriptions.Item>
+          <Descriptions.Item label="OS ID">{osInfo?.id ?? 'Unknown'}</Descriptions.Item>
+          <Descriptions.Item label="Version">{osInfo?.version_id ?? 'Unknown'}</Descriptions.Item>
           <Descriptions.Item label="BTRFS Support">
             {compatibility.btrfs_available ? <Tag>Available</Tag> : <Tag>Not Available</Tag>}
           </Descriptions.Item>
           <Descriptions.Item label="Sudo Support">
             {(() => {
-              const sudoStatus = compatibility.sudo_available || 'unknown';
+              const sudoStatus = compatibility.sudo_available;
               if (sudoStatus === 'available') {
                 return <Tag>Available</Tag>;
               }
@@ -156,11 +156,7 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
               key: 'raw',
               label: 'Raw Response Data',
               children: (
-                <SimpleJsonEditor
-                  value={JSON.stringify(result, null, 2)}
-                  readOnly={true}
-                  height="200px"
-                />
+                <SimpleJsonEditor value={JSON.stringify(result, null, 2)} readOnly height="200px" />
               ),
             },
           ]}

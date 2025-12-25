@@ -60,7 +60,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     isLoading: loadingAssigned,
     refetch: refetchAssigned,
   } = useCloneMachines(
-    clone?.cloneName || '',
+    clone?.cloneName ?? '',
     snapshotName,
     imageName,
     poolName,
@@ -95,7 +95,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       });
 
       showMessage('success', t('ceph:clones.machinesAssignedSuccess'));
-      refetchAssigned();
+      void refetchAssigned();
       setSelectedMachines([]);
       onSuccess?.();
     } catch {
@@ -117,7 +117,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       });
 
       showMessage('success', t('ceph:clones.machinesRemovedSuccess'));
-      refetchAssigned();
+      void refetchAssigned();
       setRemovingMachines([]);
       onSuccess?.();
     } catch {
@@ -148,7 +148,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             mode="multiple"
             placeholder={t('machines:selectMachines')}
             value={selectedMachines}
-            onChange={(value) => setSelectedMachines(value as string[])}
+            onChange={(value) => setSelectedMachines(value)}
             showSearch
             className="w-full"
             filterOption={(input, option) =>
@@ -168,7 +168,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     );
   };
 
-  const renderManageTab = () => {
+  const renderManageTab = (): React.ReactNode => {
     if (loadingAssigned) {
       return (
         <LoadingWrapper loading centered minHeight={160}>
@@ -201,14 +201,16 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     });
 
     const columns: ColumnsType<CloneMachine> = [machineColumn, bridgeColumn];
-    const rowSelection = {
+    const rowSelection: TableRowSelection<CloneMachine> = {
       selectedRowKeys: removingMachines,
       onChange: (keys: React.Key[]) => setRemovingMachines(keys as string[]),
-      getCheckboxProps: (record: CloneMachine) =>
-        ({
+      getCheckboxProps: (record: CloneMachine) => {
+        const props: Record<string, unknown> = {
           'data-testid': `assign-clone-machine-checkbox-${record.machineName}`,
-        }) as Record<string, unknown>,
-    } as TableRowSelection<CloneMachine>;
+        };
+        return props;
+      },
+    };
 
     return (
       <Flex vertical gap={16} className="w-full">

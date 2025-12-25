@@ -90,7 +90,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       const target = e.currentTarget;
       const start = target.selectionStart;
       const end = target.selectionEnd;
-      const newValue = internalValue.substring(0, start) + '  ' + internalValue.substring(end);
+      const newValue = `${internalValue.substring(0, start)}  ${internalValue.substring(end)}`;
       setInternalValue(newValue);
       onChange?.(newValue);
 

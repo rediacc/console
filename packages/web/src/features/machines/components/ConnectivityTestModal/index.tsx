@@ -120,7 +120,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           )
         );
       } else {
-        throw new Error(result.error || 'Failed to create test task');
+        throw new Error(result.error ?? 'Failed to create test task');
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create test task';
@@ -206,7 +206,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     dataIndex: 'message',
     key: 'message',
     ellipsis: true,
-    renderText: (message) => message || '-',
+    renderText: (message) => message ?? '-',
   });
 
   const columns: ColumnsType<TestResult> = [
@@ -394,7 +394,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                       );
                       if (successfulTests.length === 0) return '-';
                       const avgDuration =
-                        successfulTests.reduce((sum, r) => sum + (r.duration || 0), 0) /
+                        successfulTests.reduce((sum, r) => sum + (r.duration ?? 0), 0) /
                         successfulTests.length;
                       return avgDuration < 1000
                         ? `${Math.round(avgDuration)}ms`

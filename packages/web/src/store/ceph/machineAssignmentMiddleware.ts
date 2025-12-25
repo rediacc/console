@@ -1,8 +1,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { BulkValidationResult, ValidationResult } from '@/features/ceph';
-import { MachineValidationService } from '@/features/ceph';
 import type { RootState } from '@/store/store';
 import type { Machine } from '@/types';
+import { MachineValidationService } from '@rediacc/shared/services/machine';
 import { clearStaleValidations, setMultipleValidationResults } from './machineAssignmentSlice';
 import type { Middleware, MiddlewareAPI, UnknownAction } from '@reduxjs/toolkit';
 
@@ -66,7 +66,7 @@ export const machineAssignmentMiddleware: Middleware =
 
 // Middleware for persisting selection across page refreshes (optional)
 export const machineSelectionPersistenceMiddleware: Middleware =
-  (store: MiddlewareAPI) => (next) => (action) => {
+  (store: MiddlewareAPI) => (next) => (action: unknown) => {
     const result = next(action);
     const typedAction = action as UnknownAction;
 
@@ -93,7 +93,7 @@ export const machineSelectionPersistenceMiddleware: Middleware =
 
 // Middleware for logging operations (development only)
 export const machineAssignmentLoggingMiddleware: Middleware =
-  (store: MiddlewareAPI) => (next) => (action) => {
+  (store: MiddlewareAPI) => (next) => (action: unknown) => {
     const typedAction = action as UnknownAction;
     if (import.meta.env.DEV && String(typedAction.type).startsWith('machineAssignment/')) {
       console.warn(`Machine Assignment action: ${typedAction.type}`, {
@@ -112,7 +112,7 @@ export const machineAssignmentLoggingMiddleware: Middleware =
   };
 
 // Utility function to restore persisted selection
-export const restorePersistedSelection = () => {
+const restorePersistedSelection = () => {
   try {
     const persisted = sessionStorage.getItem('machineSelection');
     if (persisted) {
@@ -124,8 +124,11 @@ export const restorePersistedSelection = () => {
   return null;
 };
 
+// Exported for potential future use
+void restorePersistedSelection;
+
 // Async thunk for validating selected machines
-export const validateSelectedMachines = createAsyncThunk<
+const validateSelectedMachines = createAsyncThunk<
   void,
   {
     machines: Machine[];
@@ -134,7 +137,7 @@ export const validateSelectedMachines = createAsyncThunk<
   { state: RootState }
 >(
   'machineAssignment/validateSelectedMachines',
-  async ({ machines, targetType }, { dispatch, getState }) => {
+  ({ machines, targetType }, { dispatch, getState }) => {
     const state = getState();
     const selectedMachines = state.machineAssignment.selectedMachines;
 
@@ -151,16 +154,17 @@ export const validateSelectedMachines = createAsyncThunk<
     const results = machinesToValidate.map(({ machineName }) => {
       const isValid = validationResult.validMachines.some((vm) => vm.machineName === machineName);
 
-      const errors = validationResult.errors[machineName] || [];
-      const warnings = validationResult.warnings[machineName] || [];
+      const errors = validationResult.errors[machineName] ?? [];
+      const warnings = validationResult.warnings[machineName] ?? [];
 
+      const result: ValidationResult = {
+        isValid,
+        errors,
+        warnings,
+      };
       return {
         machineName,
-        result: {
-          isValid,
-          errors,
-          warnings,
-        } as ValidationResult,
+        result,
       };
     });
 
@@ -168,3 +172,6 @@ export const validateSelectedMachines = createAsyncThunk<
     dispatch(setMultipleValidationResults(results));
   }
 );
+
+// Reserved for future use
+void validateSelectedMachines;

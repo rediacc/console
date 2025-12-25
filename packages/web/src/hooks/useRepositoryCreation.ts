@@ -61,8 +61,8 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
         // Step 2: Queue the "new" function to create the repository on the machine
         try {
           // Find the machine details from dropdown data
-          const teamData = dropdownData?.machinesByTeam?.find((t) => t.teamName === data.teamName);
-          const machineData = teamData?.machines?.find((m) => m.value === machineName);
+          const teamData = dropdownData?.machinesByTeam.find((t) => t.teamName === data.teamName);
+          const machineData = teamData?.machines.find((m) => m.value === machineName);
 
           if (!machineData) {
             showMessage('error', t('resources:errors.machineNotFound'));
@@ -86,8 +86,8 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
             (repository) => repository.repositoryName === data.repositoryName
           );
 
-          const repositoryVault = createdRepository?.vaultContent || data.vaultContent || '{}';
-          const repositoryGuid = createdRepository?.repositoryGuid || '';
+          const repositoryVault = createdRepository?.vaultContent ?? data.vaultContent ?? '{}';
+          const repositoryGuid = createdRepository?.repositoryGuid ?? '';
 
           if (!repositoryGuid) {
             showMessage('error', t('resources:errors.failedToGetRepoGuid'));
@@ -115,13 +115,13 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
             machineName: machineData.value,
             bridgeName: machineData.bridgeName,
             functionName: 'new',
-            params: params,
+            params,
             priority: 3,
             addedVia: 'repository-creation',
-            teamVault: team?.vaultContent || '{}',
-            machineVault: fullMachine?.vaultContent || '{}',
-            repositoryVault: repositoryVault,
-            repositoryGuid: repositoryGuid,
+            teamVault: team?.vaultContent ?? '{}',
+            machineVault: fullMachine?.vaultContent ?? '{}',
+            repositoryVault,
+            repositoryGuid,
             repositoryNetworkId: createdRepository?.repositoryNetworkId,
             repositoryNetworkMode: createdRepository?.repositoryNetworkMode,
             repositoryTag: createdRepository?.repositoryTag,
@@ -140,7 +140,7 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
           // Return success with taskId if available
           return {
             success: true,
-            taskId: response?.taskId,
+            taskId: response.taskId,
             machineName: machineData.value,
           };
         } catch {

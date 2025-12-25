@@ -1,8 +1,3 @@
-export {
-  processFieldMovements,
-  syncFormWithJson,
-  handleRawJsonChange,
-  type FieldMovements,
-} from './jsonUtils';
-export { readJsonFile, applyImportedData, handleImport } from './importUtils';
-export { buildExportData, downloadJsonFile, handleExport } from './exportUtils';
+export { handleRawJsonChange, type FieldMovements } from './jsonUtils';
+export { handleImport } from './importUtils';
+export { handleExport } from './exportUtils';

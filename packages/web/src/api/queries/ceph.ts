@@ -4,7 +4,6 @@ import type {
   CephAvailableMachine,
   CephCloneMachine,
   CephMachineAssignmentStatus,
-  CephMachineAssignmentValidation,
   GetAvailableMachinesForCloneParams,
   GetCephClusterMachines_ResultSet1,
   GetCephClusterMachinesParams,
@@ -17,7 +16,6 @@ import type {
   GetCephRbdImagesParams,
   GetCephRbdSnapshots_ResultSet1,
   GetCephRbdSnapshotsParams,
-  GetCloneMachineAssignmentValidationParams,
   GetCloneMachinesParams,
   GetMachineAssignmentStatusParams,
 } from '@rediacc/shared/types';
@@ -70,7 +68,7 @@ export const useCephClusters = (teamFilter?: string | string[], enabled = true) 
   return useQuery<GetCephClusters_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.clusters(teamFilter),
     queryFn: () => api.ceph.listClusters(),
-    enabled: enabled,
+    enabled,
   });
 };
 
@@ -79,7 +77,7 @@ export const useCephPools = (teamFilter?: string | string[], enabled = true) => 
   return useQuery<GetCephPools_ResultSet1[]>({
     queryKey: CEPH_QUERY_KEYS.pools(teamFilter),
     queryFn: async () => {
-      const teamName = Array.isArray(teamFilter) ? teamFilter?.[0] : teamFilter;
+      const teamName = Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
       if (!teamName) {
         return [];
       }
@@ -183,25 +181,6 @@ export const useAvailableMachinesForClone = (teamName: string, enabled = true) =
       return api.ceph.getAvailableMachinesForClone(params);
     },
     enabled: enabled && !!teamName,
-  });
-};
-
-// Clone Machine Assignment Validation
-export const useCloneMachineAssignmentValidation = (
-  teamName: string,
-  machineNames: string,
-  enabled = true
-) => {
-  return useQuery<CephMachineAssignmentValidation[]>({
-    queryKey: CEPH_QUERY_KEYS.machineAssignmentValidation(teamName, machineNames),
-    queryFn: () => {
-      const params: GetCloneMachineAssignmentValidationParams & { machineNames: string } = {
-        teamName,
-        machineNames,
-      };
-      return api.ceph.getCloneAssignmentValidation(params);
-    },
-    enabled: enabled && !!teamName && !!machineNames,
   });
 };
 

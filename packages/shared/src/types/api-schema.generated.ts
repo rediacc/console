@@ -4525,17 +4525,17 @@ export interface CompanyDropdownMachine {
 
 /** Complete dropdown data for UI */
 export interface CompanyDropdownData {
-  teams: Array<{ value: string; label: string }>;
-  allTeams: Array<{ value: string; label: string; memberCount: number }>;
-  regions: Array<{ value: string; label: string; bridgeCount: number }>;
+  teams: { value: string; label: string }[];
+  allTeams: { value: string; label: string; memberCount: number }[];
+  regions: { value: string; label: string; bridgeCount: number }[];
   machines?: string[];
-  bridges?: Array<{ value: string; label: string }>;
+  bridges?: { value: string; label: string }[];
   bridgesByRegion: CompanyDropdownRegion[];
-  machinesByTeam: Array<{ teamName: string; machines: CompanyDropdownMachine[] }>;
-  users: Array<{ value: string; label: string; status: string }>;
-  permissionGroups: Array<{ value: string; label: string; userCount: number; permissionCount: number }>;
-  permissions: Array<{ name: string; value: string }>;
-  subscriptionPlans: Array<{ value: string; label: string; description: string }>;
+  machinesByTeam: { teamName: string; machines: CompanyDropdownMachine[] }[];
+  users: { value: string; label: string; status: string }[];
+  permissionGroups: { value: string; label: string; userCount: number; permissionCount: number }[];
+  permissions: { name: string; value: string }[];
+  subscriptionPlans: { value: string; label: string; description: string }[];
   requestContext?: string;
   currentUser?: string;
   userRole?: string;

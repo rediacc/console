@@ -142,7 +142,7 @@ const AuditPage = () => {
     [t]
   );
 
-  const entityTypes = getUniqueMappedValues(auditLogs || [], (log) => log.entity);
+  const entityTypes = getUniqueMappedValues(auditLogs ?? [], (log) => log.entity);
 
   const exportToCSV = () => {
     if (!filteredLogs || filteredLogs.length === 0) {
@@ -161,9 +161,9 @@ const AuditPage = () => {
       dayjs(log.timestamp).format('YYYY-MM-DD HH:mm:ss'),
       log.action.replace(/_/g, ' '),
       log.entity,
-      log.entityName || '',
+      log.entityName ?? '',
       log.actionByUser,
-      log.details || '',
+      log.details ?? '',
     ]);
 
     const csvContent = buildCSVContent(headers, rows);
@@ -183,7 +183,7 @@ const AuditPage = () => {
         to: filters.dateRange[1]?.format('YYYY-MM-DD HH:mm:ss'),
       },
       filters: {
-        entityType: filters.entityFilter || 'All',
+        entityType: filters.entityFilter ?? 'All',
         searchText: filters.searchText || 'None',
       },
       totalRecords: filteredLogs.length,
@@ -364,7 +364,7 @@ const AuditPage = () => {
         {isError && (
           <Alert
             message={t('system:audit.errors.loadTitle')}
-            description={error?.message || t('system:audit.errors.loadDescription')}
+            description={error.message || t('system:audit.errors.loadDescription')}
             type="error"
             closable
             showIcon
@@ -381,7 +381,7 @@ const AuditPage = () => {
           <ResourceListView<AuditLog>
             data-testid="audit-table"
             columns={columns}
-            data={filteredLogs || []}
+            data={filteredLogs ?? []}
             loading={isLoading}
             rowKey={(record) => `${record.timestamp}-${record.action}-${record.entityName}`}
             mobileRender={mobileRender}
@@ -394,8 +394,8 @@ const AuditPage = () => {
             }
             pagination={{
               current: currentPage,
-              pageSize: pageSize,
-              total: filteredLogs?.length || 0,
+              pageSize,
+              total: filteredLogs?.length ?? 0,
               showSizeChanger: true,
               pageSizeOptions: ['10', '25', '50', '100'],
               showTotal: (total, range) =>

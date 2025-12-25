@@ -63,11 +63,12 @@ export function useFilters<T extends Record<string, unknown>>(
   initialFilters: T,
   options?: UseFiltersOptions<T>
 ): UseFiltersReturn<T> {
-  const [filters, setFiltersState] = useState<T>(initialFilters);
+  // eslint-disable-next-line react/hook-use-state -- setFiltersInternal avoids conflict with exported setFilters function
+  const [filters, setFiltersInternal] = useState<T>(initialFilters);
 
   const setFilter = useCallback(
     <K extends keyof T>(key: K, value: T[K]) => {
-      setFiltersState((prev) => {
+      setFiltersInternal((prev) => {
         const updated = { ...prev, [key]: value };
         options?.onFilterChange?.(updated);
         return updated;
@@ -78,7 +79,7 @@ export function useFilters<T extends Record<string, unknown>>(
 
   const setFilters = useCallback(
     (newFilters: T | ((prev: T) => T)) => {
-      setFiltersState((prev) => {
+      setFiltersInternal((prev) => {
         const updated = typeof newFilters === 'function' ? newFilters(prev) : newFilters;
         options?.onFilterChange?.(updated);
         return updated;
@@ -89,7 +90,7 @@ export function useFilters<T extends Record<string, unknown>>(
 
   const clearFilter = useCallback(
     (key: keyof T) => {
-      setFiltersState((prev) => {
+      setFiltersInternal((prev) => {
         const updated = { ...prev, [key]: initialFilters[key] };
         options?.onFilterChange?.(updated);
         return updated;
@@ -99,7 +100,7 @@ export function useFilters<T extends Record<string, unknown>>(
   );
 
   const clearAllFilters = useCallback(() => {
-    setFiltersState(initialFilters);
+    setFiltersInternal(initialFilters);
     options?.onFilterChange?.(initialFilters);
   }, [initialFilters, options]);
 

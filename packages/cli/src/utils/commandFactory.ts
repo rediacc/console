@@ -32,11 +32,11 @@ export interface ResourceCommandConfig {
     delete: (payload: Record<string, unknown>) => Promise<unknown>;
   };
   /** Optional: Additional options for create command */
-  createOptions?: Array<{
+  createOptions?: {
     flags: string;
     description: string;
     required?: boolean;
-  }>;
+  }[];
   /** Optional: Transform create payload before sending */
   transformCreatePayload?: (
     name: string,
@@ -46,7 +46,7 @@ export interface ResourceCommandConfig {
   vaultConfig?: {
     fetch: (
       params: Record<string, unknown>
-    ) => Promise<{ vaults: Array<CompanyVaultRecord & { vaultType?: string }> }>;
+    ) => Promise<{ vaults: (CompanyVaultRecord & { vaultType?: string })[] }>;
     vaultType: string;
   };
   /** Optional: Vault update command configuration */
@@ -162,7 +162,7 @@ export function createResourceCommands(program: Command, config: ResourceCommand
 
       const items = Array.isArray(response)
         ? response
-        : Array.isArray((response as { items?: unknown[] })?.items)
+        : Array.isArray((response as { items?: unknown[] }).items)
           ? (response as { items: unknown[] }).items
           : [];
       const format = program.opts().output as OutputFormat;
@@ -357,15 +357,14 @@ export function createResourceCommands(program: Command, config: ResourceCommand
             'Vault fetched'
           );
 
-          const vaultsArray: Array<CompanyVaultRecord & { vaultType?: string }> = Array.isArray(
+          const vaultsArray: (CompanyVaultRecord & { vaultType?: string })[] = Array.isArray(
             response
           )
-            ? (response as Array<CompanyVaultRecord & { vaultType?: string }>)
+            ? (response as (CompanyVaultRecord & { vaultType?: string })[])
             : Array.isArray(
-                  (response as { vaults?: Array<CompanyVaultRecord & { vaultType?: string }> })
-                    ?.vaults
+                  (response as { vaults?: (CompanyVaultRecord & { vaultType?: string })[] }).vaults
                 )
-              ? (response as { vaults: Array<CompanyVaultRecord & { vaultType?: string }> }).vaults
+              ? (response as { vaults: (CompanyVaultRecord & { vaultType?: string })[] }).vaults
               : [];
           const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType);
           const format = program.opts().output as OutputFormat;
@@ -502,7 +501,7 @@ export function addStatusCommand(
 
         const items: Record<string, unknown>[] = Array.isArray(response)
           ? (response as Record<string, unknown>[])
-          : Array.isArray((response as { items?: Record<string, unknown>[] })?.items)
+          : Array.isArray((response as { items?: Record<string, unknown>[] }).items)
             ? (response as { items: Record<string, unknown>[] }).items
             : [];
         const item = items.find((i) => i[nameField] === name);

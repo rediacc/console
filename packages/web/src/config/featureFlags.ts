@@ -279,10 +279,10 @@ class FeatureFlags {
    * @returns true if the feature should be visible/enabled
    */
   isEnabled(featureName: string): boolean {
-    const flag = this.flags[featureName];
+    const flag = this.flags[featureName] as FeatureFlag | undefined;
 
     // Feature doesn't exist
-    if (!flag) {
+    if (flag === undefined) {
       return false;
     }
 
@@ -326,7 +326,7 @@ class FeatureFlags {
 
     // Check build type requirement
     if (flag.requiresBuildType) {
-      const currentBuildType = import.meta.env.VITE_BUILD_TYPE || 'DEBUG';
+      const currentBuildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
       if (currentBuildType !== flag.requiresBuildType) {
         return false;
       }
@@ -385,7 +385,7 @@ class FeatureFlags {
    * @returns 'DEBUG' or 'RELEASE'
    */
   getBuildType(): 'DEBUG' | 'RELEASE' {
-    const buildType = import.meta.env.VITE_BUILD_TYPE || 'DEBUG';
+    const buildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
     return buildType === 'RELEASE' ? 'RELEASE' : 'DEBUG';
   }
 
@@ -410,19 +410,18 @@ class FeatureFlags {
 
       this.notifyListeners();
       return this.isLocalhostModeActive;
-    } else {
-      // Toggle power mode (original behavior)
-      this.isPowerModeActive = !this.isPowerModeActive;
-
-      if (import.meta.env.DEV) {
-        console.warn(
-          `[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`
-        );
-      }
-
-      this.notifyListeners();
-      return this.isPowerModeActive;
     }
+    // Toggle power mode (original behavior)
+    this.isPowerModeActive = !this.isPowerModeActive;
+
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`
+      );
+    }
+
+    this.notifyListeners();
+    return this.isPowerModeActive;
   }
 
   /**

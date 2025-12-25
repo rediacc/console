@@ -46,7 +46,7 @@ const EndpointSelector: React.FC = () => {
         if (formattedVersion === 'Development') {
           setVersionDisplay('Development');
         } else {
-          const buildType = import.meta.env.VITE_BUILD_TYPE || 'DEBUG';
+          const buildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
           const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
           setVersionDisplay(`${buildLabel} - ${formattedVersion}`);
         }
@@ -56,7 +56,7 @@ const EndpointSelector: React.FC = () => {
       }
     };
 
-    fetchVersion();
+    void fetchVersion();
   }, []);
 
   /**
@@ -98,8 +98,8 @@ const EndpointSelector: React.FC = () => {
       // Check health for each endpoint in parallel
       const promises = endpointsList.map(async (endpoint) => {
         // Check if cached health is still valid
-        const cached = healthStatusRef.current[endpoint.id];
-        if (cached && Date.now() - cached.lastChecked < HEALTH_CACHE_DURATION) {
+        const cached = healthStatusRef.current[endpoint.id] as EndpointHealth | undefined;
+        if (cached !== undefined && Date.now() - cached.lastChecked < HEALTH_CACHE_DURATION) {
           healthChecks[endpoint.id] = cached;
           return;
         }
@@ -175,7 +175,7 @@ const EndpointSelector: React.FC = () => {
           // Find all localhost endpoints and select the first healthy one
           const localhostEndpoints = allEndpoints.filter((e) => e.type === 'localhost');
           const healthyLocalhostEndpoint = localhostEndpoints.find(
-            (e) => healthChecks[e.id]?.isHealthy
+            (e) => healthChecks[e.id].isHealthy
           );
 
           if (healthyLocalhostEndpoint) {
@@ -216,7 +216,7 @@ const EndpointSelector: React.FC = () => {
         if (!selected) {
           const connectionInfo = apiConnectionService.getSelectedEndpoint();
           if (connectionInfo) {
-            selected = allEndpoints.find((e) => e.url === connectionInfo.url) || null;
+            selected = allEndpoints.find((e) => e.url === connectionInfo.url) ?? null;
           }
         }
 
@@ -234,10 +234,10 @@ const EndpointSelector: React.FC = () => {
       }
     };
 
-    fetchEndpointsAndSelection();
+    void fetchEndpointsAndSelection();
   }, [checkAllEndpointsHealth]);
 
-  const handleEndpointChange = async (value: unknown) => {
+  const handleEndpointChange = (value: unknown) => {
     if (typeof value !== 'string') {
       return;
     }
@@ -262,7 +262,7 @@ const EndpointSelector: React.FC = () => {
 
   const handleAddCustomEndpoint = async (values: { name: string; url: string }) => {
     try {
-      const newEndpoint = await endpointService.addCustomEndpoint(values.name, values.url);
+      const newEndpoint = endpointService.addCustomEndpoint(values.name, values.url);
 
       // Refresh endpoints list
       const allEndpoints = await endpointService.fetchEndpoints(true);
@@ -313,7 +313,7 @@ const EndpointSelector: React.FC = () => {
   }
 
   // If no endpoint selected and we have endpoints, show the first one
-  const displayValue = selectedEndpoint?.id || endpoints[0]?.id;
+  const displayValue = selectedEndpoint?.id ?? endpoints[0]?.id;
 
   return (
     <>
@@ -340,7 +340,7 @@ const EndpointSelector: React.FC = () => {
         >
           {/* Predefined and custom endpoints */}
           {endpoints.map((endpoint) => {
-            const health = healthStatus[endpoint.id];
+            const health = healthStatus[endpoint.id] as EndpointHealth | undefined;
             const isChecking = health?.checking;
             // Disable if not checked yet or unhealthy (except localhost which is always enabled)
             const isDisabled =

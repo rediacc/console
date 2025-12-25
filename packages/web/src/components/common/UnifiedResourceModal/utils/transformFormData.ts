@@ -21,7 +21,7 @@ export const transformFormData = async (
     const defaults: ResourceFormValues = {};
 
     if (!data.teamName) {
-      defaults.teamName = existingData?.teamName || 'Private Team';
+      defaults.teamName = existingData?.teamName ?? 'Private Team';
     }
 
     if (resourceType === 'machine') {
@@ -35,9 +35,9 @@ export const transformFormData = async (
   // Repository-specific transformations
   if (resourceType === 'repository') {
     // Ensure machine name is included when creating from machine
-    if (existingData?.machineName && existingData?.prefilledMachine) {
+    if (existingData?.machineName && existingData.prefilledMachine) {
       data.machineName = existingData.machineName;
-      if (existingData?.teamName && !data.teamName) {
+      if (existingData.teamName && !data.teamName) {
         data.teamName = existingData.teamName;
       }
     }

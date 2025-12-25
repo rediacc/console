@@ -184,7 +184,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
       fieldDefinition?.additionalProperties &&
       typeof fieldDefinition.additionalProperties === 'object'
     ) {
-      const propDef = fieldDefinition.additionalProperties as FieldSchema;
+      const propDef = fieldDefinition.additionalProperties;
       if (propDef.type === 'object' && propDef.properties) {
         defaultValue = Object.keys(propDef.properties).reduce<NestedRecord>((acc, keyName) => {
           const schema = propDef.properties?.[keyName];
@@ -241,8 +241,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   const renderEntryValue = (entry: ObjectEntry, index: number): React.ReactNode => {
     const entryDef =
       fieldDefinition?.properties?.[entry.key] ?? fieldDefinition?.additionalProperties;
-    const nestedDefinition =
-      typeof entryDef === 'object' && entryDef ? (entryDef as FieldSchema) : undefined;
+    const nestedDefinition = typeof entryDef === 'object' ? entryDef : undefined;
 
     if (isRecordLike(entry.value)) {
       const imageValue = entry.value.image;
@@ -366,7 +365,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
 
   return (
     <Flex vertical className="w-full">
-      {(title || description || structureInfo.isUniform) && (
+      {Boolean(title ?? description ?? structureInfo.isUniform) && (
         <Flex vertical>
           {title && <Typography.Text strong>{title}</Typography.Text>}
           {description && (

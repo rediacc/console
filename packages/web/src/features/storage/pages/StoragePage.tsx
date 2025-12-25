@@ -224,7 +224,7 @@ const StoragePage: React.FC = () => {
                   <Button
                     icon={<ReloadOutlined />}
                     data-testid="resources-refresh-button"
-                    onClick={() => refetchStorage()}
+                    onClick={() => void refetchStorage()}
                     aria-label={t('common:actions.refresh')}
                   />
                 </Tooltip>
@@ -260,7 +260,7 @@ const StoragePage: React.FC = () => {
         open={queueTrace.state.open}
         onCancel={() => {
           queueTrace.close();
-          refetchStorage();
+          void refetchStorage();
         }}
       />
 
@@ -279,7 +279,7 @@ const StoragePage: React.FC = () => {
         onClose={rcloneImportWizard.close}
         teamName={selectedTeams[0] || ''}
         onImportComplete={() => {
-          refetchStorage();
+          void refetchStorage();
           showMessage('success', t('resources:storage.import.successMessage'));
         }}
       />

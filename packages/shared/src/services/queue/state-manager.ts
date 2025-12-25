@@ -98,7 +98,7 @@ export class QueueStateManager {
     }
   }
 
-  private async startMonitoringTask(taskId: string, data: LocalQueueItemData) {
+  private startMonitoringTask(taskId: string, data: LocalQueueItemData) {
     this.emitMonitoringEvent({
       type: 'task-start',
       taskId,
@@ -144,7 +144,7 @@ export class QueueStateManager {
       queuedItem.status = 'submitting';
       const response = await submitFunction(data);
       queuedItem.status = 'submitted';
-      return (response as { taskId?: string })?.taskId || id;
+      return (response as { taskId?: string }).taskId ?? id;
     } catch (error) {
       queuedItem.status = 'failed';
       throw error instanceof Error ? error : new Error('Failed to submit queue item');
@@ -237,7 +237,7 @@ export class QueueStateManager {
 
     try {
       const response = await pendingItem.submitFunction(pendingItem.data);
-      const taskId = (response as { taskId?: string })?.taskId;
+      const taskId = (response as { taskId?: string }).taskId;
 
       if (
         taskId &&
@@ -254,7 +254,7 @@ export class QueueStateManager {
           timestamp: Date.now(),
         };
         this.trackActiveTask(activeTask);
-        await this.startMonitoringTask(taskId, pendingItem.data);
+        this.startMonitoringTask(taskId, pendingItem.data);
       }
 
       pendingItem.status = 'submitted';
@@ -291,7 +291,7 @@ export class QueueStateManager {
 
   retryItem(id: string) {
     const item = this.queue.find((queueItem) => queueItem.id === id);
-    if (item && item.status === 'failed') {
+    if (item?.status === 'failed') {
       item.status = 'pending';
       item.retryCount = 0;
       this.notifyListeners();
@@ -323,7 +323,7 @@ export class QueueStateManager {
     const mappedBridge = this.taskIdToBridge.get(taskId);
     if (mappedBridge) {
       const activeTask = this.activeTasks.get(mappedBridge);
-      if (activeTask && activeTask.taskId === taskId) {
+      if (activeTask?.taskId === taskId) {
         if (this.isTerminalStatus(status)) {
           this.activeTasks.delete(mappedBridge);
           this.taskIdToBridge.delete(taskId);
@@ -351,7 +351,7 @@ export class QueueStateManager {
         const bridgeName = queueItem.data.bridgeName;
         if (bridgeName && this.activeTasks.has(bridgeName)) {
           const activeTask = this.activeTasks.get(bridgeName);
-          if (activeTask && activeTask.taskId === taskId) {
+          if (activeTask?.taskId === taskId) {
             this.activeTasks.delete(bridgeName);
             this.taskIdToBridge.delete(taskId);
             bridgeCleared = bridgeName;
