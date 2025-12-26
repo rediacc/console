@@ -58,7 +58,7 @@ const getResourceTranslationKey = (resourceType: ResourceType) => {
 };
 
 const mapToOptions = (items?: { value: string; label: string }[]) =>
-  items?.map((item) => ({ value: item.value, label: item.label })) ?? [];
+  Array.isArray(items) ? items.map((item) => ({ value: item.value, label: item.label })) : [];
 
 const getResourceNameLabel = (resourceType: ResourceType): string => {
   const labels: Record<ResourceType, string> = {
