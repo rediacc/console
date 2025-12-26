@@ -1,11 +1,7 @@
 // Authentication and password utilities for browser environment
 import { tokenService } from '@/services/auth';
 import { secureMemoryStorage as secureStorage } from '@/services/crypto';
-
-// Static salt for password hashing - provides additional protection against dictionary attacks
-// This salt is concatenated with the password before hashing to ensure even common passwords
-// produce unique hashes. The salt value must be consistent across all components.
-const STATIC_SALT = 'Rd!@cc111$ecur3P@$$w0rd$@lt#H@$h';
+import { PASSWORD_SALT } from '@rediacc/shared/encryption';
 
 // Storage keys constants
 const STORAGE_KEYS = {
@@ -18,7 +14,7 @@ const STORAGE_KEYS = {
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   // Concatenate password with static salt before hashing
-  const saltedPassword = password + STATIC_SALT;
+  const saltedPassword = password + PASSWORD_SALT;
   const data = encoder.encode(saltedPassword);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));

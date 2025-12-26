@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerUserCommands(program: Command): void {
@@ -34,15 +34,31 @@ export function registerUserCommands(program: Command): void {
   user
     .command('create <email>')
     .description('Create a new user')
-    .option('-n, --name <name>', 'User full name')
+    .option('-p, --password <password>', 'Password for the new user')
     .action(async (email, options) => {
       try {
         await authService.requireAuth();
 
+        // Get password - either from option or prompt
+        let password: string;
+        if (options.password) {
+          password = options.password;
+        } else {
+          const { askPassword } = await import('../utils/prompt.js');
+          password = await askPassword('Password for new user:');
+          const confirmPassword = await askPassword('Confirm password:');
+
+          if (password !== confirmPassword) {
+            throw new ValidationError('Passwords do not match');
+          }
+        }
+
+        const { nodeCryptoProvider } = await import('../adapters/crypto.js');
+        const passwordHash = await nodeCryptoProvider.generateHash(password);
+
         const result = await withSpinner(
           `Creating user "${email}"...`,
-          () =>
-            api.users.create(email, undefined, { fullName: options.name ?? email.split('@')[0] }),
+          () => api.users.create(email, passwordHash),
           'User created'
         );
 
@@ -65,8 +81,7 @@ export function registerUserCommands(program: Command): void {
         const confirmPassword = await askPassword('Confirm password:');
 
         if (password !== confirmPassword) {
-          outputService.error('Passwords do not match');
-          process.exit(1);
+          throw new ValidationError('Passwords do not match');
         }
 
         const { nodeCryptoProvider } = await import('../adapters/crypto.js');
@@ -104,6 +119,101 @@ export function registerUserCommands(program: Command): void {
           `Deactivating user "${email}"...`,
           () => api.users.deactivate({ userEmail: email }),
           'User deactivated'
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // user reactivate
+  user
+    .command('reactivate <email>')
+    .description('Reactivate a deactivated user account')
+    .action(async (email) => {
+      try {
+        await authService.requireAuth();
+
+        await withSpinner(
+          `Reactivating user "${email}"...`,
+          () => api.users.activate({ userEmail: email }),
+          'User reactivated'
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // user update-email
+  user
+    .command('update-email <currentEmail> <newEmail>')
+    .description("Change a user's email address")
+    .action(async (currentEmail, newEmail) => {
+      try {
+        await authService.requireAuth();
+
+        await withSpinner(
+          `Updating email for "${currentEmail}"...`,
+          () => api.users.updateEmail({ currentUserEmail: currentEmail, newUserEmail: newEmail }),
+          `Email updated to "${newEmail}"`
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // user update-password
+  user
+    .command('update-password')
+    .description('Change your password')
+    .option('--password <password>', 'New password (non-interactive mode)')
+    .option('--confirm <confirm>', 'Confirm password (non-interactive mode)')
+    .action(async (options) => {
+      try {
+        await authService.requireAuth();
+
+        let newPassword: string;
+        let confirmPassword: string;
+
+        if (options.password) {
+          // Non-interactive mode
+          newPassword = options.password;
+          confirmPassword = options.confirm ?? options.password;
+        } else {
+          // Interactive mode
+          const { askPassword } = await import('../utils/prompt.js');
+          newPassword = await askPassword('New password:');
+          confirmPassword = await askPassword('Confirm new password:');
+        }
+
+        if (newPassword !== confirmPassword) {
+          throw new ValidationError('Passwords do not match');
+        }
+
+        const { nodeCryptoProvider } = await import('../adapters/crypto.js');
+        const passwordHash = await nodeCryptoProvider.generateHash(newPassword);
+
+        await withSpinner(
+          'Updating password...',
+          () => api.users.updatePassword({ userNewPass: passwordHash }),
+          'Password updated'
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // user update-language
+  user
+    .command('update-language <language>')
+    .description("Set current user's preferred language")
+    .action(async (language) => {
+      try {
+        await authService.requireAuth();
+
+        await withSpinner(
+          `Updating language preference...`,
+          () => api.users.updateLanguage({ preferredLanguage: language }),
+          `Language updated to "${language}"`
         );
       } catch (error) {
         handleError(error);
@@ -179,21 +289,20 @@ export function registerUserCommands(program: Command): void {
         }
 
         if (!vaultData) {
-          outputService.error('Vault data required. Use --vault <json> or pipe JSON via stdin.');
-          process.exit(1);
+          throw new ValidationError(
+            'Vault data required. Use --vault <json> or pipe JSON via stdin.'
+          );
         }
 
         if (options.vaultVersion === undefined || options.vaultVersion === null) {
-          outputService.error('Vault version required. Use --vault-version <n>.');
-          process.exit(1);
+          throw new ValidationError('Vault version required. Use --vault-version <n>.');
         }
 
         // Validate JSON
         try {
           JSON.parse(vaultData);
         } catch {
-          outputService.error('Invalid JSON vault data.');
-          process.exit(1);
+          throw new ValidationError('Invalid JSON vault data.');
         }
 
         await withSpinner(

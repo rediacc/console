@@ -4,32 +4,8 @@
 
 import dayjs from 'dayjs';
 
-/**
- * Escape a value for CSV format
- * @param value - The value to escape
- * @returns Escaped string suitable for CSV
- */
-export function escapeCSVValue(value: unknown): string {
-  if (value == null) return '';
-  const str = String(value);
-  // Escape double quotes and wrap in quotes if contains special chars
-  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return `"${str}"`;
-}
-
-/**
- * Build CSV content from headers and rows
- * @param headers - Array of header strings
- * @param rows - Array of row arrays
- * @returns CSV formatted string
- */
-export function buildCSVContent(headers: string[], rows: unknown[][]): string {
-  const headerRow = headers.join(',');
-  const dataRows = rows.map((row) => row.map(escapeCSVValue).join(','));
-  return [headerRow, ...dataRows].join('\n');
-}
+// Re-export from shared for backward compatibility
+export { escapeCSVValue, buildCSVContent } from '@rediacc/shared/utils';
 
 /**
  * Download content as a file

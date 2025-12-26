@@ -82,59 +82,6 @@ export default defineConfig(({ mode }) => {
           pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.trace'],
         },
       },
-      rollupOptions: {
-        output: {
-          manualChunks: (id) => {
-            if (id.includes('node_modules')) {
-              if (/[\\/]node_modules[\\/](react|react-dom|react-router-dom)[\\/]/.test(id)) {
-                return 'vendor-react';
-              }
-              if (/[\\/]node_modules[\\/]antd[\\/]/.test(id)) {
-                return 'vendor-antd';
-              }
-              if (
-                /[\\/]node_modules[\\/](@reduxjs|react-redux|@tanstack[\\/]react-query)[\\/]/.test(
-                  id
-                )
-              ) {
-                return 'vendor-state';
-              }
-              if (/[\\/]node_modules[\\/](axios|dayjs)[\\/]/.test(id)) {
-                return 'vendor-utils';
-              }
-              if (
-                /[\\/]node_modules[\\/](i18next|react-i18next|i18next-browser-languagedetector)[\\/]/.test(
-                  id
-                )
-              ) {
-                return 'vendor-i18n';
-              }
-            }
-
-            if (id.endsWith('/types.ts') || id.endsWith('/models/index.ts')) {
-              return undefined;
-            }
-
-            if (id.includes('/src/features/')) {
-              const [featureName] = id.split('/src/features/')[1].split('/');
-              return `feature-${featureName}`;
-            }
-
-            if (id.includes('/src/hooks/')) return 'app-hooks';
-            if (id.includes('/src/components/common/')) return 'app-common';
-            if (id.includes('/src/components/resources/')) return 'app-resources';
-            if (id.includes('/src/services/')) return 'app-services';
-
-            return undefined;
-          },
-          chunkFileNames: (chunkInfo) => {
-            const facadeModuleId = chunkInfo.facadeModuleId
-              ? chunkInfo.facadeModuleId.split('/').pop()
-              : 'chunk';
-            return `assets/js/${facadeModuleId}-[hash].js`;
-          },
-        },
-      },
       chunkSizeWarningLimit: 1000, // 1MB warning threshold
       reportCompressedSize: false, // Disable gzip size reporting for faster builds
     },

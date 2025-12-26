@@ -1,23 +1,24 @@
+import { extractNextToken } from '@rediacc/shared/api';
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import { isEncrypted } from '@rediacc/shared/encryption';
 import { api, apiClient } from './api.js';
+import { contextService } from './context.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
-import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
 import { askPassword } from '../utils/prompt.js';
 
-const STORAGE_KEYS = {
-  TOKEN: 'token',
-  MASTER_PASSWORD: 'masterPassword',
-  USER_EMAIL: 'userEmail',
-} as const;
-
 class AuthService {
   private cachedMasterPassword: string | null = null;
+
+  /**
+   * Login to the API and save credentials to a context.
+   * If contextName is provided, creates/updates that context.
+   * Otherwise, uses the current context.
+   */
   async login(
     email: string,
     password: string,
-    options: { sessionName?: string } = {}
+    options: { sessionName?: string; contextName?: string; apiUrl?: string } = {}
   ): Promise<{ success: boolean; isTFAEnabled?: boolean; message?: string }> {
     // Hash the password
     const passwordHash = await nodeCryptoProvider.generateHash(password);
@@ -43,18 +44,45 @@ class AuthService {
       };
     }
 
-    // Store email for convenience
-    await nodeStorageAdapter.setItem(STORAGE_KEYS.USER_EMAIL, email);
+    // Extract token from login response
+    // Note: Token rotation in apiClient.login() can't save the token because no context exists yet.
+    // We must extract it here and pass it to saveLoginCredentials.
+    const token = extractNextToken(response);
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'Login succeeded but no request token was returned from server',
+      };
+    }
+
+    // Determine the context name to use
+    const contextName = options.contextName ?? (await contextService.getCurrentName()) ?? 'default';
+    const apiUrl = options.apiUrl ?? apiClient.getApiUrl();
+
+    // Prepare credentials to save
+    const credentials: {
+      apiUrl: string;
+      token: string;
+      userEmail: string;
+      masterPassword?: string;
+    } = {
+      apiUrl,
+      token,
+      userEmail: email,
+    };
 
     // Only store master password if company has encryption enabled
-    // This matches the console's behavior - see web/src/pages/login/index.tsx
     if (isEncrypted(authResult.vaultCompany)) {
-      await this.setMasterPassword(password);
+      const encryptedPassword = await nodeCryptoProvider.encrypt(password, password);
+      credentials.masterPassword = encryptedPassword;
+      this.cachedMasterPassword = password;
     } else {
-      // Clear any previously stored password if company doesn't have encryption
-      await nodeStorageAdapter.removeItem(STORAGE_KEYS.MASTER_PASSWORD);
       this.cachedMasterPassword = null;
     }
+
+    // Save credentials to context
+    await contextService.saveLoginCredentials(contextName, credentials);
 
     return { success: true };
   }
@@ -80,26 +108,24 @@ class AuthService {
       // Ignore errors during logout
     }
 
-    // Clear local credentials
-    await apiClient.clearToken();
-    await nodeStorageAdapter.removeItem(STORAGE_KEYS.MASTER_PASSWORD);
-    await nodeStorageAdapter.removeItem(STORAGE_KEYS.USER_EMAIL);
+    // Clear credentials from current context
+    await contextService.clearCredentials();
+    this.cachedMasterPassword = null;
   }
 
   async isAuthenticated(): Promise<boolean> {
-    return apiClient.hasToken();
+    return contextService.hasToken();
   }
 
   async getStoredEmail(): Promise<string | null> {
-    return nodeStorageAdapter.getItem(STORAGE_KEYS.USER_EMAIL);
+    return contextService.getUserEmail();
   }
 
   async getMasterPassword(inputPassword?: string): Promise<string | null> {
-    const encrypted = await nodeStorageAdapter.getItem(STORAGE_KEYS.MASTER_PASSWORD);
+    const encrypted = await contextService.getMasterPassword();
     if (!encrypted) return null;
 
     if (!inputPassword) {
-      // Can't decrypt without the password
       return null;
     }
 
@@ -112,7 +138,7 @@ class AuthService {
 
   async setMasterPassword(password: string): Promise<void> {
     const encrypted = await nodeCryptoProvider.encrypt(password, password);
-    await nodeStorageAdapter.setItem(STORAGE_KEYS.MASTER_PASSWORD, encrypted);
+    await contextService.setMasterPassword(encrypted);
     this.cachedMasterPassword = password;
   }
 
@@ -130,11 +156,10 @@ class AuthService {
     }
 
     // Try to get stored encrypted password
-    const encrypted = await nodeStorageAdapter.getItem(STORAGE_KEYS.MASTER_PASSWORD);
+    const encrypted = await contextService.getMasterPassword();
 
     if (encrypted) {
       // In non-interactive mode (no TTY), skip prompting and throw error
-      // This prevents blocking in CI/scripted environments
       if (!process.stdin.isTTY) {
         throw new AuthError(
           'Master password required but running in non-interactive mode. Set REDIACC_MASTER_PASSWORD environment variable.',
@@ -142,23 +167,19 @@ class AuthService {
         );
       }
 
-      // We need the password to decrypt it - prompt user
+      // Prompt user for password
       const password = await askPassword('Enter your master password:');
 
       try {
         const decrypted = await nodeCryptoProvider.decrypt(encrypted, password);
-        // Verify the decrypted password matches by encrypting it again
-        // If it decrypts successfully, we have the right password
         this.cachedMasterPassword = decrypted;
         return decrypted;
       } catch {
-        // Decryption failed - wrong password
         throw new AuthError('Invalid master password', EXIT_CODES.AUTH_REQUIRED);
       }
     }
 
     // No stored password - company doesn't have encryption enabled
-    // Don't prompt for new password; vault operations will skip client-side encryption
     throw new AuthError(
       'No master password configured. Company may not have encryption enabled.',
       EXIT_CODES.AUTH_REQUIRED
@@ -172,7 +193,39 @@ class AuthService {
   async requireAuth(): Promise<void> {
     const isAuth = await this.isAuthenticated();
     if (!isAuth) {
-      throw new AuthError('Not authenticated. Please run: rediacc login', EXIT_CODES.AUTH_REQUIRED);
+      throw new AuthError('Not authenticated. Please run: rdc login', EXIT_CODES.AUTH_REQUIRED);
+    }
+  }
+
+  async register(
+    companyName: string,
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const passwordHash = await nodeCryptoProvider.generateHash(password);
+
+    try {
+      await apiClient.register(companyName, email, passwordHash);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Registration failed';
+      return { success: false, message };
+    }
+  }
+
+  async activate(
+    email: string,
+    password: string,
+    code: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const passwordHash = await nodeCryptoProvider.generateHash(password);
+
+    try {
+      await apiClient.activateUser(email, code, passwordHash);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Activation failed';
+      return { success: false, message };
     }
   }
 }
