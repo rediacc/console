@@ -78,25 +78,25 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
               <Flex align="center" justify="space-between">
                 <Typography.Text>Created</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-created-today">
-                  {queueStats.createdToday || 0}
+                  {queueStats.createdToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text>Completed</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-completed-today">
-                  {queueStats.completedToday || 0}
+                  {queueStats.completedToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text>Cancelled</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-cancelled-today">
-                  {queueStats.cancelledToday || 0}
+                  {queueStats.cancelledToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text>Failed</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-failed-today">
-                  {queueStats.failedToday || 0}
+                  {queueStats.failedToday ?? 0}
                 </Typography.Text>
               </Flex>
             </Flex>
@@ -121,13 +121,13 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                         <Flex align="center" justify="space-between">
                           <Typography.Text strong>{teamIssue.teamName}</Typography.Text>
                           <Flex align="center" gap={8} wrap className="inline-flex">
-                            {(teamIssue.staleItems || 0) > 0 && (
+                            {(teamIssue.staleItems ?? 0) > 0 && (
                               <Tag>
                                 <WarningOutlined /> {teamIssue.staleItems} stale
                               </Tag>
                             )}
-                            <Tag>{teamIssue.pendingItems || 0} pending</Tag>
-                            <Tag>{teamIssue.activeItems || 0} active</Tag>
+                            <Tag>{teamIssue.pendingItems ?? 0} pending</Tag>
+                            <Tag>{teamIssue.activeItems ?? 0} active</Tag>
                           </Flex>
                         </Flex>
                       </List.Item>

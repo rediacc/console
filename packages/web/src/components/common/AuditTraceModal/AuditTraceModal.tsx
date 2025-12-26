@@ -126,7 +126,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       records: data.records.map((record) => ({
         actionType: record.actionType,
         details: record.details,
-        performedBy: record.performedBy || 'System',
+        performedBy: record.performedBy ?? 'System',
         timestamp: record.timestamp,
         timeAgo: record.timeAgo,
         iconHint: record.iconHint,

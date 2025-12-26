@@ -21,10 +21,9 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
     }
 
     try {
+      // vaultContent.vaultContent is string | null per QueueVaultSnapshot type
       const content =
-        typeof vaultContent.vaultContent === 'string'
-          ? JSON.parse(vaultContent.vaultContent)
-          : (vaultContent.vaultContent ?? {});
+        typeof vaultContent.vaultContent === 'string' ? JSON.parse(vaultContent.vaultContent) : {};
       return <SimpleJsonEditor value={JSON.stringify(content, null, 2)} readOnly height="300px" />;
     } catch {
       return <Empty description="Invalid request vault content format" />;
@@ -37,10 +36,11 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
     }
 
     try {
+      // responseVaultContent.vaultContent is string | null per QueueVaultSnapshot type
       const content =
         typeof responseVaultContent.vaultContent === 'string'
           ? JSON.parse(responseVaultContent.vaultContent)
-          : (responseVaultContent.vaultContent ?? {});
+          : {};
 
       // Try to parse as SSH test result
       const sshTestResult = parseSSHTestResults(content);

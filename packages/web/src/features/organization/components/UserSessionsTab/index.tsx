@@ -69,12 +69,13 @@ const UserSessionsTab: React.FC = () => {
 
   const filteredSessions = sessions.filter((session: UserRequest) => {
     const searchLower = searchTerm.toLowerCase();
-    return (
-      session.userEmail.toLowerCase().includes(searchLower) ||
-      (session.ipAddress?.toLowerCase().includes(searchLower) ?? false) ||
-      session.sessionName.toLowerCase().includes(searchLower) ||
-      session.userAgent?.toLowerCase().includes(searchLower)
-    );
+    const searchFields = [
+      session.userEmail,
+      session.ipAddress,
+      session.sessionName,
+      session.userAgent,
+    ];
+    return searchFields.some((field) => field?.toLowerCase().includes(searchLower));
   });
 
   const activeSessions = sessions.filter((session: UserRequest) => session.isActive);

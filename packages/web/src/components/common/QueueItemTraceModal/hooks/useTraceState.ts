@@ -65,9 +65,10 @@ export const useTraceState = ({
     ) {
       try {
         // vaultContent is always a string at this point (checked above)
-        const vaultContent = JSON.parse(
-          traceData.responseVaultContent.vaultContent
-        ) as Record<string, unknown>;
+        const vaultContent = JSON.parse(traceData.responseVaultContent.vaultContent) as Record<
+          string,
+          unknown
+        >;
 
         if (vaultContent.status === 'completed') {
           // For completed status, replace accumulated output with final result
@@ -94,8 +95,8 @@ export const useTraceState = ({
           setLastOutputStatus('completed');
         } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
           // For in-progress updates, check if we should append or replace
-          const newMessage = vaultContent.message;
-          if (newMessage && lastOutputStatus !== 'completed') {
+          const newMessage = vaultContent.message as string;
+          if (lastOutputStatus !== 'completed') {
             setAccumulatedOutput((currentOutput) => {
               // If the new message starts with the current content, only append the difference
               if (newMessage.startsWith(currentOutput)) {

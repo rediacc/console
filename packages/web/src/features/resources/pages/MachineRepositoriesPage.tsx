@@ -168,7 +168,7 @@ const MachineReposPage: React.FC = () => {
       | ContainerData
       | { id: string; name: string; state: string; [key: string]: unknown }
   ) => {
-    setSelectedResource(container as PluginContainer | ContainerData);
+    setSelectedResource(container);
   };
 
   // Loading state
