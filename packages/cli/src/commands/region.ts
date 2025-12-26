@@ -1,8 +1,5 @@
 import { Command } from 'commander';
-import {
-  parseGetCompanyRegions,
-  parseGetCompanyVaults,
-} from '@rediacc/shared/api';
+import { parseGetCompanyRegions, parseGetCompanyVaults } from '@rediacc/shared/api';
 import type {
   CreateRegionParams,
   DeleteRegionParams,

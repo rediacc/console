@@ -29,7 +29,9 @@ export function registerBridgeCommands(program: Command): void {
     parentOption: 'region',
     operations: {
       list: async (params) => {
-        const response = await typedApi.GetRegionBridges({ regionName: params?.regionName as string });
+        const response = await typedApi.GetRegionBridges({
+          regionName: params?.regionName as string,
+        });
         return parseGetRegionBridges(response as never);
       },
       create: async (payload) => {
@@ -48,7 +50,8 @@ export function registerBridgeCommands(program: Command): void {
       vaultType: 'Bridge',
     },
     vaultUpdateConfig: {
-      update: (payload) => typedApi.UpdateBridgeVault(payload as unknown as UpdateBridgeVaultParams),
+      update: (payload) =>
+        typedApi.UpdateBridgeVault(payload as unknown as UpdateBridgeVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });
@@ -74,7 +77,9 @@ export function registerBridgeCommands(program: Command): void {
         );
 
         // Extract token from response
-        const tokenData = extractPrimaryOrSecondary(apiResponse as never)[0] as { authToken?: string } | undefined;
+        const tokenData = extractPrimaryOrSecondary(apiResponse as never)[0] as
+          | { authToken?: string }
+          | undefined;
         const authToken = tokenData?.authToken ?? null;
 
         if (authToken) {

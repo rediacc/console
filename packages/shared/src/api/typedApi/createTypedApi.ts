@@ -73,7 +73,9 @@ export function createTypedApi(client: ApiClient): TypedApi {
 
         const typedResponse: TypedApiResponse<typeof procedureName> = {
           ...response,
-          results: response.resultSets.map((rs) => rs.data) as TypedApiResponse<typeof procedureName>['results'],
+          results: response.resultSets.map((rs) => rs.data) as TypedApiResponse<
+            typeof procedureName
+          >['results'],
         };
         return typedResponse;
       };

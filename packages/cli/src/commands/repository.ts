@@ -321,7 +321,9 @@ export function registerRepositoryCommands(program: Command): void {
           'Vault fetched'
         );
 
-        const vaults = parseGetCompanyVaults(response as never) as unknown as (GetCompanyVaults_ResultSet1 & {
+        const vaults = parseGetCompanyVaults(
+          response as never
+        ) as unknown as (GetCompanyVaults_ResultSet1 & {
           vaultType?: string;
           teamName?: string;
           repositoryName?: string;

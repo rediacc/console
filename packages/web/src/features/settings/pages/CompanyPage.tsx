@@ -239,7 +239,7 @@ const CompanyPage: React.FC = () => {
               credential: vault.credential,
               name: vault.vaultName,
               content: finalContent,
-              version: (vault.version) || 1,
+              version: vault.version || 1,
             });
           } catch {
             showMessage('error', `Failed to process vault ${vault.vaultName}`);

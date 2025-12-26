@@ -117,7 +117,8 @@ export function registerPermissionCommands(program: Command): void {
 
         await withSpinner(
           `Adding permission "${permissionName}" to group "${groupName}"...`,
-          () => typedApi.CreatePermissionInGroup({ permissionGroupName: groupName, permissionName }),
+          () =>
+            typedApi.CreatePermissionInGroup({ permissionGroupName: groupName, permissionName }),
           'Permission added'
         );
       } catch (error) {

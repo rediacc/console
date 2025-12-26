@@ -90,9 +90,7 @@ function parseMachineStats(stats?: QueueMachineStats | null): QueueMachineStats 
 export function parseGetQueueItemTrace(response: ApiResponse): QueueTrace {
   const summary = extractFirstByIndex<QueueTraceSummary>(response, 0);
   const queueDetails = extractFirstByIndex<GetTeamQueueItems_ResultSet1>(response, 1);
-  const vaultContent = parseVaultSnapshot(
-    extractFirstByIndex<QueueVaultSnapshot>(response, 2)
-  );
+  const vaultContent = parseVaultSnapshot(extractFirstByIndex<QueueVaultSnapshot>(response, 2));
   const responseVaultContent = parseVaultSnapshot(
     extractFirstByIndex<QueueVaultSnapshot>(response, 3)
   );

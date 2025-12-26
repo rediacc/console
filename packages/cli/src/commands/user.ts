@@ -164,7 +164,8 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Updating email for "${currentEmail}"...`,
-          () => typedApi.UpdateUserEmail({ currentUserEmail: currentEmail, newUserEmail: newEmail }),
+          () =>
+            typedApi.UpdateUserEmail({ currentUserEmail: currentEmail, newUserEmail: newEmail }),
           `Email updated to "${newEmail}"`
         );
       } catch (error) {

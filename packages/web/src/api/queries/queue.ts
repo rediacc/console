@@ -60,7 +60,6 @@ export interface QueueCreateResult {
   taskId: string | null;
 }
 
-
 // Queue functions will be loaded via the functionsService instead
 
 // Get queue items with advanced filtering

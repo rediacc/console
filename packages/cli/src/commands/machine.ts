@@ -41,14 +41,17 @@ export function registerMachineCommands(program: Command): void {
     parentOption: 'team',
     operations: {
       list: async (params) => {
-        const response = await typedApi.GetTeamMachines({ teamName: params?.teamName as string | undefined });
+        const response = await typedApi.GetTeamMachines({
+          teamName: params?.teamName as string | undefined,
+        });
         return parseGetTeamMachines(response as never);
       },
       create: async (payload) => {
         const response = await typedApi.CreateMachine(payload as unknown as CreateMachineParams);
         return parseCreateMachine(response as never);
       },
-      rename: (payload) => typedApi.UpdateMachineName(payload as unknown as UpdateMachineNameParams),
+      rename: (payload) =>
+        typedApi.UpdateMachineName(payload as unknown as UpdateMachineNameParams),
       delete: (payload) => typedApi.DeleteMachine(payload as unknown as DeleteMachineParams),
     },
     createOptions: [
@@ -75,7 +78,8 @@ export function registerMachineCommands(program: Command): void {
       vaultType: 'Machine',
     },
     vaultUpdateConfig: {
-      update: (payload) => typedApi.UpdateMachineVault(payload as unknown as UpdateMachineVaultParams),
+      update: (payload) =>
+        typedApi.UpdateMachineVault(payload as unknown as UpdateMachineVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });
@@ -86,7 +90,9 @@ export function registerMachineCommands(program: Command): void {
     nameField: 'machineName',
     parentOption: 'team',
     fetch: async (params) => {
-      const response = await typedApi.GetTeamMachines({ teamName: params.teamName as string | undefined });
+      const response = await typedApi.GetTeamMachines({
+        teamName: params.teamName as string | undefined,
+      });
       return parseGetTeamMachines(response as never);
     },
   });

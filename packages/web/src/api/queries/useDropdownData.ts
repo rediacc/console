@@ -22,7 +22,8 @@ export const useDropdownData = (context?: string) => {
     queryKey: ['dropdown-data', context],
     queryFn: async () => {
       const response = await typedApi.GetLookupData(context ? { context } : {});
-      const row = extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 1) ??
+      const row =
+        extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 1) ??
         extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 0);
       if (row?.dropdownValues) {
         try {

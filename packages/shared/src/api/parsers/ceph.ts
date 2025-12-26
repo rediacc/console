@@ -71,9 +71,7 @@ export function parseGetCloneMachineAssignmentValidation(
   return extractRowsByIndex<CephMachineAssignmentValidation>(response, 0);
 }
 
-export function parseGetCloneMachines(
-  response: ApiResponse<CephCloneMachine>
-): CephCloneMachine[] {
+export function parseGetCloneMachines(response: ApiResponse<CephCloneMachine>): CephCloneMachine[] {
   return extractRowsByIndex<CephCloneMachine>(response, 0);
 }
 

@@ -26,7 +26,10 @@ export const useCompanyVault = () => {
     queryKey: ['company-vault', company],
     queryFn: async () => {
       const response = await typedApi.GetCompanyVault({});
-      return extractFirstByIndex<GetCompanyVault_ResultSet1>(response, 1) ?? extractFirstByIndex<GetCompanyVault_ResultSet1>(response, 0);
+      return (
+        extractFirstByIndex<GetCompanyVault_ResultSet1>(response, 1) ??
+        extractFirstByIndex<GetCompanyVault_ResultSet1>(response, 0)
+      );
     },
     enabled: !!company,
   });

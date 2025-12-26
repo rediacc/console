@@ -2,7 +2,12 @@
  * Auth Parsers
  */
 
-import { extractPrimaryOrSecondary, extractFirstByIndex, extractRowsByIndex, toBoolean } from './base';
+import {
+  extractPrimaryOrSecondary,
+  extractFirstByIndex,
+  extractRowsByIndex,
+  toBoolean,
+} from './base';
 import type {
   AuthLoginResult,
   AuthRequestStatus,

@@ -382,15 +382,19 @@ export function createResourceCommands(program: Command, config: ResourceCommand
             'Vault fetched'
           );
 
-          const vaultsArray: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] = Array.isArray(
-            response
-          )
-            ? (response as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[])
-            : Array.isArray(
-                  (response as { vaults?: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] }).vaults
-                )
-              ? (response as { vaults: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] }).vaults
-              : [];
+          const vaultsArray: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] =
+            Array.isArray(response)
+              ? (response as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[])
+              : Array.isArray(
+                    (
+                      response as {
+                        vaults?: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+                      }
+                    ).vaults
+                  )
+                ? (response as { vaults: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] })
+                    .vaults
+                : [];
           const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType);
           const format = program.opts().output as OutputFormat;
 

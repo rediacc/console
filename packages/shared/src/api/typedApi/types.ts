@@ -31,11 +31,10 @@ export interface TypedApiConfig {
  * For procedures with no params, make the params argument optional.
  * For procedures with params, require the params argument.
  */
-type ParamsArg<P extends StoredProcedureName> = IsEmptyRecord<
-  ProcedureParamsMap[P]
-> extends true
-  ? [params?: ProcedureParamsMap[P], config?: TypedApiConfig]
-  : [params: ProcedureParamsMap[P], config?: TypedApiConfig];
+type ParamsArg<P extends StoredProcedureName> =
+  IsEmptyRecord<ProcedureParamsMap[P]> extends true
+    ? [params?: ProcedureParamsMap[P], config?: TypedApiConfig]
+    : [params: ProcedureParamsMap[P], config?: TypedApiConfig];
 
 /**
  * Typed API response with result sets properly typed as tuples.
@@ -63,16 +62,19 @@ export type TypedApi = {
 /**
  * Extract the primary data type from a procedure's results
  */
-export type PrimaryResult<P extends StoredProcedureName> =
-  ProcedureResultsMap[P] extends [unknown, infer Second, ...unknown[]]
-    ? Second extends (infer U)[]
+export type PrimaryResult<P extends StoredProcedureName> = ProcedureResultsMap[P] extends [
+  unknown,
+  infer Second,
+  ...unknown[],
+]
+  ? Second extends (infer U)[]
+    ? U
+    : never
+  : ProcedureResultsMap[P] extends [infer First, ...unknown[]]
+    ? First extends (infer U)[]
       ? U
       : never
-    : ProcedureResultsMap[P] extends [infer First, ...unknown[]]
-      ? First extends (infer U)[]
-        ? U
-        : never
-      : never;
+    : never;
 
 /**
  * Extract result set by index
