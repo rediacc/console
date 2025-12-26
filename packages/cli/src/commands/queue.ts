@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import type { QueueTrace, QueueTraceSummary } from '@rediacc/shared/types';
+import { searchInFields, compareValues, extractMostRecentProgress } from '@rediacc/shared/utils';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -167,7 +168,12 @@ export async function traceAction(
       if (summary) {
         const statusText = formatStatus(summary.status ?? 'UNKNOWN');
         const ageText = summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : 'unknown';
-        const progressText = summary.progress ?? 'No progress';
+
+        // Extract progress percentage from console output if available
+        const percentage = extractMostRecentProgress(summary.consoleOutput || '');
+        const progressText =
+          percentage !== null ? `${percentage}%` : summary.progress ?? 'In progress';
+
         if (spinner) {
           spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;
         }
@@ -245,6 +251,9 @@ export function registerQueueCommands(program: Command): void {
     .option('--status <status>', 'Filter by status')
     .option('--priority-min <n>', 'Minimum priority (1-5)')
     .option('--priority-max <n>', 'Maximum priority (1-5)')
+    .option('--search <text>', 'Search in taskId, team, machine, bridge')
+    .option('--sort <field>', 'Sort by field (taskId, ageInMinutes, priority, status)')
+    .option('--desc', 'Sort in descending order')
     .option('--limit <n>', 'Limit results', '50')
     .action(async (options) => {
       try {
@@ -300,6 +309,27 @@ export function registerQueueCommands(program: Command): void {
         if (options.priorityMax !== undefined) {
           const max = parseInt(options.priorityMax, 10);
           items = items.filter((item) => item.priority != null && item.priority <= max);
+        }
+
+        // Search filter
+        if (options.search) {
+          items = items.filter((item) =>
+            searchInFields(item, options.search, [
+              'taskId',
+              'teamName',
+              'machineName',
+              'bridgeName',
+            ])
+          );
+        }
+
+        // Sort results
+        if (options.sort) {
+          const sortField = options.sort as keyof (typeof items)[0];
+          items.sort((a, b) => {
+            const result = compareValues(a[sortField], b[sortField]);
+            return options.desc ? -result : result;
+          });
         }
 
         const format = program.opts().output as OutputFormat;

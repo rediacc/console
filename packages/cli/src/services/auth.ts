@@ -1,4 +1,5 @@
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
+import { extractNextToken } from '@rediacc/shared/api';
 import { isEncrypted } from '@rediacc/shared/encryption';
 import { api, apiClient } from './api.js';
 import { contextService } from './context.js';
@@ -46,13 +47,7 @@ class AuthService {
     // Extract token from login response
     // Note: Token rotation in apiClient.login() can't save the token because no context exists yet.
     // We must extract it here and pass it to saveLoginCredentials.
-    let token = '';
-    if (response.resultSets.length > 0 && response.resultSets[0].data.length > 0) {
-      const row = response.resultSets[0].data[0] as Record<string, unknown>;
-      if (typeof row.nextRequestToken === 'string' && row.nextRequestToken) {
-        token = row.nextRequestToken;
-      }
-    }
+    const token = extractNextToken(response);
 
     if (!token) {
       return {

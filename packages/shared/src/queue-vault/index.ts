@@ -17,3 +17,4 @@ export type {
 } from './types';
 // Utils
 export { getParamArray, getParamValue, isBase64, minifyJSON } from './utils';
+export { parseVaultContent, parseVaultContentOrEmpty } from './parsing';

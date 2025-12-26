@@ -12,6 +12,7 @@ import type {
   UpdateMachineNameParams,
   UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
+import { searchInFields } from '@rediacc/shared/utils';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -149,6 +150,7 @@ export function registerMachineCommands(program: Command): void {
     .command('repos <name>')
     .description('List deployed repositories on a machine')
     .option('-t, --team <name>', 'Team name')
+    .option('--search <text>', 'Filter repositories by name')
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
@@ -170,8 +172,15 @@ export function registerMachineCommands(program: Command): void {
         }
 
         // Use shared parsing service
-        const repositories = getMachineRepositories(machine);
+        let repositories = getMachineRepositories(machine);
         const format = program.opts().output as OutputFormat;
+
+        // Filter by search term
+        if (options.search) {
+          repositories = repositories.filter((repo) =>
+            searchInFields(repo, options.search, ['name', 'repositoryGuid'])
+          );
+        }
 
         if (repositories.length === 0) {
           outputService.info('No repositories deployed on this machine');

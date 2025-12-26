@@ -1,6 +1,8 @@
 import { hasVaultFields, transformVaultFields } from './vaultTransform';
 import type { ICryptoProvider } from './types';
 
+export { ENCRYPTION_CONFIG, PASSWORD_SALT } from './constants';
+
 const BASE64_REGEX = /^[A-Za-z0-9+/]+=*$/;
 
 export interface VaultEncryptor {

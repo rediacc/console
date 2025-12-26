@@ -27,18 +27,34 @@ export const QUEUE_STATUS_CONFIG: Record<QueueHealthStatus, StatusConfig> = {
  */
 export interface PriorityConfig {
   timeout?: string;
+  label: string;
+  color: string;
 }
 
 /**
  * Priority configuration map (1-5 scale)
  */
 export const PRIORITY_CONFIG: Record<number, PriorityConfig> = {
-  1: { timeout: '33s' },
-  2: { timeout: 'Tier timeout' },
-  3: { timeout: 'Tier timeout' },
-  4: { timeout: 'Tier timeout' },
-  5: { timeout: 'Tier timeout' },
+  1: { timeout: '33s', label: 'Highest', color: 'red' },
+  2: { timeout: 'Tier timeout', label: 'High', color: 'orange' },
+  3: { timeout: 'Tier timeout', label: 'Normal', color: 'blue' },
+  4: { timeout: 'Tier timeout', label: 'Low', color: 'gray' },
+  5: { timeout: 'Tier timeout', label: 'Lowest', color: 'default' },
 };
+
+/**
+ * Get priority label for display
+ */
+export function getPriorityLabel(priority: number): string {
+  return PRIORITY_CONFIG[priority]?.label ?? 'Unknown';
+}
+
+/**
+ * Get priority color for styling
+ */
+export function getPriorityColor(priority: number): string {
+  return PRIORITY_CONFIG[priority]?.color ?? 'default';
+}
 
 /**
  * Stale task detection constants

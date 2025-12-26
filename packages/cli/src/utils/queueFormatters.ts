@@ -9,7 +9,7 @@ import {
   formatErrors,
   parseFailureReason,
 } from '@rediacc/shared/error-parser';
-import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
+import { STALE_TASK_CONSTANTS, getPriorityLabel } from '@rediacc/shared/queue';
 
 // Re-export formatAge for backwards compatibility
 export { formatAge } from '@rediacc/shared/formatters';
@@ -73,16 +73,18 @@ export function formatStatus(status: string | undefined): string {
 export function formatPriority(priority: number | undefined): string {
   if (!priority) return chalk.gray('-');
 
-  const priorityMap: Record<number, { color: (text: string) => string; label: string }> = {
-    1: { color: chalk.red.bold, label: 'P1 (Highest)' },
-    2: { color: chalk.yellow, label: 'P2 (High)' },
-    3: { color: chalk.blue, label: 'P3 (Normal)' },
-    4: { color: chalk.cyan, label: 'P4 (Low)' },
-    5: { color: chalk.gray, label: 'P5 (Lowest)' },
+  // Color mapping for CLI display
+  const colorMap: Record<number, (text: string) => string> = {
+    1: chalk.red.bold,
+    2: chalk.yellow,
+    3: chalk.blue,
+    4: chalk.cyan,
+    5: chalk.gray,
   };
 
-  const config = priorityMap[priority] ?? priorityMap[3];
-  return config.color(config.label);
+  const color = colorMap[priority] ?? colorMap[3];
+  const label = `P${priority} (${getPriorityLabel(priority)})`;
+  return color(label);
 }
 
 /**

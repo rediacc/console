@@ -117,6 +117,14 @@
     "./services/batch/*": {
       "types": "./dist/services/batch/*.d.ts",
       "default": "./dist/services/batch/*.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
+    },
+    "./utils/*": {
+      "types": "./dist/utils/*.d.ts",
+      "default": "./dist/utils/*.js"
     }
   },
   "files": [

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { api } from '@/api/client';
 import { type QueueRequestContext, queueService } from '@/services/queue';
+import { parseVaultContentOrEmpty } from '@rediacc/shared/queue-vault';
 
 /**
  * Hook to build queue vault data with all required context
@@ -11,22 +12,6 @@ type QueueVaultBuilderParams = Omit<QueueRequestContext, 'companyVault' | 'compa
   destinationRepositoryVault?: QueueRequestContext['destinationRepositoryVault'];
   sourceRepositoryVault?: QueueRequestContext['sourceRepositoryVault'];
   allRepositoryCredentials?: Record<string, string>;
-};
-
-const parseVaultContent = (vault?: QueueRequestContext['teamVault']): Record<string, unknown> => {
-  if (!vault || vault === '-') {
-    return {};
-  }
-
-  if (typeof vault === 'string') {
-    try {
-      return JSON.parse(vault);
-    } catch {
-      return {};
-    }
-  }
-
-  return vault;
 };
 
 export function useQueueVaultBuilder() {
@@ -59,33 +44,33 @@ export function useQueueVaultBuilder() {
         | 'sourceRepositoryVault'
       >
     > = {
-      teamVault: baseContext.teamVault ? parseVaultContent(baseContext.teamVault) : undefined,
+      teamVault: baseContext.teamVault ? parseVaultContentOrEmpty(baseContext.teamVault) : undefined,
       machineVault: baseContext.machineVault
-        ? parseVaultContent(baseContext.machineVault)
+        ? parseVaultContentOrEmpty(baseContext.machineVault)
         : undefined,
-      repositoryVault: repositoryVault ? parseVaultContent(repositoryVault) : undefined,
-      bridgeVault: baseContext.bridgeVault ? parseVaultContent(baseContext.bridgeVault) : undefined,
+      repositoryVault: repositoryVault ? parseVaultContentOrEmpty(repositoryVault) : undefined,
+      bridgeVault: baseContext.bridgeVault ? parseVaultContentOrEmpty(baseContext.bridgeVault) : undefined,
       storageVault: baseContext.storageVault
-        ? parseVaultContent(baseContext.storageVault)
+        ? parseVaultContentOrEmpty(baseContext.storageVault)
         : undefined,
-      companyVault: parseVaultContent(companyVaultData.vault),
+      companyVault: parseVaultContentOrEmpty(companyVaultData.vault),
       destinationMachineVault: baseContext.destinationMachineVault
-        ? parseVaultContent(baseContext.destinationMachineVault)
+        ? parseVaultContentOrEmpty(baseContext.destinationMachineVault)
         : undefined,
       destinationStorageVault: baseContext.destinationStorageVault
-        ? parseVaultContent(baseContext.destinationStorageVault)
+        ? parseVaultContentOrEmpty(baseContext.destinationStorageVault)
         : undefined,
       destinationRepositoryVault: destinationRepositoryVault
-        ? parseVaultContent(destinationRepositoryVault)
+        ? parseVaultContentOrEmpty(destinationRepositoryVault)
         : undefined,
       sourceMachineVault: baseContext.sourceMachineVault
-        ? parseVaultContent(baseContext.sourceMachineVault)
+        ? parseVaultContentOrEmpty(baseContext.sourceMachineVault)
         : undefined,
       sourceStorageVault: baseContext.sourceStorageVault
-        ? parseVaultContent(baseContext.sourceStorageVault)
+        ? parseVaultContentOrEmpty(baseContext.sourceStorageVault)
         : undefined,
       sourceRepositoryVault: sourceRepositoryVault
-        ? parseVaultContent(sourceRepositoryVault)
+        ? parseVaultContentOrEmpty(sourceRepositoryVault)
         : undefined,
     };
 

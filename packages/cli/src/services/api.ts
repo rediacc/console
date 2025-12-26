@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
+import { createApiServices, normalizeResponse, extractNextToken, extractApiErrors, getPrimaryErrorMessage, HTTP_STATUS, isServerError } from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
@@ -330,15 +330,7 @@ class CliApiClient implements SharedApiClient {
   }
 
   private async handleTokenRotation(response: ApiResponse): Promise<void> {
-    const resultSets = response.resultSets;
-    if (resultSets.length === 0) return;
-
-    const firstResultSet = resultSets[0];
-    if (!firstResultSet.data.length) return;
-
-    const row = firstResultSet.data[0] as Record<string, unknown>;
-    const newToken = typeof row.nextRequestToken === 'string' ? row.nextRequestToken : undefined;
-
+    const newToken = extractNextToken(response);
     if (newToken) {
       await contextService.setToken(newToken);
     }
@@ -361,50 +353,31 @@ class CliApiClient implements SharedApiClient {
   }
 
   private createApiError(response: ApiResponse): CliApiError {
-    // Collect all error details from various sources
-    const details: string[] = [];
-
-    // From errors array (SQL RAISERROR messages)
-    if (response.errors.length > 0) {
-      details.push(...response.errors);
-    }
-
-    // Check resultSets for error messages
-    for (const rs of response.resultSets) {
-      for (const row of rs.data as Record<string, unknown>[]) {
-        const errorMsg = (row.errorMessage ?? row.ErrorMessage ?? row.error) as string | undefined;
-        if (errorMsg && typeof errorMsg === 'string') {
-          if (!details.includes(errorMsg)) {
-            details.push(errorMsg);
-          }
-        }
-      }
-    }
+    // Use shared utilities for error extraction
+    const details = extractApiErrors(response);
+    const message = getPrimaryErrorMessage(response);
 
     // Determine error code and exit code from failure value
     const { code, exitCode } = this.mapFailureToError(response.failure);
-
-    // Primary message
-    const message = details[0] || response.message || `Request failed (code: ${response.failure})`;
 
     return new CliApiError(message, code, exitCode, details, response);
   }
 
   private mapFailureToError(failure: number): { code: ErrorCode; exitCode: number } {
-    // Map middleware return codes to error codes
+    // Map middleware return codes to error codes using shared HTTP_STATUS constants
     switch (failure) {
-      case 400:
+      case HTTP_STATUS.BAD_REQUEST:
         return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
-      case 401:
+      case HTTP_STATUS.UNAUTHORIZED:
         return { code: 'AUTH_REQUIRED', exitCode: EXIT_CODES.AUTH_REQUIRED };
-      case 403:
+      case HTTP_STATUS.FORBIDDEN:
         return { code: 'PERMISSION_DENIED', exitCode: EXIT_CODES.PERMISSION_DENIED };
-      case 404:
+      case HTTP_STATUS.NOT_FOUND:
         return { code: 'NOT_FOUND', exitCode: EXIT_CODES.NOT_FOUND };
-      case 409:
+      case HTTP_STATUS.CONFLICT:
         return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
       default:
-        if (failure >= 500) {
+        if (isServerError(failure)) {
           return { code: 'SERVER_ERROR', exitCode: EXIT_CODES.API_ERROR };
         }
         return { code: 'GENERAL_ERROR', exitCode: EXIT_CODES.GENERAL_ERROR };

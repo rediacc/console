@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import type { CompanyVaultRecord } from '@rediacc/shared/types';
+import { searchInFields, compareValues } from '@rediacc/shared/utils';
 import { handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
 import { authService } from '../services/auth.js';
@@ -139,6 +140,12 @@ export function createResourceCommands(program: Command, config: ResourceCommand
     listCmd.option(parentFlag, parentDesc);
   }
 
+  // Add search and sort options
+  listCmd
+    .option('--search <text>', `Search in ${nameField}`)
+    .option('--sort <field>', 'Sort by field')
+    .option('--desc', 'Sort in descending order');
+
   listCmd.action(async (options) => {
     try {
       await authService.requireAuth();
@@ -160,11 +167,26 @@ export function createResourceCommands(program: Command, config: ResourceCommand
         `${resourceNamePlural.charAt(0).toUpperCase() + resourceNamePlural.slice(1)} fetched`
       );
 
-      const items = Array.isArray(response)
-        ? response
+      let items = Array.isArray(response)
+        ? (response as Record<string, unknown>[])
         : Array.isArray((response as { items?: unknown[] }).items)
-          ? (response as { items: unknown[] }).items
+          ? ((response as { items: unknown[] }).items as Record<string, unknown>[])
           : [];
+
+      // Apply search filter
+      if (options.search) {
+        items = items.filter((item) => searchInFields(item, options.search, [nameField]));
+      }
+
+      // Apply sorting
+      if (options.sort) {
+        const sortField = options.sort;
+        items.sort((a, b) => {
+          const result = compareValues(a[sortField], b[sortField]);
+          return options.desc ? -result : result;
+        });
+      }
+
       const format = program.opts().output as OutputFormat;
 
       outputService.print(items, format);

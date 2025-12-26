@@ -3,8 +3,16 @@
 // Re-export types from shared packages
 export type { ErrorSeverity, ParsedError, ParsedErrorResult } from '@rediacc/shared/error-parser';
 export { parseFailureReason } from '@rediacc/shared/error-parser';
+
 // Re-export functions from shared packages
-export { formatAge } from '@rediacc/shared/formatters';
+export {
+  formatAge,
+  formatPropertyName,
+  formatTimestampAsIs,
+  formatDurationFull,
+  formatValue,
+} from '@rediacc/shared/formatters';
+
 export type {
   PriorityConfig,
   QueueHealthStatus,
@@ -18,25 +26,39 @@ export {
   filterFailedItems,
   STALE_TASK_CONSTANTS,
 } from '@rediacc/shared/queue';
-// API utilities
+
+// Re-export shared utilities
+export {
+  normalizeToString,
+  normalizeToNumber,
+  normalizeToBoolean,
+  escapeCSVValue,
+  buildCSVContent,
+  extractMostRecentProgress,
+  extractProgressMessage,
+  compareValues,
+  createSorter,
+  createDateSorter,
+  createCustomSorter,
+  createArrayLengthSorter,
+  parseMemorySize,
+  calculateResourcePercent,
+  searchInFields,
+} from '@rediacc/shared/utils';
+
 // Services - re-exported from shared (machine and repository are fully platform-agnostic)
 export * from '@rediacc/shared/services/machine';
 export * from '@rediacc/shared/services/repository';
+
 // Queue service - uses local wrapper with browser timer provider
 export * from './services/queue';
 export * from './types';
+
+// Local utilities (not yet in shared)
 export * from './utils/action-mapping';
 export * from './utils/array';
 export * from './utils/crypto';
 export * from './utils/encoding';
 export * from './utils/export';
-// Existing utilities
 export * from './utils/json';
-export * from './utils/normalize';
-export * from './utils/progress-parser';
-export * from './utils/search';
-export * from './utils/size';
-export * from './utils/sorting';
-// New utilities
-export * from './utils/time';
 export * from './utils/formValidation';

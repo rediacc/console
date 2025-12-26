@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isTaskInTerminalState } from './taskStateUtils';
+import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
 
 describe('taskStateUtils', () => {
   describe('isTaskInTerminalState', () => {
@@ -25,7 +26,7 @@ describe('taskStateUtils', () => {
     it('should return true for FAILED status with max retries reached', () => {
       const queueDetails = {
         status: 'FAILED',
-        retryCount: 2,
+        retryCount: STALE_TASK_CONSTANTS.MAX_RETRY_COUNT,
         permanentlyFailed: false,
       };
       expect(isTaskInTerminalState(queueDetails)).toBe(true);
@@ -34,7 +35,7 @@ describe('taskStateUtils', () => {
     it('should return true for PENDING status with max retries and failure reason', () => {
       const queueDetails = {
         status: 'PENDING',
-        retryCount: 2,
+        retryCount: STALE_TASK_CONSTANTS.MAX_RETRY_COUNT,
         lastFailureReason: 'Connection timeout',
       };
       expect(isTaskInTerminalState(queueDetails)).toBe(true);
@@ -84,7 +85,7 @@ describe('taskStateUtils', () => {
     it('should handle mixed case field names', () => {
       const queueDetails = {
         Status: 'PENDING',
-        retryCount: 2,
+        retryCount: STALE_TASK_CONSTANTS.MAX_RETRY_COUNT,
         LastFailureReason: 'Error occurred',
       };
       expect(isTaskInTerminalState(queueDetails)).toBe(true);

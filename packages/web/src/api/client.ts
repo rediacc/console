@@ -12,9 +12,10 @@ import { telemetryService } from '@/services/telemetryService';
 import { logout, showSessionExpiredModal } from '@/store/auth/authSlice';
 import { store } from '@/store/store';
 import { showMessage } from '@/utils/messages';
-import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
+import { createApiServices, normalizeResponse, extractNextToken, extractErrorMessage as sharedExtractErrorMessage } from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import type { ApiResponse } from '@rediacc/shared/types';
+import { isApiResponse } from '@rediacc/shared/types';
 import { decryptResponseData, encryptRequestData, hasVaultFields } from './encryptionMiddleware';
 
 // Extend axios config to include metadata
@@ -230,22 +231,15 @@ class ApiClient implements SharedApiClient {
       return error;
     }
 
-    if (this.isApiResponse(error)) {
-      const errorText = error.errors.length > 0 ? error.errors.join('; ') : error.message;
-      return errorText || 'Request failed';
+    if (isApiResponse(error)) {
+      return sharedExtractErrorMessage(error);
     }
 
     if (isAxiosError<ApiResponse>(error)) {
       const data = error.response?.data;
-      const responseErrors = data?.errors.join('; ');
-      const responseMessage = data?.message;
-      const nestedMessageEntry = data?.resultSets[0]?.data[0] as { message?: string } | undefined;
-      const nestedMessage = nestedMessageEntry?.message;
-      const additionalErrors = (error as { errors?: string[] }).errors?.join('; ');
-      if (responseErrors) return responseErrors;
-      if (responseMessage) return responseMessage;
-      if (nestedMessage) return nestedMessage;
-      if (additionalErrors) return additionalErrors;
+      if (data && isApiResponse(data)) {
+        return sharedExtractErrorMessage(data);
+      }
       return error.message;
     }
 
@@ -257,7 +251,7 @@ class ApiClient implements SharedApiClient {
   }
 
   private isUnauthorizedError(error: ApiResponse | AxiosError<ApiResponse>): boolean {
-    if (this.isApiResponse(error)) {
+    if (isApiResponse(error)) {
       return error.failure === this.HTTP_UNAUTHORIZED;
     }
     return error.response?.status === this.HTTP_UNAUTHORIZED;
@@ -289,10 +283,7 @@ class ApiClient implements SharedApiClient {
   private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
     // For ForkAuthenticationRequest, only rotate the main session token (resultSets[0])
     // Don't use the fork token from the "Credentials" resultSet for main session rotation
-    const rotationSource = responseData.resultSets[0]?.data[0] as
-      | { nextRequestToken?: string }
-      | undefined;
-    const newToken = rotationSource?.nextRequestToken;
+    const newToken = extractNextToken(responseData);
     if (!newToken) return;
 
     // Token rotation is now handled by tokenService with proper locking
@@ -318,11 +309,6 @@ class ApiClient implements SharedApiClient {
     throw customError;
   }
 
-  private isApiResponse(value: unknown): value is ApiResponse {
-    return (
-      typeof value === 'object' && value !== null && 'failure' in value && 'resultSets' in value
-    );
-  }
 }
 
 export const apiClient = new ApiClient();
