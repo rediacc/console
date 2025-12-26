@@ -70,7 +70,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                       title={t('dashboard.daysRemaining')}
                       value={activeSubscription.daysRemaining}
                       valueStyle={
-                        activeSubscription.daysRemaining <= CRITICAL_DAYS_THRESHOLD
+                        (activeSubscription.daysRemaining ?? 0) <= CRITICAL_DAYS_THRESHOLD
                           ? { color: token.colorError }
                           : undefined
                       }
@@ -98,8 +98,8 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
               <Flex style={{ maxHeight: 320, overflowY: 'auto' }}>
                 <Flex vertical gap={8} className="w-full">
                   {allActiveSubscriptions.map((sub, index) => {
-                    const startDate = new Date(sub.startDate);
-                    const endDate = new Date(sub.endDate);
+                    const startDate = sub.startDate ? new Date(sub.startDate) : new Date();
+                    const endDate = sub.endDate ? new Date(sub.endDate) : new Date();
                     const now = new Date();
 
                     const percent = (() => {
@@ -111,7 +111,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                     })();
 
                     const strokeColor =
-                      sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD
+                      (sub.daysRemaining ?? 0) <= CRITICAL_DAYS_THRESHOLD
                         ? token.colorError
                         : token.colorPrimary;
 

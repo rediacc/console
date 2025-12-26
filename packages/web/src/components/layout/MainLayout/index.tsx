@@ -47,7 +47,7 @@ const MainLayout: React.FC = () => {
   // Update company data when it changes
   useEffect(() => {
     const updateCompanyData = async () => {
-      const normalizedCompanyName = companyData?.companyInfo.companyName;
+      const normalizedCompanyName = companyData?.companyInfo?.companyName;
       if (normalizedCompanyName && normalizedCompanyName !== company) {
         dispatch(updateCompany(normalizedCompanyName));
         const authData = await getAuthData();

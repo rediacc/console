@@ -179,7 +179,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
           </Col>
         </Row>
 
-        {stats.team_breakdown.length > 0 && (
+        {(stats.team_breakdown?.length ?? 0) > 0 && (
           <Flex vertical gap={8} data-testid="ds-widget-team-breakdown">
             <Flex align="center" gap={8}>
               <Flex align="center" className="inline-flex">
@@ -190,7 +190,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
             <List
               data-testid="ds-widget-team-list"
               size="small"
-              dataSource={stats.team_breakdown}
+              dataSource={stats.team_breakdown ?? []}
               renderItem={renderTeamItem}
             />
           </Flex>

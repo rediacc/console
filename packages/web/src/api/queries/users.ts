@@ -7,13 +7,13 @@ import { parseGetCompanyUsers, parseGetUserRequests } from '@rediacc/shared/api'
 import type {
   DeleteUserRequestParams,
   GetCompanyUsers_ResultSet1,
+  GetUserRequests_ResultSet1,
   UpdateUserAssignedPermissionsParams,
   UpdateUserLanguageParams,
   UpdateUserPasswordParams,
   UpdateUserToActivatedParams,
   UpdateUserToDeactivatedParams,
   UpdateUserVaultParams,
-  UserRequest,
   UserVault,
 } from '@rediacc/shared/types';
 
@@ -120,7 +120,7 @@ export const useUpdateUserPassword = () => {
 
 // Get active user requests/sessions
 export const useUserRequests = () => {
-  return useQuery<UserRequest[]>({
+  return useQuery<GetUserRequests_ResultSet1[]>({
     queryKey: ['user-requests'],
     queryFn: async () => {
       const response = await typedApi.GetUserRequests({});
@@ -184,6 +184,6 @@ export const useUpdateUserVault = () => {
 export type {
   GetCompanyUsers_ResultSet1,
   GetCompanyUsers_ResultSet1 as User,
-  UserRequest,
+  GetUserRequests_ResultSet1 as UserRequest,
   UserVault,
 } from '@rediacc/shared/types';

@@ -156,7 +156,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       sorter: createSorter<AuditTraceRecord>('actionType'),
       render: (_: unknown, record: AuditTraceRecord, index: number) => (
         <Space data-testid={`audit-trace-action-${index}`}>
-          {getIcon(record.iconHint)}
+          {getIcon(record.iconHint ?? 'info')}
           <Tag data-testid={`audit-trace-action-tag-${index}`}>{record.actionType}</Tag>
         </Space>
       ),

@@ -13,7 +13,7 @@ import type {
   AuthRequestStatus,
   EnableTfaResponse,
   ForkSessionCredentials,
-  UserRequest,
+  GetUserRequests_ResultSet1,
   VerifyTfaResult,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
@@ -128,8 +128,8 @@ export function parseForkAuthenticationRequest(response: ApiResponse): ForkSessi
   };
 }
 
-export function parseGetUserRequests(response: ApiResponse<UserRequest>): UserRequest[] {
-  return extractRowsByIndex<UserRequest>(response, 1);
+export function parseGetUserRequests(response: ApiResponse<GetUserRequests_ResultSet1>): GetUserRequests_ResultSet1[] {
+  return extractRowsByIndex<GetUserRequests_ResultSet1>(response, 1);
 }
 
 export function parseIsRegistered(response: ApiResponse): { isRegistered: boolean } {

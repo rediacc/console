@@ -35,6 +35,22 @@ export type WithOptionalVault<T extends { vaultContent: string }> = Omit<T, 'vau
 export type OptionalParams<T> = Partial<T>;
 
 // =============================================================================
+// CONTAINER TYPES
+// =============================================================================
+
+/** Plugin container data */
+export interface PluginContainer {
+  id: string;
+  name: string;
+  state: string;
+  status?: string;
+  image?: string;
+  ports?: string;
+  created?: string;
+  repository?: string;
+}
+
+// =============================================================================
 // QUEUE TYPES (replaces manual QueueFilters interface)
 // =============================================================================
 
@@ -218,16 +234,7 @@ export interface ForkSessionCredentials {
   parentRequestId: number | null;
 }
 
-/** User request record */
-export interface UserRequest {
-  requestId?: number;
-  userEmail?: string;
-  ipAddress?: string;
-  createdAt?: string;
-  expiresAt?: string;
-  isActive?: boolean;
-  [key: string]: unknown;
-}
+/** User request record - use GetUserRequests_ResultSet1 from api-schema.generated */
 
 /** TFA verification result */
 export interface VerifyTfaResult {
@@ -244,6 +251,7 @@ export interface VerifyTfaResult {
 export interface AuditTraceRecord {
   auditId?: number;
   action?: string;
+  actionType?: string;
   entityType?: string;
   entityId?: number;
   entityName?: string;
@@ -252,7 +260,9 @@ export interface AuditTraceRecord {
   timestamp?: string;
   details?: string | null;
   ipAddress?: string | null;
-  [key: string]: unknown;
+  iconHint?: string;
+  performedBy?: string;
+  timeAgo?: string;
 }
 
 /** Audit trace summary */
@@ -289,7 +299,10 @@ export interface CephAvailableMachine {
   machineName: string;
   teamName?: string;
   assignmentStatus?: string;
-  [key: string]: unknown;
+  status?: string;
+  description?: string;
+  bridgeName?: string;
+  regionName?: string;
 }
 
 /** Ceph clone machine info */
@@ -299,19 +312,15 @@ export interface CephCloneMachine {
   machineName: string;
   cloneName?: string;
   assignedAt?: string;
-  [key: string]: unknown;
 }
 
-/** Ceph machine assignment status */
+/** Ceph machine assignment status - matches GetMachineAssignmentStatus result */
 export interface CephMachineAssignmentStatus {
-  machineId?: number;
-  machineGuid?: string;
-  machineName?: string;
-  assignmentStatus?: string;
-  assignedResource?: string;
-  assignedResourceType?: string;
-  assignedAt?: string;
-  [key: string]: unknown;
+  machineName: string | null;
+  teamName: string | null;
+  assignmentType: string | null;
+  assignmentDetails: string | null;
+  status: string | null;
 }
 
 /** Ceph machine assignment validation */
@@ -322,7 +331,6 @@ export interface CephMachineAssignmentValidation {
   validationMessage?: string;
   conflictType?: string;
   conflictResource?: string;
-  [key: string]: unknown;
 }
 
 // =============================================================================
@@ -361,6 +369,26 @@ export type Permission = GetPermissionGroupDetails_ResultSet1;
 export interface DropdownOption {
   value: string;
   label: string;
+  status?: string;
+}
+
+/** Machine dropdown option with additional properties */
+export interface MachineDropdownOption extends DropdownOption {
+  bridgeName?: string;
+  regionName?: string;
+  teamName?: string;
+  status?: string;
+}
+
+/** Permission dropdown option */
+export interface PermissionDropdownOption {
+  name: string;
+  description?: string;
+}
+
+/** Team dropdown option with status */
+export interface TeamDropdownOption extends DropdownOption {
+  status?: string;
 }
 
 /** Bridges grouped by region for dropdown */
@@ -372,21 +400,21 @@ export interface RegionBridges {
 /** Machines grouped by team for dropdown */
 export interface TeamMachines {
   teamName: string;
-  machines: DropdownOption[];
+  machines: MachineDropdownOption[];
 }
 
 /** Company-wide dropdown data for forms */
 export interface CompanyDropdownData {
-  teams: DropdownOption[];
-  allTeams: DropdownOption[];
+  teams: TeamDropdownOption[];
+  allTeams: TeamDropdownOption[];
   regions: DropdownOption[];
-  machines: DropdownOption[];
+  machines: MachineDropdownOption[];
   bridges: DropdownOption[];
   bridgesByRegion: RegionBridges[];
   machinesByTeam: TeamMachines[];
   users: DropdownOption[];
   permissionGroups: DropdownOption[];
-  permissions: DropdownOption[];
+  permissions: PermissionDropdownOption[];
   subscriptionPlans: DropdownOption[];
 }
 
@@ -398,7 +426,7 @@ export interface CompanyDropdownData {
 export interface CompanyInfo {
   companyName?: string;
   companyGuid?: string;
-  [key: string]: unknown;
+  Plan?: string;
 }
 
 /** Active subscription details */
@@ -406,13 +434,23 @@ export interface ActiveSubscription {
   planCode?: string;
   totalActivePurchases?: number;
   daysRemaining?: number;
-  [key: string]: unknown;
+  startDate?: string;
+  endDate?: string;
+  quantity?: number;
+  isTrial?: number;
+  isExpiringSoon?: boolean;
 }
 
 /** Plan limits from dashboard */
 export interface PlanLimits {
   planCode?: string;
-  [key: string]: unknown;
+  machineLimit?: number;
+  repositoryLimit?: number;
+  userLimit?: number;
+  maxActiveJobs?: number;
+  maxReservedJobs?: number;
+  jobTimeoutHours?: number;
+  maxRepoSize?: number;
 }
 
 /** Account health status */
@@ -421,7 +459,6 @@ export interface AccountHealth {
   resourcesAtLimit?: number;
   resourcesNearLimit?: number;
   upgradeRecommendation?: string;
-  [key: string]: unknown;
 }
 
 /** Queue team issue from dashboard */
@@ -461,17 +498,24 @@ export interface DashboardQueueStats {
   lowPriorityPending?: number;
   teamIssues?: QueueTeamIssue[];
   machineIssues?: QueueMachineIssue[];
-  [key: string]: unknown;
 }
 
 /** Feature access flags */
 export interface FeatureAccess {
-  [key: string]: boolean | undefined;
+  ceph?: boolean;
+  auditLog?: boolean;
+  advancedQueue?: boolean;
+  hasAdvancedAnalytics?: boolean;
 }
 
-/** Resource usage data */
-export interface ResourceUsage {
-  [key: string]: unknown;
+/** Resource usage item */
+export interface ResourceUsageItem {
+  resourceType: string;
+  currentUsage: number;
+  resourceLimit: number;
+  usagePercentage: number;
+  isLimitReached?: number;
+  isNearLimit?: number;
 }
 
 /** Full company dashboard data */
@@ -483,15 +527,14 @@ export interface CompanyDashboardData {
   accountHealth?: AccountHealth;
   queueStats?: DashboardQueueStats;
   featureAccess?: FeatureAccess;
-  resources?: ResourceUsage;
-  [key: string]: unknown;
+  resources?: ResourceUsageItem[];
+  cephStats?: CompanyCephStats;
 }
 
 /** Result from UpdateCompanyVaults operation */
 export interface CompanyVaultUpdateResult {
   totalUpdated: number;
   failedCount: number;
-  [key: string]: unknown;
 }
 
 /** Result from ImportCompanyData operation */
@@ -499,7 +542,6 @@ export interface CompanyImportResult {
   importedCount: number;
   skippedCount: number;
   errorCount: number;
-  [key: string]: unknown;
 }
 
 // =============================================================================

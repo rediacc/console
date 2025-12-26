@@ -156,7 +156,7 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
               </Flex>
             )}
 
-            {featureAccess?.hasAdvancedAnalytics === 1 &&
+            {featureAccess?.hasAdvancedAnalytics &&
               queueStats.highestPriorityPending !== null && (
                 <Flex vertical>
                   <Typography.Text strong>

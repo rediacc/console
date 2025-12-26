@@ -91,7 +91,7 @@ const DashboardPage: React.FC = () => {
           <QueueDetailsWidget queueStats={queueStats} featureAccess={featureAccess} />
         )}
 
-        {featureAccess?.hasAdvancedAnalytics === 1 && dashboard.cephStats && (
+        {featureAccess?.hasAdvancedAnalytics && dashboard.cephStats && (
           <CephDashboardWidget stats={dashboard.cephStats} />
         )}
 
