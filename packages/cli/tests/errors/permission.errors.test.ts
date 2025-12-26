@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { runCli, getErrorMessage } from '../helpers/cli.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
+import { describe, expect, it } from 'vitest';
+import { getErrorMessage, runCli } from '../helpers/cli.js';
+import { ErrorPatterns, expectError, nonExistentName } from '../helpers/errors.js';
 
 /**
  * Negative test cases for permission commands.

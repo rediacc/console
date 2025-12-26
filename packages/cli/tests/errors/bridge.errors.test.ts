@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { runCli, getErrorMessage } from '../helpers/cli.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { getErrorMessage, runCli } from '../helpers/cli.js';
+import { ErrorPatterns, expectError, nonExistentName } from '../helpers/errors.js';
 
 /**
  * Negative test cases for bridge commands.
@@ -207,4 +207,59 @@ describe('bridge error scenarios', () => {
   // Note: Vault update tests require --vault-version parameter which needs
   // fetching current vault version first. This is a CLI parameter requirement,
   // not a backend error test, so these tests are omitted.
+
+  // ============================================
+  // Infrastructure Errors (from db_middleware_infrastructure.sql)
+  // ============================================
+  // The following infrastructure ErrorPatterns exist but may not be testable:
+  //
+  // TESTABLE:
+  // - BRIDGE_LIMIT_EXCEEDED - requires hitting resource limits
+  // - BRIDGE_NAME_EMPTY - tested below
+  // - BRIDGE_ACCESS_RESTRICTION - requires cross-team bridge assignment
+  // - BRIDGE_CLOUD_ONLY_GLOBAL - requires cloud-managed non-global bridge
+  //
+  // NOT TESTABLE (internal errors or require specific conditions):
+  // - BRIDGE_VAULT_EMPTY - requires vault update with null data
+  // - BRIDGE_RENAME_FAILED - internal server error
+  // - BRIDGE_VAULT_UPDATE_FAILED - internal server error
+
+  describe('RenameBridge empty name errors', () => {
+    it('should fail when renaming bridge to empty name', async () => {
+      const tempBridgeName = `error-test-empty-${Date.now()}`;
+
+      // Create a temp bridge
+      const createResult = await runCli([
+        'bridge',
+        'create',
+        tempBridgeName,
+        '--region',
+        defaultRegionName,
+      ]);
+      expect(createResult.success, `Setup failed: ${getErrorMessage(createResult)}`).toBe(true);
+
+      try {
+        // Try to rename to empty string - should fail
+        const renameResult = await runCli([
+          'bridge',
+          'rename',
+          tempBridgeName,
+          '',
+          '--region',
+          defaultRegionName,
+        ]);
+        expectError(renameResult, { messageContains: ErrorPatterns.BRIDGE_NAME_EMPTY });
+      } finally {
+        // Cleanup
+        await runCli([
+          'bridge',
+          'delete',
+          tempBridgeName,
+          '--region',
+          defaultRegionName,
+          '--force',
+        ]);
+      }
+    });
+  });
 });

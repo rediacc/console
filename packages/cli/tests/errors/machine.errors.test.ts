@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { runCli, getErrorMessage } from '../helpers/cli.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { getErrorMessage, runCli } from '../helpers/cli.js';
+import { ErrorPatterns, expectError, nonExistentName } from '../helpers/errors.js';
 
 /**
  * Negative test cases for machine commands.
@@ -211,6 +211,56 @@ describe('machine error scenarios', () => {
         nonExistentName('team'),
       ]);
       expectError(result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
+    });
+  });
+
+  // ============================================
+  // Infrastructure Errors (from db_middleware_infrastructure.sql)
+  // ============================================
+  // The following infrastructure ErrorPatterns exist but may not be testable:
+  //
+  // TESTABLE:
+  // - MACHINE_LIMIT_EXCEEDED - requires hitting resource limits
+  // - MACHINE_NAME_EMPTY - tested below
+  // - USER_VALIDATION_FAILED - requires invalid user context
+  //
+  // NOT TESTABLE (internal errors or require specific conditions):
+  // - MACHINE_VAULT_EMPTY - requires vault update with null data
+  // - MACHINE_STATUS_EMPTY - requires status update with null data
+  // - MACHINE_RENAME_FAILED - internal server error
+  // - MACHINE_VAULT_UPDATE_FAILED - internal server error
+
+  describe('RenameMachine empty name errors', () => {
+    it('should fail when renaming machine to empty name', async () => {
+      const tempMachineName = `error-test-empty-${Date.now()}`;
+
+      // Create a temp machine
+      const createResult = await runCli([
+        'machine',
+        'create',
+        tempMachineName,
+        '--team',
+        defaultTeamName,
+        '--bridge',
+        defaultBridgeName,
+      ]);
+      expect(createResult.success, `Setup failed: ${getErrorMessage(createResult)}`).toBe(true);
+
+      try {
+        // Try to rename to empty string - should fail
+        const renameResult = await runCli([
+          'machine',
+          'rename',
+          tempMachineName,
+          '',
+          '--team',
+          defaultTeamName,
+        ]);
+        expectError(renameResult, { messageContains: ErrorPatterns.MACHINE_NAME_EMPTY });
+      } finally {
+        // Cleanup
+        await runCli(['machine', 'delete', tempMachineName, '--team', defaultTeamName, '--force']);
+      }
     });
   });
 });

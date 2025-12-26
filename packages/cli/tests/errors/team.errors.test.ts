@@ -1,11 +1,36 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { runCli, getErrorMessage } from '../helpers/cli.js';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { getErrorMessage, runCli } from '../helpers/cli.js';
 import { getConfig } from '../helpers/config.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
+import { ErrorPatterns, expectError, nonExistentName } from '../helpers/errors.js';
 
 /**
  * Negative test cases for team commands.
  * Tests backend error responses from middleware stored procedures.
+ *
+ * Company ErrorPatterns coverage for teams (from db_middleware_company.sql):
+ *
+ * TESTABLE via CLI:
+ * - TEAM_NOT_FOUND - tested below
+ * - TEAM_ALREADY_EXISTS - tested below
+ * - TEAM_CANNOT_DELETE_DEFAULT - tested below
+ * - TEAM_CANNOT_RENAME_DEFAULT - tested below
+ * - USER_NOT_FOUND_IN_COMPANY - tested below
+ * - USER_ALREADY_MEMBER - tested below
+ * - CANNOT_REMOVE_SELF - tested below
+ *
+ * NOT TESTABLE (internal errors or require specific conditions):
+ * - TEAM_VAULT_EMPTY - requires vault update with null data
+ * - TEAM_RENAME_FAILED - internal server error
+ * - TEAM_MEMBER_REMOVE_FAILED - internal server error
+ * - VAULT_UPDATE_TEAM_FAILED - internal server error
+ * - VAULT_UPDATE_COMPANY_FAILED - internal server error
+ * - VAULT_UPDATE_USER_FAILED - internal server error
+ * - VAULT_BULK_UPDATE_FAILED - internal server error
+ * - VAULT_INITIAL_CREATE_FAILED - internal server error
+ * - USER_VAULT_EMPTY - requires vault update with null data
+ * - VAULT_BULK_NOT_OWNED - requires bulk vault update with mismatched company
+ * - VAULT_BULK_VERSION_CONFLICT - requires bulk vault update with old versions
+ * - VAULT_BULK_BRIDGE_LOCKED - requires updating locked bridge vault
  */
 describe('team error scenarios', () => {
   let currentUserEmail: string;

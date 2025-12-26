@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 import { runCli } from '../helpers/cli.js';
-import { expectError, ErrorPatterns } from '../helpers/errors.js';
+import { ErrorPatterns, expectError } from '../helpers/errors.js';
 
 /**
  * Negative test cases for queue commands.
@@ -62,6 +62,41 @@ describe('queue error scenarios', () => {
       const fakeTaskId = '00000000-0000-0000-0000-000000000000';
       const result = await runCli(['queue', 'trace', fakeTaskId]);
       expectError(result, { messageContains: ErrorPatterns.QUEUE_NOT_FOUND });
+    });
+  });
+
+  // ============================================
+  // Company Errors (from db_middleware_company.sql)
+  // ============================================
+  // The following company ErrorPatterns related to queues exist:
+  //
+  // TESTABLE via filter parameters:
+  // - QUEUE_PRIORITY_MIN_INVALID - tested below (priority filter min)
+  // - QUEUE_PRIORITY_MAX_INVALID - tested below (priority filter max)
+  //
+  // NOT TESTABLE (require queue creation with vault data):
+  // - QUEUE_PARAM_INVALID_CHARS - requires vault with invalid characters
+  // - QUEUE_PRIORITY_INVALID - requires priority outside 1-5 range during create
+
+  describe('Queue filter priority errors', () => {
+    it('should fail when filtering with min priority less than 1', async () => {
+      const result = await runCli(['queue', 'list', '--priority-min', '0']);
+      expectError(result, { messageContains: ErrorPatterns.QUEUE_PRIORITY_MIN_INVALID });
+    });
+
+    it('should fail when filtering with min priority greater than 5', async () => {
+      const result = await runCli(['queue', 'list', '--priority-min', '6']);
+      expectError(result, { messageContains: ErrorPatterns.QUEUE_PRIORITY_MIN_INVALID });
+    });
+
+    it('should fail when filtering with max priority less than 1', async () => {
+      const result = await runCli(['queue', 'list', '--priority-max', '0']);
+      expectError(result, { messageContains: ErrorPatterns.QUEUE_PRIORITY_MAX_INVALID });
+    });
+
+    it('should fail when filtering with max priority greater than 5', async () => {
+      const result = await runCli(['queue', 'list', '--priority-max', '6']);
+      expectError(result, { messageContains: ErrorPatterns.QUEUE_PRIORITY_MAX_INVALID });
     });
   });
 });

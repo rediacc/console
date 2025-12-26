@@ -1,6 +1,6 @@
-import { describe, it, beforeAll } from 'vitest';
+import { beforeAll, describe, it } from 'vitest';
 import { runCli } from '../helpers/cli.js';
-import { expectError, nonExistentName, ErrorPatterns } from '../helpers/errors.js';
+import { ErrorPatterns, expectError, nonExistentName } from '../helpers/errors.js';
 
 /**
  * Negative test cases for repository commands.
