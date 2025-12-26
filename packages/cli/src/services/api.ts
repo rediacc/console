@@ -1,12 +1,12 @@
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
 import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
-import type { ErrorCode } from '../types/errors.js';
 import { EXIT_CODES } from '../types/index.js';
+import type { ErrorCode } from '../types/errors.js';
 
 const API_PREFIX = '/StoredProcedure';
 const STORAGE_KEYS = {

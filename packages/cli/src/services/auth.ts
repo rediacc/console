@@ -1,10 +1,10 @@
 import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import { isEncrypted } from '@rediacc/shared/encryption';
+import { api, apiClient } from './api.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
 import { askPassword } from '../utils/prompt.js';
-import { api, apiClient } from './api.js';
 
 const STORAGE_KEYS = {
   TOKEN: 'token',

@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import type { OutputFormat } from '../types/index.js';
 
 export function registerContextCommands(program: Command): void {
   const context = program.command('context').description('CLI context management');

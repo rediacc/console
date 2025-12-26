@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 import {
   canDeleteGrandRepo,
   canPromoteToGrand,
@@ -6,14 +7,13 @@ import {
   type RepositoryWithRelations,
 } from '@rediacc/shared/services/repository';
 import type { CompanyVaultRecord } from '@rediacc/shared/types';
-import { Command } from 'commander';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import type { OutputFormat } from '../types/index.js';
 
 export function registerRepositoryCommands(program: Command): void {
   const repository = program.command('repository').description('Repository management commands');

@@ -13,9 +13,9 @@ import { registerShortcuts } from './commands/shortcuts.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerUserCommands } from './commands/user.js';
-import type { OutputFormat } from './types/index.js';
 import { setOutputFormat } from './utils/errors.js';
 import { VERSION } from './version.js';
+import type { OutputFormat } from './types/index.js';
 
 export const cli = new Command();
 
