@@ -19,6 +19,10 @@ import type {
   GetTeamQueueItems_ResultSet2,
   GetQueueItemTrace_ResultSet1,
   GetQueueItemTrace_ResultSet2,
+  GetQueueItemTrace_ResultSet3,
+  GetQueueItemTrace_ResultSet4,
+  GetQueueItemTrace_ResultSet5,
+  GetQueueItemTrace_ResultSet6,
   QueueStatus,
 } from '@rediacc/shared/types';
 
@@ -157,12 +161,20 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       if (!taskId) return null;
       const params: GetQueueItemTraceParams = { taskId };
       const response = await typedApi.GetQueueItemTrace(params);
-      // GetQueueItemTrace returns multiple result sets
-      // Result set 1: queueDetails
-      // Result set 2: responses (trace logs)
-      // Result set 3: audit logs (not used in current structure)
+      // GetQueueItemTrace returns multiple result sets:
+      // Index 0: NEXT_REQUEST_CREDENTIAL (token)
+      // Index 1: QUEUE_ITEM_DETAILS
+      // Index 2: REQUEST_VAULT
+      // Index 3: RESPONSE_VAULT (console output)
+      // Index 4: AUDIT_USER (trace logs)
+      // Index 5: RELATED_QUEUE_ITEMS
+      // Index 6: QUEUE_COUNT (machine stats)
       const queueDetails = extractFirstByIndex<GetQueueItemTrace_ResultSet1>(response, 1);
-      const traceLogs = extractByIndex<GetQueueItemTrace_ResultSet2>(response, 2);
+      const requestVault = extractFirstByIndex<GetQueueItemTrace_ResultSet2>(response, 2);
+      const responseVault = extractFirstByIndex<GetQueueItemTrace_ResultSet3>(response, 3);
+      const traceLogs = extractByIndex<GetQueueItemTrace_ResultSet4>(response, 4);
+      const relatedItems = extractByIndex<GetQueueItemTrace_ResultSet5>(response, 5);
+      const machineStats = extractFirstByIndex<GetQueueItemTrace_ResultSet6>(response, 6);
 
       if (!queueDetails) return null;
 
@@ -187,10 +199,14 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
         },
         queueDetails: queueDetails as unknown as GetTeamQueueItems_ResultSet1,
         traceLogs: traceLogs as unknown as QueueTraceLog[],
-        vaultContent: null,
-        responseVaultContent: null,
-        queuePosition: [],
-        machineStats: null,
+        vaultContent: requestVault
+          ? { vaultContent: requestVault.vaultContent, hasContent: !!requestVault.hasContent }
+          : null,
+        responseVaultContent: responseVault
+          ? { vaultContent: responseVault.vaultContent, hasContent: !!responseVault.hasContent }
+          : null,
+        queuePosition: relatedItems as unknown as QueueTrace['queuePosition'],
+        machineStats: machineStats as unknown as QueueTrace['machineStats'],
         planInfo: null,
       };
     },
