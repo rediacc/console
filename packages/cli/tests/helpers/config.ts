@@ -1,5 +1,6 @@
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { DEFAULT_TEST_API_URL, DEFAULT_TEST_TIMEOUT } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,12 +30,11 @@ export function getConfig(): TestConfig {
   const password = currentTestAccount?.password ?? process.env.REDIACC_TEST_PASSWORD ?? '';
 
   config = {
-    apiUrl:
-      process.env.REDIACC_TEST_API_URL ?? 'https://retained-patricia-hawk-int.trycloudflare.com',
+    apiUrl: process.env.REDIACC_TEST_API_URL ?? DEFAULT_TEST_API_URL,
     email,
     password,
     cliDir: resolve(__dirname, '../..'),
-    timeout: parseInt(process.env.REDIACC_TEST_TIMEOUT ?? '30000', 10),
+    timeout: parseInt(process.env.REDIACC_TEST_TIMEOUT ?? String(DEFAULT_TEST_TIMEOUT), 10),
   };
 
   return config;

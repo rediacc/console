@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto';
 import { getErrorMessage, runCli } from './cli.js';
 import { getConfig } from './config.js';
+import { TEST_EMAIL_DOMAIN } from './constants.js';
 
 export interface TestAccount {
   companyName: string;
@@ -15,7 +16,7 @@ export function generateTestAccount(): TestAccount {
   const id = randomBytes(4).toString('hex');
   return {
     companyName: `TestCo-${id}`,
-    email: `test-${id}@rediacc.local`,
+    email: `test-${id}@${TEST_EMAIL_DOMAIN}`,
     password: `TestPass${id}!`,
   };
 }
