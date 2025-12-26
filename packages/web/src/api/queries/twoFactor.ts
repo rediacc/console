@@ -1,11 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { RootState } from '@/store/store';
 import { hashPassword } from '@/utils/auth';
 import { extractErrorMessage } from '@/utils/mutationUtils';
+import {
+  parseGetRequestAuthenticationStatus,
+  parseUpdateUserTFA,
+  parsePrivilegeAuthenticationRequest,
+} from '@rediacc/shared/api';
 import type { AuthRequestStatus, EnableTfaResponse, VerifyTfaResult } from '@rediacc/shared/types';
 
 export type TwoFactorStatus = AuthRequestStatus;
@@ -19,7 +24,8 @@ export const useTFAStatus = () => {
     queryKey: ['tfa-status', userEmail],
     queryFn: async () => {
       try {
-        return await api.auth.getRequestStatus();
+        const response = await typedApi.GetRequestAuthenticationStatus({});
+        return parseGetRequestAuthenticationStatus(response as never);
       } catch {
         return {
           isTFAEnabled: false,
@@ -47,8 +53,13 @@ export const useEnableTFA = () => {
     }) => {
       // Generate only mode - get secret without saving
       if (data.generateOnly && data.password) {
-        const passwordHash = await hashPassword(data.password);
-        const responseData = await api.auth.enableTfa(passwordHash, { generateOnly: true });
+        const userHash = await hashPassword(data.password);
+        const response = await typedApi.UpdateUserTFA({
+          enable: true,
+          generateOnly: true,
+          userHash,
+        });
+        const responseData = parseUpdateUserTFA(response as never);
         if (!responseData?.secret) {
           throw new Error(i18n.t('settings:twoFactorAuth.errors.missingData'));
         }
@@ -58,11 +69,13 @@ export const useEnableTFA = () => {
 
       // Confirm enable mode - verify code and save
       if (data.confirmEnable && data.verificationCode && data.secret) {
-        return api.auth.enableTfa(undefined, {
-          verificationCode: data.verificationCode,
+        const response = await typedApi.UpdateUserTFA({
+          enable: true,
+          currentCode: data.verificationCode,
           secret: data.secret,
           confirmEnable: true,
         });
+        return parseUpdateUserTFA(response as never);
       }
 
       throw new Error(i18n.t('settings:twoFactorAuth.errors.invalidParameters'));
@@ -104,8 +117,12 @@ export const useDisableTFA = () => {
 
   return useMutationWithFeedback({
     mutationFn: async (data: { password: string; currentCode: string }) => {
-      const passwordHash = await hashPassword(data.password);
-      await api.auth.disableTfa(passwordHash, data.currentCode);
+      const userHash = await hashPassword(data.password);
+      await typedApi.UpdateUserTFA({
+        enable: false,
+        userHash,
+        currentCode: data.currentCode,
+      });
     },
     successMessage: i18n.t('settings:twoFactorAuth.success.disabled'),
     errorMessage: i18n.t('settings:twoFactorAuth.errors.disableFailed'),
@@ -128,8 +145,10 @@ export const useVerifyTFA = () => {
   const queryClient = useQueryClient();
 
   return useMutationWithFeedback({
-    mutationFn: async (data: { code: string }): Promise<VerifyTfaResult> =>
-      api.auth.verifyTfa(data.code),
+    mutationFn: async (data: { code: string }): Promise<VerifyTfaResult> => {
+      const response = await typedApi.PrivilegeAuthenticationRequest({ tFACode: data.code });
+      return parsePrivilegeAuthenticationRequest(response as never);
+    },
     // Only show success message when verification results in authorization
     successMessage: (data) =>
       data.isAuthorized ? i18n.t('settings:twoFactorAuth.success.verified') : null,

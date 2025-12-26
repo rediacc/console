@@ -47,7 +47,10 @@ export interface ResourceCommandConfig {
   vaultConfig?: {
     fetch: (
       params: Record<string, unknown>
-    ) => Promise<{ vaults: (CompanyVaultRecord & { vaultType?: string })[] }>;
+    ) => Promise<
+      | (CompanyVaultRecord & { vaultType?: string })[]
+      | { vaults: (CompanyVaultRecord & { vaultType?: string })[] }
+    >;
     vaultType: string;
   };
   /** Optional: Vault update command configuration */

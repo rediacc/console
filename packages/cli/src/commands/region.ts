@@ -1,11 +1,16 @@
 import { Command } from 'commander';
+import {
+  parseGetCompanyRegions,
+  parseGetCompanyVaults,
+} from '@rediacc/shared/api';
 import type {
   CreateRegionParams,
   DeleteRegionParams,
   UpdateRegionNameParams,
   UpdateRegionVaultParams,
+  CompanyVaultRecord,
 } from '@rediacc/shared/types';
-import { api } from '../services/api.js';
+import { typedApi } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 
 export function registerRegionCommands(program: Command): void {
@@ -15,17 +20,32 @@ export function registerRegionCommands(program: Command): void {
     nameField: 'regionName',
     parentOption: 'none',
     operations: {
-      list: () => api.regions.list(),
-      create: (payload) => api.regions.create(payload as unknown as CreateRegionParams),
-      rename: (payload) => api.regions.rename(payload as unknown as UpdateRegionNameParams),
-      delete: (payload) => api.regions.delete(payload as unknown as DeleteRegionParams),
+      list: async () => {
+        const response = await typedApi.GetCompanyRegions({});
+        return parseGetCompanyRegions(response as never);
+      },
+      create: async (payload) => {
+        await typedApi.CreateRegion(payload as unknown as CreateRegionParams);
+      },
+      rename: async (payload) => {
+        await typedApi.UpdateRegionName(payload as unknown as UpdateRegionNameParams);
+      },
+      delete: async (payload) => {
+        await typedApi.DeleteRegion(payload as unknown as DeleteRegionParams);
+      },
     },
     vaultConfig: {
-      fetch: (params) => api.company.getAllVaults(params),
+      fetch: async () => {
+        const response = await typedApi.GetCompanyVaults({});
+        const vaults = parseGetCompanyVaults(response as never);
+        return { vaults } as unknown as { vaults: (CompanyVaultRecord & { vaultType?: string })[] };
+      },
       vaultType: 'Region',
     },
     vaultUpdateConfig: {
-      update: (payload) => api.regions.updateVault(payload as unknown as UpdateRegionVaultParams),
+      update: async (payload) => {
+        await typedApi.UpdateRegionVault(payload as unknown as UpdateRegionVaultParams);
+      },
       vaultFieldName: 'vaultContent',
     },
   });

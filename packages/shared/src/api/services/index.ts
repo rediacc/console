@@ -1,35 +1,11 @@
-import { createAuditService } from './audit';
-import { createAuthService } from './auth';
-import { createBridgesService } from './bridges';
-import { createCephService } from './ceph';
-import { createCompanyService } from './company';
-import { createMachinesService } from './machines';
-import { createPermissionsService } from './permissions';
-import { createQueueService } from './queue';
-import { createRegionsService } from './regions';
-import { createRepositorysitoriesService } from './repositories';
-import { createStorageService } from './storage';
-import { createTeamsService } from './teams';
-import { createUsersService } from './users';
-import type { ApiClient } from './types';
+/**
+ * Services Module Exports
+ *
+ * This module exports types and the auth service factory.
+ * The general API service factory (createApiServices) has been replaced
+ * by the TypeSafeApi proxy pattern (typedApi).
+ */
 
-export function createApiServices(client: ApiClient) {
-  return {
-    auth: createAuthService(client),
-    company: createCompanyService(client),
-    users: createUsersService(client),
-    permissions: createPermissionsService(client),
-    teams: createTeamsService(client),
-    regions: createRegionsService(client),
-    bridges: createBridgesService(client),
-    machines: createMachinesService(client),
-    repositories: createRepositorysitoriesService(client),
-    storage: createStorageService(client),
-    queue: createQueueService(client),
-    ceph: createCephService(client),
-    audit: createAuditService(client),
-  };
-}
-
-export type { PermissionGroupWithParsedPermissions } from './permissions';
-export type { ApiClient, ApiRequestConfig } from './types';
+export type { ApiClient, ApiRequestConfig, ProcedureEndpoint } from './types';
+export { createAuthService } from './auth';
+export type { AuthService, AuthHttpClient } from './auth';

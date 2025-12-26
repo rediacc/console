@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import {
-  createApiServices,
+  createTypedApi,
+  createAuthService,
   normalizeResponse,
   extractNextToken,
   extractApiErrors,
@@ -131,18 +132,9 @@ class CliApiClient implements SharedApiClient {
   ): Promise<ApiResponse> {
     await this.initialize();
 
-    const response = await this.client.post<ApiResponse>(
-      '/CreateAuthenticationRequest',
-      { name: sessionName },
-      {
-        headers: {
-          'Rediacc-UserEmail': email,
-          'Rediacc-UserHash': passwordHash,
-        },
-      }
-    );
-
-    const data = response.data;
+    // Use shared auth service
+    const authService = createAuthService(this.client);
+    const data = await authService.login(email, passwordHash, sessionName);
     await this.handleTokenRotation(data);
     return data;
   }
@@ -158,18 +150,9 @@ class CliApiClient implements SharedApiClient {
   ): Promise<ApiResponse> {
     await this.initialize();
 
-    const response = await this.client.post<ApiResponse>(
-      '/ActivateUserAccount',
-      { activationCode },
-      {
-        headers: {
-          'Rediacc-UserEmail': email,
-          'Rediacc-UserHash': passwordHash,
-        },
-      }
-    );
-
-    return response.data;
+    // Use shared auth service
+    const authService = createAuthService(this.client);
+    return authService.activateUser(email, activationCode, passwordHash);
   }
 
   async register(
@@ -180,22 +163,9 @@ class CliApiClient implements SharedApiClient {
   ): Promise<ApiResponse> {
     await this.initialize();
 
-    const response = await this.client.post<ApiResponse>(
-      '/CreateNewCompany',
-      {
-        companyName,
-        userEmailAddress: email,
-        languagePreference,
-      },
-      {
-        headers: {
-          'Rediacc-UserEmail': email,
-          'Rediacc-UserHash': passwordHash,
-        },
-      }
-    );
-
-    return response.data;
+    // Use shared auth service
+    const authService = createAuthService(this.client);
+    return authService.register(companyName, email, passwordHash, languagePreference);
   }
 
   async get<T = unknown>(
@@ -407,4 +377,4 @@ export class CliApiError extends Error {
 }
 
 export const apiClient = new CliApiClient();
-export const api = createApiServices(apiClient);
+export const typedApi = createTypedApi(apiClient);

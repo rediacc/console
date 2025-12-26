@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import { minifyJSON } from '@/platform/utils/json';
+import { parseGetTeamStorages } from '@rediacc/shared/api';
 import type {
   CreateStorageParams,
   DeleteStorageParams,
@@ -19,7 +20,8 @@ export const useStorage = (teamFilter?: string | string[]) => {
       if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return [];
 
       const targetTeam = Array.isArray(teamFilter) ? teamFilter.join(',') : teamFilter;
-      return api.storage.list({ teamName: targetTeam });
+      const response = await typedApi.GetTeamStorages({ teamName: targetTeam });
+      return parseGetTeamStorages(response as never);
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
     staleTime: 30 * 1000, // 30 seconds
@@ -31,7 +33,7 @@ export const useCreateStorage = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateStorageParams>>({
     mutationFn: (params) =>
-      api.storage.create({
+      typedApi.CreateStorage({
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       }),
@@ -48,7 +50,7 @@ export const useCreateStorage = () => {
 export const useUpdateStorageName = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateStorageNameParams>({
-    mutationFn: (params) => api.storage.rename(params),
+    mutationFn: (params) => typedApi.UpdateStorageName(params),
     successMessage: (_, vars) => `Storage renamed to "${vars.newStorageName}"`,
     errorMessage: 'Failed to update storage name',
     onSuccess: () => {
@@ -66,7 +68,7 @@ export const useUpdateStorageVault = () => {
     UpdateStorageVaultParams & Record<string, unknown>
   >({
     mutationFn: (params) =>
-      api.storage.updateVault({
+      typedApi.UpdateStorageVault({
         ...params,
         vaultContent: minifyJSON(params.vaultContent),
       }),
@@ -82,7 +84,7 @@ export const useUpdateStorageVault = () => {
 export const useDeleteStorage = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteStorageParams & Record<string, unknown>>({
-    mutationFn: (params) => api.storage.delete(params),
+    mutationFn: (params) => typedApi.DeleteStorage(params),
     successMessage: (_, vars) => `Storage "${vars.storageName}" deleted successfully`,
     errorMessage: 'Failed to delete storage',
     onSuccess: () => {

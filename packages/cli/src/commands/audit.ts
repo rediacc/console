@@ -1,10 +1,12 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
+import { parseGetAuditLogs, parseGetEntityAuditTrace } from '@rediacc/shared/api';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
+
 export function registerAuditCommands(program: Command): void {
   const audit = program.command('audit').description('Audit log commands');
 
@@ -13,20 +15,20 @@ export function registerAuditCommands(program: Command): void {
     .command('log')
     .description('View audit logs')
     .option('--limit <n>', 'Limit results', '100')
-    .option('--offset <n>', 'Offset results', '0')
-    .action(async (options) => {
+    .action(async (options: { limit: string }) => {
       try {
         await authService.requireAuth();
 
-        const logs = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching audit logs...',
           () =>
-            api.audit.getLogs(undefined, undefined, undefined, parseInt(options.limit, 10), {
-              offset: parseInt(options.offset, 10),
+            typedApi.GetAuditLogs({
+              maxRecords: parseInt(options.limit, 10),
             }),
           'Audit logs fetched'
         );
 
+        const logs = parseGetAuditLogs(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(logs, format);
@@ -39,16 +41,17 @@ export function registerAuditCommands(program: Command): void {
   audit
     .command('trace <entityType> <entityId>')
     .description('Trace audit history for an entity')
-    .action(async (entityType, entityId) => {
+    .action(async (entityType: string, entityId: string) => {
       try {
         await authService.requireAuth();
 
-        const trace = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching entity audit trace...',
-          () => api.audit.getEntityTrace({ entityType, entityIdentifier: entityId }),
+          () => typedApi.GetEntityAuditTrace({ entityType, entityIdentifier: entityId }),
           'Audit trace fetched'
         );
 
+        const trace = parseGetEntityAuditTrace(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(trace.records, format);
@@ -61,19 +64,20 @@ export function registerAuditCommands(program: Command): void {
   audit
     .command('history <entityType> <entityId>')
     .description('View entity history')
-    .action(async (entityType, entityId) => {
+    .action(async (entityType: string, entityId: string) => {
       try {
         await authService.requireAuth();
 
-        const history = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching entity history...',
-          () => api.audit.getEntityHistory(entityType, entityId),
+          () => typedApi.GetEntityAuditTrace({ entityType, entityIdentifier: entityId }),
           'History fetched'
         );
 
+        const trace = parseGetEntityAuditTrace(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
-        outputService.print(history, format);
+        outputService.print(trace, format);
       } catch (error) {
         handleError(error);
       }

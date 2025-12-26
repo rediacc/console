@@ -211,7 +211,7 @@ const CompanyPage: React.FC = () => {
       for (const vault of vaultsResult.data.allVaults) {
         if (vault.decryptedVault && vault.credential && vault.vaultName) {
           try {
-            let vaultContent = vault.decryptedVault as string;
+            let vaultContent = vault.decryptedVault;
 
             if (
               typeof vaultContent === 'string' &&
@@ -236,10 +236,10 @@ const CompanyPage: React.FC = () => {
             }
 
             vaultUpdates.push({
-              credential: vault.credential as string,
-              name: vault.vaultName as string,
+              credential: vault.credential,
+              name: vault.vaultName,
               content: finalContent,
-              version: (vault.version as number) || 1,
+              version: (vault.version) || 1,
             });
           } catch {
             showMessage('error', `Failed to process vault ${vault.vaultName}`);
@@ -314,7 +314,7 @@ const CompanyPage: React.FC = () => {
         onSave={handleUpdateCompanyVault}
         entityType="COMPANY"
         title={t('company.modalTitle')}
-        initialVault={companyVault?.vault ?? '{}'}
+        initialVault={companyVault?.vaultContent ?? '{}'}
         initialVersion={companyVault?.vaultVersion ?? 1}
         loading={updateCompanyVaultMutation.isPending}
       />

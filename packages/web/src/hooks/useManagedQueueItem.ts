@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import type { QueueItem, QueueItemData } from '@/platform/types/queue';
 import { minifyJSON } from '@/platform/utils/json';
 import { queueService } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
+import { parseCreateQueueItem } from '@rediacc/shared/api';
 
 /**
  * A managed version of useCreateQueueItem that handles high-priority queue items
@@ -46,7 +47,7 @@ export const useManagedQueueItem = () => {
       priority,
     };
 
-    const response = await api.queue.create({
+    const response = await typedApi.CreateQueueItem({
       teamName: minifiedData.teamName,
       machineName: minifiedData.machineName as string,
       bridgeName: minifiedData.bridgeName as string,
@@ -54,7 +55,7 @@ export const useManagedQueueItem = () => {
       priority: minifiedData.priority,
     });
 
-    return response;
+    return parseCreateQueueItem(response as never);
   };
 
   const mutation = useMutation({

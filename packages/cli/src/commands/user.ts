@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
+import { parseGetCompanyUsers, parseIsRegistered } from '@rediacc/shared/api';
+import { apiClient, typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -16,11 +17,13 @@ export function registerUserCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const users = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching users...',
-          () => api.users.list(),
+          () => typedApi.GetCompanyUsers({}),
           'Users fetched'
         );
+
+        const users = parseGetCompanyUsers(apiResponse as never);
 
         const format = program.opts().output as OutputFormat;
 
@@ -56,15 +59,24 @@ export function registerUserCommands(program: Command): void {
         const { nodeCryptoProvider } = await import('../adapters/crypto.js');
         const passwordHash = await nodeCryptoProvider.generateHash(password);
 
-        const result = await withSpinner(
+        // Generate activation code (8 random alphanumeric characters)
+        const activationCode = Array.from({ length: 8 }, () =>
+          '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 36))
+        ).join('');
+
+        await withSpinner(
           `Creating user "${email}"...`,
-          () => api.users.create(email, passwordHash),
+          () =>
+            typedApi.CreateNewUser({
+              newUserEmail: email,
+              newUserHash: passwordHash,
+              activationCode,
+            }),
           'User created'
         );
 
-        if (result.activationCode) {
-          outputService.success(`Activation code: ${result.activationCode}`);
-        }
+        // Show the activation code we generated
+        outputService.success(`Activation code: ${activationCode}`);
       } catch (error) {
         handleError(error);
       }
@@ -89,7 +101,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Activating user "${email}"...`,
-          () => api.auth.activateAccount(email, activationCode, passwordHash),
+          () => apiClient.activateUser(email, activationCode, passwordHash),
           'User activated'
         );
       } catch (error) {
@@ -117,7 +129,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Deactivating user "${email}"...`,
-          () => api.users.deactivate({ userEmail: email }),
+          () => typedApi.UpdateUserToDeactivated({ userEmail: email }),
           'User deactivated'
         );
       } catch (error) {
@@ -135,7 +147,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Reactivating user "${email}"...`,
-          () => api.users.activate({ userEmail: email }),
+          () => typedApi.UpdateUserToActivated({ userEmail: email }),
           'User reactivated'
         );
       } catch (error) {
@@ -153,7 +165,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Updating email for "${currentEmail}"...`,
-          () => api.users.updateEmail({ currentUserEmail: currentEmail, newUserEmail: newEmail }),
+          () => typedApi.UpdateUserEmail({ currentUserEmail: currentEmail, newUserEmail: newEmail }),
           `Email updated to "${newEmail}"`
         );
       } catch (error) {
@@ -194,7 +206,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           'Updating password...',
-          () => api.users.updatePassword({ userNewPass: passwordHash }),
+          () => typedApi.UpdateUserPassword({ userNewPass: passwordHash }),
           'Password updated'
         );
       } catch (error) {
@@ -212,7 +224,7 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Updating language preference...`,
-          () => api.users.updateLanguage({ preferredLanguage: language }),
+          () => typedApi.UpdateUserLanguage({ preferredLanguage: language }),
           `Language updated to "${language}"`
         );
       } catch (error) {
@@ -226,7 +238,8 @@ export function registerUserCommands(program: Command): void {
     .description('Check if a user exists')
     .action(async (email) => {
       try {
-        const status = await api.auth.checkRegistration(email);
+        const apiResponse = await typedApi.IsRegistered({ userName: email });
+        const status = parseIsRegistered(apiResponse as never);
 
         if (status.isRegistered) {
           outputService.success(`User "${email}" exists`);
@@ -249,14 +262,17 @@ export function registerUserCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const vaultData = await withSpinner(
+        const response = await withSpinner(
           'Fetching user vault...',
-          () => api.users.getVault(),
+          () => typedApi.GetUserVault({}),
           'Vault fetched'
         );
 
         const format = program.opts().output as OutputFormat;
 
+        // GetUserVault returns the vault data directly in first result set
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- results may be empty at runtime
+        const vaultData = response.results[0]?.[0] ?? {};
         outputService.print(vaultData, format);
       } catch (error) {
         handleError(error);
@@ -308,7 +324,10 @@ export function registerUserCommands(program: Command): void {
         await withSpinner(
           'Updating user vault...',
           () =>
-            api.users.updateVault({ vaultContent: vaultData, vaultVersion: options.vaultVersion }),
+            typedApi.UpdateUserVault({
+              vaultContent: vaultData,
+              vaultVersion: options.vaultVersion,
+            }),
           'User vault updated'
         );
       } catch (error) {
@@ -329,7 +348,8 @@ export function registerUserCommands(program: Command): void {
 
         await withSpinner(
           `Assigning "${groupName}" to user "${userEmail}"...`,
-          () => api.users.assignPermissions({ userEmail, permissionGroupName: groupName }),
+          () =>
+            typedApi.UpdateUserAssignedPermissions({ userEmail, permissionGroupName: groupName }),
           'Permission assigned'
         );
       } catch (error) {

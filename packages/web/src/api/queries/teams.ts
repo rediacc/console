@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { QUERY_KEY_STRINGS, QUERY_KEYS } from '@/api/queryKeys';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import { minifyJSON } from '@/platform/utils/json';
+import { parseGetCompanyTeams, parseGetTeamMembers } from '@rediacc/shared/api';
 import type {
   CreateTeamMembershipParams,
   CreateTeamParams,
@@ -20,7 +21,8 @@ export const useTeams = () => {
   return useQuery<GetCompanyTeams_ResultSet1[]>({
     queryKey: QUERY_KEYS.teams.all,
     queryFn: async () => {
-      return api.teams.list();
+      const response = await typedApi.GetCompanyTeams({});
+      return parseGetCompanyTeams(response as never);
     },
     staleTime: 30 * 1000, // 30 seconds
   });
@@ -31,7 +33,8 @@ export const useTeamMembers = (teamName: string) => {
   return useQuery<GetTeamMembers_ResultSet1[]>({
     queryKey: QUERY_KEYS.teams.members(teamName),
     queryFn: async () => {
-      return api.teams.getMembers({ teamName });
+      const response = await typedApi.GetTeamMembers({ teamName });
+      return parseGetTeamMembers(response as never);
     },
     enabled: !!teamName,
   });
@@ -49,7 +52,7 @@ export const useCreateTeam = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateTeamParams>>({
     mutationFn: (params) =>
-      api.teams.create({
+      typedApi.CreateTeam({
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       }),
@@ -65,7 +68,7 @@ export const useCreateTeam = () => {
 export const useUpdateTeamName = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateTeamNameParams>({
-    mutationFn: (params) => api.teams.rename(params),
+    mutationFn: (params) => typedApi.UpdateTeamName(params),
     successMessage: (_, vars) => `Team renamed to "${vars.newTeamName}"`,
     errorMessage: 'Failed to update team name',
     onSuccess: () => {
@@ -80,7 +83,7 @@ export const useUpdateTeamVault = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateTeamVaultParams & Record<string, unknown>>({
     mutationFn: (params) =>
-      api.teams.updateVault({
+      typedApi.UpdateTeamVault({
         ...params,
         vaultContent: minifyJSON(params.vaultContent),
       }),
@@ -96,7 +99,7 @@ export const useUpdateTeamVault = () => {
 export const useDeleteTeam = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteTeamParams>({
-    mutationFn: (params) => api.teams.delete(params),
+    mutationFn: (params) => typedApi.DeleteTeam(params),
     successMessage: (_, vars) => `Team "${vars.teamName}" deleted successfully`,
     errorMessage: 'Failed to delete team',
     onSuccess: () => {
@@ -110,7 +113,7 @@ export const useDeleteTeam = () => {
 export const useAddTeamMember = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, CreateTeamMembershipParams>({
-    mutationFn: (params) => api.teams.addMember(params),
+    mutationFn: (params) => typedApi.CreateTeamMembership(params),
     successMessage: (_, vars) => `User "${vars.newUserEmail}" added to team`,
     errorMessage: 'Failed to add team member',
     onSuccess: (_, vars) => {
@@ -125,7 +128,7 @@ export const useAddTeamMember = () => {
 export const useRemoveTeamMember = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteUserFromTeamParams>({
-    mutationFn: (params) => api.teams.removeMember(params),
+    mutationFn: (params) => typedApi.DeleteUserFromTeam(params),
     successMessage: (_, vars) => `User "${vars.removeUserEmail}" removed from team`,
     errorMessage: 'Failed to remove team member',
     onSuccess: (_, vars) => {
