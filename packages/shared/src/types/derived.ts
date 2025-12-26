@@ -363,6 +363,18 @@ export interface DropdownOption {
   label: string;
 }
 
+/** Bridges grouped by region for dropdown */
+export interface RegionBridges {
+  regionName: string;
+  bridges: DropdownOption[];
+}
+
+/** Machines grouped by team for dropdown */
+export interface TeamMachines {
+  teamName: string;
+  machines: DropdownOption[];
+}
+
 /** Company-wide dropdown data for forms */
 export interface CompanyDropdownData {
   teams: DropdownOption[];
@@ -370,8 +382,8 @@ export interface CompanyDropdownData {
   regions: DropdownOption[];
   machines: DropdownOption[];
   bridges: DropdownOption[];
-  bridgesByRegion: DropdownOption[];
-  machinesByTeam: DropdownOption[];
+  bridgesByRegion: RegionBridges[];
+  machinesByTeam: TeamMachines[];
   users: DropdownOption[];
   permissionGroups: DropdownOption[];
   permissions: DropdownOption[];
@@ -412,6 +424,23 @@ export interface AccountHealth {
   [key: string]: unknown;
 }
 
+/** Queue team issue from dashboard */
+export interface QueueTeamIssue {
+  teamName: string;
+  staleItems?: number;
+  pendingItems?: number;
+  activeItems?: number;
+}
+
+/** Queue machine issue from dashboard */
+export interface QueueMachineIssue {
+  machineName: string;
+  teamName: string;
+  staleItems?: number;
+  pendingItems?: number;
+  activeItems?: number;
+}
+
 /** Queue statistics from dashboard */
 export interface DashboardQueueStats {
   pendingCount?: number;
@@ -419,6 +448,19 @@ export interface DashboardQueueStats {
   completedCount?: number;
   failedCount?: number;
   staleCount?: number;
+  hasStaleItems?: number;
+  hasOldPendingItems?: number;
+  oldestPendingAgeMinutes?: number;
+  createdToday?: number;
+  completedToday?: number;
+  cancelledToday?: number;
+  failedToday?: number;
+  highestPriorityPending?: number | null;
+  highPriorityPending?: number;
+  normalPriorityPending?: number;
+  lowPriorityPending?: number;
+  teamIssues?: QueueTeamIssue[];
+  machineIssues?: QueueMachineIssue[];
   [key: string]: unknown;
 }
 
@@ -458,4 +500,33 @@ export interface CompanyImportResult {
   skippedCount: number;
   errorCount: number;
   [key: string]: unknown;
+}
+
+// =============================================================================
+// CEPH DASHBOARD TYPES
+// =============================================================================
+
+/** Ceph team breakdown for dashboard widget */
+export interface CephTeamBreakdown {
+  teamName: string;
+  totalMachines: number;
+  availableMachines: number;
+  clusterMachines: number;
+  imageMachines: number;
+  cloneMachines: number;
+}
+
+/** Ceph statistics for company dashboard */
+export interface CompanyCephStats {
+  total_machines: number;
+  truly_available_machines: number;
+  cluster_assigned_machines: number;
+  cluster_percentage: number;
+  image_assigned_machines: number;
+  image_percentage: number;
+  clone_assigned_machines: number;
+  clone_percentage: number;
+  total_clusters?: number;
+  avg_machines_per_cluster?: number;
+  team_breakdown?: CephTeamBreakdown[];
 }

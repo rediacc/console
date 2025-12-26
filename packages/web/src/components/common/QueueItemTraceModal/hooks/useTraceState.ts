@@ -11,6 +11,14 @@ interface UseTraceStateProps {
   traceData: QueueTrace | null | undefined;
 }
 
+/** Shape of command result in vault content */
+interface CommandResult {
+  command_output?: string;
+  message?: string;
+  status?: string;
+  exit_code?: number;
+}
+
 interface UseTraceStateReturn extends TraceState, TraceStateActions {
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -128,7 +136,7 @@ export const useTraceState = ({
               initialOutput = vaultContent.result;
             }
           } else if (vaultContent.result && typeof vaultContent.result === 'object') {
-            const result = vaultContent.result;
+            const result = vaultContent.result as CommandResult;
             // Same logic for object format
             initialOutput = result.command_output ?? '';
             if (!initialOutput && result.message) {
