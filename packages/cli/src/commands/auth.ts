@@ -1,11 +1,13 @@
 import { Command } from 'commander';
 import { api, apiClient } from '../services/api.js';
 import { authService } from '../services/auth.js';
+import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm, askPassword, askText } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
+
 export function registerAuthCommands(program: Command): void {
   const auth = program.command('auth').description('Authentication commands');
 
@@ -16,12 +18,28 @@ export function registerAuthCommands(program: Command): void {
     .option('-e, --email <email>', 'Email address')
     .option('-p, --password <password>', 'Password (for non-interactive login)')
     .option('-n, --name <name>', 'Session name')
-    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .option('--endpoint <url>', 'API endpoint URL')
+    .option('--save-as <context>', 'Save credentials to a named context')
     .action(async (options) => {
       try {
-        // Set API endpoint if provided
+        // Determine context name (--save-as overrides current context)
+        const contextName = options.saveAs ?? (await contextService.getCurrentName());
+
+        // Determine API URL
+        let apiUrl: string;
         if (options.endpoint) {
-          await apiClient.setApiUrl(options.endpoint);
+          apiUrl = apiClient.normalizeApiUrl(options.endpoint);
+        } else if (contextName) {
+          const existingContext = await contextService.get(contextName);
+          apiUrl = existingContext?.apiUrl ?? (await contextService.getApiUrl());
+        } else {
+          apiUrl = await contextService.getApiUrl();
+        }
+
+        // Temporarily set API URL for this request
+        const originalUrl = apiClient.getApiUrl();
+        if (apiUrl !== originalUrl) {
+          await apiClient.reinitialize();
         }
 
         // Get email
@@ -31,13 +49,18 @@ export function registerAuthCommands(program: Command): void {
             validate: (input) => input.includes('@') || 'Please enter a valid email',
           }));
 
-        // Get password (use provided or prompt interactively)
+        // Get password
         const password = options.password ?? (await askPassword('Password:'));
 
-        // Attempt login
+        // Attempt login with context info
         const result = await withSpinner(
           'Authenticating...',
-          () => authService.login(email, password, { sessionName: options.name }),
+          () =>
+            authService.login(email, password, {
+              sessionName: options.name,
+              contextName: contextName ?? 'default',
+              apiUrl,
+            }),
           'Authenticated successfully'
         );
 
@@ -55,7 +78,8 @@ export function registerAuthCommands(program: Command): void {
           throw new ValidationError(result.message ?? 'Authentication failed');
         }
 
-        outputService.success('Login successful!');
+        const savedTo = contextName ?? 'default';
+        outputService.success(`Login successful! Saved to context "${savedTo}"`);
       } catch (error) {
         handleError(error);
       }

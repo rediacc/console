@@ -4,16 +4,11 @@ import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
 import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
-import { nodeStorageAdapter } from '../adapters/storage.js';
+import { contextService } from './context.js';
 import { EXIT_CODES } from '../types/index.js';
 import type { ErrorCode } from '../types/errors.js';
 
 const API_PREFIX = '/StoredProcedure';
-const STORAGE_KEYS = {
-  TOKEN: 'token',
-  API_URL: 'apiUrl',
-  MASTER_PASSWORD: 'masterPassword',
-} as const;
 
 const vaultEncryptor = createVaultEncryptor(nodeCryptoProvider);
 
@@ -83,26 +78,42 @@ class CliApiClient implements SharedApiClient {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // Load API URL from storage or use default
-    const storedUrl = await nodeStorageAdapter.getItem(STORAGE_KEYS.API_URL);
-    this.apiUrl = storedUrl ?? process.env.REDIACC_API_URL ?? 'https://www.rediacc.com/api';
+    // Load API URL from context service
+    this.apiUrl = await contextService.getApiUrl();
     this.client.defaults.baseURL = `${this.apiUrl}${API_PREFIX}`;
     this.initialized = true;
   }
 
-  async setApiUrl(url: string): Promise<void> {
-    // Normalize URL: ensure it ends with /api
-    let normalizedUrl = url.replace(/\/+$/, ''); // Remove trailing slashes
+  /**
+   * Reinitialize the API client (useful after context switch).
+   */
+  async reinitialize(): Promise<void> {
+    this.initialized = false;
+    await this.initialize();
+  }
+
+  /**
+   * Normalize an API URL to ensure it ends with /api.
+   */
+  normalizeApiUrl(url: string): string {
+    let normalizedUrl = url.replace(/\/+$/, '');
     if (!normalizedUrl.endsWith('/api')) {
       normalizedUrl = `${normalizedUrl}/api`;
     }
-    this.apiUrl = normalizedUrl;
-    this.client.defaults.baseURL = `${normalizedUrl}${API_PREFIX}`;
-    await nodeStorageAdapter.setItem(STORAGE_KEYS.API_URL, normalizedUrl);
+    return normalizedUrl;
   }
 
   getApiUrl(): string {
     return this.apiUrl;
+  }
+
+  /**
+   * Set the API URL directly (for register/activate commands that don't require a context).
+   */
+  async setApiUrl(url: string): Promise<void> {
+    await this.initialize();
+    this.apiUrl = this.normalizeApiUrl(url);
+    this.client.defaults.baseURL = `${this.apiUrl}${API_PREFIX}`;
   }
 
   async login(
@@ -319,8 +330,6 @@ class CliApiClient implements SharedApiClient {
   }
 
   private async handleTokenRotation(response: ApiResponse): Promise<void> {
-    // Desktop CLI specifically uses resultSets[0] for token rotation
-    // (see /desktop/src/cli/core/api_client.py lines 382-396)
     const resultSets = response.resultSets;
     if (resultSets.length === 0) return;
 
@@ -331,29 +340,24 @@ class CliApiClient implements SharedApiClient {
     const newToken = (row.nextRequestToken ?? row.NextRequestToken) as string | undefined;
 
     if (newToken) {
-      await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, newToken);
+      await contextService.setToken(newToken);
     }
   }
 
   private async getToken(): Promise<string | null> {
-    // Check environment variable first
-    const envToken = process.env.REDIACC_TOKEN;
-    if (envToken) return envToken;
-
-    return nodeStorageAdapter.getItem(STORAGE_KEYS.TOKEN);
+    return contextService.getToken();
   }
 
   async setToken(token: string): Promise<void> {
-    await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, token);
+    await contextService.setToken(token);
   }
 
   async clearToken(): Promise<void> {
-    await nodeStorageAdapter.removeItem(STORAGE_KEYS.TOKEN);
+    await contextService.clearCredentials();
   }
 
   async hasToken(): Promise<boolean> {
-    const token = await this.getToken();
-    return token !== null;
+    return contextService.hasToken();
   }
 
   private createApiError(response: ApiResponse): CliApiError {

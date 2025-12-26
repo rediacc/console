@@ -5,16 +5,13 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
-    testTimeout: 30000, // CLI commands may take time
+    testTimeout: 30000,
     hookTimeout: 30000,
-    // Setup file only runs for blackbox tests (tests/ directory)
-    // Unit tests in src/__tests__ don't need API setup
+    // Setup file runs for integration tests in tests/ directory
+    // It checks test path and skips setup for unit tests
     setupFiles: ['./tests/setup.ts'],
-    // Run tests sequentially to avoid auth state conflicts
     fileParallelism: false,
-    sequence: {
-      concurrent: false,
-    },
+    sequence: { concurrent: false },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
