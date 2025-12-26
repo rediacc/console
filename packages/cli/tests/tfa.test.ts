@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { runCli, getErrorMessage } from './helpers/cli.js';
-import { expectError, ErrorPatterns } from './helpers/errors.js';
-import { generateTOTPCode, extractSecret, disableTFA, getTFAStatus } from './helpers/tfa.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getErrorMessage, runCli } from './helpers/cli.js';
+import { ErrorPatterns, expectError } from './helpers/errors.js';
+import { disableTFA, extractSecret, generateTOTPCode, getTFAStatus } from './helpers/tfa.js';
 
 describe('TFA (Two-Factor Authentication)', () => {
   let tfaSecret: string | null = null;

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { isEncrypted, analyzeVaultProtocolState, VaultProtocolState } from '../vaultProtocol.js';
+import { describe, expect, it } from 'vitest';
+import { analyzeVaultProtocolState, isEncrypted, VaultProtocolState } from '../vaultProtocol.js';
 
 describe('vaultProtocol', () => {
   describe('isEncrypted', () => {
@@ -101,7 +101,9 @@ describe('vaultProtocol', () => {
       });
 
       it('should return VALID when password is valid', () => {
-        expect(analyzeVaultProtocolState(encryptedVault, true, true)).toBe(VaultProtocolState.VALID);
+        expect(analyzeVaultProtocolState(encryptedVault, true, true)).toBe(
+          VaultProtocolState.VALID
+        );
       });
     });
   });

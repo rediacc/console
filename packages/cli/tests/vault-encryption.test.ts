@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
+import { describe, expect, it } from 'vitest';
 import { nodeCryptoProvider } from '../src/adapters/crypto.js';
 
 describe('Vault Encryption Integration', () => {
@@ -172,7 +172,8 @@ describe('Vault Encryption Integration', () => {
           ip: '10.0.0.50',
           port: 22,
           username: 'deploy',
-          privateKey: '-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----',
+          privateKey:
+            '-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----',
         }),
         status: 'ONLINE',
       };
@@ -189,7 +190,8 @@ describe('Vault Encryption Integration', () => {
       const teamData = {
         teamName: 'Development',
         teamVault: JSON.stringify({
-          SSH_PRIVATE_KEY: '-----BEGIN OPENSSH PRIVATE KEY-----\nbase64data...\n-----END OPENSSH PRIVATE KEY-----',
+          SSH_PRIVATE_KEY:
+            '-----BEGIN OPENSSH PRIVATE KEY-----\nbase64data...\n-----END OPENSSH PRIVATE KEY-----',
           SSH_PUBLIC_KEY: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ...',
           DEPLOY_TOKEN: 'ghp_xxxxxxxxxxxxxxxxxxxx',
         }),

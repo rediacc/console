@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { nodeCryptoProvider } from '../src/adapters/crypto.js';
 
 describe('NodeCryptoProvider', () => {
@@ -87,7 +87,9 @@ describe('NodeCryptoProvider', () => {
     });
 
     it('should fail with corrupted base64 data', async () => {
-      await expect(nodeCryptoProvider.decrypt('not-valid-base64!!!', testPassword)).rejects.toThrow();
+      await expect(
+        nodeCryptoProvider.decrypt('not-valid-base64!!!', testPassword)
+      ).rejects.toThrow();
     });
 
     it('should fail with truncated ciphertext', async () => {

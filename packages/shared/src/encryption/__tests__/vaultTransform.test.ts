@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { isVaultField, hasVaultFields, transformVaultFields } from '../vaultTransform.js';
+import { describe, expect, it } from 'vitest';
+import { hasVaultFields, isVaultField, transformVaultFields } from '../vaultTransform.js';
 
 describe('vaultTransform', () => {
   describe('isVaultField', () => {
