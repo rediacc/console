@@ -18,6 +18,7 @@ import type {
   CreateRepositoryParams,
   CreateStorageParams,
   CreateTeamParams,
+  GetPermissionGroupDetails_ResultSet1,
   GetTeamQueueItemsParams,
 } from './api-schema.generated';
 
@@ -333,3 +334,46 @@ export type MachineAssignmentStatus = 'ASSIGNED' | 'UNASSIGNED';
 
 /** Machine assignment type */
 export type MachineAssignmentType = 'AVAILABLE' | 'CLUSTER' | 'IMAGE' | 'CLONE';
+
+// =============================================================================
+// USER DOMAIN TYPES
+// =============================================================================
+
+/** User vault data */
+export interface UserVault {
+  vault: string;
+  vaultVersion: number;
+  userCredential: string | null;
+}
+
+// =============================================================================
+// PERMISSION DOMAIN TYPES
+// =============================================================================
+
+/** Permission record - alias for generated type */
+export type Permission = GetPermissionGroupDetails_ResultSet1;
+
+// =============================================================================
+// DROPDOWN DOMAIN TYPES
+// =============================================================================
+
+/** Generic dropdown option */
+export interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+/** Company-wide dropdown data for forms */
+export interface CompanyDropdownData {
+  teams: DropdownOption[];
+  allTeams: DropdownOption[];
+  regions: DropdownOption[];
+  machines: DropdownOption[];
+  bridges: DropdownOption[];
+  bridgesByRegion: DropdownOption[];
+  machinesByTeam: DropdownOption[];
+  users: DropdownOption[];
+  permissionGroups: DropdownOption[];
+  permissions: DropdownOption[];
+  subscriptionPlans: DropdownOption[];
+}
