@@ -45,7 +45,7 @@ export function registerTeamCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});
         const vaults = parseGetCompanyVaults(response as never);
-        return { vaults } as unknown as { vaults: (CompanyVaultRecord & { vaultType?: string })[] };
+        return vaults as unknown as (CompanyVaultRecord & { vaultType?: string })[];
       },
       vaultType: 'Team',
     },

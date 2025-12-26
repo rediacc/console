@@ -77,7 +77,7 @@ export function registerAuditCommands(program: Command): void {
         const trace = parseGetEntityAuditTrace(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
-        outputService.print(trace, format);
+        outputService.print(trace.records, format);
       } catch (error) {
         handleError(error);
       }

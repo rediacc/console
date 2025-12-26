@@ -3,7 +3,7 @@
  */
 
 import { extractPrimaryOrSecondary, extractFirstByIndex } from './base';
-import type { GetCompanyUsers_ResultSet1 } from '../../types';
+import type { GetCompanyUsers_ResultSet1, CreateNewUser_ResultSet1 } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
 export function parseGetCompanyUsers(
@@ -13,11 +13,11 @@ export function parseGetCompanyUsers(
 }
 
 export function parseCreateUser(
-  response: ApiResponse<GetCompanyUsers_ResultSet1>
-): GetCompanyUsers_ResultSet1 | null {
+  response: ApiResponse<CreateNewUser_ResultSet1>
+): CreateNewUser_ResultSet1 | null {
   return (
-    extractFirstByIndex<GetCompanyUsers_ResultSet1>(response, 1) ??
-    extractFirstByIndex<GetCompanyUsers_ResultSet1>(response, 0)
+    extractFirstByIndex<CreateNewUser_ResultSet1>(response, 1) ??
+    extractFirstByIndex<CreateNewUser_ResultSet1>(response, 0)
   );
 }
 

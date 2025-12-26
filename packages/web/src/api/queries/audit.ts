@@ -1,12 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { typedApi } from '@/api/client';
-import { extractByIndex, extractFirstByIndex } from '@rediacc/shared/api/typedApi';
-import type {
-  AuditTraceResponse,
-  GetAuditLogs_ResultSet1,
-  AuditTraceRecord,
-  AuditTraceSummary,
-} from '@rediacc/shared/types';
+import { parseGetAuditLogs, parseGetEntityAuditTrace } from '@rediacc/shared/api';
+import type { ApiResponse } from '@rediacc/shared/types/api';
+import type { AuditTraceResponse, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
 export type { AuditTraceRecord, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
@@ -31,8 +27,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
           endDate: params?.endDate,
           maxRecords: params?.maxRecords ?? 100,
         });
-        // Extract from index 1 (primary data after token result set)
-        return extractByIndex<GetAuditLogs_ResultSet1>(response, 1);
+        return parseGetAuditLogs(response as never);
       } catch (error) {
         console.error('Failed to fetch audit logs:', error);
         throw new Error('Unable to load audit logs. Please check your date range and try again.');
@@ -55,7 +50,7 @@ export const useRecentAuditLogs = (maxRecords: number = 10) => {
     queryKey: ['recentAuditLogs', maxRecords],
     queryFn: async () => {
       const response = await typedApi.GetAuditLogs({ maxRecords });
-      return extractByIndex<GetAuditLogs_ResultSet1>(response, 1);
+      return parseGetAuditLogs(response as never);
     },
   });
 };
@@ -66,15 +61,7 @@ const getEntityAuditTrace = async (
   entityIdentifier: string
 ): Promise<AuditTraceResponse> => {
   const response = await typedApi.GetEntityAuditTrace({ entityType, entityIdentifier });
-  // GetEntityAuditTrace returns two result sets: records and summary
-  const records = extractByIndex<AuditTraceRecord>(response, 1);
-  const summaryData = extractFirstByIndex<AuditTraceSummary>(response, 2);
-
-  if (!summaryData) {
-    throw new Error('No audit trace summary returned');
-  }
-
-  return { records, summary: summaryData };
+  return parseGetEntityAuditTrace(response as never);
 };
 
 // React Query hook for entity audit trace
