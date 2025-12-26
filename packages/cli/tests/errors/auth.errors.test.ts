@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 import { runCli } from '../helpers/cli.js';
-import { ErrorPatterns, expectError, nonExistentName } from '../helpers/errors.js';
+import { ErrorPatterns, expectError } from '../helpers/errors.js';
 
 /**
  * Negative test cases for auth commands.
@@ -63,30 +63,26 @@ describe('auth error scenarios', () => {
   // ============================================
   describe('Token revoke errors', () => {
     it('should fail when revoking non-existent token', async () => {
-      const fakeRequestId = nonExistentName('request');
+      // Request ID must be numeric (INT in SQL) - use a large number unlikely to exist
+      const fakeRequestId = '999999999';
       const result = await runCli(['auth', 'token', 'revoke', fakeRequestId]);
 
-      // API should return an error for non-existent request ID
+      // API should return "Target session not found or already terminated"
       expectError(result, { messageContains: ErrorPatterns.QUEUE_NOT_FOUND });
     });
   });
 
   // ============================================
-  // Token Create Errors
+  // Token Fork Errors
   // ============================================
-  describe('Token create errors', () => {
-    it('should fail with invalid token expiration hours', async () => {
-      // Token expiration must be between 1 and 720 hours
-      const result = await runCli(['auth', 'token', 'create', '--expiration', '0']);
-
-      // This may be caught by CLI validation or backend
-      expectError(result, { messageContains: 'expiration' });
+  describe('Token fork errors', () => {
+    it('should fail with token expiration below minimum (1 hour)', async () => {
+      const result = await runCli(['auth', 'token', 'fork', '-n', 'test-token', '-e', '0']);
+      expectError(result, { messageContains: ErrorPatterns.TOKEN_EXPIRATION_INVALID });
     });
 
-    it('should fail with excessive token expiration hours', async () => {
-      // Token expiration must be between 1 and 720 hours (30 days max)
-      const result = await runCli(['auth', 'token', 'create', '--expiration', '1000']);
-
+    it('should fail with token expiration above maximum (720 hours)', async () => {
+      const result = await runCli(['auth', 'token', 'fork', '-n', 'test-token', '-e', '1000']);
       expectError(result, { messageContains: ErrorPatterns.TOKEN_EXPIRATION_INVALID });
     });
   });

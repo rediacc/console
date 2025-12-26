@@ -189,16 +189,22 @@ export function registerAuthCommands(program: Command): void {
     .command('fork')
     .description('Create a forked token for another application')
     .option('-n, --name <name>', 'Token name', 'CLI Fork')
-    .option('-e, --expires <hours>', 'Expiration in hours', '24')
+    .option('-e, --expires <hours>', 'Expiration in hours (1-720)', '24')
     .action(async (options) => {
       try {
         await authService.requireAuth();
+
+        // Validate expiration hours (must be between 1 and 720)
+        const expiresHours = parseInt(options.expires, 10);
+        if (isNaN(expiresHours) || expiresHours < 1 || expiresHours > 720) {
+          throw new ValidationError('Token expiration must be between 1 and 720 hours');
+        }
 
         const credentials = await withSpinner(
           'Creating forked token...',
           () =>
             api.auth.forkSession(options.name, {
-              expiresInHours: parseInt(options.expires, 10),
+              expiresInHours: expiresHours,
             }),
           'Token created'
         );
@@ -224,7 +230,7 @@ export function registerAuthCommands(program: Command): void {
 
         await withSpinner(
           'Revoking token...',
-          () => api.auth.terminateSession(requestId),
+          () => api.auth.terminateSession({ requestId }),
           'Token revoked'
         );
       } catch (error) {

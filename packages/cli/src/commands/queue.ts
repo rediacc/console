@@ -243,10 +243,29 @@ export function registerQueueCommands(program: Command): void {
     .description('List queue items')
     .option('-t, --team <name>', 'Team name')
     .option('--status <status>', 'Filter by status')
+    .option('--priority-min <n>', 'Minimum priority (1-5)')
+    .option('--priority-max <n>', 'Maximum priority (1-5)')
     .option('--limit <n>', 'Limit results', '50')
     .action(async (options) => {
       try {
         await authService.requireAuth();
+
+        // Validate priority-min if provided (before checking team to give clearer error)
+        if (options.priorityMin !== undefined) {
+          const min = parseInt(options.priorityMin, 10);
+          if (isNaN(min) || min < 1 || min > 5) {
+            throw new ValidationError('Minimum priority must be between 1 and 5');
+          }
+        }
+
+        // Validate priority-max if provided (before checking team to give clearer error)
+        if (options.priorityMax !== undefined) {
+          const max = parseInt(options.priorityMax, 10);
+          if (isNaN(max) || max < 1 || max > 5) {
+            throw new ValidationError('Maximum priority must be between 1 and 5');
+          }
+        }
+
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
@@ -269,6 +288,18 @@ export function registerQueueCommands(program: Command): void {
           items = items.filter(
             (item) => item.status?.toLowerCase() === options.status.toLowerCase()
           );
+        }
+
+        // Filter by priority-min if specified
+        if (options.priorityMin !== undefined) {
+          const min = parseInt(options.priorityMin, 10);
+          items = items.filter((item) => item.priority !== undefined && item.priority >= min);
+        }
+
+        // Filter by priority-max if specified
+        if (options.priorityMax !== undefined) {
+          const max = parseInt(options.priorityMax, 10);
+          items = items.filter((item) => item.priority !== undefined && item.priority <= max);
         }
 
         const format = program.opts().output as OutputFormat;
