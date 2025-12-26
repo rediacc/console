@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isTaskInTerminalState } from './taskStateUtils';
 import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
+import { isTaskInTerminalState } from './taskStateUtils';
 
 describe('taskStateUtils', () => {
   describe('isTaskInTerminalState', () => {

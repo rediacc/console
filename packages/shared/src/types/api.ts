@@ -45,10 +45,5 @@ export class ApiError extends Error {
  * Type guard to check if a value is an ApiResponse
  */
 export function isApiResponse(value: unknown): value is ApiResponse {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'failure' in value &&
-    'resultSets' in value
-  );
+  return typeof value === 'object' && value !== null && 'failure' in value && 'resultSets' in value;
 }

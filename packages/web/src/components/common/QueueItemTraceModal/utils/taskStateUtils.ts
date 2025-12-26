@@ -1,6 +1,6 @@
 import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 /**
  * Determines if a task is in a terminal state (completed, cancelled, or permanently failed).
@@ -27,11 +27,18 @@ export const isTaskInTerminalState = (
     return true;
   }
 
-  if (status === 'FAILED' && (permanentlyFailed || retryCount >= STALE_TASK_CONSTANTS.MAX_RETRY_COUNT)) {
+  if (
+    status === 'FAILED' &&
+    (permanentlyFailed || retryCount >= STALE_TASK_CONSTANTS.MAX_RETRY_COUNT)
+  ) {
     return true;
   }
 
-  if (status === 'PENDING' && retryCount >= STALE_TASK_CONSTANTS.MAX_RETRY_COUNT && lastFailureReason) {
+  if (
+    status === 'PENDING' &&
+    retryCount >= STALE_TASK_CONSTANTS.MAX_RETRY_COUNT &&
+    lastFailureReason
+  ) {
     return true;
   }
 

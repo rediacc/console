@@ -170,9 +170,9 @@ export async function traceAction(
         const ageText = summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : 'unknown';
 
         // Extract progress percentage from console output if available
-        const percentage = extractMostRecentProgress(summary.consoleOutput || '');
+        const percentage = extractMostRecentProgress(summary.consoleOutput ?? '');
         const progressText =
-          percentage !== null ? `${percentage}%` : summary.progress ?? 'In progress';
+          percentage !== null ? `${percentage}%` : (summary.progress ?? 'In progress');
 
         if (spinner) {
           spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;

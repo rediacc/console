@@ -44,12 +44,16 @@ export function useQueueVaultBuilder() {
         | 'sourceRepositoryVault'
       >
     > = {
-      teamVault: baseContext.teamVault ? parseVaultContentOrEmpty(baseContext.teamVault) : undefined,
+      teamVault: baseContext.teamVault
+        ? parseVaultContentOrEmpty(baseContext.teamVault)
+        : undefined,
       machineVault: baseContext.machineVault
         ? parseVaultContentOrEmpty(baseContext.machineVault)
         : undefined,
       repositoryVault: repositoryVault ? parseVaultContentOrEmpty(repositoryVault) : undefined,
-      bridgeVault: baseContext.bridgeVault ? parseVaultContentOrEmpty(baseContext.bridgeVault) : undefined,
+      bridgeVault: baseContext.bridgeVault
+        ? parseVaultContentOrEmpty(baseContext.bridgeVault)
+        : undefined,
       storageVault: baseContext.storageVault
         ? parseVaultContentOrEmpty(baseContext.storageVault)
         : undefined,

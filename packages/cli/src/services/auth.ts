@@ -1,5 +1,5 @@
-import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import { extractNextToken } from '@rediacc/shared/api';
+import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
 import { isEncrypted } from '@rediacc/shared/encryption';
 import { api, apiClient } from './api.js';
 import { contextService } from './context.js';

@@ -1,5 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { createApiServices, normalizeResponse, extractNextToken, extractApiErrors, getPrimaryErrorMessage, HTTP_STATUS, isServerError } from '@rediacc/shared/api';
+import {
+  createApiServices,
+  normalizeResponse,
+  extractNextToken,
+  extractApiErrors,
+  getPrimaryErrorMessage,
+  HTTP_STATUS,
+  isServerError,
+} from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';

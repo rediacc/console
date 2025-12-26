@@ -40,5 +40,6 @@ export function parseVaultContent<T = Record<string, unknown>>(
 export function parseVaultContentOrEmpty<T = Record<string, unknown>>(
   value?: string | T | null
 ): T {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return parseVaultContent(value) ?? ({} as T);
 }

@@ -12,7 +12,12 @@ import { telemetryService } from '@/services/telemetryService';
 import { logout, showSessionExpiredModal } from '@/store/auth/authSlice';
 import { store } from '@/store/store';
 import { showMessage } from '@/utils/messages';
-import { createApiServices, normalizeResponse, extractNextToken, extractErrorMessage as sharedExtractErrorMessage } from '@rediacc/shared/api';
+import {
+  createApiServices,
+  normalizeResponse,
+  extractNextToken,
+  extractErrorMessage as sharedExtractErrorMessage,
+} from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { isApiResponse } from '@rediacc/shared/types';
@@ -308,7 +313,6 @@ class ApiClient implements SharedApiClient {
     customError.response = error.response;
     throw customError;
   }
-
 }
 
 export const apiClient = new ApiClient();

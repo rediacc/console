@@ -34,7 +34,7 @@ export interface PriorityConfig {
 /**
  * Priority configuration map (1-5 scale)
  */
-export const PRIORITY_CONFIG: Record<number, PriorityConfig> = {
+export const PRIORITY_CONFIG: Partial<Record<number, PriorityConfig>> = {
   1: { timeout: '33s', label: 'Highest', color: 'red' },
   2: { timeout: 'Tier timeout', label: 'High', color: 'orange' },
   3: { timeout: 'Tier timeout', label: 'Normal', color: 'blue' },
@@ -106,8 +106,14 @@ export function getStatusConfig(status: QueueHealthStatus): StatusConfig {
   return QUEUE_STATUS_CONFIG[status];
 }
 
+const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
+  timeout: 'Tier timeout',
+  label: 'Normal',
+  color: 'blue',
+};
+
 export function getPriorityConfig(priority: number): PriorityConfig {
-  return PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG[3];
+  return PRIORITY_CONFIG[priority] ?? DEFAULT_PRIORITY_CONFIG;
 }
 
 export function isRetryEligible(retryCount: number, lastFailureReason?: string): boolean {
