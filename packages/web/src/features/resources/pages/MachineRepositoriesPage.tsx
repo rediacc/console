@@ -320,7 +320,7 @@ const MachineReposPage: React.FC = () => {
       {selectedResource &&
         ('repositoryName' in selectedResource ? (
           <RepositoryDetailPanel
-            repository={selectedResource as Repository}
+            repository={selectedResource}
             visible
             onClose={handlePanelClose}
             splitView

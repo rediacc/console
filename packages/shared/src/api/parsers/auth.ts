@@ -128,7 +128,9 @@ export function parseForkAuthenticationRequest(response: ApiResponse): ForkSessi
   };
 }
 
-export function parseGetUserRequests(response: ApiResponse<GetUserRequests_ResultSet1>): GetUserRequests_ResultSet1[] {
+export function parseGetUserRequests(
+  response: ApiResponse<GetUserRequests_ResultSet1>
+): GetUserRequests_ResultSet1[] {
   return extractRowsByIndex<GetUserRequests_ResultSet1>(response, 1);
 }
 

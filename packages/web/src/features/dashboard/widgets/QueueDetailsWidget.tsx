@@ -156,48 +156,47 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
               </Flex>
             )}
 
-            {featureAccess?.hasAdvancedAnalytics &&
-              queueStats.highestPriorityPending !== null && (
-                <Flex vertical>
-                  <Typography.Text strong>
-                    <ThunderboltOutlined /> Priority Breakdown
-                  </Typography.Text>
-                  <Flex vertical className="w-full">
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>Highest Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.highestPriorityPending}
-                        showZero
-                        data-testid="dashboard-badge-highest-priority"
-                      />
-                    </Flex>
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>High Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.highPriorityPending ?? 0}
-                        showZero
-                        data-testid="dashboard-badge-high-priority"
-                      />
-                    </Flex>
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>Normal Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.normalPriorityPending ?? 0}
-                        showZero
-                        data-testid="dashboard-badge-normal-priority"
-                      />
-                    </Flex>
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>Low Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.lowPriorityPending ?? 0}
-                        showZero
-                        data-testid="dashboard-badge-low-priority"
-                      />
-                    </Flex>
+            {featureAccess?.hasAdvancedAnalytics && queueStats.highestPriorityPending !== null && (
+              <Flex vertical>
+                <Typography.Text strong>
+                  <ThunderboltOutlined /> Priority Breakdown
+                </Typography.Text>
+                <Flex vertical className="w-full">
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>Highest Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.highestPriorityPending}
+                      showZero
+                      data-testid="dashboard-badge-highest-priority"
+                    />
+                  </Flex>
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>High Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.highPriorityPending ?? 0}
+                      showZero
+                      data-testid="dashboard-badge-high-priority"
+                    />
+                  </Flex>
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>Normal Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.normalPriorityPending ?? 0}
+                      showZero
+                      data-testid="dashboard-badge-normal-priority"
+                    />
+                  </Flex>
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>Low Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.lowPriorityPending ?? 0}
+                      showZero
+                      data-testid="dashboard-badge-low-priority"
+                    />
                   </Flex>
                 </Flex>
-              )}
+              </Flex>
+            )}
           </Flex>
         </Col>
       </Row>
