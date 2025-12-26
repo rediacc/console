@@ -62,8 +62,8 @@ describe('vaultTransform', () => {
   });
 
   describe('transformVaultFields', () => {
-    const mockTransformer = async (value: string): Promise<string> => {
-      return `TRANSFORMED:${value}`;
+    const mockTransformer = (value: string): Promise<string> => {
+      return Promise.resolve(`TRANSFORMED:${value}`);
     };
 
     it('should transform vault field values', async () => {
