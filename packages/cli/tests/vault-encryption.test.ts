@@ -1,5 +1,5 @@
-import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import { describe, expect, it } from 'vitest';
+import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import { nodeCryptoProvider } from '../src/adapters/crypto.js';
 
 describe('Vault Encryption Integration', () => {
