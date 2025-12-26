@@ -43,6 +43,24 @@ class AuthService {
       };
     }
 
+    // Extract token from login response
+    // Note: Token rotation in apiClient.login() can't save the token because no context exists yet.
+    // We must extract it here and pass it to saveLoginCredentials.
+    let token = '';
+    if (response.resultSets.length > 0 && response.resultSets[0].data.length > 0) {
+      const row = response.resultSets[0].data[0] as Record<string, unknown>;
+      if (typeof row.nextRequestToken === 'string' && row.nextRequestToken) {
+        token = row.nextRequestToken;
+      }
+    }
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'Login succeeded but no request token was returned from server',
+      };
+    }
+
     // Determine the context name to use
     const contextName = options.contextName ?? (await contextService.getCurrentName()) ?? 'default';
     const apiUrl = options.apiUrl ?? apiClient.getApiUrl();
@@ -55,7 +73,7 @@ class AuthService {
       masterPassword?: string;
     } = {
       apiUrl,
-      token: '', // Token is handled by token rotation
+      token,
       userEmail: email,
     };
 

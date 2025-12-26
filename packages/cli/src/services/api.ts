@@ -337,7 +337,7 @@ class CliApiClient implements SharedApiClient {
     if (!firstResultSet.data.length) return;
 
     const row = firstResultSet.data[0] as Record<string, unknown>;
-    const newToken = (row.nextRequestToken ?? row.NextRequestToken) as string | undefined;
+    const newToken = typeof row.nextRequestToken === 'string' ? row.nextRequestToken : undefined;
 
     if (newToken) {
       await contextService.setToken(newToken);
