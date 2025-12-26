@@ -5,7 +5,7 @@ import type {
   DeleteStorageParams,
   UpdateStorageNameParams,
   UpdateStorageVaultParams,
-  CompanyVaultRecord,
+  GetCompanyVaults_ResultSet1,
 } from '@rediacc/shared/types';
 import { typedApi } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
@@ -35,7 +35,7 @@ export function registerStorageCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});
         const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (CompanyVaultRecord & { vaultType?: string })[];
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Storage',
     },

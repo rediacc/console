@@ -6,7 +6,7 @@ import {
   extractPrimaryOrSecondary,
 } from '@rediacc/shared/api';
 import type {
-  CompanyVaultRecord,
+  GetCompanyVaults_ResultSet1,
   CreateBridgeParams,
   DeleteBridgeParams,
   UpdateBridgeNameParams,
@@ -43,7 +43,7 @@ export function registerBridgeCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});
         const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (CompanyVaultRecord & { vaultType?: string })[];
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Bridge',
     },

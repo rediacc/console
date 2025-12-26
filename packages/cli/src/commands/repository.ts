@@ -7,7 +7,7 @@ import {
   isCredential,
   type RepositoryWithRelations,
 } from '@rediacc/shared/services/repository';
-import type { CompanyVaultRecord } from '@rediacc/shared/types';
+import type { GetCompanyVaults_ResultSet1 } from '@rediacc/shared/types';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -321,8 +321,11 @@ export function registerRepositoryCommands(program: Command): void {
           'Vault fetched'
         );
 
-        const vaults = parseGetCompanyVaults(response as never) as unknown as (CompanyVaultRecord & {
+        const vaults = parseGetCompanyVaults(response as never) as unknown as (GetCompanyVaults_ResultSet1 & {
           vaultType?: string;
+          teamName?: string;
+          repositoryName?: string;
+          repositoryTag?: string;
         })[];
 
         const repositoryVault = vaults.find(

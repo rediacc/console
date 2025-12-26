@@ -9,7 +9,7 @@ import type {
   DeleteTeamParams,
   UpdateTeamNameParams,
   UpdateTeamVaultParams,
-  CompanyVaultRecord,
+  GetCompanyVaults_ResultSet1,
 } from '@rediacc/shared/types';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
@@ -45,7 +45,7 @@ export function registerTeamCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});
         const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (CompanyVaultRecord & { vaultType?: string })[];
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Team',
     },

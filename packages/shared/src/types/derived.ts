@@ -77,3 +77,259 @@ export interface QueueStatistics {
   failedCount: number;
   staleCount: number;
 }
+
+// =============================================================================
+// QUEUE DOMAIN TYPES
+// =============================================================================
+
+/** Queue health status - derived from status and timing */
+export type QueueHealthStatus =
+  | 'PENDING'
+  | 'ACTIVE'
+  | 'STALE'
+  | 'STALE_PENDING'
+  | 'CANCELLING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'UNKNOWN';
+
+/** Queue item status - raw status from database */
+export type QueueStatus =
+  | 'PENDING'
+  | 'ASSIGNED'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+/** Queue list result with items and optional statistics */
+export interface QueueListResult {
+  items: import('./api-schema.generated').GetTeamQueueItems_ResultSet1[];
+  statistics: import('./api-schema.generated').GetTeamQueueItems_ResultSet2 | null;
+}
+
+/** Queue machine stats from trace */
+export interface QueueMachineStats {
+  currentQueueDepth?: number | null;
+  activeProcessingCount?: number | null;
+  maxConcurrentTasks?: number | null;
+}
+
+/** Queue plan info from trace */
+export interface QueuePlanInfo {
+  planName?: string | null;
+  planVersion?: number | null;
+  estimatedDuration?: number | null;
+  [key: string]: unknown;
+}
+
+/** Queue position entry for trace */
+export interface QueuePositionEntry {
+  taskId: string;
+  status: string;
+  createdTime: string;
+  relativePosition?: string;
+}
+
+/** Queue trace log entry */
+export interface QueueTraceLog {
+  timestamp?: string | null;
+  level?: string | null;
+  message?: string | null;
+  source?: string | null;
+  [key: string]: unknown;
+}
+
+/** Queue trace summary */
+export interface QueueTraceSummary {
+  taskId?: string;
+  status?: QueueStatus;
+  healthStatus?: QueueHealthStatus;
+  progress?: string | null;
+  consoleOutput?: string | null;
+  errorMessage?: string | null;
+  lastFailureReason?: string | null;
+  priority?: number;
+  retryCount?: number;
+  ageInMinutes?: number;
+  hasResponse?: boolean;
+  teamName?: string;
+  machineName?: string;
+  bridgeName?: string;
+  createdTime?: string;
+  updatedTime?: string;
+}
+
+/** Queue vault snapshot */
+export interface QueueVaultSnapshot {
+  hasContent?: boolean;
+  vaultVersion?: number | null;
+  vaultContent?: string | null;
+  updatedAt?: string | null;
+}
+
+/** Full queue trace response */
+export interface QueueTrace {
+  summary: QueueTraceSummary | null;
+  queueDetails: import('./api-schema.generated').GetTeamQueueItems_ResultSet1 | null;
+  traceLogs: QueueTraceLog[];
+  vaultContent: QueueVaultSnapshot | null;
+  responseVaultContent: QueueVaultSnapshot | null;
+  queuePosition: QueuePositionEntry[];
+  machineStats: QueueMachineStats | null;
+  planInfo: QueuePlanInfo | null;
+}
+
+// =============================================================================
+// AUTH DOMAIN TYPES
+// =============================================================================
+
+/** Authentication login result */
+export interface AuthLoginResult {
+  isAuthorized: boolean;
+  authenticationStatus: string;
+  vaultCompany: string | null;
+  companyName: string | null;
+  company: string | null;
+  preferredLanguage: string | null;
+}
+
+/** Authentication request status */
+export interface AuthRequestStatus {
+  isTFAEnabled: boolean;
+  isAuthorized: boolean;
+  authenticationStatus: string;
+}
+
+/** TFA enable response */
+export interface EnableTfaResponse {
+  secret?: string | null;
+  qrCodeUrl?: string | null;
+  backupCodes?: string[] | null;
+  [key: string]: unknown;
+}
+
+/** Fork session credentials */
+export interface ForkSessionCredentials {
+  requestToken: string | null;
+  nextRequestToken: string | null;
+  parentRequestId: number | null;
+}
+
+/** User request record */
+export interface UserRequest {
+  requestId?: number;
+  userEmail?: string;
+  ipAddress?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  isActive?: boolean;
+  [key: string]: unknown;
+}
+
+/** TFA verification result */
+export interface VerifyTfaResult {
+  isAuthorized?: boolean;
+  result?: string;
+  hasTFAEnabled?: boolean;
+}
+
+// =============================================================================
+// AUDIT DOMAIN TYPES
+// =============================================================================
+
+/** Audit trace record */
+export interface AuditTraceRecord {
+  auditId?: number;
+  action?: string;
+  entityType?: string;
+  entityId?: number;
+  entityName?: string;
+  userId?: number;
+  userEmail?: string;
+  timestamp?: string;
+  details?: string | null;
+  ipAddress?: string | null;
+  [key: string]: unknown;
+}
+
+/** Audit trace summary */
+export interface AuditTraceSummary {
+  entityType: string;
+  entityName: string;
+  entityId: number;
+  totalAuditRecords: number;
+  visibleAuditRecords: number;
+  oldestVisibleActivity: string | null;
+  lastActivity: string | null;
+  hasAccess: boolean;
+  isAdmin: boolean;
+  subscriptionTier: string;
+  auditRetentionDays: number;
+  hasOlderRecords: boolean;
+  relatedCount: number;
+}
+
+/** Audit trace response */
+export interface AuditTraceResponse {
+  records: AuditTraceRecord[];
+  summary: AuditTraceSummary;
+}
+
+// =============================================================================
+// CEPH DOMAIN TYPES
+// =============================================================================
+
+/** Ceph available machine for clone assignment */
+export interface CephAvailableMachine {
+  machineId?: number;
+  machineGuid?: string;
+  machineName: string;
+  teamName?: string;
+  assignmentStatus?: string;
+  [key: string]: unknown;
+}
+
+/** Ceph clone machine info */
+export interface CephCloneMachine {
+  machineId?: number;
+  machineGuid?: string;
+  machineName: string;
+  cloneName?: string;
+  assignedAt?: string;
+  [key: string]: unknown;
+}
+
+/** Ceph machine assignment status */
+export interface CephMachineAssignmentStatus {
+  machineId?: number;
+  machineGuid?: string;
+  machineName?: string;
+  assignmentStatus?: string;
+  assignedResource?: string;
+  assignedResourceType?: string;
+  assignedAt?: string;
+  [key: string]: unknown;
+}
+
+/** Ceph machine assignment validation */
+export interface CephMachineAssignmentValidation {
+  machineId?: number;
+  machineName?: string;
+  isValid?: boolean;
+  validationMessage?: string;
+  conflictType?: string;
+  conflictResource?: string;
+  [key: string]: unknown;
+}
+
+// =============================================================================
+// MACHINE DOMAIN TYPES
+// =============================================================================
+
+/** Machine assignment status */
+export type MachineAssignmentStatus = 'ASSIGNED' | 'UNASSIGNED';
+
+/** Machine assignment type */
+export type MachineAssignmentType = 'AVAILABLE' | 'CLUSTER' | 'IMAGE' | 'CLONE';

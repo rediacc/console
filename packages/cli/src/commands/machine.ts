@@ -11,7 +11,7 @@ import {
   parseVaultStatus,
 } from '@rediacc/shared/services/machine';
 import type {
-  CompanyVaultRecord,
+  GetCompanyVaults_ResultSet1,
   CreateMachineParams,
   DeleteMachineParams,
   UpdateMachineAssignedBridgeParams,
@@ -70,7 +70,7 @@ export function registerMachineCommands(program: Command): void {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});
         const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (CompanyVaultRecord & { vaultType?: string })[];
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Machine',
     },
