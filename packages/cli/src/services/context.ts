@@ -42,7 +42,7 @@ class ContextService {
    */
   async list(): Promise<NamedContext[]> {
     const config = await configStorage.load();
-    return Object.values(config.contexts);
+    return Object.values(config.contexts).filter((ctx): ctx is NamedContext => ctx !== undefined);
   }
 
   /**
