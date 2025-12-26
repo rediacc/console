@@ -32,11 +32,7 @@ export const useStorage = (teamFilter?: string | string[]) => {
 export const useCreateStorage = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateStorageParams>>({
-    mutationFn: (params) =>
-      typedApi.CreateStorage({
-        ...params,
-        vaultContent: params.vaultContent ?? '{}',
-      }),
+    mutationFn: (params) => typedApi.CreateStorage(params),
     successMessage: (_, vars) => `Storage "${vars.storageName}" created successfully`,
     errorMessage: 'Failed to create storage',
     onSuccess: () => {

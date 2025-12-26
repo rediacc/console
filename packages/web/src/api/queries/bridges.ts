@@ -31,11 +31,7 @@ export const useBridges = (regionName?: string) => {
 export const useCreateBridge = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateBridgeParams>>({
-    mutationFn: (params) =>
-      typedApi.CreateBridge({
-        ...params,
-        vaultContent: params.vaultContent ?? '{}',
-      }),
+    mutationFn: (params) => typedApi.CreateBridge(params),
     successMessage: (_, vars) => `Bridge "${vars.bridgeName}" created successfully`,
     errorMessage: 'Failed to create bridge',
     onSuccess: () => {

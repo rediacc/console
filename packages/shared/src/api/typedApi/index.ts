@@ -14,6 +14,7 @@
  */
 
 export { createTypedApi } from './createTypedApi';
+export { PROCEDURE_DEFAULTS, applyProcedureDefaults } from './defaults';
 export {
   extractPrimary,
   extractFirst,

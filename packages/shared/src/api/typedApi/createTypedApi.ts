@@ -25,6 +25,7 @@
 import type { TypedApi, TypedApiConfig, TypedApiResponse } from './types';
 import type { StoredProcedureName } from '../../types/api-schema.generated';
 import type { ApiClient } from '../services/types';
+import { applyProcedureDefaults } from './defaults';
 
 /**
  * Determines the HTTP method for a procedure based on naming conventions.
@@ -66,10 +67,13 @@ export function createTypedApi(client: ApiClient): TypedApi {
         const endpoint = `/${procedureName}` as const;
         const method = getHttpMethod(procedureName);
 
+        // Apply procedure-specific defaults (e.g., vaultContent: '{}')
+        const paramsWithDefaults = applyProcedureDefaults(procedureName, params);
+
         const response =
           method === 'get'
-            ? await client.get(endpoint, params ?? {}, config)
-            : await client.post(endpoint, params ?? {}, config);
+            ? await client.get(endpoint, paramsWithDefaults, config)
+            : await client.post(endpoint, paramsWithDefaults, config);
 
         const typedResponse: TypedApiResponse<typeof procedureName> = {
           ...response,

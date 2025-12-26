@@ -45,7 +45,7 @@ export const useCreateRepository = () => {
       teamName,
       repositoryName,
       repositoryTag = 'latest',
-      vaultContent = '{}',
+      vaultContent,
       parentRepositoryName,
       repositoryGuid,
     }) =>
@@ -53,7 +53,7 @@ export const useCreateRepository = () => {
         teamName,
         repositoryName,
         repositoryTag,
-        vaultContent,
+        ...(vaultContent && { vaultContent }),
         parentRepositoryName,
         repositoryGuid,
       }),

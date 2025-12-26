@@ -33,7 +33,6 @@ export function registerRegionCommands(program: Command): void {
     },
     transformCreatePayload: (name, _opts) => ({
       regionName: name,
-      vaultContent: '{}',
     }),
     vaultConfig: {
       fetch: async () => {

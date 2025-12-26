@@ -66,28 +66,17 @@ export function registerRepositoryCommands(program: Command): void {
           throw new ValidationError('Team name required. Use --team or set context.');
         }
 
-        const createParams: {
-          teamName: string;
-          repositoryName: string;
-          vaultContent: string;
-          repositoryTag?: string;
-          parentRepositoryName?: string;
-          parentRepositoryTag?: string;
-        } = {
+        const createParams = {
           teamName: opts.team,
           repositoryName: name,
-          vaultContent: '{}', // Empty vault for new repository
           repositoryTag: options.tag,
+          parentRepositoryName: options.parent,
+          parentRepositoryTag: options.parent ? options.parentTag ?? 'main' : undefined,
         };
-
-        if (options.parent) {
-          createParams.parentRepositoryName = options.parent;
-          createParams.parentRepositoryTag = options.parentTag ?? 'main';
-        }
 
         await withSpinner(
           `Creating repository "${name}:${options.tag}"...`,
-          () => typedApi.CreateRepository(createParams),
+          () => typedApi.CreateRepository(createParams as never),
           `Repository "${name}:${options.tag}" created`
         );
       } catch (error) {

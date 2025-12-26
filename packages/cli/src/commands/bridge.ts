@@ -44,7 +44,6 @@ export function registerBridgeCommands(program: Command): void {
     transformCreatePayload: (name, opts) => ({
       bridgeName: name,
       regionName: opts.region,
-      vaultContent: '{}',
     }),
     vaultConfig: {
       fetch: async () => {

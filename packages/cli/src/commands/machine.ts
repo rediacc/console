@@ -62,7 +62,7 @@ export function registerMachineCommands(program: Command): void {
       machineName: name,
       teamName: opts.team,
       bridgeName: opts.bridge,
-      vaultContent: opts.vault ?? '{}',
+      vaultContent: opts.vault,
     }),
     vaultConfig: {
       fetch: async () => {

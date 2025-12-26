@@ -43,7 +43,6 @@ export function registerTeamCommands(program: Command): void {
     },
     transformCreatePayload: (name, _opts) => ({
       teamName: name,
-      vaultContent: '{}',
     }),
     vaultConfig: {
       fetch: async () => {

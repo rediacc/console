@@ -34,7 +34,6 @@ export function registerStorageCommands(program: Command): void {
     transformCreatePayload: (name, opts) => ({
       storageName: name,
       teamName: opts.team,
-      vaultContent: '{}',
     }),
     vaultConfig: {
       fetch: async () => {
