@@ -5,13 +5,7 @@ export type { ErrorSeverity, ParsedError, ParsedErrorResult } from '@rediacc/sha
 export { parseFailureReason } from '@rediacc/shared/error-parser';
 
 // Re-export functions from shared packages
-export {
-  formatAge,
-  formatPropertyName,
-  formatTimestampAsIs,
-  formatDurationFull,
-  formatValue,
-} from '@rediacc/shared/formatters';
+export { formatAge, formatTimestampAsIs, formatDurationFull } from '@rediacc/shared/formatters';
 
 export type {
   PriorityConfig,
@@ -32,16 +26,13 @@ export {
   normalizeToString,
   normalizeToNumber,
   normalizeToBoolean,
-  escapeCSVValue,
   buildCSVContent,
   extractMostRecentProgress,
   extractProgressMessage,
-  compareValues,
   createSorter,
   createDateSorter,
   createCustomSorter,
   createArrayLengthSorter,
-  parseMemorySize,
   calculateResourcePercent,
   searchInFields,
 } from '@rediacc/shared/utils';
