@@ -58,17 +58,12 @@ export function registerMachineCommands(program: Command): void {
       { flags: '-b, --bridge <name>', description: 'Bridge name', required: true },
       { flags: '--vault <json>', description: 'Machine vault data as JSON string' },
     ],
-    transformCreatePayload: (name, opts) => {
-      const payload: Record<string, unknown> = {
-        machineName: name,
-        teamName: opts.team,
-        bridgeName: opts.bridge,
-      };
-      if (opts.vault) {
-        payload.vaultContent = opts.vault;
-      }
-      return payload;
-    },
+    transformCreatePayload: (name, opts) => ({
+      machineName: name,
+      teamName: opts.team,
+      bridgeName: opts.bridge,
+      vaultContent: opts.vault ?? '{}',
+    }),
     vaultConfig: {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});

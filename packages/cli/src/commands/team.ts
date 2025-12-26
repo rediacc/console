@@ -41,6 +41,10 @@ export function registerTeamCommands(program: Command): void {
         await typedApi.DeleteTeam(payload as unknown as DeleteTeamParams);
       },
     },
+    transformCreatePayload: (name, _opts) => ({
+      teamName: name,
+      vaultContent: '{}',
+    }),
     vaultConfig: {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});

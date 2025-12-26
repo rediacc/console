@@ -31,6 +31,11 @@ export function registerStorageCommands(program: Command): void {
         await typedApi.DeleteStorage(payload as unknown as DeleteStorageParams);
       },
     },
+    transformCreatePayload: (name, opts) => ({
+      storageName: name,
+      teamName: opts.team,
+      vaultContent: '{}',
+    }),
     vaultConfig: {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});

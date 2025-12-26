@@ -41,6 +41,11 @@ export function registerBridgeCommands(program: Command): void {
       rename: (payload) => typedApi.UpdateBridgeName(payload as unknown as UpdateBridgeNameParams),
       delete: (payload) => typedApi.DeleteBridge(payload as unknown as DeleteBridgeParams),
     },
+    transformCreatePayload: (name, opts) => ({
+      bridgeName: name,
+      regionName: opts.region,
+      vaultContent: '{}',
+    }),
     vaultConfig: {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});

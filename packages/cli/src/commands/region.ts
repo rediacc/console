@@ -31,6 +31,10 @@ export function registerRegionCommands(program: Command): void {
         await typedApi.DeleteRegion(payload as unknown as DeleteRegionParams);
       },
     },
+    transformCreatePayload: (name, _opts) => ({
+      regionName: name,
+      vaultContent: '{}',
+    }),
     vaultConfig: {
       fetch: async () => {
         const response = await typedApi.GetCompanyVaults({});
