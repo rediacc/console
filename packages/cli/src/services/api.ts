@@ -1,18 +1,22 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import {
+  createApiServices,
+  normalizeResponse,
+  extractNextToken,
+  extractApiErrors,
+  getPrimaryErrorMessage,
+  HTTP_STATUS,
+  isServerError,
+} from '@rediacc/shared/api';
 import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
-import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
 import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
+import { contextService } from './context.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
-import { nodeStorageAdapter } from '../adapters/storage.js';
 import { EXIT_CODES } from '../types/index.js';
+import type { ErrorCode } from '../types/errors.js';
 
 const API_PREFIX = '/StoredProcedure';
-const STORAGE_KEYS = {
-  TOKEN: 'token',
-  API_URL: 'apiUrl',
-  MASTER_PASSWORD: 'masterPassword',
-} as const;
 
 const vaultEncryptor = createVaultEncryptor(nodeCryptoProvider);
 
@@ -82,21 +86,42 @@ class CliApiClient implements SharedApiClient {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // Load API URL from storage or use default
-    const storedUrl = await nodeStorageAdapter.getItem(STORAGE_KEYS.API_URL);
-    this.apiUrl = storedUrl ?? process.env.REDIACC_API_URL ?? 'https://www.rediacc.com/api';
+    // Load API URL from context service
+    this.apiUrl = await contextService.getApiUrl();
     this.client.defaults.baseURL = `${this.apiUrl}${API_PREFIX}`;
     this.initialized = true;
   }
 
-  async setApiUrl(url: string): Promise<void> {
-    this.apiUrl = url;
-    this.client.defaults.baseURL = `${url}${API_PREFIX}`;
-    await nodeStorageAdapter.setItem(STORAGE_KEYS.API_URL, url);
+  /**
+   * Reinitialize the API client (useful after context switch).
+   */
+  async reinitialize(): Promise<void> {
+    this.initialized = false;
+    await this.initialize();
+  }
+
+  /**
+   * Normalize an API URL to ensure it ends with /api.
+   */
+  normalizeApiUrl(url: string): string {
+    let normalizedUrl = url.replace(/\/+$/, '');
+    if (!normalizedUrl.endsWith('/api')) {
+      normalizedUrl = `${normalizedUrl}/api`;
+    }
+    return normalizedUrl;
   }
 
   getApiUrl(): string {
     return this.apiUrl;
+  }
+
+  /**
+   * Set the API URL directly (for register/activate commands that don't require a context).
+   */
+  async setApiUrl(url: string): Promise<void> {
+    await this.initialize();
+    this.apiUrl = this.normalizeApiUrl(url);
+    this.client.defaults.baseURL = `${this.apiUrl}${API_PREFIX}`;
   }
 
   async login(
@@ -136,6 +161,32 @@ class CliApiClient implements SharedApiClient {
     const response = await this.client.post<ApiResponse>(
       '/ActivateUserAccount',
       { activationCode },
+      {
+        headers: {
+          'Rediacc-UserEmail': email,
+          'Rediacc-UserHash': passwordHash,
+        },
+      }
+    );
+
+    return response.data;
+  }
+
+  async register(
+    companyName: string,
+    email: string,
+    passwordHash: string,
+    languagePreference = 'en'
+  ): Promise<ApiResponse> {
+    await this.initialize();
+
+    const response = await this.client.post<ApiResponse>(
+      '/CreateNewCompany',
+      {
+        companyName,
+        userEmailAddress: email,
+        languagePreference,
+      },
       {
         headers: {
           'Rediacc-UserEmail': email,
@@ -240,17 +291,46 @@ class CliApiClient implements SharedApiClient {
       return normalizeResponse(responseData);
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        // Check if we have an API response with error details
+        const responseData = error.response?.data as ApiResponse | undefined;
+        if (responseData && typeof responseData === 'object' && 'failure' in responseData) {
+          // Process API error response to extract details
+          throw this.createApiError(responseData);
+        }
+
+        // Check for middleware HTTP error format: { error: "message" }
+        const httpErrorData = error.response?.data as { error?: string } | undefined;
+        if (httpErrorData && typeof httpErrorData === 'object' && 'error' in httpErrorData) {
+          const errorMessage = httpErrorData.error ?? 'Request failed';
+          const statusCode = error.response?.status ?? 400;
+          const { code, exitCode } = this.mapFailureToError(statusCode);
+          throw new CliApiError(errorMessage, code, exitCode, [errorMessage]);
+        }
+
+        // Handle HTTP status codes without API response body
         if (error.response?.status === 401) {
-          throw new CliApiError('Authentication required', EXIT_CODES.AUTH_REQUIRED);
+          throw new CliApiError(
+            'Authentication required',
+            'AUTH_REQUIRED',
+            EXIT_CODES.AUTH_REQUIRED
+          );
         }
         if (error.response?.status === 403) {
-          throw new CliApiError('Permission denied', EXIT_CODES.PERMISSION_DENIED);
+          throw new CliApiError(
+            'Permission denied',
+            'PERMISSION_DENIED',
+            EXIT_CODES.PERMISSION_DENIED
+          );
         }
         if (error.response?.status === 404) {
-          throw new CliApiError('Resource not found', EXIT_CODES.NOT_FOUND);
+          throw new CliApiError('Resource not found', 'NOT_FOUND', EXIT_CODES.NOT_FOUND);
         }
         if (!error.response) {
-          throw new CliApiError(`Network error: ${error.message}`, EXIT_CODES.NETWORK_ERROR);
+          throw new CliApiError(
+            `Network error: ${error.message}`,
+            'NETWORK_ERROR',
+            EXIT_CODES.NETWORK_ERROR
+          );
         }
       }
       throw error;
@@ -258,53 +338,67 @@ class CliApiClient implements SharedApiClient {
   }
 
   private async handleTokenRotation(response: ApiResponse): Promise<void> {
-    // Desktop CLI specifically uses resultSets[0] for token rotation
-    // (see /desktop/src/cli/core/api_client.py lines 382-396)
-    const resultSets = response.resultSets;
-    if (resultSets.length === 0) return;
-
-    const firstResultSet = resultSets[0];
-    if (!firstResultSet.data.length) return;
-
-    const row = firstResultSet.data[0] as Record<string, unknown>;
-    const newToken = (row.nextRequestToken ?? row.NextRequestToken) as string | undefined;
-
+    const newToken = extractNextToken(response);
     if (newToken) {
-      await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, newToken);
+      await contextService.setToken(newToken);
     }
   }
 
   private async getToken(): Promise<string | null> {
-    // Check environment variable first
-    const envToken = process.env.REDIACC_TOKEN;
-    if (envToken) return envToken;
-
-    return nodeStorageAdapter.getItem(STORAGE_KEYS.TOKEN);
+    return contextService.getToken();
   }
 
   async setToken(token: string): Promise<void> {
-    await nodeStorageAdapter.setItem(STORAGE_KEYS.TOKEN, token);
+    await contextService.setToken(token);
   }
 
   async clearToken(): Promise<void> {
-    await nodeStorageAdapter.removeItem(STORAGE_KEYS.TOKEN);
+    await contextService.clearCredentials();
   }
 
   async hasToken(): Promise<boolean> {
-    const token = await this.getToken();
-    return token !== null;
+    return contextService.hasToken();
   }
 
   private createApiError(response: ApiResponse): CliApiError {
-    const message = response.errors.join('; ') || response.message || 'API request failed';
-    return new CliApiError(message, EXIT_CODES.GENERAL_ERROR, response);
+    // Use shared utilities for error extraction
+    const details = extractApiErrors(response);
+    const message = getPrimaryErrorMessage(response);
+
+    // Determine error code and exit code from failure value
+    const { code, exitCode } = this.mapFailureToError(response.failure);
+
+    return new CliApiError(message, code, exitCode, details, response);
+  }
+
+  private mapFailureToError(failure: number): { code: ErrorCode; exitCode: number } {
+    // Map middleware return codes to error codes using shared HTTP_STATUS constants
+    switch (failure) {
+      case HTTP_STATUS.BAD_REQUEST:
+        return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
+      case HTTP_STATUS.UNAUTHORIZED:
+        return { code: 'AUTH_REQUIRED', exitCode: EXIT_CODES.AUTH_REQUIRED };
+      case HTTP_STATUS.FORBIDDEN:
+        return { code: 'PERMISSION_DENIED', exitCode: EXIT_CODES.PERMISSION_DENIED };
+      case HTTP_STATUS.NOT_FOUND:
+        return { code: 'NOT_FOUND', exitCode: EXIT_CODES.NOT_FOUND };
+      case HTTP_STATUS.CONFLICT:
+        return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
+      default:
+        if (isServerError(failure)) {
+          return { code: 'SERVER_ERROR', exitCode: EXIT_CODES.API_ERROR };
+        }
+        return { code: 'GENERAL_ERROR', exitCode: EXIT_CODES.GENERAL_ERROR };
+    }
   }
 }
 
 export class CliApiError extends Error {
   constructor(
     message: string,
+    public readonly code: ErrorCode = 'GENERAL_ERROR',
     public readonly exitCode: number = EXIT_CODES.GENERAL_ERROR,
+    public readonly details: string[] = [],
     public readonly response?: ApiResponse
   ) {
     super(message);

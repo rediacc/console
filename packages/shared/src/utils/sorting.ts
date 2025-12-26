@@ -1,7 +1,6 @@
 /**
- * Core generic table sorting utilities.
+ * Generic table sorting utilities.
  * Provides type-safe sorter factories that handle null/undefined values consistently.
- * These utilities are framework-agnostic and can be used in both React and CLI.
  */
 
 type SortOrder = number;
@@ -44,7 +43,11 @@ function isNumericString(value: string): boolean {
   return !isNaN(Number(value)) && value.trim() !== '';
 }
 
-function compareValues(a: unknown, b: unknown): SortOrder {
+/**
+ * Core comparison function for sorting values
+ * Handles null/undefined, numbers, strings, dates, and booleans
+ */
+export function compareValues(a: unknown, b: unknown): SortOrder {
   if (a === b) return 0;
   if (a == null && b == null) return 0;
   if (a == null) return 1;

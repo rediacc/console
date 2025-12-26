@@ -1,12 +1,5 @@
 import type { ICryptoProvider } from '@/platform/types';
-
-const ENCRYPTION_CONFIG = {
-  SALT_LENGTH: 16,
-  ITERATIONS: 100000,
-  KEY_LENGTH: 256,
-  IV_LENGTH: 12,
-  TAG_LENGTH: 16,
-} as const;
+import { ENCRYPTION_CONFIG } from '@rediacc/shared/encryption';
 
 class WebCryptoProvider implements ICryptoProvider {
   async encrypt(data: string, password: string): Promise<string> {
@@ -67,7 +60,7 @@ class WebCryptoProvider implements ICryptoProvider {
         hash: 'SHA-256',
       },
       baseKey,
-      { name: 'AES-GCM', length: ENCRYPTION_CONFIG.KEY_LENGTH },
+      { name: 'AES-GCM', length: ENCRYPTION_CONFIG.KEY_LENGTH_BITS },
       false,
       ['encrypt', 'decrypt']
     );

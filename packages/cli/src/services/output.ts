@@ -2,6 +2,8 @@
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
+import { formatPropertyName, formatValue, formatTimestampAsIs } from '@rediacc/shared/formatters';
+import { escapeCSVValue } from '@rediacc/shared/utils';
 import type { OutputFormat } from '../types/index.js';
 
 interface TableColumn {
@@ -72,7 +74,7 @@ class OutputService {
         if (col.format) {
           return col.format(value);
         }
-        return this.formatValue(value);
+        return formatValue(value);
       });
       table.push(row);
     }
@@ -88,13 +90,13 @@ class OutputService {
     const lines: string[] = [];
 
     // Header row
-    lines.push(cols.map((c) => this.escapeCsv(c.header)).join(','));
+    lines.push(cols.map((c) => escapeCSVValue(c.header)).join(','));
 
     // Data rows
     for (const item of items) {
       const row = cols.map((col) => {
         const value = item[col.key];
-        return this.escapeCsv(this.formatValue(value));
+        return escapeCSVValue(formatValue(value));
       });
       lines.push(row.join(','));
     }
@@ -141,38 +143,31 @@ class OutputService {
     if (items.length === 0) return [];
 
     const keys = Object.keys(items[0]);
-    return keys.map((key) => ({
-      key,
-      header: this.formatHeader(key),
-    }));
+    return keys.map((key) => {
+      const column: TableColumn = {
+        key,
+        header: formatPropertyName(key),
+      };
+
+      // Auto-format timestamp columns
+      if (this.isTimestampKey(key)) {
+        column.format = (value) => formatTimestampAsIs(value as string, 'datetime');
+      }
+
+      return column;
+    });
   }
 
-  private formatHeader(key: string): string {
-    // Convert camelCase/snake_case to Title Case
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/_/g, ' ')
-      .replace(/^\s+/, '')
-      .split(' ')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  }
-
-  private formatValue(value: unknown): string {
-    if (value === null || value === undefined) {
-      return '';
-    }
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    return String(value);
-  }
-
-  private escapeCsv(value: string): string {
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"`;
-    }
-    return value;
+  private isTimestampKey(key: string): boolean {
+    const lowerKey = key.toLowerCase();
+    return (
+      lowerKey.includes('time') ||
+      lowerKey.includes('date') ||
+      lowerKey.endsWith('at') ||
+      lowerKey === 'created' ||
+      lowerKey === 'updated' ||
+      lowerKey === 'timestamp'
+    );
   }
 }
 

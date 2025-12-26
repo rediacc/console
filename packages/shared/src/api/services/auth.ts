@@ -167,9 +167,8 @@ export function createAuthService(client: ApiClient) {
     },
 
     getTfaStatus: async (): Promise<AuthRequestStatus> => {
-      const response = await client.post<AuthStatusRow>('/UpdateUserTFA', {
-        action: 'status',
-      });
+      // Use GetRequestAuthenticationStatus to check TFA status
+      const response = await client.get<AuthStatusRow>('/GetRequestAuthenticationStatus');
       return extractAuthStatus(response);
     },
 
@@ -177,14 +176,6 @@ export function createAuthService(client: ApiClient) {
       passwordHash?: string,
       options: EnableTfaOptions = {}
     ): Promise<EnableTfaResponse | null> => {
-      // Legacy mode for CLI - no password/options provided
-      if (!passwordHash && Object.keys(options).length === 0) {
-        const response = await client.post<EnableTfaResponse>('/UpdateUserTFA', {
-          action: 'enable',
-        });
-        return extractTfaResponse(response);
-      }
-
       const payload: Record<string, unknown> = { enable: true };
       if (passwordHash) payload.userHash = passwordHash;
       if (options.generateOnly) payload.generateOnly = true;
@@ -197,16 +188,11 @@ export function createAuthService(client: ApiClient) {
     },
 
     disableTfa: async (passwordHash?: string, currentCode?: string): Promise<void> => {
-      if (!passwordHash && !currentCode) {
-        await client.post('/UpdateUserTFA', { action: 'disable' });
-        return;
-      }
+      const payload: Record<string, unknown> = { enable: false };
+      if (passwordHash) payload.userHash = passwordHash;
+      if (currentCode) payload.currentCode = currentCode;
 
-      await client.post('/UpdateUserTFA', {
-        enable: false,
-        userHash: passwordHash,
-        currentCode,
-      });
+      await client.post('/UpdateUserTFA', payload);
     },
 
     verifyTfa: async (code: string, sessionName?: string): Promise<VerifyTfaResult> => {

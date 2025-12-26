@@ -1,11 +1,13 @@
 import { Command } from 'commander';
 import { api, apiClient } from '../services/api.js';
 import { authService } from '../services/auth.js';
+import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm, askPassword, askText } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
+
 export function registerAuthCommands(program: Command): void {
   const auth = program.command('auth').description('Authentication commands');
 
@@ -16,12 +18,28 @@ export function registerAuthCommands(program: Command): void {
     .option('-e, --email <email>', 'Email address')
     .option('-p, --password <password>', 'Password (for non-interactive login)')
     .option('-n, --name <name>', 'Session name')
-    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .option('--endpoint <url>', 'API endpoint URL')
+    .option('--save-as <context>', 'Save credentials to a named context')
     .action(async (options) => {
       try {
-        // Set API endpoint if provided
+        // Determine context name (--save-as overrides current context)
+        const contextName = options.saveAs ?? (await contextService.getCurrentName());
+
+        // Determine API URL
+        let apiUrl: string;
         if (options.endpoint) {
-          await apiClient.setApiUrl(options.endpoint);
+          apiUrl = apiClient.normalizeApiUrl(options.endpoint);
+        } else if (contextName) {
+          const existingContext = await contextService.get(contextName);
+          apiUrl = existingContext?.apiUrl ?? (await contextService.getApiUrl());
+        } else {
+          apiUrl = await contextService.getApiUrl();
+        }
+
+        // Temporarily set API URL for this request
+        const originalUrl = apiClient.getApiUrl();
+        if (apiUrl !== originalUrl) {
+          await apiClient.reinitialize();
         }
 
         // Get email
@@ -31,13 +49,18 @@ export function registerAuthCommands(program: Command): void {
             validate: (input) => input.includes('@') || 'Please enter a valid email',
           }));
 
-        // Get password (use provided or prompt interactively)
+        // Get password
         const password = options.password ?? (await askPassword('Password:'));
 
-        // Attempt login
+        // Attempt login with context info
         const result = await withSpinner(
           'Authenticating...',
-          () => authService.login(email, password, { sessionName: options.name }),
+          () =>
+            authService.login(email, password, {
+              sessionName: options.name,
+              contextName: contextName ?? 'default',
+              apiUrl,
+            }),
           'Authenticated successfully'
         );
 
@@ -52,11 +75,11 @@ export function registerAuthCommands(program: Command): void {
         }
 
         if (!result.success && !result.isTFAEnabled) {
-          outputService.error(result.message ?? 'Authentication failed');
-          process.exit(1);
+          throw new ValidationError(result.message ?? 'Authentication failed');
         }
 
-        outputService.success('Login successful!');
+        const savedTo = contextName ?? 'default';
+        outputService.success(`Login successful! Saved to context "${savedTo}"`);
       } catch (error) {
         handleError(error);
       }
@@ -88,6 +111,69 @@ export function registerAuthCommands(program: Command): void {
         } else {
           outputService.warn('Not authenticated. Run: rediacc login');
         }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // auth register
+  auth
+    .command('register')
+    .description('Register a new company and user account')
+    .requiredOption('--company <name>', 'Company name')
+    .requiredOption('-e, --email <email>', 'Email address')
+    .requiredOption('-p, --password <password>', 'Password')
+    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .action(async (options) => {
+      try {
+        // Set API endpoint if provided
+        if (options.endpoint) {
+          await apiClient.setApiUrl(options.endpoint);
+        }
+
+        const result = await withSpinner(
+          'Registering account...',
+          () => authService.register(options.company, options.email, options.password),
+          'Registration submitted'
+        );
+
+        if (!result.success) {
+          throw new ValidationError(result.message ?? 'Registration failed');
+        }
+
+        outputService.success('Registration successful! Check your email for the activation code.');
+        outputService.info('Then run: rdc auth activate -e <email> -p <password> --code <code>');
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // auth activate
+  auth
+    .command('activate')
+    .description('Activate account with verification code')
+    .requiredOption('-e, --email <email>', 'Email address')
+    .requiredOption('-p, --password <password>', 'Password')
+    .requiredOption('--code <code>', 'Activation code from email')
+    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .action(async (options) => {
+      try {
+        // Set API endpoint if provided
+        if (options.endpoint) {
+          await apiClient.setApiUrl(options.endpoint);
+        }
+
+        const result = await withSpinner(
+          'Activating account...',
+          () => authService.activate(options.email, options.password, options.code),
+          'Account activated'
+        );
+
+        if (!result.success) {
+          throw new ValidationError(result.message ?? 'Activation failed');
+        }
+
+        outputService.success('Account activated! You can now login with: rdc login');
       } catch (error) {
         handleError(error);
       }
@@ -127,16 +213,22 @@ export function registerAuthCommands(program: Command): void {
     .command('fork')
     .description('Create a forked token for another application')
     .option('-n, --name <name>', 'Token name', 'CLI Fork')
-    .option('-e, --expires <hours>', 'Expiration in hours', '24')
+    .option('-e, --expires <hours>', 'Expiration in hours (1-720)', '24')
     .action(async (options) => {
       try {
         await authService.requireAuth();
+
+        // Validate expiration hours (must be between 1 and 720)
+        const expiresHours = parseInt(options.expires, 10);
+        if (isNaN(expiresHours) || expiresHours < 1 || expiresHours > 720) {
+          throw new ValidationError('Token expiration must be between 1 and 720 hours');
+        }
 
         const credentials = await withSpinner(
           'Creating forked token...',
           () =>
             api.auth.forkSession(options.name, {
-              expiresInHours: parseInt(options.expires, 10),
+              expiresInHours: expiresHours,
             }),
           'Token created'
         );
@@ -162,7 +254,7 @@ export function registerAuthCommands(program: Command): void {
 
         await withSpinner(
           'Revoking token...',
-          () => api.auth.terminateSession(requestId),
+          () => api.auth.terminateSession({ requestId }),
           'Token revoked'
         );
       } catch (error) {
@@ -220,17 +312,27 @@ export function registerAuthCommands(program: Command): void {
   tfa
     .command('disable')
     .description('Disable two-factor authentication')
-    .action(async () => {
+    .option('--code <code>', 'Current TFA code for verification')
+    .option('-y, --yes', 'Skip confirmation prompt')
+    .action(async (options) => {
       try {
         await authService.requireAuth();
 
-        const confirm = await askConfirm('Are you sure you want to disable TFA?');
-        if (!confirm) {
-          outputService.info('Cancelled');
-          return;
+        if (!options.yes) {
+          const confirm = await askConfirm('Are you sure you want to disable TFA?');
+          if (!confirm) {
+            outputService.info('Cancelled');
+            return;
+          }
         }
 
-        await withSpinner('Disabling TFA...', () => api.auth.disableTfa(), 'TFA disabled');
+        // If code provided, pass it; otherwise use default flow
+        const code = options.code ?? undefined;
+        await withSpinner(
+          'Disabling TFA...',
+          () => api.auth.disableTfa(undefined, code),
+          'TFA disabled'
+        );
       } catch (error) {
         handleError(error);
       }

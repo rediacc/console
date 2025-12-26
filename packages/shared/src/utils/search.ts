@@ -4,6 +4,7 @@
 
 /**
  * Check if any of the specified fields in an item contain the search text
+ *
  * @param item - The item to search in
  * @param searchText - The text to search for
  * @param fields - Array of field names to search

@@ -4,6 +4,7 @@ import {
   QueueVaultBuilder,
   type QueueVaultBuilderConfig,
   type VaultData,
+  parseVaultContent,
 } from '@rediacc/shared/queue-vault';
 import type {
   GetCompanyTeams_ResultSet1,
@@ -90,7 +91,7 @@ class CliQueueService {
 
     try {
       const companyVault = await api.company.getVault();
-      const parsed = this.parseVaultContent(companyVault.vault);
+      const parsed = parseVaultContent<VaultData>(companyVault.vault);
       if (parsed) {
         vaults.companyVault = parsed;
       }
@@ -102,7 +103,7 @@ class CliQueueService {
       try {
         const teams = await api.teams.list();
         const team = teams.find((t: GetCompanyTeams_ResultSet1) => t.teamName === context.teamName);
-        const parsed = this.parseVaultContent(team?.vaultContent);
+        const parsed = parseVaultContent<VaultData>(team?.vaultContent);
         if (parsed) {
           vaults.teamVault = parsed;
         }
@@ -117,7 +118,7 @@ class CliQueueService {
         const machine = machines.find(
           (m: GetTeamMachines_ResultSet1) => m.machineName === context.machineName
         );
-        const parsed = this.parseVaultContent(machine?.vaultContent);
+        const parsed = parseVaultContent<VaultData>(machine?.vaultContent);
         if (parsed) {
           vaults.machineVault = parsed;
         }
@@ -133,7 +134,7 @@ class CliQueueService {
         const repository = repositories.find(
           (r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid
         );
-        const vaultContent = this.parseVaultContent(repository?.vaultContent);
+        const vaultContent = parseVaultContent<VaultData>(repository?.vaultContent);
         if (vaultContent) {
           if (repository?.repositoryNetworkId !== undefined) {
             (vaultContent as Record<string, unknown>).repositoryNetworkId =
@@ -162,7 +163,7 @@ class CliQueueService {
           const storage = storageList.find(
             (s: GetTeamStorages_ResultSet1) => s.storageName === storageName
           );
-          const parsed = this.parseVaultContent(storage?.vaultContent);
+          const parsed = parseVaultContent<VaultData>(storage?.vaultContent);
           if (parsed) {
             vaults.storageVault = parsed;
           }
@@ -178,7 +179,7 @@ class CliQueueService {
         const bridge = bridges.find(
           (b: GetRegionBridges_ResultSet1) => b.bridgeName === context.bridgeName
         );
-        const parsed = this.parseVaultContent(bridge?.vaultContent);
+        const parsed = parseVaultContent<VaultData>(bridge?.vaultContent);
         if (parsed) {
           vaults.bridgeVault = parsed;
         }
@@ -188,24 +189,6 @@ class CliQueueService {
     }
 
     return vaults;
-  }
-
-  private parseVaultContent(
-    value?: string | Record<string, unknown> | null
-  ): VaultData | undefined {
-    if (!value) {
-      return undefined;
-    }
-
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value) as VaultData;
-      } catch {
-        return undefined;
-      }
-    }
-
-    return value as VaultData;
   }
 }
 

@@ -12,6 +12,7 @@ import type {
   UpdateMachineNameParams,
   UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
+import { searchInFields } from '@rediacc/shared/utils';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -21,7 +22,7 @@ import {
   addStatusCommand,
   createResourceCommands,
 } from '../utils/commandFactory.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
@@ -93,8 +94,7 @@ export function registerMachineCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         const machines = await withSpinner(
@@ -105,8 +105,7 @@ export function registerMachineCommands(program: Command): void {
 
         const machine = machines.find((m: MachineWithVaultStatus) => m.machineName === name);
         if (!machine) {
-          outputService.error(`Machine "${name}" not found`);
-          process.exit(1);
+          throw new ValidationError(`Machine "${name}" not found`);
         }
 
         const format = program.opts().output as OutputFormat;
@@ -151,14 +150,14 @@ export function registerMachineCommands(program: Command): void {
     .command('repos <name>')
     .description('List deployed repositories on a machine')
     .option('-t, --team <name>', 'Team name')
+    .option('--search <text>', 'Filter repositories by name')
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         const machines = await withSpinner(
@@ -169,13 +168,19 @@ export function registerMachineCommands(program: Command): void {
 
         const machine = machines.find((m: MachineWithVaultStatus) => m.machineName === name);
         if (!machine) {
-          outputService.error(`Machine "${name}" not found`);
-          process.exit(1);
+          throw new ValidationError(`Machine "${name}" not found`);
         }
 
         // Use shared parsing service
-        const repositories = getMachineRepositories(machine);
+        let repositories = getMachineRepositories(machine);
         const format = program.opts().output as OutputFormat;
+
+        // Filter by search term
+        if (options.search) {
+          repositories = repositories.filter((repo) =>
+            searchInFields(repo, options.search, ['name', 'repositoryGuid'])
+          );
+        }
 
         if (repositories.length === 0) {
           outputService.info('No repositories deployed on this machine');

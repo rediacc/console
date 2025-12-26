@@ -1,22 +1,9 @@
 import { createCipheriv, createDecipheriv, createHash, pbkdf2, randomBytes } from 'node:crypto';
 import { promisify } from 'node:util';
 import type { ICryptoProvider } from '@rediacc/shared/encryption';
+import { ENCRYPTION_CONFIG, PASSWORD_SALT } from '@rediacc/shared/encryption';
 
 const pbkdf2Async = promisify(pbkdf2);
-
-// Must match web implementation exactly
-const ENCRYPTION_CONFIG = {
-  SALT_LENGTH: 16,
-  ITERATIONS: 100000,
-  KEY_LENGTH: 32, // 256 bits = 32 bytes
-  IV_LENGTH: 12,
-  TAG_LENGTH: 16,
-  ALGORITHM: 'aes-256-gcm',
-  HASH: 'sha256',
-} as const;
-
-// Password salt - must match database sfHash function (db_middleware_000_functions.sql)
-const PASSWORD_SALT = 'Rd!@cc111$ecur3P@$$w0rd$@lt#H@$h';
 
 class NodeCryptoProvider implements ICryptoProvider {
   async encrypt(data: string, password: string): Promise<string> {
@@ -71,7 +58,7 @@ class NodeCryptoProvider implements ICryptoProvider {
       password,
       Buffer.from(salt),
       ENCRYPTION_CONFIG.ITERATIONS,
-      ENCRYPTION_CONFIG.KEY_LENGTH,
+      ENCRYPTION_CONFIG.KEY_LENGTH_BYTES,
       ENCRYPTION_CONFIG.HASH
     );
     return key.toString('base64');
@@ -82,7 +69,7 @@ class NodeCryptoProvider implements ICryptoProvider {
       password,
       salt,
       ENCRYPTION_CONFIG.ITERATIONS,
-      ENCRYPTION_CONFIG.KEY_LENGTH,
+      ENCRYPTION_CONFIG.KEY_LENGTH_BYTES,
       ENCRYPTION_CONFIG.HASH
     );
   }

@@ -1,6 +1,6 @@
 /**
- * Core API utilities
- * These utilities are framework-agnostic and can be used in both React and CLI
+ * Property normalization utilities for API responses
+ * Handles different casing conventions (camelCase, PascalCase, etc.)
  */
 
 /**

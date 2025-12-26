@@ -10,7 +10,7 @@ import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
 export function registerBridgeCommands(program: Command): void {
@@ -47,8 +47,7 @@ export function registerBridgeCommands(program: Command): void {
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.region) {
-          outputService.error('Region name required. Use --region or set context.');
-          process.exit(1);
+          throw new ValidationError('Region name required. Use --region or set context.');
         }
 
         const authToken = await withSpinner(

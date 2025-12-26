@@ -1,4 +1,5 @@
 import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
+import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 /**
@@ -26,11 +27,18 @@ export const isTaskInTerminalState = (
     return true;
   }
 
-  if (status === 'FAILED' && (permanentlyFailed || retryCount >= 2)) {
+  if (
+    status === 'FAILED' &&
+    (permanentlyFailed || retryCount >= STALE_TASK_CONSTANTS.MAX_RETRY_COUNT)
+  ) {
     return true;
   }
 
-  if (status === 'PENDING' && retryCount >= 2 && lastFailureReason) {
+  if (
+    status === 'PENDING' &&
+    retryCount >= STALE_TASK_CONSTANTS.MAX_RETRY_COUNT &&
+    lastFailureReason
+  ) {
     return true;
   }
 

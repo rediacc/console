@@ -1,6 +1,5 @@
 /**
- * Core utility functions for parsing and formatting data sizes (memory, disk, etc.)
- * These utilities are framework-agnostic and can be used in both React and CLI
+ * Utility functions for parsing and formatting data sizes (memory, disk, etc.)
  */
 
 /**
@@ -10,7 +9,7 @@
  * @param sizeStr - Size string with optional unit
  * @returns Size in bytes, or 0 if invalid
  */
-const parseMemorySize = (sizeStr: string): number => {
+export function parseMemorySize(sizeStr: string): number {
   if (!sizeStr || typeof sizeStr !== 'string') return 0;
 
   // Extract number and unit from string like "685Mi", "3.8Gi", "2.5 G", "15GB" etc.
@@ -55,7 +54,7 @@ const parseMemorySize = (sizeStr: string): number => {
   const multiplier =
     binaryMultipliers[unit] || decimalMultipliers[unit] || commonMultipliers[unit] || 1;
   return value * multiplier;
-};
+}
 
 /**
  * Calculates percentage for resource usage with fallback
@@ -66,11 +65,11 @@ const parseMemorySize = (sizeStr: string): number => {
  * @param total - Total amount with unit
  * @returns Percentage between 0 and 100
  */
-export const calculateResourcePercent = (
+export function calculateResourcePercent(
   usePercent?: string,
   used?: string,
   total?: string
-): number => {
+): number {
   // Use backend-provided percentage if available and valid
   if (usePercent) {
     const backendPercent = parseInt(usePercent);
@@ -89,4 +88,4 @@ export const calculateResourcePercent = (
 
   const percentage = Math.round((usedBytes / totalBytes) * 100);
   return Math.min(100, Math.max(0, percentage));
-};
+}

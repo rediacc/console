@@ -1,6 +1,6 @@
 /**
- * Core utilities for parsing progress from console output
- * These utilities are framework-agnostic and can be used in both React and CLI
+ * Progress parsing utilities for console output
+ * Supports bash scripts, rsync, and rclone progress formats
  */
 
 /**

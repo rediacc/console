@@ -11,8 +11,8 @@
       "project": ["src/**/*.ts"]
     },
     "packages/cli": {
-      "entry": ["src/index.ts", "src/types/index.ts"],
-      "project": ["src/**/*.ts"]
+      "entry": ["src/index.ts", "src/types/index.ts", "tests/**/*.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/web": {
       "entry": [

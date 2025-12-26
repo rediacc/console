@@ -1,11 +1,12 @@
 import { Command } from 'commander';
 import type { QueueTrace, QueueTraceSummary } from '@rediacc/shared/types';
+import { searchInFields, compareValues, extractMostRecentProgress } from '@rediacc/shared/utils';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import {
   formatAge,
   formatBoolean,
@@ -92,8 +93,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
   const opts = await contextService.applyDefaults(options);
 
   if (!opts.team) {
-    outputService.error('Team name required. Use --team or set context.');
-    process.exit(1);
+    throw new ValidationError('Team name required. Use --team or set context.');
   }
 
   let queueVault: string;
@@ -168,7 +168,12 @@ export async function traceAction(
       if (summary) {
         const statusText = formatStatus(summary.status ?? 'UNKNOWN');
         const ageText = summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : 'unknown';
-        const progressText = summary.progress ?? 'No progress';
+
+        // Extract progress percentage from console output if available
+        const percentage = extractMostRecentProgress(summary.consoleOutput ?? '');
+        const progressText =
+          percentage !== null ? `${percentage}%` : (summary.progress ?? 'In progress');
+
         if (spinner) {
           spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;
         }
@@ -244,15 +249,36 @@ export function registerQueueCommands(program: Command): void {
     .description('List queue items')
     .option('-t, --team <name>', 'Team name')
     .option('--status <status>', 'Filter by status')
+    .option('--priority-min <n>', 'Minimum priority (1-5)')
+    .option('--priority-max <n>', 'Maximum priority (1-5)')
+    .option('--search <text>', 'Search in taskId, team, machine, bridge')
+    .option('--sort <field>', 'Sort by field (taskId, ageInMinutes, priority, status)')
+    .option('--desc', 'Sort in descending order')
     .option('--limit <n>', 'Limit results', '50')
     .action(async (options) => {
       try {
         await authService.requireAuth();
+
+        // Validate priority-min if provided (before checking team to give clearer error)
+        if (options.priorityMin !== undefined) {
+          const min = parseInt(options.priorityMin, 10);
+          if (isNaN(min) || min < 1 || min > 5) {
+            throw new ValidationError('Minimum priority must be between 1 and 5');
+          }
+        }
+
+        // Validate priority-max if provided (before checking team to give clearer error)
+        if (options.priorityMax !== undefined) {
+          const max = parseInt(options.priorityMax, 10);
+          if (isNaN(max) || max < 1 || max > 5) {
+            throw new ValidationError('Maximum priority must be between 1 and 5');
+          }
+        }
+
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.');
-          process.exit(1);
+          throw new ValidationError('Team name required. Use --team or set context.');
         }
 
         const response = await withSpinner(
@@ -271,6 +297,39 @@ export function registerQueueCommands(program: Command): void {
           items = items.filter(
             (item) => item.status?.toLowerCase() === options.status.toLowerCase()
           );
+        }
+
+        // Filter by priority-min if specified
+        if (options.priorityMin !== undefined) {
+          const min = parseInt(options.priorityMin, 10);
+          items = items.filter((item) => item.priority != null && item.priority >= min);
+        }
+
+        // Filter by priority-max if specified
+        if (options.priorityMax !== undefined) {
+          const max = parseInt(options.priorityMax, 10);
+          items = items.filter((item) => item.priority != null && item.priority <= max);
+        }
+
+        // Search filter
+        if (options.search) {
+          items = items.filter((item) =>
+            searchInFields(item, options.search, [
+              'taskId',
+              'teamName',
+              'machineName',
+              'bridgeName',
+            ])
+          );
+        }
+
+        // Sort results
+        if (options.sort) {
+          const sortField = options.sort as keyof (typeof items)[0];
+          items.sort((a, b) => {
+            const result = compareValues(a[sortField], b[sortField]);
+            return options.desc ? -result : result;
+          });
         }
 
         const format = program.opts().output as OutputFormat;
