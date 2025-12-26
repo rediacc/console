@@ -1,10 +1,11 @@
-import { Command } from 'commander';
 import type { QueueTrace, QueueTraceSummary } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
+import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   formatAge,
@@ -15,7 +16,6 @@ import {
   formatStatus,
 } from '../utils/queueFormatters.js';
 import { startSpinner, stopSpinner, withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 
 // Exported action handlers for reuse in shortcuts
 

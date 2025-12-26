@@ -1,5 +1,5 @@
-import { TOTP, Secret } from 'otpauth';
-import { runCli, type CliResult } from './cli.js';
+import { Secret, TOTP } from 'otpauth';
+import { type CliResult, runCli } from './cli.js';
 
 /**
  * Generate a valid TOTP code from a Base32 secret.

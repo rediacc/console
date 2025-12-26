@@ -1,5 +1,5 @@
-import { describe, it, expect, afterAll } from 'vitest';
-import { runCli, login, logout } from './helpers/cli.js';
+import { afterAll, describe, expect, it } from 'vitest';
+import { login, logout, runCli } from './helpers/cli.js';
 import { getConfig } from './helpers/config.js';
 
 describe('auth commands', () => {

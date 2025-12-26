@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { runCli, getErrorMessage } from './helpers/cli.js';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { getErrorMessage, runCli } from './helpers/cli.js';
 
 describe('storage commands', () => {
   let teamName: string;

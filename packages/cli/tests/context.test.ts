@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { runCli } from './helpers/cli.js';
 
 describe('context commands', () => {

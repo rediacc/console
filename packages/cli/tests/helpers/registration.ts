@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { runCli, getErrorMessage } from './cli.js';
+import { getErrorMessage, runCli } from './cli.js';
 import { getConfig } from './config.js';
 
 export interface TestAccount {

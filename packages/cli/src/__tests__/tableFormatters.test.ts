@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  formatStatus,
-  formatPriority,
   formatBoolean,
-  formatRetryCount,
   formatError,
+  formatPriority,
+  formatRetryCount,
+  formatStatus,
 } from '../utils/queueFormatters.js';
 
 describe('Queue Formatters', () => {

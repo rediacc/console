@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { runCli, getErrorMessage } from './helpers/cli.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getErrorMessage, runCli } from './helpers/cli.js';
 
 describe('permission commands', () => {
   let teamName: string;

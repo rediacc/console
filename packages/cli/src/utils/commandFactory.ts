@@ -1,11 +1,11 @@
-import { Command } from 'commander';
 import type { CompanyVaultRecord } from '@rediacc/shared/types';
-import { handleError } from './errors.js';
-import { withSpinner } from './spinner.js';
+import { Command } from 'commander';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat } from '../types/index.js';
+import { handleError } from './errors.js';
+import { withSpinner } from './spinner.js';
 
 /**
  * Configuration for a standard resource CRUD command set

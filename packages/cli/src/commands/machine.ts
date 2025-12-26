@@ -1,4 +1,3 @@
-import { Command } from 'commander';
 import {
   getDeploymentSummary,
   getMachineRepositories,
@@ -12,10 +11,12 @@ import type {
   UpdateMachineNameParams,
   UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { api } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 import {
   addAssignCommand,
   addStatusCommand,
@@ -23,7 +24,6 @@ import {
 } from '../utils/commandFactory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 
 export function registerMachineCommands(program: Command): void {
   // Create standard CRUD commands using factory

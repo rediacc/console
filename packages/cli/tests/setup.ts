@@ -1,4 +1,4 @@
-import { beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll } from 'vitest';
 import { logout } from './helpers/cli.js';
 import { getConfig, setTestAccount } from './helpers/config.js';
 import {

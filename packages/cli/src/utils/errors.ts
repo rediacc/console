@@ -1,7 +1,7 @@
 import { CliApiError } from '../services/api.js';
 import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import { ValidationError, type CliError } from '../types/errors.js';
+import { type CliError, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 
 // Global output format (set by main program before command execution)
