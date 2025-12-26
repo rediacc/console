@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import { minifyJSON } from '@/platform/utils/json';
+import { parseGetTeamRepositories } from '@rediacc/shared/api';
 import type {
   CreateRepositoryParams,
   DeleteRepositoryParams,
@@ -16,13 +17,13 @@ import type {
 // Get repositories for a team or multiple teams
 export const useRepositories = createResourceQuery<GetTeamRepositories_ResultSet1>({
   queryKey: 'repositories',
-  fetcher: (teamFilter) => {
+  fetcher: async (teamFilter) => {
     if (!teamFilter) {
       throw new Error('Team filter is required to load repositories');
     }
-    return api.repositories.list(
-      Array.isArray(teamFilter) ? { teamName: teamFilter } : { teamName: teamFilter }
-    );
+    const teamName = Array.isArray(teamFilter) ? teamFilter.join(',') : teamFilter;
+    const response = await typedApi.GetTeamRepositories({ teamName });
+    return parseGetTeamRepositories(response as never);
   },
   enabledCheck: (teamFilter) =>
     !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
@@ -48,7 +49,9 @@ export const useCreateRepository = () => {
       parentRepositoryName,
       repositoryGuid,
     }) =>
-      api.repositories.create(teamName, repositoryName, {
+      typedApi.CreateRepository({
+        teamName,
+        repositoryName,
         repositoryTag,
         vaultContent,
         parentRepositoryName,
@@ -69,7 +72,7 @@ export const useCreateRepository = () => {
 export const useUpdateRepositoryName = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateRepositoryNameParams>({
-    mutationFn: (params) => api.repositories.rename(params),
+    mutationFn: (params) => typedApi.UpdateRepositoryName(params),
     successMessage: (_, vars) => `Repository renamed to "${vars.newRepositoryName}"`,
     errorMessage: 'Failed to update repository name',
     onSuccess: () => {
@@ -83,7 +86,7 @@ export const useUpdateRepositoryName = () => {
 export const useUpdateRepositoryTag = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateRepositoryTagParams>({
-    mutationFn: (params) => api.repositories.renameTag(params),
+    mutationFn: (params) => typedApi.UpdateRepositoryTag(params),
     successMessage: (_, vars) => `Tag renamed to "${vars.newTag}"`,
     errorMessage: 'Failed to update tag',
     onSuccess: () => {
@@ -98,7 +101,7 @@ export const useUpdateRepositoryVault = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateRepositoryVaultParams>({
     mutationFn: (params) =>
-      api.repositories.updateVault({
+      typedApi.UpdateRepositoryVault({
         ...params,
         vaultContent: minifyJSON(params.vaultContent),
       }),
@@ -119,7 +122,7 @@ export const useDeleteRepository = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteRepositoryHookParams>({
     mutationFn: ({ teamName, repositoryName, repositoryTag = 'latest' }) =>
-      api.repositories.delete({ teamName, repositoryName, repositoryTag }),
+      typedApi.DeleteRepository({ teamName, repositoryName, repositoryTag }),
     successMessage: (_, vars) =>
       `Repository "${vars.repositoryName}:${vars.repositoryTag ?? 'latest'}" deleted successfully`,
     errorMessage: 'Failed to delete repository',
@@ -135,7 +138,7 @@ export const useDeleteRepository = () => {
 export const usePromoteRepositoryToGrand = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, PromoteRepositoryToGrandParams>({
-    mutationFn: (params) => api.repositories.promoteToGrand(params),
+    mutationFn: (params) => typedApi.PromoteRepositoryToGrand(params),
     successMessage: (_, vars) =>
       `Repository "${vars.repositoryName}" promoted to original successfully`,
     errorMessage: 'Failed to promote repository',

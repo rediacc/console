@@ -1,4 +1,5 @@
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
+import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import type { GetTeamQueueItems_ResultSet1, QueueTrace } from '@rediacc/shared/types';
 
 interface HelloResponseData {
@@ -62,7 +63,8 @@ export async function waitForQueueItemCompletion(
 
 async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionResult | null> {
   try {
-    const trace = await api.queue.getTrace({ taskId });
+    const response = await typedApi.GetQueueItemTrace({ taskId });
+    const trace = parseGetQueueItemTrace(response as never);
     const queueDetails = trace.queueDetails;
 
     if (!queueDetails) {

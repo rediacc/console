@@ -1,6 +1,7 @@
 import { isAxiosError } from 'axios';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { showTranslatedMessage } from '@/utils/messages';
+import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import { isPermanentFailure, STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
 import type { GetTeamQueueItems_ResultSet1, QueueTrace } from '@rediacc/shared/types';
 
@@ -207,12 +208,13 @@ class QueueMonitoringService {
       if (this.isExtensionContext()) {
         // In Chrome extension context, wrap API call with additional error handling
         try {
-          trace = (await Promise.race([
-            api.queue.getTrace({ taskId: task.taskId }),
+          const response = (await Promise.race([
+            typedApi.GetQueueItemTrace({ taskId: task.taskId }),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
             ),
-          ])) as QueueTrace;
+          ])) as Awaited<ReturnType<typeof typedApi.GetQueueItemTrace>>;
+          trace = parseGetQueueItemTrace(response as never);
         } catch (extensionError: unknown) {
           if (
             extensionError instanceof Error &&
@@ -224,7 +226,8 @@ class QueueMonitoringService {
         }
       } else {
         // Fetch the latest status normally
-        trace = await api.queue.getTrace({ taskId: task.taskId });
+        const response = await typedApi.GetQueueItemTrace({ taskId: task.taskId });
+        trace = parseGetQueueItemTrace(response as never);
       }
 
       // Extract queue details from response

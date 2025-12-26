@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { parseGetTeamRepositories, parseGetCompanyVaults } from '@rediacc/shared/api';
 import {
   canDeleteGrandRepo,
   canPromoteToGrand,
@@ -7,7 +8,7 @@ import {
   type RepositoryWithRelations,
 } from '@rediacc/shared/services/repository';
 import type { CompanyVaultRecord } from '@rediacc/shared/types';
-import { api } from '../services/api.js';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -32,11 +33,13 @@ export function registerRepositoryCommands(program: Command): void {
           throw new ValidationError('Team name required. Use --team or set context.');
         }
 
-        const repositories = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching repositories...',
-          () => api.repositories.list({ teamName: opts.team as string }),
+          () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
           'Repositories fetched'
         );
+
+        const repositories = parseGetTeamRepositories(apiResponse as never);
 
         const format = program.opts().output as OutputFormat;
 
@@ -63,21 +66,28 @@ export function registerRepositoryCommands(program: Command): void {
           throw new ValidationError('Team name required. Use --team or set context.');
         }
 
-        const createOptions: {
+        const createParams: {
+          teamName: string;
+          repositoryName: string;
+          vaultContent: string;
           repositoryTag?: string;
           parentRepositoryName?: string;
           parentRepositoryTag?: string;
         } = {
+          teamName: opts.team,
+          repositoryName: name,
+          vaultContent: '{}', // Empty vault for new repository
           repositoryTag: options.tag,
         };
+
         if (options.parent) {
-          createOptions.parentRepositoryName = options.parent;
-          createOptions.parentRepositoryTag = options.parentTag ?? 'main';
+          createParams.parentRepositoryName = options.parent;
+          createParams.parentRepositoryTag = options.parentTag ?? 'main';
         }
 
         await withSpinner(
           `Creating repository "${name}:${options.tag}"...`,
-          () => api.repositories.create(opts.team as string, name, createOptions),
+          () => typedApi.CreateRepository(createParams),
           `Repository "${name}:${options.tag}" created`
         );
       } catch (error) {
@@ -103,7 +113,7 @@ export function registerRepositoryCommands(program: Command): void {
         await withSpinner(
           `Renaming repository "${oldName}" to "${newName}"...`,
           () =>
-            api.repositories.rename({
+            typedApi.UpdateRepositoryName({
               teamName: opts.team as string,
               currentRepositoryName: oldName,
               newRepositoryName: newName,
@@ -132,11 +142,13 @@ export function registerRepositoryCommands(program: Command): void {
         }
 
         // Fetch all repositories to validate deletion
-        const allRepositories = await withSpinner(
+        const apiResponse = await withSpinner(
           'Checking repository relationships...',
-          () => api.repositories.list({ teamName: opts.team as string }),
+          () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
           'Repository relationships checked'
         );
+
+        const allRepositories = parseGetTeamRepositories(apiResponse as never);
 
         // Find the target repo
         const targetRepository = allRepositories.find(
@@ -190,7 +202,7 @@ export function registerRepositoryCommands(program: Command): void {
         await withSpinner(
           `Deleting repository "${name}:${options.tag}"...`,
           () =>
-            api.repositories.delete({
+            typedApi.DeleteRepository({
               teamName: opts.team as string,
               repositoryName: name,
               repositoryTag: options.tag,
@@ -219,11 +231,13 @@ export function registerRepositoryCommands(program: Command): void {
         }
 
         // Fetch all repositories to validate promotion
-        const allRepositories = await withSpinner(
+        const apiResponse = await withSpinner(
           'Checking repository relationships...',
-          () => api.repositories.list({ teamName: opts.team as string }),
+          () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
           'Repository relationships checked'
         );
+
+        const allRepositories = parseGetTeamRepositories(apiResponse as never);
 
         // Find the target repo
         const targetRepository = allRepositories.find(
@@ -272,7 +286,7 @@ export function registerRepositoryCommands(program: Command): void {
         await withSpinner(
           `Promoting repository "${name}:${options.tag}"...`,
           () =>
-            api.repositories.promoteToGrand({
+            typedApi.PromoteRepositoryToGrand({
               teamName: opts.team as string,
               repositoryName: name,
             }),
@@ -301,19 +315,22 @@ export function registerRepositoryCommands(program: Command): void {
           throw new ValidationError('Team name required. Use --team or set context.');
         }
 
-        const vaultsResponse = await withSpinner(
+        const response = await withSpinner(
           'Fetching repository vault...',
-          () =>
-            api.company.getAllVaults({
-              teamName: opts.team,
-              repositoryName,
-              repositoryTag: options.tag,
-            }),
+          () => typedApi.GetCompanyVaults({}),
           'Vault fetched'
         );
 
-        const repositoryVault = vaultsResponse.vaults.find(
-          (vault: CompanyVaultRecord & { vaultType?: string }) => vault.vaultType === 'Repository'
+        const vaults = parseGetCompanyVaults(response as never) as unknown as (CompanyVaultRecord & {
+          vaultType?: string;
+        })[];
+
+        const repositoryVault = vaults.find(
+          (vault) =>
+            vault.vaultType === 'Repository' &&
+            vault.teamName === opts.team &&
+            vault.repositoryName === repositoryName &&
+            vault.repositoryTag === options.tag
         );
         const format = program.opts().output as OutputFormat;
 
@@ -379,7 +396,7 @@ export function registerRepositoryCommands(program: Command): void {
         await withSpinner(
           'Updating repository vault...',
           () =>
-            api.repositories.updateVault({
+            typedApi.UpdateRepositoryVault({
               teamName: opts.team as string,
               repositoryName,
               repositoryTag: options.tag,

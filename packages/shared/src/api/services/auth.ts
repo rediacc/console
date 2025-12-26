@@ -1,249 +1,117 @@
-import { parseFirst, parseResponse, responseExtractors } from '../parseResponse';
-import type { ApiClient } from './types';
-import type {
-  AuthLoginResult,
-  AuthRequestStatus,
-  DeleteUserRequestParams,
-  EnableTfaResponse,
-  ForkSessionCredentials,
-  IsRegisteredParams,
-  UserRequest,
-  VerifyTfaResult,
-} from '../../types';
+/**
+ * Shared Auth Service
+ *
+ * Factory function that creates auth-specific API methods.
+ * These methods require special HTTP headers (Rediacc-UserEmail, Rediacc-UserHash)
+ * instead of the normal request token authentication.
+ */
+
 import type { ApiResponse } from '../../types/api';
 
-export interface ForkSessionOptions {
-  permissionsName?: string;
-  expiresInHours?: number;
+/**
+ * Low-level HTTP client interface for auth operations.
+ * This is a subset of what axios provides, allowing both web and CLI clients to work.
+ */
+export interface AuthHttpClient {
+  post<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: { headers?: Record<string, string> }
+  ): Promise<{ data: T }>;
 }
 
-export interface EnableTfaOptions {
-  generateOnly?: boolean;
-  verificationCode?: string;
-  secret?: string;
-  confirmEnable?: boolean;
+/**
+ * Auth service interface with methods that require special HTTP headers.
+ */
+export interface AuthService {
+  /**
+   * Create an authentication session (login).
+   * @param email User's email address
+   * @param passwordHash Hashed password
+   * @param sessionName Optional session name (default: 'Session')
+   */
+  login(email: string, passwordHash: string, sessionName?: string): Promise<ApiResponse>;
+
+  /**
+   * Activate a user account.
+   * @param email User's email address
+   * @param activationCode Activation code received during registration
+   * @param passwordHash Hashed password for the new account
+   */
+  activateUser(email: string, activationCode: string, passwordHash: string): Promise<ApiResponse>;
+
+  /**
+   * Register a new company and user.
+   * @param companyName Company name
+   * @param email User's email address
+   * @param passwordHash Hashed password
+   * @param language Optional language preference (default: 'en')
+   */
+  register(
+    companyName: string,
+    email: string,
+    passwordHash: string,
+    language?: string
+  ): Promise<ApiResponse>;
 }
 
-interface AuthStatusRow {
-  isTFAEnabled?: boolean | number | string;
-  isAuthorized?: boolean | number | string;
-  authenticationStatus?: string;
-}
-
-interface AuthLoginRow {
-  isAuthorized?: boolean | number | string;
-  authenticationStatus?: string;
-  vaultCompany?: string | null;
-  companyName?: string | null;
-  company?: string | null;
-  preferredLanguage?: string | null;
-}
-
-const toBoolean = (value: unknown): boolean =>
-  value === true || value === 1 || value === '1' || value === 'true';
-
-const normalizeAuthStatus = (row?: AuthStatusRow | null): AuthRequestStatus => ({
-  isTFAEnabled: toBoolean(row?.isTFAEnabled),
-  isAuthorized: toBoolean(row?.isAuthorized),
-  authenticationStatus: row?.authenticationStatus ?? 'Unknown',
-});
-
-const extractAuthStatus = (response: ApiResponse<AuthStatusRow>): AuthRequestStatus => {
-  const row =
-    parseFirst<AuthStatusRow>(response, {
-      extractor: responseExtractors.byIndex<AuthStatusRow>(1),
-    }) ??
-    parseFirst<AuthStatusRow>(response, {
-      extractor: responseExtractors.byIndex<AuthStatusRow>(0),
-    }) ??
-    (typeof (response as AuthStatusRow).isTFAEnabled !== 'undefined'
-      ? (response as AuthStatusRow)
-      : null);
-
-  return normalizeAuthStatus(row);
-};
-
-const extractTfaResponse = (response: ApiResponse<EnableTfaResponse>): EnableTfaResponse | null => {
-  return (
-    parseFirst<EnableTfaResponse>(response, {
-      extractor: responseExtractors.byIndex<EnableTfaResponse>(1),
-    }) ??
-    parseFirst<EnableTfaResponse>(response, {
-      extractor: responseExtractors.byIndex<EnableTfaResponse>(0),
-    }) ??
-    null
-  );
-};
-
-const extractLoginRow = (response: ApiResponse): AuthLoginRow | null =>
-  parseFirst<AuthLoginRow>(response as ApiResponse<AuthLoginRow>, {
-    extractor: responseExtractors.primaryOrSecondary,
-  });
-
-export function createAuthService(client: ApiClient) {
+/**
+ * Build auth headers for requests that authenticate via email/password hash.
+ */
+function buildAuthHeaders(email: string, passwordHash: string): Record<string, string> {
   return {
-    login: (email: string, passwordHash: string, sessionName = 'Web Session') =>
-      client.post(
-        '/CreateAuthenticationRequest',
-        { name: sessionName },
-        {
-          headers: {
-            'Rediacc-UserEmail': email,
-            'Rediacc-UserHash': passwordHash,
-          },
-        }
-      ),
-
-    logout: () => client.post('/DeleteUserRequest', {}),
-
-    forkSession: async (
-      sessionName: string,
-      options: ForkSessionOptions = {}
-    ): Promise<ForkSessionCredentials> => {
-      const payload: Record<string, unknown> = { childName: sessionName };
-      if (options.permissionsName && options.permissionsName.trim() !== '') {
-        payload.forkedPermissionsName = options.permissionsName;
-      }
-      if (options.expiresInHours !== undefined) {
-        payload.tokenExpirationHours = options.expiresInHours;
-      }
-      const response = await client.post('/ForkAuthenticationRequest', payload);
-
-      const foundSet = response.resultSets.find((set) => set.resultSetName === 'Credentials');
-      const fallbackSet = response.resultSets.length > 1 ? response.resultSets[1] : undefined;
-      const credentialsSet = foundSet ?? fallbackSet;
-
-      const row = (credentialsSet ? credentialsSet.data[0] : undefined) as
-        | (Partial<ForkSessionCredentials> & {
-            parentRequestId?: number | string;
-          })
-        | undefined;
-
-      const parentRequestId = row?.parentRequestId;
-      return {
-        requestToken: typeof row?.requestToken === 'string' ? row.requestToken : null,
-        nextRequestToken: typeof row?.nextRequestToken === 'string' ? row.nextRequestToken : null,
-        parentRequestId:
-          typeof parentRequestId === 'number'
-            ? parentRequestId
-            : typeof parentRequestId === 'string'
-              ? Number(parentRequestId) || null
-              : null,
-      };
-    },
-
-    activateAccount: (email: string, code: string, passwordHash: string) =>
-      client.post(
-        '/ActivateUserAccount',
-        { activationCode: code },
-        {
-          headers: {
-            'Rediacc-UserEmail': email,
-            'Rediacc-UserHash': passwordHash,
-          },
-        }
-      ),
-
-    getRequestStatus: async (): Promise<AuthRequestStatus> => {
-      const response = await client.get<AuthStatusRow>('/GetRequestAuthenticationStatus');
-      return extractAuthStatus(response);
-    },
-
-    getSessions: async (): Promise<UserRequest[]> => {
-      const response = await client.get<UserRequest>('/GetUserRequests');
-      return parseResponse(response, {
-        extractor: responseExtractors.byIndex<UserRequest>(1),
-      });
-    },
-
-    terminateSession: (params: DeleteUserRequestParams | { requestId: number | string }) => {
-      const targetRequestId =
-        'requestId' in params
-          ? typeof params.requestId === 'number'
-            ? params.requestId
-            : Number(params.requestId)
-          : params.targetRequestId;
-      return client.post('/DeleteUserRequest', { targetRequestId });
-    },
-
-    getTfaStatus: async (): Promise<AuthRequestStatus> => {
-      // Use GetRequestAuthenticationStatus to check TFA status
-      const response = await client.get<AuthStatusRow>('/GetRequestAuthenticationStatus');
-      return extractAuthStatus(response);
-    },
-
-    enableTfa: async (
-      passwordHash?: string,
-      options: EnableTfaOptions = {}
-    ): Promise<EnableTfaResponse | null> => {
-      const payload: Record<string, unknown> = { enable: true };
-      if (passwordHash) payload.userHash = passwordHash;
-      if (options.generateOnly) payload.generateOnly = true;
-      if (options.verificationCode) payload.verificationCode = options.verificationCode;
-      if (options.secret) payload.secret = options.secret;
-      if (options.confirmEnable) payload.confirmEnable = true;
-
-      const response = await client.post<EnableTfaResponse>('/UpdateUserTFA', payload);
-      return extractTfaResponse(response);
-    },
-
-    disableTfa: async (passwordHash?: string, currentCode?: string): Promise<void> => {
-      const payload: Record<string, unknown> = { enable: false };
-      if (passwordHash) payload.userHash = passwordHash;
-      if (currentCode) payload.currentCode = currentCode;
-
-      await client.post('/UpdateUserTFA', payload);
-    },
-
-    verifyTfa: async (code: string, sessionName?: string): Promise<VerifyTfaResult> => {
-      const response = await client.post<VerifyTfaResult>('/PrivilegeAuthenticationRequest', {
-        currentCode: code,
-        sessionName,
-      });
-
-      const row =
-        parseFirst<VerifyTfaResult>(response, {
-          extractor: responseExtractors.byIndex<VerifyTfaResult>(1),
-        }) ??
-        parseFirst<VerifyTfaResult>(response, {
-          extractor: responseExtractors.byIndex<VerifyTfaResult>(0),
-        }) ??
-        null;
-
-      return {
-        isAuthorized: toBoolean(row?.isAuthorized),
-        result: row?.result,
-        hasTFAEnabled: row?.hasTFAEnabled,
-      };
-    },
-
-    checkRegistration: async (params: IsRegisteredParams): Promise<{ isRegistered: boolean }> => {
-      interface RegistrationRow {
-        isRegistered?: boolean | number | string;
-      }
-
-      const response = await client.get<RegistrationRow>('/IsRegistered', {
-        userEmail: params.userName,
-      });
-      const row = parseFirst<RegistrationRow>(response, {
-        extractor: responseExtractors.primaryOrSecondary,
-      });
-      const value = row?.isRegistered;
-      const isRegistered = value === true || value === 1 || value === '1' || value === 'true';
-
-      return { isRegistered };
-    },
+    'Rediacc-UserEmail': email,
+    'Rediacc-UserHash': passwordHash,
   };
 }
 
-export function parseAuthenticationResult(response: ApiResponse): AuthLoginResult {
-  const row = extractLoginRow(response);
+/**
+ * Create an auth service instance.
+ *
+ * @param client HTTP client (axios instance or compatible)
+ * @param apiPrefix API path prefix (e.g., '/StoredProcedure')
+ * @returns AuthService instance
+ *
+ * @example
+ * // Web usage
+ * const authApi = createAuthService(axiosInstance, '/StoredProcedure');
+ *
+ * // CLI usage
+ * const authApi = createAuthService(axiosInstance, '/StoredProcedure');
+ */
+export function createAuthService(client: AuthHttpClient, apiPrefix = ''): AuthService {
+  const buildUrl = (endpoint: string) => `${apiPrefix}${endpoint}`;
+
   return {
-    isAuthorized: toBoolean(row?.isAuthorized),
-    authenticationStatus: row?.authenticationStatus ?? 'unknown',
-    vaultCompany: typeof row?.vaultCompany === 'string' ? row.vaultCompany : null,
-    companyName: row?.companyName ?? row?.company ?? null,
-    company: row?.company ?? null,
-    preferredLanguage: typeof row?.preferredLanguage === 'string' ? row.preferredLanguage : null,
+    async login(email, passwordHash, sessionName = 'Session') {
+      const response = await client.post<ApiResponse>(
+        buildUrl('/CreateAuthenticationRequest'),
+        { name: sessionName },
+        { headers: buildAuthHeaders(email, passwordHash) }
+      );
+      return response.data;
+    },
+
+    async activateUser(email, activationCode, passwordHash) {
+      const response = await client.post<ApiResponse>(
+        buildUrl('/ActivateUserAccount'),
+        { activationCode },
+        { headers: buildAuthHeaders(email, passwordHash) }
+      );
+      return response.data;
+    },
+
+    async register(companyName, email, passwordHash, language = 'en') {
+      const response = await client.post<ApiResponse>(
+        buildUrl('/CreateNewCompany'),
+        {
+          companyName,
+          userEmailAddress: email,
+          languagePreference: language,
+        },
+        { headers: buildAuthHeaders(email, passwordHash) }
+      );
+      return response.data;
+    },
   };
 }

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { type QueueRequestContext, queueService } from '@/services/queue';
+import { parseGetCompanyVault } from '@rediacc/shared/api';
 import { parseVaultContentOrEmpty } from '@rediacc/shared/queue-vault';
 
 /**
@@ -17,7 +18,12 @@ type QueueVaultBuilderParams = Omit<QueueRequestContext, 'companyVault' | 'compa
 export function useQueueVaultBuilder() {
   const buildQueueVault = useCallback(async (context: QueueVaultBuilderParams): Promise<string> => {
     // Fetch company vault directly from API to ensure we have the latest data
-    const companyVaultData = await api.company.getVault();
+    const response = await typedApi.GetCompanyVault({});
+    const companyVaultData = parseGetCompanyVault(response as never);
+
+    if (!companyVaultData) {
+      throw new Error('Failed to fetch company vault data');
+    }
 
     const {
       repositoryVault,
@@ -57,7 +63,7 @@ export function useQueueVaultBuilder() {
       storageVault: baseContext.storageVault
         ? parseVaultContentOrEmpty(baseContext.storageVault)
         : undefined,
-      companyVault: parseVaultContentOrEmpty(companyVaultData.vault),
+      companyVault: parseVaultContentOrEmpty(companyVaultData.vaultContent),
       destinationMachineVault: baseContext.destinationMachineVault
         ? parseVaultContentOrEmpty(baseContext.destinationMachineVault)
         : undefined,
@@ -82,7 +88,7 @@ export function useQueueVaultBuilder() {
     const fullContext: QueueRequestContext = {
       ...baseContext,
       ...parsedVaults,
-      companyCredential: companyVaultData.companyCredential ?? undefined,
+      companyCredential: companyVaultData.companyCredential,
       allRepositoryCredentials,
     };
 

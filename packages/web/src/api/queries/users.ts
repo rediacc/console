@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { hashPassword } from '@/utils/auth';
+import { parseGetCompanyUsers, parseGetUserRequests } from '@rediacc/shared/api';
 import type {
   DeleteUserRequestParams,
   GetCompanyUsers_ResultSet1,
@@ -20,7 +21,10 @@ import type {
 export const useUsers = () => {
   return useQuery<GetCompanyUsers_ResultSet1[]>({
     queryKey: ['users'],
-    queryFn: () => api.users.list(),
+    queryFn: async () => {
+      const response = await typedApi.GetCompanyUsers({});
+      return parseGetCompanyUsers(response as never);
+    },
   });
 };
 
@@ -30,7 +34,12 @@ export const useCreateUser = () => {
   return useMutationWithFeedback<unknown, Error, { email: string; password: string }>({
     mutationFn: async ({ email, password }) => {
       const passwordHash = await hashPassword(password);
-      return api.users.create(email, passwordHash, { language: i18n.language || 'en' });
+      return typedApi.CreateNewUser({
+        newUserEmail: email,
+        newUserHash: passwordHash,
+        activationCode: '',
+        languagePreference: i18n.language || 'en',
+      });
     },
     successMessage: (_, vars) =>
       i18n.t('organization:users.success.created', { email: vars.email }),
@@ -46,7 +55,7 @@ export const useCreateUser = () => {
 export const useDeactivateUser = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateUserToDeactivatedParams>({
-    mutationFn: (params) => api.users.deactivate(params),
+    mutationFn: (params) => typedApi.UpdateUserToDeactivated(params),
     successMessage: (_, params) =>
       i18n.t('organization:users.success.deactivated', { email: params.userEmail }),
     errorMessage: i18n.t('organization:users.errors.deactivateFailed'),
@@ -60,7 +69,7 @@ export const useDeactivateUser = () => {
 export const useReactivateUser = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateUserToActivatedParams>({
-    mutationFn: (params) => api.users.activate(params),
+    mutationFn: (params) => typedApi.UpdateUserToActivated(params),
     successMessage: (_, params) =>
       i18n.t('organization:users.success.activated', { email: params.userEmail }),
     errorMessage: i18n.t('organization:users.errors.activateFailed'),
@@ -73,7 +82,7 @@ export const useReactivateUser = () => {
 // Update user language preference
 export const useUpdateUserLanguage = () => {
   return useMutationWithFeedback<unknown, Error, UpdateUserLanguageParams>({
-    mutationFn: (params) => api.users.updateLanguage(params),
+    mutationFn: (params) => typedApi.UpdateUserLanguage(params),
     successMessage: () => i18n.t('organization:users.success.languageSaved'),
     errorMessage: i18n.t('organization:users.errors.languageUpdateFailed'),
   });
@@ -83,7 +92,7 @@ export const useUpdateUserLanguage = () => {
 export const useAssignUserPermissions = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateUserAssignedPermissionsParams>({
-    mutationFn: (params) => api.users.assignPermissions(params),
+    mutationFn: (params) => typedApi.UpdateUserAssignedPermissions(params),
     successMessage: (_, vars) =>
       i18n.t('organization:users.success.permissionsAssigned', {
         email: vars.userEmail,
@@ -102,7 +111,7 @@ export const useUpdateUserPassword = () => {
     mutationFn: async ({ newPassword }) => {
       const passwordHash = await hashPassword(newPassword);
       const params: UpdateUserPasswordParams = { userNewPass: passwordHash };
-      return api.users.updatePassword(params);
+      return typedApi.UpdateUserPassword(params);
     },
     successMessage: () => i18n.t('organization:users.success.passwordUpdated'),
     errorMessage: i18n.t('organization:users.errors.passwordUpdateFailed'),
@@ -113,7 +122,10 @@ export const useUpdateUserPassword = () => {
 export const useUserRequests = () => {
   return useQuery<UserRequest[]>({
     queryKey: ['user-requests'],
-    queryFn: () => api.auth.getSessions(),
+    queryFn: async () => {
+      const response = await typedApi.GetUserRequests({});
+      return parseGetUserRequests(response as never);
+    },
     staleTime: 10 * 1000,
     refetchInterval: 30 * 1000,
   });
@@ -123,7 +135,7 @@ export const useUserRequests = () => {
 export const useDeleteUserRequest = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteUserRequestParams>({
-    mutationFn: (params) => api.auth.terminateSession(params),
+    mutationFn: (params) => typedApi.DeleteUserRequest(params),
     successMessage: () => i18n.t('organization:users.success.sessionTerminated'),
     errorMessage: i18n.t('organization:users.errors.sessionTerminateFailed'),
     onSuccess: () => {
@@ -136,7 +148,23 @@ export const useDeleteUserRequest = () => {
 export const useUserVault = () => {
   return useQuery<UserVault>({
     queryKey: ['user-vault'],
-    queryFn: () => api.users.getVault(),
+    queryFn: async () => {
+      const response = await typedApi.GetUserVault({});
+      // GetUserVault returns the vault data in resultSet[1]
+      const resultSet = response.results[1];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- results may be empty at runtime
+      const vaultData = resultSet?.[0];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- vaultData may be undefined at runtime
+      if (!vaultData) {
+        return { vault: '{}', vaultVersion: 0, userCredential: null };
+      }
+      return {
+        vault: vaultData.vaultContent ?? '{}',
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- vaultVersion may be null at runtime
+        vaultVersion: vaultData.vaultVersion ?? 0,
+        userCredential: vaultData.userEmail ?? null,
+      };
+    },
   });
 };
 
@@ -144,7 +172,7 @@ export const useUserVault = () => {
 export const useUpdateUserVault = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateUserVaultParams>({
-    mutationFn: (params) => api.users.updateVault(params),
+    mutationFn: (params) => typedApi.UpdateUserVault(params),
     successMessage: () => i18n.t('organization:users.success.userVaultUpdated'),
     errorMessage: i18n.t('organization:users.errors.userVaultUpdateFailed'),
     onSuccess: () => {

@@ -1,5 +1,11 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
+import {
+  parseGetCompanyVault,
+  parseGetCompanyVaults,
+  parseGetCompanyDashboardJson,
+  extractFirstByIndex,
+} from '@rediacc/shared/api';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -16,12 +22,14 @@ export function registerCompanyCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const info = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching company info...',
-          () => api.company.getInfo(),
+          () => typedApi.GetUserCompany({}),
           'Company info fetched'
         );
 
+        // Extract company info from first row
+        const info = extractFirstByIndex(apiResponse as never, 0);
         const format = program.opts().output as OutputFormat;
 
         if (info) {
@@ -42,12 +50,13 @@ export function registerCompanyCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const dashboard = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching dashboard...',
-          () => api.company.getDashboard(),
+          () => typedApi.GetCompanyDashboardJson({}),
           'Dashboard fetched'
         );
 
+        const dashboard = parseGetCompanyDashboardJson(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(dashboard, format);
@@ -67,15 +76,16 @@ export function registerCompanyCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const vaultData = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching company vault...',
-          () => api.company.getVault(),
+          () => typedApi.GetCompanyVault({}),
           'Vault fetched'
         );
 
+        const vaultData = parseGetCompanyVault(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
-        if (vaultData.vault) {
+        if (vaultData?.vaultContent) {
           outputService.print(vaultData, format);
         } else {
           outputService.info('No company vault found');
@@ -93,15 +103,16 @@ export function registerCompanyCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const vaults = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching vaults...',
-          () => api.company.getAllVaults(),
+          () => typedApi.GetCompanyVaults({}),
           'Vaults fetched'
         );
 
+        const vaults = parseGetCompanyVaults(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
-        outputService.print(vaults.vaults, format);
+        outputService.print(vaults, format);
       } catch (error) {
         handleError(error);
       }
@@ -117,12 +128,12 @@ export function registerCompanyCommands(program: Command): void {
       'Current vault version (required for optimistic concurrency)',
       parseInt
     )
-    .action(async (options) => {
+    .action(async (options: { vault?: string; vaultVersion?: number }) => {
       try {
         await authService.requireAuth();
 
         // Get vault data from --vault flag or stdin
-        let vaultData: string = options.vault;
+        let vaultData: string = options.vault ?? '';
         if (!vaultData && !process.stdin.isTTY) {
           // Read from stdin if not a TTY (piped input)
           const chunks: Buffer[] = [];
@@ -138,7 +149,7 @@ export function registerCompanyCommands(program: Command): void {
           );
         }
 
-        if (options.vaultVersion === undefined || options.vaultVersion === null) {
+        if (options.vaultVersion == null) {
           throw new ValidationError('Vault version required. Use --vault-version <n>.');
         }
 
@@ -152,9 +163,9 @@ export function registerCompanyCommands(program: Command): void {
         await withSpinner(
           'Updating company vault...',
           () =>
-            api.company.updateVault({
+            typedApi.UpdateCompanyVault({
               vaultContent: vaultData,
-              vaultVersion: options.vaultVersion,
+              vaultVersion: options.vaultVersion as number,
             }),
           'Company vault updated'
         );
@@ -168,13 +179,13 @@ export function registerCompanyCommands(program: Command): void {
     .command('export')
     .description('Export company data')
     .option('--path <path>', 'Output file path')
-    .action(async (options) => {
+    .action(async (options: { path?: string }) => {
       try {
         await authService.requireAuth();
 
         const exportData = await withSpinner(
           'Exporting company data...',
-          () => api.company.exportData(),
+          () => typedApi.ExportCompanyData({}),
           'Export complete'
         );
 
@@ -196,7 +207,7 @@ export function registerCompanyCommands(program: Command): void {
     .command('import <path>')
     .description('Import company data')
     .option('--mode <mode>', 'Import mode (merge|replace)', 'merge')
-    .action(async (path, options) => {
+    .action(async (path: string, options: { mode: string }) => {
       try {
         await authService.requireAuth();
 
@@ -210,7 +221,7 @@ export function registerCompanyCommands(program: Command): void {
 
         await withSpinner(
           'Importing company data...',
-          () => api.company.importData({ companyDataJson: content, importMode: options.mode }),
+          () => typedApi.ImportCompanyData({ companyDataJson: content, importMode: options.mode }),
           'Import complete'
         );
       } catch (error) {
@@ -222,7 +233,7 @@ export function registerCompanyCommands(program: Command): void {
   company
     .command('maintenance <action>')
     .description('Enable or disable maintenance mode (blocks non-admin logins)')
-    .action(async (action) => {
+    .action(async (action: string) => {
       try {
         await authService.requireAuth();
 
@@ -235,7 +246,7 @@ export function registerCompanyCommands(program: Command): void {
 
         await withSpinner(
           `${enable ? 'Enabling' : 'Disabling'} maintenance mode...`,
-          () => api.company.updateBlockUserRequests({ blockUserRequests: enable }),
+          () => typedApi.UpdateCompanyBlockUserRequests({ blockUserRequests: enable }),
           `Maintenance mode ${enable ? 'enabled' : 'disabled'}`
         );
       } catch (error) {

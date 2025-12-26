@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import { minifyJSON } from '@/platform/utils/json';
+import { parseGetRegionBridges } from '@rediacc/shared/api';
 import type {
   CreateBridgeParams,
   DeleteBridgeParams,
@@ -18,7 +19,8 @@ export const useBridges = (regionName?: string) => {
     queryKey: ['bridges', regionName],
     queryFn: async () => {
       if (!regionName) return [];
-      return api.bridges.list({ regionName });
+      const response = await typedApi.GetRegionBridges({ regionName });
+      return parseGetRegionBridges(response as never);
     },
     enabled: !!regionName,
     staleTime: 30 * 1000, // 30 seconds
@@ -30,7 +32,7 @@ export const useCreateBridge = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateBridgeParams>>({
     mutationFn: (params) =>
-      api.bridges.create({
+      typedApi.CreateBridge({
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       }),
@@ -48,7 +50,7 @@ export const useCreateBridge = () => {
 export const useUpdateBridgeName = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateBridgeNameParams>({
-    mutationFn: (params) => api.bridges.rename(params),
+    mutationFn: (params) => typedApi.UpdateBridgeName(params),
     successMessage: (_, vars) => `Bridge renamed to "${vars.newBridgeName}"`,
     errorMessage: 'Failed to update bridge name',
     onSuccess: () => {
@@ -64,7 +66,7 @@ export const useUpdateBridgeVault = () => {
   return useMutationWithFeedback<unknown, Error, UpdateBridgeVaultParams & Record<string, unknown>>(
     {
       mutationFn: (params) =>
-        api.bridges.updateVault({
+        typedApi.UpdateBridgeVault({
           ...params,
           vaultContent: minifyJSON(params.vaultContent),
         }),
@@ -81,7 +83,7 @@ export const useUpdateBridgeVault = () => {
 export const useDeleteBridge = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteBridgeParams & Record<string, unknown>>({
-    mutationFn: (params) => api.bridges.delete(params),
+    mutationFn: (params) => typedApi.DeleteBridge(params),
     successMessage: (_, vars) => `Bridge "${vars.bridgeName}" deleted successfully`,
     errorMessage: 'Failed to delete bridge',
     onSuccess: () => {
@@ -95,7 +97,7 @@ export const useDeleteBridge = () => {
 export const useResetBridgeAuthorization = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, ResetBridgeAuthorizationParams>({
-    mutationFn: (params) => api.bridges.resetAuthorization(params),
+    mutationFn: (params) => typedApi.ResetBridgeAuthorization(params),
     successMessage: (_, vars) => `Bridge authorization reset for "${vars.bridgeName}"`,
     errorMessage: 'Failed to reset bridge authorization',
     onSuccess: () => {

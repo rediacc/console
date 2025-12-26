@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { QUERY_KEY_STRINGS } from '@/api/queryKeys';
 import { createResourceQuery } from '@/hooks/api/queryFactory';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import { minifyJSON } from '@/platform/utils/json';
 import type { Machine } from '@/types';
+import { parseGetTeamMachines } from '@rediacc/shared/api';
 import type {
   CreateMachineParams,
   DeleteMachineParams,
@@ -17,7 +18,15 @@ import type {
 // Get machines for a team, multiple teams, or all machines
 export const useMachines = createResourceQuery<Machine>({
   queryKey: QUERY_KEY_STRINGS.machines,
-  fetcher: (teamFilter) => api.machines.list(teamFilter),
+  fetcher: async (teamFilter) => {
+    const teamName = teamFilter
+      ? Array.isArray(teamFilter)
+        ? teamFilter.join(',')
+        : teamFilter
+      : undefined;
+    const response = await typedApi.GetTeamMachines(teamName ? { teamName } : {});
+    return parseGetTeamMachines(response as never);
+  },
   operationName: 'machines.list',
 });
 
@@ -26,7 +35,7 @@ export const useCreateMachine = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateMachineParams>>({
     mutationFn: ({ teamName, bridgeName, machineName, vaultContent }) =>
-      api.machines.create({
+      typedApi.CreateMachine({
         teamName,
         bridgeName,
         machineName,
@@ -47,7 +56,7 @@ export const useCreateMachine = () => {
 export const useUpdateMachineName = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateMachineNameParams>({
-    mutationFn: (params) => api.machines.rename(params),
+    mutationFn: (params) => typedApi.UpdateMachineName(params),
     successMessage: (_, vars) => `Machine renamed to "${vars.newMachineName}"`,
     errorMessage: 'Failed to update machine name',
     onSuccess: () => {
@@ -61,7 +70,7 @@ export const useUpdateMachineName = () => {
 export const useUpdateMachineBridge = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateMachineAssignedBridgeParams>({
-    mutationFn: (params) => api.machines.assignBridge(params),
+    mutationFn: (params) => typedApi.UpdateMachineAssignedBridge(params),
     successMessage: (_, vars) =>
       `Machine "${vars.machineName}" reassigned to bridge "${vars.newBridgeName}"`,
     errorMessage: 'Failed to update machine bridge',
@@ -81,7 +90,7 @@ export const useUpdateMachineVault = () => {
     UpdateMachineVaultParams & Record<string, unknown>
   >({
     mutationFn: (params) =>
-      api.machines.updateVault({
+      typedApi.UpdateMachineVault({
         ...params,
         vaultContent: minifyJSON(params.vaultContent),
       }),
@@ -97,7 +106,7 @@ export const useUpdateMachineVault = () => {
 export const useDeleteMachine = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteMachineParams & Record<string, unknown>>({
-    mutationFn: (params) => api.machines.delete(params),
+    mutationFn: (params) => typedApi.DeleteMachine(params),
     successMessage: (_, vars) => `Machine "${vars.machineName}" deleted successfully`,
     errorMessage: 'Failed to delete machine',
     onSuccess: () => {

@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { QUERY_KEYS } from '@/api/queryKeys';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import { minifyJSON } from '@/platform/utils/json';
 import { invalidateAllQueueCaches } from '@/utils/cacheUtils';
+import { extractByIndex, extractFirstByIndex } from '@rediacc/shared/api/typedApi';
 import type {
   CancelQueueItemParams,
   CreateQueueItemParams,
@@ -12,7 +13,13 @@ import type {
   QueueFilters,
   QueueListResult,
   QueueTrace,
+  QueueTraceLog,
   RetryFailedQueueItemParams,
+  GetTeamQueueItems_ResultSet1,
+  GetTeamQueueItems_ResultSet2,
+  GetQueueItemTrace_ResultSet1,
+  GetQueueItemTrace_ResultSet2,
+  QueueStatus,
 } from '@rediacc/shared/types';
 
 export type { QueueFilters } from '@rediacc/shared/types';
@@ -53,6 +60,7 @@ export interface QueueCreateResult {
   taskId: string | null;
 }
 
+
 // Queue functions will be loaded via the functionsService instead
 
 // Get queue items with advanced filtering
@@ -61,7 +69,11 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
     queryKey: QUERY_KEYS.queue.items(filters),
     queryFn: async () => {
       const { teamName, ...rest } = filters;
-      return api.queue.list(teamName, rest);
+      const response = await typedApi.GetTeamQueueItems({ teamName, ...rest });
+      // Extract queue items from result set 1 and statistics from result set 2
+      const items = extractByIndex<GetTeamQueueItems_ResultSet1>(response, 1);
+      const statistics = extractFirstByIndex<GetTeamQueueItems_ResultSet2>(response, 2);
+      return { items, statistics };
     },
     // refetchInterval: 5000, // Disabled auto-refresh
   });
@@ -93,7 +105,9 @@ export const useCreateQueueItem = () => {
         vaultContent: minifyJSON(data.queueVault),
         priority,
       };
-      return api.queue.create(params);
+      const response = await typedApi.CreateQueueItem(params);
+      const result = extractFirstByIndex<QueueCreateResult>(response, 0);
+      return result ?? { taskId: null };
     },
     successMessage: i18n.t('queue:success.created'),
     errorMessage: i18n.t('queue:errors.createFailed'),
@@ -109,7 +123,7 @@ export const useCancelQueueItem = () => {
   return useMutationWithFeedback<unknown, Error, string>({
     mutationFn: async (taskId) => {
       const params: CancelQueueItemParams = { taskId };
-      return api.queue.cancel(params);
+      return typedApi.CancelQueueItem(params);
     },
     successMessage: (_, taskId) => i18n.t('queue:success.cancellationInitiated', { taskId }),
     errorMessage: i18n.t('queue:errors.cancelFailed'),
@@ -125,7 +139,7 @@ export const useRetryFailedQueueItem = () => {
   return useMutationWithFeedback<unknown, Error, string>({
     mutationFn: async (taskId) => {
       const params: RetryFailedQueueItemParams = { taskId };
-      return api.queue.retry(params);
+      return typedApi.RetryFailedQueueItem(params);
     },
     successMessage: (_, taskId) => i18n.t('queue:success.queuedForRetry', { taskId }),
     errorMessage: i18n.t('queue:errors.retryFailed'),
@@ -143,8 +157,43 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
     queryFn: async () => {
       if (!taskId) return null;
       const params: GetQueueItemTraceParams = { taskId };
-      const trace = await api.queue.getTrace(params);
-      return trace;
+      const response = await typedApi.GetQueueItemTrace(params);
+      // GetQueueItemTrace returns multiple result sets
+      // Result set 1: queueDetails
+      // Result set 2: responses (trace logs)
+      // Result set 3: audit logs (not used in current structure)
+      const queueDetails = extractFirstByIndex<GetQueueItemTrace_ResultSet1>(response, 1);
+      const traceLogs = extractByIndex<GetQueueItemTrace_ResultSet2>(response, 2);
+
+      if (!queueDetails) return null;
+
+      // Build QueueTrace structure - extracting fields from queueDetails for summary
+      return {
+        summary: {
+          taskId: queueDetails.taskId,
+          status: queueDetails.status as QueueStatus | undefined,
+          healthStatus: undefined, // Not in result set
+          progress: undefined, // Not in result set
+          consoleOutput: undefined, // Not in result set
+          errorMessage: undefined, // Not in result set
+          lastFailureReason: queueDetails.lastFailureReason ?? undefined,
+          priority: queueDetails.priority ?? undefined,
+          retryCount: queueDetails.retryCount,
+          ageInMinutes: undefined, // Not in result set
+          hasResponse: queueDetails.lastResponseAt !== null,
+          teamName: queueDetails.teamName,
+          machineName: queueDetails.machineName,
+          bridgeName: queueDetails.bridgeName,
+          createdTime: queueDetails.createdTime,
+        },
+        queueDetails: queueDetails as unknown as GetTeamQueueItems_ResultSet1,
+        traceLogs: traceLogs as unknown as QueueTraceLog[],
+        vaultContent: null,
+        responseVaultContent: null,
+        queuePosition: [],
+        machineStats: null,
+        planInfo: null,
+      };
     },
     enabled: enabled && !!taskId,
     refetchInterval: (query) => {
