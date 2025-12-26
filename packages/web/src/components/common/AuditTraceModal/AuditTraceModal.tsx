@@ -91,8 +91,8 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       ...data.records.map((record) => {
         const row = [
           record.actionType,
-          `"${record.details.replace(/"/g, '""')}"`, // Escape quotes in details
-          record.performedBy || 'System',
+          `"${(record.details ?? '').replace(/"/g, '""')}"`, // Escape quotes in details
+          record.performedBy ?? 'System',
           formatTimestampAsIs(record.timestamp, 'datetime'),
           record.timeAgo,
         ];

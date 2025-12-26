@@ -64,10 +64,10 @@ export const useTraceState = ({
       traceData.responseVaultContent.vaultContent
     ) {
       try {
-        const vaultContent =
-          typeof traceData.responseVaultContent.vaultContent === 'string'
-            ? JSON.parse(traceData.responseVaultContent.vaultContent)
-            : (traceData.responseVaultContent.vaultContent ?? {});
+        // vaultContent is always a string at this point (checked above)
+        const vaultContent = JSON.parse(
+          traceData.responseVaultContent.vaultContent
+        ) as Record<string, unknown>;
 
         if (vaultContent.status === 'completed') {
           // For completed status, replace accumulated output with final result

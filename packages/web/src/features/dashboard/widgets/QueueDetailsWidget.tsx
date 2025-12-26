@@ -39,9 +39,9 @@ const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
     width: 200,
     render: (_: unknown, record: QueueMachineIssue) => (
       <Flex align="center" gap={8} wrap className="inline-flex">
-        {(record.staleItems || 0) > 0 && <Tag>{record.staleItems} stale</Tag>}
-        <Tag>{record.pendingItems || 0} pending</Tag>
-        <Tag>{record.activeItems || 0} active</Tag>
+        {(record.staleItems ?? 0) > 0 && <Tag>{record.staleItems} stale</Tag>}
+        <Tag>{record.pendingItems ?? 0} pending</Tag>
+        <Tag>{record.activeItems ?? 0} active</Tag>
       </Flex>
     ),
   },

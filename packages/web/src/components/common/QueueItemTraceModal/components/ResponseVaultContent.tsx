@@ -2,17 +2,13 @@ import React from 'react';
 import { Empty, Space, Tabs } from 'antd';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import { FileTextOutlined } from '@/utils/optimizedIcons';
+import type { QueueVaultSnapshot } from '@rediacc/shared/types';
 import { SSHTestResultsDisplay } from './SSHTestResultsDisplay';
 import { parseSSHTestResults } from '../utils/sshTestResultParser';
 
-interface VaultContent {
-  hasContent: boolean;
-  vaultContent?: string | Record<string, unknown>;
-}
-
 interface ResponseVaultContentProps {
-  vaultContent: VaultContent | null | undefined;
-  responseVaultContent: VaultContent | null | undefined;
+  vaultContent: QueueVaultSnapshot | null | undefined;
+  responseVaultContent: QueueVaultSnapshot | null | undefined;
 }
 
 export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({

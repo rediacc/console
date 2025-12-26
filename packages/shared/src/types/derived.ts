@@ -377,3 +377,85 @@ export interface CompanyDropdownData {
   permissions: DropdownOption[];
   subscriptionPlans: DropdownOption[];
 }
+
+// =============================================================================
+// COMPANY DOMAIN TYPES
+// =============================================================================
+
+/** Company info from dashboard */
+export interface CompanyInfo {
+  companyName?: string;
+  companyGuid?: string;
+  [key: string]: unknown;
+}
+
+/** Active subscription details */
+export interface ActiveSubscription {
+  planCode?: string;
+  totalActivePurchases?: number;
+  daysRemaining?: number;
+  [key: string]: unknown;
+}
+
+/** Plan limits from dashboard */
+export interface PlanLimits {
+  planCode?: string;
+  [key: string]: unknown;
+}
+
+/** Account health status */
+export interface AccountHealth {
+  subscriptionStatus?: string;
+  resourcesAtLimit?: number;
+  resourcesNearLimit?: number;
+  upgradeRecommendation?: string;
+  [key: string]: unknown;
+}
+
+/** Queue statistics from dashboard */
+export interface DashboardQueueStats {
+  pendingCount?: number;
+  activeCount?: number;
+  completedCount?: number;
+  failedCount?: number;
+  staleCount?: number;
+  [key: string]: unknown;
+}
+
+/** Feature access flags */
+export interface FeatureAccess {
+  [key: string]: boolean | undefined;
+}
+
+/** Resource usage data */
+export interface ResourceUsage {
+  [key: string]: unknown;
+}
+
+/** Full company dashboard data */
+export interface CompanyDashboardData {
+  companyInfo?: CompanyInfo;
+  activeSubscription?: ActiveSubscription;
+  allActiveSubscriptions?: ActiveSubscription[];
+  planLimits?: PlanLimits;
+  accountHealth?: AccountHealth;
+  queueStats?: DashboardQueueStats;
+  featureAccess?: FeatureAccess;
+  resources?: ResourceUsage;
+  [key: string]: unknown;
+}
+
+/** Result from UpdateCompanyVaults operation */
+export interface CompanyVaultUpdateResult {
+  totalUpdated: number;
+  failedCount: number;
+  [key: string]: unknown;
+}
+
+/** Result from ImportCompanyData operation */
+export interface CompanyImportResult {
+  importedCount: number;
+  skippedCount: number;
+  errorCount: number;
+  [key: string]: unknown;
+}

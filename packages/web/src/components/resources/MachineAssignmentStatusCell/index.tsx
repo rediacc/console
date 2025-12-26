@@ -61,13 +61,13 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
 
   const legacyData = data as unknown as Record<string, unknown>;
   const assignmentType = normalizeAssignmentType(
-    data.assignmentType ||
-      (legacyData.assignment_type as string) ||
+    data.assignmentType ??
+      (legacyData.assignment_type as string) ??
       (legacyData.AssignmentType as string)
   );
   const assignmentDetails = getAssignmentDetails(
-    data.assignmentDetails ||
-      (legacyData.assignment_details as string) ||
+    data.assignmentDetails ??
+      (legacyData.assignment_details as string) ??
       (legacyData.AssignmentDetails as string)
   );
 
