@@ -54,7 +54,14 @@ describe('context commands', () => {
 
     it('should create and switch with --switch flag', async () => {
       const result = await runCli(
-        ['context', 'create', testContext2, '--api-url', 'https://test2.example.com/api', '--switch'],
+        [
+          'context',
+          'create',
+          testContext2,
+          '--api-url',
+          'https://test2.example.com/api',
+          '--switch',
+        ],
         { skipJsonParse: true }
       );
 
@@ -236,9 +243,12 @@ describe('context commands', () => {
   describe('context rename', () => {
     it('should rename a context', async () => {
       // Create a context to rename
-      await runCli(['context', 'create', renamedContext, '--api-url', 'https://rename.example.com/api'], {
-        skipJsonParse: true,
-      });
+      await runCli(
+        ['context', 'create', renamedContext, '--api-url', 'https://rename.example.com/api'],
+        {
+          skipJsonParse: true,
+        }
+      );
 
       const newName = `${renamedContext}-new`;
       const result = await runCli(['context', 'rename', renamedContext, newName], {

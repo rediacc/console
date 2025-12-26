@@ -1,10 +1,10 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createApiServices, normalizeResponse } from '@rediacc/shared/api';
+import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
 import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
-import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { contextService } from './context.js';
+import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { EXIT_CODES } from '../types/index.js';
 import type { ErrorCode } from '../types/errors.js';
 

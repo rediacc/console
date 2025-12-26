@@ -114,8 +114,8 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
       () =>
         queueService.buildQueueVault({
           teamName: opts.team as string,
-          machineName: opts.machine as string | undefined,
-          bridgeName: opts.bridge as string | undefined,
+          machineName: opts.machine,
+          bridgeName: opts.bridge,
           functionName: options.function,
           params,
           priority: parseInt(options.priority, 10),

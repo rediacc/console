@@ -2,8 +2,7 @@ import { promises as fs } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import lockfile from 'proper-lockfile';
-import type { CliConfig } from '../types/index.js';
-import { createEmptyConfig } from '../types/index.js';
+import { createEmptyConfig, type CliConfig } from '../types/index.js';
 
 const CONFIG_DIR = join(homedir(), '.rediacc');
 const CONFIG_FILE = 'config.json';

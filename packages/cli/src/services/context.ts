@@ -1,5 +1,5 @@
 import { configStorage } from '../adapters/storage.js';
-import type { CliConfig, NamedContext } from '../types/index.js';
+import type { NamedContext } from '../types/index.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 
@@ -190,11 +190,14 @@ class ContextService {
 
   /**
    * Set the token for the current context.
+   * If no context exists, silently skips (token will be saved via saveLoginCredentials).
    */
   async setToken(token: string): Promise<void> {
     const name = await this.getEffectiveContextName();
     if (!name) {
-      throw new Error('No active context. Create or select a context first.');
+      // No context yet - this can happen during login before saveLoginCredentials.
+      // The token will be saved when saveLoginCredentials creates the context.
+      return;
     }
     await this.update(name, { token });
   }
@@ -283,10 +286,21 @@ class ContextService {
     if (!name) {
       throw new Error('No active context. Create or select a context first.');
     }
-    await this.update(name, { team: undefined, region: undefined, bridge: undefined, machine: undefined });
+    await this.update(name, {
+      team: undefined,
+      region: undefined,
+      bridge: undefined,
+      machine: undefined,
+    });
   }
 
-  async applyDefaults(options: { team?: string; region?: string; bridge?: string; machine?: string; [key: string]: unknown }): Promise<typeof options> {
+  async applyDefaults(options: {
+    team?: string;
+    region?: string;
+    bridge?: string;
+    machine?: string;
+    [key: string]: unknown;
+  }): Promise<typeof options> {
     const result = { ...options };
     result.team ??= await this.getTeam();
     result.region ??= await this.getRegion();

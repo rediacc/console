@@ -36,7 +36,7 @@ export interface CliConfig {
   /** Name of the currently active context */
   currentContext: string;
   /** Map of context names to their configurations */
-  contexts: Record<string, NamedContext>;
+  contexts: { [name: string]: NamedContext | undefined };
 }
 
 /**

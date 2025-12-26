@@ -1,13 +1,15 @@
 import { Command } from 'commander';
-import { contextService } from '../services/context.js';
 import { apiClient } from '../services/api.js';
+import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askText } from '../utils/prompt.js';
-import type { OutputFormat, NamedContext } from '../types/index.js';
+import type { NamedContext, OutputFormat } from '../types/index.js';
 
 export function registerContextCommands(program: Command): void {
-  const context = program.command('context').description('Manage CLI contexts (multiple endpoints)');
+  const context = program
+    .command('context')
+    .description('Manage CLI contexts (multiple endpoints)');
 
   // context list - List all contexts
   context
@@ -66,15 +68,10 @@ export function registerContextCommands(program: Command): void {
     .option('-s, --switch', 'Switch to this context after creation')
     .action(async (name, options) => {
       try {
-        let apiUrl = options.apiUrl;
-
-        // If no API URL provided, prompt for it
-        if (!apiUrl) {
-          apiUrl = await askText('API URL:', { default: 'https://www.rediacc.com/api' });
-        }
-
-        // Normalize URL
-        apiUrl = apiClient.normalizeApiUrl(apiUrl);
+        // If no API URL provided, prompt for it, then normalize
+        const rawUrl =
+          options.apiUrl ?? (await askText('API URL:', { default: 'https://www.rediacc.com/api' }));
+        const apiUrl = apiClient.normalizeApiUrl(rawUrl);
 
         const newContext: NamedContext = {
           name,
@@ -130,6 +127,7 @@ export function registerContextCommands(program: Command): void {
       try {
         const name = await contextService.getCurrentName();
         if (name) {
+          // eslint-disable-next-line no-console -- Raw output for scripting
           console.log(name);
         } else {
           outputService.info('No context selected');
