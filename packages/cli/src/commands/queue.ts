@@ -293,13 +293,13 @@ export function registerQueueCommands(program: Command): void {
         // Filter by priority-min if specified
         if (options.priorityMin !== undefined) {
           const min = parseInt(options.priorityMin, 10);
-          items = items.filter((item) => item.priority !== undefined && item.priority >= min);
+          items = items.filter((item) => item.priority != null && item.priority >= min);
         }
 
         // Filter by priority-max if specified
         if (options.priorityMax !== undefined) {
           const max = parseInt(options.priorityMax, 10);
-          items = items.filter((item) => item.priority !== undefined && item.priority <= max);
+          items = items.filter((item) => item.priority != null && item.priority <= max);
         }
 
         const format = program.opts().output as OutputFormat;
