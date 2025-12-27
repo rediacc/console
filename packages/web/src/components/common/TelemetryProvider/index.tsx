@@ -88,7 +88,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
     const initializeTelemetry = () => {
       // Skip telemetry initialization in Electron desktop app
       if (isElectron()) {
-        console.info('[Telemetry] Skipping initialization in Electron environment');
+        // Telemetry is disabled in desktop environment for privacy
         setIsInitialized(false);
         return;
       }

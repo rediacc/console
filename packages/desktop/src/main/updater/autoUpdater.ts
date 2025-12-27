@@ -1,5 +1,5 @@
-import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
 import log from 'electron-log';
+import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
 import { sendToAllWindows } from '../ipc/updater';
 
 // Configure logging
@@ -59,7 +59,7 @@ export function setupAutoUpdater(): void {
 
   // Check for updates on startup (after 10 seconds delay)
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch((err) => {
+    autoUpdater.checkForUpdates().catch((err: unknown) => {
       log.error('Failed to check for updates on startup:', err);
     });
   }, 10000);
@@ -67,7 +67,7 @@ export function setupAutoUpdater(): void {
   // Check for updates every 4 hours
   setInterval(
     () => {
-      autoUpdater.checkForUpdates().catch((err) => {
+      autoUpdater.checkForUpdates().catch((err: unknown) => {
         log.error('Failed to check for updates (scheduled):', err);
       });
     },

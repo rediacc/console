@@ -1,6 +1,6 @@
-import { ipcMain, safeStorage, app } from 'electron';
-import { join } from 'path';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { ipcMain, safeStorage, app } from 'electron';
 
 const STORAGE_DIR = join(app.getPath('userData'), 'secure-storage');
 const STORAGE_FILE = join(STORAGE_DIR, 'data.enc');

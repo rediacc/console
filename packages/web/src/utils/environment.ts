@@ -48,5 +48,6 @@ export function getPlatform(): 'electron' | 'web' {
  * (kept for compatibility with existing timer adapter)
  */
 export function isExtensionContext(): boolean {
-  return typeof chrome !== 'undefined' && chrome.runtime?.id !== undefined;
+  const chromeGlobal = globalThis as unknown as { chrome?: { runtime?: { id?: string } } };
+  return chromeGlobal.chrome?.runtime?.id !== undefined;
 }

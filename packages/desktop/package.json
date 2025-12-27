@@ -19,17 +19,17 @@
     "typecheck": "npm run typecheck:main && npm run typecheck:preload"
   },
   "dependencies": {
-    "electron-updater": "^6.3.9"
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
-    "@electron-toolkit/preload": "^3.0.1",
-    "@electron-toolkit/utils": "^3.0.0",
+    "@electron-toolkit/preload": "^3.0.2",
+    "@electron-toolkit/utils": "^4.0.0",
     "@types/node": "^22.10.2",
     "@vitejs/plugin-react": "^4.3.4",
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8",
-    "electron-log": "^5.2.4",
-    "electron-vite": "^2.3.0",
+    "electron": "39.2.7",
+    "electron-builder": "^26.0.12",
+    "electron-log": "^5.4.3",
+    "electron-vite": "^5.0.0",
     "typescript": "^5.9.3",
     "vite": "^6.0.6",
     "vite-tsconfig-paths": "^5.1.4"

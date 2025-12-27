@@ -1,6 +1,6 @@
-import { BrowserWindow, screen } from 'electron';
-import { join } from 'path';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { BrowserWindow, screen } from 'electron';
 import { app } from 'electron';
 
 interface WindowState {

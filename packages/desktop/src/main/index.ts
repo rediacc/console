@@ -1,6 +1,6 @@
-import { app, BrowserWindow, session } from 'electron';
-import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { join } from 'path';
+import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { app, BrowserWindow, session, shell } from 'electron';
 import { registerIpcHandlers } from './ipc';
 import { setupAutoUpdater } from './updater/autoUpdater';
 import { WindowManager } from './windowManager';
@@ -44,8 +44,7 @@ function createWindow(): void {
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     // Open external links in default browser
-    const { shell } = require('electron');
-    shell.openExternal(details.url);
+    void shell.openExternal(details.url);
     return { action: 'deny' };
   });
 
@@ -68,9 +67,9 @@ function createWindow(): void {
 
   // Load the renderer
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    void mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 
   // Open DevTools in development
@@ -80,7 +79,7 @@ function createWindow(): void {
 }
 
 // App lifecycle
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.rediacc.console');
 
