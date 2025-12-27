@@ -403,52 +403,43 @@ function desktop() {
   case "$COMMAND" in
     dev)
       echo "Starting Electron development server..."
-      # Build shared and web packages first for HMR to work
+      # Build shared packages first for HMR to work
       npm run build:packages
       cd "$ROOT_DIR/packages/desktop"
       npm run dev
       ;;
-    build)
-      echo "Building Electron application..."
+    build|pack|dist|dist:win|dist:mac|dist:linux)
+      # Common build steps for all packaging commands
       npm run build:packages
       npm run build:web
       cd "$ROOT_DIR/packages/desktop"
-      npm run build
-      ;;
-    pack)
-      echo "Packaging Electron application (unpacked)..."
-      npm run build:packages
-      npm run build:web
-      cd "$ROOT_DIR/packages/desktop"
-      npm run pack
-      ;;
-    dist)
-      echo "Building distributable installers for all platforms..."
-      npm run build:packages
-      npm run build:web
-      cd "$ROOT_DIR/packages/desktop"
-      npm run dist
-      ;;
-    dist:win)
-      echo "Building Windows installer..."
-      npm run build:packages
-      npm run build:web
-      cd "$ROOT_DIR/packages/desktop"
-      npm run dist:win
-      ;;
-    dist:mac)
-      echo "Building macOS installer..."
-      npm run build:packages
-      npm run build:web
-      cd "$ROOT_DIR/packages/desktop"
-      npm run dist:mac
-      ;;
-    dist:linux)
-      echo "Building Linux installers..."
-      npm run build:packages
-      npm run build:web
-      cd "$ROOT_DIR/packages/desktop"
-      npm run dist:linux
+
+      case "$COMMAND" in
+        build)
+          echo "Building Electron application..."
+          npm run build
+          ;;
+        pack)
+          echo "Packaging Electron application (unpacked)..."
+          npm run pack
+          ;;
+        dist)
+          echo "Building distributable installers for all platforms..."
+          npm run dist
+          ;;
+        dist:win)
+          echo "Building Windows installer..."
+          npm run dist:win
+          ;;
+        dist:mac)
+          echo "Building macOS installer..."
+          npm run dist:mac
+          ;;
+        dist:linux)
+          echo "Building Linux installers..."
+          npm run dist:linux
+          ;;
+      esac
       ;;
     *)
       echo "Unknown desktop command: $COMMAND"

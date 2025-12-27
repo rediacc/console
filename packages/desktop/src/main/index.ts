@@ -49,18 +49,28 @@ function createWindow(): void {
   });
 
   // Set up Content Security Policy
+  // Development mode allows unsafe-inline/eval for HMR, production is stricter
+  const cspPolicy = is.dev
+    ? // Development: Allow HMR and debugging
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "connect-src 'self' https://*.rediacc.com wss://*.rediacc.com http://localhost:* https://localhost:* ws://localhost:*; " +
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:;"
+    : // Production: Strict CSP without unsafe-inline/eval
+      "default-src 'self'; " +
+      "script-src 'self'; " +
+      "style-src 'self' 'unsafe-inline'; " + // unsafe-inline still needed for Ant Design runtime styles
+      "connect-src 'self' https://*.rediacc.com wss://*.rediacc.com; " +
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:;";
+
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-            "style-src 'self' 'unsafe-inline'; " +
-            "connect-src 'self' https://*.rediacc.com wss://*.rediacc.com http://localhost:* https://localhost:*; " +
-            "img-src 'self' data: https:; " +
-            "font-src 'self' data:;",
-        ],
+        'Content-Security-Policy': [cspPolicy],
       },
     });
   });
@@ -117,9 +127,14 @@ app.on('window-all-closed', () => {
 app.on('web-contents-created', (_, contents) => {
   contents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
-    const allowedOrigins = ['localhost', 'rediacc.com', 'www.rediacc.com', 'sandbox.rediacc.com'];
+    const allowedOrigins = ['localhost', 'rediacc.com'];
 
-    if (!allowedOrigins.some((origin) => parsedUrl.hostname.endsWith(origin))) {
+    // Precise hostname matching: exact match or subdomain (e.g., www.rediacc.com, sandbox.rediacc.com)
+    const isAllowed = allowedOrigins.some(
+      (origin) => parsedUrl.hostname === origin || parsedUrl.hostname.endsWith(`.${origin}`)
+    );
+
+    if (!isAllowed) {
       event.preventDefault();
     }
   });

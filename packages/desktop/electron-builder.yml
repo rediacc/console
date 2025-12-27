@@ -49,7 +49,7 @@ mac:
   category: public.app-category.developer-tools
   entitlementsInherit: resources/entitlements.mac.plist
   hardenedRuntime: true
-  gatekeeperAssess: false
+  # gatekeeperAssess defaults to true, enabling macOS security verification
 
 dmg:
   contents:

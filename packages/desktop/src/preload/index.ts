@@ -1,5 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+// Type definitions matching electron-updater events
+export interface UpdateInfo {
+  version: string;
+  releaseNotes?: string | null;
+  releaseDate?: string;
+}
+
+export interface UpdateProgress {
+  percent: number;
+  bytesPerSecond: number;
+  transferred: number;
+  total: number;
+}
+
 // Type definitions for the exposed API
 export interface ElectronAPI {
   safeStorage: {
@@ -20,10 +34,10 @@ export interface ElectronAPI {
     installUpdate: () => Promise<void>;
     getVersion: () => Promise<string>;
     onChecking: (callback: () => void) => () => void;
-    onAvailable: (callback: (info: unknown) => void) => () => void;
-    onNotAvailable: (callback: (info: unknown) => void) => () => void;
-    onDownloaded: (callback: (info: unknown) => void) => () => void;
-    onProgress: (callback: (progress: unknown) => void) => () => void;
+    onAvailable: (callback: (info: UpdateInfo) => void) => () => void;
+    onNotAvailable: (callback: (info: UpdateInfo) => void) => () => void;
+    onDownloaded: (callback: (info: UpdateInfo) => void) => () => void;
+    onProgress: (callback: (progress: UpdateProgress) => void) => () => void;
     onError: (callback: (error: string) => void) => () => void;
   };
   app: {
@@ -64,23 +78,23 @@ const electronAPI: ElectronAPI = {
       ipcRenderer.on('updater:checking', handler);
       return () => ipcRenderer.removeListener('updater:checking', handler);
     },
-    onAvailable: (callback: (info: unknown) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, info: unknown): void => callback(info);
+    onAvailable: (callback: (info: UpdateInfo) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, info: UpdateInfo): void => callback(info);
       ipcRenderer.on('updater:available', handler);
       return () => ipcRenderer.removeListener('updater:available', handler);
     },
-    onNotAvailable: (callback: (info: unknown) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, info: unknown): void => callback(info);
+    onNotAvailable: (callback: (info: UpdateInfo) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, info: UpdateInfo): void => callback(info);
       ipcRenderer.on('updater:not-available', handler);
       return () => ipcRenderer.removeListener('updater:not-available', handler);
     },
-    onDownloaded: (callback: (info: unknown) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, info: unknown): void => callback(info);
+    onDownloaded: (callback: (info: UpdateInfo) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, info: UpdateInfo): void => callback(info);
       ipcRenderer.on('updater:downloaded', handler);
       return () => ipcRenderer.removeListener('updater:downloaded', handler);
     },
-    onProgress: (callback: (progress: unknown) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, progress: unknown): void =>
+    onProgress: (callback: (progress: UpdateProgress) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: UpdateProgress): void =>
         callback(progress);
       ipcRenderer.on('updater:progress', handler);
       return () => ipcRenderer.removeListener('updater:progress', handler);

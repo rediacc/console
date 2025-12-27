@@ -2,12 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Production CSP: strict without unsafe-eval, unsafe-inline only for styles (Ant Design) -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
-               script-src 'self' 'unsafe-inline' 'unsafe-eval';
+               script-src 'self';
                style-src 'self' 'unsafe-inline';
-               connect-src 'self' https://*.rediacc.com wss://*.rediacc.com http://localhost:* https://localhost:*;
+               connect-src 'self' https://*.rediacc.com wss://*.rediacc.com;
                img-src 'self' data: https:;
                font-src 'self' data:;"
     />
