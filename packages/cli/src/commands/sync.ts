@@ -212,7 +212,9 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     throw new Error('Repository name is required. Use --repository <name>.');
   }
 
-  const teamName = opts.team ?? 'Default';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- opts index signature returns unknown
+  const teamName = (opts.team as string | undefined) ?? 'Default';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- opts index signature returns unknown
   const machineName = opts.machine as string;
   const repositoryName = opts.repository as string;
 
@@ -339,7 +341,9 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
     throw new Error('Repository name is required. Use --repository <name>.');
   }
 
-  const teamName = opts.team ?? 'Default';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- opts index signature returns unknown
+  const teamName = (opts.team as string | undefined) ?? 'Default';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- opts index signature returns unknown
   const machineName = opts.machine as string;
   const repositoryName = opts.repository as string;
 

@@ -226,7 +226,9 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     throw new Error('Machine name is required. Use --machine <name> or set a default context.');
   }
 
-  const teamName = opts.team ?? 'Default';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- opts index signature returns unknown
+  const teamName = (opts.team as string | undefined) ?? 'Default';
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- opts index signature returns unknown
   const machineName = opts.machine as string;
   const repositoryName = opts.repository as string | undefined;
 

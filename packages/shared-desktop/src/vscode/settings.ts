@@ -45,7 +45,7 @@ function wslPathFromWindows(windowsPath: string): string | null {
  */
 function getWSLVSCodeSettingsPaths(variant: 'Code' | 'Code - Insiders'): string[] {
   const paths: string[] = [];
-  const home = process.env.HOME || '';
+  const home = process.env.HOME ?? '';
 
   // Try Windows user profile first for better VS Code integration
   const userProfile = process.env.USERPROFILE;
@@ -67,7 +67,7 @@ function getWSLVSCodeSettingsPaths(variant: 'Code' | 'Code - Insiders'): string[
  * Gets the VS Code settings.json path for the current platform
  */
 export function getVSCodeSettingsPath(): string {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
   const platform = getPlatform();
 
   // Handle WSL environment
@@ -79,11 +79,11 @@ export function getVSCodeSettingsPath(): string {
         return path;
       }
     }
-    return paths[0] || join(home, '.config', 'Code', 'User', 'settings.json');
+    return paths[0] ?? join(home, '.config', 'Code', 'User', 'settings.json');
   }
 
   if (platform === 'windows') {
-    const appData = process.env.APPDATA || join(home, 'AppData', 'Roaming');
+    const appData = process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
     return join(appData, 'Code', 'User', 'settings.json');
   } else if (platform === 'macos') {
     return join(home, 'Library', 'Application Support', 'Code', 'User', 'settings.json');
@@ -96,7 +96,7 @@ export function getVSCodeSettingsPath(): string {
  * Gets the VS Code Insiders settings.json path for the current platform
  */
 export function getVSCodeInsidersSettingsPath(): string {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
   const platform = getPlatform();
 
   // Handle WSL environment
@@ -108,11 +108,11 @@ export function getVSCodeInsidersSettingsPath(): string {
         return path;
       }
     }
-    return paths[0] || join(home, '.config', 'Code - Insiders', 'User', 'settings.json');
+    return paths[0] ?? join(home, '.config', 'Code - Insiders', 'User', 'settings.json');
   }
 
   if (platform === 'windows') {
-    const appData = process.env.APPDATA || join(home, 'AppData', 'Roaming');
+    const appData = process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
     return join(appData, 'Code - Insiders', 'User', 'settings.json');
   } else if (platform === 'macos') {
     return join(home, 'Library', 'Application Support', 'Code - Insiders', 'User', 'settings.json');
@@ -128,7 +128,7 @@ export function getVSCodeInsidersSettingsPath(): string {
  * @returns Parsed settings object or empty object if file doesn't exist
  */
 export function readVSCodeSettings(settingsPath?: string): Record<string, unknown> {
-  const path = settingsPath || getVSCodeSettingsPath();
+  const path = settingsPath ?? getVSCodeSettingsPath();
 
   if (!existsSync(path)) {
     return {};
@@ -155,7 +155,7 @@ export function writeVSCodeSettings(
   settings: Record<string, unknown>,
   settingsPath?: string
 ): void {
-  const path = settingsPath || getVSCodeSettingsPath();
+  const path = settingsPath ?? getVSCodeSettingsPath();
   const dir = dirname(path);
 
   // Ensure directory exists
@@ -172,7 +172,7 @@ export function writeVSCodeSettings(
  */
 function expandPath(path: string): string {
   if (path.startsWith('~')) {
-    const home = process.env.HOME || process.env.USERPROFILE || '';
+    const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
     return join(home, path.slice(1));
   }
   return path;
@@ -192,10 +192,10 @@ const DEFAULT_DATASTORE_PATH = '/mnt/datastore';
  */
 export function getServerInstallPath(datastorePath?: string): string {
   // Check environment variable first (matches Python behavior)
-  const envPath = process.env.REDIACC_DATASTORE_USER || process.env.REDIACC_DATASTORE;
+  const envPath = process.env.REDIACC_DATASTORE_USER ?? process.env.REDIACC_DATASTORE;
 
   // Use provided path, then env, then default
-  const basePath = datastorePath || envPath || DEFAULT_DATASTORE_PATH;
+  const basePath = datastorePath ?? envPath ?? DEFAULT_DATASTORE_PATH;
 
   return `${basePath}/.vscode-server`;
 }
@@ -227,15 +227,16 @@ export function getRequiredRemoteSSHSettings(datastorePath?: string): VSCodeRemo
  * @param serverPath - Server install path for this host
  * @param isInsiders - Whether to configure VS Code Insiders
  */
-export async function setHostServerInstallPath(
+export function setHostServerInstallPath(
   host: string,
   serverPath: string,
   isInsiders = false
-): Promise<void> {
+): void {
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
   const settings = readVSCodeSettings(settingsPath);
 
-  const installPaths = (settings['remote.SSH.serverInstallPath'] as Record<string, string>) || {};
+  const existingInstallPaths = settings['remote.SSH.serverInstallPath'] as Record<string, string> | undefined;
+  const installPaths = existingInstallPaths ?? {};
   installPaths[host] = serverPath;
   settings['remote.SSH.serverInstallPath'] = installPaths;
 
@@ -248,12 +249,12 @@ export async function setHostServerInstallPath(
  * @param isInsiders - Whether to configure VS Code Insiders
  * @returns Object with status and any warnings
  */
-export async function configureVSCodeSettings(isInsiders = false): Promise<{
+export function configureVSCodeSettings(isInsiders = false): {
   success: boolean;
   settingsPath: string;
   changed: boolean;
   error?: string;
-}> {
+} {
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
 
   try {
@@ -310,10 +311,10 @@ export async function configureVSCodeSettings(isInsiders = false): Promise<{
  * @param host - SSH host name to remove
  * @param isInsiders - Whether to configure VS Code Insiders
  */
-export async function removeHostFromRemotePlatform(
+export function removeHostFromRemotePlatform(
   host: string,
   isInsiders = false
-): Promise<void> {
+): void {
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
   const settings = readVSCodeSettings(settingsPath);
 
@@ -332,13 +333,14 @@ export async function removeHostFromRemotePlatform(
  * @param user - Universal user to switch to
  * @param isInsiders - Whether to configure VS Code Insiders
  */
-export async function configureTerminalProfile(user: string, isInsiders = false): Promise<void> {
+export function configureTerminalProfile(user: string, isInsiders = false): void {
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
   const settings = readVSCodeSettings(settingsPath);
 
   // Add terminal profile for the user
   const profileKey = 'terminal.integrated.profiles.linux';
-  const profiles = (settings[profileKey] as Record<string, unknown>) || {};
+  const existingProfiles = settings[profileKey] as Record<string, unknown> | undefined;
+  const profiles = existingProfiles ?? {};
 
   profiles[`Rediacc (${user})`] = {
     path: '/bin/bash',

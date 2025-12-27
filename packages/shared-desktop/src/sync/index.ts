@@ -16,7 +16,6 @@ export {
 
 // Rsync execution
 export {
-  findMSYS2Executable,
   getRsyncCommand,
   getRsyncSSHCommand,
   parseRsyncChanges,

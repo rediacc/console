@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process';
 import { join } from 'path';
 import { findMSYS2Installation } from './detector.js';
-import { getPlatform, isWSL, windowsToUnixPath } from '../utils/platform.js';
+import { getPlatform, isWSL } from '../utils/platform.js';
 import type { TerminalType, TerminalLaunchOptions } from '../types/index.js';
 
 /**
@@ -387,9 +387,6 @@ export function launchTerminal(
   options: TerminalLaunchOptions
 ): LaunchResult {
   const launcher = launchers[terminalType];
-  if (!launcher) {
-    return { success: false, error: `Unknown terminal type: ${terminalType}` };
-  }
   return launcher(options);
 }
 

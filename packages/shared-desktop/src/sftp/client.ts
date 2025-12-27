@@ -7,7 +7,7 @@
 
 import { Client as SSHClient, type ConnectConfig } from 'ssh2';
 import type { FileInfo, SSHCredentials } from '../types/index.js';
-import type { SFTPWrapper, FileEntry, Stats, InputAttributes } from 'ssh2';
+import type { SFTPWrapper, FileEntry, Stats } from 'ssh2';
 
 /**
  * Configuration for SFTP client connection
@@ -395,16 +395,13 @@ export class SFTPClient {
   /**
    * Close the SFTP session and SSH connection
    */
-  async close(): Promise<void> {
+  close(): void {
     if (this.sftp) {
       this.sftp.end();
       this.sftp = null;
     }
 
-    if (this.ssh) {
-      this.ssh.end();
-    }
-
+    this.ssh.end();
     this.connected = false;
   }
 
@@ -421,7 +418,7 @@ export class SFTPClient {
     // S_IFDIR = 0o040000 (directory)
     // S_IFREG = 0o100000 (regular file)
     // S_IFLNK = 0o120000 (symbolic link)
-    const mode = entry.attrs.mode ?? 0;
+    const mode = entry.attrs.mode;
     const fileTypeMask = mode & 0o170000;
     const isDirectory = fileTypeMask === 0o040000;
     const isFile = fileTypeMask === 0o100000;
@@ -433,11 +430,11 @@ export class SFTPClient {
       isDirectory,
       isFile,
       isSymlink,
-      size: entry.attrs.size ?? 0,
-      modifiedAt: new Date((entry.attrs.mtime ?? 0) * 1000),
+      size: entry.attrs.size,
+      modifiedAt: new Date(entry.attrs.mtime * 1000),
       permissions: this.formatPermissions(mode),
-      owner: entry.attrs.uid?.toString(),
-      group: entry.attrs.gid?.toString(),
+      owner: entry.attrs.uid.toString(),
+      group: entry.attrs.gid.toString(),
     };
   }
 
@@ -456,8 +453,8 @@ export class SFTPClient {
       size: stats.size,
       modifiedAt: new Date(stats.mtime * 1000),
       permissions: this.formatPermissions(stats.mode),
-      owner: stats.uid?.toString(),
-      group: stats.gid?.toString(),
+      owner: stats.uid.toString(),
+      group: stats.gid.toString(),
     };
   }
 

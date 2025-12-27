@@ -1,7 +1,7 @@
-import { spawn, type ChildProcess } from 'child_process';
+import { spawn } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { prepareRsyncPaths, ensureTrailingSlash, joinRemotePath } from './pathConverter.js';
+import { prepareRsyncPaths } from './pathConverter.js';
 import {
   getRsyncPath,
   getSshPath,
@@ -9,7 +9,7 @@ import {
   findSystemMsys2Path,
 } from '../msys2/paths.js';
 import { getPlatform, commandExists } from '../utils/platform.js';
-import type { SyncOptions, SyncProgress, SyncResult } from '../types/index.js';
+import type { SyncProgress, SyncResult } from '../types/index.js';
 
 /**
  * MSYS2 subdirectories to check for binaries (kept for backward compatibility)
@@ -283,6 +283,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
 
   // Verbose logging: output full command before execution
   if (options.verbose) {
+    // eslint-disable-next-line no-console
     console.log(`[rsync] Executing: ${rsyncCommand} ${args.join(' ')}`);
   }
 
@@ -295,7 +296,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
     let filesTransferred = 0;
     let bytesTransferred = 0;
 
-    rsync.stdout?.on('data', (data: Buffer) => {
+    rsync.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
       options.onStdout?.(output);
 
@@ -324,7 +325,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
       }
     });
 
-    rsync.stderr?.on('data', (data: Buffer) => {
+    rsync.stderr.on('data', (data: Buffer) => {
       const error = data.toString();
       options.onStderr?.(error);
       errors.push(error);
@@ -417,6 +418,7 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
 
   // Verbose logging: output full command before execution
   if (options.verbose) {
+    // eslint-disable-next-line no-console
     console.log(`[rsync] Preview: ${rsyncCommand} ${args.join(' ')}`);
   }
 
@@ -429,11 +431,11 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
       env,
     });
 
-    rsync.stdout?.on('data', (data: Buffer) => {
+    rsync.stdout.on('data', (data: Buffer) => {
       output += data.toString();
     });
 
-    rsync.stderr?.on('data', (data: Buffer) => {
+    rsync.stderr.on('data', (data: Buffer) => {
       errorOutput += data.toString();
     });
 

@@ -4,7 +4,7 @@
  */
 
 import { existsSync, writeFileSync, unlinkSync, mkdirSync, readdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 import { getPlatform } from '../utils/platform.js';
 import type { KeyPersistencePaths } from './types.js';
 
@@ -23,7 +23,7 @@ function normalizePathForSSH(path: string): string {
  * Gets the directory for persisted rediacc keys
  */
 function getKeysDirectory(): string {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
   return join(home, '.ssh', 'rediacc_keys');
 }
 
@@ -48,12 +48,12 @@ function generateKeyName(team: string, machine: string, repository?: string): st
  * @param privateKey - SSH private key content
  * @returns Path to the persisted key file
  */
-export async function persistSSHKey(
+export function persistSSHKey(
   teamName: string,
   machineName: string,
   repositoryName: string | undefined,
   privateKey: string
-): Promise<string> {
+): string {
   const keysDir = getKeysDirectory();
   const keyName = generateKeyName(teamName, machineName, repositoryName);
   const keyPath = join(keysDir, keyName);
@@ -78,11 +78,11 @@ export async function persistSSHKey(
  * @param hostEntry - Host key entry
  * @returns Path to the persisted known hosts file
  */
-export async function persistKnownHosts(
+export function persistKnownHosts(
   teamName: string,
   machineName: string,
   hostEntry: string
-): Promise<string> {
+): string {
   const keysDir = getKeysDirectory();
   const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
   const hostsName = `${sanitize(teamName)}_${sanitize(machineName)}_known_hosts`;
@@ -139,11 +139,11 @@ export function getPersistedKeyPaths(
  * @param machineName - Machine name
  * @param repositoryName - Optional repository name
  */
-export async function removePersistedKeys(
+export function removePersistedKeys(
   teamName: string,
   machineName: string,
   repositoryName?: string
-): Promise<void> {
+): void {
   const keysDir = getKeysDirectory();
   const keyName = generateKeyName(teamName, machineName, repositoryName);
   const keyPath = join(keysDir, keyName);
@@ -186,7 +186,7 @@ export function listPersistedKeys(): string[] {
 /**
  * Cleans up all persisted rediacc keys
  */
-export async function cleanupAllPersistedKeys(): Promise<void> {
+export function cleanupAllPersistedKeys(): void {
   const keysDir = getKeysDirectory();
 
   if (!existsSync(keysDir)) {

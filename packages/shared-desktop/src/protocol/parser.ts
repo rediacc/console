@@ -185,10 +185,10 @@ export function buildCliCommand(parsed: ProtocolUrl): string[] {
       if (params?.localPath) {
         cmd.push('--local', params.localPath);
       }
-      if (params?.mirror?.toLowerCase() === 'true') {
+      if (params?.mirror && params.mirror.toLowerCase() === 'true') {
         cmd.push('--mirror');
       }
-      if (params?.verify?.toLowerCase() === 'true') {
+      if (params?.verify && params.verify.toLowerCase() === 'true') {
         cmd.push('--verify');
       }
       break;
@@ -202,7 +202,7 @@ export function buildCliCommand(parsed: ProtocolUrl): string[] {
       if (params?.terminalType === 'machine') {
         // Connect to machine directly (no repository)
         // Already have the base command, just don't add repository
-      } else if (params?.terminalType === 'container' && params?.containerId) {
+      } else if (params?.terminalType === 'container' && params.containerId) {
         // Container terminal operations
         const containerAction = params.action || 'terminal';
         const containerId = params.containerId;

@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax, react/forbid-elements */
 import React from 'react';
 import { DesktopOutlined, DownloadOutlined } from '@ant-design/icons';
 import { Button, Result, Typography } from 'antd';

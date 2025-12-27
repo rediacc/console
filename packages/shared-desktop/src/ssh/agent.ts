@@ -67,11 +67,11 @@ export async function startSSHAgent(timeoutMs = SSH_AGENT_TIMEOUT_MS): Promise<S
     let stdout = '';
     let stderr = '';
 
-    agent.stdout?.on('data', (data: Buffer) => {
+    agent.stdout.on('data', (data: Buffer) => {
       stdout += data.toString();
     });
 
-    agent.stderr?.on('data', (data: Buffer) => {
+    agent.stderr.on('data', (data: Buffer) => {
       stderr += data.toString();
     });
 
@@ -161,7 +161,7 @@ export async function addKeyToAgent(
       });
 
       let stderr = '';
-      sshAdd.stderr?.on('data', (data: Buffer) => {
+      sshAdd.stderr.on('data', (data: Buffer) => {
         stderr += data.toString();
       });
 

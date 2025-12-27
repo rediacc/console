@@ -15,24 +15,24 @@ import type { VSCodeInfo, VSCodeLaunchOptions } from './types.js';
  */
 const VSCODE_PATHS = {
   windows: [
-    join(process.env.LOCALAPPDATA || '', 'Programs', 'Microsoft VS Code', 'Code.exe'),
+    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Microsoft VS Code', 'Code.exe'),
     join(
-      process.env.LOCALAPPDATA || '',
+      process.env.LOCALAPPDATA ?? '',
       'Programs',
       'Microsoft VS Code Insiders',
       'Code - Insiders.exe'
     ),
-    join(process.env.PROGRAMFILES || '', 'Microsoft VS Code', 'Code.exe'),
-    join(process.env['PROGRAMFILES(X86)'] || '', 'Microsoft VS Code', 'Code.exe'),
+    join(process.env.PROGRAMFILES ?? '', 'Microsoft VS Code', 'Code.exe'),
+    join(process.env['PROGRAMFILES(X86)'] ?? '', 'Microsoft VS Code', 'Code.exe'),
     // VSCodium on Windows
-    join(process.env.LOCALAPPDATA || '', 'Programs', 'VSCodium', 'VSCodium.exe'),
-    join(process.env.PROGRAMFILES || '', 'VSCodium', 'VSCodium.exe'),
+    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'VSCodium', 'VSCodium.exe'),
+    join(process.env.PROGRAMFILES ?? '', 'VSCodium', 'VSCodium.exe'),
   ],
   macos: [
     '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
     '/Applications/Visual Studio Code - Insiders.app/Contents/Resources/app/bin/code-insiders',
     join(
-      process.env.HOME || '',
+      process.env.HOME ?? '',
       'Applications',
       'Visual Studio Code.app',
       'Contents',
@@ -44,7 +44,7 @@ const VSCODE_PATHS = {
     // VSCodium on macOS
     '/Applications/VSCodium.app/Contents/Resources/app/bin/codium',
     join(
-      process.env.HOME || '',
+      process.env.HOME ?? '',
       'Applications',
       'VSCodium.app',
       'Contents',
@@ -59,7 +59,7 @@ const VSCODE_PATHS = {
     '/usr/local/bin/code',
     '/snap/bin/code',
     '/var/lib/flatpak/exports/bin/com.visualstudio.code',
-    join(process.env.HOME || '', '.local', 'bin', 'code'),
+    join(process.env.HOME ?? '', '.local', 'bin', 'code'),
     // code-oss (Arch Linux package, etc.)
     '/usr/bin/code-oss',
     '/usr/local/bin/code-oss',
@@ -68,7 +68,7 @@ const VSCODE_PATHS = {
     '/usr/local/bin/codium',
     '/snap/bin/codium',
     '/var/lib/flatpak/exports/bin/com.vscodium.codium',
-    join(process.env.HOME || '', '.local', 'bin', 'codium'),
+    join(process.env.HOME ?? '', '.local', 'bin', 'codium'),
   ],
 };
 
@@ -117,7 +117,7 @@ export async function findVSCode(): Promise<VSCodeInfo | null> {
   }
 
   // Check known paths
-  const paths = VSCODE_PATHS[platform] || [];
+  const paths = VSCODE_PATHS[platform];
   for (const vscodePath of paths) {
     if (existsSync(vscodePath)) {
       const isInsiders = vscodePath.toLowerCase().includes('insiders');
@@ -201,7 +201,7 @@ export async function launchVSCode(
  */
 export async function isRemoteSSHExtensionInstalled(): Promise<boolean> {
   const platform = getPlatform();
-  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
 
   let extensionsPath: string;
   if (platform === 'windows') {

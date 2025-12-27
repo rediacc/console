@@ -45,8 +45,9 @@ async function handleRegister(options: ProtocolRegisterOptions): Promise<void> {
     console.log('Registering protocol handler for current user...');
   }
 
-  await withSpinner('Registering protocol handler...', async () => {
+  await withSpinner('Registering protocol handler...', () => {
     registerProtocol(options.force, systemWide);
+    return Promise.resolve();
   });
 
   // eslint-disable-next-line no-console
@@ -69,8 +70,9 @@ async function handleUnregister(options: { system?: boolean }): Promise<void> {
 
   const systemWide = options.system ?? false;
 
-  await withSpinner('Unregistering protocol handler...', async () => {
+  await withSpinner('Unregistering protocol handler...', () => {
     unregisterProtocol(systemWide);
+    return Promise.resolve();
   });
 
   // eslint-disable-next-line no-console

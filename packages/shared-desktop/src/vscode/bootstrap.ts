@@ -7,7 +7,7 @@
  */
 
 import { spawn } from 'child_process';
-import { formatBashExports, composeSudoEnvCommand, needsUserSwitch } from './envCompose.js';
+import { formatBashExports, needsUserSwitch } from './envCompose.js';
 
 /**
  * Marker comment for identifying managed content
@@ -191,11 +191,11 @@ async function executeRemoteCommand(
     let stdout = '';
     let stderr = '';
 
-    ssh.stdout?.on('data', (data: Buffer) => {
+    ssh.stdout.on('data', (data: Buffer) => {
       stdout += data.toString();
     });
 
-    ssh.stderr?.on('data', (data: Buffer) => {
+    ssh.stderr.on('data', (data: Buffer) => {
       stderr += data.toString();
     });
 

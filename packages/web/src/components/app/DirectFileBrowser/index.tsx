@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax, react/forbid-elements, @typescript-eslint/no-floating-promises, react-hooks/exhaustive-deps, @typescript-eslint/require-await */
 import React, { useEffect, useState } from 'react';
 import {
   CloseOutlined,

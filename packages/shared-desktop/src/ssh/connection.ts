@@ -4,16 +4,10 @@ import {
   addKeyToAgent,
   stopSSHAgent,
   isSSHAgentAvailable,
-  type SSHAgentResult,
 } from './agent.js';
 import { createTempSSHKeyFile, removeTempSSHKeyFile, decodeSSHKey } from './keyManager.js';
-import {
-  createTempKnownHostsFile,
-  removeTempKnownHostsFile,
-  decodeHostEntry,
-} from './knownHosts.js';
+import { createTempKnownHostsFile, removeTempKnownHostsFile } from './knownHosts.js';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
-import type { SSHCredentials, SSHConnectionOptions } from '../types/index.js';
 
 /**
  * Connection method used for SSH
@@ -350,9 +344,8 @@ export class SSHConnection {
           return this.setupResult;
         }
       } catch (error) {
-        // Log the error prominently to stdout (matches Python CLI behavior)
-        // Using console.log instead of console.warn for better terminal visibility
-        console.log(
+        // Log the error prominently (matches Python CLI behavior)
+        console.warn(
           `Warning: SSH agent setup failed, using file-based keys instead.\n` +
             `  Reason: ${error instanceof Error ? error.message : String(error)}`
         );

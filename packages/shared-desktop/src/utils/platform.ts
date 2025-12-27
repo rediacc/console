@@ -12,7 +12,8 @@ export function isWSL(): boolean {
   // Check for WSL-specific indicators
   try {
     // WSL1 and WSL2 have /proc/version containing "Microsoft" or "microsoft"
-    const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs') as typeof import('fs');
     const version = fs.readFileSync('/proc/version', 'utf8').toLowerCase();
     return version.includes('microsoft') || version.includes('wsl');
   } catch {

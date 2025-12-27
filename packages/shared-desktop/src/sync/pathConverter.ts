@@ -1,4 +1,4 @@
-import { isAbsolute, parse as parsePath } from 'path';
+import { isAbsolute } from 'path';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
 
 /**

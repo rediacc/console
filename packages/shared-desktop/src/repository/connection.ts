@@ -110,13 +110,13 @@ export class RepositoryConnection {
    *
    * @param options - Connection options including credentials and paths
    */
-  async initialize(options: {
+  initialize(options: {
     machineInfo: Record<string, unknown>;
     repoInfo: Record<string, unknown>;
     connectionInfo: MachineConnectionInfo;
     repoGuid: string;
     sshKey: string;
-  }): Promise<void> {
+  }): void {
     this.machineInfo = options.machineInfo;
     this.repoInfo = options.repoInfo;
     this.connectionInfo = options.connectionInfo;

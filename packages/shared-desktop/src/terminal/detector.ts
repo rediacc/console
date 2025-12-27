@@ -65,7 +65,7 @@ function saveCache(cache: Record<string, CachedInfo>): void {
  * Checks if cached results are still valid
  */
 function isCacheValid(cache: Record<string, CachedInfo>, platform: string): boolean {
-  const cached = cache[platform];
+  const cached = cache[platform] as CachedInfo | undefined;
   if (!cached?.timestamp) return false;
 
   try {
@@ -292,11 +292,9 @@ export class TerminalDetector {
     // Test each method
     for (const method of methods) {
       const testFn = testFunctions[method];
-      if (testFn) {
-        const result = testFn();
-        if (result.success) {
-          workingMethods.push(method);
-        }
+      const result = testFn();
+      if (result.success) {
+        workingMethods.push(method);
       }
     }
 
@@ -353,7 +351,7 @@ export class TerminalDetector {
   getWorkingMethods(): TerminalType[] {
     const platform = getPlatform();
     const cached = this.cache[platform];
-    return cached?.workingMethods ?? [];
+    return cached.workingMethods;
   }
 
   /**

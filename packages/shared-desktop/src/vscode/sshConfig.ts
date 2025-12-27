@@ -29,21 +29,10 @@ function normalizePathForSSH(path: string): string {
  * Default SSH config file path for rediacc connections
  */
 export function getSSHConfigPath(): string {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const path = join(home, '.ssh', 'config_rediacc');
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
+  const sshPath = join(home, '.ssh', 'config_rediacc');
   // Normalize for Windows - SSH expects forward slashes
-  return normalizePathForSSH(path);
-}
-
-/**
- * Expands ~ to home directory
- */
-function expandPath(path: string): string {
-  if (path.startsWith('~')) {
-    const home = process.env.HOME || process.env.USERPROFILE || '';
-    return normalizePathForSSH(join(home, path.slice(1)));
-  }
-  return path;
+  return normalizePathForSSH(sshPath);
 }
 
 /**
@@ -147,7 +136,7 @@ function parseSSHConfig(content: string): Map<string, string> {
  *
  * @param entry - SSH config entry to add
  */
-export async function addSSHConfigEntry(entry: SSHConfigEntry): Promise<void> {
+export function addSSHConfigEntry(entry: SSHConfigEntry): void {
   const configPath = getSSHConfigPath();
   const configDir = dirname(configPath);
 
@@ -177,7 +166,7 @@ export async function addSSHConfigEntry(entry: SSHConfigEntry): Promise<void> {
  *
  * @param host - Host name to remove
  */
-export async function removeSSHConfigEntry(host: string): Promise<void> {
+export function removeSSHConfigEntry(host: string): void {
   const configPath = getSSHConfigPath();
 
   if (!existsSync(configPath)) {
@@ -210,7 +199,7 @@ export function getSSHConfigEntry(host: string): string | null {
   const content = readFileSync(configPath, 'utf8');
   const hosts = parseSSHConfig(content);
 
-  return hosts.get(host) || null;
+  return hosts.get(host) ?? null;
 }
 
 /**
@@ -305,7 +294,7 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
       repositoryName,
       datastorePath,
       repositoryPath,
-      universalUser: universalUser || sshUser,
+      universalUser: universalUser ?? sshUser,
       networkId,
       additionalEnv,
     });
@@ -314,7 +303,7 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
       teamName,
       machineName,
       datastorePath,
-      universalUser: universalUser || sshUser,
+      universalUser: universalUser ?? sshUser,
     });
   }
 
