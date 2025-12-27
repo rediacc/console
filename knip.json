@@ -10,6 +10,23 @@
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
+    "packages/shared-desktop": {
+      "entry": [
+        "src/index.ts",
+        "src/ssh/index.ts",
+        "src/sync/index.ts",
+        "src/terminal/index.ts",
+        "src/protocol/index.ts",
+        "src/msys2/index.ts",
+        "src/repository/index.ts",
+        "src/sftp/index.ts",
+        "src/utils/index.ts",
+        "src/config/index.ts",
+        "src/types/index.ts",
+        "src/vscode/index.ts"
+      ],
+      "project": ["src/**/*.ts"]
+    },
     "packages/cli": {
       "entry": ["src/index.ts", "src/types/index.ts", "tests/**/*.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
@@ -24,7 +41,16 @@
         "src/components/common/index.ts",
         "src/utils/cacheUtils.ts",
         "src/adapters/electronStorage.ts",
-        "src/utils/environment.ts"
+        "src/utils/environment.ts",
+        "src/hooks/index.ts",
+        "src/hooks/terminal/index.ts",
+        "src/hooks/sftp/useSftp.ts",
+        "src/components/app/Terminal/index.ts",
+        "src/components/app/Terminal/Terminal.tsx",
+        "src/components/app/Terminal/DesktopPrompt.tsx",
+        "src/components/app/DirectFileBrowser/index.tsx",
+        "src/components/app/DirectFileBrowser/DesktopPrompt.tsx",
+        "src/utils/formatters.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": [
@@ -39,7 +65,8 @@
         "src/main/index.ts",
         "src/preload/index.ts",
         "src/renderer/main.tsx",
-        "electron.vite.config.ts"
+        "electron.vite.config.ts",
+        "src/main/protocol.ts"
       ],
       "project": ["src/**/*.ts", "*.ts"]
     }
@@ -49,7 +76,10 @@
     "@types/*",
     "@opentelemetry/instrumentation-*",
     "dayjs",
-    "@electron-toolkit/preload"
+    "@electron-toolkit/preload",
+    "node-pty",
+    "ssh2",
+    "@rediacc/shared"
   ],
   "ignoreBinaries": ["rimraf"]
 }
