@@ -473,8 +473,12 @@ jobs:
           fi
 
   desktop-build:
-    name: 🖥️ Desktop - Electron Build
-    runs-on: ubuntu-latest
+    name: 🖥️ Desktop - Electron Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -503,7 +507,8 @@ jobs:
         working-directory: packages/desktop
         run: npm run build
 
-      - name: Check desktop build output
+      - name: Check desktop build output (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo "Checking Electron build output..."
           if [ ! -d "packages/desktop/out" ]; then
@@ -519,12 +524,37 @@ jobs:
             exit 1
           fi
           echo "Desktop build successful!"
-          echo "## Desktop Build Output" >> $GITHUB_STEP_SUMMARY
+          echo "## Desktop Build Output (${{ matrix.os }})" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           ls -lah packages/desktop/out/ >> $GITHUB_STEP_SUMMARY
           ls -lah packages/desktop/out/main/ >> $GITHUB_STEP_SUMMARY
           ls -lah packages/desktop/out/preload/ >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check desktop build output (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "Checking Electron build output..."
+          if (-not (Test-Path "packages/desktop/out")) {
+            Write-Error "Error: desktop out directory not created"
+            exit 1
+          }
+          if (-not (Test-Path "packages/desktop/out/main/index.js")) {
+            Write-Error "Error: main process bundle not found"
+            exit 1
+          }
+          if (-not (Test-Path "packages/desktop/out/preload/index.js")) {
+            Write-Error "Error: preload script bundle not found"
+            exit 1
+          }
+          Write-Host "Desktop build successful!"
+          "## Desktop Build Output (${{ matrix.os }})" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "``````" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem packages/desktop/out/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem packages/desktop/out/main/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem packages/desktop/out/preload/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "``````" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
 
   ci-summary:
     name: ✅ CI Summary
