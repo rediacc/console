@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { app, BrowserWindow, session, shell } from 'electron';
-import { registerIpcHandlers } from './ipc';
+import { registerIpcHandlers, cleanupIpcHandlers } from './ipc';
+import { setupProtocolHandler } from './protocol';
 import { setupAutoUpdater } from './updater/autoUpdater';
 import { WindowManager } from './windowManager';
 
@@ -98,6 +99,10 @@ void app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  // Set up protocol handler (rediacc:// URLs)
+  // Must be done before registering IPC handlers
+  setupProtocolHandler(() => mainWindow);
+
   // Register IPC handlers before creating window
   registerIpcHandlers();
 
@@ -121,6 +126,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Cleanup before quitting
+app.on('before-quit', async () => {
+  await cleanupIpcHandlers();
 });
 
 // Security: Prevent navigation to untrusted URLs

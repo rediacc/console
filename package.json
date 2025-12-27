@@ -5,6 +5,7 @@
   "type": "module",
   "workspaces": [
     "packages/shared",
+    "packages/shared-desktop",
     "packages/cli",
     "packages/web",
     "packages/desktop"
