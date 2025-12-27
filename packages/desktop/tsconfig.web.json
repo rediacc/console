@@ -1,0 +1,9 @@
+{
+  "extends": "../web/tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./out/renderer",
+    "rootDir": "../web/src"
+  },
+  "include": ["../web/src/**/*.ts", "../web/src/**/*.tsx"]
+}
