@@ -1,10 +1,5 @@
 import { spawn, type ChildProcess } from 'child_process';
-import {
-  startSSHAgent,
-  addKeyToAgent,
-  stopSSHAgent,
-  isSSHAgentAvailable,
-} from './agent.js';
+import { startSSHAgent, addKeyToAgent, stopSSHAgent, isSSHAgentAvailable } from './agent.js';
 import { createTempSSHKeyFile, removeTempSSHKeyFile, decodeSSHKey } from './keyManager.js';
 import { createTempKnownHostsFile, removeTempKnownHostsFile } from './knownHosts.js';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';

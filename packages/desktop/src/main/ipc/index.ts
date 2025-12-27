@@ -33,6 +33,6 @@ export function registerIpcHandlers(): void {
  */
 export async function cleanupIpcHandlers(): Promise<void> {
   await cleanupAllTerminalSessions();
-  await cleanupAllSftpSessions();
+  cleanupAllSftpSessions();
   abortAllRsyncOperations();
 }

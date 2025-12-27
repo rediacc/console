@@ -181,8 +181,8 @@ export function registerSftpHandlers(): void {
   );
 
   // Close SFTP session
-  ipcMain.handle('sftp:close', async (_event, sessionId: string): Promise<void> => {
-    await cleanupSession(sessionId);
+  ipcMain.handle('sftp:close', (_event, sessionId: string): void => {
+    cleanupSession(sessionId);
   });
 
   // Get active session count (for debugging)
@@ -209,12 +209,12 @@ export function registerSftpHandlers(): void {
 /**
  * Cleans up an SFTP session
  */
-async function cleanupSession(sessionId: string): Promise<void> {
+function cleanupSession(sessionId: string): void {
   const session = sessions.get(sessionId);
   if (!session) return;
 
   try {
-    await session.client.close();
+    session.client.close();
   } catch {
     // Ignore errors during cleanup
   }
@@ -225,7 +225,7 @@ async function cleanupSession(sessionId: string): Promise<void> {
 /**
  * Cleanup all SFTP sessions (call on app quit)
  */
-export async function cleanupAllSftpSessions(): Promise<void> {
+export function cleanupAllSftpSessions(): void {
   const sessionIds = Array.from(sessions.keys());
-  await Promise.all(sessionIds.map((id) => cleanupSession(id)));
+  sessionIds.forEach((id) => cleanupSession(id));
 }

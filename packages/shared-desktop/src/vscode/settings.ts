@@ -235,7 +235,9 @@ export function setHostServerInstallPath(
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
   const settings = readVSCodeSettings(settingsPath);
 
-  const existingInstallPaths = settings['remote.SSH.serverInstallPath'] as Record<string, string> | undefined;
+  const existingInstallPaths = settings['remote.SSH.serverInstallPath'] as
+    | Record<string, string>
+    | undefined;
   const installPaths = existingInstallPaths ?? {};
   installPaths[host] = serverPath;
   settings['remote.SSH.serverInstallPath'] = installPaths;
@@ -311,10 +313,7 @@ export function configureVSCodeSettings(isInsiders = false): {
  * @param host - SSH host name to remove
  * @param isInsiders - Whether to configure VS Code Insiders
  */
-export function removeHostFromRemotePlatform(
-  host: string,
-  isInsiders = false
-): void {
+export function removeHostFromRemotePlatform(host: string, isInsiders = false): void {
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
   const settings = readVSCodeSettings(settingsPath);
 
