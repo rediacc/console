@@ -1,0 +1,37 @@
+{
+  "name": "@rediacc/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rediacc Console Desktop Application",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "postinstall": "electron-builder install-app-deps",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "typecheck:main": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:preload": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "npm run typecheck:main && npm run typecheck:preload"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "@electron-toolkit/preload": "^3.0.2",
+    "@electron-toolkit/utils": "^4.0.0",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "39.2.7",
+    "electron-builder": "^26.0.12",
+    "electron-log": "^5.4.3",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.6",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

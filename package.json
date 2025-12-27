@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/shared",
     "packages/cli",
-    "packages/web"
+    "packages/web",
+    "packages/desktop"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli && npm run build:web",

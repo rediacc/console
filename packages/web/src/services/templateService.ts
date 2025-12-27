@@ -80,7 +80,7 @@ class TemplateService {
    * Fetch the templates list from the configured URL
    * Uses cache to avoid repeated fetches
    */
-  async fetchTemplates(forceRefresh: boolean = false): Promise<Template[]> {
+  async fetchTemplates(forceRefresh = false): Promise<Template[]> {
     if (this.templatesCache && !forceRefresh) {
       return this.templatesCache;
     }

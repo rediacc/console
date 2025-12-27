@@ -271,7 +271,7 @@ class TelemetryService {
     });
   }
 
-  trackPerformance(metric: string, value: number, unit: string = 'ms'): void {
+  trackPerformance(metric: string, value: number, unit = 'ms'): void {
     this.trackEvent('performance.metric', {
       'performance.metric.name': metric,
       'performance.metric.value': value,

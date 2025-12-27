@@ -1,0 +1,114 @@
+appId: com.rediacc.console
+productName: Rediacc Console
+copyright: Copyright © 2024 Rediacc
+
+directories:
+  buildResources: resources
+  output: ../../dist/desktop
+
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.*'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{dev-app-update.yml}'
+
+asarUnpack:
+  - resources/**
+
+# Windows Configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: rediacc-console-${version}-win-${arch}.${ext}
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Rediacc Console
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+
+# macOS Configuration
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  artifactName: rediacc-console-${version}-mac-${arch}.${ext}
+  icon: resources/icon.png
+  category: public.app-category.developer-tools
+  entitlementsInherit: resources/entitlements.mac.plist
+  hardenedRuntime: true
+  # gatekeeperAssess defaults to true, enabling macOS security verification
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+
+# Linux Configuration
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  artifactName: rediacc-console-${version}-linux-${arch}.${ext}
+  icon: resources/icon.png
+  category: Development
+  maintainer: Rediacc <support@rediacc.com>
+  synopsis: Rediacc Console Desktop Application
+  description: Desktop application for managing Rediacc infrastructure
+
+deb:
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libsecret-1-0
+  afterInstall: scripts/postinst.sh
+  afterRemove: scripts/postrm.sh
+
+appImage:
+  artifactName: rediacc-console-${version}-linux.${ext}
+
+# Publish Configuration
+publish:
+  - provider: github
+    owner: rediacc
+    repo: console
+    releaseType: release
+  - provider: generic
+    url: https://www.rediacc.com/updates/
+    channel: latest
+
+# Extra Resources
+extraResources:
+  - from: resources/
+    to: resources/
+    filter:
+      - '**/*'
+      - '!*.psd'

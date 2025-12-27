@@ -398,7 +398,7 @@ export class MachineValidationService {
   static validateCapacity(
     currentCount: number,
     maxCount: number,
-    additionalCount: number = 1
+    additionalCount = 1
   ): CapacityValidation {
     const newCount = currentCount + additionalCount;
     const hasCapacity = newCount <= maxCount;

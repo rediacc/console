@@ -83,6 +83,10 @@ export default tseslint.config(
       
       // TypeScript rules
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-inferrable-types': ['error', {
+        ignoreParameters: false,
+        ignoreProperties: false,
+      }],
       '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'

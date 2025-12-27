@@ -388,6 +388,34 @@ jobs:
           path: packages/web/dist/
           retention-days: 90
 
+      # Bundle Size Analysis (RELEASE only)
+      - name: Analyze bundle size
+        if: matrix.build-type == 'RELEASE'
+        run: |
+          echo "## 📦 Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Main Bundles" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -h packages/web/dist/assets/js/*.js | sort -h >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Total Size" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -sh packages/web/dist/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check bundle size limits
+        if: matrix.build-type == 'RELEASE'
+        run: |
+          TOTAL_SIZE=$(du -sb packages/web/dist/ | cut -f1)
+          MAX_SIZE=$((10 * 1024 * 1024))  # 10MB limit
+
+          if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then
+            echo "::warning::Bundle size ($TOTAL_SIZE bytes) exceeds 10MB limit"
+          else
+            echo "Bundle size OK: $TOTAL_SIZE bytes"
+          fi
+
   security-scan:
     name: 🔒 Security - Vulnerability Scan
     runs-on: ubuntu-latest
@@ -419,9 +447,13 @@ jobs:
           path: audit-report.json
           retention-days: 30
 
-  bundle-size:
-    name: 📦 Analysis - Bundle Size
-    runs-on: ubuntu-latest
+  desktop-build:
+    name: 🖥️ Desktop - Electron Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -439,43 +471,70 @@ jobs:
       - name: Build shared libraries
         run: npm run build:packages
 
-      - name: Build for production
+      - name: Build web application
         env:
           REDIACC_BUILD_TYPE: RELEASE
           VITE_APP_VERSION: ${{ github.sha }}
-          VITE_BASE_PATH: /
           NODE_ENV: production
         run: npm run build:web
 
-      - name: Analyze bundle size
-        run: |
-          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Main Bundles" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -h packages/web/dist/assets/js/*.js | sort -h >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Total Size" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -sh packages/web/dist/ >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      - name: Build Electron main/preload
+        working-directory: packages/desktop
+        run: npm run build
 
-      - name: Check bundle size limits
+      - name: Check desktop build output (Unix)
+        if: runner.os != 'Windows'
         run: |
-          TOTAL_SIZE=$(du -sb packages/web/dist/ | cut -f1)
-          MAX_SIZE=$((10 * 1024 * 1024))  # 10MB limit
-
-          if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then
-            echo "::warning::Bundle size ($TOTAL_SIZE bytes) exceeds 10MB limit"
-          else
-            echo "Bundle size OK: $TOTAL_SIZE bytes"
+          echo "Checking Electron build output..."
+          if [ ! -d "packages/desktop/out" ]; then
+            echo "Error: desktop out directory not created"
+            exit 1
           fi
+          if [ ! -f "packages/desktop/out/main/index.js" ]; then
+            echo "Error: main process bundle not found"
+            exit 1
+          fi
+          if [ ! -f "packages/desktop/out/preload/index.js" ]; then
+            echo "Error: preload script bundle not found"
+            exit 1
+          fi
+          echo "Desktop build successful!"
+          echo "## Desktop Build Output (${{ matrix.os }})" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -lah packages/desktop/out/ >> $GITHUB_STEP_SUMMARY
+          ls -lah packages/desktop/out/main/ >> $GITHUB_STEP_SUMMARY
+          ls -lah packages/desktop/out/preload/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check desktop build output (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "Checking Electron build output..."
+          if (-not (Test-Path "packages/desktop/out")) {
+            Write-Error "Error: desktop out directory not created"
+            exit 1
+          }
+          if (-not (Test-Path "packages/desktop/out/main/index.js")) {
+            Write-Error "Error: main process bundle not found"
+            exit 1
+          }
+          if (-not (Test-Path "packages/desktop/out/preload/index.js")) {
+            Write-Error "Error: preload script bundle not found"
+            exit 1
+          }
+          Write-Host "Desktop build successful!"
+          "## Desktop Build Output (${{ matrix.os }})" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "``````" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem packages/desktop/out/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem packages/desktop/out/main/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem packages/desktop/out/preload/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+          "``````" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
 
   ci-summary:
     name: ✅ CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, format-check, type-check, unit-tests, cli-check, cli-tests, build, security-scan, bundle-size]
+    needs: [lint, format-check, type-check, unit-tests, cli-check, cli-tests, build, security-scan, desktop-build]
     if: always()
 
     steps:
@@ -490,8 +549,8 @@ jobs:
           echo "- CLI Check: ${{ needs.cli-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI Tests: ${{ needs.cli-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop Build: ${{ needs.desktop-build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Bundle Size: ${{ needs.bundle-size.result }}" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.format-check.result }}" != "success" ] || \
@@ -499,7 +558,8 @@ jobs:
              [ "${{ needs.unit-tests.result }}" != "success" ] || \
              [ "${{ needs.cli-check.result }}" != "success" ] || \
              [ "${{ needs.cli-tests.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ]; then
+             [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.desktop-build.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "❌ **CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
             exit 1

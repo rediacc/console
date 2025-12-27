@@ -112,7 +112,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     return os === 'windows' ? 'rediacc.bat' : 'rediacc';
   };
 
-  const buildTermCommand = (token: string = '<SECURE_TOKEN>') => {
+  const buildTermCommand = (token = '<SECURE_TOKEN>') => {
     const params: Record<string, string> = {};
     if (termCommand) {
       params.command = termCommand;
@@ -121,12 +121,12 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     return `${buildCommandPrefix()} protocol run "${protocolUrl}"`;
   };
 
-  const buildDesktopCommand = (token: string = '<SECURE_TOKEN>') => {
+  const buildDesktopCommand = (token = '<SECURE_TOKEN>') => {
     const protocolUrl = buildProtocolUrl(token, 'desktop');
     return `${buildCommandPrefix()} protocol run "${protocolUrl}"`;
   };
 
-  const buildVSCodeCommand = (token: string = '<SECURE_TOKEN>') => {
+  const buildVSCodeCommand = (token = '<SECURE_TOKEN>') => {
     const protocolUrl = buildProtocolUrl(token, 'vscode');
     return `${buildCommandPrefix()} protocol run "${protocolUrl}"`;
   };
