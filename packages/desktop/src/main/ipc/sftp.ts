@@ -68,10 +68,10 @@ export function registerSftpHandlers(): void {
   // List directory contents
   ipcMain.handle(
     'sftp:listDirectory',
-    async (_event, sessionId: string, path: string): Promise<FileInfo[]> => {
+    (_event, sessionId: string, path: string): Promise<FileInfo[]> => {
       const session = sessions.get(sessionId);
       if (!session) {
-        throw new Error('SFTP session not found');
+        return Promise.reject(new Error('SFTP session not found'));
       }
 
       return session.client.listDirectory(path);
@@ -79,17 +79,14 @@ export function registerSftpHandlers(): void {
   );
 
   // Read file contents
-  ipcMain.handle(
-    'sftp:readFile',
-    async (_event, sessionId: string, path: string): Promise<Buffer> => {
-      const session = sessions.get(sessionId);
-      if (!session) {
-        throw new Error('SFTP session not found');
-      }
-
-      return session.client.readFile(path);
+  ipcMain.handle('sftp:readFile', (_event, sessionId: string, path: string): Promise<Buffer> => {
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return Promise.reject(new Error('SFTP session not found'));
     }
-  );
+
+    return session.client.readFile(path);
+  });
 
   // Write file contents
   ipcMain.handle(
@@ -155,30 +152,24 @@ export function registerSftpHandlers(): void {
   );
 
   // Get file/directory stats
-  ipcMain.handle(
-    'sftp:stat',
-    async (_event, sessionId: string, path: string): Promise<FileInfo> => {
-      const session = sessions.get(sessionId);
-      if (!session) {
-        throw new Error('SFTP session not found');
-      }
-
-      return session.client.stat(path);
+  ipcMain.handle('sftp:stat', (_event, sessionId: string, path: string): Promise<FileInfo> => {
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return Promise.reject(new Error('SFTP session not found'));
     }
-  );
+
+    return session.client.stat(path);
+  });
 
   // Check if path exists
-  ipcMain.handle(
-    'sftp:exists',
-    async (_event, sessionId: string, path: string): Promise<boolean> => {
-      const session = sessions.get(sessionId);
-      if (!session) {
-        throw new Error('SFTP session not found');
-      }
-
-      return session.client.exists(path);
+  ipcMain.handle('sftp:exists', (_event, sessionId: string, path: string): Promise<boolean> => {
+    const session = sessions.get(sessionId);
+    if (!session) {
+      return Promise.reject(new Error('SFTP session not found'));
     }
-  );
+
+    return session.client.exists(path);
+  });
 
   // Close SFTP session
   ipcMain.handle('sftp:close', (_event, sessionId: string): void => {

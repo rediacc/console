@@ -73,7 +73,7 @@ export function registerRsyncHandlers(): void {
   // Get rsync preview (dry-run)
   ipcMain.handle(
     'rsync:preview',
-    async (_event, options: RsyncExecutorOptions): Promise<RsyncChanges> => {
+    (_event, options: RsyncExecutorOptions): Promise<RsyncChanges> => {
       return getRsyncPreview(options);
     }
   );
