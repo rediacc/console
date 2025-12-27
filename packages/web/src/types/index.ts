@@ -52,3 +52,22 @@ export type {
 
 // Modal types - only export what's actually used
 export type { BaseModalProps } from './modal';
+
+// Electron API types for desktop integration
+export type {
+  ElectronAPI,
+  TerminalConnectParams,
+  TerminalConnectResult,
+  RsyncExecutorOptions,
+  RsyncProgress,
+  RsyncResult,
+  RsyncChanges,
+  ParsedProtocolUrl,
+  UpdateInfo,
+  UpdateProgress,
+  SFTPConnectParams,
+  SFTPConnectResult,
+  SFTPFileInfo,
+  SFTPSessionInfo,
+} from './electron';
+export { isElectron, getElectronAPI } from './electron';

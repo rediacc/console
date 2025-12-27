@@ -25,6 +25,12 @@ win:
         - x64
   artifactName: rediacc-console-${version}-win-${arch}.${ext}
   icon: resources/icon.ico
+  # Bundle MSYS2 binaries for rsync/SSH functionality
+  extraResources:
+    - from: msys2-bundle
+      to: msys2-bundle
+      filter:
+        - '**/*'
 
 nsis:
   oneClick: false
@@ -104,6 +110,13 @@ publish:
   - provider: generic
     url: https://www.rediacc.com/updates/
     channel: latest
+
+# Protocol Handler (rediacc://)
+protocols:
+  - name: Rediacc Desktop
+    schemes:
+      - rediacc
+    role: Viewer
 
 # Extra Resources
 extraResources:

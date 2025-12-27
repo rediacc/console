@@ -34,6 +34,7 @@
     "build:exe:all": "bun run build:exe:win && bun run build:exe:mac && bun run build:exe:mac-arm && bun run build:exe:linux"
   },
   "dependencies": {
+    "@rediacc/shared-desktop": "*",
     "inquirer": "^13.1.0"
   },
   "devDependencies": {

@@ -5,19 +5,20 @@
   "type": "module",
   "workspaces": [
     "packages/shared",
+    "packages/shared-desktop",
     "packages/cli",
     "packages/web",
     "packages/desktop"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli && npm run build:web",
-    "build:packages": "npm run build -w @rediacc/shared",
+    "build:packages": "npm run build -w @rediacc/shared && npm run build -w @rediacc/shared-desktop",
     "build:cli": "npm run build -w @rediacc/cli",
     "build:web": "npm run build -w @rediacc/web",
     "dev": "npm run dev -w @rediacc/web",
     "dev:parity": "npm run build:packages && npm run dev -w @rediacc/web",
     "lint": "eslint .",
-    "typecheck": "tsc -b packages/shared packages/cli && npm run typecheck -w @rediacc/web",
+    "typecheck": "tsc -b packages/shared packages/shared-desktop packages/cli && npm run typecheck -w @rediacc/web",
     "clean": "npm run clean -w @rediacc/shared && npm run clean -w @rediacc/cli && npm run clean -w @rediacc/web",
     "fix": "biome format --write packages/ && eslint . --fix",
     "format": "biome format --write packages/",
