@@ -41,15 +41,13 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
           <Typography.Text>
             Subscription & Plan Details - {planLimits?.planCode ?? 'N/A'}
           </Typography.Text>
-          {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
-            <Badge count={allActiveSubscriptions.length} />
-          )}
+          {allActiveSubscriptions.length > 0 && <Badge count={allActiveSubscriptions.length} />}
         </Flex>
       }
       data-testid="dashboard-card-subscription-plans"
     >
       <Row gutter={[24, 24]}>
-        <Col xs={24} md={allActiveSubscriptions && allActiveSubscriptions.length > 0 ? 12 : 24}>
+        <Col xs={24} md={allActiveSubscriptions.length > 0 ? 12 : 24}>
           {activeSubscription ? (
             <Flex vertical gap={16} className="w-full">
               <Flex vertical>
@@ -85,7 +83,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
           )}
         </Col>
 
-        {allActiveSubscriptions && allActiveSubscriptions.length > 0 && (
+        {allActiveSubscriptions.length > 0 && (
           <Col xs={24} md={12}>
             <Flex vertical gap={16} className="w-full">
               <Flex vertical>
@@ -155,10 +153,16 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
       {planLimits ? (
         <Row gutter={[24, 24]}>
           <Col xs={24} md={6}>
-            <Statistic title={t('dashboard.maxActiveJobs')} value={planLimits.maxActiveJobs ?? undefined} />
+            <Statistic
+              title={t('dashboard.maxActiveJobs')}
+              value={planLimits.maxActiveJobs ?? undefined}
+            />
           </Col>
           <Col xs={24} md={6}>
-            <Statistic title={t('dashboard.maxReservedJobs')} value={planLimits.maxReservedJobs ?? undefined} />
+            <Statistic
+              title={t('dashboard.maxReservedJobs')}
+              value={planLimits.maxReservedJobs ?? undefined}
+            />
           </Col>
           <Col xs={24} md={6}>
             <Statistic

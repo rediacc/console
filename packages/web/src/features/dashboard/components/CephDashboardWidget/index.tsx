@@ -39,14 +39,14 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
     {
       type: 'image',
       label: t('ceph:assignmentStatus.image'),
-      count: stats.imageAssignedMachines ?? 0,
+      count: stats.imageAssignedMachines,
       percentage: stats.imagePercentage ?? 0,
       icon: <HddOutlined />,
     },
     {
       type: 'clone',
       label: t('ceph:assignmentStatus.clone'),
-      count: stats.cloneAssignedMachines ?? 0,
+      count: stats.cloneAssignedMachines,
       percentage: stats.clonePercentage ?? 0,
       icon: <CopyOutlined />,
     },
@@ -115,9 +115,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
         </Flex>
       }
       extra={
-        <Typography.Text>
-          {t('ceph:dashboard.subtitle', { total: totalMachines })}
-        </Typography.Text>
+        <Typography.Text>{t('ceph:dashboard.subtitle', { total: totalMachines })}</Typography.Text>
       }
     >
       <Flex vertical gap={16} className="w-full">
@@ -148,14 +146,14 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
                   <Statistic
                     data-testid="ds-widget-stat-total-clusters"
                     title={t('ceph:dashboard.totalClusters')}
-                    value={stats.totalClusters ?? 0}
+                    value={stats.totalClusters}
                   />
                 </Col>
                 <Col span={12}>
                   <Statistic
                     data-testid="ds-widget-stat-avg-machines"
                     title={t('ceph:dashboard.avgMachinesPerCluster')}
-                    value={stats.avgMachinesPerCluster ?? 0}
+                    value={stats.avgMachinesPerCluster}
                     precision={1}
                   />
                 </Col>

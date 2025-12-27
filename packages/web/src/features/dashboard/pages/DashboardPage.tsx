@@ -56,10 +56,10 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  const activeSubscriptions = dashboard.allActiveSubscriptions ?? [];
+  const activeSubscriptions = dashboard.allActiveSubscriptions;
   const queueStats = dashboard.queueStats;
-  const teamIssues = dashboard.teamIssues ?? [];
-  const machineIssues = dashboard.machineIssues ?? [];
+  const teamIssues = dashboard.teamIssues;
+  const machineIssues = dashboard.machineIssues;
   const hasQueueDetails = Boolean(
     queueStats && (teamIssues.length > 0 || machineIssues.length > 0)
   );

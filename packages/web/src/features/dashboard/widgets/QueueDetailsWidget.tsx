@@ -60,7 +60,6 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
   machineIssues,
   featureAccess,
 }) => {
-
   return (
     <Card
       title={

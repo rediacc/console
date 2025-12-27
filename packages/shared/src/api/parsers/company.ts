@@ -20,8 +20,8 @@ import type {
   GetCompanyVault_ResultSet1,
   GetCompanyVaults_ResultSet1,
 } from '../../types';
-import type { CompanyDashboardData } from '../../types/derived';
 import type { ApiResponse } from '../../types/api';
+import type { CompanyDashboardData } from '../../types/derived';
 
 /**
  * Parse GetCompanyDashboard response into CompanyDashboardData

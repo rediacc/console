@@ -22,10 +22,10 @@
  * ```
  */
 
+import { applyProcedureDefaults } from './defaults';
 import type { TypedApi, TypedApiConfig, TypedApiResponse } from './types';
 import type { StoredProcedureName } from '../../types/api-schema.generated';
 import type { ApiClient } from '../services/types';
-import { applyProcedureDefaults } from './defaults';
 
 /**
  * Determines the HTTP method for a procedure based on naming conventions.

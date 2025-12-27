@@ -71,7 +71,7 @@ export function registerRepositoryCommands(program: Command): void {
           repositoryName: name,
           repositoryTag: options.tag,
           parentRepositoryName: options.parent,
-          parentRepositoryTag: options.parent ? options.parentTag ?? 'main' : undefined,
+          parentRepositoryTag: options.parent ? (options.parentTag ?? 'main') : undefined,
         };
 
         await withSpinner(

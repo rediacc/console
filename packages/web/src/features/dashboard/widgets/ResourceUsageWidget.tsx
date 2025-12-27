@@ -40,7 +40,7 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
       data-testid="dashboard-card-resource-usage"
     >
       <Row gutter={[16, 24]}>
-        {(resources ?? [])
+        {resources
           .filter(
             (resource) =>
               resource.resourceType === 'Machine' || resource.resourceType === 'Repository'
