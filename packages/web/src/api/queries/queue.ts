@@ -154,7 +154,7 @@ export const useRetryFailedQueueItem = () => {
 };
 
 // Get queue item trace
-export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true) => {
+export const useQueueItemTrace = (taskId: string | null, enabled = true) => {
   return useQuery<QueueTrace | null>({
     queryKey: QUERY_KEYS.queue.itemTrace(taskId),
     queryFn: async () => {

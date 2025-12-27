@@ -40,7 +40,7 @@ export function downloadCSV(content: string, filename: string): void {
  * @param filename - Filename (without extension)
  * @param pretty - Whether to pretty-print the JSON (default: true)
  */
-export function downloadJSON(data: unknown, filename: string, pretty: boolean = true): void {
+export function downloadJSON(data: unknown, filename: string, pretty = true): void {
   const content = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
   downloadFile(content, `${filename}.json`, 'application/json');
 }

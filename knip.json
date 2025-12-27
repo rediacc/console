@@ -22,7 +22,9 @@
         "src/api/queries/*.ts",
         "src/components/common/columns/index.tsx",
         "src/components/common/index.ts",
-        "src/utils/cacheUtils.ts"
+        "src/utils/cacheUtils.ts",
+        "src/adapters/electronStorage.ts",
+        "src/utils/environment.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": [
@@ -31,13 +33,23 @@
         "src/utils/secureContext.ts",
         "src/utils/vaultProtocol.ts"
       ]
+    },
+    "packages/desktop": {
+      "entry": [
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/renderer/main.tsx",
+        "electron.vite.config.ts"
+      ],
+      "project": ["src/**/*.ts", "*.ts"]
     }
   },
-  "ignore": ["**/dist/**", "**/node_modules/**", "**/*.d.ts"],
+  "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts"],
   "ignoreDependencies": [
     "@types/*",
     "@opentelemetry/instrumentation-*",
-    "dayjs"
+    "dayjs",
+    "@electron-toolkit/preload"
   ],
   "ignoreBinaries": ["rimraf"]
 }

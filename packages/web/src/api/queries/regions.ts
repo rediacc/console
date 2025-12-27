@@ -13,7 +13,7 @@ import type {
 } from '@rediacc/shared/types';
 
 // Get all regions
-export const useRegions = (enabled: boolean = true) => {
+export const useRegions = (enabled = true) => {
   return useQuery<GetCompanyRegions_ResultSet1[]>({
     queryKey: ['regions'],
     queryFn: async () => {

@@ -113,7 +113,7 @@ class EndpointService {
    * Fetch all endpoints (predefined + custom)
    * Uses cache to avoid repeated fetches
    */
-  async fetchEndpoints(forceRefresh: boolean = false): Promise<Endpoint[]> {
+  async fetchEndpoints(forceRefresh = false): Promise<Endpoint[]> {
     if (this.endpointsCache && !forceRefresh) {
       return [...this.endpointsCache, ...this.getCustomEndpoints()];
     }

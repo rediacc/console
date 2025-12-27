@@ -44,7 +44,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
   });
 };
 
-export const useRecentAuditLogs = (maxRecords: number = 10) => {
+export const useRecentAuditLogs = (maxRecords = 10) => {
   return useQuery<GetAuditLogs_ResultSet1[]>({
     queryKey: ['recentAuditLogs', maxRecords],
     queryFn: async () => {

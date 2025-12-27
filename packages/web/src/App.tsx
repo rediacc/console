@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect } from 'react';
 import { Flex } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { initializeApiClient } from '@/api/init';
 import { AppProviders } from '@/components/app/AppProviders';
 import { ErrorBoundary } from '@/components/app/ErrorBoundary';
@@ -19,6 +19,7 @@ import { loginSuccess } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth';
 import { getBasePath } from '@/utils/basePath';
+import { isElectron } from '@/utils/environment';
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() =>
@@ -138,9 +139,13 @@ const AppContent: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  // Use HashRouter for Electron (file:// protocol), BrowserRouter for web
+  const Router = isElectron() ? HashRouter : BrowserRouter;
+  const routerProps = isElectron() ? {} : { basename: getBasePath() };
+
   return (
     <AppProviders>
-      <BrowserRouter basename={getBasePath()}>
+      <Router {...routerProps}>
         <RedirectHandler />
         <TelemetryProvider>
           <ErrorBoundary>
@@ -342,7 +347,7 @@ const AppContent: React.FC = () => {
             </InteractionTracker>
           </ErrorBoundary>
         </TelemetryProvider>
-      </BrowserRouter>
+      </Router>
       <ThemedToaster />
       <SessionExpiredModal />
     </AppProviders>

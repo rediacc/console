@@ -18,7 +18,7 @@ const statusIconWrapperStyle: React.CSSProperties = {
  */
 export const renderTimestamp = (
   timestamp: string | Date | null | undefined,
-  format: string = 'YYYY-MM-DD HH:mm:ss'
+  format = 'YYYY-MM-DD HH:mm:ss'
 ): string => {
   if (!timestamp) {
     return '-';
@@ -34,7 +34,7 @@ export const renderTimestamp = (
  */
 export const renderTimestampElement = (
   timestamp: string | Date | null | undefined,
-  format: string = 'YYYY-MM-DD HH:mm:ss'
+  format = 'YYYY-MM-DD HH:mm:ss'
 ): React.ReactNode => {
   if (!timestamp) {
     return <Typography.Text>-</Typography.Text>;
@@ -82,8 +82,8 @@ export const createStatusRenderer = <T extends string>(
  */
 export const renderBoolean = (
   value: boolean | null | undefined,
-  yesText: string = 'Yes',
-  noText: string = 'No'
+  yesText = 'Yes',
+  noText = 'No'
 ): React.ReactNode => {
   if (value === null || value === undefined) {
     return <Typography.Text>-</Typography.Text>;

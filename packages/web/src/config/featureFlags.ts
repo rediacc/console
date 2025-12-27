@@ -129,8 +129,8 @@ export interface FeatureFlag {
 
 class FeatureFlags {
   private isDevelopment = false;
-  private isPowerModeActive: boolean = false; // Global power mode state (session-only)
-  private isLocalhostModeActive: boolean = false; // Localhost mode state (session-only)
+  private isPowerModeActive = false; // Global power mode state (session-only)
+  private isLocalhostModeActive = false; // Localhost mode state (session-only)
   private listeners: Set<() => void> = new Set();
 
   constructor() {

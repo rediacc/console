@@ -14,7 +14,7 @@
  * abbreviatePath('/very/long/path/to/file.txt', 20)
  * // Returns: '.../path/to/file.txt'
  */
-export const abbreviatePath = (path: string, maxLength: number = 50): string => {
+export const abbreviatePath = (path: string, maxLength = 50): string => {
   if (!path || path.length <= maxLength) return path;
 
   // Show last portion of path with ellipsis

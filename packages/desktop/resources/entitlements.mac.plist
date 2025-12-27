@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Required for V8 JavaScript engine JIT compilation -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <!-- Network access for API communication -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <!-- File access for user-selected files -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <!-- Note: Removed dangerous entitlements:
+         - com.apple.security.cs.allow-unsigned-executable-memory
+         - com.apple.security.cs.allow-dyld-environment-variables
+         These weaken hardened runtime and should only be added if strictly required -->
+</dict>
+</plist>

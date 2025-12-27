@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Production CSP: strict without unsafe-eval, unsafe-inline only for styles (Ant Design) -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self';
+               style-src 'self' 'unsafe-inline';
+               connect-src 'self' https://*.rediacc.com wss://*.rediacc.com;
+               img-src 'self' data: https:;
+               font-src 'self' data:;"
+    />
+    <link rel="icon" type="image/svg+xml" href="../../../packages/web/public/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rediacc Console</title>
+    <!-- NO Plausible analytics in desktop version -->
+    <!-- Runtime configuration will be loaded by the app -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

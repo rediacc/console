@@ -380,6 +380,85 @@ function test() {
   fi
 }
 
+# Function to build desktop application
+function desktop() {
+  local COMMAND="${1:-dev}"
+
+  echo "Rediacc Console Desktop - $COMMAND"
+
+  # Install dependencies if needed
+  if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
+    echo "Installing dependencies..."
+    npm install
+  fi
+
+  # Install desktop package dependencies
+  if [ ! -d "$ROOT_DIR/packages/desktop/node_modules" ]; then
+    echo "Installing desktop dependencies..."
+    cd "$ROOT_DIR/packages/desktop"
+    npm install
+    cd "$ROOT_DIR"
+  fi
+
+  case "$COMMAND" in
+    dev)
+      echo "Starting Electron development server..."
+      # Build shared packages first for HMR to work
+      npm run build:packages
+      cd "$ROOT_DIR/packages/desktop"
+      npm run dev
+      ;;
+    build|pack|dist|dist:win|dist:mac|dist:linux)
+      # Common build steps for all packaging commands
+      npm run build:packages
+      npm run build:web
+      cd "$ROOT_DIR/packages/desktop"
+
+      case "$COMMAND" in
+        build)
+          echo "Building Electron application..."
+          npm run build
+          ;;
+        pack)
+          echo "Packaging Electron application (unpacked)..."
+          npm run pack
+          ;;
+        dist)
+          echo "Building distributable installers for all platforms..."
+          npm run dist
+          ;;
+        dist:win)
+          echo "Building Windows installer..."
+          npm run dist:win
+          ;;
+        dist:mac)
+          echo "Building macOS installer..."
+          npm run dist:mac
+          ;;
+        dist:linux)
+          echo "Building Linux installers..."
+          npm run dist:linux
+          ;;
+      esac
+      ;;
+    *)
+      echo "Unknown desktop command: $COMMAND"
+      echo ""
+      echo "Usage: ./go desktop [COMMAND]"
+      echo ""
+      echo "Commands:"
+      echo "  dev         Start Electron development server with HMR"
+      echo "  build       Build the Electron application"
+      echo "  pack        Package application (unpacked, for testing)"
+      echo "  dist        Build distributable installers for all platforms"
+      echo "  dist:win    Build Windows installer (NSIS)"
+      echo "  dist:mac    Build macOS installer (DMG)"
+      echo "  dist:linux  Build Linux installers (AppImage + deb)"
+      exit 1
+      ;;
+  esac
+}
+
 # Function to create release package
 function release() {
   echo "Creating release build..."
@@ -595,6 +674,14 @@ function show_help() {
   echo "  setup [sandbox]  Setup development environment"
   echo "                   Use 'setup sandbox' for open-source setup"
   echo "  status        Check application status"
+  echo "  desktop [cmd] Build and run desktop application (Electron)"
+  echo "    dev         Start Electron dev server with HMR"
+  echo "    build       Build the Electron application"
+  echo "    pack        Package application (unpacked, for testing)"
+  echo "    dist        Build installers for all platforms"
+  echo "    dist:win    Build Windows installer (NSIS)"
+  echo "    dist:mac    Build macOS installer (DMG)"
+  echo "    dist:linux  Build Linux installers (AppImage + deb)"
   echo ""
   echo "  help          Show this help message"
   echo ""
@@ -653,6 +740,10 @@ main() {
         ;;
       status)
         status
+        ;;
+      desktop)
+        shift  # Remove 'desktop' from arguments
+        desktop "$@"
         ;;
       help|--help|-h)
         show_help

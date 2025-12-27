@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { createTelemetryConfig, telemetryService } from '@/services/telemetryService';
 import { selectCompany, selectUser } from '@/store/auth/authSelectors';
+import { isElectron } from '@/utils/environment';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;
 
@@ -85,6 +86,13 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
 
   useEffect(() => {
     const initializeTelemetry = () => {
+      // Skip telemetry initialization in Electron desktop app
+      if (isElectron()) {
+        // Telemetry is disabled in desktop environment for privacy
+        setIsInitialized(false);
+        return;
+      }
+
       try {
         const config = createTelemetryConfig();
         telemetryService.initialize(config);
