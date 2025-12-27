@@ -91,10 +91,7 @@ async function exportEd25519PrivateKeyToPEM(privateKey: CryptoKey): Promise<stri
 }
 
 // Export RSA public key to SSH format
-async function exportRSAPublicKeyToSSH(
-  publicKey: CryptoKey,
-  comment = ''
-): Promise<string> {
+async function exportRSAPublicKeyToSSH(publicKey: CryptoKey, comment = ''): Promise<string> {
   const exported = await crypto.subtle.exportKey('spki', publicKey);
   const exportedAsBase64 = arrayBufferToBase64(exported);
 
@@ -187,10 +184,7 @@ export function generateRandomPassword(): string {
 }
 
 // Export Ed25519 public key to SSH format
-async function exportEd25519PublicKeyToSSH(
-  publicKey: CryptoKey,
-  comment = ''
-): Promise<string> {
+async function exportEd25519PublicKeyToSSH(publicKey: CryptoKey, comment = ''): Promise<string> {
   const exported = await crypto.subtle.exportKey('spki', publicKey);
   const exportedAsBase64 = arrayBufferToBase64(exported);
   return `ssh-ed25519 ${exportedAsBase64} ${comment}`.trim();
