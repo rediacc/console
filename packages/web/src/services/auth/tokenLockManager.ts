@@ -12,7 +12,7 @@
 
 class TokenLockManager {
   private tokenLock: Promise<void> = Promise.resolve();
-  private currentVersion: number = 0;
+  private currentVersion = 0;
 
   /**
    * Acquire lock for token operation

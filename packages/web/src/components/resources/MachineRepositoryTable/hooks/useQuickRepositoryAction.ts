@@ -39,7 +39,7 @@ export const useQuickRepositoryAction = ({
   const executeQuickAction = async (
     repository: Repository,
     functionName: string,
-    priority: number = 4,
+    priority = 4,
     option?: string
   ): Promise<void> => {
     const repoData = teamRepositories.find(

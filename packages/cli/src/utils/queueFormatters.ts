@@ -124,7 +124,7 @@ function chalkColorFn(text: string, level: string): string {
  * formatError("ERROR: Repository not found\nWARNING: Disk space low", true)
  * // Returns: [ERROR] Repository not found\n[WARNING] Disk space low
  */
-export function formatError(failureReason: string | undefined, showAll: boolean = false): string {
+export function formatError(failureReason: string | undefined, showAll = false): string {
   if (!failureReason) return chalk.gray('No errors');
 
   const result = parseFailureReason(failureReason);

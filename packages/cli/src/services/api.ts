@@ -56,7 +56,7 @@ function hasEncryptedVaultContent(value: unknown): boolean {
 
 class CliApiClient implements SharedApiClient {
   private client: AxiosInstance;
-  private apiUrl: string = '';
+  private apiUrl = '';
   private initialized = false;
   private masterPasswordGetter: (() => Promise<string>) | null = null;
 

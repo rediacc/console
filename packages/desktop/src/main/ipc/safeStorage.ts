@@ -1,5 +1,5 @@
-import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
+import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { app, ipcMain, safeStorage } from 'electron';
 
