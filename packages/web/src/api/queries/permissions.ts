@@ -1,7 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
+import {
+  parseGetCompanyPermissionGroups,
+  parseGetPermissionGroupDetails,
+} from '@rediacc/shared/api';
 import type { PermissionGroupWithParsedPermissions } from '@rediacc/shared/api';
 import type {
   CreatePermissionGroupParams,
@@ -16,7 +20,8 @@ export const usePermissionGroups = () => {
   return useQuery<PermissionGroupWithParsedPermissions[]>({
     queryKey: ['permissionGroups'],
     queryFn: async () => {
-      return api.permissions.listGroups();
+      const response = await typedApi.GetCompanyPermissionGroups({});
+      return parseGetCompanyPermissionGroups(response as never);
     },
   });
 };
@@ -26,7 +31,10 @@ export const usePermissionGroupDetails = (groupName: string) => {
   return useQuery({
     queryKey: ['permissionGroup', groupName],
     queryFn: async () => {
-      const permissions = await api.permissions.getGroupDetails({ permissionGroupName: groupName });
+      const response = await typedApi.GetPermissionGroupDetails({
+        permissionGroupName: groupName,
+      });
+      const permissions = parseGetPermissionGroupDetails(response as never);
 
       return {
         permissionGroupName: groupName,
@@ -41,7 +49,7 @@ export const usePermissionGroupDetails = (groupName: string) => {
 export const useCreatePermissionGroup = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, CreatePermissionGroupParams>({
-    mutationFn: (params) => api.permissions.createGroup(params),
+    mutationFn: (params) => typedApi.CreatePermissionGroup(params),
     successMessage: (_, vars) =>
       i18n.t('organization:access.success.groupCreated', { group: vars.permissionGroupName }),
     errorMessage: i18n.t('organization:access.errors.createGroupFailed'),
@@ -56,7 +64,7 @@ export const useCreatePermissionGroup = () => {
 export const useDeletePermissionGroup = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeletePermissionGroupParams>({
-    mutationFn: (params) => api.permissions.deleteGroup(params),
+    mutationFn: (params) => typedApi.DeletePermissionGroup(params),
     successMessage: (_, vars) =>
       i18n.t('organization:access.success.groupDeleted', { group: vars.permissionGroupName }),
     errorMessage: i18n.t('organization:access.errors.deleteGroupFailed'),
@@ -71,7 +79,7 @@ export const useDeletePermissionGroup = () => {
 export const useAddPermissionToGroup = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, CreatePermissionInGroupParams>({
-    mutationFn: (params) => api.permissions.addPermission(params),
+    mutationFn: (params) => typedApi.CreatePermissionInGroup(params),
     successMessage: (_, vars) =>
       i18n.t('organization:access.success.permissionAdded', { permission: vars.permissionName }),
     errorMessage: i18n.t('organization:access.errors.addPermissionFailed'),
@@ -88,7 +96,7 @@ export const useAddPermissionToGroup = () => {
 export const useRemovePermissionFromGroup = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeletePermissionFromGroupParams>({
-    mutationFn: (params) => api.permissions.removePermission(params),
+    mutationFn: (params) => typedApi.DeletePermissionFromGroup(params),
     successMessage: (_, vars) =>
       i18n.t('organization:access.success.permissionRemoved', { permission: vars.permissionName }),
     errorMessage: i18n.t('organization:access.errors.removePermissionFailed'),
@@ -105,7 +113,7 @@ export const useRemovePermissionFromGroup = () => {
 export const useAssignUserToGroup = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateUserAssignedPermissionsParams>({
-    mutationFn: (params) => api.users.assignPermissions(params),
+    mutationFn: (params) => typedApi.UpdateUserAssignedPermissions(params),
     successMessage: (_, vars) =>
       i18n.t('organization:access.success.userAssigned', { group: vars.permissionGroupName }),
     errorMessage: i18n.t('organization:access.errors.assignUserFailed'),

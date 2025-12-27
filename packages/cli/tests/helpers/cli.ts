@@ -48,8 +48,8 @@ export async function runCli(args: string[], options: RunCliOptions = {}): Promi
 
   const result = await execa('npx', fullArgs, execaOptions);
 
-  const stdout = result.stdout ?? '';
-  const stderr = result.stderr ?? '';
+  const stdout = String(result.stdout ?? '');
+  const stderr = String(result.stderr ?? '');
   const exitCode = result.exitCode ?? 0;
 
   return {

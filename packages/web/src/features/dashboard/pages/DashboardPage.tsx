@@ -6,7 +6,6 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import CephDashboardWidget from '@/features/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/features/dashboard/components/SystemVersionFooter';
 import { AlertOutlined } from '@/utils/optimizedIcons';
-import type { QueueMachineIssue, QueueTeamIssue } from '@rediacc/shared/types';
 import AccountHealthWidget from '../widgets/AccountHealthWidget';
 import DashboardAlertsWidget from '../widgets/DashboardAlertsWidget';
 import QueueDetailsWidget from '../widgets/QueueDetailsWidget';
@@ -57,14 +56,10 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  const activeSubscriptions = dashboard.allActiveSubscriptions ?? [];
+  const activeSubscriptions = dashboard.allActiveSubscriptions;
   const queueStats = dashboard.queueStats;
-  const teamIssues: QueueTeamIssue[] = Array.isArray(queueStats?.teamIssues)
-    ? queueStats.teamIssues
-    : [];
-  const machineIssues: QueueMachineIssue[] = Array.isArray(queueStats?.machineIssues)
-    ? queueStats.machineIssues
-    : [];
+  const teamIssues = dashboard.teamIssues;
+  const machineIssues = dashboard.machineIssues;
   const hasQueueDetails = Boolean(
     queueStats && (teamIssues.length > 0 || machineIssues.length > 0)
   );
@@ -88,11 +83,19 @@ const DashboardPage: React.FC = () => {
         <QueueOverviewWidget queueStats={queueStats} />
 
         {hasQueueDetails && queueStats && (
-          <QueueDetailsWidget queueStats={queueStats} featureAccess={featureAccess} />
+          <QueueDetailsWidget
+            queueStats={queueStats}
+            teamIssues={teamIssues}
+            machineIssues={machineIssues}
+            featureAccess={featureAccess}
+          />
         )}
 
-        {featureAccess?.hasAdvancedAnalytics === 1 && dashboard.cephStats && (
-          <CephDashboardWidget stats={dashboard.cephStats} />
+        {featureAccess?.hasAdvancedAnalytics && dashboard.cephStats && (
+          <CephDashboardWidget
+            stats={dashboard.cephStats}
+            teamBreakdown={dashboard.cephTeamBreakdown}
+          />
         )}
 
         <AccountHealthWidget accountHealth={accountHealth} />

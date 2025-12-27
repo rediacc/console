@@ -61,7 +61,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
           <Col xs={12} md={6}>
             <Statistic
               title={t('dashboard.pending')}
-              value={queueStats.pendingCount || 0}
+              value={queueStats.pendingCount ?? 0}
               prefix={<ClockCircleOutlined />}
               data-testid="dashboard-stat-pending"
             />
@@ -69,7 +69,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
           <Col xs={12} md={6}>
             <Statistic
               title={t('dashboard.processing')}
-              value={queueStats.activeCount || 0}
+              value={queueStats.activeCount ?? 0}
               prefix={<SyncOutlined spin />}
               data-testid="dashboard-stat-processing"
             />
@@ -77,7 +77,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
           <Col xs={12} md={6}>
             <Statistic
               title={t('dashboard.completed')}
-              value={queueStats.completedCount || 0}
+              value={queueStats.completedCount ?? 0}
               prefix={<CheckCircleOutlined />}
               data-testid="dashboard-stat-completed"
             />
@@ -85,7 +85,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
           <Col xs={12} md={6}>
             <Statistic
               title={t('dashboard.failed')}
-              value={queueStats.failedCount || 0}
+              value={queueStats.failedCount ?? 0}
               prefix={<ExclamationCircleOutlined />}
               data-testid="dashboard-stat-failed"
             />
@@ -96,7 +96,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
           <Flex vertical gap={8} className="w-full">
             {queueStats.hasStaleItems === 1 && (
               <Alert
-                message={`${queueStats.staleCount || 0} stale items`}
+                message={`${queueStats.staleCount ?? 0} stale items`}
                 type="warning"
                 showIcon
                 icon={<WarningOutlined />}
@@ -105,7 +105,7 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
             )}
             {queueStats.hasOldPendingItems === 1 && (
               <Alert
-                message={`Oldest: ${Math.floor((queueStats.oldestPendingAgeMinutes || 0) / 60)}h`}
+                message={`Oldest: ${Math.floor((queueStats.oldestPendingAgeMinutes ?? 0) / 60)}h`}
                 type="info"
                 showIcon
                 icon={<FieldTimeOutlined />}

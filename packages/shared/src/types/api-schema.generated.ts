@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-17T10:46:54Z
+ * Generated at: 2025-12-26T19:29:31Z
  * Schema version: 3.0.0
- * Schema generated: 2025-12-12T14:56:10.0016831Z
+ * Schema generated: 2025-12-26T19:19:11.4388227Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: ./_scripts/console-schema.sh --generate
@@ -12,6 +12,37 @@
  * This file provides compile-time type safety for API calls by ensuring
  * parameter names and types match the middleware's expected schema.
  */
+
+// ============================================================================
+// Type-Safe API Base Types
+// ============================================================================
+
+/**
+ * Result set interface for typed responses.
+ * Local type alias matching ApiResultSet from api.ts for self-containment.
+ * Not exported to avoid conflicts with the main ApiResultSet export.
+ */
+type ResultSet<T> = {
+  data: T[];
+  resultSetIndex?: number;
+  resultSetName?: string;
+};
+
+/**
+ * Base interface for typed API responses.
+ * Used by generated TypedResponse interfaces for compile-time type safety.
+ */
+export interface ApiResponseBase {
+  failure: number;
+  errors: string[];
+  message: string;
+  resultSets: ResultSet<unknown>[];
+  status?: number;
+  isTFAEnabled?: boolean;
+  isAuthorized?: boolean;
+  authenticationStatus?: string;
+  nextRequestToken?: string;
+}
 
 // ============================================================================
 // Procedure Parameter Interfaces
@@ -419,9 +450,7 @@ export interface GetCloneMachinesParams {
   teamName: string;
 }
 
-export type GetCompanyDashboardJsonParams = Record<string, never>;
-
-export type GetCompanyDataGraphJsonParams = Record<string, never>;
+export type GetCompanyDashboardParams = Record<string, never>;
 
 export type GetCompanyPermissionGroupsParams = Record<string, never>;
 
@@ -1707,6 +1736,10 @@ export type GetCephRbdSnapshotsResults = [
 ];
 
 export interface GetCloneMachineAssignmentValidation_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetCloneMachineAssignmentValidation_ResultSet1 {
   /** @sqlType nvarchar */
   machineName: string | null;
   /** @sqlType nvarchar */
@@ -1715,10 +1748,6 @@ export interface GetCloneMachineAssignmentValidation_ResultSet0 {
   currentAssignment: string | null;
   /** @sqlType nvarchar */
   message: string | null;
-}
-export interface GetCloneMachineAssignmentValidation_ResultSet1 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
 }
 export interface GetCloneMachineAssignmentValidation_ResultSet2 {
   /** @sqlType nvarchar */
@@ -1755,15 +1784,41 @@ export type GetCloneMachinesResults = [
   GetCloneMachines_ResultSet1[],
 ];
 
-export interface GetCompanyDashboardJson_ResultSet0 {
+export interface GetCompanyDashboard_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
-export interface GetCompanyDashboardJson_ResultSet1 {
+export interface GetCompanyDashboard_ResultSet1 {
   /** @sqlType nvarchar */
-  subscriptionAndResourcesJson: string | null;
+  companyName: string;
+  /** @sqlType nvarchar */
+  companyGuid: string | null;
+  /** @sqlType nvarchar */
+  planCode: string | null;
 }
-export interface GetCompanyDashboardJson_ResultSet2 {
+export interface GetCompanyDashboard_ResultSet2 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  quantity: number | null;
+  /** @sqlType int */
+  totalActivePurchases: number | null;
+  /** @sqlType datetime2 */
+  startDate: string | null;
+  /** @sqlType datetime2 */
+  endDate: string | null;
+  /** @sqlType int */
+  daysRemaining: number | null;
+  /** @sqlType nvarchar */
+  status: string | null;
+  /** @sqlType int */
+  isActive: number;
+  /** @sqlType int */
+  isTrial: number;
+  /** @sqlType int */
+  isExpiringSoon: number;
+}
+export interface GetCompanyDashboard_ResultSet3 {
   /** @sqlType nvarchar */
   planCode: string | null;
   /** @sqlType int */
@@ -1779,25 +1834,269 @@ export interface GetCompanyDashboardJson_ResultSet2 {
   /** @sqlType int */
   isTrial: number;
 }
-
-export type GetCompanyDashboardJsonResults = [
-  GetCompanyDashboardJson_ResultSet0[],
-  GetCompanyDashboardJson_ResultSet1[],
-  GetCompanyDashboardJson_ResultSet2[],
-];
-
-export interface GetCompanyDataGraphJson_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyDataGraphJson_ResultSet1 {
+export interface GetCompanyDashboard_ResultSet4 {
+  /** @sqlType varchar */
+  resourceType: string;
+  /** @sqlType int */
+  resourceLimit: number | null;
   /** @sqlType nvarchar */
-  companyDataGraph: string | null;
+  activeSubscriptionTier: string | null;
+  /** @sqlType int */
+  currentUsage: number | null;
+  /** @sqlType int */
+  isLimitReached: number;
+  /** @sqlType decimal */
+  usagePercentage: number | null;
+}
+export interface GetCompanyDashboard_ResultSet5 {
+  /** @sqlType int */
+  resourcesAtLimit: number | null;
+  /** @sqlType int */
+  resourcesNearLimit: number | null;
+  /** @sqlType varchar */
+  subscriptionStatus: string | null;
+  /** @sqlType varchar */
+  upgradeRecommendation: string;
+}
+export interface GetCompanyDashboard_ResultSet6 {
+  /** @sqlType int */
+  hasAdvancedAnalytics: number;
+  /** @sqlType int */
+  hasPrioritySupport: number;
+  /** @sqlType int */
+  hasDedicatedAccount: number;
+  /** @sqlType int */
+  hasCustomBranding: number;
+  /** @sqlType int */
+  ceph: number;
+  /** @sqlType int */
+  auditLog: number;
+  /** @sqlType int */
+  advancedQueue: number;
+}
+export interface GetCompanyDashboard_ResultSet7 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  machineLimit: number | null;
+  /** @sqlType int */
+  repositoryLimit: number | null;
+  /** @sqlType int */
+  userLimit: number | null;
+  /** @sqlType int */
+  maxActiveJobs: number | null;
+  /** @sqlType int */
+  maxReservedJobs: number | null;
+  /** @sqlType int */
+  jobTimeoutHours: number | null;
+  /** @sqlType int */
+  maxRepositorySize: number | null;
+}
+export interface GetCompanyDashboard_ResultSet8 {
+  /** @sqlType int */
+  pendingCount: number | null;
+  /** @sqlType int */
+  assignedCount: number | null;
+  /** @sqlType int */
+  processingCount: number | null;
+  /** @sqlType int */
+  activeCount: number | null;
+  /** @sqlType int */
+  completedCount: number | null;
+  /** @sqlType int */
+  cancelledCount: number | null;
+  /** @sqlType int */
+  failedCount: number | null;
+  /** @sqlType int */
+  totalCount: number | null;
+  /** @sqlType int */
+  staleCount: number | null;
+  /** @sqlType int */
+  stalePendingCount: number | null;
+  /** @sqlType int */
+  completedToday: number | null;
+  /** @sqlType int */
+  cancelledToday: number | null;
+  /** @sqlType int */
+  createdToday: number | null;
+  /** @sqlType int */
+  itemsWithRetries: number | null;
+  /** @sqlType int */
+  maxRetryCount: number | null;
+  /** @sqlType int */
+  avgRetryCount: number | null;
+  /** @sqlType int */
+  oldestPendingAgeMinutes: number | null;
+  /** @sqlType int */
+  avgPendingAgeMinutes: number | null;
+  /** @sqlType int */
+  highestPriorityPending: number | null;
+  /** @sqlType int */
+  highPriorityPending: number | null;
+  /** @sqlType int */
+  normalPriorityPending: number | null;
+  /** @sqlType int */
+  lowPriorityPending: number | null;
+  /** @sqlType int */
+  hasStaleItems: number;
+  /** @sqlType int */
+  hasOldPendingItems: number;
+}
+export interface GetCompanyDashboard_ResultSet9 {
+  /** @sqlType int */
+  totalUserItems: number | null;
+  /** @sqlType int */
+  userPendingItems: number | null;
+  /** @sqlType int */
+  userActiveItems: number | null;
+  /** @sqlType int */
+  userCompletedToday: number | null;
+  /** @sqlType int */
+  userHighPriorityActive: number | null;
+}
+export interface GetCompanyDashboard_ResultSet10 {
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  pendingItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  staleItems: number | null;
+}
+export interface GetCompanyDashboard_ResultSet11 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  pendingItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  staleItems: number | null;
+}
+export interface GetCompanyDashboard_ResultSet12 {
+  /** @sqlType nvarchar */
+  userName: string;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  completedToday: number | null;
+  /** @sqlType int */
+  highPriorityActive: number | null;
+}
+export interface GetCompanyDashboard_ResultSet13 {
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterAssignedMachines: number | null;
+  /** @sqlType int */
+  imageAssignedMachines: number;
+  /** @sqlType int */
+  cloneAssignedMachines: number;
+  /** @sqlType int */
+  trulyAvailableMachines: number | null;
+  /** @sqlType decimal */
+  availablePercentage: number | null;
+  /** @sqlType decimal */
+  clusterPercentage: number | null;
+  /** @sqlType decimal */
+  imagePercentage: number | null;
+  /** @sqlType decimal */
+  clonePercentage: number | null;
+  /** @sqlType int */
+  totalClusters: number;
+  /** @sqlType int */
+  activeClusters: number;
+  /** @sqlType int */
+  avgMachinesPerCluster: number;
+}
+export interface GetCompanyDashboard_ResultSet14 {
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterAssignedMachines: number | null;
+  /** @sqlType int */
+  imageAssignedMachines: number | null;
+  /** @sqlType int */
+  cloneAssignedMachines: number | null;
+  /** @sqlType int */
+  trulyAvailableMachines: number | null;
+  /** @sqlType decimal */
+  availablePercentage: number | null;
+  /** @sqlType decimal */
+  clusterPercentage: number | null;
+  /** @sqlType decimal */
+  imagePercentage: number | null;
+  /** @sqlType decimal */
+  clonePercentage: number | null;
+  /** @sqlType int */
+  totalClusters: number | null;
+  /** @sqlType int */
+  activeClusters: number | null;
+  /** @sqlType int */
+  avgMachinesPerCluster: number | null;
+}
+export interface GetCompanyDashboard_ResultSet15 {
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterMachines: number | null;
+  /** @sqlType int */
+  imageMachines: number | null;
+  /** @sqlType int */
+  cloneMachines: number | null;
+}
+export interface GetCompanyDashboard_ResultSet16 {
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterMachines: number | null;
+  /** @sqlType int */
+  imageMachines: number | null;
+  /** @sqlType int */
+  cloneMachines: number | null;
 }
 
-export type GetCompanyDataGraphJsonResults = [
-  GetCompanyDataGraphJson_ResultSet0[],
-  GetCompanyDataGraphJson_ResultSet1[],
+export type GetCompanyDashboardResults = [
+  GetCompanyDashboard_ResultSet0[],
+  GetCompanyDashboard_ResultSet1[],
+  GetCompanyDashboard_ResultSet2[],
+  GetCompanyDashboard_ResultSet3[],
+  GetCompanyDashboard_ResultSet4[],
+  GetCompanyDashboard_ResultSet5[],
+  GetCompanyDashboard_ResultSet6[],
+  GetCompanyDashboard_ResultSet7[],
+  GetCompanyDashboard_ResultSet8[],
+  GetCompanyDashboard_ResultSet9[],
+  GetCompanyDashboard_ResultSet10[],
+  GetCompanyDashboard_ResultSet11[],
+  GetCompanyDashboard_ResultSet12[],
+  GetCompanyDashboard_ResultSet13[],
+  GetCompanyDashboard_ResultSet14[],
+  GetCompanyDashboard_ResultSet15[],
+  GetCompanyDashboard_ResultSet16[],
 ];
 
 export interface GetCompanyPermissionGroups_ResultSet0 {
@@ -2093,6 +2392,10 @@ export type GetLookupDataResults = [
 ];
 
 export interface GetMachineAssignmentStatus_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetMachineAssignmentStatus_ResultSet1 {
   /** @sqlType nvarchar */
   machineName: string | null;
   /** @sqlType nvarchar */
@@ -2103,10 +2406,6 @@ export interface GetMachineAssignmentStatus_ResultSet0 {
   assignmentDetails: string | null;
   /** @sqlType nvarchar */
   status: string | null;
-}
-export interface GetMachineAssignmentStatus_ResultSet1 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
 }
 export interface GetMachineAssignmentStatus_ResultSet2 {
   /** @sqlType nvarchar */
@@ -2798,6 +3097,10 @@ export type GetUserVaultResults = [
 ];
 
 export interface ImportCompanyData_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface ImportCompanyData_ResultSet1 {
   /** @sqlType varchar */
   message: string;
   /** @sqlType int */
@@ -2806,10 +3109,6 @@ export interface ImportCompanyData_ResultSet0 {
   skippedCount: number;
   /** @sqlType int */
   errorCount: number;
-}
-export interface ImportCompanyData_ResultSet1 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
 }
 export interface ImportCompanyData_ResultSet2 {
   /** @sqlType int */
@@ -2992,12 +3291,12 @@ export type UpdateCephPoolVaultResults = [
 ];
 
 export interface UpdateCloneMachineAssignments_ResultSet0 {
-  /** @sqlType varchar */
-  message: string;
-}
-export interface UpdateCloneMachineAssignments_ResultSet1 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
+}
+export interface UpdateCloneMachineAssignments_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
 }
 export interface UpdateCloneMachineAssignments_ResultSet2 {
   /** @sqlType nvarchar */
@@ -3016,12 +3315,12 @@ export type UpdateCloneMachineAssignmentsResults = [
 ];
 
 export interface UpdateCloneMachineRemovals_ResultSet0 {
-  /** @sqlType varchar */
-  message: string;
-}
-export interface UpdateCloneMachineRemovals_ResultSet1 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
+}
+export interface UpdateCloneMachineRemovals_ResultSet1 {
+  /** @sqlType varchar */
+  message: string;
 }
 export interface UpdateCloneMachineRemovals_ResultSet2 {
   /** @sqlType nvarchar */
@@ -3648,6 +3947,1945 @@ export type UpdateUserVaultResults = [
 ];
 
 // ============================================================================
+// Typed Response Interfaces
+// ============================================================================
+
+export interface ActivateUserAccountTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<ActivateUserAccount_ResultSet0>,
+  ];
+}
+
+export interface CancelQueueItemTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CancelQueueItem_ResultSet0>,
+    ResultSet<CancelQueueItem_ResultSet1>,
+    ResultSet<CancelQueueItem_ResultSet2>,
+  ];
+}
+
+export interface CreateAuthenticationRequestTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateAuthenticationRequest_ResultSet0>,
+  ];
+}
+
+export interface CreateBridgeTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateBridge_ResultSet0>,
+    ResultSet<CreateBridge_ResultSet1>,
+  ];
+}
+
+export interface CreateCephClusterTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateCephCluster_ResultSet0>,
+    ResultSet<CreateCephCluster_ResultSet1>,
+  ];
+}
+
+export interface CreateCephPoolTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateCephPool_ResultSet0>,
+    ResultSet<CreateCephPool_ResultSet1>,
+  ];
+}
+
+export interface CreateCephRbdCloneTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateCephRbdClone_ResultSet0>,
+    ResultSet<CreateCephRbdClone_ResultSet1>,
+  ];
+}
+
+export interface CreateCephRbdImageTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateCephRbdImage_ResultSet0>,
+    ResultSet<CreateCephRbdImage_ResultSet1>,
+  ];
+}
+
+export interface CreateCephRbdSnapshotTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateCephRbdSnapshot_ResultSet0>,
+    ResultSet<CreateCephRbdSnapshot_ResultSet1>,
+  ];
+}
+
+export interface CreateMachineTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateMachine_ResultSet0>,
+    ResultSet<CreateMachine_ResultSet1>,
+  ];
+}
+
+export interface CreateNewCompanyTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateNewCompany_ResultSet0>,
+  ];
+}
+
+export interface CreateNewUserTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateNewUser_ResultSet0>,
+    ResultSet<CreateNewUser_ResultSet1>,
+  ];
+}
+
+export interface CreatePermissionGroupTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreatePermissionGroup_ResultSet0>,
+    ResultSet<CreatePermissionGroup_ResultSet1>,
+  ];
+}
+
+export interface CreatePermissionInGroupTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreatePermissionInGroup_ResultSet0>,
+    ResultSet<CreatePermissionInGroup_ResultSet1>,
+  ];
+}
+
+export interface CreateQueueItemTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateQueueItem_ResultSet0>,
+    ResultSet<CreateQueueItem_ResultSet1>,
+  ];
+}
+
+export interface CreateRegionTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateRegion_ResultSet0>,
+    ResultSet<CreateRegion_ResultSet1>,
+  ];
+}
+
+export interface CreateRepositoryTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateRepository_ResultSet0>,
+    ResultSet<CreateRepository_ResultSet1>,
+  ];
+}
+
+export interface CreateStorageTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateStorage_ResultSet0>,
+    ResultSet<CreateStorage_ResultSet1>,
+  ];
+}
+
+export interface CreateTeamTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateTeam_ResultSet0>,
+    ResultSet<CreateTeam_ResultSet1>,
+  ];
+}
+
+export interface CreateTeamMembershipTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<CreateTeamMembership_ResultSet0>,
+    ResultSet<CreateTeamMembership_ResultSet1>,
+  ];
+}
+
+export interface DeleteBridgeTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteBridge_ResultSet0>,
+  ];
+}
+
+export interface DeleteCephClusterTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteCephCluster_ResultSet0>,
+    ResultSet<DeleteCephCluster_ResultSet1>,
+  ];
+}
+
+export interface DeleteCephPoolTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteCephPool_ResultSet0>,
+    ResultSet<DeleteCephPool_ResultSet1>,
+  ];
+}
+
+export interface DeleteCephRbdCloneTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteCephRbdClone_ResultSet0>,
+    ResultSet<DeleteCephRbdClone_ResultSet1>,
+  ];
+}
+
+export interface DeleteCephRbdImageTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteCephRbdImage_ResultSet0>,
+    ResultSet<DeleteCephRbdImage_ResultSet1>,
+  ];
+}
+
+export interface DeleteCephRbdSnapshotTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteCephRbdSnapshot_ResultSet0>,
+    ResultSet<DeleteCephRbdSnapshot_ResultSet1>,
+  ];
+}
+
+export interface DeleteMachineTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteMachine_ResultSet0>,
+  ];
+}
+
+export interface DeletePermissionFromGroupTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeletePermissionFromGroup_ResultSet0>,
+    ResultSet<DeletePermissionFromGroup_ResultSet1>,
+  ];
+}
+
+export interface DeletePermissionGroupTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeletePermissionGroup_ResultSet0>,
+    ResultSet<DeletePermissionGroup_ResultSet1>,
+  ];
+}
+
+export interface DeleteQueueItemTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteQueueItem_ResultSet0>,
+    ResultSet<DeleteQueueItem_ResultSet1>,
+  ];
+}
+
+export interface DeleteRegionTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteRegion_ResultSet0>,
+  ];
+}
+
+export interface DeleteRepositoryTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteRepository_ResultSet0>,
+  ];
+}
+
+export interface DeleteStorageTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteStorage_ResultSet0>,
+  ];
+}
+
+export interface DeleteTeamTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteTeam_ResultSet0>,
+  ];
+}
+
+export interface DeleteUserFromTeamTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteUserFromTeam_ResultSet0>,
+    ResultSet<DeleteUserFromTeam_ResultSet1>,
+  ];
+}
+
+export interface DeleteUserRequestTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<DeleteUserRequest_ResultSet0>,
+    ResultSet<DeleteUserRequest_ResultSet1>,
+  ];
+}
+
+export interface ExportCompanyDataTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<ExportCompanyData_ResultSet0>,
+    ResultSet<ExportCompanyData_ResultSet1>,
+  ];
+}
+
+export interface ForkAuthenticationRequestTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<ForkAuthenticationRequest_ResultSet0>,
+    ResultSet<ForkAuthenticationRequest_ResultSet1>,
+  ];
+}
+
+export interface GetAuditLogsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetAuditLogs_ResultSet0>,
+    ResultSet<GetAuditLogs_ResultSet1>,
+    ResultSet<GetAuditLogs_ResultSet2>,
+  ];
+}
+
+export interface GetAvailableMachinesForCloneTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetAvailableMachinesForClone_ResultSet0>,
+    ResultSet<GetAvailableMachinesForClone_ResultSet1>,
+  ];
+}
+
+export interface GetCephClusterMachinesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCephClusterMachines_ResultSet0>,
+    ResultSet<GetCephClusterMachines_ResultSet1>,
+  ];
+}
+
+export interface GetCephClustersTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCephClusters_ResultSet0>,
+    ResultSet<GetCephClusters_ResultSet1>,
+  ];
+}
+
+export interface GetCephPoolsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCephPools_ResultSet0>,
+    ResultSet<GetCephPools_ResultSet1>,
+  ];
+}
+
+export interface GetCephRbdClonesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCephRbdClones_ResultSet0>,
+    ResultSet<GetCephRbdClones_ResultSet1>,
+  ];
+}
+
+export interface GetCephRbdImagesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCephRbdImages_ResultSet0>,
+    ResultSet<GetCephRbdImages_ResultSet1>,
+  ];
+}
+
+export interface GetCephRbdSnapshotsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCephRbdSnapshots_ResultSet0>,
+    ResultSet<GetCephRbdSnapshots_ResultSet1>,
+  ];
+}
+
+export interface GetCloneMachineAssignmentValidationTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCloneMachineAssignmentValidation_ResultSet0>,
+    ResultSet<GetCloneMachineAssignmentValidation_ResultSet1>,
+    ResultSet<GetCloneMachineAssignmentValidation_ResultSet2>,
+  ];
+}
+
+export interface GetCloneMachinesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCloneMachines_ResultSet0>,
+    ResultSet<GetCloneMachines_ResultSet1>,
+  ];
+}
+
+export interface GetCompanyDashboardTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCompanyDashboard_ResultSet0>,
+    ResultSet<GetCompanyDashboard_ResultSet1>,
+    ResultSet<GetCompanyDashboard_ResultSet2>,
+    ResultSet<GetCompanyDashboard_ResultSet3>,
+    ResultSet<GetCompanyDashboard_ResultSet4>,
+    ResultSet<GetCompanyDashboard_ResultSet5>,
+    ResultSet<GetCompanyDashboard_ResultSet6>,
+    ResultSet<GetCompanyDashboard_ResultSet7>,
+    ResultSet<GetCompanyDashboard_ResultSet8>,
+    ResultSet<GetCompanyDashboard_ResultSet9>,
+    ResultSet<GetCompanyDashboard_ResultSet10>,
+    ResultSet<GetCompanyDashboard_ResultSet11>,
+    ResultSet<GetCompanyDashboard_ResultSet12>,
+    ResultSet<GetCompanyDashboard_ResultSet13>,
+    ResultSet<GetCompanyDashboard_ResultSet14>,
+    ResultSet<GetCompanyDashboard_ResultSet15>,
+    ResultSet<GetCompanyDashboard_ResultSet16>,
+  ];
+}
+
+export interface GetCompanyPermissionGroupsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCompanyPermissionGroups_ResultSet0>,
+    ResultSet<GetCompanyPermissionGroups_ResultSet1>,
+  ];
+}
+
+export interface GetCompanyRegionsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCompanyRegions_ResultSet0>,
+    ResultSet<GetCompanyRegions_ResultSet1>,
+  ];
+}
+
+export interface GetCompanyTeamsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCompanyTeams_ResultSet0>,
+    ResultSet<GetCompanyTeams_ResultSet1>,
+  ];
+}
+
+export interface GetCompanyUsersTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCompanyUsers_ResultSet0>,
+    ResultSet<GetCompanyUsers_ResultSet1>,
+    ResultSet<GetCompanyUsers_ResultSet2>,
+  ];
+}
+
+export interface GetCompanyVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCompanyVault_ResultSet0>,
+    ResultSet<GetCompanyVault_ResultSet1>,
+  ];
+}
+
+export interface GetCompanyVaultsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetCompanyVaults_ResultSet0>,
+    ResultSet<GetCompanyVaults_ResultSet1>,
+    ResultSet<GetCompanyVaults_ResultSet2>,
+  ];
+}
+
+export interface GetEntityAuditTraceTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetEntityAuditTrace_ResultSet0>,
+    ResultSet<GetEntityAuditTrace_ResultSet1>,
+    ResultSet<GetEntityAuditTrace_ResultSet2>,
+  ];
+}
+
+export interface GetEntityHistoryTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetEntityHistory_ResultSet0>,
+    ResultSet<GetEntityHistory_ResultSet1>,
+    ResultSet<GetEntityHistory_ResultSet2>,
+  ];
+}
+
+export interface GetLookupDataTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetLookupData_ResultSet0>,
+    ResultSet<GetLookupData_ResultSet1>,
+  ];
+}
+
+export interface GetMachineAssignmentStatusTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetMachineAssignmentStatus_ResultSet0>,
+    ResultSet<GetMachineAssignmentStatus_ResultSet1>,
+    ResultSet<GetMachineAssignmentStatus_ResultSet2>,
+  ];
+}
+
+export interface GetPermissionGroupDetailsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetPermissionGroupDetails_ResultSet0>,
+    ResultSet<GetPermissionGroupDetails_ResultSet1>,
+  ];
+}
+
+export interface GetQueueItemTraceTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetQueueItemTrace_ResultSet0>,
+    ResultSet<GetQueueItemTrace_ResultSet1>,
+    ResultSet<GetQueueItemTrace_ResultSet2>,
+    ResultSet<GetQueueItemTrace_ResultSet3>,
+    ResultSet<GetQueueItemTrace_ResultSet4>,
+    ResultSet<GetQueueItemTrace_ResultSet5>,
+    ResultSet<GetQueueItemTrace_ResultSet6>,
+  ];
+}
+
+export interface GetQueueItemsNextTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetQueueItemsNext_ResultSet0>,
+    ResultSet<GetQueueItemsNext_ResultSet1>,
+    ResultSet<GetQueueItemsNext_ResultSet2>,
+    ResultSet<GetQueueItemsNext_ResultSet3>,
+    ResultSet<GetQueueItemsNext_ResultSet4>,
+    ResultSet<GetQueueItemsNext_ResultSet5>,
+    ResultSet<GetQueueItemsNext_ResultSet6>,
+    ResultSet<GetQueueItemsNext_ResultSet7>,
+  ];
+}
+
+export interface GetRegionBridgesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetRegionBridges_ResultSet0>,
+    ResultSet<GetRegionBridges_ResultSet1>,
+  ];
+}
+
+export interface GetRequestAuthenticationStatusTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetRequestAuthenticationStatus_ResultSet0>,
+    ResultSet<GetRequestAuthenticationStatus_ResultSet1>,
+  ];
+}
+
+export interface GetSystemConfigurationTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetSystemConfiguration_ResultSet0>,
+    ResultSet<GetSystemConfiguration_ResultSet1>,
+    ResultSet<GetSystemConfiguration_ResultSet2>,
+  ];
+}
+
+export interface GetTeamMachinesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetTeamMachines_ResultSet0>,
+    ResultSet<GetTeamMachines_ResultSet1>,
+  ];
+}
+
+export interface GetTeamMembersTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetTeamMembers_ResultSet0>,
+    ResultSet<GetTeamMembers_ResultSet1>,
+    ResultSet<GetTeamMembers_ResultSet2>,
+  ];
+}
+
+export interface GetTeamQueueItemsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetTeamQueueItems_ResultSet0>,
+    ResultSet<GetTeamQueueItems_ResultSet1>,
+    ResultSet<GetTeamQueueItems_ResultSet2>,
+  ];
+}
+
+export interface GetTeamRepositoriesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetTeamRepositories_ResultSet0>,
+    ResultSet<GetTeamRepositories_ResultSet1>,
+  ];
+}
+
+export interface GetTeamStoragesTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetTeamStorages_ResultSet0>,
+    ResultSet<GetTeamStorages_ResultSet1>,
+  ];
+}
+
+export interface GetUserCompanyTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetUserCompany_ResultSet0>,
+    ResultSet<GetUserCompany_ResultSet1>,
+  ];
+}
+
+export interface GetUserRequestsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetUserRequests_ResultSet0>,
+    ResultSet<GetUserRequests_ResultSet1>,
+  ];
+}
+
+export interface GetUserVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetUserVault_ResultSet0>,
+    ResultSet<GetUserVault_ResultSet1>,
+  ];
+}
+
+export interface ImportCompanyDataTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<ImportCompanyData_ResultSet0>,
+    ResultSet<ImportCompanyData_ResultSet1>,
+    ResultSet<ImportCompanyData_ResultSet2>,
+    ResultSet<ImportCompanyData_ResultSet3>,
+  ];
+}
+
+export interface IsRegisteredTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<IsRegistered_ResultSet0>,
+    ResultSet<IsRegistered_ResultSet1>,
+  ];
+}
+
+export interface PrivilegeAuthenticationRequestTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<PrivilegeAuthenticationRequest_ResultSet0>,
+    ResultSet<PrivilegeAuthenticationRequest_ResultSet1>,
+    ResultSet<PrivilegeAuthenticationRequest_ResultSet2>,
+  ];
+}
+
+export interface PromoteRepositoryToGrandTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<PromoteRepositoryToGrand_ResultSet0>,
+  ];
+}
+
+export interface ResetBridgeAuthorizationTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<ResetBridgeAuthorization_ResultSet0>,
+    ResultSet<ResetBridgeAuthorization_ResultSet1>,
+  ];
+}
+
+export interface RetryFailedQueueItemTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<RetryFailedQueueItem_ResultSet0>,
+    ResultSet<RetryFailedQueueItem_ResultSet1>,
+  ];
+}
+
+export interface UpdateBridgeNameTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateBridgeName_ResultSet0>,
+    ResultSet<UpdateBridgeName_ResultSet1>,
+  ];
+}
+
+export interface UpdateBridgeVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateBridgeVault_ResultSet0>,
+    ResultSet<UpdateBridgeVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateCephClusterVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateCephClusterVault_ResultSet0>,
+    ResultSet<UpdateCephClusterVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateCephPoolVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateCephPoolVault_ResultSet0>,
+    ResultSet<UpdateCephPoolVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateCloneMachineAssignmentsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateCloneMachineAssignments_ResultSet0>,
+    ResultSet<UpdateCloneMachineAssignments_ResultSet1>,
+    ResultSet<UpdateCloneMachineAssignments_ResultSet2>,
+    ResultSet<UpdateCloneMachineAssignments_ResultSet3>,
+  ];
+}
+
+export interface UpdateCloneMachineRemovalsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateCloneMachineRemovals_ResultSet0>,
+    ResultSet<UpdateCloneMachineRemovals_ResultSet1>,
+    ResultSet<UpdateCloneMachineRemovals_ResultSet2>,
+  ];
+}
+
+export interface UpdateCompanyBlockUserRequestsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateCompanyBlockUserRequests_ResultSet0>,
+    ResultSet<UpdateCompanyBlockUserRequests_ResultSet1>,
+  ];
+}
+
+export interface UpdateCompanyVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateCompanyVault_ResultSet0>,
+    ResultSet<UpdateCompanyVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateCompanyVaultsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateCompanyVaults_ResultSet0>,
+    ResultSet<UpdateCompanyVaults_ResultSet1>,
+  ];
+}
+
+export interface UpdateImageMachineAssignmentTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateImageMachineAssignment_ResultSet0>,
+    ResultSet<UpdateImageMachineAssignment_ResultSet1>,
+    ResultSet<UpdateImageMachineAssignment_ResultSet2>,
+  ];
+}
+
+export interface UpdateMachineAssignedBridgeTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateMachineAssignedBridge_ResultSet0>,
+    ResultSet<UpdateMachineAssignedBridge_ResultSet1>,
+  ];
+}
+
+export interface UpdateMachineCephTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateMachineCeph_ResultSet0>,
+    ResultSet<UpdateMachineCeph_ResultSet1>,
+    ResultSet<UpdateMachineCeph_ResultSet2>,
+  ];
+}
+
+export interface UpdateMachineClusterAssignmentTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateMachineClusterAssignment_ResultSet0>,
+    ResultSet<UpdateMachineClusterAssignment_ResultSet1>,
+  ];
+}
+
+export interface UpdateMachineClusterRemovalTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateMachineClusterRemoval_ResultSet0>,
+    ResultSet<UpdateMachineClusterRemoval_ResultSet1>,
+  ];
+}
+
+export interface UpdateMachineNameTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateMachineName_ResultSet0>,
+    ResultSet<UpdateMachineName_ResultSet1>,
+  ];
+}
+
+export interface UpdateMachineStatusTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateMachineStatus_ResultSet0>,
+    ResultSet<UpdateMachineStatus_ResultSet1>,
+  ];
+}
+
+export interface UpdateMachineVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateMachineVault_ResultSet0>,
+    ResultSet<UpdateMachineVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateQueueItemResponseTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateQueueItemResponse_ResultSet0>,
+    ResultSet<UpdateQueueItemResponse_ResultSet1>,
+    ResultSet<UpdateQueueItemResponse_ResultSet2>,
+    ResultSet<UpdateQueueItemResponse_ResultSet3>,
+    ResultSet<UpdateQueueItemResponse_ResultSet4>,
+    ResultSet<UpdateQueueItemResponse_ResultSet5>,
+    ResultSet<UpdateQueueItemResponse_ResultSet6>,
+    ResultSet<UpdateQueueItemResponse_ResultSet7>,
+  ];
+}
+
+export interface UpdateQueueItemToCompletedTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateQueueItemToCompleted_ResultSet0>,
+    ResultSet<UpdateQueueItemToCompleted_ResultSet1>,
+  ];
+}
+
+export interface UpdateRegionNameTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateRegionName_ResultSet0>,
+    ResultSet<UpdateRegionName_ResultSet1>,
+  ];
+}
+
+export interface UpdateRegionVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateRegionVault_ResultSet0>,
+    ResultSet<UpdateRegionVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateRepositoryNameTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateRepositoryName_ResultSet0>,
+    ResultSet<UpdateRepositoryName_ResultSet1>,
+  ];
+}
+
+export interface UpdateRepositoryTagTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateRepositoryTag_ResultSet0>,
+    ResultSet<UpdateRepositoryTag_ResultSet1>,
+  ];
+}
+
+export interface UpdateRepositoryVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateRepositoryVault_ResultSet0>,
+    ResultSet<UpdateRepositoryVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateStorageNameTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateStorageName_ResultSet0>,
+    ResultSet<UpdateStorageName_ResultSet1>,
+  ];
+}
+
+export interface UpdateStorageVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateStorageVault_ResultSet0>,
+    ResultSet<UpdateStorageVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateTeamNameTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateTeamName_ResultSet0>,
+    ResultSet<UpdateTeamName_ResultSet1>,
+  ];
+}
+
+export interface UpdateTeamVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateTeamVault_ResultSet0>,
+    ResultSet<UpdateTeamVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateUserAssignedPermissionsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserAssignedPermissions_ResultSet0>,
+    ResultSet<UpdateUserAssignedPermissions_ResultSet1>,
+  ];
+}
+
+export interface UpdateUserEmailTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserEmail_ResultSet0>,
+    ResultSet<UpdateUserEmail_ResultSet1>,
+  ];
+}
+
+export interface UpdateUserLanguageTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserLanguage_ResultSet0>,
+    ResultSet<UpdateUserLanguage_ResultSet1>,
+  ];
+}
+
+export interface UpdateUserPasswordTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserPassword_ResultSet0>,
+    ResultSet<UpdateUserPassword_ResultSet1>,
+  ];
+}
+
+export interface UpdateUserTFATypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserTFA_ResultSet0>,
+    ResultSet<UpdateUserTFA_ResultSet1>,
+    ResultSet<UpdateUserTFA_ResultSet2>,
+    ResultSet<UpdateUserTFA_ResultSet3>,
+    ResultSet<UpdateUserTFA_ResultSet4>,
+  ];
+}
+
+export interface UpdateUserToActivatedTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserToActivated_ResultSet0>,
+    ResultSet<UpdateUserToActivated_ResultSet1>,
+  ];
+}
+
+export interface UpdateUserToDeactivatedTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserToDeactivated_ResultSet0>,
+    ResultSet<UpdateUserToDeactivated_ResultSet1>,
+  ];
+}
+
+export interface UpdateUserVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateUserVault_ResultSet0>,
+    ResultSet<UpdateUserVault_ResultSet1>,
+  ];
+}
+
+// ============================================================================
+// Generated Extractor Functions
+// ============================================================================
+// Named 'extract*' to avoid conflicts with manual 'parse*' functions.
+// These provide type-safe extraction from ApiResponseBase.
+
+export function extractActivateUserAccount(response: ApiResponseBase): ActivateUserAccount_ResultSet0[] {
+  const resultSet = response.resultSets[0] as { data: ActivateUserAccount_ResultSet0[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractActivateUserAccountFirst(response: ApiResponseBase): ActivateUserAccount_ResultSet0 | null {
+  const items = extractActivateUserAccount(response);
+  return items[0] ?? null;
+}
+
+export function extractCancelQueueItem(response: ApiResponseBase): CancelQueueItem_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CancelQueueItem_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCancelQueueItemFirst(response: ApiResponseBase): CancelQueueItem_ResultSet1 | null {
+  const items = extractCancelQueueItem(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateAuthenticationRequest(response: ApiResponseBase): CreateAuthenticationRequest_ResultSet0[] {
+  const resultSet = response.resultSets[0] as { data: CreateAuthenticationRequest_ResultSet0[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateAuthenticationRequestFirst(response: ApiResponseBase): CreateAuthenticationRequest_ResultSet0 | null {
+  const items = extractCreateAuthenticationRequest(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateBridge(response: ApiResponseBase): CreateBridge_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateBridge_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateBridgeFirst(response: ApiResponseBase): CreateBridge_ResultSet1 | null {
+  const items = extractCreateBridge(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateCephCluster(response: ApiResponseBase): CreateCephCluster_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateCephCluster_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateCephClusterFirst(response: ApiResponseBase): CreateCephCluster_ResultSet1 | null {
+  const items = extractCreateCephCluster(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateCephPool(response: ApiResponseBase): CreateCephPool_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateCephPool_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateCephPoolFirst(response: ApiResponseBase): CreateCephPool_ResultSet1 | null {
+  const items = extractCreateCephPool(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateCephRbdClone(response: ApiResponseBase): CreateCephRbdClone_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateCephRbdClone_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateCephRbdCloneFirst(response: ApiResponseBase): CreateCephRbdClone_ResultSet1 | null {
+  const items = extractCreateCephRbdClone(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateCephRbdImage(response: ApiResponseBase): CreateCephRbdImage_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateCephRbdImage_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateCephRbdImageFirst(response: ApiResponseBase): CreateCephRbdImage_ResultSet1 | null {
+  const items = extractCreateCephRbdImage(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateCephRbdSnapshot(response: ApiResponseBase): CreateCephRbdSnapshot_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateCephRbdSnapshot_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateCephRbdSnapshotFirst(response: ApiResponseBase): CreateCephRbdSnapshot_ResultSet1 | null {
+  const items = extractCreateCephRbdSnapshot(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateMachine(response: ApiResponseBase): CreateMachine_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateMachine_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateMachineFirst(response: ApiResponseBase): CreateMachine_ResultSet1 | null {
+  const items = extractCreateMachine(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateNewCompany(response: ApiResponseBase): CreateNewCompany_ResultSet0[] {
+  const resultSet = response.resultSets[0] as { data: CreateNewCompany_ResultSet0[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateNewCompanyFirst(response: ApiResponseBase): CreateNewCompany_ResultSet0 | null {
+  const items = extractCreateNewCompany(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateNewUser(response: ApiResponseBase): CreateNewUser_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateNewUser_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateNewUserFirst(response: ApiResponseBase): CreateNewUser_ResultSet1 | null {
+  const items = extractCreateNewUser(response);
+  return items[0] ?? null;
+}
+
+export function extractCreatePermissionGroup(response: ApiResponseBase): CreatePermissionGroup_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreatePermissionGroup_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreatePermissionGroupFirst(response: ApiResponseBase): CreatePermissionGroup_ResultSet1 | null {
+  const items = extractCreatePermissionGroup(response);
+  return items[0] ?? null;
+}
+
+export function extractCreatePermissionInGroup(response: ApiResponseBase): CreatePermissionInGroup_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreatePermissionInGroup_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreatePermissionInGroupFirst(response: ApiResponseBase): CreatePermissionInGroup_ResultSet1 | null {
+  const items = extractCreatePermissionInGroup(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateQueueItem(response: ApiResponseBase): CreateQueueItem_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateQueueItem_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateQueueItemFirst(response: ApiResponseBase): CreateQueueItem_ResultSet1 | null {
+  const items = extractCreateQueueItem(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateRegion(response: ApiResponseBase): CreateRegion_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateRegion_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateRegionFirst(response: ApiResponseBase): CreateRegion_ResultSet1 | null {
+  const items = extractCreateRegion(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateRepository(response: ApiResponseBase): CreateRepository_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateRepository_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateRepositoryFirst(response: ApiResponseBase): CreateRepository_ResultSet1 | null {
+  const items = extractCreateRepository(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateStorage(response: ApiResponseBase): CreateStorage_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateStorage_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateStorageFirst(response: ApiResponseBase): CreateStorage_ResultSet1 | null {
+  const items = extractCreateStorage(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateTeam(response: ApiResponseBase): CreateTeam_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateTeam_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateTeamFirst(response: ApiResponseBase): CreateTeam_ResultSet1 | null {
+  const items = extractCreateTeam(response);
+  return items[0] ?? null;
+}
+
+export function extractCreateTeamMembership(response: ApiResponseBase): CreateTeamMembership_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: CreateTeamMembership_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractCreateTeamMembershipFirst(response: ApiResponseBase): CreateTeamMembership_ResultSet1 | null {
+  const items = extractCreateTeamMembership(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteCephCluster(response: ApiResponseBase): DeleteCephCluster_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteCephCluster_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteCephClusterFirst(response: ApiResponseBase): DeleteCephCluster_ResultSet1 | null {
+  const items = extractDeleteCephCluster(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteCephPool(response: ApiResponseBase): DeleteCephPool_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteCephPool_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteCephPoolFirst(response: ApiResponseBase): DeleteCephPool_ResultSet1 | null {
+  const items = extractDeleteCephPool(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteCephRbdClone(response: ApiResponseBase): DeleteCephRbdClone_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteCephRbdClone_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteCephRbdCloneFirst(response: ApiResponseBase): DeleteCephRbdClone_ResultSet1 | null {
+  const items = extractDeleteCephRbdClone(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteCephRbdImage(response: ApiResponseBase): DeleteCephRbdImage_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteCephRbdImage_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteCephRbdImageFirst(response: ApiResponseBase): DeleteCephRbdImage_ResultSet1 | null {
+  const items = extractDeleteCephRbdImage(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteCephRbdSnapshot(response: ApiResponseBase): DeleteCephRbdSnapshot_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteCephRbdSnapshot_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteCephRbdSnapshotFirst(response: ApiResponseBase): DeleteCephRbdSnapshot_ResultSet1 | null {
+  const items = extractDeleteCephRbdSnapshot(response);
+  return items[0] ?? null;
+}
+
+export function extractDeletePermissionFromGroup(response: ApiResponseBase): DeletePermissionFromGroup_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeletePermissionFromGroup_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeletePermissionFromGroupFirst(response: ApiResponseBase): DeletePermissionFromGroup_ResultSet1 | null {
+  const items = extractDeletePermissionFromGroup(response);
+  return items[0] ?? null;
+}
+
+export function extractDeletePermissionGroup(response: ApiResponseBase): DeletePermissionGroup_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeletePermissionGroup_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeletePermissionGroupFirst(response: ApiResponseBase): DeletePermissionGroup_ResultSet1 | null {
+  const items = extractDeletePermissionGroup(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteQueueItem(response: ApiResponseBase): DeleteQueueItem_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteQueueItem_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteQueueItemFirst(response: ApiResponseBase): DeleteQueueItem_ResultSet1 | null {
+  const items = extractDeleteQueueItem(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteUserFromTeam(response: ApiResponseBase): DeleteUserFromTeam_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteUserFromTeam_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteUserFromTeamFirst(response: ApiResponseBase): DeleteUserFromTeam_ResultSet1 | null {
+  const items = extractDeleteUserFromTeam(response);
+  return items[0] ?? null;
+}
+
+export function extractDeleteUserRequest(response: ApiResponseBase): DeleteUserRequest_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: DeleteUserRequest_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractDeleteUserRequestFirst(response: ApiResponseBase): DeleteUserRequest_ResultSet1 | null {
+  const items = extractDeleteUserRequest(response);
+  return items[0] ?? null;
+}
+
+export function extractExportCompanyData(response: ApiResponseBase): ExportCompanyData_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: ExportCompanyData_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractExportCompanyDataFirst(response: ApiResponseBase): ExportCompanyData_ResultSet1 | null {
+  const items = extractExportCompanyData(response);
+  return items[0] ?? null;
+}
+
+export function extractForkAuthenticationRequest(response: ApiResponseBase): ForkAuthenticationRequest_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: ForkAuthenticationRequest_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractForkAuthenticationRequestFirst(response: ApiResponseBase): ForkAuthenticationRequest_ResultSet1 | null {
+  const items = extractForkAuthenticationRequest(response);
+  return items[0] ?? null;
+}
+
+export function extractGetAuditLogs(response: ApiResponseBase): GetAuditLogs_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetAuditLogs_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetAuditLogsFirst(response: ApiResponseBase): GetAuditLogs_ResultSet1 | null {
+  const items = extractGetAuditLogs(response);
+  return items[0] ?? null;
+}
+
+export function extractGetAvailableMachinesForClone(response: ApiResponseBase): GetAvailableMachinesForClone_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetAvailableMachinesForClone_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetAvailableMachinesForCloneFirst(response: ApiResponseBase): GetAvailableMachinesForClone_ResultSet1 | null {
+  const items = extractGetAvailableMachinesForClone(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCephClusterMachines(response: ApiResponseBase): GetCephClusterMachines_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCephClusterMachines_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCephClusterMachinesFirst(response: ApiResponseBase): GetCephClusterMachines_ResultSet1 | null {
+  const items = extractGetCephClusterMachines(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCephClusters(response: ApiResponseBase): GetCephClusters_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCephClusters_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCephClustersFirst(response: ApiResponseBase): GetCephClusters_ResultSet1 | null {
+  const items = extractGetCephClusters(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCephPools(response: ApiResponseBase): GetCephPools_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCephPools_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCephPoolsFirst(response: ApiResponseBase): GetCephPools_ResultSet1 | null {
+  const items = extractGetCephPools(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCephRbdClones(response: ApiResponseBase): GetCephRbdClones_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCephRbdClones_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCephRbdClonesFirst(response: ApiResponseBase): GetCephRbdClones_ResultSet1 | null {
+  const items = extractGetCephRbdClones(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCephRbdImages(response: ApiResponseBase): GetCephRbdImages_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCephRbdImages_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCephRbdImagesFirst(response: ApiResponseBase): GetCephRbdImages_ResultSet1 | null {
+  const items = extractGetCephRbdImages(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCephRbdSnapshots(response: ApiResponseBase): GetCephRbdSnapshots_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCephRbdSnapshots_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCephRbdSnapshotsFirst(response: ApiResponseBase): GetCephRbdSnapshots_ResultSet1 | null {
+  const items = extractGetCephRbdSnapshots(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCloneMachineAssignmentValidation(response: ApiResponseBase): GetCloneMachineAssignmentValidation_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCloneMachineAssignmentValidation_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCloneMachineAssignmentValidationFirst(response: ApiResponseBase): GetCloneMachineAssignmentValidation_ResultSet1 | null {
+  const items = extractGetCloneMachineAssignmentValidation(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCloneMachines(response: ApiResponseBase): GetCloneMachines_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCloneMachines_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCloneMachinesFirst(response: ApiResponseBase): GetCloneMachines_ResultSet1 | null {
+  const items = extractGetCloneMachines(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCompanyDashboard(response: ApiResponseBase): GetCompanyDashboard_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyDashboard_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCompanyDashboardFirst(response: ApiResponseBase): GetCompanyDashboard_ResultSet1 | null {
+  const items = extractGetCompanyDashboard(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCompanyPermissionGroups(response: ApiResponseBase): GetCompanyPermissionGroups_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyPermissionGroups_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCompanyPermissionGroupsFirst(response: ApiResponseBase): GetCompanyPermissionGroups_ResultSet1 | null {
+  const items = extractGetCompanyPermissionGroups(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCompanyRegions(response: ApiResponseBase): GetCompanyRegions_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyRegions_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCompanyRegionsFirst(response: ApiResponseBase): GetCompanyRegions_ResultSet1 | null {
+  const items = extractGetCompanyRegions(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCompanyTeams(response: ApiResponseBase): GetCompanyTeams_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyTeams_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCompanyTeamsFirst(response: ApiResponseBase): GetCompanyTeams_ResultSet1 | null {
+  const items = extractGetCompanyTeams(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCompanyUsers(response: ApiResponseBase): GetCompanyUsers_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyUsers_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCompanyUsersFirst(response: ApiResponseBase): GetCompanyUsers_ResultSet1 | null {
+  const items = extractGetCompanyUsers(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCompanyVault(response: ApiResponseBase): GetCompanyVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCompanyVaultFirst(response: ApiResponseBase): GetCompanyVault_ResultSet1 | null {
+  const items = extractGetCompanyVault(response);
+  return items[0] ?? null;
+}
+
+export function extractGetCompanyVaults(response: ApiResponseBase): GetCompanyVaults_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyVaults_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetCompanyVaultsFirst(response: ApiResponseBase): GetCompanyVaults_ResultSet1 | null {
+  const items = extractGetCompanyVaults(response);
+  return items[0] ?? null;
+}
+
+export function extractGetEntityAuditTrace(response: ApiResponseBase): GetEntityAuditTrace_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetEntityAuditTrace_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetEntityAuditTraceFirst(response: ApiResponseBase): GetEntityAuditTrace_ResultSet1 | null {
+  const items = extractGetEntityAuditTrace(response);
+  return items[0] ?? null;
+}
+
+export function extractGetEntityHistory(response: ApiResponseBase): GetEntityHistory_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetEntityHistory_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetEntityHistoryFirst(response: ApiResponseBase): GetEntityHistory_ResultSet1 | null {
+  const items = extractGetEntityHistory(response);
+  return items[0] ?? null;
+}
+
+export function extractGetLookupData(response: ApiResponseBase): GetLookupData_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetLookupData_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetLookupDataFirst(response: ApiResponseBase): GetLookupData_ResultSet1 | null {
+  const items = extractGetLookupData(response);
+  return items[0] ?? null;
+}
+
+export function extractGetMachineAssignmentStatus(response: ApiResponseBase): GetMachineAssignmentStatus_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetMachineAssignmentStatus_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetMachineAssignmentStatusFirst(response: ApiResponseBase): GetMachineAssignmentStatus_ResultSet1 | null {
+  const items = extractGetMachineAssignmentStatus(response);
+  return items[0] ?? null;
+}
+
+export function extractGetPermissionGroupDetails(response: ApiResponseBase): GetPermissionGroupDetails_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetPermissionGroupDetails_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetPermissionGroupDetailsFirst(response: ApiResponseBase): GetPermissionGroupDetails_ResultSet1 | null {
+  const items = extractGetPermissionGroupDetails(response);
+  return items[0] ?? null;
+}
+
+export function extractGetQueueItemTrace(response: ApiResponseBase): GetQueueItemTrace_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetQueueItemTrace_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetQueueItemTraceFirst(response: ApiResponseBase): GetQueueItemTrace_ResultSet1 | null {
+  const items = extractGetQueueItemTrace(response);
+  return items[0] ?? null;
+}
+
+export function extractGetQueueItemsNext(response: ApiResponseBase): GetQueueItemsNext_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetQueueItemsNext_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetQueueItemsNextFirst(response: ApiResponseBase): GetQueueItemsNext_ResultSet1 | null {
+  const items = extractGetQueueItemsNext(response);
+  return items[0] ?? null;
+}
+
+export function extractGetRegionBridges(response: ApiResponseBase): GetRegionBridges_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetRegionBridges_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetRegionBridgesFirst(response: ApiResponseBase): GetRegionBridges_ResultSet1 | null {
+  const items = extractGetRegionBridges(response);
+  return items[0] ?? null;
+}
+
+export function extractGetRequestAuthenticationStatus(response: ApiResponseBase): GetRequestAuthenticationStatus_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetRequestAuthenticationStatus_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetRequestAuthenticationStatusFirst(response: ApiResponseBase): GetRequestAuthenticationStatus_ResultSet1 | null {
+  const items = extractGetRequestAuthenticationStatus(response);
+  return items[0] ?? null;
+}
+
+export function extractGetSystemConfiguration(response: ApiResponseBase): GetSystemConfiguration_ResultSet0[] {
+  const resultSet = response.resultSets[0] as { data: GetSystemConfiguration_ResultSet0[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetSystemConfigurationFirst(response: ApiResponseBase): GetSystemConfiguration_ResultSet0 | null {
+  const items = extractGetSystemConfiguration(response);
+  return items[0] ?? null;
+}
+
+export function extractGetTeamMachines(response: ApiResponseBase): GetTeamMachines_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetTeamMachines_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetTeamMachinesFirst(response: ApiResponseBase): GetTeamMachines_ResultSet1 | null {
+  const items = extractGetTeamMachines(response);
+  return items[0] ?? null;
+}
+
+export function extractGetTeamMembers(response: ApiResponseBase): GetTeamMembers_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetTeamMembers_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetTeamMembersFirst(response: ApiResponseBase): GetTeamMembers_ResultSet1 | null {
+  const items = extractGetTeamMembers(response);
+  return items[0] ?? null;
+}
+
+export function extractGetTeamQueueItems(response: ApiResponseBase): GetTeamQueueItems_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetTeamQueueItems_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetTeamQueueItemsFirst(response: ApiResponseBase): GetTeamQueueItems_ResultSet1 | null {
+  const items = extractGetTeamQueueItems(response);
+  return items[0] ?? null;
+}
+
+export function extractGetTeamRepositories(response: ApiResponseBase): GetTeamRepositories_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetTeamRepositories_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetTeamRepositoriesFirst(response: ApiResponseBase): GetTeamRepositories_ResultSet1 | null {
+  const items = extractGetTeamRepositories(response);
+  return items[0] ?? null;
+}
+
+export function extractGetTeamStorages(response: ApiResponseBase): GetTeamStorages_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetTeamStorages_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetTeamStoragesFirst(response: ApiResponseBase): GetTeamStorages_ResultSet1 | null {
+  const items = extractGetTeamStorages(response);
+  return items[0] ?? null;
+}
+
+export function extractGetUserCompany(response: ApiResponseBase): GetUserCompany_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetUserCompany_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetUserCompanyFirst(response: ApiResponseBase): GetUserCompany_ResultSet1 | null {
+  const items = extractGetUserCompany(response);
+  return items[0] ?? null;
+}
+
+export function extractGetUserRequests(response: ApiResponseBase): GetUserRequests_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetUserRequests_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetUserRequestsFirst(response: ApiResponseBase): GetUserRequests_ResultSet1 | null {
+  const items = extractGetUserRequests(response);
+  return items[0] ?? null;
+}
+
+export function extractGetUserVault(response: ApiResponseBase): GetUserVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetUserVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetUserVaultFirst(response: ApiResponseBase): GetUserVault_ResultSet1 | null {
+  const items = extractGetUserVault(response);
+  return items[0] ?? null;
+}
+
+export function extractImportCompanyData(response: ApiResponseBase): ImportCompanyData_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: ImportCompanyData_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractImportCompanyDataFirst(response: ApiResponseBase): ImportCompanyData_ResultSet1 | null {
+  const items = extractImportCompanyData(response);
+  return items[0] ?? null;
+}
+
+export function extractIsRegistered(response: ApiResponseBase): IsRegistered_ResultSet0[] {
+  const resultSet = response.resultSets[0] as { data: IsRegistered_ResultSet0[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractIsRegisteredFirst(response: ApiResponseBase): IsRegistered_ResultSet0 | null {
+  const items = extractIsRegistered(response);
+  return items[0] ?? null;
+}
+
+export function extractPrivilegeAuthenticationRequest(response: ApiResponseBase): PrivilegeAuthenticationRequest_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: PrivilegeAuthenticationRequest_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractPrivilegeAuthenticationRequestFirst(response: ApiResponseBase): PrivilegeAuthenticationRequest_ResultSet1 | null {
+  const items = extractPrivilegeAuthenticationRequest(response);
+  return items[0] ?? null;
+}
+
+export function extractResetBridgeAuthorization(response: ApiResponseBase): ResetBridgeAuthorization_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: ResetBridgeAuthorization_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractResetBridgeAuthorizationFirst(response: ApiResponseBase): ResetBridgeAuthorization_ResultSet1 | null {
+  const items = extractResetBridgeAuthorization(response);
+  return items[0] ?? null;
+}
+
+export function extractRetryFailedQueueItem(response: ApiResponseBase): RetryFailedQueueItem_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: RetryFailedQueueItem_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractRetryFailedQueueItemFirst(response: ApiResponseBase): RetryFailedQueueItem_ResultSet1 | null {
+  const items = extractRetryFailedQueueItem(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateBridgeName(response: ApiResponseBase): UpdateBridgeName_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateBridgeName_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateBridgeNameFirst(response: ApiResponseBase): UpdateBridgeName_ResultSet1 | null {
+  const items = extractUpdateBridgeName(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateBridgeVault(response: ApiResponseBase): UpdateBridgeVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateBridgeVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateBridgeVaultFirst(response: ApiResponseBase): UpdateBridgeVault_ResultSet1 | null {
+  const items = extractUpdateBridgeVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateCephClusterVault(response: ApiResponseBase): UpdateCephClusterVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateCephClusterVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateCephClusterVaultFirst(response: ApiResponseBase): UpdateCephClusterVault_ResultSet1 | null {
+  const items = extractUpdateCephClusterVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateCephPoolVault(response: ApiResponseBase): UpdateCephPoolVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateCephPoolVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateCephPoolVaultFirst(response: ApiResponseBase): UpdateCephPoolVault_ResultSet1 | null {
+  const items = extractUpdateCephPoolVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateCloneMachineAssignments(response: ApiResponseBase): UpdateCloneMachineAssignments_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateCloneMachineAssignments_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateCloneMachineAssignmentsFirst(response: ApiResponseBase): UpdateCloneMachineAssignments_ResultSet1 | null {
+  const items = extractUpdateCloneMachineAssignments(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateCloneMachineRemovals(response: ApiResponseBase): UpdateCloneMachineRemovals_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateCloneMachineRemovals_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateCloneMachineRemovalsFirst(response: ApiResponseBase): UpdateCloneMachineRemovals_ResultSet1 | null {
+  const items = extractUpdateCloneMachineRemovals(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateCompanyBlockUserRequests(response: ApiResponseBase): UpdateCompanyBlockUserRequests_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateCompanyBlockUserRequests_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateCompanyBlockUserRequestsFirst(response: ApiResponseBase): UpdateCompanyBlockUserRequests_ResultSet1 | null {
+  const items = extractUpdateCompanyBlockUserRequests(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateCompanyVault(response: ApiResponseBase): UpdateCompanyVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateCompanyVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateCompanyVaultFirst(response: ApiResponseBase): UpdateCompanyVault_ResultSet1 | null {
+  const items = extractUpdateCompanyVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateCompanyVaults(response: ApiResponseBase): UpdateCompanyVaults_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateCompanyVaults_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateCompanyVaultsFirst(response: ApiResponseBase): UpdateCompanyVaults_ResultSet1 | null {
+  const items = extractUpdateCompanyVaults(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateImageMachineAssignment(response: ApiResponseBase): UpdateImageMachineAssignment_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateImageMachineAssignment_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateImageMachineAssignmentFirst(response: ApiResponseBase): UpdateImageMachineAssignment_ResultSet1 | null {
+  const items = extractUpdateImageMachineAssignment(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateMachineAssignedBridge(response: ApiResponseBase): UpdateMachineAssignedBridge_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateMachineAssignedBridge_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateMachineAssignedBridgeFirst(response: ApiResponseBase): UpdateMachineAssignedBridge_ResultSet1 | null {
+  const items = extractUpdateMachineAssignedBridge(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateMachineCeph(response: ApiResponseBase): UpdateMachineCeph_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateMachineCeph_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateMachineCephFirst(response: ApiResponseBase): UpdateMachineCeph_ResultSet1 | null {
+  const items = extractUpdateMachineCeph(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateMachineClusterAssignment(response: ApiResponseBase): UpdateMachineClusterAssignment_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateMachineClusterAssignment_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateMachineClusterAssignmentFirst(response: ApiResponseBase): UpdateMachineClusterAssignment_ResultSet1 | null {
+  const items = extractUpdateMachineClusterAssignment(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateMachineClusterRemoval(response: ApiResponseBase): UpdateMachineClusterRemoval_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateMachineClusterRemoval_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateMachineClusterRemovalFirst(response: ApiResponseBase): UpdateMachineClusterRemoval_ResultSet1 | null {
+  const items = extractUpdateMachineClusterRemoval(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateMachineName(response: ApiResponseBase): UpdateMachineName_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateMachineName_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateMachineNameFirst(response: ApiResponseBase): UpdateMachineName_ResultSet1 | null {
+  const items = extractUpdateMachineName(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateMachineStatus(response: ApiResponseBase): UpdateMachineStatus_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateMachineStatus_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateMachineStatusFirst(response: ApiResponseBase): UpdateMachineStatus_ResultSet1 | null {
+  const items = extractUpdateMachineStatus(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateMachineVault(response: ApiResponseBase): UpdateMachineVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateMachineVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateMachineVaultFirst(response: ApiResponseBase): UpdateMachineVault_ResultSet1 | null {
+  const items = extractUpdateMachineVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateQueueItemResponse(response: ApiResponseBase): UpdateQueueItemResponse_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateQueueItemResponse_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateQueueItemResponseFirst(response: ApiResponseBase): UpdateQueueItemResponse_ResultSet1 | null {
+  const items = extractUpdateQueueItemResponse(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateQueueItemToCompleted(response: ApiResponseBase): UpdateQueueItemToCompleted_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateQueueItemToCompleted_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateQueueItemToCompletedFirst(response: ApiResponseBase): UpdateQueueItemToCompleted_ResultSet1 | null {
+  const items = extractUpdateQueueItemToCompleted(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateRegionName(response: ApiResponseBase): UpdateRegionName_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateRegionName_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateRegionNameFirst(response: ApiResponseBase): UpdateRegionName_ResultSet1 | null {
+  const items = extractUpdateRegionName(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateRegionVault(response: ApiResponseBase): UpdateRegionVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateRegionVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateRegionVaultFirst(response: ApiResponseBase): UpdateRegionVault_ResultSet1 | null {
+  const items = extractUpdateRegionVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateRepositoryName(response: ApiResponseBase): UpdateRepositoryName_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateRepositoryName_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateRepositoryNameFirst(response: ApiResponseBase): UpdateRepositoryName_ResultSet1 | null {
+  const items = extractUpdateRepositoryName(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateRepositoryTag(response: ApiResponseBase): UpdateRepositoryTag_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateRepositoryTag_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateRepositoryTagFirst(response: ApiResponseBase): UpdateRepositoryTag_ResultSet1 | null {
+  const items = extractUpdateRepositoryTag(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateRepositoryVault(response: ApiResponseBase): UpdateRepositoryVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateRepositoryVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateRepositoryVaultFirst(response: ApiResponseBase): UpdateRepositoryVault_ResultSet1 | null {
+  const items = extractUpdateRepositoryVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateStorageName(response: ApiResponseBase): UpdateStorageName_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateStorageName_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateStorageNameFirst(response: ApiResponseBase): UpdateStorageName_ResultSet1 | null {
+  const items = extractUpdateStorageName(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateStorageVault(response: ApiResponseBase): UpdateStorageVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateStorageVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateStorageVaultFirst(response: ApiResponseBase): UpdateStorageVault_ResultSet1 | null {
+  const items = extractUpdateStorageVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateTeamName(response: ApiResponseBase): UpdateTeamName_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateTeamName_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateTeamNameFirst(response: ApiResponseBase): UpdateTeamName_ResultSet1 | null {
+  const items = extractUpdateTeamName(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateTeamVault(response: ApiResponseBase): UpdateTeamVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateTeamVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateTeamVaultFirst(response: ApiResponseBase): UpdateTeamVault_ResultSet1 | null {
+  const items = extractUpdateTeamVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserAssignedPermissions(response: ApiResponseBase): UpdateUserAssignedPermissions_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserAssignedPermissions_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserAssignedPermissionsFirst(response: ApiResponseBase): UpdateUserAssignedPermissions_ResultSet1 | null {
+  const items = extractUpdateUserAssignedPermissions(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserEmail(response: ApiResponseBase): UpdateUserEmail_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserEmail_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserEmailFirst(response: ApiResponseBase): UpdateUserEmail_ResultSet1 | null {
+  const items = extractUpdateUserEmail(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserLanguage(response: ApiResponseBase): UpdateUserLanguage_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserLanguage_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserLanguageFirst(response: ApiResponseBase): UpdateUserLanguage_ResultSet1 | null {
+  const items = extractUpdateUserLanguage(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserPassword(response: ApiResponseBase): UpdateUserPassword_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserPassword_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserPasswordFirst(response: ApiResponseBase): UpdateUserPassword_ResultSet1 | null {
+  const items = extractUpdateUserPassword(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserTFA(response: ApiResponseBase): UpdateUserTFA_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserTFA_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserTFAFirst(response: ApiResponseBase): UpdateUserTFA_ResultSet1 | null {
+  const items = extractUpdateUserTFA(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserToActivated(response: ApiResponseBase): UpdateUserToActivated_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserToActivated_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserToActivatedFirst(response: ApiResponseBase): UpdateUserToActivated_ResultSet1 | null {
+  const items = extractUpdateUserToActivated(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserToDeactivated(response: ApiResponseBase): UpdateUserToDeactivated_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserToDeactivated_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserToDeactivatedFirst(response: ApiResponseBase): UpdateUserToDeactivated_ResultSet1 | null {
+  const items = extractUpdateUserToDeactivated(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateUserVault(response: ApiResponseBase): UpdateUserVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateUserVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateUserVaultFirst(response: ApiResponseBase): UpdateUserVault_ResultSet1 | null {
+  const items = extractUpdateUserVault(response);
+  return items[0] ?? null;
+}
+
+// ============================================================================
 // Utility Types
 // ============================================================================
 
@@ -3703,8 +5941,7 @@ export type StoredProcedureName =
   | 'GetCephRbdSnapshots'
   | 'GetCloneMachineAssignmentValidation'
   | 'GetCloneMachines'
-  | 'GetCompanyDashboardJson'
-  | 'GetCompanyDataGraphJson'
+  | 'GetCompanyDashboard'
   | 'GetCompanyPermissionGroups'
   | 'GetCompanyRegions'
   | 'GetCompanyTeams'
@@ -3824,8 +6061,7 @@ export interface ProcedureParamsMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsParams;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationParams;
   GetCloneMachines: GetCloneMachinesParams;
-  GetCompanyDashboardJson: GetCompanyDashboardJsonParams;
-  GetCompanyDataGraphJson: GetCompanyDataGraphJsonParams;
+  GetCompanyDashboard: GetCompanyDashboardParams;
   GetCompanyPermissionGroups: GetCompanyPermissionGroupsParams;
   GetCompanyRegions: GetCompanyRegionsParams;
   GetCompanyTeams: GetCompanyTeamsParams;
@@ -3946,8 +6182,7 @@ export interface ProcedurePrefixMap {
   GetCephRbdSnapshots: 'Public';
   GetCloneMachineAssignmentValidation: 'Public';
   GetCloneMachines: 'Public';
-  GetCompanyDashboardJson: 'Public';
-  GetCompanyDataGraphJson: 'Public';
+  GetCompanyDashboard: 'Public';
   GetCompanyPermissionGroups: 'Public';
   GetCompanyRegions: 'Public';
   GetCompanyTeams: 'Public';
@@ -4068,8 +6303,7 @@ export interface ProcedureResultsMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsResults;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationResults;
   GetCloneMachines: GetCloneMachinesResults;
-  GetCompanyDashboardJson: GetCompanyDashboardJsonResults;
-  GetCompanyDataGraphJson: GetCompanyDataGraphJsonResults;
+  GetCompanyDashboard: GetCompanyDashboardResults;
   GetCompanyPermissionGroups: GetCompanyPermissionGroupsResults;
   GetCompanyRegions: GetCompanyRegionsResults;
   GetCompanyTeams: GetCompanyTeamsResults;
@@ -4139,6 +6373,251 @@ export interface ProcedureResultsMap {
 }
 
 /**
+ * Map of procedure names to their typed response interfaces
+ */
+export interface TypedResponseMap {
+  ActivateUserAccount: ActivateUserAccountTypedResponse;
+  CancelQueueItem: CancelQueueItemTypedResponse;
+  CreateAuthenticationRequest: CreateAuthenticationRequestTypedResponse;
+  CreateBridge: CreateBridgeTypedResponse;
+  CreateCephCluster: CreateCephClusterTypedResponse;
+  CreateCephPool: CreateCephPoolTypedResponse;
+  CreateCephRbdClone: CreateCephRbdCloneTypedResponse;
+  CreateCephRbdImage: CreateCephRbdImageTypedResponse;
+  CreateCephRbdSnapshot: CreateCephRbdSnapshotTypedResponse;
+  CreateMachine: CreateMachineTypedResponse;
+  CreateNewCompany: CreateNewCompanyTypedResponse;
+  CreateNewUser: CreateNewUserTypedResponse;
+  CreatePermissionGroup: CreatePermissionGroupTypedResponse;
+  CreatePermissionInGroup: CreatePermissionInGroupTypedResponse;
+  CreateQueueItem: CreateQueueItemTypedResponse;
+  CreateRegion: CreateRegionTypedResponse;
+  CreateRepository: CreateRepositoryTypedResponse;
+  CreateStorage: CreateStorageTypedResponse;
+  CreateTeam: CreateTeamTypedResponse;
+  CreateTeamMembership: CreateTeamMembershipTypedResponse;
+  DeleteBridge: DeleteBridgeTypedResponse;
+  DeleteCephCluster: DeleteCephClusterTypedResponse;
+  DeleteCephPool: DeleteCephPoolTypedResponse;
+  DeleteCephRbdClone: DeleteCephRbdCloneTypedResponse;
+  DeleteCephRbdImage: DeleteCephRbdImageTypedResponse;
+  DeleteCephRbdSnapshot: DeleteCephRbdSnapshotTypedResponse;
+  DeleteMachine: DeleteMachineTypedResponse;
+  DeletePermissionFromGroup: DeletePermissionFromGroupTypedResponse;
+  DeletePermissionGroup: DeletePermissionGroupTypedResponse;
+  DeleteQueueItem: DeleteQueueItemTypedResponse;
+  DeleteRegion: DeleteRegionTypedResponse;
+  DeleteRepository: DeleteRepositoryTypedResponse;
+  DeleteStorage: DeleteStorageTypedResponse;
+  DeleteTeam: DeleteTeamTypedResponse;
+  DeleteUserFromTeam: DeleteUserFromTeamTypedResponse;
+  DeleteUserRequest: DeleteUserRequestTypedResponse;
+  ExportCompanyData: ExportCompanyDataTypedResponse;
+  ForkAuthenticationRequest: ForkAuthenticationRequestTypedResponse;
+  GetAuditLogs: GetAuditLogsTypedResponse;
+  GetAvailableMachinesForClone: GetAvailableMachinesForCloneTypedResponse;
+  GetCephClusterMachines: GetCephClusterMachinesTypedResponse;
+  GetCephClusters: GetCephClustersTypedResponse;
+  GetCephPools: GetCephPoolsTypedResponse;
+  GetCephRbdClones: GetCephRbdClonesTypedResponse;
+  GetCephRbdImages: GetCephRbdImagesTypedResponse;
+  GetCephRbdSnapshots: GetCephRbdSnapshotsTypedResponse;
+  GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationTypedResponse;
+  GetCloneMachines: GetCloneMachinesTypedResponse;
+  GetCompanyDashboard: GetCompanyDashboardTypedResponse;
+  GetCompanyPermissionGroups: GetCompanyPermissionGroupsTypedResponse;
+  GetCompanyRegions: GetCompanyRegionsTypedResponse;
+  GetCompanyTeams: GetCompanyTeamsTypedResponse;
+  GetCompanyUsers: GetCompanyUsersTypedResponse;
+  GetCompanyVault: GetCompanyVaultTypedResponse;
+  GetCompanyVaults: GetCompanyVaultsTypedResponse;
+  GetEntityAuditTrace: GetEntityAuditTraceTypedResponse;
+  GetEntityHistory: GetEntityHistoryTypedResponse;
+  GetLookupData: GetLookupDataTypedResponse;
+  GetMachineAssignmentStatus: GetMachineAssignmentStatusTypedResponse;
+  GetPermissionGroupDetails: GetPermissionGroupDetailsTypedResponse;
+  GetQueueItemTrace: GetQueueItemTraceTypedResponse;
+  GetQueueItemsNext: GetQueueItemsNextTypedResponse;
+  GetRegionBridges: GetRegionBridgesTypedResponse;
+  GetRequestAuthenticationStatus: GetRequestAuthenticationStatusTypedResponse;
+  GetSystemConfiguration: GetSystemConfigurationTypedResponse;
+  GetTeamMachines: GetTeamMachinesTypedResponse;
+  GetTeamMembers: GetTeamMembersTypedResponse;
+  GetTeamQueueItems: GetTeamQueueItemsTypedResponse;
+  GetTeamRepositories: GetTeamRepositoriesTypedResponse;
+  GetTeamStorages: GetTeamStoragesTypedResponse;
+  GetUserCompany: GetUserCompanyTypedResponse;
+  GetUserRequests: GetUserRequestsTypedResponse;
+  GetUserVault: GetUserVaultTypedResponse;
+  ImportCompanyData: ImportCompanyDataTypedResponse;
+  IsRegistered: IsRegisteredTypedResponse;
+  PrivilegeAuthenticationRequest: PrivilegeAuthenticationRequestTypedResponse;
+  PromoteRepositoryToGrand: PromoteRepositoryToGrandTypedResponse;
+  ResetBridgeAuthorization: ResetBridgeAuthorizationTypedResponse;
+  RetryFailedQueueItem: RetryFailedQueueItemTypedResponse;
+  UpdateBridgeName: UpdateBridgeNameTypedResponse;
+  UpdateBridgeVault: UpdateBridgeVaultTypedResponse;
+  UpdateCephClusterVault: UpdateCephClusterVaultTypedResponse;
+  UpdateCephPoolVault: UpdateCephPoolVaultTypedResponse;
+  UpdateCloneMachineAssignments: UpdateCloneMachineAssignmentsTypedResponse;
+  UpdateCloneMachineRemovals: UpdateCloneMachineRemovalsTypedResponse;
+  UpdateCompanyBlockUserRequests: UpdateCompanyBlockUserRequestsTypedResponse;
+  UpdateCompanyVault: UpdateCompanyVaultTypedResponse;
+  UpdateCompanyVaults: UpdateCompanyVaultsTypedResponse;
+  UpdateImageMachineAssignment: UpdateImageMachineAssignmentTypedResponse;
+  UpdateMachineAssignedBridge: UpdateMachineAssignedBridgeTypedResponse;
+  UpdateMachineCeph: UpdateMachineCephTypedResponse;
+  UpdateMachineClusterAssignment: UpdateMachineClusterAssignmentTypedResponse;
+  UpdateMachineClusterRemoval: UpdateMachineClusterRemovalTypedResponse;
+  UpdateMachineName: UpdateMachineNameTypedResponse;
+  UpdateMachineStatus: UpdateMachineStatusTypedResponse;
+  UpdateMachineVault: UpdateMachineVaultTypedResponse;
+  UpdateQueueItemResponse: UpdateQueueItemResponseTypedResponse;
+  UpdateQueueItemToCompleted: UpdateQueueItemToCompletedTypedResponse;
+  UpdateRegionName: UpdateRegionNameTypedResponse;
+  UpdateRegionVault: UpdateRegionVaultTypedResponse;
+  UpdateRepositoryName: UpdateRepositoryNameTypedResponse;
+  UpdateRepositoryTag: UpdateRepositoryTagTypedResponse;
+  UpdateRepositoryVault: UpdateRepositoryVaultTypedResponse;
+  UpdateStorageName: UpdateStorageNameTypedResponse;
+  UpdateStorageVault: UpdateStorageVaultTypedResponse;
+  UpdateTeamName: UpdateTeamNameTypedResponse;
+  UpdateTeamVault: UpdateTeamVaultTypedResponse;
+  UpdateUserAssignedPermissions: UpdateUserAssignedPermissionsTypedResponse;
+  UpdateUserEmail: UpdateUserEmailTypedResponse;
+  UpdateUserLanguage: UpdateUserLanguageTypedResponse;
+  UpdateUserPassword: UpdateUserPasswordTypedResponse;
+  UpdateUserTFA: UpdateUserTFATypedResponse;
+  UpdateUserToActivated: UpdateUserToActivatedTypedResponse;
+  UpdateUserToDeactivated: UpdateUserToDeactivatedTypedResponse;
+  UpdateUserVault: UpdateUserVaultTypedResponse;
+}
+
+/**
+ * Map of procedure names to their primary data result set index.
+ * - Value 1: Token at index 0, data at index 1 (most public procedures)
+ * - Value 0: Data at index 0 (protected procedures without token rotation)
+ * - Value -1: No data result sets (token-only or no results)
+ */
+export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
+  ActivateUserAccount: 0,
+  CancelQueueItem: 1,
+  CreateAuthenticationRequest: 0,
+  CreateBridge: 1,
+  CreateCephCluster: 1,
+  CreateCephPool: 1,
+  CreateCephRbdClone: 1,
+  CreateCephRbdImage: 1,
+  CreateCephRbdSnapshot: 1,
+  CreateMachine: 1,
+  CreateNewCompany: 0,
+  CreateNewUser: 1,
+  CreatePermissionGroup: 1,
+  CreatePermissionInGroup: 1,
+  CreateQueueItem: 1,
+  CreateRegion: 1,
+  CreateRepository: 1,
+  CreateStorage: 1,
+  CreateTeam: 1,
+  CreateTeamMembership: 1,
+  DeleteBridge: -1,
+  DeleteCephCluster: 1,
+  DeleteCephPool: 1,
+  DeleteCephRbdClone: 1,
+  DeleteCephRbdImage: 1,
+  DeleteCephRbdSnapshot: 1,
+  DeleteMachine: -1,
+  DeletePermissionFromGroup: 1,
+  DeletePermissionGroup: 1,
+  DeleteQueueItem: 1,
+  DeleteRegion: -1,
+  DeleteRepository: -1,
+  DeleteStorage: -1,
+  DeleteTeam: -1,
+  DeleteUserFromTeam: 1,
+  DeleteUserRequest: 1,
+  ExportCompanyData: 1,
+  ForkAuthenticationRequest: 1,
+  GetAuditLogs: 1,
+  GetAvailableMachinesForClone: 1,
+  GetCephClusterMachines: 1,
+  GetCephClusters: 1,
+  GetCephPools: 1,
+  GetCephRbdClones: 1,
+  GetCephRbdImages: 1,
+  GetCephRbdSnapshots: 1,
+  GetCloneMachineAssignmentValidation: 1,
+  GetCloneMachines: 1,
+  GetCompanyDashboard: 1,
+  GetCompanyPermissionGroups: 1,
+  GetCompanyRegions: 1,
+  GetCompanyTeams: 1,
+  GetCompanyUsers: 1,
+  GetCompanyVault: 1,
+  GetCompanyVaults: 1,
+  GetEntityAuditTrace: 1,
+  GetEntityHistory: 1,
+  GetLookupData: 1,
+  GetMachineAssignmentStatus: 1,
+  GetPermissionGroupDetails: 1,
+  GetQueueItemTrace: 1,
+  GetQueueItemsNext: 1,
+  GetRegionBridges: 1,
+  GetRequestAuthenticationStatus: 1,
+  GetSystemConfiguration: 0,
+  GetTeamMachines: 1,
+  GetTeamMembers: 1,
+  GetTeamQueueItems: 1,
+  GetTeamRepositories: 1,
+  GetTeamStorages: 1,
+  GetUserCompany: 1,
+  GetUserRequests: 1,
+  GetUserVault: 1,
+  ImportCompanyData: 1,
+  IsRegistered: 0,
+  PrivilegeAuthenticationRequest: 1,
+  PromoteRepositoryToGrand: -1,
+  ResetBridgeAuthorization: 1,
+  RetryFailedQueueItem: 1,
+  UpdateBridgeName: 1,
+  UpdateBridgeVault: 1,
+  UpdateCephClusterVault: 1,
+  UpdateCephPoolVault: 1,
+  UpdateCloneMachineAssignments: 1,
+  UpdateCloneMachineRemovals: 1,
+  UpdateCompanyBlockUserRequests: 1,
+  UpdateCompanyVault: 1,
+  UpdateCompanyVaults: 1,
+  UpdateImageMachineAssignment: 1,
+  UpdateMachineAssignedBridge: 1,
+  UpdateMachineCeph: 1,
+  UpdateMachineClusterAssignment: 1,
+  UpdateMachineClusterRemoval: 1,
+  UpdateMachineName: 1,
+  UpdateMachineStatus: 1,
+  UpdateMachineVault: 1,
+  UpdateQueueItemResponse: 1,
+  UpdateQueueItemToCompleted: 1,
+  UpdateRegionName: 1,
+  UpdateRegionVault: 1,
+  UpdateRepositoryName: 1,
+  UpdateRepositoryTag: 1,
+  UpdateRepositoryVault: 1,
+  UpdateStorageName: 1,
+  UpdateStorageVault: 1,
+  UpdateTeamName: 1,
+  UpdateTeamVault: 1,
+  UpdateUserAssignedPermissions: 1,
+  UpdateUserEmail: 1,
+  UpdateUserLanguage: 1,
+  UpdateUserPassword: 1,
+  UpdateUserTFA: 1,
+  UpdateUserToActivated: 1,
+  UpdateUserToDeactivated: 1,
+  UpdateUserVault: 1,
+} as const;
+
+/**
  * Get parameter type for a specific procedure
  */
 export type ParamsFor<T extends StoredProcedureName> = ProcedureParamsMap[T];
@@ -4186,548 +6665,7 @@ export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2025-12-12T14:56:10.0016831Z',
-  procedureCount: 116,
+  generated: '2025-12-26T19:19:11.4388227Z',
+  procedureCount: 115,
 } as const;
-
-// ============================================================================
-// Domain Types (Generated from entity-metadata.json)
-// ============================================================================
-
-// Enum/Union Types
-
-/** Type of machine assignment in Ceph */
-export type MachineAssignmentType =
-  | 'AVAILABLE'
-  | 'CLUSTER'
-  | 'IMAGE'
-  | 'CLONE';
-
-/** Status of a queue item */
-export type QueueStatus =
-  | 'PENDING'
-  | 'ASSIGNED'
-  | 'PROCESSING'
-  | 'CANCELLING'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'FAILED';
-
-/** Health status of a queue item */
-export type QueueHealthStatus =
-  | 'PENDING'
-  | 'ACTIVE'
-  | 'STALE'
-  | 'STALE_PENDING'
-  | 'CANCELLING'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'FAILED'
-  | 'UNKNOWN';
-
-/** Relative position in queue */
-export type QueueRelativePosition =
-  | 'Before'
-  | 'After'
-  | 'Current';
-
-// Interface Types
-
-/** Status of machine assignment */
-export interface MachineAssignmentStatus {
-  assignmentType: MachineAssignmentType;
-  assignmentDetails: string;
-  status?: string;
-}
-
-/** Bridge authorization token */
-export interface BridgeAuthorizationToken {
-  authToken?: string;
-}
-
-/** Plugin container information */
-export interface PluginContainer {
-  name: string;
-  image: string;
-  status: string;
-  [key: string]: unknown;
-}
-
-/** Permission definition */
-export interface Permission {
-  permissionName: string;
-  description?: string;
-}
-
-/** User request/session information */
-export interface UserRequest {
-  requestId: number;
-  userEmail: string;
-  sessionName: string;
-  ipAddress: string | null;
-  userAgent: string | null;
-  createdAt: string;
-  lastActivity: string;
-  isActive: boolean;
-  parentRequestId: number | null;
-  permissionsName: string;
-  expirationTime: string | null;
-}
-
-/** Ceph machine assignment status */
-export interface CephMachineAssignmentStatus {
-  machineName: string;
-  teamName: string;
-  assignmentType: string;
-  assignmentDetails: string;
-  status: string;
-}
-
-/** Available machine for Ceph assignment */
-export interface CephAvailableMachine {
-  machineName: string;
-  status: string;
-  description: string;
-  bridgeName?: string;
-  regionName?: string;
-}
-
-/** Machine assigned to a Ceph clone */
-export interface CephCloneMachine {
-  machineName: string;
-  bridgeName: string;
-  assignmentId: number;
-}
-
-/** Validation result for Ceph machine assignment */
-export interface CephMachineAssignmentValidation {
-  machineName: string;
-  isValid: boolean;
-  error?: string;
-}
-
-/** Company profile information */
-export interface CompanyProfile extends Record<string, unknown> {
-  companyName?: string;
-  Plan?: string;
-  planCode?: string;
-}
-
-/** Company subscription details */
-export interface CompanySubscription extends Record<string, unknown> {
-  edition: string;
-  planCode: string;
-  quantity: number;
-  totalActivePurchases: number;
-  startDate: string;
-  endDate: string;
-  daysRemaining: number;
-  status: string;
-  isActive: number;
-  isTrial: number;
-  isExpiringSoon?: number;
-}
-
-/** Company resource limit */
-export interface CompanyResourceLimit {
-  resourceType: string;
-  resourceLimit: number;
-  activeSubscriptionTier: string;
-  currentUsage: number;
-  isLimitReached: number;
-  usagePercentage: number;
-}
-
-/** Company account health status */
-export interface CompanyAccountHealth {
-  resourcesAtLimit: number;
-  resourcesNearLimit: number;
-  subscriptionStatus: 'Critical' | 'Warning' | 'Good';
-  upgradeRecommendation: string;
-}
-
-/** Company feature access flags */
-export interface CompanyFeatureAccess {
-  hasAdvancedAnalytics: number;
-  hasPrioritySupport: number;
-  hasDedicatedAccount: number;
-  hasCustomBranding: number;
-}
-
-/** Company plan limits */
-export interface CompanyPlanLimits {
-  maxActiveJobs: number;
-  maxReservedJobs: number;
-  jobTimeoutHours: number;
-  maxRepoSize: number;
-  planCode: string;
-}
-
-/** Detailed subscription information */
-export interface CompanySubscriptionDetail {
-  planCode: string;
-  quantity: number;
-  startDate: string;
-  endDate: string;
-  daysRemaining: number;
-  status: string;
-  isTrial: number;
-}
-
-/** Team-level queue issue */
-export interface QueueTeamIssue {
-  teamName: string;
-  totalItems: number;
-  pendingItems: number;
-  activeItems: number;
-  staleItems: number;
-}
-
-/** Machine-level queue issue */
-export interface QueueMachineIssue {
-  machineName: string;
-  teamName: string;
-  bridgeName: string;
-  totalItems: number;
-  pendingItems: number;
-  activeItems: number;
-  staleItems: number;
-}
-
-/** Company-wide queue statistics */
-export interface CompanyQueueStats {
-  pendingCount: number;
-  assignedCount: number;
-  processingCount: number;
-  activeCount: number;
-  completedCount: number;
-  cancelledCount: number;
-  failedCount: number;
-  totalCount: number;
-  staleCount: number;
-  completedToday: number;
-  cancelledToday: number;
-  failedToday: number;
-  createdToday: number;
-  oldestPendingAgeMinutes: number;
-  avgPendingAgeMinutes: number;
-  highestPriorityPending: number | null;
-  highPriorityPending: number | null;
-  normalPriorityPending: number | null;
-  lowPriorityPending: number | null;
-  hasStaleItems: number;
-  hasOldPendingItems: number;
-  teamIssues?: QueueTeamIssue[];
-  machineIssues?: QueueMachineIssue[];
-}
-
-/** Ceph usage breakdown by team */
-export interface CephTeamBreakdown {
-  teamName: string;
-  totalMachines: number;
-  availableMachines: number;
-  clusterMachines: number;
-  imageMachines: number;
-  cloneMachines: number;
-}
-
-/** Company-wide Ceph statistics */
-export interface CompanyCephStats {
-  total_machines: number;
-  available_machines: number;
-  cluster_assigned_machines: number;
-  image_assigned_machines: number;
-  clone_assigned_machines: number;
-  truly_available_machines: number;
-  available_percentage: number;
-  cluster_percentage: number;
-  image_percentage: number;
-  clone_percentage: number;
-  total_clusters?: number;
-  active_clusters?: number;
-  avg_machines_per_cluster?: number;
-  team_breakdown: CephTeamBreakdown[];
-}
-
-/** Complete dashboard data for a company */
-export interface CompanyDashboardData {
-  companyInfo: CompanyProfile;
-  activeSubscription: CompanySubscription | null;
-  resources: CompanyResourceLimit[];
-  accountHealth: CompanyAccountHealth | null;
-  featureAccess: CompanyFeatureAccess | null;
-  planLimits: CompanyPlanLimits | null;
-  queueStats?: CompanyQueueStats;
-  cephStats?: CompanyCephStats;
-  allActiveSubscriptions?: CompanySubscriptionDetail[];
-}
-
-/** Company vault details */
-export interface CompanyVaultDetails {
-  vault: string;
-  vaultVersion: number;
-  companyCredential?: string | null;
-}
-
-/** Company vault record */
-export interface CompanyVaultRecord extends Record<string, unknown> {
-  entityType?: string;
-  entityIdentifier?: string;
-  vaultContent?: string;
-  vaultVersion?: number;
-  vaultType?: string;
-}
-
-/** Company vault collections */
-export interface CompanyVaultCollections {
-  vaults: CompanyVaultRecord[];
-  bridgesWithRequestToken: CompanyVaultRecord[];
-}
-
-/** Result of company vault update */
-export interface CompanyVaultUpdateResult {
-  totalUpdated: number;
-  failedCount: number;
-}
-
-/** Result of company data import */
-export interface CompanyImportResult {
-  importedCount: number;
-  skippedCount: number;
-  errorCount: number;
-}
-
-/** Result of blocking user requests */
-export interface CompanyBlockUserRequestsResult {
-  deactivatedCount: number;
-}
-
-/** Bridge option for dropdowns */
-export interface CompanyDropdownBridge {
-  value: string;
-  label: string;
-  machineCount?: number;
-}
-
-/** Region option for dropdowns */
-export interface CompanyDropdownRegion {
-  regionName: string;
-  bridges: CompanyDropdownBridge[];
-}
-
-/** Machine option for dropdowns */
-export interface CompanyDropdownMachine {
-  value: string;
-  label: string;
-  bridgeName: string;
-  regionName: string;
-}
-
-/** Complete dropdown data for UI */
-export interface CompanyDropdownData {
-  teams: { value: string; label: string }[];
-  allTeams: { value: string; label: string; memberCount: number }[];
-  regions: { value: string; label: string; bridgeCount: number }[];
-  machines?: string[];
-  bridges?: { value: string; label: string }[];
-  bridgesByRegion: CompanyDropdownRegion[];
-  machinesByTeam: { teamName: string; machines: CompanyDropdownMachine[] }[];
-  users: { value: string; label: string; status: string }[];
-  permissionGroups: { value: string; label: string; userCount: number; permissionCount: number }[];
-  permissions: { name: string; value: string }[];
-  subscriptionPlans: { value: string; label: string; description: string }[];
-  requestContext?: string;
-  currentUser?: string;
-  userRole?: string;
-}
-
-/** Node in company data graph */
-export interface CompanyGraphNode extends Record<string, unknown> {
-  nodeType: string;
-  nodeId: string;
-  name: string;
-  label: string;
-  hierarchyLevel: string;
-}
-
-/** Relationship in company data graph */
-export interface CompanyGraphRelationship {
-  source: string;
-  target: string;
-  relationshipType: string;
-  label: string;
-}
-
-/** Complete company data graph for visualization */
-export interface CompanyDataGraph {
-  metadata: { currentUser: string; userRole: string; generatedAt: string; dataFormat: string };
-  nodes: Record<string, CompanyGraphNode[]>;
-  relationships: Record<string, CompanyGraphRelationship[]>;
-  summary: { userTeamCount: number; accessibleMachines: number; totalQueueItems: number; isAdministrator: boolean; companyName: string };
-}
-
-/** Queue trace log entry */
-export interface QueueTraceLog {
-  timestamp?: string;
-  action?: string;
-  status?: string;
-  message?: string;
-  details?: string;
-  metadata?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-/** Queue vault snapshot */
-export interface QueueVaultSnapshot {
-  hasContent: boolean;
-  vaultVersion?: number;
-  vaultContent?: string | Record<string, unknown>;
-  updatedAt?: string;
-}
-
-/** Queue position entry */
-export interface QueuePositionEntry {
-  taskId: string;
-  status: QueueStatus;
-  createdTime: string;
-  relativePosition: QueueRelativePosition | string;
-}
-
-/** Queue machine statistics */
-export interface QueueMachineStats {
-  currentQueueDepth: number;
-  activeProcessingCount: number;
-  maxConcurrentTasks?: number;
-}
-
-/** Queue plan information */
-export interface QueuePlanInfo {
-  planId?: string;
-  planName?: string;
-  planDescription?: string;
-  expiresAt?: string;
-}
-
-/** Queue trace summary */
-export interface QueueTraceSummary {
-  taskId?: string;
-  status?: QueueStatus;
-  healthStatus?: QueueHealthStatus;
-  progress?: string;
-  consoleOutput?: string;
-  errorMessage?: string;
-  lastFailureReason?: string;
-  priority?: number;
-  retryCount?: number;
-  ageInMinutes?: number;
-  hasResponse?: boolean;
-  teamName?: string;
-  machineName?: string;
-  bridgeName?: string;
-  createdTime?: string;
-  updatedTime?: string;
-}
-
-/** Complete queue trace information */
-export interface QueueTrace {
-  summary: QueueTraceSummary | null;
-  queueDetails: GetTeamQueueItems_ResultSet1 | null;
-  traceLogs: QueueTraceLog[];
-  vaultContent: QueueVaultSnapshot | null;
-  responseVaultContent: QueueVaultSnapshot | null;
-  queuePosition: QueuePositionEntry[];
-  machineStats: QueueMachineStats | null;
-  planInfo: QueuePlanInfo | null;
-}
-
-/** Queue list with statistics */
-export interface QueueListResult {
-  items: GetTeamQueueItems_ResultSet1[];
-  statistics: GetTeamQueueItems_ResultSet2 | null;
-}
-
-/** User vault information */
-export interface UserVault {
-  vault: string;
-  vaultVersion: number;
-  userCredential: string | null;
-}
-
-/** Authentication request status */
-export interface AuthRequestStatus {
-  isTFAEnabled: boolean;
-  isAuthorized: boolean;
-  authenticationStatus: string;
-}
-
-/** Authentication login result */
-export interface AuthLoginResult {
-  isAuthorized: boolean;
-  authenticationStatus: string;
-  vaultCompany: string | null;
-  companyName: string | null;
-  company?: string | null;
-  preferredLanguage?: string | null;
-}
-
-/** Enable TFA response */
-export interface EnableTfaResponse {
-  secret?: string;
-  userEmail?: string;
-  authType?: string;
-  result?: string;
-}
-
-/** Verify TFA result */
-export interface VerifyTfaResult {
-  isAuthorized: boolean;
-  result?: string;
-  hasTFAEnabled?: boolean;
-}
-
-/** Fork session credentials */
-export interface ForkSessionCredentials {
-  requestToken: string | null;
-  nextRequestToken: string | null;
-  parentRequestId: number | null;
-}
-
-/** Audit trace record */
-export interface AuditTraceRecord {
-  action: string;
-  details: string;
-  performedBy: string;
-  timestamp: string;
-  actionType: string;
-  timeAgo: string;
-  iconHint: string;
-}
-
-/** Audit trace summary */
-export interface AuditTraceSummary {
-  entityType: string;
-  entityName: string;
-  entityId: number;
-  totalAuditRecords: number;
-  visibleAuditRecords: number;
-  oldestVisibleActivity: string | null;
-  lastActivity: string | null;
-  hasAccess: boolean;
-  isAdmin: boolean;
-  subscriptionTier: string;
-  auditRetentionDays: number;
-  hasOlderRecords: boolean;
-  relatedCount: number;
-}
-
-/** Audit trace response */
-export interface AuditTraceResponse {
-  records: AuditTraceRecord[];
-  summary: AuditTraceSummary;
-}
-
-// Type Aliases
-
-/** Company export data type */
-export type CompanyExportData = Record<string, unknown>;
 

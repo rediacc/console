@@ -30,7 +30,7 @@ import {
   VaultProtocolState,
   validateMasterPassword,
 } from '@/utils/vaultProtocol';
-import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
+import { parseLoginResult as parseAuthenticationResult } from '@rediacc/shared/api';
 import type { AuthLoginResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
 import { TFAModal } from './components/TFAModal';

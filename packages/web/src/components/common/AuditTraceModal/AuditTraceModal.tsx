@@ -91,8 +91,8 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       ...data.records.map((record) => {
         const row = [
           record.actionType,
-          `"${record.details.replace(/"/g, '""')}"`, // Escape quotes in details
-          record.performedBy || 'System',
+          `"${(record.details ?? '').replace(/"/g, '""')}"`, // Escape quotes in details
+          record.performedBy ?? 'System',
           formatTimestampAsIs(record.timestamp, 'datetime'),
           record.timeAgo,
         ];
@@ -126,7 +126,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       records: data.records.map((record) => ({
         actionType: record.actionType,
         details: record.details,
-        performedBy: record.performedBy || 'System',
+        performedBy: record.performedBy ?? 'System',
         timestamp: record.timestamp,
         timeAgo: record.timeAgo,
         iconHint: record.iconHint,
@@ -156,7 +156,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       sorter: createSorter<AuditTraceRecord>('actionType'),
       render: (_: unknown, record: AuditTraceRecord, index: number) => (
         <Space data-testid={`audit-trace-action-${index}`}>
-          {getIcon(record.iconHint)}
+          {getIcon(record.iconHint ?? 'info')}
           <Tag data-testid={`audit-trace-action-tag-${index}`}>{record.actionType}</Tag>
         </Space>
       ),

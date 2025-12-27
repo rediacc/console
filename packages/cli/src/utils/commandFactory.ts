@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import type { CompanyVaultRecord } from '@rediacc/shared/types';
+import type { GetCompanyVaults_ResultSet1 } from '@rediacc/shared/types';
 import { searchInFields, compareValues } from '@rediacc/shared/utils';
 import { handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
@@ -47,7 +47,10 @@ export interface ResourceCommandConfig {
   vaultConfig?: {
     fetch: (
       params: Record<string, unknown>
-    ) => Promise<{ vaults: (CompanyVaultRecord & { vaultType?: string })[] }>;
+    ) => Promise<
+      | (GetCompanyVaults_ResultSet1 & { vaultType?: string })[]
+      | { vaults: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] }
+    >;
     vaultType: string;
   };
   /** Optional: Vault update command configuration */
@@ -379,15 +382,19 @@ export function createResourceCommands(program: Command, config: ResourceCommand
             'Vault fetched'
           );
 
-          const vaultsArray: (CompanyVaultRecord & { vaultType?: string })[] = Array.isArray(
-            response
-          )
-            ? (response as (CompanyVaultRecord & { vaultType?: string })[])
-            : Array.isArray(
-                  (response as { vaults?: (CompanyVaultRecord & { vaultType?: string })[] }).vaults
-                )
-              ? (response as { vaults: (CompanyVaultRecord & { vaultType?: string })[] }).vaults
-              : [];
+          const vaultsArray: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] =
+            Array.isArray(response)
+              ? (response as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[])
+              : Array.isArray(
+                    (
+                      response as {
+                        vaults?: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+                      }
+                    ).vaults
+                  )
+                ? (response as { vaults: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] })
+                    .vaults
+                : [];
           const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType);
           const format = program.opts().output as OutputFormat;
 

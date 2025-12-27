@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
+import { parseGetAuditLogs, parseGetEntityAuditTrace } from '@rediacc/shared/api';
 import type { AuditTraceResponse, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
 export type { AuditTraceRecord, GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
@@ -19,12 +20,13 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
     queryKey: ['auditLogs', params],
     queryFn: async () => {
       try {
-        return await api.audit.getLogs(
-          params?.entityFilter,
-          params?.startDate,
-          params?.endDate,
-          params?.maxRecords ?? 100
-        );
+        const response = await typedApi.GetAuditLogs({
+          entityFilter: params?.entityFilter,
+          startDate: params?.startDate,
+          endDate: params?.endDate,
+          maxRecords: params?.maxRecords ?? 100,
+        });
+        return parseGetAuditLogs(response as never);
       } catch (error) {
         console.error('Failed to fetch audit logs:', error);
         throw new Error('Unable to load audit logs. Please check your date range and try again.');
@@ -46,7 +48,8 @@ export const useRecentAuditLogs = (maxRecords: number = 10) => {
   return useQuery<GetAuditLogs_ResultSet1[]>({
     queryKey: ['recentAuditLogs', maxRecords],
     queryFn: async () => {
-      return api.audit.getLogs(undefined, undefined, undefined, maxRecords);
+      const response = await typedApi.GetAuditLogs({ maxRecords });
+      return parseGetAuditLogs(response as never);
     },
   });
 };
@@ -56,7 +59,8 @@ const getEntityAuditTrace = async (
   entityType: string,
   entityIdentifier: string
 ): Promise<AuditTraceResponse> => {
-  return api.audit.getEntityTrace({ entityType, entityIdentifier });
+  const response = await typedApi.GetEntityAuditTrace({ entityType, entityIdentifier });
+  return parseGetEntityAuditTrace(response as never);
 };
 
 // React Query hook for entity audit trace

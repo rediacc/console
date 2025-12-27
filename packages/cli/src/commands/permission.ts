@@ -1,5 +1,9 @@
 import { Command } from 'commander';
-import { api } from '../services/api.js';
+import {
+  parseGetCompanyPermissionGroups,
+  parseGetPermissionGroupDetails,
+} from '@rediacc/shared/api';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
@@ -19,12 +23,13 @@ export function registerPermissionCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const groups = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching permission groups...',
-          () => api.permissions.listGroups(),
+          () => typedApi.GetCompanyPermissionGroups({}),
           'Permission groups fetched'
         );
 
+        const groups = parseGetCompanyPermissionGroups(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(groups, format);
@@ -37,13 +42,13 @@ export function registerPermissionCommands(program: Command): void {
   group
     .command('create <name>')
     .description('Create a new permission group')
-    .action(async (name) => {
+    .action(async (name: string) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
           `Creating permission group "${name}"...`,
-          () => api.permissions.createGroup({ permissionGroupName: name }),
+          () => typedApi.CreatePermissionGroup({ permissionGroupName: name }),
           `Permission group "${name}" created`
         );
       } catch (error) {
@@ -56,7 +61,7 @@ export function registerPermissionCommands(program: Command): void {
     .command('delete <name>')
     .description('Delete a permission group')
     .option('-f, --force', 'Skip confirmation')
-    .action(async (name, options) => {
+    .action(async (name: string, options: { force?: boolean }) => {
       try {
         await authService.requireAuth();
 
@@ -71,7 +76,7 @@ export function registerPermissionCommands(program: Command): void {
 
         await withSpinner(
           `Deleting permission group "${name}"...`,
-          () => api.permissions.deleteGroup({ permissionGroupName: name }),
+          () => typedApi.DeletePermissionGroup({ permissionGroupName: name }),
           `Permission group "${name}" deleted`
         );
       } catch (error) {
@@ -83,16 +88,17 @@ export function registerPermissionCommands(program: Command): void {
   group
     .command('show <name>')
     .description('Show permission group details')
-    .action(async (name) => {
+    .action(async (name: string) => {
       try {
         await authService.requireAuth();
 
-        const details = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching permission group details...',
-          () => api.permissions.getGroupDetails({ permissionGroupName: name }),
+          () => typedApi.GetPermissionGroupDetails({ permissionGroupName: name }),
           'Details fetched'
         );
 
+        const details = parseGetPermissionGroupDetails(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(details, format);
@@ -105,13 +111,14 @@ export function registerPermissionCommands(program: Command): void {
   permission
     .command('add <groupName> <permission>')
     .description('Add a permission to a group')
-    .action(async (groupName, permissionName) => {
+    .action(async (groupName: string, permissionName: string) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
           `Adding permission "${permissionName}" to group "${groupName}"...`,
-          () => api.permissions.addPermission({ permissionGroupName: groupName, permissionName }),
+          () =>
+            typedApi.CreatePermissionInGroup({ permissionGroupName: groupName, permissionName }),
           'Permission added'
         );
       } catch (error) {
@@ -123,14 +130,14 @@ export function registerPermissionCommands(program: Command): void {
   permission
     .command('remove <groupName> <permission>')
     .description('Remove a permission from a group')
-    .action(async (groupName, permissionName) => {
+    .action(async (groupName: string, permissionName: string) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
           `Removing permission "${permissionName}" from group "${groupName}"...`,
           () =>
-            api.permissions.removePermission({ permissionGroupName: groupName, permissionName }),
+            typedApi.DeletePermissionFromGroup({ permissionGroupName: groupName, permissionName }),
           'Permission removed'
         );
       } catch (error) {

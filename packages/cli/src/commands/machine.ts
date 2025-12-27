@@ -1,11 +1,17 @@
 import { Command } from 'commander';
 import {
+  parseGetTeamMachines,
+  parseCreateMachine,
+  parseGetCompanyVaults,
+} from '@rediacc/shared/api';
+import {
   getDeploymentSummary,
   getMachineRepositories,
   type MachineWithVaultStatus,
   parseVaultStatus,
 } from '@rediacc/shared/services/machine';
 import type {
+  GetCompanyVaults_ResultSet1,
   CreateMachineParams,
   DeleteMachineParams,
   UpdateMachineAssignedBridgeParams,
@@ -13,7 +19,7 @@ import type {
   UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
 import { searchInFields } from '@rediacc/shared/utils';
-import { api } from '../services/api.js';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -34,32 +40,41 @@ export function registerMachineCommands(program: Command): void {
     nameField: 'machineName',
     parentOption: 'team',
     operations: {
-      list: (params) => api.machines.list(params?.teamName as string | undefined),
-      create: (payload) => api.machines.create(payload as unknown as CreateMachineParams),
-      rename: (payload) => api.machines.rename(payload as unknown as UpdateMachineNameParams),
-      delete: (payload) => api.machines.delete(payload as unknown as DeleteMachineParams),
+      list: async (params) => {
+        const response = await typedApi.GetTeamMachines({
+          teamName: params?.teamName as string | undefined,
+        });
+        return parseGetTeamMachines(response as never);
+      },
+      create: async (payload) => {
+        const response = await typedApi.CreateMachine(payload as unknown as CreateMachineParams);
+        return parseCreateMachine(response as never);
+      },
+      rename: (payload) =>
+        typedApi.UpdateMachineName(payload as unknown as UpdateMachineNameParams),
+      delete: (payload) => typedApi.DeleteMachine(payload as unknown as DeleteMachineParams),
     },
     createOptions: [
       { flags: '-b, --bridge <name>', description: 'Bridge name', required: true },
       { flags: '--vault <json>', description: 'Machine vault data as JSON string' },
     ],
-    transformCreatePayload: (name, opts) => {
-      const payload: Record<string, unknown> = {
-        machineName: name,
-        teamName: opts.team,
-        bridgeName: opts.bridge,
-      };
-      if (opts.vault) {
-        payload.vaultContent = opts.vault;
-      }
-      return payload;
-    },
+    transformCreatePayload: (name, opts) => ({
+      machineName: name,
+      teamName: opts.team,
+      bridgeName: opts.bridge,
+      vaultContent: opts.vault,
+    }),
     vaultConfig: {
-      fetch: (params) => api.company.getAllVaults(params),
+      fetch: async () => {
+        const response = await typedApi.GetCompanyVaults({});
+        const vaults = parseGetCompanyVaults(response as never);
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+      },
       vaultType: 'Machine',
     },
     vaultUpdateConfig: {
-      update: (payload) => api.machines.updateVault(payload as unknown as UpdateMachineVaultParams),
+      update: (payload) =>
+        typedApi.UpdateMachineVault(payload as unknown as UpdateMachineVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });
@@ -69,7 +84,12 @@ export function registerMachineCommands(program: Command): void {
     resourceName: 'machine',
     nameField: 'machineName',
     parentOption: 'team',
-    fetch: (params) => api.machines.list(params.teamName as string | undefined),
+    fetch: async (params) => {
+      const response = await typedApi.GetTeamMachines({
+        teamName: params.teamName as string | undefined,
+      });
+      return parseGetTeamMachines(response as never);
+    },
   });
 
   // Add assign-bridge command
@@ -80,7 +100,7 @@ export function registerMachineCommands(program: Command): void {
     targetField: 'newBridgeName',
     parentOption: 'team',
     perform: (payload) =>
-      api.machines.assignBridge(payload as unknown as UpdateMachineAssignedBridgeParams),
+      typedApi.UpdateMachineAssignedBridge(payload as unknown as UpdateMachineAssignedBridgeParams),
   });
 
   // Add vault-status command using shared parsing
@@ -88,7 +108,7 @@ export function registerMachineCommands(program: Command): void {
     .command('vault-status <name>')
     .description('Show parsed vault status for a machine')
     .option('-t, --team <name>', 'Team name')
-    .action(async (name, options) => {
+    .action(async (name: string, options: { team?: string }) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
@@ -97,12 +117,13 @@ export function registerMachineCommands(program: Command): void {
           throw new ValidationError('Team name required. Use --team or set context.');
         }
 
-        const machines = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching machine...',
-          () => api.machines.list(opts.team as string),
+          () => typedApi.GetTeamMachines({ teamName: opts.team as string }),
           'Machine fetched'
         );
 
+        const machines = parseGetTeamMachines(apiResponse as never);
         const machine = machines.find((m: MachineWithVaultStatus) => m.machineName === name);
         if (!machine) {
           throw new ValidationError(`Machine "${name}" not found`);
@@ -151,7 +172,7 @@ export function registerMachineCommands(program: Command): void {
     .description('List deployed repositories on a machine')
     .option('-t, --team <name>', 'Team name')
     .option('--search <text>', 'Filter repositories by name')
-    .action(async (name, options) => {
+    .action(async (name: string, options: { team?: string; search?: string }) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
@@ -160,12 +181,13 @@ export function registerMachineCommands(program: Command): void {
           throw new ValidationError('Team name required. Use --team or set context.');
         }
 
-        const machines = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching machine...',
-          () => api.machines.list(opts.team as string),
+          () => typedApi.GetTeamMachines({ teamName: opts.team as string }),
           'Machine fetched'
         );
 
+        const machines = parseGetTeamMachines(apiResponse as never);
         const machine = machines.find((m: MachineWithVaultStatus) => m.machineName === name);
         if (!machine) {
           throw new ValidationError(`Machine "${name}" not found`);
@@ -177,8 +199,9 @@ export function registerMachineCommands(program: Command): void {
 
         // Filter by search term
         if (options.search) {
+          const searchTerm = options.search;
           repositories = repositories.filter((repo) =>
-            searchInFields(repo, options.search, ['name', 'repositoryGuid'])
+            searchInFields(repo, searchTerm, ['name', 'repositoryGuid'])
           );
         }
 

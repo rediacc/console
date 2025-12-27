@@ -47,7 +47,7 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
 
         <Flex vertical gap={8} className="w-full">
           <Flex align="center" gap={8} wrap className="inline-flex">
-            {accountHealth.resourcesAtLimit > 0 ? (
+            {(accountHealth.resourcesAtLimit ?? 0) > 0 ? (
               <Flex className="inline-flex">
                 <ExclamationCircleOutlined />
               </Flex>

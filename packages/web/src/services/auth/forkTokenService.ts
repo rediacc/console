@@ -5,8 +5,9 @@
  * Fork tokens are isolated from the main session and have limited lifespans.
  */
 
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { secureMemoryStorage as secureStorage } from '@/services/crypto';
+import { parseForkAuthenticationRequest } from '@rediacc/shared/api';
 
 interface ForkTokenInfo {
   token: string;
@@ -180,9 +181,11 @@ class ForkTokenService {
    * Call the ForkAuthenticationRequest API
    */
   private async callForkAuthenticationRequest(childName: string, expirationHours: number) {
-    const credentials = await api.auth.forkSession(childName, {
-      expiresInHours: expirationHours,
+    const response = await typedApi.ForkAuthenticationRequest({
+      childName,
+      tokenExpirationHours: expirationHours,
     });
+    const credentials = parseForkAuthenticationRequest(response as never);
 
     if (!credentials.nextRequestToken) {
       throw new Error('Fork token data not found in API response');

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
+import { extractFirstByIndex } from '@rediacc/shared/api';
 import type { CompanyDropdownData } from '@rediacc/shared/types';
 
 const EMPTY_DROPDOWN_DATA: CompanyDropdownData = {
@@ -16,12 +17,43 @@ const EMPTY_DROPDOWN_DATA: CompanyDropdownData = {
   subscriptionPlans: [],
 };
 
+/**
+ * Safely merges parsed dropdown data with defaults, ensuring arrays are never null.
+ * This prevents runtime errors like "users.filter is not a function" when API returns null.
+ */
+function mergeDropdownData(parsed: Partial<CompanyDropdownData>): CompanyDropdownData {
+  return {
+    teams: Array.isArray(parsed.teams) ? parsed.teams : [],
+    allTeams: Array.isArray(parsed.allTeams) ? parsed.allTeams : [],
+    regions: Array.isArray(parsed.regions) ? parsed.regions : [],
+    machines: Array.isArray(parsed.machines) ? parsed.machines : [],
+    bridges: Array.isArray(parsed.bridges) ? parsed.bridges : [],
+    bridgesByRegion: Array.isArray(parsed.bridgesByRegion) ? parsed.bridgesByRegion : [],
+    machinesByTeam: Array.isArray(parsed.machinesByTeam) ? parsed.machinesByTeam : [],
+    users: Array.isArray(parsed.users) ? parsed.users : [],
+    permissionGroups: Array.isArray(parsed.permissionGroups) ? parsed.permissionGroups : [],
+    permissions: Array.isArray(parsed.permissions) ? parsed.permissions : [],
+    subscriptionPlans: Array.isArray(parsed.subscriptionPlans) ? parsed.subscriptionPlans : [],
+  };
+}
+
 export const useDropdownData = (context?: string) => {
   return useQuery({
     queryKey: ['dropdown-data', context],
     queryFn: async () => {
-      const data = await api.company.getLookupData(context ? { context } : undefined);
-      return { ...EMPTY_DROPDOWN_DATA, ...data };
+      const response = await typedApi.GetLookupData(context ? { context } : {});
+      const row =
+        extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 1) ??
+        extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 0);
+      if (row?.dropdownValues) {
+        try {
+          const parsed = JSON.parse(row.dropdownValues) as Partial<CompanyDropdownData>;
+          return mergeDropdownData(parsed);
+        } catch {
+          return EMPTY_DROPDOWN_DATA;
+        }
+      }
+      return EMPTY_DROPDOWN_DATA;
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
