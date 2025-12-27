@@ -75,7 +75,8 @@ export {
 
 // Company
 export {
-  parseGetCompanyDashboardJson,
+  parseGetCompanyDashboard,
+  parseCompanyInfo,
   parseGetCompanyVault,
   parseGetCompanyVaults,
   parseDashboard,

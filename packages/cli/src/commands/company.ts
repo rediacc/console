@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import {
   parseGetCompanyVault,
   parseGetCompanyVaults,
-  parseGetCompanyDashboardJson,
+  parseGetCompanyDashboard,
   extractFirstByIndex,
 } from '@rediacc/shared/api';
 import { typedApi } from '../services/api.js';
@@ -52,11 +52,11 @@ export function registerCompanyCommands(program: Command): void {
 
         const apiResponse = await withSpinner(
           'Fetching dashboard...',
-          () => typedApi.GetCompanyDashboardJson({}),
+          () => typedApi.GetCompanyDashboard({}),
           'Dashboard fetched'
         );
 
-        const dashboard = parseGetCompanyDashboardJson(apiResponse as never);
+        const dashboard = parseGetCompanyDashboard(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         outputService.print(dashboard, format);

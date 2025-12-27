@@ -18,6 +18,19 @@ import type {
   CreateRepositoryParams,
   CreateStorageParams,
   CreateTeamParams,
+  GetCompanyDashboard_ResultSet1,
+  GetCompanyDashboard_ResultSet2,
+  GetCompanyDashboard_ResultSet3,
+  GetCompanyDashboard_ResultSet4,
+  GetCompanyDashboard_ResultSet5,
+  GetCompanyDashboard_ResultSet6,
+  GetCompanyDashboard_ResultSet7,
+  GetCompanyDashboard_ResultSet8,
+  GetCompanyDashboard_ResultSet10,
+  GetCompanyDashboard_ResultSet11,
+  GetCompanyDashboard_ResultSet12,
+  GetCompanyDashboard_ResultSet13,
+  GetCompanyDashboard_ResultSet15,
   GetPermissionGroupDetails_ResultSet1,
   GetTeamQueueItemsParams,
 } from './api-schema.generated';
@@ -419,116 +432,63 @@ export interface CompanyDropdownData {
 }
 
 // =============================================================================
-// COMPANY DOMAIN TYPES
+// COMPANY DASHBOARD TYPES (from GetCompanyDashboard result sets)
 // =============================================================================
 
-/** Company info from dashboard */
-export interface CompanyInfo {
-  companyName?: string;
-  companyGuid?: string;
-  Plan?: string;
-}
+/** Company info from dashboard - ResultSet1 */
+export type CompanyInfo = GetCompanyDashboard_ResultSet1;
 
-/** Active subscription details */
-export interface ActiveSubscription {
-  planCode?: string;
-  totalActivePurchases?: number;
-  daysRemaining?: number;
-  startDate?: string;
-  endDate?: string;
-  quantity?: number;
-  isTrial?: number;
-  isExpiringSoon?: boolean;
-}
+/** Active subscription details - ResultSet2 */
+export type ActiveSubscription = GetCompanyDashboard_ResultSet2;
 
-/** Plan limits from dashboard */
-export interface PlanLimits {
-  planCode?: string;
-  machineLimit?: number;
-  repositoryLimit?: number;
-  userLimit?: number;
-  maxActiveJobs?: number;
-  maxReservedJobs?: number;
-  jobTimeoutHours?: number;
-  maxRepoSize?: number;
-}
+/** All subscriptions list - ResultSet3 */
+export type AllSubscriptionsItem = GetCompanyDashboard_ResultSet3;
 
-/** Account health status */
-export interface AccountHealth {
-  subscriptionStatus?: string;
-  resourcesAtLimit?: number;
-  resourcesNearLimit?: number;
-  upgradeRecommendation?: string;
-}
+/** Resource usage item - ResultSet4 */
+export type ResourceUsageItem = GetCompanyDashboard_ResultSet4;
 
-/** Queue team issue from dashboard */
-export interface QueueTeamIssue {
-  teamName: string;
-  staleItems?: number;
-  pendingItems?: number;
-  activeItems?: number;
-}
+/** Account health status - ResultSet5 */
+export type AccountHealth = GetCompanyDashboard_ResultSet5;
 
-/** Queue machine issue from dashboard */
-export interface QueueMachineIssue {
-  machineName: string;
-  teamName: string;
-  staleItems?: number;
-  pendingItems?: number;
-  activeItems?: number;
-}
+/** Feature access flags - ResultSet6 */
+export type FeatureAccess = GetCompanyDashboard_ResultSet6;
 
-/** Queue statistics from dashboard */
-export interface DashboardQueueStats {
-  pendingCount?: number;
-  activeCount?: number;
-  completedCount?: number;
-  failedCount?: number;
-  staleCount?: number;
-  hasStaleItems?: number;
-  hasOldPendingItems?: number;
-  oldestPendingAgeMinutes?: number;
-  createdToday?: number;
-  completedToday?: number;
-  cancelledToday?: number;
-  failedToday?: number;
-  highestPriorityPending?: number | null;
-  highPriorityPending?: number;
-  normalPriorityPending?: number;
-  lowPriorityPending?: number;
-  teamIssues?: QueueTeamIssue[];
-  machineIssues?: QueueMachineIssue[];
-}
+/** Plan limits from dashboard - ResultSet7 */
+export type PlanLimits = GetCompanyDashboard_ResultSet7;
 
-/** Feature access flags */
-export interface FeatureAccess {
-  ceph?: boolean;
-  auditLog?: boolean;
-  advancedQueue?: boolean;
-  hasAdvancedAnalytics?: boolean;
-}
+/** Queue statistics from dashboard - ResultSet8 */
+export type DashboardQueueStats = GetCompanyDashboard_ResultSet8;
 
-/** Resource usage item */
-export interface ResourceUsageItem {
-  resourceType: string;
-  currentUsage: number;
-  resourceLimit: number;
-  usagePercentage: number;
-  isLimitReached?: number;
-  isNearLimit?: number;
-}
+/** Queue team issue from dashboard - ResultSet10 */
+export type QueueTeamIssue = GetCompanyDashboard_ResultSet10;
 
-/** Full company dashboard data */
+/** Queue machine issue from dashboard - ResultSet11 */
+export type QueueMachineIssue = GetCompanyDashboard_ResultSet11;
+
+/** Active user from dashboard - ResultSet12 */
+export type ActiveUser = GetCompanyDashboard_ResultSet12;
+
+/** Ceph statistics for company dashboard - ResultSet13 */
+export type CompanyCephStats = GetCompanyDashboard_ResultSet13;
+
+/** Ceph team breakdown for dashboard widget - ResultSet15 */
+export type CephTeamBreakdown = GetCompanyDashboard_ResultSet15;
+
+/** Full company dashboard data - composed from result sets */
 export interface CompanyDashboardData {
-  companyInfo?: CompanyInfo;
-  activeSubscription?: ActiveSubscription;
-  allActiveSubscriptions?: ActiveSubscription[];
-  planLimits?: PlanLimits;
-  accountHealth?: AccountHealth;
-  queueStats?: DashboardQueueStats;
-  featureAccess?: FeatureAccess;
-  resources?: ResourceUsageItem[];
-  cephStats?: CompanyCephStats;
+  companyInfo: CompanyInfo | null;
+  activeSubscription: ActiveSubscription | null;
+  allActiveSubscriptions: AllSubscriptionsItem[];
+  resources: ResourceUsageItem[];
+  accountHealth: AccountHealth | null;
+  featureAccess: FeatureAccess | null;
+  planLimits: PlanLimits | null;
+  queueStats: DashboardQueueStats | null;
+  teamIssues: QueueTeamIssue[];
+  machineIssues: QueueMachineIssue[];
+  activeUsers: ActiveUser[];
+  cephStats: CompanyCephStats | null;
+  cephTeamBreakdown: CephTeamBreakdown[];
 }
 
 /** Result from UpdateCompanyVaults operation */
@@ -542,33 +502,4 @@ export interface CompanyImportResult {
   importedCount: number;
   skippedCount: number;
   errorCount: number;
-}
-
-// =============================================================================
-// CEPH DASHBOARD TYPES
-// =============================================================================
-
-/** Ceph team breakdown for dashboard widget */
-export interface CephTeamBreakdown {
-  teamName: string;
-  totalMachines: number;
-  availableMachines: number;
-  clusterMachines: number;
-  imageMachines: number;
-  cloneMachines: number;
-}
-
-/** Ceph statistics for company dashboard */
-export interface CompanyCephStats {
-  total_machines: number;
-  truly_available_machines: number;
-  cluster_assigned_machines: number;
-  cluster_percentage: number;
-  image_assigned_machines: number;
-  image_percentage: number;
-  clone_assigned_machines: number;
-  clone_percentage: number;
-  total_clusters?: number;
-  avg_machines_per_cluster?: number;
-  team_breakdown?: CephTeamBreakdown[];
 }

@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-26T15:29:29Z
+ * Generated at: 2025-12-26T19:29:31Z
  * Schema version: 3.0.0
- * Schema generated: 2025-12-26T15:27:24.6818866Z
+ * Schema generated: 2025-12-26T19:19:11.4388227Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: ./_scripts/console-schema.sh --generate
@@ -450,7 +450,7 @@ export interface GetCloneMachinesParams {
   teamName: string;
 }
 
-export type GetCompanyDashboardJsonParams = Record<string, never>;
+export type GetCompanyDashboardParams = Record<string, never>;
 
 export type GetCompanyPermissionGroupsParams = Record<string, never>;
 
@@ -1784,15 +1784,41 @@ export type GetCloneMachinesResults = [
   GetCloneMachines_ResultSet1[],
 ];
 
-export interface GetCompanyDashboardJson_ResultSet0 {
+export interface GetCompanyDashboard_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
-export interface GetCompanyDashboardJson_ResultSet1 {
+export interface GetCompanyDashboard_ResultSet1 {
   /** @sqlType nvarchar */
-  subscriptionAndResourcesJson: string | null;
+  companyName: string;
+  /** @sqlType nvarchar */
+  companyGuid: string | null;
+  /** @sqlType nvarchar */
+  planCode: string | null;
 }
-export interface GetCompanyDashboardJson_ResultSet2 {
+export interface GetCompanyDashboard_ResultSet2 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  quantity: number | null;
+  /** @sqlType int */
+  totalActivePurchases: number | null;
+  /** @sqlType datetime2 */
+  startDate: string | null;
+  /** @sqlType datetime2 */
+  endDate: string | null;
+  /** @sqlType int */
+  daysRemaining: number | null;
+  /** @sqlType nvarchar */
+  status: string | null;
+  /** @sqlType int */
+  isActive: number;
+  /** @sqlType int */
+  isTrial: number;
+  /** @sqlType int */
+  isExpiringSoon: number;
+}
+export interface GetCompanyDashboard_ResultSet3 {
   /** @sqlType nvarchar */
   planCode: string | null;
   /** @sqlType int */
@@ -1808,11 +1834,269 @@ export interface GetCompanyDashboardJson_ResultSet2 {
   /** @sqlType int */
   isTrial: number;
 }
+export interface GetCompanyDashboard_ResultSet4 {
+  /** @sqlType varchar */
+  resourceType: string;
+  /** @sqlType int */
+  resourceLimit: number | null;
+  /** @sqlType nvarchar */
+  activeSubscriptionTier: string | null;
+  /** @sqlType int */
+  currentUsage: number | null;
+  /** @sqlType int */
+  isLimitReached: number;
+  /** @sqlType decimal */
+  usagePercentage: number | null;
+}
+export interface GetCompanyDashboard_ResultSet5 {
+  /** @sqlType int */
+  resourcesAtLimit: number | null;
+  /** @sqlType int */
+  resourcesNearLimit: number | null;
+  /** @sqlType varchar */
+  subscriptionStatus: string | null;
+  /** @sqlType varchar */
+  upgradeRecommendation: string;
+}
+export interface GetCompanyDashboard_ResultSet6 {
+  /** @sqlType int */
+  hasAdvancedAnalytics: number;
+  /** @sqlType int */
+  hasPrioritySupport: number;
+  /** @sqlType int */
+  hasDedicatedAccount: number;
+  /** @sqlType int */
+  hasCustomBranding: number;
+  /** @sqlType int */
+  ceph: number;
+  /** @sqlType int */
+  auditLog: number;
+  /** @sqlType int */
+  advancedQueue: number;
+}
+export interface GetCompanyDashboard_ResultSet7 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  machineLimit: number | null;
+  /** @sqlType int */
+  repositoryLimit: number | null;
+  /** @sqlType int */
+  userLimit: number | null;
+  /** @sqlType int */
+  maxActiveJobs: number | null;
+  /** @sqlType int */
+  maxReservedJobs: number | null;
+  /** @sqlType int */
+  jobTimeoutHours: number | null;
+  /** @sqlType int */
+  maxRepositorySize: number | null;
+}
+export interface GetCompanyDashboard_ResultSet8 {
+  /** @sqlType int */
+  pendingCount: number | null;
+  /** @sqlType int */
+  assignedCount: number | null;
+  /** @sqlType int */
+  processingCount: number | null;
+  /** @sqlType int */
+  activeCount: number | null;
+  /** @sqlType int */
+  completedCount: number | null;
+  /** @sqlType int */
+  cancelledCount: number | null;
+  /** @sqlType int */
+  failedCount: number | null;
+  /** @sqlType int */
+  totalCount: number | null;
+  /** @sqlType int */
+  staleCount: number | null;
+  /** @sqlType int */
+  stalePendingCount: number | null;
+  /** @sqlType int */
+  completedToday: number | null;
+  /** @sqlType int */
+  cancelledToday: number | null;
+  /** @sqlType int */
+  createdToday: number | null;
+  /** @sqlType int */
+  itemsWithRetries: number | null;
+  /** @sqlType int */
+  maxRetryCount: number | null;
+  /** @sqlType int */
+  avgRetryCount: number | null;
+  /** @sqlType int */
+  oldestPendingAgeMinutes: number | null;
+  /** @sqlType int */
+  avgPendingAgeMinutes: number | null;
+  /** @sqlType int */
+  highestPriorityPending: number | null;
+  /** @sqlType int */
+  highPriorityPending: number | null;
+  /** @sqlType int */
+  normalPriorityPending: number | null;
+  /** @sqlType int */
+  lowPriorityPending: number | null;
+  /** @sqlType int */
+  hasStaleItems: number;
+  /** @sqlType int */
+  hasOldPendingItems: number;
+}
+export interface GetCompanyDashboard_ResultSet9 {
+  /** @sqlType int */
+  totalUserItems: number | null;
+  /** @sqlType int */
+  userPendingItems: number | null;
+  /** @sqlType int */
+  userActiveItems: number | null;
+  /** @sqlType int */
+  userCompletedToday: number | null;
+  /** @sqlType int */
+  userHighPriorityActive: number | null;
+}
+export interface GetCompanyDashboard_ResultSet10 {
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  pendingItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  staleItems: number | null;
+}
+export interface GetCompanyDashboard_ResultSet11 {
+  /** @sqlType nvarchar */
+  machineName: string;
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType nvarchar */
+  bridgeName: string;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  pendingItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  staleItems: number | null;
+}
+export interface GetCompanyDashboard_ResultSet12 {
+  /** @sqlType nvarchar */
+  userName: string;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  completedToday: number | null;
+  /** @sqlType int */
+  highPriorityActive: number | null;
+}
+export interface GetCompanyDashboard_ResultSet13 {
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterAssignedMachines: number | null;
+  /** @sqlType int */
+  imageAssignedMachines: number;
+  /** @sqlType int */
+  cloneAssignedMachines: number;
+  /** @sqlType int */
+  trulyAvailableMachines: number | null;
+  /** @sqlType decimal */
+  availablePercentage: number | null;
+  /** @sqlType decimal */
+  clusterPercentage: number | null;
+  /** @sqlType decimal */
+  imagePercentage: number | null;
+  /** @sqlType decimal */
+  clonePercentage: number | null;
+  /** @sqlType int */
+  totalClusters: number;
+  /** @sqlType int */
+  activeClusters: number;
+  /** @sqlType int */
+  avgMachinesPerCluster: number;
+}
+export interface GetCompanyDashboard_ResultSet14 {
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterAssignedMachines: number | null;
+  /** @sqlType int */
+  imageAssignedMachines: number | null;
+  /** @sqlType int */
+  cloneAssignedMachines: number | null;
+  /** @sqlType int */
+  trulyAvailableMachines: number | null;
+  /** @sqlType decimal */
+  availablePercentage: number | null;
+  /** @sqlType decimal */
+  clusterPercentage: number | null;
+  /** @sqlType decimal */
+  imagePercentage: number | null;
+  /** @sqlType decimal */
+  clonePercentage: number | null;
+  /** @sqlType int */
+  totalClusters: number | null;
+  /** @sqlType int */
+  activeClusters: number | null;
+  /** @sqlType int */
+  avgMachinesPerCluster: number | null;
+}
+export interface GetCompanyDashboard_ResultSet15 {
+  /** @sqlType nvarchar */
+  teamName: string;
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterMachines: number | null;
+  /** @sqlType int */
+  imageMachines: number | null;
+  /** @sqlType int */
+  cloneMachines: number | null;
+}
+export interface GetCompanyDashboard_ResultSet16 {
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterMachines: number | null;
+  /** @sqlType int */
+  imageMachines: number | null;
+  /** @sqlType int */
+  cloneMachines: number | null;
+}
 
-export type GetCompanyDashboardJsonResults = [
-  GetCompanyDashboardJson_ResultSet0[],
-  GetCompanyDashboardJson_ResultSet1[],
-  GetCompanyDashboardJson_ResultSet2[],
+export type GetCompanyDashboardResults = [
+  GetCompanyDashboard_ResultSet0[],
+  GetCompanyDashboard_ResultSet1[],
+  GetCompanyDashboard_ResultSet2[],
+  GetCompanyDashboard_ResultSet3[],
+  GetCompanyDashboard_ResultSet4[],
+  GetCompanyDashboard_ResultSet5[],
+  GetCompanyDashboard_ResultSet6[],
+  GetCompanyDashboard_ResultSet7[],
+  GetCompanyDashboard_ResultSet8[],
+  GetCompanyDashboard_ResultSet9[],
+  GetCompanyDashboard_ResultSet10[],
+  GetCompanyDashboard_ResultSet11[],
+  GetCompanyDashboard_ResultSet12[],
+  GetCompanyDashboard_ResultSet13[],
+  GetCompanyDashboard_ResultSet14[],
+  GetCompanyDashboard_ResultSet15[],
+  GetCompanyDashboard_ResultSet16[],
 ];
 
 export interface GetCompanyPermissionGroups_ResultSet0 {
@@ -3996,11 +4280,25 @@ export interface GetCloneMachinesTypedResponse extends ApiResponseBase {
   ];
 }
 
-export interface GetCompanyDashboardJsonTypedResponse extends ApiResponseBase {
+export interface GetCompanyDashboardTypedResponse extends ApiResponseBase {
   resultSets: [
-    ResultSet<GetCompanyDashboardJson_ResultSet0>,
-    ResultSet<GetCompanyDashboardJson_ResultSet1>,
-    ResultSet<GetCompanyDashboardJson_ResultSet2>,
+    ResultSet<GetCompanyDashboard_ResultSet0>,
+    ResultSet<GetCompanyDashboard_ResultSet1>,
+    ResultSet<GetCompanyDashboard_ResultSet2>,
+    ResultSet<GetCompanyDashboard_ResultSet3>,
+    ResultSet<GetCompanyDashboard_ResultSet4>,
+    ResultSet<GetCompanyDashboard_ResultSet5>,
+    ResultSet<GetCompanyDashboard_ResultSet6>,
+    ResultSet<GetCompanyDashboard_ResultSet7>,
+    ResultSet<GetCompanyDashboard_ResultSet8>,
+    ResultSet<GetCompanyDashboard_ResultSet9>,
+    ResultSet<GetCompanyDashboard_ResultSet10>,
+    ResultSet<GetCompanyDashboard_ResultSet11>,
+    ResultSet<GetCompanyDashboard_ResultSet12>,
+    ResultSet<GetCompanyDashboard_ResultSet13>,
+    ResultSet<GetCompanyDashboard_ResultSet14>,
+    ResultSet<GetCompanyDashboard_ResultSet15>,
+    ResultSet<GetCompanyDashboard_ResultSet16>,
   ];
 }
 
@@ -4927,13 +5225,13 @@ export function extractGetCloneMachinesFirst(response: ApiResponseBase): GetClon
   return items[0] ?? null;
 }
 
-export function extractGetCompanyDashboardJson(response: ApiResponseBase): GetCompanyDashboardJson_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyDashboardJson_ResultSet1[] } | undefined;
+export function extractGetCompanyDashboard(response: ApiResponseBase): GetCompanyDashboard_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetCompanyDashboard_ResultSet1[] } | undefined;
   return resultSet?.data ?? [];
 }
 
-export function extractGetCompanyDashboardJsonFirst(response: ApiResponseBase): GetCompanyDashboardJson_ResultSet1 | null {
-  const items = extractGetCompanyDashboardJson(response);
+export function extractGetCompanyDashboardFirst(response: ApiResponseBase): GetCompanyDashboard_ResultSet1 | null {
+  const items = extractGetCompanyDashboard(response);
   return items[0] ?? null;
 }
 
@@ -5643,7 +5941,7 @@ export type StoredProcedureName =
   | 'GetCephRbdSnapshots'
   | 'GetCloneMachineAssignmentValidation'
   | 'GetCloneMachines'
-  | 'GetCompanyDashboardJson'
+  | 'GetCompanyDashboard'
   | 'GetCompanyPermissionGroups'
   | 'GetCompanyRegions'
   | 'GetCompanyTeams'
@@ -5763,7 +6061,7 @@ export interface ProcedureParamsMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsParams;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationParams;
   GetCloneMachines: GetCloneMachinesParams;
-  GetCompanyDashboardJson: GetCompanyDashboardJsonParams;
+  GetCompanyDashboard: GetCompanyDashboardParams;
   GetCompanyPermissionGroups: GetCompanyPermissionGroupsParams;
   GetCompanyRegions: GetCompanyRegionsParams;
   GetCompanyTeams: GetCompanyTeamsParams;
@@ -5884,7 +6182,7 @@ export interface ProcedurePrefixMap {
   GetCephRbdSnapshots: 'Public';
   GetCloneMachineAssignmentValidation: 'Public';
   GetCloneMachines: 'Public';
-  GetCompanyDashboardJson: 'Public';
+  GetCompanyDashboard: 'Public';
   GetCompanyPermissionGroups: 'Public';
   GetCompanyRegions: 'Public';
   GetCompanyTeams: 'Public';
@@ -6005,7 +6303,7 @@ export interface ProcedureResultsMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsResults;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationResults;
   GetCloneMachines: GetCloneMachinesResults;
-  GetCompanyDashboardJson: GetCompanyDashboardJsonResults;
+  GetCompanyDashboard: GetCompanyDashboardResults;
   GetCompanyPermissionGroups: GetCompanyPermissionGroupsResults;
   GetCompanyRegions: GetCompanyRegionsResults;
   GetCompanyTeams: GetCompanyTeamsResults;
@@ -6126,7 +6424,7 @@ export interface TypedResponseMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsTypedResponse;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationTypedResponse;
   GetCloneMachines: GetCloneMachinesTypedResponse;
-  GetCompanyDashboardJson: GetCompanyDashboardJsonTypedResponse;
+  GetCompanyDashboard: GetCompanyDashboardTypedResponse;
   GetCompanyPermissionGroups: GetCompanyPermissionGroupsTypedResponse;
   GetCompanyRegions: GetCompanyRegionsTypedResponse;
   GetCompanyTeams: GetCompanyTeamsTypedResponse;
@@ -6250,7 +6548,7 @@ export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   GetCephRbdSnapshots: 1,
   GetCloneMachineAssignmentValidation: 1,
   GetCloneMachines: 1,
-  GetCompanyDashboardJson: 1,
+  GetCompanyDashboard: 1,
   GetCompanyPermissionGroups: 1,
   GetCompanyRegions: 1,
   GetCompanyTeams: 1,
@@ -6367,7 +6665,7 @@ export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2025-12-26T15:27:24.6818866Z',
+  generated: '2025-12-26T19:19:11.4388227Z',
   procedureCount: 115,
 } as const;
 

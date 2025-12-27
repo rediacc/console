@@ -49,16 +49,17 @@ const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
 
 interface QueueDetailsWidgetProps {
   queueStats: NonNullable<CompanyDashboardData['queueStats']>;
+  teamIssues: QueueTeamIssue[];
+  machineIssues: QueueMachineIssue[];
   featureAccess?: CompanyDashboardData['featureAccess'];
 }
 
-const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, featureAccess }) => {
-  const teamIssues: QueueTeamIssue[] = Array.isArray(queueStats.teamIssues)
-    ? queueStats.teamIssues
-    : [];
-  const machineIssues: QueueMachineIssue[] = Array.isArray(queueStats.machineIssues)
-    ? queueStats.machineIssues
-    : [];
+const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
+  queueStats,
+  teamIssues,
+  machineIssues,
+  featureAccess,
+}) => {
 
   return (
     <Card
