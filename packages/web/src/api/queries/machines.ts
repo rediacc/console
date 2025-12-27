@@ -34,7 +34,7 @@ export const useMachines = createResourceQuery<Machine>({
 export const useCreateMachine = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateMachineParams>>({
-    mutationFn: (params) => typedApi.CreateMachine(params),
+    mutationFn: (params) => typedApi.CreateMachine({ ...params, vaultContent: params.vaultContent ?? '{}' }),
     successMessage: (_, vars) => `Machine "${vars.machineName}" created successfully`,
     errorMessage: 'Failed to create machine',
     onSuccess: () => {

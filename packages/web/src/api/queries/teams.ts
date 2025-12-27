@@ -51,7 +51,7 @@ export type {
 export const useCreateTeam = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateTeamParams>>({
-    mutationFn: (params) => typedApi.CreateTeam(params),
+    mutationFn: (params) => typedApi.CreateTeam({ ...params, vaultContent: params.vaultContent ?? '{}' }),
     successMessage: (_, vars) => `Team "${vars.teamName}" created successfully`,
     errorMessage: 'Failed to create team',
     onSuccess: () => {

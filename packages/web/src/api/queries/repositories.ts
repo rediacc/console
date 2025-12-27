@@ -53,7 +53,7 @@ export const useCreateRepository = () => {
         teamName,
         repositoryName,
         repositoryTag,
-        ...(vaultContent && { vaultContent }),
+        vaultContent: vaultContent ?? '{}',
         parentRepositoryName,
         repositoryGuid,
       }),

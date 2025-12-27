@@ -63,8 +63,8 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
                       </Typography.Text>
                     </Flex>
                     <Progress
-                      percent={resource.resourceLimit === 0 ? 0 : resource.usagePercentage}
-                      status={getProgressStatus(resource.usagePercentage)}
+                      percent={resource.resourceLimit === 0 ? 0 : (resource.usagePercentage ?? 0)}
+                      status={getProgressStatus(resource.usagePercentage ?? 0)}
                       strokeColor={progressColor}
                       data-testid={`dashboard-progress-${resource.resourceType.toLowerCase()}`}
                     />

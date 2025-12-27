@@ -17,6 +17,26 @@ const EMPTY_DROPDOWN_DATA: CompanyDropdownData = {
   subscriptionPlans: [],
 };
 
+/**
+ * Safely merges parsed dropdown data with defaults, ensuring arrays are never null.
+ * This prevents runtime errors like "users.filter is not a function" when API returns null.
+ */
+function mergeDropdownData(parsed: Partial<CompanyDropdownData>): CompanyDropdownData {
+  return {
+    teams: Array.isArray(parsed.teams) ? parsed.teams : [],
+    allTeams: Array.isArray(parsed.allTeams) ? parsed.allTeams : [],
+    regions: Array.isArray(parsed.regions) ? parsed.regions : [],
+    machines: Array.isArray(parsed.machines) ? parsed.machines : [],
+    bridges: Array.isArray(parsed.bridges) ? parsed.bridges : [],
+    bridgesByRegion: Array.isArray(parsed.bridgesByRegion) ? parsed.bridgesByRegion : [],
+    machinesByTeam: Array.isArray(parsed.machinesByTeam) ? parsed.machinesByTeam : [],
+    users: Array.isArray(parsed.users) ? parsed.users : [],
+    permissionGroups: Array.isArray(parsed.permissionGroups) ? parsed.permissionGroups : [],
+    permissions: Array.isArray(parsed.permissions) ? parsed.permissions : [],
+    subscriptionPlans: Array.isArray(parsed.subscriptionPlans) ? parsed.subscriptionPlans : [],
+  };
+}
+
 export const useDropdownData = (context?: string) => {
   return useQuery({
     queryKey: ['dropdown-data', context],
@@ -28,7 +48,7 @@ export const useDropdownData = (context?: string) => {
       if (row?.dropdownValues) {
         try {
           const parsed = JSON.parse(row.dropdownValues) as Partial<CompanyDropdownData>;
-          return { ...EMPTY_DROPDOWN_DATA, ...parsed };
+          return mergeDropdownData(parsed);
         } catch {
           return EMPTY_DROPDOWN_DATA;
         }

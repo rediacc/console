@@ -61,14 +61,14 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                   <Col span={12}>
                     <Statistic
                       title={t('dashboard.activeLicenses')}
-                      value={activeSubscription.totalActivePurchases}
+                      value={activeSubscription.totalActivePurchases ?? undefined}
                       data-testid="dashboard-stat-active-licenses"
                     />
                   </Col>
                   <Col span={12}>
                     <Statistic
                       title={t('dashboard.daysRemaining')}
-                      value={activeSubscription.daysRemaining}
+                      value={activeSubscription.daysRemaining ?? undefined}
                       valueStyle={
                         (activeSubscription.daysRemaining ?? 0) <= CRITICAL_DAYS_THRESHOLD
                           ? { color: token.colorError }
@@ -155,22 +155,22 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
       {planLimits ? (
         <Row gutter={[24, 24]}>
           <Col xs={24} md={6}>
-            <Statistic title={t('dashboard.maxActiveJobs')} value={planLimits.maxActiveJobs} />
+            <Statistic title={t('dashboard.maxActiveJobs')} value={planLimits.maxActiveJobs ?? undefined} />
           </Col>
           <Col xs={24} md={6}>
-            <Statistic title={t('dashboard.maxReservedJobs')} value={planLimits.maxReservedJobs} />
+            <Statistic title={t('dashboard.maxReservedJobs')} value={planLimits.maxReservedJobs ?? undefined} />
           </Col>
           <Col xs={24} md={6}>
             <Statistic
               title={t('dashboard.jobTimeout')}
-              value={planLimits.jobTimeoutHours}
+              value={planLimits.jobTimeoutHours ?? undefined}
               suffix="hours"
             />
           </Col>
           <Col xs={24} md={6}>
             <Statistic
               title={t('dashboard.maxRepoSize')}
-              value={planLimits.maxRepoSize}
+              value={planLimits.maxRepositorySize ?? undefined}
               suffix="GB"
             />
           </Col>

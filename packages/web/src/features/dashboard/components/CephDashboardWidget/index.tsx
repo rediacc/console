@@ -76,21 +76,21 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
                 {team.availableMachines} available
               </Tag>
             </Tooltip>
-            {team.clusterMachines > 0 && (
+            {(team.clusterMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.cluster')}>
                 <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`}>
                   {team.clusterMachines} cluster
                 </Tag>
               </Tooltip>
             )}
-            {team.imageMachines > 0 && (
+            {(team.imageMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.image')}>
                 <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`}>
                   {team.imageMachines} image
                 </Tag>
               </Tooltip>
             )}
-            {team.cloneMachines > 0 && (
+            {(team.cloneMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.clone')}>
                 <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`}>
                   {team.cloneMachines} clone

@@ -95,9 +95,9 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text>Failed</Typography.Text>
+                <Typography.Text>Failed (Total)</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-failed-today">
-                  {queueStats.failedToday ?? 0}
+                  {queueStats.failedCount ?? 0}
                 </Typography.Text>
               </Flex>
             </Flex>
