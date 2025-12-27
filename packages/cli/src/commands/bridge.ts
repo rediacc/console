@@ -1,11 +1,18 @@
 import { Command } from 'commander';
+import {
+  parseGetRegionBridges,
+  parseGetCompanyVaults,
+  parseCreateBridge,
+  extractPrimaryOrSecondary,
+} from '@rediacc/shared/api';
 import type {
+  GetCompanyVaults_ResultSet1,
   CreateBridgeParams,
   DeleteBridgeParams,
   UpdateBridgeNameParams,
   UpdateBridgeVaultParams,
 } from '@rediacc/shared/types';
-import { api } from '../services/api.js';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -21,17 +28,34 @@ export function registerBridgeCommands(program: Command): void {
     nameField: 'bridgeName',
     parentOption: 'region',
     operations: {
-      list: (params) => api.bridges.list({ regionName: params?.regionName as string }),
-      create: (payload) => api.bridges.create(payload as unknown as CreateBridgeParams),
-      rename: (payload) => api.bridges.rename(payload as unknown as UpdateBridgeNameParams),
-      delete: (payload) => api.bridges.delete(payload as unknown as DeleteBridgeParams),
+      list: async (params) => {
+        const response = await typedApi.GetRegionBridges({
+          regionName: params?.regionName as string,
+        });
+        return parseGetRegionBridges(response as never);
+      },
+      create: async (payload) => {
+        const response = await typedApi.CreateBridge(payload as unknown as CreateBridgeParams);
+        return parseCreateBridge(response as never);
+      },
+      rename: (payload) => typedApi.UpdateBridgeName(payload as unknown as UpdateBridgeNameParams),
+      delete: (payload) => typedApi.DeleteBridge(payload as unknown as DeleteBridgeParams),
     },
+    transformCreatePayload: (name, opts) => ({
+      bridgeName: name,
+      regionName: opts.region,
+    }),
     vaultConfig: {
-      fetch: (params) => api.company.getAllVaults(params),
+      fetch: async () => {
+        const response = await typedApi.GetCompanyVaults({});
+        const vaults = parseGetCompanyVaults(response as never);
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+      },
       vaultType: 'Bridge',
     },
     vaultUpdateConfig: {
-      update: (payload) => api.bridges.updateVault(payload as unknown as UpdateBridgeVaultParams),
+      update: (payload) =>
+        typedApi.UpdateBridgeVault(payload as unknown as UpdateBridgeVaultParams),
       vaultFieldName: 'vaultContent',
     },
   });
@@ -41,7 +65,7 @@ export function registerBridgeCommands(program: Command): void {
     .command('reset-auth <name>')
     .description('Reset bridge authorization token')
     .option('-r, --region <name>', 'Region name')
-    .action(async (name, options) => {
+    .action(async (name: string, options: { region?: string }) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
@@ -50,11 +74,17 @@ export function registerBridgeCommands(program: Command): void {
           throw new ValidationError('Region name required. Use --region or set context.');
         }
 
-        const authToken = await withSpinner(
+        const apiResponse = await withSpinner(
           `Resetting authorization for bridge "${name}"...`,
-          () => api.bridges.resetAuthorization({ bridgeName: name, isCloudManaged: false }),
+          () => typedApi.ResetBridgeAuthorization({ bridgeName: name, isCloudManaged: false }),
           'Authorization reset'
         );
+
+        // Extract token from response
+        const tokenData = extractPrimaryOrSecondary(apiResponse as never)[0] as
+          | { authToken?: string }
+          | undefined;
+        const authToken = tokenData?.authToken ?? null;
 
         if (authToken) {
           outputService.success(`New token: ${authToken}`);

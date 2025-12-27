@@ -1,7 +1,10 @@
-import { extractNextToken } from '@rediacc/shared/api';
-import { parseAuthenticationResult } from '@rediacc/shared/api/services/auth';
+import {
+  extractNextToken,
+  parsePrivilegeAuthenticationRequest,
+  parseLoginResult,
+} from '@rediacc/shared/api';
 import { isEncrypted } from '@rediacc/shared/encryption';
-import { api, apiClient } from './api.js';
+import { typedApi, apiClient } from './api.js';
 import { contextService } from './context.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { EXIT_CODES } from '../types/index.js';
@@ -36,7 +39,7 @@ class AuthService {
     }
 
     // Check authentication status
-    const authResult = parseAuthenticationResult(response);
+    const authResult = parseLoginResult(response);
     if (!authResult.isAuthorized) {
       return {
         success: false,
@@ -88,7 +91,8 @@ class AuthService {
   }
 
   async privilegeWithTFA(tfaCode: string): Promise<{ success: boolean; message?: string }> {
-    const result = await api.auth.verifyTfa(tfaCode);
+    const response = await typedApi.PrivilegeAuthenticationRequest({ tFACode: tfaCode });
+    const result = parsePrivilegeAuthenticationRequest(response as never);
 
     if (!result.isAuthorized) {
       return {

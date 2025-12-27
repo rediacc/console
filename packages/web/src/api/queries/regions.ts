@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import { minifyJSON } from '@/platform/utils/json';
+import { parseGetCompanyRegions } from '@rediacc/shared/api';
 import type {
   CreateRegionParams,
   DeleteRegionParams,
@@ -16,7 +17,8 @@ export const useRegions = (enabled: boolean = true) => {
   return useQuery<GetCompanyRegions_ResultSet1[]>({
     queryKey: ['regions'],
     queryFn: async () => {
-      return api.regions.list();
+      const response = await typedApi.GetCompanyRegions({});
+      return parseGetCompanyRegions(response as never);
     },
     enabled,
     staleTime: 30 * 1000, // 30 seconds
@@ -33,7 +35,7 @@ export const useCreateRegion = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, WithOptionalVault<CreateRegionParams>>({
     mutationFn: (params) =>
-      api.regions.create({
+      typedApi.CreateRegion({
         ...params,
         vaultContent: params.vaultContent ?? '{}',
       }),
@@ -49,7 +51,7 @@ export const useCreateRegion = () => {
 export const useUpdateRegionName = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, UpdateRegionNameParams>({
-    mutationFn: (params) => api.regions.rename(params),
+    mutationFn: (params) => typedApi.UpdateRegionName(params),
     successMessage: (_, vars) => `Region renamed to "${vars.newRegionName}"`,
     errorMessage: 'Failed to update region name',
     onSuccess: () => {
@@ -65,7 +67,7 @@ export const useUpdateRegionVault = () => {
   return useMutationWithFeedback<unknown, Error, UpdateRegionVaultParams & Record<string, unknown>>(
     {
       mutationFn: (params) =>
-        api.regions.updateVault({
+        typedApi.UpdateRegionVault({
           ...params,
           vaultContent: minifyJSON(params.vaultContent),
         }),
@@ -82,7 +84,7 @@ export const useUpdateRegionVault = () => {
 export const useDeleteRegion = () => {
   const queryClient = useQueryClient();
   return useMutationWithFeedback<unknown, Error, DeleteRegionParams>({
-    mutationFn: (params) => api.regions.delete(params),
+    mutationFn: (params) => typedApi.DeleteRegion(params),
     successMessage: (_, vars) => `Region "${vars.regionName}" deleted successfully`,
     errorMessage: 'Failed to delete region',
     onSuccess: () => {

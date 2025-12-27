@@ -1,5 +1,5 @@
 ﻿import { useTranslation } from 'react-i18next';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useCreateRepository } from '@/api/queries/repositories';
 import { useTeams } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -7,6 +7,7 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
+import { parseGetTeamRepositories } from '@rediacc/shared/api';
 
 interface RepoCreationData {
   repositoryName: string;
@@ -61,8 +62,12 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
         // Step 2: Queue the "new" function to create the repository on the machine
         try {
           // Find the machine details from dropdown data
-          const teamData = dropdownData?.machinesByTeam.find((t) => t.teamName === data.teamName);
-          const machineData = teamData?.machines.find((m) => m.value === machineName);
+          const teamData = dropdownData?.machinesByTeam.find(
+            (t: { teamName: string }) => t.teamName === data.teamName
+          );
+          const machineData = teamData?.machines.find(
+            (m: { value: string }) => m.value === machineName
+          );
 
           if (!machineData) {
             showMessage('error', t('resources:errors.machineNotFound'));
@@ -81,7 +86,8 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
           await new Promise((resolve) => setTimeout(resolve, 500));
 
           // Fetch the created repository to get its vault with credentials
-          const repositoryList = await api.repositories.list({ teamName: data.teamName });
+          const repoResponse = await typedApi.GetTeamRepositories({ teamName: data.teamName });
+          const repositoryList = parseGetTeamRepositories(repoResponse as never);
           const createdRepository = repositoryList.find(
             (repository) => repository.repositoryName === data.repositoryName
           );
@@ -127,7 +133,7 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
             repositoryTag: createdRepository?.repositoryTag,
           });
 
-          const response = await createQueueItemMutation.mutateAsync({
+          const queueResponse = await createQueueItemMutation.mutateAsync({
             teamName: data.teamName,
             machineName: machineData.value,
             bridgeName: machineData.bridgeName,
@@ -140,7 +146,7 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
           // Return success with taskId if available
           return {
             success: true,
-            taskId: response.taskId,
+            taskId: queueResponse.taskId,
             machineName: machineData.value,
           };
         } catch {

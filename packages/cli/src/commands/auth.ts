@@ -1,5 +1,11 @@
 import { Command } from 'commander';
-import { api, apiClient } from '../services/api.js';
+import {
+  parseGetUserRequests,
+  parseForkAuthenticationRequest,
+  parseUpdateUserTFA,
+  parseGetRequestAuthenticationStatus,
+} from '@rediacc/shared/api';
+import { typedApi, apiClient } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -189,12 +195,13 @@ export function registerAuthCommands(program: Command): void {
     .action(async () => {
       try {
         await authService.requireAuth();
-        const tokens = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching tokens...',
-          () => api.auth.getSessions(),
+          () => typedApi.GetUserRequests({}),
           'Tokens fetched'
         );
 
+        const tokens = parseGetUserRequests(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         if (tokens.length === 0) {
@@ -214,7 +221,7 @@ export function registerAuthCommands(program: Command): void {
     .description('Create a forked token for another application')
     .option('-n, --name <name>', 'Token name', 'CLI Fork')
     .option('-e, --expires <hours>', 'Expiration in hours (1-720)', '24')
-    .action(async (options) => {
+    .action(async (options: { name: string; expires: string }) => {
       try {
         await authService.requireAuth();
 
@@ -224,14 +231,17 @@ export function registerAuthCommands(program: Command): void {
           throw new ValidationError('Token expiration must be between 1 and 720 hours');
         }
 
-        const credentials = await withSpinner(
+        const apiResponse = await withSpinner(
           'Creating forked token...',
           () =>
-            api.auth.forkSession(options.name, {
-              expiresInHours: expiresHours,
+            typedApi.ForkAuthenticationRequest({
+              childName: options.name,
+              tokenExpirationHours: expiresHours,
             }),
           'Token created'
         );
+
+        const credentials = parseForkAuthenticationRequest(apiResponse as never);
 
         const token = credentials.requestToken ?? credentials.nextRequestToken;
         if (token) {
@@ -248,13 +258,13 @@ export function registerAuthCommands(program: Command): void {
   token
     .command('revoke <requestId>')
     .description('Revoke a specific token')
-    .action(async (requestId) => {
+    .action(async (requestId: string) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
           'Revoking token...',
-          () => api.auth.terminateSession({ requestId }),
+          () => typedApi.DeleteUserRequest({ targetRequestId: parseInt(requestId, 10) }),
           'Token revoked'
         );
       } catch (error) {
@@ -273,7 +283,8 @@ export function registerAuthCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const status = await api.auth.getTfaStatus();
+        const apiResponse = await typedApi.GetRequestAuthenticationStatus({});
+        const status = parseGetRequestAuthenticationStatus(apiResponse as never);
 
         if (status.isTFAEnabled) {
           outputService.success('TFA is enabled');
@@ -293,11 +304,13 @@ export function registerAuthCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const tfaSetup = await withSpinner(
+        const apiResponse = await withSpinner(
           'Enabling TFA...',
-          () => api.auth.enableTfa(),
+          () => typedApi.UpdateUserTFA({ enable: true }),
           'TFA setup initiated'
         );
+
+        const tfaSetup = parseUpdateUserTFA(apiResponse as never);
 
         if (tfaSetup?.secret) {
           outputService.info(`Setup key: ${tfaSetup.secret}`);
@@ -314,7 +327,7 @@ export function registerAuthCommands(program: Command): void {
     .description('Disable two-factor authentication')
     .option('--code <code>', 'Current TFA code for verification')
     .option('-y, --yes', 'Skip confirmation prompt')
-    .action(async (options) => {
+    .action(async (options: { code?: string; yes?: boolean }) => {
       try {
         await authService.requireAuth();
 
@@ -326,11 +339,15 @@ export function registerAuthCommands(program: Command): void {
           }
         }
 
-        // If code provided, pass it; otherwise use default flow
-        const code = options.code ?? undefined;
+        // Build payload
+        const payload: { enable: boolean; currentCode?: string } = { enable: false };
+        if (options.code) {
+          payload.currentCode = options.code;
+        }
+
         await withSpinner(
           'Disabling TFA...',
-          () => api.auth.disableTfa(undefined, code),
+          () => typedApi.UpdateUserTFA(payload),
           'TFA disabled'
         );
       } catch (error) {

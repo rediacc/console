@@ -39,9 +39,9 @@ const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
     width: 200,
     render: (_: unknown, record: QueueMachineIssue) => (
       <Flex align="center" gap={8} wrap className="inline-flex">
-        {(record.staleItems || 0) > 0 && <Tag>{record.staleItems} stale</Tag>}
-        <Tag>{record.pendingItems || 0} pending</Tag>
-        <Tag>{record.activeItems || 0} active</Tag>
+        {(record.staleItems ?? 0) > 0 && <Tag>{record.staleItems} stale</Tag>}
+        <Tag>{record.pendingItems ?? 0} pending</Tag>
+        <Tag>{record.activeItems ?? 0} active</Tag>
       </Flex>
     ),
   },
@@ -49,17 +49,17 @@ const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
 
 interface QueueDetailsWidgetProps {
   queueStats: NonNullable<CompanyDashboardData['queueStats']>;
+  teamIssues: QueueTeamIssue[];
+  machineIssues: QueueMachineIssue[];
   featureAccess?: CompanyDashboardData['featureAccess'];
 }
 
-const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, featureAccess }) => {
-  const teamIssues: QueueTeamIssue[] = Array.isArray(queueStats.teamIssues)
-    ? queueStats.teamIssues
-    : [];
-  const machineIssues: QueueMachineIssue[] = Array.isArray(queueStats.machineIssues)
-    ? queueStats.machineIssues
-    : [];
-
+const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
+  queueStats,
+  teamIssues,
+  machineIssues,
+  featureAccess,
+}) => {
   return (
     <Card
       title={
@@ -78,25 +78,25 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
               <Flex align="center" justify="space-between">
                 <Typography.Text>Created</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-created-today">
-                  {queueStats.createdToday || 0}
+                  {queueStats.createdToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text>Completed</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-completed-today">
-                  {queueStats.completedToday || 0}
+                  {queueStats.completedToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
                 <Typography.Text>Cancelled</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-cancelled-today">
-                  {queueStats.cancelledToday || 0}
+                  {queueStats.cancelledToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text>Failed</Typography.Text>
+                <Typography.Text>Failed (Total)</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-failed-today">
-                  {queueStats.failedToday || 0}
+                  {queueStats.failedCount ?? 0}
                 </Typography.Text>
               </Flex>
             </Flex>
@@ -121,13 +121,13 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
                         <Flex align="center" justify="space-between">
                           <Typography.Text strong>{teamIssue.teamName}</Typography.Text>
                           <Flex align="center" gap={8} wrap className="inline-flex">
-                            {(teamIssue.staleItems || 0) > 0 && (
+                            {(teamIssue.staleItems ?? 0) > 0 && (
                               <Tag>
                                 <WarningOutlined /> {teamIssue.staleItems} stale
                               </Tag>
                             )}
-                            <Tag>{teamIssue.pendingItems || 0} pending</Tag>
-                            <Tag>{teamIssue.activeItems || 0} active</Tag>
+                            <Tag>{teamIssue.pendingItems ?? 0} pending</Tag>
+                            <Tag>{teamIssue.activeItems ?? 0} active</Tag>
                           </Flex>
                         </Flex>
                       </List.Item>
@@ -156,48 +156,47 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({ queueStats, fea
               </Flex>
             )}
 
-            {featureAccess?.hasAdvancedAnalytics === 1 &&
-              queueStats.highestPriorityPending !== null && (
-                <Flex vertical>
-                  <Typography.Text strong>
-                    <ThunderboltOutlined /> Priority Breakdown
-                  </Typography.Text>
-                  <Flex vertical className="w-full">
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>Highest Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.highestPriorityPending}
-                        showZero
-                        data-testid="dashboard-badge-highest-priority"
-                      />
-                    </Flex>
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>High Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.highPriorityPending ?? 0}
-                        showZero
-                        data-testid="dashboard-badge-high-priority"
-                      />
-                    </Flex>
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>Normal Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.normalPriorityPending ?? 0}
-                        showZero
-                        data-testid="dashboard-badge-normal-priority"
-                      />
-                    </Flex>
-                    <Flex align="center" justify="space-between">
-                      <Typography.Text>Low Priority</Typography.Text>
-                      <Badge
-                        count={queueStats.lowPriorityPending ?? 0}
-                        showZero
-                        data-testid="dashboard-badge-low-priority"
-                      />
-                    </Flex>
+            {featureAccess?.hasAdvancedAnalytics && queueStats.highestPriorityPending !== null && (
+              <Flex vertical>
+                <Typography.Text strong>
+                  <ThunderboltOutlined /> Priority Breakdown
+                </Typography.Text>
+                <Flex vertical className="w-full">
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>Highest Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.highestPriorityPending}
+                      showZero
+                      data-testid="dashboard-badge-highest-priority"
+                    />
+                  </Flex>
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>High Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.highPriorityPending ?? 0}
+                      showZero
+                      data-testid="dashboard-badge-high-priority"
+                    />
+                  </Flex>
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>Normal Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.normalPriorityPending ?? 0}
+                      showZero
+                      data-testid="dashboard-badge-normal-priority"
+                    />
+                  </Flex>
+                  <Flex align="center" justify="space-between">
+                    <Typography.Text>Low Priority</Typography.Text>
+                    <Badge
+                      count={queueStats.lowPriorityPending ?? 0}
+                      showZero
+                      data-testid="dashboard-badge-low-priority"
+                    />
                   </Flex>
                 </Flex>
-              )}
+              </Flex>
+            )}
           </Flex>
         </Col>
       </Row>

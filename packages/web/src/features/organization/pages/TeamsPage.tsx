@@ -357,18 +357,16 @@ const TeamsPage: React.FC = () => {
                           .toLowerCase()
                           .includes(input.toLowerCase())
                       }
-                      options={
-                        dropdownData?.users
-                          .filter((user) => user.status === 'active')
-                          .map((user) => ({
-                            value: user.value,
-                            label: user.label,
-                            disabled: teamMembers.some(
-                              (member: TeamMember) =>
-                                member.userEmail === user.value && member.isMember
-                            ),
-                          })) ?? []
-                      }
+                      options={(dropdownData?.users ?? [])
+                        .filter((user) => user.status === 'active')
+                        .map((user) => ({
+                          value: user.value,
+                          label: user.label,
+                          disabled: teamMembers.some(
+                            (member: TeamMember) =>
+                              member.userEmail === user.value && member.isMember
+                          ),
+                        }))}
                     />
                     <Tooltip title={tSystem('actions.addMember')}>
                       <Button

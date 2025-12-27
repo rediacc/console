@@ -6,7 +6,7 @@ import type { Dayjs } from 'dayjs';
 
 interface DropdownData {
   teams?: { label: string; value: string }[];
-  machines?: string[];
+  machines?: { label: string; value: string }[];
   regions?: { label: string; value: string }[];
   bridges?: { label: string; value: string }[];
 }
@@ -65,10 +65,7 @@ export const QueueFilterPanel: React.FC<QueueFilterPanelProps> = ({
         value={filters.machineName || undefined}
         onChange={(value) => onFilterChange('machineName', typeof value === 'string' ? value : '')}
         allowClear
-        options={(dropdownData?.machines ?? []).map((machine) => ({
-          label: machine,
-          value: machine,
-        }))}
+        options={dropdownData?.machines ?? []}
         data-testid="queue-filter-machine"
       />
       <Select

@@ -13,7 +13,7 @@ import { logout, showSessionExpiredModal } from '@/store/auth/authSlice';
 import { store } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import {
-  createApiServices,
+  createTypedApi,
   normalizeResponse,
   extractNextToken,
   extractErrorMessage as sharedExtractErrorMessage,
@@ -174,6 +174,29 @@ class ApiClient implements SharedApiClient {
     return response.data;
   }
 
+  async register(
+    companyName: string,
+    email: string,
+    passwordHash: string,
+    options: { languagePreference?: string; turnstileToken?: string } = {}
+  ) {
+    const response = await this.client.post<ApiResponse>(
+      '/CreateNewCompany',
+      {
+        companyName,
+        languagePreference: options.languagePreference ?? 'en',
+        turnstileToken: options.turnstileToken,
+      },
+      {
+        headers: {
+          'Rediacc-UserEmail': email,
+          'Rediacc-UserHash': passwordHash,
+        },
+      }
+    );
+    return response.data;
+  }
+
   private async makeRequest<T>(
     endpoint: string,
     data?: unknown,
@@ -316,5 +339,5 @@ class ApiClient implements SharedApiClient {
 }
 
 export const apiClient = new ApiClient();
-export const api = createApiServices(apiClient);
+export const typedApi = createTypedApi(apiClient);
 export default apiClient;

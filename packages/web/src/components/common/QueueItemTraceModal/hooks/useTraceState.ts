@@ -11,6 +11,14 @@ interface UseTraceStateProps {
   traceData: QueueTrace | null | undefined;
 }
 
+/** Shape of command result in vault content */
+interface CommandResult {
+  command_output?: string;
+  message?: string;
+  status?: string;
+  exit_code?: number;
+}
+
 interface UseTraceStateReturn extends TraceState, TraceStateActions {
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -64,10 +72,11 @@ export const useTraceState = ({
       traceData.responseVaultContent.vaultContent
     ) {
       try {
-        const vaultContent =
-          typeof traceData.responseVaultContent.vaultContent === 'string'
-            ? JSON.parse(traceData.responseVaultContent.vaultContent)
-            : (traceData.responseVaultContent.vaultContent ?? {});
+        // vaultContent is always a string at this point (checked above)
+        const vaultContent = JSON.parse(traceData.responseVaultContent.vaultContent) as Record<
+          string,
+          unknown
+        >;
 
         if (vaultContent.status === 'completed') {
           // For completed status, replace accumulated output with final result
@@ -94,8 +103,8 @@ export const useTraceState = ({
           setLastOutputStatus('completed');
         } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
           // For in-progress updates, check if we should append or replace
-          const newMessage = vaultContent.message;
-          if (newMessage && lastOutputStatus !== 'completed') {
+          const newMessage = vaultContent.message as string;
+          if (lastOutputStatus !== 'completed') {
             setAccumulatedOutput((currentOutput) => {
               // If the new message starts with the current content, only append the difference
               if (newMessage.startsWith(currentOutput)) {
@@ -127,7 +136,7 @@ export const useTraceState = ({
               initialOutput = vaultContent.result;
             }
           } else if (vaultContent.result && typeof vaultContent.result === 'object') {
-            const result = vaultContent.result;
+            const result = vaultContent.result as CommandResult;
             // Same logic for object format
             initialOutput = result.command_output ?? '';
             if (!initialOutput && result.message) {

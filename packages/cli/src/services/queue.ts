@@ -1,4 +1,12 @@
 import {
+  parseGetCompanyVault,
+  parseGetCompanyTeams,
+  parseGetTeamMachines,
+  parseGetTeamRepositories,
+  parseGetTeamStorages,
+  parseGetRegionBridges,
+} from '@rediacc/shared/api';
+import {
   type FunctionRequirements,
   type QueueRequestContext,
   QueueVaultBuilder,
@@ -13,7 +21,7 @@ import type {
   GetTeamRepositories_ResultSet1,
   GetTeamStorages_ResultSet1,
 } from '@rediacc/shared/types';
-import { api, apiClient } from './api.js';
+import { typedApi, apiClient } from './api.js';
 
 interface QueueContext {
   teamName: string;
@@ -90,8 +98,9 @@ class CliQueueService {
     } = {};
 
     try {
-      const companyVault = await api.company.getVault();
-      const parsed = parseVaultContent<VaultData>(companyVault.vault);
+      const response = await typedApi.GetCompanyVault({});
+      const companyVault = parseGetCompanyVault(response as never);
+      const parsed = parseVaultContent<VaultData>(companyVault?.vaultContent);
       if (parsed) {
         vaults.companyVault = parsed;
       }
@@ -101,7 +110,8 @@ class CliQueueService {
 
     if (requirements.team) {
       try {
-        const teams = await api.teams.list();
+        const response = await typedApi.GetCompanyTeams({});
+        const teams = parseGetCompanyTeams(response as never);
         const team = teams.find((t: GetCompanyTeams_ResultSet1) => t.teamName === context.teamName);
         const parsed = parseVaultContent<VaultData>(team?.vaultContent);
         if (parsed) {
@@ -114,7 +124,8 @@ class CliQueueService {
 
     if (requirements.machine && context.machineName) {
       try {
-        const machines = await api.machines.list(context.teamName);
+        const response = await typedApi.GetTeamMachines({ teamName: context.teamName });
+        const machines = parseGetTeamMachines(response as never);
         const machine = machines.find(
           (m: GetTeamMachines_ResultSet1) => m.machineName === context.machineName
         );
@@ -130,7 +141,8 @@ class CliQueueService {
     if (requirements.repository && context.params.repository) {
       try {
         const repositoryGuid = context.params.repository as string;
-        const repositories = await api.repositories.list({ teamName: context.teamName });
+        const response = await typedApi.GetTeamRepositories({ teamName: context.teamName });
+        const repositories = parseGetTeamRepositories(response as never);
         const repository = repositories.find(
           (r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid
         );
@@ -159,7 +171,8 @@ class CliQueueService {
         | undefined;
       if (storageName) {
         try {
-          const storageList = await api.storage.list({ teamName: context.teamName });
+          const response = await typedApi.GetTeamStorages({ teamName: context.teamName });
+          const storageList = parseGetTeamStorages(response as never);
           const storage = storageList.find(
             (s: GetTeamStorages_ResultSet1) => s.storageName === storageName
           );
@@ -175,7 +188,8 @@ class CliQueueService {
 
     if (requirements.bridge && context.bridgeName && context.regionName) {
       try {
-        const bridges = await api.regions.getBridges({ regionName: context.regionName });
+        const response = await typedApi.GetRegionBridges({ regionName: context.regionName });
+        const bridges = parseGetRegionBridges(response as never);
         const bridge = bridges.find(
           (b: GetRegionBridges_ResultSet1) => b.bridgeName === context.bridgeName
         );

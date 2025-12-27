@@ -1,11 +1,13 @@
 import { Command } from 'commander';
+import { parseGetTeamStorages, parseGetCompanyVaults } from '@rediacc/shared/api';
 import type {
   CreateStorageParams,
   DeleteStorageParams,
   UpdateStorageNameParams,
   UpdateStorageVaultParams,
+  GetCompanyVaults_ResultSet1,
 } from '@rediacc/shared/types';
-import { api } from '../services/api.js';
+import { typedApi } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 
 export function registerStorageCommands(program: Command): void {
@@ -15,17 +17,36 @@ export function registerStorageCommands(program: Command): void {
     nameField: 'storageName',
     parentOption: 'team',
     operations: {
-      list: (params) => api.storage.list({ teamName: params?.teamName as string }),
-      create: (payload) => api.storage.create(payload as unknown as CreateStorageParams),
-      rename: (payload) => api.storage.rename(payload as unknown as UpdateStorageNameParams),
-      delete: (payload) => api.storage.delete(payload as unknown as DeleteStorageParams),
+      list: async (params) => {
+        const response = await typedApi.GetTeamStorages({ teamName: params?.teamName as string });
+        return parseGetTeamStorages(response as never);
+      },
+      create: async (payload) => {
+        await typedApi.CreateStorage(payload as unknown as CreateStorageParams);
+      },
+      rename: async (payload) => {
+        await typedApi.UpdateStorageName(payload as unknown as UpdateStorageNameParams);
+      },
+      delete: async (payload) => {
+        await typedApi.DeleteStorage(payload as unknown as DeleteStorageParams);
+      },
     },
+    transformCreatePayload: (name, opts) => ({
+      storageName: name,
+      teamName: opts.team,
+    }),
     vaultConfig: {
-      fetch: (params) => api.company.getAllVaults(params),
+      fetch: async () => {
+        const response = await typedApi.GetCompanyVaults({});
+        const vaults = parseGetCompanyVaults(response as never);
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+      },
       vaultType: 'Storage',
     },
     vaultUpdateConfig: {
-      update: (payload) => api.storage.updateVault(payload as unknown as UpdateStorageVaultParams),
+      update: async (payload) => {
+        await typedApi.UpdateStorageVault(payload as unknown as UpdateStorageVaultParams);
+      },
       vaultFieldName: 'vaultContent',
     },
   });

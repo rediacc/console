@@ -1,5 +1,5 @@
 import { QueryKey, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
 import i18n from '@/i18n/config';
 import type {
@@ -78,7 +78,7 @@ function createCephMutation<TData extends object>(config: MutationFactoryConfig<
 // =============================================================================
 
 export const useCreateCephCluster = createCephMutation<WithOptionalVault<CreateCephClusterParams>>({
-  request: (params) => api.ceph.createCluster(params),
+  request: (params) => typedApi.CreateCephCluster(params as CreateCephClusterParams),
   operation: 'create',
   resourceKey: 'cluster',
   translationKey: 'clusters.createSuccess',
@@ -86,7 +86,7 @@ export const useCreateCephCluster = createCephMutation<WithOptionalVault<CreateC
 });
 
 export const useUpdateCephClusterVault = createCephMutation<UpdateCephClusterVaultParams>({
-  request: (params) => api.ceph.updateClusterVault(params),
+  request: (params) => typedApi.UpdateCephClusterVault(params),
   operation: 'update',
   resourceKey: 'clusterVault',
   translationKey: 'clusters.updateSuccess',
@@ -94,7 +94,7 @@ export const useUpdateCephClusterVault = createCephMutation<UpdateCephClusterVau
 });
 
 export const useDeleteCephCluster = createCephMutation<DeleteCephClusterParams>({
-  request: (params) => api.ceph.deleteCluster(params),
+  request: (params) => typedApi.DeleteCephCluster(params),
   operation: 'delete',
   resourceKey: 'cluster',
   translationKey: 'clusters.deleteSuccess',
@@ -106,7 +106,7 @@ export const useDeleteCephCluster = createCephMutation<DeleteCephClusterParams>(
 // =============================================================================
 
 export const useCreateCephPool = createCephMutation<WithOptionalVault<CreateCephPoolParams>>({
-  request: (params) => api.ceph.createPool(params),
+  request: (params) => typedApi.CreateCephPool(params as CreateCephPoolParams),
   operation: 'create',
   resourceKey: 'pool',
   translationKey: 'pools.createSuccess',
@@ -114,7 +114,7 @@ export const useCreateCephPool = createCephMutation<WithOptionalVault<CreateCeph
 });
 
 export const useUpdateCephPoolVault = createCephMutation<UpdateCephPoolVaultParams>({
-  request: (params) => api.ceph.updatePoolVault(params),
+  request: (params) => typedApi.UpdateCephPoolVault(params),
   operation: 'update',
   resourceKey: 'poolVault',
   translationKey: 'pools.updateSuccess',
@@ -122,7 +122,7 @@ export const useUpdateCephPoolVault = createCephMutation<UpdateCephPoolVaultPara
 });
 
 export const useDeleteCephPool = createCephMutation<DeleteCephPoolParams>({
-  request: (params) => api.ceph.deletePool(params),
+  request: (params) => typedApi.DeleteCephPool(params),
   operation: 'delete',
   resourceKey: 'pool',
   translationKey: 'pools.deleteSuccess',
@@ -136,7 +136,7 @@ export const useDeleteCephPool = createCephMutation<DeleteCephPoolParams>({
 export const useCreateCephRbdImage = createCephMutation<
   WithOptionalVault<CreateCephRbdImageParams>
 >({
-  request: (params) => api.ceph.createImage(params),
+  request: (params) => typedApi.CreateCephRbdImage(params as CreateCephRbdImageParams),
   operation: 'create',
   resourceKey: 'rbdImage',
   translationKey: 'images.createSuccess',
@@ -145,7 +145,7 @@ export const useCreateCephRbdImage = createCephMutation<
 });
 
 export const useDeleteCephRbdImage = createCephMutation<DeleteCephRbdImageParams>({
-  request: (params) => api.ceph.deleteImage(params),
+  request: (params) => typedApi.DeleteCephRbdImage(params),
   operation: 'delete',
   resourceKey: 'rbdImage',
   translationKey: 'images.deleteSuccess',
@@ -154,7 +154,7 @@ export const useDeleteCephRbdImage = createCephMutation<DeleteCephRbdImageParams
 
 export const useUpdateImageMachineAssignment =
   createCephMutation<UpdateImageMachineAssignmentParams>({
-    request: (params) => api.ceph.assignMachineToImage(params),
+    request: (params) => typedApi.UpdateImageMachineAssignment(params),
     operation: 'assign',
     resourceKey: 'imageMachine',
     translationKey: 'images.reassignmentSuccess',
@@ -168,7 +168,7 @@ export const useUpdateImageMachineAssignment =
 export const useCreateCephRbdSnapshot = createCephMutation<
   WithOptionalVault<CreateCephRbdSnapshotParams>
 >({
-  request: (params) => api.ceph.createSnapshot(params),
+  request: (params) => typedApi.CreateCephRbdSnapshot(params as CreateCephRbdSnapshotParams),
   operation: 'create',
   resourceKey: 'rbdSnapshot',
   translationKey: 'snapshots.createSuccess',
@@ -176,7 +176,7 @@ export const useCreateCephRbdSnapshot = createCephMutation<
 });
 
 export const useDeleteCephRbdSnapshot = createCephMutation<DeleteCephRbdSnapshotParams>({
-  request: (params) => api.ceph.deleteSnapshot(params),
+  request: (params) => typedApi.DeleteCephRbdSnapshot(params),
   operation: 'delete',
   resourceKey: 'rbdSnapshot',
   translationKey: 'snapshots.deleteSuccess',
@@ -190,7 +190,7 @@ export const useDeleteCephRbdSnapshot = createCephMutation<DeleteCephRbdSnapshot
 export const useCreateCephRbdClone = createCephMutation<
   WithOptionalVault<CreateCephRbdCloneParams>
 >({
-  request: (params) => api.ceph.createClone(params),
+  request: (params) => typedApi.CreateCephRbdClone(params as CreateCephRbdCloneParams),
   operation: 'create',
   resourceKey: 'rbdClone',
   translationKey: 'clones.createSuccess',
@@ -198,7 +198,7 @@ export const useCreateCephRbdClone = createCephMutation<
 });
 
 export const useDeleteCephRbdClone = createCephMutation<DeleteCephRbdCloneParams>({
-  request: (params) => api.ceph.deleteClone(params),
+  request: (params) => typedApi.DeleteCephRbdClone(params),
   operation: 'delete',
   resourceKey: 'rbdClone',
   translationKey: 'clones.deleteSuccess',
@@ -210,7 +210,7 @@ export const useDeleteCephRbdClone = createCephMutation<DeleteCephRbdCloneParams
 // =============================================================================
 
 export const useUpdateMachineCeph = createCephMutation<UpdateMachineCephParams>({
-  request: (params) => api.machines.updateCeph(params),
+  request: (params) => typedApi.UpdateMachineCeph(params),
   operation: 'update',
   resourceKey: 'machineClusterAssignment',
   translationKey: 'machines.updateSuccess',
@@ -220,7 +220,7 @@ export const useUpdateMachineCeph = createCephMutation<UpdateMachineCephParams>(
 export const useUpdateCloneMachineAssignments = createCephMutation<
   UpdateCloneMachineAssignmentsParams & { machineNames: string }
 >({
-  request: (params) => api.ceph.assignMachinesToClone(params),
+  request: (params) => typedApi.UpdateCloneMachineAssignments(params),
   operation: 'assign',
   resourceKey: 'cloneMachines',
   translationKey: 'clones.machinesAssignedSuccess',
@@ -239,7 +239,7 @@ export const useUpdateCloneMachineAssignments = createCephMutation<
 export const useUpdateCloneMachineRemovals = createCephMutation<
   UpdateCloneMachineRemovalsParams & { machineNames: string }
 >({
-  request: (params) => api.ceph.removeMachinesFromClone(params),
+  request: (params) => typedApi.UpdateCloneMachineRemovals(params),
   operation: 'remove',
   resourceKey: 'cloneMachines',
   translationKey: 'clones.machinesRemovedSuccess',
@@ -257,7 +257,7 @@ export const useUpdateCloneMachineRemovals = createCephMutation<
 
 export const useUpdateMachineClusterAssignment =
   createCephMutation<UpdateMachineClusterAssignmentParams>({
-    request: (params) => api.machines.updateClusterAssignment(params),
+    request: (params) => typedApi.UpdateMachineClusterAssignment(params),
     operation: 'assign',
     resourceKey: 'machineCluster',
     translationKey: 'machines.clusterAssignedSuccess',
@@ -269,7 +269,7 @@ export const useUpdateMachineClusterAssignment =
 
 export const useUpdateMachineClusterRemoval = createCephMutation<UpdateMachineClusterRemovalParams>(
   {
-    request: (params) => api.machines.removeFromCluster(params),
+    request: (params) => typedApi.UpdateMachineClusterRemoval(params),
     operation: 'remove',
     resourceKey: 'machineCluster',
     translationKey: 'machines.clusterRemovedSuccess',

@@ -437,13 +437,11 @@ const AccessPage: React.FC = () => {
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
-          options={
-            dropdownData?.users.map((user) => ({
-              value: user.value,
-              label: user.label,
-              disabled: user.status !== 'active',
-            })) ?? []
-          }
+          options={(dropdownData?.users ?? []).map((user) => ({
+            value: user.value,
+            label: user.label,
+            disabled: user.status !== 'active',
+          }))}
           data-testid="assign-user-select"
         />
       </Modal>

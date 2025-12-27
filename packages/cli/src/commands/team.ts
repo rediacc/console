@@ -1,11 +1,17 @@
 import { Command } from 'commander';
+import {
+  parseGetCompanyTeams,
+  parseGetTeamMembers,
+  parseGetCompanyVaults,
+} from '@rediacc/shared/api';
 import type {
   CreateTeamParams,
   DeleteTeamParams,
   UpdateTeamNameParams,
   UpdateTeamVaultParams,
+  GetCompanyVaults_ResultSet1,
 } from '@rediacc/shared/types';
-import { api } from '../services/api.js';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
@@ -21,17 +27,35 @@ export function registerTeamCommands(program: Command): void {
     nameField: 'teamName',
     parentOption: 'none',
     operations: {
-      list: () => api.teams.list(),
-      create: (payload) => api.teams.create(payload as unknown as CreateTeamParams),
-      rename: (payload) => api.teams.rename(payload as unknown as UpdateTeamNameParams),
-      delete: (payload) => api.teams.delete(payload as unknown as DeleteTeamParams),
+      list: async () => {
+        const response = await typedApi.GetCompanyTeams({});
+        return parseGetCompanyTeams(response as never);
+      },
+      create: async (payload) => {
+        await typedApi.CreateTeam(payload as unknown as CreateTeamParams);
+      },
+      rename: async (payload) => {
+        await typedApi.UpdateTeamName(payload as unknown as UpdateTeamNameParams);
+      },
+      delete: async (payload) => {
+        await typedApi.DeleteTeam(payload as unknown as DeleteTeamParams);
+      },
     },
+    transformCreatePayload: (name, _opts) => ({
+      teamName: name,
+    }),
     vaultConfig: {
-      fetch: (params) => api.company.getAllVaults(params),
+      fetch: async () => {
+        const response = await typedApi.GetCompanyVaults({});
+        const vaults = parseGetCompanyVaults(response as never);
+        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+      },
       vaultType: 'Team',
     },
     vaultUpdateConfig: {
-      update: (payload) => api.teams.updateVault(payload as unknown as UpdateTeamVaultParams),
+      update: async (payload) => {
+        await typedApi.UpdateTeamVault(payload as unknown as UpdateTeamVaultParams);
+      },
       vaultFieldName: 'vaultContent',
     },
   });
@@ -47,11 +71,13 @@ export function registerTeamCommands(program: Command): void {
       try {
         await authService.requireAuth();
 
-        const members = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching team members...',
-          () => api.teams.getMembers({ teamName }),
+          () => typedApi.GetTeamMembers({ teamName }),
           'Members fetched'
         );
+
+        const members = parseGetTeamMembers(apiResponse as never);
 
         const format = program.opts().output as OutputFormat;
 
@@ -71,7 +97,7 @@ export function registerTeamCommands(program: Command): void {
 
         await withSpinner(
           `Adding ${userEmail} to team "${teamName}"...`,
-          () => api.teams.addMember({ teamName, newUserEmail: userEmail }),
+          () => typedApi.CreateTeamMembership({ teamName, newUserEmail: userEmail }),
           `User added to team "${teamName}"`
         );
       } catch (error) {
@@ -89,7 +115,7 @@ export function registerTeamCommands(program: Command): void {
 
         await withSpinner(
           `Removing ${userEmail} from team "${teamName}"...`,
-          () => api.teams.removeMember({ teamName, removeUserEmail: userEmail }),
+          () => typedApi.DeleteUserFromTeam({ teamName, removeUserEmail: userEmail }),
           `User removed from team "${teamName}"`
         );
       } catch (error) {

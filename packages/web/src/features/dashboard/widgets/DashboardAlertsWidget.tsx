@@ -12,8 +12,8 @@ const DashboardAlertsWidget: React.FC<DashboardAlertsWidgetProps> = ({
   dashboard,
   accountHealth,
 }) => {
-  const showSubscriptionAlert = dashboard.activeSubscription?.isExpiringSoon === 1;
-  const showResourceLimitAlert = accountHealth && accountHealth.resourcesAtLimit > 0;
+  const showSubscriptionAlert = dashboard.activeSubscription?.isExpiringSoon;
+  const showResourceLimitAlert = accountHealth && (accountHealth.resourcesAtLimit ?? 0) > 0;
 
   if (!showSubscriptionAlert && !showResourceLimitAlert) {
     return null;

@@ -4,21 +4,25 @@ import { useTranslation } from 'react-i18next';
 import { DashboardOutlined, HourglassOutlined, SyncOutlined } from '@/utils/optimizedIcons';
 
 interface MachineStats {
-  currentQueueDepth: number;
-  activeProcessingCount: number;
-  maxConcurrentTasks?: number;
+  currentQueueDepth?: number | null;
+  activeProcessingCount?: number | null;
+  maxConcurrentTasks?: number | null;
 }
 
 interface PerformanceMetricsProps {
-  machineStats: MachineStats;
+  machineStats: MachineStats | null;
 }
 
 export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineStats }) => {
   const { t } = useTranslation(['queue', 'common']);
 
-  const isHighQueue = machineStats.currentQueueDepth > 50;
-  const isAtCapacity = machineStats.activeProcessingCount >= (machineStats.maxConcurrentTasks ?? 0);
-  const isIdle = machineStats.currentQueueDepth === 0 && machineStats.activeProcessingCount === 0;
+  const queueDepth = machineStats?.currentQueueDepth ?? 0;
+  const activeCount = machineStats?.activeProcessingCount ?? 0;
+  const maxTasks = machineStats?.maxConcurrentTasks ?? 0;
+
+  const isHighQueue = queueDepth > 50;
+  const isAtCapacity = activeCount >= maxTasks && maxTasks > 0;
+  const isIdle = queueDepth === 0 && activeCount === 0;
 
   return (
     <>
@@ -27,12 +31,12 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
           <Card>
             <Statistic
               title={t('trace.queueDepth')}
-              value={machineStats.currentQueueDepth}
+              value={queueDepth}
               prefix={<HourglassOutlined />}
               suffix="tasks"
             />
             <Progress
-              percent={Math.min(100, (machineStats.currentQueueDepth / 100) * 100)}
+              percent={Math.min(100, (queueDepth / 100) * 100)}
               showInfo={false}
               status={isHighQueue ? 'exception' : 'normal'}
             />
@@ -42,7 +46,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
           <Card>
             <Statistic
               title={t('trace.activeProcessing')}
-              value={machineStats.activeProcessingCount}
+              value={activeCount}
               prefix={<SyncOutlined spin />}
               suffix="tasks"
             />
@@ -55,18 +59,11 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
           <Card>
             <Statistic
               title={t('trace.processingCapacity')}
-              value={`${machineStats.activeProcessingCount}/${machineStats.maxConcurrentTasks ?? 'N/A'}`}
+              value={`${activeCount}/${maxTasks > 0 ? maxTasks : 'N/A'}`}
               prefix={<DashboardOutlined />}
             />
             <Progress
-              percent={
-                machineStats.maxConcurrentTasks
-                  ? Math.min(
-                      100,
-                      (machineStats.activeProcessingCount / machineStats.maxConcurrentTasks) * 100
-                    )
-                  : 0
-              }
+              percent={maxTasks > 0 ? Math.min(100, (activeCount / maxTasks) * 100) : 0}
               showInfo={false}
               status={isAtCapacity ? 'exception' : 'normal'}
             />

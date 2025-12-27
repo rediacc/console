@@ -11,47 +11,49 @@ import {
 import type { CephTeamBreakdown } from '@rediacc/shared/types';
 import { CephDashboardWidgetProps } from './types';
 
-const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
+const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBreakdown = [] }) => {
   const { t } = useTranslation(['common', 'ceph']);
 
   if (stats === null || stats === undefined) {
     return null;
   }
 
+  const totalMachines = stats.totalMachines ?? 0;
+  const trulyAvailable = stats.trulyAvailableMachines ?? 0;
+
   const assignmentData = [
     {
       type: 'available',
       label: t('ceph:assignmentStatus.available'),
-      count: stats.truly_available_machines,
-      percentage: Math.round((stats.truly_available_machines / stats.total_machines) * 100),
+      count: trulyAvailable,
+      percentage: totalMachines > 0 ? Math.round((trulyAvailable / totalMachines) * 100) : 0,
       icon: <CloudServerOutlined />,
     },
     {
       type: 'cluster',
       label: t('ceph:assignmentStatus.cluster'),
-      count: stats.cluster_assigned_machines,
-      percentage: stats.cluster_percentage,
+      count: stats.clusterAssignedMachines ?? 0,
+      percentage: stats.clusterPercentage ?? 0,
       icon: <DatabaseOutlined />,
     },
     {
       type: 'image',
       label: t('ceph:assignmentStatus.image'),
-      count: stats.image_assigned_machines,
-      percentage: stats.image_percentage,
+      count: stats.imageAssignedMachines,
+      percentage: stats.imagePercentage ?? 0,
       icon: <HddOutlined />,
     },
     {
       type: 'clone',
       label: t('ceph:assignmentStatus.clone'),
-      count: stats.clone_assigned_machines,
-      percentage: stats.clone_percentage,
+      count: stats.cloneAssignedMachines,
+      percentage: stats.clonePercentage ?? 0,
       icon: <CopyOutlined />,
     },
   ];
 
-  const utilizationPercent = Math.round(
-    ((stats.total_machines - stats.truly_available_machines) / stats.total_machines) * 100
-  );
+  const utilizationPercent =
+    totalMachines > 0 ? Math.round(((totalMachines - trulyAvailable) / totalMachines) * 100) : 0;
 
   const renderTeamItem = (item: unknown) => {
     const team = item as CephTeamBreakdown | null | undefined;
@@ -74,21 +76,21 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
                 {team.availableMachines} available
               </Tag>
             </Tooltip>
-            {team.clusterMachines > 0 && (
+            {(team.clusterMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.cluster')}>
                 <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`}>
                   {team.clusterMachines} cluster
                 </Tag>
               </Tooltip>
             )}
-            {team.imageMachines > 0 && (
+            {(team.imageMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.image')}>
                 <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`}>
                   {team.imageMachines} image
                 </Tag>
               </Tooltip>
             )}
-            {team.cloneMachines > 0 && (
+            {(team.cloneMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.clone')}>
                 <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`}>
                   {team.cloneMachines} clone
@@ -113,9 +115,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
         </Flex>
       }
       extra={
-        <Typography.Text>
-          {t('ceph:dashboard.subtitle', { total: stats.total_machines })}
-        </Typography.Text>
+        <Typography.Text>{t('ceph:dashboard.subtitle', { total: totalMachines })}</Typography.Text>
       }
     >
       <Flex vertical gap={16} className="w-full">
@@ -146,14 +146,14 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
                   <Statistic
                     data-testid="ds-widget-stat-total-clusters"
                     title={t('ceph:dashboard.totalClusters')}
-                    value={stats.total_clusters}
+                    value={stats.totalClusters}
                   />
                 </Col>
                 <Col span={12}>
                   <Statistic
                     data-testid="ds-widget-stat-avg-machines"
                     title={t('ceph:dashboard.avgMachinesPerCluster')}
-                    value={stats.avg_machines_per_cluster}
+                    value={stats.avgMachinesPerCluster}
                     precision={1}
                   />
                 </Col>
@@ -171,15 +171,15 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
               />
               <Typography.Text>
                 {t('ceph:dashboard.utilizationDetails', {
-                  used: stats.total_machines - stats.truly_available_machines,
-                  total: stats.total_machines,
+                  used: totalMachines - trulyAvailable,
+                  total: totalMachines,
                 })}
               </Typography.Text>
             </Flex>
           </Col>
         </Row>
 
-        {stats.team_breakdown.length > 0 && (
+        {teamBreakdown.length > 0 && (
           <Flex vertical gap={8} data-testid="ds-widget-team-breakdown">
             <Flex align="center" gap={8}>
               <Flex align="center" className="inline-flex">
@@ -190,7 +190,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats }) => {
             <List
               data-testid="ds-widget-team-list"
               size="small"
-              dataSource={stats.team_breakdown}
+              dataSource={teamBreakdown}
               renderItem={renderTeamItem}
             />
           </Flex>

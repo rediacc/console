@@ -18,6 +18,20 @@ import type {
   CreateRepositoryParams,
   CreateStorageParams,
   CreateTeamParams,
+  GetCompanyDashboard_ResultSet1,
+  GetCompanyDashboard_ResultSet2,
+  GetCompanyDashboard_ResultSet3,
+  GetCompanyDashboard_ResultSet4,
+  GetCompanyDashboard_ResultSet5,
+  GetCompanyDashboard_ResultSet6,
+  GetCompanyDashboard_ResultSet7,
+  GetCompanyDashboard_ResultSet8,
+  GetCompanyDashboard_ResultSet10,
+  GetCompanyDashboard_ResultSet11,
+  GetCompanyDashboard_ResultSet12,
+  GetCompanyDashboard_ResultSet13,
+  GetCompanyDashboard_ResultSet15,
+  GetPermissionGroupDetails_ResultSet1,
   GetTeamQueueItemsParams,
 } from './api-schema.generated';
 
@@ -32,6 +46,22 @@ export type WithOptionalVault<T extends { vaultContent: string }> = Omit<T, 'vau
 
 /** Makes all properties of T optional */
 export type OptionalParams<T> = Partial<T>;
+
+// =============================================================================
+// CONTAINER TYPES
+// =============================================================================
+
+/** Plugin container data */
+export interface PluginContainer {
+  id: string;
+  name: string;
+  state: string;
+  status?: string;
+  image?: string;
+  ports?: string;
+  created?: string;
+  repository?: string;
+}
 
 // =============================================================================
 // QUEUE TYPES (replaces manual QueueFilters interface)
@@ -76,4 +106,400 @@ export interface QueueStatistics {
   cancelledCount: number;
   failedCount: number;
   staleCount: number;
+}
+
+// =============================================================================
+// QUEUE DOMAIN TYPES
+// =============================================================================
+
+/** Queue health status - derived from status and timing */
+export type QueueHealthStatus =
+  | 'PENDING'
+  | 'ACTIVE'
+  | 'STALE'
+  | 'STALE_PENDING'
+  | 'CANCELLING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'UNKNOWN';
+
+/** Queue item status - raw status from database */
+export type QueueStatus =
+  | 'PENDING'
+  | 'ASSIGNED'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+/** Queue list result with items and optional statistics */
+export interface QueueListResult {
+  items: import('./api-schema.generated').GetTeamQueueItems_ResultSet1[];
+  statistics: import('./api-schema.generated').GetTeamQueueItems_ResultSet2 | null;
+}
+
+/** Queue machine stats from trace */
+export interface QueueMachineStats {
+  currentQueueDepth?: number | null;
+  activeProcessingCount?: number | null;
+  maxConcurrentTasks?: number | null;
+}
+
+/** Queue plan info from trace */
+export interface QueuePlanInfo {
+  planName?: string | null;
+  planVersion?: number | null;
+  estimatedDuration?: number | null;
+  [key: string]: unknown;
+}
+
+/** Queue position entry for trace */
+export interface QueuePositionEntry {
+  taskId: string;
+  status: string;
+  createdTime: string;
+  relativePosition?: string;
+}
+
+/** Queue trace log entry */
+export interface QueueTraceLog {
+  timestamp?: string | null;
+  level?: string | null;
+  message?: string | null;
+  source?: string | null;
+  [key: string]: unknown;
+}
+
+/** Queue trace summary */
+export interface QueueTraceSummary {
+  taskId?: string;
+  status?: QueueStatus;
+  healthStatus?: QueueHealthStatus;
+  progress?: string | null;
+  consoleOutput?: string | null;
+  errorMessage?: string | null;
+  lastFailureReason?: string | null;
+  priority?: number;
+  retryCount?: number;
+  ageInMinutes?: number;
+  hasResponse?: boolean;
+  teamName?: string;
+  machineName?: string;
+  bridgeName?: string;
+  createdTime?: string;
+  updatedTime?: string;
+}
+
+/** Queue vault snapshot */
+export interface QueueVaultSnapshot {
+  hasContent?: boolean;
+  vaultVersion?: number | null;
+  vaultContent?: string | null;
+  updatedAt?: string | null;
+}
+
+/** Full queue trace response */
+export interface QueueTrace {
+  summary: QueueTraceSummary | null;
+  queueDetails: import('./api-schema.generated').GetTeamQueueItems_ResultSet1 | null;
+  traceLogs: QueueTraceLog[];
+  vaultContent: QueueVaultSnapshot | null;
+  responseVaultContent: QueueVaultSnapshot | null;
+  queuePosition: QueuePositionEntry[];
+  machineStats: QueueMachineStats | null;
+  planInfo: QueuePlanInfo | null;
+}
+
+// =============================================================================
+// AUTH DOMAIN TYPES
+// =============================================================================
+
+/** Authentication login result */
+export interface AuthLoginResult {
+  isAuthorized: boolean;
+  authenticationStatus: string;
+  vaultCompany: string | null;
+  companyName: string | null;
+  company: string | null;
+  preferredLanguage: string | null;
+}
+
+/** Authentication request status */
+export interface AuthRequestStatus {
+  isTFAEnabled: boolean;
+  isAuthorized: boolean;
+  authenticationStatus: string;
+}
+
+/** TFA enable response */
+export interface EnableTfaResponse {
+  secret?: string | null;
+  qrCodeUrl?: string | null;
+  backupCodes?: string[] | null;
+  [key: string]: unknown;
+}
+
+/** Fork session credentials */
+export interface ForkSessionCredentials {
+  requestToken: string | null;
+  nextRequestToken: string | null;
+  parentRequestId: number | null;
+}
+
+/** User request record - use GetUserRequests_ResultSet1 from api-schema.generated */
+
+/** TFA verification result */
+export interface VerifyTfaResult {
+  isAuthorized?: boolean;
+  result?: string;
+  hasTFAEnabled?: boolean;
+}
+
+// =============================================================================
+// AUDIT DOMAIN TYPES
+// =============================================================================
+
+/** Audit trace record */
+export interface AuditTraceRecord {
+  auditId?: number;
+  action?: string;
+  actionType?: string;
+  entityType?: string;
+  entityId?: number;
+  entityName?: string;
+  userId?: number;
+  userEmail?: string;
+  timestamp?: string;
+  details?: string | null;
+  ipAddress?: string | null;
+  iconHint?: string;
+  performedBy?: string;
+  timeAgo?: string;
+}
+
+/** Audit trace summary */
+export interface AuditTraceSummary {
+  entityType: string;
+  entityName: string;
+  entityId: number;
+  totalAuditRecords: number;
+  visibleAuditRecords: number;
+  oldestVisibleActivity: string | null;
+  lastActivity: string | null;
+  hasAccess: boolean;
+  isAdmin: boolean;
+  subscriptionTier: string;
+  auditRetentionDays: number;
+  hasOlderRecords: boolean;
+  relatedCount: number;
+}
+
+/** Audit trace response */
+export interface AuditTraceResponse {
+  records: AuditTraceRecord[];
+  summary: AuditTraceSummary;
+}
+
+// =============================================================================
+// CEPH DOMAIN TYPES
+// =============================================================================
+
+/** Ceph available machine for clone assignment */
+export interface CephAvailableMachine {
+  machineId?: number;
+  machineGuid?: string;
+  machineName: string;
+  teamName?: string;
+  assignmentStatus?: string;
+  status?: string;
+  description?: string;
+  bridgeName?: string;
+  regionName?: string;
+}
+
+/** Ceph clone machine info */
+export interface CephCloneMachine {
+  machineId?: number;
+  machineGuid?: string;
+  machineName: string;
+  cloneName?: string;
+  assignedAt?: string;
+}
+
+/** Ceph machine assignment status - matches GetMachineAssignmentStatus result */
+export interface CephMachineAssignmentStatus {
+  machineName: string | null;
+  teamName: string | null;
+  assignmentType: string | null;
+  assignmentDetails: string | null;
+  status: string | null;
+}
+
+/** Ceph machine assignment validation */
+export interface CephMachineAssignmentValidation {
+  machineId?: number;
+  machineName?: string;
+  isValid?: boolean;
+  validationMessage?: string;
+  conflictType?: string;
+  conflictResource?: string;
+}
+
+// =============================================================================
+// MACHINE DOMAIN TYPES
+// =============================================================================
+
+/** Machine assignment status */
+export type MachineAssignmentStatus = 'ASSIGNED' | 'UNASSIGNED';
+
+/** Machine assignment type */
+export type MachineAssignmentType = 'AVAILABLE' | 'CLUSTER' | 'IMAGE' | 'CLONE';
+
+// =============================================================================
+// USER DOMAIN TYPES
+// =============================================================================
+
+/** User vault data */
+export interface UserVault {
+  vault: string;
+  vaultVersion: number;
+  userCredential: string | null;
+}
+
+// =============================================================================
+// PERMISSION DOMAIN TYPES
+// =============================================================================
+
+/** Permission record - alias for generated type */
+export type Permission = GetPermissionGroupDetails_ResultSet1;
+
+// =============================================================================
+// DROPDOWN DOMAIN TYPES
+// =============================================================================
+
+/** Generic dropdown option */
+export interface DropdownOption {
+  value: string;
+  label: string;
+  status?: string;
+}
+
+/** Machine dropdown option with additional properties */
+export interface MachineDropdownOption extends DropdownOption {
+  bridgeName?: string;
+  regionName?: string;
+  teamName?: string;
+  status?: string;
+}
+
+/** Permission dropdown option */
+export interface PermissionDropdownOption {
+  name: string;
+  description?: string;
+}
+
+/** Team dropdown option with status */
+export interface TeamDropdownOption extends DropdownOption {
+  status?: string;
+}
+
+/** Bridges grouped by region for dropdown */
+export interface RegionBridges {
+  regionName: string;
+  bridges: DropdownOption[];
+}
+
+/** Machines grouped by team for dropdown */
+export interface TeamMachines {
+  teamName: string;
+  machines: MachineDropdownOption[];
+}
+
+/** Company-wide dropdown data for forms */
+export interface CompanyDropdownData {
+  teams: TeamDropdownOption[];
+  allTeams: TeamDropdownOption[];
+  regions: DropdownOption[];
+  machines: MachineDropdownOption[];
+  bridges: DropdownOption[];
+  bridgesByRegion: RegionBridges[];
+  machinesByTeam: TeamMachines[];
+  users: DropdownOption[];
+  permissionGroups: DropdownOption[];
+  permissions: PermissionDropdownOption[];
+  subscriptionPlans: DropdownOption[];
+}
+
+// =============================================================================
+// COMPANY DASHBOARD TYPES (from GetCompanyDashboard result sets)
+// =============================================================================
+
+/** Company info from dashboard - ResultSet1 */
+export type CompanyInfo = GetCompanyDashboard_ResultSet1;
+
+/** Active subscription details - ResultSet2 */
+export type ActiveSubscription = GetCompanyDashboard_ResultSet2;
+
+/** All subscriptions list - ResultSet3 */
+export type AllSubscriptionsItem = GetCompanyDashboard_ResultSet3;
+
+/** Resource usage item - ResultSet4 */
+export type ResourceUsageItem = GetCompanyDashboard_ResultSet4;
+
+/** Account health status - ResultSet5 */
+export type AccountHealth = GetCompanyDashboard_ResultSet5;
+
+/** Feature access flags - ResultSet6 */
+export type FeatureAccess = GetCompanyDashboard_ResultSet6;
+
+/** Plan limits from dashboard - ResultSet7 */
+export type PlanLimits = GetCompanyDashboard_ResultSet7;
+
+/** Queue statistics from dashboard - ResultSet8 */
+export type DashboardQueueStats = GetCompanyDashboard_ResultSet8;
+
+/** Queue team issue from dashboard - ResultSet10 */
+export type QueueTeamIssue = GetCompanyDashboard_ResultSet10;
+
+/** Queue machine issue from dashboard - ResultSet11 */
+export type QueueMachineIssue = GetCompanyDashboard_ResultSet11;
+
+/** Active user from dashboard - ResultSet12 */
+export type ActiveUser = GetCompanyDashboard_ResultSet12;
+
+/** Ceph statistics for company dashboard - ResultSet13 */
+export type CompanyCephStats = GetCompanyDashboard_ResultSet13;
+
+/** Ceph team breakdown for dashboard widget - ResultSet15 */
+export type CephTeamBreakdown = GetCompanyDashboard_ResultSet15;
+
+/** Full company dashboard data - composed from result sets */
+export interface CompanyDashboardData {
+  companyInfo: CompanyInfo | null;
+  activeSubscription: ActiveSubscription | null;
+  allActiveSubscriptions: AllSubscriptionsItem[];
+  resources: ResourceUsageItem[];
+  accountHealth: AccountHealth | null;
+  featureAccess: FeatureAccess | null;
+  planLimits: PlanLimits | null;
+  queueStats: DashboardQueueStats | null;
+  teamIssues: QueueTeamIssue[];
+  machineIssues: QueueMachineIssue[];
+  activeUsers: ActiveUser[];
+  cephStats: CompanyCephStats | null;
+  cephTeamBreakdown: CephTeamBreakdown[];
+}
+
+/** Result from UpdateCompanyVaults operation */
+export interface CompanyVaultUpdateResult {
+  totalUpdated: number;
+  failedCount: number;
+}
+
+/** Result from ImportCompanyData operation */
+export interface CompanyImportResult {
+  importedCount: number;
+  skippedCount: number;
+  errorCount: number;
 }

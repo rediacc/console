@@ -249,7 +249,7 @@ const CredentialsPage: React.FC = () => {
         const queuePayload: QueueActionParams = {
           teamName: currentResource.teamName,
           machineName: machineEntry.value,
-          bridgeName: machineEntry.bridgeName,
+          bridgeName: machineEntry.bridgeName ?? '',
           functionName: functionData.function.name,
           params: functionData.params,
           priority: functionData.priority,

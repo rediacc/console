@@ -1,7 +1,16 @@
 import { Command } from 'commander';
-import type { QueueTrace, QueueTraceSummary } from '@rediacc/shared/types';
+import {
+  parseGetTeamQueueItems,
+  parseGetQueueItemTrace,
+  parseCreateQueueItem,
+} from '@rediacc/shared/api';
+import type {
+  QueueTrace,
+  QueueTraceSummary,
+  GetTeamQueueItems_ResultSet1,
+} from '@rediacc/shared/types';
 import { searchInFields, compareValues, extractMostRecentProgress } from '@rediacc/shared/utils';
-import { api } from '../services/api.js';
+import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -125,10 +134,10 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
     );
   }
 
-  const response = await withSpinner(
+  const apiResponse = await withSpinner(
     `Creating queue item for function "${options.function}"...`,
     () =>
-      api.queue.create({
+      typedApi.CreateQueueItem({
         teamName: opts.team as string,
         machineName: opts.machine as string,
         bridgeName: opts.bridge as string,
@@ -137,6 +146,8 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
       }),
     'Queue item created'
   );
+
+  const response = parseCreateQueueItem(apiResponse as never);
 
   if (response.taskId) {
     outputService.success(`Task ID: ${response.taskId}`);
@@ -152,7 +163,10 @@ export async function traceAction(
 ): Promise<void> {
   await authService.requireAuth();
 
-  const fetchTrace = async () => api.queue.getTrace({ taskId });
+  const fetchTrace = async () => {
+    const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
+    return parseGetQueueItemTrace(apiResponse as never);
+  };
 
   if (options.watch) {
     // Watch mode - poll until complete
@@ -225,7 +239,7 @@ export async function cancelAction(taskId: string): Promise<void> {
 
   await withSpinner(
     `Cancelling task ${taskId}...`,
-    () => api.queue.cancel({ taskId }),
+    () => typedApi.CancelQueueItem({ taskId }),
     'Task cancelled'
   );
 }
@@ -235,7 +249,7 @@ export async function retryAction(taskId: string): Promise<void> {
 
   await withSpinner(
     `Retrying task ${taskId}...`,
-    () => api.queue.retry({ taskId }),
+    () => typedApi.RetryFailedQueueItem({ taskId }),
     'Task retry initiated'
   );
 }
@@ -281,39 +295,46 @@ export function registerQueueCommands(program: Command): void {
           throw new ValidationError('Team name required. Use --team or set context.');
         }
 
-        const response = await withSpinner(
+        const apiResponse = await withSpinner(
           'Fetching queue items...',
           () =>
-            api.queue.list(opts.team as string, {
+            typedApi.GetTeamQueueItems({
+              teamName: opts.team as string,
               maxRecords: parseInt(options.limit, 10),
             }),
           'Queue items fetched'
         );
 
+        const response = parseGetTeamQueueItems(apiResponse as never);
         let items = response.items;
 
         // Filter by status if specified
         if (options.status) {
           items = items.filter(
-            (item) => item.status?.toLowerCase() === options.status.toLowerCase()
+            (item: GetTeamQueueItems_ResultSet1) =>
+              item.status?.toLowerCase() === options.status.toLowerCase()
           );
         }
 
         // Filter by priority-min if specified
         if (options.priorityMin !== undefined) {
           const min = parseInt(options.priorityMin, 10);
-          items = items.filter((item) => item.priority != null && item.priority >= min);
+          items = items.filter(
+            (item: GetTeamQueueItems_ResultSet1) => item.priority != null && item.priority >= min
+          );
         }
 
         // Filter by priority-max if specified
         if (options.priorityMax !== undefined) {
           const max = parseInt(options.priorityMax, 10);
-          items = items.filter((item) => item.priority != null && item.priority <= max);
+          items = items.filter(
+            (item: GetTeamQueueItems_ResultSet1) => item.priority != null && item.priority <= max
+          );
         }
 
         // Search filter
         if (options.search) {
-          items = items.filter((item) =>
+          items = items.filter((item: GetTeamQueueItems_ResultSet1) =>
             searchInFields(item, options.search, [
               'taskId',
               'teamName',
@@ -325,8 +346,8 @@ export function registerQueueCommands(program: Command): void {
 
         // Sort results
         if (options.sort) {
-          const sortField = options.sort as keyof (typeof items)[0];
-          items.sort((a, b) => {
+          const sortField = options.sort as keyof GetTeamQueueItems_ResultSet1;
+          items.sort((a: GetTeamQueueItems_ResultSet1, b: GetTeamQueueItems_ResultSet1) => {
             const result = compareValues(a[sortField], b[sortField]);
             return options.desc ? -result : result;
           });
@@ -336,7 +357,7 @@ export function registerQueueCommands(program: Command): void {
 
         // Format items for better CLI display (table format only)
         if (format === 'table' && items.length > 0) {
-          const formattedItems = items.map((item) => ({
+          const formattedItems = items.map((item: GetTeamQueueItems_ResultSet1) => ({
             taskId: item.taskId,
             status: formatStatus(item.status ?? item.healthStatus),
             priority: item.priority ? formatPriority(item.priority) : '-',
@@ -442,7 +463,7 @@ export function registerQueueCommands(program: Command): void {
 
         await withSpinner(
           `Deleting task ${taskId}...`,
-          () => api.queue.delete({ taskId }),
+          () => typedApi.DeleteQueueItem({ taskId }),
           'Task deleted'
         );
       } catch (error) {

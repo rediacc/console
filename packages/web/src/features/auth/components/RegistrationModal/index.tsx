@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Button, Checkbox, Flex, Form, Input, Modal, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import apiClient, { api } from '@/api/client';
+import apiClient from '@/api/client';
 import { LanguageLink } from '@/features/auth/components/LanguageLink';
 import { Turnstile } from '@/features/auth/components/Turnstile';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
@@ -152,14 +152,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         // Hash the password
         const passwordHash = await hashPassword(values.password);
 
-        // Call CreateNewCompany with headers and captcha token
-        await api.company.registerCompany(
-          values.companyName,
-          values.email,
-          passwordHash,
-          turnstileToken ?? undefined,
-          i18n.language || 'en'
-        );
+        // Call register with proper auth headers
+        await apiClient.register(values.companyName, values.email, passwordHash, {
+          languagePreference: i18n.language || 'en',
+          turnstileToken: turnstileToken ?? undefined,
+        });
 
         return {
           email: values.email,
