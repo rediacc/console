@@ -388,6 +388,34 @@ jobs:
           path: packages/web/dist/
           retention-days: 90
 
+      # Bundle Size Analysis (RELEASE only)
+      - name: Analyze bundle size
+        if: matrix.build-type == 'RELEASE'
+        run: |
+          echo "## 📦 Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Main Bundles" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -h packages/web/dist/assets/js/*.js | sort -h >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Total Size" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -sh packages/web/dist/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check bundle size limits
+        if: matrix.build-type == 'RELEASE'
+        run: |
+          TOTAL_SIZE=$(du -sb packages/web/dist/ | cut -f1)
+          MAX_SIZE=$((10 * 1024 * 1024))  # 10MB limit
+
+          if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then
+            echo "::warning::Bundle size ($TOTAL_SIZE bytes) exceeds 10MB limit"
+          else
+            echo "Bundle size OK: $TOTAL_SIZE bytes"
+          fi
+
   security-scan:
     name: 🔒 Security - Vulnerability Scan
     runs-on: ubuntu-latest
@@ -418,59 +446,6 @@ jobs:
           name: security-audit-${{ github.sha }}
           path: audit-report.json
           retention-days: 30
-
-  bundle-size:
-    name: 📦 Analysis - Bundle Size
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build for production
-        env:
-          REDIACC_BUILD_TYPE: RELEASE
-          VITE_APP_VERSION: ${{ github.sha }}
-          VITE_BASE_PATH: /
-          NODE_ENV: production
-        run: npm run build:web
-
-      - name: Analyze bundle size
-        run: |
-          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Main Bundles" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -h packages/web/dist/assets/js/*.js | sort -h >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Total Size" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -sh packages/web/dist/ >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Check bundle size limits
-        run: |
-          TOTAL_SIZE=$(du -sb packages/web/dist/ | cut -f1)
-          MAX_SIZE=$((10 * 1024 * 1024))  # 10MB limit
-
-          if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then
-            echo "::warning::Bundle size ($TOTAL_SIZE bytes) exceeds 10MB limit"
-          else
-            echo "Bundle size OK: $TOTAL_SIZE bytes"
-          fi
 
   desktop-build:
     name: 🖥️ Desktop - Electron Build (${{ matrix.os }})
@@ -559,7 +534,7 @@ jobs:
   ci-summary:
     name: ✅ CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, format-check, type-check, unit-tests, cli-check, cli-tests, build, security-scan, bundle-size, desktop-build]
+    needs: [lint, format-check, type-check, unit-tests, cli-check, cli-tests, build, security-scan, desktop-build]
     if: always()
 
     steps:
@@ -576,7 +551,6 @@ jobs:
           echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Desktop Build: ${{ needs.desktop-build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Bundle Size: ${{ needs.bundle-size.result }}" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.format-check.result }}" != "success" ] || \
