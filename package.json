@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli && npm run build:web",
-    "build:packages": "npm run build -w @rediacc/shared",
+    "build:packages": "npm run build -w @rediacc/shared && npm run build -w @rediacc/shared-desktop",
     "build:cli": "npm run build -w @rediacc/cli",
     "build:web": "npm run build -w @rediacc/web",
     "dev": "npm run dev -w @rediacc/web",
