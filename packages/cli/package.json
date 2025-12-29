@@ -45,7 +45,7 @@
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
-    "esbuild": "^0.27.1",
+    "esbuild": "^0.27.2",
     "execa": "^9.6.1",
     "ora": "^9.0.0",
     "otpauth": "^9.4.1",
