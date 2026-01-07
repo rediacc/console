@@ -2076,7 +2076,9 @@ export class ApiValidationError extends Error {
     public resultSetIndex: number,
     public zodError: z.ZodError
   ) {
-    super(`API validation failed for ${procedure} resultSet[${resultSetIndex}]: ${zodError.message}`);
+    super(
+      `API validation failed for ${procedure} resultSet[${resultSetIndex}]: ${zodError.message}`
+    );
     this.name = 'ApiValidationError';
   }
 }
@@ -2107,4 +2109,3 @@ export function validateApiResponse<T>(
 
   return response as T;
 }
-
