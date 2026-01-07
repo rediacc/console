@@ -21,7 +21,8 @@
       "helpText": "高度な構成のための追加の rclone パラメータ",
       "label": "追加パラメータ",
       "placeholder": "--転送 4 --チェッカー 8"
-    }
+    },
+    "tips": "ヒント"
   },
   "storageProviders": {
     "azureblob": {
@@ -44,7 +45,7 @@
         },
         "sas_url": {
           "helpText": "制限付きアクセス用の共有アクセス署名 URL",
-          "label": "SAS URL",
+          "label": "SAS URL (共有アクセス署名URL)",
           "placeholder": "使用する場合は SAS URL を入力してください"
         }
       },
@@ -68,7 +69,7 @@
         "endpoint": {
           "helpText": "B2 用のカスタム S3 互換エンドポイント",
           "label": "カスタムエンドポイント",
-          "placeholder": "s3.us-west-000.backblazeb2.com"
+          "placeholder": "例: s3.us-west-000.backblazeb2.com"
         },
         "hard_delete": {
           "helpText": "ファイルを非表示にするのではなく、完全に削除します。 慎重に使用してください",
@@ -155,7 +156,7 @@
         "client_id": {
           "helpText": "Google Cloud Console からの OAuth 2.0 クライアント ID",
           "label": "OAuth クライアント ID",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+          "placeholder": "例: 123456789012-abcdef.apps.googleusercontent.com"
         },
         "client_secret": {
           "helpText": "OAuth 2.0 クライアント シークレット。 これを安全に保管してください",
@@ -165,7 +166,7 @@
         "impersonate": {
           "helpText": "サービスアカウントを使用するときに偽装するユーザーのメールアドレス",
           "label": "ユーザーになりすます",
-          "placeholder": "user@domain.com"
+          "placeholder": "例: user@domain.com"
         },
         "root_folder_id": {
           "helpText": "使用するルートフォルダーのID。 ドライブルートを使用するには空のままにしてください",
@@ -266,7 +267,7 @@
         "url": {
           "helpText": "FileFabric インスタンスの URL",
           "label": "URL",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "FileFabric は、企業向けのマルチクラウド データ管理プラットフォームを提供します。",
@@ -303,7 +304,7 @@
         }
       },
       "helpText": "Files.com は、高度な自動化機能とセキュリティ機能を備えたクラウド FTP/SFTP サービスです。",
-      "name": "Files.com",
+      "name": "Files.com (クラウドFTPサービス)",
       "tips": [
         "エンタープライズグレードのセキュリティ",
         "自動化ワークフロー",
@@ -321,7 +322,7 @@
         "host": {
           "helpText": "FTP サーバーのホスト名または IP アドレス",
           "label": "ホスト",
-          "placeholder": "ftp.example.com"
+          "placeholder": "例: ftp.example.com"
         },
         "pass": {
           "helpText": "FTPパスワード",
@@ -417,7 +418,7 @@
         "client_id": {
           "helpText": "Google Cloud Console からの OAuth 2.0 クライアント ID",
           "label": "OAuth クライアント ID",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+          "placeholder": "例: 123456789012-abcdef.apps.googleusercontent.com"
         },
         "client_secret": {
           "helpText": "OAuth 2.0 クライアント シークレット",
@@ -457,7 +458,7 @@
         "service_principal_name": {
           "helpText": "Kerberos サービス プリンシパル名",
           "label": "サービスプリンシパル",
-          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM"
+          "placeholder": "例: hdfs/namenode.example.com@EXAMPLE.COM"
         },
         "username": {
           "helpText": "HDFS ユーザー名",
@@ -618,7 +619,7 @@
         "user": {
           "helpText": "Koofr アカウントのメールアドレス",
           "label": "電子メール",
-          "placeholder": "user@example.com"
+          "placeholder": "例: user@example.com"
         }
       },
       "helpText": "Koofr は、他のクラウド ストレージ アカウントに接続できるヨーロッパのクラウド ストレージ サービスです。",
@@ -685,7 +686,7 @@
         "user": {
           "helpText": "Mail.ru のメール アドレス",
           "label": "ユーザー名",
-          "placeholder": "user@mail.ru"
+          "placeholder": "例: user@mail.ru"
         }
       },
       "helpText": "Mail.ru Cloud (現在は VK Cloud の一部) は、ロシアで人気のあるクラウド ストレージ サービスです。",
@@ -716,7 +717,7 @@
         "user": {
           "helpText": "MEGA アカウントのメール アドレス",
           "label": "電子メール",
-          "placeholder": "user@example.com"
+          "placeholder": "例: user@example.com"
         }
       },
       "helpText": "MEGA は、クライアント側の暗号化されたクラウド ストレージを提供します。 厳しいログイン率制限があります。",
@@ -729,7 +730,7 @@
       ]
     },
     "netstorage": {
-      "description": "Akamai NetStorage CDN",
+      "description": "Akamai NetStorage CDN ネットストレージ",
       "fields": {
         "account": {
           "helpText": "NetStorageアカウント名",
@@ -739,7 +740,7 @@
         "host": {
           "helpText": "NetStorageホスト",
           "label": "ホスト",
-          "placeholder": "xxxxx.akamaihd.net"
+          "placeholder": "例: xxxxx.akamaihd.net"
         },
         "secret": {
           "helpText": "NetStorage シークレット/キー",
@@ -762,7 +763,7 @@
         "drive_id": {
           "helpText": "使用する特定のドライブ ID。 デフォルトでは空のままにしておきます",
           "label": "ドライブID",
-          "placeholder": "b!Ei1XXXXXXXXXX"
+          "placeholder": "例: b!Ei1XXXXXXXXXX"
         },
         "drive_type": {
           "helpText": "OneDrive アカウントの種類 - 個人、ビジネス、またはドキュメント ライブラリ",
@@ -779,7 +780,7 @@
         }
       },
       "helpText": "Microsoft OneDrive の個人用およびビジネス用クラウド ストレージ。 OAuth認証を使用します。",
-      "name": "Microsoft OneDrive",
+      "name": "Microsoft OneDrive (クラウドストレージ)",
       "tips": [
         "トークンは 90 日ごとに期限切れになり、更新が必要です",
         "ビジネスアカウントには異なる API 制限がある場合があります",
@@ -816,12 +817,12 @@
         "compartment": {
           "helpText": "バケットが存在するコンパートメントOCID",
           "label": "コンパートメントOCID",
-          "placeholder": "ocid1.compartment.oc1..."
+          "placeholder": "例: ocid1.compartment.oc1..."
         },
         "fingerprint": {
           "helpText": "API署名キーのフィンガープリント",
           "label": "キーの指紋",
-          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+          "placeholder": "例: aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
         },
         "key_file": {
           "helpText": "PEM 形式の RSA 秘密キー (base64 エンコード)",
@@ -841,12 +842,12 @@
         "tenancy": {
           "helpText": "テナントOCID",
           "label": "テナントOCID",
-          "placeholder": "ocid1.tenancy.oc1..."
+          "placeholder": "例: ocid1.tenancy.oc1..."
         },
         "user": {
           "helpText": "認証用のユーザーOCID",
           "label": "ユーザーOCID",
-          "placeholder": "ocid1.user.oc1..."
+          "placeholder": "例: ocid1.user.oc1..."
         }
       },
       "helpText": "Oracle Cloud Infrastructure (OCI) Object Storageは、大量の非構造化データを保存するためのリージョン・サービスです。",
@@ -874,7 +875,7 @@
         "hostname": {
           "helpText": "API ホスト名 (EU の場合は eapi.pcloud.com)",
           "label": "ホスト名",
-          "placeholder": "api.pcloud.com"
+          "placeholder": "例: api.pcloud.com"
         },
         "root_folder_id": {
           "helpText": "開始フォルダーID (オプション)",
@@ -906,7 +907,7 @@
         "user": {
           "helpText": "PikPakアカウントのメールアドレス",
           "label": "ユーザー名",
-          "placeholder": "user@example.com"
+          "placeholder": "例: user@example.com"
         }
       },
       "helpText": "PikPak は、オフライン ダウンロードとメディア ストリーミングをサポートするクラウド ストレージ サービスです。",
@@ -951,7 +952,7 @@
         }
       },
       "helpText": "Premiumize.me は、クラウド ストレージとダウンロード機能を提供するマルチホスター サービスです。",
-      "name": "Premiumize.me",
+      "name": "Premiumize.me (マルチホスター)",
       "tips": [
         "クラウドストレージとダウンロードサービスを組み合わせます",
         "多くのファイルホスティングサイトをサポート",
@@ -975,7 +976,7 @@
         "username": {
           "helpText": "Proton アカウントのメールアドレス",
           "label": "ユーザー名",
-          "placeholder": "user@proton.me"
+          "placeholder": "例: user@proton.me"
         }
       },
       "helpText": "Proton Drive は、ProtonMail のメーカーが提供するエンドツーエンドの暗号化されたクラウド ストレージを提供します。",
@@ -997,7 +998,7 @@
         }
       },
       "helpText": "Put.io は、Torrent を取得してストリーミングできるクラウド ストレージ サービスです。",
-      "name": "Put.io",
+      "name": "Put.io (トレント対応ストレージ)",
       "tips": [
         "トレント処理に特化した",
         "自動ビデオ変換",
@@ -1076,7 +1077,7 @@
         "endpoint": {
           "helpText": "S3 API エンドポイント URL。 AWS S3 の場合は空のままにします。 他のプロバイダーには必須",
           "label": "終点",
-          "placeholder": "s3.amazonaws.com"
+          "placeholder": "例: s3.amazonaws.com"
         },
         "env_auth": {
           "helpText": "認証に AWS 環境変数または IAM ロールを使用する",
@@ -1143,7 +1144,7 @@
         "user": {
           "helpText": "Seafileのユーザー名またはメールアドレス",
           "label": "ユーザー名",
-          "placeholder": "user@example.com"
+          "placeholder": "例: user@example.com"
         }
       },
       "helpText": "Seafile は、ファイル暗号化とグループ コラボレーション機能を備えたオープン ソースのファイル同期および共有プラットフォームです。",
@@ -1161,7 +1162,7 @@
         "host": {
           "helpText": "SFTPサーバーのホスト名またはIPアドレス",
           "label": "ホスト",
-          "placeholder": "example.com"
+          "placeholder": "例: example.com"
         },
         "key_file": {
           "helpText": "SSH秘密鍵ファイルへのパス",
@@ -1176,7 +1177,7 @@
         "known_hosts_file": {
           "helpText": "サーバー検証用の既知のホスト ファイルへのパス",
           "label": "既知のホスト ファイル",
-          "placeholder": "~/.ssh/known_hosts"
+          "placeholder": "例: ~/.ssh/known_hosts"
         },
         "pass": {
           "helpText": "パスワード認証用のパスワード",
@@ -1223,7 +1224,7 @@
         "upload_endpoint": {
           "helpText": "ShareFileアップロードエンドポイントURL",
           "label": "アップロードエンドポイント",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile は、安全なファイル共有を備えたエンタープライズ コンテンツ コラボレーション プラットフォームです。",
@@ -1245,7 +1246,7 @@
         },
         "api_url": {
           "helpText": "ダーリンが満足しているのを見てください",
-          "label": "API URL",
+          "label": "API URL (SiaAPIエンドポイント)",
           "placeholder": "http://127.0.0.1:9980"
         }
       },
@@ -1288,7 +1289,7 @@
         }
       },
       "helpText": "Windows 共有および NAS デバイスにアクセスするためのサーバー メッセージ ブロック (SMB) プロトコル。",
-      "name": "SMB / CIFS",
+      "name": "SMB / CIFS (ネットワーク共有)",
       "tips": [
         "セキュリティの観点からSMB3を推奨",
         "ネットワーク検出が有効になっていることを確認してください",
@@ -1317,7 +1318,7 @@
         "satellite_address": {
           "helpText": "サテライトアドレス (オプション、デフォルトは us1.storj.io:7777)",
           "label": "衛星アドレス",
-          "placeholder": "us1.storj.io:7777"
+          "placeholder": "例: us1.storj.io:7777"
         }
       },
       "helpText": "Storj は、ファイルを暗号化してグローバル ネットワーク全体に分散する分散型クラウド ストレージ ネットワークです。",
@@ -1439,7 +1440,7 @@
         }
       },
       "helpText": "Uloz.to は、チェコ共和国とスロバキアで人気のあるファイル ホスティング サービスです。",
-      "name": "Uloz.to",
+      "name": "Uloz.to (ファイルホスティング)",
       "tips": [
         "チェコとスロバキアの市場で人気",
         "大きなファイルのアップロードをサポート",
@@ -1476,7 +1477,7 @@
         "endpoint": {
           "helpText": "Wasabi エンドポイント URL",
           "label": "終点",
-          "placeholder": "s3.wasabisys.com"
+          "placeholder": "例: s3.wasabisys.com"
         },
         "region": {
           "helpText": "わさび地方",

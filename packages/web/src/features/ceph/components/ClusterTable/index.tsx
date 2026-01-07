@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { Button, Dropdown, Empty, Flex, Modal, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { CephCluster } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { ExpandIcon } from '@/components/common/ExpandIcon';
 import {
@@ -18,6 +17,7 @@ import { buildClusterMenuItems } from '@/features/ceph/utils/menuItems';
 import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
 import { confirmAction } from '@/utils/confirmations';
 import { CloudServerOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
+import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';
 import { buildClusterColumns } from './columns';
 import { ClusterMachineCountBadge } from '../ClusterMachineCountBadge';
 import { ClusterMachines } from '../ClusterMachines';
@@ -25,12 +25,12 @@ import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ClusterTableProps {
-  clusters: CephCluster[];
+  clusters: GetCephClusters_ResultSet1[];
   loading: boolean;
   onCreateCluster: () => void;
-  onEditCluster: (cluster: CephCluster) => void;
-  onDeleteCluster: (cluster: CephCluster) => void;
-  onRunFunction: (cluster: CephCluster) => void;
+  onEditCluster: (cluster: GetCephClusters_ResultSet1) => void;
+  onDeleteCluster: (cluster: GetCephClusters_ResultSet1) => void;
+  onRunFunction: (cluster: GetCephClusters_ResultSet1) => void;
 }
 
 export const ClusterTable: React.FC<ClusterTableProps> = ({
@@ -44,29 +44,29 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   const { t } = useTranslation(['ceph', 'common', 'machines']);
   const [modal, contextHolder] = Modal.useModal();
   const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable();
-  const manageMachinesModal = useDialogState<CephCluster>();
+  const manageMachinesModal = useDialogState<GetCephClusters_ResultSet1>();
   const auditTrace = useTraceModal();
 
   const handleManageMachines = useCallback(
-    (cluster: CephCluster) => {
+    (cluster: GetCephClusters_ResultSet1) => {
       manageMachinesModal.open(cluster);
     },
     [manageMachinesModal]
   );
 
   const handleAuditTrace = useCallback(
-    (cluster: CephCluster) => {
+    (cluster: GetCephClusters_ResultSet1) => {
       auditTrace.open({
         entityType: 'CephCluster',
-        entityIdentifier: cluster.clusterName,
-        entityName: cluster.clusterName,
+        entityIdentifier: cluster.clusterName ?? '',
+        entityName: cluster.clusterName ?? '',
       });
     },
     [auditTrace]
   );
 
   const handleDelete = useCallback(
-    (cluster: CephCluster) => {
+    (cluster: GetCephClusters_ResultSet1) => {
       confirmAction({
         modal,
         title: t('clusters.confirmDelete'),
@@ -83,13 +83,13 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   );
 
   const handleFunctionRun = useCallback(
-    (cluster: CephCluster & { preselectedFunction?: string }) => {
+    (cluster: GetCephClusters_ResultSet1 & { preselectedFunction?: string }) => {
       onRunFunction(cluster);
     },
     [onRunFunction]
   );
 
-  const columns = useMemo<ColumnsType<CephCluster>>(
+  const columns = useMemo<ColumnsType<GetCephClusters_ResultSet1>>(
     () =>
       buildClusterColumns({
         t,
@@ -120,8 +120,8 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: CephCluster) => {
-      const isExpanded = expandedRowKeys.includes(record.clusterName);
+    () => (record: GetCephClusters_ResultSet1) => {
+      const isExpanded = expandedRowKeys.includes(record.clusterName ?? '');
 
       const menuItems: MenuProps['items'] = [
         buildEditMenuItem(t, () => onEditCluster(record)),
@@ -163,18 +163,18 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       );
 
       return (
-        <MobileCard onClick={() => handleToggleRow(record.clusterName)} actions={actions}>
+        <MobileCard onClick={() => handleToggleRow(record.clusterName ?? '')} actions={actions}>
           <Space>
             <ExpandIcon isExpanded={isExpanded} />
             <CloudServerOutlined />
             <Typography.Text strong>{record.clusterName}</Typography.Text>
           </Space>
-          <Flex gap={8} wrap align="center">
+          <Flex wrap align="center">
             <Tag bordered={false}>{record.teamName}</Tag>
             <ClusterMachineCountBadge cluster={record} />
           </Flex>
           <Typography.Text type="secondary" className="text-xs">
-            {t('common:general.versionFormat', { version: record.vaultVersion || 0 })}
+            {t('common:general.versionFormat', { version: record.vaultVersion ?? 0 })}
           </Typography.Text>
         </MobileCard>
       );
@@ -192,7 +192,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   );
 
   const expandedRowRender = useCallback(
-    (record: CephCluster) => <ClusterMachines cluster={record} />,
+    (record: GetCephClusters_ResultSet1) => <ClusterMachines cluster={record} />,
     []
   );
 
@@ -211,12 +211,13 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
     <>
       {contextHolder}
       <Flex className="overflow-hidden">
-        <ResourceListView<CephCluster>
+        <ResourceListView<GetCephClusters_ResultSet1>
           data-testid="ds-cluster-table"
           columns={columns}
           data={clusters}
           rowKey="clusterName"
           loading={loading}
+          searchPlaceholder={t('clusters.searchClusters')}
           pagination={{
             showSizeChanger: true,
             showTotal: (total, range) =>
@@ -242,7 +243,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
               if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
                 return;
               }
-              handleToggleRow(record.clusterName);
+              handleToggleRow(record.clusterName ?? '');
             },
           })}
           rowClassName={() => 'cluster-row'}
@@ -260,13 +261,13 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       {manageMachinesModal.state.data && (
         <ManageClusterMachinesModal
           open={manageMachinesModal.isOpen}
-          clusterName={manageMachinesModal.state.data.clusterName}
+          clusterName={manageMachinesModal.state.data.clusterName ?? ''}
           teamName={manageMachinesModal.state.data.teamName ?? ''}
           onCancel={() => {
             manageMachinesModal.close();
           }}
           onSuccess={() => {
-            const clusterName = manageMachinesModal.state.data?.clusterName;
+            const clusterName = manageMachinesModal.state.data?.clusterName ?? '';
             manageMachinesModal.close();
             if (clusterName && expandedRowKeys.includes(clusterName)) {
               setExpandedRowKeys([]);

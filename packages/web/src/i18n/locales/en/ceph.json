@@ -26,6 +26,15 @@
     "image": "Image"
   },
   "clones": {
+    "pool": "Pool",
+    "selectPool": "Select Pool",
+    "image": "Image",
+    "selectImage": "Select Image",
+    "snapshot": "Snapshot",
+    "selectSnapshot": "Select Snapshot",
+    "assignMachinesInfo": "Select machines to assign to this clone",
+    "removeMachinesInfo": "Select machines to remove from this clone",
+    "viewMachines": "View Machines",
     "addMachine": "Add Machine",
     "assignMachines": "Assign Machines",
     "assignedMachines": "Assigned Machines",
@@ -53,6 +62,7 @@
     "split": "Split Clone"
   },
   "clusters": {
+    "cluster": "Cluster",
     "assignMachines": "Assign Machines",
     "assignedMachines": "Assigned Machines",
     "availableMachines": "Available Machines",
@@ -73,6 +83,7 @@
     "updateSuccess": "Cluster updated successfully",
     "deleteSuccess": "Cluster deleted successfully",
     "noClusters": "No clusters found",
+    "searchClusters": "Search clusters...",
     "clusterName": "Cluster Name",
     "confirmDelete": "Delete Cluster",
     "create": "Create Cluster",
@@ -107,6 +118,14 @@
   },
   "description": "Manage Ceph clusters, pools, images, and snapshots",
   "images": {
+    "pool": "Pool",
+    "selectPool": "Select Pool",
+    "machine": "Machine",
+    "selectMachine": "Select Machine",
+    "image": "Image",
+    "selectNewMachine": "Select New Machine",
+    "reassignmentInfo": "This will reassign the image to a different machine",
+    "reassignmentWarning": "Reassigning an image requires data migration and may cause temporary unavailability",
     "assignedMachine": "Assigned Machine",
     "name": "Image Name",
     "reassignMachine": "Reassign Machine",
@@ -145,6 +164,10 @@
     "viewDetails": "View Details"
   },
   "machines": {
+    "selectMachines": "Select Machines",
+    "assignMachine": "Assign Machine",
+    "unassignMachine": "Unassign Machine",
+    "unassignError": "Failed to unassign machine",
     "actions": {
       "exportReport": "Export Report",
       "removeAssignment": "Remove Assignment",
@@ -196,6 +219,9 @@
     "operationFailed": "Failed to {{operation}} {{resource}}"
   },
   "pools": {
+    "cluster": "Cluster",
+    "selectCluster": "Select Cluster",
+    "pool": "Pool",
     "configureVault": "Configure Vault",
     "create": "Create Pool",
     "createPool": "Create Pool",
@@ -220,6 +246,10 @@
     "poolName": "Pool Name"
   },
   "snapshots": {
+    "pool": "Pool",
+    "selectPool": "Select Pool",
+    "image": "Image",
+    "selectImage": "Select Image",
     "title": "Snapshots",
     "createSuccess": "Snapshot created successfully",
     "deleteSuccess": "Snapshot deleted successfully",
@@ -251,7 +281,12 @@
   },
   "accessDenied": {
     "title": "Ceph unavailable",
-    "description": "Your current plan does not include Ceph. Upgrade to Business or Enterprise or contact support to enable it."
+    "description": "Your current plan does not include Ceph. Upgrade to Business or Enterprise or contact support to enable it.",
+    "debugInfo": "Debug Info",
+    "currentPlan": "Current Plan",
+    "noPlanDetected": "No plan detected",
+    "hasAccess": "Has Access",
+    "organizationData": "Organization Data"
   },
   "functions": {
     "cluster_dashboard": "Open Cluster Dashboard",

@@ -24,7 +24,11 @@ export const EnumFieldRenderer: React.FC<FieldRendererProps> = ({
       data-testid={`vault-editor-field-${fieldName}`}
     >
       {fieldDef.enum?.map((option) => (
-        <Select.Option key={option} value={option}>
+        <Select.Option
+          key={option}
+          value={option}
+          data-testid={`vault-editor-option-${fieldName}-${option}`}
+        >
           {option}
         </Select.Option>
       ))}

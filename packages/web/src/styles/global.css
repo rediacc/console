@@ -19,9 +19,20 @@ body {
   width: 100%;
 }
 
-/* Fix vertical Flex containers to stretch horizontally */
+/* ==========================================================================
+   Flex Spacing Defaults - Sensible gaps automatically applied
+   Most components need zero spacing props. Override only when different.
+   ========================================================================== */
+
+/* Vertical Flex: 16px gap (stacking elements need more breathing room) */
 .ant-flex-vertical {
   width: 100%;
+  gap: 16px;
+}
+
+/* Horizontal Flex: 8px gap (inline elements need tighter spacing) */
+.ant-flex:not(.ant-flex-vertical) {
+  gap: 8px;
 }
 
 /* Fix table wrapper to fill available width */
@@ -73,6 +84,23 @@ body {
 }
 
 /* ==========================================================================
+   Alert Defaults - Icons always visible
+   Most Alerts (41/43) use showIcon - make it the default behavior.
+   ========================================================================== */
+.ant-alert .ant-alert-icon {
+  display: inline-flex !important;
+}
+
+/* ==========================================================================
+   Table Defaults - Compact sizing
+   Most Tables (46+) use size="small" - apply compact padding by default.
+   ========================================================================== */
+.ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  padding: 8px 16px;
+}
+
+/* ==========================================================================
    UTILITY CLASSES (Tailwind-style naming)
    Use these instead of inline styles. ESLint enforces this rule.
    ========================================================================== */
@@ -98,6 +126,9 @@ body {
 .items-center {
   align-items: center;
 }
+.justify-start {
+  justify-content: flex-start;
+}
 .justify-center {
   justify-content: center;
 }
@@ -111,15 +142,22 @@ body {
   flex-direction: column;
 }
 
-/* Gap */
-.gap-2 {
-  gap: 8px;
+/* Gap Overrides - Use ONLY when different from Flex defaults
+   Vertical Flex default: 16px, Horizontal Flex default: 8px */
+.gap-0 {
+  gap: 0 !important;
 }
-.gap-1 {
-  gap: 4px;
+.gap-xs {
+  gap: 4px !important;
 }
-.gap-3 {
-  gap: 12px;
+.gap-sm {
+  gap: 8px !important;
+}
+.gap-md {
+  gap: 16px !important;
+}
+.gap-lg {
+  gap: 24px !important;
 }
 
 /* Padding */
@@ -138,15 +176,88 @@ body {
 .min-w-0 {
   min-width: 0;
 }
+.w-80 {
+  width: 80px;
+}
+.w-200 {
+  width: 200px;
+}
+.w-240 {
+  width: 240px;
+}
+.w-280 {
+  width: 280px;
+}
+.w-320 {
+  width: 320px;
+}
+
+/* Max Width */
+.max-w-240 {
+  max-width: 240px;
+}
+.max-w-300 {
+  max-width: 300px;
+}
+.max-w-320 {
+  max-width: 320px;
+}
+.max-w-400 {
+  max-width: 400px;
+}
+.max-w-500 {
+  max-width: 500px;
+}
 
 /* Height */
 .h-full {
   height: 100%;
 }
 
+/* Margin */
+.mb-0 {
+  margin-bottom: 0;
+}
+.mt-2 {
+  margin-top: 8px;
+}
+.mt-3 {
+  margin-top: 12px;
+}
+.mt-4 {
+  margin-top: 16px;
+}
+.mt-6 {
+  margin-top: 24px;
+}
+.mb-2 {
+  margin-bottom: 8px;
+}
+.mb-4 {
+  margin-bottom: 16px;
+}
+.my-3 {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+.my-4 {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+.my-6 {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
 /* Text */
 .text-center {
   text-align: center;
+}
+.italic {
+  font-style: italic;
+}
+.capitalize {
+  text-transform: capitalize;
 }
 .text-ellipsis {
   text-overflow: ellipsis;
@@ -159,8 +270,58 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.break-all {
+  word-break: break-all;
+}
+.break-words {
+  word-break: break-word;
+}
+
+/* Font Sizes */
+.text-2xs {
+  font-size: 10px;
+}
 .text-xs {
   font-size: 12px;
+}
+.text-sm {
+  font-size: 14px;
+}
+.text-base {
+  font-size: 16px;
+}
+.text-lg {
+  font-size: 20px;
+}
+.text-xl {
+  font-size: 24px;
+}
+.text-2xl {
+  font-size: 32px;
+}
+
+/* Font Weights */
+.font-normal {
+  font-weight: 400;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.font-bold {
+  font-weight: 700;
+}
+
+/* Font Family */
+.font-mono {
+  font-family: monospace;
+}
+
+/* Line Height */
+.line-height-normal {
+  line-height: 1.5;
 }
 
 /* Overflow */
@@ -171,9 +332,20 @@ body {
   overflow: auto;
 }
 
+/* Object Fit */
+.object-contain {
+  object-fit: contain;
+}
+
 /* Cursor */
 .cursor-pointer {
   cursor: pointer;
+}
+.cursor-default {
+  cursor: default;
+}
+.cursor-not-allowed {
+  cursor: not-allowed;
 }
 
 /* Position */
@@ -182,6 +354,15 @@ body {
 }
 .absolute {
   position: absolute;
+}
+.sticky {
+  position: sticky;
+}
+.top-0 {
+  top: 0;
+}
+.z-10 {
+  z-index: 10;
 }
 
 /* Transform */
@@ -204,8 +385,98 @@ body {
 }
 
 /* ==========================================================================
+   Responsive Utilities
+   ========================================================================== */
+
+/* Overflow utilities */
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* Scrollable container heights */
+.max-h-200 {
+  max-height: 200px;
+}
+
+.max-h-scroll-sm {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.max-h-scroll-md {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Width constraints */
+.w-full-max-sm {
+  width: 100%;
+  max-width: 360px;
+}
+
+.w-full-max-md {
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Button/dropdown sizing */
+.min-w-btn {
+  min-width: 42px;
+}
+.min-h-btn {
+  min-height: 40px;
+}
+
+.min-w-dropdown {
+  min-width: 320px;
+}
+
+/* Select/input sizing for file browser */
+.max-w-select {
+  max-width: 280px;
+}
+
+.search-input-constrained {
+  min-width: 120px;
+  max-width: 200px;
+}
+
+/* Terminal/code output display */
+.terminal-output {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 12px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 6px;
+  max-height: 300px;
+  overflow: auto;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* ==========================================================================
    Auth Layout - Split Screen
    ========================================================================== */
+
+.auth-layout {
+  min-height: 100vh;
+  background-color: var(--ant-color-bg-base);
+}
+
+.auth-header {
+  padding: 16px 24px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+}
+
+.auth-logo {
+  height: 40px;
+  margin-bottom: 32px;
+}
 
 /* Desktop: side-by-side content */
 @media (min-width: 768px) {
@@ -214,7 +485,7 @@ body {
   }
   .auth-branding-panel {
     flex: 1;
-    background-color: #f5f5f5;
+    background-color: var(--ant-color-bg-layout);
   }
 }
 
@@ -265,4 +536,22 @@ body {
   .modal-fullscreen .ant-modal-footer .ant-btn {
     min-width: auto;
   }
+}
+
+/* ==========================================================================
+   COMPOSITE UTILITIES
+   Common multi-property patterns used throughout the codebase.
+   ========================================================================== */
+
+/* Flex item that can truncate text - required for text-overflow in flex containers */
+.flex-1-truncate {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+/* Icon + text inline pattern with proper alignment */
+.inline-icon-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }

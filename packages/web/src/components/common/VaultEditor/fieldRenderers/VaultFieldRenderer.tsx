@@ -57,7 +57,7 @@ export const VaultFieldRenderer: React.FC<VaultFieldRendererProps> = ({
     fieldPlaceholder = field.example;
   }
 
-  const rules = buildValidationRules(field, required, fieldLabel, t);
+  const rules = buildValidationRules(field, required, fieldLabel, t, fieldName);
 
   const commonProps: FieldRendererProps = {
     fieldName,

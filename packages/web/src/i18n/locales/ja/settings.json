@@ -1,8 +1,8 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "ボールトの構成",
     "description": "会社の Vault 設定を構成して、組織全体の構成を管理します。",
-    "modalTitle": "Company Vault の構成",
+    "modalTitle": "Organization Vault の構成",
     "title": "会社の設定"
   },
   "personal": {
@@ -92,6 +92,7 @@
       "enabledDescription": "あなたのアカウントは追加のセキュリティ層で保護されています。"
     },
     "statusMessages": {
+      "authorized": "TFA 認証成功",
       "enabled": "TFA が有効になっている",
       "none": "TFA が構成されていません",
       "unknown": "TFA ステータスを判断できません"

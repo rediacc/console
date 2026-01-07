@@ -6,11 +6,10 @@ import {
   HistoryOutlined,
   InboxOutlined,
   SettingOutlined,
-  ShopOutlined,
   TeamOutlined,
   ThunderboltOutlined,
 } from '@/utils/optimizedIcons';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 export type RouteItem = {
   path?: string;
@@ -23,7 +22,7 @@ export type RouteItem = {
   routes?: RouteItem[];
 };
 
-export const getRoutes = (t: TFunction): { path: string; routes: RouteItem[] } => ({
+export const getRoutes = (t: TypedTFunction): { path: string; routes: RouteItem[] } => ({
   path: '/',
   routes: [
     {
@@ -81,11 +80,11 @@ export const getRoutes = (t: TFunction): { path: string; routes: RouteItem[] } =
           'data-testid': 'sub-nav-settings-profile',
         },
         {
-          path: '/settings/company',
-          name: t('navigation.settingsCompany'),
+          path: '/settings/organization',
+          name: t('navigation.settingsOrganization'),
           showInSimple: false,
-          featureFlag: 'companySettings',
-          'data-testid': 'sub-nav-settings-company',
+          featureFlag: 'organizationSettings',
+          'data-testid': 'sub-nav-settings-organization',
         },
         {
           path: '/settings/infrastructure',
@@ -154,14 +153,6 @@ export const getRoutes = (t: TFunction): { path: string; routes: RouteItem[] } =
       showInSimple: false,
       featureFlag: 'auditLogs',
       'data-testid': 'main-nav-audit',
-    },
-    {
-      path: '/marketplace',
-      name: t('navigation.marketplace'),
-      icon: <ShopOutlined />,
-      showInSimple: false,
-      featureFlag: 'marketplace',
-      'data-testid': 'main-nav-marketplace',
     },
   ],
 });

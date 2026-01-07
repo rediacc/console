@@ -7,6 +7,7 @@ import { isEncrypted } from '@rediacc/shared/encryption';
 import { typedApi, apiClient } from './api.js';
 import { contextService } from './context.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
+import { t } from '../i18n/index.js';
 import { EXIT_CODES } from '../types/index.js';
 import { askPassword } from '../utils/prompt.js';
 
@@ -61,7 +62,7 @@ class AuthService {
 
     // Determine the context name to use
     const contextName = options.contextName ?? (await contextService.getCurrentName()) ?? 'default';
-    const apiUrl = options.apiUrl ?? apiClient.getApiUrl();
+    const apiUrl = options.apiUrl ?? (await apiClient.getApiUrl());
 
     // Prepare credentials to save
     const credentials: {
@@ -75,8 +76,8 @@ class AuthService {
       userEmail: email,
     };
 
-    // Only store master password if company has encryption enabled
-    if (isEncrypted(authResult.vaultCompany)) {
+    // Only store master password if organization has encryption enabled
+    if (isEncrypted(authResult.vaultOrganization)) {
       const encryptedPassword = await nodeCryptoProvider.encrypt(password, password);
       credentials.masterPassword = encryptedPassword;
       this.cachedMasterPassword = password;
@@ -172,7 +173,7 @@ class AuthService {
       }
 
       // Prompt user for password
-      const password = await askPassword('Enter your master password:');
+      const password = await askPassword(t('prompts.masterPassword'));
 
       try {
         const decrypted = await nodeCryptoProvider.decrypt(encrypted, password);
@@ -183,9 +184,9 @@ class AuthService {
       }
     }
 
-    // No stored password - company doesn't have encryption enabled
+    // No stored password - organization doesn't have encryption enabled
     throw new AuthError(
-      'No master password configured. Company may not have encryption enabled.',
+      'No master password configured. Organization may not have encryption enabled.',
       EXIT_CODES.AUTH_REQUIRED
     );
   }
@@ -202,14 +203,14 @@ class AuthService {
   }
 
   async register(
-    companyName: string,
+    organizationName: string,
     email: string,
     password: string
   ): Promise<{ success: boolean; message?: string }> {
     const passwordHash = await nodeCryptoProvider.generateHash(password);
 
     try {
-      await apiClient.register(companyName, email, passwordHash);
+      await apiClient.register(organizationName, email, passwordHash);
       return { success: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';

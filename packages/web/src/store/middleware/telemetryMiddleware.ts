@@ -7,7 +7,7 @@ const TRACKED_ACTIONS = [
   // Authentication actions
   'auth/loginSuccess',
   'auth/logout',
-  'auth/updateCompany',
+  'auth/updateOrganization',
 
   // UI actions
   'ui/toggleUiMode',
@@ -20,24 +20,24 @@ const TRACKED_ACTIONS = [
   'machineAssignment/assignMachine',
   'machineAssignment/validateSelectedMachines',
   'machineAssignment/clearAssignments',
-];
+] as const;
 
 // Actions that indicate feature usage
 const FEATURE_USAGE_ACTIONS = [
   'machineAssignment/assignMachine',
   'machineAssignment/validateSelectedMachines',
   'ui/toggleUiMode',
-];
+] as const;
 
 // Actions that indicate user preferences
-const PREFERENCE_ACTIONS = ['ui/setTheme', 'ui/toggleUiMode'];
+const PREFERENCE_ACTIONS = ['ui/setTheme', 'ui/toggleUiMode'] as const;
 
 // Actions that indicate workflow progression
 const WORKFLOW_ACTIONS = [
   'auth/loginSuccess',
   'machineAssignment/assignMachine',
   'machineAssignment/validateSelectedMachines',
-];
+] as const;
 
 interface TelemetryMiddlewareOptions {
   enabled?: boolean;
@@ -83,17 +83,17 @@ const createTelemetryMiddleware = (
         });
 
         // Track feature usage
-        if (FEATURE_USAGE_ACTIONS.includes(typedAction.type)) {
+        if ((FEATURE_USAGE_ACTIONS as readonly string[]).includes(typedAction.type)) {
           trackFeatureUsage(action as UnknownAction);
         }
 
         // Track user preferences
-        if (PREFERENCE_ACTIONS.includes(typedAction.type)) {
+        if ((PREFERENCE_ACTIONS as readonly string[]).includes(typedAction.type)) {
           trackUserPreferences(action as UnknownAction, stateBefore, stateAfter);
         }
 
         // Track workflow progression
-        if (WORKFLOW_ACTIONS.includes(typedAction.type)) {
+        if ((WORKFLOW_ACTIONS as readonly string[]).includes(typedAction.type)) {
           trackWorkflowProgression(action as UnknownAction, stateAfter);
         }
 
@@ -129,7 +129,8 @@ function shouldTrackAction(actionType: string): boolean {
   ];
 
   return (
-    !skipActions.some((skip) => actionType.includes(skip)) && TRACKED_ACTIONS.includes(actionType)
+    !skipActions.some((skip) => actionType.includes(skip)) &&
+    (TRACKED_ACTIONS as readonly string[]).includes(actionType)
   );
 }
 
@@ -180,7 +181,7 @@ function trackWorkflowProgression(action: UnknownAction, stateAfter: RootState):
         ...workflowData,
         'workflow.name': 'authentication',
         'workflow.step': 'login_completed',
-        'user.company': stateAfter.auth.company ?? 'unknown',
+        'user.organization': stateAfter.auth.organization ?? 'unknown',
       };
       break;
 
@@ -214,8 +215,8 @@ function trackBusinessActions(
   switch (action.type) {
     case 'auth/loginSuccess':
       telemetryService.trackEvent('business.user_session_start', {
-        'session.company': String(typedAction.payload?.company ?? 'unknown'),
-        'session.has_encryption': !!typedAction.payload?.companyEncryptionEnabled,
+        'session.organization': String(typedAction.payload?.organization ?? 'unknown'),
+        'session.has_encryption': !!typedAction.payload?.organizationEncryptionEnabled,
         'auth.method': 'standard',
       });
       break;
@@ -225,7 +226,7 @@ function trackBusinessActions(
       const sessionDuration = Date.now() - sessionStartTime;
       telemetryService.trackEvent('business.user_session_end', {
         'session.duration_ms': sessionDuration,
-        'session.company': stateBefore.auth.company ?? 'unknown',
+        'session.organization': stateBefore.auth.organization ?? 'unknown',
       });
       break;
     }

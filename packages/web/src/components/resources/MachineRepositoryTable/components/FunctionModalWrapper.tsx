@@ -2,10 +2,10 @@ import React from 'react';
 import { Flex, Space, Tag, Typography } from 'antd';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import type { Machine } from '@/types';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { FunctionData } from '../hooks/useFunctionExecution';
 import type { Repository } from '../types';
-import type { TFunction } from 'i18next';
 
 interface FunctionModalWrapperProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ interface FunctionModalWrapperProps {
   machine: Machine;
   teamRepositories: GetTeamRepositories_ResultSet1[];
   isExecuting: boolean;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
@@ -44,9 +44,9 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
     };
 
     const stateParam =
-      selectedFunction === 'backup' ||
-      selectedFunction === 'push' ||
-      selectedFunction === 'deploy' ||
+      selectedFunction === 'backup_create' ||
+      selectedFunction === 'backup_push' ||
+      selectedFunction === 'backup_deploy' ||
       selectedFunction === 'fork'
         ? { state: selectedRepository.mounted ? 'online' : 'offline' }
         : {};
@@ -55,14 +55,17 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
   };
 
   const getInitialParams = () => {
-    if ((selectedFunction === 'fork' || selectedFunction === 'deploy') && selectedRepository) {
+    if (
+      (selectedFunction === 'fork' || selectedFunction === 'backup_deploy') &&
+      selectedRepository
+    ) {
       return { tag: new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-') };
     }
     return {};
   };
 
   const getAdditionalContext = () => {
-    if (selectedFunction === 'push' && selectedRepository) {
+    if (selectedFunction === 'backup_push' && selectedRepository) {
       const currentRepoData = teamRepositories.find(
         (r) =>
           r.repositoryName === selectedRepository.name &&
@@ -86,7 +89,7 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
     if (!selectedRepository) return undefined;
 
     return (
-      <Flex vertical gap={8} className="w-full">
+      <Flex vertical className="w-full gap-sm">
         <Space>
           <Typography.Text>{t('resources:repositories.Repository')}:</Typography.Text>
           <Tag>{selectedRepository.name}</Tag>
@@ -94,7 +97,7 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
           <Typography.Text>{t('machines:machine')}:</Typography.Text>
           <Tag>{machine.machineName}</Tag>
         </Space>
-        {selectedFunction === 'push' &&
+        {selectedFunction === 'backup_push' &&
           (() => {
             const currentRepoData = teamRepositories.find(
               (r) =>
@@ -141,12 +144,12 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
       allowedCategories={['Repository', 'backup', 'network']}
       loading={isExecuting}
       showMachineSelection={false}
-      teamName={machine.teamName}
+      teamName={machine.teamName ?? undefined}
       hiddenParams={['repository', 'grand', 'state']}
       defaultParams={getDefaultParams()}
       initialParams={getInitialParams()}
       preselectedFunction={selectedFunction ?? undefined}
-      currentMachineName={machine.machineName}
+      currentMachineName={machine.machineName ?? undefined}
       additionalContext={getAdditionalContext()}
     />
   );

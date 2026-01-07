@@ -24,8 +24,8 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
   const { t } = useTranslation(['queue']);
 
   return (
-    <Flex wrap="wrap" align="center" gap={8}>
-      <Flex align="center" gap={4}>
+    <Flex wrap="wrap" align="center" data-testid="queue-statistics-bar">
+      <Flex align="center" data-testid="queue-stats-total">
         <Typography.Text className="inline-flex">
           <ThunderboltOutlined />
         </Typography.Text>
@@ -33,7 +33,7 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
         <Typography.Text>{totalCount}</Typography.Text>
       </Flex>
       <Divider type="vertical" />
-      <Flex align="center" gap={4}>
+      <Flex align="center" data-testid="queue-stats-active">
         <Typography.Text className="inline-flex">
           <PlayCircleOutlined />
         </Typography.Text>
@@ -41,7 +41,7 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
         <Typography.Text>{activeCount}</Typography.Text>
       </Flex>
       <Divider type="vertical" />
-      <Flex align="center" gap={4}>
+      <Flex align="center" data-testid="queue-stats-failed">
         <Typography.Text className="inline-flex">
           <ExclamationCircleOutlined />
         </Typography.Text>
@@ -49,7 +49,7 @@ export const QueueStatisticsBar: React.FC<QueueStatisticsBarProps> = ({
         <Typography.Text>{failedCount}</Typography.Text>
       </Flex>
       <Divider type="vertical" />
-      <Flex align="center" gap={4}>
+      <Flex align="center" data-testid="queue-stats-stale">
         <Typography.Text className="inline-flex">
           <WarningOutlined />
         </Typography.Text>

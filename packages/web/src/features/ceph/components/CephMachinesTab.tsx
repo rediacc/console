@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Card, Col, Flex, Input, Row, Select, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { useMachines } from '@/api/queries/machines';
+import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import { AssignToClusterModal } from '@/features/ceph/components/modals/AssignToClusterModal';
 import { RemoveFromClusterModal } from '@/features/ceph/components/modals/RemoveFromClusterModal';
 import { ViewAssignmentStatusModal } from '@/features/ceph/components/modals/ViewAssignmentStatusModal';
@@ -45,7 +45,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
   const [viewAssignmentStatusModal, setViewAssignmentStatusModal] = useState(false);
 
   // Queries
-  const { data: allMachines = [], isLoading, refetch } = useMachines(teamFilter);
+  const { data: allMachines = [], isLoading, refetch } = useGetTeamMachines(teamFilter?.[0]);
 
   // Filter machines based on search and assignment status
   const filteredMachines = React.useMemo(() => {
@@ -60,9 +60,9 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
     if (searchText) {
       filtered = filtered.filter(
         (machine: Machine) =>
-          machine.machineName.toLowerCase().includes(searchText.toLowerCase()) ||
-          machine.teamName.toLowerCase().includes(searchText.toLowerCase()) ||
-          machine.bridgeName.toLowerCase().includes(searchText.toLowerCase())
+          (machine.machineName ?? '').toLowerCase().includes(searchText.toLowerCase()) ||
+          (machine.teamName ?? '').toLowerCase().includes(searchText.toLowerCase()) ||
+          (machine.bridgeName ?? '').toLowerCase().includes(searchText.toLowerCase())
       );
     }
 
@@ -245,7 +245,7 @@ export const CephMachinesTab: React.FC<CephMachinesTabProps> = ({ teamFilter }) 
         machine={assignClusterModal.state.data}
         machines={
           bulkAssignClusterModal
-            ? allMachines.filter((m) => selectedMachines.includes(m.machineName))
+            ? allMachines.filter((m) => selectedMachines.includes(m.machineName ?? ''))
             : undefined
         }
         onSuccess={() => {

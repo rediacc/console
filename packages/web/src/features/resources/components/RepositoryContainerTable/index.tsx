@@ -1,13 +1,14 @@
 import React, { useCallback, useMemo } from 'react';
 import { Alert, Flex, Space, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useRepositories } from '@/api/queries/repositories';
+import { useGetTeamRepositories } from '@/api/api-hooks.generated';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
-  createActionColumn,
   createStatusColumn,
   createTruncatedColumn,
+  RESPONSIVE_HIDE_XS,
 } from '@/components/common/columns';
+import { createActionColumn } from '@/components/common/columns/factories/action';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import ResourceListView from '@/components/common/ResourceListView';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
@@ -47,12 +48,12 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions']);
   const userEmail = useAppSelector((state) => state.auth.user?.email ?? '');
-  const { executeAction, isExecuting } = useQueueAction();
-  const { data: teamRepositories = [] } = useRepositories(machine.teamName);
+  const { executeDynamic, isExecuting } = useQueueAction();
+  const { data: teamRepositories = [] } = useGetTeamRepositories(machine.teamName ?? undefined);
 
   // Parse containers from vaultStatus
   const { loading, error, containers, pluginContainers } = useContainerParser({
-    vaultStatus: machine.vaultStatus ?? undefined,
+    vaultStatus: machine.vaultStatus ?? '',
     repository,
     refreshKey,
     t,
@@ -69,22 +70,22 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   // Get grand repository vault
   const grandRepoVault = repositoryData
     ? (getGrandVaultForOperation(
-        repositoryData.repositoryGuid,
-        repositoryData.grandGuid,
+        repositoryData.repositoryGuid ?? '',
+        repositoryData.grandGuid ?? '',
         teamRepositories
       ) ?? '{}')
     : '{}';
 
   // Container actions
   const { handleContainerAction } = useContainerActions({
-    teamName: machine.teamName,
-    machineName: machine.machineName,
-    bridgeName: machine.bridgeName,
+    teamName: machine.teamName ?? '',
+    machineName: machine.machineName ?? '',
+    bridgeName: machine.bridgeName ?? '',
     repository,
     repositoryData: repositoryData as Parameters<typeof useContainerActions>[0]['repositoryData'],
     grandRepoVault,
     machineVault: machine.vaultContent ?? '{}',
-    executeAction,
+    executeDynamic,
     onQueueItemCreated,
     t,
   });
@@ -178,12 +179,16 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           </Space>
         ),
       },
-      imageColumn,
+      {
+        ...imageColumn,
+        responsive: RESPONSIVE_HIDE_XS,
+      },
       {
         title: t('resources:containers.ports'),
         dataIndex: 'port_mappings',
         key: 'ports',
         width: 150,
+        responsive: RESPONSIVE_HIDE_XS,
         sorter: createArrayLengthSorter<Container>('port_mappings'),
         render: (_: unknown, record: Container) => {
           if (!record.port_mappings || record.port_mappings.length === 0) {
@@ -197,7 +202,9 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
                 </Typography.Text>
               ))}
               {record.port_mappings.length > 2 && (
-                <Typography.Text>+{record.port_mappings.length - 2} more</Typography.Text>
+                <Typography.Text>
+                  {t('common:table.moreItems', { count: record.port_mappings.length - 2 })}
+                </Typography.Text>
               )}
             </Space>
           );
@@ -287,9 +294,9 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
                   type: 'custom',
                   render: (row) => (
                     <LocalActionsMenu
-                      machine={machine.machineName}
+                      machine={machine.machineName ?? ''}
                       repository={repository.name}
-                      teamName={machine.teamName}
+                      teamName={machine.teamName ?? ''}
                       userEmail={userEmail}
                       containerId={row.id}
                       containerName={row.name}
@@ -356,7 +363,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         message={t('resources:repositories.errorLoadingContainers')}
         description={error}
         type="error"
-        showIcon
         data-testid="container-list-error"
       />
     );

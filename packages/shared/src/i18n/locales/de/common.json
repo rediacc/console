@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "Abgebrochen",
+    "completed": "Abgeschlossen",
+    "failed": "Fehlgeschlagen",
+    "pending": "Ausstehend",
+    "processing": "Verarbeitung",
+    "running": "Läuft",
+    "success": "Erfolgreich",
+    "unknown": "Unbekannt",
+    "inProgress": "In Bearbeitung",
+    "initializing": "Initialisierung..."
+  },
+  "actions": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "create": "Erstellen",
+    "edit": "Bearbeiten",
+    "copy": "Kopieren",
+    "retry": "Wiederholen",
+    "refresh": "Aktualisieren",
+    "close": "Schließen",
+    "download": "Herunterladen",
+    "upload": "Hochladen",
+    "remove": "Entfernen",
+    "confirm": "Bestätigen",
+    "reset": "Zurücksetzen",
+    "back": "Zurück",
+    "search": "Suchen",
+    "export": "Exportieren"
+  },
+  "common": {
+    "yes": "Ja",
+    "no": "Nein",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "warning": "Warnung",
+    "success": "Erfolgreich",
+    "unknown": "Unbekannt",
+    "total": "Gesamt",
+    "none": "Keine"
+  },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich",
+    "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "invalidFormat": "Ungültiges Format"
+  },
+  "time": {
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "last7Days": "Letzte 7 Tage",
+    "last30Days": "Letzte 30 Tage",
+    "thisMonth": "Dieser Monat",
+    "lastMonth": "Letzter Monat"
+  },
+  "confirm": {
+    "areYouSure": "Sind Sie sicher?",
+    "confirmDelete": "Möchten Sie dies wirklich löschen?"
+  },
+  "notifications": {
+    "error": "Fehler",
+    "warning": "Warnung",
+    "success": "Erfolgreich",
+    "info": "Information"
+  }
+}

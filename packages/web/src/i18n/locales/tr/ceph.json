@@ -1,13 +1,18 @@
 {
   "accessDenied": {
+    "currentPlan": "Güncel Plan",
+    "debugInfo": "Hata Ayıklama Bilgisi",
     "description": "Mevcut planınız dağıtılmış depolamayı içermiyor. Business veya Enterprise'a yükseltin veya etkinleştirmek için destek ekibiyle iletişime geçin.",
+    "hasAccess": "Erişim Var",
+    "noPlanDetected": "Plan algılanmadı",
+    "organizationData": "Organizasyon Verileri",
     "title": "Dağıtılmış depolama alanı kullanılamıyor"
   },
   "assignment": {
     "actions": {
-      "assignToCluster": "Kümeye Atandı",
       "assignedToClone": "Klon'a Atandı",
       "assignedToImage": "Görüntüye Atandı",
+      "assignToCluster": "Kümeye Atandı",
       "reassignedImage": "Yeniden Atanan Görüntü",
       "removedFromClone": "Klon'dan kaldırıldı",
       "removedFromCluster": "Kümeden Çıkarıldı"
@@ -31,8 +36,9 @@
   },
   "clones": {
     "addMachine": "Makine Ekle",
-    "assignMachines": "Makine Atama",
     "assignedMachines": "Atanmış Makineler",
+    "assignMachines": "Makine Atama",
+    "assignMachinesInfo": "Bu klona atanacak makineleri seçin",
     "create": "Klon Oluştur",
     "createSuccess": "Klon başarıyla oluşturuldu",
     "delete": "Klonu Sil",
@@ -41,6 +47,7 @@
     "export": "Klonu Dışa Aktar",
     "exportMachines": "İhracat Makineleri",
     "flatten": "Düzleştir Klonu",
+    "image": "Görüntü",
     "info": "Klon Bilgisi",
     "machineManager": "Makine Yöneticisi",
     "machinesAssignedSuccess": "Başarılı bir şekilde klonlamak için atanan makineler",
@@ -48,18 +55,26 @@
     "manageMachines": "Makineleri Yönet",
     "name": "Klon Adı",
     "noMachinesAssigned": "Bu klona atanmış makine yok",
+    "pool": "Havuz",
     "removeMachine": "Makineyi Kaldır",
+    "removeMachinesInfo": "Bu klondan kaldırılacak makineleri seçin",
     "removeSelectedMachines": "Seçili Makineleri Kaldır",
     "searchMachines": "Arama makineleri...",
+    "selectImage": "Görüntü Seçin",
+    "selectPool": "Havuz Seçin",
+    "selectSnapshot": "Anlık Görüntü Seçin",
+    "snapshot": "Anlık Görüntü",
     "split": "Bölünmüş Klon",
     "statistics": "İstatistikler",
     "title": "Klonlar",
-    "totalMachines": "Toplam Makineler"
+    "totalMachines": "Toplam Makineler",
+    "viewMachines": "Makineleri Görüntüle"
   },
   "clusters": {
-    "assignMachines": "Makine Atama",
     "assignedMachines": "Atanmış Makineler",
+    "assignMachines": "Makine Atama",
     "availableMachines": "Mevcut Makineler",
+    "cluster": "Küme",
     "clusterDetails": "Küme ayrıntıları",
     "clusterName": "Küme Adı",
     "configureVault": "Kasayı Yapılandırma",
@@ -78,6 +93,7 @@
     "noClusters": "Küme bulunamadı",
     "noMachinesAssigned": "Bu kümeye atanmış makine yok",
     "removeFromCluster": "Kümeden Çıkarma",
+    "searchClusters": "Kümeleri ara...",
     "secretKey": "Gizli Anahtar",
     "title": "Kümeler",
     "updateSuccess": "Küme başarıyla güncellendi"
@@ -131,11 +147,15 @@
     "export": "Görüntüyü Dışa Aktar",
     "flatten": "Resmi Düzleştir",
     "guid": "GUID",
+    "image": "Görüntü",
     "import": "Görüntüyü İçe Aktar",
     "info": "Resim Bilgisi",
+    "machine": "Makine",
     "map": "Harita Resmi",
     "name": "Resim Adı",
+    "pool": "Havuz",
     "reassignMachine": "Makineyi Yeniden Atayın",
+    "reassignmentInfo": "Bu, görüntüyü farklı bir makineye yeniden atayacaktır",
     "reassignmentModal": {
       "currentAssignment": "Mevcut Görevlendirme",
       "noMachineAssigned": "Şu anda atanmış makine yok",
@@ -144,18 +164,16 @@
       "warning": "Uyarı: Bir görüntünün farklı bir makineye yeniden atanması, veriler taşınana kadar mevcut makinede kullanılamaz hale gelmesine neden olur."
     },
     "reassignmentSuccess": "Görüntü makinesi ataması başarıyla güncellendi",
+    "reassignmentWarning": "Bir görüntüyü yeniden atamak veri geçişi gerektirir ve geçici olarak kullanılamamasına neden olabilir",
     "resize": "Resmi Yeniden Boyutlandır",
+    "selectMachine": "Makine Seçin",
+    "selectNewMachine": "Yeni Makine Seçin",
+    "selectPool": "Havuz Seçin",
     "showMapped": "Eşlenen Görselleri Göster",
     "status": "Durum",
     "title": "Görüntüler",
     "unmap": "Resmin Eşlemesini Kaldır",
     "updateSuccess": "Resim başarıyla güncellendi"
-  },
-  "machineSection": {
-    "manageAssignment": "Atamayı Yönet",
-    "notAssigned": "Herhangi bir dağıtılmış depolama kaynağına atanmamış",
-    "title": "Dağıtılmış Depolama",
-    "viewDetails": "Detayları Görüntüle"
   },
   "machines": {
     "actions": {
@@ -164,6 +182,7 @@
       "viewDetails": "Detayları Görüntüle"
     },
     "assignedDate": "Atanma Tarihi",
+    "assignMachine": "Makine Ata",
     "bridgeName": "Köprü",
     "clusterAssignedSuccess": "Makine kümeye başarıyla atandı",
     "clusterRemovedSuccess": "Makine kümeden başarıyla kaldırıldı",
@@ -173,6 +192,7 @@
       "searchPlaceholder": "Arama makineleri..."
     },
     "machineName": "Makine Adı",
+    "selectMachines": "Makineleri Seçin",
     "summary": {
       "assignedToClones": "Klonlara Atandı",
       "assignedToClusters": "Kümelere Atananlar",
@@ -181,7 +201,15 @@
       "title": "Makine Kullanılabilirliği",
       "total": "Toplam Makineler"
     },
+    "unassignError": "Makine ataması kaldırılamadı",
+    "unassignMachine": "Makine Atamasını Kaldır",
     "updateSuccess": "Makine kümesi ataması başarıyla güncellendi"
+  },
+  "machineSection": {
+    "manageAssignment": "Atamayı Yönet",
+    "notAssigned": "Herhangi bir dağıtılmış depolama kaynağına atanmamış",
+    "title": "Dağıtılmış Depolama",
+    "viewDetails": "Detayları Görüntüle"
   },
   "mutations": {
     "operations": {
@@ -206,6 +234,7 @@
     }
   },
   "pools": {
+    "cluster": "Küme",
     "clusterPrefix": "Küme",
     "configureVault": "Kasayı Yapılandırma",
     "confirmDelete": "Havuzu Sil",
@@ -222,9 +251,11 @@
     "noPools": "Havuz bulunamadı",
     "pgNum": "PG Numarası",
     "pgpNum": "PGP Numarası",
+    "pool": "Havuz",
     "poolDetails": "Havuz Detayları",
     "poolId": "Havuz Kimliği",
     "poolName": "Havuz Adı",
+    "selectCluster": "Küme Seçin",
     "size": "Boyut",
     "title": "Havuzlar",
     "updateSuccess": "Havuz başarıyla güncellendi"
@@ -243,9 +274,13 @@
     "diff": "Fark Anlık Görüntüsü",
     "edit": "Anlık Görüntüyü Düzenle",
     "guid": "GUID",
+    "image": "Görüntü",
     "name": "Anlık Görüntü Adı",
+    "pool": "Havuz",
     "protect": "Anlık Görüntüyü Koru",
     "rollback": "Anlık Görüntüyü Geri Alma",
+    "selectImage": "Görüntü Seçin",
+    "selectPool": "Havuz Seçin",
     "title": "Anlık Görüntüler",
     "unprotect": "Anlık Görüntünün Korumasını Kaldır",
     "vault": "Anlık Görüntü Kasası"

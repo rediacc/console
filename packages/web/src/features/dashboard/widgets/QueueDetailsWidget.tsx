@@ -1,6 +1,8 @@
 import React from 'react';
-import { Badge, Card, Col, Flex, List, Row, Table, Tag, Typography } from 'antd';
+import { Badge, Card, Col, Flex, Grid, List, Row, Table, Tag, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';
+import { MobileCard } from '@/components/common/MobileCard';
 import { createSorter } from '@/platform';
 import {
   DesktopOutlined,
@@ -10,48 +12,60 @@ import {
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import type {
-  CompanyDashboardData,
-  QueueMachineIssue,
-  QueueTeamIssue,
+  GetOrganizationDashboard_ResultSet10,
+  GetOrganizationDashboard_ResultSet11,
+  OrganizationDashboardData,
 } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 
-const machineNameColumn = createTruncatedColumn<QueueMachineIssue>({
-  title: 'Machine',
-  dataIndex: 'machineName',
-  key: 'machineName',
-  sorter: createSorter<QueueMachineIssue>('machineName'),
-});
+const getMachineIssueColumns = (
+  t: (key: string) => string
+): ColumnsType<GetOrganizationDashboard_ResultSet11> => {
+  const machineNameColumn = createTruncatedColumn<GetOrganizationDashboard_ResultSet11>({
+    title: t('dashboard.widgets.queueDetails.machine'),
+    dataIndex: 'machineName',
+    key: 'machineName',
+    sorter: createSorter<GetOrganizationDashboard_ResultSet11>('machineName'),
+  });
 
-const teamColumn = createTruncatedColumn<QueueMachineIssue>({
-  title: 'Team',
-  dataIndex: 'teamName',
-  key: 'teamName',
-  sorter: createSorter<QueueMachineIssue>('teamName'),
-});
+  const teamColumn = createTruncatedColumn<GetOrganizationDashboard_ResultSet11>({
+    title: t('dashboard.widgets.queueDetails.team'),
+    dataIndex: 'teamName',
+    key: 'teamName',
+    sorter: createSorter<GetOrganizationDashboard_ResultSet11>('teamName'),
+  });
 
-const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
-  machineNameColumn,
-  teamColumn,
-  {
-    title: 'Status',
-    key: 'status',
-    width: 200,
-    render: (_: unknown, record: QueueMachineIssue) => (
-      <Flex align="center" gap={8} wrap className="inline-flex">
-        {(record.staleItems ?? 0) > 0 && <Tag>{record.staleItems} stale</Tag>}
-        <Tag>{record.pendingItems ?? 0} pending</Tag>
-        <Tag>{record.activeItems ?? 0} active</Tag>
-      </Flex>
-    ),
-  },
-];
+  return [
+    machineNameColumn,
+    teamColumn,
+    {
+      title: t('dashboard.widgets.queueDetails.status'),
+      key: 'status',
+      width: 200,
+      render: (_: unknown, record: GetOrganizationDashboard_ResultSet11) => (
+        <Flex align="center" wrap className="inline-flex">
+          {(record.staleItems ?? 0) > 0 && (
+            <Tag>
+              {record.staleItems} {t('dashboard.widgets.queueDetails.stale')}
+            </Tag>
+          )}
+          <Tag>
+            {record.pendingItems ?? 0} {t('dashboard.widgets.queueDetails.pending')}
+          </Tag>
+          <Tag>
+            {record.activeItems ?? 0} {t('dashboard.widgets.queueDetails.active')}
+          </Tag>
+        </Flex>
+      ),
+    },
+  ];
+};
 
 interface QueueDetailsWidgetProps {
-  queueStats: NonNullable<CompanyDashboardData['queueStats']>;
-  teamIssues: QueueTeamIssue[];
-  machineIssues: QueueMachineIssue[];
-  featureAccess?: CompanyDashboardData['featureAccess'];
+  queueStats: NonNullable<OrganizationDashboardData['queueStats']>;
+  teamIssues: GetOrganizationDashboard_ResultSet10[];
+  machineIssues: GetOrganizationDashboard_ResultSet11[];
+  featureAccess?: OrganizationDashboardData['featureAccess'];
 }
 
 const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
@@ -60,12 +74,17 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
   machineIssues,
   featureAccess,
 }) => {
+  const { t } = useTranslation('common');
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.sm;
+  const machineIssueColumns = getMachineIssueColumns(t);
+
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <RobotOutlined />
-          <Typography.Text>Queue Details</Typography.Text>
+          <Typography.Text>{t('dashboard.widgets.queueDetails.title')}</Typography.Text>
         </Flex>
       }
       data-testid="dashboard-card-queue-details"
@@ -73,28 +92,30 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
           <Flex vertical>
-            <Typography.Text strong>Today&apos;s Activity</Typography.Text>
-            <Flex vertical gap={16} className="w-full">
+            <Typography.Text strong>
+              {t('dashboard.widgets.queueDetails.todayActivity')}
+            </Typography.Text>
+            <Flex vertical className="w-full">
               <Flex align="center" justify="space-between">
-                <Typography.Text>Created</Typography.Text>
+                <Typography.Text>{t('dashboard.widgets.queueDetails.created')}</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-created-today">
                   {queueStats.createdToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text>Completed</Typography.Text>
+                <Typography.Text>{t('dashboard.widgets.queueDetails.completed')}</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-completed-today">
                   {queueStats.completedToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text>Cancelled</Typography.Text>
+                <Typography.Text>{t('dashboard.widgets.queueDetails.cancelled')}</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-cancelled-today">
                   {queueStats.cancelledToday ?? 0}
                 </Typography.Text>
               </Flex>
               <Flex align="center" justify="space-between">
-                <Typography.Text>Failed (Total)</Typography.Text>
+                <Typography.Text>{t('dashboard.widgets.queueDetails.failedTotal')}</Typography.Text>
                 <Typography.Text data-testid="dashboard-stat-failed-today">
                   {queueStats.failedCount ?? 0}
                 </Typography.Text>
@@ -104,11 +125,11 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
         </Col>
 
         <Col xs={24} lg={16}>
-          <Flex vertical gap={16} className="w-full">
+          <Flex vertical className="w-full">
             {teamIssues.length > 0 && (
               <Flex vertical>
                 <Typography.Text strong>
-                  <TeamOutlined /> Team Queue Status
+                  <TeamOutlined /> {t('dashboard.widgets.queueDetails.teamQueueStatus')}
                 </Typography.Text>
                 <List
                   size="small"
@@ -120,14 +141,21 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
                       <List.Item>
                         <Flex align="center" justify="space-between">
                           <Typography.Text strong>{teamIssue.teamName}</Typography.Text>
-                          <Flex align="center" gap={8} wrap className="inline-flex">
+                          <Flex align="center" wrap className="inline-flex">
                             {(teamIssue.staleItems ?? 0) > 0 && (
                               <Tag>
-                                <WarningOutlined /> {teamIssue.staleItems} stale
+                                <WarningOutlined /> {teamIssue.staleItems}{' '}
+                                {t('dashboard.widgets.queueDetails.stale')}
                               </Tag>
                             )}
-                            <Tag>{teamIssue.pendingItems ?? 0} pending</Tag>
-                            <Tag>{teamIssue.activeItems ?? 0} active</Tag>
+                            <Tag>
+                              {teamIssue.pendingItems ?? 0}{' '}
+                              {t('dashboard.widgets.queueDetails.pending')}
+                            </Tag>
+                            <Tag>
+                              {teamIssue.activeItems ?? 0}{' '}
+                              {t('dashboard.widgets.queueDetails.active')}
+                            </Tag>
                           </Flex>
                         </Flex>
                       </List.Item>
@@ -140,30 +168,66 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
             {machineIssues.length > 0 && (
               <Flex vertical>
                 <Typography.Text strong>
-                  <DesktopOutlined /> Machine Queue Status
+                  <DesktopOutlined /> {t('dashboard.widgets.queueDetails.machineQueueStatus')}
                 </Typography.Text>
-                {/* eslint-disable-next-line no-restricted-syntax */}
-                <Flex style={{ width: '100%', overflowX: 'auto' }}>
-                  <Table<QueueMachineIssue>
+                {isMobile ? (
+                  <List
                     size="small"
                     dataSource={machineIssues}
-                    pagination={false}
-                    columns={machineIssueColumns}
                     data-testid="dashboard-table-machine-issues"
-                    rowKey={(record) => `${record.teamName}-${record.machineName}`}
+                    renderItem={(record) => (
+                      <List.Item key={`${record.teamName}-${record.machineName}`}>
+                        <MobileCard>
+                          <Flex align="center">
+                            <DesktopOutlined />
+                            <Typography.Text strong className="truncate">
+                              {record.machineName}
+                            </Typography.Text>
+                          </Flex>
+                          <Typography.Text type="secondary">{record.teamName}</Typography.Text>
+                          <Flex align="center" wrap className="inline-flex">
+                            {(record.staleItems ?? 0) > 0 && (
+                              <Tag>
+                                {record.staleItems} {t('dashboard.widgets.queueDetails.stale')}
+                              </Tag>
+                            )}
+                            <Tag>
+                              {record.pendingItems ?? 0}{' '}
+                              {t('dashboard.widgets.queueDetails.pending')}
+                            </Tag>
+                            <Tag>
+                              {record.activeItems ?? 0} {t('dashboard.widgets.queueDetails.active')}
+                            </Tag>
+                          </Flex>
+                        </MobileCard>
+                      </List.Item>
+                    )}
                   />
-                </Flex>
+                ) : (
+                  // eslint-disable-next-line no-restricted-syntax
+                  <Flex style={{ width: '100%', overflowX: 'auto' }}>
+                    <Table<GetOrganizationDashboard_ResultSet11>
+                      dataSource={machineIssues}
+                      pagination={false}
+                      columns={machineIssueColumns}
+                      data-testid="dashboard-table-machine-issues"
+                      rowKey={(record) => `${record.teamName}-${record.machineName}`}
+                    />
+                  </Flex>
+                )}
               </Flex>
             )}
 
             {featureAccess?.hasAdvancedAnalytics && queueStats.highestPriorityPending !== null && (
               <Flex vertical>
                 <Typography.Text strong>
-                  <ThunderboltOutlined /> Priority Breakdown
+                  <ThunderboltOutlined /> {t('dashboard.widgets.queueDetails.priorityBreakdown')}
                 </Typography.Text>
                 <Flex vertical className="w-full">
                   <Flex align="center" justify="space-between">
-                    <Typography.Text>Highest Priority</Typography.Text>
+                    <Typography.Text>
+                      {t('dashboard.widgets.queueDetails.highestPriority')}
+                    </Typography.Text>
                     <Badge
                       count={queueStats.highestPriorityPending}
                       showZero
@@ -171,7 +235,9 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
                     />
                   </Flex>
                   <Flex align="center" justify="space-between">
-                    <Typography.Text>High Priority</Typography.Text>
+                    <Typography.Text>
+                      {t('dashboard.widgets.queueDetails.highPriority')}
+                    </Typography.Text>
                     <Badge
                       count={queueStats.highPriorityPending ?? 0}
                       showZero
@@ -179,7 +245,9 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
                     />
                   </Flex>
                   <Flex align="center" justify="space-between">
-                    <Typography.Text>Normal Priority</Typography.Text>
+                    <Typography.Text>
+                      {t('dashboard.widgets.queueDetails.normalPriority')}
+                    </Typography.Text>
                     <Badge
                       count={queueStats.normalPriorityPending ?? 0}
                       showZero
@@ -187,7 +255,9 @@ const QueueDetailsWidget: React.FC<QueueDetailsWidgetProps> = ({
                     />
                   </Flex>
                   <Flex align="center" justify="space-between">
-                    <Typography.Text>Low Priority</Typography.Text>
+                    <Typography.Text>
+                      {t('dashboard.widgets.queueDetails.lowPriority')}
+                    </Typography.Text>
                     <Badge
                       count={queueStats.lowPriorityPending ?? 0}
                       showZero

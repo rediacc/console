@@ -1,6 +1,6 @@
 import {
-  parseGetCompanyVault,
-  parseGetCompanyTeams,
+  parseGetOrganizationVault,
+  parseGetOrganizationTeams,
   parseGetTeamMachines,
   parseGetTeamRepositories,
   parseGetTeamStorages,
@@ -11,17 +11,27 @@ import {
   type QueueRequestContext,
   QueueVaultBuilder,
   type QueueVaultBuilderConfig,
-  type VaultData,
   parseVaultContent,
 } from '@rediacc/shared/queue-vault';
 import type {
-  GetCompanyTeams_ResultSet1,
+  GetOrganizationTeams_ResultSet1,
   GetRegionBridges_ResultSet1,
   GetTeamMachines_ResultSet1,
   GetTeamRepositories_ResultSet1,
   GetTeamStorages_ResultSet1,
 } from '@rediacc/shared/types';
 import { typedApi, apiClient } from './api.js';
+
+/** Generic vault data type for parsed vault content */
+type ParsedVaultData = Record<string, unknown>;
+
+interface MachineContext {
+  ip: string;
+  user: string;
+  port?: number;
+  datastore?: string;
+  ssh_password?: string;
+}
 
 interface QueueContext {
   teamName: string;
@@ -31,26 +41,50 @@ interface QueueContext {
   functionName: string;
   params: Record<string, unknown>;
   priority: number;
+  /** Direct machine context for test-connection (bypasses vault lookup) */
+  machineContext?: MachineContext;
+  /** User's preferred language for task output (en, de, es, fr, ja, ar, ru, tr, zh) */
+  language?: string;
 }
 
 class CliQueueService {
-  private builder: QueueVaultBuilder;
-
-  constructor() {
+  private createBuilder(apiUrl: string): QueueVaultBuilder {
     const builderConfig: QueueVaultBuilderConfig = {
-      getApiUrl: () => apiClient.getApiUrl(),
+      getApiUrl: () => apiUrl,
       encodeBase64: (value: string) => Buffer.from(value, 'utf-8').toString('base64'),
+      validateParams: true,
+      validateConnections: true,
     };
-    this.builder = new QueueVaultBuilder(builderConfig);
+    return new QueueVaultBuilder(builderConfig);
   }
 
   getFunctionRequirements(functionName: string): FunctionRequirements {
-    return this.builder.getFunctionRequirements(functionName);
+    // Create a temporary builder just for getting requirements (doesn't need API URL)
+    const builder = this.createBuilder('');
+    return builder.getFunctionRequirements(functionName);
   }
 
   async buildQueueVault(context: QueueContext): Promise<string> {
+    // Resolve API URL before building vault
+    const apiUrl = await apiClient.getApiUrl();
+    const builder = this.createBuilder(apiUrl);
+
     const requirements = this.getFunctionRequirements(context.functionName);
     const vaults = await this.fetchRequiredVaults(context, requirements);
+
+    // If machineContext is provided directly, use it instead of fetched vault
+    // This is used for ssh_test to test connections to new machines
+    let machineVault = vaults.machineVault;
+    if (context.machineContext) {
+      const directMachineVault: ParsedVaultData = {
+        ip: context.machineContext.ip,
+        user: context.machineContext.user,
+        port: context.machineContext.port,
+        datastore: context.machineContext.datastore,
+        ssh_password: context.machineContext.ssh_password,
+      };
+      machineVault = directMachineVault;
+    }
 
     const requestContext: QueueRequestContext = {
       teamName: context.teamName,
@@ -61,9 +95,9 @@ class CliQueueService {
       priority: context.priority,
       addedVia: 'cli',
       teamVault: vaults.teamVault,
-      machineVault: vaults.machineVault,
+      machineVault,
       repositoryVault: vaults.vaultContent,
-      companyVault: vaults.companyVault,
+      organizationVault: vaults.organizationVault,
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repository as string | undefined,
@@ -72,48 +106,51 @@ class CliQueueService {
       repositoryNetworkMode: (vaults.vaultContent as { networkMode?: string } | undefined)
         ?.networkMode,
       storageName: (context.params.to ?? context.params.from) as string | undefined,
+      language: context.language,
     };
 
-    return this.builder.buildQueueVault(requestContext);
+    return builder.buildQueueVault(requestContext);
   }
 
   private async fetchRequiredVaults(
     context: QueueContext,
     requirements: FunctionRequirements
   ): Promise<{
-    companyVault?: VaultData;
-    teamVault?: VaultData;
-    machineVault?: VaultData;
-    vaultContent?: VaultData;
-    storageVault?: VaultData;
-    bridgeVault?: VaultData;
+    organizationVault?: ParsedVaultData;
+    teamVault?: ParsedVaultData;
+    machineVault?: ParsedVaultData;
+    vaultContent?: ParsedVaultData;
+    storageVault?: ParsedVaultData;
+    bridgeVault?: ParsedVaultData;
   }> {
     const vaults: {
-      companyVault?: VaultData;
-      teamVault?: VaultData;
-      machineVault?: VaultData;
-      vaultContent?: VaultData;
-      storageVault?: VaultData;
-      bridgeVault?: VaultData;
+      organizationVault?: ParsedVaultData;
+      teamVault?: ParsedVaultData;
+      machineVault?: ParsedVaultData;
+      vaultContent?: ParsedVaultData;
+      storageVault?: ParsedVaultData;
+      bridgeVault?: ParsedVaultData;
     } = {};
 
     try {
-      const response = await typedApi.GetCompanyVault({});
-      const companyVault = parseGetCompanyVault(response as never);
-      const parsed = parseVaultContent<VaultData>(companyVault?.vaultContent);
+      const response = await typedApi.GetOrganizationVault({});
+      const organizationVault = parseGetOrganizationVault(response as never);
+      const parsed = parseVaultContent<ParsedVaultData>(organizationVault?.vaultContent);
       if (parsed) {
-        vaults.companyVault = parsed;
+        vaults.organizationVault = parsed;
       }
     } catch {
-      // Ignore company vault failures - optional context
+      // Ignore organization vault failures - optional context
     }
 
     if (requirements.team) {
       try {
-        const response = await typedApi.GetCompanyTeams({});
-        const teams = parseGetCompanyTeams(response as never);
-        const team = teams.find((t: GetCompanyTeams_ResultSet1) => t.teamName === context.teamName);
-        const parsed = parseVaultContent<VaultData>(team?.vaultContent);
+        const response = await typedApi.GetOrganizationTeams({});
+        const teams = parseGetOrganizationTeams(response as never);
+        const team = teams.find(
+          (t: GetOrganizationTeams_ResultSet1) => t.teamName === context.teamName
+        );
+        const parsed = parseVaultContent<ParsedVaultData>(team?.vaultContent);
         if (parsed) {
           vaults.teamVault = parsed;
         }
@@ -129,7 +166,7 @@ class CliQueueService {
         const machine = machines.find(
           (m: GetTeamMachines_ResultSet1) => m.machineName === context.machineName
         );
-        const parsed = parseVaultContent<VaultData>(machine?.vaultContent);
+        const parsed = parseVaultContent<ParsedVaultData>(machine?.vaultContent);
         if (parsed) {
           vaults.machineVault = parsed;
         }
@@ -146,7 +183,7 @@ class CliQueueService {
         const repository = repositories.find(
           (r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid
         );
-        const vaultContent = parseVaultContent<VaultData>(repository?.vaultContent);
+        const vaultContent = parseVaultContent<ParsedVaultData>(repository?.vaultContent);
         if (vaultContent) {
           if (repository?.repositoryNetworkId !== undefined) {
             (vaultContent as Record<string, unknown>).repositoryNetworkId =
@@ -176,7 +213,7 @@ class CliQueueService {
           const storage = storageList.find(
             (s: GetTeamStorages_ResultSet1) => s.storageName === storageName
           );
-          const parsed = parseVaultContent<VaultData>(storage?.vaultContent);
+          const parsed = parseVaultContent<ParsedVaultData>(storage?.vaultContent);
           if (parsed) {
             vaults.storageVault = parsed;
           }
@@ -193,7 +230,7 @@ class CliQueueService {
         const bridge = bridges.find(
           (b: GetRegionBridges_ResultSet1) => b.bridgeName === context.bridgeName
         );
-        const parsed = parseVaultContent<VaultData>(bridge?.vaultContent);
+        const parsed = parseVaultContent<ParsedVaultData>(bridge?.vaultContent);
         if (parsed) {
           vaults.bridgeVault = parsed;
         }

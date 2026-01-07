@@ -17,13 +17,27 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
 }) => (
   <Flex>
     <Space>
-      <Upload accept=".json" showUploadList={false} beforeUpload={onImport}>
+      <Upload
+        accept=".json"
+        showUploadList={false}
+        beforeUpload={onImport}
+        data-testid="resource-modal-upload-json"
+      >
         <Tooltip title={importLabel}>
-          <Button icon={<UploadOutlined />} aria-label={importLabel} />
+          <Button
+            icon={<UploadOutlined />}
+            aria-label={importLabel}
+            data-testid="resource-modal-import-button"
+          />
         </Tooltip>
       </Upload>
       <Tooltip title={exportLabel}>
-        <Button icon={<DownloadOutlined />} onClick={onExport} aria-label={exportLabel} />
+        <Button
+          icon={<DownloadOutlined />}
+          onClick={onExport}
+          aria-label={exportLabel}
+          data-testid="resource-modal-export-button"
+        />
       </Tooltip>
     </Space>
   </Flex>

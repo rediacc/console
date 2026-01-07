@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 
 // Type definitions matching electron-updater events
 export interface UpdateInfo {
@@ -12,6 +12,97 @@ export interface UpdateProgress {
   bytesPerSecond: number;
   transferred: number;
   total: number;
+}
+
+// Terminal types
+export interface TerminalConnectParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  known_hosts?: string;
+  cols?: number;
+  rows?: number;
+  env?: Record<string, string>;
+}
+
+export interface TerminalConnectResult {
+  sessionId: string;
+}
+
+// Rsync types
+export interface RsyncExecutorOptions {
+  sshOptions: string;
+  source: string;
+  destination: string;
+  mirror?: boolean;
+  verify?: boolean;
+  exclude?: string[];
+  universalUser?: string;
+}
+
+export interface RsyncProgress {
+  percentage?: number;
+  currentFile?: string;
+  speed?: string;
+  bytesTransferred?: number;
+  totalBytes?: number;
+}
+
+export interface RsyncResult {
+  success: boolean;
+  filesTransferred: number;
+  bytesTransferred: number;
+  duration: number;
+  errors: string[];
+}
+
+export interface RsyncChanges {
+  newFiles: string[];
+  modifiedFiles: string[];
+  deletedFiles: string[];
+}
+
+// Protocol types
+export interface ParsedProtocolUrl {
+  token: string;
+  teamName: string;
+  machineName: string;
+  repositoryName?: string;
+  action: string;
+  params: Record<string, string>;
+}
+
+// SFTP types
+export interface SFTPConnectParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  passphrase?: string;
+}
+
+export interface SFTPConnectResult {
+  sessionId: string;
+}
+
+export interface SFTPFileInfo {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  isFile: boolean;
+  isSymlink: boolean;
+  size: number;
+  modifiedAt: Date;
+  permissions: string;
+  owner?: string;
+  group?: string;
+}
+
+export interface SFTPSessionInfo {
+  host: string;
+  user: string;
+  createdAt: number;
 }
 
 // Type definitions for the exposed API
@@ -44,6 +135,43 @@ export interface ElectronAPI {
     getVersion: () => Promise<string>;
     getPlatform: () => Promise<string>;
     getArch: () => Promise<string>;
+  };
+  terminal: {
+    connect: (params: TerminalConnectParams) => Promise<TerminalConnectResult>;
+    write: (sessionId: string, data: string) => void;
+    resize: (sessionId: string, cols: number, rows: number) => void;
+    close: (sessionId: string) => Promise<void>;
+    onData: (sessionId: string, callback: (data: string) => void) => () => void;
+    onExit: (sessionId: string, callback: (code: number) => void) => () => void;
+    getSessionCount: () => Promise<number>;
+  };
+  rsync: {
+    execute: (options: RsyncExecutorOptions) => Promise<RsyncResult>;
+    preview: (options: RsyncExecutorOptions) => Promise<RsyncChanges>;
+    formatSummary: (changes: RsyncChanges) => Promise<string>;
+    abort: (operationId: string) => Promise<boolean>;
+    onProgress: (
+      callback: (data: { operationId: string; progress: RsyncProgress }) => void
+    ) => () => void;
+    getActiveCount: () => Promise<number>;
+  };
+  protocol: {
+    onOpen: (callback: (parsed: ParsedProtocolUrl) => void) => () => void;
+  };
+  sftp: {
+    connect: (params: SFTPConnectParams) => Promise<SFTPConnectResult>;
+    listDirectory: (sessionId: string, path: string) => Promise<SFTPFileInfo[]>;
+    readFile: (sessionId: string, path: string) => Promise<ArrayBuffer>;
+    writeFile: (sessionId: string, path: string, data: ArrayBuffer) => Promise<void>;
+    mkdir: (sessionId: string, path: string) => Promise<void>;
+    delete: (sessionId: string, path: string, isDirectory: boolean) => Promise<void>;
+    deleteRecursive: (sessionId: string, path: string) => Promise<void>;
+    rename: (sessionId: string, oldPath: string, newPath: string) => Promise<void>;
+    stat: (sessionId: string, path: string) => Promise<SFTPFileInfo>;
+    exists: (sessionId: string, path: string) => Promise<boolean>;
+    close: (sessionId: string) => Promise<void>;
+    getSessionCount: () => Promise<number>;
+    getSessionInfo: (sessionId: string) => Promise<SFTPSessionInfo | null>;
   };
 }
 
@@ -111,6 +239,89 @@ const electronAPI: ElectronAPI = {
     getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
     getPlatform: (): Promise<string> => ipcRenderer.invoke('app:getPlatform'),
     getArch: (): Promise<string> => ipcRenderer.invoke('app:getArch'),
+  },
+
+  // Terminal (SSH PTY)
+  terminal: {
+    connect: (params: TerminalConnectParams): Promise<TerminalConnectResult> =>
+      ipcRenderer.invoke('terminal:connect', params),
+    write: (sessionId: string, data: string): void =>
+      ipcRenderer.send('terminal:write', sessionId, data),
+    resize: (sessionId: string, cols: number, rows: number): void =>
+      ipcRenderer.send('terminal:resize', sessionId, cols, rows),
+    close: (sessionId: string): Promise<void> => ipcRenderer.invoke('terminal:close', sessionId),
+    onData: (sessionId: string, callback: (data: string) => void): (() => void) => {
+      const handler = (_event: IpcRendererEvent, data: string): void => callback(data);
+      ipcRenderer.on(`terminal:data:${sessionId}`, handler);
+      return () => ipcRenderer.removeListener(`terminal:data:${sessionId}`, handler);
+    },
+    onExit: (sessionId: string, callback: (code: number) => void): (() => void) => {
+      const handler = (_event: IpcRendererEvent, code: number): void => callback(code);
+      ipcRenderer.on(`terminal:exit:${sessionId}`, handler);
+      return () => ipcRenderer.removeListener(`terminal:exit:${sessionId}`, handler);
+    },
+    getSessionCount: (): Promise<number> => ipcRenderer.invoke('terminal:getSessionCount'),
+  },
+
+  // Rsync (File Sync)
+  rsync: {
+    execute: (options: RsyncExecutorOptions): Promise<RsyncResult> =>
+      ipcRenderer.invoke('rsync:execute', options),
+    preview: (options: RsyncExecutorOptions): Promise<RsyncChanges> =>
+      ipcRenderer.invoke('rsync:preview', options),
+    formatSummary: (changes: RsyncChanges): Promise<string> =>
+      ipcRenderer.invoke('rsync:formatSummary', changes),
+    abort: (operationId: string): Promise<boolean> =>
+      ipcRenderer.invoke('rsync:abort', operationId),
+    onProgress: (
+      callback: (data: { operationId: string; progress: RsyncProgress }) => void
+    ): (() => void) => {
+      const handler = (
+        _event: IpcRendererEvent,
+        data: { operationId: string; progress: RsyncProgress }
+      ): void => callback(data);
+      ipcRenderer.on('rsync:progress', handler);
+      return () => ipcRenderer.removeListener('rsync:progress', handler);
+    },
+    getActiveCount: (): Promise<number> => ipcRenderer.invoke('rsync:getActiveCount'),
+  },
+
+  // Protocol Handler
+  protocol: {
+    onOpen: (callback: (parsed: ParsedProtocolUrl) => void): (() => void) => {
+      const handler = (_event: IpcRendererEvent, parsed: ParsedProtocolUrl): void =>
+        callback(parsed);
+      ipcRenderer.on('protocol:open', handler);
+      return () => ipcRenderer.removeListener('protocol:open', handler);
+    },
+  },
+
+  // SFTP (File Browser)
+  sftp: {
+    connect: (params: SFTPConnectParams): Promise<SFTPConnectResult> =>
+      ipcRenderer.invoke('sftp:connect', params),
+    listDirectory: (sessionId: string, path: string): Promise<SFTPFileInfo[]> =>
+      ipcRenderer.invoke('sftp:listDirectory', sessionId, path),
+    readFile: (sessionId: string, path: string): Promise<ArrayBuffer> =>
+      ipcRenderer.invoke('sftp:readFile', sessionId, path),
+    writeFile: (sessionId: string, path: string, data: ArrayBuffer): Promise<void> =>
+      ipcRenderer.invoke('sftp:writeFile', sessionId, path, data),
+    mkdir: (sessionId: string, path: string): Promise<void> =>
+      ipcRenderer.invoke('sftp:mkdir', sessionId, path),
+    delete: (sessionId: string, path: string, isDirectory: boolean): Promise<void> =>
+      ipcRenderer.invoke('sftp:delete', sessionId, path, isDirectory),
+    deleteRecursive: (sessionId: string, path: string): Promise<void> =>
+      ipcRenderer.invoke('sftp:deleteRecursive', sessionId, path),
+    rename: (sessionId: string, oldPath: string, newPath: string): Promise<void> =>
+      ipcRenderer.invoke('sftp:rename', sessionId, oldPath, newPath),
+    stat: (sessionId: string, path: string): Promise<SFTPFileInfo> =>
+      ipcRenderer.invoke('sftp:stat', sessionId, path),
+    exists: (sessionId: string, path: string): Promise<boolean> =>
+      ipcRenderer.invoke('sftp:exists', sessionId, path),
+    close: (sessionId: string): Promise<void> => ipcRenderer.invoke('sftp:close', sessionId),
+    getSessionCount: (): Promise<number> => ipcRenderer.invoke('sftp:getSessionCount'),
+    getSessionInfo: (sessionId: string): Promise<SFTPSessionInfo | null> =>
+      ipcRenderer.invoke('sftp:getSessionInfo', sessionId),
   },
 };
 

@@ -317,7 +317,7 @@ const EndpointSelector: React.FC = () => {
 
   return (
     <>
-      <Flex vertical gap={4} align="center">
+      <Flex vertical className="gap-sm" align="center">
         {/* Display selected endpoint URL with version */}
         {selectedEndpoint && (
           <Typography.Text>
@@ -348,7 +348,7 @@ const EndpointSelector: React.FC = () => {
 
             // Label for selected value (with health indicator)
             const labelContent = (
-              <Flex align="center" gap={8}>
+              <Flex align="center">
                 {isChecking ? (
                   <LoadingOutlined />
                 ) : (
@@ -367,7 +367,7 @@ const EndpointSelector: React.FC = () => {
                 label={labelContent}
               >
                 <Flex justify="space-between" align="center">
-                  <Flex align="center" gap={8}>
+                  <Flex align="center">
                     {/* Health indicator */}
                     {isChecking ? (
                       <LoadingOutlined />
@@ -418,6 +418,7 @@ const EndpointSelector: React.FC = () => {
         }}
         footer={null}
         centered
+        data-testid="custom-endpoint-modal"
       >
         <Form form={customForm} layout="vertical" onFinish={handleAddCustomEndpoint}>
           <Form.Item
@@ -453,17 +454,18 @@ const EndpointSelector: React.FC = () => {
           </Form.Item>
 
           <Form.Item>
-            <Flex justify="flex-end" gap={8} className="w-full">
+            <Flex justify="flex-end" className="w-full">
               <Button
                 onClick={() => {
                   customModal.close();
                   customForm.resetFields();
                 }}
+                data-testid="custom-endpoint-cancel-button"
               >
-                Cancel
+                {t('endpointSelector.cancel')}
               </Button>
               <Button type="primary" htmlType="submit" data-testid="custom-endpoint-submit-button">
-                Add Endpoint
+                {t('endpointSelector.addEndpoint')}
               </Button>
             </Flex>
           </Form.Item>

@@ -6,7 +6,7 @@ import { PASSWORD_SALT } from '@rediacc/shared/encryption';
 // Storage keys constants
 const STORAGE_KEYS = {
   USER_EMAIL: 'user_email',
-  USER_COMPANY: 'user_company',
+  USER_ORGANIZATION: 'user_organization',
   AUTH_TOKEN: 'auth_token',
 } as const;
 
@@ -25,23 +25,23 @@ export async function hashPassword(password: string): Promise<string> {
 // Session storage helpers using secure memory storage
 // Note: Token is managed separately by tokenService and should NOT be saved manually
 // Token rotation is handled automatically by API response interceptor
-export async function saveAuthData(email: string, company?: string) {
-  // Store email and company in secure storage
+export async function saveAuthData(email: string, organization?: string) {
+  // Store email and organization in secure storage
   // Token is managed by tokenService and rotated automatically by interceptor
   await secureStorage.setItem(STORAGE_KEYS.USER_EMAIL, email);
-  if (company) {
-    await secureStorage.setItem(STORAGE_KEYS.USER_COMPANY, company);
+  if (organization) {
+    await secureStorage.setItem(STORAGE_KEYS.USER_ORGANIZATION, organization);
   }
 }
 
 export async function getAuthData() {
-  const [token, email, company] = await Promise.all<string | null>([
+  const [token, email, organization] = await Promise.all<string | null>([
     tokenService.getToken(),
     secureStorage.getItem(STORAGE_KEYS.USER_EMAIL),
-    secureStorage.getItem(STORAGE_KEYS.USER_COMPANY),
+    secureStorage.getItem(STORAGE_KEYS.USER_ORGANIZATION),
   ]);
 
-  return { token, email, company };
+  return { token, email, organization };
 }
 
 export async function clearAuthData() {
@@ -49,7 +49,7 @@ export async function clearAuthData() {
   await tokenService.clearToken();
   // Clear other auth data
   secureStorage.removeItem(STORAGE_KEYS.USER_EMAIL);
-  secureStorage.removeItem(STORAGE_KEYS.USER_COMPANY);
+  secureStorage.removeItem(STORAGE_KEYS.USER_ORGANIZATION);
 }
 
 // Helper function for batch storage operations
@@ -81,7 +81,7 @@ export async function migrateFromLocalStorage() {
   const migrationKeys = {
     [STORAGE_KEYS.AUTH_TOKEN]: STORAGE_KEYS.AUTH_TOKEN,
     [STORAGE_KEYS.USER_EMAIL]: STORAGE_KEYS.USER_EMAIL,
-    [STORAGE_KEYS.USER_COMPANY]: STORAGE_KEYS.USER_COMPANY,
+    [STORAGE_KEYS.USER_ORGANIZATION]: STORAGE_KEYS.USER_ORGANIZATION,
   };
 
   // Check if migration is needed

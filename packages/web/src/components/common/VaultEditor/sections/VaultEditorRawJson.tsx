@@ -7,7 +7,6 @@ import { SimpleJsonEditor } from '../components/SimpleJsonEditor';
 interface VaultEditorRawJsonProps {
   rawJsonValue: string;
   rawJsonError?: string;
-  uiMode: string;
   onChange: (value: string | undefined) => void;
   t: (key: string, options?: Record<string, unknown>) => string;
 }
@@ -15,13 +14,12 @@ interface VaultEditorRawJsonProps {
 export const VaultEditorRawJson: React.FC<VaultEditorRawJsonProps> = ({
   rawJsonValue,
   rawJsonError,
-  uiMode,
   onChange,
   t,
 }) => {
   const formatJsonRef = useRef<(() => void) | null>(null);
 
-  if (!featureFlags.isEnabled('advancedVaultEditor') || uiMode === 'simple') {
+  if (!featureFlags.isEnabled('advancedVaultEditor')) {
     return null;
   }
 
@@ -33,10 +31,7 @@ export const VaultEditorRawJson: React.FC<VaultEditorRawJsonProps> = ({
             <CodeOutlined />
             {t('vaultEditor.rawJsonEditor')}
             <Tooltip title={t('vaultEditor.rawJsonTooltip')}>
-              <ExclamationCircleOutlined
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ fontSize: 16 }}
-              />
+              <ExclamationCircleOutlined className="text-base" />
             </Tooltip>
           </Space>
         }
@@ -48,22 +43,11 @@ export const VaultEditorRawJson: React.FC<VaultEditorRawJsonProps> = ({
           message={t('vaultEditor.expertModeOnly')}
           description={t('vaultEditor.expertModeDescription')}
           type="error"
-          showIcon
-          icon={
-            <ExclamationCircleOutlined
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ fontSize: 16 }}
-            />
-          }
+          icon={<ExclamationCircleOutlined className="text-base" />}
         />
 
         {rawJsonError && (
-          <Alert
-            message={t('vaultEditor.jsonError')}
-            description={rawJsonError}
-            type="error"
-            showIcon
-          />
+          <Alert message={t('vaultEditor.jsonError')} description={rawJsonError} type="error" />
         )}
 
         <Flex justify="flex-end">
@@ -72,7 +56,7 @@ export const VaultEditorRawJson: React.FC<VaultEditorRawJsonProps> = ({
             onClick={() => formatJsonRef.current?.()}
             data-testid="vault-editor-format-json"
           >
-            Format
+            {t('common:actions.format')}
           </Button>
         </Flex>
 

@@ -41,21 +41,27 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
   const config = statusConfig[status];
 
   return (
-    <Flex vertical gap={16} className="w-full">
+    <Flex vertical className="w-full">
       {/* SSH Test Result Summary */}
       <Card size="small" title={t('trace.sshTestResult')}>
-        <Descriptions column={2} size="small">
-          <Descriptions.Item label="Status">
+        <Descriptions column={{ xs: 1, sm: 2 }} size="small">
+          <Descriptions.Item label={t('trace.status')}>
             <Tag>{result.status}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Machine">{result.machine ?? 'N/A'}</Descriptions.Item>
-          <Descriptions.Item label="IP Address">{result.ip}</Descriptions.Item>
-          <Descriptions.Item label="User">{result.user}</Descriptions.Item>
-          <Descriptions.Item label="Auth Method">
+          <Descriptions.Item label={t('trace.machine')}>
+            {result.machine ?? 'N/A'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('trace.ipAddress')}>{result.ip}</Descriptions.Item>
+          <Descriptions.Item label={t('trace.user')}>{result.user}</Descriptions.Item>
+          <Descriptions.Item label={t('trace.authMethod')}>
             <Tag>{result.auth_method}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="SSH Key">
-            {result.ssh_key_configured ? <Tag>Configured</Tag> : <Tag>Not Configured</Tag>}
+          <Descriptions.Item label={t('trace.sshKeyConfigured')}>
+            {result.ssh_key_configured ? (
+              <Tag>{t('trace.configured')}</Tag>
+            ) : (
+              <Tag>{t('trace.notConfigured')}</Tag>
+            )}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -63,30 +69,38 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
       {/* System Information */}
       <Card size="small" title={t('trace.systemInfo')}>
         <Descriptions column={1} size="small">
-          <Descriptions.Item label="Operating System">
-            {osInfo?.pretty_name ?? 'Unknown'}
+          <Descriptions.Item label={t('trace.operatingSystem')}>
+            {osInfo?.pretty_name ?? t('trace.unknown')}
           </Descriptions.Item>
-          <Descriptions.Item label="Kernel Version">
+          <Descriptions.Item label={t('trace.kernelVersion')}>
             <Typography.Text code>{compatibility.kernel_version}</Typography.Text>
           </Descriptions.Item>
-          <Descriptions.Item label="OS ID">{osInfo?.id ?? 'Unknown'}</Descriptions.Item>
-          <Descriptions.Item label="Version">{osInfo?.version_id ?? 'Unknown'}</Descriptions.Item>
-          <Descriptions.Item label="BTRFS Support">
-            {compatibility.btrfs_available ? <Tag>Available</Tag> : <Tag>Not Available</Tag>}
+          <Descriptions.Item label={t('trace.osId')}>
+            {osInfo?.id ?? t('trace.unknown')}
           </Descriptions.Item>
-          <Descriptions.Item label="Sudo Support">
+          <Descriptions.Item label={t('trace.version')}>
+            {osInfo?.version_id ?? t('trace.unknown')}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('trace.btrfsSupport')}>
+            {compatibility.btrfs_available ? (
+              <Tag>{t('trace.available')}</Tag>
+            ) : (
+              <Tag>{t('trace.notAvailable')}</Tag>
+            )}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('trace.sudoSupport')}>
             {(() => {
               const sudoStatus = compatibility.sudo_available;
               if (sudoStatus === 'available') {
-                return <Tag>Available</Tag>;
+                return <Tag>{t('trace.available')}</Tag>;
               }
               if (sudoStatus === 'password_required') {
-                return <Tag>Password Required</Tag>;
+                return <Tag>{t('trace.passwordRequired')}</Tag>;
               }
               if (sudoStatus === 'not_installed') {
-                return <Tag>Not Installed</Tag>;
+                return <Tag>{t('trace.notInstalled')}</Tag>;
               }
-              return <Tag>Unknown</Tag>;
+              return <Tag>{t('trace.unknown')}</Tag>;
             })()}
           </Descriptions.Item>
         </Descriptions>
@@ -99,25 +113,16 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
         icon={config.icon}
         message={
           <Space>
-            <Typography.Text strong>Compatibility Status:</Typography.Text>
-            <Typography.Text
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ textTransform: 'capitalize' }}
-            >
-              {status}
-            </Typography.Text>
+            <Typography.Text strong>{t('trace.compatibilityStatus')}</Typography.Text>
+            <Typography.Text className="capitalize">{status}</Typography.Text>
           </Space>
         }
         description={
           <>
             {compatibility.compatibility_issues &&
               compatibility.compatibility_issues.length > 0 && (
-                <Flex
-                  vertical
-                  // eslint-disable-next-line no-restricted-syntax
-                  style={{ marginTop: 8 }}
-                >
-                  <Typography.Text strong>Known Issues:</Typography.Text>
+                <Flex vertical className="mt-2">
+                  <Typography.Text strong>{t('trace.knownIssues')}</Typography.Text>
                   <ul>
                     {compatibility.compatibility_issues.map((issue: string, index: number) => (
                       <li key={index}>{issue}</li>
@@ -126,12 +131,8 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
                 </Flex>
               )}
             {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-              <Flex
-                vertical
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ marginTop: 16 }}
-              >
-                <Typography.Text strong>Recommendations:</Typography.Text>
+              <Flex vertical className="mt-4">
+                <Typography.Text strong>{t('trace.recommendations')}</Typography.Text>
                 <ul>
                   {compatibility.recommendations.map((rec: string, index: number) => (
                     <li key={index}>{rec}</li>
@@ -141,20 +142,15 @@ export const SSHTestResultsDisplay: React.FC<SSHTestResultsDisplayProps> = ({ re
             )}
           </>
         }
-        showIcon
       />
 
       {/* Raw JSON fallback */}
-      <Flex
-        vertical
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ marginTop: 16 }}
-      >
+      <Flex vertical className="mt-4">
         <Collapse
           items={[
             {
               key: 'raw',
-              label: 'Raw Response Data',
+              label: t('trace.rawResponseData'),
               children: (
                 <SimpleJsonEditor value={JSON.stringify(result, null, 2)} readOnly height="200px" />
               ),

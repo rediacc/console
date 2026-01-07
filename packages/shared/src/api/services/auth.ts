@@ -41,14 +41,14 @@ export interface AuthService {
   activateUser(email: string, activationCode: string, passwordHash: string): Promise<ApiResponse>;
 
   /**
-   * Register a new company and user.
-   * @param companyName Company name
+   * Register a new organization and user.
+   * @param organizationName Organization name
    * @param email User's email address
    * @param passwordHash Hashed password
    * @param language Optional language preference (default: 'en')
    */
   register(
-    companyName: string,
+    organizationName: string,
     email: string,
     passwordHash: string,
     language?: string
@@ -101,11 +101,11 @@ export function createAuthService(client: AuthHttpClient, apiPrefix = ''): AuthS
       return response.data;
     },
 
-    async register(companyName, email, passwordHash, language = 'en') {
+    async register(organizationName, email, passwordHash, language = 'en') {
       const response = await client.post<ApiResponse>(
-        buildUrl('/CreateNewCompany'),
+        buildUrl('/CreateNewOrganization'),
         {
-          companyName,
+          organizationName,
           userEmailAddress: email,
           languagePreference: language,
         },

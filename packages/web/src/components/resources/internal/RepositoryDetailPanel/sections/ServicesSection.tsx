@@ -5,14 +5,14 @@ import {
   DetailPanelFieldValue,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { CodeOutlined } from '@/utils/optimizedIcons';
-import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { RepositoryPanelData } from '../types';
-import type { TFunction } from 'i18next';
 
 interface ServicesSectionProps {
-  repository: Repository;
+  repository: GetTeamRepositories_ResultSet1;
   panelData: RepositoryPanelData;
-  t: TFunction<'resources' | 'common' | 'machines'>;
+  t: TypedTFunction;
 }
 
 export const ServicesSection: React.FC<ServicesSectionProps> = ({ repository, panelData, t }) => (
@@ -55,25 +55,27 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ repository, pa
                   <Flex wrap>
                     {service.memory_human && (
                       <Flex vertical>
-                        <Typography.Text>Memory</Typography.Text>
+                        <Typography.Text>{t('resources:repositories.memoryLabel')}</Typography.Text>
                         <Typography.Text>{service.memory_human}</Typography.Text>
                       </Flex>
                     )}
                     {service.main_pid && (
                       <Flex vertical>
-                        <Typography.Text>PID</Typography.Text>
+                        <Typography.Text>{t('resources:repositories.pidLabel')}</Typography.Text>
                         <Typography.Text>{service.main_pid}</Typography.Text>
                       </Flex>
                     )}
                     {service.uptime_human && (
                       <Flex vertical>
-                        <Typography.Text>Uptime</Typography.Text>
+                        <Typography.Text>{t('resources:repositories.uptimeLabel')}</Typography.Text>
                         <Typography.Text>{service.uptime_human}</Typography.Text>
                       </Flex>
                     )}
                     {service.restarts !== undefined && (
                       <Flex vertical>
-                        <Typography.Text>Restarts</Typography.Text>
+                        <Typography.Text>
+                          {t('resources:repositories.restartsLabel')}
+                        </Typography.Text>
                         <Typography.Text>{service.restarts}</Typography.Text>
                       </Flex>
                     )}

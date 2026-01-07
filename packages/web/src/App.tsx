@@ -55,8 +55,8 @@ const AccessPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import('@/features/settings').then((m) => ({ default: m.ProfilePage }))
 );
-const CompanyPage = lazy(() =>
-  import('@/features/settings').then((m) => ({ default: m.CompanyPage }))
+const OrganizationPage = lazy(() =>
+  import('@/features/settings').then((m) => ({ default: m.OrganizationPage }))
 );
 const InfrastructurePage = lazy(() =>
   import('@/features/settings').then((m) => ({ default: m.InfrastructurePage }))
@@ -122,8 +122,8 @@ const AppContent: React.FC = () => {
         // Token exists in secure storage, restore session (token not stored in Redux for security)
         dispatch(
           loginSuccess({
-            user: { email: authData.email, company: authData.company ?? undefined },
-            company: authData.company ?? undefined,
+            user: { email: authData.email, organization: authData.organization ?? undefined },
+            organization: authData.organization ?? undefined,
           })
         );
       }
@@ -248,10 +248,10 @@ const AppContent: React.FC = () => {
                     }
                   />
                   <Route
-                    path="/settings/company"
+                    path="/settings/organization"
                     element={
                       <Suspense fallback={<PageLoader />}>
-                        <CompanyPage />
+                        <OrganizationPage />
                       </Suspense>
                     }
                   />

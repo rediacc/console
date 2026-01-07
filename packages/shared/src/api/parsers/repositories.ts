@@ -13,7 +13,7 @@ export interface NormalizedRepository extends GetTeamRepositories_ResultSet1 {
 function normalizeRepository(repository: GetTeamRepositories_ResultSet1): NormalizedRepository {
   return {
     ...repository,
-    repositoryTag: repository.repositoryTag || 'latest',
+    repositoryTag: repository.repositoryTag ?? 'latest',
   };
 }
 

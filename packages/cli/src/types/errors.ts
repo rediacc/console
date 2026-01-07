@@ -1,5 +1,8 @@
 // Unified error types for CLI
 
+// Re-export ValidationError from shared package
+export { ValidationError } from '@rediacc/shared/errors';
+
 const _ERROR_CODES = {
   GENERAL_ERROR: 'GENERAL_ERROR',
   INVALID_REQUEST: 'INVALID_REQUEST',
@@ -14,19 +17,8 @@ const _ERROR_CODES = {
 export type ErrorCode = (typeof _ERROR_CODES)[keyof typeof _ERROR_CODES];
 
 export interface CliError {
-  code: ErrorCode;
+  code: ErrorCode | string;
   message: string;
   details?: string[];
   exitCode: number;
-}
-
-/**
- * Validation error for invalid user input or missing required options.
- * Thrown when command arguments/options don't meet requirements.
- */
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
 }

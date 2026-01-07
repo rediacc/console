@@ -1,16 +1,18 @@
 import { showMessage } from '@/utils/messages';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import { getGrandRepoVault } from '../hooks/useFunctionExecution';
-import type { FunctionExecutionContext, FunctionData } from '../hooks/useFunctionExecution';
+import type { CustomFunctionData } from './types';
+import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 
 export const handleCustomFunction = async (
-  functionData: FunctionData,
+  functionData: CustomFunctionData,
   context: FunctionExecutionContext
 ): Promise<void> => {
   const {
     selectedRepository,
     teamRepositories,
     machine,
-    executeAction,
+    executeDynamic,
     onQueueItemCreated,
     closeModal,
     t,
@@ -35,12 +37,11 @@ export const handleCustomFunction = async (
 
   const grandRepoVault = getGrandRepoVault(RepoData, teamRepositories);
 
-  const result = await executeAction({
+  const result = await executeDynamic(functionData.function.name as BridgeFunctionName, {
+    params: functionData.params,
     teamName: machine.teamName,
     machineName: machine.machineName,
     bridgeName: machine.bridgeName,
-    functionName: functionData.function.name,
-    params: functionData.params,
     priority: functionData.priority,
     addedVia: 'machine-Repository-list',
     machineVault: machine.vaultContent ?? '{}',

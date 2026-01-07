@@ -20,6 +20,7 @@ const darkThemeTokens = {
 };
 
 export const getThemeConfig = (isDark: boolean): ThemeConfig => ({
+  cssVar: true,
   algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
   token: isDark ? darkThemeTokens : lightThemeTokens,
   components: {

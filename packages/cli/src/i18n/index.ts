@@ -1,0 +1,26 @@
+/**
+ * CLI i18n module
+ *
+ * Provides internationalization support for the CLI.
+ * Language preference is stored in context config (~/.rediacc/).
+ *
+ * Usage:
+ *   import { t, initI18n, changeLanguage } from './i18n/index.js';
+ *
+ *   // Initialize on startup
+ *   await initI18n('en');
+ *
+ *   // Use translations
+ *   outputService.success(t('auth.loginSuccess', { context: 'default' }));
+ *
+ *   // Change language
+ *   await changeLanguage('de');
+ */
+
+export {
+  initI18n,
+  t,
+  changeLanguage,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from './config.js';

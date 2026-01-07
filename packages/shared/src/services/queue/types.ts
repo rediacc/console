@@ -120,6 +120,10 @@ export interface QueueServiceConfig {
   emitNotification?: (notification: QueueNotification) => void;
   /** Monitoring event callback */
   emitMonitoringEvent?: (event: QueueMonitoringEvent) => void;
+  /** Enable validation of function parameters against Zod schemas */
+  validateParams?: boolean;
+  /** Enable validation of machine connection details (IP/port) */
+  validateConnections?: boolean;
 }
 
 /**

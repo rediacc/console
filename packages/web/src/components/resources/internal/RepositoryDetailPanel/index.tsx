@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Alert, Empty, Flex, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useMachines } from '@/api/queries/machines';
+import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import {
   DetailPanelBody,
   DetailPanelDivider,
@@ -22,15 +22,15 @@ import {
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
-import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useRepositoryVaultData } from './hooks/useRepositoryVaultData';
 import { ServicesSection } from './sections/ServicesSection';
 import { StorageSection } from './sections/StorageSection';
 import type { RepositoryPanelData } from './types';
-import type { TFunction } from 'i18next';
 
 interface RepositoryDetailPanelProps {
-  repository: Repository | null;
+  repository: GetTeamRepositories_ResultSet1 | null;
   visible: boolean;
   onClose: () => void;
   splitView?: boolean;
@@ -43,7 +43,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
   splitView = false,
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines']);
-  const { data: machines = [] } = useMachines(repository?.teamName);
+  const { data: machines = [] } = useGetTeamMachines(repository?.teamName ?? undefined);
   const repositoryData = useRepositoryVaultData(repository, machines);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
         ) : (
           <>
             <RepoInfoSection repository={repository} panelData={repositoryData} t={t} />
-            <ExternalVolumeWarning repository={repository} panelData={repositoryData} />
+            <ExternalVolumeWarning repository={repository} panelData={repositoryData} t={t} />
             <StorageSection repository={repository} panelData={repositoryData} t={t} />
             <FilePathsSection repository={repository} panelData={repositoryData} t={t} />
             {repositoryData.repositoryData.mounted && (
@@ -98,9 +98,9 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
 };
 
 interface SectionProps {
-  repository: Repository;
+  repository: GetTeamRepositories_ResultSet1;
   panelData: RepositoryPanelData;
-  t: TFunction<'resources' | 'common' | 'machines'>;
+  t: TypedTFunction;
 }
 
 const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) => {
@@ -178,15 +178,22 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
             repositoryData.volume_status &&
             repositoryData.volume_status !== 'none' && (
               <DetailPanelFieldRow>
-                <DetailPanelFieldLabel>Docker Volumes:</DetailPanelFieldLabel>
+                <DetailPanelFieldLabel>
+                  {t('resources:repositories.dockerVolumes.label')}:
+                </DetailPanelFieldLabel>
                 {repositoryData.volume_status === 'safe' ? (
                   <Tag
                     bordered={false}
                     icon={<CheckCircleOutlined />}
                     data-testid={`repo-detail-volume-safe-${repository.repositoryName}`}
                   >
-                    {repositoryData.internal_volumes} Safe Volume
-                    {repositoryData.internal_volumes !== 1 ? 's' : ''}
+                    {repositoryData.internal_volumes === 1
+                      ? t('resources:repositories.dockerVolumes.safeVolume', {
+                          count: repositoryData.internal_volumes,
+                        })
+                      : t('resources:repositories.dockerVolumes.safeVolumes', {
+                          count: repositoryData.internal_volumes,
+                        })}
                   </Tag>
                 ) : (
                   <Tag
@@ -194,8 +201,10 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
                     icon={<WarningOutlined />}
                     data-testid={`repo-detail-volume-warning-${repository.repositoryName}`}
                   >
-                    {repositoryData.external_volumes} External, {repositoryData.internal_volumes}{' '}
-                    Internal
+                    {repositoryData.external_volumes}{' '}
+                    {t('resources:repositories.dockerVolumes.external')},{' '}
+                    {repositoryData.internal_volumes}{' '}
+                    {t('resources:repositories.dockerVolumes.internal')}
                   </Tag>
                 )}
               </DetailPanelFieldRow>
@@ -207,16 +216,16 @@ const RepoInfoSection: React.FC<SectionProps> = ({ repository, panelData, t }) =
 };
 
 interface WarningProps {
-  repository: Repository;
+  repository: GetTeamRepositories_ResultSet1;
   panelData: RepositoryPanelData;
+  t: TypedTFunction;
 }
 
-const ExternalVolumeWarning: React.FC<WarningProps> = ({ repository, panelData }) => {
+const ExternalVolumeWarning: React.FC<WarningProps> = ({ repository, panelData, t }) => {
   const { repositoryData } = panelData;
 
   if (
     repositoryData.volume_status !== 'warning' ||
-    !repositoryData.external_volume_names ||
     repositoryData.external_volume_names.length === 0
   ) {
     return null;
@@ -225,13 +234,12 @@ const ExternalVolumeWarning: React.FC<WarningProps> = ({ repository, panelData }
   return (
     <Alert
       type="warning"
-      showIcon
       icon={<WarningOutlined />}
-      message="External Docker Volumes Detected"
+      message={t('resources:repositories.dockerVolumes.warningTitle')}
       description={
         <Flex vertical>
           <DetailPanelFieldValue>
-            The following volumes are stored outside the repository:
+            {t('resources:repositories.dockerVolumes.warningDescription')}
           </DetailPanelFieldValue>
           <ul>
             {repositoryData.external_volume_names.map((vol) => (
@@ -241,9 +249,8 @@ const ExternalVolumeWarning: React.FC<WarningProps> = ({ repository, panelData }
             ))}
           </ul>
           <DetailPanelFieldValue>
-            <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned.
-            Use bind mounts to <DetailPanelFieldValue code>$REPOSITORY_PATH</DetailPanelFieldValue>{' '}
-            instead.
+            <strong>{t('common:important')}:</strong>{' '}
+            {t('resources:repositories.dockerVolumes.orphanWarning', { path: '$REPOSITORY_PATH' })}
           </DetailPanelFieldValue>
         </Flex>
       }

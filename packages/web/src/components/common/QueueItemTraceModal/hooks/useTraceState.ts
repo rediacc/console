@@ -11,14 +11,6 @@ interface UseTraceStateProps {
   traceData: QueueTrace | null | undefined;
 }
 
-/** Shape of command result in vault content */
-interface CommandResult {
-  command_output?: string;
-  message?: string;
-  status?: string;
-  exit_code?: number;
-}
-
 interface UseTraceStateReturn extends TraceState, TraceStateActions {
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -33,7 +25,6 @@ export const useTraceState = ({
   const [activeKeys, setActiveKeys] = useState<string[]>(['overview']); // Start with overview panel open
   const [simpleMode, setSimpleMode] = useState(true); // Default to simple mode
   const [accumulatedOutput, setAccumulatedOutput] = useState<string>(''); // Store accumulated console output
-  const [lastOutputStatus, setLastOutputStatus] = useState<string>(''); // Track the last status to detect completion
   const [isSimpleConsoleExpanded, setIsSimpleConsoleExpanded] = useState(false); // Console collapse state for simple mode
   const [isDetailedConsoleExpanded, setIsDetailedConsoleExpanded] = useState(false); // Console collapse state for detailed mode
   const consoleOutputRef = useRef<HTMLDivElement>(null);
@@ -64,97 +55,17 @@ export const useTraceState = ({
     }
   }, [accumulatedOutput]);
 
-  // Handle accumulating console output
-  // Note: These setState calls process incoming data, not derived state
+  // Handle console output from response vault
+  // The bridge sends plain text output directly in vaultContent
   useEffect(() => {
     if (
       traceData?.responseVaultContent?.hasContent &&
       traceData.responseVaultContent.vaultContent
     ) {
-      try {
-        // vaultContent is always a string at this point (checked above)
-        const vaultContent = JSON.parse(traceData.responseVaultContent.vaultContent) as Record<
-          string,
-          unknown
-        >;
-
-        if (vaultContent.status === 'completed') {
-          // For completed status, replace accumulated output with final result
-          let finalOutput = '';
-          if (vaultContent.result && typeof vaultContent.result === 'string') {
-            try {
-              const result = JSON.parse(vaultContent.result);
-              // Extract command output from the cleaned response structure
-              finalOutput = result.command_output ?? '';
-
-              // If no command output but we have a message, show it
-              if (!finalOutput && result.message) {
-                finalOutput = `[${result.status}] ${result.message}`;
-                if (result.exit_code !== undefined) {
-                  finalOutput += ` (exit code: ${result.exit_code})`;
-                }
-              }
-            } catch {
-              finalOutput = vaultContent.result;
-            }
-          }
-          // eslint-disable-next-line react-hooks/set-state-in-effect -- Processing incoming data
-          setAccumulatedOutput(finalOutput);
-          setLastOutputStatus('completed');
-        } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
-          // For in-progress updates, check if we should append or replace
-          const newMessage = vaultContent.message as string;
-          if (lastOutputStatus !== 'completed') {
-            setAccumulatedOutput((currentOutput) => {
-              // If the new message starts with the current content, only append the difference
-              if (newMessage.startsWith(currentOutput)) {
-                const newContent = newMessage.substring(currentOutput.length);
-                return currentOutput + newContent;
-              }
-              // Otherwise, replace the entire content
-              return newMessage;
-            });
-            setLastOutputStatus('in_progress');
-          }
-        } else if (!accumulatedOutput) {
-          // Handle initial load for already completed tasks or other formats
-          let initialOutput = '';
-          if (vaultContent.result && typeof vaultContent.result === 'string') {
-            try {
-              const result = JSON.parse(vaultContent.result);
-              // Extract command output from the cleaned response structure
-              initialOutput = result.command_output ?? '';
-
-              // If no command output but we have a message, show it
-              if (!initialOutput && result.message) {
-                initialOutput = `[${result.status}] ${result.message}`;
-                if (result.exit_code !== undefined) {
-                  initialOutput += ` (exit code: ${result.exit_code})`;
-                }
-              }
-            } catch {
-              initialOutput = vaultContent.result;
-            }
-          } else if (vaultContent.result && typeof vaultContent.result === 'object') {
-            const result = vaultContent.result as CommandResult;
-            // Same logic for object format
-            initialOutput = result.command_output ?? '';
-            if (!initialOutput && result.message) {
-              initialOutput = `[${result.status}] ${result.message}`;
-              if (result.exit_code !== undefined) {
-                initialOutput += ` (exit code: ${result.exit_code})`;
-              }
-            }
-          }
-          if (initialOutput) {
-            setAccumulatedOutput(initialOutput);
-          }
-        }
-      } catch {
-        // Error processing console output
-      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing accumulated output with response data from API
+      setAccumulatedOutput(traceData.responseVaultContent.vaultContent);
     }
-  }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput]);
+  }, [traceData?.responseVaultContent]);
 
   // Reset states when modal opens with new taskId
   // Note: These setState calls are intentional initialization, not derived state
@@ -169,7 +80,6 @@ export const useTraceState = ({
       setSimpleMode(true); // Default to simple mode
       // Reset accumulated output when opening modal with new task
       setAccumulatedOutput('');
-      setLastOutputStatus('');
       // Reset collapse states (consoleProgress/progressMessage are now derived via useMemo)
       setIsSimpleConsoleExpanded(false);
       setIsDetailedConsoleExpanded(false);
@@ -182,7 +92,6 @@ export const useTraceState = ({
     activeKeys,
     simpleMode,
     accumulatedOutput,
-    lastOutputStatus,
     consoleProgress,
     progressMessage,
     isSimpleConsoleExpanded,
@@ -193,7 +102,6 @@ export const useTraceState = ({
     setActiveKeys,
     setSimpleMode,
     setAccumulatedOutput,
-    setLastOutputStatus,
     setIsSimpleConsoleExpanded,
     setIsDetailedConsoleExpanded,
   };

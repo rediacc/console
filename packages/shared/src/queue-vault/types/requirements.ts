@@ -1,10 +1,12 @@
-import type { VaultData } from './vault';
+/** Parsed vault content - either an object or JSON string */
+export type VaultContent = Record<string, unknown> | string | null;
 
 export interface QueueRequestContext {
   teamName: string;
   machineName?: string | null;
   bridgeName?: string;
   repositoryGuid?: string;
+  repositoryName?: string;
   repositoryNetworkId?: number;
   repositoryNetworkMode?: string;
   repositoryTag?: string;
@@ -13,28 +15,31 @@ export interface QueueRequestContext {
   params: Record<string, unknown>;
   priority: number;
   addedVia: string;
-  teamVault?: VaultData | string | null;
-  machineVault?: VaultData | string | null;
-  repositoryVault?: VaultData | string | null;
-  bridgeVault?: VaultData | string | null;
-  companyVault?: VaultData | string | null;
-  companyCredential?: string;
-  storageVault?: VaultData | string | null;
-  destinationMachineVault?: VaultData | string | null;
-  destinationStorageVault?: VaultData | string | null;
-  destinationRepositoryVault?: VaultData | string | null;
-  sourceMachineVault?: VaultData | string | null;
-  sourceStorageVault?: VaultData | string | null;
-  sourceRepositoryVault?: VaultData | string | null;
+  /** User's preferred language for task output (en, de, es, fr, ja, ar, ru, tr, zh) */
+  language?: string;
+  teamVault?: VaultContent;
+  machineVault?: VaultContent;
+  repositoryVault?: VaultContent;
+  bridgeVault?: VaultContent;
+  organizationVault?: VaultContent;
+  organizationCredential?: string;
+  storageVault?: VaultContent;
+  destinationMachineVault?: VaultContent;
+  destinationStorageVault?: VaultContent;
+  destinationRepositoryVault?: VaultContent;
+  sourceMachineVault?: VaultContent;
+  sourceStorageVault?: VaultContent;
+  sourceRepositoryVault?: VaultContent;
   allRepositoryCredentials?: Record<string, string>;
-  additionalStorageData?: Record<string, VaultData>;
-  additionalMachineData?: Record<string, VaultData>;
+  allRepositories?: Record<string, string>;
+  additionalStorageData?: Record<string, VaultContent>;
+  additionalMachineData?: Record<string, VaultContent>;
 }
 
 export interface FunctionRequirements {
   machine?: boolean;
   team?: boolean;
-  company?: boolean;
+  organization?: boolean;
   repository?: boolean;
   storage?: boolean;
   plugin?: boolean;

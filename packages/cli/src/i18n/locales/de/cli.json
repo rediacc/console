@@ -1,0 +1,1001 @@
+{
+  "cli": {
+    "description": "Rediacc Console CLI - Befehlszeilenschnittstelle für Rediacc-Operationen"
+  },
+  "commands": {
+    "auth": {
+      "description": "Authentifizierungsbefehle",
+      "login": {
+        "authenticating": "Authentifizierung läuft...",
+        "description": "Mit Rediacc authentifizieren",
+        "shortcut": "Mit Rediacc authentifizieren (Kurzform: auth login)",
+        "success": "Anmeldung erfolgreich! Gespeichert im Kontext \"{{context}}\"",
+        "tfaPrompt": "2FA-Code eingeben:",
+        "tfaRequired": "Zwei-Faktor-Authentifizierung erforderlich",
+        "tfaVerified": "2FA erfolgreich verifiziert",
+        "verifyingTfa": "2FA wird überprüft..."
+      },
+      "logout": {
+        "description": "Gespeicherte Anmeldedaten löschen",
+        "loggingOut": "Meldung läuft...",
+        "shortcut": "Gespeicherte Anmeldedaten löschen (Kurzform: auth logout)",
+        "success": "Erfolgreich abgemeldet"
+      },
+      "status": {
+        "description": "Aktuellen Authentifizierungsstatus prüfen",
+        "authenticated": "Authentifiziert als: {{email}}",
+        "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc login"
+      },
+      "register": {
+        "description": "Ein neues Organisationskonto und Benutzerkonto registrieren",
+        "nextStep": "Führen Sie dann aus: rdc auth activate -e <email> -p <password> --code <code>",
+        "registering": "Konto wird registriert...",
+        "submitted": "Registrierung eingereicht",
+        "success": "Registrierung erfolgreich! Überprüfen Sie Ihre E-Mail auf den Aktivierungscode."
+      },
+      "activate": {
+        "activated": "Konto aktiviert",
+        "activating": "Konto wird aktiviert...",
+        "description": "Konto mit Verifizierungscode aktivieren",
+        "success": "Konto aktiviert! Sie können sich jetzt anmelden mit: rdc login"
+      },
+      "tfa": {
+        "description": "Zwei-Faktor-Authentifizierung-Verwaltung",
+        "disable": {
+          "confirm": "Möchten Sie 2FA wirklich deaktivieren?",
+          "description": "Zwei-Faktor-Authentifizierung deaktivieren",
+          "disabling": "2FA wird deaktiviert...",
+          "success": "2FA erfolgreich deaktiviert"
+        },
+        "enable": {
+          "addToApp": "Fügen Sie dies zu Ihrer Authenticator-App hinzu",
+          "description": "Zwei-Faktor-Authentifizierung aktivieren",
+          "enabling": "2FA wird aktiviert...",
+          "initiated": "2FA-Setup initiiert",
+          "setupKey": "Setup-Schlüssel: {{key}}",
+          "success": "2FA erfolgreich aktiviert"
+        },
+        "status": {
+          "description": "2FA-Status prüfen",
+          "disabled": "2FA ist nicht aktiviert",
+          "enabled": "2FA ist aktiviert"
+        }
+      },
+      "token": {
+        "description": "Token-Verwaltung",
+        "fork": {
+          "creating": "Fork-Token wird erstellt...",
+          "description": "Erstellen Sie einen Fork-Token für eine andere Anwendung",
+          "success": "Token erfolgreich erstellt",
+          "tokenValue": "Token: {{token}}"
+        },
+        "list": {
+          "description": "Aktive Tokens/Sitzungen auflisten",
+          "fetching": "Tokens werden abgerufen...",
+          "noTokens": "Keine aktiven Tokens"
+        },
+        "revoke": {
+          "description": "Ein bestimmtes Token widerrufen",
+          "revoking": "Token wird widerrufen...",
+          "success": "Token erfolgreich widerrufen"
+        }
+      }
+    },
+    "audit": {
+      "description": "Audit-Log-Befehle",
+      "list": {
+        "description": "Audit-Log-Einträge auflisten",
+        "fetching": "Audit-Logs werden abgerufen..."
+      },
+      "log": {
+        "description": "Audit-Logs anzeigen",
+        "fetching": "Audit-Logs werden abgerufen...",
+        "success": "Audit-Logs abgerufen"
+      },
+      "trace": {
+        "description": "Audit-Verlauf für eine Entität nachverfolgen",
+        "fetching": "Entity-Audit-Verlauf wird abgerufen...",
+        "success": "Audit-Verlauf abgerufen"
+      },
+      "history": {
+        "description": "Entitätsverlauf anzeigen",
+        "fetching": "Entitätsverlauf wird abgerufen...",
+        "success": "Verlauf abgerufen"
+      }
+    },
+    "bridge": {
+      "description": "Bridge-Verwaltung",
+      "list": {
+        "description": "Bridges auflisten",
+        "fetching": "Bridges werden abgerufen..."
+      },
+      "resetAuth": {
+        "description": "Bridge-Autorisierungstoken zurücksetzen",
+        "newToken": "Neues Token: {{token}}",
+        "resetting": "Autorisierung für Bridge \"{{name}}\" wird zurückgesetzt...",
+        "success": "Autorisierung zurückgesetzt"
+      }
+    },
+    "context": {
+      "description": "CLI-Kontexte verwalten",
+      "list": {
+        "description": "Alle Kontexte auflisten",
+        "noContexts": "Keine Kontexte konfiguriert"
+      },
+      "show": {
+        "description": "Details zum aktuellen Kontext anzeigen",
+        "noContext": "Kein aktiver Kontext"
+      },
+      "use": {
+        "description": "Zu einem anderen Kontext wechseln",
+        "switched": "Zu Kontext \"{{name}}\" gewechselt"
+      },
+      "create": {
+        "description": "Einen neuen Kontext erstellen",
+        "success": "Kontext \"{{name}}\" erstellt"
+      },
+      "delete": {
+        "description": "Einen Kontext löschen",
+        "success": "Kontext \"{{name}}\" gelöscht",
+        "confirm": "Möchten Sie den Kontext \"{{name}}\" wirklich löschen?"
+      },
+      "rename": {
+        "description": "Einen Kontext umbenennen",
+        "success": "Kontext umbenannt von \"{{oldName}}\" in \"{{newName}}\""
+      },
+      "current": {
+        "description": "Namen des aktuellen Kontexts anzeigen",
+        "noContext": "Kein aktiver Kontext"
+      },
+      "set": {
+        "description": "Einen Standardwert festlegen (Team, Region, Bridge, Machine)",
+        "success": "\"{{key}}\" auf \"{{value}}\" gesetzt"
+      },
+      "unset": {
+        "description": "Einen Kontext-Standardwert entfernen",
+        "success": "{{key}} aus dem aktuellen Kontext entfernt"
+      },
+      "clear": {
+        "description": "Standardwerte löschen (alle oder einen bestimmten Schlüssel)",
+        "keyCleared": "\"{{key}}\" gelöscht",
+        "allCleared": "Alle Standardwerte gelöscht"
+      },
+      "setLanguage": {
+        "description": "Bevorzugte Sprache festlegen",
+        "success": "Sprache auf \"{{code}}\" gesetzt",
+        "unsupported": "Nicht unterstützte Sprache. Unterstützt: {{languages}}"
+      },
+      "createLocal": {
+        "description": "Erstellen Sie einen neuen lokalen Kontext für Middleware-losen Betrieb",
+        "success": "Lokaler Kontext \"{{name}}\" erstellt",
+        "nextStep": "Fügen Sie Machines hinzu mit: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "addMachine": {
+        "description": "Fügen Sie dem aktuellen lokalen Kontext eine Machine hinzu",
+        "success": "Machine \"{{name}}\" hinzugefügt ({{user}}@{{ip}})"
+      },
+      "removeMachine": {
+        "description": "Entfernen Sie eine Machine aus dem aktuellen lokalen Kontext",
+        "success": "Machine \"{{name}}\" entfernt"
+      },
+      "machines": {
+        "description": "Machines im aktuellen lokalen Kontext auflisten",
+        "noMachines": "Keine Machines konfiguriert. Fügen Sie eine hinzu mit: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "setSsh": {
+        "description": "SSH-Konfiguration für den aktuellen lokalen Kontext aktualisieren",
+        "success": "SSH-Konfiguration aktualisiert"
+      },
+      "setRenet": {
+        "description": "Legen Sie den Pfad zur renet-Binärdatei für den lokalen Modus fest",
+        "success": "Renet-Pfad gesetzt auf: {{path}}"
+      }
+    },
+    "machine": {
+      "description": "Machine-Verwaltung",
+      "list": {
+        "description": "Machines auflisten",
+        "fetching": "Machines werden abgerufen..."
+      },
+      "create": {
+        "description": "Eine neue Machine erstellen",
+        "creating": "Machine wird erstellt...",
+        "success": "Machine \"{{name}}\" erstellt"
+      },
+      "delete": {
+        "description": "Eine Machine löschen",
+        "deleting": "Machine wird gelöscht...",
+        "success": "Machine \"{{name}}\" gelöscht",
+        "confirm": "Möchten Sie die Machine \"{{name}}\" wirklich löschen?"
+      },
+      "update": {
+        "description": "Machine-Konfiguration aktualisieren",
+        "updating": "Machine wird aktualisiert...",
+        "success": "Machine \"{{name}}\" aktualisiert"
+      },
+      "health": {
+        "description": "Machine-Zustand für CI/CD-Pipelines prüfen",
+        "fetching": "Machine-Zustand wird abgerufen...",
+        "fetched": "Zustandsdaten abgerufen",
+        "header": "\nZustandsprüfung für {{name}}:",
+        "statusHealthy": "✓ Status: GESUND",
+        "statusWarning": "⚠ Status: WARNUNG",
+        "statusError": "✗ Status: FEHLER",
+        "statusCritical": "✗ Status: KRITISCH",
+        "noData": "Keine Statusdaten für Machine verfügbar",
+        "systemSection": "\nSystem:",
+        "systemUptime": "  Betriebszeit: {{uptime}}",
+        "systemMemory": "  Speicher: {{percent}}",
+        "systemDisk": "  Festplatte: {{percent}}",
+        "systemDatastore": "  Datastore: {{percent}}",
+        "containersSection": "\nContainer:",
+        "containersSummary": "  {{running}}/{{total}} laufen ({{healthy}} gesund, {{unhealthy}} ungesund)",
+        "servicesSection": "\nDienste:",
+        "servicesSummary": "  {{active}}/{{total}} aktiv ({{failed}} fehlgeschlagen)",
+        "storageSection": "\nSpeicher:",
+        "storageSmart": "  SMART: {{healthy}} gesund, {{failing}} ausfallend",
+        "storageTemp": "  Max. Temperatur: {{temp}}°C",
+        "repositoriesSection": "\nRepositories:",
+        "repositoriesSummary": "  {{mounted}}/{{total}} eingebunden ({{docker}} mit Docker)",
+        "issuesSection": "\nProbleme:",
+        "exitCode": "\nExit-Code: {{code}}"
+      },
+      "containers": {
+        "description": "Docker-Container auf einer Machine auflisten",
+        "fetching": "Container werden abgerufen...",
+        "fetched": "Container abgerufen",
+        "noContainers": "Keine Container auf dieser Machine gefunden",
+        "healthCheck": "Zustandsprüfungsmodus - beendet mit Code 2 bei ungesunden Containern",
+        "allHealthy": "Alle Container sind gesund",
+        "unhealthyFound": "{{count}} ungesunde(r) Container gefunden"
+      },
+      "services": {
+        "description": "systemd-Dienste auf einer Machine auflisten",
+        "fetching": "Dienste werden abgerufen...",
+        "fetched": "Dienste abgerufen",
+        "noServices": "Keine rediacc-Dienste auf dieser Machine gefunden",
+        "stabilityCheck": "Stabilitätsprüfungsmodus - beendet mit Code 2 bei fehlgeschlagenen/neu startenden Diensten",
+        "allStable": "Alle Dienste sind stabil",
+        "unstableFound": "{{count}} instabile(r) Dienst(e) gefunden"
+      },
+      "vaultStatus": {
+        "description": "Parsed-Vault-Status für eine Machine anzeigen",
+        "fetching": "Machine wird abgerufen...",
+        "fetched": "Machine abgerufen",
+        "header": "\nVault-Status für {{name}}:",
+        "status": "  Status: {{status}}",
+        "systemSection": "\nSystem:",
+        "systemUptime": "  Betriebszeit: {{uptime}}",
+        "systemHostname": "  Hostname: {{hostname}}",
+        "systemMemory": "  Speicher: {{used}} / {{total}} ({{percent}})",
+        "systemDisk": "  Festplatte: {{used}} / {{total}} ({{percent}})",
+        "systemDatastore": "  Datastore: {{used}} / {{total}} ({{percent}})",
+        "totalRepos": "  Gesamtzahl Repositories: {{count}}",
+        "mounted": "  Eingebunden: {{count}}",
+        "dockerRunning": "  Docker läuft: {{count}}",
+        "deployedRepos": "\nBereitgestellte Repositories:",
+        "repoMounted": "    Eingebunden: {{mounted}}",
+        "repoDocker": "    Docker: {{status}}"
+      },
+      "repos": {
+        "description": "Auf einer Machine bereitgestellte Repositories auflisten",
+        "fetching": "Machine wird abgerufen...",
+        "fetched": "Machine abgerufen",
+        "noRepos": "Keine Repositories auf dieser Machine bereitgestellt"
+      },
+      "testConnection": {
+        "description": "SSH-Verbindung zu einer Machine testen und Host-Schlüssel erfassen",
+        "testing": "SSH-Verbindung zu {{user}}@{{ip}}:{{port}} wird getestet...",
+        "creating": "SSH-Test-Task wird erstellt...",
+        "created": "Task erstellt",
+        "taskId": "Task-ID: {{taskId}}",
+        "waiting": "Auf SSH-Test-Ergebnis wird gewartet...",
+        "waitingTime": "Auf SSH-Test-Ergebnis wird gewartet... ({{seconds}}s)",
+        "testResult": "SSH-Test {{result}}",
+        "rawOutput": "Rohe Ausgabe:",
+        "error": "Fehler: {{error}}",
+        "timeout": "Zeitüberschreitung beim Warten auf Ergebnis",
+        "timeoutMessage": "Test-Verbindung hat Zeitüberschreitung. Prüfen Sie Queue-Nachverfolgung für Details.",
+        "results": "SSH-Test-Ergebnisse:",
+        "statusResult": "  Status: {{status}}",
+        "authMethod": "  Auth-Methode: {{method}}",
+        "sshKeyConfigured": "  SSH-Schlüssel konfiguriert: {{status}}",
+        "publicKeyDeployed": "  Öffentlicher Schlüssel bereitgestellt: {{status}}",
+        "knownHosts": "  Known Hosts: {{entry}}",
+        "message": "  Nachricht: {{message}}",
+        "saving": "known_hosts wird in Machine-Vault \"{{machine}}\" gespeichert...",
+        "saved": "Known Hosts im Machine-Vault gespeichert"
+      }
+    },
+    "organization": {
+      "description": "Organisationsverwaltungsbefehle",
+      "list": {
+        "description": "Organisationen auflisten",
+        "fetching": "Organisationen werden abgerufen..."
+      },
+      "info": {
+        "description": "Organisationsinformationen abrufen",
+        "fetching": "Organisationsinformationen werden abgerufen...",
+        "notFound": "Keine Organisationsinformationen gefunden",
+        "success": "Organisationsinformationen abgerufen"
+      },
+      "dashboard": {
+        "description": "Organisationsdaten für das Dashboard abrufen",
+        "fetching": "Dashboard wird abgerufen...",
+        "success": "Dashboard abgerufen"
+      },
+      "vault": {
+        "description": "Organisations-Vault-Verwaltung",
+        "get": {
+          "description": "Organisations-Vault-Daten abrufen",
+          "fetching": "Organisations-Vault wird abgerufen...",
+          "notFound": "Kein Organisations-Vault gefunden",
+          "success": "Vault abgerufen"
+        },
+        "list": {
+          "description": "Alle Vault-Typen auflisten",
+          "fetching": "Vaults werden abgerufen...",
+          "success": "Vaults abgerufen"
+        },
+        "update": {
+          "description": "Organisations-Vault-Daten aktualisieren",
+          "success": "Organisations-Vault aktualisiert",
+          "updating": "Organisations-Vault wird aktualisiert..."
+        }
+      },
+      "export": {
+        "description": "Organisationsdaten exportieren",
+        "exported": "Exportiert nach {{path}}",
+        "exporting": "Organisationsdaten werden exportiert...",
+        "success": "Export abgeschlossen"
+      },
+      "import": {
+        "description": "Organisationsdaten importieren",
+        "importing": "Organisationsdaten werden importiert...",
+        "success": "Import abgeschlossen"
+      },
+      "maintenance": {
+        "description": "Wartungsmodus aktivieren oder deaktivieren (blockiert Nicht-Admin-Anmeldungen)",
+        "disabled": "Wartungsmodus deaktiviert",
+        "disabling": "Wartungsmodus wird deaktiviert...",
+        "enabled": "Wartungsmodus aktiviert",
+        "enabling": "Wartungsmodus wird aktiviert..."
+      }
+    },
+    "protocol": {
+      "description": "Verwaltung der {{scheme}}://-Protokollhandler-Registrierung und URL-Verarbeitung",
+      "register": {
+        "description": "Registrieren Sie den Protokollhandler systemweit",
+        "systemWide": "Protokollhandler wird systemweit registriert...",
+        "adminRequired": "Hinweis: Dies erfordert möglicherweise Administrator-/Root-Berechtigungen.",
+        "currentUser": "Protokollhandler wird für aktuellen Benutzer registriert...",
+        "registering": "Protokollhandler wird registriert...",
+        "success": "\n{{scheme}}://-Protokollhandler erfolgreich registriert.",
+        "exampleUrls": "\nSie können jetzt URLs wie diese öffnen:"
+      },
+      "unregister": {
+        "description": "Deregistrieren Sie den Protokollhandler vom System",
+        "unregistering": "Protokollhandler wird deregistriert...",
+        "success": "\n{{scheme}}://-Protokollhandler erfolgreich deregistriert."
+      },
+      "status": {
+        "description": "Registrierungsstatus des Protokollhandlers anzeigen",
+        "title": "\nProtokollhandler-Status",
+        "platform": "Plattform:",
+        "supported": "Unterstützt:",
+        "registered": "Registriert:",
+        "userRegistration": "Benutzerregistrierung:",
+        "systemRegistration": "Systemregistrierung:",
+        "handlerCommand": "Handler-Befehl:",
+        "error": "\nFehler: {{error}}",
+        "registerHint": "\nUm den Protokollhandler zu registrieren, führen Sie aus:"
+      },
+      "open": {
+        "description": "Öffnen Sie eine {{scheme}}://-URL und führen Sie die Aktion aus",
+        "parsedUrl": "\nAnalysierte Protokoll-URL:",
+        "token": "Token:",
+        "team": "Team:",
+        "machine": "Machine:",
+        "repository": "Repository:",
+        "action": "Aktion:",
+        "params": "Parameter:",
+        "cliCommand": "\nÄquivalenter CLI-Befehl:",
+        "executing": "\nAktion wird ausgeführt...\n"
+      },
+      "build": {
+        "description": "Erstellen Sie eine {{scheme}}://-URL aus Komponenten"
+      },
+      "parse": {
+        "description": "Analysieren Sie eine {{scheme}}://-URL und zeigen Sie Komponenten",
+        "parsedUrl": "\nAnalysierte Protokoll-URL:",
+        "cliCommand": "\nCLI-Befehl:"
+      }
+    },
+    "permission": {
+      "description": "Berechtigungsverwaltungsbefehle",
+      "list": {
+        "description": "Berechtigungen auflisten",
+        "fetching": "Berechtigungen werden abgerufen..."
+      },
+      "group": {
+        "description": "Berechtigungsgruppen-Verwaltung",
+        "list": {
+          "description": "Alle Berechtigungsgruppen auflisten",
+          "fetching": "Berechtigungsgruppen werden abgerufen...",
+          "success": "Berechtigungsgruppen abgerufen"
+        },
+        "create": {
+          "description": "Eine neue Berechtigungsgruppe erstellen",
+          "creating": "Berechtigungsgruppe \"{{name}}\" wird erstellt...",
+          "success": "Berechtigungsgruppe \"{{name}}\" erstellt"
+        },
+        "delete": {
+          "confirm": "Berechtigungsgruppe \"{{name}}\" löschen?",
+          "deleting": "Berechtigungsgruppe \"{{name}}\" wird gelöscht...",
+          "description": "Eine Berechtigungsgruppe löschen",
+          "success": "Berechtigungsgruppe \"{{name}}\" gelöscht"
+        },
+        "show": {
+          "description": "Details zur Berechtigungsgruppe anzeigen",
+          "fetching": "Details zur Berechtigungsgruppe werden abgerufen...",
+          "success": "Details abgerufen"
+        }
+      },
+      "add": {
+        "adding": "Berechtigung \"{{permission}}\" wird zur Gruppe \"{{group}}\" hinzugefügt...",
+        "description": "Fügen Sie einer Gruppe eine Berechtigung hinzu",
+        "success": "Berechtigung hinzugefügt"
+      },
+      "remove": {
+        "description": "Entfernen Sie eine Berechtigung aus einer Gruppe",
+        "removing": "Berechtigung \"{{permission}}\" wird aus Gruppe \"{{group}}\" entfernt...",
+        "success": "Berechtigung entfernt"
+      }
+    },
+    "queue": {
+      "description": "Queue-Verwaltung",
+      "list": {
+        "description": "Queue-Items auflisten",
+        "fetching": "Queue-Items werden abgerufen...",
+        "success": "Queue-Items abgerufen"
+      },
+      "create": {
+        "description": "Ein Queue-Item erstellen",
+        "buildingVault": "Queue-Vault wird erstellt...",
+        "vaultBuilt": "Queue-Vault erstellt",
+        "creating": "Queue-Item für Funktion '{{function}}' wird erstellt...",
+        "success": "Queue-Item erstellt",
+        "taskId": "Task-ID: {{taskId}}"
+      },
+      "cancel": {
+        "description": "Ein Queue-Item abbrechen",
+        "cancelling": "Task {{taskId}} wird abgebrochen...",
+        "success": "Task abgebrochen"
+      },
+      "retry": {
+        "description": "Einen fehlgeschlagenen Queue-Item wiederholen",
+        "retrying": "Task {{taskId}} wird wiederholt...",
+        "success": "Task in Warteschlange zur Wiederholung eingereiht"
+      },
+      "trace": {
+        "description": "Queue-Item-Ausführung nachverfolgen",
+        "fetching": "Queue-Nachverfolgung wird abgerufen...",
+        "fetched": "Queue-Nachverfolgung abgerufen",
+        "watching": "Task-Fortschritt wird beobachtet...",
+        "age": "Alter",
+        "finalStatus": "Endgültiger Status: {{status}}",
+        "errorDetails": "Fehlerdetails:",
+        "noTrace": "Keine Nachverfolgungsinformationen verfügbar"
+      },
+      "delete": {
+        "description": "Ein Queue-Item löschen",
+        "confirm": "Möchten Sie Task {{taskId}} wirklich löschen?",
+        "deleting": "Task {{taskId}} wird gelöscht...",
+        "success": "Task gelöscht"
+      }
+    },
+    "region": {
+      "description": "Regionen-Verwaltung",
+      "list": {
+        "description": "Regionen auflisten",
+        "fetching": "Regionen werden abgerufen..."
+      }
+    },
+    "repository": {
+      "description": "Repository-Verwaltungsbefehle",
+      "list": {
+        "description": "Repositories auflisten",
+        "fetching": "Repositories werden abgerufen...",
+        "success": "Repositories abgerufen"
+      },
+      "create": {
+        "description": "Ein neues Repository erstellen",
+        "creating": "Repository \"{{name}}:{{tag}}\" wird erstellt...",
+        "success": "Repository \"{{name}}:{{tag}}\" erstellt"
+      },
+      "rename": {
+        "description": "Ein Repository umbenennen",
+        "renaming": "Repository \"{{oldName}}\" wird in \"{{newName}}\" umbenannt...",
+        "success": "Repository in \"{{name}}\" umbenannt"
+      },
+      "delete": {
+        "description": "Ein Repository löschen",
+        "checkingRelationships": "Repository-Beziehungen werden überprüft...",
+        "relationshipsChecked": "Repository-Beziehungen überprüft",
+        "grandRepoWarning": "Dies ist ein Grand-Repository (Anmeldedaten). Das Löschen ist nicht umkehrbar.",
+        "confirm": "Repository \"{{name}}:{{tag}}\" löschen? Dies kann nicht rückgängig gemacht werden.",
+        "deleting": "Repository \"{{name}}:{{tag}}\" wird gelöscht...",
+        "success": "Repository \"{{name}}:{{tag}}\" gelöscht"
+      },
+      "promote": {
+        "description": "Befördern Sie einen Fork zu Grand-Status",
+        "checkingRelationships": "Repository-Beziehungen werden überprüft...",
+        "relationshipsChecked": "Repository-Beziehungen überprüft",
+        "separateInfo": "\nDies trennt \"{{name}}\" vom Grand-Repository \"{{grandName}}\"",
+        "siblingsInfo": "\n{{count}} Sibling-Klon(e) bleiben mit dem ursprünglichen Grand verknüpft:",
+        "confirmPromote": "\nFortfahren mit der Beförderung?",
+        "promoting": "Repository \"{{name}}:{{tag}}\" wird befördert...",
+        "success": "Repository \"{{name}}:{{tag}}\" zu Grand-Status befördert"
+      },
+      "vault": {
+        "description": "Repository-Vault-Verwaltung",
+        "get": {
+          "description": "Repository-Vault-Daten abrufen",
+          "fetching": "Repository-Vault wird abgerufen...",
+          "success": "Vault abgerufen",
+          "notFound": "Kein Repository-Vault gefunden"
+        },
+        "update": {
+          "description": "Repository-Vault-Daten aktualisieren",
+          "updating": "Repository-Vault wird aktualisiert...",
+          "success": "Repository-Vault aktualisiert"
+        }
+      }
+    },
+    "storage": {
+      "description": "Speicherverwaltung",
+      "list": {
+        "description": "Speicheranbieter auflisten",
+        "fetching": "Speicheranbieter werden abgerufen..."
+      }
+    },
+    "sync": {
+      "description": "Dateisynchronisierung mit Repositories mit rsync",
+      "fetchingDetails": "Verbindungsdetails werden abgerufen...",
+      "previewingChanges": "\nÄnderungen werden angezeigt...\n",
+      "noChanges": "Keine Änderungen zum Synchronisieren.",
+      "cancelled": "Synchronisierung abgebrochen.",
+      "dryRunHeader": "\nProbelauf - zeigt, was übertragen würde:\n",
+      "totalSize": "Gesamtgröße: {{size}}",
+      "duration": "Dauer: {{seconds}}s",
+      "errors": "Fehler:",
+      "upload": {
+        "description": "Dateien in ein Repository hochladen",
+        "starting": "Upload wird gestartet...",
+        "progress": "Hochladen: {{percentage}}% - {{file}} ({{speed}})",
+        "completed": "Upload abgeschlossen: {{count}} Dateien übertragen",
+        "failed": "Upload fehlgeschlagen"
+      },
+      "download": {
+        "description": "Dateien aus einem Repository herunterladen",
+        "starting": "Download wird gestartet...",
+        "progress": "Herunterladen: {{percentage}}% - {{file}} ({{speed}})",
+        "completed": "Download abgeschlossen: {{count}} Dateien übertragen",
+        "failed": "Download fehlgeschlagen"
+      },
+      "status": {
+        "description": "Synchronisierungsstatus prüfen und lokale/Remote-Dateien vergleichen"
+      }
+    },
+    "team": {
+      "description": "Team-Verwaltung",
+      "list": {
+        "description": "Teams auflisten",
+        "fetching": "Teams werden abgerufen..."
+      },
+      "create": {
+        "description": "Ein Team erstellen",
+        "creating": "Team wird erstellt...",
+        "success": "Team \"{{name}}\" erstellt"
+      },
+      "member": {
+        "description": "Team-Mitgliedschaftsverwaltung",
+        "list": {
+          "description": "Team-Mitglieder auflisten",
+          "fetching": "Team-Mitglieder werden abgerufen...",
+          "success": "Mitglieder abgerufen"
+        },
+        "add": {
+          "description": "Fügen Sie einen Benutzer zu einem Team hinzu",
+          "adding": "{{email}} wird zum Team \"{{team}}\" hinzugefügt...",
+          "success": "Benutzer zum Team \"{{team}}\" hinzugefügt"
+        },
+        "remove": {
+          "description": "Entfernen Sie einen Benutzer aus einem Team",
+          "removing": "{{email}} wird aus Team \"{{team}}\" entfernt...",
+          "success": "Benutzer aus Team \"{{team}}\" entfernt"
+        }
+      }
+    },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[lokal] In {{duration}}ms abgeschlossen",
+        "description": "Führen Sie eine Funktion aus (Kurzform: queue create)",
+        "executingLocal": "[lokal] Führe '{{function}}' auf {{machine}} aus...",
+        "failedLocal": "[lokal] Fehlgeschlagen: {{error}}",
+        "watching": "Auf Fertigstellung wird gewartet..."
+      },
+      "trace": {
+        "description": "Eine Task nachverfolgen (Kurzform: queue trace)"
+      },
+      "cancel": {
+        "description": "Eine Task abbrechen (Kurzform: queue cancel)"
+      },
+      "retry": {
+        "description": "Eine fehlgeschlagene Task wiederholen (Kurzform: queue retry)"
+      }
+    },
+    "term": {
+      "description": "SSH-Terminal-Zugriff auf Machines und Repositories",
+      "connecting": "Verbindung zu {{machine}} wird hergestellt...",
+      "connect": {
+        "description": "Verbinden Sie sich über SSH mit einer Machine oder einem Repository"
+      },
+      "connectingTo": "Verbindung zu {{title}} wird hergestellt...",
+      "fetchingDetails": "Verbindungsdetails werden abgerufen...",
+      "launchSuccess": "Terminal erfolgreich gestartet.",
+      "launchingTerminal": "{{type}}-Terminal wird gestartet...",
+      "testingConnectivity": "Konnektivität zu {{host}}:{{port}} wird getestet..."
+    },
+    "vscode": {
+      "description": "VS Code Remote-SSH-Integration",
+      "connect": {
+        "description": "Verbinden Sie sich mit einer Machine oder einem Repository in VS Code",
+        "detecting": "VS Code wird erkannt...",
+        "extensionWarning": "Warnung: Remote-SSH-Erweiterung möglicherweise nicht installiert.\nInstallieren Sie unter: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "Verbindungsdetails werden abgerufen...",
+        "testingConnectivity": "Konnektivität zu {{host}}:{{port}} wird getestet...",
+        "persistingKey": "SSH-Schlüssel wird beibehalten...",
+        "configuringSSH": "SSH wird konfiguriert...",
+        "configuringVSCode": "VS Code-Einstellungen werden konfiguriert...",
+        "settingsWarning": "Warnung: Konnte VS Code-Einstellungen nicht konfigurieren: {{error}}",
+        "settingUpEnv": "Remote-Umgebung wird eingerichtet...",
+        "opening": "VS Code wird geöffnet: {{connection}} → {{path}}",
+        "success": "VS Code erfolgreich gestartet."
+      },
+      "list": {
+        "description": "Konfigurierte VS Code-SSH-Verbindungen auflisten",
+        "noConnections": "Keine VS Code-SSH-Verbindungen konfiguriert.",
+        "configFile": "\nKonfigurationsdatei: {{path}}",
+        "header": "Konfigurierte VS Code-SSH-Verbindungen:\n",
+        "keyPersisted": " (Schlüssel beibehalten)",
+        "total": "\nGesamt: {{count}} Verbindung(en)"
+      },
+      "cleanup": {
+        "description": "Entfernen Sie VS Code-SSH-Konfigurationen",
+        "cleanedAll": "{{count}} VS Code-SSH-Verbindung(en) bereinigt.",
+        "removedKeys": "Alle beibehaltenen SSH-Schlüssel entfernt.",
+        "cleaned": "Bereinigt: {{connection}}"
+      },
+      "check": {
+        "description": "Überprüfen Sie die VS Code-Installation und Konfiguration",
+        "title": "VS Code-Setup-Überprüfung\n",
+        "installation": "Installation:",
+        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  Version: {{version}}",
+        "variant": "  Variante: Insiders",
+        "vscodeNotFound": "  VS Code: Nicht gefunden",
+        "remoteSSH": "  Remote-SSH-Erweiterung: {{status}}",
+        "installed": "Installiert",
+        "notDetected": "Nicht erkannt",
+        "configuration": "\nKonfiguration:",
+        "settingsPath": "  Einstellungspfad: {{path}}",
+        "configured": "  Konfiguriert: {{status}}",
+        "yes": "Ja",
+        "no": "Nein",
+        "missingSettings": "  Fehlende Einstellungen:",
+        "sshConfig": "\nSSH-Konfiguration: {{path}}",
+        "activeConnections": "Aktive Verbindungen: {{count}}"
+      }
+    },
+    "user": {
+      "description": "Benutzerverwaltungsbefehle",
+      "list": {
+        "description": "Alle Benutzer auflisten",
+        "fetching": "Benutzer werden abgerufen...",
+        "success": "Benutzer abgerufen"
+      },
+      "create": {
+        "description": "Einen neuen Benutzer erstellen",
+        "creating": "Benutzer \"{{email}}\" wird erstellt...",
+        "success": "Benutzer erstellt",
+        "activationCode": "Aktivierungscode: {{code}}"
+      },
+      "activate": {
+        "description": "Ein Benutzerkonto aktivieren",
+        "activating": "Benutzer \"{{email}}\" wird aktiviert...",
+        "success": "Benutzer aktiviert"
+      },
+      "deactivate": {
+        "description": "Ein Benutzerkonto deaktivieren",
+        "confirm": "Benutzer \"{{email}}\" deaktivieren?",
+        "deactivating": "Benutzer \"{{email}}\" wird deaktiviert...",
+        "success": "Benutzer deaktiviert"
+      },
+      "reactivate": {
+        "description": "Ein deaktiviertes Benutzerkonto erneut aktivieren",
+        "reactivating": "Benutzer \"{{email}}\" wird erneut aktiviert...",
+        "success": "Benutzer erneut aktiviert"
+      },
+      "updateEmail": {
+        "description": "Die E-Mail-Adresse eines Benutzers ändern",
+        "updating": "E-Mail für \"{{email}}\" wird aktualisiert...",
+        "success": "E-Mail aktualisiert zu \"{{email}}\""
+      },
+      "updatePassword": {
+        "description": "Ändern Sie Ihr Passwort",
+        "updating": "Passwort wird aktualisiert...",
+        "success": "Passwort aktualisiert"
+      },
+      "updateLanguage": {
+        "description": "Legen Sie die bevorzugte Sprache des aktuellen Benutzers fest",
+        "updating": "Spracheinstellung wird aktualisiert...",
+        "success": "Sprache aktualisiert zu \"{{language}}\""
+      },
+      "exists": {
+        "description": "Prüfen Sie, ob ein Benutzer existiert",
+        "exists": "Benutzer \"{{email}}\" existiert",
+        "notExists": "Benutzer \"{{email}}\" existiert nicht"
+      },
+      "vault": {
+        "description": "Benutzervault-Verwaltung",
+        "get": {
+          "description": "Aktuelle Benutzervault-Daten abrufen",
+          "fetching": "Benutzervault wird abgerufen...",
+          "success": "Vault abgerufen"
+        },
+        "update": {
+          "description": "Aktuelle Benutzervault-Daten aktualisieren",
+          "updating": "Benutzervault wird aktualisiert...",
+          "success": "Benutzervault aktualisiert"
+        }
+      },
+      "permission": {
+        "description": "Benutzerberechtigung-Verwaltung",
+        "assign": {
+          "description": "Weisen Sie eine Berechtigungsgruppe einem Benutzer zu",
+          "assigning": "\"{{group}}\" wird dem Benutzer \"{{email}}\" zugewiesen...",
+          "success": "Berechtigung zugewiesen"
+        }
+      }
+    }
+  },
+  "errors": {
+    "activationFailed": "Aktivierung fehlgeschlagen",
+    "authFailed": "Authentifizierung fehlgeschlagen",
+    "authRequired": "Authentifizierung erforderlich. Ausführen: rdc login",
+    "bridgeRequired": "Bridge-Name erforderlich. Verwenden Sie --bridge oder stellen Sie den Kontext ein.",
+    "contextNotFound": "Kontext \"{{name}}\" nicht gefunden",
+    "invalidCredentials": "Ungültige Anmeldedaten",
+    "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "invalidExpiration": "Token-Ablauf muss zwischen 1 und 720 Stunden liegen",
+    "invalidAction": "Ungültige Aktion \"{{action}}\". Verwenden Sie \"{{valid}}\".",
+    "invalidFunctionParams": "Ungültige Parameter für Funktion \"{{function}}\": {{errors}}",
+    "invalidJsonFile": "Die bereitgestellte Datei enthält kein gültiges JSON.",
+    "invalidJsonVault": "Ungültige JSON-Vault-Daten.",
+    "invalidKey": "Ungültiger Schlüssel. Gültige Schlüssel: {{keys}}",
+    "machineNotFound": "Machine \"{{name}}\" nicht gefunden",
+    "machineRequired": "Machine-Name erforderlich. Verwenden Sie --machine oder stellen Sie den Kontext ein.",
+    "machineRequiredLocal": "Machine-Name erforderlich. Verwenden Sie --machine oder legen Sie den Standard fest mit: rdc context set machine <name>",
+    "invalidHost": "Ungültige IP-Adresse oder Hostname: \"{{host}}\". Muss eine gültige IPv4-, IPv6- oder Hostname sein.",
+    "invalidPort": "Ungültige Portnummer: \"{{port}}\". Muss zwischen 1 und 65535 liegen.",
+    "failedCreateQueueItem": "Queue-Item konnte nicht erstellt werden",
+    "invalidPriorityMin": "Ungültiger priority-min-Wert. Muss zwischen 1 und 5 liegen.",
+    "invalidPriorityMax": "Ungültiger priority-max-Wert. Muss zwischen 1 und 5 liegen.",
+    "passwordsMismatch": "Passwörter stimmen nicht überein",
+    "repositoryNotFound": "Repository \"{{name}}:{{tag}}\" nicht gefunden",
+    "cannotDeleteGrandRepo": "Kann Grand-Repository nicht löschen: {{reason}}",
+    "affectedChildClones": ". Betroffene untergeordnete Klone: {{clones}}. Löschen oder befördern Sie untergeordnete Klone zuerst.",
+    "cannotPromote": "Kann nicht befördern: {{reason}}",
+    "protocol": {
+      "notSupported": "Protokollregistrierung wird auf {{platform}} nicht unterstützt",
+      "invalidUrl": "Ungültige Protokoll-URL: {{error}}",
+      "commandExitCode": "Befehl mit Code {{code}} beendet",
+      "tokenRequired": "Token erforderlich. Verwenden Sie --token <token>",
+      "teamRequired": "Team-Name erforderlich. Verwenden Sie --team <name>",
+      "machineRequired": "Machine-Name erforderlich. Verwenden Sie --machine <name>",
+      "invalidAction": "Ungültige Aktion '{{action}}'. Muss eine der folgenden sein: {{validActions}}",
+      "parseFailed": "URL konnte nicht analysiert werden: {{error}}"
+    },
+    "networkError": "Netzwerkfehler: {{message}}",
+    "noActiveContext": "Kein aktiver Kontext. Erstellen Sie zunächst einen Kontext oder wählen Sie einen aus.",
+    "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc login",
+    "permissionDenied": "Berechtigung verweigert",
+    "regionRequired": "Regionsname erforderlich. Verwenden Sie --region oder stellen Sie den Kontext ein.",
+    "registrationFailed": "Registrierung fehlgeschlagen",
+    "resourceNotFound": "{{resource}} nicht gefunden",
+    "repositoryRequired": "Repository-Name erforderlich. Verwenden Sie --repository <name>.",
+    "sshKeyNotFound": "SSH-Schlüssel nicht gefunden: {{path}}",
+    "sync": {
+      "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
+      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
+      "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
+      "localPathNotFound": "Lokaler Pfad existiert nicht: {{path}}"
+    },
+    "teamRequired": "Team-Name erforderlich. Verwenden Sie --team oder stellen Sie den Kontext ein.",
+    "term": {
+      "connectivityFailed": "Kann {{host}}:{{port}} nicht erreichen. {{error}}\n\nFehlerbehebung:\n  - Überprüfen Sie, ob die Machine eingeschaltet ist und mit dem Netzwerk verbunden ist\n  - Überprüfen Sie, ob die IP-Adresse im Machine-Vault korrekt ist\n  - Stellen Sie sicher, dass Port {{port}} nicht durch eine Firewall blockiert ist\n  - Versuchen Sie, die Machine zu pingen: ping {{host}}",
+      "launchFailed": "Terminal konnte nicht gestartet werden: {{error}}",
+      "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
+      "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
+      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
+      "sshCode1": "Generischer Fehler - Überprüfen Sie die Befehlssyntax oder Remote-Berechtigungen",
+      "sshCode126": "Berechtigung verweigert - Befehl kann nicht auf Remote ausgeführt werden",
+      "sshCode127": "Befehl auf Remote-Machine nicht gefunden",
+      "sshCode130": "Verbindung vom Benutzer beendet (Strg+C)",
+      "sshCode255": "SSH-Verbindung fehlgeschlagen - mögliche Ursachen:\n    - Authentifizierung fehlgeschlagen (SSH-Schlüssel-Berechtigungen überprüfen)\n    - Host-Schlüssel-Überprüfung fehlgeschlagen\n    - Netzwerkverbindung unterbrochen\n    - Remote-SSH-Service läuft nicht",
+      "sshExitCode": "SSH mit Code {{code}} beendet"
+    },
+    "vscode": {
+      "cleanupRequired": "Geben Sie --all an, um alle Verbindungen zu entfernen, oder --connection <name> für eine spezifische.",
+      "connectivityFailed": "Kann {{host}}:{{port}} nicht erreichen. {{error}}\n\nFehlerbehebung:\n  - Überprüfen Sie, ob die Machine eingeschaltet ist und mit dem Netzwerk verbunden ist\n  - Überprüfen Sie, ob die IP-Adresse im Machine-Vault korrekt ist\n  - Stellen Sie sicher, dass Port {{port}} nicht durch eine Firewall blockiert ist\n  - Versuchen Sie, die Machine zu pingen: ping {{host}}",
+      "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
+      "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
+      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
+      "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable."
+    },
+    "tokenExpired": "Token abgelaufen. Bitte melden Sie sich erneut an.",
+    "unexpectedError": "Unerwarteter Fehler: {{message}}",
+    "validationError": "Validierungsfehler: {{message}}",
+    "vaultDataRequired": "Vault-Daten erforderlich. Verwenden Sie --vault <json> oder leiten Sie JSON über stdin weiter.",
+    "vaultVersionRequired": "Vault-Version erforderlich. Verwenden Sie --vault-version <n>.",
+    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
+    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+  },
+  "options": {
+    "activationCode": "Aktivierungscode aus E-Mail",
+    "apiUrl": "API-URL",
+    "bridge": "Bridge-Name",
+    "command": "Ausführen eines Befehls statt interaktiver Shell",
+    "container": "Mit einem bestimmten Docker-Container verbinden",
+    "containerAction": "Container-Aktion: Terminal, Logs, Stats, Exec",
+    "context": "Verwenden Sie einen bestimmten Kontext für diesen Befehl",
+    "datastore": "Datastore-Pfad auf Machine",
+    "email": "E-Mail-Adresse",
+    "external": "Erzwinge Start in externem Terminal-Fenster",
+    "follow": "Logs-Ausgabe folgen",
+    "endpoint": "API-Endpunkt-URL",
+    "expires": "Ablauf in Stunden (1-720)",
+    "force": "Bestätigungsaufforderungen überspringen",
+    "lang": "Sprache überschreiben ({{languages}})",
+    "limit": "Maximale Anzahl von Ergebnissen",
+    "logLines": "Anzahl der angezeigten Log-Zeilen (Standard: 50)",
+    "machine": "Machine-Name",
+    "machineIp": "Machine-IP-Adresse oder Hostname",
+    "machineShorthand": "Machine-Name (Kurzform für --machine)",
+    "organization": "Organisationsname",
+    "output": "Ausgabeformat (table|json|yaml|csv)",
+    "password": "Passwort (für nicht-interaktive Anmeldung)",
+    "region": "Regionsname",
+    "renetPath": "Pfad zur renet-Binärdatei (Standard: renet in PATH)",
+    "repository": "Repository-Name (verbindet sich mit Repository-Umgebung)",
+    "repositoryShorthand": "Repository-Name (Kurzform für --repository)",
+    "saveAs": "Anmeldedaten unter benanntem Kontext speichern",
+    "sessionName": "Sitzungsname",
+    "sshKey": "Pfad zum SSH-Private-Key (z. B. ~/.ssh/id_rsa)",
+    "sshPort": "SSH-Port",
+    "sshPrivateKey": "Pfad zum SSH-Private-Key",
+    "sshPublicKey": "Pfad zum SSH-Public-Key",
+    "sshUser": "SSH-Benutzername",
+    "switch": "Nach Erstellung zu diesem Kontext wechseln",
+    "team": "Team-Name",
+    "tfaCode": "Aktueller TFA-Code zur Überprüfung",
+    "tokenName": "Token-Name",
+    "watch": "Auf Änderungen achten",
+    "watchUpdates": "Auf Updates achten",
+    "yes": "Bestätigungsaufforderung überspringen",
+    "priority": "Priorität (1=höchste)",
+    "param": "Funktionsparameter",
+    "debug": "Debug-Ausgabe aktivieren (lokaler Modus)",
+    "pollInterval": "Abrufintervall in Millisekunden",
+    "folder": "Pfad zum Remote-Ordner zum Öffnen",
+    "urlOnly": "Drucke die VS Code-URI statt sie zu starten",
+    "newWindow": "In neuem VS Code-Fenster öffnen",
+    "skipEnvSetup": "Remote-Umgebungs-Setup überspringen",
+    "insiders": "VS Code Insiders-Einstellungen verwenden",
+    "cleanupAll": "Alle rediacc-SSH-Konfigurationen entfernen",
+    "connectionName": "Spezifische Verbindung entfernen",
+    "vaultJson": "Vault-Inhalt als JSON-String",
+    "vaultVersion": "Aktuelle Vault-Version für optimistisches Locking",
+    "outputPath": "Pfad zum Speichern der Ausgabedatei",
+    "importMode": "Importmodus (merge oder replace)",
+    "vaultJsonMachine": "Machine-Vault-Daten als JSON-String",
+    "searchInField": "Suchen in {{field}}",
+    "searchRepos": "Repositories nach Name filtern",
+    "sortByField": "Sortieren nach Feld",
+    "sortDescending": "Absteigend sortieren",
+    "sshPassword": "SSH-Passwort für erste Authentifizierung",
+    "machineForVault": "Machine-Name (zum Aktualisieren des Vault nach Test)",
+    "saveKnownHosts": "known_hosts nach erfolgreichem Test im Machine-Vault speichern",
+    "localPath": "Lokaler Verzeichnispfad (Standard: aktuelles Verzeichnis)",
+    "remotePath": "Remote-Unterverzichnis-Pfad innerhalb des Repository",
+    "mirrorUpload": "Spiegelmodus - Remote-Dateien löschen, die nicht lokal vorhanden sind",
+    "mirrorDownload": "Spiegelmodus - lokale Dateien löschen, die nicht auf Remote vorhanden sind",
+    "verifyChecksum": "Dateien mit Prüfsummen nach der Synchronisierung überprüfen",
+    "confirmSync": "Änderungen anzeigen und vor der Synchronisierung um Bestätigung bitten",
+    "excludePatterns": "Von der Synchronisierung auszuschließende Muster",
+    "dryRun": "Anzeigen, was übertragen würde, ohne tatsächlich zu synchronisieren",
+    "filterStatus": "Nach Status filtern",
+    "priorityMin": "Mindestpriorität (1-5)",
+    "priorityMax": "Maximale Priorität (1-5)",
+    "searchQueue": "In Task-ID, Team, Machine, Bridge suchen",
+    "sortField": "Nach Feld sortieren",
+    "sortDesc": "In absteigender Reihenfolge sortieren",
+    "functionName": "Funktionsname zum Ausführen",
+    "rawVault": "Raw Vault JSON (für Scripts/CI)",
+    "userPassword": "Passwort für den neuen Benutzer",
+    "newPasswordNonInteractive": "Neues Passwort (nicht-interaktiver Modus)",
+    "confirmPasswordNonInteractive": "Passwort bestätigen (nicht-interaktiver Modus)",
+    "repositoryTag": "Repository-Tag",
+    "parentRepository": "Parent-Repository (für Forks)",
+    "parentRepositoryTag": "Parent-Repository-Tag",
+    "protocolSystem": "Systemweit registrieren (erfordert Admin-Rechte)",
+    "protocolForce": "Neu-Registrierung erzwingen, auch wenn bereits registriert",
+    "protocolSystemUnregister": "Systemweite Registrierung deregistrieren (erfordert Admin-Rechte)",
+    "outputFormat": "Ausgabeformat (json)",
+    "protocolToken": "Authentifizierungs-Token",
+    "protocolAction": "Aktion ({{actions}})",
+    "protocolParams": "Zusätzliche Parameter"
+  },
+  "prompts": {
+    "apiUrl": "API-URL:",
+    "cancelled": "Abgebrochen",
+    "confirm": "Sind Sie sicher?",
+    "confirmDelete": "Möchten Sie dies wirklich löschen?",
+    "email": "E-Mail:",
+    "enterValue": "Geben Sie {{field}} ein:",
+    "password": "Passwort:",
+    "selectOption": "Wählen Sie eine Option:",
+    "sshPassword": "SSH-Passwort (leer lassen, wenn Sie Schlüssel-Auth verwenden): ",
+    "syncConfirm": "\nFortfahren mit Synchronisierung? [y/N/d(etails)] ",
+    "syncConfirmHelp": "Bitte geben Sie y (ja), n (nein) oder d (details) ein",
+    "passwordForUser": "Passwort für neuen Benutzer:",
+    "confirmPassword": "Passwort bestätigen:",
+    "setPassword": "Passwort für Benutzer festlegen:",
+    "newPassword": "Neues Passwort:",
+    "confirmNewPassword": "Neues Passwort bestätigen:",
+    "masterPassword": "Geben Sie Ihr Master-Passwort ein:"
+  },
+  "spinners": {
+    "connecting": "Verbindung wird hergestellt...",
+    "creating": "{{resource}} wird erstellt...",
+    "deleting": "{{resource}} wird gelöscht...",
+    "fetching": "{{resource}} wird abgerufen...",
+    "loading": "Wird geladen...",
+    "processing": "Wird verarbeitet...",
+    "saving": "Wird gespeichert...",
+    "updating": "{{resource}} wird aktualisiert..."
+  },
+  "status": {
+    "cancelled": "Abgebrochen",
+    "completed": "Abgeschlossen",
+    "failed": "Fehlgeschlagen",
+    "pending": "Ausstehend",
+    "processing": "Wird verarbeitet",
+    "success": "Erfolg"
+  },
+  "table": {
+    "noData": "Keine Daten zum Anzeigen"
+  },
+  "common": {
+    "yes": "Ja",
+    "no": "Nein",
+    "running": "Läuft",
+    "stopped": "Gestoppt",
+    "completed": "Abgeschlossen",
+    "failed": "Fehlgeschlagen",
+    "success": "✓ Erfolg",
+    "unknown": "Unbekannt",
+    "inProgress": "In Bearbeitung"
+  }
+}

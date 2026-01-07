@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "İptal edildi",
+    "completed": "Tamamlandı",
+    "failed": "Başarısız",
+    "pending": "Beklemede",
+    "processing": "İşleniyor",
+    "running": "Çalışıyor",
+    "success": "Başarılı",
+    "unknown": "Bilinmiyor",
+    "inProgress": "Devam ediyor",
+    "initializing": "Başlatılıyor..."
+  },
+  "actions": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "create": "Oluştur",
+    "edit": "Düzenle",
+    "copy": "Kopyala",
+    "retry": "Tekrar dene",
+    "refresh": "Yenile",
+    "close": "Kapat",
+    "download": "İndir",
+    "upload": "Yükle",
+    "remove": "Kaldır",
+    "confirm": "Onayla",
+    "reset": "Sıfırla",
+    "back": "Geri",
+    "search": "Ara",
+    "export": "Dışa aktar"
+  },
+  "common": {
+    "yes": "Evet",
+    "no": "Hayır",
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "warning": "Uyarı",
+    "success": "Başarılı",
+    "unknown": "Bilinmiyor",
+    "total": "Toplam",
+    "none": "Hiçbiri"
+  },
+  "validation": {
+    "required": "Bu alan zorunludur",
+    "invalidEmail": "Geçerli bir e-posta adresi girin",
+    "invalidFormat": "Geçersiz format"
+  },
+  "time": {
+    "today": "Bugün",
+    "yesterday": "Dün",
+    "last7Days": "Son 7 gün",
+    "last30Days": "Son 30 gün",
+    "thisMonth": "Bu ay",
+    "lastMonth": "Geçen ay"
+  },
+  "confirm": {
+    "areYouSure": "Emin misiniz?",
+    "confirmDelete": "Bunu silmek istediğinizden emin misiniz?"
+  },
+  "notifications": {
+    "error": "Hata",
+    "warning": "Uyarı",
+    "success": "Başarılı",
+    "info": "Bilgi"
+  }
+}

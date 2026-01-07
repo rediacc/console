@@ -36,7 +36,7 @@ describe('bridge commands', () => {
     });
   });
 
-  // CRUD operations - safe to run with fresh company registration
+  // CRUD operations - safe to run with fresh organization registration
   describe('bridge CRUD operations', () => {
     const testBridgeName = `test-bridge-${Date.now()}`;
 

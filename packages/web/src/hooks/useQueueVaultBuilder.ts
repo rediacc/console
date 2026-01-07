@@ -1,14 +1,17 @@
 import { useCallback } from 'react';
 import { typedApi } from '@/api/client';
 import { type QueueRequestContext, queueService } from '@/services/queue';
-import { parseGetCompanyVault } from '@rediacc/shared/api';
+import { parseGetOrganizationVault } from '@rediacc/shared/api';
 import { parseVaultContentOrEmpty } from '@rediacc/shared/queue-vault';
 
 /**
  * Hook to build queue vault data with all required context
  * This combines vault data from various entities based on function requirements
  */
-type QueueVaultBuilderParams = Omit<QueueRequestContext, 'companyVault' | 'companyCredential'> & {
+type QueueVaultBuilderParams = Omit<
+  QueueRequestContext,
+  'organizationVault' | 'organizationCredential'
+> & {
   repositoryVault?: QueueRequestContext['repositoryVault'];
   destinationRepositoryVault?: QueueRequestContext['destinationRepositoryVault'];
   sourceRepositoryVault?: QueueRequestContext['sourceRepositoryVault'];
@@ -17,12 +20,12 @@ type QueueVaultBuilderParams = Omit<QueueRequestContext, 'companyVault' | 'compa
 
 export function useQueueVaultBuilder() {
   const buildQueueVault = useCallback(async (context: QueueVaultBuilderParams): Promise<string> => {
-    // Fetch company vault directly from API to ensure we have the latest data
-    const response = await typedApi.GetCompanyVault({});
-    const companyVaultData = parseGetCompanyVault(response as never);
+    // Fetch organization vault directly from API to ensure we have the latest data
+    const response = await typedApi.GetOrganizationVault({});
+    const organizationVaultData = parseGetOrganizationVault(response as never);
 
-    if (!companyVaultData) {
-      throw new Error('Failed to fetch company vault data');
+    if (!organizationVaultData) {
+      throw new Error('Failed to fetch organization vault data');
     }
 
     const {
@@ -41,7 +44,7 @@ export function useQueueVaultBuilder() {
         | 'repositoryVault'
         | 'bridgeVault'
         | 'storageVault'
-        | 'companyVault'
+        | 'organizationVault'
         | 'destinationMachineVault'
         | 'destinationStorageVault'
         | 'destinationRepositoryVault'
@@ -63,7 +66,7 @@ export function useQueueVaultBuilder() {
       storageVault: baseContext.storageVault
         ? parseVaultContentOrEmpty(baseContext.storageVault)
         : undefined,
-      companyVault: parseVaultContentOrEmpty(companyVaultData.vaultContent),
+      organizationVault: parseVaultContentOrEmpty(organizationVaultData.vaultContent),
       destinationMachineVault: baseContext.destinationMachineVault
         ? parseVaultContentOrEmpty(baseContext.destinationMachineVault)
         : undefined,
@@ -88,7 +91,7 @@ export function useQueueVaultBuilder() {
     const fullContext: QueueRequestContext = {
       ...baseContext,
       ...parsedVaults,
-      companyCredential: companyVaultData.companyCredential,
+      organizationCredential: organizationVaultData.organizationCredential ?? undefined,
       allRepositoryCredentials,
     };
 

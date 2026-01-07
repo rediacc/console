@@ -7,13 +7,13 @@ import {
 } from '@ant-design/icons';
 import { Alert, Button, Empty, Flex, Input, Select, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useMachines } from '@/api/queries/machines';
-import { useRepositories } from '@/api/queries/repositories';
-import { useStorage } from '@/api/queries/storage';
-import { useTeams } from '@/api/queries/teams';
+import { useGetTeamMachines } from '@/api/api-hooks.generated';
+import { useGetTeamRepositories } from '@/api/api-hooks.generated';
+import { useGetTeamStorages } from '@/api/api-hooks.generated';
+import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { useDropdownData } from '@/api/queries/useDropdownData';
-import { SizedModal } from '@/components/common';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import { SizedModal } from '@/components/common/SizedModal';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { waitForQueueItemCompletion } from '@/services/helloService';
@@ -88,10 +88,10 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines']);
   const { data: _dropdownData } = useDropdownData();
-  const { data: storageData, isLoading: isLoadingStorage } = useStorage(teamName);
-  const { data: machinesData, isLoading: isLoadingMachines } = useMachines(teamName);
-  const { data: teamsData } = useTeams();
-  const { data: teamRepositories = [] } = useRepositories(teamName);
+  const { data: storageData, isLoading: isLoadingStorage } = useGetTeamStorages(teamName);
+  const { data: machinesData, isLoading: isLoadingMachines } = useGetTeamMachines(teamName);
+  const { data: teamsData } = useGetOrganizationTeams();
+  const { data: teamRepositories = [] } = useGetTeamRepositories(teamName);
   const { buildQueueVault } = useQueueVaultBuilder();
   const { mutateAsync: createQueueItem } = useManagedQueueItem();
 
@@ -107,16 +107,16 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
     machinesData?.forEach((machine) => {
       sources.push({
-        value: machine.machineName,
-        label: `${machine.machineName} (Machine)`,
+        value: machine.machineName ?? '',
+        label: `${machine.machineName ?? ''} (Machine)`,
         type: 'machine',
       });
     });
 
     storageData?.forEach((storage) => {
       sources.push({
-        value: storage.storageName,
-        label: `${storage.storageName} (Cloud Storage)`,
+        value: storage.storageName ?? '',
+        label: `${storage.storageName ?? ''} (Cloud Storage)`,
         type: 'storage',
       });
     });
@@ -138,10 +138,10 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         isUnmapped: true,
       };
     }
-    const tag = repositoryInfo.repositoryTag || 'latest';
+    const tag = repositoryInfo.repositoryTag ?? 'latest';
     return {
-      displayName: `${repositoryInfo.repositoryName}:${tag}`,
-      repositoryName: repositoryInfo.repositoryName,
+      displayName: `${repositoryInfo.repositoryName ?? ''}:${tag}`,
+      repositoryName: repositoryInfo.repositoryName ?? undefined,
       repositoryTag: tag,
       isUnmapped: false,
     };
@@ -162,7 +162,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       teamName,
       machineName,
       bridgeName,
-      functionName: 'list',
+      functionName: 'repository_list',
       params: {
         from: selectedSource,
         path: currentPath || '',
@@ -208,9 +208,13 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         selectedSource,
         machineName,
         storageSources,
-        machinesData,
-        storageData,
-        teamsData,
+        machinesData: machinesData?.filter(
+          (m): m is typeof m & { machineName: string } => !!m.machineName
+        ),
+        storageData: storageData?.filter(
+          (s): s is typeof s & { storageName: string } => !!s.storageName
+        ),
+        teamsData: teamsData?.filter((t): t is typeof t & { teamName: string } => !!t.teamName),
         teamName,
       });
 
@@ -271,9 +275,13 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       machineName,
       teamName,
       storageSources,
-      machinesData,
-      storageData,
-      teamsData,
+      machinesData: machinesData?.filter(
+        (m): m is typeof m & { machineName: string } => !!m.machineName
+      ),
+      storageData: storageData?.filter(
+        (s): s is typeof s & { storageName: string } => !!s.storageName
+      ),
+      teamsData: teamsData?.filter((t): t is typeof t & { teamName: string } => !!t.teamName),
     });
 
     const sourceDetails = storageSources.find((s) => s.value === selectedSource);
@@ -283,7 +291,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       teamName,
       machineName,
       bridgeName,
-      functionName: 'pull',
+      functionName: 'backup_pull',
       params: {
         from: selectedSource,
         repository: file.originalGuid ?? file.name,
@@ -356,15 +364,14 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         </Tooltip>,
       ]}
     >
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         <Flex vertical data-testid="file-browser-source-container">
           <Typography.Text data-testid="file-browser-source-label">
             {t('resources:remoteFiles.sourceLabel')}
           </Typography.Text>
           <Flex justify="space-between" className="w-full">
             <Space>
-              {/* eslint-disable-next-line no-restricted-syntax */}
-              <Flex style={{ width: 240 }}>
+              <Flex className="min-w-0 flex-1 max-w-select">
                 <Flex className="w-full">
                   <Select
                     placeholder={t('resources:remoteFiles.selectSource')}
@@ -408,8 +415,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                 />
               </Tooltip>
             </Space>
-            {/* eslint-disable-next-line no-restricted-syntax */}
-            <Flex style={{ width: 200 }}>
+            <Flex className="min-w-0 search-input-constrained">
               <Input
                 placeholder={t('common:actions.search')}
                 value={searchText}
@@ -435,7 +441,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         <Alert
           type="info"
           message={t('resources:remoteFiles.info')}
-          showIcon
           data-testid="file-browser-info-alert"
         />
       </Flex>

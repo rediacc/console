@@ -1,8 +1,8 @@
 import React from 'react';
 import { Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { SizedModal } from '@/components/common';
-import { createTruncatedColumn } from '@/components/common/columns';
+import { createTruncatedColumn, RESPONSIVE_HIDE_XS } from '@/components/common/columns';
+import { SizedModal } from '@/components/common/SizedModal';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import type { Machine } from '@/types';
@@ -32,7 +32,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   const targetMachines: Machine[] =
     machines ??
     (selectedMachines && allMachines
-      ? allMachines.filter((machine) => selectedMachines.includes(machine.machineName))
+      ? allMachines.filter((machine) => selectedMachines.includes(machine.machineName ?? ''))
       : []);
   const noneLabel = t('common:none');
 
@@ -42,33 +42,39 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     key: 'machineName',
     width: 200,
     renderWrapper: (content) => (
-      <Flex align="center" gap={8}>
+      <Flex align="center">
         <CloudServerOutlined />
         <Typography.Text>{content}</Typography.Text>
       </Flex>
     ),
   });
 
-  const teamColumn = createTruncatedColumn<Machine>({
-    title: t('machines:team'),
-    dataIndex: 'teamName',
-    key: 'teamName',
-    width: 150,
-    renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
-  });
+  const teamColumn = {
+    ...createTruncatedColumn<Machine>({
+      title: t('machines:team'),
+      dataIndex: 'teamName',
+      key: 'teamName',
+      width: 150,
+      renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  };
 
-  const clusterColumn = createTruncatedColumn<Machine>({
-    title: t('ceph:clusters.cluster'),
-    dataIndex: 'cephClusterName',
-    key: 'cluster',
-    renderText: (cluster?: string | null) => cluster ?? noneLabel,
-    renderWrapper: (content, fullText) =>
-      fullText === noneLabel ? (
-        <Typography.Text>{fullText}</Typography.Text>
-      ) : (
-        <Tag bordered={false}>{content}</Tag>
-      ),
-  });
+  const clusterColumn = {
+    ...createTruncatedColumn<Machine>({
+      title: t('ceph:clusters.cluster'),
+      dataIndex: 'cephClusterName',
+      key: 'cluster',
+      renderText: (cluster?: string | null) => cluster ?? noneLabel,
+      renderWrapper: (content, fullText) =>
+        fullText === noneLabel ? (
+          <Typography.Text>{fullText}</Typography.Text>
+        ) : (
+          <Tag bordered={false}>{content}</Tag>
+        ),
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  };
 
   const columns: ColumnsType<Machine> = [
     machineColumn,
@@ -99,7 +105,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   return (
     <SizedModal
       title={
-        <Flex align="center" gap={8} wrap>
+        <Flex align="center" wrap>
           <InfoCircleOutlined />
           {t('machines:bulkActions.viewAssignmentStatus')}
         </Flex>
@@ -113,20 +119,20 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
     >
       <Flex
         align="center"
-        gap={16}
+        className="gap-md"
         wrap
         // eslint-disable-next-line no-restricted-syntax
         style={{ marginBottom: 16 }}
       >
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <Typography.Text>{t('common:total')}:</Typography.Text>
           <Typography.Text>{totalMachines}</Typography.Text>
         </Flex>
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
           <Typography.Text>{stats.available}</Typography.Text>
         </Flex>
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <MachineAssignmentStatusBadge assignmentType="CLUSTER" size="small" />
           <Typography.Text>{stats.cluster}</Typography.Text>
         </Flex>
@@ -136,12 +142,11 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
         columns={columns}
         dataSource={targetMachines}
         rowKey="machineName"
-        size="small"
         pagination={{
           pageSize: 10,
           showSizeChanger: false,
         }}
-        scroll={{ y: 400 }}
+        scroll={{ x: 'max-content', y: 400 }}
         data-testid="ds-view-assignment-status-table"
       />
     </SizedModal>

@@ -2,17 +2,17 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Button, Flex, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useMachines } from '@/api/queries/machines';
+import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import {
   useCreateRepository,
   usePromoteRepositoryToGrand,
-  useRepositories,
+  useGetTeamRepositories,
   useUpdateRepositoryName,
   useUpdateRepositoryTag,
-} from '@/api/queries/repositories';
-import { useStorage } from '@/api/queries/storage';
-import { useTeams } from '@/api/queries/teams';
-import { createActionColumn } from '@/components/common/columns';
+} from '@/api/api-hooks.generated';
+import { useGetTeamStorages } from '@/api/api-hooks.generated';
+import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
+import { createActionColumn } from '@/components/common/columns/factories/action';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
@@ -29,10 +29,12 @@ import { RepositoryMobileCard } from './components/RepositoryMobileCard';
 import { SSHKeyWarning } from './components/SSHKeyWarning';
 import {
   handleForkFunction,
-  handleDeployFunction,
-  handleBackupFunction,
+  handlePushFunction,
   handlePullFunction,
   handleCustomFunction,
+  isPushFunctionData,
+  isForkFunctionData,
+  isPullFunctionData,
 } from './handlers';
 import { useConfirmForkDeletion } from './hooks/useConfirmForkDeletion';
 import { useConfirmRepositoryDeletion } from './hooks/useConfirmRepositoryDeletion';
@@ -74,15 +76,15 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   const functionModal = useDialogState<void>();
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null);
 
-  const { executeAction, isExecuting } = useQueueAction();
-  const { data: teams } = useTeams();
+  const { executeTyped, executeDynamic, isExecuting } = useQueueAction();
+  const { data: teams } = useGetOrganizationTeams();
   const {
     data: teamRepositories = [],
     isLoading: repositoriesLoading,
     refetch: refetchRepos,
-  } = useRepositories(machine.teamName);
-  const { data: teamMachines = [] } = useMachines(machine.teamName);
-  const { data: teamStorages = [] } = useStorage(machine.teamName);
+  } = useGetTeamRepositories(machine.teamName ?? undefined);
+  const { data: teamMachines = [] } = useGetTeamMachines(machine.teamName ?? undefined);
+  const { data: teamStorages = [] } = useGetTeamStorages(machine.teamName ?? undefined);
   const createRepositoryMutation = useCreateRepository();
   const promoteRepoMutation = usePromoteRepositoryToGrand();
   const updateRepoNameMutation = useUpdateRepositoryName();
@@ -103,7 +105,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       typeof useQuickRepositoryAction
     >[0]['teamRepositories'],
     machine: machine as Parameters<typeof useQuickRepositoryAction>[0]['machine'],
-    executeAction: executeAction as Parameters<typeof useQuickRepositoryAction>[0]['executeAction'],
+    executeDynamic: executeDynamic as Parameters<
+      typeof useQuickRepositoryAction
+    >[0]['executeDynamic'],
     onQueueItemCreated,
     t,
   });
@@ -114,7 +118,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
     >[0]['teamRepositories'],
     machine: machine as Parameters<typeof useConfirmForkDeletion>[0]['machine'],
     confirm: confirm as Parameters<typeof useConfirmForkDeletion>[0]['confirm'],
-    executeAction: executeAction as Parameters<typeof useConfirmForkDeletion>[0]['executeAction'],
+    executeTyped: executeTyped as Parameters<typeof useConfirmForkDeletion>[0]['executeTyped'],
     onQueueItemCreated,
     t,
   });
@@ -135,24 +139,19 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
       const repoData = teamRepositories.find((r) => r.repositoryGuid === context.repositoryGuid);
 
-      const params: Record<string, unknown> = {
-        repository: context.repositoryGuid,
-        repositoryName: context.repositoryTag,
-        grand: context.repositoryGuid,
-      };
-
-      const result = await executeAction({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: 'rm',
-        params,
+      const result = await executeTyped('repository_delete', {
+        params: {
+          grand: context.repositoryGuid ?? undefined,
+        },
+        teamName: machine.teamName ?? '',
+        machineName: machine.machineName ?? '',
+        bridgeName: machine.bridgeName ?? '',
         priority: 4,
         addedVia: 'machine-Repository-list-delete-grand',
         machineVault: machine.vaultContent ?? '{}',
-        repositoryGuid: context.repositoryGuid,
+        repositoryGuid: context.repositoryGuid ?? undefined,
         vaultContent: grandRepoVault,
-        repositoryNetworkId: context.repositoryNetworkId,
+        repositoryNetworkId: context.repositoryNetworkId ?? undefined,
       });
 
       if (result.success) {
@@ -164,7 +163,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             })
           );
           if (onQueueItemCreated) {
-            onQueueItemCreated(result.taskId, machine.machineName);
+            onQueueItemCreated(result.taskId, machine.machineName ?? '');
           }
           showMessage('success', t('resources:repositories.deleteGrandSuccess'));
         } else if (result.isQueued) {
@@ -178,7 +177,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
   });
 
   const { handlePromoteToGrand, handleRenameRepo, handleRenameTag } = useRepositoryActions({
-    teamName: machine.teamName,
+    teamName: machine.teamName ?? '',
     teamRepositories,
     confirm,
     modal,
@@ -211,10 +210,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
 
   const createRepositoryCredential = async (repositoryName: string, tag: string) => {
     await createRepositoryMutation.mutateAsync({
-      teamName: machine.teamName,
+      teamName: machine.teamName ?? '',
       repositoryName,
       repositoryTag: tag,
       parentRepositoryName: repositoryName,
+      vaultContent: '{}',
     });
     const { data: updatedRepos } = await refetchRepos();
     const newRepo = updatedRepos?.find(
@@ -234,7 +234,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         machine: machine as FunctionExecutionContext['machine'],
         teamMachines: teamMachines as FunctionExecutionContext['teamMachines'],
         teamStorages: teamStorages as FunctionExecutionContext['teamStorages'],
-        executeAction: executeAction as FunctionExecutionContext['executeAction'],
+        executeTyped: executeTyped as FunctionExecutionContext['executeTyped'],
+        executeDynamic: executeDynamic as FunctionExecutionContext['executeDynamic'],
         createRepositoryCredential:
           createRepositoryCredential as FunctionExecutionContext['createRepositoryCredential'],
         onQueueItemCreated,
@@ -242,29 +243,26 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         t,
       };
 
-      const functionName = functionData.function.name;
+      // Use type guards for proper type narrowing
+      const functionDataWithParams = { ...functionData, params: functionData.params };
 
-      if (functionName === 'fork') {
-        await handleForkFunction(functionData, context);
+      if (isForkFunctionData(functionDataWithParams)) {
+        await handleForkFunction(functionDataWithParams, context);
         return;
       }
 
-      if (functionName === 'deploy' && functionData.params.machines) {
-        await handleDeployFunction(functionData, context);
+      if (isPushFunctionData(functionDataWithParams)) {
+        await handlePushFunction(functionDataWithParams, context);
         return;
       }
 
-      if (functionName === 'backup' && functionData.params.storages) {
-        await handleBackupFunction(functionData, context);
+      if (isPullFunctionData(functionDataWithParams)) {
+        await handlePullFunction(functionDataWithParams, context);
         return;
       }
 
-      if (functionName === 'pull') {
-        await handlePullFunction(functionData, context);
-        return;
-      }
-
-      await handleCustomFunction(functionData, context);
+      // For all other functions, use the custom handler
+      await handleCustomFunction({ ...functionData, params: functionData.params }, context);
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -319,9 +317,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           onDeleteGrandRepository={confirmRepositoryDeletion}
           onRepositoryClick={onRepositoryClick}
           onViewContainers={(repo) =>
-            navigate(`/machines/${machine.machineName}/repositories/${repo.name}/containers`, {
-              state: { machine, Repository: repo },
-            })
+            navigate(
+              `/machines/${machine.machineName ?? ''}/repositories/${repo.name}/containers`,
+              {
+                state: { machine, Repository: repo },
+              }
+            )
           }
           onCreateRepository={onCreateRepository}
           t={t}
@@ -335,9 +336,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       <RepositoryMobileCard
         record={record}
         teamRepositories={teamRepositories}
-        machineName={machine.machineName}
+        machineName={machine.machineName ?? ''}
         onNavigateToContainers={(repo) =>
-          navigate(`/machines/${machine.machineName}/repositories/${repo.name}/containers`, {
+          navigate(`/machines/${machine.machineName ?? ''}/repositories/${repo.name}/containers`, {
             state: { machine, Repository: repo },
           })
         }
@@ -384,7 +385,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           message={t('common:messages.error')}
           description={error}
           type="error"
-          showIcon
           action={
             <Tooltip title={t('common:actions.retry')}>
               <Button
@@ -428,8 +428,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
               </Typography.Title>
             </Space>
             <Space wrap size={8}>
-              <Tag data-testid="machine-repo-list-team-tag">{machine.teamName}</Tag>
-              <Tag data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</Tag>
+              <Tag data-testid="machine-repo-list-team-tag">{machine.teamName ?? ''}</Tag>
+              <Tag data-testid="machine-repo-list-bridge-tag">{machine.bridgeName ?? ''}</Tag>
               {machine.regionName && (
                 <Tag data-testid="machine-repo-list-region-tag">{machine.regionName}</Tag>
               )}
@@ -441,7 +441,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
         </Flex>
       )}
 
-      <SSHKeyWarning teamName={machine.teamName} teams={teams} t={t} />
+      <SSHKeyWarning
+        teamName={machine.teamName ?? ''}
+        teams={teams as Parameters<typeof SSHKeyWarning>[0]['teams']}
+        t={t}
+      />
 
       <Flex className="w-full">
         <ResourceListView<RepositoryTableRow>
@@ -452,6 +456,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           pagination={false}
           emptyDescription={t('resources:repositories.noRepositories')}
           mobileRender={mobileRender}
+          data-testid="machine-repo-list-table"
         />
       </Flex>
 
@@ -464,7 +469,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
             columns={systemContainerColumns}
             dataSource={systemContainers}
             rowKey="id"
-            size="small"
             pagination={false}
             scroll={{ x: 'max-content' }}
             data-testid="machine-repo-list-system-containers-table"

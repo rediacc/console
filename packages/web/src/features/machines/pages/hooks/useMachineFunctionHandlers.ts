@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
 import { FUNCTION_DEFINITIONS } from '@/services/functionsService';
-import type { QueueActionParams } from '@/services/queue';
+import type { DynamicQueueActionParams, QueueActionResult } from '@/services/queue';
 import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import { isBridgeFunction, type BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import type { MachineFunctionData } from '../types';
-import type { TFunction } from 'i18next';
 
 interface UseMachineFunctionHandlersProps {
   currentResource: Machine | null;
@@ -12,16 +13,14 @@ interface UseMachineFunctionHandlersProps {
   machines: Machine[];
   repositories: { repositoryGuid: string; vaultContent?: string | null }[];
   storages: { storageName: string; vaultContent?: string | null }[];
-  executeAction: (params: QueueActionParams) => Promise<{
-    success: boolean;
-    taskId?: string;
-    isQueued?: boolean;
-    error?: string;
-  }>;
+  executeDynamic: (
+    functionName: BridgeFunctionName,
+    params: Omit<DynamicQueueActionParams, 'functionName'>
+  ) => Promise<QueueActionResult>;
   closeUnifiedModal: () => void;
   openQueueTrace: (taskId: string, machineName: string) => void;
   setRefreshKeys: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export function useMachineFunctionHandlers({
@@ -30,7 +29,7 @@ export function useMachineFunctionHandlers({
   machines,
   repositories,
   storages,
-  executeAction,
+  executeDynamic,
   closeUnifiedModal,
   openQueueTrace,
   setRefreshKeys,
@@ -49,12 +48,11 @@ export function useMachineFunctionHandlers({
             ? functionData.params.repository
             : undefined;
 
-        const queuePayload: QueueActionParams = {
-          teamName: currentResource.teamName,
-          machineName,
-          bridgeName,
-          functionName: functionData.function.name,
+        const queuePayload: Omit<DynamicQueueActionParams, 'functionName'> = {
           params: functionData.params,
+          teamName: currentResource.teamName ?? '',
+          machineName: machineName ?? '',
+          bridgeName: bridgeName ?? '',
           priority: functionData.priority,
           addedVia: 'machine-table',
           teamVault: teamData?.vaultContent ?? '{}',
@@ -68,7 +66,7 @@ export function useMachineFunctionHandlers({
           queuePayload.vaultContent = repository?.vaultContent ?? '{}';
         }
 
-        if (functionData.function.name === 'pull') {
+        if (functionData.function.name === 'backup_pull') {
           const sourceType =
             typeof functionData.params.sourceType === 'string'
               ? functionData.params.sourceType
@@ -95,13 +93,16 @@ export function useMachineFunctionHandlers({
           }
         }
 
-        const result = await executeAction(queuePayload);
+        const result = await executeDynamic(
+          functionData.function.name as BridgeFunctionName,
+          queuePayload
+        );
         closeUnifiedModal();
 
         if (result.success) {
           if (result.taskId) {
             showMessage('success', t('machines:queueItemCreated'));
-            openQueueTrace(result.taskId, machineName);
+            openQueueTrace(result.taskId, machineName ?? '');
           } else if (result.isQueued) {
             showMessage(
               'info',
@@ -118,7 +119,7 @@ export function useMachineFunctionHandlers({
     [
       closeUnifiedModal,
       currentResource,
-      executeAction,
+      executeDynamic,
       machines,
       openQueueTrace,
       repositories,
@@ -130,32 +131,27 @@ export function useMachineFunctionHandlers({
 
   const handleDirectFunctionQueue = useCallback(
     async (machine: Machine, functionName: string) => {
-      const funcDef = FUNCTION_DEFINITIONS[functionName] as
-        | (typeof FUNCTION_DEFINITIONS)[keyof typeof FUNCTION_DEFINITIONS]
-        | undefined;
-      if (funcDef === undefined) {
+      if (!isBridgeFunction(functionName)) {
         showMessage('error', t('resources:errors.functionNotFound'));
         return;
       }
+      const funcDef = FUNCTION_DEFINITIONS[functionName];
 
       // Build default params from function definition
       const defaultParams: Record<string, string> = {};
-      if (funcDef.params) {
-        Object.entries(funcDef.params).forEach(([paramName, paramInfo]) => {
-          if (paramInfo.default) {
-            defaultParams[paramName] = paramInfo.default;
-          }
-        });
-      }
+      Object.entries(funcDef.params).forEach(([paramName, paramInfo]) => {
+        if (paramInfo.default) {
+          defaultParams[paramName] = paramInfo.default;
+        }
+      });
 
       const teamData = teams.find((team) => team.teamName === machine.teamName);
 
-      const queuePayload: QueueActionParams = {
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName,
+      const queuePayload: Omit<DynamicQueueActionParams, 'functionName'> = {
         params: defaultParams,
+        teamName: machine.teamName ?? '',
+        machineName: machine.machineName ?? '',
+        bridgeName: machine.bridgeName ?? '',
         priority: 4, // Normal priority
         addedVia: 'machine-table-quick',
         teamVault: teamData?.vaultContent ?? '{}',
@@ -164,12 +160,12 @@ export function useMachineFunctionHandlers({
       };
 
       try {
-        const result = await executeAction(queuePayload);
+        const result = await executeDynamic(functionName, queuePayload);
 
         if (result.success) {
           if (result.taskId) {
             showMessage('success', t('machines:queueItemCreated'));
-            openQueueTrace(result.taskId, machine.machineName);
+            openQueueTrace(result.taskId, machine.machineName ?? '');
           } else if (result.isQueued) {
             showMessage(
               'info',
@@ -182,13 +178,13 @@ export function useMachineFunctionHandlers({
 
         setRefreshKeys((prev) => ({
           ...prev,
-          [machine.machineName]: Date.now(),
+          [machine.machineName ?? '']: Date.now(),
         }));
       } catch {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'));
       }
     },
-    [executeAction, openQueueTrace, setRefreshKeys, t, teams]
+    [executeDynamic, openQueueTrace, setRefreshKeys, t, teams]
   );
 
   return {

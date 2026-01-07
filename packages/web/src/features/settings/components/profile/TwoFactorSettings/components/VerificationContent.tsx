@@ -2,8 +2,8 @@ import React from 'react';
 import { Alert, Button, Flex, Form, Input, QRCode, Space, Tabs, Typography } from 'antd';
 import { OTPCodeField } from '@/features/settings/components/profile/OTPCodeField';
 import { CopyOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { FormInstance } from 'antd/es/form';
-import type { TFunction } from 'i18next';
 
 const { Title, Paragraph } = Typography;
 
@@ -16,7 +16,7 @@ interface VerificationContentProps {
   isSubmitting: boolean;
   copySecret: (value: string) => void;
   generateOtpAuthUrl: (secret: string, email: string) => string;
-  t: TFunction<'settings'>;
+  t: TypedTFunction;
 }
 
 export const VerificationContent: React.FC<VerificationContentProps> = ({
@@ -53,7 +53,7 @@ export const VerificationContent: React.FC<VerificationContentProps> = ({
           className="w-full"
           message={t('twoFactorAuth.manualSetup.title')}
           description={
-            <Flex vertical gap={8} className="w-full">
+            <Flex vertical className="gap-sm w-full">
               <Typography.Text>{t('twoFactorAuth.manualSetup.instructions')}</Typography.Text>
               <Space.Compact className="w-full">
                 <Input value={secret} readOnly data-testid="tfa-settings-secret-key-input" />
@@ -73,7 +73,7 @@ export const VerificationContent: React.FC<VerificationContentProps> = ({
   ];
 
   return (
-    <Flex vertical gap={24} className="w-full">
+    <Flex vertical className="w-full">
       <Flex vertical align="center" className="text-center">
         <SafetyCertificateOutlined />
         <Title level={4}>{t('twoFactorAuth.verification.title')}</Title>

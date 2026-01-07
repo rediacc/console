@@ -1,41 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import functionDefinitions from '@rediacc/shared/queue-vault/data/definitions';
+import {
+  FUNCTION_DEFINITIONS,
+  FUNCTION_CATEGORIES,
+  type FunctionDefinition,
+} from '@rediacc/shared/queue-vault/data/definitions';
+import { isBridgeFunction } from '@rediacc/shared/queue-vault/data/functions.generated';
 
-// Base function definition without translatable content
-interface FunctionDefinition {
-  name: string;
-  category: string;
-  showInMenu?: boolean;
-  requirements?: FunctionRequirements;
-  params?: Record<string, FunctionParam>;
-}
-
-interface FunctionRequirements {
-  machine?: boolean;
-  team?: boolean;
-  company?: boolean;
-  repository?: boolean;
-  storage?: boolean;
-  plugin?: boolean;
-  bridge?: boolean;
-}
-
-interface FunctionParam {
-  type: string;
-  required?: boolean;
-  default?: string;
-  format?: string;
-  units?: string[];
-  help?: string;
-  label?: string;
-  options?: string[]; // For dropdown parameters
-  ui?: string; // UI type specification (e.g., 'dropdown', 'repo-dropdown', 'destination-dropdown')
-}
-
-// Import function definitions from JSON
-export const FUNCTION_DEFINITIONS: Record<string, FunctionDefinition> =
-  functionDefinitions.functions;
-const FUNCTION_CATEGORIES: string[] = functionDefinitions.categories;
+// Re-export for backwards compatibility
+export { FUNCTION_DEFINITIONS };
 
 // Hook to get localized function data
 export function useLocalizedFunctions() {
@@ -44,7 +16,7 @@ export function useLocalizedFunctions() {
   // Get localized category data
   const getLocalizedCategories = () =>
     Object.fromEntries(
-      FUNCTION_CATEGORIES.map((category) => [
+      [...FUNCTION_CATEGORIES].map((category) => [
         category,
         {
           name: t(`categories.${category}.name`),
@@ -55,26 +27,24 @@ export function useLocalizedFunctions() {
 
   // Get localized function data
   const getLocalizedFunction = (functionName: string) => {
-    const funcDef = FUNCTION_DEFINITIONS[functionName] as FunctionDefinition | undefined;
-    if (funcDef === undefined) return null;
+    if (!isBridgeFunction(functionName)) return null;
+    const funcDef: FunctionDefinition = FUNCTION_DEFINITIONS[functionName];
 
     return {
       ...funcDef,
       description: t(`functions.${functionName}.description`),
       showInMenu: funcDef.showInMenu !== false, // Default to true if not specified
-      requirements: funcDef.requirements ?? {},
-      params: funcDef.params
-        ? Object.fromEntries(
-            Object.entries(funcDef.params).map(([paramName, paramDef]) => [
-              paramName,
-              {
-                ...paramDef,
-                label: t(`functions.${functionName}.params.${paramName}.label`),
-                help: t(`functions.${functionName}.params.${paramName}.help`),
-              },
-            ])
-          )
-        : {},
+      requirements: funcDef.requirements,
+      params: Object.fromEntries(
+        Object.entries(funcDef.params).map(([paramName, paramDef]) => [
+          paramName,
+          {
+            ...paramDef,
+            label: t(`functions.${functionName}.params.${paramName}.label`),
+            help: t(`functions.${functionName}.params.${paramName}.help`),
+          },
+        ])
+      ),
     };
   };
 

@@ -142,7 +142,9 @@ const validateSelectedMachines = createAsyncThunk<
     const selectedMachines = state.machineAssignment.selectedMachines;
 
     // Filter to only validate selected machines
-    const machinesToValidate = machines.filter((m) => selectedMachines.includes(m.machineName));
+    const machinesToValidate = machines.filter((m) =>
+      selectedMachines.includes(m.machineName ?? '')
+    );
 
     // Perform validation
     const validationResult: BulkValidationResult = MachineValidationService.validateBulkAssignment(
@@ -152,10 +154,13 @@ const validateSelectedMachines = createAsyncThunk<
 
     // Convert to validation results format
     const results = machinesToValidate.map(({ machineName }) => {
-      const isValid = validationResult.validMachines.some((vm) => vm.machineName === machineName);
+      const machineNameStr = machineName ?? '';
+      const isValid = validationResult.validMachines.some(
+        (vm) => vm.machineName === machineNameStr
+      );
 
-      const errors = validationResult.errors[machineName] ?? [];
-      const warnings = validationResult.warnings[machineName] ?? [];
+      const errors = validationResult.errors[machineNameStr] ?? [];
+      const warnings = validationResult.warnings[machineNameStr] ?? [];
 
       const result: ValidationResult = {
         isValid,
@@ -163,7 +168,7 @@ const validateSelectedMachines = createAsyncThunk<
         warnings,
       };
       return {
-        machineName,
+        machineName: machineNameStr,
         result,
       };
     });

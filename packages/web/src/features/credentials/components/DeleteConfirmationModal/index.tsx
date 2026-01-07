@@ -1,23 +1,23 @@
 import { Alert, Flex, Modal, Typography } from 'antd';
-import type { Repository } from '@/api/queries/repositories';
 import { showMessage } from '@/utils/messages';
 import { WarningOutlined } from '@/utils/optimizedIcons';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 
 interface AffectedResources {
   isCredential: boolean;
   forks: {
-    repositoryGuid: string;
-    repositoryName: string;
+    repositoryGuid: string | null;
+    repositoryName: string | null;
     repositoryTag?: string | null;
   }[];
-  affectedMachines: { machineName: string; repositoryNames: string[] }[];
+  affectedMachines: { machineName: string | null; repositoryNames: string[] }[];
 }
 
 interface DeleteConfirmationModalParams {
-  t: TFunction<'resources' | 'machines' | 'common'>;
-  getAffectedResources: (repository: Repository) => AffectedResources;
-  onDelete: (repository: Repository) => Promise<unknown>;
+  t: TypedTFunction;
+  getAffectedResources: (repository: GetTeamRepositories_ResultSet1) => AffectedResources;
+  onDelete: (repository: GetTeamRepositories_ResultSet1) => Promise<unknown>;
   onDeleted: () => void;
 }
 
@@ -29,7 +29,7 @@ export const useDeleteConfirmationModal = ({
 }: DeleteConfirmationModalParams) => {
   const [modal, contextHolder] = Modal.useModal();
 
-  const handleDeleteRepository = (repository: Repository) => {
+  const handleDeleteRepository = (repository: GetTeamRepositories_ResultSet1) => {
     const { isCredential, forks, affectedMachines } = getAffectedResources(repository);
 
     if (isCredential && affectedMachines.length > 0) {
@@ -51,11 +51,10 @@ export const useDeleteConfirmationModal = ({
             {forks.length > 0 && (
               <Flex vertical>
                 <Typography.Text strong>{t('repositories.affectedForks')}</Typography.Text>
-                {/* eslint-disable-next-line no-restricted-syntax */}
-                <ul style={{ paddingLeft: 24 }}>
+                <ul className="pl-6">
                   {forks.map((fork) => (
-                    <li key={fork.repositoryGuid}>
-                      {fork.repositoryName}
+                    <li key={fork.repositoryGuid ?? ''}>
+                      {fork.repositoryName ?? ''}
                       {fork.repositoryTag ? `:${fork.repositoryTag}` : ''}
                     </li>
                   ))}
@@ -65,11 +64,10 @@ export const useDeleteConfirmationModal = ({
 
             <Flex vertical>
               <Typography.Text strong>{t('repositories.affectedMachines')}</Typography.Text>
-              {/* eslint-disable-next-line no-restricted-syntax */}
-              <ul style={{ paddingLeft: 24 }}>
+              <ul className="pl-6">
                 {affectedMachines.map((machine) => (
-                  <li key={machine.machineName}>
-                    <Typography.Text strong>{machine.machineName}</Typography.Text>
+                  <li key={machine.machineName ?? ''}>
+                    <Typography.Text strong>{machine.machineName ?? ''}</Typography.Text>
                     <Typography.Text> ({machine.repositoryNames.join(', ')})</Typography.Text>
                   </li>
                 ))}
@@ -79,7 +77,6 @@ export const useDeleteConfirmationModal = ({
             <Alert
               type="warning"
               message={t('repositories.removeDeploymentsFirst')}
-              showIcon
               icon={<WarningOutlined />}
             />
           </Flex>
@@ -112,16 +109,14 @@ export const useDeleteConfirmationModal = ({
               type="warning"
               message={t('repositories.machinesWillLoseAccess')}
               description={
-                // eslint-disable-next-line no-restricted-syntax
-                <ul style={{ paddingLeft: 24 }}>
+                <ul className="pl-6">
                   {affectedMachines.map((machine) => (
-                    <li key={machine.machineName}>
-                      <Typography.Text strong>{machine.machineName}</Typography.Text>
+                    <li key={machine.machineName ?? ''}>
+                      <Typography.Text strong>{machine.machineName ?? ''}</Typography.Text>
                     </li>
                   ))}
                 </ul>
               }
-              showIcon
               icon={<WarningOutlined />}
             />
           </Flex>

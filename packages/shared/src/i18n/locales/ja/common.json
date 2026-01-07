@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "キャンセル済み",
+    "completed": "完了",
+    "failed": "失敗",
+    "pending": "保留中",
+    "processing": "処理中",
+    "running": "実行中",
+    "success": "成功",
+    "unknown": "不明",
+    "inProgress": "進行中",
+    "initializing": "初期化中..."
+  },
+  "actions": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "create": "作成",
+    "edit": "編集",
+    "copy": "コピー",
+    "retry": "再試行",
+    "refresh": "更新",
+    "close": "閉じる",
+    "download": "ダウンロード",
+    "upload": "アップロード",
+    "remove": "削除",
+    "confirm": "確認",
+    "reset": "リセット",
+    "back": "戻る",
+    "search": "検索",
+    "export": "エクスポート"
+  },
+  "common": {
+    "yes": "はい",
+    "no": "いいえ",
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "warning": "警告",
+    "success": "成功",
+    "unknown": "不明",
+    "total": "合計",
+    "none": "なし"
+  },
+  "validation": {
+    "required": "このフィールドは必須です",
+    "invalidEmail": "有効なメールアドレスを入力してください",
+    "invalidFormat": "無効な形式"
+  },
+  "time": {
+    "today": "今日",
+    "yesterday": "昨日",
+    "last7Days": "過去7日間",
+    "last30Days": "過去30日間",
+    "thisMonth": "今月",
+    "lastMonth": "先月"
+  },
+  "confirm": {
+    "areYouSure": "よろしいですか？",
+    "confirmDelete": "本当に削除しますか？"
+  },
+  "notifications": {
+    "error": "エラー",
+    "warning": "警告",
+    "success": "成功",
+    "info": "情報"
+  }
+}

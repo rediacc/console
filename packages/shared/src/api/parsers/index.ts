@@ -16,7 +16,7 @@ export type { ListParser, SingleParser, CompositeParser, ParserOptions } from '.
 
 // Teams
 export {
-  parseGetCompanyTeams,
+  parseGetOrganizationTeams,
   parseGetTeamMembers,
   parseTeamList,
   parseTeamMembers,
@@ -73,15 +73,15 @@ export {
   parseClones,
 } from './ceph';
 
-// Company
+// Organization
 export {
-  parseGetCompanyDashboard,
-  parseCompanyInfo,
-  parseGetCompanyVault,
-  parseGetCompanyVaults,
+  parseGetOrganizationDashboard,
+  parseOrganizationInfo,
+  parseGetOrganizationVault,
+  parseGetOrganizationVaults,
   parseDashboard,
-  parseCompanyVault,
-} from './company';
+  parseOrganizationVault,
+} from './organization';
 
 // Audit
 export {
@@ -97,7 +97,7 @@ export type {
   PermissionGroupWithPermissions as PermissionGroupWithParsedPermissions,
 } from './permissions';
 export {
-  parseGetCompanyPermissionGroups,
+  parseGetOrganizationPermissionGroups,
   parseGetPermissionGroupDetails,
   parsePermissionGroups,
   parsePermissionDetails,
@@ -113,7 +113,7 @@ export {
 
 // Resources (Bridges, Regions, Storage)
 export {
-  parseGetCompanyRegions,
+  parseGetOrganizationRegions,
   parseGetRegionBridges,
   parseCreateBridge,
   parseGetTeamStorages,
@@ -125,7 +125,7 @@ export {
 
 // Users
 export {
-  parseGetCompanyUsers,
+  parseGetOrganizationUsers,
   parseCreateUser,
   parseUserList,
 } from './users';

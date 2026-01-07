@@ -272,7 +272,7 @@
         "url": {
           "helpText": "FileFabric instance URL",
           "label": "URL",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "FileFabric provides a multi-cloud data management platform for enterprises.",
@@ -300,7 +300,7 @@
         "site": {
           "helpText": "Your Files.com subdomain",
           "label": "Site Subdomain",
-          "placeholder": "mycompany"
+          "placeholder": "myorganization"
         },
         "username": {
           "helpText": "Files.com username",
@@ -1234,7 +1234,7 @@
         "upload_endpoint": {
           "helpText": "ShareFile upload endpoint URL",
           "label": "Upload Endpoint",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile is an enterprise content collaboration platform with secure file sharing.",

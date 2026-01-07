@@ -284,7 +284,7 @@ class TelemetryService {
     this.trackEvent('web_vitals.metric', {
       'web_vitals.name': metric.name,
       'web_vitals.value': metric.value,
-      'web_vitals.rating': metric.rating,
+      'web_vitals.rating': metric.rating ?? 'unknown',
       'web_vitals.delta': metric.delta ?? 0,
       'web_vitals.id': metric.id,
     });
@@ -374,7 +374,8 @@ class TelemetryService {
     if (this.userContext.sessionId) attributes['user.session_id'] = this.userContext.sessionId;
     if (this.userContext.email)
       attributes['user.email_domain'] = this.userContext.email.split('@')[1] ?? '';
-    if (this.userContext.company) attributes['user.company'] = this.userContext.company;
+    if (this.userContext.organization)
+      attributes['user.organization'] = this.userContext.organization;
     if (this.userContext.teamName) attributes['user.team'] = this.userContext.teamName;
     return attributes;
   }

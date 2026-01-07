@@ -21,7 +21,8 @@
       "helpText": "Дополнительные параметры rclone для расширенной настройки",
       "label": "Дополнительные параметры",
       "placeholder": "--трансферы 4 --шашки 8"
-    }
+    },
+    "tips": "Советы"
   },
   "storageProviders": {
     "azureblob": {
@@ -68,7 +69,7 @@
         "endpoint": {
           "helpText": "Пользовательская конечная точка, совместимая с S3, для B2",
           "label": "Пользовательская конечная точка",
-          "placeholder": "s3.us-west-000.backblazeb2.com"
+          "placeholder": "(пример) s3.us-west-000.backblazeb2.com"
         },
         "hard_delete": {
           "helpText": "Удаляйте файлы навсегда, а не скрывайте их. Используйте с осторожностью",
@@ -160,7 +161,7 @@
         "client_id": {
           "helpText": "Идентификатор клиента OAuth 2.0 из Google Cloud Console",
           "label": "Идентификатор клиента OAuth",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+          "placeholder": "(ID клиента Google) 123456789012-abcdef.apps.googleusercontent.com"
         },
         "client_secret": {
           "helpText": "Секрет клиента OAuth 2.0. Держите это в безопасности",
@@ -271,7 +272,7 @@
         "url": {
           "helpText": "URL-адрес экземпляра FileFabric",
           "label": "URL-адрес",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "FileFabric предоставляет предприятиям мультиоблачную платформу управления данными.",
@@ -308,7 +309,7 @@
         }
       },
       "helpText": "Files.com — это облачная служба FTP/SFTP с расширенными функциями автоматизации и безопасности.",
-      "name": "Files.com",
+      "name": "Files.com (управление файлами)",
       "tips": [
         "Безопасность корпоративного уровня",
         "Автоматизация рабочих процессов",
@@ -326,7 +327,7 @@
         "host": {
           "helpText": "Имя хоста или IP-адрес FTP-сервера",
           "label": "Хозяин",
-          "placeholder": "ftp.example.com"
+          "placeholder": "(хост) ftp.example.com"
         },
         "pass": {
           "helpText": "FTP-пароль",
@@ -422,7 +423,7 @@
         "client_id": {
           "helpText": "Идентификатор клиента OAuth 2.0 из Google Cloud Console",
           "label": "Идентификатор клиента OAuth",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+          "placeholder": "(ID клиента) 123456789012-abcdef.apps.googleusercontent.com"
         },
         "client_secret": {
           "helpText": "Секрет клиента OAuth 2.0",
@@ -462,7 +463,7 @@
         "service_principal_name": {
           "helpText": "Имя участника службы Kerberos",
           "label": "Директор службы",
-          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM"
+          "placeholder": "(имя принципала) hdfs/namenode.example.com@EXAMPLE.COM"
         },
         "username": {
           "helpText": "Имя пользователя HDFS",
@@ -600,7 +601,7 @@
         }
       },
       "helpText": "Jottacloud — это популярный в странах Северной Европы сервис облачного хранения, ориентированный на конфиденциальность.",
-      "name": "Jottacloud",
+      "name": "Jottacloud (облачное хранилище)",
       "tips": [
         "Неограниченное хранилище на личных планах",
         "Данные хранятся в Норвегии (законы ЕС о конфиденциальности)",
@@ -734,7 +735,7 @@
       ]
     },
     "netstorage": {
-      "description": "Akamai NetStorage CDN",
+      "description": "Akamai NetStorage CDN (сеть доставки контента)",
       "fields": {
         "account": {
           "helpText": "Имя учетной записи NetStorage",
@@ -744,7 +745,7 @@
         "host": {
           "helpText": "Хост NetStorage",
           "label": "Хозяин",
-          "placeholder": "xxxxx.akamaihd.net"
+          "placeholder": "(хост Akamai) xxxxx.akamaihd.net"
         },
         "secret": {
           "helpText": "Секрет/ключ NetStorage",
@@ -753,7 +754,7 @@
         }
       },
       "helpText": "Akamai NetStorage — это глобально распределенное облачное решение для хранения данных, оптимизированное для доставки мультимедиа.",
-      "name": "Akamai NetStorage",
+      "name": "Akamai NetStorage (CDN Akamai)",
       "tips": [
         "Оптимизирован для доставки CDN",
         "Глобальные периферийные местоположения",
@@ -784,7 +785,7 @@
         }
       },
       "helpText": "Личное и деловое облачное хранилище Microsoft OneDrive. Использует аутентификацию OAuth.",
-      "name": "Microsoft OneDrive",
+      "name": "Microsoft OneDrive (облачное хранилище)",
       "tips": [
         "Срок действия токенов истекает каждые 90 дней, и их необходимо обновлять.",
         "Бизнес-аккаунты могут иметь разные ограничения API.",
@@ -821,7 +822,7 @@
         "compartment": {
           "helpText": "OCID отсека, в котором существует сегмент",
           "label": "Отсек OCID",
-          "placeholder": "ocid1.compartment.oc1..."
+          "placeholder": "(ID компартмента) ocid1.compartment.oc1..."
         },
         "fingerprint": {
           "helpText": "Отпечаток ключа подписи API",
@@ -846,12 +847,12 @@
         "tenancy": {
           "helpText": "Аренда OCID",
           "label": "Аренда OCID",
-          "placeholder": "ocid1.tenancy.oc1..."
+          "placeholder": "(ID тенента) ocid1.tenancy.oc1..."
         },
         "user": {
           "helpText": "OCID пользователя для аутентификации",
           "label": "OCID пользователя",
-          "placeholder": "ocid1.user.oc1..."
+          "placeholder": "(ID пользователя) ocid1.user.oc1..."
         }
       },
       "helpText": "Объектное хранилище Oracle Cloud Infrastructure (OCI) — это региональный сервис для хранения больших объемов неструктурированных данных.",
@@ -879,7 +880,7 @@
         "hostname": {
           "helpText": "Имя хоста API (eapi.ploud.com для ЕС)",
           "label": "Имя хоста",
-          "placeholder": "api.pcloud.com"
+          "placeholder": "(хост) api.pcloud.com"
         },
         "root_folder_id": {
           "helpText": "Идентификатор начальной папки (необязательно)",
@@ -892,7 +893,7 @@
         }
       },
       "helpText": "pCloud предлагает безопасное облачное хранилище с возможностью шифрования на стороне клиента. Имеет регионы ЕС и США.",
-      "name": "pCloud",
+      "name": "pCloud (облачное хранилище)",
       "tips": [
         "Выберите регион ЕС или США в зависимости от вашего местоположения.",
         "Папка Crypto обеспечивает шифрование на стороне клиента.",
@@ -956,7 +957,7 @@
         }
       },
       "helpText": "Premiumize.me — это сервис с несколькими хостингами, который предоставляет облачное хранилище и возможности загрузки.",
-      "name": "Premiumize.me",
+      "name": "Premiumize.me (потоковая передача)",
       "tips": [
         "Объединяет облачное хранилище со службой загрузки",
         "Поддерживает множество файловых хостингов.",
@@ -1002,7 +1003,7 @@
         }
       },
       "helpText": "Put.io — это облачное хранилище, которое может получать и транслировать торренты.",
-      "name": "Put.io",
+      "name": "Put.io (облачное хранилище)",
       "tips": [
         "Специализируется на обработке торрентов",
         "Автоматическое преобразование видео",
@@ -1031,7 +1032,7 @@
         "zone": {
           "helpText": "Зона QingStor (например, pek3a, sh1a)",
           "label": "Зона",
-          "placeholder": "pek3a"
+          "placeholder": "(зона) pek3a"
         }
       },
       "helpText": "QingStor — это служба хранения объектов от QingCloud, популярная в Китае.",
@@ -1086,7 +1087,7 @@
         "endpoint": {
           "helpText": "URL-адрес конечной точки API S3. Оставьте пустым для AWS S3. Требуется для других провайдеров",
           "label": "Конечная точка",
-          "placeholder": "s3.amazonaws.com"
+          "placeholder": "(эндпоинт S3) s3.amazonaws.com"
         },
         "env_auth": {
           "helpText": "Используйте переменные среды AWS или роль IAM для аутентификации.",
@@ -1171,7 +1172,7 @@
         "host": {
           "helpText": "Имя хоста или IP-адрес SFTP-сервера",
           "label": "Хозяин",
-          "placeholder": "example.com"
+          "placeholder": "(хост) example.com"
         },
         "key_file": {
           "helpText": "Путь к файлу закрытого ключа SSH",
@@ -1233,11 +1234,11 @@
         "upload_endpoint": {
           "helpText": "URL-адрес конечной точки загрузки ShareFile",
           "label": "Загрузить конечную точку",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile — это платформа для совместной работы над корпоративным контентом с безопасным обменом файлами.",
-      "name": "Citrix ShareFile",
+      "name": "Citrix ShareFile (корпоративное хранилище)",
       "tips": [
         "Разработан для корпоративного использования",
         "Поддерживает передачу больших файлов",
@@ -1327,7 +1328,7 @@
         "satellite_address": {
           "helpText": "Адрес спутника (необязательно, по умолчанию us1.storj.io:7777)",
           "label": "Спутниковый адрес",
-          "placeholder": "us1.storj.io:7777"
+          "placeholder": "(адрес спутника) us1.storj.io:7777"
         }
       },
       "helpText": "Storj — это децентрализованная сеть облачного хранения, которая шифрует и распространяет файлы по глобальной сети.",
@@ -1421,7 +1422,7 @@
         }
       },
       "helpText": "Объектное хранилище OpenStack Swift, используемое Rackspace, OVH и другими.",
-      "name": "OpenStack Swift",
+      "name": "OpenStack Swift (объектное хранилище)",
       "tips": [
         "Уточните у своего провайдера правильный URL-адрес авторизации.",
         "Для новых развертываний рекомендуется использовать аутентификацию v3.",
@@ -1449,7 +1450,7 @@
         }
       },
       "helpText": "Uloz.to — файловый хостинг, популярный в Чехии и Словакии.",
-      "name": "Uloz.to",
+      "name": "Uloz.to (облачное хранилище)",
       "tips": [
         "Популярен на чешском и словацком рынках.",
         "Поддерживает загрузку больших файлов",
@@ -1486,7 +1487,7 @@
         "endpoint": {
           "helpText": "URL-адрес конечной точки Васаби",
           "label": "Конечная точка",
-          "placeholder": "s3.wasabisys.com"
+          "placeholder": "(эндпоинт Wasabi) s3.wasabisys.com"
         },
         "region": {
           "helpText": "Регион Васаби",

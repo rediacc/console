@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
 import { CloseCircleOutlined, ReloadOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
 import type { ActionButtonsProps } from '../types';
@@ -15,6 +16,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onRefresh,
   onClose,
 }) => {
+  const { t } = useTranslation('queue');
   const status = queueDetails ? normalizeToString(queueDetails, 'status', 'Status') : '';
   const retryCount = queueDetails
     ? normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount')
@@ -44,17 +46,19 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         icon={<CloseCircleOutlined />}
         onClick={onCancel}
         loading={isCancelling}
-        // eslint-disable-next-line no-restricted-syntax
-        style={{
-          fontWeight: taskStaleness === 'critical' ? 600 : 500,
-          fontSize: taskStaleness === 'critical' ? 14 : 12,
-        }}
+        className={
+          taskStaleness === 'critical'
+            ? 'font-semibold text-sm'
+            : taskStaleness === 'stale'
+              ? 'font-medium text-xs'
+              : 'font-medium text-xs'
+        }
       >
         {taskStaleness === 'critical'
-          ? 'Cancel Stuck Task'
+          ? t('trace.cancelStuckTaskBtn')
           : taskStaleness === 'stale'
-            ? 'Cancel Task'
-            : 'Cancel'}
+            ? t('trace.cancelTaskBtn')
+            : t('trace.cancelBtn')}
       </Button>
     ) : null,
     // Show Retry button only for failed tasks that haven't reached max retries
@@ -67,7 +71,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         onClick={onRetry}
         loading={isRetrying}
       >
-        Retry Again
+        {t('trace.retryAgain')}
       </Button>
     ) : null,
     <Button
@@ -77,10 +81,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       onClick={onRefresh}
       loading={isTraceLoading}
     >
-      Refresh
+      {t('trace.refresh')}
     </Button>,
     <Button key="close" data-testid="queue-trace-close-button" onClick={onClose}>
-      Close
+      {t('trace.close')}
     </Button>,
   ].filter(Boolean);
 };

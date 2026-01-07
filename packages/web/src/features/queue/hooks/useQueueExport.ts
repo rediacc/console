@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { useExportData, type ExportColumn } from '@/hooks/useExportData';
-import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 /**
  * Queue-specific export hook that uses the shared useExportData hook
@@ -8,9 +8,9 @@ import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/
  * @param items - Queue items to export
  * @returns handleExport function to export in CSV or JSON format
  */
-export const useQueueExport = (items: QueueItem[]) => {
+export const useQueueExport = (items: GetTeamQueueItems_ResultSet1[]) => {
   // Define queue-specific columns for CSV export
-  const columns: ExportColumn<QueueItem>[] = [
+  const columns: ExportColumn<GetTeamQueueItems_ResultSet1>[] = [
     { key: 'taskId', header: 'Task ID' },
     { key: 'healthStatus', header: 'Status' },
     { key: 'priorityLabel', header: 'Priority', format: (val) => String(val ?? '') },

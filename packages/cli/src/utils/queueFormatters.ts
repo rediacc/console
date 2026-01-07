@@ -52,7 +52,7 @@ function getStatusColor(status: string): (text: string) => string {
  * @param status - Queue status string
  * @returns Colored status string
  */
-export function formatStatus(status: string | undefined): string {
+export function formatStatus(status: string | null | undefined): string {
   if (!status) return chalk.gray('UNKNOWN');
 
   const colorFn = getStatusColor(status);

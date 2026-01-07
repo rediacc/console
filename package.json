@@ -1,23 +1,24 @@
 {
   "name": "rediacc-console",
-  "version": "1.0.0",
+  "version": "0.3.6",
   "private": true,
   "type": "module",
   "workspaces": [
     "packages/shared",
+    "packages/shared-desktop",
     "packages/cli",
     "packages/web",
     "packages/desktop"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli && npm run build:web",
-    "build:packages": "npm run build -w @rediacc/shared",
+    "build:packages": "npm run build -w @rediacc/shared && npm run build -w @rediacc/shared-desktop",
     "build:cli": "npm run build -w @rediacc/cli",
     "build:web": "npm run build -w @rediacc/web",
     "dev": "npm run dev -w @rediacc/web",
     "dev:parity": "npm run build:packages && npm run dev -w @rediacc/web",
     "lint": "eslint .",
-    "typecheck": "tsc -b packages/shared packages/cli && npm run typecheck -w @rediacc/web",
+    "typecheck": "tsc -b packages/shared packages/shared-desktop packages/cli && npm run typecheck -w @rediacc/web",
     "clean": "npm run clean -w @rediacc/shared && npm run clean -w @rediacc/cli && npm run clean -w @rediacc/web",
     "fix": "biome format --write packages/ && eslint . --fix",
     "format": "biome format --write packages/",
@@ -28,11 +29,17 @@
     "test": "npm run test -w @rediacc/web",
     "test:ui": "npm run test:ui -w @rediacc/web",
     "test:run": "npm run test:run -w @rediacc/web",
-    "test:coverage": "npm run test:coverage -w @rediacc/web"
+    "test:coverage": "npm run test:coverage -w @rediacc/web",
+    "i18n:generate-hashes": "node scripts/generate-translation-hashes.js",
+    "i18n:update-hashes": "node scripts/generate-translation-hashes.js",
+    "i18n:check-hashes": "node scripts/check-translation-hashes.js",
+    "i18n:sync": "node scripts/sync-translations.js",
+    "generate:i18n-types": "node scripts/generate-translation-types.js"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
     "@eslint/js": "^9.39.2",
+    "@eslint/json": "^0.14.0",
     "@types/proper-lockfile": "^4.1.4",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
@@ -44,12 +51,19 @@
     "globals": "^16.5.0",
     "knip": "^5.76.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.48.1"
+    "typescript-eslint": "^8.51.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
     "proper-lockfile": "^4.1.2"
+  },
+  "overrides": {
+    "glob": "^10.3.10",
+    "rimraf": "^5.0.5",
+    "inflight": "npm:@isaacs/inflight@^1.0.1",
+    "cacache": "^18.0.0",
+    "@npmcli/move-file": "npm:@npmcli/fs@^3.1.0"
   }
 }

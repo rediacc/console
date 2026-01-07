@@ -1,7 +1,7 @@
-import { TFunction } from 'i18next';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import { featureFlags } from '@/config/featureFlags';
 import { conditionalRequired, validationRules } from '@/platform/utils/formValidation';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { ResourceType } from '../index';
 
 type ClusterOption = { clusterName: string };
@@ -36,7 +36,7 @@ interface FormFieldGeneratorProps {
   creationContext?: 'credentials-only' | 'normal';
   getFormValue: (field: string) => string | undefined;
   getFilteredBridges: (regionName: string | null) => { value: string; label: string }[];
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 const getResourceTranslationKey = (resourceType: ResourceType) => {
@@ -77,7 +77,7 @@ const getResourceNameLabel = (resourceType: ResourceType): string => {
   return labels[resourceType];
 };
 
-const createNameField = (resourceType: ResourceType, t: TFunction): FormFieldConfig => ({
+const createNameField = (resourceType: ResourceType, t: TypedTFunction): FormFieldConfig => ({
   name: `${resourceType}Name`,
   label: t(`${getResourceTranslationKey(resourceType)}.${resourceType}Name`),
   placeholder: t(
@@ -89,7 +89,7 @@ const createNameField = (resourceType: ResourceType, t: TFunction): FormFieldCon
 
 const createTeamField = (
   dropdownData: DropdownData | undefined,
-  t: TFunction
+  t: TypedTFunction
 ): FormFieldConfig => ({
   name: 'teamName',
   label: t('general.team'),
@@ -102,7 +102,7 @@ const createTeamField = (
 
 const createRegionField = (
   dropdownData: DropdownData | undefined,
-  t: TFunction
+  t: TypedTFunction
 ): FormFieldConfig => ({
   name: 'regionName',
   label: t('general.region'),
@@ -116,7 +116,7 @@ const createRegionField = (
 const createBridgeField = (
   getFormValue: (field: string) => string | undefined,
   getFilteredBridges: (regionName: string | null) => { value: string; label: string }[],
-  t: TFunction
+  t: TypedTFunction
 ): FormFieldConfig => {
   const currentRegion = getFormValue('regionName') ?? null;
   const bridgeOptions = getFilteredBridges(currentRegion);
@@ -153,9 +153,9 @@ export const getFormFields = ({
   if (mode === 'edit') {
     if (resourceType === 'machine') {
       const fields = [nameField, createRegionField(dropdownData, t)];
-      // Hide bridge field when disableBridge flag is enabled
+      // Show bridge field only when bridgeManageEnabled flag is enabled
       // Note: existing bridgeName value is preserved and sent to backend
-      if (!featureFlags.isEnabled('disableBridge')) {
+      if (featureFlags.isEnabled('bridgeManageEnabled')) {
         fields.push(createBridgeField(getFormValue, getFilteredBridges, t));
       }
       return fields;
@@ -247,15 +247,14 @@ export const getFormFields = ({
   }
 
   const fields = [];
-  if (!isTeamPreselected) fields.push(createTeamField(dropdownData, t));
+  // Add team field for non-machine resources when team is not preselected
+  // Machine resources use InfrastructurePills for team/region/bridge selection
+  if (!isTeamPreselected && resourceType !== 'machine') {
+    fields.push(createTeamField(dropdownData, t));
+  }
 
   if (resourceType === 'machine') {
-    fields.push(createRegionField(dropdownData, t));
-    // Hide bridge field when disableBridge flag is enabled
-    // Note: bridgeName value is still auto-selected and sent to backend
-    if (!featureFlags.isEnabled('disableBridge')) {
-      fields.push(createBridgeField(getFormValue, getFilteredBridges, t));
-    }
+    // Only show machine name field - team/region/bridge are handled by InfrastructurePills
     fields.push(nameField);
   } else if (resourceType === 'bridge') {
     fields.push(createRegionField(dropdownData, t), nameField);
@@ -276,8 +275,9 @@ export const getFormFields = ({
       hasExistingGuidForStorage || creationContext === 'credentials-only';
 
     // Get machines for the selected team
+    // Always use teamFilter as fallback for preselected team (works in both simple and expert mode)
     let preselectedTeamName = '';
-    if (isTeamPreselected && teamFilter) {
+    if (teamFilter) {
       preselectedTeamName = Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
     }
 

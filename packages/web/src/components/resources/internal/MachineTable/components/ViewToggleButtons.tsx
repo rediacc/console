@@ -9,15 +9,15 @@ import {
   InboxOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { GroupByMode } from '../types';
-import type { TFunction } from 'i18next';
 
 interface ViewToggleButtonsProps {
   groupBy: GroupByMode;
   setGroupBy: (mode: GroupByMode) => void;
   uiMode: string;
   isExpertMode: boolean;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
@@ -38,8 +38,7 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
       <Space wrap size="small">
         <Tooltip title={t('machines:machine')}>
           <Button
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ minWidth: 42 }}
+            className="min-w-btn"
             type={groupBy === 'machine' ? 'primary' : 'default'}
             icon={<DesktopOutlined />}
             onClick={() => setGroupBy('machine')}
@@ -55,8 +54,7 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
 
         <Tooltip title={t('machines:groupByBridge')}>
           <Button
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ minWidth: 42 }}
+            className="min-w-btn"
             type={groupBy === 'bridge' ? 'primary' : 'default'}
             icon={<CloudServerOutlined />}
             onClick={() => setGroupBy('bridge')}
@@ -67,8 +65,7 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
 
         <Tooltip title={t('machines:groupByTeam')}>
           <Button
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ minWidth: 42 }}
+            className="min-w-btn"
             type={groupBy === 'team' ? 'primary' : 'default'}
             icon={<TeamOutlined />}
             onClick={() => setGroupBy('team')}
@@ -80,8 +77,7 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
         {isExpertMode && (
           <Tooltip title={t('machines:groupByRegion')}>
             <Button
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ minWidth: 42 }}
+              className="min-w-btn"
               type={groupBy === 'region' ? 'primary' : 'default'}
               icon={<GlobalOutlined />}
               onClick={() => setGroupBy('region')}
@@ -93,8 +89,7 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
 
         <Tooltip title={t('machines:groupByRepository')}>
           <Button
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ minWidth: 42 }}
+            className="min-w-btn"
             type={groupBy === 'repository' ? 'primary' : 'default'}
             icon={<InboxOutlined />}
             onClick={() => setGroupBy('repository')}
@@ -105,8 +100,7 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
 
         <Tooltip title={t('machines:groupByStatus')}>
           <Button
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ minWidth: 42 }}
+            className="min-w-btn"
             type={groupBy === 'status' ? 'primary' : 'default'}
             icon={<DashboardOutlined />}
             onClick={() => setGroupBy('status')}
@@ -117,8 +111,7 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
 
         <Tooltip title={t('machines:groupByGrand')}>
           <Button
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ minWidth: 42 }}
+            className="min-w-btn"
             type={groupBy === 'grand' ? 'primary' : 'default'}
             icon={<BranchesOutlined />}
             onClick={() => setGroupBy('grand')}

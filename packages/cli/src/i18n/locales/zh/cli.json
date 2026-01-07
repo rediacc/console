@@ -1,0 +1,1001 @@
+{
+  "cli": {
+    "description": "Rediacc 控制台命令行界面 - 用于 Rediacc 操作的命令行接口"
+  },
+  "commands": {
+    "auth": {
+      "description": "身份验证命令",
+      "login": {
+        "authenticating": "正在身份验证...",
+        "description": "使用 Rediacc 进行身份验证",
+        "shortcut": "使用 Rediacc 进行身份验证（快捷方式：auth login）",
+        "success": "登录成功！已保存到上下文 \"{{context}}\"",
+        "tfaPrompt": "输入双因素认证代码：",
+        "tfaRequired": "需要双因素认证",
+        "tfaVerified": "双因素认证验证成功",
+        "verifyingTfa": "正在验证双因素认证..."
+      },
+      "logout": {
+        "description": "清除存储的凭证",
+        "loggingOut": "正在登出...",
+        "shortcut": "清除存储的凭证（快捷方式：auth logout）",
+        "success": "登出成功"
+      },
+      "status": {
+        "description": "检查当前身份验证状态",
+        "authenticated": "以以下身份认证：{{email}}",
+        "notAuthenticated": "未认证。运行：rdc login"
+      },
+      "register": {
+        "description": "注册新组织和用户账户",
+        "nextStep": "然后运行：rdc auth activate -e <email> -p <password> --code <code>",
+        "registering": "正在注册账户...",
+        "submitted": "注册已提交",
+        "success": "注册成功！请检查您的电子邮件以获取激活代码。"
+      },
+      "activate": {
+        "activated": "账户已激活",
+        "activating": "正在激活账户...",
+        "description": "使用验证码激活账户",
+        "success": "账户已激活！现在可以使用以下命令登录：rdc login"
+      },
+      "tfa": {
+        "description": "双因素认证管理",
+        "disable": {
+          "confirm": "确定要禁用双因素认证吗？",
+          "description": "禁用双因素认证",
+          "disabling": "正在禁用双因素认证...",
+          "success": "双因素认证已禁用"
+        },
+        "enable": {
+          "addToApp": "将此添加到身份验证应用程序",
+          "description": "启用双因素认证",
+          "enabling": "正在启用双因素认证...",
+          "initiated": "双因素认证设置已启动",
+          "setupKey": "设置密钥：{{key}}",
+          "success": "双因素认证已启用"
+        },
+        "status": {
+          "description": "检查双因素认证状态",
+          "disabled": "未启用双因素认证",
+          "enabled": "已启用双因素认证"
+        }
+      },
+      "token": {
+        "description": "令牌管理",
+        "fork": {
+          "creating": "正在创建分叉令牌...",
+          "description": "为另一个应用程序创建分叉令牌",
+          "success": "令牌创建成功",
+          "tokenValue": "令牌：{{token}}"
+        },
+        "list": {
+          "description": "列出活跃的令牌/会话",
+          "fetching": "正在获取令牌...",
+          "noTokens": "没有活跃的令牌"
+        },
+        "revoke": {
+          "description": "撤销特定令牌",
+          "revoking": "正在撤销令牌...",
+          "success": "令牌已撤销"
+        }
+      }
+    },
+    "audit": {
+      "description": "审计日志命令",
+      "list": {
+        "description": "列出审计日志条目",
+        "fetching": "正在获取审计日志..."
+      },
+      "log": {
+        "description": "查看审计日志",
+        "fetching": "正在获取审计日志...",
+        "success": "审计日志已获取"
+      },
+      "trace": {
+        "description": "跟踪实体的审计历史",
+        "fetching": "正在获取实体审计跟踪...",
+        "success": "审计跟踪已获取"
+      },
+      "history": {
+        "description": "查看实体历史",
+        "fetching": "正在获取实体历史...",
+        "success": "历史已获取"
+      }
+    },
+    "bridge": {
+      "description": "网桥管理",
+      "list": {
+        "description": "列出网桥",
+        "fetching": "正在获取网桥..."
+      },
+      "resetAuth": {
+        "description": "重置网桥授权令牌",
+        "newToken": "新令牌：{{token}}",
+        "resetting": "正在重置网桥 \"{{name}}\" 的授权...",
+        "success": "授权已重置"
+      }
+    },
+    "context": {
+      "description": "管理命令行界面上下文",
+      "list": {
+        "description": "列出所有上下文",
+        "noContexts": "未配置任何上下文"
+      },
+      "show": {
+        "description": "显示当前上下文详情",
+        "noContext": "没有活跃的上下文"
+      },
+      "use": {
+        "description": "切换到不同的上下文",
+        "switched": "已切换到上下文 \"{{name}}\""
+      },
+      "create": {
+        "description": "创建新上下文",
+        "success": "上下文 \"{{name}}\" 已创建"
+      },
+      "delete": {
+        "description": "删除上下文",
+        "success": "上下文 \"{{name}}\" 已删除",
+        "confirm": "确定要删除上下文 \"{{name}}\" 吗？"
+      },
+      "rename": {
+        "description": "重命名上下文",
+        "success": "上下文已从 \"{{oldName}}\" 重命名为 \"{{newName}}\""
+      },
+      "current": {
+        "description": "显示当前上下文名称",
+        "noContext": "没有活跃的上下文"
+      },
+      "set": {
+        "description": "设置默认值（团队、区域、网桥、机器）",
+        "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
+      },
+      "unset": {
+        "description": "移除上下文默认值",
+        "success": "已从当前上下文中移除 {{key}}"
+      },
+      "clear": {
+        "description": "清除默认值（全部或特定键）",
+        "keyCleared": "已清除 \"{{key}}\"",
+        "allCleared": "已清除所有默认值"
+      },
+      "setLanguage": {
+        "description": "设置首选语言",
+        "success": "语言已设置为 \"{{code}}\"",
+        "unsupported": "不支持的语言。支持的语言：{{languages}}"
+      },
+      "createLocal": {
+        "description": "为无中间件操作创建新的本地上下文",
+        "success": "本地上下文 \"{{name}}\" 已创建",
+        "nextStep": "使用以下命令添加机器：rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "addMachine": {
+        "description": "将机器添加到当前本地上下文",
+        "success": "机器 \"{{name}}\" 已添加（{{user}}@{{ip}}）"
+      },
+      "removeMachine": {
+        "description": "从当前本地上下文中移除机器",
+        "success": "机器 \"{{name}}\" 已移除"
+      },
+      "machines": {
+        "description": "列出当前本地上下文中的机器",
+        "noMachines": "未配置任何机器。使用以下命令添加：rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "setSsh": {
+        "description": "更新当前本地上下文的 SSH 配置",
+        "success": "SSH 配置已更新"
+      },
+      "setRenet": {
+        "description": "设置本地模式下的 renet 二进制文件路径",
+        "success": "Renet 路径已设置为：{{path}}"
+      }
+    },
+    "machine": {
+      "description": "机器管理",
+      "list": {
+        "description": "列出机器",
+        "fetching": "正在获取机器..."
+      },
+      "create": {
+        "description": "创建新机器",
+        "creating": "正在创建机器...",
+        "success": "机器 \"{{name}}\" 已创建"
+      },
+      "delete": {
+        "description": "删除机器",
+        "deleting": "正在删除机器...",
+        "success": "机器 \"{{name}}\" 已删除",
+        "confirm": "确定要删除机器 \"{{name}}\" 吗？"
+      },
+      "update": {
+        "description": "更新机器配置",
+        "updating": "正在更新机器...",
+        "success": "机器 \"{{name}}\" 已更新"
+      },
+      "health": {
+        "description": "检查 CI/CD 流水线的机器健康状况",
+        "fetching": "正在获取机器健康状况...",
+        "fetched": "健康数据已获取",
+        "header": "\n{{name}} 的健康检查：",
+        "statusHealthy": "✓ 状态：健康",
+        "statusWarning": "⚠ 状态：警告",
+        "statusError": "✗ 状态：错误",
+        "statusCritical": "✗ 状态：严重",
+        "noData": "机器无状态数据可用",
+        "systemSection": "\n系统：",
+        "systemUptime": "  运行时间：{{uptime}}",
+        "systemMemory": "  内存：{{percent}}",
+        "systemDisk": "  磁盘：{{percent}}",
+        "systemDatastore": "  数据存储：{{percent}}",
+        "containersSection": "\n容器：",
+        "containersSummary": "  {{running}}/{{total}} 正在运行（{{healthy}} 健康，{{unhealthy}} 不健康）",
+        "servicesSection": "\n服务：",
+        "servicesSummary": "  {{active}}/{{total}} 活动（{{failed}} 失败）",
+        "storageSection": "\n存储：",
+        "storageSmart": "  SMART：{{healthy}} 健康，{{failing}} 故障",
+        "storageTemp": "  最高温度：{{temp}}°C",
+        "repositoriesSection": "\n仓库：",
+        "repositoriesSummary": "  {{mounted}}/{{total}} 已挂载（{{docker}} 使用 Docker）",
+        "issuesSection": "\n问题：",
+        "exitCode": "\n退出代码：{{code}}"
+      },
+      "containers": {
+        "description": "列出机器上的 Docker 容器",
+        "fetching": "正在获取容器...",
+        "fetched": "容器已获取",
+        "noContainers": "此机器上未找到容器",
+        "healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
+        "allHealthy": "所有容器都健康",
+        "unhealthyFound": "找到 {{count}} 个不健康的容器"
+      },
+      "services": {
+        "description": "列出机器上的 systemd 服务",
+        "fetching": "正在获取服务...",
+        "fetched": "服务已获取",
+        "noServices": "此机器上未找到 rediacc 服务",
+        "stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",
+        "allStable": "所有服务都稳定",
+        "unstableFound": "找到 {{count}} 个不稳定的服务"
+      },
+      "vaultStatus": {
+        "description": "显示机器的已解析保险箱状态",
+        "fetching": "正在获取机器...",
+        "fetched": "机器已获取",
+        "header": "\n{{name}} 的保险箱状态：",
+        "status": "  状态：{{status}}",
+        "systemSection": "\n系统：",
+        "systemUptime": "  运行时间：{{uptime}}",
+        "systemHostname": "  主机名：{{hostname}}",
+        "systemMemory": "  内存：{{used}} / {{total}}（{{percent}}）",
+        "systemDisk": "  磁盘：{{used}} / {{total}}（{{percent}}）",
+        "systemDatastore": "  数据存储：{{used}} / {{total}}（{{percent}}）",
+        "totalRepos": "  总仓库数：{{count}}",
+        "mounted": "  已挂载：{{count}}",
+        "dockerRunning": "  Docker 运行中：{{count}}",
+        "deployedRepos": "\n已部署的仓库：",
+        "repoMounted": "    已挂载：{{mounted}}",
+        "repoDocker": "    Docker：{{status}}"
+      },
+      "repos": {
+        "description": "列出机器上已部署的仓库",
+        "fetching": "正在获取机器...",
+        "fetched": "机器已获取",
+        "noRepos": "此机器上未部署任何仓库"
+      },
+      "testConnection": {
+        "description": "测试到机器的 SSH 连接并捕获主机密钥",
+        "testing": "正在测试与 {{user}}@{{ip}}:{{port}} 的 SSH 连接...",
+        "creating": "正在创建 SSH 测试任务...",
+        "created": "任务已创建",
+        "taskId": "任务 ID：{{taskId}}",
+        "waiting": "正在等待 SSH 测试结果...",
+        "waitingTime": "正在等待 SSH 测试结果...（{{seconds}}s）",
+        "testResult": "SSH 测试 {{result}}",
+        "rawOutput": "原始输出：",
+        "error": "错误：{{error}}",
+        "timeout": "等待结果超时",
+        "timeoutMessage": "测试连接超时。检查队列跟踪以获取详细信息。",
+        "results": "SSH 测试结果：",
+        "statusResult": "  状态：{{status}}",
+        "authMethod": "  认证方法：{{method}}",
+        "sshKeyConfigured": "  SSH 密钥已配置：{{status}}",
+        "publicKeyDeployed": "  公钥已部署：{{status}}",
+        "knownHosts": "  主机条目：{{entry}}",
+        "message": "  消息：{{message}}",
+        "saving": "正在将 known_hosts 保存到机器 \"{{machine}}\" 保险箱...",
+        "saved": "主机条目已保存到机器保险箱"
+      }
+    },
+    "organization": {
+      "description": "组织管理命令",
+      "list": {
+        "description": "列出组织",
+        "fetching": "正在获取组织..."
+      },
+      "info": {
+        "description": "获取组织信息",
+        "fetching": "正在获取组织信息...",
+        "notFound": "未找到组织信息",
+        "success": "组织信息已获取"
+      },
+      "dashboard": {
+        "description": "获取组织仪表板数据",
+        "fetching": "正在获取仪表板...",
+        "success": "仪表板已获取"
+      },
+      "vault": {
+        "description": "组织保险箱管理",
+        "get": {
+          "description": "获取组织保险箱数据",
+          "fetching": "正在获取组织保险箱...",
+          "notFound": "未找到组织保险箱",
+          "success": "保险箱已获取"
+        },
+        "list": {
+          "description": "列出所有保险箱类型",
+          "fetching": "正在获取保险箱...",
+          "success": "保险箱已获取"
+        },
+        "update": {
+          "description": "更新组织保险箱数据",
+          "success": "组织保险箱已更新",
+          "updating": "正在更新组织保险箱..."
+        }
+      },
+      "export": {
+        "description": "导出组织数据",
+        "exported": "已导出至 {{path}}",
+        "exporting": "正在导出组织数据...",
+        "success": "导出完成"
+      },
+      "import": {
+        "description": "导入组织数据",
+        "importing": "正在导入组织数据...",
+        "success": "导入完成"
+      },
+      "maintenance": {
+        "description": "启用或禁用维护模式（阻止非管理员登录）",
+        "disabled": "维护模式已禁用",
+        "disabling": "正在禁用维护模式...",
+        "enabled": "维护模式已启用",
+        "enabling": "正在启用维护模式..."
+      }
+    },
+    "protocol": {
+      "description": "管理 {{scheme}}:// 协议处理程序注册和 URL 处理",
+      "register": {
+        "description": "在系统上注册协议处理程序",
+        "systemWide": "正在系统范围内注册协议处理程序...",
+        "adminRequired": "注意：这可能需要管理员/root 权限。",
+        "currentUser": "正在为当前用户注册协议处理程序...",
+        "registering": "正在注册协议处理程序...",
+        "success": "\n已成功注册 {{scheme}}:// 协议处理程序。",
+        "exampleUrls": "\n现在可以打开以下 URL 形式的链接："
+      },
+      "unregister": {
+        "description": "从系统中注销协议处理程序",
+        "unregistering": "正在注销协议处理程序...",
+        "success": "\n已成功注销 {{scheme}}:// 协议处理程序。"
+      },
+      "status": {
+        "description": "显示协议处理程序注册状态",
+        "title": "\n协议处理程序状态",
+        "platform": "平台：",
+        "supported": "支持：",
+        "registered": "已注册：",
+        "userRegistration": "用户注册：",
+        "systemRegistration": "系统注册：",
+        "handlerCommand": "处理程序命令：",
+        "error": "\n错误：{{error}}",
+        "registerHint": "\n要注册协议处理程序，请运行："
+      },
+      "open": {
+        "description": "打开 {{scheme}}:// URL 并执行操作",
+        "parsedUrl": "\n已解析的协议 URL：",
+        "token": "令牌：",
+        "team": "团队：",
+        "machine": "机器：",
+        "repository": "仓库：",
+        "action": "操作：",
+        "params": "参数：",
+        "cliCommand": "\n等效的命令行界面命令：",
+        "executing": "\n正在执行操作...\n"
+      },
+      "build": {
+        "description": "从组件构建 {{scheme}}:// URL"
+      },
+      "parse": {
+        "description": "解析 {{scheme}}:// URL 并显示组件",
+        "parsedUrl": "\n已解析的协议 URL：",
+        "cliCommand": "\n命令行界面命令："
+      }
+    },
+    "permission": {
+      "description": "权限管理命令",
+      "list": {
+        "description": "列出权限",
+        "fetching": "正在获取权限..."
+      },
+      "group": {
+        "description": "权限组管理",
+        "list": {
+          "description": "列出所有权限组",
+          "fetching": "正在获取权限组...",
+          "success": "权限组已获取"
+        },
+        "create": {
+          "description": "创建新权限组",
+          "creating": "正在创建权限组 \"{{name}}\"...",
+          "success": "权限组 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "confirm": "删除权限组 \"{{name}}\" 吗？",
+          "deleting": "正在删除权限组 \"{{name}}\"...",
+          "description": "删除权限组",
+          "success": "权限组 \"{{name}}\" 已删除"
+        },
+        "show": {
+          "description": "显示权限组详情",
+          "fetching": "正在获取权限组详情...",
+          "success": "详情已获取"
+        }
+      },
+      "add": {
+        "adding": "正在将权限 \"{{permission}}\" 添加到组 \"{{group}}\"...",
+        "description": "向组添加权限",
+        "success": "权限已添加"
+      },
+      "remove": {
+        "description": "从组中移除权限",
+        "removing": "正在从组 \"{{group}}\" 中移除权限 \"{{permission}}\"...",
+        "success": "权限已移除"
+      }
+    },
+    "queue": {
+      "description": "队列管理",
+      "list": {
+        "description": "列出队列项",
+        "fetching": "正在获取队列项...",
+        "success": "队列项已获取"
+      },
+      "create": {
+        "description": "创建队列项",
+        "buildingVault": "正在构建队列保险箱...",
+        "vaultBuilt": "队列保险箱已构建",
+        "creating": "正在为函数 '{{function}}' 创建队列项...",
+        "success": "队列项已创建",
+        "taskId": "任务 ID：{{taskId}}"
+      },
+      "cancel": {
+        "description": "取消队列项",
+        "cancelling": "正在取消任务 {{taskId}}...",
+        "success": "任务已取消"
+      },
+      "retry": {
+        "description": "重试失败的队列项",
+        "retrying": "正在重试任务 {{taskId}}...",
+        "success": "任务已排队重试"
+      },
+      "trace": {
+        "description": "跟踪队列项执行",
+        "fetching": "正在获取队列跟踪...",
+        "fetched": "队列跟踪已获取",
+        "watching": "正在监视任务进度...",
+        "age": "年龄",
+        "finalStatus": "最终状态：{{status}}",
+        "errorDetails": "错误详情：",
+        "noTrace": "没有可用的跟踪信息"
+      },
+      "delete": {
+        "description": "删除队列项",
+        "confirm": "确定要删除任务 {{taskId}} 吗？",
+        "deleting": "正在删除任务 {{taskId}}...",
+        "success": "任务已删除"
+      }
+    },
+    "region": {
+      "description": "区域管理",
+      "list": {
+        "description": "列出区域",
+        "fetching": "正在获取区域..."
+      }
+    },
+    "repository": {
+      "description": "仓库管理命令",
+      "list": {
+        "description": "列出仓库",
+        "fetching": "正在获取仓库...",
+        "success": "仓库已获取"
+      },
+      "create": {
+        "description": "创建新仓库",
+        "creating": "正在创建仓库 \"{{name}}:{{tag}}\"...",
+        "success": "仓库 \"{{name}}:{{tag}}\" 已创建"
+      },
+      "rename": {
+        "description": "重命名仓库",
+        "renaming": "正在将仓库 \"{{oldName}}\" 重命名为 \"{{newName}}\"...",
+        "success": "仓库已重命名为 \"{{name}}\""
+      },
+      "delete": {
+        "description": "删除仓库",
+        "checkingRelationships": "正在检查仓库关系...",
+        "relationshipsChecked": "仓库关系已检查",
+        "grandRepoWarning": "这是一个主仓库（凭证）。删除它不可逆转。",
+        "confirm": "删除仓库 \"{{name}}:{{tag}}\" 吗？无法撤销此操作。",
+        "deleting": "正在删除仓库 \"{{name}}:{{tag}}\"...",
+        "success": "仓库 \"{{name}}:{{tag}}\" 已删除"
+      },
+      "promote": {
+        "description": "将分叉提升为主状态",
+        "checkingRelationships": "正在检查仓库关系...",
+        "relationshipsChecked": "仓库关系已检查",
+        "separateInfo": "\n这将把 \"{{name}}\" 与主仓库 \"{{grandName}}\" 分离",
+        "siblingsInfo": "\n{{count}} 个兄弟克隆将保持与原始主仓库的链接：",
+        "confirmPromote": "\n继续提升？",
+        "promoting": "正在提升仓库 \"{{name}}:{{tag}}\"...",
+        "success": "仓库 \"{{name}}:{{tag}}\" 已提升为主状态"
+      },
+      "vault": {
+        "description": "仓库保险箱管理",
+        "get": {
+          "description": "获取仓库保险箱数据",
+          "fetching": "正在获取仓库保险箱...",
+          "success": "保险箱已获取",
+          "notFound": "未找到仓库保险箱"
+        },
+        "update": {
+          "description": "更新仓库保险箱数据",
+          "updating": "正在更新仓库保险箱...",
+          "success": "仓库保险箱已更新"
+        }
+      }
+    },
+    "storage": {
+      "description": "存储管理",
+      "list": {
+        "description": "列出存储提供商",
+        "fetching": "正在获取存储提供商..."
+      }
+    },
+    "sync": {
+      "description": "使用 rsync 与仓库进行文件同步",
+      "fetchingDetails": "正在获取连接详情...",
+      "previewingChanges": "\n正在预览更改...\n",
+      "noChanges": "没有要同步的更改。",
+      "cancelled": "同步已取消。",
+      "dryRunHeader": "\n试运行 - 显示将传输的内容：\n",
+      "totalSize": "总大小：{{size}}",
+      "duration": "持续时间：{{seconds}}s",
+      "errors": "错误：",
+      "upload": {
+        "description": "将文件上传到仓库",
+        "starting": "正在开始上传...",
+        "progress": "上传中：{{percentage}}% - {{file}}（{{speed}}）",
+        "completed": "上传完成：{{count}} 个文件已传输",
+        "failed": "上传失败"
+      },
+      "download": {
+        "description": "从仓库下载文件",
+        "starting": "正在开始下载...",
+        "progress": "下载中：{{percentage}}% - {{file}}（{{speed}}）",
+        "completed": "下载完成：{{count}} 个文件已传输",
+        "failed": "下载失败"
+      },
+      "status": {
+        "description": "检查同步状态并比较本地/远程文件"
+      }
+    },
+    "team": {
+      "description": "团队管理",
+      "list": {
+        "description": "列出团队",
+        "fetching": "正在获取团队..."
+      },
+      "create": {
+        "description": "创建团队",
+        "creating": "正在创建团队...",
+        "success": "团队 \"{{name}}\" 已创建"
+      },
+      "member": {
+        "description": "团队成员管理",
+        "list": {
+          "description": "列出团队成员",
+          "fetching": "正在获取团队成员...",
+          "success": "成员已获取"
+        },
+        "add": {
+          "description": "将用户添加到团队",
+          "adding": "正在将 {{email}} 添加到团队 \"{{team}}\"...",
+          "success": "用户已添加到团队 \"{{team}}\""
+        },
+        "remove": {
+          "description": "从团队中移除用户",
+          "removing": "正在从团队 \"{{team}}\" 中移除 {{email}}...",
+          "success": "用户已从团队 \"{{team}}\" 中移除"
+        }
+      }
+    },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[本地] 在 {{duration}}ms 内完成",
+        "description": "运行函数（快捷方式：queue create）",
+        "executingLocal": "[本地] 在 {{machine}} 上执行 '{{function}}'...",
+        "failedLocal": "[本地] 失败：{{error}}",
+        "watching": "正在监视完成情况..."
+      },
+      "trace": {
+        "description": "跟踪任务（快捷方式：queue trace）"
+      },
+      "cancel": {
+        "description": "取消任务（快捷方式：queue cancel）"
+      },
+      "retry": {
+        "description": "重试失败的任务（快捷方式：queue retry）"
+      }
+    },
+    "term": {
+      "description": "SSH 终端访问机器和仓库",
+      "connecting": "正在连接到 {{machine}}...",
+      "connect": {
+        "description": "通过 SSH 连接到机器或仓库"
+      },
+      "connectingTo": "正在连接到 {{title}}...",
+      "fetchingDetails": "正在获取连接详情...",
+      "launchSuccess": "终端已成功启动。",
+      "launchingTerminal": "正在启动 {{type}} 终端...",
+      "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
+    },
+    "vscode": {
+      "description": "VS Code 远程 SSH 集成",
+      "connect": {
+        "description": "在 VS Code 中连接到机器或仓库",
+        "detecting": "正在检测 VS Code...",
+        "extensionWarning": "警告：可能未安装远程 SSH 扩展。\n从以下地址安装：https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "正在获取连接详情...",
+        "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接...",
+        "persistingKey": "正在保存 SSH 密钥...",
+        "configuringSSH": "正在配置 SSH...",
+        "configuringVSCode": "正在配置 VS Code 设置...",
+        "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
+        "settingUpEnv": "正在设置远程环境...",
+        "opening": "正在打开 VS Code：{{connection}} → {{path}}",
+        "success": "VS Code 已成功启动。"
+      },
+      "list": {
+        "description": "列出已配置的 VS Code SSH 连接",
+        "noConnections": "未配置任何 VS Code SSH 连接。",
+        "configFile": "\n配置文件：{{path}}",
+        "header": "已配置的 VS Code SSH 连接：\n",
+        "keyPersisted": "（密钥已保存）",
+        "total": "\n总计：{{count}} 个连接"
+      },
+      "cleanup": {
+        "description": "移除 VS Code SSH 配置",
+        "cleanedAll": "已清除 {{count}} 个 VS Code SSH 连接。",
+        "removedKeys": "已移除所有保存的 SSH 密钥。",
+        "cleaned": "已清除：{{connection}}"
+      },
+      "check": {
+        "description": "检查 VS Code 安装和配置",
+        "title": "VS Code 设置检查\n",
+        "installation": "安装：",
+        "vscodeFound": "  VS Code：{{path}}",
+        "version": "  版本：{{version}}",
+        "variant": "  变体：Insiders",
+        "vscodeNotFound": "  VS Code：未找到",
+        "remoteSSH": "  远程 SSH 扩展：{{status}}",
+        "installed": "已安装",
+        "notDetected": "未检测到",
+        "configuration": "\n配置：",
+        "settingsPath": "  设置路径：{{path}}",
+        "configured": "  已配置：{{status}}",
+        "yes": "是",
+        "no": "否",
+        "missingSettings": "  缺失的设置：",
+        "sshConfig": "\nSSH 配置：{{path}}",
+        "activeConnections": "活跃连接：{{count}}"
+      }
+    },
+    "user": {
+      "description": "用户管理命令",
+      "list": {
+        "description": "列出所有用户",
+        "fetching": "正在获取用户...",
+        "success": "用户已获取"
+      },
+      "create": {
+        "description": "创建新用户",
+        "creating": "正在创建用户 \"{{email}}\"...",
+        "success": "用户已创建",
+        "activationCode": "激活码：{{code}}"
+      },
+      "activate": {
+        "description": "激活用户账户",
+        "activating": "正在激活用户 \"{{email}}\"...",
+        "success": "用户已激活"
+      },
+      "deactivate": {
+        "description": "停用用户账户",
+        "confirm": "停用用户 \"{{email}}\" 吗？",
+        "deactivating": "正在停用用户 \"{{email}}\"...",
+        "success": "用户已停用"
+      },
+      "reactivate": {
+        "description": "重新激活已停用的用户账户",
+        "reactivating": "正在重新激活用户 \"{{email}}\"...",
+        "success": "用户已重新激活"
+      },
+      "updateEmail": {
+        "description": "更改用户的电子邮件地址",
+        "updating": "正在更新 \"{{email}}\" 的电子邮件...",
+        "success": "电子邮件已更新为 \"{{email}}\""
+      },
+      "updatePassword": {
+        "description": "更改您的密码",
+        "updating": "正在更新密码...",
+        "success": "密码已更新"
+      },
+      "updateLanguage": {
+        "description": "设置当前用户的首选语言",
+        "updating": "正在更新语言偏好...",
+        "success": "语言已更新为 \"{{language}}\""
+      },
+      "exists": {
+        "description": "检查用户是否存在",
+        "exists": "用户 \"{{email}}\" 存在",
+        "notExists": "用户 \"{{email}}\" 不存在"
+      },
+      "vault": {
+        "description": "用户保险箱管理",
+        "get": {
+          "description": "获取当前用户保险箱数据",
+          "fetching": "正在获取用户保险箱...",
+          "success": "保险箱已获取"
+        },
+        "update": {
+          "description": "更新当前用户保险箱数据",
+          "updating": "正在更新用户保险箱...",
+          "success": "用户保险箱已更新"
+        }
+      },
+      "permission": {
+        "description": "用户权限管理",
+        "assign": {
+          "description": "为用户分配权限组",
+          "assigning": "正在为用户 \"{{email}}\" 分配 \"{{group}}\"...",
+          "success": "权限已分配"
+        }
+      }
+    }
+  },
+  "errors": {
+    "activationFailed": "激活失败",
+    "authFailed": "身份验证失败",
+    "authRequired": "需要身份验证。运行：rdc login",
+    "bridgeRequired": "需要网桥名称。使用 --bridge 或设置上下文。",
+    "contextNotFound": "上下文 \"{{name}}\" 未找到",
+    "invalidCredentials": "凭证无效",
+    "invalidEmail": "请输入有效的电子邮件",
+    "invalidExpiration": "令牌过期时间必须在 1 到 720 小时之间",
+    "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
+    "invalidFunctionParams": "函数 \"{{function}}\" 的参数无效：{{errors}}",
+    "invalidJsonFile": "提供的文件不包含有效的 JSON。",
+    "invalidJsonVault": "无效的 JSON 保险箱数据。",
+    "invalidKey": "无效的密钥。有效的密钥：{{keys}}",
+    "machineNotFound": "机器 \"{{name}}\" 未找到",
+    "machineRequired": "需要机器名称。使用 --machine 或设置上下文。",
+    "machineRequiredLocal": "需要机器名称。使用 --machine 或使用以下命令设置默认值：rdc context set machine <name>",
+    "invalidHost": "无效的 IP 地址或主机名：\"{{host}}\"。必须是有效的 IPv4、IPv6 或主机名。",
+    "invalidPort": "无效的端口号：\"{{port}}\"。必须在 1 到 65535 之间。",
+    "failedCreateQueueItem": "无法创建队列项",
+    "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
+    "invalidPriorityMax": "无效的优先级-最大值。必须在 1 到 5 之间。",
+    "passwordsMismatch": "密码不匹配",
+    "repositoryNotFound": "仓库 \"{{name}}:{{tag}}\" 未找到",
+    "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
+    "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
+    "cannotPromote": "无法提升：{{reason}}",
+    "protocol": {
+      "notSupported": "{{platform}} 上不支持协议注册",
+      "invalidUrl": "无效的协议 URL：{{error}}",
+      "commandExitCode": "命令退出代码 {{code}}",
+      "tokenRequired": "需要令牌。使用 --token <token>",
+      "teamRequired": "需要团队名称。使用 --team <name>",
+      "machineRequired": "需要机器名称。使用 --machine <name>",
+      "invalidAction": "无效的操作 '{{action}}'。必须是以下之一：{{validActions}}",
+      "parseFailed": "无法解析 URL：{{error}}"
+    },
+    "networkError": "网络错误：{{message}}",
+    "noActiveContext": "没有活跃的上下文。请先创建或选择上下文。",
+    "notAuthenticated": "未认证。运行：rdc login",
+    "permissionDenied": "权限被拒绝",
+    "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
+    "registrationFailed": "注册失败",
+    "resourceNotFound": "{{resource}} 未找到",
+    "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
+    "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
+    "sync": {
+      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
+      "localPathNotFound": "本地路径不存在：{{path}}"
+    },
+    "teamRequired": "需要团队名称。使用 --team 或设置上下文。",
+    "term": {
+      "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
+      "launchFailed": "无法启动终端：{{error}}",
+      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
+      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "sshCode1": "通用错误 - 检查命令语法或远程权限",
+      "sshCode126": "权限被拒绝 - 无法在远程执行命令",
+      "sshCode127": "在远程机器上找不到命令",
+      "sshCode130": "连接被用户终止（Ctrl+C）",
+      "sshCode255": "SSH 连接失败 - 可能的原因：\n    - 身份验证失败（检查 SSH 密钥权限）\n    - 主机密钥验证失败\n    - 网络连接断开\n    - 远程 SSH 服务未运行",
+      "sshExitCode": "SSH 退出代码 {{code}}"
+    },
+    "vscode": {
+      "cleanupRequired": "指定 --all 以移除所有连接或指定 --connection <name> 以移除特定连接。",
+      "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
+      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
+      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
+    },
+    "tokenExpired": "令牌已过期。请重新登录。",
+    "unexpectedError": "意外错误：{{message}}",
+    "validationError": "验证错误：{{message}}",
+    "vaultDataRequired": "需要保险箱数据。使用 --vault <json> 或通过 stdin 管道传输 JSON。",
+    "vaultVersionRequired": "需要保险箱版本。使用 --vault-version <n>。",
+    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
+    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+  },
+  "options": {
+    "activationCode": "来自电子邮件的激活码",
+    "apiUrl": "API 网址",
+    "bridge": "网桥名称",
+    "command": "执行命令而不是交互式 shell",
+    "container": "连接到特定 Docker 容器",
+    "containerAction": "容器操作：terminal、logs、stats、exec",
+    "context": "为此命令使用特定上下文",
+    "datastore": "机器上的数据存储路径",
+    "email": "电子邮件地址",
+    "external": "强制在外部终端窗口中启动",
+    "follow": "跟踪日志输出",
+    "endpoint": "API 端点 URL",
+    "expires": "过期时间（小时数，1-720）",
+    "force": "跳过确认提示",
+    "lang": "语言覆盖（{{languages}}）",
+    "limit": "最大结果数",
+    "logLines": "显示的日志行数（默认：50）",
+    "machine": "机器名称",
+    "machineIp": "机器 IP 地址或主机名",
+    "machineShorthand": "机器名称（--machine 的简写）",
+    "organization": "组织名称",
+    "output": "输出格式（table|json|yaml|csv）",
+    "password": "密码（用于非交互式登录）",
+    "region": "区域名称",
+    "renetPath": "renet 二进制文件的路径（默认：PATH 中的 renet）",
+    "repository": "仓库名称（连接到仓库环境）",
+    "repositoryShorthand": "仓库名称（--repository 的简写）",
+    "saveAs": "将凭证保存到命名上下文",
+    "sessionName": "会话名称",
+    "sshKey": "SSH 私钥路径（例如：~/.ssh/id_rsa）",
+    "sshPort": "SSH 端口",
+    "sshPrivateKey": "SSH 私钥路径",
+    "sshPublicKey": "SSH 公钥路径",
+    "sshUser": "SSH 用户名",
+    "switch": "创建后切换到此上下文",
+    "team": "团队名称",
+    "tfaCode": "用于验证的当前双因素认证代码",
+    "tokenName": "令牌名称",
+    "watch": "监视更改",
+    "watchUpdates": "监视更新",
+    "yes": "跳过确认提示",
+    "priority": "优先级（1=最高）",
+    "param": "函数参数",
+    "debug": "启用调试输出（本地模式）",
+    "pollInterval": "轮询间隔（毫秒）",
+    "folder": "远程文件夹路径以打开",
+    "urlOnly": "打印 VS Code URI 而不是启动",
+    "newWindow": "在新 VS Code 窗口中打开",
+    "skipEnvSetup": "跳过远程环境设置",
+    "insiders": "使用 VS Code Insiders 设置",
+    "cleanupAll": "移除所有 rediacc SSH 配置",
+    "connectionName": "移除特定连接",
+    "vaultJson": "保险箱内容为 JSON 字符串",
+    "vaultVersion": "用于乐观锁定的当前保险箱版本",
+    "outputPath": "保存输出文件的路径",
+    "importMode": "导入模式（merge 或 replace）",
+    "vaultJsonMachine": "机器保险箱数据为 JSON 字符串",
+    "searchInField": "在 {{field}} 中搜索",
+    "searchRepos": "按名称过滤仓库",
+    "sortByField": "按字段排序",
+    "sortDescending": "降序排序",
+    "sshPassword": "用于初始身份验证的 SSH 密码",
+    "machineForVault": "机器名称（用于测试后更新保险箱）",
+    "saveKnownHosts": "测试成功后将 known_hosts 保存到机器保险箱",
+    "localPath": "本地目录路径（默认：当前目录）",
+    "remotePath": "仓库内的远程子目录路径",
+    "mirrorUpload": "镜像模式 - 删除本地不存在的远程文件",
+    "mirrorDownload": "镜像模式 - 删除远程不存在的本地文件",
+    "verifyChecksum": "同步后使用校验和验证文件",
+    "confirmSync": "预览更改并在同步前请求确认",
+    "excludePatterns": "从同步中排除的模式",
+    "dryRun": "显示将传输的内容而不实际同步",
+    "filterStatus": "按状态过滤",
+    "priorityMin": "最小优先级（1-5）",
+    "priorityMax": "最大优先级（1-5）",
+    "searchQueue": "在任务 ID、团队、机器、网桥中搜索",
+    "sortField": "按字段排序",
+    "sortDesc": "按降序排序",
+    "functionName": "要执行的函数名称",
+    "rawVault": "原始保险箱 JSON（用于脚本/CI）",
+    "userPassword": "新用户的密码",
+    "newPasswordNonInteractive": "新密码（非交互式模式）",
+    "confirmPasswordNonInteractive": "确认密码（非交互式模式）",
+    "repositoryTag": "仓库标签",
+    "parentRepository": "父仓库（用于分叉）",
+    "parentRepositoryTag": "父仓库标签",
+    "protocolSystem": "系统范围内注册（需要管理员权限）",
+    "protocolForce": "强制重新注册即使已注册",
+    "protocolSystemUnregister": "注销系统范围的注册（需要管理员权限）",
+    "outputFormat": "输出格式（json）",
+    "protocolToken": "身份验证令牌",
+    "protocolAction": "操作（{{actions}}）",
+    "protocolParams": "附加参数"
+  },
+  "prompts": {
+    "apiUrl": "API URL：",
+    "cancelled": "已取消",
+    "confirm": "确定吗？",
+    "confirmDelete": "确定要删除此项吗？",
+    "email": "电子邮件：",
+    "enterValue": "输入 {{field}}：",
+    "password": "密码：",
+    "selectOption": "选择选项：",
+    "sshPassword": "SSH 密码（如果使用密钥认证，则留空）：",
+    "syncConfirm": "\n继续同步吗？[y/N/d(etails)]",
+    "syncConfirmHelp": "请输入 y（是）、n（否）或 d（详情）",
+    "passwordForUser": "新用户的密码：",
+    "confirmPassword": "确认密码：",
+    "setPassword": "为用户设置密码：",
+    "newPassword": "新密码：",
+    "confirmNewPassword": "确认新密码：",
+    "masterPassword": "请输入您的主密码："
+  },
+  "spinners": {
+    "connecting": "正在连接...",
+    "creating": "正在创建 {{resource}}...",
+    "deleting": "正在删除 {{resource}}...",
+    "fetching": "正在获取 {{resource}}...",
+    "loading": "正在加载...",
+    "processing": "正在处理...",
+    "saving": "正在保存...",
+    "updating": "正在更新 {{resource}}..."
+  },
+  "status": {
+    "cancelled": "已取消",
+    "completed": "已完成",
+    "failed": "失败",
+    "pending": "待处理",
+    "processing": "处理中",
+    "success": "成功"
+  },
+  "table": {
+    "noData": "没有要显示的数据"
+  },
+  "common": {
+    "yes": "是",
+    "no": "否",
+    "running": "运行中",
+    "stopped": "已停止",
+    "completed": "已完成",
+    "failed": "失败",
+    "success": "✓ 成功",
+    "unknown": "未知",
+    "inProgress": "进行中"
+  }
+}

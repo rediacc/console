@@ -27,11 +27,11 @@ export type MachineWithAssignmentStatus = GetTeamMachines_ResultSet1;
 // ============================================================================
 
 export interface MachineAssignment {
-  machineId: string;
-  machineName: string;
+  machineId: string | null;
+  machineName: string | null;
   assignmentType: MachineAssignmentType;
-  resourceId?: string;
-  resourceName?: string;
+  resourceId?: string | null;
+  resourceName?: string | null;
   assignedAt?: Date;
 }
 
@@ -57,12 +57,12 @@ export type ConflictType = 'exclusivity' | 'availability' | 'permission';
 
 export interface AssignmentConflict {
   machine: MachineWithAssignmentStatus;
-  machineName: string;
+  machineName: string | null;
   currentAssignment: MachineAssignment;
   requestedAssignment: string;
   conflictType: ConflictType;
   targetType?: CephResourceType;
-  targetResource?: string;
+  targetResource?: string | null;
   message?: string;
 }
 
@@ -125,7 +125,7 @@ export interface ValidationWarning {
 
 export interface InvalidMachine {
   machine: MachineWithAssignmentStatus;
-  machineName: string;
+  machineName: string | null;
   errors: ValidationError[];
   canOverride: boolean;
 }

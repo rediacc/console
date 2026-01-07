@@ -4,16 +4,16 @@
 
 import { extractPrimaryOrSecondary, extractRowsByIndex, extractFirstByIndex } from './base';
 import type {
-  GetCompanyRegions_ResultSet1,
+  GetOrganizationRegions_ResultSet1,
   GetRegionBridges_ResultSet1,
   GetTeamStorages_ResultSet1,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
 // Regions
-export function parseGetCompanyRegions(
-  response: ApiResponse<GetCompanyRegions_ResultSet1>
-): GetCompanyRegions_ResultSet1[] {
+export function parseGetOrganizationRegions(
+  response: ApiResponse<GetOrganizationRegions_ResultSet1>
+): GetOrganizationRegions_ResultSet1[] {
   return extractPrimaryOrSecondary(response).filter((region) => Boolean(region.regionName));
 }
 
@@ -49,6 +49,6 @@ export function parseCreateStorage(
   );
 }
 
-export const parseRegionList = parseGetCompanyRegions;
+export const parseRegionList = parseGetOrganizationRegions;
 export const parseBridgeList = parseGetRegionBridges;
 export const parseStorageList = parseGetTeamStorages;

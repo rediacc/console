@@ -42,7 +42,7 @@
     }
   },
   "teams": {
-    "heading": "Teams",
+    "heading": "Mannschaften",
     "manageMembers": {
       "accessStatus": "Hat Zugriff",
       "addTab": "Mitglied hinzufügen",
@@ -58,7 +58,7 @@
     },
     "searchPlaceholder": "Teams durchsuchen...",
     "subtitle": "Teams und deren Mitglieder verwalten",
-    "title": "Teams"
+    "title": "Mannschaften"
   },
   "users": {
     "errors": {

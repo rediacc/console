@@ -5,11 +5,11 @@ import { useSelector } from 'react-redux';
 import {
   useDisableTFA,
   useEnableTFA,
-  useTFAStatus,
+  useGetTFAStatus,
   type EnableTwoFactorResponse,
-} from '@/api/queries/twoFactor';
-import { SizedModal } from '@/components/common';
+} from '@/api/hooks-tfa';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { SizedModal } from '@/components/common/SizedModal';
 import { OTPCodeField } from '@/features/settings/components/profile/OTPCodeField';
 import { useCopyToClipboard } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
@@ -21,9 +21,9 @@ import {
   SafetyCertificateOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { VerificationContent } from './components/VerificationContent';
 import type { FormInstance } from 'antd/es/form';
-import type { TFunction } from 'i18next';
 
 const { Title, Paragraph } = Typography;
 
@@ -42,7 +42,11 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [verificationForm] = Form.useForm();
   const userEmail = useSelector((state: RootState) => state.auth.user?.email) ?? '';
 
-  const { data: twoFAStatus, isLoading: statusLoading, refetch: refetchTFAStatus } = useTFAStatus();
+  const {
+    data: twoFAStatus,
+    isLoading: statusLoading,
+    refetch: refetchTFAStatus,
+  } = useGetTFAStatus();
   const enableTFAMutation = useEnableTFA();
   const disableTFAMutation = useDisableTFA();
 
@@ -175,7 +179,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
     <>
       <SizedModal
         title={
-          <Flex align="center" gap={8} className="inline-flex">
+          <Flex align="center" className="inline-flex">
             <SafetyCertificateOutlined />
             <Typography.Text>{t('twoFactorAuth.title')}</Typography.Text>
           </Flex>
@@ -225,92 +229,95 @@ const LoadingState = () => (
 );
 
 interface SuccessContentProps {
-  t: TFunction<'settings'>;
+  t: TypedTFunction;
   onDone: () => void;
 }
 
-const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => (
-  <Result
-    status="success"
-    title={t('twoFactorAuth.enableSuccess.title')}
-    subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
-    data-testid="tfa-settings-success-result"
-    extra={
-      <Flex vertical gap={24} className="w-full">
-        <Alert
-          message={t('twoFactorAuth.enableSuccess.verified')}
-          description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
-          type="success"
-          showIcon
-          icon={<CheckCircleOutlined />}
-          data-testid="tfa-settings-success-alert"
-        />
+const SuccessContent: React.FC<SuccessContentProps> = ({ t, onDone }) => {
+  return (
+    <Result
+      status="success"
+      title={t('twoFactorAuth.enableSuccess.title')}
+      subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
+      data-testid="tfa-settings-success-result"
+      extra={
+        <Flex vertical className="w-full">
+          <Alert
+            message={t('twoFactorAuth.enableSuccess.verified')}
+            description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
+            type="success"
+            icon={<CheckCircleOutlined />}
+            data-testid="tfa-settings-success-alert"
+          />
 
-        <Button block onClick={onDone} data-testid="tfa-settings-success-done-button">
-          {t('twoFactorAuth.done')}
-        </Button>
-      </Flex>
-    }
-  />
-);
+          <Button block onClick={onDone} data-testid="tfa-settings-success-done-button">
+            {t('twoFactorAuth.done')}
+          </Button>
+        </Flex>
+      }
+    />
+  );
+};
 
 interface StatusOverviewProps {
   isEnabled: boolean;
   onEnable: () => void;
   onDisable: () => void;
-  t: TFunction<'settings'>;
+  t: TypedTFunction;
 }
 
-const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, onDisable, t }) => (
-  <Flex vertical gap={24} className="w-full">
-    <Flex vertical align="center" className="text-center">
-      <SafetyCertificateOutlined />
-      <Title level={4}>
-        {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
-      </Title>
-      <Paragraph>
-        {isEnabled
-          ? t('twoFactorAuth.status.enabledDescription')
-          : t('twoFactorAuth.status.disabledDescription')}
-      </Paragraph>
-    </Flex>
-
-    <Card>
-      <Flex vertical gap={8}>
-        <Title level={5}>{t('twoFactorAuth.whatIs.title')}</Title>
-        <Paragraph>{t('twoFactorAuth.whatIs.description')}</Paragraph>
-        <ul>
-          <li>{t('twoFactorAuth.whatIs.benefit1')}</li>
-          <li>{t('twoFactorAuth.whatIs.benefit2')}</li>
-          <li>{t('twoFactorAuth.whatIs.benefit3')}</li>
-        </ul>
+const StatusOverview: React.FC<StatusOverviewProps> = ({ isEnabled, onEnable, onDisable, t }) => {
+  return (
+    <Flex vertical className="w-full">
+      <Flex vertical align="center" className="text-center">
+        <SafetyCertificateOutlined />
+        <Title level={4}>
+          {isEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
+        </Title>
+        <Paragraph>
+          {isEnabled
+            ? t('twoFactorAuth.status.enabledDescription')
+            : t('twoFactorAuth.status.disabledDescription')}
+        </Paragraph>
       </Flex>
-    </Card>
 
-    {isEnabled ? (
-      <Button
-        type="primary"
-        danger
-        block
-        icon={<WarningOutlined />}
-        onClick={onDisable}
-        data-testid="tfa-settings-disable-button"
-      >
-        {t('twoFactorAuth.disable')}
-      </Button>
-    ) : (
-      <Button
-        type="primary"
-        block
-        icon={<CheckCircleOutlined />}
-        onClick={onEnable}
-        data-testid="tfa-settings-enable-button"
-      >
-        {t('twoFactorAuth.enable')}
-      </Button>
-    )}
-  </Flex>
-);
+      <Card>
+        <Flex vertical className="gap-sm">
+          <Title level={5}>{t('twoFactorAuth.whatIs.title')}</Title>
+          <Paragraph>{t('twoFactorAuth.whatIs.description')}</Paragraph>
+          <ul>
+            <li>{t('twoFactorAuth.whatIs.benefit1')}</li>
+            <li>{t('twoFactorAuth.whatIs.benefit2')}</li>
+            <li>{t('twoFactorAuth.whatIs.benefit3')}</li>
+          </ul>
+        </Flex>
+      </Card>
+
+      {isEnabled ? (
+        <Button
+          type="primary"
+          danger
+          block
+          icon={<WarningOutlined />}
+          onClick={onDisable}
+          data-testid="tfa-settings-disable-button"
+        >
+          {t('twoFactorAuth.disable')}
+        </Button>
+      ) : (
+        <Button
+          type="primary"
+          block
+          icon={<CheckCircleOutlined />}
+          onClick={onEnable}
+          data-testid="tfa-settings-enable-button"
+        >
+          {t('twoFactorAuth.enable')}
+        </Button>
+      )}
+    </Flex>
+  );
+};
 
 interface EnableModalProps {
   open: boolean;
@@ -318,7 +325,7 @@ interface EnableModalProps {
   form: FormInstance;
   onSubmit: (values: { password: string }) => void;
   isSubmitting: boolean;
-  t: TFunction<'settings'>;
+  t: TypedTFunction;
 }
 
 const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
@@ -342,7 +349,6 @@ const EnableTwoFactorModal: React.FC<EnableModalProps> = ({
         message={t('twoFactorAuth.enableModal.warning')}
         description={t('twoFactorAuth.enableModal.warningDescription')}
         type="warning"
-        showIcon
         data-testid="tfa-settings-enable-warning-alert"
       />
 
@@ -383,7 +389,7 @@ interface DisableModalProps {
   form: FormInstance;
   onSubmit: (values: { password: string; code: string }) => void;
   isSubmitting: boolean;
-  t: TFunction<'settings'>;
+  t: TypedTFunction;
 }
 
 const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
@@ -407,7 +413,6 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         message={t('twoFactorAuth.disableModal.warning')}
         description={t('twoFactorAuth.disableModal.warningDescription')}
         type="error"
-        showIcon
         data-testid="tfa-settings-disable-warning-alert"
       />
 

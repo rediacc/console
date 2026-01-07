@@ -49,6 +49,8 @@ export class QueueService extends SharedQueueService {
       isExtensionContext: isExtensionContext(),
       emitNotification: dependencies.emitNotification,
       emitMonitoringEvent: dependencies.emitMonitoringEvent,
+      validateParams: true,
+      validateConnections: true,
     });
   }
 }

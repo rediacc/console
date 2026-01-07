@@ -52,8 +52,8 @@ export const useBridgeSelection = ({
       const currentBridge = getFormValue('bridgeName');
       const filteredBridges = getFilteredBridges(regionValue);
 
-      // If bridge feature is disabled, auto-select first available bridge
-      if (featureFlags.isEnabled('disableBridge')) {
+      // If bridge management UI is hidden, auto-select first available bridge
+      if (!featureFlags.isEnabled('bridgeManageEnabled')) {
         if (filteredBridges.length > 0) {
           form.setFieldValue('bridgeName', filteredBridges[0].value);
         }

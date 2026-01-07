@@ -9,7 +9,7 @@ import {
 
 /**
  * Verify that default infrastructure (region, bridge) was created.
- * This catches middleware bugs where company setup fails silently.
+ * This catches middleware bugs where organization setup fails silently.
  */
 async function verifyDefaultInfrastructure(): Promise<void> {
   // Verify default region exists
@@ -19,7 +19,7 @@ async function verifyDefaultInfrastructure(): Promise<void> {
   }
   const regions = regionsResult.json as { regionName: string }[];
   if (!Array.isArray(regions) || regions.length === 0) {
-    throw new Error('No default region found after company registration');
+    throw new Error('No default region found after organization registration');
   }
 
   // Verify default bridge exists in the default region
@@ -31,7 +31,7 @@ async function verifyDefaultInfrastructure(): Promise<void> {
   const bridges = bridgesResult.json as { bridgeName: string }[];
   if (!Array.isArray(bridges) || bridges.length === 0) {
     throw new Error(
-      `No default bridge found in region "${defaultRegion}" after company registration`
+      `No default bridge found in region "${defaultRegion}" after organization registration`
     );
   }
 }
@@ -40,7 +40,7 @@ async function verifyDefaultInfrastructure(): Promise<void> {
  * Global test setup for integration tests
  *
  * This file runs before all tests to:
- * 1. Register a fresh company/user for this test run
+ * 1. Register a fresh organization/user for this test run
  * 2. Activate the account with code 111111 (CI_MODE)
  * 3. Login with the new credentials
  *

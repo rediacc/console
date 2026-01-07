@@ -1,5 +1,5 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "Configurer le coffre-fort",
     "description": "Configurez les paramètres du coffre-fort de votre entreprise pour gérer les configurations à l'échelle de l'organisation.",
     "modalTitle": "Configurer le coffre-fort de l'entreprise",
@@ -92,6 +92,7 @@
       "enabledDescription": "Votre compte est protégé par une couche de sécurité supplémentaire."
     },
     "statusMessages": {
+      "authorized": "Autorisation TFA réussie",
       "enabled": "TFA activé",
       "none": "Aucun TFA configuré",
       "unknown": "Impossible de déterminer le statut TFA"

@@ -1,8 +1,8 @@
 import React from 'react';
-import type { QueueFunction } from '@/api/queries/queue';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
+import type { QueueFunction } from '@rediacc/shared/types';
 
 type FunctionSubmitPayload = {
   function: QueueFunction;
@@ -129,7 +129,6 @@ export const ResourceModalDialogs: React.FC<ResourceModalDialogsProps> = ({
         templateName={templateToView}
         onClose={onTemplateClose}
         onUseTemplate={onTemplateUse}
-        context="repository-creation"
       />
     </>
   );

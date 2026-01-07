@@ -15,14 +15,17 @@ import {
   Typography,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useMachines } from '@/api/queries/machines';
-import type { QueueFunction } from '@/api/queries/queue';
-import { useRepositories } from '@/api/queries/repositories';
-import { useStorage } from '@/api/queries/storage';
-import { SizedModal } from '@/components/common';
+import {
+  useGetTeamMachines,
+  useGetTeamRepositories,
+  useGetTeamStorages,
+} from '@/api/api-hooks.generated';
+import { SizedModal } from '@/components/common/SizedModal';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
+import { FORM_LAYOUTS } from '@/config/formLayouts';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { ModalSize } from '@/types/modal';
+import type { QueueFunction } from '@rediacc/shared/types';
 import FunctionParameterField from './components/FunctionParameterField';
 import PrioritySelector from './components/PrioritySelector';
 import { useFunctionParameters } from './hooks/useFunctionParameters';
@@ -34,7 +37,12 @@ type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
 
 const { Paragraph } = Typography;
-const QUICK_TASK_NAMES = ['ping', 'hello', 'ssh_test', 'health_check'];
+const QUICK_TASK_NAMES = [
+  'machine_ping',
+  'machine_version',
+  'machine_ssh_test',
+  'health_check',
+] as const;
 
 interface FunctionSelectionModalProps {
   open: boolean;
@@ -107,11 +115,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [templateToView, setTemplateToView] = useState<string | null>(null);
 
   // Fetch repositories for the current team
-  const { data: repositories } = useRepositories(teamName);
+  const { data: repositories } = useGetTeamRepositories(teamName);
 
   // Fetch machines and storage for destination dropdown
-  const { data: machinesData } = useMachines(teamName);
-  const { data: storageData } = useStorage(teamName);
+  const { data: machinesData } = useGetTeamMachines(teamName);
+  const { data: storageData } = useGetTeamStorages(teamName);
 
   // Use custom hooks
   const { initializeParams } = useFunctionParameters({
@@ -125,16 +133,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionParams(params);
 
     // Auto-select P1 for quick tasks
-    const quickTasks = ['ping', 'hello', 'ssh_test', 'health_check'];
-    if (
-      quickTasks.includes(func.name) ||
+    const isQuickTask =
+      (QUICK_TASK_NAMES as readonly string[]).includes(func.name) ||
       func.name.includes('test') ||
-      func.name.includes('check')
-    ) {
-      setFunctionPriority(1);
-    } else {
-      setFunctionPriority(4);
-    }
+      func.name.includes('check');
+    setFunctionPriority(isQuickTask ? 1 : 4);
   };
 
   const { handleSelectFunction, functionsByCategory } = useFunctionSelection({
@@ -300,7 +303,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       </Flex>
                       {funcs.map((func) => {
                         const isQuickTask =
-                          QUICK_TASK_NAMES.includes(func.name) ||
+                          (QUICK_TASK_NAMES as readonly string[]).includes(func.name) ||
                           func.name.includes('test') ||
                           func.name.includes('check');
 
@@ -332,13 +335,13 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
           <Col span={preselectedFunction ? 24 : 14}>
             {selectedFunction ? (
-              <Flex vertical gap={24} className="w-full">
+              <Flex vertical className="w-full">
                 <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
                   <Paragraph>{selectedFunction.description}</Paragraph>
 
-                  <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
+                  <Form {...FORM_LAYOUTS.horizontal}>
                     {/* Show additional info for push function */}
-                    {selectedFunction.name === 'push' && functionParams.dest && (
+                    {selectedFunction.name === 'backup_push' && functionParams.dest && (
                       <Flex
                         // eslint-disable-next-line no-restricted-syntax
                         style={{
@@ -349,17 +352,20 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       >
                         <Alert
                           type="info"
-                          showIcon
-                          message="Push Operation Details"
+                          message={t('functions:pushOperationDetails')}
                           description={
                             <Space direction="vertical" size="small">
                               <Flex>
-                                <Typography.Text strong>Destination Filename: </Typography.Text>
+                                <Typography.Text strong>
+                                  {t('functions:destinationFilename')}:{' '}
+                                </Typography.Text>
                                 <Typography.Text code>{functionParams.dest}</Typography.Text>
                               </Flex>
                               {additionalContext?.parentRepo && (
                                 <Flex>
-                                  <Typography.Text strong>Repository Lineage: </Typography.Text>
+                                  <Typography.Text strong>
+                                    {t('functions:repositoryLineage')}:{' '}
+                                  </Typography.Text>
                                   <Space>
                                     <Tag>{additionalContext.parentRepo}</Tag>
                                     <Typography.Text>→</Typography.Text>
@@ -371,16 +377,18 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               )}
                               {!additionalContext?.parentRepo && additionalContext?.sourceRepo && (
                                 <Flex>
-                                  <Typography.Text strong>Source Repository: </Typography.Text>
+                                  <Typography.Text strong>
+                                    {t('functions:sourceRepository')}:{' '}
+                                  </Typography.Text>
                                   <Tag>{additionalContext.sourceRepo}</Tag>
-                                  <Typography.Text> (Original)</Typography.Text>
+                                  <Typography.Text>{t('functions:original')}</Typography.Text>
                                 </Flex>
                               )}
                               <Flex>
                                 <Typography.Text>
                                   {functionParams.state === 'online'
-                                    ? 'The repository will be pushed in online state (mounted).'
-                                    : 'The repository will be pushed in offline state (unmounted).'}
+                                    ? t('functions:repositoryWillBePushedOnline')
+                                    : t('functions:repositoryWillBePushedOffline')}
                                 </Typography.Text>
                               </Flex>
                             </Space>
@@ -389,7 +397,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         {functionParams.state === 'online' && (
                           <Alert
                             type="warning"
-                            showIcon
                             message={t('functions:onlinePushWarningTitle')}
                             description={
                               <Space direction="vertical" size="small">
@@ -505,7 +512,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           setShowTemplateDetails(false);
           setTemplateToView(null);
         }}
-        context="repository-creation"
       />
     </>
   );

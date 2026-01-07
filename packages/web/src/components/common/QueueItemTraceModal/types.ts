@@ -11,10 +11,13 @@ export interface QueueItemTraceModalProps extends BaseModalProps {
   onTaskStatusChange?: (status: string, taskId: string) => void;
 }
 
+export type ConsoleViewMode = 'structured' | 'raw';
+
 export interface ConsoleOutputProps {
   content: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   isEmpty?: boolean;
+  viewMode: ConsoleViewMode;
 }
 
 export interface SimplifiedStatus {
@@ -37,7 +40,6 @@ export interface TraceState {
   activeKeys: string[];
   simpleMode: boolean;
   accumulatedOutput: string;
-  lastOutputStatus: string;
   consoleProgress: number | null;
   progressMessage: string | null;
   isSimpleConsoleExpanded: boolean;
@@ -50,7 +52,6 @@ export interface TraceStateActions {
   setActiveKeys: (keys: string[]) => void;
   setSimpleMode: (simple: boolean) => void;
   setAccumulatedOutput: (output: string | ((prev: string) => string)) => void;
-  setLastOutputStatus: (status: string) => void;
   setIsSimpleConsoleExpanded: (expanded: boolean) => void;
   setIsDetailedConsoleExpanded: (expanded: boolean) => void;
 }

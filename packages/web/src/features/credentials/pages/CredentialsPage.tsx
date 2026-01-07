@@ -1,22 +1,30 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Button, Flex, Space, Tooltip, Typography } from 'antd';
+import { Flex, Space, Tag, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMachines } from '@/api/queries/machines';
-import { QueueFunction } from '@/api/queries/queue';
 import {
-  Repository,
   useCreateRepository,
   useDeleteRepository,
-  useRepositories,
+  useGetTeamMachines,
+  useGetTeamRepositories,
+  useGetTeamStorages,
   useUpdateRepositoryName,
   useUpdateRepositoryVault,
-} from '@/api/queries/repositories';
-import { useStorage } from '@/api/queries/storage';
+} from '@/api/api-hooks.generated';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { TooltipButton } from '@/components/common/buttons';
 import { buildRepositoryColumns } from '@/components/common/columns/builders/credentialColumns';
+import {
+  buildDeleteMenuItem,
+  buildDivider,
+  buildEditMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
+import { PageHeader } from '@/components/common/PageHeader';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
@@ -31,11 +39,13 @@ import { useQueueAction } from '@/hooks/useQueueAction';
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
 import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { getAffectedResources as coreGetAffectedResources } from '@/platform';
-import type { QueueActionParams } from '@/services/queue';
+import type { DynamicQueueActionParams } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
-import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { InboxOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
+import type { QueueFunction } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useDeleteConfirmationModal } from '../components/DeleteConfirmationModal';
-import { RepositoryMobileCard } from '../components/RepositoryMobileCard';
 
 interface CredentialsLocationState {
   createRepository?: boolean;
@@ -51,7 +61,7 @@ type RepositoryFormValues = {
   [key: string]: unknown;
 };
 
-type RepoModalData = Partial<Repository> & Record<string, unknown>;
+type RepoModalData = Partial<GetTeamRepositories_ResultSet1> & Record<string, unknown>;
 
 const CredentialsPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common']);
@@ -65,7 +75,7 @@ const CredentialsPage: React.FC = () => {
     currentResource,
     openModal: openUnifiedModal,
     closeModal: closeUnifiedModal,
-  } = useUnifiedModal<Repository & Record<string, unknown>>('repository');
+  } = useUnifiedModal<GetTeamRepositories_ResultSet1 & Record<string, unknown>>('repository');
   const {
     page: repositoryPage,
     pageSize: repositoryPageSize,
@@ -86,14 +96,15 @@ const CredentialsPage: React.FC = () => {
     data: repositories = [],
     isLoading: repositoriesLoading,
     refetch: refetchRepos,
-  } = useRepositories(selectedTeams.length > 0 ? selectedTeams : undefined);
+  } = useGetTeamRepositories(selectedTeams.length > 0 ? selectedTeams[0] : undefined);
 
-  const { data: machines = [] } = useMachines(
-    selectedTeams.length > 0 ? selectedTeams : undefined,
-    selectedTeams.length > 0
+  const { data: machines = [] } = useGetTeamMachines(
+    selectedTeams.length > 0 ? selectedTeams[0] : undefined
   );
 
-  const { data: storages = [] } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined);
+  const { data: storages = [] } = useGetTeamStorages(
+    selectedTeams.length > 0 ? selectedTeams[0] : undefined
+  );
 
   const createRepositoryMutation = useCreateRepository();
   const updateRepoNameMutation = useUpdateRepositoryName();
@@ -102,7 +113,7 @@ const CredentialsPage: React.FC = () => {
 
   const { createRepository: createRepositoryWithQueue, isCreating } =
     useRepositoryCreation(machines);
-  const { executeAction, isExecuting } = useQueueAction();
+  const { executeDynamic, isExecuting } = useQueueAction();
 
   const originalRepositories = useMemo(
     () =>
@@ -113,7 +124,8 @@ const CredentialsPage: React.FC = () => {
   );
 
   const getAffectedResources = useCallback(
-    (repository: Repository) => coreGetAffectedResources(repository, repositories, machines),
+    (repository: GetTeamRepositories_ResultSet1) =>
+      coreGetAffectedResources(repository, repositories, machines),
     [repositories, machines]
   );
 
@@ -122,8 +134,8 @@ const CredentialsPage: React.FC = () => {
     getAffectedResources,
     onDelete: (repository) =>
       deleteRepoMutation.mutateAsync({
-        teamName: repository.teamName,
-        repositoryName: repository.repositoryName,
+        teamName: repository.teamName ?? '',
+        repositoryName: repository.repositoryName ?? '',
       }),
     onDeleted: refetchRepos,
   });
@@ -165,9 +177,9 @@ const CredentialsPage: React.FC = () => {
               await updateRepoVaultMutation.mutateAsync({
                 teamName: currentResource.teamName,
                 repositoryName: newName ?? currentName,
-                repositoryTag: currentResource.repositoryTag || 'latest',
+                repositoryTag: currentResource.repositoryTag ?? 'latest',
                 vaultContent: vaultData,
-                vaultVersion: currentResource.vaultVersion + 1,
+                vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
               });
             }
 
@@ -200,7 +212,7 @@ const CredentialsPage: React.FC = () => {
           await updateRepoVaultMutation.mutateAsync({
             teamName: currentResource.teamName,
             repositoryName: currentResource.repositoryName,
-            repositoryTag: currentResource.repositoryTag || 'latest',
+            repositoryTag: currentResource.repositoryTag ?? 'latest',
             vaultContent: vault,
             vaultVersion: version,
           });
@@ -246,26 +258,25 @@ const CredentialsPage: React.FC = () => {
             machine.teamName === currentResource.teamName
         );
 
-        const queuePayload: QueueActionParams = {
-          teamName: currentResource.teamName,
+        const queuePayload: Omit<DynamicQueueActionParams, 'functionName'> = {
+          params: functionData.params,
+          teamName: currentResource.teamName ?? '',
           machineName: machineEntry.value,
           bridgeName: machineEntry.bridgeName ?? '',
-          functionName: functionData.function.name,
-          params: functionData.params,
           priority: functionData.priority,
           description: functionData.description,
           addedVia: 'repository-table',
           teamVault:
             teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent ?? '{}',
-          repositoryGuid: currentResource.repositoryGuid,
+          repositoryGuid: currentResource.repositoryGuid ?? undefined,
           vaultContent: currentResource.vaultContent ?? '{}',
-          repositoryNetworkId: currentResource.repositoryNetworkId,
-          repositoryNetworkMode: currentResource.repositoryNetworkMode,
-          repositoryTag: currentResource.repositoryTag,
+          repositoryNetworkId: currentResource.repositoryNetworkId ?? undefined,
+          repositoryNetworkMode: currentResource.repositoryNetworkMode ?? undefined,
+          repositoryTag: currentResource.repositoryTag ?? undefined,
           machineVault: selectedMachine?.vaultContent ?? '{}',
         };
 
-        if (functionData.function.name === 'pull') {
+        if (functionData.function.name === 'backup_pull') {
           if (functionData.params.sourceType === 'machine' && functionData.params.from) {
             const sourceMachine = machines.find(
               (machine) => machine.machineName === functionData.params.from
@@ -285,7 +296,10 @@ const CredentialsPage: React.FC = () => {
           }
         }
 
-        const result = await executeAction(queuePayload);
+        const result = await executeDynamic(
+          functionData.function.name as BridgeFunctionName,
+          queuePayload
+        );
         closeUnifiedModal();
 
         if (result.success) {
@@ -309,7 +323,7 @@ const CredentialsPage: React.FC = () => {
       closeUnifiedModal,
       currentResource,
       dropdownData,
-      executeAction,
+      executeDynamic,
       machines,
       queueTrace,
       storages,
@@ -318,11 +332,12 @@ const CredentialsPage: React.FC = () => {
     ]
   );
 
-  const isSubmitting =
-    createRepositoryMutation.isPending ||
-    updateRepoNameMutation.isPending ||
-    isCreating ||
-    isExecuting;
+  const isSubmitting = [
+    createRepositoryMutation.isPending,
+    updateRepoNameMutation.isPending,
+    isCreating,
+    isExecuting,
+  ].some(Boolean);
 
   const isUpdatingVault = updateRepoVaultMutation.isPending;
 
@@ -351,12 +366,15 @@ const CredentialsPage: React.FC = () => {
       buildRepositoryColumns({
         t,
         onEdit: (repository) =>
-          openUnifiedModal('edit', repository as Repository & Record<string, unknown>),
+          openUnifiedModal(
+            'edit',
+            repository as GetTeamRepositories_ResultSet1 & Record<string, unknown>
+          ),
         onTrace: (repository) =>
           auditTrace.open({
             entityType: 'Repository',
-            entityIdentifier: repository.repositoryName,
-            entityName: repository.repositoryName,
+            entityIdentifier: repository.repositoryName ?? '',
+            entityName: repository.repositoryName ?? '',
           }),
         onDelete: handleDeleteRepository,
       }),
@@ -369,24 +387,39 @@ const CredentialsPage: React.FC = () => {
     ? t('repositories.noRepositories')
     : t('teams.selectTeamPrompt');
 
-  const mobileRender = useCallback(
-    (record: Repository) => (
-      <RepositoryMobileCard
-        record={record}
-        t={t}
-        onEdit={(repository) =>
-          openUnifiedModal('edit', repository as Repository & Record<string, unknown>)
-        }
-        onTrace={(repository) =>
+  const mobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: GetTeamRepositories_ResultSet1) => {
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(t, () =>
+          openUnifiedModal(
+            'edit',
+            record as GetTeamRepositories_ResultSet1 & Record<string, unknown>
+          )
+        ),
+        buildTraceMenuItem(t, () =>
           auditTrace.open({
             entityType: 'Repository',
-            entityIdentifier: repository.repositoryName,
-            entityName: repository.repositoryName,
+            entityIdentifier: record.repositoryName ?? '',
+            entityName: record.repositoryName ?? '',
           })
-        }
-        onDelete={handleDeleteRepository}
-      />
-    ),
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(t, () => handleDeleteRepository(record)),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <InboxOutlined />
+            <Typography.Text strong className="truncate">
+              {record.repositoryName}
+            </Typography.Text>
+          </Space>
+          <Tag>{record.teamName}</Tag>
+        </MobileCard>
+      );
+    },
     [t, openUnifiedModal, auditTrace, handleDeleteRepository]
   );
 
@@ -394,8 +427,7 @@ const CredentialsPage: React.FC = () => {
     <>
       <Flex vertical>
         <Flex vertical>
-          {/* eslint-disable-next-line no-restricted-syntax */}
-          <Flex style={{ width: '100%', maxWidth: 360 }}>
+          <Flex className="w-full-max-sm">
             <TeamSelector
               data-testid="resources-team-selector"
               teams={teams}
@@ -406,12 +438,9 @@ const CredentialsPage: React.FC = () => {
             />
           </Flex>
 
-          <ResourceListView<Repository>
+          <ResourceListView<GetTeamRepositories_ResultSet1>
             title={
-              <Space direction="vertical" size={0}>
-                <Typography.Text strong>{t('credentials.title')}</Typography.Text>
-                <Typography.Text>{t('credentials.subtitle')}</Typography.Text>
-              </Space>
+              <PageHeader title={t('credentials.title')} subtitle={t('credentials.subtitle')} />
             }
             loading={repositoriesLoading}
             data={displayedRepositories}
@@ -420,6 +449,7 @@ const CredentialsPage: React.FC = () => {
             rowKey="repositoryGuid"
             data-testid="resources-repository-table"
             resourceType="repositories"
+            searchPlaceholder={t('repositories.searchRepositories')}
             emptyDescription={emptyDescription}
             pagination={
               hasTeamSelection
@@ -449,23 +479,19 @@ const CredentialsPage: React.FC = () => {
             actions={
               hasTeamSelection ? (
                 <>
-                  <Tooltip title={t('repositories.createRepository')}>
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      data-testid="resources-create-repositorie-button"
-                      onClick={() => openUnifiedModal('create', undefined, 'credentials-only')}
-                      aria-label={t('repositories.createRepository')}
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('common:actions.refresh')}>
-                    <Button
-                      icon={<ReloadOutlined />}
-                      data-testid="resources-refresh-button"
-                      onClick={() => refetchRepos()}
-                      aria-label={t('common:actions.refresh')}
-                    />
-                  </Tooltip>
+                  <TooltipButton
+                    tooltip={t('repositories.createRepository')}
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    data-testid="resources-create-repositorie-button"
+                    onClick={() => openUnifiedModal('create', undefined, 'credentials-only')}
+                  />
+                  <TooltipButton
+                    tooltip={t('common:actions.refresh')}
+                    icon={<ReloadOutlined />}
+                    data-testid="resources-refresh-button"
+                    onClick={() => refetchRepos()}
+                  />
                 </>
               ) : undefined
             }
@@ -494,9 +520,9 @@ const CredentialsPage: React.FC = () => {
         defaultParams={
           currentResource
             ? {
-                repository: currentResource.repositoryGuid,
-                repositoryName: currentResource.repositoryName,
-                grand: currentResource.grandGuid || '',
+                repository: currentResource.repositoryGuid ?? '',
+                repositoryName: currentResource.repositoryName ?? '',
+                grand: currentResource.grandGuid ?? '',
               }
             : {}
         }

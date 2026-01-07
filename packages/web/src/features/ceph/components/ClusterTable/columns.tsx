@@ -1,11 +1,11 @@
 import { Button, Flex, Tag, Typography } from 'antd';
-import type { CephCluster } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
-  createActionColumn,
   createTruncatedColumn,
   createVersionColumn,
+  RESPONSIVE_HIDE_XS,
 } from '@/components/common/columns';
+import { createActionColumn } from '@/components/common/columns/factories/action';
 import { buildClusterMenuItems } from '@/features/ceph/utils/menuItems';
 import { createSorter } from '@/platform';
 import {
@@ -16,18 +16,19 @@ import {
   RightOutlined,
   CloudServerOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';
 import { ClusterMachineCountBadge } from '../ClusterMachineCountBadge';
 import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
 
 interface BuildClusterColumnsParams {
-  t: TFunction<'ceph' | 'common' | 'machines'>;
+  t: TypedTFunction;
   expandedRowKeys: string[];
-  onManageMachines: (cluster: CephCluster) => void;
-  onEditCluster: (cluster: CephCluster) => void;
-  onDeleteCluster: (cluster: CephCluster) => void;
-  onRunFunction: (cluster: CephCluster & { preselectedFunction?: string }) => void;
-  onShowAuditTrace: (cluster: CephCluster) => void;
+  onManageMachines: (cluster: GetCephClusters_ResultSet1) => void;
+  onEditCluster: (cluster: GetCephClusters_ResultSet1) => void;
+  onDeleteCluster: (cluster: GetCephClusters_ResultSet1) => void;
+  onRunFunction: (cluster: GetCephClusters_ResultSet1 & { preselectedFunction?: string }) => void;
+  onShowAuditTrace: (cluster: GetCephClusters_ResultSet1) => void;
 }
 
 export const buildClusterColumns = ({
@@ -38,29 +39,29 @@ export const buildClusterColumns = ({
   onDeleteCluster,
   onRunFunction,
   onShowAuditTrace,
-}: BuildClusterColumnsParams): ColumnsType<CephCluster> => {
-  const clusterNameColumn = createTruncatedColumn<CephCluster>({
+}: BuildClusterColumnsParams): ColumnsType<GetCephClusters_ResultSet1> => {
+  const clusterNameColumn = createTruncatedColumn<GetCephClusters_ResultSet1>({
     title: t('clusters.clusterName'),
     dataIndex: 'clusterName',
     key: 'clusterName',
-    sorter: createSorter<CephCluster>('clusterName'),
+    sorter: createSorter<GetCephClusters_ResultSet1>('clusterName'),
   });
 
-  const teamColumn = createTruncatedColumn<CephCluster>({
+  const teamColumn = createTruncatedColumn<GetCephClusters_ResultSet1>({
     title: t('common:general.team'),
     dataIndex: 'teamName',
     key: 'teamName',
     width: 150,
-    sorter: createSorter<CephCluster>('teamName'),
+    sorter: createSorter<GetCephClusters_ResultSet1>('teamName'),
   });
 
   return [
     {
       ...clusterNameColumn,
-      render: (name: string, record: CephCluster, index) => {
-        const isExpanded = expandedRowKeys.includes(record.clusterName);
+      render: (name: string, record: GetCephClusters_ResultSet1, index) => {
+        const isExpanded = expandedRowKeys.includes(record.clusterName ?? '');
         return (
-          <Flex align="center" gap={8}>
+          <Flex align="center">
             <RightOutlined className={`expand-icon ${isExpanded ? 'expand-icon-rotated' : ''}`} />
             <CloudServerOutlined />
             <Typography.Text>
@@ -72,7 +73,8 @@ export const buildClusterColumns = ({
     },
     {
       ...teamColumn,
-      render: (teamName: string, record: CephCluster, index) => (
+      responsive: RESPONSIVE_HIDE_XS,
+      render: (teamName: string, record: GetCephClusters_ResultSet1, index) => (
         <Tag bordered={false}>
           {teamColumn.render?.(teamName, record, index) as React.ReactNode}
         </Tag>
@@ -83,8 +85,8 @@ export const buildClusterColumns = ({
       key: 'machineCount',
       width: 160,
       align: 'center',
-      render: (_: unknown, record: CephCluster) => (
-        <Flex align="center" gap={8}>
+      render: (_: unknown, record: GetCephClusters_ResultSet1) => (
+        <Flex align="center">
           <ClusterMachineCountBadge cluster={record} />
           <Button
             data-testid={`ds-cluster-manage-machines-${record.clusterName}`}
@@ -98,15 +100,18 @@ export const buildClusterColumns = ({
         </Flex>
       ),
     },
-    createVersionColumn<CephCluster>({
-      title: t('common:general.vaultVersion'),
-      dataIndex: 'vaultVersion',
-      key: 'vaultVersion',
-      width: 120,
-      sorter: createSorter<CephCluster>('vaultVersion'),
-      formatVersion: (version: number) => t('common:general.versionFormat', { version }),
-    }),
-    createActionColumn<CephCluster>({
+    {
+      ...createVersionColumn<GetCephClusters_ResultSet1>({
+        title: t('common:general.vaultVersion'),
+        dataIndex: 'vaultVersion',
+        key: 'vaultVersion',
+        width: 120,
+        sorter: createSorter<GetCephClusters_ResultSet1>('vaultVersion'),
+        formatVersion: (version: number) => t('common:general.versionFormat', { version }),
+      }),
+      responsive: RESPONSIVE_HIDE_XS,
+    },
+    createActionColumn<GetCephClusters_ResultSet1>({
       width: 260,
       renderActions: (record) => (
         <ActionButtonGroup

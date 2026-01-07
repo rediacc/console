@@ -7,27 +7,27 @@
       "deleteGroupFailed": "删除权限组失败",
       "removePermissionFailed": "无法从组中删除权限"
     },
-    "heading": "Access Control",
+    "heading": "访问控制",
     "modals": {
-      "addPermissionButton": "Add Permission",
-      "addPermissionsTab": "Add Permissions",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "createGroupTitle": "Create Permission Group",
-      "currentPermissionsTab": "Current Permissions",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?",
-      "deleteGroupTitle": "Delete Permission Group",
-      "groupNameRequired": "Please enter a group name",
-      "groupPlaceholder": "Enter group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "userPlaceholder": "Select user"
+      "addPermissionButton": "添加权限",
+      "addPermissionsTab": "添加权限",
+      "assignUserTitle": "分配用户",
+      "assignUserTo": "到 {{group}}",
+      "createGroupTitle": "创建权限组",
+      "currentPermissionsTab": "当前权限",
+      "deleteGroupDescription": "您确定要删除群组 \"{{group}}\" 吗？",
+      "deleteGroupTitle": "删除权限组",
+      "groupNameRequired": "请输入群组名称",
+      "groupPlaceholder": "输入群组名称",
+      "managePermissionsTitle": "管理权限",
+      "noPermissions": "未分配权限",
+      "permissionPlaceholder": "选择要添加的权限",
+      "userPlaceholder": "选择用户"
     },
     "permissions": {
-      "searchPlaceholder": "Search permission groups...",
-      "subtitle": "Manage permission groups and their assignments",
-      "title": "Permission Groups"
+      "searchPlaceholder": "搜索权限组...",
+      "subtitle": "管理权限组及其分配",
+      "title": "权限组"
     },
     "success": {
       "groupCreated": "权限组“{{group}}”创建成功",
@@ -37,28 +37,28 @@
       "userAssigned": "分配给权限组“{{group}}”的用户"
     },
     "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "permissions": "权限",
+      "sessions": "会话"
     }
   },
   "teams": {
-    "heading": "Teams",
+    "heading": "团队",
     "manageMembers": {
-      "accessStatus": "Has Access",
-      "addTab": "Add Member",
-      "currentTab": "Current Members",
-      "empty": "No members in this team",
-      "memberStatus": "Member",
-      "pendingStatus": "Pending",
-      "removeButton": "Remove",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeTitle": "Remove Team Member",
-      "selectUser": "Select user",
-      "title": "Manage Team Members"
+      "accessStatus": "有访问权限",
+      "addTab": "添加成员",
+      "currentTab": "当前成员",
+      "empty": "此团队中没有成员",
+      "memberStatus": "成员",
+      "pendingStatus": "待处理",
+      "removeButton": "删除",
+      "removeDescription": "您确定要从此团队中删除 \"{{email}}\" 吗？",
+      "removeTitle": "删除团队成员",
+      "selectUser": "选择用户",
+      "title": "管理团队成员"
     },
-    "searchPlaceholder": "Search teams...",
-    "subtitle": "Manage teams and their members",
-    "title": "Teams"
+    "searchPlaceholder": "搜索团队...",
+    "subtitle": "管理团队及其成员",
+    "title": "团队"
   },
   "users": {
     "errors": {
@@ -74,31 +74,31 @@
       "userVaultUpdateFailed": "无法更新用户保管库"
     },
     "form": {
-      "emailLabel": "Email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password"
+      "emailLabel": "电子邮件",
+      "passwordLabel": "密码",
+      "passwordPlaceholder": "输入密码"
     },
-    "heading": "Users",
+    "heading": "用户",
     "lastActive": {
-      "never": "Never"
+      "never": "从未"
     },
     "modals": {
-      "assignTitle": "Assign Permissions",
-      "createTitle": "Create User",
-      "permissionGroupLabel": "Permission Group",
-      "permissionGroupPlaceholder": "Select permission group",
-      "permissionsLabel": "permissions",
-      "usersLabel": "users"
+      "assignTitle": "分配权限",
+      "createTitle": "创建用户",
+      "permissionGroupLabel": "权限组",
+      "permissionGroupPlaceholder": "选择权限组",
+      "permissionsLabel": "权限",
+      "usersLabel": "用户"
     },
     "permissionGroups": {
-      "none": "No Group"
+      "none": "无组"
     },
-    "searchPlaceholder": "Search users...",
+    "searchPlaceholder": "搜索用户...",
     "status": {
-      "active": "Active",
-      "inactive": "Inactive"
+      "active": "活跃",
+      "inactive": "非活跃"
     },
-    "subtitle": "Manage users and their permissions",
+    "subtitle": "管理用户及其权限",
     "success": {
       "activated": "用户“{{email}}”已激活",
       "created": "用户“{{email}}”创建成功",
@@ -111,6 +111,6 @@
       "sessionTerminated": "会话成功终止",
       "userVaultUpdated": "用户保管库更新成功"
     },
-    "title": "Users"
+    "title": "用户"
   }
 }

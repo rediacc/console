@@ -1,6 +1,7 @@
 import { CliApiError } from '../services/api.js';
 import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
+import { telemetryService } from '../services/telemetry.js';
 import { type CliError, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 
@@ -15,6 +16,10 @@ export function setOutputFormat(format: OutputFormat): void {
   currentOutputFormat = format;
 }
 
+export function getOutputFormat(): OutputFormat {
+  return currentOutputFormat;
+}
+
 /**
  * Handle errors with format-aware output.
  *
@@ -23,6 +28,13 @@ export function setOutputFormat(format: OutputFormat): void {
  */
 export function handleError(error: unknown): never {
   const cliError = normalizeError(error);
+
+  // Track error in telemetry
+  telemetryService.trackError(error, {
+    code: cliError.code,
+    exitCode: cliError.exitCode,
+    hasDetails: Boolean(cliError.details?.length),
+  });
 
   if (currentOutputFormat === 'json') {
     // JSON mode: output error as JSON to stdout for piping
@@ -49,7 +61,18 @@ export function handleError(error: unknown): never {
     }
   }
 
-  process.exit(cliError.exitCode);
+  // Shutdown telemetry before exit (fire and forget with short timeout)
+  void telemetryService.shutdown().finally(() => {
+    process.exit(cliError.exitCode);
+  });
+
+  // If shutdown takes too long, exit anyway after 2 seconds
+  setTimeout(() => {
+    process.exit(cliError.exitCode);
+  }, 2000).unref();
+
+  // This never returns, but TypeScript needs a return type
+  throw new Error('Unreachable');
 }
 
 /**

@@ -1,96 +1,83 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 import {
+  createApiClient,
   createTypedApi,
-  createAuthService,
-  normalizeResponse,
-  extractNextToken,
-  extractApiErrors,
-  getPrimaryErrorMessage,
-  HTTP_STATUS,
-  isServerError,
+  ApiClientError,
+  type FullApiClient,
+  type HttpClient,
+  type MasterPasswordProvider,
+  type ProcedureEndpoint,
 } from '@rediacc/shared/api';
-import type { ApiClient as SharedApiClient } from '@rediacc/shared/api';
-import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
+import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { contextService } from './context.js';
-import { nodeCryptoProvider } from '../adapters/crypto.js';
+import {
+  nodeCryptoProvider,
+  tokenAdapter,
+  urlAdapter,
+  errorHandler,
+  telemetryAdapter,
+} from '../adapters/index.js';
 import { EXIT_CODES } from '../types/index.js';
 import type { ErrorCode } from '../types/errors.js';
 
-const API_PREFIX = '/StoredProcedure';
-
-const vaultEncryptor = createVaultEncryptor(nodeCryptoProvider);
+// Create axios instance
+const axiosInstance = axios.create({
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 /**
- * Check if an object contains any vault fields with actually encrypted content.
- * This differs from hasVaultFields() which only checks field names.
- * We check the actual content to determine if decryption is needed.
+ * CLI-specific API client extending the shared factory with CLI features.
  */
-function hasEncryptedVaultContent(value: unknown): boolean {
-  if (!value || typeof value !== 'object') return false;
-
-  const check = (obj: unknown): boolean => {
-    if (!obj || typeof obj !== 'object') return false;
-
-    if (Array.isArray(obj)) {
-      return obj.some((item) => check(item));
-    }
-
-    for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
-      // Check if this is a vault field with encrypted content
-      if (key.toLowerCase().includes('vault') && typeof val === 'string') {
-        if (isEncrypted(val)) {
-          return true;
-        }
-      }
-      // Recursively check nested objects
-      if (val && typeof val === 'object' && check(val)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  return check(value);
-}
-
-class CliApiClient implements SharedApiClient {
-  private client: AxiosInstance;
-  private apiUrl = '';
-  private initialized = false;
+class CliApiClient {
+  private client: FullApiClient | null = null;
   private masterPasswordGetter: (() => Promise<string>) | null = null;
+  private initialized = false;
 
-  constructor() {
-    this.client = axios.create({
-      timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
-
+  /**
+   * Set a callback for getting the master password.
+   * This is used by commands that need to encrypt/decrypt vault data.
+   */
   setMasterPasswordGetter(getter: () => Promise<string>): void {
     this.masterPasswordGetter = getter;
   }
 
-  private async getMasterPassword(): Promise<string | null> {
-    if (this.masterPasswordGetter) {
-      try {
-        return await this.masterPasswordGetter();
-      } catch {
-        return null;
-      }
+  /**
+   * Initialize the client on first use.
+   */
+  private ensureInitialized(): FullApiClient {
+    if (this.client && this.initialized) {
+      return this.client;
     }
-    return null;
-  }
 
-  async initialize(): Promise<void> {
-    if (this.initialized) return;
+    const masterPasswordProvider: MasterPasswordProvider = {
+      getMasterPassword: async () => {
+        if (this.masterPasswordGetter) {
+          try {
+            return await this.masterPasswordGetter();
+          } catch {
+            return null;
+          }
+        }
+        return null;
+      },
+    };
 
-    // Load API URL from context service
-    this.apiUrl = await contextService.getApiUrl();
-    this.client.defaults.baseURL = `${this.apiUrl}${API_PREFIX}`;
+    this.client = createApiClient({
+      httpClient: axiosInstance as unknown as HttpClient,
+      tokenAdapter,
+      urlProvider: urlAdapter,
+      vaultEncryptor: createVaultEncryptor(nodeCryptoProvider),
+      masterPasswordProvider,
+      errorHandler,
+      telemetry: telemetryAdapter,
+    });
+
     this.initialized = true;
+    return this.client;
   }
 
   /**
@@ -98,7 +85,8 @@ class CliApiClient implements SharedApiClient {
    */
   async reinitialize(): Promise<void> {
     this.initialized = false;
-    await this.initialize();
+    const client = this.ensureInitialized();
+    await client.reinitialize();
   }
 
   /**
@@ -112,35 +100,34 @@ class CliApiClient implements SharedApiClient {
     return normalizedUrl;
   }
 
-  getApiUrl(): string {
-    return this.apiUrl;
+  /**
+   * Get the current API URL.
+   */
+  async getApiUrl(): Promise<string> {
+    return contextService.getApiUrl();
   }
 
   /**
    * Set the API URL directly (for register/activate commands that don't require a context).
    */
-  async setApiUrl(url: string): Promise<void> {
-    await this.initialize();
-    this.apiUrl = this.normalizeApiUrl(url);
-    this.client.defaults.baseURL = `${this.apiUrl}${API_PREFIX}`;
+  setApiUrl(url: string): void {
+    const client = this.ensureInitialized();
+    client.updateApiUrl(this.normalizeApiUrl(url));
   }
 
+  // Auth methods
   async login(
     email: string,
     passwordHash: string,
     sessionName = 'CLI Session'
   ): Promise<ApiResponse> {
-    await this.initialize();
-
-    // Use shared auth service
-    const authService = createAuthService(this.client);
-    const data = await authService.login(email, passwordHash, sessionName);
-    await this.handleTokenRotation(data);
-    return data;
+    const client = this.ensureInitialized();
+    return client.login(email, passwordHash, sessionName);
   }
 
   async logout(): Promise<ApiResponse> {
-    return this.post('/DeleteUserRequest', {});
+    const client = this.ensureInitialized();
+    return client.logout();
   }
 
   async activateUser(
@@ -148,233 +135,91 @@ class CliApiClient implements SharedApiClient {
     activationCode: string,
     passwordHash: string
   ): Promise<ApiResponse> {
-    await this.initialize();
-
-    // Use shared auth service
-    const authService = createAuthService(this.client);
-    return authService.activateUser(email, activationCode, passwordHash);
+    const client = this.ensureInitialized();
+    return client.activateUser(email, activationCode, passwordHash);
   }
 
   async register(
-    companyName: string,
+    organizationName: string,
     email: string,
     passwordHash: string,
     languagePreference = 'en'
   ): Promise<ApiResponse> {
-    await this.initialize();
-
-    // Use shared auth service
-    const authService = createAuthService(this.client);
-    return authService.register(companyName, email, passwordHash, languagePreference);
+    const client = this.ensureInitialized();
+    return client.register(organizationName, email, passwordHash, { languagePreference });
   }
 
+  // CRUD methods (typed - only accepts known endpoints)
   async get<T = unknown>(
-    endpoint: string,
+    endpoint: ProcedureEndpoint,
     params?: Record<string, unknown>,
-    config?: AxiosRequestConfig
+    _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, params, config);
+    const client = this.ensureInitialized();
+    return client.get<T>(endpoint, params);
   }
 
   async post<T = unknown>(
-    endpoint: string,
+    endpoint: ProcedureEndpoint,
     data?: Record<string, unknown>,
-    config?: AxiosRequestConfig
+    _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, data, config);
+    const client = this.ensureInitialized();
+    return client.post<T>(endpoint, data);
   }
 
   async put<T = unknown>(
-    endpoint: string,
+    endpoint: ProcedureEndpoint,
     data?: Record<string, unknown>,
-    config?: AxiosRequestConfig
+    _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, data, config);
+    const client = this.ensureInitialized();
+    return client.put<T>(endpoint, data);
   }
 
   async delete<T = unknown>(
-    endpoint: string,
+    endpoint: ProcedureEndpoint,
     data?: Record<string, unknown>,
-    config?: AxiosRequestConfig
+    _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, data, config);
+    const client = this.ensureInitialized();
+    return client.delete<T>(endpoint, data);
   }
 
-  private async makeRequest<T>(
-    endpoint: string,
-    data?: Record<string, unknown>,
-    config?: AxiosRequestConfig
-  ): Promise<ApiResponse<T>> {
-    await this.initialize();
-
-    const token = await this.getToken();
-    const headers: Record<string, string> = {};
-
-    // Copy string headers from config
-    if (config?.headers) {
-      for (const [key, value] of Object.entries(config.headers)) {
-        if (typeof value === 'string') {
-          headers[key] = value;
-        }
-      }
-    }
-
-    if (token) {
-      headers['Rediacc-RequestToken'] = token;
-    }
-
-    try {
-      // Encrypt vault fields in request data if present (only get password if needed)
-      let requestData = data ?? {};
-      let masterPassword: string | null = null;
-
-      if (vaultEncryptor.hasVaultFields(requestData)) {
-        masterPassword = await this.getMasterPassword();
-        if (masterPassword) {
-          requestData = await vaultEncryptor.encrypt(requestData, masterPassword);
-        }
-      }
-
-      const response = await this.client.post<ApiResponse<T>>(endpoint, requestData, {
-        ...config,
-        headers,
-      });
-
-      let responseData = response.data;
-      await this.handleTokenRotation(responseData);
-
-      if (responseData.failure !== 0) {
-        throw this.createApiError(responseData);
-      }
-
-      // Decrypt vault fields in response data (only if content is actually encrypted)
-      // We check if vault fields contain encrypted content (not just if vault fields exist)
-      // This prevents unnecessary master password prompts when company doesn't have encryption
-      const hasEncrypted = hasEncryptedVaultContent(responseData);
-      if (hasEncrypted) {
-        masterPassword ??= await this.getMasterPassword();
-        if (masterPassword) {
-          responseData = await vaultEncryptor.decrypt(responseData, masterPassword);
-        }
-      }
-
-      return normalizeResponse(responseData);
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        // Check if we have an API response with error details
-        const responseData = error.response?.data as ApiResponse | undefined;
-        if (responseData && typeof responseData === 'object' && 'failure' in responseData) {
-          // Process API error response to extract details
-          throw this.createApiError(responseData);
-        }
-
-        // Check for middleware HTTP error format: { error: "message" }
-        const httpErrorData = error.response?.data as { error?: string } | undefined;
-        if (httpErrorData && typeof httpErrorData === 'object' && 'error' in httpErrorData) {
-          const errorMessage = httpErrorData.error ?? 'Request failed';
-          const statusCode = error.response?.status ?? 400;
-          const { code, exitCode } = this.mapFailureToError(statusCode);
-          throw new CliApiError(errorMessage, code, exitCode, [errorMessage]);
-        }
-
-        // Handle HTTP status codes without API response body
-        if (error.response?.status === 401) {
-          throw new CliApiError(
-            'Authentication required',
-            'AUTH_REQUIRED',
-            EXIT_CODES.AUTH_REQUIRED
-          );
-        }
-        if (error.response?.status === 403) {
-          throw new CliApiError(
-            'Permission denied',
-            'PERMISSION_DENIED',
-            EXIT_CODES.PERMISSION_DENIED
-          );
-        }
-        if (error.response?.status === 404) {
-          throw new CliApiError('Resource not found', 'NOT_FOUND', EXIT_CODES.NOT_FOUND);
-        }
-        if (!error.response) {
-          throw new CliApiError(
-            `Network error: ${error.message}`,
-            'NETWORK_ERROR',
-            EXIT_CODES.NETWORK_ERROR
-          );
-        }
-      }
-      throw error;
-    }
-  }
-
-  private async handleTokenRotation(response: ApiResponse): Promise<void> {
-    const newToken = extractNextToken(response);
-    if (newToken) {
-      await contextService.setToken(newToken);
-    }
-  }
-
-  private async getToken(): Promise<string | null> {
-    return contextService.getToken();
-  }
-
+  // Token management utilities
   async setToken(token: string): Promise<void> {
-    await contextService.setToken(token);
+    await tokenAdapter.set(token);
   }
 
   async clearToken(): Promise<void> {
-    await contextService.clearCredentials();
+    await tokenAdapter.clear();
   }
 
   async hasToken(): Promise<boolean> {
     return contextService.hasToken();
   }
-
-  private createApiError(response: ApiResponse): CliApiError {
-    // Use shared utilities for error extraction
-    const details = extractApiErrors(response);
-    const message = getPrimaryErrorMessage(response);
-
-    // Determine error code and exit code from failure value
-    const { code, exitCode } = this.mapFailureToError(response.failure);
-
-    return new CliApiError(message, code, exitCode, details, response);
-  }
-
-  private mapFailureToError(failure: number): { code: ErrorCode; exitCode: number } {
-    // Map middleware return codes to error codes using shared HTTP_STATUS constants
-    switch (failure) {
-      case HTTP_STATUS.BAD_REQUEST:
-        return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
-      case HTTP_STATUS.UNAUTHORIZED:
-        return { code: 'AUTH_REQUIRED', exitCode: EXIT_CODES.AUTH_REQUIRED };
-      case HTTP_STATUS.FORBIDDEN:
-        return { code: 'PERMISSION_DENIED', exitCode: EXIT_CODES.PERMISSION_DENIED };
-      case HTTP_STATUS.NOT_FOUND:
-        return { code: 'NOT_FOUND', exitCode: EXIT_CODES.NOT_FOUND };
-      case HTTP_STATUS.CONFLICT:
-        return { code: 'INVALID_REQUEST', exitCode: EXIT_CODES.INVALID_ARGUMENTS };
-      default:
-        if (isServerError(failure)) {
-          return { code: 'SERVER_ERROR', exitCode: EXIT_CODES.API_ERROR };
-        }
-        return { code: 'GENERAL_ERROR', exitCode: EXIT_CODES.GENERAL_ERROR };
-    }
-  }
 }
 
-export class CliApiError extends Error {
+/**
+ * CLI-specific API error with exit code.
+ * Extends the shared ApiClientError with CLI-specific exit codes.
+ */
+export class CliApiError extends ApiClientError {
+  public override readonly name = 'CliApiError';
+  public readonly exitCode: number;
+
   constructor(
     message: string,
-    public readonly code: ErrorCode = 'GENERAL_ERROR',
-    public readonly exitCode: number = EXIT_CODES.GENERAL_ERROR,
-    public readonly details: string[] = [],
-    public readonly response?: ApiResponse
+    code: ErrorCode = 'GENERAL_ERROR',
+    exitCode: number = EXIT_CODES.GENERAL_ERROR,
+    details: string[] = [],
+    response?: ApiResponse
   ) {
-    super(message);
-    this.name = 'CliApiError';
+    super(message, code, details, response);
+    this.exitCode = exitCode;
   }
 }
 
+// Export singleton instance
 export const apiClient = new CliApiClient();
 export const typedApi = createTypedApi(apiClient);

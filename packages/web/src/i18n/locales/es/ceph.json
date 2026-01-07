@@ -1,13 +1,18 @@
 {
   "accessDenied": {
+    "currentPlan": "Plan actual",
+    "debugInfo": "Información de depuración",
     "description": "Su plan actual no incluye almacenamiento distribuido. Actualice a Business o Enterprise o comuníquese con el soporte para habilitarlo.",
+    "hasAccess": "Tiene acceso",
+    "noPlanDetected": "Sin plan detectado",
+    "organizationData": "Datos de la organización",
     "title": "Almacenamiento distribuido no disponible"
   },
   "assignment": {
     "actions": {
-      "assignToCluster": "Asignado al clúster",
       "assignedToClone": "Asignado a clonar",
       "assignedToImage": "Asignado a la imagen",
+      "assignToCluster": "Asignado al clúster",
       "reassignedImage": "Imagen reasignada",
       "removedFromClone": "Eliminada del clon",
       "removedFromCluster": "Eliminada del clúster"
@@ -31,16 +36,18 @@
   },
   "clones": {
     "addMachine": "Agregar máquina",
-    "assignMachines": "Asignar máquinas",
     "assignedMachines": "Máquinas asignadas",
+    "assignMachines": "Asignar máquinas",
+    "assignMachinesInfo": "Seleccione máquinas para asignar a este clon",
     "create": "Crear clon",
     "createSuccess": "Clon creado exitosamente",
     "delete": "Eliminar clon",
     "deleteSuccess": "Clon eliminado exitosamente",
     "edit": "Editar clonar",
     "export": "Exportar clon",
-    "exportMachines": "Máquinas de Exportación",
+    "exportMachines": "Máquinas de exportación",
     "flatten": "Aplanar clon",
+    "image": "Imagen",
     "info": "Información de clonación",
     "machineManager": "Administrador de máquinas",
     "machinesAssignedSuccess": "Máquinas asignadas para clonar exitosamente",
@@ -48,18 +55,26 @@
     "manageMachines": "Administrar máquinas",
     "name": "Nombre del clon",
     "noMachinesAssigned": "No hay máquinas asignadas a este clon.",
+    "pool": "Piscina",
     "removeMachine": "Quitar máquina",
+    "removeMachinesInfo": "Seleccione máquinas para quitar de este clon",
     "removeSelectedMachines": "Eliminar máquinas seleccionadas",
     "searchMachines": "Máquinas de búsqueda...",
+    "selectImage": "Seleccionar imagen",
+    "selectPool": "Seleccionar piscina",
+    "selectSnapshot": "Seleccionar instantánea",
+    "snapshot": "Instantánea",
     "split": "Clon dividido",
     "statistics": "Estadística",
-    "title": "Clones",
-    "totalMachines": "Máquinas totales"
+    "title": "Clonaciones",
+    "totalMachines": "Máquinas totales",
+    "viewMachines": "Ver máquinas"
   },
   "clusters": {
-    "assignMachines": "Asignar máquinas",
     "assignedMachines": "Máquinas asignadas",
+    "assignMachines": "Asignar máquinas",
     "availableMachines": "Máquinas disponibles",
+    "cluster": "Clúster",
     "clusterDetails": "Detalles del clúster",
     "clusterName": "Nombre del clúster",
     "configureVault": "Configurar bóveda",
@@ -78,6 +93,7 @@
     "noClusters": "No se encontraron grupos",
     "noMachinesAssigned": "No hay máquinas asignadas a este clúster.",
     "removeFromCluster": "Quitar del clúster",
+    "searchClusters": "Buscar clústeres...",
     "secretKey": "clave secreta",
     "title": "Clústeres",
     "updateSuccess": "Clúster actualizado correctamente"
@@ -90,11 +106,11 @@
     "delete": "Borrar",
     "details": "Detalles",
     "edit": "Editar",
-    "error": "Error",
+    "error": "Error de sistema",
     "hasVault": "Tiene bóveda",
     "loading": "Cargando...",
     "none": "Ninguna",
-    "refresh": "Refrescar",
+    "refresh": "Actualizar",
     "save": "Guardar",
     "success": "Éxito",
     "vault": "Bóveda"
@@ -131,11 +147,15 @@
     "export": "Exportar imagen",
     "flatten": "Aplanar imagen",
     "guid": "GUID",
+    "image": "Imagen",
     "import": "Importar imagen",
     "info": "Información de la imagen",
+    "machine": "Máquina",
     "map": "Imagen del mapa",
     "name": "Nombre de la imagen",
+    "pool": "Piscina",
     "reassignMachine": "Reasignar máquina",
+    "reassignmentInfo": "Esto reasignará la imagen a una máquina diferente",
     "reassignmentModal": {
       "currentAssignment": "Asignación actual",
       "noMachineAssigned": "Ninguna máquina asignada actualmente",
@@ -144,18 +164,16 @@
       "warning": "Advertencia: Reasignar una imagen a una máquina diferente hará que no esté disponible en la máquina actual hasta que se migren los datos."
     },
     "reassignmentSuccess": "La asignación de la máquina de imágenes se actualizó correctamente",
+    "reassignmentWarning": "Reasignar una imagen requiere migración de datos y puede causar indisponibilidad temporal",
     "resize": "Cambiar el tamaño de la imagen",
+    "selectMachine": "Seleccionar máquina",
+    "selectNewMachine": "Seleccionar nueva máquina",
+    "selectPool": "Seleccionar piscina",
     "showMapped": "Mostrar imágenes mapeadas",
     "status": "Estado",
     "title": "Imágenes",
     "unmap": "Desasignar imagen",
     "updateSuccess": "Imagen actualizada exitosamente"
-  },
-  "machineSection": {
-    "manageAssignment": "Administrar tarea",
-    "notAssigned": "No asignado a ningún recurso de almacenamiento distribuido",
-    "title": "Almacenamiento distribuido",
-    "viewDetails": "Ver detalles"
   },
   "machines": {
     "actions": {
@@ -164,6 +182,7 @@
       "viewDetails": "Ver detalles"
     },
     "assignedDate": "Fecha asignada",
+    "assignMachine": "Asignar máquina",
     "bridgeName": "Puente",
     "clusterAssignedSuccess": "Máquina asignada al clúster correctamente",
     "clusterRemovedSuccess": "Máquina eliminada del clúster con éxito",
@@ -173,6 +192,7 @@
       "searchPlaceholder": "Máquinas de búsqueda..."
     },
     "machineName": "Nombre de la máquina",
+    "selectMachines": "Seleccionar máquinas",
     "summary": {
       "assignedToClones": "Asignado a clones",
       "assignedToClusters": "Asignado a clústeres",
@@ -181,7 +201,15 @@
       "title": "Disponibilidad de la máquina",
       "total": "Máquinas totales"
     },
+    "unassignError": "Error al desasignar máquina",
+    "unassignMachine": "Desasignar máquina",
     "updateSuccess": "La asignación del clúster de máquinas se actualizó correctamente"
+  },
+  "machineSection": {
+    "manageAssignment": "Administrar tarea",
+    "notAssigned": "No asignado a ningún recurso de almacenamiento distribuido",
+    "title": "Almacenamiento distribuido",
+    "viewDetails": "Ver detalles"
   },
   "mutations": {
     "operations": {
@@ -206,6 +234,7 @@
     }
   },
   "pools": {
+    "cluster": "Grupo",
     "clusterPrefix": "Grupo",
     "configureVault": "Configurar bóveda",
     "confirmDelete": "Eliminar grupo",
@@ -219,14 +248,16 @@
     "editPool": "Editar grupo",
     "minSize": "Tamaño mínimo",
     "name": "Nombre del pool",
-    "noPools": "No se encontraron pools",
+    "noPools": "No se encontraron piscinas",
     "pgNum": "Número de PG",
     "pgpNum": "Número PGP",
-    "poolDetails": "Detalles del pool",
-    "poolId": "ID del pool",
-    "poolName": "Nombre del pool",
+    "pool": "Piscina",
+    "poolDetails": "Detalles de la piscina",
+    "poolId": "ID de piscina",
+    "poolName": "Nombre de la piscina",
+    "selectCluster": "Seleccionar clúster",
     "size": "Tamaño",
-    "title": "Pools",
+    "title": "Piscinas",
     "updateSuccess": "Grupo actualizado exitosamente"
   },
   "queue": {
@@ -243,9 +274,13 @@
     "diff": "Instantánea de diferencias",
     "edit": "Editar instantánea",
     "guid": "GUID",
+    "image": "Imagen",
     "name": "Nombre de la instantánea",
+    "pool": "Piscina",
     "protect": "Proteger instantánea",
     "rollback": "Instantánea de reversión",
+    "selectImage": "Seleccionar imagen",
+    "selectPool": "Seleccionar piscina",
     "title": "Instantáneas",
     "unprotect": "Desproteger instantánea",
     "vault": "Bóveda de instantáneas"
@@ -253,7 +288,7 @@
   "tabs": {
     "clusters": "Clústeres",
     "machines": "maquinas",
-    "pools": "Pools"
+    "pools": "Piscinas"
   },
   "title": "Almacenamiento distribuido",
   "warnings": {

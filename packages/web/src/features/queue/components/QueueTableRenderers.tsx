@@ -5,11 +5,11 @@ import { formatTimestampAsIs, parseFailureReason, STALE_TASK_CONSTANTS } from '@
 import { ExclamationCircleOutlined } from '@/utils/optimizedIcons';
 import { renderPriority } from '@/utils/queueRenderers';
 import type { ParsedError } from '@rediacc/shared/error-parser';
-import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface PriorityWithTooltipProps {
   priorityLabel: string | undefined;
-  record: QueueItem;
+  record: GetTeamQueueItems_ResultSet1;
 }
 
 export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
@@ -36,7 +36,7 @@ export const PriorityWithTooltip: React.FC<PriorityWithTooltipProps> = ({
 
 interface AgeRendererProps {
   ageInMinutes: number;
-  record: QueueItem;
+  record: GetTeamQueueItems_ResultSet1;
 }
 
 export const AgeRenderer: React.FC<AgeRendererProps> = ({ ageInMinutes, record: _record }) => {
@@ -55,13 +55,15 @@ export const AgeRenderer: React.FC<AgeRendererProps> = ({ ageInMinutes, record: 
 
 interface ErrorRetriesRendererProps {
   retryCount: number | undefined;
-  record: QueueItem;
+  record: GetTeamQueueItems_ResultSet1;
 }
 
 export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
   retryCount,
   record,
 }) => {
+  const { t } = useTranslation(['queue']);
+
   if (!retryCount && retryCount !== 0) {
     return <Typography.Text>-</Typography.Text>;
   }
@@ -75,7 +77,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
   const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason);
 
   return (
-    <Flex vertical gap={4} className="w-full">
+    <Flex vertical className="gap-sm w-full">
       {/* Error messages with severity badges */}
       {allErrors.length > 0 && (
         <Tooltip
@@ -89,7 +91,8 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
               ))}
               {record.lastRetryAt && (
                 <Typography.Text className="block">
-                  Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
+                  {t('queue:trace.lastRetry')}:{' '}
+                  {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
                 </Typography.Text>
               )}
             </Flex>
@@ -97,7 +100,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
         >
           <Flex vertical className="w-full">
             {/* Show primary (highest severity) error */}
-            <Flex gap={4} className="w-full">
+            <Flex className="w-full">
               {primaryError?.severity && <Tag>{primaryError.severity}</Tag>}
               <Typography.Text className="inline-flex flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                 {primaryError?.message}
@@ -106,7 +109,7 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
             {/* Show count of additional errors if any */}
             {allErrors.length > 1 && (
               <Typography.Text>
-                +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}
+                {t('queue:trace.moreMessages', { count: allErrors.length - 1 })}
               </Typography.Text>
             )}
           </Flex>
@@ -115,7 +118,10 @@ export const ErrorRetriesRenderer: React.FC<ErrorRetriesRendererProps> = ({
 
       {/* Retry count badge */}
       <Tag icon={icon}>
-        {retryCount}/{STALE_TASK_CONSTANTS.MAX_RETRY_COUNT} retries
+        {t('queue:trace.retriesLabel', {
+          current: retryCount,
+          max: STALE_TASK_CONSTANTS.MAX_RETRY_COUNT,
+        })}
       </Tag>
     </Flex>
   );

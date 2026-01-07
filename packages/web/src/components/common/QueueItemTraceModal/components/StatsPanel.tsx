@@ -14,7 +14,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
 
   return (
     <Row gutter={[16, 16]}>
-      <Col span={8}>
+      <Col xs={24} sm={8}>
         <Statistic
           title={t('queue:statistics.totalDuration')}
           value={
@@ -24,7 +24,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
           prefix={<ClockCircleOutlined />}
         />
       </Col>
-      <Col span={8}>
+      <Col xs={24} sm={8}>
         <Statistic
           title={t('queue:statistics.processing')}
           value={
@@ -38,7 +38,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
           prefix={<SyncOutlined />}
         />
       </Col>
-      <Col span={8}>
+      <Col xs={24} sm={8}>
         <Statistic
           title={t('queue:statistics.timeSinceAssigned')}
           value={

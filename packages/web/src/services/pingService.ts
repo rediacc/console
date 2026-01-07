@@ -1,10 +1,10 @@
 import { useCallback } from 'react';
-import { useCreateQueueItem } from '@/api/queries/queue';
-import { useTeams } from '@/api/queries/teams';
+import { useCreateQueueItem } from '@/api/api-hooks.generated';
+import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import type { Machine } from '@/types';
-import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 import { type QueueItemCompletionResult, waitForQueueItemCompletion } from './helloService';
 
 interface PingFunctionParams {
@@ -63,7 +63,7 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
   const createQueueItemMutation: QueueItemMutation = options?.useManaged
     ? managedMutation
     : regularMutation;
-  const { data: teams } = useTeams();
+  const { data: teams } = useGetOrganizationTeams();
 
   const executePing = useCallback(
     async (params: PingFunctionParams): Promise<PingFunctionResult> => {
@@ -97,9 +97,9 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
       }
     ): Promise<PingFunctionResult> => {
       return executePing({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
+        teamName: machine.teamName ?? '',
+        machineName: machine.machineName ?? '',
+        bridgeName: machine.bridgeName ?? '',
         priority: options?.priority,
         description: options?.description,
         addedVia: options?.addedVia,
@@ -154,9 +154,9 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
     }> => {
       return executePingAndWait(
         {
-          teamName: machine.teamName,
-          machineName: machine.machineName,
-          bridgeName: machine.bridgeName,
+          teamName: machine.teamName ?? '',
+          machineName: machine.machineName ?? '',
+          bridgeName: machine.bridgeName ?? '',
           priority: options?.priority,
           description: options?.description,
           addedVia: options?.addedVia,
@@ -181,7 +181,7 @@ export function usePingFunction(options?: { useManaged?: boolean }) {
 // Helper functions
 function getTeamVault(
   params: PingFunctionParams,
-  teams: GetCompanyTeams_ResultSet1[] | undefined
+  teams: GetOrganizationTeams_ResultSet1[] | undefined
 ): string {
   if (params.teamVault && params.teamVault !== '{}') {
     return params.teamVault;
@@ -204,7 +204,7 @@ async function buildPingQueueVault(
     teamName: params.teamName,
     machineName: params.machineName,
     bridgeName: params.bridgeName,
-    functionName: 'ping',
+    functionName: 'machine_ping',
     params: {},
     priority: params.priority ?? DEFAULT_PRIORITY,
     addedVia: params.addedVia ?? DEFAULT_ADDED_VIA,
@@ -226,6 +226,7 @@ async function createPingQueueItem(
     machineName: params.machineName,
     bridgeName: params.bridgeName,
     queueVault,
+    vaultContent: queueVault,
     priority: params.priority ?? DEFAULT_PRIORITY,
   });
 

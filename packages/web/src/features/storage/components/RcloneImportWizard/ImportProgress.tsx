@@ -35,7 +35,6 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({
           message={t('resources:storage.import.complete')}
           description={t('resources:storage.import.completeDescription')}
           type="success"
-          showIcon
         />
 
         <Table<ImportStatus>
@@ -43,7 +42,7 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({
           columns={columns}
           rowKey="name"
           pagination={false}
-          size="small"
+          scroll={{ x: 'max-content' }}
           data-testid="rclone-wizard-results-table"
         />
       </>
