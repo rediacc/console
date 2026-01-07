@@ -1,9 +1,9 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "Configure Vault",
-    "description": "Configure your company vault settings to manage organization-wide configurations.",
-    "modalTitle": "Configure Company Vault",
-    "title": "Company Settings"
+    "description": "Configure your organization vault settings to manage organization-wide configurations.",
+    "modalTitle": "Configure Organization Vault",
+    "title": "Organization Settings"
   },
   "personal": {
     "configureVault": "Configure Vault",
@@ -104,7 +104,8 @@
     "statusMessages": {
       "unknown": "Unable to determine TFA status",
       "none": "No TFA configured",
-      "enabled": "TFA enabled"
+      "enabled": "TFA enabled",
+      "authorized": "TFA authorization successful"
     },
     "success": {
       "enabled": "Two-factor authentication enabled and verified successfully.",

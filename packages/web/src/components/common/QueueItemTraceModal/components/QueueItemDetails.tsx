@@ -1,5 +1,6 @@
 import React from 'react';
 import { Descriptions, Tag, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   normalizeToNumber,
   normalizeToString,
@@ -19,6 +20,7 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
   totalDurationSeconds,
   processingDurationSeconds,
 }) => {
+  const { t } = useTranslation('queue');
   const status = normalizeToString(queueDetails, 'status', 'Status');
   const retryCount = normalizeToNumber(queueDetails, 0, 'retryCount', 'RetryCount');
   const lastFailureReason = normalizeToString(
@@ -28,57 +30,59 @@ export const QueueItemDetails: React.FC<QueueItemDetailsProps> = ({
   );
 
   return (
-    <Descriptions column={2} size="small">
-      <Descriptions.Item label="Task ID">
+    <Descriptions column={{ xs: 1, sm: 2 }} size="small">
+      <Descriptions.Item label={t('trace.taskId')}>
         <Typography.Text code>
           {normalizeToString(queueDetails, 'taskId', 'TaskId')}
         </Typography.Text>
       </Descriptions.Item>
-      <Descriptions.Item label="Status">
+      <Descriptions.Item label={t('trace.status')}>
         <Tag>{status}</Tag>
       </Descriptions.Item>
-      <Descriptions.Item label="Priority">{queueDetails.priorityLabel ?? '-'}</Descriptions.Item>
-      <Descriptions.Item label="Machine">
+      <Descriptions.Item label={t('trace.priority')}>
+        {queueDetails.priorityLabel ?? '-'}
+      </Descriptions.Item>
+      <Descriptions.Item label={t('trace.machine')}>
         <Typography.Text>{queueDetails.machineName}</Typography.Text>
       </Descriptions.Item>
-      <Descriptions.Item label="Team">
+      <Descriptions.Item label={t('trace.team')}>
         <Typography.Text>{queueDetails.teamName}</Typography.Text>
       </Descriptions.Item>
-      <Descriptions.Item label="Bridge">
+      <Descriptions.Item label={t('trace.bridge')}>
         <Typography.Text>{queueDetails.bridgeName}</Typography.Text>
       </Descriptions.Item>
-      <Descriptions.Item label="Region">
+      <Descriptions.Item label={t('trace.region')}>
         <Typography.Text>{queueDetails.regionName}</Typography.Text>
       </Descriptions.Item>
-      <Descriptions.Item label="Created">
+      <Descriptions.Item label={t('trace.created')}>
         {formatTimestampAsIs(queueDetails.createdTime, 'datetime')}
       </Descriptions.Item>
       {queueDetails.assignedTime && (
-        <Descriptions.Item label="Assigned">
+        <Descriptions.Item label={t('trace.assigned')}>
           {formatTimestampAsIs(queueDetails.assignedTime, 'datetime')}
         </Descriptions.Item>
       )}
       {queueDetails.lastRetryAt && (
-        <Descriptions.Item label="Last Retry">
+        <Descriptions.Item label={t('trace.lastRetry')}>
           {formatTimestampAsIs(queueDetails.lastRetryAt, 'datetime')}
         </Descriptions.Item>
       )}
-      <Descriptions.Item label="Total Duration">
+      <Descriptions.Item label={t('trace.totalDuration')}>
         {formatDurationFull(totalDurationSeconds)}
       </Descriptions.Item>
       {processingDurationSeconds > 0 && (
-        <Descriptions.Item label="Processing Duration">
+        <Descriptions.Item label={t('trace.processingDuration')}>
           {formatDurationFull(processingDurationSeconds)}
         </Descriptions.Item>
       )}
-      <Descriptions.Item label="Created By">
+      <Descriptions.Item label={t('trace.createdBy')}>
         {normalizeToString(queueDetails, 'createdBy', 'CreatedBy') || '-'}
       </Descriptions.Item>
-      <Descriptions.Item label="Retry Count">
+      <Descriptions.Item label={t('trace.retryCount')}>
         <Tag>{retryCount}/2</Tag>
       </Descriptions.Item>
       {lastFailureReason && (
-        <Descriptions.Item label="Last Failure Reason" span={2}>
+        <Descriptions.Item label={t('trace.lastFailureReason')} span={2}>
           <Typography.Text type="warning">{lastFailureReason}</Typography.Text>
         </Descriptions.Item>
       )}

@@ -1,13 +1,18 @@
 {
   "accessDenied": {
+    "currentPlan": "الخطة الحالية",
+    "debugInfo": "معلومات التصحيح",
     "description": "خطتك الحالية لا تتضمن التخزين الموزع. قم بالترقية إلى Business أو Enterprise أو اتصل بالدعم لتمكينه.",
+    "hasAccess": "له الوصول",
+    "noPlanDetected": "لم يتم الكشف عن خطة",
+    "organizationData": "بيانات المنظمة",
     "title": "التخزين الموزع غير متوفر"
   },
   "assignment": {
     "actions": {
-      "assignToCluster": "تم تعيينه إلى الكتلة",
       "assignedToClone": "المخصصة للاستنساخ",
       "assignedToImage": "المخصصة للصورة",
+      "assignToCluster": "تم تعيينه إلى الكتلة",
       "reassignedImage": "الصورة المعاد تعيينها",
       "removedFromClone": "تمت الإزالة من الاستنساخ",
       "removedFromCluster": "تمت الإزالة من الكتلة"
@@ -31,8 +36,9 @@
   },
   "clones": {
     "addMachine": "أضف آلة",
-    "assignMachines": "تعيين الآلات",
     "assignedMachines": "الآلات المخصصة",
+    "assignMachines": "تعيين الآلات",
+    "assignMachinesInfo": "اختر الآلات لتعيينها لهذا الاستنساخ",
     "create": "إنشاء استنساخ",
     "createSuccess": "تم إنشاء الاستنساخ بنجاح",
     "delete": "حذف استنساخ",
@@ -41,6 +47,7 @@
     "export": "استنساخ التصدير",
     "exportMachines": "آلات التصدير",
     "flatten": "تتسطح استنساخ",
+    "image": "صورة",
     "info": "معلومات الاستنساخ",
     "machineManager": "مدير الآلة",
     "machinesAssignedSuccess": "تم تعيين الأجهزة للاستنساخ بنجاح",
@@ -48,18 +55,26 @@
     "manageMachines": "إدارة الآلات",
     "name": "اسم الاستنساخ",
     "noMachinesAssigned": "لا توجد أجهزة مخصصة لهذا الاستنساخ",
+    "pool": "حوض",
     "removeMachine": "إزالة الآلة",
+    "removeMachinesInfo": "اختر الآلات لإزالتها من هذا الاستنساخ",
     "removeSelectedMachines": "إزالة الأجهزة المحددة",
     "searchMachines": "آلات البحث...",
+    "selectImage": "اختر صورة",
+    "selectPool": "اختر حوض",
+    "selectSnapshot": "اختر لقطة",
+    "snapshot": "لقطة",
     "split": "انقسام استنساخ",
     "statistics": "إحصائيات",
     "title": "المستنسخات",
-    "totalMachines": "مجموع الآلات"
+    "totalMachines": "مجموع الآلات",
+    "viewMachines": "عرض الأجهزة"
   },
   "clusters": {
-    "assignMachines": "تعيين الآلات",
     "assignedMachines": "الآلات المخصصة",
+    "assignMachines": "تعيين الآلات",
     "availableMachines": "الآلات المتاحة",
+    "cluster": "مجموعة",
     "clusterDetails": "تفاصيل الكتلة",
     "clusterName": "اسم الكتلة",
     "configureVault": "تكوين قبو",
@@ -78,6 +93,7 @@
     "noClusters": "لم يتم العثور على مجموعات",
     "noMachinesAssigned": "لم يتم تعيين أي أجهزة لهذه المجموعة",
     "removeFromCluster": "إزالة من الكتلة",
+    "searchClusters": "بحث عن المجموعات...",
     "secretKey": "المفتاح السري",
     "title": "مجموعات",
     "updateSuccess": "تم تحديث المجموعة بنجاح"
@@ -131,11 +147,15 @@
     "export": "تصدير الصورة",
     "flatten": "تتسطح الصورة",
     "guid": "GUID",
+    "image": "صورة",
     "import": "استيراد الصورة",
     "info": "معلومات الصورة",
+    "machine": "جهاز",
     "map": "صورة الخريطة",
     "name": "اسم الصورة",
+    "pool": "حوض",
     "reassignMachine": "إعادة تعيين الجهاز",
+    "reassignmentInfo": "سيؤدي هذا إلى إعادة تعيين الصورة إلى جهاز مختلف",
     "reassignmentModal": {
       "currentAssignment": "المهمة الحالية",
       "noMachineAssigned": "لم يتم تعيين أي جهاز حاليا",
@@ -144,18 +164,16 @@
       "warning": "تحذير: ستؤدي إعادة تعيين الصورة إلى جهاز مختلف إلى جعلها غير متاحة على الجهاز الحالي حتى يتم ترحيل البيانات."
     },
     "reassignmentSuccess": "تم تحديث مهمة آلة الصورة بنجاح",
+    "reassignmentWarning": "تتطلب إعادة تعيين الصورة ترحيل البيانات وقد تسبب توقف مؤقت",
     "resize": "تغيير حجم الصورة",
+    "selectMachine": "اختر جهاز",
+    "selectNewMachine": "اختر جهاز جديد",
+    "selectPool": "اختر حوض",
     "showMapped": "عرض الصور المعينة",
     "status": "حالة",
     "title": "الصور",
     "unmap": "صورة غير الخريطة",
     "updateSuccess": "تم تحديث الصورة بنجاح"
-  },
-  "machineSection": {
-    "manageAssignment": "إدارة المهمة",
-    "notAssigned": "لم يتم تعيينه لأي مورد تخزين موزع",
-    "title": "التخزين الموزع",
-    "viewDetails": "عرض التفاصيل"
   },
   "machines": {
     "actions": {
@@ -164,6 +182,7 @@
       "viewDetails": "عرض التفاصيل"
     },
     "assignedDate": "التاريخ المحدد",
+    "assignMachine": "تعيين جهاز",
     "bridgeName": "كوبري",
     "clusterAssignedSuccess": "تم تعيين الجهاز للمجموعة بنجاح",
     "clusterRemovedSuccess": "تمت إزالة الجهاز من المجموعة بنجاح",
@@ -173,6 +192,7 @@
       "searchPlaceholder": "آلات البحث..."
     },
     "machineName": "اسم الآلة",
+    "selectMachines": "اختر الأجهزة",
     "summary": {
       "assignedToClones": "المخصصة للاستنساخ",
       "assignedToClusters": "المخصصة للمجموعات",
@@ -181,7 +201,15 @@
       "title": "توفر الآلة",
       "total": "مجموع الآلات"
     },
+    "unassignError": "فشل إلغاء تعيين الجهاز",
+    "unassignMachine": "إلغاء تعيين جهاز",
     "updateSuccess": "تم تحديث تعيين مجموعة الأجهزة بنجاح"
+  },
+  "machineSection": {
+    "manageAssignment": "إدارة المهمة",
+    "notAssigned": "لم يتم تعيينه لأي مورد تخزين موزع",
+    "title": "التخزين الموزع",
+    "viewDetails": "عرض التفاصيل"
   },
   "mutations": {
     "operations": {
@@ -206,6 +234,7 @@
     }
   },
   "pools": {
+    "cluster": "مجموعة",
     "clusterPrefix": "مجموعة",
     "configureVault": "تكوين قبو",
     "confirmDelete": "حذف التجمع",
@@ -222,9 +251,11 @@
     "noPools": "لم يتم العثور على حمامات سباحة",
     "pgNum": "رقم الصفحة",
     "pgpNum": "رقم بي جي بي",
+    "pool": "حوض",
     "poolDetails": "تفاصيل حمام السباحة",
     "poolId": "معرف المجمع",
     "poolName": "اسم المجمع",
+    "selectCluster": "اختر مجموعة",
     "size": "مقاس",
     "title": "حمامات سباحة",
     "updateSuccess": "تم تحديث المجمع بنجاح"
@@ -243,9 +274,13 @@
     "diff": "لقطة الفرق",
     "edit": "تحرير لقطة",
     "guid": "GUID",
+    "image": "صورة",
     "name": "اسم اللقطة",
+    "pool": "حوض",
     "protect": "حماية لقطة",
     "rollback": "لقطة التراجع",
+    "selectImage": "اختر صورة",
+    "selectPool": "اختر حوض",
     "title": "لقطات",
     "unprotect": "إلغاء حماية اللقطة",
     "vault": "لقطة المدفن"

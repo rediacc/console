@@ -1,5 +1,5 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "Configurar bóveda",
     "description": "Configure los ajustes de la bóveda de su empresa para gestionar las configuraciones de toda la organización.",
     "modalTitle": "Configurar la bóveda de la empresa",
@@ -92,6 +92,7 @@
       "enabledDescription": "Su cuenta está protegida con una capa adicional de seguridad."
     },
     "statusMessages": {
+      "authorized": "Autorización TFA exitosa",
       "enabled": "TFA habilitada",
       "none": "No hay TFA configurado",
       "unknown": "No se puede determinar el estado de TFA"

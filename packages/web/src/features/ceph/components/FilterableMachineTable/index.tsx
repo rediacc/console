@@ -59,7 +59,10 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   const renderExpandedRow = React.useCallback(
     (machine: Machine) => (
       <Flex>
-        <MachineRepositoryTable machine={machine} refreshKey={refreshKeys[machine.machineName]} />
+        <MachineRepositoryTable
+          machine={machine}
+          refreshKey={refreshKeys[machine.machineName ?? '']}
+        />
       </Flex>
     ),
     [refreshKeys]
@@ -80,8 +83,8 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   const mobileRender = React.useMemo(
     // eslint-disable-next-line react/display-name
     () => (record: Machine) => {
-      const isExpanded = expandedRowKeys.includes(record.machineName);
-      const isSelected = selectedRowKeys.includes(record.machineName);
+      const isExpanded = expandedRowKeys.includes(record.machineName ?? '');
+      const isSelected = selectedRowKeys.includes(record.machineName ?? '');
       const hasQueueItems = (record.queueCount ?? 0) > 0;
 
       const handleCheckboxChange = (e: React.MouseEvent) => {
@@ -89,9 +92,9 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
         if (!onSelectionChange) return;
 
         if (isSelected) {
-          onSelectionChange(selectedRowKeys.filter((key) => key !== record.machineName));
+          onSelectionChange(selectedRowKeys.filter((key) => key !== (record.machineName ?? '')));
         } else {
-          onSelectionChange([...selectedRowKeys, record.machineName]);
+          onSelectionChange([...selectedRowKeys, record.machineName ?? '']);
         }
       };
 
@@ -103,13 +106,16 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
 
       return (
         <MobileCard
-          onClick={hasQueueItems ? () => handleToggleRow(record.machineName) : undefined}
+          onClick={hasQueueItems ? () => handleToggleRow(record.machineName ?? '') : undefined}
           actions={actions}
         >
           <Space>
             {showSelection && (
               <Typography.Text onClick={handleCheckboxChange}>
-                <Checkbox checked={isSelected} />
+                <Checkbox
+                  checked={isSelected}
+                  data-testid={`ds-machine-checkbox-${record.machineName}`}
+                />
               </Typography.Text>
             )}
             {hasQueueItems && <ExpandIcon isExpanded={isExpanded} />}
@@ -118,7 +124,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
               {record.machineName}
             </Typography.Text>
           </Space>
-          <Flex gap={8} wrap align="center">
+          <Flex wrap align="center">
             {record.teamName && <Tag bordered={false}>{record.teamName}</Tag>}
             {record.bridgeName && (
               <Tag bordered={false} color="blue">
@@ -126,7 +132,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
               </Tag>
             )}
           </Flex>
-          <Flex align="center" gap={8}>
+          <Flex align="center">
             <MachineAssignmentStatusCell machine={record} />
           </Flex>
         </MobileCard>

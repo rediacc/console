@@ -9,12 +9,7 @@ export const ThemedToaster: React.FC = () => {
   const toastOptions = useMemo(() => createToastOptions(), []);
 
   return (
-    <Flex
-      data-testid="themed-toaster-container"
-      className="relative"
-      // eslint-disable-next-line no-restricted-syntax
-      style={{ zIndex: 1000 }}
-    >
+    <Flex data-testid="themed-toaster-container" className="relative z-[1000]">
       <Toaster position="top-center" toastOptions={toastOptions} />
     </Flex>
   );

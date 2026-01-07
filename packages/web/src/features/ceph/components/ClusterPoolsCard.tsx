@@ -1,23 +1,23 @@
 import React, { type ReactNode } from 'react';
 import { Card, Flex, Tag, Typography } from 'antd';
-import type { CephPool } from '@/api/queries/ceph';
 import ResourceListView from '@/components/common/ResourceListView';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetCephPools_ResultSet1 } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
 
 interface ClusterPoolsCardProps {
   clusterName: string;
   teamName?: string;
-  pools: CephPool[];
+  pools: GetCephPools_ResultSet1[];
   loading: boolean;
-  columns: ColumnsType<CephPool>;
+  columns: ColumnsType<GetCephPools_ResultSet1>;
   expandedRowKeys: string[];
   onExpandedRowsChange: (clusterKeys: string[], keys: string[]) => void;
-  expandedRowRender: (pool: CephPool) => React.ReactNode;
+  expandedRowRender: (pool: GetCephPools_ResultSet1) => React.ReactNode;
   onToggleRow: (poolGuid?: string) => void;
-  mobileRender?: (record: CephPool) => ReactNode;
-  t: TFunction<'ceph' | 'common'>;
+  mobileRender?: (record: GetCephPools_ResultSet1) => ReactNode;
+  t: TypedTFunction;
 }
 
 export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
@@ -40,7 +40,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
     <Card
       key={clusterName}
       title={
-        <Flex align="center" gap={8} wrap>
+        <Flex align="center" wrap>
           <CloudServerOutlined />
           <Typography.Text>
             {t('pools.clusterPrefix')}: {clusterName}
@@ -50,7 +50,7 @@ export const ClusterPoolsCard: React.FC<ClusterPoolsCardProps> = ({
       }
     >
       <Flex className="overflow-hidden">
-        <ResourceListView<CephPool>
+        <ResourceListView<GetCephPools_ResultSet1>
           columns={columns}
           data={pools}
           rowKey="poolGuid"

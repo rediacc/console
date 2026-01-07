@@ -1,5 +1,5 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "配置保险库",
     "description": "配置您的公司保险库设置以管理组织范围的配置。",
     "modalTitle": "配置公司保险库",
@@ -92,6 +92,7 @@
       "enabledDescription": "您的账户已通过额外的安全层进行保护。"
     },
     "statusMessages": {
+      "authorized": "TFA 授权成功",
       "enabled": "启用 TFA",
       "none": "未配置 TFA",
       "unknown": "无法确定 TFA 状态"

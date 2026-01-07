@@ -20,5 +20,4 @@ export interface ResourceFormProps {
   cancelText?: string;
   onCancel?: () => void;
   loading?: boolean;
-  layout?: 'horizontal' | 'vertical' | 'inline';
 }

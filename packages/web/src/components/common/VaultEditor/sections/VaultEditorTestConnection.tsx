@@ -33,12 +33,11 @@ export const VaultEditorTestConnection: React.FC<VaultEditorTestConnectionProps>
           />
         }
       >
-        <Flex vertical gap={8} className="w-full">
+        <Flex vertical className="w-full gap-sm">
           {!testConnectionSuccess && (
             <Alert
               message={t('vaultEditor.testConnection.required')}
               type="info"
-              showIcon
               icon={<InfoCircleOutlined />}
               data-testid="vault-editor-connection-required-alert"
             />

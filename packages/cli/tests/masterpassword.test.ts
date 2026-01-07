@@ -18,9 +18,9 @@ describe('Master Password CLI Integration', () => {
     teamName = teams[0].teamName;
   });
 
-  describe('company vault operations', () => {
-    it('should get company vault data', async () => {
-      const result = await runCli(['company', 'vault', 'get']);
+  describe('organization vault operations', () => {
+    it('should get organization vault data', async () => {
+      const result = await runCli(['organization', 'vault', 'get']);
 
       // Should succeed - vault may be empty or have encrypted data
       expect(result.success).toBe(true);

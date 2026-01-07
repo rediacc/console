@@ -1,39 +1,30 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Button,
-  Flex,
-  Form,
-  Modal,
-  Select,
-  Space,
-  Tag,
-  Tooltip,
-  Typography,
-  type MenuProps,
-} from 'antd';
+import { Flex, Form, Modal, Select, Space, Tag, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useGetOrganizationPermissionGroups as usePermissionGroupsQuery } from '@/api/api-hooks.generated';
 import {
-  PermissionGroup,
-  usePermissionGroups as usePermissionGroupsQuery,
-} from '@/api/queries/permissions';
-import {
-  User,
-  useAssignUserPermissions,
-  useCreateUser,
-  useDeactivateUser,
-  useReactivateUser,
-  useUsers,
-} from '@/api/queries/users';
+  useUpdateUserAssignedPermissions,
+  useCreateNewUser,
+  useUpdateUserToDeactivated,
+  useUpdateUserToActivated,
+  useGetOrganizationUsers,
+} from '@/api/api-hooks.generated';
+import type { CreateUserInput } from '@/api/mutation-transforms';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { TooltipButton } from '@/components/common/buttons';
 import { buildUserColumns } from '@/components/common/columns/builders/userColumns';
-import { buildDivider, buildTraceMenuItem } from '@/components/common/menuBuilders';
+import {
+  buildDivider,
+  buildPermissionsMenuItem,
+  buildTraceMenuItem,
+} from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { PageHeader } from '@/components/common/PageHeader';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import ResourceForm from '@/features/organization/components/ResourceForm';
 import type { FormFieldConfig } from '@/features/organization/components/ResourceForm/types';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
-import type { CreateUserFormValues } from '@/platform/utils/formValidation';
 import {
   CheckCircleOutlined,
   CheckOutlined,
@@ -42,6 +33,10 @@ import {
   StopOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import type {
+  GetOrganizationPermissionGroups_ResultSet1,
+  GetOrganizationUsers_ResultSet1,
+} from '@rediacc/shared/types';
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation('organization');
@@ -49,22 +44,22 @@ const UsersPage: React.FC = () => {
   const { t: tCommon } = useTranslation('common');
 
   const createUserModal = useDialogState();
-  const assignPermissionModal = useDialogState<User>();
+  const assignPermissionModal = useDialogState<GetOrganizationUsers_ResultSet1>();
   const [selectedUserGroup, setSelectedUserGroup] = useState('');
   const auditTrace = useTraceModal();
 
-  const [userForm] = Form.useForm<CreateUserFormValues>();
+  const [userForm] = Form.useForm<CreateUserInput>();
 
-  const { data: users = [], isLoading: usersLoading } = useUsers();
-  const createUserMutation = useCreateUser();
-  const deactivateUserMutation = useDeactivateUser();
-  const reactivateUserMutation = useReactivateUser();
-  const assignUserPermissionsMutation = useAssignUserPermissions();
+  const { data: users = [], isLoading: usersLoading } = useGetOrganizationUsers();
+  const createUserMutation = useCreateNewUser();
+  const deactivateUserMutation = useUpdateUserToDeactivated();
+  const reactivateUserMutation = useUpdateUserToActivated();
+  const assignUserPermissionsMutation = useUpdateUserAssignedPermissions();
   const { data: permissionGroups = [] } = usePermissionGroupsQuery();
 
   const userFormFields: FormFieldConfig[] = [
     {
-      name: 'newUserEmail',
+      name: 'email',
       label: t('users.form.emailLabel'),
       type: 'email',
       placeholder: 'user@example.com',
@@ -75,7 +70,7 @@ const UsersPage: React.FC = () => {
       ],
     },
     {
-      name: 'newUserPassword',
+      name: 'password',
       label: t('users.form.passwordLabel'),
       type: 'password',
       placeholder: t('users.form.passwordPlaceholder'),
@@ -88,12 +83,8 @@ const UsersPage: React.FC = () => {
   ];
 
   const handleCreateUser = async (data: Record<string, unknown>) => {
-    const formData = data as unknown as CreateUserFormValues;
     try {
-      await createUserMutation.mutateAsync({
-        email: formData.newUserEmail,
-        password: formData.newUserPassword,
-      });
+      await createUserMutation.mutateAsync(data as unknown as CreateUserInput);
       createUserModal.close();
       userForm.resetFields();
     } catch {
@@ -139,9 +130,9 @@ const UsersPage: React.FC = () => {
   };
 
   const handleOpenPermissionsModal = useCallback(
-    (record: User) => {
+    (record: GetOrganizationUsers_ResultSet1) => {
       assignPermissionModal.open(record);
-      setSelectedUserGroup(record.permissionsName || '');
+      setSelectedUserGroup(record.permissionsName ?? '');
     },
     [assignPermissionModal]
   );
@@ -150,14 +141,12 @@ const UsersPage: React.FC = () => {
     () =>
       buildUserColumns({
         t,
-        tSystem,
-        tCommon,
         onAssignPermissions: handleOpenPermissionsModal,
         onTrace: (record) =>
           auditTrace.open({
             entityType: 'User',
-            entityIdentifier: record.userEmail,
-            entityName: record.userEmail,
+            entityIdentifier: record.userEmail ?? '',
+            entityName: record.userEmail ?? undefined,
           }),
         onDeactivate: handleDeactivateUser,
         onReactivate: handleReactivateUser,
@@ -166,8 +155,6 @@ const UsersPage: React.FC = () => {
       }),
     [
       t,
-      tSystem,
-      tCommon,
       handleOpenPermissionsModal,
       auditTrace,
       handleDeactivateUser,
@@ -179,22 +166,17 @@ const UsersPage: React.FC = () => {
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: User) => {
+    () => (record: GetOrganizationUsers_ResultSet1) => {
       const menuItems: MenuProps['items'] = [
-        {
-          key: 'permissions',
-          label: tSystem('actions.permissions'),
-          icon: <SafetyOutlined />,
-          onClick: () => {
-            assignPermissionModal.open(record);
-            setSelectedUserGroup(record.permissionsName || '');
-          },
-        },
+        buildPermissionsMenuItem(tCommon, () => {
+          assignPermissionModal.open(record);
+          setSelectedUserGroup(record.permissionsName ?? '');
+        }),
         buildTraceMenuItem(tCommon, () =>
           auditTrace.open({
             entityType: 'User',
-            entityIdentifier: record.userEmail,
-            entityName: record.userEmail,
+            entityIdentifier: record.userEmail ?? '',
+            entityName: record.userEmail ?? undefined,
           })
         ),
         buildDivider(),
@@ -204,13 +186,13 @@ const UsersPage: React.FC = () => {
               label: tSystem('actions.deactivate'),
               icon: <StopOutlined />,
               danger: true,
-              onClick: () => handleDeactivateUser(record.userEmail),
+              onClick: () => handleDeactivateUser(record.userEmail ?? ''),
             }
           : {
               key: 'activate',
               label: tSystem('actions.activate'),
               icon: <CheckOutlined />,
-              onClick: () => handleReactivateUser(record.userEmail),
+              onClick: () => handleReactivateUser(record.userEmail ?? ''),
             },
       ];
 
@@ -222,7 +204,7 @@ const UsersPage: React.FC = () => {
               {record.userEmail}
             </Typography.Text>
           </Space>
-          <Flex gap={8} wrap>
+          <Flex className="gap-sm" wrap>
             {record.activated ? (
               <Tag icon={<CheckCircleOutlined />}>{t('users.status.active')}</Tag>
             ) : (
@@ -249,14 +231,9 @@ const UsersPage: React.FC = () => {
 
   return (
     <Flex vertical>
-      <Flex vertical gap={16}>
+      <Flex vertical>
         <ResourceListView
-          title={
-            <Flex vertical>
-              <Typography.Title level={4}>{t('users.title')}</Typography.Title>
-              <Typography.Text>{t('users.subtitle')}</Typography.Text>
-            </Flex>
-          }
+          title={<PageHeader title={t('users.title')} subtitle={t('users.subtitle')} />}
           loading={usersLoading}
           data={users}
           columns={userColumns}
@@ -265,15 +242,13 @@ const UsersPage: React.FC = () => {
           searchPlaceholder={t('users.searchPlaceholder')}
           data-testid="system-user-table"
           actions={
-            <Tooltip title={tSystem('actions.createUser')}>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => createUserModal.open()}
-                data-testid="system-create-user-button"
-                aria-label={tSystem('actions.createUser')}
-              />
-            </Tooltip>
+            <TooltipButton
+              tooltip={tSystem('actions.createUser')}
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => createUserModal.open()}
+              data-testid="system-create-user-button"
+            />
           }
         />
       </Flex>
@@ -287,6 +262,7 @@ const UsersPage: React.FC = () => {
         }}
         footer={null}
         centered
+        data-testid="users-create-modal"
       >
         <ResourceForm
           form={userForm}
@@ -315,6 +291,7 @@ const UsersPage: React.FC = () => {
         okButtonProps={{ 'data-testid': 'modal-assign-permissions-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-permissions-cancel' }}
         centered
+        data-testid="users-assign-permissions-modal"
       >
         <Form layout="vertical">
           <Form.Item label={t('users.modals.permissionGroupLabel')}>
@@ -322,10 +299,12 @@ const UsersPage: React.FC = () => {
               value={selectedUserGroup}
               onChange={(value) => setSelectedUserGroup(value || '')}
               placeholder={t('users.modals.permissionGroupPlaceholder')}
-              options={permissionGroups.map((group: PermissionGroup) => ({
-                value: group.permissionGroupName,
-                label: `${group.permissionGroupName} (${group.userCount} ${t('users.modals.usersLabel')}, ${group.permissionCount} ${t('users.modals.permissionsLabel')})`,
-              }))}
+              options={permissionGroups.map(
+                (group: GetOrganizationPermissionGroups_ResultSet1) => ({
+                  value: group.permissionGroupName,
+                  label: `${group.permissionGroupName} (${group.userCount} ${t('users.modals.usersLabel')}, ${group.permissionCount} ${t('users.modals.permissionsLabel')})`,
+                })
+              )}
               allowClear
               data-testid="user-permission-group-select"
             />

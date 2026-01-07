@@ -1,10 +1,10 @@
 import React from 'react';
 import { Checkbox, Flex, Input, InputNumber, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { QueueFunction, QueueFunctionParameter } from '@/api/queries/queue';
 import TemplateSelector from '@/components/common/TemplateSelector';
 import type { Machine, Repository } from '@/types';
-import type { GetTeamStorages_ResultSet1 as Storage } from '@rediacc/shared/types';
+import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
+import type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -20,7 +20,7 @@ interface FunctionParameterFieldProps {
   selectedTemplates: string[];
   repositories?: Repository[];
   machinesData?: Machine[];
-  storageData?: Storage[];
+  storageData?: GetTeamStorages_ResultSet1[];
   currentMachineName?: string;
 }
 
@@ -49,7 +49,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
   // Size parameter renderer
   if (isSizeParam && paramInfo.units) {
     return (
-      <Flex align="center" gap={8} wrap>
+      <Flex align="center" wrap>
         <InputNumber
           value={
             typeof functionParams[`${paramName}_value`] === 'number'
@@ -311,7 +311,7 @@ const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
     const selectedValues = getStringParam(paramName).split(' ').filter(Boolean);
 
     return (
-      <Flex vertical gap={8}>
+      <Flex vertical className="gap-sm">
         {paramInfo.checkboxOptions.map((option: { value: string; label: string }) => {
           const isChecked = selectedValues.includes(option.value);
 

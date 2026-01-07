@@ -1,9 +1,18 @@
 import js from '@eslint/js';
+import json from '@eslint/json';
 import tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
+import { requireTestId } from './eslint-rules/require-testid.js';
+import { requireTranslation } from './eslint-rules/require-translation.js';
+import { noHardcodedText } from './eslint-rules/no-hardcoded-text.js';
+import { noHardcodedCliText } from './eslint-rules/no-hardcoded-cli-text.js';
+import { noRawApiCalls } from './eslint-rules/no-raw-api-calls.js';
+import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-translation-props.js';
+import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
+import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
 export default tseslint.config(
   // Ignore patterns
@@ -24,6 +33,13 @@ export default tseslint.config(
       '**/*.d.ts',
       // Ignore public config files
       'packages/web/public/**',
+      // Ignore desktop build output
+      'packages/desktop/out/**',
+      // Ignore custom eslint rules (plain JS)
+      'eslint-rules/**',
+      // Ignore scripts directories (plain JS utilities)
+      'scripts/**',
+      'packages/*/scripts/**',
     ]
   },
   
@@ -40,6 +56,17 @@ export default tseslint.config(
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       import: importPlugin,
+      'custom': {
+        rules: {
+          'require-testid': requireTestId,
+          'require-translation': requireTranslation,
+          'no-hardcoded-text': noHardcodedText,
+          'no-hardcoded-cli-text': noHardcodedCliText,
+          'no-raw-api-calls': noRawApiCalls,
+          'no-duplicate-translation-props': noDuplicateTranslationProps,
+          'prefer-const-arrays': preferConstArrays,
+        },
+      },
     },
     languageOptions: {
       ecmaVersion: 'latest',
@@ -69,6 +96,8 @@ export default tseslint.config(
             'packages/shared/tsconfig.json',
             'packages/cli/tsconfig.json',
           ],
+          // Suppress warning about multiple tsconfig files (expected in monorepo)
+          noWarnOnMultipleProjects: true,
         },
       },
     },
@@ -82,12 +111,12 @@ export default tseslint.config(
       ...reactHooksPlugin.configs.recommended.rules,
       
       // TypeScript rules
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-inferrable-types': ['error', {
         ignoreParameters: false,
         ignoreProperties: false,
       }],
-      '@typescript-eslint/no-unused-vars': ['warn', {
+      '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
       }],
@@ -96,8 +125,8 @@ export default tseslint.config(
       '@typescript-eslint/no-deprecated': 'error',
       
       // General rules
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'no-debugger': 'warn',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+      'no-debugger': 'error',
       'max-lines': ['error', { max: 512, skipBlankLines: true, skipComments: true }],
 
       // === TypeScript Strict Rules (Bug Prevention) ===
@@ -121,6 +150,40 @@ export default tseslint.config(
         objectLiteralTypeAssertions: 'allow-as-parameter'
       }],
 
+      // === Translation Prop Rules ===
+      // Prevent multiple TypedTFunction props - use single t with namespace prefixes
+      'custom/no-duplicate-translation-props': 'error',
+
+      // === Type Safety Rules ===
+      // Enforce `as const` on UPPER_SNAKE_CASE constant arrays for narrow literal types
+      'custom/prefer-const-arrays': 'error',
+
+      // === E2E Testing Rules ===
+      // Enforce data-testid on interactive elements for E2E test coverage
+      // This is strict (error) to ensure all interactive elements have testids
+      'custom/require-testid': ['error', {
+        requiredElements: ['Modal', 'Drawer'],
+        interactiveElements: ['Button'],
+        // All Ant Design data entry components (https://ant.design/components/overview)
+        formElements: [
+          // Input variants
+          'Input', 'Input.Password', 'Input.Search', 'Input.TextArea', 'Input.OTP',
+          // Selection components
+          'Select', 'Select.Option', 'Checkbox', 'Checkbox.Group',
+          'Radio', 'Radio.Group', 'Radio.Button', 'Switch',
+          // Upload
+          'Upload', 'Upload.Dragger',
+          // Numeric inputs
+          'InputNumber', 'Slider', 'Rate',
+          // Date/Time pickers
+          'DatePicker', 'DatePicker.RangePicker', 'RangePicker', 'TimePicker', 'TimePicker.RangePicker',
+          // Advanced selectors
+          'AutoComplete', 'Cascader', 'TreeSelect', 'Transfer', 'Mentions',
+          // Other
+          'ColorPicker',
+        ],
+        allowTemplateLiterals: true,
+      }],
       // === React Rules (Quality & Consistency) ===
       'react/hook-use-state': 'error',
       'react/button-has-type': 'error',
@@ -167,6 +230,7 @@ export default tseslint.config(
       }],
 
       // Ban styled-components and Layout to enforce Ant Design best practices
+      // Ban deprecated type utilities to prevent hopping type patterns
       'no-restricted-imports': ['error', {
         paths: [
           { name: 'styled-components', message: 'Use Ant Design components with CSS utility classes (className) instead.' },
@@ -174,6 +238,11 @@ export default tseslint.config(
             name: 'antd',
             importNames: ['Layout'],
             message: 'Layout has default grey/dark backgrounds. Use Flex component instead.',
+          },
+          {
+            name: '@rediacc/shared/types',
+            importNames: ['WithOptionalVault'],
+            message: 'WithOptionalVault is deprecated. vaultContent and vaultVersion are now optional with SQL defaults in generated types. Use CreateXxxParams directly.',
           },
         ],
         patterns: [
@@ -211,13 +280,315 @@ export default tseslint.config(
           selector: 'JSXAttribute[name.name="style"]',
           message: 'Inline styles are not allowed. Use CSS utility classes from global.css instead (e.g., className="w-full inline-flex"). For dynamic styles, use // eslint-disable-next-line no-restricted-syntax',
         },
+        {
+          selector: "ExportNamedDeclaration > TSTypeAliasDeclaration:not([typeParameters]) > TSTypeAnnotation > TSTypeReference",
+          message: 'Do not create type aliases. Use the original type directly instead of creating an alias.',
+        },
       ],
     }
   },
 
+  // Web UI i18n enforcement
+  {
+    files: ['packages/web/src/**/*.{js,jsx,ts,tsx}'],
+    plugins: {
+      'i18n-source': i18nSourcePlugin,
+    },
+    rules: {
+      'custom/require-translation': ['error', {
+        localeDir: 'packages/web/src/i18n/locales/en',
+      }],
+      'custom/no-hardcoded-text': ['error'],
+      'i18n-source/interpolation-match': ['error', {
+        localeDir: 'packages/web/src/i18n/locales/en',
+      }],
+      // Enforce type-safe API calls - use typedApi instead of raw apiClient methods
+      'custom/no-raw-api-calls': 'error',
+    }
+  },
+
+  // CLI i18n enforcement
+  {
+    files: ['packages/cli/src/**/*.{js,ts}'],
+    ignores: ['packages/cli/src/__tests__/**'],
+    plugins: {
+      'i18n-source': i18nSourcePlugin,
+    },
+    rules: {
+      // Enforce t() for CLI-specific patterns
+      'custom/no-hardcoded-cli-text': ['error'],
+      // Enforce translation keys exist in locale files
+      'custom/require-translation': ['error', {
+        localeDir: 'packages/cli/src/i18n/locales/en',
+      }],
+      'i18n-source/interpolation-match': ['error', {
+        localeDir: 'packages/cli/src/i18n/locales/en',
+      }],
+      // Enforce type-safe API calls - use typedApi instead of raw apiClient methods
+      'custom/no-raw-api-calls': 'error',
+    }
+  },
+
+  // JSON locale file linting (all languages) - Web
+  {
+    files: ['packages/web/src/i18n/locales/**/*.json'],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      // JSON-specific rules
+      'json/no-duplicate-keys': 'error',
+      'i18n/no-empty-translations': 'error',
+      'i18n/sorted-keys': 'error',
+      'i18n/key-naming-convention': ['error', {
+        keyFormat: 'camelCase',
+        allowedPatterns: [
+          // Allow single uppercase letters (common for status codes)
+          '^[A-Z]$',
+          // Allow pluralization suffixes like _one, _other
+          '_one$', '_other$', '_zero$', '_few$', '_many$',
+        ],
+      }],
+    },
+  },
+
+  // JSON locale file linting (all languages) - CLI
+  {
+    files: ['packages/cli/src/i18n/locales/**/*.json'],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      // JSON-specific rules
+      'json/no-duplicate-keys': 'error',
+      'i18n/no-empty-translations': 'error',
+      'i18n/sorted-keys': 'error',
+      'i18n/key-naming-convention': ['error', {
+        keyFormat: 'camelCase',
+        allowedPatterns: [
+          // Allow single uppercase letters (common for status codes)
+          '^[A-Z]$',
+          // Allow pluralization suffixes like _one, _other
+          '_one$', '_other$', '_zero$', '_few$', '_many$',
+        ],
+      }],
+    },
+  },
+
+  // English locale files only - cross-language validation (Web)
+  {
+    files: ['packages/web/src/i18n/locales/en/**/*.json'],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      // Cross-language consistency - ensure all languages have same keys
+      'i18n/cross-language-consistency': ['error', {
+        localesDir: 'packages/web/src/i18n/locales',
+        sourceLanguage: 'en',
+      }],
+      // Translation coverage - ensure minimum coverage threshold
+      'i18n/translation-coverage': ['error', {
+        localesDir: 'packages/web/src/i18n/locales',
+        sourceLanguage: 'en',
+        minimumCoverage: 100,
+      }],
+      // Unused keys detection - find keys not used in source code
+      'i18n/no-unused-keys': ['error', {
+        sourceDir: 'packages/web/src',
+        ignorePatterns: [
+          // Ignore keys that might be used dynamically
+          '^errors\\.',
+          '^messages\\.',
+          '^validation\\.',
+        ],
+      }],
+      // Translation staleness - detect when English values change
+      'i18n/translation-staleness': ['error', {
+        hashFileName: '.translation-hashes.json',
+      }],
+    },
+  },
+
+  // English locale files only - cross-language validation (CLI)
+  {
+    files: ['packages/cli/src/i18n/locales/en/**/*.json'],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      // Cross-language consistency - ensure all languages have same keys
+      'i18n/cross-language-consistency': ['error', {
+        localesDir: 'packages/cli/src/i18n/locales',
+        sourceLanguage: 'en',
+      }],
+      // Translation coverage - ensure minimum coverage threshold
+      'i18n/translation-coverage': ['error', {
+        localesDir: 'packages/cli/src/i18n/locales',
+        sourceLanguage: 'en',
+        minimumCoverage: 100,
+      }],
+      // Unused keys detection - find keys not used in source code
+      'i18n/no-unused-keys': ['error', {
+        sourceDir: 'packages/cli/src',
+        ignorePatterns: [
+          // Ignore keys that might be used dynamically
+          '^errors\\.',
+          '^spinners\\.',
+          '^prompts\\.',
+          '^status\\.',
+        ],
+      }],
+      // Translation staleness - detect when English values change
+      'i18n/translation-staleness': ['error', {
+        hashFileName: '.translation-hashes.json',
+      }],
+    },
+  },
+
+  // Non-English locale files - untranslated value detection (Web)
+  {
+    files: [
+      'packages/web/src/i18n/locales/ar/**/*.json',
+      'packages/web/src/i18n/locales/de/**/*.json',
+      'packages/web/src/i18n/locales/es/**/*.json',
+      'packages/web/src/i18n/locales/fr/**/*.json',
+      'packages/web/src/i18n/locales/ja/**/*.json',
+      'packages/web/src/i18n/locales/ru/**/*.json',
+      'packages/web/src/i18n/locales/tr/**/*.json',
+      'packages/web/src/i18n/locales/zh/**/*.json',
+    ],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      // Detect untranslated values (identical to English)
+      'i18n/no-untranslated-values': ['error', {
+        localesDir: 'packages/web/src/i18n/locales',
+        minLength: 3,
+        allowedPatterns: [
+          // Allow technical abbreviations and acronyms
+          '^[A-Z]{2,}$',
+          // Allow URLs and paths
+          '^https?://',
+          '^/',
+          // Allow domain names and example URLs (contain dots)
+          '.*\\..*',
+          // Allow email addresses
+          '.*@.*',
+          // Allow IDs with special characters (like b!Ei1XXXXXXXXXX)
+          '^[a-zA-Z0-9!]+$',
+          // Allow colon-separated values (like port numbers, UUIDs, etc.)
+          '.*:.*',
+          // Allow format strings with placeholder variables
+          '.*\\{\\{.*\\}\\}.*',
+          // Allow command examples (docker ps, etc.)
+          '^[a-z]+\\s+[a-z]+$',
+          // Allow command-line flags (--transfers, -f, --fast-list)
+          '^-{1,2}[a-zA-Z]',
+          // Allow technical lowercase-hyphenated values (my-bucket, us-east-1)
+          '^[a-z][a-z0-9]*(-[a-z0-9]+)+$',
+          // Allow port numbers (443, 8080, 22)
+          '^\\d{2,5}$',
+          // Allow file extensions and technical suffixes
+          '\\.(json|xml|txt|log|pem|key|crt)$',
+          // Allow technical terms with numbers (OAuth2, S3, B2)
+          '^[A-Za-z]+\\d+$',
+          // Allow placeholder patterns (my-bucket, your-key, example-name)
+          '^(my|your|example|sample|test)-',
+        ],
+      }],
+      // Ensure translations have same {{placeholders}} as English
+      'i18n/interpolation-consistency': ['error', {
+        localesDir: 'packages/web/src/i18n/locales',
+      }],
+    },
+  },
+
+  // Non-English locale files - untranslated value detection (CLI)
+  {
+    files: [
+      'packages/cli/src/i18n/locales/ar/**/*.json',
+      'packages/cli/src/i18n/locales/de/**/*.json',
+      'packages/cli/src/i18n/locales/es/**/*.json',
+      'packages/cli/src/i18n/locales/fr/**/*.json',
+      'packages/cli/src/i18n/locales/ja/**/*.json',
+      'packages/cli/src/i18n/locales/ru/**/*.json',
+      'packages/cli/src/i18n/locales/tr/**/*.json',
+      'packages/cli/src/i18n/locales/zh/**/*.json',
+    ],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      // Detect untranslated values (identical to English)
+      'i18n/no-untranslated-values': ['error', {
+        localesDir: 'packages/cli/src/i18n/locales',
+        minLength: 3,
+        allowedPatterns: [
+          // Allow technical abbreviations and acronyms
+          '^[A-Z]{2,}$',
+          // Allow URLs and paths
+          '^https?://',
+          '^/',
+          // Allow domain names and example URLs (contain dots)
+          '.*\\..*',
+          // Allow email addresses
+          '.*@.*',
+          // Allow colon-separated values (like port numbers, UUIDs, etc.)
+          '.*:.*',
+          // Allow format strings with placeholder variables
+          '.*\\{\\{.*\\}\\}.*',
+          // Allow command examples (docker ps, etc.)
+          '^[a-z]+\\s+[a-z]+$',
+          // Allow command-line flags (--transfers, -f, --fast-list)
+          '^-{1,2}[a-zA-Z]',
+          // Allow technical lowercase-hyphenated values (my-bucket, us-east-1)
+          '^[a-z][a-z0-9]*(-[a-z0-9]+)+$',
+          // Allow port numbers (443, 8080, 22)
+          '^\\d{2,5}$',
+          // Allow file extensions and technical suffixes
+          '\\.(json|xml|txt|log|pem|key|crt)$',
+          // Allow CLI-specific patterns
+          '^rdc\\s',  // CLI commands like "rdc login"
+        ],
+      }],
+      // Ensure translations have same {{placeholders}} as English
+      'i18n/interpolation-consistency': ['error', {
+        localesDir: 'packages/cli/src/i18n/locales',
+      }],
+    },
+  },
+
+  // Disable JS/TS rules for JSON files (they inherit from base config)
+  {
+    files: ['**/*.json'],
+    rules: {
+      // Turn off all inherited rules that don't apply to JSON
+      'no-irregular-whitespace': 'off',
+      'no-unused-vars': 'off',
+      'no-unused-expressions': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
   // Disable rules for auto-generated files
   {
-    files: ['**/*.generated.ts', '**/*.generated.tsx'],
+    files: ['**/*.generated.ts', '**/*.generated.tsx', '**/api-schema.zod.ts'],
     rules: {
       'max-lines': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'off',
@@ -226,6 +597,7 @@ export default tseslint.config(
       '@typescript-eslint/prefer-optional-chain': 'off',
       '@typescript-eslint/array-type': 'off',
       '@typescript-eslint/consistent-type-assertions': 'off',
+      '@typescript-eslint/no-deprecated': 'off',
     }
   }
 );

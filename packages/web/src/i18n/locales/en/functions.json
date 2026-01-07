@@ -1,4 +1,5 @@
 {
+  "priorityLevelFormat": "P{{level}} ({{label}})",
   "additionalOptions": "Additional options (advanced)",
   "availableFunctions": "Available Functions",
   "categories": {
@@ -158,7 +159,7 @@
         }
       }
     },
-    "down": {
+    "repository_down": {
       "description": "Stop repository services",
       "name": "down",
       "params": {
@@ -172,7 +173,7 @@
         }
       }
     },
-    "deploy": {
+    "backup_deploy": {
       "description": "Deploy repository to multiple machines",
       "name": "deploy",
       "params": {
@@ -206,7 +207,7 @@
         }
       }
     },
-    "backup": {
+    "backup_create": {
       "description": "Backup repository to multiple storage systems",
       "name": "backup",
       "params": {
@@ -224,7 +225,7 @@
         }
       }
     },
-    "validate": {
+    "repository_validate": {
       "description": "Validate repository by running prep, up, health checks, test, and down",
       "name": "validate",
       "params": {
@@ -254,7 +255,7 @@
         }
       }
     },
-    "expand": {
+    "repository_expand": {
       "description": "Expand repository storage online with zero downtime",
       "name": "expand",
       "params": {
@@ -272,11 +273,11 @@
         }
       }
     },
-    "hello": {
+    "machine_version": {
       "description": "Simple test function that prints hello from hostname",
       "name": "hello"
     },
-    "list": {
+    "repository_list": {
       "description": "List files in remote storage locations",
       "name": "list files",
       "params": {
@@ -294,7 +295,7 @@
         }
       }
     },
-    "mount": {
+    "repository_mount": {
       "description": "Mount repository filesystems",
       "name": "mount",
       "params": {
@@ -312,7 +313,7 @@
         }
       }
     },
-    "new": {
+    "repository_create": {
       "description": "Create a new repository",
       "name": "new",
       "params": {
@@ -326,7 +327,7 @@
         }
       }
     },
-    "ownership": {
+    "repository_ownership": {
       "description": "Change repository ownership",
       "name": "ownership",
       "params": {
@@ -344,7 +345,7 @@
         }
       }
     },
-    "ping": {
+    "machine_ping": {
       "description": "Test network connectivity to the machine",
       "name": "ping"
     },
@@ -376,7 +377,7 @@
         }
       }
     },
-    "apply_template": {
+    "repository_template_apply": {
       "description": "Apply a template configuration to this repository",
       "name": "templates",
       "params": {
@@ -395,6 +396,9 @@
       }
     },
     "pull": {
+      "name": "Pull"
+    },
+    "backup_pull": {
       "description": "Pull repository from remote storage",
       "name": "pull",
       "params": {
@@ -412,7 +416,7 @@
         }
       }
     },
-    "push": {
+    "backup_push": {
       "description": "Push repository to remote storage",
       "name": "push",
       "params": {
@@ -446,7 +450,7 @@
         }
       }
     },
-    "resize": {
+    "repository_resize": {
       "description": "Resize repository storage (offline operation - repository must be unmounted)",
       "name": "resize",
       "params": {
@@ -460,7 +464,7 @@
         }
       }
     },
-    "rm": {
+    "repository_delete": {
       "description": "Delete repository",
       "name": "rm",
       "params": {
@@ -504,11 +508,11 @@
         }
       }
     },
-    "uninstall": {
+    "machine_uninstall": {
       "description": "Cleanup and uninstall system components",
       "name": "uninstall"
     },
-    "unmount": {
+    "repository_unmount": {
       "description": "Unmount repository filesystems",
       "name": "unmount",
       "params": {
@@ -526,7 +530,7 @@
         }
       }
     },
-    "up": {
+    "repository_up": {
       "description": "Start repository services using Rediaccfile",
       "name": "up",
       "params": {
@@ -577,5 +581,13 @@
   "validationError": "Validation Error",
   "onlinePushWarningTitle": "Online Push Warning",
   "onlinePushWarningMessage": "Pushing a mounted repository while services are running may cause data inconsistencies.",
-  "onlinePushLearnMore": "Learn more about online vs offline pushes →"
+  "onlinePushLearnMore": "Learn more about online vs offline pushes →",
+  "pushOperationDetails": "Push Operation Details",
+  "destinationFilename": "Destination Filename",
+  "repositoryLineage": "Repository Lineage",
+  "sourceRepository": "Source Repository",
+  "original": " (Original)",
+  "repositoryWillBePushedOnline": "The repository will be pushed in online state (mounted).",
+  "repositoryWillBePushedOffline": "The repository will be pushed in offline state (unmounted).",
+  "imagePlaceholder": "e.g., registry/image:tag"
 }

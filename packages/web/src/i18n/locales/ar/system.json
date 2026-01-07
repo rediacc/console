@@ -22,36 +22,6 @@
     "trace": "يتعقب",
     "twoFactorAuth": "المصادقة الثنائية"
   },
-  "architecture": {
-    "bridges": "الجسور",
-    "clearAll": "مسح الكل",
-    "fetchError": "فشل جلب بيانات الهندسة المعمارية",
-    "filterEntities": "تصفية الكيانات",
-    "legend": "أسطورة",
-    "machines": "آلات",
-    "noData": "لا توجد بيانات معمارية متاحة",
-    "noEntitiesSelected": "لم يتم تحديد أي كيانات. يرجى تحديد نوع كيان واحد على الأقل لعرضه.",
-    "nodeBridge": "كوبري",
-    "nodeCompany": "شركة",
-    "nodeMachine": "آلة",
-    "nodeRegion": "منطقة",
-    "nodeRepository": "مستودع",
-    "nodeStorage": "تخزين",
-    "nodeTeam": "فريق",
-    "nodeUser": "مستخدم",
-    "regions": "المناطق",
-    "repositories": "المستودعات",
-    "schedules": "الجداول الزمنية",
-    "selectAll": "حدد الكل",
-    "selectEntities": "حدد أنواع الكيانات لعرضها",
-    "storages": "المخازن",
-    "teams": "فرق",
-    "title": "الهندسة المعمارية للشركة",
-    "users": "المستخدمين",
-    "viewForce": "قوة",
-    "viewHierarchy": "تَسَلسُل",
-    "viewRadial": "شعاعي"
-  },
   "audit": {
     "columns": {
       "action": "فعل",
@@ -92,24 +62,6 @@
     },
     "subtitle": "تتبع جميع الأنشطة والتغييرات في مؤسستك",
     "title": "سجلات التدقيق"
-  },
-  "company": {
-    "errors": {
-      "blockRequestsFailed": "فشل تحديث حالة حظر طلب المستخدم",
-      "importFailed": "فشل في استيراد بيانات الشركة",
-      "noExportData": "لم يتم إرجاع أي بيانات تصدير",
-      "vaultUpdateFailed": "فشل تحديث تكوين المخزن"
-    },
-    "success": {
-      "errorCount": "{{count}} أخطاء",
-      "importComplete": "اكتمل الاستيراد: {{summary}}",
-      "importedCount": "تم استيراد {{count}} من العناصر",
-      "requestsBlocked": "تم حظر طلبات المستخدم بنجاح",
-      "requestsBlockedWithTerminations": "تم حظر طلبات المستخدم. تم إنهاء {{count}} من الجلسات النشطة.",
-      "requestsUnblocked": "تم إلغاء حظر طلبات المستخدم بنجاح",
-      "skippedCount": "تم تخطي {{count}} من العناصر",
-      "vaultUpdated": "تم تحديث تكوين Vault بنجاح"
-    }
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -155,8 +107,8 @@
         "cancel": "يلغي",
         "fileRequired": "الرجاء تحديد ملف لاستيراده",
         "import": "يستورد",
-        "importMode": "وضع الاستيراد",
         "importing": "جارٍ الاستيراد...",
+        "importMode": "وضع الاستيراد",
         "invalidFile": "تنسيق الملف غير صالح. الرجاء تحديد ملف صالح لتصدير بيانات الشركة.",
         "modeOverride": "تجاوز العناصر الموجودة",
         "modeOverrideDesc": "استبدال العناصر الموجودة بالبيانات المستوردة",
@@ -244,6 +196,47 @@
       "warning": "قم بتخزين كلمة المرور الجديدة في مكان آمن - ولا يمكن استعادتها في حالة فقدانها."
     }
   },
+  "dashboard": {
+    "activeLicenses": "الرخص النشطة",
+    "completed": "مكتمل",
+    "daysRemaining": "الأيام المتبقية",
+    "failed": "فشل",
+    "jobTimeout": "انتهاء مهلة الوظيفة",
+    "maxActiveJobs": "أقصى عدد وظائف نشطة",
+    "maxRepoSize": "أقصى حجم مستودع",
+    "maxReservedJobs": "أقصى عدد وظائف مستثناة",
+    "noPlanData": "لا توجد بيانات حد الخطة متاحة",
+    "noSubscription": "لا يوجد اشتراك نشط",
+    "pending": "قيد الانتظار",
+    "processing": "جاري المعالجة"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "فشل تحديث حالة حظر طلب المستخدم",
+      "importFailed": "فشل في استيراد بيانات الشركة",
+      "noExportData": "لم يتم إرجاع أي بيانات تصدير",
+      "vaultUpdateFailed": "فشل تحديث تكوين المخزن",
+      "vaultsUpdateFailed": "فشل تحديث تكوينات المخزن"
+    },
+    "success": {
+      "errorCount": "{{count}} أخطاء",
+      "importComplete": "اكتمل الاستيراد: {{summary}}",
+      "imported": "تم استيراد بيانات المنظمة بنجاح",
+      "importedCount": "تم استيراد {{count}} من العناصر",
+      "requestsBlocked": "تم حظر طلبات المستخدم بنجاح",
+      "requestsBlockedWithTerminations": "تم حظر طلبات المستخدم. تم إنهاء {{count}} من الجلسات النشطة.",
+      "requestsUnblocked": "تم إلغاء حظر طلبات المستخدم بنجاح",
+      "skippedCount": "تم تخطي {{count}} من العناصر",
+      "vaultUpdated": "تم تحديث تكوين Vault بنجاح",
+      "vaultsUpdated": "تم تحديث جميع تكوينات المخزن بنجاح"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "تم تغيير كلمة المرور الخاصة بك. سيتم تسجيل خروجك في {{seconds}} ثانية...",
+      "successTitle": "تم تغيير كلمة المرور بنجاح"
+    }
+  },
   "regionsInfrastructure": {
     "title": "المناطق والبنية التحتية"
   },
@@ -259,6 +252,7 @@
       "machines": "آلات",
       "members": "أعضاء",
       "repositories": "المستودعات",
+      "stats": "الإحصائيات",
       "storage": "تخزين",
       "teamName": "اسم الفريق",
       "vaultVersion": "نسخة قبو"
@@ -269,6 +263,22 @@
       "lastActive": "آخر نشاط",
       "permissionGroup": "مجموعة الأذونات",
       "status": "حالة"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "هل أنت متأكد من أنك تريد حذف الفريق \"{{teamName}}\"؟",
+      "confirmTitle": "حذف الفريق"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "هل أنت متأكد أنك تريد تفعيل \"{{email}}\"؟",
+      "confirmTitle": "تفعيل المستخدم"
+    },
+    "deactivate": {
+      "confirmDescription": "هل أنت متأكد أنك تريد إلغاء تفعيل \"{{email}}\"؟",
+      "confirmTitle": "إلغاء تنشيط المستخدم"
     }
   },
   "userSessions": {
@@ -294,6 +304,7 @@
     "forkToken": "هذا رمز شوكة (جلسة فرعية)",
     "hasChildren": "{{count}} جلسات فرعية",
     "inactive": "غير نشط",
+    "ipLabel": "IP",
     "minutes": "دقائق",
     "notAvailable": "لا يوجد",
     "searchPlaceholder": "البحث حسب البريد الإلكتروني أو IP أو اسم الجلسة...",
@@ -304,21 +315,11 @@
     "totalSessions": "إجمالي الجلسات",
     "uniqueUsers": "المستخدمون الفريدون"
   },
-  "users": {
-    "activate": {
-      "confirmDescription": "هل أنت متأكد أنك تريد تفعيل \"{{email}}\"؟",
-      "confirmTitle": "تفعيل المستخدم"
-    },
-    "deactivate": {
-      "confirmDescription": "هل أنت متأكد أنك تريد إلغاء تفعيل \"{{email}}\"؟",
-      "confirmTitle": "إلغاء تنشيط المستخدم"
-    }
-  },
   "vaultProtocol": {
     "errors": {
       "disableFailed": "فشل في تعطيل تشفير المخزن",
       "enableFailed": "فشل في تمكين تشفير المخزن",
-      "noCompanySelected": "لم يتم اختيار أي شركة. الرجاء اختيار شركة قبل تحديث التشفير."
+      "noOrganizationSelected": "لم يتم اختيار أي شركة. الرجاء اختيار شركة قبل تحديث التشفير."
     },
     "success": {
       "disabled": "تم تعطيل تشفير Vault. لم تعد كلمات المرور الرئيسية مطلوبة.",

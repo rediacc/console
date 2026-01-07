@@ -15,7 +15,7 @@ export const storageProviderConfig = storageProviders as unknown as StorageProvi
 /**
  * Machine basic field order
  */
-export const MACHINE_BASIC_FIELD_ORDER = ['ip', 'user', 'datastore'];
+export const MACHINE_BASIC_FIELD_ORDER = ['ip', 'user', 'datastore'] as const;
 
 /**
  * Fields to keep when changing storage provider
@@ -26,4 +26,4 @@ export const STORAGE_FIELDS_TO_KEEP = [
   'description',
   'noVersioning',
   'parameters',
-];
+] as const;

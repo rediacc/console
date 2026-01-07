@@ -1,4 +1,24 @@
 {
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "save": "Save",
+  "important": "Important",
+  "unknown": "Unknown",
+  "remote": "Remote",
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "schemaValidationFailed": "Data sync issue detected. Please refresh the page or contact support if the issue persists."
+  },
+  "desktopPrompt": {
+    "title": "{{feature}} Requires Desktop App",
+    "subtitle": "The {{feature}} uses secure SSH connections that require the Rediacc desktop application.",
+    "openDesktop": "Open in Desktop App",
+    "downloadDesktop": "Download Desktop App",
+    "whyDesktopOnly": "Why desktop only?",
+    "securityExplanation": "Direct file operations require a secure SSH connection from your computer to the remote machine. This connection cannot be established from a browser for security reasons.",
+    "machine": "Machine",
+    "repository": "Repository"
+  },
   "aria": {
     "cancel": "Cancel",
     "close": "Close",
@@ -23,9 +43,13 @@
     "description": "An unexpected error occurred. This has been automatically reported.",
     "errorDetails": "Error Details (Development Mode)",
     "tryAgain": "Try Again",
-    "reloadPage": "Reload Page"
+    "reloadPage": "Reload Page",
+    "error": "Error",
+    "stack": "Stack",
+    "componentStack": "Component Stack"
   },
   "actions": {
+    "actions": "Actions",
     "addToQueue": "Add to Queue",
     "advanced": "Advanced",
     "assign": "Assign",
@@ -37,24 +61,33 @@
     "copied": "Copied",
     "copy": "Copy",
     "create": "Create",
+    "createNew": "Create New",
     "createResource": "Create {{resource}}",
     "delete": "Delete",
+    "deleteSelected": "Delete Selected",
+    "download": "Download",
+    "downloadSelected": "Download Selected",
     "edit": "Edit",
     "editResource": "Edit {{resource}}",
     "editVault": "Edit Vault",
     "exitFullscreen": "Exit Fullscreen",
+    "format": "Format",
     "fullscreen": "Fullscreen",
     "logoutNow": "Logout Now",
     "manage": "Manage",
+    "newFolder": "New Folder",
     "refresh": "Refresh",
     "remote": "Remote",
     "remove": "Remove",
+    "rename": "Rename",
     "reset": "Reset",
     "retry": "Retry",
     "runFunction": "Run Function",
     "save": "Save",
     "search": "Search",
     "trace": "Trace",
+    "upload": "Upload",
+    "uploadFile": "Upload File",
     "viewTrace": "View Trace",
     "export": "Export",
     "exportSuccess": "Export successful"
@@ -73,14 +106,10 @@
   "current": "Current",
   "desktopConnectionFailed": "Failed to create secure connection for desktop app",
   "tokenGenerationFailed": "Token generation failed: {{error}}",
-  "dashboard": {
-    "availablePlans": "Available Plans",
-    "comparePlansDescription": "Compare features and pricing across different subscription tiers",
-    "currentPlan": "Current Plan",
-    "enterprisePlanDescription": "You're on our highest tier plan with all features unlocked",
-    "upgradeOptions": "Upgrade Options"
+  "export": {
+    "label": "Export",
+    "success": "Export successful"
   },
-  "export": "Export",
   "exportCSV": "Export as CSV",
   "exportJSON": "Export as JSON",
   "fieldGenerator": {
@@ -107,18 +136,30 @@
   "fields": {
     "vault": "Vault Configuration"
   },
+  "defaults": {
+    "privateTeam": "Private Team",
+    "defaultRegion": "Default Region",
+    "globalBridges": "Global Bridges",
+    "jsonError": "JSON Error"
+  },
+  "alt": {
+    "logo": "Rediacc"
+  },
   "general": {
     "cancel": "Cancel",
     "defaultsApplied": "Default values applied",
     "important": "Important",
     "loading": "Loading...",
+    "no": "No",
     "path": "Path",
+    "refreshing": "Refreshing...",
     "showingRecords": "Showing records {{start}}-{{end}} of {{total}}",
     "team": "Team",
     "unknown": "Unknown",
     "vaultVersion": "Vault Version",
     "versionFormat": "v{{version}}",
-    "warning": "Warning"
+    "warning": "Warning",
+    "yes": "Yes"
   },
   "language": {
     "ar": "Arabic",
@@ -129,6 +170,7 @@
     "ja": "Japanese",
     "label": "Language",
     "select": "Select Language",
+    "switch": "Switch Language",
     "tr": "Turkish",
     "zh": "Chinese"
   },
@@ -161,7 +203,7 @@
     "organizationUsers": "Users",
     "queue": "Queue",
     "settings": "Settings",
-    "settingsCompany": "Company",
+    "settingsOrganization": "Organization",
     "settingsInfrastructure": "Infrastructure",
     "settingsProfile": "Profile",
     "storage": "Storage",
@@ -218,6 +260,7 @@
   },
   "table": {
     "actions": "Actions",
+    "moreItems": "+{{count}} more",
     "showingRecords": "Showing records {{start}}-{{end}} of {{total}}"
   },
   "thisMonth": "This Month",
@@ -235,6 +278,90 @@
     "switching": "Switching to {{mode}} mode..."
   },
   "utilized": "Utilized",
+  "dashboard": {
+    "availablePlans": "Available Plans",
+    "comparePlansDescription": "Compare features and pricing across different subscription tiers",
+    "currentPlan": "Current Plan",
+    "enterprisePlanDescription": "You're on our highest tier plan with all features unlocked",
+    "title": "Dashboard",
+    "upgradeOptions": "Upgrade Options",
+    "widgets": {
+      "accountHealth": {
+        "title": "Account Health",
+        "overallStatus": "Overall Status",
+        "resourcesAtLimit": "resources at limit",
+        "resourcesNearLimit": "resources near limit",
+        "noData": "No account health data available"
+      },
+      "queueOverview": {
+        "title": "Queue Overview",
+        "manage": "Manage",
+        "noData": "No queue data available"
+      },
+      "queueDetails": {
+        "title": "Queue Details",
+        "todayActivity": "Today's Activity",
+        "created": "Created",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "failedTotal": "Failed (Total)",
+        "teamQueueStatus": "Team Queue Status",
+        "machineQueueStatus": "Machine Queue Status",
+        "priorityBreakdown": "Priority Breakdown",
+        "highestPriority": "Highest Priority",
+        "highPriority": "High Priority",
+        "normalPriority": "Normal Priority",
+        "lowPriority": "Low Priority",
+        "machine": "Machine",
+        "team": "Team",
+        "status": "Status",
+        "stale": "stale",
+        "staleItems": "{{count}} stale items",
+        "pending": "pending",
+        "active": "active"
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "viewAll": "View All",
+        "noActivity": "No recent activity"
+      },
+      "resourceUsage": {
+        "title": "Resource Usage",
+        "subtitle": "Monitor your resource consumption against plan limits",
+        "machines": "Machines",
+        "repositories": "Repositories",
+        "limitReached": "Limit reached"
+      },
+      "subscriptionPlan": {
+        "title": "Subscription & Plan Details",
+        "currentSubscription": "CURRENT SUBSCRIPTION",
+        "allActiveLicenses": "ALL ACTIVE LICENSES",
+        "total": "Total",
+        "remaining": "remaining",
+        "day": "day",
+        "days": "days",
+        "trial": "Trial",
+        "hours": "hours"
+      },
+      "systemVersion": {
+        "console": "Console",
+        "api": "API",
+        "apiUptime": "API Uptime"
+      },
+      "ceph": {
+        "machines": "machines",
+        "available": "available",
+        "cluster": "cluster",
+        "image": "image",
+        "clone": "clone"
+      }
+    },
+    "errors": {
+      "title": "Error",
+      "loadFailed": "Failed to load dashboard data. Please try again later.",
+      "noData": "No dashboard data available"
+    }
+  },
   "vaultEditor": {
     "advanced": "Advanced",
     "enterJsonArray": "Enter JSON array",
@@ -307,7 +434,7 @@
           "label": "OSD Nodes"
         }
       },
-      "COMPANY": {
+      "ORGANIZATION": {
         "DOCKER_JSON_CONF": {
           "description": "Docker registry authentication configuration",
           "label": "Docker Configuration"
@@ -321,11 +448,11 @@
           "label": "Plugins"
         },
         "SSH_PRIVATE_KEY": {
-          "description": "Base64-encoded SSH private key for company operations",
+          "description": "Base64-encoded SSH private key for organization operations",
           "label": "SSH Private Key"
         },
         "SSH_PUBLIC_KEY": {
-          "description": "SSH public key for company operations",
+          "description": "SSH public key for organization operations",
           "label": "SSH Public Key"
         },
         "UNIVERSAL_USER_ID": {
@@ -336,7 +463,7 @@
           "description": "Universal user name for system operations",
           "label": "Universal User Name"
         },
-        "description": "Company configuration for organization-wide settings"
+        "description": "Organization configuration for organization-wide settings"
       },
       "IMAGE": {
         "data_pool": {
@@ -371,9 +498,9 @@
           "label": "Datastore Path"
         },
         "description": "Machine configuration for SSH access and storage",
-        "host_entry": {
+        "known_hosts": {
           "description": "SSH known host entry for security verification",
-          "label": "Host Entry"
+          "label": "Known Hosts"
         },
         "ip": {
           "description": "IP address of the machine",
@@ -427,6 +554,10 @@
         "code": {
           "description": "Short code for the region",
           "label": "Region Code"
+        },
+        "location": {
+          "description": "Location details for the region",
+          "label": "Location"
         },
         "description": "Region configuration for geographic distribution",
         "name": {
@@ -557,8 +688,8 @@
     "requiredFields": "Required Fields",
     "resetToFormValues": "Reset to Form Values",
     "saveVaultConfiguration": "Save Vault Configuration",
-    "hostEntryHelp": "Optional. SSH known host entry will be detected automatically.",
-    "hostEntryPlaceholder": "Auto-populated during connection test",
+    "knownHostsHelp": "Optional. SSH known host entry will be detected automatically.",
+    "knownHostsPlaceholder": "Auto-populated during connection test",
     "sshPasswordPlaceholder": "Optional: for initial SSH key setup",
     "sshPasswordRequiredWhenNoKey": "SSH password is required for initial key setup",
     "systemCompatibility": {
@@ -609,6 +740,49 @@
   "warnings": {
     "sandboxEnvironment": "Sandbox Environment",
     "sandboxMessage": "Data may be reset during updates. For testing only."
+  },
+  "fileBrowser": {
+    "fileBrowser": "File Browser",
+    "name": "Name",
+    "size": "Size",
+    "modified": "Modified",
+    "permissions": "Permissions",
+    "originalFile": "Original file",
+    "connecting": "Connecting...",
+    "establishingConnection": "Establishing SFTP connection to {{host}}...",
+    "error": "Error",
+    "root": "root",
+    "items": "{{count}} items",
+    "folder": "Folder",
+    "createNewFolder": "Create New Folder",
+    "folderName": "Folder name",
+    "newName": "New name",
+    "deleteFolderConfirm": "Delete folder?",
+    "deleteFileConfirm": "Delete file?",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{{name}}\"?",
+    "deleteFolderWarning": " This will delete all contents.",
+    "downloaded": "Downloaded: {{name}}",
+    "created": "Created folder: {{name}}",
+    "renamedSuccessfully": "Renamed successfully",
+    "uploaded": "Uploaded: {{name}}"
+  },
+  "resourceList": {
+    "searchPlaceholder": "Search...",
+    "noDataAvailable": "No data available",
+    "createNew": "Create New",
+    "showingRecords": "Showing records {{start}}-{{end}} of {{total}}",
+    "getStartedMessage": "Get started by creating your first {{resource}}",
+    "noResourcesFound": "No {{resources}} found. Try adjusting your search criteria."
+  },
+  "teamSelector": {
+    "selectTeams": "Select teams...",
+    "moreTeams": "+{{count}} more"
+  },
+  "powerMode": {
+    "localhostAllEnabled": "Localhost Mode - All features enabled",
+    "localhostAllDisabled": "Localhost Mode - All features disabled",
+    "advancedEnabled": "Advanced options enabled",
+    "advancedDisabled": "Advanced options disabled"
   },
   "yes": "Yes",
   "yesterday": "Yesterday"

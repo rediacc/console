@@ -11,27 +11,27 @@ import {
   SyncOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import type { CompanyDashboardData } from '@rediacc/shared/types';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 interface QueueOverviewWidgetProps {
-  queueStats?: CompanyDashboardData['queueStats'];
+  queueStats?: OrganizationDashboardData['queueStats'];
 }
 
 const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats }) => {
-  const { t } = useTranslation('system');
+  const { t } = useTranslation(['system', 'common']);
 
   if (!queueStats) {
     return (
       <Card
         title={
-          <Flex align="center" gap={8} wrap className="inline-flex">
+          <Flex align="center" wrap className="inline-flex">
             <RobotOutlined />
-            <Typography.Text>Queue Overview</Typography.Text>
+            <Typography.Text>{t('common:dashboard.widgets.queueOverview.title')}</Typography.Text>
           </Flex>
         }
         data-testid="dashboard-card-queue-overview-empty"
       >
-        <Empty description="No queue data available" />
+        <Empty description={t('common:dashboard.widgets.queueOverview.noData')} />
       </Card>
     );
   }
@@ -39,9 +39,9 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <RobotOutlined />
-          <Typography.Text>Queue Overview</Typography.Text>
+          <Typography.Text>{t('common:dashboard.widgets.queueOverview.title')}</Typography.Text>
         </Flex>
       }
       extra={
@@ -51,12 +51,12 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
           // eslint-disable-next-line no-restricted-syntax
           style={{ fontWeight: 500 }}
         >
-          Manage
+          {t('common:dashboard.widgets.queueOverview.manage')}
         </RouterLink>
       }
       data-testid="dashboard-card-queue-overview"
     >
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         <Row gutter={[16, 16]}>
           <Col xs={12} md={6}>
             <Statistic
@@ -92,22 +92,22 @@ const QueueOverviewWidget: React.FC<QueueOverviewWidgetProps> = ({ queueStats })
           </Col>
         </Row>
 
-        {(queueStats.hasStaleItems === 1 || queueStats.hasOldPendingItems === 1) && (
-          <Flex vertical gap={8} className="w-full">
-            {queueStats.hasStaleItems === 1 && (
+        {(queueStats.hasStaleItems === true || queueStats.hasOldPendingItems === true) && (
+          <Flex vertical className="gap-sm w-full">
+            {queueStats.hasStaleItems === true && (
               <Alert
-                message={`${queueStats.staleCount ?? 0} stale items`}
+                message={t('common:dashboard.widgets.queueDetails.staleItems', {
+                  count: queueStats.staleCount ?? 0,
+                })}
                 type="warning"
-                showIcon
                 icon={<WarningOutlined />}
                 data-testid="dashboard-alert-stale-items"
               />
             )}
-            {queueStats.hasOldPendingItems === 1 && (
+            {queueStats.hasOldPendingItems === true && (
               <Alert
                 message={`Oldest: ${Math.floor((queueStats.oldestPendingAgeMinutes ?? 0) / 60)}h`}
                 type="info"
-                showIcon
                 icon={<FieldTimeOutlined />}
                 data-testid="dashboard-alert-old-pending"
               />

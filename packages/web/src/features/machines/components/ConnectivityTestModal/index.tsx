@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, Flex, Progress, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { SizedModal } from '@/components/common';
-import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
+import {
+  createStatusColumn,
+  createTruncatedColumn,
+  RESPONSIVE_HIDE_XS,
+} from '@/components/common/columns';
+import { SizedModal } from '@/components/common/SizedModal';
 import type { QueueItemCompletionResult } from '@/services/helloService';
 import { usePingFunction } from '@/services/pingService';
 import type { Machine } from '@/types';
@@ -54,9 +58,9 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   useEffect(() => {
     if (open && machines.length > 0) {
       const initialResults: TestResult[] = machines.map((machine) => ({
-        machineName: machine.machineName,
-        teamName: machine.teamName,
-        bridgeName: machine.bridgeName,
+        machineName: machine.machineName ?? '',
+        teamName: machine.teamName ?? '',
+        bridgeName: machine.bridgeName ?? '',
         status: 'pending',
       }));
       setTestResults(initialResults);
@@ -174,19 +178,25 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   };
 
   // Table columns
-  const teamColumn = createTruncatedColumn<TestResult>({
-    title: t('machines:team'),
-    dataIndex: 'teamName',
-    key: 'teamName',
-    renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
-  });
+  const teamColumn = {
+    ...createTruncatedColumn<TestResult>({
+      title: t('machines:team'),
+      dataIndex: 'teamName',
+      key: 'teamName',
+      renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  };
 
-  const bridgeColumn = createTruncatedColumn<TestResult>({
-    title: t('machines:bridge'),
-    dataIndex: 'bridgeName',
-    key: 'bridgeName',
-    renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
-  });
+  const bridgeColumn = {
+    ...createTruncatedColumn<TestResult>({
+      title: t('machines:bridge'),
+      dataIndex: 'bridgeName',
+      key: 'bridgeName',
+      renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  };
 
   const statusColumn = createStatusColumn<TestResult>({
     title: t('machines:status'),
@@ -238,7 +248,6 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         return (
           <Flex
             align="center"
-            gap={8}
             wrap
             className="inline-flex"
             data-testid={`connectivity-machine-${name}`}
@@ -264,6 +273,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       dataIndex: 'duration',
       key: 'duration',
       width: 120,
+      responsive: RESPONSIVE_HIDE_XS,
       render: (duration?: number) => {
         if (!duration) return '-';
         if (duration < 1000) return `${duration}ms`;
@@ -290,7 +300,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     <SizedModal
       data-testid="connectivity-modal"
       title={
-        <Flex gap={8} align="center">
+        <Flex align="center">
           <WifiOutlined />
           <Typography.Text>{t('machines:connectivityTest')}</Typography.Text>
         </Flex>
@@ -310,20 +320,20 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           >
             {isRunning ? t('machines:testing') : t('machines:runTest')}
           </Button>
-          <Tooltip title="Close">
+          <Tooltip title={t('common:tooltips.close')}>
             <Button
               type="text"
               icon={<CloseCircleOutlined />}
               onClick={onClose}
               data-testid="connectivity-close-button"
-              aria-label="Close"
+              aria-label={t('common:aria.close')}
             />
           </Tooltip>
         </Flex>
       }
     >
       <Flex className="w-full">
-        <Flex vertical gap={16} className="w-full">
+        <Flex vertical className="w-full">
           {isRunning && (
             <Flex vertical data-testid="connectivity-progress-container">
               <Progress
@@ -345,7 +355,6 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             <Alert
               message={t('machines:connectivityTestDescription')}
               type="info"
-              showIcon
               icon={<WifiOutlined />}
               data-testid="connectivity-info-alert"
             />
@@ -357,7 +366,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
               dataSource={testResults}
               rowKey="machineName"
               pagination={false}
-              scroll={{ y: 400 }}
+              scroll={{ x: 'max-content', y: 400 }}
               loading={machines.length === 0}
               rowClassName={(record) => `status-${record.status}`}
               data-testid="connectivity-results-table"
@@ -367,23 +376,23 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           {!isRunning && testResults.some((r) => r.status !== 'pending') && (
             <Flex data-testid="connectivity-summary-statistics">
               <Flex align="center" wrap>
-                <Flex align="center" gap={12} data-testid="connectivity-total-machines">
+                <Flex align="center" data-testid="connectivity-total-machines">
                   <Typography.Text type="secondary">{t('machines:totalMachines')}:</Typography.Text>
                   <Typography.Text strong>{machines.length}</Typography.Text>
                 </Flex>
-                <Flex align="center" gap={12} data-testid="connectivity-connected-count">
+                <Flex align="center" data-testid="connectivity-connected-count">
                   <Typography.Text type="secondary">{t('machines:connected')}:</Typography.Text>
                   <Typography.Text strong type="success">
                     {testResults.filter((r) => r.status === 'success').length}
                   </Typography.Text>
                 </Flex>
-                <Flex align="center" gap={12} data-testid="connectivity-failed-count">
+                <Flex align="center" data-testid="connectivity-failed-count">
                   <Typography.Text type="secondary">{t('machines:failed')}:</Typography.Text>
                   <Typography.Text strong type="danger">
                     {testResults.filter((r) => r.status === 'failed').length}
                   </Typography.Text>
                 </Flex>
-                <Flex align="center" gap={12} data-testid="connectivity-average-response">
+                <Flex align="center" data-testid="connectivity-average-response">
                   <Typography.Text type="secondary">
                     {t('machines:averageResponse')}:
                   </Typography.Text>

@@ -1,11 +1,11 @@
+/* eslint-disable max-lines */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapse, Form, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import type { QueueFunction } from '@/api/queries/queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
-import { SizedModal } from '@/components/common';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
+import { SizedModal } from '@/components/common/SizedModal';
 import TemplateSelector from '@/components/common/TemplateSelector';
 import ResourceFormWithVault, {
   type ImportExportHandlers,
@@ -17,9 +17,11 @@ import { useDialogState } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
+import type { QueueFunction } from '@rediacc/shared/types';
+import { InfrastructurePills } from './components/InfrastructurePills';
 import { ModalFooter } from './components/ModalFooter';
 import {
-  renderModalTitle,
+  ModalTitleRenderer,
   resolveTeamName,
   getBridgeName,
   createFunctionSubtitle,
@@ -42,6 +44,117 @@ type FunctionSubmitPayload = {
   priority: number;
   description: string;
   selectedMachine?: string;
+};
+
+const buildExistingDataKey = (
+  resourceType: ResourceType,
+  mode: 'create' | 'edit' | 'vault',
+  existingData?: ExistingResourceData
+): string => {
+  if (!existingData) {
+    return `${resourceType}:${mode}:none`;
+  }
+  const resourceNameKey = `${resourceType}Name`;
+  const resourceName = existingData[resourceNameKey];
+  if (typeof resourceName === 'string' && resourceName) {
+    const vaultVersion = existingData.vaultVersion ?? '';
+    return `${resourceType}:${mode}:${resourceName}:${vaultVersion}`;
+  }
+  try {
+    return `${resourceType}:${mode}:${JSON.stringify(existingData)}`;
+  } catch {
+    return `${resourceType}:${mode}:unstringifiable`;
+  }
+};
+
+const normalizeExistingData = (
+  existingData?: ExistingResourceData
+): ExistingResourceData | undefined => {
+  if (!existingData) return undefined;
+  if (existingData.vaultVersion == null) {
+    const { vaultVersion: _vaultVersion, ...rest } = existingData;
+    return { ...rest, vaultVersion: undefined };
+  }
+  return existingData;
+};
+
+const DEFAULT_VAULT_CONTENT = '{}';
+const EMPTY_STRING_LIST: string[] = [];
+const EMPTY_PARAMS: FunctionParamsMap = {};
+
+const EDIT_EXTRAS: Partial<
+  Record<ResourceType, (data: ExistingResourceData) => Partial<ResourceFormValues>>
+> = {
+  machine: (data) => ({ regionName: data.regionName, bridgeName: data.bridgeName }),
+  bridge: (data) => ({ regionName: data.regionName }),
+  pool: (data) => ({ clusterName: data.clusterName }),
+  image: (data) => ({ poolName: data.poolName }),
+  snapshot: (data) => ({ poolName: data.poolName, imageName: data.imageName }),
+  clone: (data) => ({
+    poolName: data.poolName,
+    imageName: data.imageName,
+    snapshotName: data.snapshotName,
+  }),
+};
+
+const CREATE_EXTRAS: Partial<
+  Record<ResourceType, (uiMode: 'simple' | 'expert') => Partial<ResourceFormValues>>
+> = {
+  machine: (uiMode) => ({
+    regionName: uiMode === 'simple' ? 'Default Region' : '',
+    bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
+  }),
+  repository: () => ({ machineName: '', size: '', repositoryGuid: '' }),
+  team: () => ({ teamName: '' }),
+  bridge: () => ({ regionName: '' }),
+  pool: () => ({ clusterName: '' }),
+  image: () => ({ poolName: '' }),
+  snapshot: () => ({ poolName: '', imageName: '' }),
+  clone: () => ({ poolName: '', imageName: '', snapshotName: '' }),
+};
+
+const applyExistingData = (
+  defaults: ResourceFormValues,
+  existingData?: ExistingResourceData
+): ResourceFormValues => {
+  if (!existingData) return defaults;
+  Object.keys(existingData).forEach((key) => {
+    if (existingData[key] !== undefined) {
+      defaults[key] = existingData[key];
+    }
+  });
+  return defaults;
+};
+
+const buildDefaultValues = ({
+  resourceType,
+  mode,
+  uiMode,
+  existingData,
+}: {
+  resourceType: ResourceType;
+  mode: 'create' | 'edit' | 'vault';
+  uiMode: 'simple' | 'expert';
+  existingData?: ExistingResourceData;
+}): ResourceFormValues => {
+  const nameKey = `${resourceType}Name`;
+
+  if (mode === 'edit' && existingData) {
+    return {
+      [nameKey]: existingData[nameKey],
+      ...(EDIT_EXTRAS[resourceType]?.(existingData) ?? {}),
+      vaultContent: existingData.vaultContent ?? DEFAULT_VAULT_CONTENT,
+    };
+  }
+
+  const baseDefaults: ResourceFormValues = {
+    teamName: uiMode === 'simple' ? 'Private Team' : '',
+    vaultContent: DEFAULT_VAULT_CONTENT,
+    [nameKey]: '',
+  };
+
+  const resourceDefaults = CREATE_EXTRAS[resourceType]?.(uiMode) ?? {};
+  return applyExistingData({ ...baseDefaults, ...resourceDefaults }, existingData);
 };
 
 export interface UnifiedResourceModalProps {
@@ -75,9 +188,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   onFunctionSubmit,
   isSubmitting = false,
   isUpdatingVault = false,
-  functionCategories = [],
-  hiddenParams = [],
-  defaultParams = {},
+  functionCategories = EMPTY_STRING_LIST,
+  hiddenParams = EMPTY_STRING_LIST,
+  defaultParams = EMPTY_PARAMS,
   preselectedFunction,
   creationContext,
 }) => {
@@ -96,10 +209,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // State for test connection (for machines)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false);
 
-  // Track test connection state changes
-  useEffect(() => {
-    // Test connection state updated
-  }, [testConnectionSuccess, resourceType, mode]);
+  const existingDataKey = useMemo(
+    () => buildExistingDataKey(resourceType, mode, existingData),
+    [resourceType, mode, existingData]
+  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally using existingDataKey for stable reference
+  const stableExistingData = useMemo(() => normalizeExistingData(existingData), [existingDataKey]);
 
   // State for auto-setup after machine creation
   const [autoSetupEnabled, setAutoSetupEnabled] = useState(true);
@@ -112,20 +227,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     setShowTemplateDetails,
     templateToView,
     setTemplateToView,
-  } = useTemplateSelection({ existingData });
+  } = useTemplateSelection({ existingData: stableExistingData });
 
   // Import/Export handlers ref
   const importExportHandlers = useRef<ImportExportHandlers | null>(null);
+  const handleImportExportRef = useCallback((handlers: ImportExportHandlers) => {
+    importExportHandlers.current = handlers;
+  }, []);
 
   // Ant Design Form instance
   const [form] = Form.useForm<ResourceFormValues>();
-
-  // Log when modal opens
-  useEffect(() => {
-    if (open) {
-      // Modal opened with resource configuration
-    }
-  }, [open, resourceType, mode, uiMode, existingData, teamFilter]);
 
   const getFormValue = useCallback(
     (field: string): string | undefined => {
@@ -136,73 +247,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   );
 
   // Get default values for form initialization
-  const getDefaultValues = useCallback((): ResourceFormValues => {
-    if (mode === 'edit' && existingData) {
-      return {
-        [`${resourceType}Name`]: existingData[`${resourceType}Name`],
-        ...(resourceType === 'machine' && {
-          regionName: existingData.regionName,
-          bridgeName: existingData.bridgeName,
-        }),
-        ...(resourceType === 'bridge' && { regionName: existingData.regionName }),
-        ...(resourceType === 'pool' && { clusterName: existingData.clusterName }),
-        ...(resourceType === 'image' && { poolName: existingData.poolName }),
-        ...(resourceType === 'snapshot' && {
-          poolName: existingData.poolName,
-          imageName: existingData.imageName,
-        }),
-        ...(resourceType === 'clone' && {
-          poolName: existingData.poolName,
-          imageName: existingData.imageName,
-          snapshotName: existingData.snapshotName,
-        }),
-        vaultContent: existingData.vaultContent ?? '{}',
-      };
-    }
-
-    const baseDefaults: ResourceFormValues = {
-      teamName: uiMode === 'simple' ? 'Private Team' : '',
-      vaultContent: '{}',
-      [`${resourceType}Name`]: '',
-    };
-
-    const resourceDefaults: Record<string, ResourceFormValues> = {
-      machine: {
-        regionName: uiMode === 'simple' ? 'Default Region' : '',
-        bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
-        vaultContent: '{}',
-      },
-      repository: {
-        machineName: '',
-        size: '',
-        repositoryGuid: '',
-        vaultContent: '{}',
-      },
-      team: { teamName: '', vaultContent: '{}' },
-      region: { regionName: '', vaultContent: '{}' },
-      bridge: { regionName: '', bridgeName: '', vaultContent: '{}' },
-      cluster: { clusterName: '', vaultContent: '{}' },
-      pool: { clusterName: '', poolName: '', vaultContent: '{}' },
-      image: { poolName: '', imageName: '', vaultContent: '{}' },
-      snapshot: { poolName: '', imageName: '', snapshotName: '', vaultContent: '{}' },
-      clone: { poolName: '', imageName: '', snapshotName: '', cloneName: '', vaultContent: '{}' },
-    };
-
-    const finalDefaults: ResourceFormValues = {
-      ...baseDefaults,
-      ...resourceDefaults[resourceType],
-    };
-
-    if (existingData) {
-      Object.keys(existingData).forEach((key) => {
-        if (existingData[key] !== undefined) {
-          finalDefaults[key] = existingData[key];
-        }
-      });
-    }
-
-    return finalDefaults;
-  }, [mode, existingData, resourceType, uiMode]);
+  const defaultValues = useMemo(
+    () =>
+      buildDefaultValues({
+        resourceType,
+        mode,
+        uiMode,
+        existingData: stableExistingData,
+      }),
+    [mode, resourceType, uiMode, stableExistingData]
+  );
 
   // Hook: Bridge selection logic
   const { getFilteredBridges } = useBridgeSelection({
@@ -219,26 +273,39 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     resourceType,
     form,
     dropdownData,
-    existingData,
+    existingData: stableExistingData,
     teamFilter,
     setSelectedTemplate,
   });
 
   // Reset form values when modal opens
+  const formInitKey = useMemo(
+    () => `${resourceType}:${mode}:${existingDataKey}:${open ? 'open' : 'closed'}`,
+    [resourceType, mode, existingDataKey, open]
+  );
+  const lastFormInitKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (open) {
-      form.resetFields();
-      // Type assertion needed: Ant Design expects { [x: string]: {} | undefined }
-      // but ResourceFormValues uses unknown for flexibility
-      form.setFieldsValue(getDefaultValues() as Record<string, {} | undefined>);
+    if (!open) {
+      lastFormInitKeyRef.current = null;
+      return;
     }
-  }, [open, form, getDefaultValues]);
+
+    if (lastFormInitKeyRef.current === formInitKey) {
+      return;
+    }
+
+    lastFormInitKeyRef.current = formInitKey;
+    form.resetFields();
+    // Type assertion needed: Ant Design expects { [x: string]: {} | undefined }
+    // but ResourceFormValues uses unknown for flexibility
+    form.setFieldsValue(defaultValues as Record<string, {} | undefined>);
+  }, [open, form, defaultValues, formInitKey]);
 
   // Determine if team is already selected/known
-  const isTeamPreselected =
-    uiMode === 'simple' ||
-    (!!teamFilter && !Array.isArray(teamFilter)) ||
-    (!!teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1);
+  // In simple mode, team is always preselected (uses "Private Team")
+  // In expert mode, always show team dropdown so user can select any team
+  const isTeamPreselected = uiMode === 'simple';
 
   // Get form fields based on resource type and mode
   const formFields = useMemo(
@@ -249,7 +316,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         uiMode,
         isExpertMode,
         isTeamPreselected,
-        existingData,
+        existingData: stableExistingData,
         dropdownData,
         teamFilter,
         creationContext,
@@ -263,7 +330,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       uiMode,
       isExpertMode,
       isTeamPreselected,
-      existingData,
+      stableExistingData,
       dropdownData,
       teamFilter,
       creationContext,
@@ -273,62 +340,91 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     ]
   );
 
-  // Helper functions
-  const getEntityType = () => resourceType.toUpperCase();
-  const getVaultFieldName = () => 'vaultContent';
+  const initialVaultData = useMemo(
+    () => parseVaultData(resourceType, stableExistingData),
+    [resourceType, stableExistingData]
+  );
+  const entityType = resourceType.toUpperCase();
 
   // Modal header renderer props
-  const modalHeaderProps = {
-    resourceType,
-    mode,
-    uiMode,
-    isExpertMode,
-    isTeamPreselected,
-    existingData,
-    teamFilter,
-    creationContext,
-    getFormValue,
-    t,
-  };
-
-  // Handle form submission
-  const handleSubmit = async (data: ResourceFormValues) => {
-    // Validate machine creation - check if SSH password is present without SSH key configured
-    if (mode === 'create' && resourceType === 'machine') {
-      const vaultString = typeof data.machineVault === 'string' ? data.machineVault : '';
-      const vaultData: Record<string, unknown> = vaultString ? JSON.parse(vaultString) : {};
-      const sshPassword = vaultData.ssh_password;
-      const sshKeyConfigured = vaultData.ssh_key_configured;
-
-      if (typeof sshPassword === 'string' && sshPassword && !sshKeyConfigured) {
-        message.error('machines:validation.sshPasswordNotAllowed');
-        return;
-      }
-
-      if (!testConnectionSuccess) {
-        message.warning('machines:validation.sshConnectionNotTested');
-      }
-    }
-
-    // Transform form data using utility
-    const transformedData = await transformFormData(data, {
+  const modalHeaderProps = useMemo(
+    () => ({
       resourceType,
       mode,
       uiMode,
-      existingData,
+      isExpertMode,
+      isTeamPreselected,
+      existingData: stableExistingData,
+      teamFilter,
+      creationContext,
+      getFormValue,
+      t,
+    }),
+    [
+      resourceType,
+      mode,
+      uiMode,
+      isExpertMode,
+      isTeamPreselected,
+      stableExistingData,
+      teamFilter,
+      creationContext,
+      getFormValue,
+      t,
+    ]
+  );
+
+  // Handle form submission
+  const handleSubmit = useCallback(
+    async (data: ResourceFormValues) => {
+      // Validate machine creation - check if SSH password is present without SSH key configured
+      if (mode === 'create' && resourceType === 'machine') {
+        const vaultString = typeof data.machineVault === 'string' ? data.machineVault : '';
+        const vaultData: Record<string, unknown> = vaultString ? JSON.parse(vaultString) : {};
+        const sshPassword = vaultData.ssh_password;
+        const sshKeyConfigured = vaultData.ssh_key_configured;
+
+        if (typeof sshPassword === 'string' && sshPassword && !sshKeyConfigured) {
+          message.error('machines:validation.sshPasswordNotAllowed');
+          return;
+        }
+
+        if (!testConnectionSuccess) {
+          message.warning('machines:validation.sshConnectionNotTested');
+        }
+      }
+
+      // Transform form data using utility
+      const transformedData = await transformFormData(data, {
+        resourceType,
+        mode,
+        uiMode,
+        existingData: stableExistingData,
+        selectedTemplate,
+        autoSetupEnabled,
+      });
+
+      await onSubmit(transformedData);
+    },
+    [
+      mode,
+      resourceType,
+      message,
+      testConnectionSuccess,
+      uiMode,
+      stableExistingData,
       selectedTemplate,
       autoSetupEnabled,
-    });
-
-    await onSubmit(transformedData);
-  };
+      onSubmit,
+    ]
+  );
 
   // Show functions button only for machines, repositories, and storage
   const showFunctions = Boolean(
     (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage') &&
       mode === 'create' &&
-      existingData &&
-      !existingData.prefilledMachine && // Don't show functions when creating repository from machine
+      stableExistingData &&
+      !stableExistingData.prefilledMachine && // Don't show functions when creating repository from machine
       onFunctionSubmit &&
       functionCategories.length > 0
   );
@@ -338,13 +434,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Without it, each call to functionModal.open() triggers a state change, causing re-render,
   // which triggers this effect again, leading to "Maximum update depth exceeded" error.
   useEffect(() => {
-    if (open && mode === 'create' && existingData && showFunctions && !isFunctionModalOpen) {
+    if (open && mode === 'create' && stableExistingData && showFunctions && !isFunctionModalOpen) {
       openFunctionModal();
     }
-  }, [open, mode, existingData, showFunctions, isFunctionModalOpen, openFunctionModal]);
+  }, [open, mode, stableExistingData, showFunctions, isFunctionModalOpen, openFunctionModal]);
 
   // If we're in vault mode, show the vault editor directly
-  if (mode === 'vault' && existingData && onUpdateVault) {
+  if (mode === 'vault' && stableExistingData && onUpdateVault) {
     return (
       <VaultEditorModal
         open={open}
@@ -353,10 +449,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           await onUpdateVault(vault, version);
           onCancel();
         }}
-        entityType={getEntityType()}
-        title={t('general.configureVault', { name: existingData[`${resourceType}Name`] ?? '' })}
-        initialVault={existingData.vaultContent ?? '{}'}
-        initialVersion={existingData.vaultVersion ?? 1}
+        entityType={entityType}
+        title={t('general.configureVault', {
+          name: (stableExistingData[`${resourceType}Name`] as string | null) ?? '',
+        })}
+        initialVault={stableExistingData.vaultContent ?? '{}'}
+        initialVersion={stableExistingData.vaultVersion ?? 1}
         loading={isUpdatingVault}
       />
     );
@@ -365,10 +463,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // If we're showing functions directly, don't show the main modal
   if (
     mode === 'create' &&
-    existingData &&
+    stableExistingData &&
     showFunctions &&
     functionModal.isOpen &&
-    !existingData.prefilledMachine
+    !stableExistingData.prefilledMachine
   ) {
     return (
       <>
@@ -387,13 +485,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             onCancel();
           }}
           title={getFunctionTitle(resourceType, t)}
-          subtitle={createFunctionSubtitle(resourceType, existingData, t)}
+          subtitle={createFunctionSubtitle(resourceType, stableExistingData, t)}
           allowedCategories={functionCategories}
           loading={isSubmitting}
           showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
-          teamName={existingData.teamName}
+          teamName={stableExistingData.teamName ?? undefined}
           machines={(
-            dropdownData?.machinesByTeam.find((tm) => tm.teamName === existingData.teamName)
+            dropdownData?.machinesByTeam.find((tm) => tm.teamName === stableExistingData.teamName)
               ?.machines ?? []
           ).map((m) => ({ ...m, bridgeName: '' }))}
           hiddenParams={hiddenParams}
@@ -408,7 +506,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     <>
       <SizedModal
         data-testid="resource-modal"
-        title={renderModalTitle(modalHeaderProps)}
+        title={<ModalTitleRenderer {...modalHeaderProps} />}
         open={open}
         onCancel={onCancel}
         destroyOnHidden
@@ -423,7 +521,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             testConnectionSuccess={testConnectionSuccess}
             autoSetupEnabled={autoSetupEnabled}
             setAutoSetupEnabled={setAutoSetupEnabled}
-            existingData={existingData}
+            existingData={stableExistingData}
             showFunctions={showFunctions}
             onCancel={onCancel}
             onUpdateVault={onUpdateVault}
@@ -440,25 +538,32 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         ]}
       >
         <ResourceFormWithVault
+          key={existingDataKey}
           ref={formRef}
           form={form}
           fields={formFields}
           onSubmit={handleSubmit}
-          entityType={getEntityType()}
-          vaultFieldName={getVaultFieldName()}
+          entityType={entityType}
           showDefaultsAlert={false}
           uiMode={uiMode}
-          initialVaultData={parseVaultData(resourceType, existingData)}
+          initialVaultData={initialVaultData}
           hideImportExport
           isEditMode={mode === 'edit'}
-          onImportExportRef={(handlers) => {
-            importExportHandlers.current = handlers;
-          }}
-          teamName={resolveTeamName(getFormValue, existingData, teamFilter)}
+          onImportExportRef={handleImportExportRef}
+          teamName={resolveTeamName(getFormValue, stableExistingData, teamFilter)}
           bridgeName={getBridgeName(getFormValue)}
           onTestConnectionStateChange={setTestConnectionSuccess}
           isModalOpen={open}
-          beforeVaultContent={undefined}
+          beforeVaultContent={
+            <InfrastructurePills
+              resourceType={resourceType}
+              mode={mode}
+              uiMode={uiMode}
+              form={form}
+              dropdownData={dropdownData}
+              getFilteredBridges={getFilteredBridges}
+            />
+          }
           afterVaultContent={
             resourceType === 'repository' &&
             mode === 'create' &&
@@ -500,11 +605,17 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           }
           defaultsContent={
             <Space direction="vertical" size={4}>
-              <Typography.Text>{t('general.team')}: Private Team</Typography.Text>
+              <Typography.Text>
+                {t('general.team')}: {t('defaults.privateTeam')}
+              </Typography.Text>
               {resourceType === 'machine' && (
                 <>
-                  <Typography.Text>{t('machines:region')}: Default Region</Typography.Text>
-                  <Typography.Text>{t('machines:bridge')}: Global Bridges</Typography.Text>
+                  <Typography.Text>
+                    {t('machines:region')}: {t('defaults.defaultRegion')}
+                  </Typography.Text>
+                  <Typography.Text>
+                    {t('machines:bridge')}: {t('defaults.globalBridges')}
+                  </Typography.Text>
                 </>
               )}
             </Space>
@@ -515,14 +626,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       {/* Sub-modals */}
       <ResourceModalDialogs
         // Vault Editor
-        showVaultEditor={!!(existingData && onUpdateVault)}
+        showVaultEditor={!!(stableExistingData && onUpdateVault)}
         vaultModal={vaultModal}
-        entityType={getEntityType()}
+        entityType={entityType}
         vaultTitle={t('general.configureVault', {
-          name: existingData?.[`${resourceType}Name`] ?? '',
+          name: (stableExistingData?.[`${resourceType}Name`] as string | null) ?? '',
         })}
-        initialVault={existingData?.vaultContent ?? '{}'}
-        initialVersion={existingData?.vaultVersion ?? 1}
+        initialVault={stableExistingData?.vaultContent ?? '{}'}
+        initialVersion={stableExistingData?.vaultVersion ?? 1}
         isUpdatingVault={isUpdatingVault}
         onVaultSave={async (vault, version) => {
           if (onUpdateVault) {
@@ -532,16 +643,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         }}
         onVaultCancel={vaultModal.close}
         // Function Selection
-        showFunctionModal={!!(showFunctions && existingData)}
+        showFunctionModal={!!(showFunctions && stableExistingData)}
         functionModal={functionModal}
         functionTitle={getFunctionTitle(resourceType, t)}
-        functionSubtitle={createFunctionSubtitle(resourceType, existingData, t)}
+        functionSubtitle={createFunctionSubtitle(resourceType, stableExistingData, t)}
         functionCategories={functionCategories}
         isSubmitting={isSubmitting}
         showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
-        teamName={existingData?.teamName}
+        teamName={stableExistingData?.teamName ?? undefined}
         machines={(
-          dropdownData?.machinesByTeam.find((tm) => tm.teamName === existingData?.teamName)
+          dropdownData?.machinesByTeam.find((tm) => tm.teamName === stableExistingData?.teamName)
             ?.machines ?? []
         ).map((m) => ({ ...m, bridgeName: '' }))}
         hiddenParams={hiddenParams}

@@ -33,26 +33,9 @@
   "currentPriority": "Güncel",
   "description": "Açıklama (isteğe bağlı)",
   "descriptionPlaceholder": "Bu kuyruk öğesi için özel bir açıklama ekleyin",
+  "destinationFilename": "Hedef Dosya Adı",
   "functions": {
-    "apply_template": {
-      "description": "Bu depoya bir şablon yapılandırması uygulayın",
-      "name": "şablonlar",
-      "params": {
-        "grand": {
-          "help": "Büyük depo GUID'si",
-          "label": "Büyük Depo"
-        },
-        "repository": {
-          "help": "Depo adı",
-          "label": "Depo"
-        },
-        "tmpl": {
-          "help": "Depoya uygulamak için bir şablon seçin",
-          "label": "Şablon"
-        }
-      }
-    },
-    "backup": {
+    "backup_create": {
       "description": "Depoyu birden fazla depolama sistemine yedekleme",
       "name": "yedekleme",
       "params": {
@@ -60,9 +43,31 @@
           "help": "Kontrol noktası ile sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
           "label": "Kontrol Noktasını Etkinleştir"
         },
-        "dest": {
-          "help": "Yedekleme dosyası için ad",
-          "label": "Hedef Dosya Adı"
+        "option": {
+          "help": "Seçenekler (örn. geçersiz kılma)",
+          "label": "Seçenekler"
+        },
+        "storages": {
+          "help": "Yedekleme için bir veya daha fazla hedef depolama sistemi seçin",
+          "label": "Hedef Depolama Sistemleri"
+        }
+      }
+    },
+    "backup_deploy": {
+      "description": "Depoyu birden fazla makineye dağıtma",
+      "name": "konuşlandırmak",
+      "params": {
+        "checkpoint": {
+          "help": "Kontrol noktası ile sıcak dağıtım modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
+          "label": "Kontrol Noktasını Etkinleştir"
+        },
+        "grand": {
+          "help": "Grand depo referansı",
+          "label": "Grand Depo"
+        },
+        "machines": {
+          "help": "Dağıtım için bir veya daha fazla hedef makine seçin",
+          "label": "Hedef Makineler"
         },
         "option": {
           "help": "Seçenekler (örn. geçersiz kılma)",
@@ -73,18 +78,70 @@
           "label": "Depo"
         },
         "state": {
-          "help": "Yedeklemeden önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
+          "help": "Dağıtmadan önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
           "label": "Gerekli Durum"
         },
-        "storages": {
-          "help": "Yedekleme için bir veya daha fazla hedef depolama sistemi seçin",
-          "label": "Hedef Depolama Sistemleri"
+        "tag": {
+          "help": "Dağıtılan depo için etiket (zaman damgası biçimi)",
+          "label": "Etiket"
+        }
+      }
+    },
+    "backup_pull": {
+      "description": "Depoyu uzak depolamadan çekme",
+      "name": "çek",
+      "params": {
+        "from": {
+          "help": "Kaynak makineyi veya depolamayı seçin",
+          "label": "Kaynak"
+        },
+        "repository": {
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
+          "label": "Depo"
+        },
+        "sourceType": {
+          "help": "Bir makineden mi yoksa depodan mı çekileceğini seçin",
+          "label": "Kaynak Türü"
+        }
+      }
+    },
+    "backup_push": {
+      "description": "Depoyu uzak depolamaya gönder",
+      "name": "gönder",
+      "params": {
+        "checkpoint": {
+          "help": "Kontrol noktası ile sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
+          "label": "Kontrol Noktasını Etkinleştir"
+        },
+        "dest": {
+          "help": "Yedekleme dosyası için ad",
+          "label": "Hedef Dosya Adı"
+        },
+        "destinationType": {
+          "help": "Bir makineye mi yoksa depoya mı itileceğini seçin",
+          "label": "Hedef Türü"
+        },
+        "option": {
+          "help": "Seçenekler (örn. geçersiz kılma)",
+          "label": "Seçenekler"
+        },
+        "repository": {
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
+          "label": "Depo"
+        },
+        "state": {
+          "help": "İtmeden önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
+          "label": "Gerekli Durum"
+        },
+        "to": {
+          "help": "Hedef makineyi veya depolama alanını seçin",
+          "label": "Hedef"
         }
       }
     },
     "container_inspect": {
       "description": "Docker kapsayıcı ayrıntılarını inceleme",
-      "name": "container_inspect",
+      "name": "İnceleme",
       "params": {
         "container": {
           "help": "Konteyner adı veya kimliği",
@@ -94,7 +151,7 @@
     },
     "container_logs": {
       "description": "Docker kapsayıcı günlüklerini görüntüleme",
-      "name": "container_logs",
+      "name": "Günlükler",
       "params": {
         "container": {
           "help": "Konteyner adı veya kimliği",
@@ -156,7 +213,7 @@
     },
     "container_stats": {
       "description": "Docker kapsayıcı kaynak kullanım istatistiklerini görüntüleme",
-      "name": "container_stats",
+      "name": "İstatistikler",
       "params": {
         "container": {
           "help": "Konteyner adı veya kimliği (isteğe bağlı - boşsa tümünü gösterir)",
@@ -184,251 +241,31 @@
         }
       }
     },
-    "deploy": {
-      "description": "Depoyu birden fazla makineye dağıtma",
-      "name": "konuşlandırmak",
-      "params": {
-        "checkpoint": {
-          "help": "Kontrol noktası ile sıcak dağıtım modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
-          "label": "Kontrol Noktasını Etkinleştir"
-        },
-        "dest": {
-          "help": "Dağıtım dosyası için ad",
-          "label": "Hedef Dosya Adı"
-        },
-        "machines": {
-          "help": "Dağıtım için bir veya daha fazla hedef makine seçin",
-          "label": "Hedef Makineler"
-        },
-        "option": {
-          "help": "Seçenekler (örn. geçersiz kılma)",
-          "label": "Seçenekler"
-        },
-        "repository": {
-          "help": "Depo ad(lar)ı, virgülle ayrılmış",
-          "label": "Depo"
-        },
-        "state": {
-          "help": "Dağıtmadan önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
-          "label": "Gerekli Durum"
-        }
-      }
-    },
-    "down": {
-      "description": "Depo hizmetlerini durdurma",
-      "name": "aşağı",
-      "params": {
-        "option": {
-          "help": "Ek seçenekler",
-          "label": "Seçenekler"
-        },
-        "repository": {
-          "help": "Depo ad(lar)ı, virgülle ayrılmış",
-          "label": "Depo"
-        }
-      }
-    },
-    "expand": {
-      "description": "Depo depolama alanını sıfır kesinti ile çevrimiçi olarak genişletin",
-      "name": "genişletmek",
-      "params": {
-        "grand": {
-          "help": "Büyük depo GUID",
-          "label": "Büyük Depo"
-        },
-        "repository": {
-          "help": "Depo adı",
-          "label": "Depo"
-        },
-        "size": {
-          "help": "Yeni boyut (örn. 20G) - mevcut boyuttan daha büyük olmalıdır",
-          "label": "Yeni Boyut"
-        }
-      }
-    },
     "fork": {
       "description": "Depoyu zaman damgası tabanlı etiketle çatallama",
-      "name": "çatal"
-    },
-    "hello": {
-      "description": "Hostname'den hello yazdıran basit test fonksiyonu",
-      "name": "Merhaba"
-    },
-    "list": {
-      "description": "Uzak depolama konumlarındaki dosyaları listeleme",
-      "name": "dosyaları listele",
+      "name": "çatal",
       "params": {
-        "format": {
-          "help": "Dosya listesi için format",
-          "label": "Çıktı Formatı"
-        },
-        "from": {
-          "help": "Dosyaları listelemek için makine veya depolama sistemi",
-          "label": "Kaynak Konum"
-        },
-        "path": {
-          "help": "Depolama alanı içinde isteğe bağlı yol",
-          "label": "Yol"
-        }
-      }
-    },
-    "mount": {
-      "description": "Depo dosya sistemlerini bağla",
-      "name": "bağla",
-      "params": {
-        "checkpoint": {
-          "help": "Varsa konteynerleri kontrol noktasından geri yükleme (CRIU gerektirir)",
-          "label": "Kontrol Noktası Geri Yüklemeyi Etkinleştir"
-        },
-        "from": {
-          "help": "Bağlanılacak uzak makine",
-          "label": "Makineden"
+        "grand": {
+          "help": "Grand depo referansı",
+          "label": "Grand Depo"
         },
         "repository": {
-          "help": "Depo ad(lar)ı, virgülle ayrılmış",
-          "label": "Depo"
-        }
-      }
-    },
-    "new": {
-      "description": "Yeni bir depo oluşturun",
-      "name": "yeni",
-      "params": {
-        "repository": {
-          "help": "Depo adı",
-          "label": "Depo"
-        },
-        "size": {
-          "help": "Depo boyutu (örn. 10G)",
-          "label": "Boyut"
-        }
-      }
-    },
-    "ownership": {
-      "description": "Depo sahipliğini değiştirme",
-      "name": "sahiplik",
-      "params": {
-        "from": {
-          "help": "Şu anki sahibi",
-          "label": "Mevcut Sahibi"
-        },
-        "repository": {
-          "help": "Depo adı",
-          "label": "Depo"
-        },
-        "to": {
-          "help": "Yeni sahip (varsayılan: evrensel kullanıcı)",
-          "label": "Yeni Sahibi"
-        }
-      }
-    },
-    "ping": {
-      "description": "Makineye ağ bağlantısını test edin",
-      "name": "ping"
-    },
-    "plugin": {
-      "description": "Depo eklentilerini etkinleştirin",
-      "name": "eklenti",
-      "params": {
-        "plugin": {
-          "help": "Eklenti ad(lar)ı, virgülle ayrılmış",
-          "label": "Eklenti"
-        },
-        "repository": {
-          "help": "Depo ad(lar)ı, virgülle ayrılmış",
-          "label": "Depo"
-        }
-      }
-    },
-    "plugout": {
-      "description": "Depo eklentilerini devre dışı bırakma",
-      "name": "plugout",
-      "params": {
-        "plugin": {
-          "help": "Eklenti ad(lar)ı, virgülle ayrılmış",
-          "label": "Eklenti"
-        },
-        "repository": {
-          "help": "Depo ad(lar)ı, virgülle ayrılmış",
-          "label": "Depo"
-        }
-      }
-    },
-    "pull": {
-      "description": "Depoyu uzak depolamadan çekme",
-      "name": "çek",
-      "params": {
-        "from": {
-          "help": "Kaynak makineyi veya depolamayı seçin",
-          "label": "Kaynak"
-        },
-        "repository": {
-          "help": "Depo ad(lar)ı, virgülle ayrılmış",
-          "label": "Depo"
-        },
-        "sourceType": {
-          "help": "Bir makineden mi yoksa depodan mı çekileceğini seçin",
-          "label": "Kaynak Türü"
-        }
-      }
-    },
-    "push": {
-      "description": "Depoyu uzak depolamaya gönder",
-      "name": "gönder",
-      "params": {
-        "checkpoint": {
-          "help": "Kontrol noktası ile sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
-          "label": "Kontrol Noktasını Etkinleştir"
-        },
-        "dest": {
-          "help": "Yedekleme dosyası için ad",
-          "label": "Hedef Dosya Adı"
-        },
-        "destinationType": {
-          "help": "Bir makineye mi yoksa depoya mı itileceğini seçin",
-          "label": "Hedef Türü"
-        },
-        "option": {
-          "help": "Seçenekler (örn. geçersiz kılma)",
-          "label": "Seçenekler"
-        },
-        "repository": {
-          "help": "Depo ad(lar)ı, virgülle ayrılmış",
+          "help": "Çatala alınacak depo",
           "label": "Depo"
         },
         "state": {
-          "help": "İtmeden önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
-          "label": "Gerekli Durum"
+          "help": "Deponun mevcut durumu",
+          "label": "Durum"
         },
-        "to": {
-          "help": "Hedef makineyi veya depolama alanını seçin",
-          "label": "Hedef"
+        "tag": {
+          "help": "Çatallanmış depo için etiket (zaman damgası biçimi)",
+          "label": "Etiket"
         }
       }
     },
-    "resize": {
-      "description": "Depo depolama alanını yeniden boyutlandırma (çevrimdışı işlem - deponun bağlantısı kaldırılmalıdır)",
-      "name": "yeniden boyutlandır",
-      "params": {
-        "repository": {
-          "help": "Depo adı",
-          "label": "Depo"
-        },
-        "size": {
-          "help": "Yeni boyut (örn. 20G) - mevcut boyuttan daha büyük veya daha küçük olabilir",
-          "label": "Yeni Boyut"
-        }
-      }
-    },
-    "rm": {
-      "description": "Depoyu sil",
-      "name": "rm",
-      "params": {
-        "repository": {
-          "help": "Depo adı",
-          "label": "Depo"
-        }
-      }
+    "machine_ping": {
+      "description": "Makineye ağ bağlantısını test edin",
+      "name": "Ping"
     },
     "setup": {
       "description": "İşletim sistemini gerekli araçlar ve konfigürasyonlarla kurma",
@@ -464,11 +301,188 @@
         }
       }
     },
-    "uninstall": {
+    "machine_uninstall": {
       "description": "Sistem bileşenlerini temizleme ve kaldırma",
       "name": "Kaldır"
     },
-    "unmount": {
+    "machine_version": {
+      "description": "Hostname'den hello yazdıran basit test fonksiyonu",
+      "name": "Merhaba"
+    },
+    "plugin": {
+      "description": "Depo eklentilerini etkinleştirin",
+      "name": "eklenti",
+      "params": {
+        "plugin": {
+          "help": "Eklenti ad(lar)ı, virgülle ayrılmış",
+          "label": "Eklenti"
+        },
+        "repository": {
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
+          "label": "Depo"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Depo eklentilerini devre dışı bırakma",
+      "name": "Çıkar",
+      "params": {
+        "plugin": {
+          "help": "Eklenti ad(lar)ı, virgülle ayrılmış",
+          "label": "Eklenti"
+        },
+        "repository": {
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
+          "label": "Depo"
+        }
+      }
+    },
+    "pull": {
+      "name": "Çek"
+    },
+    "repository_create": {
+      "description": "Yeni bir depo oluşturun",
+      "name": "yeni",
+      "params": {
+        "repository": {
+          "help": "Depo adı",
+          "label": "Depo"
+        },
+        "size": {
+          "help": "Depo boyutu (örn. 10G)",
+          "label": "Boyut"
+        }
+      }
+    },
+    "repository_delete": {
+      "description": "Depoyu sil",
+      "name": "rm",
+      "params": {
+        "repository": {
+          "help": "Depo adı",
+          "label": "Depo"
+        }
+      }
+    },
+    "repository_down": {
+      "description": "Depo hizmetlerini durdurma",
+      "name": "aşağı",
+      "params": {
+        "option": {
+          "help": "Ek seçenekler",
+          "label": "Seçenekler"
+        },
+        "repository": {
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
+          "label": "Depo"
+        }
+      }
+    },
+    "repository_expand": {
+      "description": "Depo depolama alanını sıfır kesinti ile çevrimiçi olarak genişletin",
+      "name": "genişletmek",
+      "params": {
+        "grand": {
+          "help": "Büyük depo GUID",
+          "label": "Büyük Depo"
+        },
+        "repository": {
+          "help": "Depo adı",
+          "label": "Depo"
+        },
+        "size": {
+          "help": "Yeni boyut (örn. 20G) - mevcut boyuttan daha büyük olmalıdır",
+          "label": "Yeni Boyut"
+        }
+      }
+    },
+    "repository_list": {
+      "description": "Uzak depolama konumlarındaki dosyaları listeleme",
+      "name": "dosyaları listele",
+      "params": {
+        "format": {
+          "help": "Dosya listesi için format",
+          "label": "Çıktı Formatı"
+        },
+        "from": {
+          "help": "Dosyaları listelemek için makine veya depolama sistemi",
+          "label": "Kaynak Konum"
+        },
+        "path": {
+          "help": "Depolama alanı içinde isteğe bağlı yol",
+          "label": "Yol"
+        }
+      }
+    },
+    "repository_mount": {
+      "description": "Depo dosya sistemlerini bağla",
+      "name": "bağla",
+      "params": {
+        "checkpoint": {
+          "help": "Varsa konteynerleri kontrol noktasından geri yükleme (CRIU gerektirir)",
+          "label": "Kontrol Noktası Geri Yüklemeyi Etkinleştir"
+        },
+        "from": {
+          "help": "Bağlanılacak uzak makine",
+          "label": "Makineden"
+        },
+        "repository": {
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
+          "label": "Depo"
+        }
+      }
+    },
+    "repository_ownership": {
+      "description": "Depo sahipliğini değiştirme",
+      "name": "sahiplik",
+      "params": {
+        "from": {
+          "help": "Şu anki sahibi",
+          "label": "Mevcut Sahibi"
+        },
+        "repository": {
+          "help": "Depo adı",
+          "label": "Depo"
+        },
+        "to": {
+          "help": "Yeni sahip (varsayılan: evrensel kullanıcı)",
+          "label": "Yeni Sahibi"
+        }
+      }
+    },
+    "repository_resize": {
+      "description": "Depo depolama alanını yeniden boyutlandırma (çevrimdışı işlem - deponun bağlantısı kaldırılmalıdır)",
+      "name": "yeniden boyutlandır",
+      "params": {
+        "repository": {
+          "help": "Depo adı",
+          "label": "Depo"
+        },
+        "size": {
+          "help": "Yeni boyut (örn. 20G) - mevcut boyuttan daha büyük veya daha küçük olabilir",
+          "label": "Yeni Boyut"
+        }
+      }
+    },
+    "repository_template_apply": {
+      "description": "Bu depoya bir şablon yapılandırması uygulayın",
+      "name": "şablonlar",
+      "params": {
+        "grand": {
+          "help": "Büyük depo GUID'si",
+          "label": "Büyük Depo"
+        },
+        "repository": {
+          "help": "Depo adı",
+          "label": "Depo"
+        },
+        "tmpl": {
+          "help": "Depoya uygulamak için bir şablon seçin",
+          "label": "Şablon"
+        }
+      }
+    },
+    "repository_unmount": {
       "description": "Depo dosya sistemlerinin bağlantısını kaldır",
       "name": "bağlantıyı kaldır",
       "params": {
@@ -486,7 +500,7 @@
         }
       }
     },
-    "up": {
+    "repository_up": {
       "description": "Rediaccfile kullanarak depo hizmetlerini başlatma",
       "name": "yukarı",
       "params": {
@@ -500,7 +514,7 @@
         }
       }
     },
-    "validate": {
+    "repository_validate": {
       "description": "Hazırlık, yukarı, sağlık kontrolleri, test ve aşağı işlemlerini çalıştırarak depoyu doğrulayın",
       "name": "doğrulamak",
       "params": {
@@ -531,27 +545,30 @@
       }
     }
   },
+  "imagePlaceholder": "örn., registry/image:tag",
   "missingRequiredParams": "Lütfen gerekli tüm parametreleri doldurun: {{params}}",
   "onlinePushLearnMore": "Çevrimiçi ve çevrimdışı itmeler hakkında daha fazla bilgi edinin →",
   "onlinePushWarningMessage": "Hizmetler çalışırken bağlı bir depoyu itmek veri tutarsızlıklarına neden olabilir.",
   "onlinePushWarningTitle": "Çevrimiçi Push Uyarısı",
+  "original": " (Orijinal)",
   "priority": "Öncelik",
   "priorityAboveNormal": "Normalin Üzerinde",
-  "priorityBelowNormal": "Normal",
+  "priorityBelowNormal": "Normalin Altında",
   "priorityHelp": "Görevler önce önceliğe göre, sonra yaşa göre işlenir",
   "priorityHigh": "Yüksek",
   "priorityHighDescription": "Birden fazla eş zamanlı yüksek öncelikli göreve izin verir. Daha hızlı işlem gerektiren önemli görevler için kullanın.",
-  "priorityHighWarning": "Yüksek Öncelikli (2)",
   "priorityHighest": "En yüksek",
   "priorityHighestDescription": "En yüksek öncelikli bir görev göndermek, sahip olduğunuz mevcut en yüksek öncelikli görevleri otomatik olarak iptal edecektir. Yalnızca hemen ilgilenilmesi gereken acil kritik görevler için kullanın.",
   "priorityHighestTimeout": "P1 görevleri 33 saniye sonra zaman aşımına uğrar",
   "priorityHighestTimeoutWarning": "SSH testleri, sağlık kontrolleri ve durum sorguları gibi hızlı işlemler için en iyisidir. Daha uzun kritik görevler için P2 kullanın (katman tabanlı zaman aşımı: 2-96 saat).",
   "priorityHighestWarning": "En Yüksek Öncelik (1)",
+  "priorityHighWarning": "Yüksek Öncelikli (2)",
+  "priorityLevelFormat": "P{{level}} ({{label}})",
   "priorityLow": "Düşük",
   "priorityLowDescription": "Standart işlem hızı. Çoğu işlem ve günlük görevler için önerilir.",
-  "priorityLowWarning": "Normal Öncelik (4)",
   "priorityLowestDescription": "En yavaş işlem hızı. Toplu işlemler veya zaman kısıtlaması olmayan görevler için kullanın.",
   "priorityLowestWarning": "En Düşük Öncelik (5)",
+  "priorityLowWarning": "Normal Öncelik (4)",
   "priorityNormal": "Normalin Üzerinde",
   "priorityNormalDescription": "Standart işlem hızından daha yüksek. Normalden daha hızlı işlem gerektiren görevler için kullanın.",
   "priorityNormalWarning": "Normalin Üzerinde Öncelik (3)",
@@ -562,10 +579,15 @@
   "priorityPopoverP4": "Kademe zaman aşımı (2-96 saat). Çoğu işlem için standart işlem.",
   "priorityPopoverP5": "Kademe zaman aşımı (2-96h). Zaman kısıtlaması olmayan toplu işlemler için.",
   "priorityPopoverTitle": "Öncelik Sistemi",
+  "pushOperationDetails": "İtme İşlemi Ayrıntıları",
   "quickTaskBadge": "Hızlı Görev",
   "quickTaskDescription": "30 saniyenin altında tamamlanır",
+  "repositoryLineage": "Depo Soyu",
+  "repositoryWillBePushedOffline": "Depo çevrimdışı durumda itilecektir",
+  "repositoryWillBePushedOnline": "Depo çevrimiçi durumda itilecektir",
   "searchFunctions": "Arama fonksiyonları...",
   "selectFunction": "Fonksiyon Seçiniz",
   "selectFunctionToConfigure": "Yapılandırmak için bir işlev seçin",
+  "sourceRepository": "Kaynak Depo",
   "validationError": "Doğrulama Hatası"
 }

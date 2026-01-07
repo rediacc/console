@@ -23,12 +23,12 @@ import {
   InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import { BlockDevicesSection } from './sections/BlockDevicesSection';
 import { NetworkSection } from './sections/NetworkSection';
 import { SystemContainersSection } from './sections/SystemContainersSection';
 import type { SystemInfo, VaultData } from './types';
-import type { TFunction } from 'i18next';
 
 interface MachineVaultStatusPanelProps {
   machine: Machine | null;
@@ -127,64 +127,66 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
 interface SystemInfoSectionProps {
   system: SystemInfo;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
-const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => (
-  <Flex vertical>
-    <DetailPanelSectionHeader>
-      <DesktopOutlined />
-      <DetailPanelSectionTitle level={5} data-testid="vault-status-system-info-title">
-        {t('resources:repositories.systemInfo')}
-      </DetailPanelSectionTitle>
-    </DetailPanelSectionHeader>
+const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => {
+  return (
+    <Flex vertical>
+      <DetailPanelSectionHeader>
+        <DesktopOutlined />
+        <DetailPanelSectionTitle level={5} data-testid="vault-status-system-info-title">
+          {t('resources:repositories.systemInfo')}
+        </DetailPanelSectionTitle>
+      </DetailPanelSectionHeader>
 
-    <Card size="small" data-testid="vault-status-system-info-card">
-      <Flex vertical gap={8} className="w-full">
-        <DetailPanelFieldRow>
-          <DetailPanelFieldLabel>{t('resources:repositories.hostname')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-hostname">
-            {system.hostname}
-          </DetailPanelFieldValue>
-        </DetailPanelFieldRow>
-        <DetailPanelFieldRow>
-          <DetailPanelFieldLabel>{t('resources:repositories.uptime')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-uptime">
-            {system.uptime}
-          </DetailPanelFieldValue>
-        </DetailPanelFieldRow>
-        <DetailPanelFieldRow>
-          <DetailPanelFieldLabel>{t('resources:repositories.osName')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-os-name">
-            {system.os_name}
-          </DetailPanelFieldValue>
-        </DetailPanelFieldRow>
-        <DetailPanelFieldRow>
-          <DetailPanelFieldLabel>{t('resources:repositories.kernel')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-kernel">
-            {system.kernel}
-          </DetailPanelFieldValue>
-        </DetailPanelFieldRow>
-        <DetailPanelFieldRow>
-          <DetailPanelFieldLabel>{t('resources:repositories.cpu')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-cpu">
-            {system.cpu_count} × {system.cpu_model}
-          </DetailPanelFieldValue>
-        </DetailPanelFieldRow>
-        <DetailPanelFieldRow>
-          <DetailPanelFieldLabel>{t('resources:repositories.systemTime')}:</DetailPanelFieldLabel>
-          <DetailPanelFieldValue data-testid="vault-status-system-time">
-            {system.system_time_human} ({system.timezone})
-          </DetailPanelFieldValue>
-        </DetailPanelFieldRow>
-      </Flex>
-    </Card>
-  </Flex>
-);
+      <Card size="small" data-testid="vault-status-system-info-card">
+        <Flex vertical className="w-full gap-sm">
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.hostname')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldValue data-testid="vault-status-hostname">
+              {system.hostname}
+            </DetailPanelFieldValue>
+          </DetailPanelFieldRow>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.uptime')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldValue data-testid="vault-status-uptime">
+              {system.uptime}
+            </DetailPanelFieldValue>
+          </DetailPanelFieldRow>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.osName')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldValue data-testid="vault-status-os-name">
+              {system.os_name}
+            </DetailPanelFieldValue>
+          </DetailPanelFieldRow>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.kernel')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldValue data-testid="vault-status-kernel">
+              {system.kernel}
+            </DetailPanelFieldValue>
+          </DetailPanelFieldRow>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.cpu')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldValue data-testid="vault-status-cpu">
+              {system.cpu_count} × {system.cpu_model}
+            </DetailPanelFieldValue>
+          </DetailPanelFieldRow>
+          <DetailPanelFieldRow>
+            <DetailPanelFieldLabel>{t('resources:repositories.systemTime')}:</DetailPanelFieldLabel>
+            <DetailPanelFieldValue data-testid="vault-status-system-time">
+              {system.system_time_human} ({system.timezone})
+            </DetailPanelFieldValue>
+          </DetailPanelFieldRow>
+        </Flex>
+      </Card>
+    </Flex>
+  );
+};
 
 interface ResourceUsageSectionProps {
   system: SystemInfo;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }) => {

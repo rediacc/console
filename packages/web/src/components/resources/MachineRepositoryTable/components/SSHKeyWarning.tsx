@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'antd';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface Team {
   teamName: string;
@@ -10,7 +10,7 @@ interface Team {
 interface SSHKeyWarningProps {
   teamName: string;
   teams?: Team[];
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const SSHKeyWarning: React.FC<SSHKeyWarningProps> = ({ teamName, teams, t }) => {
@@ -30,7 +30,6 @@ export const SSHKeyWarning: React.FC<SSHKeyWarningProps> = ({ teamName, teams, t
   return (
     <Alert
       type="warning"
-      showIcon
       closable
       message={t('common:vaultEditor.missingSshKeysWarning')}
       description={t('common:vaultEditor.missingSshKeysDescription')}

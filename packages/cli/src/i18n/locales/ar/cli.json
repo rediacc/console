@@ -1,0 +1,1001 @@
+{
+  "cli": {
+    "description": "واجهة سطر الأوامر الخاصة بـ Rediacc - واجهة سطر الأوامر لعمليات Rediacc"
+  },
+  "commands": {
+    "auth": {
+      "description": "أوامر المصادقة",
+      "login": {
+        "authenticating": "جاري المصادقة...",
+        "description": "المصادقة باستخدام Rediacc",
+        "shortcut": "المصادقة باستخدام Rediacc (اختصار لـ: auth login)",
+        "success": "تم تسجيل الدخول بنجاح! تم الحفظ إلى السياق \"{{context}}\"",
+        "tfaPrompt": "أدخل رمز المصادقة الثنائية:",
+        "tfaRequired": "المصادقة الثنائية مطلوبة",
+        "tfaVerified": "تم التحقق من المصادقة الثنائية بنجاح",
+        "verifyingTfa": "جاري التحقق من المصادقة الثنائية..."
+      },
+      "logout": {
+        "description": "مسح بيانات المصادقة المحفوظة",
+        "loggingOut": "جاري تسجيل الخروج...",
+        "shortcut": "مسح بيانات المصادقة المحفوظة (اختصار لـ: auth logout)",
+        "success": "تم تسجيل الخروج بنجاح"
+      },
+      "status": {
+        "description": "التحقق من حالة المصادقة الحالية",
+        "authenticated": "تم المصادقة باسم: {{email}}",
+        "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc login"
+      },
+      "register": {
+        "description": "تسجيل مؤسسة جديدة وحساب مستخدم",
+        "nextStep": "ثم قم بتشغيل: rdc auth activate -e <email> -p <password> --code <code>",
+        "registering": "جاري تسجيل الحساب...",
+        "submitted": "تم إرسال التسجيل",
+        "success": "تم التسجيل بنجاح! تحقق من بريدك الإلكتروني للحصول على رمز التفعيل."
+      },
+      "activate": {
+        "activated": "تم تفعيل الحساب",
+        "activating": "جاري تفعيل الحساب...",
+        "description": "تفعيل الحساب برمز التحقق",
+        "success": "تم تفعيل الحساب! يمكنك الآن تسجيل الدخول باستخدام: rdc login"
+      },
+      "tfa": {
+        "description": "إدارة المصادقة الثنائية",
+        "disable": {
+          "confirm": "هل تريد بالتأكيد تعطيل المصادقة الثنائية؟",
+          "description": "تعطيل المصادقة الثنائية",
+          "disabling": "جاري تعطيل المصادقة الثنائية...",
+          "success": "تم تعطيل المصادقة الثنائية بنجاح"
+        },
+        "enable": {
+          "addToApp": "أضف هذا إلى تطبيق المصادقة الخاص بك",
+          "description": "تفعيل المصادقة الثنائية",
+          "enabling": "جاري تفعيل المصادقة الثنائية...",
+          "initiated": "تم بدء إعداد المصادقة الثنائية",
+          "setupKey": "مفتاح الإعداد: {{key}}",
+          "success": "تم تفعيل المصادقة الثنائية بنجاح"
+        },
+        "status": {
+          "description": "التحقق من حالة المصادقة الثنائية",
+          "disabled": "المصادقة الثنائية غير مفعلة",
+          "enabled": "المصادقة الثنائية مفعلة"
+        }
+      },
+      "token": {
+        "description": "إدارة الرموز",
+        "fork": {
+          "creating": "جاري إنشاء رمز منفصل...",
+          "description": "إنشاء رمز منفصل لتطبيق آخر",
+          "success": "تم إنشاء الرمز بنجاح",
+          "tokenValue": "الرمز: {{token}}"
+        },
+        "list": {
+          "description": "قائمة الرموز النشطة/الجلسات",
+          "fetching": "جاري جلب الرموز...",
+          "noTokens": "لا توجد رموز نشطة"
+        },
+        "revoke": {
+          "description": "إلغاء رمز معين",
+          "revoking": "جاري إلغاء الرمز...",
+          "success": "تم إلغاء الرمز بنجاح"
+        }
+      }
+    },
+    "audit": {
+      "description": "أوامر سجل التدقيق",
+      "list": {
+        "description": "قائمة إدخالات سجل التدقيق",
+        "fetching": "جاري جلب سجلات التدقيق..."
+      },
+      "log": {
+        "description": "عرض سجلات التدقيق",
+        "fetching": "جاري جلب سجلات التدقيق...",
+        "success": "تم جلب سجلات التدقيق"
+      },
+      "trace": {
+        "description": "تتبع سجل التدقيق لكيان",
+        "fetching": "جاري جلب آثار التدقيق للكيان...",
+        "success": "تم جلب آثار التدقيق"
+      },
+      "history": {
+        "description": "عرض سجل الكيان",
+        "fetching": "جاري جلب سجل الكيان...",
+        "success": "تم جلب السجل"
+      }
+    },
+    "bridge": {
+      "description": "إدارة الجسور",
+      "list": {
+        "description": "قائمة الجسور",
+        "fetching": "جاري جلب الجسور..."
+      },
+      "resetAuth": {
+        "description": "إعادة تعيين رمز تفويض الجسر",
+        "newToken": "الرمز الجديد: {{token}}",
+        "resetting": "جاري إعادة تعيين التفويض للجسر \"{{name}}\"...",
+        "success": "تم إعادة تعيين التفويض"
+      }
+    },
+    "context": {
+      "description": "إدارة السياقات في سطر الأوامر",
+      "list": {
+        "description": "قائمة جميع السياقات",
+        "noContexts": "لا توجد سياقات مكونة"
+      },
+      "show": {
+        "description": "عرض تفاصيل السياق الحالي",
+        "noContext": "لا يوجد سياق نشط"
+      },
+      "use": {
+        "description": "الانتقال إلى سياق مختلف",
+        "switched": "تم الانتقال إلى السياق \"{{name}}\""
+      },
+      "create": {
+        "description": "إنشاء سياق جديد",
+        "success": "تم إنشاء السياق \"{{name}}\""
+      },
+      "delete": {
+        "description": "حذف سياق",
+        "success": "تم حذف السياق \"{{name}}\"",
+        "confirm": "هل تريد بالتأكيد حذف السياق \"{{name}}\"؟"
+      },
+      "rename": {
+        "description": "إعادة تسمية سياق",
+        "success": "تمت إعادة تسمية السياق من \"{{oldName}}\" إلى \"{{newName}}\""
+      },
+      "current": {
+        "description": "عرض اسم السياق الحالي",
+        "noContext": "لا يوجد سياق نشط"
+      },
+      "set": {
+        "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر، آلة)",
+        "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
+      },
+      "unset": {
+        "description": "إزالة قيمة افتراضية للسياق",
+        "success": "تمت إزالة {{key}} من السياق الحالي"
+      },
+      "clear": {
+        "description": "مسح الإعدادات الافتراضية (الكل أو مفتاح محدد)",
+        "keyCleared": "تم مسح \"{{key}}\"",
+        "allCleared": "تم مسح جميع الإعدادات الافتراضية"
+      },
+      "setLanguage": {
+        "description": "تعيين اللغة المفضلة",
+        "success": "تم تعيين اللغة إلى \"{{code}}\"",
+        "unsupported": "لغة غير مدعومة. اللغات المدعومة: {{languages}}"
+      },
+      "createLocal": {
+        "description": "إنشاء سياق محلي جديد للعمل بدون middleware",
+        "success": "تم إنشاء السياق المحلي \"{{name}}\"",
+        "nextStep": "أضف الآلات باستخدام: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "addMachine": {
+        "description": "إضافة آلة إلى السياق المحلي الحالي",
+        "success": "تمت إضافة الآلة \"{{name}}\" ({{user}}@{{ip}})"
+      },
+      "removeMachine": {
+        "description": "إزالة آلة من السياق المحلي الحالي",
+        "success": "تمت إزالة الآلة \"{{name}}\""
+      },
+      "machines": {
+        "description": "قائمة الآلات في السياق المحلي الحالي",
+        "noMachines": "لا توجد آلات مكونة. أضف واحدة باستخدام: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "setSsh": {
+        "description": "تحديث إعدادات SSH للسياق المحلي الحالي",
+        "success": "تم تحديث إعدادات SSH"
+      },
+      "setRenet": {
+        "description": "تعيين المسار إلى ثنائي renet للوضع المحلي",
+        "success": "تم تعيين مسار Renet إلى: {{path}}"
+      }
+    },
+    "machine": {
+      "description": "إدارة الآلات",
+      "list": {
+        "description": "قائمة الآلات",
+        "fetching": "جاري جلب الآلات..."
+      },
+      "create": {
+        "description": "إنشاء آلة جديدة",
+        "creating": "جاري إنشاء الآلة...",
+        "success": "تم إنشاء الآلة \"{{name}}\""
+      },
+      "delete": {
+        "description": "حذف آلة",
+        "deleting": "جاري حذف الآلة...",
+        "success": "تم حذف الآلة \"{{name}}\"",
+        "confirm": "هل تريد بالتأكيد حذف الآلة \"{{name}}\"؟"
+      },
+      "update": {
+        "description": "تحديث إعدادات الآلة",
+        "updating": "جاري تحديث الآلة...",
+        "success": "تم تحديث الآلة \"{{name}}\""
+      },
+      "health": {
+        "description": "فحص صحة الآلة لأنابيب CI/CD",
+        "fetching": "جاري جلب صحة الآلة...",
+        "fetched": "تم جلب بيانات الصحة",
+        "header": "\nفحص الصحة لـ {{name}}:",
+        "statusHealthy": "✓ الحالة: سليم",
+        "statusWarning": "⚠ الحالة: تحذير",
+        "statusError": "✗ الحالة: خطأ",
+        "statusCritical": "✗ الحالة: حرج",
+        "noData": "لا توجد بيانات حالة متاحة للآلة",
+        "systemSection": "\nالنظام:",
+        "systemUptime": "  وقت التشغيل: {{uptime}}",
+        "systemMemory": "  الذاكرة: {{percent}}",
+        "systemDisk": "  القرص: {{percent}}",
+        "systemDatastore": "  مخزن البيانات: {{percent}}",
+        "containersSection": "\nالحاويات:",
+        "containersSummary": "  {{running}}/{{total}} قيد التشغيل ({{healthy}} سليم، {{unhealthy}} غير سليم)",
+        "servicesSection": "\nالخدمات:",
+        "servicesSummary": "  {{active}}/{{total}} نشط ({{failed}} فشل)",
+        "storageSection": "\nالتخزين:",
+        "storageSmart": "  SMART: {{healthy}} سليم، {{failing}} فاشل",
+        "storageTemp": "  درجة الحرارة القصوى: {{temp}}°C",
+        "repositoriesSection": "\nالمستودعات:",
+        "repositoriesSummary": "  {{mounted}}/{{total}} مثبتة ({{docker}} مع Docker)",
+        "issuesSection": "\nالمشاكل:",
+        "exitCode": "\nرمز الخروج: {{code}}"
+      },
+      "containers": {
+        "description": "قائمة حاويات Docker على آلة",
+        "fetching": "جاري جلب الحاويات...",
+        "fetched": "تم جلب الحاويات",
+        "noContainers": "لا توجد حاويات على هذه الآلة",
+        "healthCheck": "وضع فحص الصحة - الخروج برمز 2 إذا وُجدت حاويات غير سليمة",
+        "allHealthy": "جميع الحاويات سليمة",
+        "unhealthyFound": "تم العثور على {{count}} حاوية غير سليمة"
+      },
+      "services": {
+        "description": "قائمة خدمات systemd على آلة",
+        "fetching": "جاري جلب الخدمات...",
+        "fetched": "تم جلب الخدمات",
+        "noServices": "لا توجد خدمات rediacc على هذه الآلة",
+        "stabilityCheck": "وضع فحص الاستقرار - الخروج برمز 2 إذا وُجدت خدمات فاشلة/تعيد التشغيل",
+        "allStable": "جميع الخدمات مستقرة",
+        "unstableFound": "تم العثور على {{count}} خدمة غير مستقرة"
+      },
+      "vaultStatus": {
+        "description": "عرض حالة الخزينة المحللة لآلة",
+        "fetching": "جاري جلب الآلة...",
+        "fetched": "تم جلب الآلة",
+        "header": "\nحالة الخزينة لـ {{name}}:",
+        "status": "  الحالة: {{status}}",
+        "systemSection": "\nالنظام:",
+        "systemUptime": "  وقت التشغيل: {{uptime}}",
+        "systemHostname": "  اسم المضيف: {{hostname}}",
+        "systemMemory": "  الذاكرة: {{used}} / {{total}} ({{percent}})",
+        "systemDisk": "  القرص: {{used}} / {{total}} ({{percent}})",
+        "systemDatastore": "  مخزن البيانات: {{used}} / {{total}} ({{percent}})",
+        "totalRepos": "  إجمالي المستودعات: {{count}}",
+        "mounted": "  مثبتة: {{count}}",
+        "dockerRunning": "  Docker قيد التشغيل: {{count}}",
+        "deployedRepos": "\nالمستودعات المنتشرة:",
+        "repoMounted": "    مثبتة: {{mounted}}",
+        "repoDocker": "    Docker: {{status}}"
+      },
+      "repos": {
+        "description": "قائمة المستودعات المنتشرة على آلة",
+        "fetching": "جاري جلب الآلة...",
+        "fetched": "تم جلب الآلة",
+        "noRepos": "لا توجد مستودعات منتشرة على هذه الآلة"
+      },
+      "testConnection": {
+        "description": "اختبار اتصال SSH بآلة والتقاط مفتاح المضيف",
+        "testing": "جاري اختبار اتصال SSH إلى {{user}}@{{ip}}:{{port}}...",
+        "creating": "جاري إنشاء مهمة اختبار SSH...",
+        "created": "تم إنشاء المهمة",
+        "taskId": "معرف المهمة: {{taskId}}",
+        "waiting": "جاري الانتظار لنتيجة اختبار SSH...",
+        "waitingTime": "جاري الانتظار لنتيجة اختبار SSH... ({{seconds}}ث)",
+        "testResult": "اختبار SSH {{result}}",
+        "rawOutput": "المخرجات الأولية:",
+        "error": "خطأ: {{error}}",
+        "timeout": "انتهاء المهلة الزمنية أثناء الانتظار للنتيجة",
+        "timeoutMessage": "انتهت مهلة الاختبار. تحقق من تتبع الطابور للمزيد من التفاصيل.",
+        "results": "نتائج اختبار SSH:",
+        "statusResult": "  الحالة: {{status}}",
+        "authMethod": "  طريقة المصادقة: {{method}}",
+        "sshKeyConfigured": "  مفتاح SSH مكون: {{status}}",
+        "publicKeyDeployed": "  المفتاح العام منتشر: {{status}}",
+        "knownHosts": "  إدخال المضيف: {{entry}}",
+        "message": "  الرسالة: {{message}}",
+        "saving": "جاري حفظ known_hosts في خزينة الآلة \"{{machine}}\"...",
+        "saved": "تم حفظ إدخال المضيف في خزينة الآلة"
+      }
+    },
+    "organization": {
+      "description": "أوامر إدارة المؤسسة",
+      "list": {
+        "description": "قائمة المؤسسات",
+        "fetching": "جاري جلب المؤسسات..."
+      },
+      "info": {
+        "description": "الحصول على معلومات المؤسسة",
+        "fetching": "جاري جلب معلومات المؤسسة...",
+        "notFound": "لم يتم العثور على معلومات المؤسسة",
+        "success": "تم جلب معلومات المؤسسة"
+      },
+      "dashboard": {
+        "description": "الحصول على بيانات لوحة معلومات المؤسسة",
+        "fetching": "جاري جلب لوحة المعلومات...",
+        "success": "تم جلب لوحة المعلومات"
+      },
+      "vault": {
+        "description": "إدارة خزينة المؤسسة",
+        "get": {
+          "description": "الحصول على بيانات خزينة المؤسسة",
+          "fetching": "جاري جلب خزينة المؤسسة...",
+          "notFound": "لم يتم العثور على خزينة المؤسسة",
+          "success": "تم جلب الخزينة"
+        },
+        "list": {
+          "description": "قائمة جميع أنواع الخزائن",
+          "fetching": "جاري جلب الخزائن...",
+          "success": "تم جلب الخزائن"
+        },
+        "update": {
+          "description": "تحديث بيانات خزينة المؤسسة",
+          "success": "تم تحديث خزينة المؤسسة",
+          "updating": "جاري تحديث خزينة المؤسسة..."
+        }
+      },
+      "export": {
+        "description": "تصدير بيانات المؤسسة",
+        "exported": "تم التصدير إلى {{path}}",
+        "exporting": "جاري تصدير بيانات المؤسسة...",
+        "success": "تم إكمال التصدير"
+      },
+      "import": {
+        "description": "استيراد بيانات المؤسسة",
+        "importing": "جاري استيراد بيانات المؤسسة...",
+        "success": "تم إكمال الاستيراد"
+      },
+      "maintenance": {
+        "description": "تفعيل أو تعطيل وضع الصيانة (يحجب تسجيلات الدخول للمستخدمين العاديين)",
+        "disabled": "تم تعطيل وضع الصيانة",
+        "disabling": "جاري تعطيل وضع الصيانة...",
+        "enabled": "تم تفعيل وضع الصيانة",
+        "enabling": "جاري تفعيل وضع الصيانة..."
+      }
+    },
+    "protocol": {
+      "description": "إدارة تسجيل معالج البروتوكول {{scheme}}:// والتعامل مع عناوين URL",
+      "register": {
+        "description": "تسجيل معالج البروتوكول على النظام",
+        "systemWide": "جاري تسجيل معالج البروتوكول على مستوى النظام...",
+        "adminRequired": "ملاحظة: قد يتطلب هذا امتيازات المسؤول/root.",
+        "currentUser": "جاري تسجيل معالج البروتوكول للمستخدم الحالي...",
+        "registering": "جاري تسجيل معالج البروتوكول...",
+        "success": "\nتم تسجيل معالج البروتوكول {{scheme}}:// بنجاح.",
+        "exampleUrls": "\nيمكنك الآن فتح عناوين URL مثل:"
+      },
+      "unregister": {
+        "description": "إلغاء تسجيل معالج البروتوكول من النظام",
+        "unregistering": "جاري إلغاء تسجيل معالج البروتوكول...",
+        "success": "\nتم إلغاء تسجيل معالج البروتوكول {{scheme}}:// بنجاح."
+      },
+      "status": {
+        "description": "عرض حالة تسجيل معالج البروتوكول",
+        "title": "\nحالة معالج البروتوكول",
+        "platform": "المنصة:",
+        "supported": "مدعومة:",
+        "registered": "مسجلة:",
+        "userRegistration": "تسجيل المستخدم:",
+        "systemRegistration": "تسجيل النظام:",
+        "handlerCommand": "أمر المعالج:",
+        "error": "\nخطأ: {{error}}",
+        "registerHint": "\nلتسجيل معالج البروتوكول، قم بتشغيل:"
+      },
+      "open": {
+        "description": "فتح عنوان URL {{scheme}}:// وتنفيذ الإجراء",
+        "parsedUrl": "\nعنوان URL المحلل للبروتوكول:",
+        "token": "الرمز:",
+        "team": "الفريق:",
+        "machine": "الآلة:",
+        "repository": "المستودع:",
+        "action": "الإجراء:",
+        "params": "المعاملات:",
+        "cliCommand": "\nأمر سطر الأوامر المكافئ:",
+        "executing": "\nجاري تنفيذ الإجراء...\n"
+      },
+      "build": {
+        "description": "إنشاء عنوان URL {{scheme}}:// من المكونات"
+      },
+      "parse": {
+        "description": "تحليل عنوان URL {{scheme}}:// وعرض المكونات",
+        "parsedUrl": "\nعنوان URL المحلل للبروتوكول:",
+        "cliCommand": "\nأمر سطر الأوامر:"
+      }
+    },
+    "permission": {
+      "description": "أوامر إدارة الأذونات",
+      "list": {
+        "description": "قائمة الأذونات",
+        "fetching": "جاري جلب الأذونات..."
+      },
+      "group": {
+        "description": "إدارة مجموعات الأذونات",
+        "list": {
+          "description": "قائمة جميع مجموعات الأذونات",
+          "fetching": "جاري جلب مجموعات الأذونات...",
+          "success": "تم جلب مجموعات الأذونات"
+        },
+        "create": {
+          "description": "إنشاء مجموعة أذونات جديدة",
+          "creating": "جاري إنشاء مجموعة الأذونات \"{{name}}\"...",
+          "success": "تم إنشاء مجموعة الأذونات \"{{name}}\""
+        },
+        "delete": {
+          "confirm": "حذف مجموعة الأذونات \"{{name}}\"؟",
+          "deleting": "جاري حذف مجموعة الأذونات \"{{name}}\"...",
+          "description": "حذف مجموعة أذونات",
+          "success": "تم حذف مجموعة الأذونات \"{{name}}\""
+        },
+        "show": {
+          "description": "عرض تفاصيل مجموعة الأذونات",
+          "fetching": "جاري جلب تفاصيل مجموعة الأذونات...",
+          "success": "تم جلب التفاصيل"
+        }
+      },
+      "add": {
+        "adding": "جاري إضافة الإذن \"{{permission}}\" إلى المجموعة \"{{group}}\"...",
+        "description": "إضافة إذن إلى مجموعة",
+        "success": "تم إضافة الإذن"
+      },
+      "remove": {
+        "description": "إزالة إذن من مجموعة",
+        "removing": "جاري إزالة الإذن \"{{permission}}\" من المجموعة \"{{group}}\"...",
+        "success": "تم إزالة الإذن"
+      }
+    },
+    "queue": {
+      "description": "إدارة الطابور",
+      "list": {
+        "description": "قائمة عناصر الطابور",
+        "fetching": "جاري جلب عناصر الطابور...",
+        "success": "تم جلب عناصر الطابور"
+      },
+      "create": {
+        "description": "إنشاء عنصر طابور",
+        "buildingVault": "جاري بناء خزينة الطابور...",
+        "vaultBuilt": "تم بناء خزينة الطابور",
+        "creating": "جاري إنشاء عنصر طابور للدالة '{{function}}'...",
+        "success": "تم إنشاء عنصر الطابور",
+        "taskId": "معرف المهمة: {{taskId}}"
+      },
+      "cancel": {
+        "description": "إلغاء عنصر طابور",
+        "cancelling": "جاري إلغاء المهمة {{taskId}}...",
+        "success": "تم إلغاء المهمة"
+      },
+      "retry": {
+        "description": "إعادة محاولة عنصر طابور فاشل",
+        "retrying": "جاري إعادة محاولة المهمة {{taskId}}...",
+        "success": "تم إدراج المهمة في طابور الانتظار لإعادة المحاولة"
+      },
+      "trace": {
+        "description": "تتبع تنفيذ عنصر الطابور",
+        "fetching": "جاري جلب تتبع الطابور...",
+        "fetched": "تم جلب تتبع الطابور",
+        "watching": "جاري مراقبة تقدم المهمة...",
+        "age": "العمر",
+        "finalStatus": "الحالة النهائية: {{status}}",
+        "errorDetails": "تفاصيل الخطأ:",
+        "noTrace": "لا توجد معلومات تتبع متاحة"
+      },
+      "delete": {
+        "description": "حذف عنصر طابور",
+        "confirm": "هل تريد بالتأكيد حذف المهمة {{taskId}}؟",
+        "deleting": "جاري حذف المهمة {{taskId}}...",
+        "success": "تم حذف المهمة"
+      }
+    },
+    "region": {
+      "description": "إدارة المناطق",
+      "list": {
+        "description": "قائمة المناطق",
+        "fetching": "جاري جلب المناطق..."
+      }
+    },
+    "repository": {
+      "description": "أوامر إدارة المستودع",
+      "list": {
+        "description": "قائمة المستودعات",
+        "fetching": "جاري جلب المستودعات...",
+        "success": "تم جلب المستودعات"
+      },
+      "create": {
+        "description": "إنشاء مستودع جديد",
+        "creating": "جاري إنشاء المستودع \"{{name}}:{{tag}}\"...",
+        "success": "تم إنشاء المستودع \"{{name}}:{{tag}}\""
+      },
+      "rename": {
+        "description": "إعادة تسمية مستودع",
+        "renaming": "جاري إعادة تسمية المستودع \"{{oldName}}\" إلى \"{{newName}}\"...",
+        "success": "تمت إعادة تسمية المستودع إلى \"{{name}}\""
+      },
+      "delete": {
+        "description": "حذف مستودع",
+        "checkingRelationships": "جاري التحقق من العلاقات...",
+        "relationshipsChecked": "تم التحقق من العلاقات",
+        "grandRepoWarning": "هذا مستودع رئيسي (بيانات اعتماد). حذفه غير قابل للعكس.",
+        "confirm": "حذف المستودع \"{{name}}:{{tag}}\"؟ لا يمكن التراجع عن ذلك.",
+        "deleting": "جاري حذف المستودع \"{{name}}:{{tag}}\"...",
+        "success": "تم حذف المستودع \"{{name}}:{{tag}}\""
+      },
+      "promote": {
+        "description": "ترقية فرع إلى حالة رئيسية",
+        "checkingRelationships": "جاري التحقق من العلاقات...",
+        "relationshipsChecked": "تم التحقق من العلاقات",
+        "separateInfo": "\nسيؤدي هذا إلى فصل \"{{name}}\" عن المستودع الرئيسي \"{{grandName}}\"",
+        "siblingsInfo": "\n{{count}} نسخة أخت ستبقى مرتبطة بالمستودع الأصلي:",
+        "confirmPromote": "\nهل تريد المتابعة بالترقية؟",
+        "promoting": "جاري ترقية المستودع \"{{name}}:{{tag}}\"...",
+        "success": "تمت ترقية المستودع \"{{name}}:{{tag}}\" إلى حالة رئيسية"
+      },
+      "vault": {
+        "description": "إدارة خزينة المستودع",
+        "get": {
+          "description": "الحصول على بيانات خزينة المستودع",
+          "fetching": "جاري جلب خزينة المستودع...",
+          "success": "تم جلب الخزينة",
+          "notFound": "لم يتم العثور على خزينة المستودع"
+        },
+        "update": {
+          "description": "تحديث بيانات خزينة المستودع",
+          "updating": "جاري تحديث خزينة المستودع...",
+          "success": "تم تحديث خزينة المستودع"
+        }
+      }
+    },
+    "storage": {
+      "description": "إدارة التخزين",
+      "list": {
+        "description": "قائمة موفري التخزين",
+        "fetching": "جاري جلب موفري التخزين..."
+      }
+    },
+    "sync": {
+      "description": "مزامنة الملفات مع المستودعات باستخدام rsync",
+      "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
+      "previewingChanges": "\nجاري معاينة التغييرات...\n",
+      "noChanges": "لا توجد تغييرات للمزامنة.",
+      "cancelled": "تم إلغاء المزامنة.",
+      "dryRunHeader": "\nالمحاكاة - عرض ما سيتم نقله:\n",
+      "totalSize": "الحجم الإجمالي: {{size}}",
+      "duration": "المدة: {{seconds}}ث",
+      "errors": "الأخطاء:",
+      "upload": {
+        "description": "تحميل الملفات إلى مستودع",
+        "starting": "جاري بدء التحميل...",
+        "progress": "جاري التحميل: {{percentage}}% - {{file}} ({{speed}})",
+        "completed": "تم إكمال التحميل: تم نقل {{count}} ملف",
+        "failed": "فشل التحميل"
+      },
+      "download": {
+        "description": "تنزيل الملفات من مستودع",
+        "starting": "جاري بدء التنزيل...",
+        "progress": "جاري التنزيل: {{percentage}}% - {{file}} ({{speed}})",
+        "completed": "تم إكمال التنزيل: تم نقل {{count}} ملف",
+        "failed": "فشل التنزيل"
+      },
+      "status": {
+        "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة"
+      }
+    },
+    "team": {
+      "description": "إدارة الفريق",
+      "list": {
+        "description": "قائمة الفرق",
+        "fetching": "جاري جلب الفرق..."
+      },
+      "create": {
+        "description": "إنشاء فريق",
+        "creating": "جاري إنشاء الفريق...",
+        "success": "تم إنشاء الفريق \"{{name}}\""
+      },
+      "member": {
+        "description": "إدارة عضوية الفريق",
+        "list": {
+          "description": "قائمة أعضاء الفريق",
+          "fetching": "جاري جلب أعضاء الفريق...",
+          "success": "تم جلب الأعضاء"
+        },
+        "add": {
+          "description": "إضافة مستخدم إلى فريق",
+          "adding": "جاري إضافة {{email}} إلى الفريق \"{{team}}\"...",
+          "success": "تمت إضافة المستخدم إلى الفريق \"{{team}}\""
+        },
+        "remove": {
+          "description": "إزالة مستخدم من فريق",
+          "removing": "جاري إزالة {{email}} من الفريق \"{{team}}\"...",
+          "success": "تمت إزالة المستخدم من الفريق \"{{team}}\""
+        }
+      }
+    },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[محلي] تم الإكمال في {{duration}}ms",
+        "description": "تنفيذ دالة (اختصار لـ: queue create)",
+        "executingLocal": "[محلي] جاري تنفيذ '{{function}}' على {{machine}}...",
+        "failedLocal": "[محلي] فشل: {{error}}",
+        "watching": "جاري الانتظار للإكمال..."
+      },
+      "trace": {
+        "description": "تتبع مهمة (اختصار لـ: queue trace)"
+      },
+      "cancel": {
+        "description": "إلغاء مهمة (اختصار لـ: queue cancel)"
+      },
+      "retry": {
+        "description": "إعادة محاولة مهمة فاشلة (اختصار لـ: queue retry)"
+      }
+    },
+    "term": {
+      "description": "وصول طرفية SSH إلى الآلات والمستودعات",
+      "connecting": "جاري الاتصال بـ {{machine}}...",
+      "connect": {
+        "description": "الاتصال بآلة أو مستودع عبر SSH"
+      },
+      "connectingTo": "جاري الاتصال بـ {{title}}...",
+      "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
+      "launchSuccess": "تم تشغيل الطرفية بنجاح.",
+      "launchingTerminal": "جاري تشغيل طرفية {{type}}...",
+      "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}..."
+    },
+    "vscode": {
+      "description": "تكامل VS Code Remote SSH",
+      "connect": {
+        "description": "الاتصال بآلة أو مستودع في VS Code",
+        "detecting": "جاري كشف VS Code...",
+        "extensionWarning": "تحذير: قد لا يكون امتداد Remote SSH مثبتاً.\nقم بالتثبيت من: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
+        "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}...",
+        "persistingKey": "جاري حفظ مفتاح SSH...",
+        "configuringSSH": "جاري إعدادات SSH...",
+        "configuringVSCode": "جاري إعدادات VS Code...",
+        "settingsWarning": "تحذير: لم يتمكن من إعدادات VS Code: {{error}}",
+        "settingUpEnv": "جاري إعداد البيئة البعيدة...",
+        "opening": "جاري فتح VS Code: {{connection}} → {{path}}",
+        "success": "تم تشغيل VS Code بنجاح."
+      },
+      "list": {
+        "description": "قائمة اتصالات VS Code SSH المكونة",
+        "noConnections": "لا توجد اتصالات VS Code SSH مكونة.",
+        "configFile": "\nملف الإعدادات: {{path}}",
+        "header": "اتصالات VS Code SSH المكونة:\n",
+        "keyPersisted": " (تم حفظ المفتاح)",
+        "total": "\nالإجمالي: {{count}} اتصال(اتصالات)"
+      },
+      "cleanup": {
+        "description": "إزالة إعدادات VS Code SSH",
+        "cleanedAll": "تم تنظيف {{count}} اتصال(اتصالات) VS Code SSH.",
+        "removedKeys": "تم إزالة جميع مفاتيح SSH المحفوظة.",
+        "cleaned": "تم التنظيف: {{connection}}"
+      },
+      "check": {
+        "description": "التحقق من تثبيت VS Code والإعدادات",
+        "title": "فحص إعداد VS Code\n",
+        "installation": "التثبيت:",
+        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  الإصدار: {{version}}",
+        "variant": "  النوع: Insiders",
+        "vscodeNotFound": "  VS Code: غير مثبت",
+        "remoteSSH": "  امتداد Remote SSH: {{status}}",
+        "installed": "مثبت",
+        "notDetected": "لم يتم الكشف عنه",
+        "configuration": "\nالإعدادات:",
+        "settingsPath": "  مسار الإعدادات: {{path}}",
+        "configured": "  مكون: {{status}}",
+        "yes": "نعم",
+        "no": "لا",
+        "missingSettings": "  الإعدادات المفقودة:",
+        "sshConfig": "\nإعدادات SSH: {{path}}",
+        "activeConnections": "الاتصالات النشطة: {{count}}"
+      }
+    },
+    "user": {
+      "description": "أوامر إدارة المستخدم",
+      "list": {
+        "description": "قائمة جميع المستخدمين",
+        "fetching": "جاري جلب المستخدمين...",
+        "success": "تم جلب المستخدمين"
+      },
+      "create": {
+        "description": "إنشاء مستخدم جديد",
+        "creating": "جاري إنشاء المستخدم \"{{email}}\"...",
+        "success": "تم إنشاء المستخدم",
+        "activationCode": "رمز التفعيل: {{code}}"
+      },
+      "activate": {
+        "description": "تفعيل حساب المستخدم",
+        "activating": "جاري تفعيل المستخدم \"{{email}}\"...",
+        "success": "تم تفعيل المستخدم"
+      },
+      "deactivate": {
+        "description": "تعطيل حساب المستخدم",
+        "confirm": "تعطيل المستخدم \"{{email}}\"؟",
+        "deactivating": "جاري تعطيل المستخدم \"{{email}}\"...",
+        "success": "تم تعطيل المستخدم"
+      },
+      "reactivate": {
+        "description": "إعادة تفعيل حساب المستخدم المعطل",
+        "reactivating": "جاري إعادة تفعيل المستخدم \"{{email}}\"...",
+        "success": "تم إعادة تفعيل المستخدم"
+      },
+      "updateEmail": {
+        "description": "تغيير عنوان البريد الإلكتروني للمستخدم",
+        "updating": "جاري تحديث البريد الإلكتروني لـ \"{{email}}\"...",
+        "success": "تم تحديث البريد الإلكتروني إلى \"{{email}}\""
+      },
+      "updatePassword": {
+        "description": "تغيير كلمة المرور الخاصة بك",
+        "updating": "جاري تحديث كلمة المرور...",
+        "success": "تم تحديث كلمة المرور"
+      },
+      "updateLanguage": {
+        "description": "تعيين اللغة المفضلة للمستخدم الحالي",
+        "updating": "جاري تحديث تفضيل اللغة...",
+        "success": "تم تحديث اللغة إلى \"{{language}}\""
+      },
+      "exists": {
+        "description": "التحقق مما إذا كان المستخدم موجوداً",
+        "exists": "المستخدم \"{{email}}\" موجود",
+        "notExists": "المستخدم \"{{email}}\" غير موجود"
+      },
+      "vault": {
+        "description": "إدارة خزينة المستخدم",
+        "get": {
+          "description": "الحصول على بيانات خزينة المستخدم الحالي",
+          "fetching": "جاري جلب خزينة المستخدم...",
+          "success": "تم جلب الخزينة"
+        },
+        "update": {
+          "description": "تحديث بيانات خزينة المستخدم الحالي",
+          "updating": "جاري تحديث خزينة المستخدم...",
+          "success": "تم تحديث خزينة المستخدم"
+        }
+      },
+      "permission": {
+        "description": "إدارة أذونات المستخدم",
+        "assign": {
+          "description": "تعيين مجموعة أذونات لمستخدم",
+          "assigning": "جاري تعيين \"{{group}}\" للمستخدم \"{{email}}\"...",
+          "success": "تم تعيين الإذن"
+        }
+      }
+    }
+  },
+  "errors": {
+    "activationFailed": "فشل التفعيل",
+    "authFailed": "فشلت المصادقة",
+    "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc login",
+    "bridgeRequired": "اسم الجسر مطلوب. استخدم --bridge أو اضبط السياق.",
+    "contextNotFound": "لم يتم العثور على السياق \"{{name}}\"",
+    "invalidCredentials": "بيانات اعتماد غير صحيحة",
+    "invalidEmail": "الرجاء إدخال بريد إلكتروني صحيح",
+    "invalidExpiration": "انتهاء الصلاحية يجب أن يكون بين 1 و 720 ساعة",
+    "invalidAction": "إجراء غير صحيح \"{{action}}\". استخدم \"{{valid}}\".",
+    "invalidFunctionParams": "معاملات غير صحيحة للدالة \"{{function}}\": {{errors}}",
+    "invalidJsonFile": "الملف المرفوع لا يحتوي على JSON صحيح.",
+    "invalidJsonVault": "بيانات خزينة JSON غير صحيحة.",
+    "invalidKey": "مفتاح غير صحيح. المفاتيح الصحيحة: {{keys}}",
+    "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
+    "machineRequired": "اسم الآلة مطلوب. استخدم --machine أو اضبط السياق.",
+    "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine أو اضبط الافتراضي باستخدام: rdc context set machine <name>",
+    "invalidHost": "عنوان IP أو اسم مضيف غير صحيح: \"{{host}}\". يجب أن يكون IPv4 أو IPv6 أو اسم مضيف صحيح.",
+    "invalidPort": "رقم منفذ غير صحيح: \"{{port}}\". يجب أن يكون بين 1 و 65535.",
+    "failedCreateQueueItem": "فشل إنشاء عنصر الطابور",
+    "invalidPriorityMin": "قيمة priority-min غير صحيحة. يجب أن تكون بين 1 و 5.",
+    "invalidPriorityMax": "قيمة priority-max غير صحيحة. يجب أن تكون بين 1 و 5.",
+    "passwordsMismatch": "كلمات المرور غير متطابقة",
+    "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}:{{tag}}\"",
+    "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
+    "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
+    "cannotPromote": "لا يمكن الترقية: {{reason}}",
+    "protocol": {
+      "notSupported": "تسجيل البروتوكول غير مدعوم على {{platform}}",
+      "invalidUrl": "عنوان URL بروتوكول غير صحيح: {{error}}",
+      "commandExitCode": "انتهت الأوامر برمز {{code}}",
+      "tokenRequired": "الرمز مطلوب. استخدم --token <token>",
+      "teamRequired": "اسم الفريق مطلوب. استخدم --team <name>",
+      "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
+      "invalidAction": "إجراء غير صحيح '{{action}}'. يجب أن يكون أحد: {{validActions}}",
+      "parseFailed": "فشل تحليل عنوان URL: {{error}}"
+    },
+    "networkError": "خطأ الشبكة: {{message}}",
+    "noActiveContext": "لا يوجد سياق نشط. قم بإنشاء أو تحديد سياق أولاً.",
+    "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc login",
+    "permissionDenied": "تم رفض الإذن",
+    "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
+    "registrationFailed": "فشل التسجيل",
+    "resourceNotFound": "{{resource}} غير موجود",
+    "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
+    "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
+    "sync": {
+      "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
+      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
+      "localPathNotFound": "المسار المحلي غير موجود: {{path}}"
+    },
+    "teamRequired": "اسم الفريق مطلوب. استخدم --team أو اضبط السياق.",
+    "term": {
+      "connectivityFailed": "لا يمكن الوصول إلى {{host}}:{{port}}. {{error}}\n\nاستكشاف الأخطاء:\n  - تحقق من أن الآلة مشغلة ومتصلة بالشبكة\n  - تحقق من صحة عنوان IP في خزينة الآلة\n  - تأكد من عدم حجب المنفذ {{port}} بواسطة جدار حماية\n  - جرب ping على الآلة: ping {{host}}",
+      "launchFailed": "فشل تشغيل الطرفية: {{error}}",
+      "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
+      "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
+      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "sshCode1": "خطأ عام - تحقق من صيغة الأمر أو أذونات البعيد",
+      "sshCode126": "تم رفض الإذن - لا يمكن تنفيذ الأمر على البعيد",
+      "sshCode127": "الأمر غير موجود على الآلة البعيدة",
+      "sshCode130": "تم إنهاء الاتصال بواسطة المستخدم (Ctrl+C)",
+      "sshCode255": "فشل اتصال SSH - الأسباب المحتملة:\n    - فشلت المصادقة (تحقق من أذونات مفتاح SSH)\n    - فشل التحقق من مفتاح المضيف\n    - تم قطع الاتصال بالشبكة\n    - خدمة SSH البعيدة غير مشغلة",
+      "sshExitCode": "خرج SSH برمز {{code}}"
+    },
+    "vscode": {
+      "cleanupRequired": "حدد --all لإزالة جميع الاتصالات أو --connection <name> لواحد محدد.",
+      "connectivityFailed": "لا يمكن الوصول إلى {{host}}:{{port}}. {{error}}\n\nاستكشاف الأخطاء:\n  - تحقق من أن الآلة مشغلة ومتصلة بالشبكة\n  - تحقق من صحة عنوان IP في خزينة الآلة\n  - تأكد من عدم حجب المنفذ {{port}} بواسطة جدار حماية\n  - جرب ping على الآلة: ping {{host}}",
+      "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
+      "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
+      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH."
+    },
+    "tokenExpired": "انتهت صلاحية الرمز. الرجاء تسجيل الدخول مرة أخرى.",
+    "unexpectedError": "خطأ غير متوقع: {{message}}",
+    "validationError": "خطأ التحقق: {{message}}",
+    "vaultDataRequired": "بيانات الخزينة مطلوبة. استخدم --vault <json> أو أنبوب JSON عبر stdin.",
+    "vaultVersionRequired": "إصدار الخزينة مطلوب. استخدم --vault-version <n>.",
+    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
+    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+  },
+  "options": {
+    "activationCode": "رمز التفعيل من البريد الإلكتروني",
+    "apiUrl": "عنوان URL للـ API",
+    "bridge": "اسم الجسر",
+    "command": "تنفيذ أمر بدلاً من الصدفة التفاعلية",
+    "container": "الاتصال بحاوية Docker معينة",
+    "containerAction": "إجراء الحاوية: terminal أو logs أو stats أو exec",
+    "context": "استخدم سياق معين لهذا الأمر",
+    "datastore": "مسار التخزين على الآلة",
+    "email": "عنوان البريد الإلكتروني",
+    "external": "فرض تشغيل في نافذة طرفية خارجية",
+    "follow": "متابعة إخراج السجلات",
+    "endpoint": "عنوان URL لنقطة نهاية API",
+    "expires": "انتهاء الصلاحية بالساعات (1-720)",
+    "force": "تخطي نوافذ التأكيد",
+    "lang": "تجاوز اللغة ({{languages}})",
+    "limit": "الحد الأقصى لعدد النتائج",
+    "logLines": "عدد أسطر السجل المراد عرضها (افتراضي: 50)",
+    "machine": "اسم الآلة",
+    "machineIp": "عنوان IP للآلة أو اسم المضيف",
+    "machineShorthand": "اسم الآلة (اختصار --machine)",
+    "organization": "اسم المؤسسة",
+    "output": "صيغة المخرجات (table|json|yaml|csv)",
+    "password": "كلمة المرور (لتسجيل الدخول غير التفاعلي)",
+    "region": "اسم المنطقة",
+    "renetPath": "المسار إلى ثنائي renet (افتراضي: renet في PATH)",
+    "repository": "اسم المستودع (يتصل ببيئة المستودع)",
+    "repositoryShorthand": "اسم المستودع (اختصار --repository)",
+    "saveAs": "حفظ بيانات الاعتماد في سياق باسم",
+    "sessionName": "اسم الجلسة",
+    "sshKey": "المسار إلى مفتاح SSH الخاص (مثال: ~/.ssh/id_rsa)",
+    "sshPort": "منفذ SSH",
+    "sshPrivateKey": "المسار إلى مفتاح SSH الخاص",
+    "sshPublicKey": "المسار إلى مفتاح SSH العام",
+    "sshUser": "اسم مستخدم SSH",
+    "switch": "الانتقال إلى هذا السياق بعد الإنشاء",
+    "team": "اسم الفريق",
+    "tfaCode": "رمز TFA الحالي للتحقق",
+    "tokenName": "اسم الرمز",
+    "watch": "الانتظار للتغييرات",
+    "watchUpdates": "الانتظار للتحديثات",
+    "yes": "تخطي نافذة التأكيد",
+    "priority": "الأولوية (1=الأعلى)",
+    "param": "معاملات الدالة",
+    "debug": "تفعيل مخرجات التصحيح (الوضع المحلي)",
+    "pollInterval": "فترة المسح بالميلي ثانية",
+    "folder": "مسار المجلد البعيد للفتح",
+    "urlOnly": "طباعة عنوان VS Code URI بدلاً من تشغيله",
+    "newWindow": "الفتح في نافذة VS Code جديدة",
+    "skipEnvSetup": "تخطي إعداد البيئة البعيدة",
+    "insiders": "استخدام إعدادات VS Code Insiders",
+    "cleanupAll": "إزالة جميع إعدادات SSH الخاصة بـ rediacc",
+    "connectionName": "إزالة اتصال معين",
+    "vaultJson": "محتوى الخزينة كسلسلة JSON",
+    "vaultVersion": "الإصدار الحالي للخزينة للأقفال المتفائلة",
+    "outputPath": "المسار لحفظ ملف الإخراج",
+    "importMode": "وضع الاستيراد (دمج أو استبدال)",
+    "vaultJsonMachine": "بيانات خزينة الآلة كسلسلة JSON",
+    "searchInField": "البحث في {{field}}",
+    "searchRepos": "تصفية المستودعات حسب الاسم",
+    "sortByField": "الترتيب حسب الحقل",
+    "sortDescending": "ترتيب تنازلي",
+    "sshPassword": "كلمة مرور SSH للمصادقة الأولية",
+    "machineForVault": "اسم الآلة (لتحديث الخزينة بعد الاختبار)",
+    "saveKnownHosts": "حفظ known_hosts في خزينة الآلة بعد الاختبار الناجح",
+    "localPath": "مسار المجلد المحلي (افتراضي: المجلد الحالي)",
+    "remotePath": "مسار المجلد الفرعي البعيد ضمن المستودع",
+    "mirrorUpload": "وضع الانعكاس - حذف الملفات البعيدة غير الموجودة محلياً",
+    "mirrorDownload": "وضع الانعكاس - حذف الملفات المحلية غير الموجودة على البعيد",
+    "verifyChecksum": "التحقق من الملفات باستخدام المجاميع الاختبارية بعد المزامنة",
+    "confirmSync": "معاينة التغييرات وطلب التأكيد قبل المزامنة",
+    "excludePatterns": "الأنماط التي يتم استبعادها من المزامنة",
+    "dryRun": "عرض ما سيتم نقله دون المزامنة الفعلية",
+    "filterStatus": "التصفية حسب الحالة",
+    "priorityMin": "الحد الأدنى للأولوية (1-5)",
+    "priorityMax": "الحد الأقصى للأولوية (1-5)",
+    "searchQueue": "البحث في معرف المهمة والفريق والآلة والجسر",
+    "sortField": "الفرز حسب الحقل",
+    "sortDesc": "الفرز بترتيب تنازلي",
+    "functionName": "اسم الدالة للتنفيذ",
+    "rawVault": "خزينة JSON أولية (للنصوص البرمجية/CI)",
+    "userPassword": "كلمة مرور المستخدم الجديد",
+    "newPasswordNonInteractive": "كلمة المرور الجديدة (الوضع غير التفاعلي)",
+    "confirmPasswordNonInteractive": "تأكيد كلمة المرور (الوضع غير التفاعلي)",
+    "repositoryTag": "علامة المستودع",
+    "parentRepository": "المستودع الأب (للفروع)",
+    "parentRepositoryTag": "علامة المستودع الأب",
+    "protocolSystem": "تسجيل على مستوى النظام (يتطلب امتيازات المسؤول)",
+    "protocolForce": "فرض إعادة التسجيل حتى لو كان مسجلاً بالفعل",
+    "protocolSystemUnregister": "إلغاء تسجيل التسجيل على مستوى النظام (يتطلب امتيازات المسؤول)",
+    "outputFormat": "صيغة المخرجات (json)",
+    "protocolToken": "رمز المصادقة",
+    "protocolAction": "الإجراء ({{actions}})",
+    "protocolParams": "معاملات إضافية"
+  },
+  "prompts": {
+    "apiUrl": "عنوان URL للـ API:",
+    "cancelled": "تم الإلغاء",
+    "confirm": "هل أنت متأكد؟",
+    "confirmDelete": "هل تريد بالتأكيد حذف هذا؟",
+    "email": "البريد الإلكتروني:",
+    "enterValue": "أدخل {{field}}:",
+    "password": "كلمة المرور:",
+    "selectOption": "اختر خياراً:",
+    "sshPassword": "كلمة مرور SSH (اترك فارغاً إذا كنت تستخدم مصادقة المفتاح): ",
+    "syncConfirm": "\nهل تريد المتابعة بالمزامنة؟ [y/N/d(etails)] ",
+    "syncConfirmHelp": "يرجى إدخال y (نعم) أو n (لا) أو d (التفاصيل)",
+    "passwordForUser": "كلمة مرور للمستخدم الجديد:",
+    "confirmPassword": "تأكيد كلمة المرور:",
+    "setPassword": "تعيين كلمة مرور للمستخدم:",
+    "newPassword": "كلمة مرور جديدة:",
+    "confirmNewPassword": "تأكيد كلمة المرور الجديدة:",
+    "masterPassword": "أدخل كلمة المرور الرئيسية:"
+  },
+  "spinners": {
+    "connecting": "جاري الاتصال...",
+    "creating": "جاري إنشاء {{resource}}...",
+    "deleting": "جاري حذف {{resource}}...",
+    "fetching": "جاري جلب {{resource}}...",
+    "loading": "جاري التحميل...",
+    "processing": "جاري المعالجة...",
+    "saving": "جاري الحفظ...",
+    "updating": "جاري تحديث {{resource}}..."
+  },
+  "status": {
+    "cancelled": "تم الإلغاء",
+    "completed": "تم الإكمال",
+    "failed": "فشل",
+    "pending": "في الانتظار",
+    "processing": "جاري المعالجة",
+    "success": "نجح"
+  },
+  "table": {
+    "noData": "لا توجد بيانات للعرض"
+  },
+  "common": {
+    "yes": "نعم",
+    "no": "لا",
+    "running": "قيد التشغيل",
+    "stopped": "متوقف",
+    "completed": "تم الإكمال",
+    "failed": "فشل",
+    "success": "✓ نجح",
+    "unknown": "غير معروف",
+    "inProgress": "جاري التقدم"
+  }
+}

@@ -22,36 +22,6 @@
     "trace": "След",
     "twoFactorAuth": "Двухфакторная аутентификация"
   },
-  "architecture": {
-    "bridges": "Мосты",
-    "clearAll": "Очистить все",
-    "fetchError": "Не удалось получить данные об архитектуре.",
-    "filterEntities": "Фильтровать объекты",
-    "legend": "Легенда",
-    "machines": "Машины",
-    "noData": "Данные об архитектуре отсутствуют",
-    "noEntitiesSelected": "Объекты не выбраны. Пожалуйста, выберите хотя бы один тип объекта для отображения.",
-    "nodeBridge": "Мост",
-    "nodeCompany": "Компания",
-    "nodeMachine": "Машина",
-    "nodeRegion": "Область",
-    "nodeRepository": "Репозиторий",
-    "nodeStorage": "Хранилище",
-    "nodeTeam": "Команда",
-    "nodeUser": "Пользователь",
-    "regions": "Регионы",
-    "repositories": "Репозитории",
-    "schedules": "Расписания",
-    "selectAll": "Выбрать все",
-    "selectEntities": "Выберите типы объектов для отображения",
-    "storages": "Хранилища",
-    "teams": "Команды",
-    "title": "Архитектура компании",
-    "users": "Пользователи",
-    "viewForce": "Сила",
-    "viewHierarchy": "Иерархия",
-    "viewRadial": "Радиальный"
-  },
   "audit": {
     "columns": {
       "action": "Действие",
@@ -92,24 +62,6 @@
     },
     "subtitle": "Отслеживайте все действия и изменения в вашей организации",
     "title": "Журналы аудита"
-  },
-  "company": {
-    "errors": {
-      "blockRequestsFailed": "Не удалось обновить статус блокировки запросов пользователей.",
-      "importFailed": "Не удалось импортировать данные компании.",
-      "noExportData": "Данные экспорта не возвращены",
-      "vaultUpdateFailed": "Не удалось обновить конфигурацию хранилища."
-    },
-    "success": {
-      "errorCount": "{{count}} ошибок",
-      "importComplete": "Импорт завершен: {{summary}}",
-      "importedCount": "Импортировано {{count}} элементов",
-      "requestsBlocked": "Запросы пользователей успешно заблокированы",
-      "requestsBlockedWithTerminations": "Запросы пользователей заблокированы. Активные сеансы: {{count}} прерваны.",
-      "requestsUnblocked": "Запросы пользователей успешно разблокированы",
-      "skippedCount": "Элементов: {{count}} пропущено",
-      "vaultUpdated": "Конфигурация хранилища успешно обновлена."
-    }
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -155,8 +107,8 @@
         "cancel": "Отмена",
         "fileRequired": "Пожалуйста, выберите файл для импорта",
         "import": "Импорт",
-        "importMode": "Режим импорта",
         "importing": "Импорт...",
+        "importMode": "Режим импорта",
         "invalidFile": "Неверный формат файла. Выберите действительный файл экспорта данных компании.",
         "modeOverride": "Переопределить существующие элементы",
         "modeOverrideDesc": "Заменить существующие элементы импортированными данными",
@@ -244,6 +196,47 @@
       "warning": "Храните новый пароль в безопасном месте — в случае утери его невозможно будет восстановить."
     }
   },
+  "dashboard": {
+    "activeLicenses": "Активные лицензии",
+    "completed": "Завершено",
+    "daysRemaining": "Дней осталось",
+    "failed": "Ошибка",
+    "jobTimeout": "Тайм-аут задания",
+    "maxActiveJobs": "Макс. активных заданий",
+    "maxRepoSize": "Макс. размер репозитория",
+    "maxReservedJobs": "Макс. зарезервировано заданий",
+    "noPlanData": "Данные об ограничении плана недоступны",
+    "noSubscription": "Нет активной подписки",
+    "pending": "В ожидании",
+    "processing": "Обработка"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "Не удалось обновить статус блокировки запросов пользователей.",
+      "importFailed": "Не удалось импортировать данные компании.",
+      "noExportData": "Данные экспорта не возвращены",
+      "vaultsUpdateFailed": "Не удалось обновить конфигурации хранилищ.",
+      "vaultUpdateFailed": "Не удалось обновить конфигурацию хранилища."
+    },
+    "success": {
+      "errorCount": "{{count}} ошибок",
+      "importComplete": "Импорт завершен: {{summary}}",
+      "imported": "Данные организации успешно импортированы",
+      "importedCount": "Импортировано {{count}} элементов",
+      "requestsBlocked": "Запросы пользователей успешно заблокированы",
+      "requestsBlockedWithTerminations": "Запросы пользователей заблокированы. Активные сеансы: {{count}} прерваны.",
+      "requestsUnblocked": "Запросы пользователей успешно разблокированы",
+      "skippedCount": "Элементов: {{count}} пропущено",
+      "vaultsUpdated": "Все конфигурации хранилищ успешно обновлены",
+      "vaultUpdated": "Конфигурация хранилища успешно обновлена."
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "Ваш пароль был изменен. Вы выйдете из системы через {{seconds}} секунд...",
+      "successTitle": "Пароль успешно изменен"
+    }
+  },
   "regionsInfrastructure": {
     "title": "Регионы и инфраструктура"
   },
@@ -259,6 +252,7 @@
       "machines": "Машины",
       "members": "Члены",
       "repositories": "Репозитории",
+      "stats": "Статистика",
       "storage": "Хранилище",
       "teamName": "Название команды",
       "vaultVersion": "Версия хранилища"
@@ -269,6 +263,22 @@
       "lastActive": "Последняя активность",
       "permissionGroup": "Группа разрешений",
       "status": "Статус"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "Вы уверены, что хотите удалить команду \"{{teamName}}\"?",
+      "confirmTitle": "Удалить команду"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "Вы уверены, что хотите активировать «{{email}}»?",
+      "confirmTitle": "Активировать пользователя"
+    },
+    "deactivate": {
+      "confirmDescription": "Вы уверены, что хотите деактивировать «{{email}}»?",
+      "confirmTitle": "Деактивировать пользователя"
     }
   },
   "userSessions": {
@@ -294,6 +304,7 @@
     "forkToken": "Это токен вилки (дочерний сеанс)",
     "hasChildren": "{{count}} дочерних сессий",
     "inactive": "Неактивный",
+    "ipLabel": "IP",
     "minutes": "минуты",
     "notAvailable": "Н/Д",
     "searchPlaceholder": "Поиск по электронной почте, IP-адресу или имени сеанса...",
@@ -304,21 +315,11 @@
     "totalSessions": "Всего сеансов",
     "uniqueUsers": "Уникальные пользователи"
   },
-  "users": {
-    "activate": {
-      "confirmDescription": "Вы уверены, что хотите активировать «{{email}}»?",
-      "confirmTitle": "Активировать пользователя"
-    },
-    "deactivate": {
-      "confirmDescription": "Вы уверены, что хотите деактивировать «{{email}}»?",
-      "confirmTitle": "Деактивировать пользователя"
-    }
-  },
   "vaultProtocol": {
     "errors": {
       "disableFailed": "Не удалось отключить шифрование хранилища.",
       "enableFailed": "Не удалось включить шифрование хранилища.",
-      "noCompanySelected": "Компания не выбрана. Пожалуйста, выберите компанию перед обновлением шифрования."
+      "noOrganizationSelected": "Компания не выбрана. Пожалуйста, выберите компанию перед обновлением шифрования."
     },
     "success": {
       "disabled": "Шифрование хранилища отключено. Мастер-пароли больше не требуются.",

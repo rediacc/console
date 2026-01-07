@@ -6,7 +6,6 @@ export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>;
 }
 
-export type ResourceFormLayout = 'horizontal' | 'vertical' | 'inline';
 export type ResourceFormUiMode = 'simple' | 'expert';
 
 export interface FormFieldOption {
@@ -39,8 +38,6 @@ export interface ResourceFormWithVaultProps {
   fields: FormFieldConfig[];
   onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
   entityType: string;
-  vaultFieldName: string;
-  layout?: ResourceFormLayout;
   showDefaultsAlert?: boolean;
   defaultsContent?: ReactNode;
   hideImportExport?: boolean;

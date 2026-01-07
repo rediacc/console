@@ -1,4 +1,5 @@
 import ora, { Ora } from 'ora';
+import { getOutputFormat } from './errors.js';
 
 let currentSpinner: Ora | null = null;
 
@@ -42,8 +43,9 @@ export async function withSpinner<T>(
   if (!isInteractive()) {
     try {
       const result = await fn();
-      // Always print success message for CI/piped output
-      if (successText) {
+      // Avoid polluting machine-readable output formats
+      const format = getOutputFormat();
+      if (successText && format === 'table') {
         process.stdout.write(`✓ ${successText}\n`);
       }
       return result;

@@ -63,7 +63,7 @@ export class QueueStateManager {
       return false;
     }
     const activeTask = this.activeTasks.get(bridgeName);
-    if (activeTask && activeTask.priority === this.HIGHEST_PRIORITY) {
+    if (activeTask?.priority === this.HIGHEST_PRIORITY) {
       return true;
     }
 
@@ -347,7 +347,7 @@ export class QueueStateManager {
 
     if (!bridgeCleared) {
       const queueItem = this.queue.find((item) => item.taskId === taskId);
-      if (queueItem && queueItem.data.priority === this.HIGHEST_PRIORITY) {
+      if (queueItem?.data.priority === this.HIGHEST_PRIORITY) {
         const bridgeName = queueItem.data.bridgeName;
         if (bridgeName && this.activeTasks.has(bridgeName)) {
           const activeTask = this.activeTasks.get(bridgeName);

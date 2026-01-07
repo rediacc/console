@@ -1,7 +1,8 @@
 import React from 'react';
-import { Card, Col, Flex, Progress, Row, Typography, theme } from 'antd';
+import { Card, Col, Flex, Progress, Row, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { DesktopOutlined, InboxOutlined, ThunderboltOutlined } from '@/utils/optimizedIcons';
-import type { CompanyDashboardData } from '@rediacc/shared/types';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,
@@ -20,23 +21,21 @@ const getProgressStatus = (percentage: number): 'exception' | 'normal' | 'succes
 };
 
 interface ResourceUsageWidgetProps {
-  resources: CompanyDashboardData['resources'];
+  resources: OrganizationDashboardData['resources'];
 }
 
 const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) => {
-  const { token } = theme.useToken();
+  const { t } = useTranslation('common');
 
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <ThunderboltOutlined />
-          <Typography.Text>Resource Usage</Typography.Text>
+          <Typography.Text>{t('dashboard.widgets.resourceUsage.title')}</Typography.Text>
         </Flex>
       }
-      extra={
-        <Typography.Text>Monitor your resource consumption against plan limits</Typography.Text>
-      }
+      extra={<Typography.Text>{t('dashboard.widgets.resourceUsage.subtitle')}</Typography.Text>}
       data-testid="dashboard-card-resource-usage"
     >
       <Row gutter={[16, 24]}>
@@ -46,16 +45,18 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
               resource.resourceType === 'Machine' || resource.resourceType === 'Repository'
           )
           .map((resource) => {
-            const progressColor =
-              resource.isLimitReached === 1 ? token.colorError : token.colorPrimary;
+            const progressColor = resource.isLimitReached === true ? '#ff4d4f' : '#1677ff';
+            const resourceKey = resource.resourceType === 'Machine' ? 'machines' : 'repositories';
             return (
               <Col key={resource.resourceType} xs={24} sm={12} md={8}>
                 <Flex vertical>
-                  <Flex vertical gap={16} className="w-full">
+                  <Flex vertical className="w-full">
                     <Flex align="center" justify="space-between" className="w-full">
-                      <Flex align="center" gap={8} wrap className="inline-flex">
-                        {resourceIcons[resource.resourceType]}
-                        <Typography.Text strong>{resource.resourceType}s</Typography.Text>
+                      <Flex align="center" wrap className="inline-flex">
+                        {resourceIcons[resource.resourceType ?? '']}
+                        <Typography.Text strong>
+                          {t(`dashboard.widgets.resourceUsage.${resourceKey}`)}
+                        </Typography.Text>
                       </Flex>
                       <Typography.Text className="inline-block">
                         {resource.currentUsage} /{' '}
@@ -66,10 +67,12 @@ const ResourceUsageWidget: React.FC<ResourceUsageWidgetProps> = ({ resources }) 
                       percent={resource.resourceLimit === 0 ? 0 : (resource.usagePercentage ?? 0)}
                       status={getProgressStatus(resource.usagePercentage ?? 0)}
                       strokeColor={progressColor}
-                      data-testid={`dashboard-progress-${resource.resourceType.toLowerCase()}`}
+                      data-testid={`dashboard-progress-${(resource.resourceType ?? '').toLowerCase()}`}
                     />
-                    {resource.isLimitReached === 1 && (
-                      <Typography.Text type="danger">Limit reached</Typography.Text>
+                    {resource.isLimitReached === true && (
+                      <Typography.Text type="danger">
+                        {t('dashboard.widgets.resourceUsage.limitReached')}
+                      </Typography.Text>
                     )}
                   </Flex>
                 </Flex>

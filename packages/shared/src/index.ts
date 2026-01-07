@@ -2,6 +2,7 @@ export * from './api';
 export * from './encryption';
 export * from './error-parser';
 export * from './formatters';
+export * from './telemetry';
 export {
   ACTIVE_STATUSES,
   filterActiveItems,

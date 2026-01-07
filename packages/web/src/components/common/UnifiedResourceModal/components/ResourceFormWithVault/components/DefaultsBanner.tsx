@@ -8,6 +8,6 @@ interface DefaultsBannerProps {
 
 export const DefaultsBanner: React.FC<DefaultsBannerProps> = ({ title, content }) => (
   <Flex>
-    <Alert message={title} description={content} type="info" showIcon />
+    <Alert message={title} description={content} type="info" />
   </Flex>
 );

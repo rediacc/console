@@ -33,26 +33,9 @@
   "currentPriority": "Aktuell",
   "description": "Beschreibung (optional)",
   "descriptionPlaceholder": "Fügen Sie eine benutzerdefinierte Beschreibung für dieses Warteschlangenelement hinzu",
+  "destinationFilename": "Zieldateiname",
   "functions": {
-    "apply_template": {
-      "description": "Wenden Sie eine Vorlagenkonfiguration auf dieses Repository an",
-      "name": "Vorlagen",
-      "params": {
-        "grand": {
-          "help": "GUID des großen Repositorys",
-          "label": "Großes Repository"
-        },
-        "repository": {
-          "help": "Repository-Name",
-          "label": "Repository"
-        },
-        "tmpl": {
-          "help": "Wählen Sie eine Vorlage aus, die Sie auf das Repository anwenden möchten",
-          "label": "Vorlage"
-        }
-      }
-    },
-    "backup": {
+    "backup_create": {
       "description": "Backup-Repository auf mehreren Speichersystemen",
       "name": "Sicherung",
       "params": {
@@ -60,21 +43,9 @@
           "help": "Aktivieren Sie den Hot-Backup-Modus mit Checkpoint (erfordert CRIU, keine Ausfallzeit für Online-Repos)",
           "label": "Checkpoint aktivieren"
         },
-        "dest": {
-          "help": "Name für die Sicherungsdatei",
-          "label": "Zieldateiname"
-        },
         "option": {
           "help": "Optionen (z. B. Überschreiben)",
           "label": "Optionen"
-        },
-        "repository": {
-          "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
-        },
-        "state": {
-          "help": "Überprüfen Sie vor dem Sichern, ob das Repository online oder offline ist",
-          "label": "Erforderlicher Zustand"
         },
         "storages": {
           "help": "Wählen Sie ein oder mehrere Zielspeichersysteme für die Sicherung aus",
@@ -82,113 +53,7 @@
         }
       }
     },
-    "clone": {
-      "description": "Klonen Sie das Repository auf demselben Computer",
-      "name": "Klon"
-    },
-    "container_inspect": {
-      "description": "Überprüfen Sie die Details des Docker-Containers",
-      "name": "container_inspect",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        }
-      }
-    },
-    "container_logs": {
-      "description": "Docker-Containerprotokolle anzeigen",
-      "name": "container_logs",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        },
-        "follow": {
-          "help": "Verfolgen Sie die Protokollausgabe in Echtzeit",
-          "label": "Folgen Sie den Protokollen"
-        },
-        "lines": {
-          "help": "Anzahl der anzuzeigenden Zeilen (Standard: 100)",
-          "label": "Linien"
-        }
-      }
-    },
-    "container_pause": {
-      "description": "Unterbrechen Sie einen laufenden Docker-Container",
-      "name": "Pause",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        }
-      }
-    },
-    "container_remove": {
-      "description": "Entfernen Sie einen Docker-Container",
-      "name": "entfernen",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        },
-        "force": {
-          "help": "Entfernen des laufenden Containers erzwingen",
-          "label": "Entfernen erzwingen"
-        }
-      }
-    },
-    "container_restart": {
-      "description": "Starten Sie einen Docker-Container neu",
-      "name": "neu starten",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        }
-      }
-    },
-    "container_start": {
-      "description": "Starten Sie einen Docker-Container",
-      "name": "Start",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        }
-      }
-    },
-    "container_stats": {
-      "description": "Statistiken zur Ressourcennutzung des Docker-Containers anzeigen",
-      "name": "container_stats",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID (optional – zeigt alle an, wenn leer)",
-          "label": "Container"
-        }
-      }
-    },
-    "container_stop": {
-      "description": "Stoppen Sie einen laufenden Docker-Container",
-      "name": "stoppen",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        }
-      }
-    },
-    "container_unpause": {
-      "description": "Heben Sie die Pause eines angehaltenen Docker-Containers auf",
-      "name": "Pause machen",
-      "params": {
-        "container": {
-          "help": "Containername oder -ID",
-          "label": "Container"
-        }
-      }
-    },
-    "deploy": {
+    "backup_deploy": {
       "description": "Stellen Sie das Repository auf mehreren Computern bereit",
       "name": "einsetzen",
       "params": {
@@ -196,9 +61,9 @@
           "help": "Aktivieren Sie den Hot-Deploy-Modus mit Prüfpunkt (erfordert CRIU, keine Ausfallzeit für Online-Repos)",
           "label": "Checkpoint aktivieren"
         },
-        "dest": {
-          "help": "Name für die Bereitstellungsdatei",
-          "label": "Zieldateiname"
+        "grand": {
+          "help": "Großes Repository-Referenz",
+          "label": "Großes Repository"
         },
         "machines": {
           "help": "Wählen Sie einen oder mehrere Zielcomputer für die Bereitstellung aus",
@@ -210,155 +75,19 @@
         },
         "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
+          "label": "Lagerhaus"
         },
         "state": {
           "help": "Überprüfen Sie vor der Bereitstellung, ob das Repository online oder offline ist",
           "label": "Erforderlicher Zustand"
+        },
+        "tag": {
+          "help": "Kennzeichnung für das bereitgestellte Repository (Zeitstempelformat empfohlen)",
+          "label": "Etikett"
         }
       }
     },
-    "down": {
-      "description": "Stoppen Sie die Repository-Dienste",
-      "name": "runter",
-      "params": {
-        "option": {
-          "help": "Zusätzliche Optionen",
-          "label": "Optionen"
-        },
-        "repository": {
-          "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
-        }
-      }
-    },
-    "expand": {
-      "description": "Erweitern Sie den Repository-Speicher online ohne Ausfallzeiten",
-      "name": "expandieren",
-      "params": {
-        "grand": {
-          "help": "GUID des großen Repositorys",
-          "label": "Großes Repository"
-        },
-        "repository": {
-          "help": "Repository-Name",
-          "label": "Repository"
-        },
-        "size": {
-          "help": "Neue Größe (z. B. 20 G) – muss größer als die aktuelle Größe sein",
-          "label": "Neue Größe"
-        }
-      }
-    },
-    "fork": {
-      "description": "Fork-Repository mit zeitstempelbasiertem Tag",
-      "name": "Gabel"
-    },
-    "hello": {
-      "description": "Einfache Testfunktion, die „Hallo“ vom Hostnamen ausgibt",
-      "name": "Hallo"
-    },
-    "list": {
-      "description": "Listen Sie Dateien an Remote-Speicherorten auf",
-      "name": "Remote-Dateien auflisten",
-      "params": {
-        "format": {
-          "help": "Format für die Dateiliste",
-          "label": "Ausgabeformat"
-        },
-        "from": {
-          "help": "Maschine oder Speichersystem, von dem Dateien aufgelistet werden sollen",
-          "label": "Quellort"
-        },
-        "path": {
-          "help": "Optionaler Pfad innerhalb des Speichers",
-          "label": "Weg"
-        }
-      }
-    },
-    "mount": {
-      "description": "Mounten Sie Repository-Dateisysteme",
-      "name": "montieren",
-      "params": {
-        "checkpoint": {
-          "help": "Container vom Kontrollpunkt wiederherstellen, falls verfügbar (erfordert CRIU)",
-          "label": "Aktivieren Sie die Checkpoint-Wiederherstellung"
-        },
-        "from": {
-          "help": "Remote-Computer, von dem aus gemountet werden soll",
-          "label": "Von der Maschine"
-        },
-        "repository": {
-          "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
-        }
-      }
-    },
-    "new": {
-      "description": "Erstellen Sie ein neues Repository",
-      "name": "neu",
-      "params": {
-        "repository": {
-          "help": "Repository-Name",
-          "label": "Repository"
-        },
-        "size": {
-          "help": "Repository-Größe (z. B. 10 GB)",
-          "label": "Größe"
-        }
-      }
-    },
-    "ownership": {
-      "description": "Ändern Sie den Repository-Eigentümer",
-      "name": "Eigentum",
-      "params": {
-        "from": {
-          "help": "Aktueller Besitzer",
-          "label": "Aktueller Besitzer"
-        },
-        "repository": {
-          "help": "Repository-Name",
-          "label": "Repository"
-        },
-        "to": {
-          "help": "Neuer Besitzer (Standard: Universalbenutzer)",
-          "label": "Neuer Besitzer"
-        }
-      }
-    },
-    "ping": {
-      "description": "Testen Sie die Netzwerkverbindung zur Maschine",
-      "name": "Klingeln"
-    },
-    "plugin": {
-      "description": "Aktivieren Sie Repository-Plugins",
-      "name": "Plugin",
-      "params": {
-        "plugin": {
-          "help": "Plugin-Name(n), durch Kommas getrennt",
-          "label": "Plugin"
-        },
-        "repository": {
-          "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
-        }
-      }
-    },
-    "plugout": {
-      "description": "Repository-Plugins deaktivieren",
-      "name": "Ausstecken",
-      "params": {
-        "plugin": {
-          "help": "Plugin-Name(n), durch Kommas getrennt",
-          "label": "Plugin"
-        },
-        "repository": {
-          "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
-        }
-      }
-    },
-    "pull": {
+    "backup_pull": {
       "description": "Ziehen Sie das Repository aus dem Remote-Speicher",
       "name": "Ziehen",
       "params": {
@@ -368,7 +97,7 @@
         },
         "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
+          "label": "Lagerhaus"
         },
         "sourceType": {
           "help": "Wählen Sie aus, ob von einer Maschine oder einem Lager abgerufen werden soll",
@@ -376,7 +105,7 @@
         }
       }
     },
-    "push": {
+    "backup_push": {
       "description": "Repository in den Remote-Speicher verschieben",
       "name": "drücken",
       "params": {
@@ -398,7 +127,7 @@
         },
         "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
+          "label": "Lagerhaus"
         },
         "state": {
           "help": "Überprüfen Sie vor dem Pushen, ob das Repository online oder offline ist",
@@ -410,29 +139,133 @@
         }
       }
     },
-    "resize": {
-      "description": "Größe des Repository-Speichers ändern (Offline-Betrieb – Repository muss ausgehängt werden)",
-      "name": "Größe ändern",
+    "container_inspect": {
+      "description": "Überprüfen Sie die Details des Docker-Containers",
+      "name": "Container untersuchen",
       "params": {
-        "repository": {
-          "help": "Repository-Name",
-          "label": "Repository"
-        },
-        "size": {
-          "help": "Neue Größe (z. B. 20G) – kann größer oder kleiner als die aktuelle Größe sein",
-          "label": "Neue Größe"
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
         }
       }
     },
-    "rm": {
-      "description": "Repository löschen",
-      "name": "rm",
+    "container_logs": {
+      "description": "Docker-Containerprotokolle anzeigen",
+      "name": "Container-Protokolle",
       "params": {
-        "repository": {
-          "help": "Repository-Name",
-          "label": "Repository"
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
+        },
+        "follow": {
+          "help": "Verfolgen Sie die Protokollausgabe in Echtzeit",
+          "label": "Folgen Sie den Protokollen"
+        },
+        "lines": {
+          "help": "Anzahl der anzuzeigenden Zeilen (Standard: 100)",
+          "label": "Linien"
         }
       }
+    },
+    "container_pause": {
+      "description": "Unterbrechen Sie einen laufenden Docker-Container",
+      "name": "Pause",
+      "params": {
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
+        }
+      }
+    },
+    "container_remove": {
+      "description": "Entfernen Sie einen Docker-Container",
+      "name": "entfernen",
+      "params": {
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
+        },
+        "force": {
+          "help": "Entfernen des laufenden Containers erzwingen",
+          "label": "Entfernen erzwingen"
+        }
+      }
+    },
+    "container_restart": {
+      "description": "Starten Sie einen Docker-Container neu",
+      "name": "neu starten",
+      "params": {
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
+        }
+      }
+    },
+    "container_start": {
+      "description": "Starten Sie einen Docker-Container",
+      "name": "Start",
+      "params": {
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
+        }
+      }
+    },
+    "container_stats": {
+      "description": "Statistiken zur Ressourcennutzung des Docker-Containers anzeigen",
+      "name": "Container-Statistiken",
+      "params": {
+        "container": {
+          "help": "Containername oder -ID (optional – zeigt alle an, wenn leer)",
+          "label": "Behälter"
+        }
+      }
+    },
+    "container_stop": {
+      "description": "Stoppen Sie einen laufenden Docker-Container",
+      "name": "stoppen",
+      "params": {
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
+        }
+      }
+    },
+    "container_unpause": {
+      "description": "Heben Sie die Pause eines angehaltenen Docker-Containers auf",
+      "name": "Pause machen",
+      "params": {
+        "container": {
+          "help": "Containername oder -ID",
+          "label": "Behälter"
+        }
+      }
+    },
+    "fork": {
+      "description": "Fork-Repository mit zeitstempelbasiertem Tag",
+      "name": "Gabel",
+      "params": {
+        "grand": {
+          "help": "Großes Repository-Referenz",
+          "label": "Großes Repository"
+        },
+        "repository": {
+          "help": "Zu forkendes Repository",
+          "label": "Lagerhaus"
+        },
+        "state": {
+          "help": "Aktueller Zustand des Repositorys",
+          "label": "Staat"
+        },
+        "tag": {
+          "help": "Kennzeichnung für das geforkete Repository (Zeitstempelformat empfohlen)",
+          "label": "Etikett"
+        }
+      }
+    },
+    "machine_ping": {
+      "description": "Testen Sie die Netzwerkverbindung zur Maschine",
+      "name": "Klingeln"
     },
     "setup": {
       "description": "Richten Sie das Betriebssystem mit den erforderlichen Tools und Konfigurationen ein",
@@ -468,11 +301,188 @@
         }
       }
     },
-    "uninstall": {
+    "machine_uninstall": {
       "description": "Systemkomponenten bereinigen und deinstallieren",
       "name": "deinstallieren"
     },
-    "unmount": {
+    "machine_version": {
+      "description": "Einfache Testfunktion, die „Hallo“ vom Hostnamen ausgibt",
+      "name": "Hallo"
+    },
+    "plugin": {
+      "description": "Aktivieren Sie Repository-Plugins",
+      "name": "Plugin",
+      "params": {
+        "plugin": {
+          "help": "Plugin-Name(n), durch Kommas getrennt",
+          "label": "Plug-in"
+        },
+        "repository": {
+          "help": "Repository-Name(n), durch Kommas getrennt",
+          "label": "Lagerhaus"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Repository-Plugins deaktivieren",
+      "name": "Ausstecken",
+      "params": {
+        "plugin": {
+          "help": "Plugin-Name(n), durch Kommas getrennt",
+          "label": "Plug-in"
+        },
+        "repository": {
+          "help": "Repository-Name(n), durch Kommas getrennt",
+          "label": "Lagerhaus"
+        }
+      }
+    },
+    "pull": {
+      "name": "Ziehen"
+    },
+    "repository_create": {
+      "description": "Erstellen Sie ein neues Repository",
+      "name": "neu",
+      "params": {
+        "repository": {
+          "help": "Repository-Name",
+          "label": "Lagerhaus"
+        },
+        "size": {
+          "help": "Repository-Größe (z. B. 10 GB)",
+          "label": "Größe"
+        }
+      }
+    },
+    "repository_delete": {
+      "description": "Repository löschen",
+      "name": "rm",
+      "params": {
+        "repository": {
+          "help": "Repository-Name",
+          "label": "Lagerhaus"
+        }
+      }
+    },
+    "repository_down": {
+      "description": "Stoppen Sie die Repository-Dienste",
+      "name": "runter",
+      "params": {
+        "option": {
+          "help": "Zusätzliche Optionen",
+          "label": "Optionen"
+        },
+        "repository": {
+          "help": "Repository-Name(n), durch Kommas getrennt",
+          "label": "Lagerhaus"
+        }
+      }
+    },
+    "repository_expand": {
+      "description": "Erweitern Sie den Repository-Speicher online ohne Ausfallzeiten",
+      "name": "expandieren",
+      "params": {
+        "grand": {
+          "help": "GUID des großen Repositorys",
+          "label": "Großes Repository"
+        },
+        "repository": {
+          "help": "Repository-Name",
+          "label": "Lagerhaus"
+        },
+        "size": {
+          "help": "Neue Größe (z. B. 20 G) – muss größer als die aktuelle Größe sein",
+          "label": "Neue Größe"
+        }
+      }
+    },
+    "repository_list": {
+      "description": "Listen Sie Dateien an Remote-Speicherorten auf",
+      "name": "Remote-Dateien auflisten",
+      "params": {
+        "format": {
+          "help": "Format für die Dateiliste",
+          "label": "Ausgabeformat"
+        },
+        "from": {
+          "help": "Maschine oder Speichersystem, von dem Dateien aufgelistet werden sollen",
+          "label": "Quellort"
+        },
+        "path": {
+          "help": "Optionaler Pfad innerhalb des Speichers",
+          "label": "Weg"
+        }
+      }
+    },
+    "repository_mount": {
+      "description": "Mounten Sie Repository-Dateisysteme",
+      "name": "montieren",
+      "params": {
+        "checkpoint": {
+          "help": "Container vom Kontrollpunkt wiederherstellen, falls verfügbar (erfordert CRIU)",
+          "label": "Aktivieren Sie die Checkpoint-Wiederherstellung"
+        },
+        "from": {
+          "help": "Remote-Computer, von dem aus gemountet werden soll",
+          "label": "Von der Maschine"
+        },
+        "repository": {
+          "help": "Repository-Name(n), durch Kommas getrennt",
+          "label": "Lagerhaus"
+        }
+      }
+    },
+    "repository_ownership": {
+      "description": "Ändern Sie den Repository-Eigentümer",
+      "name": "Eigentum",
+      "params": {
+        "from": {
+          "help": "Aktueller Besitzer",
+          "label": "Aktueller Besitzer"
+        },
+        "repository": {
+          "help": "Repository-Name",
+          "label": "Lagerhaus"
+        },
+        "to": {
+          "help": "Neuer Besitzer (Standard: Universalbenutzer)",
+          "label": "Neuer Besitzer"
+        }
+      }
+    },
+    "repository_resize": {
+      "description": "Größe des Repository-Speichers ändern (Offline-Betrieb – Repository muss ausgehängt werden)",
+      "name": "Größe ändern",
+      "params": {
+        "repository": {
+          "help": "Repository-Name",
+          "label": "Lagerhaus"
+        },
+        "size": {
+          "help": "Neue Größe (z. B. 20G) – kann größer oder kleiner als die aktuelle Größe sein",
+          "label": "Neue Größe"
+        }
+      }
+    },
+    "repository_template_apply": {
+      "description": "Wenden Sie eine Vorlagenkonfiguration auf dieses Repository an",
+      "name": "Vorlagen",
+      "params": {
+        "grand": {
+          "help": "GUID des großen Repositorys",
+          "label": "Großes Repository"
+        },
+        "repository": {
+          "help": "Repository-Name",
+          "label": "Lagerhaus"
+        },
+        "tmpl": {
+          "help": "Wählen Sie eine Vorlage aus, die Sie auf das Repository anwenden möchten",
+          "label": "Vorlage"
+        }
+      }
+    },
+    "repository_unmount": {
       "description": "Repository-Dateisysteme aushängen",
       "name": "aussteigen",
       "params": {
@@ -486,11 +496,11 @@
         },
         "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
+          "label": "Lagerhaus"
         }
       }
     },
-    "up": {
+    "repository_up": {
       "description": "Starten Sie Repository-Dienste mit Rediaccfile",
       "name": "hoch",
       "params": {
@@ -500,11 +510,11 @@
         },
         "repository": {
           "help": "Repository-Name(n), durch Kommas getrennt",
-          "label": "Repository"
+          "label": "Lagerhaus"
         }
       }
     },
-    "validate": {
+    "repository_validate": {
       "description": "Validieren Sie das Repository, indem Sie Prep, Up, Health Checks, Test und Down ausführen",
       "name": "bestätigen",
       "params": {
@@ -518,7 +528,7 @@
         },
         "repository": {
           "help": "Zu validierender Repository-Name",
-          "label": "Repository"
+          "label": "Lagerhaus"
         },
         "skip_down": {
           "help": "Lassen Sie die Dienste nach der Validierung weiterlaufen",
@@ -535,27 +545,30 @@
       }
     }
   },
+  "imagePlaceholder": "z. B. Registry/Image:Tag",
   "missingRequiredParams": "Bitte geben Sie alle erforderlichen Parameter ein: {{params}}",
   "onlinePushLearnMore": "Erfahren Sie mehr über Online- und Offline-Pushs →",
   "onlinePushWarningMessage": "Das Pushen eines gemounteten Repositorys während der Ausführung von Diensten kann zu Dateninkonsistenzen führen.",
   "onlinePushWarningTitle": "Online-Push-Warnung",
+  "original": " (Original-Repository)",
   "priority": "Priorität",
   "priorityAboveNormal": "Über dem Normalwert",
   "priorityBelowNormal": "Normal",
   "priorityHelp": "Aufgaben werden zuerst nach Priorität und dann nach Alter bearbeitet",
   "priorityHigh": "Hoch",
   "priorityHighDescription": "Ermöglicht mehrere gleichzeitige Aufgaben mit hoher Priorität. Für wichtige Aufgaben verwenden, die eine schnellere Bearbeitung erfordern.",
-  "priorityHighWarning": "Hohe Priorität (2)",
   "priorityHighest": "Höchste",
   "priorityHighestDescription": "Durch das Senden einer Aufgabe mit der höchsten Priorität werden alle bestehenden Aufgaben mit der höchsten Priorität automatisch abgebrochen. Nur für dringende kritische Aufgaben verwenden, die sofortige Aufmerksamkeit erfordern.",
   "priorityHighestTimeout": "P1-Aufgaben-Timeout nach 33 Sekunden",
   "priorityHighestTimeoutWarning": "Am besten für schnelle Vorgänge wie SSH-Tests, Gesundheitsprüfungen und Statusabfragen geeignet. Für längere kritische Aufgaben verwenden Sie P2 (tierbasiertes Timeout: 2–96 Stunden).",
   "priorityHighestWarning": "Höchste Priorität (1)",
+  "priorityHighWarning": "Hohe Priorität (2)",
+  "priorityLevelFormat": "P{{level}} ({{label}})",
   "priorityLow": "Niedrig",
   "priorityLowDescription": "Standardverarbeitungsgeschwindigkeit. Empfohlen für die meisten Einsätze und alltäglichen Aufgaben.",
-  "priorityLowWarning": "Normale Priorität (4)",
   "priorityLowestDescription": "Langsamste Verarbeitungsgeschwindigkeit. Verwendung für Batch-Vorgänge oder Aufgaben ohne zeitliche Einschränkungen.",
   "priorityLowestWarning": "Niedrigste Priorität (5)",
+  "priorityLowWarning": "Normale Priorität (4)",
   "priorityNormal": "Über dem Normalwert",
   "priorityNormalDescription": "Schneller als die Standardverarbeitungsgeschwindigkeit. Verwenden Sie diese Option für Aufgaben, die eine schnellere Verarbeitung als normal erfordern.",
   "priorityNormalWarning": "Über der normalen Priorität (3)",
@@ -566,10 +579,15 @@
   "priorityPopoverP4": "Tier-Timeout (2–96 Stunden). Standardverarbeitung für die meisten Vorgänge.",
   "priorityPopoverP5": "Tier-Timeout (2–96 Stunden). Für Batch-Operationen ohne zeitliche Einschränkungen.",
   "priorityPopoverTitle": "Prioritätssystem",
+  "pushOperationDetails": "Push-Betriebsdetails",
   "quickTaskBadge": "Schnelle Aufgabe",
   "quickTaskDescription": "In weniger als 30 Sekunden abgeschlossen",
+  "repositoryLineage": "Repository-Abstammung",
+  "repositoryWillBePushedOffline": "The repository will be pushed in offline state (unmounted).",
+  "repositoryWillBePushedOnline": "The repository will be pushed in online state (mounted).",
   "searchFunctions": "Suchfunktionen...",
   "selectFunction": "Wählen Sie Funktion",
   "selectFunctionToConfigure": "Wählen Sie eine Funktion zum Konfigurieren aus",
+  "sourceRepository": "Quell-Repository",
   "validationError": "Validierungsfehler"
 }

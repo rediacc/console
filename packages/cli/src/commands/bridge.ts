@@ -1,17 +1,18 @@
 import { Command } from 'commander';
 import {
   parseGetRegionBridges,
-  parseGetCompanyVaults,
+  parseGetOrganizationVaults,
   parseCreateBridge,
   extractPrimaryOrSecondary,
 } from '@rediacc/shared/api';
 import type {
-  GetCompanyVaults_ResultSet1,
+  GetOrganizationVaults_ResultSet1,
   CreateBridgeParams,
   DeleteBridgeParams,
   UpdateBridgeNameParams,
   UpdateBridgeVaultParams,
 } from '@rediacc/shared/types';
+import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -47,9 +48,9 @@ export function registerBridgeCommands(program: Command): void {
     }),
     vaultConfig: {
       fetch: async () => {
-        const response = await typedApi.GetCompanyVaults({});
-        const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+        const response = await typedApi.GetOrganizationVaults({});
+        const vaults = parseGetOrganizationVaults(response as never);
+        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Bridge',
     },
@@ -63,21 +64,21 @@ export function registerBridgeCommands(program: Command): void {
   // Add custom reset-auth command
   bridge
     .command('reset-auth <name>')
-    .description('Reset bridge authorization token')
-    .option('-r, --region <name>', 'Region name')
+    .description(t('commands.bridge.resetAuth.description'))
+    .option('-r, --region <name>', t('options.region'))
     .action(async (name: string, options: { region?: string }) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.region) {
-          throw new ValidationError('Region name required. Use --region or set context.');
+          throw new ValidationError(t('errors.regionRequired'));
         }
 
         const apiResponse = await withSpinner(
-          `Resetting authorization for bridge "${name}"...`,
+          t('commands.bridge.resetAuth.resetting', { name }),
           () => typedApi.ResetBridgeAuthorization({ bridgeName: name, isCloudManaged: false }),
-          'Authorization reset'
+          t('commands.bridge.resetAuth.success')
         );
 
         // Extract token from response
@@ -87,7 +88,7 @@ export function registerBridgeCommands(program: Command): void {
         const authToken = tokenData?.authToken ?? null;
 
         if (authToken) {
-          outputService.success(`New token: ${authToken}`);
+          outputService.success(t('commands.bridge.resetAuth.newToken', { token: authToken }));
         }
       } catch (error) {
         handleError(error);

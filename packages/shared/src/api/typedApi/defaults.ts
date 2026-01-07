@@ -9,6 +9,8 @@ import type { StoredProcedureName } from '../../types/api-schema.generated';
 
 type ProcedureDefaults = Partial<Record<StoredProcedureName, Record<string, unknown>>>;
 
+export const DEFAULT_REPOSITORY_TAG = 'latest';
+
 /**
  * Map of procedure names to their default parameter values.
  * These defaults are applied when calling procedures through TypedApi.
@@ -20,7 +22,7 @@ export const PROCEDURE_DEFAULTS: ProcedureDefaults = {
   CreateBridge: { vaultContent: '{}' },
   CreateMachine: { vaultContent: '{}' },
   CreateRegion: { vaultContent: '{}' },
-  CreateRepository: { vaultContent: '{}' },
+  CreateRepository: { vaultContent: '{}', repositoryTag: DEFAULT_REPOSITORY_TAG },
   CreateStorage: { vaultContent: '{}' },
   CreateTeam: { vaultContent: '{}' },
   // Ceph resources

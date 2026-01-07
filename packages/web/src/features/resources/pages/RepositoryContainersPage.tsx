@@ -1,9 +1,21 @@
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Button, Card, Drawer, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Drawer,
+  Flex,
+  Grid,
+  Modal,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useMachines } from '@/api/queries/machines';
-import { useRepositories } from '@/api/queries/repositories';
+import { useGetTeamMachines } from '@/api/api-hooks.generated';
+import { useGetTeamRepositories } from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
@@ -16,6 +28,7 @@ import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { Machine, PluginContainer } from '@/types';
 import { DoubleLeftOutlined, InboxOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { parseListResult } from '@rediacc/shared/services/machine';
 
 type RepoContainersLocationState = {
   machine?: Machine;
@@ -43,12 +56,16 @@ const RepoContainersPage: React.FC = () => {
   const connectivityTest = useDialogState();
 
   // Fetch machine data if not provided via state
-  const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines();
+  const {
+    data: machines,
+    isLoading: machinesLoading,
+    refetch: refetchMachines,
+  } = useGetTeamMachines();
   const actualMachine = machine ?? machines?.find((m) => m.machineName === machineName);
 
   // Fetch repositories to get the repositoryGuid from friendly name
-  const { data: teamRepositories = [], isLoading: repositoriesLoading } = useRepositories(
-    actualMachine?.teamName ? [actualMachine.teamName] : undefined
+  const { data: teamRepositories = [], isLoading: repositoriesLoading } = useGetTeamRepositories(
+    actualMachine?.teamName ?? undefined
   );
 
   // Reconstruct repository from vaultStatus if not provided via state
@@ -59,41 +76,30 @@ const RepoContainersPage: React.FC = () => {
 
     // First, find the repositoryGuid from the API data using the friendly name
     const repoCredential = teamRepositories.find((r) => r.repositoryName === repositoryName);
-    const repoGuidToFind = repoCredential?.repositoryGuid;
+    const repositoryGuidToFind = repoCredential?.repositoryGuid;
 
-    try {
-      const vaultStatusData = JSON.parse(actualMachine.vaultStatus);
-      if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-        let cleanedResult = vaultStatusData.result.trim();
-        const newlineIndex = cleanedResult.indexOf('\njq:');
-        if (newlineIndex > 0) {
-          cleanedResult = cleanedResult.substring(0, newlineIndex);
-        }
-        const result = JSON.parse(cleanedResult);
-
-        if (Array.isArray(result?.repositories)) {
-          // Search by GUID if we have it, otherwise try by name as fallback
-          return (
-            result.repositories.find((candidate: unknown): candidate is RepositoryContainerData => {
-              if (!isRepositoryData(candidate)) {
-                return false;
-              }
-              return repoGuidToFind
-                ? candidate.name === repoGuidToFind
-                : candidate.name === repositoryName;
-            }) ?? null
-          );
-        }
-      }
-    } catch (err) {
-      console.error('Failed to parse repository from vaultStatus:', err);
+    const listResult = parseListResult(actualMachine.vaultStatus);
+    if (listResult && Array.isArray(listResult.repositories)) {
+      // Search by GUID if we have it, otherwise try by name as fallback
+      return (
+        listResult.repositories.find((candidate): candidate is RepositoryContainerData => {
+          if (!isRepositoryData(candidate)) {
+            return false;
+          }
+          return repositoryGuidToFind
+            ? candidate.name === repositoryGuidToFind
+            : candidate.name === repositoryName;
+        }) ?? null
+      );
     }
 
     return null;
-  }, [repository, actualMachine?.vaultStatus, repositoryName, teamRepositories]);
+  }, [repository, actualMachine, repositoryName, teamRepositories]);
 
   // Panel width management
   const panelWidth = usePanelWidth();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const refreshData = useCallback(async () => {
     await refetchMachines();
@@ -157,7 +163,6 @@ const RepoContainersPage: React.FC = () => {
                 </Flex>
               }
               type="error"
-              showIcon
             />
           </Flex>
         </Card>
@@ -187,7 +192,6 @@ const RepoContainersPage: React.FC = () => {
                 </Flex>
               }
               type="error"
-              showIcon
             />
           </Flex>
         </Card>
@@ -225,7 +229,7 @@ const RepoContainersPage: React.FC = () => {
   ];
 
   const header = (
-    <Flex align="center" gap={8} wrap>
+    <Flex align="center" wrap>
       <Tooltip title={t('machines:backToRepositories')}>
         <Button
           type="text"
@@ -292,7 +296,28 @@ const RepoContainersPage: React.FC = () => {
     />
   );
 
-  const drawer = (
+  const panelContent = selectedContainer && (
+    <ContainerDetailPanel
+      container={selectedContainer as unknown as ContainerData}
+      visible
+      onClose={handlePanelClose}
+      splitView
+    />
+  );
+
+  const drawer = isMobile ? (
+    <Modal
+      open={!!selectedContainer}
+      onCancel={handlePanelClose}
+      footer={null}
+      width="100%"
+      styles={{ body: { padding: 0 } }}
+      data-testid="repository-containers-modal"
+      centered
+    >
+      {panelContent}
+    </Modal>
+  ) : (
     <Drawer
       open={!!selectedContainer}
       onClose={handlePanelClose}
@@ -301,14 +326,7 @@ const RepoContainersPage: React.FC = () => {
       mask
       data-testid="repository-containers-drawer"
     >
-      {selectedContainer && (
-        <ContainerDetailPanel
-          container={selectedContainer as unknown as ContainerData}
-          visible
-          onClose={handlePanelClose}
-          splitView
-        />
-      )}
+      {panelContent}
     </Drawer>
   );
 
@@ -344,7 +362,7 @@ const RepoContainersPage: React.FC = () => {
           void handleRefresh();
         }}
         machines={[actualMachine]}
-        teamFilter={[actualMachine.teamName]}
+        teamFilter={[actualMachine.teamName ?? '']}
       />
     </>
   );

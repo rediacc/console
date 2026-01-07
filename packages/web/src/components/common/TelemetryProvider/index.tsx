@@ -3,7 +3,7 @@ import { Flex } from 'antd';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { createTelemetryConfig, telemetryService } from '@/services/telemetryService';
-import { selectCompany, selectUser } from '@/store/auth/authSelectors';
+import { selectOrganization, selectUser } from '@/store/auth/authSelectors';
 import { isElectron } from '@/utils/environment';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;
@@ -81,7 +81,7 @@ declare global {
 export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const user = useSelector(selectUser);
-  const company = useSelector(selectCompany);
+  const organization = useSelector(selectOrganization);
   const location = useLocation();
 
   useEffect(() => {
@@ -122,10 +122,10 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
     if (isInitialized && user) {
       telemetryService.setUserContext({
         email: user.email,
-        company: company ?? undefined,
+        organization: organization ?? undefined,
       });
     }
-  }, [isInitialized, user, company]);
+  }, [isInitialized, user, organization]);
 
   useEffect(() => {
     if (isInitialized) {

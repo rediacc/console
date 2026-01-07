@@ -1,0 +1,129 @@
+{
+  "name": "@rediacc/shared-desktop",
+  "version": "0.3.6",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./ssh": {
+      "types": "./dist/ssh/index.d.ts",
+      "default": "./dist/ssh/index.js"
+    },
+    "./ssh/*": {
+      "types": "./dist/ssh/*.d.ts",
+      "default": "./dist/ssh/*.js"
+    },
+    "./sync": {
+      "types": "./dist/sync/index.d.ts",
+      "default": "./dist/sync/index.js"
+    },
+    "./sync/*": {
+      "types": "./dist/sync/*.d.ts",
+      "default": "./dist/sync/*.js"
+    },
+    "./terminal": {
+      "types": "./dist/terminal/index.d.ts",
+      "default": "./dist/terminal/index.js"
+    },
+    "./terminal/*": {
+      "types": "./dist/terminal/*.d.ts",
+      "default": "./dist/terminal/*.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol/index.d.ts",
+      "default": "./dist/protocol/index.js"
+    },
+    "./protocol/*": {
+      "types": "./dist/protocol/*.d.ts",
+      "default": "./dist/protocol/*.js"
+    },
+    "./msys2": {
+      "types": "./dist/msys2/index.d.ts",
+      "default": "./dist/msys2/index.js"
+    },
+    "./msys2/*": {
+      "types": "./dist/msys2/*.d.ts",
+      "default": "./dist/msys2/*.js"
+    },
+    "./repository": {
+      "types": "./dist/repository/index.d.ts",
+      "default": "./dist/repository/index.js"
+    },
+    "./repository/*": {
+      "types": "./dist/repository/*.d.ts",
+      "default": "./dist/repository/*.js"
+    },
+    "./sftp": {
+      "types": "./dist/sftp/index.d.ts",
+      "default": "./dist/sftp/index.js"
+    },
+    "./sftp/*": {
+      "types": "./dist/sftp/*.d.ts",
+      "default": "./dist/sftp/*.js"
+    },
+    "./vscode": {
+      "types": "./dist/vscode/index.d.ts",
+      "default": "./dist/vscode/index.js"
+    },
+    "./vscode/*": {
+      "types": "./dist/vscode/*.d.ts",
+      "default": "./dist/vscode/*.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
+    },
+    "./utils/*": {
+      "types": "./dist/utils/*.d.ts",
+      "default": "./dist/utils/*.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "default": "./dist/config/index.js"
+    },
+    "./config/*": {
+      "types": "./dist/config/*.d.ts",
+      "default": "./dist/config/*.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts",
+      "default": "./dist/types/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "@rediacc/shared": "*",
+    "@types/node": "^22.10.2",
+    "@types/ssh2": "^1.15.5",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "@rediacc/shared": "*"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

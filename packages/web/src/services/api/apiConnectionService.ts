@@ -24,8 +24,13 @@ class ApiConnectionService {
     // Determine build type from environment
     const envBuildType =
       (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? import.meta.env.MODE;
-    this.buildType =
-      envBuildType === 'RELEASE' || import.meta.env.MODE === 'production' ? 'RELEASE' : 'DEBUG';
+    // RELEASE and production use relative /api paths (same domain)
+    // DEBUG and ELECTRON use absolute localhost URL (http://localhost:7322/api)
+    if (envBuildType === 'RELEASE' || import.meta.env.MODE === 'production') {
+      this.buildType = 'RELEASE';
+    } else {
+      this.buildType = 'DEBUG';
+    }
   }
 
   /**

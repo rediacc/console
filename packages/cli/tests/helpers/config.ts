@@ -14,7 +14,7 @@ export interface TestConfig {
 }
 
 export interface TestAccount {
-  companyName: string;
+  organizationName: string;
   email: string;
   password: string;
 }

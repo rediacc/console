@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Checkbox, Flex, Form, Input, Radio, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { SizedModal } from '@/components/common';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
+import { SizedModal } from '@/components/common/SizedModal';
 import { useMessage } from '@/hooks';
 import { createFreshForkToken } from '@/services/auth';
 import type { PluginContainer } from '@/types';
@@ -213,18 +213,22 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
       <Form layout="vertical">
         <Form.Item label={t('resources:localCommandBuilder.operatingSystem')}>
-          <Radio.Group value={os} onChange={handleOsChange}>
-            <Radio.Button value="unix">
+          <Radio.Group value={os} onChange={handleOsChange} data-testid="local-command-os-select">
+            <Radio.Button value="unix" data-testid="local-command-os-unix">
               <AppleOutlined /> {t('resources:localCommandBuilder.unixLinuxMac')}
             </Radio.Button>
-            <Radio.Button value="windows">
+            <Radio.Button value="windows" data-testid="local-command-os-windows">
               <WindowsOutlined /> {t('resources:localCommandBuilder.windows')}
             </Radio.Button>
           </Radio.Group>
         </Form.Item>
 
         <Form.Item>
-          <Checkbox checked={useDocker} onChange={handleDockerChange}>
+          <Checkbox
+            checked={useDocker}
+            onChange={handleDockerChange}
+            data-testid="local-command-docker-checkbox"
+          >
             {t('resources:localCommandBuilder.useDocker')}
             <Typography.Text>{t('resources:localCommandBuilder.useDockerHelp')}</Typography.Text>
           </Checkbox>
@@ -232,7 +236,11 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
         {useDocker && (
           <Form.Item>
-            <Checkbox checked={useNetworkHost} onChange={handleNetworkHostChange}>
+            <Checkbox
+              checked={useNetworkHost}
+              onChange={handleNetworkHostChange}
+              data-testid="local-command-network-host-checkbox"
+            >
               {t('resources:localCommandBuilder.useNetworkHost')}
               <Typography.Text>
                 {t('resources:localCommandBuilder.useNetworkHostHelp')}
@@ -271,10 +279,11 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
                   help={t('resources:localCommandBuilder.commandHelp')}
                 >
                   <Input
-                    placeholder="docker ps"
+                    placeholder={t('resources:localCommandBuilder.commandPlaceholder')}
                     value={termCommand}
                     onChange={handleTermCommandChange}
                     autoComplete="off"
+                    data-testid="local-command-terminal-input"
                   />
                 </Form.Item>
               </Form>
@@ -297,7 +306,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         ]}
       />
 
-      <Flex vertical gap={12} className="w-full">
+      <Flex vertical className="w-full gap-sm">
         <Flex align="center" justify="space-between" wrap>
           <Typography.Text strong>
             {t('resources:localCommandBuilder.generatedCommand')}:
@@ -314,10 +323,12 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         </Flex>
 
         {tokenError && (
-          <Flex vertical gap={4}>
-            <Typography.Text type="danger">Token generation failed: {tokenError}</Typography.Text>
+          <Flex vertical className="gap-sm">
+            <Typography.Text type="danger">
+              {t('resources:localCommandBuilder.tokenGenerationFailed')}: {tokenError}
+            </Typography.Text>
             <Typography.Text>
-              Copy will attempt without secure token. You may need to login manually.
+              {t('resources:localCommandBuilder.copyWithoutTokenWarning')}
             </Typography.Text>
           </Flex>
         )}
@@ -338,18 +349,24 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           <Typography.Text>
             {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
           </Typography.Text>
-          <Typography.Text>Token: Secure token will be generated on copy</Typography.Text>
+          <Typography.Text>
+            {t('resources:localCommandBuilder.token')}:{' '}
+            {t('resources:localCommandBuilder.tokenGeneratedOnCopy')}
+          </Typography.Text>
         </Flex>
       </Flex>
 
-      <Flex align="center" wrap gap={8}>
-        <Button onClick={onClose}>{t('common:close')}</Button>
+      <Flex align="center" wrap>
+        <Button onClick={onClose} data-testid="local-command-close-button">
+          {t('common:close')}
+        </Button>
         <Button
           type="primary"
           icon={<CopyOutlined />}
           onClick={copyToClipboard}
           disabled={isGeneratingToken}
           loading={isGeneratingToken}
+          data-testid="local-command-copy-button"
         >
           {t('resources:localCommandBuilder.copyCommand')}
         </Button>

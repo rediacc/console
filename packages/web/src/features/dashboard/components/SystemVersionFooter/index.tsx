@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
 import { Tag, Tooltip, Typography, Flex } from 'antd';
-import { useApiHealth } from '@/api/queries/health';
+import { useTranslation } from 'react-i18next';
+import { useApiHealth } from '@/api/hooks-system';
 import { versionService } from '@/services/versionService';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
@@ -13,6 +14,7 @@ const formatUptime = (uptime: { days: number; hours: number; minutes: number }):
 };
 
 const SystemVersionFooter: React.FC = () => {
+  const { t } = useTranslation('common');
   const [uiVersion, setUiVersion] = useState<string>('...');
   const { data: apiHealth, isLoading: apiLoading } = useApiHealth();
 
@@ -42,18 +44,18 @@ const SystemVersionFooter: React.FC = () => {
   const uptime = apiHealth?.uptime;
 
   return (
-    <Flex align="center" justify="center" gap={8} data-testid="system-version-footer">
-      <Flex align="center" gap={8} className="inline-flex">
+    <Flex align="center" justify="center" data-testid="system-version-footer">
+      <Flex align="center" className="inline-flex">
         <DesktopOutlined />
-        <Typography.Text>Console</Typography.Text>
+        <Typography.Text>{t('dashboard.widgets.systemVersion.console')}</Typography.Text>
         <Typography.Text data-testid="ui-version">{uiVersion}</Typography.Text>
       </Flex>
 
       <Typography.Text>|</Typography.Text>
 
-      <Flex align="center" gap={8} className="inline-flex">
+      <Flex align="center" className="inline-flex">
         <CloudServerOutlined />
-        <Typography.Text>API</Typography.Text>
+        <Typography.Text>{t('dashboard.widgets.systemVersion.api')}</Typography.Text>
         <Typography.Text data-testid="api-version">{apiVersion}</Typography.Text>
         <Tag bordered={false} data-testid="environment-tag">
           {environment}
@@ -63,8 +65,8 @@ const SystemVersionFooter: React.FC = () => {
       {uptime && (
         <>
           <Typography.Text>|</Typography.Text>
-          <Tooltip title="API Uptime">
-            <Flex align="center" gap={8} className="inline-flex">
+          <Tooltip title={t('dashboard.widgets.systemVersion.apiUptime')}>
+            <Flex align="center" className="inline-flex">
               <ClockCircleOutlined />
               <Typography.Text data-testid="api-uptime">{formatUptime(uptime)}</Typography.Text>
             </Flex>

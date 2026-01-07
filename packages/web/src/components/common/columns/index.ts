@@ -9,6 +9,7 @@ export {
   createTruncatedColumn,
   createVersionColumn,
   type DateColumnOptions,
+  RESPONSIVE_HIDE_XS,
   type StatusColumnOptions,
   type TruncatedColumnOptions,
   type VersionColumnOptions,

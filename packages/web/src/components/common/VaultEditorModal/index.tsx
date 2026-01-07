@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { Button, Flex, Space, Tag, Tooltip, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { SizedModal } from '@/components/common';
+import { SizedModal } from '@/components/common/SizedModal';
 import VaultEditor from '@/components/common/VaultEditor';
 import { useMessage } from '@/hooks';
 import type { BaseModalProps } from '@/types';
@@ -110,7 +110,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       data-testid="vault-modal"
       destroyOnHidden
     >
-      <Flex vertical gap={24} className="w-full">
+      <Flex vertical className="w-full">
         <Flex align="center" justify="space-between">
           <Space size="small">
             <Typography.Text strong>{t('vaultEditor.vaultVersion')}</Typography.Text>

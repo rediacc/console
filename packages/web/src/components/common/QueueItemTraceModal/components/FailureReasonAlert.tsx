@@ -54,7 +54,6 @@ export const FailureReasonAlert: React.FC<FailureReasonAlertProps> = ({ queueDet
       message={getMessage()}
       description={lastFailureReason}
       type={getType()}
-      showIcon
       icon={getIcon()}
     />
   );

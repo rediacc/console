@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { Button, Dropdown, Empty, Modal, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { CephCluster, CephPool } from '@/api/queries/ceph';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { ExpandIcon } from '@/components/common/ExpandIcon';
 import {
@@ -17,18 +16,19 @@ import { buildPoolMenuItems } from '@/features/ceph/utils/menuItems';
 import { useExpandableTable, useTraceModal } from '@/hooks';
 import { confirmAction } from '@/utils/confirmations';
 import { DatabaseOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
+import type { GetCephClusters_ResultSet1, GetCephPools_ResultSet1 } from '@rediacc/shared/types';
 import { buildPoolColumns } from './columns';
 import { ClusterPoolsCard } from '../ClusterPoolsCard';
 import type { MenuProps } from 'antd';
 
 interface PoolTableProps {
-  pools: CephPool[];
-  clusters: CephCluster[];
+  pools: GetCephPools_ResultSet1[];
+  clusters: GetCephClusters_ResultSet1[];
   loading: boolean;
   onCreatePool: () => void;
-  onEditPool: (pool: CephPool) => void;
-  onDeletePool: (pool: CephPool) => void;
-  onRunFunction: (pool: CephPool) => void;
+  onEditPool: (pool: GetCephPools_ResultSet1) => void;
+  onDeletePool: (pool: GetCephPools_ResultSet1) => void;
+  onRunFunction: (pool: GetCephPools_ResultSet1) => void;
 }
 
 export const PoolTable: React.FC<PoolTableProps> = ({
@@ -46,26 +46,27 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   const auditTrace = useTraceModal();
 
   const poolsByCluster = useMemo(() => {
-    return pools.reduce<Record<string, CephPool[]>>((acc, pool) => {
-      const existing = acc[pool.clusterName] as CephPool[] | undefined;
+    return pools.reduce<Record<string, GetCephPools_ResultSet1[]>>((acc, pool) => {
+      const clusterName = pool.clusterName ?? '';
+      const existing = acc[clusterName] as GetCephPools_ResultSet1[] | undefined;
       if (existing === undefined) {
-        acc[pool.clusterName] = [];
+        acc[clusterName] = [];
       }
-      acc[pool.clusterName].push(pool);
+      acc[clusterName].push(pool);
       return acc;
     }, {});
   }, [pools]);
 
   const clusterMap = useMemo(() => {
-    const map = new Map<string, CephCluster>();
+    const map = new Map<string, GetCephClusters_ResultSet1>();
     clusters.forEach((cluster) => {
-      map.set(cluster.clusterName, cluster);
+      map.set(cluster.clusterName ?? '', cluster);
     });
     return map;
   }, [clusters]);
 
   const handleDelete = useCallback(
-    (pool: CephPool) => {
+    (pool: GetCephPools_ResultSet1) => {
       confirmAction({
         modal,
         title: t('pools.confirmDelete'),
@@ -82,18 +83,18 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   );
 
   const handleAuditTrace = useCallback(
-    (pool: CephPool) => {
+    (pool: GetCephPools_ResultSet1) => {
       auditTrace.open({
         entityType: 'CephPool',
-        entityIdentifier: pool.poolName,
-        entityName: pool.poolName,
+        entityIdentifier: pool.poolName ?? '',
+        entityName: pool.poolName ?? '',
       });
     },
     [auditTrace]
   );
 
   const handleRunFunction = useCallback(
-    (pool: CephPool & { preselectedFunction?: string }) => {
+    (pool: GetCephPools_ResultSet1 & { preselectedFunction?: string }) => {
       onRunFunction(pool);
     },
     [onRunFunction]
@@ -124,7 +125,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: CephPool) => {
+    () => (record: GetCephPools_ResultSet1) => {
       const isExpanded = expandedRowKeys.includes(record.poolGuid ?? '');
 
       const menuItems: MenuProps['items'] = [
@@ -168,7 +169,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             <Typography.Text strong>{record.poolName}</Typography.Text>
           </Space>
           <Typography.Text type="secondary" className="text-xs">
-            {t('common:general.versionFormat', { version: record.vaultVersion || 0 })}
+            {t('common:general.versionFormat', { version: record.vaultVersion ?? 0 })}
           </Typography.Text>
         </MobileCard>
       );
@@ -184,8 +185,8 @@ export const PoolTable: React.FC<PoolTableProps> = ({
     ]
   );
 
-  const expandedRowRender = useCallback((record: CephPool) => {
-    const teamFilter = record.teamName;
+  const expandedRowRender = useCallback((record: GetCephPools_ResultSet1) => {
+    const teamFilter = record.teamName ?? '';
     return <RbdImageTable pool={record} teamFilter={teamFilter} />;
   }, []);
 

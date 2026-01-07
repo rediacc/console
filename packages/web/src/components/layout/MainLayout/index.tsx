@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
-import { useCompanyInfo } from '@/api/queries/dashboard';
+import { useOrganizationInfo } from '@/api/hooks-organization';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
 import SandboxWarning from '@/components/common/SandboxWarning';
@@ -14,8 +14,8 @@ import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
 import { useMessage } from '@/hooks';
 import { masterPasswordService } from '@/services/auth';
-import { selectCompany } from '@/store/auth/authSelectors';
-import { logout, updateCompany } from '@/store/auth/authSlice';
+import { selectOrganization } from '@/store/auth/authSelectors';
+import { logout, updateOrganization } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { toggleThemeMode, toggleUiMode } from '@/store/ui/uiSlice';
 import { clearAuthData, getAuthData, saveAuthData } from '@/utils/auth';
@@ -33,31 +33,31 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
-  const company = useSelector(selectCompany);
+  const organization = useSelector(selectOrganization);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const themeMode = useSelector((state: RootState) => state.ui.themeMode);
   const logo = themeMode === 'dark' ? logoWhite : logoBlack;
   const { t } = useTranslation('common');
   const message = useMessage();
-  const { data: companyData } = useCompanyInfo();
+  const { data: organizationData } = useOrganizationInfo();
   const { trackUserAction } = useTelemetry();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.sm;
 
-  // Update company data when it changes
+  // Update organization data when it changes
   useEffect(() => {
-    const updateCompanyData = async () => {
-      const normalizedCompanyName = companyData?.companyInfo?.companyName;
-      if (normalizedCompanyName && normalizedCompanyName !== company) {
-        dispatch(updateCompany(normalizedCompanyName));
+    const updateOrganizationData = async () => {
+      const normalizedOrganizationName = organizationData?.organizationInfo?.organizationName;
+      if (normalizedOrganizationName && normalizedOrganizationName !== organization) {
+        dispatch(updateOrganization(normalizedOrganizationName));
         const authData = await getAuthData();
         if (authData.email) {
-          await saveAuthData(authData.email, normalizedCompanyName);
+          await saveAuthData(authData.email, normalizedOrganizationName);
         }
       }
     };
-    void updateCompanyData();
-  }, [companyData, company, dispatch]);
+    void updateOrganizationData();
+  }, [organizationData, organization, dispatch]);
 
   // Keyboard shortcut for power mode
   useEffect(() => {
@@ -69,17 +69,17 @@ const MainLayout: React.FC = () => {
         const newState = featureFlags.togglePowerMode();
         const msg = onLocalhost
           ? newState
-            ? 'Localhost Mode - All features enabled'
-            : 'Localhost Mode - All features disabled'
+            ? t('powerMode.localhostAllEnabled')
+            : t('powerMode.localhostAllDisabled')
           : newState
-            ? 'Advanced options enabled'
-            : 'Advanced options disabled';
+            ? t('powerMode.advancedEnabled')
+            : t('powerMode.advancedDisabled');
         message.info(msg);
       }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [message]);
+  }, [message, t]);
 
   // Get routes configuration
   const routes = useMemo(() => getRoutes(t), [t]);
@@ -87,9 +87,9 @@ const MainLayout: React.FC = () => {
   // Filter menu based on uiMode, plan, feature flags
   const menuDataRender = useCallback(
     (menuData: MenuDataItem[]) => {
-      return filterRouteItems(menuData as RouteItem[], uiMode, companyData) as MenuDataItem[];
+      return filterRouteItems(menuData as RouteItem[], uiMode, organizationData) as MenuDataItem[];
     },
-    [uiMode, companyData]
+    [uiMode, organizationData]
   );
 
   const handleModeToggle = () => {
@@ -104,7 +104,7 @@ const MainLayout: React.FC = () => {
 
     // Check if current page is visible in new mode
     const currentPath = location.pathname;
-    const nextRoutes = filterRouteItems(routes.routes, newMode, companyData);
+    const nextRoutes = filterRouteItems(routes.routes, newMode, organizationData);
     const visiblePaths = flattenRoutePaths(nextRoutes);
     const isCurrentPageVisibleInNewMode = visiblePaths.some((path) => currentPath.startsWith(path));
 
@@ -178,9 +178,11 @@ const MainLayout: React.FC = () => {
         menuDataRender={menuDataRender}
         menuItemRender={(item, dom) => {
           if (!item.path) return dom;
+          const navKey = item.path.replace(/^\//, '').replace(/\//g, '-') || 'home';
           return (
             <Link
               to={item.path}
+              data-testid={`main-nav-${navKey}`}
               onClick={() => {
                 trackUserAction('navigation', item.path, {
                   menu_item: item.name as string,
@@ -196,9 +198,11 @@ const MainLayout: React.FC = () => {
         }}
         subMenuItemRender={(item, dom) => {
           if (!item.path) return dom;
+          const navKey = item.path.replace(/^\//, '').replace(/\//g, '-') || 'home';
           return (
             <Link
               to={item.path}
+              data-testid={`main-nav-${navKey}`}
               onClick={() => {
                 trackUserAction('navigation', item.path, {
                   menu_item: item.name as string,
@@ -214,7 +218,7 @@ const MainLayout: React.FC = () => {
         }}
         // Header
         headerTitleRender={() => (
-          <Flex align="center" gap={12}>
+          <Flex align="center">
             <Button
               type="text"
               icon={<MenuOutlined />}
@@ -239,7 +243,7 @@ const MainLayout: React.FC = () => {
             >
               <img
                 src={logo}
-                alt="Rediacc Logo"
+                alt={t('common:alt.logo')}
                 // eslint-disable-next-line no-restricted-syntax
                 style={{ height: isMobile ? 24 : 32, width: 'auto', objectFit: 'contain' }}
               />
@@ -261,25 +265,26 @@ const MainLayout: React.FC = () => {
           },
         }}
       >
-        {isTransitioning ? (
-          <Flex
-            vertical
-            align="center"
-            justify="center"
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ minHeight: 240 }}
-            data-testid="main-content"
-          >
-            <Flex>{uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}</Flex>
-            <Flex>
-              {t('uiMode.switching', {
-                mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
-              })}
+        <Flex vertical data-testid="main-content">
+          {isTransitioning ? (
+            <Flex
+              vertical
+              align="center"
+              justify="center"
+              // eslint-disable-next-line no-restricted-syntax
+              style={{ minHeight: 240 }}
+            >
+              <Flex>{uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}</Flex>
+              <Flex>
+                {t('uiMode.switching', {
+                  mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
+                })}
+              </Flex>
             </Flex>
-          </Flex>
-        ) : (
-          <Outlet />
-        )}
+          ) : (
+            <Outlet />
+          )}
+        </Flex>
       </ProLayout>
     </>
   );

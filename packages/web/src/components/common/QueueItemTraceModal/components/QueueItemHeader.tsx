@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, Flex, Progress, Space, Steps, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { normalizeToString, formatTimestampAsIs } from '@/platform';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { getCurrentStep, getSimplifiedStatus, getTimelineTimestamp } from '../utils';
@@ -18,12 +19,13 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
   progressMessage,
   consoleProgress,
 }) => {
+  const { t } = useTranslation('queue');
   const simplifiedStatus = getSimplifiedStatus(queueDetails);
   const status = normalizeToString(queueDetails, 'status', 'Status');
 
   return (
     <Card data-testid="queue-trace-simple-overview">
-      <Flex vertical gap={24} className="w-full">
+      <Flex vertical className="w-full">
         {/* Status Summary */}
         <Flex className="text-center" justify="center">
           <Space size="large">
@@ -32,7 +34,9 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
             >
               {simplifiedStatus.icon}
             </Typography.Text>
-            <Typography.Title level={3}>Task {simplifiedStatus.status}</Typography.Title>
+            <Typography.Title level={3}>
+              {t('trace.taskStatus', { status: simplifiedStatus.status })}
+            </Typography.Title>
           </Space>
         </Flex>
 
@@ -45,13 +49,13 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
           size="small"
           items={[
             {
-              title: 'Assigned',
+              title: t('trace.assignedStep'),
               description: queueDetails.assignedTime
                 ? formatTimestampAsIs(queueDetails.assignedTime, 'time')
-                : 'Waiting',
+                : t('trace.waiting'),
             },
             {
-              title: 'Processing',
+              title: t('trace.processingStep'),
               description: (() => {
                 const currentStep = getCurrentStep(queueDetails);
                 const processingTimestamp = getTimelineTimestamp(
@@ -61,37 +65,37 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
                 );
 
                 if (status === 'PROCESSING') {
-                  return processingTimestamp ?? 'In Progress';
+                  return processingTimestamp ?? t('trace.inProgress');
                 }
 
                 if (status === 'CANCELLING') {
-                  return 'Cancelling...';
+                  return t('trace.cancelling');
                 }
 
                 if (currentStep >= 1) {
-                  return processingTimestamp ?? 'Processed';
+                  return processingTimestamp ?? t('trace.processed');
                 }
 
                 return '';
               })(),
             },
             {
-              title: 'Completed',
+              title: t('trace.completedStep'),
               description: (() => {
                 if (status === 'COMPLETED') {
                   const timestamp = getTimelineTimestamp(traceLogs, 'QUEUE_ITEM_COMPLETED');
-                  return `Done${timestamp ? ` - ${timestamp}` : ''}`;
+                  return `${t('trace.done')}${timestamp ? ` - ${timestamp}` : ''}`;
                 }
                 if (status === 'FAILED') {
                   const timestamp = getTimelineTimestamp(traceLogs, 'QUEUE_ITEM_FAILED');
-                  return `Failed${timestamp ? ` - ${timestamp}` : ''}`;
+                  return `${t('trace.failed')}${timestamp ? ` - ${timestamp}` : ''}`;
                 }
                 if (status === 'CANCELLED') {
                   const timestamp = getTimelineTimestamp(traceLogs, 'QUEUE_ITEM_CANCELLED');
-                  return `Cancelled${timestamp ? ` - ${timestamp}` : ''}`;
+                  return `${t('trace.cancelled')}${timestamp ? ` - ${timestamp}` : ''}`;
                 }
                 if (status === 'CANCELLING') {
-                  return 'Cancelling';
+                  return t('trace.cancelling');
                 }
                 return '';
               })(),
@@ -105,8 +109,7 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
           status !== 'FAILED' &&
           status !== 'CANCELLED' && (
             <Flex justify="center">
-              {/* eslint-disable-next-line no-restricted-syntax */}
-              <Typography.Text style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 12 }}>
+              <Typography.Text className="italic text-center text-xs">
                 {progressMessage}
               </Typography.Text>
             </Flex>

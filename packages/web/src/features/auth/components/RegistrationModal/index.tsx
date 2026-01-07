@@ -24,7 +24,7 @@ interface RegistrationModalProps {
   autoFillData?: {
     email: string;
     password: string;
-    companyName: string;
+    organizationName: string;
     activationCode?: string;
   };
   autoSubmit?: boolean;
@@ -35,7 +35,7 @@ interface RegistrationForm {
   email: string;
   password: string;
   passwordConfirm: string;
-  companyName: string;
+  organizationName: string;
   termsAccepted?: boolean;
 }
 
@@ -72,7 +72,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const [registrationData, setRegistrationData] = useState<{
     email: string;
-    companyName: string;
+    organizationName: string;
     passwordHash: string;
     password?: string; // Store password for auto-login
   } | null>(null);
@@ -107,7 +107,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         email: autoFillData.email,
         password: autoFillData.password,
         passwordConfirm: autoFillData.password,
-        companyName: autoFillData.companyName,
+        organizationName: autoFillData.organizationName,
       });
 
       // Auto-submit registration form after a short delay
@@ -153,14 +153,14 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         const passwordHash = await hashPassword(values.password);
 
         // Call register with proper auth headers
-        await apiClient.register(values.companyName, values.email, passwordHash, {
+        await apiClient.register(values.organizationName, values.email, passwordHash, {
           languagePreference: i18n.language || 'en',
           turnstileToken: turnstileToken ?? undefined,
         });
 
         return {
           email: values.email,
-          companyName: values.companyName,
+          organizationName: values.organizationName,
           passwordHash,
           password: values.password, // Store for auto-login if needed
         };
@@ -260,17 +260,17 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       data-testid="registration-form"
     >
       <Form.Item
-        name="companyName"
-        label={t('auth:registration.companyName')}
+        name="organizationName"
+        label={t('auth:registration.organizationName')}
         rules={[
           { required: true, message: t('common:messages.required') },
-          { min: 3, message: t('auth:registration.companyNameMin') },
+          { min: 3, message: t('auth:registration.organizationNameMin') },
         ]}
       >
         <Input
           prefix={<BankOutlined />}
-          placeholder={t('auth:registration.companyNamePlaceholder')}
-          data-testid="registration-company-input"
+          placeholder={t('auth:registration.organizationNamePlaceholder')}
+          data-testid="registration-organization-input"
         />
       </Form.Item>
 
@@ -331,7 +331,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       </Form.Item>
 
       {/* Terms and HCaptcha side by side */}
-      <Flex align="flex-start" wrap gap={16}>
+      <Flex align="flex-start" wrap className="gap-md">
         {/* Terms and Conditions */}
         <Form.Item
           name="termsAccepted"
@@ -349,7 +349,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             },
           ]}
         >
-          <Checkbox>
+          <Checkbox data-testid="registration-terms-checkbox">
             {
               t(
                 'auth:registration.termsText',
@@ -415,12 +415,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
           type="info"
-          showIcon
           data-testid="registration-verification-alert"
         />
 
@@ -493,12 +492,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       centered
       data-testid="registration-modal"
     >
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         {error && (
           <Alert
             message={error}
             type="error"
-            showIcon
             closable
             onClose={() => {
               resetRegistrationError();

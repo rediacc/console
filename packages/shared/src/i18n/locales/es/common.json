@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "Cancelado",
+    "completed": "Completado",
+    "failed": "Fallido",
+    "pending": "Pendiente",
+    "processing": "Procesando",
+    "running": "Ejecutando",
+    "success": "Éxito",
+    "unknown": "Desconocido",
+    "inProgress": "En progreso",
+    "initializing": "Inicializando..."
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "edit": "Editar",
+    "copy": "Copiar",
+    "retry": "Reintentar",
+    "refresh": "Actualizar",
+    "close": "Cerrar",
+    "download": "Descargar",
+    "upload": "Subir",
+    "remove": "Quitar",
+    "confirm": "Confirmar",
+    "reset": "Restablecer",
+    "back": "Atrás",
+    "search": "Buscar",
+    "export": "Exportar"
+  },
+  "common": {
+    "yes": "Sí",
+    "no": "No",
+    "loading": "Cargando...",
+    "error": "Error",
+    "warning": "Advertencia",
+    "success": "Éxito",
+    "unknown": "Desconocido",
+    "total": "Total",
+    "none": "Ninguno"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Por favor, introduzca un correo electrónico válido",
+    "invalidFormat": "Formato no válido"
+  },
+  "time": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "last7Days": "Últimos 7 días",
+    "last30Days": "Últimos 30 días",
+    "thisMonth": "Este mes",
+    "lastMonth": "Mes pasado"
+  },
+  "confirm": {
+    "areYouSure": "¿Está seguro?",
+    "confirmDelete": "¿Está seguro de que desea eliminar esto?"
+  },
+  "notifications": {
+    "error": "Error",
+    "warning": "Advertencia",
+    "success": "Éxito",
+    "info": "Información"
+  }
+}

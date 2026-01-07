@@ -1,11 +1,11 @@
 export { default as ProfilePage } from './pages/ProfilePage';
-export { default as CompanyPage } from './pages/CompanyPage';
+export { default as OrganizationPage } from './pages/OrganizationPage';
 export { default as InfrastructurePage } from './pages/InfrastructurePage';
 export * from './components/profile/OTPCodeField';
-export * from './components/company/CompanyVaultSection';
-export * from './components/company/DangerZoneSection';
-export * from './components/company/ImportModal';
-export * from './components/company/MasterPasswordModal';
+export * from './components/organization/OrganizationVaultSection';
+export * from './components/organization/DangerZoneSection';
+export * from './components/organization/ImportModal';
+export * from './components/organization/MasterPasswordModal';
 export * from './components/infrastructure/BridgeSection';
 export * from './components/infrastructure/RegionSection';
 export * from './components/infrastructure/BridgeCredentialsModal';

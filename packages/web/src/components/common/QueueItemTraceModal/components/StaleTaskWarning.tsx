@@ -1,5 +1,6 @@
 import React from 'react';
 import { Alert, Button } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { normalizeToString } from '@/platform';
 import {
   ClockCircleOutlined,
@@ -24,6 +25,8 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
   isCancelling,
   onCancel,
 }) => {
+  const { t } = useTranslation('queue');
+
   if (!queueDetails) return null;
 
   const status = normalizeToString(queueDetails, 'status', 'Status');
@@ -35,10 +38,9 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
     return (
       <Alert
         data-testid="queue-trace-alert-cancelling"
-        message="Task Being Cancelled"
-        description="The task is being cancelled. The bridge will stop execution gracefully."
+        message={t('trace.cancellingTitle')}
+        description={t('trace.cancellingDescription')}
         type="warning"
-        showIcon
         icon={<SyncOutlined spin />}
       />
     );
@@ -49,10 +51,9 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
     return (
       <Alert
         data-testid="queue-trace-alert-early"
-        message="Task May Be Inactive"
-        description="Task hasn't provided updates for over 1 minute. This may be normal for long-running operations."
+        message={t('trace.earlyStaleTitle')}
+        description={t('trace.earlyStaleDescription')}
         type="info"
-        showIcon
         icon={<ClockCircleOutlined />}
       />
     );
@@ -62,10 +63,9 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
     return (
       <Alert
         data-testid="queue-trace-alert-stale"
-        message="Task May Be Stale"
-        description="Task appears inactive for over 1.5 minutes. Consider canceling if no progress is expected."
+        message={t('trace.staleTitle')}
+        description={t('trace.staleDescription')}
         type="warning"
-        showIcon
         icon={<WarningOutlined />}
         action={
           canBeCancelled && isActive ? (
@@ -76,7 +76,7 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
               onClick={onCancel}
               loading={isCancelling}
             >
-              Cancel Task
+              {t('trace.cancelTask')}
             </Button>
           ) : null
         }
@@ -88,10 +88,9 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
     return (
       <Alert
         data-testid="queue-trace-alert-critical"
-        message="Task Likely Stuck - Cancellation Recommended"
-        description="Task has been inactive for over 2 minutes. The queue processor will automatically timeout this task at 3 minutes if no activity is detected."
+        message={t('trace.criticalTitle')}
+        description={t('trace.criticalDescription')}
         type="error"
-        showIcon
         icon={<ExclamationCircleOutlined />}
         action={
           canBeCancelled && isActive ? (
@@ -102,7 +101,7 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
               onClick={onCancel}
               loading={isCancelling}
             >
-              Cancel Stuck Task
+              {t('trace.cancelStuckTask')}
             </Button>
           ) : null
         }

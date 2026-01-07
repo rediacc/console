@@ -3,6 +3,9 @@
  * Import specific columns or use the factories to create customized versions
  */
 
+// Re-export constants
+export { RESPONSIVE_HIDE_XS } from './constants';
+
 // Re-export types
 export type {
   ActionColumnOptions,

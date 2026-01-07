@@ -1,5 +1,5 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "تكوين قبو",
     "description": "قم بتكوين إعدادات مخزن شركتك لإدارة التكوينات على مستوى المؤسسة.",
     "modalTitle": "تكوين قبو الشركة",
@@ -92,6 +92,7 @@
       "enabledDescription": "حسابك محمي بطبقة إضافية من الأمان."
     },
     "statusMessages": {
+      "authorized": "تم التفويض بنجاح للمصادقة الثنائية",
       "enabled": "تم تمكين TFA",
       "none": "لم يتم تكوين TFA",
       "unknown": "غير قادر على تحديد حالة TFA"

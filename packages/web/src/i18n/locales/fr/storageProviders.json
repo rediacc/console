@@ -20,8 +20,9 @@
     "parameters": {
       "helpText": "Paramètres rclone supplémentaires pour une configuration avancée",
       "label": "Paramètres supplémentaires",
-      "placeholder": "--transferts 4 --contrôleurs 8"
-    }
+      "placeholder": "--transfers 4 --checkers 8"
+    },
+    "tips": "Tips"
   },
   "storageProviders": {
     "azureblob": {
@@ -81,7 +82,7 @@
         }
       },
       "helpText": "Backblaze B2 est un service de sauvegarde cloud abordable. Utilise les clés d'application pour l'authentification.",
-      "name": "Backblaze B2",
+      "name": "B2 (Sauvegarde cloud Backblaze)",
       "tips": [
         "Créer des clés d'application avec des autorisations limitées pour la sécurité",
         "B2 offre 10 Go de stockage gratuit et 1 Go de téléchargement quotidien",
@@ -146,7 +147,7 @@
         }
       },
       "helpText": "Cloudflare R2 est un stockage d'objets compatible S3 sans frais de sortie.",
-      "name": "Cloudflare R2",
+      "name": "R2 (Stockage Cloudflare)",
       "tips": [
         "Pas de frais de sortie",
         "API compatible S3",
@@ -271,7 +272,7 @@
         "url": {
           "helpText": "URL de l'instance FileFabric",
           "label": "URL",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "FileFabric fournit une plateforme de gestion de données multi-cloud pour les entreprises.",
@@ -734,7 +735,7 @@
       ]
     },
     "netstorage": {
-      "description": "Akamai NetStorage CDN",
+      "description": "CDN Akamai NetStorage",
       "fields": {
         "account": {
           "helpText": "Nom du compte NetStorage",
@@ -752,8 +753,8 @@
           "placeholder": "Entrez le secret"
         }
       },
-      "helpText": "Akamai NetStorage est une solution de stockage cloud distribuée à l'échelle mondiale et optimisée pour la diffusion multimédia.",
-      "name": "Akamai NetStorage",
+      "helpText": "Akamai NetStorage CDN est une solution de stockage cloud distribuée à l'échelle mondiale et optimisée pour la diffusion multimédia.",
+      "name": "NetStorage (CDN Akamai)",
       "tips": [
         "Optimisé pour la livraison CDN",
         "Emplacements périphériques mondiaux",
@@ -784,7 +785,7 @@
         }
       },
       "helpText": "Stockage cloud personnel et professionnel Microsoft OneDrive. Utilise l'authentification OAuth.",
-      "name": "Microsoft OneDrive",
+      "name": "OneDrive (Microsoft)",
       "tips": [
         "Les jetons expirent tous les 90 jours et doivent être actualisés",
         "Les comptes professionnels peuvent avoir des limites API différentes",
@@ -1044,7 +1045,7 @@
       ]
     },
     "quatrix": {
-      "description": "Quatrix secure file transfer",
+      "description": "Transfert de fichiers sécurisé Quatrix",
       "fields": {
         "api_key": {
           "helpText": "Clé API du compte Quatrix",
@@ -1233,7 +1234,7 @@
         "upload_endpoint": {
           "helpText": "URL du point de terminaison de téléchargement ShareFile",
           "label": "Télécharger le point de terminaison",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile est une plateforme de collaboration de contenu d'entreprise avec partage de fichiers sécurisé.",
@@ -1421,7 +1422,7 @@
         }
       },
       "helpText": "Stockage d'objets OpenStack Swift utilisé par Rackspace, OVH et autres.",
-      "name": "OpenStack Swift",
+      "name": "Swift (OpenStack)",
       "tips": [
         "Vérifiez auprès de votre fournisseur l'URL d'authentification correcte.",
         "L'authentification v3 est recommandée pour les nouveaux déploiements",
@@ -1591,7 +1592,7 @@
         }
       },
       "helpText": "Zoho WorkDrive est une plateforme de collaboration de contenu pour les équipes dotée de contrôles d'administration avancés.",
-      "name": "Zoho WorkDrive",
+      "name": "WorkDrive (Zoho)",
       "tips": [
         "Fait partie de la suite de productivité Zoho",
         "Dossiers d'équipe et espaces de travail",

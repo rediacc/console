@@ -8,12 +8,12 @@ import {
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { ContainerOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { Container } from '../types';
-import type { TFunction } from 'i18next';
 
 interface SystemContainersSectionProps {
   containers: Container[];
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({
@@ -50,7 +50,9 @@ export const SystemContainersSection: React.FC<SystemContainersSectionProps> = (
               {container.image && <Typography.Text ellipsis>{container.image}</Typography.Text>}
               {container.cpu_percent && (
                 <Flex justify="space-between" align="center">
-                  <DetailPanelFieldLabel>CPU:</DetailPanelFieldLabel>
+                  <DetailPanelFieldLabel>
+                    {t('resources:repositories.cpuLabel')}:
+                  </DetailPanelFieldLabel>
                   <DetailPanelFieldValue>{container.cpu_percent}</DetailPanelFieldValue>
                 </Flex>
               )}

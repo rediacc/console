@@ -33,26 +33,9 @@
   "currentPriority": "Actual",
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregue una descripción personalizada para este elemento de la cola",
+  "destinationFilename": "Nombre de archivo de destino",
   "functions": {
-    "apply_template": {
-      "description": "Aplicar una configuración de plantilla a este repositorio",
-      "name": "plantillas",
-      "params": {
-        "grand": {
-          "help": "GUID del gran repositorio",
-          "label": "Gran repositorio"
-        },
-        "repository": {
-          "help": "Nombre del repositorio",
-          "label": "Repositorio"
-        },
-        "tmpl": {
-          "help": "Seleccione una plantilla para aplicar al repositorio",
-          "label": "Plantilla"
-        }
-      }
-    },
-    "backup": {
+    "backup_create": {
       "description": "Repositorio de respaldo en múltiples sistemas de almacenamiento",
       "name": "respaldo",
       "params": {
@@ -60,9 +43,31 @@
           "help": "Habilite el modo de copia de seguridad activa con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
           "label": "Habilitar punto de control"
         },
-        "dest": {
-          "help": "Nombre del archivo de copia de seguridad",
-          "label": "Nombre de archivo de destino"
+        "option": {
+          "help": "Opciones (por ejemplo, anular)",
+          "label": "Opciones"
+        },
+        "storages": {
+          "help": "Seleccione uno o más sistemas de almacenamiento de destino para la copia de seguridad",
+          "label": "Sistemas de almacenamiento de destino"
+        }
+      }
+    },
+    "backup_deploy": {
+      "description": "Implementar repositorio en varias máquinas",
+      "name": "desplegar",
+      "params": {
+        "checkpoint": {
+          "help": "Habilite el modo de implementación en caliente con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
+          "label": "Habilitar punto de control"
+        },
+        "grand": {
+          "help": "Referencia del repositorio principal",
+          "label": "Repositorio principal"
+        },
+        "machines": {
+          "help": "Seleccione una o más máquinas de destino para la implementación",
+          "label": "Máquinas objetivo"
         },
         "option": {
           "help": "Opciones (por ejemplo, anular)",
@@ -73,18 +78,66 @@
           "label": "Repositorio"
         },
         "state": {
-          "help": "Valide que el repositorio esté en línea o fuera de línea antes de realizar la copia de seguridad",
+          "help": "Validar que el repositorio esté en línea o fuera de línea antes de implementarlo",
           "label": "Estado requerido"
         },
-        "storages": {
-          "help": "Seleccione uno o más sistemas de almacenamiento de destino para la copia de seguridad",
-          "label": "Sistemas de almacenamiento de destino"
+        "tag": {
+          "help": "Etiqueta para el repositorio implementado (se recomienda formato de marca de tiempo)",
+          "label": "Etiqueta"
         }
       }
     },
-    "clone": {
-      "description": "Clonar repositorio en la misma máquina",
-      "name": "clon"
+    "backup_pull": {
+      "description": "Extraiga el repositorio del almacenamiento remoto",
+      "name": "Jalar",
+      "params": {
+        "from": {
+          "help": "Seleccione la máquina o el almacenamiento de origen",
+          "label": "Fuente"
+        },
+        "repository": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        },
+        "sourceType": {
+          "help": "Seleccione si desea extraer de una máquina o de un almacenamiento",
+          "label": "Tipo de fuente"
+        }
+      }
+    },
+    "backup_push": {
+      "description": "Enviar el repositorio al almacenamiento remoto",
+      "name": "empujar",
+      "params": {
+        "checkpoint": {
+          "help": "Habilite el modo de copia de seguridad activa con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
+          "label": "Habilitar punto de control"
+        },
+        "dest": {
+          "help": "Nombre del archivo de copia de seguridad",
+          "label": "Nombre de archivo de destino"
+        },
+        "destinationType": {
+          "help": "Seleccione si enviar a una máquina o almacenamiento",
+          "label": "Tipo de destino"
+        },
+        "option": {
+          "help": "Opciones (por ejemplo, anular)",
+          "label": "Opciones"
+        },
+        "repository": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        },
+        "state": {
+          "help": "Validar que el repositorio esté en línea o fuera de línea antes de enviarlo",
+          "label": "Estado requerido"
+        },
+        "to": {
+          "help": "Seleccione la máquina o el almacenamiento de destino",
+          "label": "Destino"
+        }
+      }
     },
     "container_inspect": {
       "description": "Inspeccionar los detalles del contenedor Docker",
@@ -188,251 +241,31 @@
         }
       }
     },
-    "deploy": {
-      "description": "Implementar repositorio en varias máquinas",
-      "name": "desplegar",
-      "params": {
-        "checkpoint": {
-          "help": "Habilite el modo de implementación en caliente con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
-          "label": "Habilitar punto de control"
-        },
-        "dest": {
-          "help": "Nombre del archivo de implementación",
-          "label": "Nombre de archivo de destino"
-        },
-        "machines": {
-          "help": "Seleccione una o más máquinas de destino para la implementación",
-          "label": "Máquinas objetivo"
-        },
-        "option": {
-          "help": "Opciones (por ejemplo, anular)",
-          "label": "Opciones"
-        },
-        "repository": {
-          "help": "Nombre(s) del repositorio, separados por comas",
-          "label": "Repositorio"
-        },
-        "state": {
-          "help": "Validar que el repositorio esté en línea o fuera de línea antes de implementarlo",
-          "label": "Estado requerido"
-        }
-      }
-    },
-    "down": {
-      "description": "Detener servicios de repositorio",
-      "name": "abajo",
-      "params": {
-        "option": {
-          "help": "Opciones adicionales",
-          "label": "Opciones"
-        },
-        "repository": {
-          "help": "Nombre(s) del repositorio, separados por comas",
-          "label": "Repositorio"
-        }
-      }
-    },
-    "expand": {
-      "description": "Amplíe el almacenamiento del repositorio en línea sin tiempo de inactividad",
-      "name": "expandir",
-      "params": {
-        "grand": {
-          "help": "GUID del gran repositorio",
-          "label": "Gran repositorio"
-        },
-        "repository": {
-          "help": "Nombre del repositorio",
-          "label": "Repositorio"
-        },
-        "size": {
-          "help": "Nuevo tamaño (por ejemplo, 20G): debe ser mayor que el tamaño actual",
-          "label": "Nuevo tamaño"
-        }
-      }
-    },
     "fork": {
       "description": "Repositorio de bifurcación con etiqueta basada en marca de tiempo",
-      "name": "tenedora"
-    },
-    "hello": {
-      "description": "Función de prueba simple que imprime saludos desde el nombre de host",
-      "name": "Hola"
-    },
-    "list": {
-      "description": "Listar archivos en ubicaciones de almacenamiento remotas",
-      "name": "Listar archivos remotos",
+      "name": "tenedora",
       "params": {
-        "format": {
-          "help": "Formato para el listado de archivos.",
-          "label": "Formato de salida"
-        },
-        "from": {
-          "help": "Máquina o sistema de almacenamiento para enumerar archivos desde",
-          "label": "Ubicación de origen"
-        },
-        "path": {
-          "help": "Ruta opcional dentro del almacenamiento.",
-          "label": "Camino"
-        }
-      }
-    },
-    "mount": {
-      "description": "Montar sistemas de archivos de repositorio",
-      "name": "montar",
-      "params": {
-        "checkpoint": {
-          "help": "Restaurar contenedores desde el punto de control si están disponibles (requiere CRIU)",
-          "label": "Habilitar restauración de puntos de control"
-        },
-        "from": {
-          "help": "Máquina remota para montar desde",
-          "label": "De la máquina"
+        "grand": {
+          "help": "Referencia del repositorio principal",
+          "label": "Repositorio principal"
         },
         "repository": {
-          "help": "Nombre(s) del repositorio, separados por comas",
-          "label": "Repositorio"
-        }
-      }
-    },
-    "new": {
-      "description": "Crear un nuevo repositorio",
-      "name": "nueva",
-      "params": {
-        "repository": {
-          "help": "Nombre del repositorio",
-          "label": "Repositorio"
-        },
-        "size": {
-          "help": "Tamaño del repositorio (por ejemplo, 10G)",
-          "label": "Tamaño"
-        }
-      }
-    },
-    "ownership": {
-      "description": "Cambiar la propiedad del repositorio",
-      "name": "propiedad",
-      "params": {
-        "from": {
-          "help": "Propietario actual",
-          "label": "Propietario actual"
-        },
-        "repository": {
-          "help": "Nombre del repositorio",
-          "label": "Repositorio"
-        },
-        "to": {
-          "help": "Nuevo propietario (predeterminado: usuario universal)",
-          "label": "Nuevo propietario"
-        }
-      }
-    },
-    "ping": {
-      "description": "Pruebe la conectividad de red con la máquina",
-      "name": "silbido"
-    },
-    "plugin": {
-      "description": "Activar complementos del repositorio",
-      "name": "complemento",
-      "params": {
-        "plugin": {
-          "help": "Nombre(s) del complemento, separados por comas",
-          "label": "Complemento"
-        },
-        "repository": {
-          "help": "Nombre(s) del repositorio, separados por comas",
-          "label": "Repositorio"
-        }
-      }
-    },
-    "plugout": {
-      "description": "Desactivar complementos del repositorio",
-      "name": "enchufe",
-      "params": {
-        "plugin": {
-          "help": "Nombre(s) del complemento, separados por comas",
-          "label": "Complemento"
-        },
-        "repository": {
-          "help": "Nombre(s) del repositorio, separados por comas",
-          "label": "Repositorio"
-        }
-      }
-    },
-    "pull": {
-      "description": "Extraiga el repositorio del almacenamiento remoto",
-      "name": "Jalar",
-      "params": {
-        "from": {
-          "help": "Seleccione la máquina o el almacenamiento de origen",
-          "label": "Fuente"
-        },
-        "repository": {
-          "help": "Nombre(s) del repositorio, separados por comas",
-          "label": "Repositorio"
-        },
-        "sourceType": {
-          "help": "Seleccione si desea extraer de una máquina o de un almacenamiento",
-          "label": "Tipo de fuente"
-        }
-      }
-    },
-    "push": {
-      "description": "Enviar el repositorio al almacenamiento remoto",
-      "name": "empujar",
-      "params": {
-        "checkpoint": {
-          "help": "Habilite el modo de copia de seguridad activa con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
-          "label": "Habilitar punto de control"
-        },
-        "dest": {
-          "help": "Nombre del archivo de copia de seguridad",
-          "label": "Nombre de archivo de destino"
-        },
-        "destinationType": {
-          "help": "Seleccione si enviar a una máquina o almacenamiento",
-          "label": "Tipo de destino"
-        },
-        "option": {
-          "help": "Opciones (por ejemplo, anular)",
-          "label": "Opciones"
-        },
-        "repository": {
-          "help": "Nombre(s) del repositorio, separados por comas",
+          "help": "Repositorio para bifurcar",
           "label": "Repositorio"
         },
         "state": {
-          "help": "Validar que el repositorio esté en línea o fuera de línea antes de enviarlo",
-          "label": "Estado requerido"
+          "help": "Estado actual del repositorio",
+          "label": "Estado"
         },
-        "to": {
-          "help": "Seleccione la máquina o el almacenamiento de destino",
-          "label": "Destino"
+        "tag": {
+          "help": "Etiqueta para el repositorio bifurcado (se recomienda formato de marca de tiempo)",
+          "label": "Etiqueta"
         }
       }
     },
-    "resize": {
-      "description": "Cambiar el tamaño del almacenamiento del repositorio (operación sin conexión: el repositorio debe estar desmontado)",
-      "name": "cambiar el tamaño",
-      "params": {
-        "repository": {
-          "help": "Nombre del repositorio",
-          "label": "Repositorio"
-        },
-        "size": {
-          "help": "Nuevo tamaño (por ejemplo, 20G): puede ser mayor o menor que el tamaño actual",
-          "label": "Nuevo tamaño"
-        }
-      }
-    },
-    "rm": {
-      "description": "Eliminar repositorio",
-      "name": "habitación",
-      "params": {
-        "repository": {
-          "help": "Nombre del repositorio",
-          "label": "Repositorio"
-        }
-      }
+    "machine_ping": {
+      "description": "Pruebe la conectividad de red con la máquina",
+      "name": "silbido"
     },
     "setup": {
       "description": "Configurar el sistema operativo con las herramientas y configuraciones necesarias.",
@@ -468,11 +301,188 @@
         }
       }
     },
-    "uninstall": {
+    "machine_uninstall": {
       "description": "Limpiar y desinstalar componentes del sistema.",
       "name": "desinstalar"
     },
-    "unmount": {
+    "machine_version": {
+      "description": "Función de prueba simple que imprime saludos desde el nombre de host",
+      "name": "Hola"
+    },
+    "plugin": {
+      "description": "Activar complementos del repositorio",
+      "name": "complemento",
+      "params": {
+        "plugin": {
+          "help": "Nombre(s) del complemento, separados por comas",
+          "label": "Complemento"
+        },
+        "repository": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Desactivar complementos del repositorio",
+      "name": "enchufe",
+      "params": {
+        "plugin": {
+          "help": "Nombre(s) del complemento, separados por comas",
+          "label": "Complemento"
+        },
+        "repository": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        }
+      }
+    },
+    "pull": {
+      "name": "Jalar"
+    },
+    "repository_create": {
+      "description": "Crear un nuevo repositorio",
+      "name": "nueva",
+      "params": {
+        "repository": {
+          "help": "Nombre del repositorio",
+          "label": "Repositorio"
+        },
+        "size": {
+          "help": "Tamaño del repositorio (por ejemplo, 10G)",
+          "label": "Tamaño"
+        }
+      }
+    },
+    "repository_delete": {
+      "description": "Eliminar repositorio",
+      "name": "habitación",
+      "params": {
+        "repository": {
+          "help": "Nombre del repositorio",
+          "label": "Repositorio"
+        }
+      }
+    },
+    "repository_down": {
+      "description": "Detener servicios de repositorio",
+      "name": "abajo",
+      "params": {
+        "option": {
+          "help": "Opciones adicionales",
+          "label": "Opciones"
+        },
+        "repository": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        }
+      }
+    },
+    "repository_expand": {
+      "description": "Amplíe el almacenamiento del repositorio en línea sin tiempo de inactividad",
+      "name": "expandir",
+      "params": {
+        "grand": {
+          "help": "GUID del gran repositorio",
+          "label": "Gran repositorio"
+        },
+        "repository": {
+          "help": "Nombre del repositorio",
+          "label": "Repositorio"
+        },
+        "size": {
+          "help": "Nuevo tamaño (por ejemplo, 20G): debe ser mayor que el tamaño actual",
+          "label": "Nuevo tamaño"
+        }
+      }
+    },
+    "repository_list": {
+      "description": "Listar archivos en ubicaciones de almacenamiento remotas",
+      "name": "Listar archivos remotos",
+      "params": {
+        "format": {
+          "help": "Formato para el listado de archivos.",
+          "label": "Formato de salida"
+        },
+        "from": {
+          "help": "Máquina o sistema de almacenamiento para enumerar archivos desde",
+          "label": "Ubicación de origen"
+        },
+        "path": {
+          "help": "Ruta opcional dentro del almacenamiento.",
+          "label": "Camino"
+        }
+      }
+    },
+    "repository_mount": {
+      "description": "Montar sistemas de archivos de repositorio",
+      "name": "montar",
+      "params": {
+        "checkpoint": {
+          "help": "Restaurar contenedores desde el punto de control si están disponibles (requiere CRIU)",
+          "label": "Habilitar restauración de puntos de control"
+        },
+        "from": {
+          "help": "Máquina remota para montar desde",
+          "label": "De la máquina"
+        },
+        "repository": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        }
+      }
+    },
+    "repository_ownership": {
+      "description": "Cambiar la propiedad del repositorio",
+      "name": "propiedad",
+      "params": {
+        "from": {
+          "help": "Propietario actual",
+          "label": "Propietario actual"
+        },
+        "repository": {
+          "help": "Nombre del repositorio",
+          "label": "Repositorio"
+        },
+        "to": {
+          "help": "Nuevo propietario (predeterminado: usuario universal)",
+          "label": "Nuevo propietario"
+        }
+      }
+    },
+    "repository_resize": {
+      "description": "Cambiar el tamaño del almacenamiento del repositorio (operación sin conexión: el repositorio debe estar desmontado)",
+      "name": "cambiar el tamaño",
+      "params": {
+        "repository": {
+          "help": "Nombre del repositorio",
+          "label": "Repositorio"
+        },
+        "size": {
+          "help": "Nuevo tamaño (por ejemplo, 20G): puede ser mayor o menor que el tamaño actual",
+          "label": "Nuevo tamaño"
+        }
+      }
+    },
+    "repository_template_apply": {
+      "description": "Aplicar una configuración de plantilla a este repositorio",
+      "name": "plantillas",
+      "params": {
+        "grand": {
+          "help": "GUID del gran repositorio",
+          "label": "Gran repositorio"
+        },
+        "repository": {
+          "help": "Nombre del repositorio",
+          "label": "Repositorio"
+        },
+        "tmpl": {
+          "help": "Seleccione una plantilla para aplicar al repositorio",
+          "label": "Plantilla"
+        }
+      }
+    },
+    "repository_unmount": {
       "description": "Desmontar sistemas de archivos del repositorio",
       "name": "desmontar",
       "params": {
@@ -490,7 +500,7 @@
         }
       }
     },
-    "up": {
+    "repository_up": {
       "description": "Iniciar servicios de repositorio usando Rediaccfile",
       "name": "arriba",
       "params": {
@@ -504,7 +514,7 @@
         }
       }
     },
-    "validate": {
+    "repository_validate": {
       "description": "Valide el repositorio ejecutando preparación, activación, comprobaciones de estado, prueba y desactivación",
       "name": "validar",
       "params": {
@@ -535,28 +545,31 @@
       }
     }
   },
+  "imagePlaceholder": "p. ej., registro/imagen:etiqueta",
   "missingRequiredParams": "Complete todos los parámetros requeridos: {{params}}",
   "onlinePushLearnMore": "Obtenga más información sobre los push en línea y fuera de línea →",
   "onlinePushWarningMessage": "Enviar un repositorio montado mientras se ejecutan los servicios puede provocar inconsistencias en los datos.",
   "onlinePushWarningTitle": "Advertencia de inserción en línea",
+  "original": " (Version original)",
   "priority": "Prioridad",
   "priorityAboveNormal": "Por encima de lo normal",
-  "priorityBelowNormal": "Normal",
+  "priorityBelowNormal": "Ligeramente baja",
   "priorityHelp": "Las tareas se procesan primero por prioridad y luego por edad.",
   "priorityHigh": "Alta",
   "priorityHighDescription": "Permite múltiples tareas simultáneas de alta prioridad. Úselo para tareas importantes que necesitan un procesamiento más rápido.",
-  "priorityHighWarning": "Alta prioridad (2)",
   "priorityHighest": "más alto",
   "priorityHighestDescription": "Al enviar una tarea de mayor prioridad se cancelarán automáticamente todas las tareas existentes de mayor prioridad que tenga. Úselo solo para tareas críticas urgentes que necesitan atención inmediata.",
   "priorityHighestTimeout": "Las tareas P1 se agotan después de 33 segundos.",
   "priorityHighestTimeoutWarning": "Lo mejor para operaciones rápidas como pruebas SSH, controles de estado y consultas de estado. Para tareas críticas más largas, utilice P2 (tiempo de espera basado en niveles: 2-96 horas).",
   "priorityHighestWarning": "Prioridad más alta (1)",
+  "priorityHighWarning": "Alta prioridad (2)",
+  "priorityLevelFormat": "P{{level}} ({{label}}) - Nivel de prioridad",
   "priorityLow": "Bajo",
   "priorityLowDescription": "Velocidad de procesamiento estándar. Recomendado para la mayoría de operaciones y tareas del día a día.",
-  "priorityLowWarning": "Prioridad normal (4)",
   "priorityLowestDescription": "Velocidad de procesamiento más lenta. Úselo para operaciones por lotes o tareas sin limitaciones de tiempo.",
   "priorityLowestWarning": "Prioridad más baja (5)",
-  "priorityNormal": "Por encima de lo normal",
+  "priorityLowWarning": "Prioridad normal (4)",
+  "priorityNormal": "Normalmente elevada",
   "priorityNormalDescription": "Más rápido que la velocidad de procesamiento estándar. Úselo para tareas que necesitan un procesamiento más rápido de lo normal.",
   "priorityNormalWarning": "Prioridad superior a lo normal (3)",
   "priorityPopoverLevels": "Niveles de prioridad:",
@@ -566,10 +579,15 @@
   "priorityPopoverP4": "Tiempo de espera de nivel (2-96 h). Procesamiento estándar para la mayoría de las operaciones.",
   "priorityPopoverP5": "Tiempo de espera de nivel (2-96 h). Para operaciones por lotes sin limitaciones de tiempo.",
   "priorityPopoverTitle": "Sistema de Prioridad",
+  "pushOperationDetails": "Detalles de la operación de envío",
   "quickTaskBadge": "Tarea rápida",
   "quickTaskDescription": "Se completa en menos de 30 segundos.",
+  "repositoryLineage": "Árbol de repositorio",
+  "repositoryWillBePushedOffline": "El repositorio se enviará sin montarse.",
+  "repositoryWillBePushedOnline": "El repositorio se enviará en estado montado.",
   "searchFunctions": "Funciones de búsqueda...",
   "selectFunction": "Seleccionar función",
   "selectFunctionToConfigure": "Seleccione una función para configurar",
+  "sourceRepository": "Repositorio de origen",
   "validationError": "Error de validación"
 }

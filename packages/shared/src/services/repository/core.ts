@@ -8,24 +8,26 @@ import { type MachineWithVaultStatus, parseVaultStatus } from '../machine';
 /**
  * Repository information for relationship analysis
  * Uses type to allow any object with the required properties
+ * Note: Fields are nullable to match generated API types
  */
 export type RepositoryWithRelations = {
-  repositoryGuid: string;
-  repositoryName: string;
+  repositoryGuid: string | null;
+  repositoryName: string | null;
   grandGuid?: string | null;
   repositoryTag?: string | null;
-  teamName?: string;
+  teamName?: string | null;
   repositoryNetworkId?: number | null;
   repositoryNetworkMode?: string | null;
-  mounted?: boolean;
+  mounted?: boolean | null;
   vaultContent?: string | null;
 };
 
 /**
  * Affected machine information
+ * Note: machineName is nullable to match generated API types
  */
 export interface AffectedMachine {
-  machineName: string;
+  machineName: string | null;
   repositoryNames: string[];
 }
 
@@ -55,6 +57,7 @@ export interface GroupedRepository {
  * @returns True if the repository is a credential
  */
 export function isCredential(repository: RepositoryWithRelations): boolean {
+  if (!repository.repositoryGuid) return false;
   return !repository.grandGuid || repository.grandGuid === repository.repositoryGuid;
 }
 
@@ -65,6 +68,7 @@ export function isCredential(repository: RepositoryWithRelations): boolean {
  * @returns True if the repository is a fork
  */
 export function isFork(repository: RepositoryWithRelations): boolean {
+  if (!repository.repositoryGuid) return false;
   return !!repository.grandGuid && repository.grandGuid !== repository.repositoryGuid;
 }
 
@@ -80,7 +84,9 @@ export function findForksOfCredential(
 ): RepositoryWithRelations[] {
   return repositories.filter(
     (repository) =>
-      repository.grandGuid === credentialGuid && repository.repositoryGuid !== credentialGuid
+      repository.repositoryGuid &&
+      repository.grandGuid === credentialGuid &&
+      repository.repositoryGuid !== credentialGuid
   );
 }
 
@@ -189,7 +195,7 @@ export function groupRepositoriesByName(
   const grouped = new Map<string, GroupedRepository>();
 
   for (const repository of repositories) {
-    const name = repository.repositoryName;
+    const name = repository.repositoryName ?? 'Unknown';
 
     if (!grouped.has(name)) {
       grouped.set(name, {
@@ -351,7 +357,6 @@ export function validateRepoDeletion(
  * @returns Display name with optional tag
  */
 export function getRepositoryDisplayName(repository: RepositoryWithRelations): string {
-  return repository.repositoryTag
-    ? `${repository.repositoryName}:${repository.repositoryTag}`
-    : repository.repositoryName;
+  const name = repository.repositoryName ?? 'Unknown';
+  return repository.repositoryTag ? `${name}:${repository.repositoryTag}` : name;
 }

@@ -98,12 +98,7 @@ const NotificationBell: React.FC = () => {
 
   const dropdownContent = (
     <Card styles={{ body: { padding: 0 } }} data-testid="notification-dropdown">
-      <Flex
-        vertical
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ maxHeight: 400, minWidth: 320 }}
-        className="notification-dropdown"
-      >
+      <Flex vertical className="notification-dropdown max-h-scroll-md min-w-dropdown">
         <Flex align="center" justify="space-between">
           <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
           {notifications.length > 0 && (
@@ -127,12 +122,7 @@ const NotificationBell: React.FC = () => {
           )}
         </Flex>
 
-        <Flex
-          vertical
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ maxHeight: 320 }}
-          className="overflow-auto"
-        >
+        <Flex vertical className="max-h-scroll-sm">
           {notifications.length === 0 ? (
             <Flex
               // eslint-disable-next-line no-restricted-syntax
@@ -153,7 +143,7 @@ const NotificationBell: React.FC = () => {
                   <List.Item.Meta
                     title={
                       <Flex justify="space-between" className="w-full">
-                        <Flex align="center" gap={8} className="inline-flex flex-1">
+                        <Flex align="center" className="inline-flex flex-1">
                           <Typography.Text>{notification.title}</Typography.Text>
                           <Typography.Text>
                             <Tag>{t(`notifications.types.${notification.type}`).toUpperCase()}</Tag>
@@ -165,7 +155,7 @@ const NotificationBell: React.FC = () => {
                           icon={<CloseOutlined />}
                           onClick={(e) => handleClear(notification.id, e)}
                           data-testid={`notification-close-${index}`}
-                          aria-label="Close notification"
+                          aria-label={t('common:aria.closeNotification')}
                           className="flex-shrink-0"
                         />
                       </Flex>
@@ -203,7 +193,7 @@ const NotificationBell: React.FC = () => {
         <Button
           type="text"
           icon={<BellOutlined />}
-          aria-label="Notifications"
+          aria-label={t('common:aria.notifications')}
           data-testid="notification-bell"
         />
       </Dropdown>

@@ -1,8 +1,11 @@
-import type { QueueFunction } from '@/api/queries/queue';
-import type { MachineFormValues as BaseMachineFormValues } from '@rediacc/shared/types';
+import type { QueueFunction } from '@rediacc/shared/types';
+import type { CreateMachineParams } from '@rediacc/shared/types';
 
 // Extend shared type with UI-specific field for auto-setup option
-export type MachineFormValues = BaseMachineFormValues & { autoSetup?: boolean };
+// Note: vaultContent and vaultVersion are already optional in CreateMachineParams
+export interface MachineFormValues extends CreateMachineParams {
+  autoSetup?: boolean;
+}
 
 export interface MachineFunctionParams {
   repository?: string;

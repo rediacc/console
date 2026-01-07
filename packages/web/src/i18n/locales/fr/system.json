@@ -22,36 +22,6 @@
     "trace": "Tracer",
     "twoFactorAuth": "Authentification à deux facteurs"
   },
-  "architecture": {
-    "bridges": "Ponts",
-    "clearAll": "Tout effacer",
-    "fetchError": "Échec de la récupération des données d'architecture",
-    "filterEntities": "Filtrer les entités",
-    "legend": "Légende",
-    "machines": "Machines",
-    "noData": "Aucune donnée d'architecture disponible",
-    "noEntitiesSelected": "Aucune entité sélectionnée. Veuillez sélectionner au moins un type d'entité à afficher.",
-    "nodeBridge": "Pont",
-    "nodeCompany": "Entreprise",
-    "nodeMachine": "Machine",
-    "nodeRegion": "Région",
-    "nodeRepository": "Dépôt",
-    "nodeStorage": "Stockage",
-    "nodeTeam": "Équipe",
-    "nodeUser": "Utilisateur",
-    "regions": "Régions",
-    "repositories": "Dépôts",
-    "schedules": "Horaires",
-    "selectAll": "Sélectionner tout",
-    "selectEntities": "Sélectionnez les types d'entités à afficher",
-    "storages": "Stockages",
-    "teams": "Équipes",
-    "title": "Architecture d'entreprise",
-    "users": "Utilisateurs",
-    "viewForce": "Forcer",
-    "viewHierarchy": "Hiérarchie",
-    "viewRadial": "Radiale"
-  },
   "audit": {
     "columns": {
       "action": "Action",
@@ -92,24 +62,6 @@
     },
     "subtitle": "Suivez toutes les activités et les changements dans votre organisation",
     "title": "Journaux d'audit"
-  },
-  "company": {
-    "errors": {
-      "blockRequestsFailed": "Échec de la mise à jour de l'état de blocage des demandes utilisateur",
-      "importFailed": "Échec de l'importation des données de l'entreprise",
-      "noExportData": "Aucune donnée d'exportation renvoyée",
-      "vaultUpdateFailed": "Échec de la mise à jour de la configuration du coffre-fort"
-    },
-    "success": {
-      "errorCount": "{{count}} erreurs",
-      "importComplete": "Importation terminée : {{summary}}",
-      "importedCount": "{{count}} éléments importés",
-      "requestsBlocked": "Demandes des utilisateurs bloquées avec succès",
-      "requestsBlockedWithTerminations": "Demandes des utilisateurs bloquées. {{count}} sessions actives ont été interrompues.",
-      "requestsUnblocked": "Demandes des utilisateurs débloquées avec succès",
-      "skippedCount": "{{count}} éléments ignorés",
-      "vaultUpdated": "La configuration du coffre-fort a été mise à jour avec succès"
-    }
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -155,8 +107,8 @@
         "cancel": "Annuler",
         "fileRequired": "Veuillez sélectionner un fichier à importer",
         "import": "Importer",
-        "importMode": "Mode d'importation",
         "importing": "Importation...",
+        "importMode": "Mode d'importation",
         "invalidFile": "Format de fichier invalide. Veuillez sélectionner un fichier d'exportation de données d'entreprise valide.",
         "modeOverride": "Remplacer les éléments existants",
         "modeOverrideDesc": "Remplacer les éléments existants par des données importées",
@@ -244,6 +196,47 @@
       "warning": "Conservez le nouveau mot de passe dans un emplacement sécurisé : il ne pourra pas être récupéré en cas de perte."
     }
   },
+  "dashboard": {
+    "activeLicenses": "Licences actives",
+    "completed": "Terminé",
+    "daysRemaining": "Jours restants",
+    "failed": "Échoué",
+    "jobTimeout": "Délai d'expiration du travail",
+    "maxActiveJobs": "Nombre maximal de tâches actives",
+    "maxRepoSize": "Taille maximale du dépôt",
+    "maxReservedJobs": "Nombre maximal de tâches réservées",
+    "noPlanData": "Aucune donnée de limite de plan disponible",
+    "noSubscription": "Aucun abonnement actif",
+    "pending": "En attente",
+    "processing": "Traitement en cours"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "Échec de la mise à jour de l'état de blocage des demandes utilisateur",
+      "importFailed": "Échec de l'importation des données de l'entreprise",
+      "noExportData": "Aucune donnée d'exportation renvoyée",
+      "vaultsUpdateFailed": "Échec de la mise à jour des configurations du coffre-fort",
+      "vaultUpdateFailed": "Échec de la mise à jour de la configuration du coffre-fort"
+    },
+    "success": {
+      "errorCount": "{{count}} erreurs",
+      "importComplete": "Importation terminée : {{summary}}",
+      "importedCount": "{{count}} éléments importés",
+      "requestsBlocked": "Demandes des utilisateurs bloquées avec succès",
+      "requestsBlockedWithTerminations": "Demandes des utilisateurs bloquées. {{count}} sessions actives ont été interrompues.",
+      "requestsUnblocked": "Demandes des utilisateurs débloquées avec succès",
+      "skippedCount": "{{count}} éléments ignorés",
+      "vaultUpdated": "La configuration du coffre-fort a été mise à jour avec succès",
+      "imported": "Données de l'entreprise importées avec succès",
+      "vaultsUpdated": "Toutes les configurations du coffre-fort mises à jour avec succès"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "Votre mot de passe a été modifié. Vous serez déconnecté dans {{seconds}} secondes...",
+      "successTitle": "Mot de passe modifié avec succès"
+    }
+  },
   "regionsInfrastructure": {
     "title": "Régions et infrastructures"
   },
@@ -256,9 +249,10 @@
     },
     "teams": {
       "actions": "Actes",
-      "machines": "Machines",
+      "machines": "Machines de traitement",
       "members": "Membres",
       "repositories": "Dépôts",
+      "stats": "Stats",
       "storage": "Stockage",
       "teamName": "Nom de l'équipe",
       "vaultVersion": "Version du coffre-fort"
@@ -269,6 +263,22 @@
       "lastActive": "Dernier actif",
       "permissionGroup": "Groupe d'autorisations",
       "status": "Statut"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "Êtes-vous sûr de vouloir supprimer l'équipe \"{{teamName}}\"?",
+      "confirmTitle": "Supprimer l'équipe"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "Êtes-vous sûr de vouloir activer « {{email}} » ?",
+      "confirmTitle": "Activer l'utilisateur"
+    },
+    "deactivate": {
+      "confirmDescription": "Êtes-vous sûr de vouloir désactiver « {{email}} » ?",
+      "confirmTitle": "Désactiver l'utilisateur"
     }
   },
   "userSessions": {
@@ -294,6 +304,7 @@
     "forkToken": "Ceci est un jeton fork (session enfant)",
     "hasChildren": "{{count}} sessions enfants",
     "inactive": "Inactive",
+    "ipLabel": "IP",
     "minutes": "minutes",
     "notAvailable": "N / A",
     "searchPlaceholder": "Recherchez par e-mail, IP ou nom de session...",
@@ -304,21 +315,11 @@
     "totalSessions": "Nombre total de séances",
     "uniqueUsers": "Utilisateurs uniques"
   },
-  "users": {
-    "activate": {
-      "confirmDescription": "Êtes-vous sûr de vouloir activer « {{email}} » ?",
-      "confirmTitle": "Activer l'utilisateur"
-    },
-    "deactivate": {
-      "confirmDescription": "Êtes-vous sûr de vouloir désactiver « {{email}} » ?",
-      "confirmTitle": "Désactiver l'utilisateur"
-    }
-  },
   "vaultProtocol": {
     "errors": {
       "disableFailed": "Échec de la désactivation du chiffrement du coffre-fort",
       "enableFailed": "Échec de l'activation du chiffrement du coffre-fort",
-      "noCompanySelected": "Aucune entreprise sélectionnée. Veuillez choisir une entreprise avant de mettre à jour le cryptage."
+      "noOrganizationSelected": "Aucune entreprise sélectionnée. Veuillez choisir une entreprise avant de mettre à jour le cryptage."
     },
     "success": {
       "disabled": "Cryptage du coffre-fort désactivé. Les mots de passe principaux ne sont plus requis.",

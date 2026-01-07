@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { GroupedRepository, Repository } from './types';
 
 export const getRepositoryDisplayName = (repository: Repository): string => {
@@ -17,7 +17,7 @@ export const getAxiosErrorMessage = (error: unknown, fallback: string) => {
 
 export const groupRepositoriesByName = (
   repositories: Repository[],
-  teamRepositories: TeamRepo[]
+  teamRepositories: GetTeamRepositories_ResultSet1[]
 ): GroupedRepository[] => {
   const grouped = repositories.reduce(
     (acc, repository) => {

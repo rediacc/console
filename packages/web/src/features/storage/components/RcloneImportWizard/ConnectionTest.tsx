@@ -15,7 +15,6 @@ export const ConnectionTest: React.FC<ConnectionTestProps> = ({ t, importStatuse
       message={t('resources:storage.import.selectStorages')}
       description={t('resources:storage.import.selectDescription')}
       type="info"
-      showIcon
     />
 
     <Table<ImportStatus>
@@ -23,7 +22,7 @@ export const ConnectionTest: React.FC<ConnectionTestProps> = ({ t, importStatuse
       columns={columns}
       rowKey="name"
       pagination={false}
-      size="small"
+      scroll={{ x: 'max-content' }}
       data-testid="rclone-wizard-config-table"
     />
   </Flex>

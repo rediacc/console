@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, Button, Checkbox, Flex, Form, Modal } from 'antd';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface ResetAuthModalData {
   bridgeName: string;
@@ -9,8 +9,7 @@ interface ResetAuthModalData {
 }
 
 interface ResetAuthModalProps {
-  t: TFunction<'resources'>;
-  tCommon: TFunction<'common'>;
+  t: TypedTFunction;
   open: boolean;
   data?: ResetAuthModalData;
   isSubmitting: boolean;
@@ -21,48 +20,57 @@ interface ResetAuthModalProps {
 
 export const ResetAuthModal: React.FC<ResetAuthModalProps> = ({
   t,
-  tCommon,
   open,
   data,
   isSubmitting,
   onClose,
   onReset,
   onToggleCloudManaged,
-}) => (
-  <Modal
-    title={t('bridges.resetAuth')}
-    open={open}
-    onCancel={onClose}
-    footer={[
-      <Button key="cancel" onClick={onClose}>
-        {tCommon('actions.cancel')}
-      </Button>,
-      <Button key="reset" type="primary" danger loading={isSubmitting} onClick={onReset}>
-        {t('bridges.resetAuthConfirm')}
-      </Button>,
-    ]}
-    centered
-  >
-    {data && (
-      <Flex vertical gap={16} className="w-full">
-        <Alert
-          message={tCommon('general.warning')}
-          description={t('bridges.resetAuthWarning', { bridge: data.bridgeName })}
-          type="warning"
-          showIcon
-        />
+}) => {
+  return (
+    <Modal
+      title={t('bridges.resetAuth')}
+      open={open}
+      onCancel={onClose}
+      footer={[
+        <Button key="cancel" onClick={onClose} data-testid="bridge-reset-auth-cancel-button">
+          {t('common:actions.cancel')}
+        </Button>,
+        <Button
+          key="reset"
+          type="primary"
+          danger
+          loading={isSubmitting}
+          onClick={onReset}
+          data-testid="bridge-reset-auth-submit-button"
+        >
+          {t('bridges.resetAuthConfirm')}
+        </Button>,
+      ]}
+      centered
+      data-testid="bridge-reset-auth-modal"
+    >
+      {data && (
+        <Flex vertical className="w-full">
+          <Alert
+            message={t('common:general.warning')}
+            description={t('bridges.resetAuthWarning', { bridge: data.bridgeName })}
+            type="warning"
+          />
 
-        <Form layout="vertical">
-          <Form.Item label={t('bridges.cloudManagement')} help={t('bridges.cloudManagementHelp')}>
-            <Checkbox
-              checked={data.isCloudManaged}
-              onChange={(e) => onToggleCloudManaged(e.target.checked)}
-            >
-              {t('bridges.enableCloudManagement')}
-            </Checkbox>
-          </Form.Item>
-        </Form>
-      </Flex>
-    )}
-  </Modal>
-);
+          <Form layout="vertical">
+            <Form.Item label={t('bridges.cloudManagement')} help={t('bridges.cloudManagementHelp')}>
+              <Checkbox
+                checked={data.isCloudManaged}
+                onChange={(e) => onToggleCloudManaged(e.target.checked)}
+                data-testid="bridge-reset-cloud-managed-checkbox"
+              >
+                {t('bridges.enableCloudManagement')}
+              </Checkbox>
+            </Form.Item>
+          </Form>
+        </Flex>
+      )}
+    </Modal>
+  );
+};

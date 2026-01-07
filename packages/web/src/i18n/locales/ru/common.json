@@ -1,37 +1,70 @@
 {
   "actions": {
+    "actions": "Действия",
     "addToQueue": "Добавить в очередь",
     "advanced": "Передовой",
+    "assign": "Назначить",
     "back": "Назад",
     "cancel": "Отмена",
-    "confirm": "Подтвердить",
     "clearSelection": "Очистить выбор",
     "close": "Закрыть",
+    "confirm": "Подтвердить",
+    "copied": "Скопировано",
+    "copy": "Копировать",
     "create": "Создавать",
+    "createNew": "Создать новое",
     "createResource": "Создать {{resource}}",
     "delete": "Удалить",
+    "deleteSelected": "Удалить выбранные",
+    "download": "Загрузить",
+    "downloadSelected": "Загрузить выбранные",
     "edit": "Редактировать",
     "editResource": "Редактировать {{resource}}",
     "editVault": "Редактировать хранилище",
     "exitFullscreen": "Выход из полноэкранного режима",
     "export": "Экспорт",
     "exportSuccess": "Экспорт успешный",
+    "format": "Формат",
     "fullscreen": "Полноэкранный",
+    "logoutNow": "Выйти сейчас",
     "manage": "Управлять",
+    "newFolder": "Новая папка",
     "refresh": "Обновить",
     "remote": "Удаленный",
     "remove": "Удалять",
+    "rename": "Переименовать",
     "reset": "Перезагрузить",
     "retry": "Повторить попытку",
     "runFunction": "Функция запуска",
     "save": "Сохранить",
     "search": "Поиск",
     "trace": "След",
+    "upload": "Загрузить файл",
+    "uploadFile": "Загрузить файл",
     "viewTrace": "Посмотреть трассировку"
   },
   "actionsColumn": "Действия",
+  "allCommandsCopied": "Все команды скопированы в буфер обмена!",
+  "alt": {
+    "logo": "Редиакк логотип"
+  },
+  "aria": {
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "closeNotification": "Закрыть уведомление",
+    "collapsePanel": "Свернуть панель",
+    "expandPanel": "Развернуть панель",
+    "notifications": "Уведомления",
+    "refresh": "Обновить",
+    "refreshMachines": "Обновить машины",
+    "trace": "Трассировка"
+  },
+  "cancel": "Отмена",
   "close": "Закрывать",
+  "commandCopied": "Команда скопирована в буфер обмена!",
+  "commandCopyFailed": "Не удалось скопировать команду",
   "copiedToClipboard": "Скопировано в буфер обмена",
+  "copiedWithoutToken": "Скопировано без защищённого токена — войдите вручную",
   "copyFailed": "Не удалось скопировать в буфер обмена",
   "current": "Текущий",
   "dashboard": {
@@ -39,10 +72,122 @@
     "comparePlansDescription": "Сравните функции и цены на разных уровнях подписки.",
     "currentPlan": "Текущий план",
     "enterprisePlanDescription": "Вы используете наш план самого высокого уровня со всеми разблокированными функциями.",
-    "upgradeOptions": "Варианты обновления"
+    "errors": {
+      "loadFailed": "Не удалось загрузить данные панели управления. Пожалуйста, повторите попытку позже.",
+      "noData": "Данные панели управления недоступны",
+      "title": "Ошибка"
+    },
+    "title": "Панель управления",
+    "upgradeOptions": "Варианты обновления",
+    "widgets": {
+      "accountHealth": {
+        "noData": "Данные о состоянии учётной записи недоступны",
+        "overallStatus": "Общее состояние",
+        "resourcesAtLimit": "ресурсы на пределе",
+        "resourcesNearLimit": "ресурсы близки к пределу",
+        "title": "Состояние учётной записи"
+      },
+      "ceph": {
+        "available": "доступный",
+        "clone": "клон",
+        "cluster": "кластер",
+        "image": "образ",
+        "machines": "машины"
+      },
+      "queueDetails": {
+        "active": "активный",
+        "cancelled": "Отменено",
+        "completed": "Завершено",
+        "created": "Создано",
+        "failedTotal": "Не удалось (всего)",
+        "highestPriority": "Высочайший приоритет",
+        "highPriority": "Высокий приоритет",
+        "lowPriority": "Низкий приоритет",
+        "machine": "Машина",
+        "machineQueueStatus": "Статус очереди машины",
+        "normalPriority": "Обычный приоритет",
+        "pending": "ожидание",
+        "priorityBreakdown": "Разбивка по приоритетам",
+        "stale": "устаревший",
+        "staleItems": "{{count}} устаревших элементов",
+        "status": "Статус",
+        "team": "Команда",
+        "teamQueueStatus": "Статус очереди команды",
+        "title": "Детали очереди",
+        "todayActivity": "Сегодняшняя активность"
+      },
+      "queueOverview": {
+        "manage": "Управлять",
+        "noData": "Данные очереди недоступны",
+        "title": "Обзор очереди"
+      },
+      "recentActivity": {
+        "noActivity": "Недавняя активность отсутствует",
+        "title": "Недавняя активность",
+        "viewAll": "Просмотреть всё"
+      },
+      "resourceUsage": {
+        "limitReached": "Достигнут лимит",
+        "machines": "Машины",
+        "repositories": "Хранилища",
+        "subtitle": "Отслеживайте потребление ресурсов в отношении лимитов плана",
+        "title": "Использование ресурсов"
+      },
+      "subscriptionPlan": {
+        "allActiveLicenses": "ВСЕ АКТИВНЫЕ ЛИЦЕНЗИИ",
+        "currentSubscription": "ТЕКУЩАЯ ПОДПИСКА",
+        "day": "день",
+        "days": "дни",
+        "hours": "часы",
+        "remaining": "осталось",
+        "title": "Подробности подписки и плана",
+        "total": "Всего",
+        "trial": "Пробный"
+      },
+      "systemVersion": {
+        "api": "API",
+        "apiUptime": "Время работы API",
+        "console": "Консоль"
+      }
+    }
   },
   "dateColumn": "Дата",
-  "export": "Экспорт",
+  "defaults": {
+    "defaultRegion": "Регион по умолчанию",
+    "globalBridges": "Глобальные мосты",
+    "jsonError": "Ошибка JSON",
+    "privateTeam": "Частная команда"
+  },
+  "delete": "Удалить",
+  "desktopConnectionFailed": "Не удалось создать безопасное соединение для приложения рабочего стола",
+  "desktopPrompt": {
+    "downloadDesktop": "Загрузить приложение для рабочего стола",
+    "machine": "Машина",
+    "openDesktop": "Открыть в приложении для рабочего стола",
+    "repository": "Хранилище",
+    "securityExplanation": "Прямые операции с файлами требуют защищённого соединения SSH с вашего компьютера на удалённую машину. Это соединение не может быть установлено из браузера по соображениям безопасности.",
+    "subtitle": "{{feature}} использует защищённые соединения SSH, требующие приложение Rediacc для рабочего стола.",
+    "title": "{{feature}} требует приложение для рабочего стола",
+    "whyDesktopOnly": "Почему только рабочий стол?"
+  },
+  "errorBoundary": {
+    "componentStack": "Стек компонентов",
+    "description": "Произошла неожиданная ошибка. Она автоматически зарегистрирована.",
+    "error": "Ошибка",
+    "errorDetails": "Детали ошибки (режим разработки)",
+    "reloadPage": "Перезагрузить страницу",
+    "stack": "Стек",
+    "title": "Что-то пошло не так",
+    "tryAgain": "Повторить попытку"
+  },
+  "errors": {
+    "somethingWentWrong": "Что-то пошло не так",
+    "schemaValidationFailed": "Обнаружена проблема синхронизации данных. Пожалуйста, обновите страницу или свяжитесь с поддержкой, если проблема сохраняется."
+  },
+  "export": {
+    "label": "Экспорт",
+    "success": "Экспорт успешен"
+  },
   "exportCSV": "Экспортировать в формате CSV",
   "exportJSON": "Экспортировать в формате JSON",
   "fieldGenerator": {
@@ -69,16 +214,48 @@
   "fields": {
     "vault": "Конфигурация хранилища"
   },
+  "fileBrowser": {
+    "connecting": "Подключение...",
+    "created": "Создана папка: {{name}}",
+    "createNewFolder": "Создать новую папку",
+    "deleteConfirmMessage": "Вы уверены, что хотите удалить «{{name}}»?",
+    "deleteFileConfirm": "Удалить файл?",
+    "deleteFolderConfirm": "Удалить папку?",
+    "deleteFolderWarning": " Это удалит всё содержимое.",
+    "downloaded": "Загруженно: {{name}}",
+    "error": "Ошибка",
+    "establishingConnection": "Установка SFTP соединения с {{host}}...",
+    "fileBrowser": "Браузер файлов",
+    "folder": "Папка",
+    "folderName": "Имя папки",
+    "items": "{{count}} элементов",
+    "modified": "Изменено",
+    "name": "Имя",
+    "newName": "Новое имя",
+    "originalFile": "Исходный файл",
+    "permissions": "Разрешения",
+    "renamedSuccessfully": "Успешно переименовано",
+    "root": "корень",
+    "size": "Размер",
+    "uploaded": "Загруженно: {{name}}"
+  },
   "general": {
     "cancel": "Отмена",
     "defaultsApplied": "Применены значения по умолчанию",
     "important": "Важный",
     "loading": "Загрузка...",
+    "no": "Нет",
+    "path": "Путь",
+    "refreshing": "Обновление...",
     "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}",
+    "team": "Команда",
     "unknown": "Неизвестный",
     "vaultVersion": "Версия хранилища",
-    "versionFormat": "v{{version}}"
+    "versionFormat": "в{{version}}",
+    "warning": "Предупреждение",
+    "yes": "Да"
   },
+  "important": "Важный",
   "language": {
     "ar": "арабский",
     "de": "немецкий",
@@ -86,12 +263,14 @@
     "es": "испанский",
     "fr": "Французский",
     "ja": "японский",
+    "label": "Язык",
     "select": "Выберите язык",
+    "switch": "Переключить язык",
     "tr": "турецкий",
     "zh": "китайский"
   },
-  "last30Days": "Последние 30 дней",
   "last7Days": "Последние 7 дней",
+  "last30Days": "Последние 30 дней",
   "lastMonth": "В прошлом месяце",
   "messages": {
     "error": "Ошибка",
@@ -101,31 +280,31 @@
     "success": "Успех"
   },
   "navigation": {
-    "architecture": "Архитектура",
     "audit": "Аудит",
+    "ceph": "Распределенное хранилище",
+    "cephClusters": "Кластеры",
+    "cephMachines": "Машины",
+    "cephPools": "Пулы",
+    "collapseSidebar": "Свернуть боковую панель",
     "credentials": "Учетные данные",
     "dashboard": "Панель управления",
-    "ceph": "Распределенное хранилище",
+    "expandSidebar": "Развернуть боковую панель",
     "logout": "Выход из системы",
     "machines": "Машины",
     "mainNavigation": "Основная навигация",
-    "marketplace": "Торговая площадка",
     "organization": "Организация",
     "organizationAccess": "Доступ",
     "organizationTeams": "Команды",
     "organizationUsers": "Пользователи",
     "queue": "Очередь",
     "settings": "Настройки",
-    "settingsCompany": "Компания",
     "settingsInfrastructure": "Инфраструктура",
+    "settingsOrganization": "Компания",
     "settingsProfile": "Профиль",
     "storage": "Хранилище",
-    "storageCloud": "Cloud",
-    "storageDistributed": "Distributed",
-    "cephClusters": "Кластеры",
-    "cephPools": "Пулы",
-    "cephMachines": "Машины",
-    "system": "Система"
+    "storageCloud": "Облако",
+    "storageDistributed": "Распределённое",
+    "userMenu": "Открыть меню пользователя"
   },
   "nestedObjectEditor": {
     "Active": "Активный",
@@ -166,7 +345,23 @@
       "warning": "Предупреждение"
     }
   },
+  "powerMode": {
+    "advancedDisabled": "Дополнительные параметры отключены",
+    "advancedEnabled": "Дополнительные параметры включены",
+    "localhostAllDisabled": "Режим localhost — все функции отключены",
+    "localhostAllEnabled": "Режим localhost — все функции включены"
+  },
   "refresh": "Обновить",
+  "remote": "Удалённый",
+  "resourceList": {
+    "createNew": "Создать новое",
+    "getStartedMessage": "Начните с создания первого {{resource}}",
+    "noDataAvailable": "Данные недоступны",
+    "noResourcesFound": "{{resources}} не найдены. Попробуйте изменить критерии поиска.",
+    "searchPlaceholder": "Поиск...",
+    "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}"
+  },
+  "save": "Сохранить",
   "status": {
     "initializing": "Инициализация...",
     "label": "Статус",
@@ -177,16 +372,37 @@
   "statusColumn": "Статус",
   "table": {
     "actions": "Действия",
+    "moreItems": "+{{count}} ещё",
     "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}"
+  },
+  "teamSelector": {
+    "moreTeams": "+{{count}} ещё",
+    "selectTeams": "Выберите команды..."
+  },
+  "theme": {
+    "dark": "Тёмный",
+    "label": "Тема",
+    "light": "Светлый"
   },
   "thisMonth": "В этом месяце",
   "today": "Сегодня",
+  "tokenGenerationFailed": "Ошибка создания токена: {{error}}",
+  "tooltips": {
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "expandPanel": "Развернуть панель",
+    "refresh": "Обновить",
+    "taskCancellable": "Эта задача может быть отменена",
+    "trace": "Трассировка"
+  },
   "total": "Общий",
   "uiMode": {
     "expert": "Эксперт",
+    "label": "Режим интерфейса",
     "simple": "Простой",
     "switching": "Переключение в режим {{mode}}..."
   },
+  "unknown": "Неизвестный",
   "utilized": "использовано",
   "vaultEditor": {
     "advanced": "Передовой",
@@ -214,7 +430,7 @@
         "description": "Настройка параметров клонирования RBD",
         "features": {
           "description": "Возможности RBD для клона",
-          "label": "Функции"
+          "label": "Возможности"
         },
         "parent_image": {
           "description": "Имя родительского изображения",
@@ -260,37 +476,6 @@
           "label": "Узлы экранного меню"
         }
       },
-      "COMPANY": {
-        "DOCKER_JSON_CONF": {
-          "description": "Конфигурация аутентификации реестра Docker",
-          "label": "Конфигурация докера"
-        },
-        "LOG_FILE": {
-          "description": "Путь к файлу системного журнала",
-          "label": "Путь к файлу журнала"
-        },
-        "PLUGINS": {
-          "description": "Конфигурации плагинов с образами контейнеров и статусом активации",
-          "label": "Плагины"
-        },
-        "SSH_PRIVATE_KEY": {
-          "description": "Закрытый ключ SSH в кодировке Base64 для операций компании",
-          "label": "Закрытый ключ SSH"
-        },
-        "SSH_PUBLIC_KEY": {
-          "description": "Открытый ключ SSH для операций компании",
-          "label": "Открытый ключ SSH"
-        },
-        "UNIVERSAL_USER_ID": {
-          "description": "Универсальный идентификатор пользователя для операций в системе",
-          "label": "Универсальный идентификатор пользователя"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "description": "Универсальное имя пользователя для системных операций",
-          "label": "Универсальное имя пользователя"
-        },
-        "description": "Конфигурация компании для настроек всей организации"
-      },
       "IMAGE": {
         "data_pool": {
           "description": "Отдельный пул для хранения данных изображения",
@@ -324,7 +509,7 @@
           "label": "Путь к хранилищу данных"
         },
         "description": "Конфигурация машины для доступа и хранения по SSH",
-        "host_entry": {
+        "known_hosts": {
           "description": "Запись известного хоста SSH для проверки безопасности",
           "label": "Вход хоста"
         },
@@ -347,6 +532,37 @@
         "user": {
           "description": "Имя пользователя SSH для подключения",
           "label": "Имя пользователя"
+        }
+      },
+      "ORGANIZATION": {
+        "description": "Конфигурация компании для настроек всей организации",
+        "DOCKER_JSON_CONF": {
+          "description": "Конфигурация аутентификации реестра Docker",
+          "label": "Конфигурация докера"
+        },
+        "LOG_FILE": {
+          "description": "Путь к файлу системного журнала",
+          "label": "Путь к файлу журнала"
+        },
+        "PLUGINS": {
+          "description": "Конфигурации плагинов с образами контейнеров и статусом активации",
+          "label": "Плагины"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Закрытый ключ SSH в кодировке Base64 для операций компании",
+          "label": "Закрытый ключ SSH"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Открытый ключ SSH для операций компании",
+          "label": "Открытый ключ SSH"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "Универсальный идентификатор пользователя для операций в системе",
+          "label": "Универсальный идентификатор пользователя"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "Универсальное имя пользователя для системных операций",
+          "label": "Универсальное имя пользователя"
         }
       },
       "POOL": {
@@ -382,6 +598,10 @@
           "label": "Код региона"
         },
         "description": "Конфигурация региона для географического распределения",
+        "location": {
+          "description": "Детали местоположения региона",
+          "label": "Местоположение"
+        },
         "name": {
           "description": "Название географического региона",
           "label": "Название региона"
@@ -449,6 +669,11 @@
         }
       },
       "TEAM": {
+        "description": "Конфигурация команды для организационной структуры",
+        "name": {
+          "description": "Название команды",
+          "label": "Название команды"
+        },
         "SSH_PRIVATE_KEY": {
           "description": "Закрытый ключ SSH в кодировке Base64 для командных операций.",
           "label": "Закрытый ключ SSH"
@@ -457,17 +682,13 @@
           "description": "Открытый ключ SSH для командных операций",
           "label": "Открытый ключ SSH"
         },
-        "description": "Конфигурация команды для организационной структуры",
-        "name": {
-          "description": "Название команды",
-          "label": "Название команды"
-        },
         "teamDescription": {
           "description": "Описание целей и обязанностей команды",
           "label": "Описание команды"
         }
       },
       "USER": {
+        "description": "Конфигурация пользователя для личных настроек",
         "SSH_PRIVATE_KEY": {
           "description": "Закрытый ключ SSH в кодировке Base64 для пользовательских операций.",
           "label": "Закрытый ключ SSH"
@@ -475,8 +696,7 @@
         "SSH_PUBLIC_KEY": {
           "description": "Открытый ключ SSH для пользовательских операций",
           "label": "Открытый ключ SSH"
-        },
-        "description": "Конфигурация пользователя для личных настроек"
+        }
       }
     },
     "fields.CLONE.description": "Настройка параметров клонирования RBD",
@@ -487,8 +707,8 @@
     "fieldsMovedFromExtra": "{{count}} полей восстановлено из extraFields: {{fields}}",
     "fieldsMovedToExtra": "Поля ({{count}}) перемещены в extraFields: {{fields}}",
     "formatJson": "Формат JSON",
-    "hostEntryHelp": "Необязательный. Запись известного хоста SSH будет обнаружена автоматически.",
-    "hostEntryPlaceholder": "Автоматически заполняется во время проверки соединения",
+    "knownHostsHelp": "Необязательный. Запись известного хоста SSH будет обнаружена автоматически.",
+    "knownHostsPlaceholder": "Автоматически заполняется во время проверки соединения",
     "importJson": "Импортировать JSON",
     "invalidFormat": "Неверный формат. {{description}}",
     "invalidJsonFormat": "Неверный формат JSON",

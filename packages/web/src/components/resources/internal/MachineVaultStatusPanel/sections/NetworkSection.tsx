@@ -9,12 +9,12 @@ import {
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { CompassOutlined, WifiOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { NetworkInterface, VaultNetwork } from '../types';
-import type { TFunction } from 'i18next';
 
 interface NetworkSectionProps {
   network: VaultNetwork;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
@@ -31,7 +31,7 @@ export const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) =>
 
       {network.default_gateway && (
         <Card size="small" data-testid="vault-status-gateway-card">
-          <Flex vertical gap={8} className="w-full">
+          <Flex vertical className="w-full gap-sm">
             <DetailPanelFieldRow>
               <DetailPanelFieldLabel>
                 {t('resources:repositories.defaultGateway')}:
@@ -98,7 +98,9 @@ export const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) =>
                 )}
                 {iface.mtu > 0 && (
                   <Flex justify="space-between" align="center">
-                    <DetailPanelFieldLabel>MTU:</DetailPanelFieldLabel>
+                    <DetailPanelFieldLabel>
+                      {t('resources:repositories.mtu')}:
+                    </DetailPanelFieldLabel>
                     <DetailPanelFieldValue>{iface.mtu}</DetailPanelFieldValue>
                   </Flex>
                 )}

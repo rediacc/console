@@ -1,5 +1,6 @@
 import React from 'react';
 import { Alert } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { WarningOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { isStalePending } from '../utils';
@@ -9,6 +10,8 @@ interface OldPendingWarningProps {
 }
 
 export const OldPendingWarning: React.FC<OldPendingWarningProps> = ({ queueDetails }) => {
+  const { t } = useTranslation('queue');
+
   if (!queueDetails || !isStalePending(queueDetails)) {
     return null;
   }
@@ -16,10 +19,9 @@ export const OldPendingWarning: React.FC<OldPendingWarningProps> = ({ queueDetai
   return (
     <Alert
       data-testid="queue-trace-alert-old-pending"
-      message="Old Pending Task"
-      description="This task has been pending for over 6 hours. It may expire soon if not processed."
+      message={t('trace.oldPendingTitle')}
+      description={t('trace.oldPendingDescription')}
       type="warning"
-      showIcon
       icon={<WarningOutlined />}
     />
   );

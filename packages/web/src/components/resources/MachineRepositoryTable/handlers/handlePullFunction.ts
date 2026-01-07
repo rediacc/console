@@ -1,16 +1,17 @@
 import { showMessage } from '@/utils/messages';
 import { getGrandRepoVault } from '../hooks/useFunctionExecution';
-import type { FunctionExecutionContext, FunctionData } from '../hooks/useFunctionExecution';
+import type { PullFunctionData } from './types';
+import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 
 export const handlePullFunction = async (
-  functionData: FunctionData,
+  functionData: PullFunctionData,
   context: FunctionExecutionContext
 ): Promise<void> => {
   const {
     selectedRepository,
     teamRepositories,
     machine,
-    executeAction,
+    executeTyped,
     onQueueItemCreated,
     closeModal,
     t,
@@ -40,12 +41,11 @@ export const handlePullFunction = async (
     grand: RepoData.grandGuid ?? RepoData.repositoryGuid,
   };
 
-  const result = await executeAction({
+  const result = await executeTyped('backup_pull', {
+    params: finalParams,
     teamName: machine.teamName,
     machineName: machine.machineName,
     bridgeName: machine.bridgeName,
-    functionName: functionData.function.name,
-    params: finalParams,
     priority: functionData.priority,
     addedVia: 'machine-Repository-list',
     machineVault: machine.vaultContent ?? '{}',

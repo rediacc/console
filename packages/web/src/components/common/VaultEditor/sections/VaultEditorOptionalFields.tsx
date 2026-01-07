@@ -32,6 +32,8 @@ export const VaultEditorOptionalFields: React.FC<VaultEditorOptionalFieldsProps>
           .filter((fieldName) => fieldName !== 'ssh_key_configured')
           .map((fieldName) => {
             const field = fields[fieldName];
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (!field) return null;
 
             return (
               <Col key={fieldName} xs={24} md={12}>
@@ -61,6 +63,8 @@ export const VaultEditorOptionalFields: React.FC<VaultEditorOptionalFieldsProps>
       )}
       {optionalFields.map((fieldName) => {
         const field = fields[fieldName];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!field) return null;
 
         if (entityType === 'MACHINE' && fieldName === 'ssh_password') {
           return (

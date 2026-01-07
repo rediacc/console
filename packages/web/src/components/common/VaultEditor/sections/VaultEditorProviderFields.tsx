@@ -39,7 +39,6 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
             defaultValue: providerFields.description,
           })}
           type="info"
-          showIcon
           icon={<QuestionCircleOutlined />}
         />
 
@@ -102,7 +101,7 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
         </Divider>
         <Alert
           message={
-            <Flex vertical gap={8} style={{ width: '100%' }}>
+            <Flex vertical className="gap-sm w-full">
               {[1, 2, 3, 4]
                 .map((index) => {
                   const tip = t(
@@ -119,7 +118,6 @@ export const VaultEditorProviderFields: React.FC<VaultEditorProviderFieldsProps>
             </Flex>
           }
           type="info"
-          showIcon
           icon={<InfoCircleOutlined />}
         />
         {/* eslint-enable no-restricted-syntax */}

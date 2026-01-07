@@ -126,14 +126,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                     <summary className="cursor-pointer">
                       {i18n.t('common:errorBoundary.errorDetails')}
                     </summary>
-                    <Flex vertical gap={8}>
-                      <Typography.Text strong>Error:</Typography.Text> {this.state.error.message}
+                    <Flex vertical className="gap-sm">
+                      <Typography.Text strong>
+                        {i18n.t('common:errorBoundary.error')}:
+                      </Typography.Text>{' '}
+                      {this.state.error.message}
                       <br />
-                      <Typography.Text strong>Stack:</Typography.Text> {this.state.error.stack}
+                      <Typography.Text strong>
+                        {i18n.t('common:errorBoundary.stack')}:
+                      </Typography.Text>{' '}
+                      {this.state.error.stack}
                       {this.state.errorInfo && (
                         <>
                           <br />
-                          <Typography.Text strong>Component Stack:</Typography.Text>{' '}
+                          <Typography.Text strong>
+                            {i18n.t('common:errorBoundary.componentStack')}:
+                          </Typography.Text>{' '}
                           {this.state.errorInfo.componentStack}
                         </>
                       )}

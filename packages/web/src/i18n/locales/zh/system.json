@@ -22,36 +22,6 @@
     "trace": "痕迹",
     "twoFactorAuth": "双因素身份验证"
   },
-  "architecture": {
-    "bridges": "桥梁",
-    "clearAll": "全部清除",
-    "fetchError": "获取架构数据失败",
-    "filterEntities": "过滤实体",
-    "legend": "传奇",
-    "machines": "机器",
-    "noData": "没有可用的架构数据",
-    "noEntitiesSelected": "未选择任何实体。 请至少选择一种要显示的实体类型。",
-    "nodeBridge": "桥",
-    "nodeCompany": "公司",
-    "nodeMachine": "机器",
-    "nodeRegion": "地区",
-    "nodeRepository": "存储库",
-    "nodeStorage": "贮存",
-    "nodeTeam": "团队",
-    "nodeUser": "用户",
-    "regions": "地区",
-    "repositories": "存储库",
-    "schedules": "时间表",
-    "selectAll": "选择全部",
-    "selectEntities": "选择要显示的实体类型",
-    "storages": "存储",
-    "teams": "团队",
-    "title": "公司架构",
-    "users": "用户",
-    "viewForce": "力量",
-    "viewHierarchy": "等级制度",
-    "viewRadial": "径向"
-  },
   "audit": {
     "columns": {
       "action": "行动",
@@ -92,24 +62,6 @@
     },
     "subtitle": "跟踪组织中的所有活动和变化",
     "title": "审核日志"
-  },
-  "company": {
-    "errors": {
-      "blockRequestsFailed": "无法更新用户请求阻止状态",
-      "importFailed": "导入公司数据失败",
-      "noExportData": "没有返回导出数据",
-      "vaultUpdateFailed": "无法更新保管库配置"
-    },
-    "success": {
-      "errorCount": "{{count}} 个错误",
-      "importComplete": "导入完成：{{summary}}",
-      "importedCount": "已导入 {{count}} 件商品",
-      "requestsBlocked": "用户请求已成功阻止",
-      "requestsBlockedWithTerminations": "用户请求被阻止。 {{count}} 个活动会话已终止。",
-      "requestsUnblocked": "用户请求解禁成功",
-      "skippedCount": "已跳过 {{count}} 项",
-      "vaultUpdated": "保管库配置更新成功"
-    }
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -155,8 +107,8 @@
         "cancel": "取消",
         "fileRequired": "请选择要导入的文件",
         "import": "进口",
-        "importMode": "导入方式",
         "importing": "输入...",
+        "importMode": "导入方式",
         "invalidFile": "文件格式无效。 请选择有效的公司数据导出文件。",
         "modeOverride": "覆盖现有项目",
         "modeOverrideDesc": "用导入的数据替换现有项目",
@@ -244,6 +196,47 @@
       "warning": "将新密码存储在安全位置 - 如果丢失则无法恢复。"
     }
   },
+  "dashboard": {
+    "activeLicenses": "活跃许可证",
+    "completed": "已完成",
+    "daysRemaining": "剩余天数",
+    "failed": "失败",
+    "jobTimeout": "任务超时",
+    "maxActiveJobs": "最大活跃任务数",
+    "maxRepoSize": "最大仓库大小",
+    "maxReservedJobs": "最大保留任务数",
+    "noPlanData": "没有可用的计划限制数据",
+    "noSubscription": "没有活跃订阅",
+    "pending": "待处理",
+    "processing": "处理中"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "无法更新用户请求阻止状态",
+      "importFailed": "导入公司数据失败",
+      "noExportData": "没有返回导出数据",
+      "vaultsUpdateFailed": "无法更新保管库配置",
+      "vaultUpdateFailed": "无法更新保管库配置"
+    },
+    "success": {
+      "errorCount": "{{count}} 个错误",
+      "importComplete": "导入完成：{{summary}}",
+      "imported": "组织数据导入成功",
+      "importedCount": "已导入 {{count}} 件商品",
+      "requestsBlocked": "用户请求已成功阻止",
+      "requestsBlockedWithTerminations": "用户请求被阻止。 {{count}} 个活动会话已终止。",
+      "requestsUnblocked": "用户请求解禁成功",
+      "skippedCount": "已跳过 {{count}} 项",
+      "vaultsUpdated": "所有保管库配置更新成功",
+      "vaultUpdated": "保管库配置更新成功"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "您的密码已更改。您将在 {{seconds}} 秒后注销...",
+      "successTitle": "密码更改成功"
+    }
+  },
   "regionsInfrastructure": {
     "title": "地区及基础设施"
   },
@@ -259,6 +252,7 @@
       "machines": "机器",
       "members": "会员",
       "repositories": "存储库",
+      "stats": "统计数据",
       "storage": "贮存",
       "teamName": "团队名称",
       "vaultVersion": "保险库版本"
@@ -269,6 +263,22 @@
       "lastActive": "最后活跃",
       "permissionGroup": "权限组",
       "status": "地位"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "您确定要删除团队 \"{{teamName}}\" 吗？",
+      "confirmTitle": "删除团队"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "您确定要激活“{{email}}”吗？",
+      "confirmTitle": "激活用户"
+    },
+    "deactivate": {
+      "confirmDescription": "您确定要停用“{{email}}”吗？",
+      "confirmTitle": "停用用户"
     }
   },
   "userSessions": {
@@ -294,6 +304,7 @@
     "forkToken": "这是一个分叉令牌（子会话）",
     "hasChildren": "{{count}} 个子会话",
     "inactive": "不活跃",
+    "ipLabel": "IP",
     "minutes": "分钟",
     "notAvailable": "不适用",
     "searchPlaceholder": "按电子邮件、IP 或会话名称搜索...",
@@ -304,21 +315,11 @@
     "totalSessions": "总会话数",
     "uniqueUsers": "独特用户"
   },
-  "users": {
-    "activate": {
-      "confirmDescription": "您确定要激活“{{email}}”吗？",
-      "confirmTitle": "激活用户"
-    },
-    "deactivate": {
-      "confirmDescription": "您确定要停用“{{email}}”吗？",
-      "confirmTitle": "停用用户"
-    }
-  },
   "vaultProtocol": {
     "errors": {
       "disableFailed": "无法禁用保管库加密",
       "enableFailed": "无法启用保管库加密",
-      "noCompanySelected": "没有选择任何公司。 请在更新加密前选择一家公司。"
+      "noOrganizationSelected": "没有选择任何公司。 请在更新加密前选择一家公司。"
     },
     "success": {
       "disabled": "保管库加密已禁用。 不再需要主密码。",

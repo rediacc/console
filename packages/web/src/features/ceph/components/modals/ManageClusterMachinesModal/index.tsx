@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { Button, Empty, Flex, Modal, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  CephClusterMachine,
-  useAvailableMachinesForClone,
-  useCephClusterMachines,
-} from '@/api/queries/ceph';
-import {
+  useGetAvailableMachinesForClone,
+  useGetCephClusterMachines,
   useUpdateMachineClusterAssignment,
   useUpdateMachineClusterRemoval,
-} from '@/api/queries/cephMutations';
-import { SizedModal } from '@/components/common';
-import { createDateColumn, createTruncatedColumn } from '@/components/common/columns';
+} from '@/api/api-hooks.generated';
+import {
+  createDateColumn,
+  createTruncatedColumn,
+  RESPONSIVE_HIDE_XS,
+} from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { SizedModal } from '@/components/common/SizedModal';
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector';
 import { useMessage } from '@/hooks';
 import { createSorter, formatTimestampAsIs } from '@/platform';
@@ -25,6 +26,7 @@ import {
   DesktopOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
+import type { GetCephClusterMachines_ResultSet1 as CephClusterMachine } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ManageClusterMachinesModalProps {
@@ -56,11 +58,11 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     data: clusterMachines = [],
     isLoading: loadingClusterMachines,
     refetch: refetchClusterMachines,
-  } = useCephClusterMachines(clusterName, open);
+  } = useGetCephClusterMachines(clusterName);
 
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingAvailable } =
-    useAvailableMachinesForClone(teamName, open && activeTab === 'assign');
+    useGetAvailableMachinesForClone(teamName);
   const normalizedAvailableMachines = availableMachines as unknown as Machine[];
 
   // Mutations
@@ -187,17 +189,20 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     renderWrapper: (content) => <Tag>{content}</Tag>,
   });
 
-  const assignedDateColumn = createDateColumn<CephClusterMachine>({
-    title: t('machines:assignedDate'),
-    dataIndex: 'assignedDate',
-    key: 'assignedDate',
-    sorter: false,
-    render: (date: string | Date | null | undefined) => {
-      if (!date) return '-';
-      const resolved = typeof date === 'string' ? date : date.toString();
-      return formatTimestampAsIs(resolved, 'datetime');
-    },
-  });
+  const assignedDateColumn = {
+    ...createDateColumn<CephClusterMachine>({
+      title: t('machines:assignedDate'),
+      dataIndex: 'assignedDate',
+      key: 'assignedDate',
+      sorter: false,
+      render: (date: string | Date | null | undefined) => {
+        if (!date) return '-';
+        const resolved = typeof date === 'string' ? date : date.toString();
+        return formatTimestampAsIs(resolved, 'datetime');
+      },
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  };
 
   const assignedColumns: ColumnsType<CephClusterMachine> = [
     machineColumn,
@@ -281,8 +286,8 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           columns={assignedColumns}
           dataSource={clusterMachines}
           rowKey="machineName"
-          size="small"
           pagination={false}
+          scroll={{ x: 'max-content' }}
           data-testid="ds-manage-machines-assigned-table"
         />
       </Space>

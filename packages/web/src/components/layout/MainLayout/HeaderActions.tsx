@@ -1,9 +1,9 @@
 import React from 'react';
 import { Button, Dropdown, Flex } from 'antd';
 import { useSelector } from 'react-redux';
-import { useCompanyInfo } from '@/api/queries/dashboard';
+import { useOrganizationInfo } from '@/api/hooks-organization';
 import NotificationBell from '@/components/layout/MainLayout/components/NotificationBell';
-import { selectCompany, selectUser } from '@/store/auth/authSelectors';
+import { selectOrganization, selectUser } from '@/store/auth/authSelectors';
 import { RootState } from '@/store/store';
 import { UserOutlined } from '@/utils/optimizedIcons';
 import { UserMenu } from './UserMenu';
@@ -20,13 +20,13 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
   onLogout,
 }) => {
   const user = useSelector(selectUser);
-  const company = useSelector(selectCompany);
+  const organization = useSelector(selectOrganization);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const themeMode = useSelector((state: RootState) => state.ui.themeMode);
-  const { data: companyData } = useCompanyInfo();
+  const { data: organizationData } = useOrganizationInfo();
 
   return (
-    <Flex align="center" gap={12}>
+    <Flex align="center">
       <NotificationBell />
       <Dropdown
         trigger={['click']}
@@ -34,8 +34,8 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
         popupRender={() => (
           <UserMenu
             user={user}
-            company={company}
-            companyData={companyData}
+            organization={organization}
+            organizationData={organizationData}
             uiMode={uiMode}
             themeMode={themeMode}
             onModeToggle={onModeToggle}

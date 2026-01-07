@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Empty, Flex } from 'antd';
-import { useRecentAuditLogs } from '@/api/queries/audit';
-import { useDashboard } from '@/api/queries/dashboard';
+import { useTranslation } from 'react-i18next';
+import { useOrganizationDashboard, useGetAuditLogs } from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import CephDashboardWidget from '@/features/dashboard/components/CephDashboardWidget';
 import SystemVersionFooter from '@/features/dashboard/components/SystemVersionFooter';
@@ -17,8 +17,14 @@ import SubscriptionPlanWidget from '../widgets/SubscriptionPlanWidget';
 const RECENT_AUDIT_LOGS_COUNT = 6;
 
 const DashboardPage: React.FC = () => {
-  const { data: dashboard, isLoading, error } = useDashboard();
-  const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT);
+  const { t } = useTranslation('common');
+  const { data: dashboard, isLoading, error } = useOrganizationDashboard();
+  const { data: auditLogs, isLoading: auditLoading } = useGetAuditLogs(
+    undefined,
+    undefined,
+    undefined,
+    RECENT_AUDIT_LOGS_COUNT
+  );
 
   if (isLoading) {
     return (
@@ -37,10 +43,9 @@ const DashboardPage: React.FC = () => {
     return (
       <Flex>
         <Alert
-          message="Error"
-          description="Failed to load dashboard data. Please try again later."
+          message={t('dashboard.errors.title')}
+          description={t('dashboard.errors.loadFailed')}
           type="error"
-          showIcon
           icon={<AlertOutlined />}
           data-testid="dashboard-error-alert"
         />
@@ -51,7 +56,7 @@ const DashboardPage: React.FC = () => {
   if (!dashboard) {
     return (
       <Flex>
-        <Empty description="No dashboard data available" />
+        <Empty description={t('dashboard.errors.noData')} />
       </Flex>
     );
   }
@@ -69,7 +74,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <Flex>
-      <Flex vertical gap={24} className="w-full">
+      <Flex vertical className="w-full">
         <DashboardAlertsWidget dashboard={dashboard} accountHealth={accountHealth} />
 
         <ResourceUsageWidget resources={dashboard.resources} />

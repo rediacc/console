@@ -1,8 +1,39 @@
 import { useMutation, UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
+import i18n from '@/i18n/config';
 import { showMessage } from '@/utils/messages';
 import { extractErrorMessage } from '@/utils/mutationUtils';
+import { applyProcedureDefaults } from '@rediacc/shared/api/typedApi/defaults';
+import type { StoredProcedureName } from '@rediacc/shared/types';
+
+function buildInterpolationValues(
+  data: unknown,
+  variables: unknown,
+  procedureName?: StoredProcedureName
+): Record<string, unknown> {
+  const dataObj = data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
+  const varsObj =
+    variables && typeof variables === 'object' ? (variables as Record<string, unknown>) : {};
+  const normalizedVars = procedureName ? applyProcedureDefaults(procedureName, varsObj) : varsObj;
+  return { ...normalizedVars, ...dataObj };
+}
+
+function translateMessage(
+  message: string,
+  data: unknown,
+  variables: unknown,
+  procedureName?: StoredProcedureName
+): string {
+  return i18n.t(message, {
+    ...buildInterpolationValues(data, variables, procedureName),
+    defaultValue: message,
+  });
+}
 
 export interface MutationFeedbackOptions<TData, TError, TVariables> {
+  /**
+   * Stored procedure name for centralized defaults/interpolation.
+   */
+  procedureName?: StoredProcedureName;
   /**
    * Success message - static string OR response-based callback.
    * If provided, shows a success toast when mutation succeeds.
@@ -65,6 +96,7 @@ export function useMutationWithFeedback<
     successMessage,
     errorMessage,
     disableFeedback,
+    procedureName,
     onSuccess: userOnSuccess,
     onError: userOnError,
     ...mutationOptions
@@ -76,7 +108,9 @@ export function useMutationWithFeedback<
       // Show success feedback
       if (!disableFeedback && successMessage) {
         const message =
-          typeof successMessage === 'function' ? successMessage(data, variables) : successMessage;
+          typeof successMessage === 'function'
+            ? successMessage(data, variables)
+            : translateMessage(successMessage, data, variables, procedureName);
         // Allow null to skip the message (for conditional feedback)
         if (message) {
           showMessage('success', message);
@@ -91,7 +125,12 @@ export function useMutationWithFeedback<
         const message =
           typeof errorMessage === 'function'
             ? errorMessage(error, variables)
-            : extractErrorMessage(error, errorMessage ?? 'Operation failed');
+            : translateMessage(
+                extractErrorMessage(error, errorMessage ?? 'Operation failed'),
+                error,
+                variables,
+                procedureName
+              );
         showMessage('error', message);
       }
       // Call user's callback

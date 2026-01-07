@@ -8,19 +8,19 @@ import {
   DetailPanelSectionCard,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { DatabaseOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
-import type { GetTeamRepositories_ResultSet1 as Repository } from '@rediacc/shared/types';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { RepositoryPanelData } from '../types';
-import type { TFunction } from 'i18next';
 
 interface StorageSectionProps {
-  repository: Repository;
+  repository: GetTeamRepositories_ResultSet1;
   panelData: RepositoryPanelData;
-  t: TFunction<'resources' | 'common' | 'machines'>;
+  t: TypedTFunction;
 }
 
 export const StorageSection: React.FC<StorageSectionProps> = ({ repository, panelData, t }) => {
   const { repositoryData } = panelData;
-  const diskPercent = repositoryData.disk_space
+  const diskPercent = repositoryData.disk_space?.use_percent
     ? parseInt(repositoryData.disk_space.use_percent, 10)
     : 0;
 

@@ -1,13 +1,18 @@
 {
   "accessDenied": {
+    "currentPlan": "Текущий план",
+    "debugInfo": "Информация отладки",
     "description": "Ваш текущий план не включает распределенное хранилище. Обновите версию до Business или Enterprise или обратитесь в службу поддержки, чтобы включить ее.",
+    "hasAccess": "Есть доступ",
+    "noPlanDetected": "План не обнаружен",
+    "organizationData": "Данные организации",
     "title": "Распределенное хранилище недоступно."
   },
   "assignment": {
     "actions": {
-      "assignToCluster": "Назначено кластеру",
       "assignedToClone": "Назначено клонировать",
       "assignedToImage": "Назначено изображению",
+      "assignToCluster": "Назначено кластеру",
       "reassignedImage": "Переназначенное изображение",
       "removedFromClone": "Удален из клона",
       "removedFromCluster": "Удален из кластера"
@@ -31,8 +36,9 @@
   },
   "clones": {
     "addMachine": "Добавить машину",
-    "assignMachines": "Назначить машины",
     "assignedMachines": "Назначенные машины",
+    "assignMachines": "Назначить машины",
+    "assignMachinesInfo": "Выберите машины для назначения этому клону",
     "create": "Создать клон",
     "createSuccess": "Клон успешно создан",
     "delete": "Удалить клон",
@@ -41,6 +47,7 @@
     "export": "Экспортировать клон",
     "exportMachines": "Экспортные машины",
     "flatten": "Сгладить клон",
+    "image": "Образ",
     "info": "Информация о клоне",
     "machineManager": "Менеджер по машинам",
     "machinesAssignedSuccess": "Машины, которым назначено успешное клонирование",
@@ -48,18 +55,26 @@
     "manageMachines": "Управление машинами",
     "name": "Имя клона",
     "noMachinesAssigned": "Этому клону не назначено ни одного компьютера.",
+    "pool": "Пул",
     "removeMachine": "Удалить машину",
+    "removeMachinesInfo": "Выберите машины для удаления из этого клона",
     "removeSelectedMachines": "Удалить выбранные машины",
     "searchMachines": "Поисковые машины...",
+    "selectImage": "Выберите образ",
+    "selectPool": "Выберите пул",
+    "selectSnapshot": "Выберите снимок",
+    "snapshot": "Снимок",
     "split": "Сплит-клон",
     "statistics": "Статистика",
     "title": "Клоны",
-    "totalMachines": "Всего машин"
+    "totalMachines": "Всего машин",
+    "viewMachines": "Просмотреть машины"
   },
   "clusters": {
-    "assignMachines": "Назначить машины",
     "assignedMachines": "Назначенные машины",
+    "assignMachines": "Назначить машины",
     "availableMachines": "Доступные машины",
+    "cluster": "Кластер",
     "clusterDetails": "Детали кластера",
     "clusterName": "Имя кластера",
     "configureVault": "Настроить хранилище",
@@ -78,6 +93,7 @@
     "noClusters": "Кластеры не найдены",
     "noMachinesAssigned": "К этому кластеру не назначено ни одного компьютера.",
     "removeFromCluster": "Удалить из кластера",
+    "searchClusters": "Поиск кластеров...",
     "secretKey": "Секретный ключ",
     "title": "Кластеры",
     "updateSuccess": "Кластер успешно обновлен."
@@ -131,11 +147,15 @@
     "export": "Экспорт изображения",
     "flatten": "Сгладить изображение",
     "guid": "ГУИД",
+    "image": "Образ",
     "import": "Импортировать изображение",
     "info": "Информация об изображении",
+    "machine": "Машина",
     "map": "Изображение карты",
     "name": "Имя изображения",
+    "pool": "Пул",
     "reassignMachine": "Переназначить машину",
+    "reassignmentInfo": "Это переназначит образ другой машине",
     "reassignmentModal": {
       "currentAssignment": "Текущее задание",
       "noMachineAssigned": "В настоящее время ни одна машина не назначена",
@@ -144,18 +164,16 @@
       "warning": "Предупреждение. Переназначение образа на другой компьютер сделает его недоступным на текущем компьютере до тех пор, пока данные не будут перенесены."
     },
     "reassignmentSuccess": "Назначение компьютера изображения успешно обновлено.",
+    "reassignmentWarning": "Переназначение образа требует миграции данных и может вызвать временную недоступность",
     "resize": "Изменить размер изображения",
+    "selectMachine": "Выберите машину",
+    "selectNewMachine": "Выберите новую машину",
+    "selectPool": "Выберите пул",
     "showMapped": "Показать сопоставленные изображения",
     "status": "Статус",
     "title": "Изображения",
     "unmap": "Отменить отображение изображения",
     "updateSuccess": "Изображение успешно обновлено"
-  },
-  "machineSection": {
-    "manageAssignment": "Управление назначением",
-    "notAssigned": "Не назначен ни одному ресурсу распределенного хранилища.",
-    "title": "Распределенное хранилище",
-    "viewDetails": "Посмотреть детали"
   },
   "machines": {
     "actions": {
@@ -164,6 +182,7 @@
       "viewDetails": "Посмотреть детали"
     },
     "assignedDate": "Назначенная дата",
+    "assignMachine": "Назначить машину",
     "bridgeName": "Мост",
     "clusterAssignedSuccess": "Компьютер успешно добавлен в кластер",
     "clusterRemovedSuccess": "Компьютер успешно удален из кластера",
@@ -173,6 +192,7 @@
       "searchPlaceholder": "Поисковые машины..."
     },
     "machineName": "Имя машины",
+    "selectMachines": "Выберите машины",
     "summary": {
       "assignedToClones": "Назначено клонам",
       "assignedToClusters": "Назначено кластерам",
@@ -181,7 +201,15 @@
       "title": "Доступность машины",
       "total": "Всего машин"
     },
+    "unassignError": "Не удалось отменить назначение машины",
+    "unassignMachine": "Отменить назначение машины",
     "updateSuccess": "Назначение кластера компьютеров успешно обновлено"
+  },
+  "machineSection": {
+    "manageAssignment": "Управление назначением",
+    "notAssigned": "Не назначен ни одному ресурсу распределенного хранилища.",
+    "title": "Распределенное хранилище",
+    "viewDetails": "Посмотреть детали"
   },
   "mutations": {
     "operations": {
@@ -206,6 +234,7 @@
     }
   },
   "pools": {
+    "cluster": "Кластер",
     "clusterPrefix": "Кластер",
     "configureVault": "Настроить хранилище",
     "confirmDelete": "Удалить пул",
@@ -222,9 +251,11 @@
     "noPools": "Пулов не найдено",
     "pgNum": "Номер PG",
     "pgpNum": "Номер PGP",
+    "pool": "Пул",
     "poolDetails": "Детали пула",
     "poolId": "Идентификатор пула",
     "poolName": "Имя пула",
+    "selectCluster": "Выберите кластер",
     "size": "Размер",
     "title": "Пулы",
     "updateSuccess": "Пул успешно обновлен"
@@ -243,9 +274,13 @@
     "diff": "Снимок различий",
     "edit": "Редактировать снимок",
     "guid": "ГУИД",
+    "image": "Образ",
     "name": "Имя снимка",
+    "pool": "Пул",
     "protect": "Защитить снимок",
     "rollback": "Снимок отката",
+    "selectImage": "Выберите образ",
+    "selectPool": "Выберите пул",
     "title": "Снимки",
     "unprotect": "Снять защиту снимка",
     "vault": "Хранилище моментальных снимков"

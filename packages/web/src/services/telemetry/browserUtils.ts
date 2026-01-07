@@ -1,5 +1,8 @@
 import type { ExtendedPerformance, NavigatorConnection, WindowNavigation } from './types';
 
+// Re-export shared utilities
+export { extractApiEndpoint, generateSessionId } from '@rediacc/shared/telemetry';
+
 export function getBrowserName(): string {
   const userAgent = navigator.userAgent;
   if (userAgent.includes('Chrome') && !userAgent.includes('Edge')) return 'chrome';
@@ -97,21 +100,4 @@ export function getPerformanceAttributes(): Record<string, number | string> {
   }
 
   return attributes;
-}
-
-export function extractApiEndpoint(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/').filter(Boolean);
-    if (pathParts.length >= 2 && pathParts[0] === 'api' && pathParts[1] === 'StoredProcedure') {
-      return pathParts[2] || 'unknown';
-    }
-    return pathParts.join('/');
-  } catch {
-    return 'unknown';
-  }
-}
-
-export function generateSessionId(): string {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }

@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
-import type { QueueActionParams } from '@/services/queue';
+import type { DynamicQueueActionParams, QueueActionResult } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import type { Container, Repository } from '../types';
-import type { TFunction } from 'i18next';
 
 interface RepositoryData {
   repositoryGuid: string;
@@ -20,11 +21,12 @@ interface UseContainerActionsProps {
   repositoryData?: RepositoryData;
   grandRepoVault: string;
   machineVault: string;
-  executeAction: (
-    params: QueueActionParams
-  ) => Promise<{ success: boolean; taskId?: string; isQueued?: boolean; error?: string }>;
+  executeDynamic: (
+    functionName: BridgeFunctionName,
+    params: Omit<DynamicQueueActionParams, 'functionName'>
+  ) => Promise<QueueActionResult>;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export function useContainerActions({
@@ -35,22 +37,21 @@ export function useContainerActions({
   repositoryData,
   grandRepoVault,
   machineVault,
-  executeAction,
+  executeDynamic,
   onQueueItemCreated,
   t,
 }: UseContainerActionsProps) {
   const handleContainerAction = useCallback(
     async (container: Container, functionName: string) => {
-      const result = await executeAction({
-        teamName,
-        machineName,
-        bridgeName,
-        functionName,
+      const result = await executeDynamic(functionName as BridgeFunctionName, {
         params: {
           repository: repositoryData?.repositoryGuid ?? repository.name,
           repositoryName: repositoryData?.repositoryName ?? repository.name,
           container: container.id,
         },
+        teamName,
+        machineName,
+        bridgeName,
         priority: 4,
         addedVia: 'container-action',
         machineVault,
@@ -75,7 +76,7 @@ export function useContainerActions({
       }
     },
     [
-      executeAction,
+      executeDynamic,
       teamName,
       machineName,
       bridgeName,

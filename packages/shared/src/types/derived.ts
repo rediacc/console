@@ -6,32 +6,19 @@
  */
 
 import type {
-  CreateBridgeParams,
-  CreateCephClusterParams,
-  CreateCephPoolParams,
-  CreateCephRbdCloneParams,
-  CreateCephRbdImageParams,
-  CreateCephRbdSnapshotParams,
-  CreateMachineParams,
-  CreateQueueItemParams,
-  CreateRegionParams,
-  CreateRepositoryParams,
-  CreateStorageParams,
-  CreateTeamParams,
-  GetCompanyDashboard_ResultSet1,
-  GetCompanyDashboard_ResultSet2,
-  GetCompanyDashboard_ResultSet3,
-  GetCompanyDashboard_ResultSet4,
-  GetCompanyDashboard_ResultSet5,
-  GetCompanyDashboard_ResultSet6,
-  GetCompanyDashboard_ResultSet7,
-  GetCompanyDashboard_ResultSet8,
-  GetCompanyDashboard_ResultSet10,
-  GetCompanyDashboard_ResultSet11,
-  GetCompanyDashboard_ResultSet12,
-  GetCompanyDashboard_ResultSet13,
-  GetCompanyDashboard_ResultSet15,
-  GetPermissionGroupDetails_ResultSet1,
+  GetOrganizationDashboard_ResultSet1,
+  GetOrganizationDashboard_ResultSet2,
+  GetOrganizationDashboard_ResultSet3,
+  GetOrganizationDashboard_ResultSet4,
+  GetOrganizationDashboard_ResultSet5,
+  GetOrganizationDashboard_ResultSet6,
+  GetOrganizationDashboard_ResultSet7,
+  GetOrganizationDashboard_ResultSet8,
+  GetOrganizationDashboard_ResultSet10,
+  GetOrganizationDashboard_ResultSet11,
+  GetOrganizationDashboard_ResultSet12,
+  GetOrganizationDashboard_ResultSet13,
+  GetOrganizationDashboard_ResultSet15,
   GetTeamQueueItemsParams,
 } from './api-schema.generated';
 
@@ -39,13 +26,11 @@ import type {
 // UTILITY TYPES
 // =============================================================================
 
-/** Makes vaultContent optional with empty JSON default */
-export type WithOptionalVault<T extends { vaultContent: string }> = Omit<T, 'vaultContent'> & {
-  vaultContent?: string;
-};
+// Note: WithOptionalVault is no longer needed - vaultContent and vaultVersion
+// are now optional with defaults in the generated API types (SQL defaults).
+// Use CreateXxxParams directly from api-schema.generated.ts.
 
-/** Makes all properties of T optional */
-export type OptionalParams<T> = Partial<T>;
+// Note: Use Partial<T> directly instead of OptionalParams<T>
 
 // =============================================================================
 // CONTAINER TYPES
@@ -75,21 +60,9 @@ export type QueueFilters = Partial<Omit<GetTeamQueueItemsParams, 'teamName'>> & 
 // FORM VALUE TYPES (for create operations with optional vault)
 // =============================================================================
 
-// Core resources
-export type StorageFormValues = WithOptionalVault<CreateStorageParams>;
-export type MachineFormValues = WithOptionalVault<CreateMachineParams>;
-export type TeamFormValues = WithOptionalVault<CreateTeamParams>;
-export type BridgeFormValues = WithOptionalVault<CreateBridgeParams>;
-export type RegionFormValues = WithOptionalVault<CreateRegionParams>;
-export type RepositoryFormValues = WithOptionalVault<CreateRepositoryParams>;
-export type QueueItemFormValues = WithOptionalVault<CreateQueueItemParams>;
-
-// Ceph resources
-export type ClusterFormValues = WithOptionalVault<CreateCephClusterParams>;
-export type PoolFormValues = WithOptionalVault<CreateCephPoolParams>;
-export type ImageFormValues = WithOptionalVault<CreateCephRbdImageParams>;
-export type SnapshotFormValues = WithOptionalVault<CreateCephRbdSnapshotParams>;
-export type CloneFormValues = WithOptionalVault<CreateCephRbdCloneParams>;
+// Note: Use CreateXxxParams directly from api-schema.generated.ts.
+// vaultContent and vaultVersion are optional with SQL defaults.
+// Example: Use CreateStorageParams directly for forms.
 
 // =============================================================================
 // COMPUTED TYPES (not from stored procedures)
@@ -219,9 +192,9 @@ export interface QueueTrace {
 export interface AuthLoginResult {
   isAuthorized: boolean;
   authenticationStatus: string;
-  vaultCompany: string | null;
-  companyName: string | null;
-  company: string | null;
+  vaultOrganization: string | null;
+  organizationName: string | null;
+  organization: string | null;
   preferredLanguage: string | null;
 }
 
@@ -253,7 +226,7 @@ export interface ForkSessionCredentials {
 export interface VerifyTfaResult {
   isAuthorized?: boolean;
   result?: string;
-  hasTFAEnabled?: boolean;
+  isTFAEnabled?: boolean;
 }
 
 // =============================================================================
@@ -371,8 +344,7 @@ export interface UserVault {
 // PERMISSION DOMAIN TYPES
 // =============================================================================
 
-/** Permission record - alias for generated type */
-export type Permission = GetPermissionGroupDetails_ResultSet1;
+// Note: Use GetPermissionGroupDetails_ResultSet1 directly from api-schema.generated
 
 // =============================================================================
 // DROPDOWN DOMAIN TYPES
@@ -416,8 +388,8 @@ export interface TeamMachines {
   machines: MachineDropdownOption[];
 }
 
-/** Company-wide dropdown data for forms */
-export interface CompanyDropdownData {
+/** Organization-wide dropdown data for forms */
+export interface OrganizationDropdownData {
   teams: TeamDropdownOption[];
   allTeams: TeamDropdownOption[];
   regions: DropdownOption[];
@@ -432,74 +404,135 @@ export interface CompanyDropdownData {
 }
 
 // =============================================================================
-// COMPANY DASHBOARD TYPES (from GetCompanyDashboard result sets)
+// ORGANIZATION DASHBOARD TYPES (from GetOrganizationDashboard result sets)
 // =============================================================================
 
-/** Company info from dashboard - ResultSet1 */
-export type CompanyInfo = GetCompanyDashboard_ResultSet1;
+// Note: Use GetOrganizationDashboard_ResultSet* directly from api-schema.generated
 
-/** Active subscription details - ResultSet2 */
-export type ActiveSubscription = GetCompanyDashboard_ResultSet2;
-
-/** All subscriptions list - ResultSet3 */
-export type AllSubscriptionsItem = GetCompanyDashboard_ResultSet3;
-
-/** Resource usage item - ResultSet4 */
-export type ResourceUsageItem = GetCompanyDashboard_ResultSet4;
-
-/** Account health status - ResultSet5 */
-export type AccountHealth = GetCompanyDashboard_ResultSet5;
-
-/** Feature access flags - ResultSet6 */
-export type FeatureAccess = GetCompanyDashboard_ResultSet6;
-
-/** Plan limits from dashboard - ResultSet7 */
-export type PlanLimits = GetCompanyDashboard_ResultSet7;
-
-/** Queue statistics from dashboard - ResultSet8 */
-export type DashboardQueueStats = GetCompanyDashboard_ResultSet8;
-
-/** Queue team issue from dashboard - ResultSet10 */
-export type QueueTeamIssue = GetCompanyDashboard_ResultSet10;
-
-/** Queue machine issue from dashboard - ResultSet11 */
-export type QueueMachineIssue = GetCompanyDashboard_ResultSet11;
-
-/** Active user from dashboard - ResultSet12 */
-export type ActiveUser = GetCompanyDashboard_ResultSet12;
-
-/** Ceph statistics for company dashboard - ResultSet13 */
-export type CompanyCephStats = GetCompanyDashboard_ResultSet13;
-
-/** Ceph team breakdown for dashboard widget - ResultSet15 */
-export type CephTeamBreakdown = GetCompanyDashboard_ResultSet15;
-
-/** Full company dashboard data - composed from result sets */
-export interface CompanyDashboardData {
-  companyInfo: CompanyInfo | null;
-  activeSubscription: ActiveSubscription | null;
-  allActiveSubscriptions: AllSubscriptionsItem[];
-  resources: ResourceUsageItem[];
-  accountHealth: AccountHealth | null;
-  featureAccess: FeatureAccess | null;
-  planLimits: PlanLimits | null;
-  queueStats: DashboardQueueStats | null;
-  teamIssues: QueueTeamIssue[];
-  machineIssues: QueueMachineIssue[];
-  activeUsers: ActiveUser[];
-  cephStats: CompanyCephStats | null;
-  cephTeamBreakdown: CephTeamBreakdown[];
+/** Full organization dashboard data - composed from result sets */
+export interface OrganizationDashboardData {
+  organizationInfo: GetOrganizationDashboard_ResultSet1 | null;
+  activeSubscription: GetOrganizationDashboard_ResultSet2 | null;
+  allActiveSubscriptions: GetOrganizationDashboard_ResultSet3[];
+  resources: GetOrganizationDashboard_ResultSet4[];
+  accountHealth: GetOrganizationDashboard_ResultSet5 | null;
+  featureAccess: GetOrganizationDashboard_ResultSet6 | null;
+  planLimits: GetOrganizationDashboard_ResultSet7 | null;
+  queueStats: GetOrganizationDashboard_ResultSet8 | null;
+  teamIssues: GetOrganizationDashboard_ResultSet10[];
+  machineIssues: GetOrganizationDashboard_ResultSet11[];
+  activeUsers: GetOrganizationDashboard_ResultSet12[];
+  cephStats: GetOrganizationDashboard_ResultSet13 | null;
+  cephTeamBreakdown: GetOrganizationDashboard_ResultSet15[];
 }
 
-/** Result from UpdateCompanyVaults operation */
-export interface CompanyVaultUpdateResult {
+/** Result from UpdateOrganizationVaults operation */
+export interface OrganizationVaultUpdateResult {
   totalUpdated: number;
   failedCount: number;
 }
 
-/** Result from ImportCompanyData operation */
-export interface CompanyImportResult {
+/** Result from ImportOrganizationData operation */
+export interface OrganizationImportResult {
   importedCount: number;
   skippedCount: number;
   errorCount: number;
+}
+
+// =============================================================================
+// ORGANIZATION VAULT TYPES
+// =============================================================================
+
+/** Organization vault item from GetOrganizationVaults */
+export interface OrganizationVaultItem {
+  entityType: string;
+  entityId: number;
+  entityName?: string;
+  vaultId: number;
+  vaultName: string;
+  credential: string;
+  decryptedVault?: string;
+  version?: number;
+}
+
+/** Organization vaults collection */
+export interface OrganizationVaultsData {
+  allVaults: OrganizationVaultItem[];
+}
+
+// =============================================================================
+// QUEUE FUNCTION TYPES (for queue vault / bridge functions)
+// =============================================================================
+
+/** Queue function parameter definition */
+export interface QueueFunctionParameter {
+  type: string;
+  required?: boolean;
+  default?: unknown;
+  help?: string;
+  label?: string;
+  format?: string;
+  units?: string[];
+  options?: string[];
+  ui?: string;
+  checkboxOptions?: { value: string; label: string }[];
+  enum?: string[];
+}
+
+/** Queue function resource requirements */
+export interface QueueFunctionRequirements {
+  machine?: boolean;
+  team?: boolean;
+  organization?: boolean;
+  repository?: boolean;
+  storage?: boolean;
+  plugin?: boolean;
+  bridge?: boolean;
+}
+
+/** Queue function definition (bridge function) */
+export interface QueueFunction {
+  name: string;
+  description: string;
+  category: string;
+  params: Record<string, QueueFunctionParameter>;
+  showInMenu?: boolean;
+  requirements?: QueueFunctionRequirements;
+}
+
+// =============================================================================
+// AUDIT PARAMS TYPE
+// =============================================================================
+
+/** Audit logs query parameters */
+export interface AuditLogsParams {
+  startDate?: string;
+  endDate?: string;
+  entityFilter?: string;
+  maxRecords?: number;
+}
+
+// =============================================================================
+// API HEALTH TYPES
+// =============================================================================
+
+/** API health check response */
+export interface ApiHealthResponse {
+  status: string;
+  version: string;
+  environment: string;
+  instanceName: string;
+  timestamp: string;
+  uptime: {
+    days: number;
+    hours: number;
+    minutes: number;
+  };
+  database: {
+    status: string;
+    database?: string;
+    error?: string;
+  };
+  shuttingDown?: boolean;
+  ciMode?: boolean;
 }

@@ -8,12 +8,12 @@
  * import { createTypedApi, extractPrimary } from '@rediacc/shared/api/typedApi';
  *
  * const typedApi = createTypedApi(client);
- * const response = await typedApi.GetCompanyTeams();
+ * const response = await typedApi.GetOrganizationTeams();
  * const teams = extractPrimary(response);
  * ```
  */
 
-export { createTypedApi } from './createTypedApi';
+export { createTypedApi, type CreateTypedApiOptions } from './createTypedApi';
 export { PROCEDURE_DEFAULTS, applyProcedureDefaults } from './defaults';
 export {
   extractPrimary,

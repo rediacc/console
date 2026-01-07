@@ -1,6 +1,6 @@
 import React from 'react';
 import { Flex, Space, Typography } from 'antd';
-import { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { ResourceType } from '../index';
 
 type ExistingResourceData = Record<string, unknown>;
@@ -15,7 +15,7 @@ interface ModalHeaderRendererProps {
   teamFilter?: string | string[];
   creationContext?: 'credentials-only' | 'normal';
   getFormValue: (field: string) => string | undefined;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 const RESOURCE_CONFIG = {
@@ -23,8 +23,8 @@ const RESOURCE_CONFIG = {
   repository: { key: 'repositories', createKey: 'resources:repositories.createRepository' },
   machine: { key: 'machines', createKey: 'machines:createMachine' },
   team: { key: 'teams', createKey: 'resources:teams.createTeam' },
-  region: { key: 'regions', createKey: 'system:regions.createRegion' },
-  bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' },
+  region: { key: 'regions', createKey: 'resources:regions.createRegion' },
+  bridge: { key: 'bridges', createKey: 'resources:bridges.createBridge' },
   cluster: { key: 'clusters', createKey: 'ceph:clusters.createCluster' },
   pool: { key: 'pools', createKey: 'ceph:pools.createPool' },
   image: { key: 'images', createKey: 'ceph:images.createImage' },
@@ -63,7 +63,7 @@ export const getBridgeName = (getFormValue: (field: string) => string | undefine
 export const createFunctionSubtitle = (
   resourceType: ResourceType,
   existingData: ExistingResourceData | undefined,
-  t: TFunction
+  t: TypedTFunction
 ): React.ReactNode => {
   if (!existingData) {
     return null;
@@ -181,34 +181,30 @@ const getModalSubtitle = ({
   return '';
 };
 
-export const getFunctionTitle = (resourceType: ResourceType, t: TFunction): string => {
+export const getFunctionTitle = (resourceType: ResourceType, t: TypedTFunction): string => {
   if (resourceType === 'machine') return t('machines:systemFunctions');
   if (resourceType === 'storage') return t('resources:storage.storageFunctions');
   return t(`${getResourceTranslationKey(resourceType)}.${resourceType}Functions`);
 };
 
-export const renderModalTitle = (props: ModalHeaderRendererProps): React.ReactNode => {
+export const ModalTitleRenderer: React.FC<ModalHeaderRendererProps> = (props) => {
   const baseTitle = getModalTitle(props);
 
   if (props.mode === 'create' && props.resourceType === 'machine') {
     const subtitle = getModalSubtitle(props);
     return (
-      <Flex vertical gap={4}>
-        {/* eslint-disable-next-line no-restricted-syntax */}
-        <Typography.Text strong style={{ fontSize: 16 }}>
+      <Flex vertical className="gap-sm">
+        <Typography.Text strong className="text-base">
           {baseTitle}
         </Typography.Text>
         {subtitle && (
-          <>
-            {/* eslint-disable-next-line no-restricted-syntax */}
-            <Typography.Text style={{ fontSize: 12 }}>
-              {props.t('general.team')}: {subtitle}
-            </Typography.Text>
-          </>
+          <Typography.Text className="text-xs">
+            {props.t('general.team')}: {subtitle}
+          </Typography.Text>
         )}
       </Flex>
     );
   }
 
-  return baseTitle;
+  return <>{baseTitle}</>;
 };

@@ -1,4 +1,5 @@
 import { Button, Flex, Form, Input, Select } from 'antd';
+import { FORM_LAYOUTS } from '@/config/formLayouts';
 import type { FormFieldConfig, ResourceFormProps } from './types';
 
 function ResourceForm({
@@ -9,7 +10,6 @@ function ResourceForm({
   cancelText = 'Cancel',
   onCancel,
   loading = false,
-  layout = 'vertical',
 }: ResourceFormProps) {
   const renderField = (field: FormFieldConfig) => {
     switch (field.type) {
@@ -54,10 +54,6 @@ function ResourceForm({
     }
   };
 
-  const formLayout = layout === 'vertical' ? 'horizontal' : layout;
-  const labelCol = { span: 6 };
-  const wrapperCol = { span: 18 };
-
   const handleFinish = async (values: Record<string, unknown>) => {
     await onSubmit(values);
   };
@@ -65,10 +61,8 @@ function ResourceForm({
   return (
     <Form
       form={form}
-      layout={formLayout}
+      {...FORM_LAYOUTS.horizontal}
       onFinish={handleFinish}
-      labelCol={labelCol}
-      wrapperCol={wrapperCol}
       labelAlign="right"
       colon
       data-testid="resource-form"
@@ -90,7 +84,12 @@ function ResourceForm({
         );
       })}
 
-      <Form.Item wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}>
+      <Form.Item
+        wrapperCol={{
+          offset: FORM_LAYOUTS.horizontal.labelCol.span,
+          span: FORM_LAYOUTS.horizontal.wrapperCol.span,
+        }}
+      >
         <Flex justify="flex-end" className="w-full">
           {onCancel && (
             <Button onClick={onCancel} disabled={loading} data-testid="resource-form-cancel-button">

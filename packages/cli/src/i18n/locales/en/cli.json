@@ -1,0 +1,1001 @@
+{
+  "cli": {
+    "description": "Rediacc Console CLI - Command line interface for Rediacc operations"
+  },
+  "commands": {
+    "auth": {
+      "description": "Authentication commands",
+      "login": {
+        "authenticating": "Authenticating...",
+        "description": "Authenticate with Rediacc",
+        "shortcut": "Authenticate with Rediacc (shortcut for: auth login)",
+        "success": "Login successful! Saved to context \"{{context}}\"",
+        "tfaPrompt": "Enter 2FA code:",
+        "tfaRequired": "Two-factor authentication required",
+        "tfaVerified": "2FA verified successfully",
+        "verifyingTfa": "Verifying 2FA..."
+      },
+      "logout": {
+        "description": "Clear stored credentials",
+        "loggingOut": "Logging out...",
+        "shortcut": "Clear stored credentials (shortcut for: auth logout)",
+        "success": "Logged out successfully"
+      },
+      "status": {
+        "description": "Check current authentication status",
+        "authenticated": "Authenticated as: {{email}}",
+        "notAuthenticated": "Not authenticated. Run: rdc login"
+      },
+      "register": {
+        "description": "Register a new organization and user account",
+        "nextStep": "Then run: rdc auth activate -e <email> -p <password> --code <code>",
+        "registering": "Registering account...",
+        "submitted": "Registration submitted",
+        "success": "Registration successful! Check your email for the activation code."
+      },
+      "activate": {
+        "activated": "Account activated",
+        "activating": "Activating account...",
+        "description": "Activate account with verification code",
+        "success": "Account activated! You can now login with: rdc login"
+      },
+      "tfa": {
+        "description": "Two-factor authentication management",
+        "disable": {
+          "confirm": "Are you sure you want to disable TFA?",
+          "description": "Disable two-factor authentication",
+          "disabling": "Disabling TFA...",
+          "success": "TFA disabled successfully"
+        },
+        "enable": {
+          "addToApp": "Add this to your authenticator app",
+          "description": "Enable two-factor authentication",
+          "enabling": "Enabling TFA...",
+          "initiated": "TFA setup initiated",
+          "setupKey": "Setup key: {{key}}",
+          "success": "TFA enabled successfully"
+        },
+        "status": {
+          "description": "Check TFA status",
+          "disabled": "TFA is not enabled",
+          "enabled": "TFA is enabled"
+        }
+      },
+      "token": {
+        "description": "Token management",
+        "fork": {
+          "creating": "Creating forked token...",
+          "description": "Create a forked token for another application",
+          "success": "Token created successfully",
+          "tokenValue": "Token: {{token}}"
+        },
+        "list": {
+          "description": "List active tokens/sessions",
+          "fetching": "Fetching tokens...",
+          "noTokens": "No active tokens"
+        },
+        "revoke": {
+          "description": "Revoke a specific token",
+          "revoking": "Revoking token...",
+          "success": "Token revoked successfully"
+        }
+      }
+    },
+    "audit": {
+      "description": "Audit log commands",
+      "list": {
+        "description": "List audit log entries",
+        "fetching": "Fetching audit logs..."
+      },
+      "log": {
+        "description": "View audit logs",
+        "fetching": "Fetching audit logs...",
+        "success": "Audit logs fetched"
+      },
+      "trace": {
+        "description": "Trace audit history for an entity",
+        "fetching": "Fetching entity audit trace...",
+        "success": "Audit trace fetched"
+      },
+      "history": {
+        "description": "View entity history",
+        "fetching": "Fetching entity history...",
+        "success": "History fetched"
+      }
+    },
+    "bridge": {
+      "description": "Bridge management",
+      "list": {
+        "description": "List bridges",
+        "fetching": "Fetching bridges..."
+      },
+      "resetAuth": {
+        "description": "Reset bridge authorization token",
+        "newToken": "New token: {{token}}",
+        "resetting": "Resetting authorization for bridge \"{{name}}\"...",
+        "success": "Authorization reset"
+      }
+    },
+    "context": {
+      "description": "Manage CLI contexts",
+      "list": {
+        "description": "List all contexts",
+        "noContexts": "No contexts configured"
+      },
+      "show": {
+        "description": "Show current context details",
+        "noContext": "No active context"
+      },
+      "use": {
+        "description": "Switch to a different context",
+        "switched": "Switched to context \"{{name}}\""
+      },
+      "create": {
+        "description": "Create a new context",
+        "success": "Context \"{{name}}\" created"
+      },
+      "delete": {
+        "description": "Delete a context",
+        "success": "Context \"{{name}}\" deleted",
+        "confirm": "Are you sure you want to delete context \"{{name}}\"?"
+      },
+      "rename": {
+        "description": "Rename a context",
+        "success": "Context renamed from \"{{oldName}}\" to \"{{newName}}\""
+      },
+      "current": {
+        "description": "Show current context name",
+        "noContext": "No active context"
+      },
+      "set": {
+        "description": "Set a default value (team, region, bridge, machine)",
+        "success": "Set \"{{key}}\" to \"{{value}}\""
+      },
+      "unset": {
+        "description": "Remove a context default value",
+        "success": "Removed {{key}} from current context"
+      },
+      "clear": {
+        "description": "Clear defaults (all or specific key)",
+        "keyCleared": "Cleared \"{{key}}\"",
+        "allCleared": "Cleared all defaults"
+      },
+      "setLanguage": {
+        "description": "Set preferred language",
+        "success": "Language set to \"{{code}}\"",
+        "unsupported": "Unsupported language. Supported: {{languages}}"
+      },
+      "createLocal": {
+        "description": "Create a new local context for middleware-less operation",
+        "success": "Local context \"{{name}}\" created",
+        "nextStep": "Add machines with: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "addMachine": {
+        "description": "Add a machine to the current local context",
+        "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})"
+      },
+      "removeMachine": {
+        "description": "Remove a machine from the current local context",
+        "success": "Machine \"{{name}}\" removed"
+      },
+      "machines": {
+        "description": "List machines in the current local context",
+        "noMachines": "No machines configured. Add one with: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "setSsh": {
+        "description": "Update SSH configuration for the current local context",
+        "success": "SSH configuration updated"
+      },
+      "setRenet": {
+        "description": "Set the path to renet binary for local mode",
+        "success": "Renet path set to: {{path}}"
+      }
+    },
+    "machine": {
+      "description": "Machine management",
+      "list": {
+        "description": "List machines",
+        "fetching": "Fetching machines..."
+      },
+      "create": {
+        "description": "Create a new machine",
+        "creating": "Creating machine...",
+        "success": "Machine \"{{name}}\" created"
+      },
+      "delete": {
+        "description": "Delete a machine",
+        "deleting": "Deleting machine...",
+        "success": "Machine \"{{name}}\" deleted",
+        "confirm": "Are you sure you want to delete machine \"{{name}}\"?"
+      },
+      "update": {
+        "description": "Update machine configuration",
+        "updating": "Updating machine...",
+        "success": "Machine \"{{name}}\" updated"
+      },
+      "health": {
+        "description": "Check machine health for CI/CD pipelines",
+        "fetching": "Fetching machine health...",
+        "fetched": "Health data fetched",
+        "header": "\nHealth Check for {{name}}:",
+        "statusHealthy": "✓ Status: HEALTHY",
+        "statusWarning": "⚠ Status: WARNING",
+        "statusError": "✗ Status: ERROR",
+        "statusCritical": "✗ Status: CRITICAL",
+        "noData": "No status data available for machine",
+        "systemSection": "\nSystem:",
+        "systemUptime": "  Uptime: {{uptime}}",
+        "systemMemory": "  Memory: {{percent}}",
+        "systemDisk": "  Disk: {{percent}}",
+        "systemDatastore": "  Datastore: {{percent}}",
+        "containersSection": "\nContainers:",
+        "containersSummary": "  {{running}}/{{total}} running ({{healthy}} healthy, {{unhealthy}} unhealthy)",
+        "servicesSection": "\nServices:",
+        "servicesSummary": "  {{active}}/{{total}} active ({{failed}} failed)",
+        "storageSection": "\nStorage:",
+        "storageSmart": "  SMART: {{healthy}} healthy, {{failing}} failing",
+        "storageTemp": "  Max Temperature: {{temp}}°C",
+        "repositoriesSection": "\nRepositories:",
+        "repositoriesSummary": "  {{mounted}}/{{total}} mounted ({{docker}} with Docker)",
+        "issuesSection": "\nIssues:",
+        "exitCode": "\nExit Code: {{code}}"
+      },
+      "containers": {
+        "description": "List Docker containers on a machine",
+        "fetching": "Fetching containers...",
+        "fetched": "Containers fetched",
+        "noContainers": "No containers found on this machine",
+        "healthCheck": "Health check mode - exits with code 2 if any unhealthy",
+        "allHealthy": "All containers are healthy",
+        "unhealthyFound": "{{count}} unhealthy container(s) found"
+      },
+      "services": {
+        "description": "List systemd services on a machine",
+        "fetching": "Fetching services...",
+        "fetched": "Services fetched",
+        "noServices": "No rediacc services found on this machine",
+        "stabilityCheck": "Stability check mode - exits with code 2 if any failed/restarting",
+        "allStable": "All services are stable",
+        "unstableFound": "{{count}} unstable service(s) found"
+      },
+      "vaultStatus": {
+        "description": "Show parsed vault status for a machine",
+        "fetching": "Fetching machine...",
+        "fetched": "Machine fetched",
+        "header": "\nVault Status for {{name}}:",
+        "status": "  Status: {{status}}",
+        "systemSection": "\nSystem:",
+        "systemUptime": "  Uptime: {{uptime}}",
+        "systemHostname": "  Hostname: {{hostname}}",
+        "systemMemory": "  Memory: {{used}} / {{total}} ({{percent}})",
+        "systemDisk": "  Disk: {{used}} / {{total}} ({{percent}})",
+        "systemDatastore": "  Datastore: {{used}} / {{total}} ({{percent}})",
+        "totalRepos": "  Total Repositories: {{count}}",
+        "mounted": "  Mounted: {{count}}",
+        "dockerRunning": "  Docker Running: {{count}}",
+        "deployedRepos": "\nDeployed Repositories:",
+        "repoMounted": "    Mounted: {{mounted}}",
+        "repoDocker": "    Docker: {{status}}"
+      },
+      "repos": {
+        "description": "List deployed repositories on a machine",
+        "fetching": "Fetching machine...",
+        "fetched": "Machine fetched",
+        "noRepos": "No repositories deployed on this machine"
+      },
+      "testConnection": {
+        "description": "Test SSH connection to a machine and capture host key",
+        "testing": "Testing SSH connection to {{user}}@{{ip}}:{{port}}...",
+        "creating": "Creating SSH test task...",
+        "created": "Task created",
+        "taskId": "Task ID: {{taskId}}",
+        "waiting": "Waiting for SSH test result...",
+        "waitingTime": "Waiting for SSH test result... ({{seconds}}s)",
+        "testResult": "SSH test {{result}}",
+        "rawOutput": "Raw output:",
+        "error": "Error: {{error}}",
+        "timeout": "Timeout waiting for result",
+        "timeoutMessage": "Test connection timed out. Check queue trace for details.",
+        "results": "SSH Test Results:",
+        "statusResult": "  Status: {{status}}",
+        "authMethod": "  Auth Method: {{method}}",
+        "sshKeyConfigured": "  SSH Key Configured: {{status}}",
+        "publicKeyDeployed": "  Public Key Deployed: {{status}}",
+        "knownHosts": "  Known Hosts: {{entry}}",
+        "message": "  Message: {{message}}",
+        "saving": "Saving known_hosts to machine \"{{machine}}\" vault...",
+        "saved": "Known hosts saved to machine vault"
+      }
+    },
+    "organization": {
+      "description": "Organization management commands",
+      "list": {
+        "description": "List organizations",
+        "fetching": "Fetching organizations..."
+      },
+      "info": {
+        "description": "Get organization information",
+        "fetching": "Fetching organization info...",
+        "notFound": "No organization info found",
+        "success": "Organization info fetched"
+      },
+      "dashboard": {
+        "description": "Get organization dashboard data",
+        "fetching": "Fetching dashboard...",
+        "success": "Dashboard fetched"
+      },
+      "vault": {
+        "description": "Organization vault management",
+        "get": {
+          "description": "Get organization vault data",
+          "fetching": "Fetching organization vault...",
+          "notFound": "No organization vault found",
+          "success": "Vault fetched"
+        },
+        "list": {
+          "description": "List all vault types",
+          "fetching": "Fetching vaults...",
+          "success": "Vaults fetched"
+        },
+        "update": {
+          "description": "Update organization vault data",
+          "success": "Organization vault updated",
+          "updating": "Updating organization vault..."
+        }
+      },
+      "export": {
+        "description": "Export organization data",
+        "exported": "Exported to {{path}}",
+        "exporting": "Exporting organization data...",
+        "success": "Export complete"
+      },
+      "import": {
+        "description": "Import organization data",
+        "importing": "Importing organization data...",
+        "success": "Import complete"
+      },
+      "maintenance": {
+        "description": "Enable or disable maintenance mode (blocks non-admin logins)",
+        "disabled": "Maintenance mode disabled",
+        "disabling": "Disabling maintenance mode...",
+        "enabled": "Maintenance mode enabled",
+        "enabling": "Enabling maintenance mode..."
+      }
+    },
+    "protocol": {
+      "description": "Manage {{scheme}}:// protocol handler registration and URL handling",
+      "register": {
+        "description": "Register the protocol handler on the system",
+        "systemWide": "Registering protocol handler system-wide...",
+        "adminRequired": "Note: This may require administrator/root privileges.",
+        "currentUser": "Registering protocol handler for current user...",
+        "registering": "Registering protocol handler...",
+        "success": "\nSuccessfully registered {{scheme}}:// protocol handler.",
+        "exampleUrls": "\nYou can now open URLs like:"
+      },
+      "unregister": {
+        "description": "Unregister the protocol handler from the system",
+        "unregistering": "Unregistering protocol handler...",
+        "success": "\nSuccessfully unregistered {{scheme}}:// protocol handler."
+      },
+      "status": {
+        "description": "Show protocol handler registration status",
+        "title": "\nProtocol Handler Status",
+        "platform": "Platform:",
+        "supported": "Supported:",
+        "registered": "Registered:",
+        "userRegistration": "User Registration:",
+        "systemRegistration": "System Registration:",
+        "handlerCommand": "Handler Command:",
+        "error": "\nError: {{error}}",
+        "registerHint": "\nTo register the protocol handler, run:"
+      },
+      "open": {
+        "description": "Open a {{scheme}}:// URL and execute the action",
+        "parsedUrl": "\nParsed Protocol URL:",
+        "token": "Token:",
+        "team": "Team:",
+        "machine": "Machine:",
+        "repository": "Repository:",
+        "action": "Action:",
+        "params": "Params:",
+        "cliCommand": "\nEquivalent CLI command:",
+        "executing": "\nExecuting action...\n"
+      },
+      "build": {
+        "description": "Build a {{scheme}}:// URL from components"
+      },
+      "parse": {
+        "description": "Parse a {{scheme}}:// URL and show components",
+        "parsedUrl": "\nParsed Protocol URL:",
+        "cliCommand": "\nCLI Command:"
+      }
+    },
+    "permission": {
+      "description": "Permission management commands",
+      "list": {
+        "description": "List permissions",
+        "fetching": "Fetching permissions..."
+      },
+      "group": {
+        "description": "Permission group management",
+        "list": {
+          "description": "List all permission groups",
+          "fetching": "Fetching permission groups...",
+          "success": "Permission groups fetched"
+        },
+        "create": {
+          "description": "Create a new permission group",
+          "creating": "Creating permission group \"{{name}}\"...",
+          "success": "Permission group \"{{name}}\" created"
+        },
+        "delete": {
+          "confirm": "Delete permission group \"{{name}}\"?",
+          "deleting": "Deleting permission group \"{{name}}\"...",
+          "description": "Delete a permission group",
+          "success": "Permission group \"{{name}}\" deleted"
+        },
+        "show": {
+          "description": "Show permission group details",
+          "fetching": "Fetching permission group details...",
+          "success": "Details fetched"
+        }
+      },
+      "add": {
+        "adding": "Adding permission \"{{permission}}\" to group \"{{group}}\"...",
+        "description": "Add a permission to a group",
+        "success": "Permission added"
+      },
+      "remove": {
+        "description": "Remove a permission from a group",
+        "removing": "Removing permission \"{{permission}}\" from group \"{{group}}\"...",
+        "success": "Permission removed"
+      }
+    },
+    "queue": {
+      "description": "Queue management",
+      "list": {
+        "description": "List queue items",
+        "fetching": "Fetching queue items...",
+        "success": "Queue items fetched"
+      },
+      "create": {
+        "description": "Create a queue item",
+        "buildingVault": "Building queue vault...",
+        "vaultBuilt": "Queue vault built",
+        "creating": "Creating queue item for function '{{function}}'...",
+        "success": "Queue item created",
+        "taskId": "Task ID: {{taskId}}"
+      },
+      "cancel": {
+        "description": "Cancel a queue item",
+        "cancelling": "Cancelling task {{taskId}}...",
+        "success": "Task cancelled"
+      },
+      "retry": {
+        "description": "Retry a failed queue item",
+        "retrying": "Retrying task {{taskId}}...",
+        "success": "Task queued for retry"
+      },
+      "trace": {
+        "description": "Trace queue item execution",
+        "fetching": "Fetching queue trace...",
+        "fetched": "Queue trace fetched",
+        "watching": "Watching task progress...",
+        "age": "Age",
+        "finalStatus": "Final status: {{status}}",
+        "errorDetails": "Error details:",
+        "noTrace": "No trace information available"
+      },
+      "delete": {
+        "description": "Delete a queue item",
+        "confirm": "Are you sure you want to delete task {{taskId}}?",
+        "deleting": "Deleting task {{taskId}}...",
+        "success": "Task deleted"
+      }
+    },
+    "region": {
+      "description": "Region management",
+      "list": {
+        "description": "List regions",
+        "fetching": "Fetching regions..."
+      }
+    },
+    "repository": {
+      "description": "Repository management commands",
+      "list": {
+        "description": "List repositories",
+        "fetching": "Fetching repositories...",
+        "success": "Repositories fetched"
+      },
+      "create": {
+        "description": "Create a new repository",
+        "creating": "Creating repository \"{{name}}:{{tag}}\"...",
+        "success": "Repository \"{{name}}:{{tag}}\" created"
+      },
+      "rename": {
+        "description": "Rename a repository",
+        "renaming": "Renaming repository \"{{oldName}}\" to \"{{newName}}\"...",
+        "success": "Repository renamed to \"{{name}}\""
+      },
+      "delete": {
+        "description": "Delete a repository",
+        "checkingRelationships": "Checking repository relationships...",
+        "relationshipsChecked": "Repository relationships checked",
+        "grandRepoWarning": "This is a grand repository (credential). Deleting it is irreversible.",
+        "confirm": "Delete repository \"{{name}}:{{tag}}\"? This cannot be undone.",
+        "deleting": "Deleting repository \"{{name}}:{{tag}}\"...",
+        "success": "Repository \"{{name}}:{{tag}}\" deleted"
+      },
+      "promote": {
+        "description": "Promote a fork to grand status",
+        "checkingRelationships": "Checking repository relationships...",
+        "relationshipsChecked": "Repository relationships checked",
+        "separateInfo": "\nThis will separate \"{{name}}\" from grand repository \"{{grandName}}\"",
+        "siblingsInfo": "\n{{count}} sibling clone(s) will remain linked to the original grand:",
+        "confirmPromote": "\nProceed with promotion?",
+        "promoting": "Promoting repository \"{{name}}:{{tag}}\"...",
+        "success": "Repository \"{{name}}:{{tag}}\" promoted to grand status"
+      },
+      "vault": {
+        "description": "Repository vault management",
+        "get": {
+          "description": "Get repository vault data",
+          "fetching": "Fetching repository vault...",
+          "success": "Vault fetched",
+          "notFound": "No repository vault found"
+        },
+        "update": {
+          "description": "Update repository vault data",
+          "updating": "Updating repository vault...",
+          "success": "Repository vault updated"
+        }
+      }
+    },
+    "storage": {
+      "description": "Storage management",
+      "list": {
+        "description": "List storage providers",
+        "fetching": "Fetching storage providers..."
+      }
+    },
+    "sync": {
+      "description": "File synchronization with repositories using rsync",
+      "fetchingDetails": "Fetching connection details...",
+      "previewingChanges": "\nPreviewing changes...\n",
+      "noChanges": "No changes to sync.",
+      "cancelled": "Sync cancelled.",
+      "dryRunHeader": "\nDry run - showing what would be transferred:\n",
+      "totalSize": "Total size: {{size}}",
+      "duration": "Duration: {{seconds}}s",
+      "errors": "Errors:",
+      "upload": {
+        "description": "Upload files to a repository",
+        "starting": "Starting upload...",
+        "progress": "Uploading: {{percentage}}% - {{file}} ({{speed}})",
+        "completed": "Upload completed: {{count}} files transferred",
+        "failed": "Upload failed"
+      },
+      "download": {
+        "description": "Download files from a repository",
+        "starting": "Starting download...",
+        "progress": "Downloading: {{percentage}}% - {{file}} ({{speed}})",
+        "completed": "Download completed: {{count}} files transferred",
+        "failed": "Download failed"
+      },
+      "status": {
+        "description": "Check sync status and compare local/remote files"
+      }
+    },
+    "team": {
+      "description": "Team management",
+      "list": {
+        "description": "List teams",
+        "fetching": "Fetching teams..."
+      },
+      "create": {
+        "description": "Create a team",
+        "creating": "Creating team...",
+        "success": "Team \"{{name}}\" created"
+      },
+      "member": {
+        "description": "Team membership management",
+        "list": {
+          "description": "List team members",
+          "fetching": "Fetching team members...",
+          "success": "Members fetched"
+        },
+        "add": {
+          "description": "Add a user to a team",
+          "adding": "Adding {{email}} to team \"{{team}}\"...",
+          "success": "User added to team \"{{team}}\""
+        },
+        "remove": {
+          "description": "Remove a user from a team",
+          "removing": "Removing {{email}} from team \"{{team}}\"...",
+          "success": "User removed from team \"{{team}}\""
+        }
+      }
+    },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[local] Completed in {{duration}}ms",
+        "description": "Run a function (shortcut for: queue create)",
+        "executingLocal": "[local] Executing '{{function}}' on {{machine}}...",
+        "failedLocal": "[local] Failed: {{error}}",
+        "watching": "Watching for completion..."
+      },
+      "trace": {
+        "description": "Trace a task (shortcut for: queue trace)"
+      },
+      "cancel": {
+        "description": "Cancel a task (shortcut for: queue cancel)"
+      },
+      "retry": {
+        "description": "Retry a failed task (shortcut for: queue retry)"
+      }
+    },
+    "term": {
+      "description": "SSH terminal access to machines and repositories",
+      "connecting": "Connecting to {{machine}}...",
+      "connect": {
+        "description": "Connect to a machine or repository via SSH"
+      },
+      "connectingTo": "Connecting to {{title}}...",
+      "fetchingDetails": "Fetching connection details...",
+      "launchSuccess": "Terminal launched successfully.",
+      "launchingTerminal": "Launching {{type}} terminal...",
+      "testingConnectivity": "Testing connectivity to {{host}}:{{port}}..."
+    },
+    "vscode": {
+      "description": "VS Code Remote SSH integration",
+      "connect": {
+        "description": "Connect to a machine or repository in VS Code",
+        "detecting": "Detecting VS Code...",
+        "extensionWarning": "Warning: Remote SSH extension may not be installed.\nInstall from: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "Fetching connection details...",
+        "testingConnectivity": "Testing connectivity to {{host}}:{{port}}...",
+        "persistingKey": "Persisting SSH key...",
+        "configuringSSH": "Configuring SSH...",
+        "configuringVSCode": "Configuring VS Code settings...",
+        "settingsWarning": "Warning: Could not configure VS Code settings: {{error}}",
+        "settingUpEnv": "Setting up remote environment...",
+        "opening": "Opening VS Code: {{connection}} → {{path}}",
+        "success": "VS Code launched successfully."
+      },
+      "list": {
+        "description": "List configured VS Code SSH connections",
+        "noConnections": "No VS Code SSH connections configured.",
+        "configFile": "\nConfig file: {{path}}",
+        "header": "Configured VS Code SSH connections:\n",
+        "keyPersisted": " (key persisted)",
+        "total": "\nTotal: {{count}} connection(s)"
+      },
+      "cleanup": {
+        "description": "Remove VS Code SSH configurations",
+        "cleanedAll": "Cleaned up {{count}} VS Code SSH connection(s).",
+        "removedKeys": "Removed all persisted SSH keys.",
+        "cleaned": "Cleaned up: {{connection}}"
+      },
+      "check": {
+        "description": "Check VS Code installation and configuration",
+        "title": "VS Code Setup Check\n",
+        "installation": "Installation:",
+        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  Version: {{version}}",
+        "variant": "  Variant: Insiders",
+        "vscodeNotFound": "  VS Code: Not found",
+        "remoteSSH": "  Remote SSH Extension: {{status}}",
+        "installed": "Installed",
+        "notDetected": "Not detected",
+        "configuration": "\nConfiguration:",
+        "settingsPath": "  Settings Path: {{path}}",
+        "configured": "  Configured: {{status}}",
+        "yes": "Yes",
+        "no": "No",
+        "missingSettings": "  Missing Settings:",
+        "sshConfig": "\nSSH Config: {{path}}",
+        "activeConnections": "Active Connections: {{count}}"
+      }
+    },
+    "user": {
+      "description": "User management commands",
+      "list": {
+        "description": "List all users",
+        "fetching": "Fetching users...",
+        "success": "Users fetched"
+      },
+      "create": {
+        "description": "Create a new user",
+        "creating": "Creating user \"{{email}}\"...",
+        "success": "User created",
+        "activationCode": "Activation code: {{code}}"
+      },
+      "activate": {
+        "description": "Activate a user account",
+        "activating": "Activating user \"{{email}}\"...",
+        "success": "User activated"
+      },
+      "deactivate": {
+        "description": "Deactivate a user account",
+        "confirm": "Deactivate user \"{{email}}\"?",
+        "deactivating": "Deactivating user \"{{email}}\"...",
+        "success": "User deactivated"
+      },
+      "reactivate": {
+        "description": "Reactivate a deactivated user account",
+        "reactivating": "Reactivating user \"{{email}}\"...",
+        "success": "User reactivated"
+      },
+      "updateEmail": {
+        "description": "Change a user's email address",
+        "updating": "Updating email for \"{{email}}\"...",
+        "success": "Email updated to \"{{email}}\""
+      },
+      "updatePassword": {
+        "description": "Change your password",
+        "updating": "Updating password...",
+        "success": "Password updated"
+      },
+      "updateLanguage": {
+        "description": "Set current user's preferred language",
+        "updating": "Updating language preference...",
+        "success": "Language updated to \"{{language}}\""
+      },
+      "exists": {
+        "description": "Check if a user exists",
+        "exists": "User \"{{email}}\" exists",
+        "notExists": "User \"{{email}}\" does not exist"
+      },
+      "vault": {
+        "description": "User vault management",
+        "get": {
+          "description": "Get current user vault data",
+          "fetching": "Fetching user vault...",
+          "success": "Vault fetched"
+        },
+        "update": {
+          "description": "Update current user vault data",
+          "updating": "Updating user vault...",
+          "success": "User vault updated"
+        }
+      },
+      "permission": {
+        "description": "User permission management",
+        "assign": {
+          "description": "Assign a permission group to a user",
+          "assigning": "Assigning \"{{group}}\" to user \"{{email}}\"...",
+          "success": "Permission assigned"
+        }
+      }
+    }
+  },
+  "errors": {
+    "activationFailed": "Activation failed",
+    "authFailed": "Authentication failed",
+    "authRequired": "Authentication required. Run: rdc login",
+    "bridgeRequired": "Bridge name required. Use --bridge or set context.",
+    "contextNotFound": "Context \"{{name}}\" not found",
+    "invalidCredentials": "Invalid credentials",
+    "invalidEmail": "Please enter a valid email",
+    "invalidExpiration": "Token expiration must be between 1 and 720 hours",
+    "invalidAction": "Invalid action \"{{action}}\". Use \"{{valid}}\".",
+    "invalidFunctionParams": "Invalid parameters for function \"{{function}}\": {{errors}}",
+    "invalidJsonFile": "The provided file does not contain valid JSON.",
+    "invalidJsonVault": "Invalid JSON vault data.",
+    "invalidKey": "Invalid key. Valid keys: {{keys}}",
+    "machineNotFound": "Machine \"{{name}}\" not found",
+    "machineRequired": "Machine name required. Use --machine or set context.",
+    "machineRequiredLocal": "Machine name required. Use --machine or set default with: rdc context set machine <name>",
+    "invalidHost": "Invalid IP address or hostname: \"{{host}}\". Must be a valid IPv4, IPv6, or hostname.",
+    "invalidPort": "Invalid port number: \"{{port}}\". Must be between 1 and 65535.",
+    "failedCreateQueueItem": "Failed to create queue item",
+    "invalidPriorityMin": "Invalid priority-min value. Must be between 1 and 5.",
+    "invalidPriorityMax": "Invalid priority-max value. Must be between 1 and 5.",
+    "passwordsMismatch": "Passwords do not match",
+    "repositoryNotFound": "Repository \"{{name}}:{{tag}}\" not found",
+    "cannotDeleteGrandRepo": "Cannot delete grand repository: {{reason}}",
+    "affectedChildClones": ". Affected child clones: {{clones}}. Delete or promote child clones first.",
+    "cannotPromote": "Cannot promote: {{reason}}",
+    "protocol": {
+      "notSupported": "Protocol registration is not supported on {{platform}}",
+      "invalidUrl": "Invalid protocol URL: {{error}}",
+      "commandExitCode": "Command exited with code {{code}}",
+      "tokenRequired": "Token is required. Use --token <token>",
+      "teamRequired": "Team name is required. Use --team <name>",
+      "machineRequired": "Machine name is required. Use --machine <name>",
+      "invalidAction": "Invalid action '{{action}}'. Must be one of: {{validActions}}",
+      "parseFailed": "Failed to parse URL: {{error}}"
+    },
+    "networkError": "Network error: {{message}}",
+    "noActiveContext": "No active context. Create or select a context first.",
+    "notAuthenticated": "Not authenticated. Run: rdc login",
+    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
+    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}.",
+    "permissionDenied": "Permission denied",
+    "regionRequired": "Region name required. Use --region or set context.",
+    "registrationFailed": "Registration failed",
+    "resourceNotFound": "{{resource}} not found",
+    "repositoryRequired": "Repository name is required. Use --repository <name>.",
+    "sshKeyNotFound": "SSH key not found: {{path}}",
+    "sync": {
+      "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
+      "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
+      "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
+      "localPathNotFound": "Local path does not exist: {{path}}"
+    },
+    "teamRequired": "Team name required. Use --team or set context.",
+    "term": {
+      "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",
+      "launchFailed": "Failed to launch terminal: {{error}}",
+      "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
+      "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
+      "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
+      "sshCode1": "Generic error - check command syntax or remote permissions",
+      "sshCode126": "Permission denied - cannot execute command on remote",
+      "sshCode127": "Command not found on remote machine",
+      "sshCode130": "Connection terminated by user (Ctrl+C)",
+      "sshCode255": "SSH connection failed - possible causes:\n    - Authentication failed (check SSH key permissions)\n    - Host key verification failed\n    - Network connection dropped\n    - Remote SSH service not running",
+      "sshExitCode": "SSH exited with code {{code}}"
+    },
+    "vscode": {
+      "cleanupRequired": "Specify --all to remove all connections or --connection <name> for a specific one.",
+      "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",
+      "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
+      "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
+      "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
+      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable."
+    },
+    "tokenExpired": "Token expired. Please login again.",
+    "unexpectedError": "Unexpected error: {{message}}",
+    "validationError": "Validation error: {{message}}",
+    "vaultDataRequired": "Vault data required. Use --vault <json> or pipe JSON via stdin.",
+    "vaultVersionRequired": "Vault version required. Use --vault-version <n>."
+  },
+  "options": {
+    "activationCode": "Activation code from email",
+    "apiUrl": "API URL",
+    "bridge": "Bridge name",
+    "command": "Execute a command instead of interactive shell",
+    "container": "Connect to a specific Docker container",
+    "containerAction": "Container action: terminal, logs, stats, exec",
+    "context": "Use specific context for this command",
+    "datastore": "Datastore path on machine",
+    "email": "Email address",
+    "external": "Force launching in external terminal window",
+    "follow": "Follow logs output",
+    "endpoint": "API endpoint URL",
+    "expires": "Expiration in hours (1-720)",
+    "force": "Skip confirmation prompts",
+    "lang": "Language override ({{languages}})",
+    "limit": "Maximum number of results",
+    "logLines": "Number of log lines to show (default: 50)",
+    "machine": "Machine name",
+    "machineIp": "Machine IP address or hostname",
+    "machineShorthand": "Machine name (shorthand for --machine)",
+    "organization": "Organization name",
+    "output": "Output format (table|json|yaml|csv)",
+    "password": "Password (for non-interactive login)",
+    "region": "Region name",
+    "renetPath": "Path to renet binary (default: renet in PATH)",
+    "repository": "Repository name (connects to repository environment)",
+    "repositoryShorthand": "Repository name (shorthand for --repository)",
+    "saveAs": "Save credentials to a named context",
+    "sessionName": "Session name",
+    "sshKey": "Path to SSH private key (e.g., ~/.ssh/id_rsa)",
+    "sshPort": "SSH port",
+    "sshPrivateKey": "Path to SSH private key",
+    "sshPublicKey": "Path to SSH public key",
+    "sshUser": "SSH username",
+    "switch": "Switch to this context after creation",
+    "team": "Team name",
+    "tfaCode": "Current TFA code for verification",
+    "tokenName": "Token name",
+    "watch": "Watch for changes",
+    "watchUpdates": "Watch for updates",
+    "yes": "Skip confirmation prompt",
+    "priority": "Priority (1=highest)",
+    "param": "Function parameters",
+    "debug": "Enable debug output (local mode)",
+    "pollInterval": "Poll interval in milliseconds",
+    "folder": "Remote folder path to open",
+    "urlOnly": "Print the VS Code URI instead of launching",
+    "newWindow": "Open in new VS Code window",
+    "skipEnvSetup": "Skip remote environment setup",
+    "insiders": "Use VS Code Insiders settings",
+    "cleanupAll": "Remove all rediacc SSH configurations",
+    "connectionName": "Remove specific connection",
+    "vaultJson": "Vault content as JSON string",
+    "vaultVersion": "Current vault version for optimistic locking",
+    "outputPath": "Path to save output file",
+    "importMode": "Import mode (merge or replace)",
+    "vaultJsonMachine": "Machine vault data as JSON string",
+    "searchInField": "Search in {{field}}",
+    "searchRepos": "Filter repositories by name",
+    "sortByField": "Sort by field",
+    "sortDescending": "Sort in descending order",
+    "sshPassword": "SSH password for initial authentication",
+    "machineForVault": "Machine name (for updating vault after test)",
+    "saveKnownHosts": "Save known_hosts to machine vault after successful test",
+    "localPath": "Local directory path (default: current directory)",
+    "remotePath": "Remote subdirectory path within repository",
+    "mirrorUpload": "Mirror mode - delete remote files not present locally",
+    "mirrorDownload": "Mirror mode - delete local files not present on remote",
+    "verifyChecksum": "Verify files using checksums after sync",
+    "confirmSync": "Preview changes and ask for confirmation before syncing",
+    "excludePatterns": "Patterns to exclude from sync",
+    "dryRun": "Show what would be transferred without actually syncing",
+    "filterStatus": "Filter by status",
+    "priorityMin": "Minimum priority (1-5)",
+    "priorityMax": "Maximum priority (1-5)",
+    "searchQueue": "Search in task ID, team, machine, bridge",
+    "sortField": "Sort by field",
+    "sortDesc": "Sort in descending order",
+    "functionName": "Function name to execute",
+    "rawVault": "Raw vault JSON (for scripts/CI)",
+    "userPassword": "Password for the new user",
+    "newPasswordNonInteractive": "New password (non-interactive mode)",
+    "confirmPasswordNonInteractive": "Confirm password (non-interactive mode)",
+    "repositoryTag": "Repository tag",
+    "parentRepository": "Parent repository (for forks)",
+    "parentRepositoryTag": "Parent repository tag",
+    "protocolSystem": "Register system-wide (requires admin privileges)",
+    "protocolForce": "Force re-registration even if already registered",
+    "protocolSystemUnregister": "Unregister system-wide registration (requires admin privileges)",
+    "outputFormat": "Output format (json)",
+    "protocolToken": "Authentication token",
+    "protocolAction": "Action ({{actions}})",
+    "protocolParams": "Additional parameters"
+  },
+  "prompts": {
+    "apiUrl": "API URL:",
+    "cancelled": "Cancelled",
+    "confirm": "Are you sure?",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "email": "Email:",
+    "enterValue": "Enter {{field}}:",
+    "password": "Password:",
+    "selectOption": "Select an option:",
+    "sshPassword": "SSH password (leave empty if using key auth): ",
+    "syncConfirm": "\nProceed with sync? [y/N/d(etails)] ",
+    "syncConfirmHelp": "Please enter y (yes), n (no), or d (details)",
+    "passwordForUser": "Password for new user:",
+    "confirmPassword": "Confirm password:",
+    "setPassword": "Set password for user:",
+    "newPassword": "New password:",
+    "confirmNewPassword": "Confirm new password:",
+    "masterPassword": "Enter your master password:"
+  },
+  "spinners": {
+    "connecting": "Connecting...",
+    "creating": "Creating {{resource}}...",
+    "deleting": "Deleting {{resource}}...",
+    "fetching": "Fetching {{resource}}...",
+    "loading": "Loading...",
+    "processing": "Processing...",
+    "saving": "Saving...",
+    "updating": "Updating {{resource}}..."
+  },
+  "status": {
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "failed": "Failed",
+    "pending": "Pending",
+    "processing": "Processing",
+    "success": "Success"
+  },
+  "table": {
+    "noData": "No data to display"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "running": "Running",
+    "stopped": "Stopped",
+    "completed": "Completed",
+    "failed": "Failed",
+    "success": "✓ Success",
+    "unknown": "Unknown",
+    "inProgress": "In Progress"
+  }
+}

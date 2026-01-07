@@ -1,10 +1,12 @@
 import React from 'react';
 import { Space, Timeline, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { formatTimestampAsIs, normalizeToString } from '@/platform';
 import type { QueueTraceLog } from '@rediacc/shared/types';
 import type { TimelineViewProps } from '../types';
 
 export const TimelineView: React.FC<TimelineViewProps> = ({ traceLogs }) => {
+  const { t } = useTranslation('queue');
   return (
     <Timeline
       mode="left"
@@ -32,7 +34,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ traceLogs }) => {
               </Typography.Text>
               <Typography.Text>{formatTimestampAsIs(timestamp, 'datetime')}</Typography.Text>
               {details && <Typography.Text>{details}</Typography.Text>}
-              {actionByUser && <Typography.Text>By: {actionByUser}</Typography.Text>}
+              {actionByUser && (
+                <Typography.Text>
+                  {t('trace.actionBy')}: {actionByUser}
+                </Typography.Text>
+              )}
             </Space>
           ),
         };

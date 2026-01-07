@@ -22,36 +22,6 @@
     "trace": "İz",
     "twoFactorAuth": "İki Faktörlü Kimlik Doğrulama"
   },
-  "architecture": {
-    "bridges": "Köprüler",
-    "clearAll": "Tümünü Temizle",
-    "fetchError": "Mimari verileri getirilemedi",
-    "filterEntities": "Varlıkları Filtrele",
-    "legend": "Efsane",
-    "machines": "Makineler",
-    "noData": "Mimari veri yok",
-    "noEntitiesSelected": "Hiçbir varlık seçilmedi. Lütfen görüntülenecek en az bir varlık türü seçin.",
-    "nodeBridge": "Köprü",
-    "nodeCompany": "Şirket",
-    "nodeMachine": "Makine",
-    "nodeRegion": "Bölge",
-    "nodeRepository": "Depo",
-    "nodeStorage": "Depolamak",
-    "nodeTeam": "Takım",
-    "nodeUser": "Kullanıcı",
-    "regions": "Bölgeler",
-    "repositories": "Depolar",
-    "schedules": "Programlar",
-    "selectAll": "Tümünü Seç",
-    "selectEntities": "Görüntülenecek varlık türlerini seçin",
-    "storages": "Depolar",
-    "teams": "Takımlar",
-    "title": "Şirket Mimarisi",
-    "users": "Kullanıcılar",
-    "viewForce": "Güç",
-    "viewHierarchy": "Hiyerarşi",
-    "viewRadial": "Radyal"
-  },
   "audit": {
     "columns": {
       "action": "Aksiyon",
@@ -92,24 +62,6 @@
     },
     "subtitle": "Kuruluşunuzdaki tüm etkinlikleri ve değişiklikleri takip edin",
     "title": "Denetim Günlükleri"
-  },
-  "company": {
-    "errors": {
-      "blockRequestsFailed": "Kullanıcı isteği engelleme durumu güncellenemedi",
-      "importFailed": "Şirket verileri içe aktarılamadı",
-      "noExportData": "Hiçbir dışa aktarma verisi döndürülmedi",
-      "vaultUpdateFailed": "Kasa yapılandırması güncellenemedi"
-    },
-    "success": {
-      "errorCount": "{{count}} hata",
-      "importComplete": "İçe aktarma tamamlandı: {{summary}}",
-      "importedCount": "{{count}} öğe içe aktarıldı",
-      "requestsBlocked": "Kullanıcı istekleri başarıyla engellendi",
-      "requestsBlockedWithTerminations": "Kullanıcı istekleri engellendi. {{count}} aktif oturum sonlandırıldı.",
-      "requestsUnblocked": "Kullanıcı isteklerinin engellemesi başarıyla kaldırıldı",
-      "skippedCount": "{{count}} öğe atlandı",
-      "vaultUpdated": "Apps Kasası yapılandırması başarıyla güncellendi"
-    }
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -155,8 +107,8 @@
         "cancel": "İptal etmek",
         "fileRequired": "Lütfen içe aktarılacak bir dosya seçin",
         "import": "İçe aktarmak",
-        "importMode": "İçe Aktarma Modu",
         "importing": "İçe aktarılıyor...",
+        "importMode": "İçe Aktarma Modu",
         "invalidFile": "Geçersiz dosya biçimi. Lütfen geçerli bir şirket veri dışa aktarma dosyası seçin.",
         "modeOverride": "Mevcut öğeleri geçersiz kıl",
         "modeOverrideDesc": "Mevcut öğeleri içe aktarılan verilerle değiştirin",
@@ -244,6 +196,47 @@
       "warning": "Yeni şifreyi güvenli bir yerde saklayın; kaybolursa kurtarılamaz."
     }
   },
+  "dashboard": {
+    "activeLicenses": "Aktif Lisanslar",
+    "completed": "Tamamlandı",
+    "daysRemaining": "Kalan Günler",
+    "failed": "Başarısız",
+    "jobTimeout": "İş Zaman Aşımı",
+    "maxActiveJobs": "En Fazla Aktif İşler",
+    "maxRepoSize": "En Fazla Depo Boyutu",
+    "maxReservedJobs": "En Fazla Ayrılmış İşler",
+    "noPlanData": "Kullanılabilir plan limiti verisi yok",
+    "noSubscription": "Aktif abonelik yok",
+    "pending": "Bekleme",
+    "processing": "İşleniyor"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "Kullanıcı isteği engelleme durumu güncellenemedi",
+      "importFailed": "Şirket verileri içe aktarılamadı",
+      "noExportData": "Hiçbir dışa aktarma verisi döndürülmedi",
+      "vaultsUpdateFailed": "Kasa yapılandırmaları güncellenemedi",
+      "vaultUpdateFailed": "Kasa yapılandırması güncellenemedi"
+    },
+    "success": {
+      "errorCount": "{{count}} hata",
+      "importComplete": "İçe aktarma tamamlandı: {{summary}}",
+      "imported": "Kuruluş verileri başarıyla içe aktarıldı",
+      "importedCount": "{{count}} öğe içe aktarıldı",
+      "requestsBlocked": "Kullanıcı istekleri başarıyla engellendi",
+      "requestsBlockedWithTerminations": "Kullanıcı istekleri engellendi. {{count}} aktif oturum sonlandırıldı.",
+      "requestsUnblocked": "Kullanıcı isteklerinin engellemesi başarıyla kaldırıldı",
+      "skippedCount": "{{count}} öğe atlandı",
+      "vaultsUpdated": "Tüm kasa yapılandırmaları başarıyla güncellendi",
+      "vaultUpdated": "Apps Kasası yapılandırması başarıyla güncellendi"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "Şifreniz değiştirildi. {{seconds}} saniye içinde çıkış yapılacaksınız...",
+      "successTitle": "Şifre Başarıyla Değiştirildi"
+    }
+  },
   "regionsInfrastructure": {
     "title": "Bölgeler ve Altyapı"
   },
@@ -259,6 +252,7 @@
       "machines": "Makineler",
       "members": "Üyeler",
       "repositories": "Depolar",
+      "stats": "İstatistikler",
       "storage": "Depolamak",
       "teamName": "Takım Adı",
       "vaultVersion": "Kasa Sürümü"
@@ -269,6 +263,22 @@
       "lastActive": "Son Aktif",
       "permissionGroup": "İzin Grubu",
       "status": "Durum"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "'{{teamName}}' takımını silmek istediğinizden emin misiniz?",
+      "confirmTitle": "Takımı Sil"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "\"{{email}}\" adresini etkinleştirmek istediğinizden emin misiniz?",
+      "confirmTitle": "Kullanıcıyı Etkinleştir"
+    },
+    "deactivate": {
+      "confirmDescription": "\"{{email}}\" adresini devre dışı bırakmak istediğinizden emin misiniz?",
+      "confirmTitle": "Kullanıcıyı Devre Dışı Bırak"
     }
   },
   "userSessions": {
@@ -294,6 +304,7 @@
     "forkToken": "Bu bir çatal belirtecidir (alt oturum)",
     "hasChildren": "{{count}} alt oturum",
     "inactive": "Etkin değil",
+    "ipLabel": "IP",
     "minutes": "dakika",
     "notAvailable": "Yok",
     "searchPlaceholder": "E-postaya, IP'ye veya oturum adına göre arayın...",
@@ -304,21 +315,11 @@
     "totalSessions": "Toplam Oturum Sayısı",
     "uniqueUsers": "Benzersiz Kullanıcılar"
   },
-  "users": {
-    "activate": {
-      "confirmDescription": "\"{{email}}\" adresini etkinleştirmek istediğinizden emin misiniz?",
-      "confirmTitle": "Kullanıcıyı Etkinleştir"
-    },
-    "deactivate": {
-      "confirmDescription": "\"{{email}}\" adresini devre dışı bırakmak istediğinizden emin misiniz?",
-      "confirmTitle": "Kullanıcıyı Devre Dışı Bırak"
-    }
-  },
   "vaultProtocol": {
     "errors": {
       "disableFailed": "Kasa şifrelemesi devre dışı bırakılamadı",
       "enableFailed": "Kasa şifrelemesi etkinleştirilemedi",
-      "noCompanySelected": "Hiçbir şirket seçilmedi. Şifrelemeyi güncellemeden önce lütfen bir şirket seçin."
+      "noOrganizationSelected": "Hiçbir şirket seçilmedi. Şifrelemeyi güncellemeden önce lütfen bir şirket seçin."
     },
     "success": {
       "disabled": "Kasa şifrelemesi devre dışı. Artık ana parolalara gerek yok.",

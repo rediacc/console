@@ -13,6 +13,7 @@ export const SizedModal: React.FC<SizedModalProps> = ({
   ...props
 }) => (
   <Modal
+    data-testid="sized-modal"
     className={className ? `${size} ${className}` : size}
     wrapClassName={wrapClassName ? `${size} ${wrapClassName}` : size}
     width={MODAL_WIDTHS[size]}

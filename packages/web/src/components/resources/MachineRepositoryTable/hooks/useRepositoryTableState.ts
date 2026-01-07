@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { isValidGuid } from '@/platform/utils/formValidation';
 import type { Machine } from '@/types';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
-import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { groupRepositoriesByName } from '../utils';
 import type {
   Container,
@@ -16,7 +16,7 @@ import type {
 
 interface UseRepoTableStateProps {
   machine: Machine;
-  teamRepositories: TeamRepo[];
+  teamRepositories: GetTeamRepositories_ResultSet1[];
   repositoriesLoading: boolean;
   refreshKey?: number;
 }
@@ -59,7 +59,11 @@ export const useRepositoryTableState = ({
       const parsed = parseVaultStatus(machine.vaultStatus);
 
       if (parsed.error) {
-        setError('Invalid Repository data');
+        if (parsed.error === 'encrypted') {
+          setError('Machine status is encrypted. Enter master password to view.');
+        } else {
+          setError('Invalid Repository data');
+        }
         setLoading(false);
       } else if (parsed.status === 'completed' && parsed.rawResult) {
         try {

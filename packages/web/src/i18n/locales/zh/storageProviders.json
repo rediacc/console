@@ -21,7 +21,8 @@
       "helpText": "用于高级配置的额外 rclone 参数",
       "label": "附加参数",
       "placeholder": "--转移 4 --跳棋 8"
-    }
+    },
+    "tips": "提示"
   },
   "storageProviders": {
     "azureblob": {
@@ -68,7 +69,7 @@
         "endpoint": {
           "helpText": "B2 的自定义 S3 兼容端点",
           "label": "自定义端点",
-          "placeholder": "s3.us-west-000.backblazeb2.com"
+          "placeholder": "例如：s3.us-west-000.backblazeb2.com"
         },
         "hard_delete": {
           "helpText": "永久删除文件而不是隐藏它们。 谨慎使用",
@@ -146,7 +147,7 @@
         }
       },
       "helpText": "Cloudflare R2 是与 S3 兼容的对象存储，无需出口费用。",
-      "name": "Cloudflare R2",
+      "name": "Cloudflare R2 存储",
       "tips": ["无出口费", "S3兼容的API", "自动复制", "与 Cloudflare CDN 集成"]
     },
     "drive": {
@@ -155,7 +156,7 @@
         "client_id": {
           "helpText": "来自 Google Cloud Console 的 OAuth 2.0 客户端 ID",
           "label": "OAuth 客户端 ID",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+          "placeholder": "例如：123456789012-abcdef.apps.googleusercontent.com"
         },
         "client_secret": {
           "helpText": "OAuth 2.0 客户端密钥。 确保安全",
@@ -219,7 +220,7 @@
         }
       },
       "helpText": "Dropbox 个人和企业云存储。 文件不区分大小写。",
-      "name": "Dropbox",
+      "name": "Dropbox 云存储",
       "tips": [
         "Dropbox 不区分大小写 - 避免类似的文件名",
         "上传的最大文件大小为 150GB",
@@ -261,7 +262,7 @@
         "url": {
           "helpText": "FileFabric 实例 URL",
           "label": "网址",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "FileFabric为企业提供多云数据管理平台。",
@@ -293,7 +294,7 @@
         }
       },
       "helpText": "Files.com 是一项云 FTP/SFTP 服务，具有先进的自动化和安全功能。",
-      "name": "Files.com",
+      "name": "Files.com 文件服务",
       "tips": ["企业级安全", "自动化工作流程", "详细的审核日志", "符合 HIPAA 和 SOC2 标准"]
     },
     "ftp": {
@@ -306,7 +307,7 @@
         "host": {
           "helpText": "FTP 服务器主机名或 IP 地址",
           "label": "主持人",
-          "placeholder": "ftp.example.com"
+          "placeholder": "例如：ftp.example.com"
         },
         "pass": {
           "helpText": "FTP密码",
@@ -402,7 +403,7 @@
         "client_id": {
           "helpText": "来自 Google Cloud Console 的 OAuth 2.0 客户端 ID",
           "label": "OAuth 客户端 ID",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+          "placeholder": "例如：123456789012-abcdef.apps.googleusercontent.com"
         },
         "client_secret": {
           "helpText": "OAuth 2.0 客户端密钥",
@@ -442,7 +443,7 @@
         "service_principal_name": {
           "helpText": "Kerberos 服务主体名称",
           "label": "服务负责人",
-          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM"
+          "placeholder": "例如：hdfs/namenode.example.com@EXAMPLE.COM"
         },
         "username": {
           "helpText": "HDFS用户名",
@@ -704,7 +705,7 @@
         "host": {
           "helpText": "网络存储主机",
           "label": "主持人",
-          "placeholder": "xxxxx.akamaihd.net"
+          "placeholder": "例如：xxxxx.akamaihd.net"
         },
         "secret": {
           "helpText": "NetStorage 秘密/密钥",
@@ -722,7 +723,7 @@
         "drive_id": {
           "helpText": "要使用的特定驱动器 ID。 默认留空",
           "label": "驱动器ID",
-          "placeholder": "b!Ei1XXXXXXXXXX"
+          "placeholder": "例如：b!Ei1XXXXXXXXXX"
         },
         "drive_type": {
           "helpText": "OneDrive 帐户类型 - 个人、企业或文档库",
@@ -771,12 +772,12 @@
         "compartment": {
           "helpText": "Bucket所在分区OCID",
           "label": "室室 OCID",
-          "placeholder": "ocid1.compartment.oc1..."
+          "placeholder": "例如：ocid1.compartment.oc1..."
         },
         "fingerprint": {
           "helpText": "API 签名密钥的指纹",
           "label": "钥匙指纹",
-          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+          "placeholder": "例如：aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
         },
         "key_file": {
           "helpText": "PEM 格式的 RSA 私钥（base64 编码）",
@@ -796,7 +797,7 @@
         "tenancy": {
           "helpText": "租赁 OCID",
           "label": "租赁 OCID",
-          "placeholder": "ocid1.tenancy.oc1..."
+          "placeholder": "例如：ocid1.tenancy.oc1..."
         },
         "user": {
           "helpText": "用于身份验证的用户 OCID",
@@ -829,7 +830,7 @@
         "hostname": {
           "helpText": "API 主机名（欧盟为 eapi.pcloud.com）",
           "label": "主机名",
-          "placeholder": "api.pcloud.com"
+          "placeholder": "例如：api.pcloud.com"
         },
         "root_folder_id": {
           "helpText": "起始文件夹 ID（可选）",
@@ -901,7 +902,7 @@
         }
       },
       "helpText": "Premiumize.me 是一项多主机服务，提供云存储和下载功能。",
-      "name": "Premiumize.me",
+      "name": "Premiumize.me 存储",
       "tips": ["将云存储与下载服务相结合", "支持许多文件托管站点", "包括 VPN 服务", "适合媒体流"]
     },
     "proton": {
@@ -942,7 +943,7 @@
         }
       },
       "helpText": "Put.io 是一种云存储服务，可以获取和流式传输种子。",
-      "name": "Put.io",
+      "name": "Put.io 云存储",
       "tips": ["专门从事洪流处理", "自动视频转换", "内置媒体播放器", "良好的自动化 API"]
     },
     "qingstor": {
@@ -1011,7 +1012,7 @@
         "endpoint": {
           "helpText": "S3 API 端点 URL。 对于 AWS S3，留空。 其他提供商需要",
           "label": "端点",
-          "placeholder": "s3.amazonaws.com"
+          "placeholder": "例如：s3.amazonaws.com"
         },
         "env_auth": {
           "helpText": "使用AWS环境变量或IAM角色进行身份验证",
@@ -1091,7 +1092,7 @@
         "host": {
           "helpText": "SFTP 服务器主机名或 IP 地址",
           "label": "主持人",
-          "placeholder": "example.com"
+          "placeholder": "例如：example.com"
         },
         "key_file": {
           "helpText": "SSH 私钥文件的路径",
@@ -1153,7 +1154,7 @@
         "upload_endpoint": {
           "helpText": "ShareFile 上传端点 URL",
           "label": "上传端点",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile 是一个具有安全文件共享功能的企业内容协作平台。",
@@ -1247,7 +1248,7 @@
         "satellite_address": {
           "helpText": "卫星地址（可选，默认为 us1.storj.io:7777）",
           "label": "卫星地址",
-          "placeholder": "us1.storj.io:7777"
+          "placeholder": "例如：us1.storj.io:7777"
         }
       },
       "helpText": "Storj 是一个去中心化的云存储网络，可在全球网络上加密和分发文件。",
@@ -1341,7 +1342,7 @@
         }
       },
       "helpText": "Rackspace、OVH 等使用的 OpenStack Swift 对象存储。",
-      "name": "OpenStack Swift",
+      "name": "OpenStack Swift 存储",
       "tips": [
         "请与您的提供商联系以获得正确的身份验证 URL",
         "建议新部署使用 v3 auth",
@@ -1369,7 +1370,7 @@
         }
       },
       "helpText": "Uloz.to 是在捷克共和国和斯洛伐克流行的文件托管服务。",
-      "name": "Uloz.to",
+      "name": "Uloz.to 文件服务",
       "tips": ["深受捷克和斯洛伐克市场的欢迎", "支持大文件上传", "免费和高级级别", "文件共享功能"]
     },
     "uptobox": {
@@ -1396,7 +1397,7 @@
         "endpoint": {
           "helpText": "芥末端点 URL",
           "label": "端点",
-          "placeholder": "s3.wasabisys.com"
+          "placeholder": "例如：s3.wasabisys.com"
         },
         "region": {
           "helpText": "芥末地区",
@@ -1488,7 +1489,7 @@
         "region": {
           "helpText": "Zoho 地区（com、eu、in、jp、com.cn、com.au）",
           "label": "地区",
-          "placeholder": "com"
+          "placeholder": "例如：com"
         },
         "token": {
           "helpText": "来自 Zoho 身份验证的 OAuth2 令牌",
@@ -1496,7 +1497,7 @@
         }
       },
       "helpText": "Zoho WorkDrive 是一个内容协作平台，适用于具有高级管理控制的团队。",
-      "name": "Zoho WorkDrive",
+      "name": "Zoho WorkDrive 协作平台",
       "tips": [
         "Zoho 生产力套件的一部分",
         "团队文件夹和工作区",

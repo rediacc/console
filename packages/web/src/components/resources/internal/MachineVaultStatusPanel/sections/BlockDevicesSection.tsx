@@ -8,12 +8,12 @@ import {
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { CodeOutlined, HddOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { BlockDevice, BlockDevicePartition } from '../types';
-import type { TFunction } from 'i18next';
 
 interface BlockDevicesSectionProps {
   devices: BlockDevice[];
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t }) => (

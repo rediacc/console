@@ -9,18 +9,18 @@ import {
 export { isEncrypted, VaultProtocolState, analyzeVaultProtocolState };
 
 /**
- * Validate master password by attempting to decrypt VaultCompany
- * @param encryptedVaultCompany The encrypted VaultCompany value
+ * Validate master password by attempting to decrypt VaultOrganization
+ * @param encryptedVaultOrganization The encrypted VaultOrganization value
  * @param masterPassword The master password to validate
  * @returns true if password is valid, false otherwise
  */
 export async function validateMasterPassword(
-  encryptedVaultCompany: string,
+  encryptedVaultOrganization: string,
   masterPassword: string
 ): Promise<boolean> {
   try {
     // Try to decrypt the vault content
-    const decrypted = await cryptoService.decryptString(encryptedVaultCompany, masterPassword);
+    const decrypted = await cryptoService.decryptString(encryptedVaultOrganization, masterPassword);
 
     // If decryption succeeds, the password is valid
     // The decrypted content should be valid JSON (even if it's just {})
@@ -38,19 +38,19 @@ export async function validateMasterPassword(
 }
 
 /**
- * Create the encrypted sentinel value for VaultCompany
- * This is used to indicate that a company has enabled encryption
- * @param company The company name
+ * Create the encrypted sentinel value for VaultOrganization
+ * This is used to indicate that a organization has enabled encryption
+ * @param organization The organization name
  * @param masterPassword The master password to use for encryption
  * @returns The encrypted sentinel value
  */
-export async function createVaultCompanySentinel(
-  company: string,
+export async function createVaultOrganizationSentinel(
+  organization: string,
   masterPassword: string
 ): Promise<string> {
-  // Create a sentinel object with company name and timestamp
+  // Create a sentinel object with organization name and timestamp
   const sentinel = {
-    company,
+    organization,
     encryptionEnabled: true,
     timestamp: new Date().toISOString(),
   };
@@ -76,8 +76,8 @@ export function getVaultProtocolMessage(state: VaultProtocolState): {
     case VaultProtocolState.NOT_ENABLED:
       return {
         type: 'info',
-        messageKey: 'auth:login.errors.companyNotEncrypted',
-        message: 'Your company has not enabled vault encryption',
+        messageKey: 'auth:login.errors.organizationNotEncrypted',
+        message: 'Your organization has not enabled vault encryption',
       };
 
     case VaultProtocolState.PASSWORD_REQUIRED:
@@ -85,7 +85,7 @@ export function getVaultProtocolMessage(state: VaultProtocolState): {
         type: 'error',
         messageKey: 'auth:login.errors.masterPasswordRequired',
         message:
-          'Your company requires a master password for vault encryption. Please enter the company master password.',
+          'Your organization requires a master password for vault encryption. Please enter the organization master password.',
       };
 
     case VaultProtocolState.INVALID_PASSWORD:
@@ -93,7 +93,7 @@ export function getVaultProtocolMessage(state: VaultProtocolState): {
         type: 'error',
         messageKey: 'auth:login.errors.invalidMasterPassword',
         message:
-          'Invalid master password. Please check with your administrator for the correct company master password.',
+          'Invalid master password. Please check with your administrator for the correct organization master password.',
       };
 
     case VaultProtocolState.VALID:
@@ -106,9 +106,9 @@ export function getVaultProtocolMessage(state: VaultProtocolState): {
     case VaultProtocolState.PASSWORD_NOT_NEEDED:
       return {
         type: 'warning',
-        messageKey: 'auth:login.errors.companyNotEncrypted',
+        messageKey: 'auth:login.errors.organizationNotEncrypted',
         message:
-          'Your company has not enabled vault encryption yet. The master password you entered will not be used.',
+          'Your organization has not enabled vault encryption yet. The master password you entered will not be used.',
       };
 
     default:

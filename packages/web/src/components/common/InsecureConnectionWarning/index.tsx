@@ -16,7 +16,6 @@ const InsecureConnectionWarning: React.FC<InsecureConnectionWarningProps> = ({ o
     <Flex>
       <Alert
         type="error"
-        showIcon
         icon={<LockOutlined />}
         closable={!!onClose}
         onClose={onClose}
@@ -26,16 +25,9 @@ const InsecureConnectionWarning: React.FC<InsecureConnectionWarningProps> = ({ o
           </Typography.Text>
         }
         description={
-          <Flex
-            vertical
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ fontSize: 14 }}
-          >
+          <Flex vertical className="text-sm">
             <Typography.Text>{t('login.insecureConnection.message')}</Typography.Text>
-            <Typography.Text
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ fontSize: 12 }}
-            >
+            <Typography.Text className="text-xs">
               <Typography.Text strong>{t('login.insecureConnection.howToFix')}:</Typography.Text>{' '}
               {securityInfo.suggestion || t('login.insecureConnection.resolution')}
             </Typography.Text>

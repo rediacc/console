@@ -31,6 +31,8 @@ export class QueueService {
     const builderConfig: QueueVaultBuilderConfig = {
       getApiUrl: config.getApiUrl,
       encodeBase64: config.encodeBase64,
+      validateParams: config.validateParams,
+      validateConnections: config.validateConnections,
     };
 
     this.builder = new QueueVaultBuilder(builderConfig);

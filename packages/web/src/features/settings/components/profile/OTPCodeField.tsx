@@ -3,7 +3,7 @@ import { Form, Input } from 'antd';
 import type { Rule } from 'antd/es/form';
 
 const CenteredInput = (props: React.ComponentProps<typeof Input>) => (
-  <Input className="text-center" {...props} />
+  <Input className="text-center" data-testid="otp-code-input" {...props} />
 );
 
 export interface OTPCodeFieldProps {

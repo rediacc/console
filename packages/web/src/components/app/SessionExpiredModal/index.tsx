@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Card, Flex, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { SizedModal } from '@/components/common';
+import { SizedModal } from '@/components/common/SizedModal';
 import { hideSessionExpiredModal, setStayLoggedOutMode } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
@@ -10,6 +11,7 @@ import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons';
 const COUNTDOWN_DURATION = 60; // 60 seconds
 
 export const SessionExpiredModal: React.FC = () => {
+  const { t } = useTranslation('auth');
   const dispatch = useDispatch();
   const isVisible = useSelector((state: RootState) => state.auth.showSessionExpiredModal);
 
@@ -58,16 +60,16 @@ export const SessionExpiredModal: React.FC = () => {
   };
 
   const formatTime = (seconds: number) => {
-    if (seconds <= 0) return '0 seconds';
-    return seconds === 1 ? '1 second' : `${seconds} seconds`;
+    if (seconds <= 0) return t('sessionExpired.zeroSeconds');
+    return t('sessionExpired.seconds', { count: seconds });
   };
 
   return (
     <SizedModal
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <ClockCircleOutlined />
-          <Typography.Title level={4}>Session Expired</Typography.Title>
+          <Typography.Title level={4}>{t('sessionExpired.title')}</Typography.Title>
         </Flex>
       }
       open={isVisible}
@@ -85,25 +87,21 @@ export const SessionExpiredModal: React.FC = () => {
           icon={<LogoutOutlined />}
           data-testid="session-expired-login-button"
         >
-          Continue to Login
+          {t('sessionExpired.continueToLogin')}
         </Button>,
         <Button key="stay" onClick={handleStayLoggedOut} data-testid="session-expired-stay-button">
-          Stay Logged Out
+          {t('sessionExpired.stayLoggedOut')}
         </Button>,
       ]}
     >
-      <Flex vertical gap={24} className="w-full">
-        <Typography.Text>
-          Your session has expired for security reasons. You have been automatically logged out.
-        </Typography.Text>
+      <Flex vertical className="w-full">
+        <Typography.Text>{t('sessionExpired.message')}</Typography.Text>
 
-        <Typography.Text>
-          You can stay on this page or continue to the login screen to sign in again.
-        </Typography.Text>
+        <Typography.Text>{t('sessionExpired.subMessage')}</Typography.Text>
 
         <Card>
           <Typography.Text strong type="danger">
-            Automatically redirecting in {formatTime(countdown)}
+            {t('sessionExpired.redirectingIn', { time: formatTime(countdown) })}
           </Typography.Text>
         </Card>
       </Flex>

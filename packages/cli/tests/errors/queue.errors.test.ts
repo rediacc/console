@@ -66,9 +66,9 @@ describe('queue error scenarios', () => {
   });
 
   // ============================================
-  // Company Errors (from db_middleware_company.sql)
+  // Organization Errors (from db_middleware_organization.sql)
   // ============================================
-  // The following company ErrorPatterns related to queues exist:
+  // The following organization ErrorPatterns related to queues exist:
   //
   // TESTABLE via filter parameters:
   // - QUEUE_PRIORITY_MIN_INVALID - tested below (priority filter min)

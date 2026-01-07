@@ -2,8 +2,8 @@ import React from 'react';
 import { Alert, Button, Flex, Form, Input, Modal, Typography } from 'antd';
 import { ModalSize } from '@/types/modal';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { FormInstance } from 'antd/es/form';
-import type { TFunction } from 'i18next';
 
 interface TFAModalProps {
   open: boolean;
@@ -13,7 +13,7 @@ interface TFAModalProps {
   onCancel: () => void;
   isVerifying: boolean;
   twoFAForm: FormInstance;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const TFAModal: React.FC<TFAModalProps> = ({
@@ -29,7 +29,7 @@ export const TFAModal: React.FC<TFAModalProps> = ({
   return (
     <Modal
       title={
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <SafetyCertificateOutlined />
           <Typography.Text>{t('login.twoFactorAuth.title')}</Typography.Text>
         </Flex>
@@ -39,13 +39,13 @@ export const TFAModal: React.FC<TFAModalProps> = ({
       footer={null}
       className={ModalSize.Medium}
       centered
+      data-testid="tfa-modal"
     >
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         <Alert
           message={t('login.twoFactorAuth.required')}
           description={t('login.twoFactorAuth.description')}
           type="info"
-          showIcon
           data-testid="tfa-info-alert"
         />
 
@@ -71,7 +71,9 @@ export const TFAModal: React.FC<TFAModalProps> = ({
 
           <Form.Item>
             <Flex justify="flex-end" className="w-full">
-              <Button onClick={onCancel}>{t('common:general.cancel')}</Button>
+              <Button onClick={onCancel} data-testid="tfa-cancel-button">
+                {t('common:general.cancel')}
+              </Button>
               <Button
                 type="primary"
                 htmlType="submit"

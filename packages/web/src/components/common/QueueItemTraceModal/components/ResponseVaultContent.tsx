@@ -1,5 +1,6 @@
 import React from 'react';
 import { Empty, Space, Tabs } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import { FileTextOutlined } from '@/utils/optimizedIcons';
 import type { QueueVaultSnapshot } from '@rediacc/shared/types';
@@ -15,9 +16,11 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
   vaultContent,
   responseVaultContent,
 }) => {
+  const { t } = useTranslation('queue');
+
   const renderRequestVault = () => {
     if (!vaultContent?.hasContent) {
-      return <Empty description="No request vault content" />;
+      return <Empty description={t('trace.noRequestVault')} />;
     }
 
     try {
@@ -26,32 +29,29 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
         typeof vaultContent.vaultContent === 'string' ? JSON.parse(vaultContent.vaultContent) : {};
       return <SimpleJsonEditor value={JSON.stringify(content, null, 2)} readOnly height="300px" />;
     } catch {
-      return <Empty description="Invalid request vault content format" />;
+      return <Empty description={t('trace.invalidRequestVault')} />;
     }
   };
 
   const renderResponseVault = () => {
-    if (!responseVaultContent?.hasContent) {
+    if (!responseVaultContent?.hasContent || !responseVaultContent.vaultContent) {
       return null;
     }
 
-    try {
-      // responseVaultContent.vaultContent is string | null per QueueVaultSnapshot type
-      const content =
-        typeof responseVaultContent.vaultContent === 'string'
-          ? JSON.parse(responseVaultContent.vaultContent)
-          : {};
+    const content = responseVaultContent.vaultContent;
 
-      // Try to parse as SSH test result
-      const sshTestResult = parseSSHTestResults(content);
+    // Try to parse as JSON (for SSH test results or structured responses)
+    try {
+      const parsed = JSON.parse(content);
+      const sshTestResult = parseSSHTestResults(parsed);
       if (sshTestResult.isSSHTest && sshTestResult.result) {
         return <SSHTestResultsDisplay result={sshTestResult.result} />;
       }
-
-      // Default JSON display
-      return <SimpleJsonEditor value={JSON.stringify(content, null, 2)} readOnly height="300px" />;
+      // Valid JSON - display as JSON editor
+      return <SimpleJsonEditor value={JSON.stringify(parsed, null, 2)} readOnly height="300px" />;
     } catch {
-      return <Empty description="Invalid response vault content format" />;
+      // Plain text output from bridge - display as preformatted text
+      return <pre className="terminal-output">{content}</pre>;
     }
   };
 
@@ -66,7 +66,7 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
           label: (
             <Space>
               <FileTextOutlined />
-              Request Vault
+              {t('trace.requestVault')}
             </Space>
           ),
           children: renderRequestVault(),
@@ -78,7 +78,7 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
                 label: (
                   <Space>
                     <FileTextOutlined />
-                    Response Vault
+                    {t('trace.responseVaultTab')}
                   </Space>
                 ),
                 children: responseTab,

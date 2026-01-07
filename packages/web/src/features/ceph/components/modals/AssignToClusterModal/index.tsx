@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Flex, Select, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { type CephCluster, useCephClusters } from '@/api/queries/ceph';
 import {
+  useGetCephClusters,
   useUpdateMachineCeph,
   useUpdateMachineClusterAssignment,
-} from '@/api/queries/cephMutations';
-import { SizedModal } from '@/components/common';
-import { createTruncatedColumn } from '@/components/common/columns';
+} from '@/api/api-hooks.generated';
+import { createTruncatedColumn, RESPONSIVE_HIDE_XS } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { SizedModal } from '@/components/common/SizedModal';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
@@ -45,18 +45,8 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
     machine?.cephClusterName ?? null
   );
 
-  // Get unique teams from all machines for bulk mode
-  const uniqueTeams: string[] = isBulkMode
-    ? Array.from(new Set(machines.map((m) => m.teamName)))
-    : machine
-      ? [machine.teamName]
-      : [];
-
   // Load clusters for the machine's team(s)
-  const { data: clusters = [], isLoading: clustersLoading } = useCephClusters(
-    uniqueTeams,
-    open && uniqueTeams.length > 0
-  ) as { data: CephCluster[]; isLoading: boolean };
+  const { data: clusters = [], isLoading: clustersLoading } = useGetCephClusters();
 
   // Update mutations
   const updateMutation = useUpdateMachineCeph();
@@ -134,19 +124,22 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       dataIndex: 'machineName',
       key: 'machineName',
       renderWrapper: (content) => (
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <CloudServerOutlined />
           <Typography.Text>{content}</Typography.Text>
         </Flex>
       ),
     });
 
-    const teamColumn = createTruncatedColumn<Machine>({
-      title: t('machines:team'),
-      dataIndex: 'teamName',
-      key: 'teamName',
-      renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
-    });
+    const teamColumn = {
+      ...createTruncatedColumn<Machine>({
+        title: t('machines:team'),
+        dataIndex: 'teamName',
+        key: 'teamName',
+        renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
+      }),
+      responsive: RESPONSIVE_HIDE_XS,
+    };
 
     return [
       machineColumn,
@@ -178,7 +171,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       className="assign-to-cluster-modal"
       size={isBulkMode ? ModalSize.Large : ModalSize.Medium}
       title={
-        <Flex align="center" gap={8} wrap>
+        <Flex align="center" wrap>
           <CloudServerOutlined />
           {isBulkMode
             ? t('machines:bulkActions.assignToCluster')
@@ -202,34 +195,32 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       }}
       data-testid="ds-assign-cluster-modal"
     >
-      <Flex vertical gap={24} className="w-full">
+      <Flex vertical className="w-full">
         {isBulkMode ? (
           <>
             <Alert
               message={t('machines:bulkOperations.selectedCount', { count: targetMachines.length })}
               description={t('machines:bulkAssignDescription')}
               type="info"
-              showIcon
             />
             <Table<Machine>
               columns={bulkColumns}
               dataSource={targetMachines}
               rowKey="machineName"
-              size="small"
               pagination={false}
-              scroll={{ y: 200 }}
+              scroll={{ x: 'max-content', y: 200 }}
               data-testid="ds-assign-cluster-bulk-table"
             />
           </>
         ) : (
           machine && (
             <>
-              <Flex vertical gap={8}>
-                <Flex align="flex-start" wrap gap={8}>
+              <Flex vertical className="gap-sm">
+                <Flex align="flex-start" wrap>
                   <Typography.Text strong>{t('machines:machine')}:</Typography.Text>
                   <Typography.Text>{machine.machineName}</Typography.Text>
                 </Flex>
-                <Flex align="flex-start" wrap gap={8}>
+                <Flex align="flex-start" wrap>
                   <Typography.Text strong>{t('machines:team')}:</Typography.Text>
                   <Typography.Text>{machine.teamName}</Typography.Text>
                 </Flex>
@@ -241,14 +232,13 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                     cluster: machine.cephClusterName,
                   })}
                   type="info"
-                  showIcon
                 />
               )}
             </>
           )
         )}
 
-        <Flex vertical gap={8} className="w-full">
+        <Flex vertical className="gap-sm w-full">
           <Typography.Text>{t('ceph:clusters.cluster')}:</Typography.Text>
           {clustersLoading ? (
             <LoadingWrapper loading centered minHeight={80}>

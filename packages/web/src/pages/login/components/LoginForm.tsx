@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button, Flex, Form, Input, Tooltip, Typography } from 'antd';
-import { featureFlags } from '@/config/featureFlags';
 import type { LoginFormValues } from '@/features/auth/types';
 import {
   InfoCircleOutlined,
@@ -9,8 +8,8 @@ import {
   UserOutlined,
 } from '@/utils/optimizedIcons';
 import { VaultProtocolState } from '@/utils/vaultProtocol';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { FormInstance } from 'antd/es/form';
-import type { TFunction } from 'i18next';
 
 interface LoginFormProps {
   form: FormInstance<LoginFormValues>;
@@ -20,7 +19,7 @@ interface LoginFormProps {
   isConnectionSecure: boolean;
   vaultProtocolState: VaultProtocolState | null;
   showAdvancedOptions: boolean;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
@@ -36,7 +35,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const showMasterPasswordField =
     vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
     vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
-    (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'));
+    showAdvancedOptions;
 
   return (
     <Form form={form} name="login" onFinish={onSubmit} layout="vertical" requiredMark={false}>
@@ -91,7 +90,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             name="masterPassword"
             label={
               <label htmlFor="login-master-password-input">
-                <Flex align="center" gap={8} className="flex">
+                <Flex align="center" className="flex">
                   <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
                   <Tooltip title={t('auth:login.masterPasswordTooltip')}>
                     <InfoCircleOutlined />

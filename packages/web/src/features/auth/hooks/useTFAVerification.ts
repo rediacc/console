@@ -1,3 +1,3 @@
-import { useVerifyTFA } from '@/api/queries/twoFactor';
+import { usePrivilegeAuthenticationRequest } from '@/api/api-hooks.generated';
 
-export const useTFAVerification = () => useVerifyTFA();
+export const useTFAVerification = () => usePrivilegeAuthenticationRequest();

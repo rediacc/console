@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useCancelQueueItem } from '@/api/queries/queue';
+import { useCancelQueueItem } from '@/api/api-hooks.generated';
 import { confirmAction } from '@/utils/confirmations';
 import type { HookAPI } from 'antd/es/modal/useModal';
 
@@ -16,7 +16,7 @@ export const useQueueActions = (modal: HookAPI) => {
       okType: 'danger',
       cancelText: t('common:actions.cancel'),
       onConfirm: async () => {
-        await cancelQueueItemMutation.mutateAsync(taskId);
+        await cancelQueueItemMutation.mutateAsync({ taskId });
       },
     });
   };

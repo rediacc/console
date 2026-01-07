@@ -167,7 +167,7 @@ describe('machine error scenarios', () => {
 
       try {
         // Try to rename machine1 to machine2's name - should fail
-        // Note: UpdateMachineName uses "already exists in team" while CreateMachine uses "already exists in your company"
+        // Note: UpdateMachineName uses "already exists in team" while CreateMachine uses "already exists in your organization"
         const renameResult = await runCli([
           'machine',
           'rename',

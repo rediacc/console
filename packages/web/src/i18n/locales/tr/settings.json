@@ -1,5 +1,5 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "Kasayı Yapılandırma",
     "description": "Kuruluş genelindeki yapılandırmaları yönetmek için şirket kasası ayarlarınızı yapılandırın.",
     "modalTitle": "Şirket Kasasını Yapılandırma",
@@ -92,6 +92,7 @@
       "enabledDescription": "Hesabınız ek bir güvenlik katmanı ile korunmaktadır."
     },
     "statusMessages": {
+      "authorized": "TFA yetkilendirmesi başarılı",
       "enabled": "TFA etkin",
       "none": "TFA yapılandırılmadı",
       "unknown": "TFA durumu belirlenemiyor"

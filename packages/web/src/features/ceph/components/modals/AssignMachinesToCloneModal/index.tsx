@@ -2,28 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Button, Empty, Flex, Select, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  type AvailableMachine,
-  type CephRbdClone,
-  type CloneMachine,
-  useAvailableMachinesForClone,
-  useCloneMachines,
-} from '@/api/queries/ceph';
-import {
+  useGetAvailableMachinesForClone,
+  useGetCloneMachines,
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
-} from '@/api/queries/cephMutations';
-import { SizedModal } from '@/components/common';
+} from '@/api/api-hooks.generated';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { SizedModal } from '@/components/common/SizedModal';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
+import type {
+  GetCephRbdClones_ResultSet1 as CephClone,
+  GetCloneMachines_ResultSet1 as CloneMachine,
+} from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableRowSelection } from 'antd/es/table/interface';
 
 interface AssignMachinesToCloneModalProps {
   open: boolean;
-  clone: CephRbdClone | null;
+  clone: CephClone | null;
   poolName: string;
   imageName: string;
   snapshotName: string;
@@ -49,24 +48,14 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
 
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingAvailable } =
-    useAvailableMachinesForClone(teamName, open && !!clone) as {
-      data?: AvailableMachine[];
-      isLoading: boolean;
-    };
+    useGetAvailableMachinesForClone(teamName);
 
   // Fetch currently assigned machines
   const {
     data: assignedMachines = [],
     isLoading: loadingAssigned,
     refetch: refetchAssigned,
-  } = useCloneMachines(
-    clone?.cloneName ?? '',
-    snapshotName,
-    imageName,
-    poolName,
-    teamName,
-    open && !!clone
-  ) as { data?: CloneMachine[]; isLoading: boolean; refetch: () => Promise<unknown> };
+  } = useGetCloneMachines(clone?.cloneName ?? '', snapshotName, imageName, poolName, teamName);
 
   // Mutations
   const assignMutation = useUpdateCloneMachineAssignments();
@@ -139,10 +128,10 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     }
 
     return (
-      <Flex vertical gap={16} className="w-full">
-        <Alert message={t('ceph:clones.assignMachinesInfo')} type="info" showIcon />
+      <Flex vertical className="w-full">
+        <Alert message={t('ceph:clones.assignMachinesInfo')} type="info" />
 
-        <Flex vertical gap={8} className="w-full">
+        <Flex vertical className="gap-sm w-full">
           <Typography.Text>{t('ceph:machines.selectMachines')}:</Typography.Text>
           <Select
             mode="multiple"
@@ -186,7 +175,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       dataIndex: 'machineName',
       key: 'machineName',
       renderWrapper: (content) => (
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <CloudServerOutlined />
           <Typography.Text>{content}</Typography.Text>
         </Flex>
@@ -213,17 +202,16 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     };
 
     return (
-      <Flex vertical gap={16} className="w-full">
-        <Alert message={t('ceph:clones.removeMachinesInfo')} type="warning" showIcon />
+      <Flex vertical className="w-full">
+        <Alert message={t('ceph:clones.removeMachinesInfo')} type="warning" />
 
         <Table<CloneMachine>
           rowSelection={rowSelection}
           columns={columns}
           dataSource={assignedMachines}
           rowKey="machineName"
-          size="small"
           pagination={false}
-          scroll={{ y: 300 }}
+          scroll={{ x: 'max-content', y: 300 }}
           data-testid="assign-clone-machines-table"
         />
 
@@ -271,7 +259,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
     <SizedModal
       data-testid="assign-clone-modal"
       title={
-        <Flex align="center" gap={8} wrap>
+        <Flex align="center" wrap>
           <CopyOutlined />
           {t('ceph:clones.manageMachines')}
           {clone && <Tag bordered={false}>{clone.cloneName}</Tag>}

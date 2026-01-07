@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Flex, Space, Tooltip, Typography } from 'antd';
 import { CloudServerOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface BulkActionsToolbarProps {
   selectedRowKeys: string[];
@@ -10,7 +10,7 @@ interface BulkActionsToolbarProps {
   onAssignToCluster: () => void;
   onRemoveFromCluster: () => void;
   onViewAssignmentStatus: () => void;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
@@ -36,7 +36,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
             data-testid="machine-bulk-clear-selection"
             aria-label={t('common:actions.clearSelection')}
           >
-            Clear
+            {t('common:actions.clearSelection')}
           </Button>
         </Tooltip>
       </Space>

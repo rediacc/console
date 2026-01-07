@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "已取消",
+    "completed": "已完成",
+    "failed": "失败",
+    "pending": "待处理",
+    "processing": "处理中",
+    "running": "运行中",
+    "success": "成功",
+    "unknown": "未知",
+    "inProgress": "进行中",
+    "initializing": "初始化中..."
+  },
+  "actions": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "create": "创建",
+    "edit": "编辑",
+    "copy": "复制",
+    "retry": "重试",
+    "refresh": "刷新",
+    "close": "关闭",
+    "download": "下载",
+    "upload": "上传",
+    "remove": "移除",
+    "confirm": "确认",
+    "reset": "重置",
+    "back": "返回",
+    "search": "搜索",
+    "export": "导出"
+  },
+  "common": {
+    "yes": "是",
+    "no": "否",
+    "loading": "加载中...",
+    "error": "错误",
+    "warning": "警告",
+    "success": "成功",
+    "unknown": "未知",
+    "total": "总计",
+    "none": "无"
+  },
+  "validation": {
+    "required": "此字段为必填项",
+    "invalidEmail": "请输入有效的电子邮件地址",
+    "invalidFormat": "格式无效"
+  },
+  "time": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "last7Days": "最近7天",
+    "last30Days": "最近30天",
+    "thisMonth": "本月",
+    "lastMonth": "上月"
+  },
+  "confirm": {
+    "areYouSure": "您确定吗？",
+    "confirmDelete": "您确定要删除此项吗？"
+  },
+  "notifications": {
+    "error": "错误",
+    "warning": "警告",
+    "success": "成功",
+    "info": "信息"
+  }
+}

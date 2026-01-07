@@ -1,3 +1,8 @@
+import {
+  validateSize,
+  validateNetworkId,
+  validateSSHPrivateKey,
+} from '@rediacc/shared/queue-vault';
 import type { Rule } from 'antd/es/form';
 
 export { isValidGuid } from '@rediacc/shared/validation';
@@ -20,12 +25,41 @@ export const validationRules = {
     { max: 100, message: `${resourceType} name must be less than 100 characters` },
   ],
 
+  /** Validates size format (e.g., "20G", "500M", "1T") using shared renet-compatible validation */
   sizeFormat: (): Rule => ({
     validator: (_, value: string | undefined) => {
       if (!value?.trim()) return Promise.resolve();
-      const match = value.match(/^(\d+)([GT])$/);
-      if (!match || parseInt(match[1], 10) <= 0) {
-        return Promise.reject(new Error('Invalid size format (e.g., 10G, 100G, 1T)'));
+      const result = validateSize(value);
+      if (!result.valid) {
+        return Promise.reject(new Error(result.error));
+      }
+      return Promise.resolve();
+    },
+  }),
+
+  /** Validates network ID format (>= 2816 and follows 2816 + n*64 pattern) */
+  networkId: (): Rule => ({
+    validator: (_, value: number | string | undefined) => {
+      if (value === undefined || value === '') return Promise.resolve();
+      const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (isNaN(numValue)) {
+        return Promise.reject(new Error('Network ID must be a number'));
+      }
+      const result = validateNetworkId(numValue);
+      if (!result.valid) {
+        return Promise.reject(new Error(result.error));
+      }
+      return Promise.resolve();
+    },
+  }),
+
+  /** Validates SSH private key format (PEM format) */
+  sshPrivateKey: (): Rule => ({
+    validator: (_, value: string | undefined) => {
+      if (!value?.trim()) return Promise.resolve();
+      const result = validateSSHPrivateKey(value);
+      if (!result.valid) {
+        return Promise.reject(new Error(result.error));
       }
       return Promise.resolve();
     },

@@ -1,12 +1,24 @@
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Button, Card, Drawer, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Drawer,
+  Flex,
+  Grid,
+  Modal,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useMachines } from '@/api/queries/machines';
-import { useRepositories } from '@/api/queries/repositories';
-import { RemoteFileBrowserModal } from '@/components/common';
+import { useGetTeamMachines } from '@/api/api-hooks.generated';
+import { useGetTeamRepositories } from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { RemoteFileBrowserModal } from '@/components/common/RemoteFileBrowserModal';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
@@ -42,6 +54,8 @@ const MachineReposPage: React.FC = () => {
 
   // Use shared panel width hook (33% of window, min 300px, max 700px)
   const panelWidth = usePanelWidth();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   // Queue trace modal state
   const queueTrace = useQueueTraceModal();
@@ -68,7 +82,7 @@ const MachineReposPage: React.FC = () => {
     isLoading: machinesLoading,
     error: machinesError,
     refetch: refetchMachines,
-  } = useMachines(initialTeamName ? [initialTeamName] : undefined, true);
+  } = useGetTeamMachines(initialTeamName ?? undefined);
 
   // Derive machine from route state or API data (no setState needed)
   const machine = useMemo(() => {
@@ -85,8 +99,8 @@ const MachineReposPage: React.FC = () => {
   const { createRepository } = useRepositoryCreation(machines);
 
   // Fetch repositories (needed for MachineRepositoryTable)
-  const { data: repositories = [], refetch: refetchRepos } = useRepositories(
-    machine?.teamName ? [machine.teamName] : undefined
+  const { data: repositories = [], refetch: refetchRepos } = useGetTeamRepositories(
+    machine?.teamName ?? undefined
   );
 
   const refreshData = useCallback(async () => {
@@ -144,7 +158,7 @@ const MachineReposPage: React.FC = () => {
     const mappedRepo: Repository = {
       repositoryName: repoRow.name,
       repositoryGuid: repoRow.originalGuid ?? repoRow.name,
-      teamName: machine!.teamName,
+      teamName: machine!.teamName ?? '',
       vaultVersion: 0,
       vaultContent: null,
       grandGuid: '',
@@ -204,7 +218,6 @@ const MachineReposPage: React.FC = () => {
                 </Flex>
               }
               type="error"
-              showIcon
             />
           </Flex>
         </Card>
@@ -226,7 +239,7 @@ const MachineReposPage: React.FC = () => {
   ];
 
   const header = (
-    <Flex align="center" gap={8} wrap>
+    <Flex align="center" wrap>
       <Tooltip title={t('machines:backToMachines')}>
         <Button
           type="text"
@@ -308,7 +321,37 @@ const MachineReposPage: React.FC = () => {
     />
   ) : null;
 
-  const drawer = (
+  const panelContent =
+    selectedResource &&
+    ('repositoryName' in selectedResource ? (
+      <RepositoryDetailPanel
+        repository={selectedResource}
+        visible
+        onClose={handlePanelClose}
+        splitView
+      />
+    ) : (
+      <ContainerDetailPanel
+        container={selectedResource as unknown as ContainerData}
+        visible
+        onClose={handlePanelClose}
+        splitView
+      />
+    ));
+
+  const drawer = isMobile ? (
+    <Modal
+      open={!!selectedResource}
+      onCancel={handlePanelClose}
+      footer={null}
+      width="100%"
+      styles={{ body: { padding: 0 } }}
+      data-testid="machine-repositories-modal"
+      centered
+    >
+      {panelContent}
+    </Modal>
+  ) : (
     <Drawer
       open={!!selectedResource}
       onClose={handlePanelClose}
@@ -317,22 +360,7 @@ const MachineReposPage: React.FC = () => {
       mask
       data-testid="machine-repositories-drawer"
     >
-      {selectedResource &&
-        ('repositoryName' in selectedResource ? (
-          <RepositoryDetailPanel
-            repository={selectedResource}
-            visible
-            onClose={handlePanelClose}
-            splitView
-          />
-        ) : (
-          <ContainerDetailPanel
-            container={selectedResource as unknown as ContainerData}
-            visible
-            onClose={handlePanelClose}
-            splitView
-          />
-        ))}
+      {panelContent}
     </Drawer>
   );
 
@@ -361,9 +389,9 @@ const MachineReposPage: React.FC = () => {
         <RemoteFileBrowserModal
           open={fileBrowserModal.isOpen}
           onCancel={fileBrowserModal.close}
-          machineName={fileBrowserModal.state.data.machineName}
-          teamName={fileBrowserModal.state.data.teamName}
-          bridgeName={fileBrowserModal.state.data.bridgeName}
+          machineName={fileBrowserModal.state.data.machineName ?? ''}
+          teamName={fileBrowserModal.state.data.teamName ?? ''}
+          bridgeName={fileBrowserModal.state.data.bridgeName ?? ''}
           onQueueItemCreated={(taskId: string) => {
             queueTrace.open(taskId, fileBrowserModal.state.data?.machineName ?? undefined);
             fileBrowserModal.close();

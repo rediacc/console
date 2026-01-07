@@ -1,7 +1,26 @@
-import { type TFunction } from 'i18next';
-import type { QueueFunction } from '@/api/queries/queue';
+import type {
+  QueueActionResult,
+  TypedQueueActionParams,
+  DynamicQueueActionParams,
+} from '@/services/queue';
 import { showMessage } from '@/utils/messages';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
+import type { QueueFunction } from '@rediacc/shared/types';
 import type { Repository } from '../types';
+
+// Re-export typed function data interfaces from handlers/types.ts
+export type {
+  PushFunctionParams,
+  ForkFunctionParams,
+  PullFunctionParams,
+  CustomFunctionParams,
+  PushFunctionData,
+  ForkFunctionData,
+  PullFunctionData,
+  CustomFunctionData,
+  BaseFunctionData,
+} from '../handlers/types';
 
 export interface FunctionExecutionContext {
   selectedRepository: Repository | null;
@@ -29,12 +48,14 @@ export interface FunctionExecutionContext {
     storageName: string;
     vaultContent?: string;
   }[];
-  executeAction: (params: unknown) => Promise<{
-    success: boolean;
-    taskId?: string;
-    isQueued?: boolean;
-    error?: string;
-  }>;
+  executeTyped: <F extends BridgeFunctionName>(
+    functionName: F,
+    params: Omit<TypedQueueActionParams<F>, 'functionName'>
+  ) => Promise<QueueActionResult>;
+  executeDynamic: (
+    functionName: BridgeFunctionName,
+    params: Omit<DynamicQueueActionParams, 'functionName'>
+  ) => Promise<QueueActionResult>;
   createRepositoryCredential: (
     name: string,
     tag: string
@@ -47,7 +68,7 @@ export interface FunctionExecutionContext {
   }>;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
   closeModal: () => void;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export interface FunctionData {
@@ -77,9 +98,9 @@ export const getGrandRepoVault = (
 };
 
 export const getRequiredTag = (
-  params: Record<string, unknown>,
+  params: { tag?: string } | Record<string, unknown>,
   errorMsg: string,
-  _t: TFunction,
+  _t: TypedTFunction,
   closeModal: () => void
 ): string | null => {
   const tag = typeof params.tag === 'string' ? params.tag.trim() : '';
@@ -95,7 +116,7 @@ export const showMultiTargetSummary = (
   taskIds: string[],
   total: number,
   keys: { success: string; partial: string; allFailed: string },
-  t: TFunction,
+  t: TypedTFunction,
   onQueueItemCreated?: (taskId: string, machineName: string) => void,
   machineName?: string
 ) => {

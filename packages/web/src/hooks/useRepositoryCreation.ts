@@ -1,7 +1,7 @@
 ﻿import { useTranslation } from 'react-i18next';
+import { useCreateRepository } from '@/api/api-hooks.generated';
+import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { typedApi } from '@/api/client';
-import { useCreateRepository } from '@/api/queries/repositories';
-import { useTeams } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
@@ -36,17 +36,19 @@ interface UseRepoCreationReturn {
  * Custom hook for handling repository creation with optional queue item creation
  * Consolidates the two-step process:
  * 1. Create repository credentials
- * 2. Queue the "new" function to create repository on machine (if machine and size provided)
+ * 2. Queue the "repository_create" function to create repository on machine (if machine and size provided)
  */
 export function useRepositoryCreation(machines: Machine[]): UseRepoCreationReturn {
   const { t } = useTranslation(['resources', 'repositories']);
   const createRepositoryMutation = useCreateRepository();
   const createQueueItemMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
-  const { data: teamsList = [] } = useTeams();
+  const { data: teamsList = [] } = useGetOrganizationTeams();
   const { data: dropdownData } = useDropdownData();
 
-  const isCreating = createRepositoryMutation.isPending || createQueueItemMutation.isPending;
+  const isCreating = [createRepositoryMutation.isPending, createQueueItemMutation.isPending].some(
+    Boolean
+  );
 
   const createRepository = async (data: RepoCreationData): Promise<RepoCreationResult> => {
     try {
@@ -57,9 +59,12 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
       if (data.machineName && data.size && !isCredentialOnlyMode) {
         // Step 1: Create the repository credentials
         const { machineName, size, ...repositoryData } = data;
-        await createRepositoryMutation.mutateAsync(repositoryData);
+        await createRepositoryMutation.mutateAsync({
+          ...repositoryData,
+          vaultContent: repositoryData.vaultContent ?? '{}',
+        });
 
-        // Step 2: Queue the "new" function to create the repository on the machine
+        // Step 2: Queue the "repository_create" function to create the repository on the machine
         try {
           // Find the machine details from dropdown data
           const teamData = dropdownData?.machinesByTeam.find(
@@ -100,7 +105,7 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
             return { success: false, error: 'Failed to get repository GUID' };
           }
 
-          // Build queue vault for the "new" function
+          // Build queue vault for the "repository_create" function
           const params: Record<string, string> = {
             repository: repositoryGuid,
             size,
@@ -120,7 +125,7 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
             teamName: data.teamName,
             machineName: machineData.value,
             bridgeName: machineData.bridgeName,
-            functionName: 'new',
+            functionName: 'repository_create',
             params,
             priority: 3,
             addedVia: 'repository-creation',
@@ -128,8 +133,8 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
             machineVault: fullMachine?.vaultContent ?? '{}',
             repositoryVault,
             repositoryGuid,
-            repositoryNetworkId: createdRepository?.repositoryNetworkId,
-            repositoryNetworkMode: createdRepository?.repositoryNetworkMode,
+            repositoryNetworkId: createdRepository?.repositoryNetworkId ?? undefined,
+            repositoryNetworkMode: createdRepository?.repositoryNetworkMode ?? undefined,
             repositoryTag: createdRepository?.repositoryTag,
           });
 
@@ -158,7 +163,10 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
         }
       } else {
         // Create repository credentials only (no machine provisioning)
-        await createRepositoryMutation.mutateAsync(data);
+        await createRepositoryMutation.mutateAsync({
+          ...data,
+          vaultContent: data.vaultContent ?? '{}',
+        });
         showMessage('success', t('repositories.createSuccess'));
         return { success: true };
       }

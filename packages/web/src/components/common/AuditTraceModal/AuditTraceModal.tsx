@@ -1,8 +1,21 @@
 import React from 'react';
-import { Alert, Button, Dropdown, Flex, Modal, Space, Table, Tag, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Dropdown,
+  Flex,
+  Grid,
+  List,
+  Modal,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
-import { AuditTraceRecord, useEntityAuditTrace } from '@/api/queries/audit';
+import { useEntityAuditTraceWithEnabled } from '@/api/hooks-organization';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { MobileCard } from '@/components/common/MobileCard';
 import { useMessage } from '@/hooks';
 import { createDateSorter, createSorter, formatTimestampAsIs } from '@/platform';
 import type { BaseModalProps } from '@/types';
@@ -24,6 +37,7 @@ import {
   PlusCircleOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import type { AuditTraceRecord } from '@rediacc/shared/types';
 
 const { Text: AntText } = Typography;
 
@@ -42,8 +56,10 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
 }) => {
   const { t } = useTranslation(['resources', 'common']);
   const message = useMessage();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.sm;
 
-  const { data, isLoading, error } = useEntityAuditTrace(
+  const { data, isLoading, error } = useEntityAuditTraceWithEnabled(
     entityType,
     entityIdentifier,
     open // Only fetch when modal is open
@@ -227,7 +243,6 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           message={t('audit.error')}
           description={error instanceof Error ? error.message : t('audit.errorLoading')}
           type="error"
-          showIcon
           data-testid="audit-trace-error-alert"
         />
       ) : data ? (
@@ -235,7 +250,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           {/* Summary Section */}
           <Flex vertical className="w-full" data-testid="audit-trace-summary">
             <Flex align="center" justify="space-between" wrap>
-              <Flex gap={24} wrap>
+              <Flex className="gap-md" wrap>
                 <Flex vertical data-testid="audit-trace-total-records">
                   <AntText type="secondary">{t('audit.totalRecords')}</AntText>
                   <Typography.Text strong>{data.summary.totalAuditRecords}</Typography.Text>
@@ -247,9 +262,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                 {data.summary.lastActivity && (
                   <Flex vertical data-testid="audit-trace-last-activity">
                     <AntText type="secondary">{t('audit.lastActivity')}</AntText>
-                    <AntText strong>
-                      {new Date(data.summary.lastActivity).toLocaleDateString()}
-                    </AntText>
+                    <AntText strong>{new Date(data.summary.lastActivity).toLocaleString()}</AntText>
                   </Flex>
                 )}
               </Flex>
@@ -284,25 +297,65 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
             </Flex>
           </Flex>
 
-          {/* Records Table */}
-          <Table<AuditTraceRecord>
-            columns={columns}
-            dataSource={data.records}
-            rowKey={(record, index) => `${record.timestamp}-${index}`}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: false,
-              showTotal: (total, range) =>
-                t('common:general.showingRecords', {
-                  start: range[0],
-                  end: range[1],
-                  total,
-                }),
-            }}
-            scroll={{ x: 800 }}
-            size="small"
-            data-testid="audit-trace-table"
-          />
+          {/* Records Table / List */}
+          {isMobile ? (
+            <List
+              dataSource={data.records}
+              data-testid="audit-trace-table"
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: false,
+                showTotal: (total, range) =>
+                  t('common:general.showingRecords', {
+                    start: range[0],
+                    end: range[1],
+                    total,
+                  }),
+              }}
+              renderItem={(record, index) => (
+                <List.Item key={`${record.timestamp}-${index}`}>
+                  <MobileCard>
+                    <Flex align="center" justify="space-between">
+                      <Space data-testid={`audit-trace-action-${index}`}>
+                        {getIcon(record.iconHint ?? 'info')}
+                        <Tag data-testid={`audit-trace-action-tag-${index}`}>
+                          {record.actionType}
+                        </Tag>
+                      </Space>
+                      <Typography.Text type="secondary">{record.timeAgo}</Typography.Text>
+                    </Flex>
+                    {record.details && (
+                      <Typography.Text type="secondary">{record.details}</Typography.Text>
+                    )}
+                    <Typography.Text
+                      type="secondary"
+                      data-testid={`audit-trace-performed-by-${index}`}
+                    >
+                      {t('audit.performedBy')}: {record.performedBy ?? t('audit.system')}
+                    </Typography.Text>
+                  </MobileCard>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Table<AuditTraceRecord>
+              columns={columns}
+              dataSource={data.records}
+              rowKey={(record, index) => `${record.timestamp}-${index}`}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: false,
+                showTotal: (total, range) =>
+                  t('common:general.showingRecords', {
+                    start: range[0],
+                    end: range[1],
+                    total,
+                  }),
+              }}
+              scroll={{ x: 800 }}
+              data-testid="audit-trace-table"
+            />
+          )}
 
           {/* Alternative Timeline View (could be toggled) */}
           {/* {renderTimelineView()} */}

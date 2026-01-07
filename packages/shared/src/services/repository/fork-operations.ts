@@ -17,8 +17,8 @@ export interface ForkDeletionValidationResult {
  * Fork parent information
  */
 export interface ForkParent {
-  repositoryGuid: string;
-  repositoryName: string;
+  repositoryGuid: string | null;
+  repositoryName: string | null;
   repositoryTag?: string | null;
 }
 
@@ -130,9 +130,9 @@ export function canForkRepo(_repo: RepositoryWithRelations): boolean {
 /**
  * Get the grandGuid to use when forking a repository
  * @param repository - Repository being forked
- * @returns The grandGuid for the new fork
+ * @returns The grandGuid for the new fork, or null if repository has no GUID
  */
-export function getGrandGuidForFork(repository: RepositoryWithRelations): string {
+export function getGrandGuidForFork(repository: RepositoryWithRelations): string | null {
   // If forking a fork, use the same grand
   // If forking a credential, the credential becomes the grand
   return repository.grandGuid ?? repository.repositoryGuid;

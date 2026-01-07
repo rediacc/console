@@ -9,8 +9,8 @@ import { isCredential, isFork, type RepositoryWithRelations } from './core';
  * Child clone information
  */
 export interface ChildClone {
-  repositoryGuid: string;
-  repositoryName: string;
+  repositoryGuid: string | null;
+  repositoryName: string | null;
   repositoryTag?: string | null;
 }
 

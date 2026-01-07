@@ -1,16 +1,17 @@
 import { Command } from 'commander';
 import {
-  parseGetCompanyTeams,
+  parseGetOrganizationTeams,
   parseGetTeamMembers,
-  parseGetCompanyVaults,
+  parseGetOrganizationVaults,
 } from '@rediacc/shared/api';
 import type {
   CreateTeamParams,
   DeleteTeamParams,
   UpdateTeamNameParams,
   UpdateTeamVaultParams,
-  GetCompanyVaults_ResultSet1,
+  GetOrganizationVaults_ResultSet1,
 } from '@rediacc/shared/types';
+import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
@@ -28,8 +29,8 @@ export function registerTeamCommands(program: Command): void {
     parentOption: 'none',
     operations: {
       list: async () => {
-        const response = await typedApi.GetCompanyTeams({});
-        return parseGetCompanyTeams(response as never);
+        const response = await typedApi.GetOrganizationTeams({});
+        return parseGetOrganizationTeams(response as never);
       },
       create: async (payload) => {
         await typedApi.CreateTeam(payload as unknown as CreateTeamParams);
@@ -46,9 +47,9 @@ export function registerTeamCommands(program: Command): void {
     }),
     vaultConfig: {
       fetch: async () => {
-        const response = await typedApi.GetCompanyVaults({});
-        const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+        const response = await typedApi.GetOrganizationVaults({});
+        const vaults = parseGetOrganizationVaults(response as never);
+        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Team',
     },
@@ -61,20 +62,20 @@ export function registerTeamCommands(program: Command): void {
   });
 
   // Add team member subcommand
-  const member = team.command('member').description('Team membership management');
+  const member = team.command('member').description(t('commands.team.member.description'));
 
   // team member list
   member
     .command('list <teamName>')
-    .description('List team members')
+    .description(t('commands.team.member.list.description'))
     .action(async (teamName) => {
       try {
         await authService.requireAuth();
 
         const apiResponse = await withSpinner(
-          'Fetching team members...',
+          t('commands.team.member.list.fetching'),
           () => typedApi.GetTeamMembers({ teamName }),
-          'Members fetched'
+          t('commands.team.member.list.success')
         );
 
         const members = parseGetTeamMembers(apiResponse as never);
@@ -90,15 +91,15 @@ export function registerTeamCommands(program: Command): void {
   // team member add
   member
     .command('add <teamName> <userEmail>')
-    .description('Add a user to a team')
+    .description(t('commands.team.member.add.description'))
     .action(async (teamName, userEmail) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
-          `Adding ${userEmail} to team "${teamName}"...`,
+          t('commands.team.member.add.adding', { email: userEmail, team: teamName }),
           () => typedApi.CreateTeamMembership({ teamName, newUserEmail: userEmail }),
-          `User added to team "${teamName}"`
+          t('commands.team.member.add.success', { team: teamName })
         );
       } catch (error) {
         handleError(error);
@@ -108,15 +109,15 @@ export function registerTeamCommands(program: Command): void {
   // team member remove
   member
     .command('remove <teamName> <userEmail>')
-    .description('Remove a user from a team')
+    .description(t('commands.team.member.remove.description'))
     .action(async (teamName, userEmail) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
-          `Removing ${userEmail} from team "${teamName}"...`,
+          t('commands.team.member.remove.removing', { email: userEmail, team: teamName }),
           () => typedApi.DeleteUserFromTeam({ teamName, removeUserEmail: userEmail }),
-          `User removed from team "${teamName}"`
+          t('commands.team.member.remove.success', { team: teamName })
         );
       } catch (error) {
         handleError(error);

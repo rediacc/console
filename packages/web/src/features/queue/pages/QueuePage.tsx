@@ -13,7 +13,7 @@ import {
   type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { QueueFilters, type QueueStatistics, useQueueItems } from '@/api/queries/queue';
+import { useQueueItemsWithFilters } from '@/api/hooks-queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { buildQueueColumns } from '@/components/common/columns/builders/queueColumns';
 import { MobileCard } from '@/components/common/MobileCard';
@@ -37,31 +37,15 @@ import {
   ReloadOutlined,
   RocketOutlined,
 } from '@/utils/optimizedIcons';
-import type { GetTeamQueueItems_ResultSet1 as QueueItem } from '@rediacc/shared/types';
+import { getQueueStatusColor } from '@/utils/statusColors';
+import type { QueueFilters } from '@rediacc/shared/types';
+import type { QueueStatistics } from '@rediacc/shared/types';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { QueueFilterPanel } from '../components/QueueFilterPanel';
 import { QueueStatisticsBar } from '../components/QueueStatisticsBar';
 import { useQueueActions } from '../hooks/useQueueActions';
 import { useQueueExport } from '../hooks/useQueueExport';
 import type { Dayjs } from 'dayjs';
-
-const getStatusColor = (status: string): string => {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 'blue';
-    case 'assigned':
-      return 'cyan';
-    case 'processing':
-      return 'orange';
-    case 'completed':
-      return 'green';
-    case 'failed':
-      return 'red';
-    case 'cancelled':
-      return 'default';
-    default:
-      return 'default';
-  }
-};
 
 // Page-level filter state type
 type QueuePageFilters = {
@@ -146,7 +130,12 @@ const QueuePage: React.FC = () => {
     [filters, activeTab]
   );
 
-  const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters);
+  const {
+    data: queueData,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQueueItemsWithFilters(queryFilters);
   const { data: dropdownData } = useDropdownData();
 
   // Custom hooks for actions and export
@@ -170,11 +159,13 @@ const QueuePage: React.FC = () => {
   const completedCount = statistics.completedCount ?? 0;
   const cancelledCount = statistics.cancelledCount ?? 0;
 
-  const items: QueueItem[] = queueData?.items ?? [];
-  const activeItems = filterActiveItems(items);
-  const completedItems = filterCompletedItems(items);
-  const cancelledItems = filterCancelledItems(items);
-  const failedItems = filterFailedItems(items);
+  const items: GetTeamQueueItems_ResultSet1[] = queueData?.items ?? [];
+  // Normalize healthStatus from nullable to non-nullable for filter functions
+  const normalizedItems = items.map((item) => ({ ...item, healthStatus: item.healthStatus ?? '' }));
+  const activeItems = filterActiveItems(normalizedItems);
+  const completedItems = filterCompletedItems(normalizedItems);
+  const cancelledItems = filterCancelledItems(normalizedItems);
+  const failedItems = filterFailedItems(normalizedItems);
 
   // Export hook
   const { handleExport } = useQueueExport(items);
@@ -286,7 +277,7 @@ const QueuePage: React.FC = () => {
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: QueueItem) => {
+    () => (record: GetTeamQueueItems_ResultSet1) => {
       const canCancel = ['PENDING', 'ASSIGNED'].includes(record.status?.toUpperCase() ?? '');
       const menuItems: MenuProps['items'] = [
         ...(record.taskId
@@ -315,14 +306,14 @@ const QueuePage: React.FC = () => {
 
       return (
         <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
-          <Flex gap={8} align="center" wrap>
+          <Flex align="center" wrap>
             <Space size="small">
               <RocketOutlined />
               <Typography.Text strong className="truncate">
                 {truncatedTaskId}
               </Typography.Text>
             </Space>
-            <Tag color={getStatusColor(record.status ?? '')}>{record.status}</Tag>
+            <Tag color={getQueueStatusColor(record.status ?? '')}>{record.status}</Tag>
           </Flex>
           {record.machineName && (
             <Space size="small">
@@ -340,7 +331,7 @@ const QueuePage: React.FC = () => {
     <Flex vertical data-testid="queue-page-container">
       {contextHolder}
       <Flex vertical data-testid="queue-filters-card">
-        <Flex vertical gap={8} className="w-full">
+        <Flex vertical className="gap-sm w-full">
           <QueueFilterPanel
             filters={filters}
             dropdownData={dropdownData}

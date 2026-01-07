@@ -1,27 +1,25 @@
 import React from 'react';
 import { ConfigProvider, Flex } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import { Outlet } from 'react-router-dom';
 import logoBlack from '@/assets/logo_black.png';
+import logoWhite from '@/assets/logo_white.png';
 import LanguageSelector from '@/components/common/LanguageSelector';
+import { RootState } from '@/store/store';
 import { getThemeConfig } from '@/theme';
 
 const AuthLayout: React.FC = () => {
+  const { t } = useTranslation('common');
+  const themeMode = useSelector((state: RootState) => state.ui.themeMode);
+  const isDark = themeMode === 'dark';
+  const logo = isDark ? logoWhite : logoBlack;
+
   return (
-    <ConfigProvider theme={getThemeConfig(false)}>
-      <Flex
-        vertical
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ minHeight: '100vh' }}
-        data-testid="auth-layout-container"
-      >
+    <ConfigProvider theme={getThemeConfig(isDark)}>
+      <Flex vertical className="auth-layout" data-testid="auth-layout-container">
         {/* Language selector - top right corner */}
-        <Flex
-          className="auth-header"
-          justify="flex-end"
-          align="center"
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ padding: '16px 24px', position: 'absolute', top: 0, right: 0, zIndex: 1 }}
-        >
+        <Flex className="auth-header" justify="flex-end" align="center">
           <LanguageSelector iconOnly />
         </Flex>
 
@@ -36,12 +34,7 @@ const AuthLayout: React.FC = () => {
             data-testid="auth-layout-content"
           >
             {/* Logo centered above form */}
-            <img
-              src={logoBlack}
-              alt="Rediacc"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ height: 40, width: 'auto', objectFit: 'contain', marginBottom: 32 }}
-            />
+            <img src={logo} alt={t('alt.logo')} className="auth-logo" />
             <Outlet />
           </Flex>
         </Flex>

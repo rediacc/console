@@ -1,31 +1,16 @@
 import type { Machine, PluginContainer } from '@/types';
+import type { RepositoryInfo } from '@rediacc/shared/queue-vault/data/list-types.generated';
 
-export interface Repository {
-  name: string;
+// Repository extends generated RepositoryInfo with frontend-computed fields
+export interface Repository extends RepositoryInfo {
+  /** Repository tag for versioning (frontend-added) */
   repositoryTag?: string;
-  size: number;
-  size_human: string;
-  modified: number;
-  modified_human: string;
-  mounted: boolean;
-  mount_path: string;
-  image_path: string;
-  accessible: boolean;
-  has_rediaccfile: boolean;
-  docker_available: boolean;
-  docker_running: boolean;
-  container_count: number;
-  plugin_count: number;
-  has_services: boolean;
-  service_count: number;
+  /** Plugin container count (computed from containers) */
+  plugin_count?: number;
+  /** Whether this repository is unmapped from API data (frontend-added) */
   isUnmapped?: boolean;
+  /** Original GUID before name resolution (frontend-added) */
   originalGuid?: string;
-  disk_space?: {
-    total: string;
-    used: string;
-    available: string;
-    use_percent: string;
-  };
 }
 
 export interface GroupedRepository {

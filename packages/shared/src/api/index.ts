@@ -17,3 +17,7 @@ export type {
 
 // Parsers - export all including base extraction utilities
 export * from './parsers';
+
+// Client factory and adapters
+export * from './client';
+export * from './adapters';

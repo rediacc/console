@@ -17,13 +17,15 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
   return (
     <>
       <Row gutter={[16, 16]}>
-        <Col span={12}>
+        <Col xs={24} lg={12}>
           <Card size="small" title={t('trace.tasksBefore')}>
             <Flex vertical className="overflow-auto">
               {tasksBefore.map((item, index) => (
-                <Flex key={index}>
-                  <Space>
-                    <Typography.Text code>{item.taskId}</Typography.Text>
+                <Flex key={index} wrap>
+                  <Space wrap>
+                    <Typography.Text code className="break-all">
+                      {item.taskId}
+                    </Typography.Text>
                     <Tag>{item.status}</Tag>
                     <Typography.Text>{dayjs(item.createdTime).fromNow()}</Typography.Text>
                   </Space>
@@ -35,20 +37,25 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
             </Flex>
           </Card>
         </Col>
-        <Col span={12}>
+        <Col xs={24} lg={12}>
           <Card size="small" title={t('trace.tasksAfter')}>
             <Flex vertical className="overflow-auto">
               {tasksAfter.map((item, index) => (
-                <Flex key={index}>
-                  <Space>
-                    <Typography.Text code>{item.taskId}</Typography.Text>
+                <Flex key={index} wrap>
+                  <Space wrap>
+                    <Typography.Text code className="break-all">
+                      {item.taskId}
+                    </Typography.Text>
                     <Tag>{item.status}</Tag>
                     <Typography.Text>{dayjs(item.createdTime).fromNow()}</Typography.Text>
                   </Space>
                 </Flex>
               ))}
               {tasksAfter.length === 0 && (
-                <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty
+                  description={t('trace.noTasksBehind')}
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
               )}
             </Flex>
           </Card>
@@ -56,7 +63,7 @@ export const RelatedQueueItems: React.FC<RelatedQueueItemsProps> = ({ queuePosit
       </Row>
       <Flex>
         <Typography.Text>
-          Total: {tasksBefore.length} tasks ahead, {tasksAfter.length} tasks behind
+          {t('trace.totalTasksSummary', { ahead: tasksBefore.length, behind: tasksAfter.length })}
         </Typography.Text>
       </Flex>
     </>

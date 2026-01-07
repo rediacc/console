@@ -30,8 +30,8 @@ export const QUERY_KEY_STRINGS = {
   dropdown: 'dropdown-data',
   permissionGroups: 'permissionGroups',
   permissionGroup: 'permissionGroup',
-  company: 'company',
-  companyVault: 'company-vault',
+  organization: 'organization',
+  organizationVault: 'organization-vault',
   queueItems: 'queue-items',
 } as const;
 
@@ -70,13 +70,13 @@ export const QUERY_KEYS = {
     groupsList: ['permission-groups'] as const,
   },
 
-  // Company
-  company: {
-    info: ['company-info'] as const,
-    base: ['company'] as const,
-    vault: (company?: string) => ['company-vault', company] as const,
-    allVaults: ['company-all-vaults'] as const,
-    exportData: ['company-export-data'] as const,
+  // Organization
+  organization: {
+    info: ['organization-info'] as const,
+    base: ['organization'] as const,
+    vault: (organization?: string) => ['organization-vault', organization] as const,
+    allVaults: ['organization-all-vaults'] as const,
+    exportData: ['organization-export-data'] as const,
   },
 
   // Dashboard
@@ -120,7 +120,7 @@ export const QUERY_KEYS = {
 
   // Vault Protocol
   vaultProtocol: {
-    companyVault: ['company-vault'] as const,
+    organizationVault: ['organization-vault'] as const,
   },
 
   // Health

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Alert, Flex, Form, Row } from 'antd';
+import { FORM_LAYOUTS } from '@/config/formLayouts';
 import { useMessage } from '@/hooks';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
@@ -29,8 +30,8 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
     onImportExport,
     isEditMode = false,
     uiMode = 'expert',
-    teamName = 'Default Team',
-    bridgeName = 'Default Bridge',
+    teamName = 'Private Team',
+    bridgeName = 'Global Bridges',
   } = props;
 
   // Use the custom hook for state management
@@ -176,7 +177,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
         teamName,
         machineName: '',
         bridgeName,
-        functionName: 'ssh_test',
+        functionName: 'machine_ssh_test',
         params: {},
         priority: 1,
         addedVia: 'vault-editor',
@@ -229,7 +230,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
   return (
     <Flex vertical>
       {uiMode !== 'simple' && (
-        <Alert message={t(`vaultEditor.${entityDef.descriptionKey}`)} type="info" showIcon />
+        <Alert message={t(`vaultEditor.${entityDef.descriptionKey}`)} type="info" />
       )}
 
       {/* Warning for TEAM vault without SSH keys */}
@@ -238,15 +239,12 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
           message={t('vaultEditor.missingSshKeysWarning')}
           description={t('vaultEditor.missingSshKeysDescription')}
           type="warning"
-          showIcon
         />
       )}
 
       <Form
         form={form}
-        layout="horizontal"
-        labelCol={{ xs: { span: 24 }, sm: { span: 8 } }}
-        wrapperCol={{ xs: { span: 24 }, sm: { span: 16 } }}
+        {...FORM_LAYOUTS.responsiveHorizontal}
         labelAlign="right"
         colon
         validateTrigger={false}
@@ -319,7 +317,6 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
           <VaultEditorRawJson
             rawJsonValue={rawJsonValue}
             rawJsonError={rawJsonError ?? undefined}
-            uiMode={uiMode}
             onChange={onRawJsonChange}
             t={t}
           />

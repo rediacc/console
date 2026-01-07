@@ -2,11 +2,11 @@
  * Vault Protocol utilities for encryption detection
  *
  * The protocol works as follows:
- * 1. VaultCompany is the Company's vault content returned during login
- * 2. If VaultCompany is encrypted (base64 pattern), all users must provide the master password
+ * 1. VaultOrganization is the Organization's vault content returned during login
+ * 2. If VaultOrganization is encrypted (base64 pattern), all users must provide the master password
  * 3. The master password is stored in secure memory and used to encrypt/decrypt vault fields
- * 4. The encrypted VaultCompany serves as an indicator that encryption is enabled
- * 5. All users in a company must use the same master password
+ * 4. The encrypted VaultOrganization serves as an indicator that encryption is enabled
+ * 5. All users in an organization must use the same master password
  */
 
 // Base64 pattern for encrypted values - matches output from encryptText
@@ -37,29 +37,29 @@ export function isEncrypted(value: string | null | undefined): boolean {
  * Protocol states for UI feedback
  */
 export enum VaultProtocolState {
-  // Company has not enabled encryption
+  // Organization has not enabled encryption
   NOT_ENABLED = 'NOT_ENABLED',
-  // Company has encryption, user needs to provide password
+  // Organization has encryption, user needs to provide password
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
-  // Company has encryption, user provided wrong password
+  // Organization has encryption, user provided wrong password
   INVALID_PASSWORD = 'INVALID_PASSWORD',
-  // Company has encryption, password is valid
+  // Organization has encryption, password is valid
   VALID = 'VALID',
-  // User provided password but company hasn't enabled encryption
+  // User provided password but organization hasn't enabled encryption
   PASSWORD_NOT_NEEDED = 'PASSWORD_NOT_NEEDED',
 }
 
 /**
- * Analyze vault protocol state based on VaultCompany and user input
+ * Analyze vault protocol state based on VaultOrganization and user input
  */
 export function analyzeVaultProtocolState(
-  vaultCompany: string | null | undefined,
+  vaultOrganization: string | null | undefined,
   userProvidedPassword: boolean,
   passwordValid?: boolean
 ): VaultProtocolState {
-  const companyHasEncryption = isEncrypted(vaultCompany);
+  const organizationHasEncryption = isEncrypted(vaultOrganization);
 
-  if (!companyHasEncryption) {
+  if (!organizationHasEncryption) {
     return userProvidedPassword
       ? VaultProtocolState.PASSWORD_NOT_NEEDED
       : VaultProtocolState.NOT_ENABLED;

@@ -21,7 +21,8 @@
       "helpText": "معلمات rclone إضافية للتكوين المتقدم",
       "label": "معلمات إضافية",
       "placeholder": "- التحويلات 4 - لعبة الداما 8"
-    }
+    },
+    "tips": "نصائح"
   },
   "storageProviders": {
     "azureblob": {
@@ -271,11 +272,11 @@
         "url": {
           "helpText": "عنوان URL لمثيل FileFabric",
           "label": "عنوان URL",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "يوفر FileFabric نظامًا أساسيًا لإدارة البيانات السحابية المتعددة للمؤسسات.",
-      "name": "FileFabric",
+      "name": "فيل فابريك",
       "tips": [
         "حل البوابة السحابية المتعددة",
         "النشر المحلي متاح",
@@ -299,7 +300,7 @@
         "site": {
           "helpText": "النطاق الفرعي Files.com الخاص بك",
           "label": "النطاق الفرعي للموقع",
-          "placeholder": "com.mycompany"
+          "placeholder": "com.myorganization"
         },
         "username": {
           "helpText": "اسم المستخدم Files.com",
@@ -308,7 +309,7 @@
         }
       },
       "helpText": "Files.com عبارة عن خدمة FTP/SFTP سحابية مع ميزات أتمتة وأمان متقدمة.",
-      "name": "Files.com",
+      "name": "فايلز دوت كوم",
       "tips": [
         "أمان على مستوى المؤسسات",
         "سير العمل الآلي",
@@ -734,7 +735,7 @@
       ]
     },
     "netstorage": {
-      "description": "Akamai NetStorage CDN",
+      "description": "شبكة توصيل المحتوى Akamai NetStorage",
       "fields": {
         "account": {
           "helpText": "اسم حساب NetStorage",
@@ -892,7 +893,7 @@
         }
       },
       "helpText": "يوفر pCloud تخزينًا سحابيًا آمنًا مع خيار التشفير من جانب العميل. لديها مناطق الاتحاد الأوروبي والولايات المتحدة.",
-      "name": "pCloud",
+      "name": "بي كلاود",
       "tips": [
         "اختر منطقة الاتحاد الأوروبي أو الولايات المتحدة بناءً على موقعك",
         "يوفر مجلد التشفير التشفير من جانب العميل",
@@ -956,7 +957,7 @@
         }
       },
       "helpText": "Premiumize.me هي خدمة متعددة المضيفين توفر إمكانيات التخزين والتنزيل السحابي.",
-      "name": "Premiumize.me",
+      "name": "بريميوميز دوت مي",
       "tips": [
         "يجمع بين التخزين السحابي وخدمة التنزيل",
         "يدعم العديد من مواقع استضافة الملفات",
@@ -1002,7 +1003,7 @@
         }
       },
       "helpText": "Put.io هي خدمة تخزين سحابية يمكنها جلب وبث ملفات التورنت.",
-      "name": "Put.io",
+      "name": "بوت دوت آي أو",
       "tips": [
         "متخصص في التعامل مع التورنت",
         "التحويل التلقائي للفيديو",
@@ -1233,7 +1234,7 @@
         "upload_endpoint": {
           "helpText": "عنوان URL لنقطة نهاية تحميل ShareFile",
           "label": "تحميل نقطة النهاية",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile عبارة عن نظام أساسي للتعاون في محتوى المؤسسات مع مشاركة آمنة للملفات.",
@@ -1449,7 +1450,7 @@
         }
       },
       "helpText": "Uloz.to هي خدمة استضافة ملفات شائعة في جمهورية التشيك وسلوفاكيا.",
-      "name": "Uloz.to",
+      "name": "أولوز دوت تو",
       "tips": [
         "شعبية في الأسواق التشيكية والسلوفاكية",
         "يدعم تحميل الملفات الكبيرة",

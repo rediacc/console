@@ -2,6 +2,10 @@ appId: com.rediacc.console
 productName: Rediacc Console
 copyright: Copyright © 2024 Rediacc
 
+# Skip native module rebuild on Windows (uses prebuilds instead)
+# See scripts/before-build.js for details
+beforeBuild: scripts/before-build.js
+
 directories:
   buildResources: resources
   output: ../../dist/desktop
@@ -25,6 +29,12 @@ win:
         - x64
   artifactName: rediacc-console-${version}-win-${arch}.${ext}
   icon: resources/icon.ico
+  # Bundle MSYS2 binaries for rsync/SSH functionality
+  extraResources:
+    - from: msys2-bundle
+      to: msys2-bundle
+      filter:
+        - '**/*'
 
 nsis:
   oneClick: false
@@ -52,6 +62,8 @@ mac:
   # gatekeeperAssess defaults to true, enabling macOS security verification
 
 dmg:
+  writeUpdateInfo: false
+  sign: false
   contents:
     - x: 130
       y: 220
@@ -104,6 +116,13 @@ publish:
   - provider: generic
     url: https://www.rediacc.com/updates/
     channel: latest
+
+# Protocol Handler (rediacc://)
+protocols:
+  - name: Rediacc Desktop
+    schemes:
+      - rediacc
+    role: Viewer
 
 # Extra Resources
 extraResources:

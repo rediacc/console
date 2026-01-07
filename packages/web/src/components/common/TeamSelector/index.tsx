@@ -2,10 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { Flex, Input, Select, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
-import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 interface TeamSelectorProps {
-  teams: Team[];
+  teams: GetOrganizationTeams_ResultSet1[];
   selectedTeams: string[];
   onChange: (selectedTeams: string[]) => void;
   loading?: boolean;
@@ -18,28 +18,28 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   selectedTeams,
   onChange,
   loading = false,
-  placeholder = 'Select teams...',
+  placeholder,
   style,
 }: TeamSelectorProps) => {
-  const { t } = useTranslation('resources');
+  const { t } = useTranslation(['resources', 'common']);
   const [searchValue, setSearchValue] = useState('');
 
   const filteredOptions = useMemo(() => {
     const filtered = teams.filter((team) =>
-      team.teamName.toLowerCase().includes(searchValue.toLowerCase())
+      (team.teamName ?? '').toLowerCase().includes(searchValue.toLowerCase())
     );
 
     return filtered.map((team) => ({
       label: (
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <Flex align="center" className="inline-flex">
             <TeamOutlined />
           </Flex>
-          <Typography.Text>{team.teamName}</Typography.Text>
+          <Typography.Text>{team.teamName ?? ''}</Typography.Text>
         </Flex>
       ),
-      value: team.teamName,
-      'data-testid': `team-selector-option-${team.teamName}`,
+      value: team.teamName ?? '',
+      'data-testid': `team-selector-option-${team.teamName ?? ''}`,
     }));
   }, [teams, searchValue]);
 
@@ -49,7 +49,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       className="w-full"
       // eslint-disable-next-line no-restricted-syntax
       style={style}
-      placeholder={placeholder}
+      placeholder={placeholder ?? t('common:teamSelector.selectTeams')}
       value={selectedTeams}
       onChange={(values) => onChange(values)}
       loading={loading}
@@ -91,7 +91,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       maxTagCount="responsive"
       maxTagPlaceholder={(omittedValues: unknown[]) => (
         <Tag className="inline-flex items-center" data-testid="team-selector-more-tag">
-          +{omittedValues.length} more
+          {t('common:teamSelector.moreTeams', { count: omittedValues.length })}
         </Tag>
       )}
     />

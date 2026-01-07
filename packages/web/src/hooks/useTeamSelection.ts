@@ -1,18 +1,18 @@
 import { useCallback, useMemo, useReducer } from 'react';
 import { useSelector } from 'react-redux';
-import { useTeams } from '@/api/queries/teams';
+import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { RootState } from '@/store/store';
-import type { GetCompanyTeams_ResultSet1 as Team } from '@rediacc/shared/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 export interface UseTeamSelectionOptions {
   /** Custom logic to select initial team (e.g., for simple UI mode) */
-  getInitialTeam?: (teams: Team[], uiMode: string) => string;
+  getInitialTeam?: (teams: GetOrganizationTeams_ResultSet1[], uiMode: string) => string;
   /** Whether to auto-select first team when none selected */
   autoSelect?: boolean;
 }
 
 export interface UseTeamSelectionReturn {
-  teams: Team[];
+  teams: GetOrganizationTeams_ResultSet1[];
   selectedTeams: string[];
   setSelectedTeams: (teams: string[]) => void;
   isLoading: boolean;
@@ -43,8 +43,9 @@ function selectionReducer(state: SelectionState, action: SelectionAction): Selec
 export function useTeamSelection(options: UseTeamSelectionOptions = {}): UseTeamSelectionReturn {
   const { autoSelect = true, getInitialTeam } = options;
 
-  const { data: teamsData, isLoading } = useTeams();
-  const teams = useMemo<Team[]>(() => teamsData ?? [], [teamsData]);
+  const { data: teamsData, isLoading } = useGetOrganizationTeams();
+
+  const teams = useMemo<GetOrganizationTeams_ResultSet1[]>(() => teamsData ?? [], [teamsData]);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
 
   const [state, dispatch] = useReducer(selectionReducer, {
@@ -62,9 +63,9 @@ export function useTeamSelection(options: UseTeamSelectionOptions = {}): UseTeam
       initialTeam = getInitialTeam(teams, uiMode);
     } else if (uiMode === 'simple') {
       const privateTeam = teams.find((team) => team.teamName === 'Private Team');
-      initialTeam = privateTeam?.teamName ?? teams[0].teamName;
+      initialTeam = privateTeam?.teamName ?? teams[0]?.teamName ?? '';
     } else {
-      initialTeam = teams[0].teamName;
+      initialTeam = teams[0]?.teamName ?? '';
     }
 
     dispatch({ type: 'INITIALIZE', teams: [initialTeam] });

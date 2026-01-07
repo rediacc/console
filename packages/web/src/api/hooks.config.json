@@ -1,0 +1,455 @@
+{
+  "$comment": "Configuration for auto-generated TanStack Query hooks",
+  "invalidations": {
+    "CreateTeam": ["organizationTeams", "dropdown-data"],
+    "UpdateTeamName": ["organizationTeams", "dropdown-data"],
+    "UpdateTeamVault": ["organizationTeams"],
+    "DeleteTeam": ["organizationTeams", "dropdown-data"],
+    "CreateTeamMembership": ["teamMembers"],
+    "DeleteUserFromTeam": ["teamMembers"],
+    "CreateMachine": ["teamMachines", "organizationTeams", "regionBridges", "dropdown-data"],
+    "UpdateMachineName": ["teamMachines", "dropdown-data"],
+    "UpdateMachineAssignedBridge": ["teamMachines", "regionBridges"],
+    "UpdateMachineVault": ["teamMachines"],
+    "DeleteMachine": ["teamMachines", "organizationTeams", "regionBridges"],
+    "CreateNewUser": ["organizationUsers", "dropdown-data"],
+    "UpdateUserToDeactivated": ["organizationUsers"],
+    "UpdateUserToActivated": ["organizationUsers"],
+    "UpdateUserAssignedPermissions": ["organizationUsers"],
+    "DeleteUserRequest": ["userRequests"],
+    "UpdateUserVault": ["userVault"],
+    "CreateRepository": ["teamRepositories", "organizationTeams", "teamMachines"],
+    "UpdateRepositoryName": ["teamRepositories", "teamMachines"],
+    "UpdateRepositoryTag": ["teamRepositories", "teamMachines"],
+    "UpdateRepositoryVault": ["teamRepositories"],
+    "DeleteRepository": ["teamRepositories", "organizationTeams", "teamMachines"],
+    "PromoteRepositoryToGrand": ["teamRepositories"],
+    "CreateBridge": ["regionBridges", "organizationRegions", "dropdown-data"],
+    "UpdateBridgeName": ["regionBridges", "dropdown-data"],
+    "UpdateBridgeVault": ["regionBridges"],
+    "DeleteBridge": ["regionBridges", "organizationRegions"],
+    "ResetBridgeAuthorization": ["regionBridges"],
+    "CreateStorage": ["teamStorages", "organizationTeams"],
+    "UpdateStorageName": ["teamStorages"],
+    "UpdateStorageVault": ["teamStorages"],
+    "DeleteStorage": ["teamStorages", "organizationTeams"],
+    "CreateRegion": ["organizationRegions", "dropdown-data"],
+    "UpdateRegionName": ["organizationRegions", "dropdown-data"],
+    "UpdateRegionVault": ["organizationRegions"],
+    "DeleteRegion": ["organizationRegions", "dropdown-data"],
+    "UpdateOrganizationVault": ["organizationVault"],
+    "UpdateOrganizationBlockUserRequests": ["userOrganization", "organizationUsers"],
+    "CreatePermissionGroup": ["organizationPermissionGroups", "dropdown-data"],
+    "DeletePermissionGroup": ["organizationPermissionGroups", "dropdown-data"],
+    "CreatePermissionInGroup": ["organizationPermissionGroups", "permissionGroupDetails"],
+    "DeletePermissionFromGroup": ["organizationPermissionGroups", "permissionGroupDetails"],
+    "CreateQueueItem": ["teamQueueItems"],
+    "UpdateQueueItemToCancelled": ["teamQueueItems"],
+    "EnableTFA": ["organizationUsers", "userVault"],
+    "DisableTFA": ["organizationUsers", "userVault"],
+    "GenerateTFARecoveryCodes": ["userVault"],
+    "CreateCephCluster": ["cephClusters"],
+    "UpdateCephClusterName": ["cephClusters"],
+    "UpdateCephClusterVault": ["cephClusters"],
+    "DeleteCephCluster": ["cephClusters"],
+    "CreateCephPool": ["cephPools", "cephClusters"],
+    "UpdateCephPoolName": ["cephPools"],
+    "DeleteCephPool": ["cephPools", "cephClusters"],
+    "CreateCephImage": ["cephRbdImages", "cephPools"],
+    "UpdateCephImageName": ["cephRbdImages"],
+    "DeleteCephImage": ["cephRbdImages", "cephPools"],
+    "CreateCephSnapshot": ["cephRbdSnapshots", "cephRbdImages"],
+    "UpdateCephSnapshotName": ["cephRbdSnapshots"],
+    "DeleteCephSnapshot": ["cephRbdSnapshots", "cephRbdImages"],
+    "CreateCephClone": ["cephRbdClones", "cephRbdSnapshots"],
+    "UpdateCephCloneName": ["cephRbdClones"],
+    "DeleteCephClone": ["cephRbdClones", "cephRbdSnapshots"],
+    "CreateCephClusterMachine": ["cephClusterMachines"],
+    "DeleteCephClusterMachine": ["cephClusterMachines"],
+    "CreateCephCloneMachineAssignment": [
+      "cloneMachines",
+      "machineAssignmentStatus",
+      "availableMachinesForClone"
+    ],
+    "DeleteCephCloneMachineAssignment": [
+      "cloneMachines",
+      "machineAssignmentStatus",
+      "availableMachinesForClone"
+    ]
+  },
+  "messages": {
+    "CreateTeam": {
+      "success": "Team \"{{teamName}}\" created successfully",
+      "error": "Failed to create team"
+    },
+    "UpdateTeamName": {
+      "success": "Team renamed to \"{{newTeamName}}\"",
+      "error": "Failed to update team name"
+    },
+    "UpdateTeamVault": {
+      "success": "Team \"{{teamName}}\" vault updated successfully",
+      "error": "Failed to update team vault"
+    },
+    "DeleteTeam": {
+      "success": "Team \"{{teamName}}\" deleted successfully",
+      "error": "Failed to delete team"
+    },
+    "CreateTeamMembership": {
+      "success": "User \"{{newUserEmail}}\" added to team",
+      "error": "Failed to add team member"
+    },
+    "DeleteUserFromTeam": {
+      "success": "User \"{{removeUserEmail}}\" removed from team",
+      "error": "Failed to remove team member"
+    },
+    "CreateMachine": {
+      "success": "Machine \"{{machineName}}\" created successfully",
+      "error": "Failed to create machine"
+    },
+    "UpdateMachineName": {
+      "success": "Machine renamed to \"{{newMachineName}}\"",
+      "error": "Failed to update machine name"
+    },
+    "UpdateMachineAssignedBridge": {
+      "success": "Machine \"{{machineName}}\" reassigned to bridge \"{{newBridgeName}}\"",
+      "error": "Failed to update machine bridge"
+    },
+    "UpdateMachineVault": {
+      "success": "Machine \"{{machineName}}\" vault updated successfully",
+      "error": "Failed to update machine vault"
+    },
+    "DeleteMachine": {
+      "success": "Machine \"{{machineName}}\" deleted successfully",
+      "error": "Failed to delete machine"
+    },
+    "CreateNewUser": {
+      "success": "organization:users.success.created",
+      "error": "organization:users.errors.createFailed"
+    },
+    "UpdateUserToDeactivated": {
+      "success": "organization:users.success.deactivated",
+      "error": "organization:users.errors.deactivateFailed"
+    },
+    "UpdateUserToActivated": {
+      "success": "organization:users.success.activated",
+      "error": "organization:users.errors.activateFailed"
+    },
+    "UpdateUserLanguage": {
+      "success": "organization:users.success.languageSaved",
+      "error": "organization:users.errors.languageUpdateFailed"
+    },
+    "UpdateUserPassword": {
+      "success": "organization:users.success.passwordUpdated",
+      "error": "organization:users.errors.passwordUpdateFailed"
+    },
+    "UpdateUserVault": {
+      "success": "organization:users.success.userVaultUpdated",
+      "error": "organization:users.errors.userVaultUpdateFailed"
+    },
+    "DeleteUserRequest": {
+      "success": "organization:users.success.sessionTerminated",
+      "error": "organization:users.errors.sessionTerminateFailed"
+    },
+    "UpdateUserAssignedPermissions": {
+      "success": "organization:users.success.permissionsAssigned",
+      "error": "organization:users.errors.assignPermissionsFailed"
+    },
+    "CreateRepository": {
+      "success": "Repository \"{{repositoryName}}:{{repositoryTag}}\" created successfully",
+      "error": "Failed to create repository"
+    },
+    "UpdateRepositoryName": {
+      "success": "Repository renamed to \"{{newRepositoryName}}\"",
+      "error": "Failed to update repository name"
+    },
+    "UpdateRepositoryTag": {
+      "success": "Tag renamed to \"{{newTag}}\"",
+      "error": "Failed to update tag"
+    },
+    "UpdateRepositoryVault": {
+      "success": "Repository vault updated for \"{{repositoryName}}\"",
+      "error": "Failed to update repository vault"
+    },
+    "DeleteRepository": {
+      "success": "Repository \"{{repositoryName}}:{{repositoryTag}}\" deleted successfully",
+      "error": "Failed to delete repository"
+    },
+    "PromoteRepositoryToGrand": {
+      "success": "Repository \"{{repositoryName}}\" promoted to original successfully",
+      "error": "Failed to promote repository"
+    },
+    "CreateBridge": {
+      "success": "Bridge \"{{bridgeName}}\" created successfully",
+      "error": "Failed to create bridge"
+    },
+    "UpdateBridgeName": {
+      "success": "Bridge renamed to \"{{newBridgeName}}\"",
+      "error": "Failed to update bridge name"
+    },
+    "UpdateBridgeVault": {
+      "success": "Bridge \"{{bridgeName}}\" vault updated successfully",
+      "error": "Failed to update bridge vault"
+    },
+    "DeleteBridge": {
+      "success": "Bridge \"{{bridgeName}}\" deleted successfully",
+      "error": "Failed to delete bridge"
+    },
+    "ResetBridgeAuthorization": {
+      "success": "Bridge authorization reset for \"{{bridgeName}}\"",
+      "error": "Failed to reset bridge authorization"
+    },
+    "CreateStorage": {
+      "success": "Storage \"{{storageName}}\" created successfully",
+      "error": "Failed to create storage"
+    },
+    "UpdateStorageName": {
+      "success": "Storage renamed to \"{{newStorageName}}\"",
+      "error": "Failed to update storage name"
+    },
+    "UpdateStorageVault": {
+      "success": "Storage \"{{storageName}}\" vault updated successfully",
+      "error": "Failed to update storage vault"
+    },
+    "DeleteStorage": {
+      "success": "Storage \"{{storageName}}\" deleted successfully",
+      "error": "Failed to delete storage"
+    },
+    "CreateRegion": {
+      "success": "Region \"{{regionName}}\" created successfully",
+      "error": "Failed to create region"
+    },
+    "UpdateRegionName": {
+      "success": "Region renamed to \"{{newRegionName}}\"",
+      "error": "Failed to update region name"
+    },
+    "UpdateRegionVault": {
+      "success": "Region \"{{regionName}}\" vault updated successfully",
+      "error": "Failed to update region vault"
+    },
+    "DeleteRegion": {
+      "success": "Region \"{{regionName}}\" deleted successfully",
+      "error": "Failed to delete region"
+    },
+    "UpdateOrganizationVault": {
+      "success": "system:organization.success.vaultUpdated",
+      "error": "system:organization.errors.vaultUpdateFailed"
+    },
+    "CreatePermissionGroup": {
+      "success": "organization:access.success.groupCreated",
+      "error": "organization:access.errors.createGroupFailed"
+    },
+    "DeletePermissionGroup": {
+      "success": "organization:access.success.groupDeleted",
+      "error": "organization:access.errors.deleteGroupFailed"
+    },
+    "CreatePermissionInGroup": {
+      "success": "organization:access.success.permissionAdded",
+      "error": "organization:access.errors.addPermissionFailed"
+    },
+    "DeletePermissionFromGroup": {
+      "success": "organization:access.success.permissionRemoved",
+      "error": "organization:access.errors.removePermissionFailed"
+    }
+  },
+  "queryOptions": {
+    "GetOrganizationTeams": {
+      "staleTime": 30000
+    },
+    "GetTeamMembers": {},
+    "GetTeamMachines": {
+      "staleTime": 30000
+    },
+    "GetOrganizationUsers": {},
+    "GetUserRequests": {
+      "staleTime": 10000,
+      "refetchInterval": 30000
+    },
+    "GetRegionBridges": {
+      "staleTime": 30000
+    },
+    "GetTeamStorages": {
+      "staleTime": 30000
+    },
+    "GetOrganizationRegions": {
+      "staleTime": 30000
+    },
+    "GetQueueItems": {
+      "staleTime": 5000,
+      "refetchInterval": 5000
+    },
+    "GetDashboard": {
+      "staleTime": 60000
+    },
+    "IsApiAvailable": {
+      "staleTime": 10000
+    }
+  },
+  "skip": [
+    "GetQueueItemsNext",
+    "ActivateUserAccount",
+    "CreateAuthenticationRequest",
+    "UpdateAuthenticationRequestPassword",
+    "GetOrganizationVaults",
+    "UpdateOrganizationVaults",
+    "UpdateOrganizationBlockUserRequests",
+    "ExportOrganizationData",
+    "ImportOrganizationData"
+  ],
+  "bundledMutations": {
+    "useTeamMutations": ["CreateTeam", "UpdateTeamName", "UpdateTeamVault", "DeleteTeam"],
+    "useTeamMemberMutations": ["CreateTeamMembership", "DeleteUserFromTeam"],
+    "useMachineMutations": [
+      "CreateMachine",
+      "UpdateMachineName",
+      "UpdateMachineAssignedBridge",
+      "UpdateMachineVault",
+      "DeleteMachine"
+    ],
+    "useRepositoryMutations": [
+      "CreateRepository",
+      "UpdateRepositoryName",
+      "UpdateRepositoryTag",
+      "UpdateRepositoryVault",
+      "DeleteRepository",
+      "PromoteRepositoryToGrand"
+    ],
+    "useBridgeMutations": [
+      "CreateBridge",
+      "UpdateBridgeName",
+      "UpdateBridgeVault",
+      "DeleteBridge",
+      "ResetBridgeAuthorization"
+    ],
+    "useStorageMutations": [
+      "CreateStorage",
+      "UpdateStorageName",
+      "UpdateStorageVault",
+      "DeleteStorage"
+    ],
+    "useRegionMutations": ["CreateRegion", "UpdateRegionName", "UpdateRegionVault", "DeleteRegion"],
+    "usePermissionMutations": [
+      "CreatePermissionGroup",
+      "DeletePermissionGroup",
+      "CreatePermissionInGroup",
+      "DeletePermissionFromGroup"
+    ]
+  },
+  "parsedQueries": {
+    "GetTeamQueueItems": {
+      "parser": "parseGetTeamQueueItems",
+      "parserModule": "@rediacc/shared/api/parsers/queue",
+      "returnType": "QueueListResult",
+      "queryKey": ["queue", "items"],
+      "queryKeyParams": ["teamName"]
+    },
+    "GetQueueItemTrace": {
+      "parser": "parseGetQueueItemTrace",
+      "parserModule": "@rediacc/shared/api/parsers/queue",
+      "returnType": "QueueTrace",
+      "queryKey": ["queue", "trace"],
+      "queryKeyParams": ["taskId"],
+      "staleTime": 5000,
+      "refetchInterval": 5000
+    },
+    "GetOrganizationDashboard": {
+      "parser": "parseGetOrganizationDashboard",
+      "parserModule": "@rediacc/shared/api/parsers/organization",
+      "returnType": "OrganizationDashboardData",
+      "queryKey": ["organization", "dashboard"],
+      "staleTime": 60000
+    },
+    "GetAuditLogs": {
+      "parser": "parseGetAuditLogs",
+      "parserModule": "@rediacc/shared/api/parsers/audit",
+      "returnType": "GetAuditLogs_ResultSet1[]",
+      "queryKey": ["auditLogs"],
+      "staleTime": 30000,
+      "gcTime": 300000
+    },
+    "GetEntityAuditTrace": {
+      "parser": "parseGetEntityAuditTrace",
+      "parserModule": "@rediacc/shared/api/parsers/audit",
+      "returnType": "AuditTraceResponse",
+      "queryKey": ["entityAuditTrace"],
+      "queryKeyParams": ["entityType", "entityIdentifier"],
+      "staleTime": 30000,
+      "gcTime": 300000
+    }
+  },
+  "aliases": {
+    "GetTeamQueueItems": "useQueueItems",
+    "GetQueueItemTrace": "useQueueItemTrace",
+    "GetOrganizationDashboard": "useOrganizationDashboard",
+    "GetAuditLogs": "useAuditLogs",
+    "GetEntityAuditTrace": "useEntityAuditTrace"
+  },
+  "semanticMutations": {
+    "CreateNewUser": {
+      "inputType": "CreateUserInput",
+      "async": true,
+      "transform": {
+        "newUserEmail": "input.email",
+        "newUserHash": "await hashPassword(input.password)",
+        "activationCode": "generateActivationCode()"
+      }
+    },
+    "CreateTeam": {
+      "inputType": "CreateTeamInput",
+      "transform": {
+        "teamName": "input.teamName",
+        "vaultContent": "ensureVaultContent(input.vaultContent)"
+      }
+    },
+    "CreateMachine": {
+      "inputType": "CreateMachineInput",
+      "transform": {
+        "teamName": "input.teamName",
+        "machineName": "input.machineName",
+        "bridgeName": "input.bridgeName",
+        "vaultContent": "ensureVaultContent(input.vaultContent)"
+      }
+    },
+    "CreateRepository": {
+      "inputType": "CreateRepositoryInput",
+      "transform": {
+        "teamName": "input.teamName",
+        "repositoryName": "input.repositoryName",
+        "repositoryTag": "input.repositoryTag ?? 'latest'",
+        "parentRepositoryName": "input.parentRepositoryName",
+        "repositoryGuid": "input.repositoryGuid",
+        "networkMode": "input.networkMode",
+        "vaultContent": "ensureVaultContent(input.vaultContent)"
+      }
+    },
+    "CreateStorage": {
+      "inputType": "CreateStorageInput",
+      "transform": {
+        "teamName": "input.teamName",
+        "storageName": "input.storageName",
+        "vaultContent": "ensureVaultContent(input.vaultContent)"
+      }
+    },
+    "CreateRegion": {
+      "inputType": "CreateRegionInput",
+      "transform": {
+        "regionName": "input.regionName",
+        "vaultContent": "ensureVaultContent(input.vaultContent)"
+      }
+    },
+    "CreateBridge": {
+      "inputType": "CreateBridgeInput",
+      "transform": {
+        "regionName": "input.regionName",
+        "bridgeName": "input.bridgeName",
+        "vaultContent": "ensureVaultContent(input.vaultContent)"
+      }
+    },
+    "CreateCephCluster": {
+      "inputType": "CreateCephClusterInput",
+      "transform": {
+        "clusterName": "input.clusterName",
+        "vaultContent": "ensureVaultContent(input.vaultContent)"
+      }
+    }
+  }
+}

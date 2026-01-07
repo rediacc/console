@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Card, Col, Flex, Row, Statistic, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useMachines } from '@/api/queries/machines';
+import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import {
   CheckCircleOutlined,
@@ -18,7 +18,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   onRefresh,
 }) => {
   const { t } = useTranslation(['ceph', 'machines']);
-  const { data: machines = [], isLoading, refetch } = useMachines(teamFilter);
+  const { data: machines = [], isLoading, refetch } = useGetTeamMachines(teamFilter?.[0]);
 
   const stats = React.useMemo<MachineStats>(() => {
     const result: MachineStats = {

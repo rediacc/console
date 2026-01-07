@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue';
-import { useTeams } from '@/api/queries/teams';
+import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
+import { useCreateQueueItemWithValidation, useQueueItemTraceWithEnabled } from '@/api/hooks-queue';
 import { useMessage } from '@/hooks';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { parseSshTestResult } from '@rediacc/shared/utils';
 import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
 import { decodeBase64, encodeBase64, formatValidationErrors, processExtraFields } from '../utils';
 import type { ValidateErrorEntity, VaultEditorProps, VaultFormValues } from '../types';
@@ -47,12 +48,15 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
   const formGutter: [number, number] = [token.marginSM, token.marginSM];
 
   const { buildQueueVault } = useQueueVaultBuilder();
-  const { mutate: createQueueItem, isPending: isCreatingQueueItem } = useCreateQueueItem();
-  const { data: testTraceData } = useQueueItemTrace(testTaskId, isTestingConnection);
-  const { data: teams } = useTeams();
+  const { mutate: createQueueItem, isPending: isCreatingQueueItem } =
+    useCreateQueueItemWithValidation();
+  const { data: testTraceData } = useQueueItemTraceWithEnabled(testTaskId, isTestingConnection);
+  const { data: teams } = useGetOrganizationTeams();
 
   // Track previous modal open state
   const prevModalOpenRef = useRef(isModalOpen);
+  const initialDataJson = useMemo(() => JSON.stringify(initialData), [initialData]);
+  const stableInitialData = useMemo(() => initialData, [initialData]);
 
   // Get entity definition from JSON
   const entityDef = useMemo(() => {
@@ -119,7 +123,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
       form.resetFields();
       form.setFields([]);
       setExtraFields({});
-      setImportedData({});
+      setImportedData(stableInitialData);
       setRawJsonValue('{}');
       setRawJsonError(null);
       setSshKeyConfigured(false);
@@ -127,28 +131,23 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
       setTestConnectionSuccess(false);
     }
     prevModalOpenRef.current = isModalOpen;
-  }, [isModalOpen, form]);
+  }, [isModalOpen, form, stableInitialData]);
 
-  // Update importedData when initialData prop changes
-  useEffect(() => {
-    setImportedData(initialData);
-  }, [initialData]);
+  const importedDataString = useMemo(() => JSON.stringify(importedData), [importedData]);
 
   // Monitor SSH test results
   useEffect(() => {
-    if (testTraceData?.queueDetails && testTraceData.responseVaultContent?.vaultContent) {
+    if (testTraceData?.queueDetails) {
       const status =
         testTraceData.queueDetails.status ??
         (testTraceData.queueDetails as { Status?: string }).Status;
 
       if (status === 'COMPLETED') {
         try {
-          const responseVault =
-            typeof testTraceData.responseVaultContent.vaultContent === 'string'
-              ? JSON.parse(testTraceData.responseVaultContent.vaultContent)
-              : testTraceData.responseVaultContent.vaultContent;
-
-          const result = responseVault.result ? JSON.parse(responseVault.result) : null;
+          const result = parseSshTestResult({
+            responseVaultContent: testTraceData.responseVaultContent?.vaultContent ?? null,
+            consoleOutput: testTraceData.summary?.consoleOutput ?? null,
+          });
 
           if (result) {
             if (result.status === 'success') {
@@ -159,8 +158,8 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
                 setSshKeyConfigured(result.ssh_key_configured);
               }
 
-              if (result.host_entry) {
-                form.setFieldValue('host_entry', result.host_entry);
+              if (result.known_hosts) {
+                form.setFieldValue('known_hosts', result.known_hosts);
               }
 
               if (result.kernel_compatibility) {
@@ -183,7 +182,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
               handleFormChange({
                 ssh_key_configured: result.ssh_key_configured,
-                host_entry: result.host_entry,
+                known_hosts: result.known_hosts,
                 ssh_password: '',
               });
             } else {
@@ -216,9 +215,6 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testTraceData, form, message, onOsSetupStatusChange, onTestConnectionStateChange]);
-
-  // Stabilize importedData to prevent unnecessary re-renders
-  const importedDataString = useMemo(() => JSON.stringify(importedData), [importedData]);
 
   // Calculate extra fields not in schema
   useEffect(() => {
@@ -265,7 +261,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive guard
     if (!entityDef) return;
 
-    const currentDataString = JSON.stringify(initialData);
+    const currentDataString = initialDataJson;
     const wasNonEmpty = lastInitializedData && lastInitializedData !== '{}';
     const isNowEmpty = currentDataString === '{}';
 
@@ -275,29 +271,29 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
     const formData: VaultFormValues = {};
     Object.entries(entityDef.fields ?? {}).forEach(([key, field]) => {
-      if (initialData[key] !== undefined) {
-        if (field.format === 'base64' && typeof initialData[key] === 'string') {
-          formData[key] = decodeBase64(initialData[key]);
+      if (stableInitialData[key] !== undefined) {
+        if (field.format === 'base64' && typeof stableInitialData[key] === 'string') {
+          formData[key] = decodeBase64(stableInitialData[key]);
         } else {
-          formData[key] = initialData[key];
+          formData[key] = stableInitialData[key];
         }
       } else if (field.default !== undefined) {
         formData[key] = field.default;
       }
     });
 
-    if (entityType === 'STORAGE' && initialData.provider) {
+    if (entityType === 'STORAGE' && stableInitialData.provider) {
       const provider =
         storageProviderConfig.providers[
-          initialData.provider as keyof typeof storageProviderConfig.providers
+          stableInitialData.provider as keyof typeof storageProviderConfig.providers
         ];
       if (provider.fields) {
         Object.entries(provider.fields).forEach(([key, field]) => {
-          if (initialData[key] !== undefined) {
-            if (field.format === 'base64' && typeof initialData[key] === 'string') {
-              formData[key] = decodeBase64(initialData[key]);
+          if (stableInitialData[key] !== undefined) {
+            if (field.format === 'base64' && typeof stableInitialData[key] === 'string') {
+              formData[key] = decodeBase64(stableInitialData[key]);
             } else {
-              formData[key] = initialData[key];
+              formData[key] = stableInitialData[key];
             }
           } else if (field.default !== undefined) {
             formData[key] = field.default;
@@ -328,10 +324,10 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
     let schemaFields = Object.keys(entityDef.fields ?? {});
 
-    if (entityType === 'STORAGE' && initialData.provider) {
+    if (entityType === 'STORAGE' && stableInitialData.provider) {
       const provider =
         storageProviderConfig.providers[
-          initialData.provider as keyof typeof storageProviderConfig.providers
+          stableInitialData.provider as keyof typeof storageProviderConfig.providers
         ];
       if (provider.fields) {
         schemaFields = [...schemaFields, ...Object.keys(provider.fields)];
@@ -340,11 +336,11 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
     const extras: VaultFormValues = {};
 
-    if (initialData.extraFields && typeof initialData.extraFields === 'object') {
-      Object.assign(extras, initialData.extraFields);
+    if (stableInitialData.extraFields && typeof stableInitialData.extraFields === 'object') {
+      Object.assign(extras, stableInitialData.extraFields);
     }
 
-    Object.entries(initialData).forEach(([key, value]) => {
+    Object.entries(stableInitialData).forEach(([key, value]) => {
       if (key !== 'extraFields' && !schemaFields.includes(key)) {
         extras[key] = value;
       }
@@ -357,7 +353,15 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
     updateRawJson(completeData);
     setLastInitializedData(currentDataString);
-  }, [form, entityDef, entityType, initialData, updateRawJson, lastInitializedData]);
+  }, [
+    form,
+    entityDef,
+    entityType,
+    initialDataJson,
+    updateRawJson,
+    lastInitializedData,
+    stableInitialData,
+  ]);
 
   // Pass form instance to parent when ready
   useEffect(() => {
@@ -428,7 +432,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
       updateRawJson(completeData);
 
-      const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData);
+      const hasChanges = JSON.stringify(completeData) !== initialDataJson;
       directOnChange(completeData, hasChanges);
 
       const validateOptions = showValidationErrors ? undefined : { validateOnly: true };
@@ -449,7 +453,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
       form,
       selectedProvider,
       extraFields,
-      initialData,
+      initialDataJson,
       updateRawJson,
       directOnChange,
       onValidate,

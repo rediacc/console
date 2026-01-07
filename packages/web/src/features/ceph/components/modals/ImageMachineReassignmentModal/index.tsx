@@ -2,19 +2,18 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Flex, Select, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  type AvailableMachine,
-  type CephRbdImage,
-  useAvailableMachinesForClone,
-} from '@/api/queries/ceph';
-import { useUpdateImageMachineAssignment } from '@/api/queries/cephMutations';
-import { SizedModal } from '@/components/common';
+  useGetAvailableMachinesForClone,
+  useUpdateImageMachineAssignment,
+} from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { SizedModal } from '@/components/common/SizedModal';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
+import type { GetCephRbdImages_ResultSet1 as CephImage } from '@rediacc/shared/types';
 
 interface ImageMachineReassignmentModalProps {
   open: boolean;
-  image: CephRbdImage | null;
+  image: CephImage | null;
   teamName: string;
   poolName: string;
   onCancel: () => void;
@@ -34,10 +33,8 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   const updateMachineAssignment = useUpdateImageMachineAssignment();
 
   // Fetch available machines
-  const { data: availableMachines = [], isLoading: loadingMachines } = useAvailableMachinesForClone(
-    teamName,
-    open && !!image
-  ) as { data?: AvailableMachine[]; isLoading: boolean };
+  const { data: availableMachines = [], isLoading: loadingMachines } =
+    useGetAvailableMachinesForClone(teamName);
 
   useEffect(() => {
     if (!open) {
@@ -94,7 +91,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   return (
     <SizedModal
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <FileImageOutlined />
           {t('ceph:images.reassignMachine')}
         </Flex>
@@ -117,13 +114,13 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       data-testid="image-reassign-modal"
     >
       {image && (
-        <Flex vertical gap={24} className="w-full">
-          <Flex align="flex-start" wrap gap={8}>
+        <Flex vertical className="w-full">
+          <Flex align="flex-start" wrap>
             <Typography.Text strong>{t('ceph:images.image')}:</Typography.Text>
             <Typography.Text>{image.imageName}</Typography.Text>
           </Flex>
 
-          <Flex align="flex-start" wrap gap={8}>
+          <Flex align="flex-start" wrap>
             <Typography.Text strong>{t('ceph:pools.pool')}:</Typography.Text>
             <Typography.Text>{poolName}</Typography.Text>
           </Flex>
@@ -134,7 +131,6 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
               type="info"
               icon={<CloudServerOutlined />}
               data-testid="image-reassign-current-machine-info"
-              showIcon
             />
           )}
 
@@ -171,7 +167,6 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             message={<Typography.Text type="warning">{t('common:important')}</Typography.Text>}
             description={<Typography.Text>{t('ceph:images.reassignmentWarning')}</Typography.Text>}
             type="warning"
-            showIcon
             data-testid="image-reassign-warning"
           />
         </Flex>

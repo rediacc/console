@@ -1,10 +1,5 @@
 import { Badge, Button, Flex, Popconfirm, Space, Tooltip, Typography, type TableProps } from 'antd';
-import type { Team } from '@/api/queries/teams';
-import {
-  createCountColumn,
-  createTruncatedColumn,
-  createVersionColumn,
-} from '@/components/common/columns';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { featureFlags } from '@/config/featureFlags';
 import {
   CloudServerOutlined,
@@ -16,29 +11,34 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
+import { createActionColumn } from '../factories/action';
+import {
+  createCountColumn,
+  createTruncatedColumn,
+  createVersionColumn,
+} from '../factories/advanced';
 
 interface BuildTeamColumnsParams {
-  tSystem: TFunction<'system'>;
-  tCommon: TFunction<'common'>;
-  onEdit: (team: Team) => void;
-  onManageMembers: (team: Team) => void;
-  onTrace: (team: Team) => void;
+  t: TypedTFunction;
+  onEdit: (team: GetOrganizationTeams_ResultSet1) => void;
+  onManageMembers: (team: GetOrganizationTeams_ResultSet1) => void;
+  onTrace: (team: GetOrganizationTeams_ResultSet1) => void;
   onDelete: (teamName: string) => void;
   isDeleting: boolean;
 }
 
 export const buildTeamColumns = ({
-  tSystem,
-  tCommon,
+  t,
   onEdit,
   onManageMembers,
   onTrace,
   onDelete,
   isDeleting,
-}: BuildTeamColumnsParams): TableProps<Team>['columns'] => {
-  const teamNameColumn = createTruncatedColumn<Team>({
-    title: tSystem('tables.teams.teamName'),
+}: BuildTeamColumnsParams): TableProps<GetOrganizationTeams_ResultSet1>['columns'] => {
+  const teamNameColumn = createTruncatedColumn<GetOrganizationTeams_ResultSet1>({
+    title: t('system:tables.teams.teamName'),
     dataIndex: 'teamName',
     key: 'teamName',
     width: 150,
@@ -51,8 +51,8 @@ export const buildTeamColumns = ({
     ),
   });
 
-  const memberCountColumn = createCountColumn<Team>({
-    title: tSystem('tables.teams.members'),
+  const memberCountColumn = createCountColumn<GetOrganizationTeams_ResultSet1>({
+    title: t('system:tables.teams.members'),
     dataIndex: 'memberCount',
     key: 'memberCount',
     width: 100,
@@ -64,8 +64,8 @@ export const buildTeamColumns = ({
     ),
   });
 
-  const machineCountColumn = createCountColumn<Team>({
-    title: tSystem('tables.teams.machines'),
+  const machineCountColumn = createCountColumn<GetOrganizationTeams_ResultSet1>({
+    title: t('system:tables.teams.machines'),
     dataIndex: 'machineCount',
     key: 'machineCount',
     width: 100,
@@ -73,8 +73,8 @@ export const buildTeamColumns = ({
     sorter: true,
   });
 
-  const repositoryCountColumn = createCountColumn<Team>({
-    title: tSystem('tables.teams.repositories'),
+  const repositoryCountColumn = createCountColumn<GetOrganizationTeams_ResultSet1>({
+    title: t('system:tables.teams.repositories'),
     dataIndex: 'repositoryCount',
     key: 'repositoryCount',
     width: 120,
@@ -82,8 +82,8 @@ export const buildTeamColumns = ({
     sorter: true,
   });
 
-  const storageCountColumn = createCountColumn<Team>({
-    title: tSystem('tables.teams.storage'),
+  const storageCountColumn = createCountColumn<GetOrganizationTeams_ResultSet1>({
+    title: t('system:tables.teams.storage'),
     dataIndex: 'storageCount',
     key: 'storageCount',
     width: 120,
@@ -91,39 +91,39 @@ export const buildTeamColumns = ({
     sorter: true,
   });
 
-  const columns: TableProps<Team>['columns'] = [
+  const columns: TableProps<GetOrganizationTeams_ResultSet1>['columns'] = [
     teamNameColumn,
     // Combined Stats column for mobile (show only on xs, hide on sm)
     {
-      title: tSystem('tables.teams.stats'),
+      title: t('system:tables.teams.stats'),
       key: 'stats',
       width: 140,
       responsive: ['xs'],
-      render: (_, record: Team) => (
+      render: (_, record: GetOrganizationTeams_ResultSet1) => (
         <Flex className="w-full">
           <Space direction="vertical" size={4}>
-            <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
+            <Tooltip title={`${record.memberCount} ${t('system:tables.teams.members')}`}>
               <Space size="small">
                 <Badge count={record.memberCount} showZero size="small">
                   <UserOutlined />
                 </Badge>
               </Space>
             </Tooltip>
-            <Tooltip title={`${record.machineCount} ${tSystem('tables.teams.machines')}`}>
+            <Tooltip title={`${record.machineCount} ${t('system:tables.teams.machines')}`}>
               <Space size="small">
                 <DesktopOutlined />
                 <Typography.Text>{record.machineCount}</Typography.Text>
               </Space>
             </Tooltip>
             <Tooltip
-              title={`${record.repositoryCount ?? 0} ${tSystem('tables.teams.repositories')}`}
+              title={`${record.repositoryCount ?? 0} ${t('system:tables.teams.repositories')}`}
             >
               <Space size="small">
                 <DatabaseOutlined />
                 <Typography.Text>{record.repositoryCount ?? 0}</Typography.Text>
               </Space>
             </Tooltip>
-            <Tooltip title={`${record.storageCount ?? 0} ${tSystem('tables.teams.storage')}`}>
+            <Tooltip title={`${record.storageCount ?? 0} ${t('system:tables.teams.storage')}`}>
               <Space size="small">
                 <CloudServerOutlined />
                 <Typography.Text>{record.storageCount ?? 0}</Typography.Text>
@@ -142,74 +142,81 @@ export const buildTeamColumns = ({
 
   if (featureFlags.isEnabled('vaultVersionColumns')) {
     columns.push(
-      createVersionColumn<Team>({
-        title: tSystem('tables.teams.vaultVersion'),
+      createVersionColumn<GetOrganizationTeams_ResultSet1>({
+        title: t('system:tables.teams.vaultVersion'),
         dataIndex: 'vaultVersion',
         key: 'vaultVersion',
         width: 120,
         sorter: true,
-        formatVersion: (version: number) => tCommon('general.versionFormat', { version }),
+        formatVersion: (version: number) => t('common:general.versionFormat', { version }),
       })
     );
   }
 
-  columns.push({
-    title: tSystem('tables.teams.actions'),
-    key: 'actions',
-    width: 160,
-    render: (_, record: Team) => (
-      <Space size={4} wrap>
-        <Tooltip title={tSystem('actions.edit')}>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => onEdit(record)}
-            data-testid={`system-team-edit-button-${record.teamName}`}
-            aria-label={tSystem('actions.edit')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.members')}>
-          <Button
-            type="text"
-            icon={<UserOutlined />}
-            onClick={() => onManageMembers(record)}
-            data-testid={`system-team-members-button-${record.teamName}`}
-            aria-label={tSystem('actions.members')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.trace')}>
-          <Button
-            type="text"
-            icon={<HistoryOutlined />}
-            onClick={() => onTrace(record)}
-            data-testid={`system-team-trace-button-${record.teamName}`}
-            aria-label={tSystem('actions.trace')}
-          />
-        </Tooltip>
-        <Popconfirm
-          title={tSystem('teams.delete.confirmTitle')}
-          description={tSystem('teams.delete.confirmDescription', {
-            teamName: record.teamName,
-          })}
-          onConfirm={() => onDelete(record.teamName)}
-          okText={tCommon('general.yes')}
-          cancelText={tCommon('general.no')}
-          okButtonProps={{ danger: true }}
-        >
-          <Tooltip title={tCommon('actions.delete')}>
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              loading={isDeleting}
-              data-testid={`system-team-delete-button-${record.teamName}`}
-              aria-label={tCommon('actions.delete')}
-            />
-          </Tooltip>
-        </Popconfirm>
-      </Space>
-    ),
-  });
+  columns.push(
+    createActionColumn<GetOrganizationTeams_ResultSet1>({
+      title: t('system:tables.teams.actions'),
+      width: 160,
+      renderActions: (record) => (
+        <ActionButtonGroup
+          buttons={[
+            {
+              type: 'edit',
+              icon: <EditOutlined />,
+              tooltip: 'system:actions.edit',
+              onClick: () => onEdit(record),
+              testId: `system-team-edit-button-${record.teamName}`,
+            },
+            {
+              type: 'members',
+              icon: <UserOutlined />,
+              tooltip: 'system:actions.members',
+              onClick: () => onManageMembers(record),
+              testId: `system-team-members-button-${record.teamName}`,
+            },
+            {
+              type: 'trace',
+              icon: <HistoryOutlined />,
+              tooltip: 'system:actions.trace',
+              onClick: () => onTrace(record),
+              testId: `system-team-trace-button-${record.teamName}`,
+            },
+            {
+              type: 'custom',
+              render: (rec) => (
+                <Popconfirm
+                  title={t('system:teams.delete.confirmTitle')}
+                  description={t('system:teams.delete.confirmDescription', {
+                    teamName: rec.teamName ?? '',
+                  })}
+                  onConfirm={() => onDelete(rec.teamName ?? '')}
+                  okText={t('common:general.yes')}
+                  cancelText={t('common:general.no')}
+                  okButtonProps={{ danger: true }}
+                >
+                  <Tooltip title={t('common:actions.delete')}>
+                    <Button
+                      type="default"
+                      shape="circle"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={isDeleting}
+                      data-testid={`system-team-delete-button-${rec.teamName}`}
+                      aria-label={t('common:actions.delete')}
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              ),
+            },
+          ]}
+          record={record}
+          idField="teamName"
+          testIdPrefix="system-team"
+          t={t}
+        />
+      ),
+    })
+  );
 
   return columns;
 };

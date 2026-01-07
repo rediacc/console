@@ -3,7 +3,7 @@
     "MACHINE": {
       "descriptionKey": "fields.MACHINE.description",
       "required": ["ip", "user", "datastore"],
-      "optional": ["port", "host_entry", "ssh_password", "ssh_key_configured"],
+      "optional": ["port", "known_hosts", "ssh_password", "ssh_key_configured"],
       "fields": {
         "ip": {
           "type": "string",
@@ -24,9 +24,9 @@
           "type": "number",
           "example": "SSH port number. Example: 22"
         },
-        "host_entry": {
+        "known_hosts": {
           "type": "string",
-          "example": "SSH known host entry. Example: 192.168.1.100 ssh-rsa AAAAB3NzaC1yc2E..."
+          "example": "SSH known_hosts entries for this machine. Example: 192.168.1.100 ssh-rsa AAAAB3NzaC1yc2E...\\n192.168.1.101 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5..."
         },
         "ssh_key_configured": {
           "type": "boolean",
@@ -174,19 +174,26 @@
     "TEAM": {
       "descriptionKey": "fields.TEAM.description",
       "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
-      "optional": [],
+      "optional": ["SSH_KNOWN_HOSTS", "SSH_PASSWORD"],
       "fields": {
         "SSH_PRIVATE_KEY": {
           "type": "string",
           "sensitive": true,
-          "format": "base64",
-          "example": "Base64 encoded private key. Example: LS0tLS1CRUdJTi0tLS0t"
+          "example": "SSH private key (plain text). Example: -----BEGIN OPENSSH PRIVATE KEY-----"
         },
         "SSH_PUBLIC_KEY": {
           "type": "string",
-          "format": "base64",
           "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
           "example": "Public SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... mykey"
+        },
+        "SSH_KNOWN_HOSTS": {
+          "type": "string",
+          "example": "SSH known_hosts entries (plain text)"
+        },
+        "SSH_PASSWORD": {
+          "type": "string",
+          "sensitive": true,
+          "example": "SSH password for password-based authentication"
         }
       }
     },
@@ -196,8 +203,8 @@
       "optional": [],
       "fields": {}
     },
-    "COMPANY": {
-      "descriptionKey": "fields.COMPANY.description",
+    "ORGANIZATION": {
+      "descriptionKey": "fields.ORGANIZATION.description",
       "required": ["UNIVERSAL_USER_ID", "UNIVERSAL_USER_NAME", "DOCKER_JSON_CONF"],
       "optional": ["LOG_FILE", "PLUGINS"],
       "fields": {

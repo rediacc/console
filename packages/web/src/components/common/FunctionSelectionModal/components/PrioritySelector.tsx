@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Form, Flex, Popover, Slider, Space, Tag, Typography } from 'antd';
+import { Alert, Flex, Form, Popover, Slider, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   ExclamationCircleOutlined,
@@ -38,9 +38,12 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                   <Typography.Text strong>{t('functions:priorityPopoverLevels')}</Typography.Text>
                 </Flex>
                 {priorityLegendItems.map((item) => (
-                  <Flex key={item.level} align="center" gap={8} wrap>
+                  <Flex key={item.level} align="center" wrap>
                     <Tag>
-                      P{item.level} ({item.label})
+                      {t('functions:priorityLevelFormat', {
+                        level: item.level,
+                        label: item.label,
+                      })}
                     </Tag>
                     <Typography.Text>{item.description}</Typography.Text>
                   </Flex>
@@ -50,11 +53,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
             title={t('functions:priorityPopoverTitle')}
             trigger="click"
           >
-            <QuestionCircleOutlined
-              className="cursor-pointer"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ fontSize: 16 }}
-            />
+            <QuestionCircleOutlined className="cursor-pointer text-base" />
           </Popover>
         </Space>
       }
@@ -106,10 +105,7 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
             priority === 1 ? (
               <Flex vertical>
                 <Typography.Text>{t('functions:priorityHighestTimeoutWarning')}</Typography.Text>
-                <Typography.Text
-                  // eslint-disable-next-line no-restricted-syntax
-                  style={{ fontStyle: 'italic' }}
-                >
+                <Typography.Text className="italic">
                   {t('functions:priorityHighestDescription')}
                 </Typography.Text>
               </Flex>
@@ -132,7 +128,6 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
                   ? 'info'
                   : 'success'
           }
-          showIcon
           icon={
             priority === 1 ? (
               <ExclamationCircleOutlined />

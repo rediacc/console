@@ -18,39 +18,9 @@
     "members": "Miembros",
     "permissions": "Permisos",
     "resetAuth": "Restablecer autenticación",
-    "token": "Token",
+    "token": "Token de acceso",
     "trace": "Rastro",
     "twoFactorAuth": "Autenticación de dos factores"
-  },
-  "architecture": {
-    "bridges": "Puentes",
-    "clearAll": "Borrar todo",
-    "fetchError": "No se pudieron recuperar los datos de arquitectura",
-    "filterEntities": "Filtrar entidades",
-    "legend": "Leyenda",
-    "machines": "maquinas",
-    "noData": "No hay datos de arquitectura disponibles",
-    "noEntitiesSelected": "No hay entidades seleccionadas. Seleccione al menos un tipo de entidad para mostrar.",
-    "nodeBridge": "Puente",
-    "nodeCompany": "Compañía",
-    "nodeMachine": "Máquina",
-    "nodeRegion": "Región",
-    "nodeRepository": "Repositorio",
-    "nodeStorage": "Almacenamiento",
-    "nodeTeam": "Equipo",
-    "nodeUser": "Usuaria",
-    "regions": "Regiones",
-    "repositories": "Repositorios",
-    "schedules": "Horarios",
-    "selectAll": "Seleccionar todo",
-    "selectEntities": "Seleccionar tipos de entidad para mostrar",
-    "storages": "Almacenamientos",
-    "teams": "equipos",
-    "title": "Arquitectura de la empresa",
-    "users": "Usuarios",
-    "viewForce": "Fuerza",
-    "viewHierarchy": "Jerarquía",
-    "viewRadial": "Radial"
   },
   "audit": {
     "columns": {
@@ -92,24 +62,6 @@
     },
     "subtitle": "Rastree todas las actividades y cambios en su organización",
     "title": "Registros de Auditoría"
-  },
-  "company": {
-    "errors": {
-      "blockRequestsFailed": "No se pudo actualizar el estado de bloqueo de solicitudes de usuario",
-      "importFailed": "No se pudieron importar los datos de la empresa",
-      "noExportData": "No se devolvieron datos de exportación",
-      "vaultUpdateFailed": "No se pudo actualizar la configuración del almacén"
-    },
-    "success": {
-      "errorCount": "{{count}} errores",
-      "importComplete": "Importación completada: {{summary}}",
-      "importedCount": "{{count}} artículos importados",
-      "requestsBlocked": "Solicitudes de usuarios bloqueadas con éxito",
-      "requestsBlockedWithTerminations": "Solicitudes de usuarios bloqueadas. Se finalizaron {{count}} sesiones activas.",
-      "requestsUnblocked": "Solicitudes de usuarios desbloqueadas con éxito",
-      "skippedCount": "{{count}} elementos omitidos",
-      "vaultUpdated": "La configuración de la bóveda se actualizó correctamente"
-    }
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -155,8 +107,8 @@
         "cancel": "Cancelar",
         "fileRequired": "Por favor seleccione un archivo para importar",
         "import": "Importar",
-        "importMode": "Modo de importación",
         "importing": "Importadora...",
+        "importMode": "Modo de importación",
         "invalidFile": "Formato de archivo no válido. Seleccione un archivo de exportación de datos de empresa válido.",
         "modeOverride": "Anular elementos existentes",
         "modeOverrideDesc": "Reemplazar elementos existentes con datos importados",
@@ -244,6 +196,47 @@
       "warning": "Guarde la nueva contraseña en un lugar seguro; no podrá recuperarla si se pierde."
     }
   },
+  "dashboard": {
+    "activeLicenses": "Licencias activas",
+    "completed": "Completada",
+    "daysRemaining": "Días restantes",
+    "failed": "Fallida",
+    "jobTimeout": "Tiempo de espera de tarea",
+    "maxActiveJobs": "Máx tareas activas",
+    "maxRepoSize": "Tamaño máximo de repositorio",
+    "maxReservedJobs": "Máx tareas reservadas",
+    "noPlanData": "No hay datos de límite de plan disponibles",
+    "noSubscription": "Sin suscripción activa",
+    "pending": "Pendiente",
+    "processing": "Procesando"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "No se pudo actualizar el estado de bloqueo de solicitudes de usuario",
+      "importFailed": "No se pudieron importar los datos de la empresa",
+      "noExportData": "No se devolvieron datos de exportación",
+      "vaultUpdateFailed": "No se pudo actualizar la configuración del almacén",
+      "vaultsUpdateFailed": "No se pudieron actualizar las configuraciones del almacén"
+    },
+    "success": {
+      "errorCount": "{{count}} errores",
+      "importComplete": "Importación completada: {{summary}}",
+      "imported": "Datos de la organización importados correctamente",
+      "importedCount": "{{count}} artículos importados",
+      "requestsBlocked": "Solicitudes de usuarios bloqueadas con éxito",
+      "requestsBlockedWithTerminations": "Solicitudes de usuarios bloqueadas. Se finalizaron {{count}} sesiones activas.",
+      "requestsUnblocked": "Solicitudes de usuarios desbloqueadas con éxito",
+      "skippedCount": "{{count}} elementos omitidos",
+      "vaultUpdated": "La configuración de la bóveda se actualizó correctamente",
+      "vaultsUpdated": "Todas las configuraciones de la bóveda se actualizaron correctamente"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "Su contraseña ha sido cambiada. Se cerrará sesión en {{seconds}} segundos...",
+      "successTitle": "Contraseña cambiada exitosamente"
+    }
+  },
   "regionsInfrastructure": {
     "title": "Regiones e infraestructura"
   },
@@ -259,6 +252,7 @@
       "machines": "Máquinas",
       "members": "Miembros",
       "repositories": "Repositorios",
+      "stats": "Estadísticas",
       "storage": "Almacenamiento",
       "teamName": "Nombre del equipo",
       "vaultVersion": "Versión de bóveda"
@@ -269,6 +263,22 @@
       "lastActive": "Última actividad",
       "permissionGroup": "Grupo de permisos",
       "status": "Estado"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "¿Está seguro de que desea eliminar el equipo \"{{teamName}}\"?",
+      "confirmTitle": "Eliminar equipo"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "¿Está seguro de que desea activar \"{{email}}\"?",
+      "confirmTitle": "Activar usuario"
+    },
+    "deactivate": {
+      "confirmDescription": "¿Está seguro de que desea desactivar \"{{email}}\"?",
+      "confirmTitle": "Desactivar usuario"
     }
   },
   "userSessions": {
@@ -294,6 +304,7 @@
     "forkToken": "Este es un token de bifurcación (sesión secundaria)",
     "hasChildren": "{{count}} sesiones infantiles",
     "inactive": "Inactiva",
+    "ipLabel": "IP",
     "minutes": "minutos",
     "notAvailable": "N / A",
     "searchPlaceholder": "Buscar por correo electrónico, IP o nombre de sesión...",
@@ -304,21 +315,11 @@
     "totalSessions": "Sesiones totales",
     "uniqueUsers": "Usuarios únicos"
   },
-  "users": {
-    "activate": {
-      "confirmDescription": "¿Está seguro de que desea activar \"{{email}}\"?",
-      "confirmTitle": "Activar usuario"
-    },
-    "deactivate": {
-      "confirmDescription": "¿Está seguro de que desea desactivar \"{{email}}\"?",
-      "confirmTitle": "Desactivar usuario"
-    }
-  },
   "vaultProtocol": {
     "errors": {
       "disableFailed": "No se pudo deshabilitar el cifrado de la bóveda",
       "enableFailed": "No se pudo habilitar el cifrado de bóveda",
-      "noCompanySelected": "Ninguna empresa seleccionada. Elija una empresa antes de actualizar el cifrado."
+      "noOrganizationSelected": "Ninguna empresa seleccionada. Elija una empresa antes de actualizar el cifrado."
     },
     "success": {
       "disabled": "Cifrado de bóveda deshabilitado. Ya no se requieren contraseñas maestras.",

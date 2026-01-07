@@ -31,9 +31,9 @@ export function nonExistentName(prefix: string): string {
  * These patterns match the RAISERROR messages in db_middleware_*.sql files.
  */
 export const ErrorPatterns = {
-  // Team errors (from db_middleware_company.sql)
-  TEAM_NOT_FOUND: 'not found in your company',
-  TEAM_ALREADY_EXISTS: 'already exists in your company',
+  // Team errors (from db_middleware_organization.sql)
+  TEAM_NOT_FOUND: 'not found in your organization',
+  TEAM_ALREADY_EXISTS: 'already exists in your organization',
   TEAM_NOT_MEMBER: 'not a member of team',
   TEAM_CANNOT_DELETE_DEFAULT: 'Cannot delete the default',
   TEAM_CANNOT_DELETE_LAST: 'Cannot remove the last team',
@@ -42,14 +42,14 @@ export const ErrorPatterns = {
   TEAM_VAULT_EMPTY: 'vault data cannot be null or empty',
 
   // Team membership errors
-  USER_NOT_FOUND_IN_COMPANY: 'not found, not activated, or not in your company',
+  USER_NOT_FOUND_IN_ORGANIZATION: 'not found, not activated, or not in your organization',
   USER_ALREADY_MEMBER: 'already a member of team',
   CANNOT_REMOVE_SELF: 'cannot remove yourself',
   BRIDGE_USER_CANNOT_JOIN: 'Bridge users cannot be added to teams',
 
   // Machine errors (from db_middleware_infrastructure.sql)
   MACHINE_NOT_FOUND: 'not found in team',
-  MACHINE_ALREADY_EXISTS: 'already exists in your company',
+  MACHINE_ALREADY_EXISTS: 'already exists in your organization',
   MACHINE_BRIDGE_MISMATCH: 'not assigned to bridge',
 
   // Bridge errors
@@ -89,13 +89,13 @@ export const ErrorPatterns = {
   BRIDGE_CLOUD_ONLY_GLOBAL: 'Only Global Bridges can be Cloud Managed',
 
   // Region errors
-  REGION_NOT_FOUND: 'not found in your company',
-  REGION_ALREADY_EXISTS: 'already exists for this company',
+  REGION_NOT_FOUND: 'not found in your organization',
+  REGION_ALREADY_EXISTS: 'already exists for this organization',
   REGION_CANNOT_DELETE_DEFAULT: 'Cannot delete the default',
   REGION_CANNOT_RENAME_DEFAULT: 'Cannot rename the default',
 
   // User errors (from db_middleware_auth.sql)
-  USER_EMAIL_NOT_FOUND: 'not found in your company',
+  USER_EMAIL_NOT_FOUND: 'not found in your organization',
   USER_ALREADY_EXISTS: 'already exists',
   USER_CANNOT_DEACTIVATE_SELF: 'cannot deactivate your own account',
   USER_CANNOT_DELETE_LAST_ADMIN: 'Cannot deactivate the last administrator',
@@ -120,7 +120,7 @@ export const ErrorPatterns = {
   LOGIN_VERIFICATION_REQUIRED: 'Verification data cannot be empty',
   LOGIN_USER_NOT_ACTIVATED: 'not found or not activated',
   LOGIN_INVALID_PASSWORD: 'Invalid password for user',
-  LOGIN_COMPANY_MAINTENANCE: 'Company vault update in progress',
+  LOGIN_ORGANIZATION_MAINTENANCE: 'Organization vault update in progress',
 
   // Token management
   TOKEN_EXPIRATION_INVALID: 'Token expiration must be between 1 and 720 hours',
@@ -150,7 +150,7 @@ export const ErrorPatterns = {
   UPDATE_EMAIL_INVALID_FORMAT: 'Invalid email format for new user email',
   UPDATE_EMAIL_FAILED: 'Failed to update email for user',
   UPDATE_PASSWORD_FAILED: 'Failed to update password for user',
-  UPDATE_PASSWORD_NO_COMPANY: 'No company association found for user',
+  UPDATE_PASSWORD_NO_ORGANIZATION: 'No organization association found for user',
 
   // User deactivation/reactivation
   DEACTIVATE_USER_FAILED: 'Failed to deactivate user',
@@ -183,8 +183,8 @@ export const ErrorPatterns = {
   QUEUE_CANNOT_RETRY: 'only retry failed',
 
   // Permission errors
-  PERMISSION_GROUP_NOT_FOUND: 'not found in your company',
-  PERMISSION_GROUP_ALREADY_EXISTS: 'already exists for this company',
+  PERMISSION_GROUP_NOT_FOUND: 'not found in your organization',
+  PERMISSION_GROUP_ALREADY_EXISTS: 'already exists for this organization',
   PERMISSION_GROUP_COMMUNITY_RESTRICTION: 'not available in the Community edition',
   PERMISSION_CANNOT_MODIFY_SYSTEM: 'This is a protected group',
   PERMISSION_GROUP_IN_USE: 'in use by',
@@ -203,11 +203,11 @@ export const ErrorPatterns = {
   TFA_VERIFICATION_FAILED: 'Invalid verification code',
 
   // ========================================
-  // COMPANY ERRORS (from db_middleware_company.sql)
+  // ORGANIZATION ERRORS (from db_middleware_organization.sql)
   // ========================================
 
   // Vault update failures
-  VAULT_UPDATE_COMPANY_FAILED: 'Failed to update vault data for company',
+  VAULT_UPDATE_ORGANIZATION_FAILED: 'Failed to update vault data for organization',
   VAULT_UPDATE_USER_FAILED: 'Failed to update vault data for user',
   VAULT_UPDATE_TEAM_FAILED: 'Failed to update vault data for team',
   VAULT_BULK_UPDATE_FAILED: 'Failed to update vault for credential',
@@ -217,7 +217,7 @@ export const ErrorPatterns = {
   USER_VAULT_EMPTY: 'User vault data cannot be null or empty',
 
   // Bulk vault conflicts
-  VAULT_BULK_NOT_OWNED: 'vault(s) do not belong to this company',
+  VAULT_BULK_NOT_OWNED: 'vault(s) do not belong to this organization',
   VAULT_BULK_VERSION_CONFLICT: 'vault(s) have newer versions than provided',
   VAULT_BULK_BRIDGE_LOCKED: 'Global Bridge with RequestToken set',
 

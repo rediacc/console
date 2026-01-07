@@ -1,9 +1,9 @@
 {
-  "company": {
+  "organization": {
     "configureVault": "Konfiguration bearbeiten",
-    "description": "Konfigurieren Sie die Einstellungen Ihres Unternehmens, um unternehmensweite Konfigurationen zu verwalten.",
-    "modalTitle": "Unternehmenskonfiguration bearbeiten",
-    "title": "Firmeneinstellungen"
+    "description": "Konfigurieren Sie die Einstellungen Ihrer Organisation, um organisationsweite Konfigurationen zu verwalten.",
+    "modalTitle": "Organisationskonfiguration bearbeiten",
+    "title": "Organisationseinstellungen"
   },
   "personal": {
     "changePassword": {
@@ -92,6 +92,7 @@
       "enabledDescription": "Ihr Konto ist durch eine zusätzliche Sicherheitsebene geschützt."
     },
     "statusMessages": {
+      "authorized": "TFA-Autorisierung erfolgreich",
       "enabled": "TFA aktiviert",
       "none": "Kein TFA konfiguriert",
       "unknown": "Der TFA-Status kann nicht ermittelt werden"

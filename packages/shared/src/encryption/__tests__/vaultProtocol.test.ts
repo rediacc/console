@@ -72,7 +72,7 @@ describe('vaultProtocol', () => {
       'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTA=';
     const plainVault = '{"SSH_KEY": "secret"}';
 
-    describe('when company has no encryption', () => {
+    describe('when organization has no encryption', () => {
       it('should return NOT_ENABLED when no password provided', () => {
         expect(analyzeVaultProtocolState(plainVault, false)).toBe(VaultProtocolState.NOT_ENABLED);
         expect(analyzeVaultProtocolState(null, false)).toBe(VaultProtocolState.NOT_ENABLED);
@@ -87,7 +87,7 @@ describe('vaultProtocol', () => {
       });
     });
 
-    describe('when company has encryption', () => {
+    describe('when organization has encryption', () => {
       it('should return PASSWORD_REQUIRED when no password provided', () => {
         expect(analyzeVaultProtocolState(encryptedVault, false)).toBe(
           VaultProtocolState.PASSWORD_REQUIRED

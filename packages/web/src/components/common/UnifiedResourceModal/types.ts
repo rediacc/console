@@ -1,5 +1,5 @@
 import type { Machine, Repository } from '@/types';
-import type { GetCompanyTeams_ResultSet1 } from '@rediacc/shared/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 export type ResourceType =
   | 'machine'
@@ -18,7 +18,7 @@ export type ResourceFormValues = Record<string, unknown>;
 
 export type ExistingResourceData = Partial<Machine> &
   Partial<Repository> &
-  Partial<GetCompanyTeams_ResultSet1> & {
+  Partial<GetOrganizationTeams_ResultSet1> & {
     prefilledMachine?: boolean;
     clusters?: { clusterName: string }[];
     pools?: { poolName: string; clusterName: string }[];

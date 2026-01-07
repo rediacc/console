@@ -1,37 +1,70 @@
 {
   "actions": {
+    "actions": "アクション",
     "addToQueue": "キューに追加",
     "advanced": "高度な",
+    "assign": "割り当て",
     "back": "戻る",
     "cancel": "キャンセル",
-    "confirm": "確認",
     "clearSelection": "選択をクリア",
     "close": "閉じる",
+    "confirm": "確認",
+    "copied": "コピーしました",
+    "copy": "コピー",
     "create": "作成する",
+    "createNew": "新規作成",
     "createResource": "{{resource}}を作成する",
     "delete": "消去",
+    "deleteSelected": "選択したアイテムを削除",
+    "download": "ダウンロード",
+    "downloadSelected": "選択したアイテムをダウンロード",
     "edit": "編集",
     "editResource": "{{resource}}を編集",
     "editVault": "ボールトの編集",
     "exitFullscreen": "全画面表示を終了する",
     "export": "輸出",
     "exportSuccess": "輸出成功",
+    "format": "フォーマット",
     "fullscreen": "全画面表示",
+    "logoutNow": "今すぐログアウト",
     "manage": "管理",
+    "newFolder": "新しいフォルダ",
     "refresh": "リフレッシュ",
     "remote": "リモート",
     "remove": "取り除く",
+    "rename": "名前変更",
     "reset": "リセット",
     "retry": "リトライ",
     "runFunction": "関数の実行",
     "save": "保存",
     "search": "検索",
     "trace": "トレース",
+    "upload": "アップロード",
+    "uploadFile": "ファイルをアップロード",
     "viewTrace": "トレースの表示"
   },
   "actionsColumn": "アクション",
+  "allCommandsCopied": "すべてのコマンドがクリップボードにコピーされました！",
+  "alt": {
+    "logo": "レディアック"
+  },
+  "aria": {
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "closeNotification": "通知を閉じる",
+    "collapsePanel": "パネルを折りたたむ",
+    "expandPanel": "パネルを展開",
+    "notifications": "通知",
+    "refresh": "リフレッシュ",
+    "refreshMachines": "マシンを更新",
+    "trace": "トレース"
+  },
+  "cancel": "キャンセル",
   "close": "閉じる",
+  "commandCopied": "コマンドがクリップボードにコピーされました！",
+  "commandCopyFailed": "コマンドのコピーに失敗しました",
   "copiedToClipboard": "クリップボードにコピーされました",
+  "copiedWithoutToken": "セキュアトークンなしでコピーされました - 手動でログインしてください",
   "copyFailed": "クリップボードへのコピーに失敗しました",
   "current": "現在",
   "dashboard": {
@@ -39,10 +72,122 @@
     "comparePlansDescription": "さまざまなサブスクリプション層の機能と価格を比較する",
     "currentPlan": "現在の計画",
     "enterprisePlanDescription": "あなたはすべての機能がロック解除された最高レベルのプランを利用しています",
-    "upgradeOptions": "アップグレードオプション"
+    "errors": {
+      "loadFailed": "ダッシュボードデータの読み込みに失敗しました。後でもう一度お試しください。",
+      "noData": "ダッシュボードのデータがありません",
+      "title": "エラー"
+    },
+    "title": "ダッシュボード",
+    "upgradeOptions": "アップグレードオプション",
+    "widgets": {
+      "accountHealth": {
+        "noData": "アカウント健全性データはありません",
+        "overallStatus": "全体ステータス",
+        "resourcesAtLimit": "リソースが上限に達している",
+        "resourcesNearLimit": "リソースが上限に近い",
+        "title": "アカウント健全性"
+      },
+      "ceph": {
+        "available": "利用可能",
+        "clone": "クローン",
+        "cluster": "クラスター",
+        "image": "イメージ",
+        "machines": "マシン"
+      },
+      "queueDetails": {
+        "active": "アクティブ",
+        "cancelled": "キャンセル済み",
+        "completed": "完了",
+        "created": "作成された",
+        "failedTotal": "失敗（合計）",
+        "highestPriority": "最高優先度",
+        "highPriority": "高優先度",
+        "lowPriority": "低優先度",
+        "machine": "マシン",
+        "machineQueueStatus": "マシンキューステータス",
+        "normalPriority": "通常優先度",
+        "pending": "保留中",
+        "priorityBreakdown": "優先度の内訳",
+        "stale": "古い",
+        "staleItems": "{{count}}個の古いアイテム",
+        "status": "ステータス",
+        "team": "チーム",
+        "teamQueueStatus": "チームキューステータス",
+        "title": "キューの詳細",
+        "todayActivity": "本日のアクティビティ"
+      },
+      "queueOverview": {
+        "manage": "管理",
+        "noData": "キューのデータはありません",
+        "title": "キューの概要"
+      },
+      "recentActivity": {
+        "noActivity": "最近のアクティビティはありません",
+        "title": "最近のアクティビティ",
+        "viewAll": "すべて表示"
+      },
+      "resourceUsage": {
+        "limitReached": "上限に達しました",
+        "machines": "マシン",
+        "repositories": "リポジトリ",
+        "subtitle": "プラン制限に対するリソース消費を監視する",
+        "title": "リソース使用状況"
+      },
+      "subscriptionPlan": {
+        "allActiveLicenses": "すべてのアクティブなライセンス",
+        "currentSubscription": "現在のサブスクリプション",
+        "day": "日",
+        "days": "日",
+        "hours": "時間",
+        "remaining": "残り",
+        "title": "サブスクリプションとプランの詳細",
+        "total": "合計",
+        "trial": "トライアル"
+      },
+      "systemVersion": {
+        "api": "API",
+        "apiUptime": "API稼働時間",
+        "console": "コンソール"
+      }
+    }
   },
   "dateColumn": "日付",
-  "export": "輸出",
+  "defaults": {
+    "defaultRegion": "デフォルトリージョン",
+    "globalBridges": "グローバルブリッジ",
+    "jsonError": "JSONエラー",
+    "privateTeam": "プライベートチーム"
+  },
+  "delete": "削除",
+  "desktopConnectionFailed": "デスクトップアプリの安全な接続を作成できませんでした",
+  "desktopPrompt": {
+    "downloadDesktop": "デスクトップアプリをダウンロード",
+    "machine": "マシン",
+    "openDesktop": "デスクトップアプリで開く",
+    "repository": "リポジトリ",
+    "securityExplanation": "ダイレクトファイル操作には、コンピューターからリモートマシンへの安全なSSH接続が必要です。セキュリティ上の理由により、この接続はブラウザから確立することはできません。",
+    "subtitle": "{{feature}}は、Rediaccデスクトップアプリケーションが必要な安全なSSH接続を使用します。",
+    "title": "{{feature}}はデスクトップアプリが必要です",
+    "whyDesktopOnly": "デスクトップのみなのはなぜですか？"
+  },
+  "errorBoundary": {
+    "componentStack": "コンポーネントスタック",
+    "description": "予期しないエラーが発生しました。これは自動的に報告されています。",
+    "error": "エラー",
+    "errorDetails": "エラー詳細（開発モード）",
+    "reloadPage": "ページを再読み込み",
+    "stack": "スタック",
+    "title": "問題が発生しました",
+    "tryAgain": "もう一度試す"
+  },
+  "errors": {
+    "somethingWentWrong": "問題が発生しました",
+    "schemaValidationFailed": "データ同期の問題が検出されました。ページを更新するか、問題が解決しない場合はサポートにお問い合わせください。"
+  },
+  "export": {
+    "label": "エクスポート",
+    "success": "エクスポート成功"
+  },
   "exportCSV": "CSVとしてエクスポート",
   "exportJSON": "JSONとしてエクスポート",
   "fieldGenerator": {
@@ -69,16 +214,48 @@
   "fields": {
     "vault": "ボールトの構成"
   },
+  "fileBrowser": {
+    "connecting": "接続中...",
+    "created": "フォルダを作成しました：{{name}}",
+    "createNewFolder": "新しいフォルダを作成",
+    "deleteConfirmMessage": "「{{name}}」を削除してもよろしいですか？",
+    "deleteFileConfirm": "ファイルを削除しますか？",
+    "deleteFolderConfirm": "フォルダを削除しますか？",
+    "deleteFolderWarning": "すべてのコンテンツが削除されます。",
+    "downloaded": "ダウンロードしました：{{name}}",
+    "error": "エラー",
+    "establishingConnection": "{{host}}へのSFTP接続を確立しています...",
+    "fileBrowser": "ファイルブラウザ",
+    "folder": "フォルダ",
+    "folderName": "フォルダ名",
+    "items": "{{count}}個のアイテム",
+    "modified": "変更日時",
+    "name": "名前",
+    "newName": "新しい名前",
+    "originalFile": "元ファイル",
+    "permissions": "権限",
+    "renamedSuccessfully": "正常に名前が変更されました",
+    "root": "ルート",
+    "size": "サイズ",
+    "uploaded": "アップロード：{{name}}"
+  },
   "general": {
     "cancel": "キャンセル",
     "defaultsApplied": "適用されるデフォルト値",
     "important": "重要",
     "loading": "読み込み中...",
+    "no": "いいえ",
+    "path": "パス",
+    "refreshing": "更新中...",
     "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています",
+    "team": "チーム",
     "unknown": "未知",
     "vaultVersion": "ボールトのバージョン",
-    "versionFormat": "v{{version}}"
+    "versionFormat": "バージョン {{version}}",
+    "warning": "警告",
+    "yes": "はい"
   },
+  "important": "重要",
   "language": {
     "ar": "アラビア語",
     "de": "ドイツ語",
@@ -86,12 +263,14 @@
     "es": "スペイン語",
     "fr": "フランス語",
     "ja": "日本語",
+    "label": "言語",
     "select": "言語の選択",
+    "switch": "言語を切り替え",
     "tr": "トルコ語",
     "zh": "中国語"
   },
-  "last30Days": "過去 30 日間",
   "last7Days": "過去 7 日間",
+  "last30Days": "過去 30 日間",
   "lastMonth": "先月",
   "messages": {
     "error": "エラー",
@@ -101,31 +280,31 @@
     "success": "成功"
   },
   "navigation": {
-    "architecture": "建築",
     "audit": "監査",
+    "ceph": "分散ストレージ",
+    "cephClusters": "クラスター",
+    "cephMachines": "マシン",
+    "cephPools": "プール",
+    "collapseSidebar": "サイドバーを折りたたむ",
     "credentials": "認証情報",
     "dashboard": "ダッシュボード",
-    "ceph": "分散ストレージ",
+    "expandSidebar": "サイドバーを展開",
     "logout": "ログアウト",
     "machines": "マシン",
     "mainNavigation": "メインナビゲーション",
-    "marketplace": "市場",
     "organization": "組織",
     "organizationAccess": "アクセス",
     "organizationTeams": "チーム",
     "organizationUsers": "ユーザー",
     "queue": "列",
     "settings": "設定",
-    "settingsCompany": "会社",
     "settingsInfrastructure": "インフラストラクチャー",
+    "settingsOrganization": "会社",
     "settingsProfile": "プロフィール",
     "storage": "ストレージ",
-    "storageCloud": "Cloud",
-    "storageDistributed": "Distributed",
-    "cephClusters": "クラスター",
-    "cephPools": "プール",
-    "cephMachines": "マシン",
-    "system": "システム"
+    "storageCloud": "クラウド",
+    "storageDistributed": "分散",
+    "userMenu": "ユーザーメニューを開く"
   },
   "nestedObjectEditor": {
     "Active": "アクティブ",
@@ -166,7 +345,23 @@
       "warning": "警告"
     }
   },
+  "powerMode": {
+    "advancedDisabled": "詳細オプションは無効です",
+    "advancedEnabled": "詳細オプションが有効です",
+    "localhostAllDisabled": "ローカルホストモード - すべての機能が無効です",
+    "localhostAllEnabled": "ローカルホストモード - すべての機能が有効です"
+  },
   "refresh": "リフレッシュ",
+  "remote": "リモート",
+  "resourceList": {
+    "createNew": "新規作成",
+    "getStartedMessage": "最初の{{resource}}を作成して開始してください",
+    "noDataAvailable": "データがありません",
+    "noResourcesFound": "{{resources}}が見つかりません。検索条件を調整してみてください。",
+    "searchPlaceholder": "検索...",
+    "showingRecords": "{{total}}件中{{start}}-{{end}}件のレコードを表示"
+  },
+  "save": "保存",
   "status": {
     "initializing": "初期化中...",
     "label": "状態",
@@ -177,16 +372,37 @@
   "statusColumn": "状態",
   "table": {
     "actions": "アクション",
+    "moreItems": "+{{count}}個の追加",
     "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています"
+  },
+  "teamSelector": {
+    "moreTeams": "+{{count}}個の追加チーム",
+    "selectTeams": "チームを選択..."
+  },
+  "theme": {
+    "dark": "ダーク",
+    "label": "テーマ",
+    "light": "ライト"
   },
   "thisMonth": "今月",
   "today": "今日",
+  "tokenGenerationFailed": "トークン生成に失敗しました：{{error}}",
+  "tooltips": {
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "expandPanel": "パネルを展開",
+    "refresh": "リフレッシュ",
+    "taskCancellable": "このタスクはキャンセルできます",
+    "trace": "トレース"
+  },
   "total": "合計",
   "uiMode": {
     "expert": "専門家",
+    "label": "インターフェースモード",
     "simple": "単純",
     "switching": "{{mode}} モードに切り替えています..."
   },
+  "unknown": "不明",
   "utilized": "活用済み",
   "vaultEditor": {
     "advanced": "高度な",
@@ -260,37 +476,6 @@
           "label": "OSDノード"
         }
       },
-      "COMPANY": {
-        "DOCKER_JSON_CONF": {
-          "description": "Docker レジストリ認証構成",
-          "label": "Docker の構成"
-        },
-        "LOG_FILE": {
-          "description": "システムログファイルへのパス",
-          "label": "ログファイルのパス"
-        },
-        "PLUGINS": {
-          "description": "コンテナイメージとアクティベーションステータスを含むプラグイン設定",
-          "label": "プラグイン"
-        },
-        "SSH_PRIVATE_KEY": {
-          "description": "企業運営用の Base64 でエンコードされた SSH 秘密キー",
-          "label": "SSH秘密鍵"
-        },
-        "SSH_PUBLIC_KEY": {
-          "description": "会社運営用の SSH 公開キー",
-          "label": "SSH公開鍵"
-        },
-        "UNIVERSAL_USER_ID": {
-          "description": "システム操作用のユニバーサルユーザーID",
-          "label": "ユニバーサルユーザーID"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "description": "システム操作用のユニバーサルユーザー名",
-          "label": "ユニバーサルユーザー名"
-        },
-        "description": "組織全体の設定のための会社の構成"
-      },
       "IMAGE": {
         "data_pool": {
           "description": "画像データを保存するための別のプール",
@@ -324,7 +509,7 @@
           "label": "データストアのパス"
         },
         "description": "SSH アクセスとストレージのためのマシン構成",
-        "host_entry": {
+        "known_hosts": {
           "description": "セキュリティ検証用の SSH 既知のホスト エントリ",
           "label": "ホストエントリー"
         },
@@ -347,6 +532,37 @@
         "user": {
           "description": "接続用のSSHユーザー名",
           "label": "ユーザー名"
+        }
+      },
+      "ORGANIZATION": {
+        "description": "組織全体の設定のための会社の構成",
+        "DOCKER_JSON_CONF": {
+          "description": "Docker レジストリ認証構成",
+          "label": "Docker の構成"
+        },
+        "LOG_FILE": {
+          "description": "システムログファイルへのパス",
+          "label": "ログファイルのパス"
+        },
+        "PLUGINS": {
+          "description": "コンテナイメージとアクティベーションステータスを含むプラグイン設定",
+          "label": "プラグイン"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "企業運営用の Base64 でエンコードされた SSH 秘密キー",
+          "label": "SSH秘密鍵"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "会社運営用の SSH 公開キー",
+          "label": "SSH公開鍵"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "システム操作用のユニバーサルユーザーID",
+          "label": "ユニバーサルユーザーID"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "システム操作用のユニバーサルユーザー名",
+          "label": "ユニバーサルユーザー名"
         }
       },
       "POOL": {
@@ -382,6 +598,10 @@
           "label": "地域コード"
         },
         "description": "地理的分散のためのリージョン構成",
+        "location": {
+          "description": "リージョンのロケーション詳細",
+          "label": "ロケーション"
+        },
         "name": {
           "description": "地理的地域の名前",
           "label": "地域名"
@@ -449,6 +669,11 @@
         }
       },
       "TEAM": {
+        "description": "組織構造のチーム構成",
+        "name": {
+          "description": "チーム名",
+          "label": "チーム名"
+        },
         "SSH_PRIVATE_KEY": {
           "description": "チーム操作用の Base64 でエンコードされた SSH 秘密キー",
           "label": "SSH秘密鍵"
@@ -457,17 +682,13 @@
           "description": "チーム操作用の SSH 公開キー",
           "label": "SSH公開鍵"
         },
-        "description": "組織構造のチーム構成",
-        "name": {
-          "description": "チーム名",
-          "label": "チーム名"
-        },
         "teamDescription": {
           "description": "チームの目的と責任の説明",
           "label": "チームの説明"
         }
       },
       "USER": {
+        "description": "個人設定のためのユーザー構成",
         "SSH_PRIVATE_KEY": {
           "description": "ユーザー操作用の Base64 でエンコードされた SSH 秘密キー",
           "label": "SSH秘密鍵"
@@ -475,8 +696,7 @@
         "SSH_PUBLIC_KEY": {
           "description": "ユーザー操作用の SSH 公開キー",
           "label": "SSH公開鍵"
-        },
-        "description": "個人設定のためのユーザー構成"
+        }
       }
     },
     "fields.CLONE.description": "RBD クローン設定を構成する",
@@ -487,8 +707,8 @@
     "fieldsMovedFromExtra": "extraFields から復元された {{count}} 個のフィールド: {{fields}}",
     "fieldsMovedToExtra": "{{count}} 個のフィールドが extraFields に移動されました: {{fields}}",
     "formatJson": "JSON形式",
-    "hostEntryHelp": "オプション。 SSH の既知のホスト エントリは自動的に検出されます。",
-    "hostEntryPlaceholder": "接続テスト中に自動入力されます",
+    "knownHostsHelp": "オプション。 SSH の既知のホスト エントリは自動的に検出されます。",
+    "knownHostsPlaceholder": "接続テスト中に自動入力されます",
     "importJson": "JSONをインポートする",
     "invalidFormat": "無効な形式です。 {{description}}",
     "invalidJsonFormat": "無効な JSON 形式",

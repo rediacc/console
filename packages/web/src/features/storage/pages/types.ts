@@ -1,4 +1,4 @@
-import { QueueFunction } from '@/api/queries/queue';
+import type { QueueFunction } from '@rediacc/shared/types';
 
 export interface StorageFunctionData {
   function: QueueFunction;

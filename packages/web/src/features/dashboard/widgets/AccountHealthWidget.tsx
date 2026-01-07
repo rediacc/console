@@ -1,30 +1,33 @@
 import React from 'react';
 import { Card, Empty, Flex, Tag, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
   SafetyCertificateOutlined,
 } from '@/utils/optimizedIcons';
-import type { CompanyDashboardData } from '@rediacc/shared/types';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 interface AccountHealthWidgetProps {
-  accountHealth?: CompanyDashboardData['accountHealth'];
+  accountHealth?: OrganizationDashboardData['accountHealth'];
 }
 
 const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth }) => {
+  const { t } = useTranslation('common');
+
   if (!accountHealth) {
     return (
       <Card
         data-testid="dashboard-account-health-card"
         title={
-          <Flex align="center" gap={8} wrap className="inline-flex">
+          <Flex align="center" wrap className="inline-flex">
             <SafetyCertificateOutlined />
-            <Typography.Text>Account Health</Typography.Text>
+            <Typography.Text>{t('dashboard.widgets.accountHealth.title')}</Typography.Text>
           </Flex>
         }
       >
-        <Empty description="No account health data available" />
+        <Empty description={t('dashboard.widgets.accountHealth.noData')} />
       </Card>
     );
   }
@@ -33,20 +36,20 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
     <Card
       data-testid="dashboard-account-health-card"
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <SafetyCertificateOutlined />
-          <Typography.Text>Account Health</Typography.Text>
+          <Typography.Text>{t('dashboard.widgets.accountHealth.title')}</Typography.Text>
         </Flex>
       }
     >
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         <Flex align="center" justify="space-between">
-          <Typography.Text>Overall Status</Typography.Text>
+          <Typography.Text>{t('dashboard.widgets.accountHealth.overallStatus')}</Typography.Text>
           <Tag bordered={false}>{accountHealth.subscriptionStatus}</Tag>
         </Flex>
 
-        <Flex vertical gap={8} className="w-full">
-          <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex vertical className="gap-sm w-full">
+          <Flex align="center" wrap className="inline-flex">
             {(accountHealth.resourcesAtLimit ?? 0) > 0 ? (
               <Flex className="inline-flex">
                 <ExclamationCircleOutlined />
@@ -56,15 +59,19 @@ const AccountHealthWidget: React.FC<AccountHealthWidgetProps> = ({ accountHealth
                 <CheckCircleOutlined />
               </Flex>
             )}
-            <Typography.Text>{accountHealth.resourcesAtLimit} resources at limit</Typography.Text>
+            <Typography.Text>
+              {accountHealth.resourcesAtLimit}{' '}
+              {t('dashboard.widgets.accountHealth.resourcesAtLimit')}
+            </Typography.Text>
           </Flex>
 
-          <Flex align="center" gap={8} wrap className="inline-flex">
+          <Flex align="center" wrap className="inline-flex">
             <Flex className="inline-flex">
               <ClockCircleOutlined />
             </Flex>
             <Typography.Text>
-              {accountHealth.resourcesNearLimit} resources near limit
+              {accountHealth.resourcesNearLimit}{' '}
+              {t('dashboard.widgets.accountHealth.resourcesNearLimit')}
             </Typography.Text>
           </Flex>
         </Flex>

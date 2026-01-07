@@ -30,7 +30,7 @@ import { ErrorPatterns, expectError } from '../helpers/errors.js';
  * - LOGIN_VERIFICATION_REQUIRED - requires login flow
  * - LOGIN_USER_NOT_ACTIVATED - requires login flow
  * - LOGIN_INVALID_PASSWORD - requires login flow
- * - LOGIN_COMPANY_MAINTENANCE - requires vault update in progress
+ * - LOGIN_ORGANIZATION_MAINTENANCE - requires vault update in progress
  * - TOKEN_EXPIRATION_INVALID - tested indirectly via token create
  * - TOKEN_BRIDGE_TARGET_REQUIRED - requires bridge token creation
  * - TOKEN_PRIVILEGE_INSUFFICIENT - requires permission group mismatch
@@ -50,7 +50,7 @@ import { ErrorPatterns, expectError } from '../helpers/errors.js';
  * - UPDATE_EMAIL_INVALID_FORMAT - tested in user.errors.test.ts
  * - UPDATE_EMAIL_FAILED - internal server error
  * - UPDATE_PASSWORD_FAILED - internal server error
- * - UPDATE_PASSWORD_NO_COMPANY - requires orphaned user
+ * - UPDATE_PASSWORD_NO_ORGANIZATION - requires orphaned user
  * - DEACTIVATE_USER_FAILED - internal server error
  * - REACTIVATE_USER_FAILED - internal server error
  * - SIGNUP_INVALID_PLAN - requires signup with invalid plan

@@ -1,7 +1,11 @@
 import React from 'react';
 import { Space, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
+import {
+  createStatusColumn,
+  createTruncatedColumn,
+  RESPONSIVE_HIDE_XS,
+} from '@/components/common/columns';
 import {
   isCredential as coreIsCredential,
   createArrayLengthSorter,
@@ -20,12 +24,12 @@ import {
   StarOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
-import type { GetTeamRepositories_ResultSet1 as TeamRepo } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { getRepositoryDisplayName } from './utils';
 import type { Container, PortMapping, RepositoryTableRow } from './types';
 import type { ColumnsType } from 'antd/es/table';
 
-export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
+export const useRepositoryColumns = (teamRepositories: GetTeamRepositories_ResultSet1[]) => {
   const { t } = useTranslation(['resources', 'common']);
   const { token } = theme.useToken();
 
@@ -83,7 +87,7 @@ export const useRepositoryColumns = (teamRepositories: TeamRepo[]) => {
             {isGrand ? <StarOutlined /> : <CopyOutlined />}
           </Typography.Text>
           <strong>{getRepositoryDisplayName(record)}</strong>
-          {isGrand && <Tag>Grand</Tag>}
+          {isGrand && <Tag>{t('resources:repositories.grand')}</Tag>}
         </Space>
       );
     },
@@ -221,7 +225,10 @@ export const useSystemContainerColumns = () => {
         </Space>
       ),
     },
-    systemImageColumn,
+    {
+      ...systemImageColumn,
+      responsive: RESPONSIVE_HIDE_XS,
+    },
     {
       ...systemStateColumn,
       render: (state: string, record: Container, index) => (
@@ -234,11 +241,7 @@ export const useSystemContainerColumns = () => {
             ) as React.ReactNode
           }
           {record.status && (
-            <Typography.Text
-              type="secondary"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ fontSize: 12 }}
-            >
+            <Typography.Text type="secondary" className="text-xs">
               {record.status}
             </Typography.Text>
           )}
@@ -249,6 +252,7 @@ export const useSystemContainerColumns = () => {
       title: t('resources:repositories.containerCPU'),
       dataIndex: 'cpu_percent',
       key: 'cpu_percent',
+      responsive: RESPONSIVE_HIDE_XS,
       sorter: createSorter<Container>('cpu_percent'),
       render: (cpu: string) => cpu || '-',
     },
@@ -256,6 +260,7 @@ export const useSystemContainerColumns = () => {
       title: t('resources:repositories.containerMemory'),
       dataIndex: 'memory_usage',
       key: 'memory_usage',
+      responsive: RESPONSIVE_HIDE_XS,
       sorter: createSorter<Container>('memory_usage'),
       render: (memory: string) => memory || '-',
     },
@@ -264,17 +269,14 @@ export const useSystemContainerColumns = () => {
       dataIndex: 'port_mappings',
       key: 'port_mappings',
       ellipsis: true,
+      responsive: RESPONSIVE_HIDE_XS,
       sorter: createArrayLengthSorter<Container>('port_mappings'),
       render: (portMappings: PortMapping[], record: Container) => {
         if (portMappings.length > 0) {
           return (
             <Space direction="vertical" size={4}>
               {portMappings.map((mapping, index) => (
-                <Typography.Text
-                  key={index}
-                  // eslint-disable-next-line no-restricted-syntax
-                  style={{ fontSize: 12 }}
-                >
+                <Typography.Text key={index} className="text-xs">
                   {mapping.host_port ? (
                     <Typography.Text>
                       {mapping.host}:{mapping.host_port} → {mapping.container_port}/
@@ -290,14 +292,7 @@ export const useSystemContainerColumns = () => {
             </Space>
           );
         } else if (record.ports) {
-          return (
-            <Typography.Text
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ fontSize: 12 }}
-            >
-              {record.ports}
-            </Typography.Text>
-          );
+          return <Typography.Text className="text-xs">{record.ports}</Typography.Text>;
         }
         return '-';
       },

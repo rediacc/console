@@ -1,5 +1,16 @@
 import React from 'react';
-import { Card, Col, Collapse, Descriptions, Flex, Row, Space, Tag, Typography } from 'antd';
+import {
+  Card,
+  Col,
+  Collapse,
+  Descriptions,
+  Flex,
+  Row,
+  Segmented,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CodeOutlined,
@@ -12,6 +23,7 @@ import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { ConsoleOutput } from './ConsoleOutput';
 import { StatsPanel } from './StatsPanel';
 import { getPriorityInfo } from '../utils';
+import type { ConsoleViewMode } from '../types';
 
 interface MachineDetailsProps {
   queueDetails: GetTeamQueueItems_ResultSet1;
@@ -22,6 +34,8 @@ interface MachineDetailsProps {
   accumulatedOutput: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   hasContent: boolean;
+  consoleViewMode: ConsoleViewMode;
+  setConsoleViewMode: (mode: ConsoleViewMode) => void;
 }
 
 export const MachineDetails: React.FC<MachineDetailsProps> = ({
@@ -33,6 +47,8 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
   accumulatedOutput,
   consoleOutputRef,
   hasContent,
+  consoleViewMode,
+  setConsoleViewMode,
 }) => {
   const { t } = useTranslation(['queue', 'common']);
 
@@ -40,26 +56,28 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
     <Row gutter={[24, 16]}>
       {/* Left Column - Task Details */}
       <Col xs={24} lg={12}>
-        <Flex vertical gap={16} className="w-full">
+        <Flex vertical className="w-full">
           <Card size="small" title={t('trace.taskInfo')} data-testid="queue-trace-task-info">
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Task ID">
+              <Descriptions.Item label={t('trace.taskId')}>
                 <Typography.Text code>{queueDetails.taskId}</Typography.Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Created By">
+              <Descriptions.Item label={t('trace.createdBy')}>
                 <Space>
                   <UserOutlined />
-                  <Typography.Text>{queueDetails.createdBy ?? 'System'}</Typography.Text>
+                  <Typography.Text>{queueDetails.createdBy ?? t('trace.system')}</Typography.Text>
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Retry Status">
+              <Descriptions.Item label={t('trace.retryStatus')}>
                 <Space>
                   <RetweetOutlined />
-                  <Tag>{queueDetails.retryCount ?? 0} / 2 retries</Tag>
-                  {queueDetails.permanentlyFailed && <Tag>Permanently Failed</Tag>}
+                  <Tag>
+                    {t('trace.retriesFormat', { current: queueDetails.retryCount ?? 0, max: 2 })}
+                  </Tag>
+                  {queueDetails.permanentlyFailed && <Tag>{t('trace.permanentlyFailed')}</Tag>}
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Priority">
+              <Descriptions.Item label={t('trace.priority')}>
                 <Space>
                   {getPriorityInfo(queueDetails.priority ?? undefined).icon}
                   <Tag>{getPriorityInfo(queueDetails.priority ?? undefined).label}</Tag>
@@ -74,19 +92,19 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
             data-testid="queue-trace-processing-info"
           >
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Machine">
+              <Descriptions.Item label={t('trace.machine')}>
                 <Space>
                   <TeamOutlined />
                   <Typography.Text>{queueDetails.machineName}</Typography.Text>
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="Team">
+              <Descriptions.Item label={t('trace.team')}>
                 <Typography.Text>{queueDetails.teamName}</Typography.Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Bridge">
+              <Descriptions.Item label={t('trace.bridge')}>
                 <Typography.Text>{queueDetails.bridgeName}</Typography.Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Region">
+              <Descriptions.Item label={t('trace.region')}>
                 <Typography.Text>{queueDetails.regionName}</Typography.Text>
               </Descriptions.Item>
             </Descriptions>
@@ -113,20 +131,31 @@ export const MachineDetails: React.FC<MachineDetailsProps> = ({
               label: (
                 <Space>
                   <CodeOutlined />
-                  <Typography.Text>Response (Console)</Typography.Text>
+                  <Typography.Text>{t('trace.responseConsole')}</Typography.Text>
                   {queueDetails.status === 'PROCESSING' && (
-                    <Tag icon={<CodeOutlined />}>Live Output</Tag>
+                    <Tag icon={<CodeOutlined />}>{t('trace.liveOutput')}</Tag>
                   )}
                 </Space>
               ),
+              extra: (
+                <Segmented
+                  size="small"
+                  value={consoleViewMode}
+                  onChange={(value) => setConsoleViewMode(value as ConsoleViewMode)}
+                  options={[
+                    { label: t('trace.structuredLog.viewStructured'), value: 'structured' },
+                    { label: t('trace.structuredLog.viewRaw'), value: 'raw' },
+                  ]}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid="console-output-view-toggle-detailed"
+                />
+              ),
               children: (
                 <ConsoleOutput
-                  content={accumulatedOutput
-                    .replace(/\\r\\n/g, '\n')
-                    .replace(/\\n/g, '\n')
-                    .replace(/\\r/g, '\r')}
+                  content={accumulatedOutput}
                   consoleOutputRef={consoleOutputRef}
                   isEmpty={!hasContent}
+                  viewMode={consoleViewMode}
                 />
               ),
             },

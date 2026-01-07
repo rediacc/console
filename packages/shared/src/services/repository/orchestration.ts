@@ -20,12 +20,13 @@ export interface OperationContext {
 
 /**
  * Context for fork deletion operation
+ * Note: Fields use `| null` to match generated API types
  */
 export interface ForkDeletionContext extends OperationContext {
-  repositoryGuid?: string;
-  grandGuid?: string;
-  parentName?: string;
-  repositoryNetworkId?: number;
+  repositoryGuid?: string | null;
+  grandGuid?: string | null;
+  parentName?: string | null;
+  repositoryNetworkId?: number | null;
   repositoryTag?: string | null;
 }
 
@@ -33,9 +34,9 @@ export interface ForkDeletionContext extends OperationContext {
  * Context for grand repository deletion operation
  */
 export interface GrandDeletionContext extends OperationContext {
-  repositoryGuid?: string;
+  repositoryGuid?: string | null;
   childClones: ChildClone[];
-  repositoryNetworkId?: number;
+  repositoryNetworkId?: number | null;
   repositoryTag?: string | null;
 }
 
@@ -43,8 +44,8 @@ export interface GrandDeletionContext extends OperationContext {
  * Context for promotion operation
  */
 export interface PromotionContext extends OperationContext {
-  repositoryGuid?: string;
-  currentGrandName: string;
+  repositoryGuid?: string | null;
+  currentGrandName: string | null;
   siblingClones: SiblingClone[];
 }
 
@@ -52,26 +53,27 @@ export interface PromotionContext extends OperationContext {
  * Context for backup operation
  */
 export interface BackupContext extends OperationContext {
-  repositoryGuid?: string;
-  grandGuid?: string;
+  repositoryGuid?: string | null;
+  grandGuid?: string | null;
   canBackupToStorage: boolean;
   canBackupToMachine: boolean;
   storageBlockReason?: string;
-  repositoryNetworkId?: number;
-  repositoryNetworkMode?: string;
+  repositoryNetworkId?: number | null;
+  repositoryNetworkMode?: string | null;
   repositoryTag?: string | null;
+  mounted?: boolean | null;
 }
 
 /**
  * Context for fork (clone) operation
  */
 export interface ForkCreationContext extends OperationContext {
-  repositoryGuid?: string;
-  grandGuid?: string;
-  repositoryNetworkId?: number;
-  repositoryNetworkMode?: string;
+  repositoryGuid?: string | null;
+  grandGuid?: string | null;
+  repositoryNetworkId?: number | null;
+  repositoryNetworkMode?: string | null;
   repositoryTag?: string | null;
-  mounted?: boolean;
+  mounted?: boolean | null;
 }
 
 /**

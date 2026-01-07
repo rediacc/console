@@ -34,13 +34,13 @@ export function useGroupedMachines({
       let key = '';
       switch (groupBy) {
         case 'bridge':
-          key = machine.bridgeName;
+          key = machine.bridgeName ?? '';
           break;
         case 'team':
-          key = machine.teamName;
+          key = machine.teamName ?? '';
           break;
         case 'region':
-          key = machine.regionName || 'Unknown';
+          key = machine.regionName ?? 'Unknown';
           break;
         case 'repository': {
           // For repository grouping, we'll handle this differently

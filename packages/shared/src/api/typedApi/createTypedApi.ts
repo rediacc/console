@@ -9,7 +9,7 @@
  * const typedApi = createTypedApi(client);
  *
  * // No params required
- * const { results } = await typedApi.GetCompanyTeams();
+ * const { results } = await typedApi.GetOrganizationTeams();
  *
  * // With params
  * const { results } = await typedApi.GetTeamMachines({ teamName: 'Default' });
@@ -23,8 +23,10 @@
  */
 
 import { applyProcedureDefaults } from './defaults';
+import { validateApiResponse, ApiValidationError } from '../../types/api-schema.zod';
 import type { TypedApi, TypedApiConfig, TypedApiResponse } from './types';
 import type { StoredProcedureName } from '../../types/api-schema.generated';
+import type { ErrorHandler } from '../adapters/types';
 import type { ApiClient } from '../services/types';
 
 /**
@@ -40,12 +42,22 @@ function getHttpMethod(procedureName: string): 'get' | 'post' {
 }
 
 /**
+ * Options for creating a typed API.
+ */
+export interface CreateTypedApiOptions {
+  /** Optional error handler for validation errors */
+  errorHandler?: ErrorHandler;
+}
+
+/**
  * Creates a type-safe API proxy that maps procedure names to typed API calls.
  *
  * @param client - The underlying API client (must implement ApiClient interface)
+ * @param options - Optional configuration including error handler
  * @returns A TypedApi proxy with methods for each stored procedure
  */
-export function createTypedApi(client: ApiClient): TypedApi {
+export function createTypedApi(client: ApiClient, options: CreateTypedApiOptions = {}): TypedApi {
+  const { errorHandler } = options;
   const callerCache = new Map<string, unknown>();
 
   const handler: ProxyHandler<object> = {
@@ -74,6 +86,16 @@ export function createTypedApi(client: ApiClient): TypedApi {
           method === 'get'
             ? await client.get(endpoint, paramsWithDefaults, config)
             : await client.post(endpoint, paramsWithDefaults, config);
+
+        // Validate response against Zod schema (fail-fast)
+        try {
+          validateApiResponse(procedureName, response);
+        } catch (error) {
+          if (error instanceof ApiValidationError) {
+            errorHandler?.onValidationError?.(error);
+          }
+          throw error;
+        }
 
         const typedResponse: TypedApiResponse<typeof procedureName> = {
           ...response,

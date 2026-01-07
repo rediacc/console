@@ -1,5 +1,5 @@
 import { Button, Popconfirm, Space, Tooltip, Typography } from 'antd';
-import type { PermissionGroup } from '@/api/queries/permissions';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   DeleteOutlined,
   HistoryOutlined,
@@ -7,32 +7,31 @@ import {
   SafetyOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetOrganizationPermissionGroups_ResultSet1 } from '@rediacc/shared/types';
+import { RESPONSIVE_HIDE_XS } from '..';
+import { createActionColumn } from '../factories/action';
 import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
 
 interface BuildPermissionColumnsParams {
-  t: TFunction<'organization'>;
-  tSystem: TFunction<'system'>;
-  tCommon: TFunction<'common'>;
-  onManagePermissions: (group: PermissionGroup) => void;
-  onAssignUser: (group: PermissionGroup) => void;
-  onTrace: (group: PermissionGroup) => void;
+  t: TypedTFunction;
+  onManagePermissions: (group: GetOrganizationPermissionGroups_ResultSet1) => void;
+  onAssignUser: (group: GetOrganizationPermissionGroups_ResultSet1) => void;
+  onTrace: (group: GetOrganizationPermissionGroups_ResultSet1) => void;
   onDeleteGroup: (groupName: string) => void;
   isDeleting: boolean;
 }
 
 export const buildPermissionColumns = ({
   t,
-  tSystem,
-  tCommon,
   onManagePermissions,
   onAssignUser,
   onTrace,
   onDeleteGroup,
   isDeleting,
-}: BuildPermissionColumnsParams): ColumnsType<PermissionGroup> => [
+}: BuildPermissionColumnsParams): ColumnsType<GetOrganizationPermissionGroups_ResultSet1> => [
   {
-    title: tSystem('tables.permissionGroups.groupName'),
+    title: t('system:tables.permissionGroups.groupName'),
     dataIndex: 'permissionGroupName',
     key: 'permissionGroupName',
     render: (text: string) => (
@@ -43,10 +42,11 @@ export const buildPermissionColumns = ({
     ),
   },
   {
-    title: tSystem('tables.permissionGroups.users'),
+    title: t('system:tables.permissionGroups.users'),
     dataIndex: 'userCount',
     key: 'userCount',
     width: 120,
+    responsive: RESPONSIVE_HIDE_XS,
     render: (count: number) => (
       <Space>
         <UserOutlined />
@@ -55,10 +55,11 @@ export const buildPermissionColumns = ({
     ),
   },
   {
-    title: tSystem('tables.permissionGroups.permissions'),
+    title: t('system:tables.permissionGroups.permissions'),
     dataIndex: 'permissionCount',
     key: 'permissionCount',
     width: 140,
+    responsive: RESPONSIVE_HIDE_XS,
     render: (count: number) => (
       <Space>
         <KeyOutlined />
@@ -66,65 +67,69 @@ export const buildPermissionColumns = ({
       </Space>
     ),
   },
-  {
-    title: tSystem('tables.permissionGroups.actions'),
-    key: 'actions',
+  createActionColumn<GetOrganizationPermissionGroups_ResultSet1>({
+    title: t('system:tables.permissionGroups.actions'),
     width: 360,
-    render: (_: unknown, record: PermissionGroup) => (
-      <Space>
-        <Tooltip title={tSystem('actions.permissions')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<KeyOutlined />}
-            onClick={() => onManagePermissions(record)}
-            data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
-            aria-label={tSystem('actions.permissions')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.assignUser')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<UserOutlined />}
-            onClick={() => onAssignUser(record)}
-            data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
-            aria-label={tSystem('actions.assignUser')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.trace')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => onTrace(record)}
-            data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
-            aria-label={tSystem('actions.trace')}
-          />
-        </Tooltip>
-        <Popconfirm
-          title={t('access.modals.deleteGroupTitle')}
-          description={t('access.modals.deleteGroupDescription', {
-            group: record.permissionGroupName,
-          })}
-          onConfirm={() => onDeleteGroup(record.permissionGroupName)}
-          okText={tCommon('general.yes')}
-          cancelText={tCommon('general.no')}
-          okButtonProps={{ danger: true }}
-        >
-          <Tooltip title={tCommon('actions.delete')}>
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              loading={isDeleting}
-              data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
-              aria-label={tCommon('actions.delete')}
-            />
-          </Tooltip>
-        </Popconfirm>
-      </Space>
+    renderActions: (record) => (
+      <ActionButtonGroup
+        buttons={[
+          {
+            type: 'permissions',
+            icon: <KeyOutlined />,
+            tooltip: 'system:actions.permissions',
+            onClick: () => onManagePermissions(record),
+            variant: 'primary',
+            testId: `system-permission-group-manage-button-${record.permissionGroupName}`,
+          },
+          {
+            type: 'assign',
+            icon: <UserOutlined />,
+            tooltip: 'system:actions.assignUser',
+            onClick: () => onAssignUser(record),
+            variant: 'primary',
+            testId: `system-permission-group-assign-user-button-${record.permissionGroupName}`,
+          },
+          {
+            type: 'trace',
+            icon: <HistoryOutlined />,
+            tooltip: 'system:actions.trace',
+            onClick: () => onTrace(record),
+            variant: 'primary',
+            testId: `system-permission-group-trace-button-${record.permissionGroupName}`,
+          },
+          {
+            type: 'custom',
+            render: (rec) => (
+              <Popconfirm
+                title={t('access.modals.deleteGroupTitle')}
+                description={t('access.modals.deleteGroupDescription', {
+                  group: rec.permissionGroupName,
+                })}
+                onConfirm={() => onDeleteGroup(rec.permissionGroupName ?? '')}
+                okText={t('common:general.yes')}
+                cancelText={t('common:general.no')}
+                okButtonProps={{ danger: true }}
+              >
+                <Tooltip title={t('common:actions.delete')}>
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={isDeleting}
+                    data-testid={`system-permission-group-delete-button-${rec.permissionGroupName}`}
+                    aria-label={t('common:actions.delete')}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            ),
+          },
+        ]}
+        record={record}
+        idField="permissionGroupName"
+        testIdPrefix="system-permission-group"
+        t={t}
+      />
     ),
-  },
+  }),
 ];

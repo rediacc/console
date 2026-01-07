@@ -1,8 +1,9 @@
 import { Command } from 'commander';
-import type { GetCompanyVaults_ResultSet1 } from '@rediacc/shared/types';
+import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
 import { searchInFields, compareValues } from '@rediacc/shared/utils';
 import { handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
+import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -48,8 +49,8 @@ export interface ResourceCommandConfig {
     fetch: (
       params: Record<string, unknown>
     ) => Promise<
-      | (GetCompanyVaults_ResultSet1 & { vaultType?: string })[]
-      | { vaults: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] }
+      | (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[]
+      | { vaults: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[] }
     >;
     vaultType: string;
   };
@@ -69,11 +70,11 @@ function createParentCheck(parentOption: 'team' | 'region' | 'none') {
       return true;
     }
     if (parentOption === 'team' && !opts.team) {
-      outputService.error('Team name required. Use --team or set context.');
+      outputService.error(t('errors.teamRequired'));
       return false;
     }
     if (parentOption === 'region' && !opts.region) {
-      outputService.error('Region name required. Use --region or set context.');
+      outputService.error(t('errors.regionRequired'));
       return false;
     }
     return true;
@@ -145,9 +146,9 @@ export function createResourceCommands(program: Command, config: ResourceCommand
 
   // Add search and sort options
   listCmd
-    .option('--search <text>', `Search in ${nameField}`)
-    .option('--sort <field>', 'Sort by field')
-    .option('--desc', 'Sort in descending order');
+    .option('--search <text>', t('options.searchInField', { field: nameField }))
+    .option('--sort <field>', t('options.sortByField'))
+    .option('--desc', t('options.sortDescending'));
 
   listCmd.action(async (options) => {
     try {
@@ -303,7 +304,7 @@ export function createResourceCommands(program: Command, config: ResourceCommand
     deleteCmd.option(parentFlag, parentDesc);
   }
 
-  deleteCmd.option('-f, --force', 'Skip confirmation').action(async (name, options) => {
+  deleteCmd.option('-f, --force', t('options.force')).action(async (name, options) => {
     try {
       await authService.requireAuth();
       const opts = hasParent ? await contextService.applyDefaults(options) : options;
@@ -318,7 +319,7 @@ export function createResourceCommands(program: Command, config: ResourceCommand
           `Delete ${resourceName} "${name}"? This cannot be undone.`
         );
         if (!confirm) {
-          outputService.info('Cancelled');
+          outputService.info(t('status.cancelled'));
           return;
         }
       }
@@ -382,18 +383,21 @@ export function createResourceCommands(program: Command, config: ResourceCommand
             'Vault fetched'
           );
 
-          const vaultsArray: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] =
+          const vaultsArray: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[] =
             Array.isArray(response)
-              ? (response as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[])
+              ? (response as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[])
               : Array.isArray(
                     (
                       response as {
-                        vaults?: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+                        vaults?: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
                       }
                     ).vaults
                   )
-                ? (response as { vaults: (GetCompanyVaults_ResultSet1 & { vaultType?: string })[] })
-                    .vaults
+                ? (
+                    response as {
+                      vaults: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
+                    }
+                  ).vaults
                 : [];
           const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType);
           const format = program.opts().output as OutputFormat;
@@ -414,12 +418,8 @@ export function createResourceCommands(program: Command, config: ResourceCommand
       const updateCmd = vault
         .command(`update <${resourceName}Name>`)
         .description(`Update ${resourceName} vault data`)
-        .option('--vault <json>', 'Vault data as JSON string')
-        .option(
-          '--vault-version <n>',
-          'Current vault version (required for optimistic concurrency)',
-          parseInt
-        );
+        .option('--vault <json>', t('options.vaultJson'))
+        .option('--vault-version <n>', t('options.vaultVersion'), parseInt);
 
       if (hasParent) {
         updateCmd.option(parentFlag, parentDesc);
@@ -446,12 +446,12 @@ export function createResourceCommands(program: Command, config: ResourceCommand
           }
 
           if (!vaultData) {
-            outputService.error('Vault data required. Use --vault <json> or pipe JSON via stdin.');
+            outputService.error(t('errors.vaultDataRequired'));
             process.exit(1);
           }
 
           if (options.vaultVersion === undefined || options.vaultVersion === null) {
-            outputService.error('Vault version required. Use --vault-version <n>.');
+            outputService.error(t('errors.vaultVersionRequired'));
             process.exit(1);
           }
 
@@ -459,7 +459,7 @@ export function createResourceCommands(program: Command, config: ResourceCommand
           try {
             JSON.parse(vaultData);
           } catch {
-            outputService.error('Invalid JSON vault data.');
+            outputService.error(t('errors.invalidJsonVault'));
             process.exit(1);
           }
 

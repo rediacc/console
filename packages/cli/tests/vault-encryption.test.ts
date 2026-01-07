@@ -206,7 +206,7 @@ describe('Vault Encryption Integration', () => {
       const queueData = {
         taskId: 'abc-123',
         queueVault: JSON.stringify({
-          function: 'deploy',
+          function: 'backup_deploy',
           repository: 'main-app',
           version: '1.2.3',
           environment: {

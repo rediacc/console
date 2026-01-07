@@ -26,8 +26,7 @@ export const DetailPanelSurface: React.FC<
 );
 
 const DetailPanelHeader = (props: React.ComponentProps<typeof Flex>) => (
-  // eslint-disable-next-line no-restricted-syntax
-  <Flex vertical style={{ position: 'sticky', top: 0, zIndex: 10 }} {...props} />
+  <Flex vertical className="sticky top-0 z-10" {...props} />
 );
 
 const DetailPanelHeaderRow = (props: React.ComponentProps<typeof Flex>) => (
@@ -90,21 +89,17 @@ export const DetailPanelFieldLabel: React.FC<
 );
 
 export const DetailPanelFieldValue = (props: React.ComponentProps<typeof Text>) => (
-  // eslint-disable-next-line no-restricted-syntax
-  <Text style={{ wordBreak: 'break-word' }} {...props} />
+  <Text className="break-words" {...props} />
 );
 
 export const DetailPanelFieldStrongValue = (props: React.ComponentProps<typeof Text>) => (
-  // eslint-disable-next-line no-restricted-syntax
-  <Text strong style={{ wordBreak: 'break-word' }} {...props} />
+  <Text strong className="break-words" {...props} />
 );
 
 export const DetailPanelFieldMonospaceValue = (props: React.ComponentProps<typeof Text>) => (
-  // eslint-disable-next-line no-restricted-syntax
-  <Text code style={{ wordBreak: 'break-word' }} {...props} />
+  <Text code className="break-words" {...props} />
 );
 
 export const DetailPanelDivider = (props: React.ComponentProps<typeof Divider>) => (
-  // eslint-disable-next-line no-restricted-syntax
-  <Divider style={{ margin: '24px 0' }} {...props} />
+  <Divider className="my-6" {...props} />
 );

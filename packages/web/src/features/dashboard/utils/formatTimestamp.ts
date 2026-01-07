@@ -27,5 +27,5 @@ export const formatTimestamp = (timestamp: string): string => {
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   }
 
-  return date.toLocaleDateString();
+  return date.toLocaleString();
 };

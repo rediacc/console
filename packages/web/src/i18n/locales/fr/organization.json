@@ -37,8 +37,8 @@
       "userAssigned": "Utilisateur affecté au groupe d'autorisations \"{{group}}\""
     },
     "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "permissions": "Autorisations",
+      "sessions": "Sessions de connexion"
     }
   },
   "teams": {
@@ -74,7 +74,7 @@
       "userVaultUpdateFailed": "Échec de la mise à jour du coffre-fort utilisateur"
     },
     "form": {
-      "emailLabel": "Email",
+      "emailLabel": "Adresse E-mail",
       "passwordLabel": "Mot de passe",
       "passwordPlaceholder": "Saisissez le mot de passe"
     },

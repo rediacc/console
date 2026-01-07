@@ -3,12 +3,12 @@
  */
 
 import { extractPrimaryOrSecondary, extractFirstByIndex } from './base';
-import type { GetCompanyUsers_ResultSet1, CreateNewUser_ResultSet1 } from '../../types';
+import type { GetOrganizationUsers_ResultSet1, CreateNewUser_ResultSet1 } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
-export function parseGetCompanyUsers(
-  response: ApiResponse<GetCompanyUsers_ResultSet1>
-): GetCompanyUsers_ResultSet1[] {
+export function parseGetOrganizationUsers(
+  response: ApiResponse<GetOrganizationUsers_ResultSet1>
+): GetOrganizationUsers_ResultSet1[] {
   return extractPrimaryOrSecondary(response).filter((user) => Boolean(user.userEmail));
 }
 
@@ -21,4 +21,4 @@ export function parseCreateUser(
   );
 }
 
-export const parseUserList = parseGetCompanyUsers;
+export const parseUserList = parseGetOrganizationUsers;

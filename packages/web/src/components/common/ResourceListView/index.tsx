@@ -12,6 +12,7 @@ import {
   Typography,
   type TableProps,
 } from 'antd';
+import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
 
@@ -44,6 +45,10 @@ export interface ResourceListViewProps<T extends object = Record<string, unknown
   rowClassName?: TableProps<T>['rowClassName'];
   /** Custom data-testid for the table */
   'data-testid'?: string;
+  /** Custom data-testid for the search input */
+  searchTestId?: string;
+  /** Custom data-testid for the refresh button */
+  refreshTestId?: string;
 }
 
 function ResourceListView<T extends object = Record<string, unknown>>({
@@ -51,29 +56,35 @@ function ResourceListView<T extends object = Record<string, unknown>>({
   loading = false,
   data = [],
   columns,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder,
   onSearch,
   filters,
   actions,
   rowKey = 'id',
-  emptyText = 'No data available',
+  emptyText,
   pagination,
   onRow,
   rowSelection,
   onCreateNew,
   onRefresh,
-  createButtonText = 'Create New',
+  createButtonText,
   emptyDescription,
   resourceType = 'items',
   mobileRender,
   expandable,
   rowClassName,
   'data-testid': dataTestId,
+  searchTestId,
+  refreshTestId,
 }: ResourceListViewProps<T>) {
+  const { t } = useTranslation('common');
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.sm;
   const shouldRenderControls = Boolean(title ?? onSearch ?? filters ?? actions);
-  const resolvedEmptyDescription = emptyDescription ?? emptyText;
+  const resolvedEmptyDescription =
+    emptyDescription ?? emptyText ?? t('resourceList.noDataAvailable');
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t('resourceList.searchPlaceholder');
+  const resolvedCreateButtonText = createButtonText ?? t('resourceList.createNew');
   const singularResourceType = resourceType.endsWith('s')
     ? resourceType.slice(0, -1)
     : resourceType;
@@ -84,7 +95,11 @@ function ResourceListView<T extends object = Record<string, unknown>>({
           showSizeChanger: true,
           size: 'small' as const,
           showTotal: (total: number, range: [number, number]) =>
-            `Showing records ${range[0]}-${range[1]} of ${total}`,
+            t('resourceList.showingRecords', {
+              start: range[0],
+              end: range[1],
+              total,
+            }),
           pageSizeOptions: ['10', '20', '50', '100'],
           defaultPageSize: 20,
           ...pagination,
@@ -113,13 +128,13 @@ function ResourceListView<T extends object = Record<string, unknown>>({
               {title}
               {onSearch && (
                 <Input.Search
-                  key={searchPlaceholder}
-                  placeholder={searchPlaceholder}
+                  key={resolvedSearchPlaceholder}
+                  placeholder={resolvedSearchPlaceholder}
                   onSearch={onSearch}
                   prefix={<SearchOutlined />}
                   allowClear
                   autoComplete="off"
-                  data-testid="resource-list-search"
+                  data-testid={searchTestId ?? 'resource-list-search'}
                 />
               )}
               <Flex align="center" data-testid="resource-list-filters">
@@ -143,29 +158,29 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                 <Typography.Text strong>{resolvedEmptyDescription}</Typography.Text>
                 <Typography.Text>
                   {onCreateNew
-                    ? `Get started by creating your first ${singularResourceType}`
-                    : `No ${resourceType} found. Try adjusting your search criteria.`}
+                    ? t('resourceList.getStartedMessage', { resource: singularResourceType })
+                    : t('resourceList.noResourcesFound', { resources: resourceType })}
                 </Typography.Text>
                 {(onCreateNew ?? onRefresh) && (
                   <Flex align="center" justify="center">
                     {onCreateNew && (
-                      <Tooltip title={createButtonText}>
+                      <Tooltip title={resolvedCreateButtonText}>
                         <Button
                           icon={<PlusOutlined />}
                           onClick={onCreateNew}
                           data-testid="resource-list-create-new"
-                          aria-label={createButtonText}
+                          aria-label={resolvedCreateButtonText}
                         />
                       </Tooltip>
                     )}
                     {onRefresh && (
-                      <Tooltip title="Refresh">
+                      <Tooltip title={t('actions.refresh')}>
                         <Button
                           shape="circle"
                           icon={<ReloadOutlined />}
                           onClick={onRefresh}
-                          data-testid="resource-list-refresh"
-                          aria-label="Refresh"
+                          data-testid={refreshTestId ?? 'resource-list-refresh'}
+                          aria-label={t('actions.refresh')}
                         />
                       </Tooltip>
                     )}

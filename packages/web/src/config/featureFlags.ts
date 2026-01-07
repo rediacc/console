@@ -52,12 +52,12 @@
  * requiresLocalhost?: boolean
  *   - Feature only visible when connected to localhost API
  *   - Use for beta/development features not ready for production
- *   - Example: marketplace, ceph, queue
+ *   - Example: ceph, queue
  *
  * requiresPowerMode?: boolean
  *   - Feature revealed by Ctrl+Shift+E on production domains
  *   - Use for advanced admin tools that should be accessible in production
- *   - Example: apiEndpointSelector, versionSelector
+ *   - Example: organizationSettings
  *
  * requiresExpertMode?: boolean
  *   - Feature requires expert mode toggle in UI (separate system)
@@ -85,9 +85,9 @@
  * }
  *
  * // Power mode feature (accessible in production with Ctrl+Shift+E)
- * apiEndpointSelector: {
+ * organizationSettings: {
  *   requiresPowerMode: true,
- *   description: 'API endpoint selector'
+ *   description: 'Organization settings menu item'
  * }
  *
  * // Production feature (always visible)
@@ -152,37 +152,17 @@ class FeatureFlags {
    * This is the single source of truth for all beta features
    */
   private flags: Record<string, FeatureFlag> = {
-    // Ceph Storage - Beta feature
+    // Ceph Storage - Disabled
     ceph: {
-      requiresLocalhost: true, // Hide in production builds
-      requiresExpertMode: true,
-      localhostOnly: true,
+      enabled: false,
       description:
         'Ceph storage cluster management - allows creating and managing storage clusters',
-    },
-
-    // Assign to Cluster - Beta feature (menu item in MachineTable)
-    assignToCluster: {
-      requiresLocalhost: true, // Hide in production builds
-      requiresExpertMode: true,
-      description: 'Assign machines to Ceph clusters',
-    },
-
-    // Login Advanced Options - Always available
-    loginAdvancedOptions: {
-      description: 'Advanced login options including master password and API endpoint selector',
     },
 
     // Plugins - Beta feature (vault-based plugin containers)
     plugins: {
       requiresLocalhost: true, // Hide in production builds
       description: 'Plugin containers system - vault-based feature for custom service containers',
-    },
-
-    // API Endpoint Selector - Power mode feature
-    apiEndpointSelector: {
-      requiresPowerMode: true,
-      description: 'API endpoint selector dropdown for switching between API backends',
     },
 
     // Queue Management - Expert mode feature
@@ -197,17 +177,15 @@ class FeatureFlags {
       description: 'Audit logs page for viewing system activity and changes',
     },
 
-    // Vault Version Columns - Expert mode feature
+    // Vault Version Columns - Power mode feature
     vaultVersionColumns: {
-      requiresLocalhost: true,
-      requiresExpertMode: true,
+      requiresPowerMode: true,
       description: 'Show vault version columns in resource tables for debugging purposes',
     },
 
-    // Advanced Vault Editor - Expert mode feature
+    // Advanced Vault Editor - Power mode feature
     advancedVaultEditor: {
-      requiresLocalhost: true,
-      requiresExpertMode: true,
+      requiresPowerMode: true,
       description: 'Raw JSON editor panel in vault editor - advanced/dangerous feature',
     },
 
@@ -217,46 +195,41 @@ class FeatureFlags {
       description: 'Regions and infrastructure management section in System page',
     },
 
-    // Danger Zone - Expert mode feature
+    // Danger Zone - Power mode feature
     dangerZone: {
-      requiresLocalhost: true,
-      requiresExpertMode: true,
+      requiresPowerMode: true,
       description:
         'Danger Zone section including block users, export/import data, and encryption settings',
     },
 
-    // Disable Bridge - Always hidden for all users
-    disableBridge: {
-      enabled: true,
+    // Bridge UI - Split into view (enabled) and manage (disabled)
+    // bridgeViewEnabled: Always show bridge info (count, assignments) for transparency
+    bridgeViewEnabled: {
       description:
-        'Hide all bridge-related UI components including bridge tables, forms, and fields',
+        'Show read-only bridge information (counts, assignments, auto-selected bridge info)',
     },
-
-    // Hide Danger Zone - DEPRECATED: Use dangerZone flag instead (kept for backwards compatibility)
-    hideDangerZone: {
-      enabled: true,
+    // bridgeManageEnabled: Control bridge create/edit/delete UI
+    bridgeManageEnabled: {
       description:
-        '[DEPRECATED] Use dangerZone flag instead. Hide the Danger Zone section including block users, export/import data, and encryption settings',
+        'Show bridge management UI (create, edit, delete bridges in Infrastructure page)',
     },
 
-    // Company Vault Configuration - Expert mode feature
-    companyVaultConfiguration: {
-      requiresLocalhost: true,
-      requiresExpertMode: true,
-      description: 'Configure Vault button in Company Settings section',
+    // Organization Vault Configuration - Power mode feature
+    organizationVaultConfiguration: {
+      requiresPowerMode: true,
+      description: 'Configure Vault button in Organization Settings section',
     },
 
-    // Personal Vault Configuration - Expert mode feature
+    // Personal Vault Configuration - Power mode feature
     personalVaultConfiguration: {
-      requiresLocalhost: true,
-      requiresExpertMode: true,
+      requiresPowerMode: true,
       description: 'Configure Vault button in Personal Settings section',
     },
 
-    // Company Settings - Power mode feature
-    companySettings: {
+    // Organization Settings - Power mode feature
+    organizationSettings: {
       requiresPowerMode: true,
-      description: 'Company Settings menu item in Settings navigation',
+      description: 'Organization Settings menu item in Settings navigation',
     },
 
     // Example: Future feature that's disabled for everyone

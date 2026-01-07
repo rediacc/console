@@ -87,13 +87,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     onChange: (val: T) => void
   ) => (
     <Flex vertical>
-      <Typography.Text
-        className="block"
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ fontWeight: 500, fontSize: 14 }}
-      >
-        {label}
-      </Typography.Text>
+      <Typography.Text className="block font-medium text-sm">{label}</Typography.Text>
       <Radio.Group
         className="block"
         value={value}
@@ -102,9 +96,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
       >
         {options.map((opt) => (
           <Radio.Button
-            className="block"
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ fontSize: 14 }}
+            className="block text-sm"
             key={opt.value}
             value={opt.value}
             disabled={opt.disabled}
@@ -136,29 +128,16 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     <Flex vertical className="w-full">
       {Object.entries(generatedValues).map(([field, value]) => (
         <Flex key={field} vertical>
-          <Flex
-            justify="space-between"
-            align="center"
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ fontWeight: 500 }}
-          >
+          <Flex justify="space-between" align="center" className="font-medium">
             <Typography.Text strong>{field}:</Typography.Text>
             <Button
               icon={
                 copiedField === field ? (
-                  <Typography.Text
-                    className="inline-flex items-center"
-                    // eslint-disable-next-line no-restricted-syntax
-                    style={{ fontSize: 12 }}
-                  >
+                  <Typography.Text className="inline-flex items-center text-xs">
                     <CheckOutlined />
                   </Typography.Text>
                 ) : (
-                  <Typography.Text
-                    className="inline-flex items-center"
-                    // eslint-disable-next-line no-restricted-syntax
-                    style={{ fontSize: 12 }}
-                  >
+                  <Typography.Text className="inline-flex items-center text-xs">
                     <CopyOutlined />
                   </Typography.Text>
                 )
@@ -169,16 +148,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               {copiedField === field ? t('fieldGenerator.copied') : t('fieldGenerator.copy')}
             </Button>
           </Flex>
-          <Flex
-            className="overflow-auto"
-            // eslint-disable-next-line no-restricted-syntax
-            style={{
-              wordBreak: 'break-all',
-              maxHeight: 200,
-              fontSize: 12,
-              lineHeight: 1.4,
-            }}
-          >
+          <Flex className="overflow-auto break-all max-h-200 text-xs line-height-normal">
             {value}
           </Flex>
         </Flex>
@@ -187,12 +157,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   );
 
   const popoverContent = (
-    <Flex
-      vertical
-      className="max-w-full"
-      // eslint-disable-next-line no-restricted-syntax
-      style={{ width: 320 }}
-    >
+    <Flex vertical className="max-w-full w-320">
       {fieldType === 'ssh_keys' && !Object.keys(generatedValues).length && renderSSHKeyOptions()}
 
       {Object.keys(generatedValues).length > 0 && renderGeneratedValues()}
@@ -202,11 +167,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           <Button
             type="primary"
             icon={
-              <Typography.Text
-                className="inline-flex items-center"
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ fontSize: 12 }}
-              >
+              <Typography.Text className="inline-flex items-center text-xs">
                 <KeyOutlined />
               </Typography.Text>
             }
@@ -226,11 +187,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             </Button>
             <Button
               icon={
-                <Typography.Text
-                  className="inline-flex items-center"
-                  // eslint-disable-next-line no-restricted-syntax
-                  style={{ fontSize: 12 }}
-                >
+                <Typography.Text className="inline-flex items-center text-xs">
                   <ReloadOutlined />
                 </Typography.Text>
               }
@@ -253,12 +210,8 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     <Popover
       content={popoverContent}
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
-          <Typography.Text
-            className="inline-flex items-center"
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ fontSize: 12 }}
-          >
+        <Flex align="center" wrap className="inline-flex">
+          <Typography.Text className="inline-flex items-center text-xs">
             <KeyOutlined />
           </Typography.Text>
           <Typography.Text>{t(`fieldGenerator.title.${fieldType}`)}</Typography.Text>
@@ -273,11 +226,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         <Button
           type="text"
           icon={
-            <Typography.Text
-              className="inline-flex items-center"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ fontSize: 12 }}
-            >
+            <Typography.Text className="inline-flex items-center text-xs">
               <KeyOutlined />
             </Typography.Text>
           }

@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { useUpdateUserLanguage } from '@/api/queries/users';
+import { useUpdateUserLanguage } from '@/api/api-hooks.generated';
 import type { RootState } from '@/store/store';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 
@@ -85,7 +85,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
       options={languages.map((lang) => ({
         value: lang.code,
         label: (
-          <Flex align="center" gap={4} className="inline-flex">
+          <Flex align="center" className="inline-flex">
             {lang.flag} {lang.name}
           </Flex>
         ),

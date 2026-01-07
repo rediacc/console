@@ -1,7 +1,5 @@
 import { Button, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd';
-import type { Bridge } from '@/api/queries/bridges';
-import type { Region } from '@/api/queries/regions';
-import { createVersionColumn } from '@/components/common/columns';
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { featureFlags } from '@/config/featureFlags';
 import { createSorter } from '@/platform';
 import {
@@ -16,35 +14,38 @@ import {
   KeyOutlined,
   SyncOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type {
+  GetRegionBridges_ResultSet1,
+  GetOrganizationRegions_ResultSet1,
+} from '@rediacc/shared/types';
+import { RESPONSIVE_HIDE_XS } from '..';
+import { createActionColumn } from '../factories/action';
+import { createVersionColumn } from '../factories/advanced';
 import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
 
 const ACTIONS_COLUMN_WIDTH = 640;
 
 interface BuildRegionColumnsParams {
-  t: TFunction<'resources'>;
-  tCommon: TFunction<'common'>;
-  tSystem: TFunction<'system'>;
-  onEdit: (region: Region) => void;
-  onTrace: (region: Region) => void;
+  t: TypedTFunction;
+  onEdit: (region: GetOrganizationRegions_ResultSet1) => void;
+  onTrace: (region: GetOrganizationRegions_ResultSet1) => void;
   onDelete: (regionName: string) => void;
   isDeleting: boolean;
 }
 
 export const buildRegionColumns = ({
   t,
-  tCommon,
-  tSystem,
   onEdit,
   onTrace,
   onDelete,
   isDeleting,
-}: BuildRegionColumnsParams): ColumnsType<Region> => [
+}: BuildRegionColumnsParams): ColumnsType<GetOrganizationRegions_ResultSet1> => [
   {
     title: t('regions.regionName'),
     dataIndex: 'regionName',
     key: 'regionName',
-    sorter: createSorter<Region>('regionName'),
+    sorter: createSorter<GetOrganizationRegions_ResultSet1>('regionName'),
     render: (text: string) => (
       <Space>
         <EnvironmentOutlined />
@@ -52,119 +53,122 @@ export const buildRegionColumns = ({
       </Space>
     ),
   },
-  ...(!featureFlags.isEnabled('disableBridge')
-    ? [
-        {
-          title: t('regions.bridges'),
-          dataIndex: 'bridgeCount',
-          key: 'bridgeCount',
-          width: 120,
-          sorter: createSorter<Region>('bridgeCount'),
-          render: (count: number) => (
-            <Space>
-              <ApiOutlined />
-              <Typography.Text>{count}</Typography.Text>
-            </Space>
-          ),
-        } satisfies ColumnsType<Region>[number],
-      ]
-    : []),
-  ...(featureFlags.isEnabled('vaultVersionColumns')
-    ? [
-        createVersionColumn<Region>({
-          title: t('general.vaultVersion'),
-          dataIndex: 'vaultVersion',
-          key: 'vaultVersion',
-          width: 120,
-          sorter: createSorter<Region>('vaultVersion'),
-          formatVersion: (version: number) => tCommon('general.versionFormat', { version }),
-        }),
-      ]
-    : []),
+  // Bridge count column - always visible for infrastructure overview
   {
-    title: t('general.actions'),
-    key: 'actions',
-    width: 300,
-    render: (_: unknown, record: Region) => (
+    title: t('regions.bridges'),
+    dataIndex: 'bridgeCount',
+    key: 'bridgeCount',
+    width: 120,
+    responsive: RESPONSIVE_HIDE_XS,
+    sorter: createSorter<GetOrganizationRegions_ResultSet1>('bridgeCount'),
+    render: (count: number) => (
       <Space>
-        <Tooltip title={t('general.edit')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => onEdit(record)}
-            data-testid={`system-region-edit-button-${record.regionName}`}
-            aria-label={t('general.edit')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.trace')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => onTrace(record)}
-            data-testid={`system-region-trace-button-${record.regionName}`}
-            aria-label={tSystem('actions.trace')}
-          />
-        </Tooltip>
-        <Popconfirm
-          title={t('regions.deleteRegion')}
-          description={t('regions.confirmDelete', { regionName: record.regionName })}
-          onConfirm={() => onDelete(record.regionName)}
-          okText={t('general.yes')}
-          cancelText={t('general.no')}
-          okButtonProps={{ danger: true }}
-        >
-          <Tooltip title={t('general.delete')}>
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              loading={isDeleting}
-              data-testid={`system-region-delete-button-${record.regionName}`}
-              aria-label={t('general.delete')}
-            />
-          </Tooltip>
-        </Popconfirm>
+        <ApiOutlined />
+        <Typography.Text>{count}</Typography.Text>
       </Space>
     ),
   },
+  ...(featureFlags.isEnabled('vaultVersionColumns')
+    ? [
+        {
+          ...createVersionColumn<GetOrganizationRegions_ResultSet1>({
+            title: t('general.vaultVersion'),
+            dataIndex: 'vaultVersion',
+            key: 'vaultVersion',
+            width: 120,
+            sorter: createSorter<GetOrganizationRegions_ResultSet1>('vaultVersion'),
+            formatVersion: (version: number) => t('common:general.versionFormat', { version }),
+          }),
+          responsive: RESPONSIVE_HIDE_XS,
+        },
+      ]
+    : []),
+  createActionColumn<GetOrganizationRegions_ResultSet1>({
+    title: t('general.actions'),
+    width: 300,
+    renderActions: (record) => (
+      <ActionButtonGroup
+        buttons={[
+          {
+            type: 'edit',
+            icon: <EditOutlined />,
+            tooltip: 'resources:general.edit',
+            onClick: () => onEdit(record),
+            variant: 'primary',
+            testId: `system-region-edit-button-${record.regionName}`,
+          },
+          {
+            type: 'trace',
+            icon: <HistoryOutlined />,
+            tooltip: 'system:actions.trace',
+            onClick: () => onTrace(record),
+            variant: 'primary',
+            testId: `system-region-trace-button-${record.regionName}`,
+          },
+          {
+            type: 'custom',
+            render: (rec) => (
+              <Popconfirm
+                title={t('regions.deleteRegion')}
+                description={t('regions.confirmDelete', { regionName: rec.regionName ?? '' })}
+                onConfirm={() => onDelete(rec.regionName ?? '')}
+                okText={t('general.yes')}
+                cancelText={t('general.no')}
+                okButtonProps={{ danger: true }}
+              >
+                <Tooltip title={t('general.delete')}>
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={isDeleting}
+                    data-testid={`system-region-delete-button-${rec.regionName}`}
+                    aria-label={t('general.delete')}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            ),
+          },
+        ]}
+        record={record}
+        idField="regionName"
+        testIdPrefix="system-region"
+        t={t}
+      />
+    ),
+  }),
 ];
 
 interface BuildBridgeColumnsParams {
-  t: TFunction<'resources'>;
-  tCommon: TFunction<'common'>;
-  tSystem: TFunction<'system'>;
-  onEdit: (bridge: Bridge) => void;
-  onOpenToken: (bridge: Bridge) => void;
-  onResetAuth: (bridge: Bridge) => void;
-  onTrace: (bridge: Bridge) => void;
-  onDelete: (bridge: Bridge) => void;
+  t: TypedTFunction;
+  onEdit: (bridge: GetRegionBridges_ResultSet1) => void;
+  onOpenToken: (bridge: GetRegionBridges_ResultSet1) => void;
+  onResetAuth: (bridge: GetRegionBridges_ResultSet1) => void;
+  onTrace: (bridge: GetRegionBridges_ResultSet1) => void;
+  onDelete: (bridge: GetRegionBridges_ResultSet1) => void;
   isDeleting: boolean;
 }
 
 export const buildBridgeColumns = ({
   t,
-  tCommon,
-  tSystem,
   onEdit,
   onOpenToken,
   onResetAuth,
   onTrace,
   onDelete,
   isDeleting,
-}: BuildBridgeColumnsParams): ColumnsType<Bridge> => [
+}: BuildBridgeColumnsParams): ColumnsType<GetRegionBridges_ResultSet1> => [
   {
     title: t('bridges.bridgeName'),
     dataIndex: 'bridgeName',
     key: 'bridgeName',
-    sorter: createSorter<Bridge>('bridgeName'),
-    render: (text: string, record: Bridge) => (
+    sorter: createSorter<GetRegionBridges_ResultSet1>('bridgeName'),
+    render: (text: string, record: GetRegionBridges_ResultSet1) => (
       <Space>
         <ApiOutlined />
         <strong>{text}</strong>
-        {Number(record.hasAccess || 0) === 1 && (
+        {record.hasAccess === true && (
           <Tag icon={<CheckCircleOutlined />}>{t('bridges.access')}</Tag>
         )}
       </Space>
@@ -175,7 +179,8 @@ export const buildBridgeColumns = ({
     dataIndex: 'machineCount',
     key: 'machineCount',
     width: 120,
-    sorter: createSorter<Bridge>('machineCount'),
+    responsive: RESPONSIVE_HIDE_XS,
+    sorter: createSorter<GetRegionBridges_ResultSet1>('machineCount'),
     render: (count: number) => (
       <Space>
         <DesktopOutlined />
@@ -188,7 +193,8 @@ export const buildBridgeColumns = ({
     dataIndex: 'isGlobalBridge',
     key: 'isGlobalBridge',
     width: 120,
-    sorter: createSorter<Bridge>('isGlobalBridge'),
+    responsive: RESPONSIVE_HIDE_XS,
+    sorter: createSorter<GetRegionBridges_ResultSet1>('isGlobalBridge'),
     render: (isGlobal: boolean) =>
       isGlobal ? (
         <Tag icon={<CloudServerOutlined />}>{t('bridges.global')}</Tag>
@@ -201,7 +207,8 @@ export const buildBridgeColumns = ({
     dataIndex: 'managementMode',
     key: 'managementMode',
     width: 140,
-    sorter: createSorter<Bridge>('managementMode'),
+    responsive: RESPONSIVE_HIDE_XS,
+    sorter: createSorter<GetRegionBridges_ResultSet1>('managementMode'),
     render: (mode: string) => {
       if (!mode) return <Tag>{t('bridges.local')}</Tag>;
       const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />;
@@ -210,83 +217,103 @@ export const buildBridgeColumns = ({
   },
   ...(featureFlags.isEnabled('vaultVersionColumns')
     ? [
-        createVersionColumn<Bridge>({
-          title: t('general.vaultVersion'),
-          dataIndex: 'vaultVersion',
-          key: 'vaultVersion',
-          width: 120,
-          sorter: createSorter<Bridge>('vaultVersion'),
-          formatVersion: (version: number) => tCommon('general.versionFormat', { version }),
-        }),
+        {
+          ...createVersionColumn<GetRegionBridges_ResultSet1>({
+            title: t('general.vaultVersion'),
+            dataIndex: 'vaultVersion',
+            key: 'vaultVersion',
+            width: 120,
+            sorter: createSorter<GetRegionBridges_ResultSet1>('vaultVersion'),
+            formatVersion: (version: number) => t('common:general.versionFormat', { version }),
+          }),
+          responsive: RESPONSIVE_HIDE_XS,
+        },
       ]
     : []),
-  {
+  createActionColumn<GetRegionBridges_ResultSet1>({
     title: t('general.actions'),
-    key: 'actions',
     width: ACTIONS_COLUMN_WIDTH,
-    render: (_: unknown, record: Bridge) => (
-      <Space>
-        <Tooltip title={t('general.edit')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => onEdit(record)}
-            data-testid={`system-bridge-edit-button-${record.bridgeName}`}
-            aria-label={t('general.edit')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.token')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<KeyOutlined />}
-            onClick={() => onOpenToken(record)}
-            data-testid={`system-bridge-token-button-${record.bridgeName}`}
-            aria-label={tSystem('actions.token')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.resetAuth')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<SyncOutlined />}
-            onClick={() => onResetAuth(record)}
-            data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
-            aria-label={tSystem('actions.resetAuth')}
-          />
-        </Tooltip>
-        <Tooltip title={tSystem('actions.trace')}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => onTrace(record)}
-            data-testid={`system-bridge-trace-button-${record.bridgeName}`}
-            aria-label={tSystem('actions.trace')}
-          />
-        </Tooltip>
-        <Popconfirm
-          title={t('bridges.deleteBridge')}
-          description={t('bridges.confirmDelete', { bridgeName: record.bridgeName })}
-          onConfirm={() => onDelete(record)}
-          okText={t('general.yes')}
-          cancelText={t('general.no')}
-          okButtonProps={{ danger: true }}
-        >
-          <Tooltip title={t('general.delete')}>
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              loading={isDeleting}
-              data-testid={`system-bridge-delete-button-${record.bridgeName}`}
-              aria-label={t('general.delete')}
-            />
-          </Tooltip>
-        </Popconfirm>
-      </Space>
+    renderActions: (record) => (
+      <ActionButtonGroup
+        buttons={[
+          {
+            type: 'edit',
+            icon: <EditOutlined />,
+            tooltip: 'resources:general.edit',
+            onClick: () => onEdit(record),
+            variant: 'primary',
+            testId: `system-bridge-edit-button-${record.bridgeName}`,
+          },
+          {
+            type: 'token',
+            icon: <KeyOutlined />,
+            tooltip: 'system:actions.token',
+            onClick: () => onOpenToken(record),
+            variant: 'primary',
+            testId: `system-bridge-token-button-${record.bridgeName}`,
+          },
+          {
+            type: 'resetAuth',
+            icon: <SyncOutlined />,
+            tooltip: 'system:actions.resetAuth',
+            onClick: () => onResetAuth(record),
+            variant: 'primary',
+            testId: `system-bridge-reset-auth-button-${record.bridgeName}`,
+          },
+          {
+            type: 'trace',
+            icon: <HistoryOutlined />,
+            tooltip: 'system:actions.trace',
+            onClick: () => onTrace(record),
+            variant: 'primary',
+            testId: `system-bridge-trace-button-${record.bridgeName}`,
+          },
+          {
+            type: 'custom',
+            render: (rec) => {
+              const isProtected = rec.bridgeName === 'Global Bridges';
+              return isProtected ? (
+                <Tooltip title={t('bridges.cannotDeleteDefault')}>
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    danger
+                    disabled
+                    icon={<DeleteOutlined />}
+                    data-testid={`system-bridge-delete-button-${rec.bridgeName}`}
+                    aria-label={t('general.delete')}
+                  />
+                </Tooltip>
+              ) : (
+                <Popconfirm
+                  title={t('bridges.deleteBridge')}
+                  description={t('bridges.confirmDelete', { bridgeName: rec.bridgeName })}
+                  onConfirm={() => onDelete(rec)}
+                  okText={t('general.yes')}
+                  cancelText={t('general.no')}
+                  okButtonProps={{ danger: true }}
+                >
+                  <Tooltip title={t('general.delete')}>
+                    <Button
+                      type="primary"
+                      shape="circle"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={isDeleting}
+                      data-testid={`system-bridge-delete-button-${rec.bridgeName}`}
+                      aria-label={t('general.delete')}
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              );
+            },
+          },
+        ]}
+        record={record}
+        idField="bridgeName"
+        testIdPrefix="system-bridge"
+        t={t}
+      />
     ),
-  },
+  }),
 ];

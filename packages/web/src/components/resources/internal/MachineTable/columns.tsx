@@ -1,11 +1,11 @@
 import { Badge, Space, Tag, Typography } from 'antd';
-import { TFunction } from 'i18next';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
-  createActionColumn,
   createStatusColumn,
   createTruncatedColumn,
+  RESPONSIVE_HIDE_XS,
 } from '@/components/common/columns';
+import { createActionColumn } from '@/components/common/columns/factories/action';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import { createCustomSorter, createSorter } from '@/platform';
@@ -25,6 +25,7 @@ import {
   HistoryOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<
@@ -38,7 +39,7 @@ export interface MachineFunctionAction {
 }
 
 interface MachineColumnsParams {
-  t: TFunction;
+  t: TypedTFunction;
   isExpertMode: boolean;
   uiMode: string;
   showActions: boolean;
@@ -125,55 +126,63 @@ export const buildMachineTableColumns = ({
   );
 
   if (!hasSplitView) {
-    baseColumns.push(
-      createTruncatedColumn<Machine>({
+    baseColumns.push({
+      ...createTruncatedColumn<Machine>({
         title: t('machines:team'),
         dataIndex: 'teamName',
         key: 'teamName',
         width: 150,
         sorter: createSorter<Machine>('teamName'),
         renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
-      })
-    );
+      }),
+      responsive: RESPONSIVE_HIDE_XS,
+    });
   }
 
   if (!hasSplitView) {
     if (isExpertMode) {
       baseColumns.push(
-        createTruncatedColumn<Machine>({
-          title: t('machines:region'),
-          dataIndex: 'regionName',
-          key: 'regionName',
-          width: 150,
-          sorter: createSorter<Machine>('regionName'),
-          renderText: (regionName?: string | null) => regionName ?? '-',
-          renderWrapper: (content, fullText) =>
-            fullText === '-' ? (
-              <Typography.Text>-</Typography.Text>
-            ) : (
-              <Tag bordered={false}>{content}</Tag>
-            ),
-        }),
-        createTruncatedColumn<Machine>({
-          title: t('machines:bridge'),
-          dataIndex: 'bridgeName',
-          key: 'bridgeName',
-          width: 150,
-          sorter: createSorter<Machine>('bridgeName'),
-          renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
-        })
+        {
+          ...createTruncatedColumn<Machine>({
+            title: t('machines:region'),
+            dataIndex: 'regionName',
+            key: 'regionName',
+            width: 150,
+            sorter: createSorter<Machine>('regionName'),
+            renderText: (regionName?: string | null) => regionName ?? '-',
+            renderWrapper: (content, fullText) =>
+              fullText === '-' ? (
+                <Typography.Text>-</Typography.Text>
+              ) : (
+                <Tag bordered={false}>{content}</Tag>
+              ),
+          }),
+          responsive: RESPONSIVE_HIDE_XS,
+        },
+        {
+          ...createTruncatedColumn<Machine>({
+            title: t('machines:bridge'),
+            dataIndex: 'bridgeName',
+            key: 'bridgeName',
+            width: 150,
+            sorter: createSorter<Machine>('bridgeName'),
+            renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
+          }),
+          responsive: RESPONSIVE_HIDE_XS,
+        }
       );
     } else if (uiMode !== 'simple') {
-      baseColumns.push(
-        createTruncatedColumn<Machine>({
+      baseColumns.push({
+        ...createTruncatedColumn<Machine>({
           title: t('bridges.bridge'),
           dataIndex: 'bridgeName',
           key: 'bridgeName',
           width: 150,
           sorter: createSorter<Machine>('bridgeName'),
           renderWrapper: (content) => <Tag bordered={false}>{content}</Tag>,
-        })
-      );
+        }),
+        responsive: RESPONSIVE_HIDE_XS,
+      });
     }
   }
 
@@ -183,6 +192,7 @@ export const buildMachineTableColumns = ({
       key: 'assignmentStatus',
       width: 180,
       ellipsis: true,
+      responsive: RESPONSIVE_HIDE_XS,
       render: (_: unknown, record: Machine) => <MachineAssignmentStatusCell machine={record} />,
     });
   }
@@ -194,6 +204,7 @@ export const buildMachineTableColumns = ({
       key: 'queueCount',
       width: 100,
       align: 'center' as const,
+      responsive: RESPONSIVE_HIDE_XS,
       sorter: createSorter<Machine>('queueCount'),
       render: (count: number) => <Badge count={count} showZero />,
     });
@@ -297,8 +308,8 @@ export const buildMachineTableColumns = ({
                   setAuditTraceModal({
                     open: true,
                     entityType: 'Machine',
-                    entityIdentifier: record.machineName,
-                    entityName: record.machineName,
+                    entityIdentifier: record.machineName ?? '',
+                    entityName: record.machineName ?? undefined,
                   }),
               },
               {
@@ -311,7 +322,10 @@ export const buildMachineTableColumns = ({
               {
                 type: 'custom',
                 render: (r: Machine) => (
-                  <LocalActionsMenu machine={r.machineName} teamName={r.teamName} />
+                  <LocalActionsMenu
+                    machine={r.machineName ?? ''}
+                    teamName={r.teamName ?? undefined}
+                  />
                 ),
               },
             ]}

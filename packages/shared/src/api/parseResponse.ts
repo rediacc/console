@@ -61,10 +61,11 @@ export function parseResponse<TInput, TOutput = TInput>(
   options: ParseResponseOptions<TInput, TOutput> = {}
 ): TOutput[] {
   const {
-    extractor = responseExtractors.primary as ResponseExtractor<TInput>,
+    extractor = responseExtractors.primaryOrSecondary as ResponseExtractor<TInput>,
     filter,
     map,
   } = options;
+
   const rows = extractor(response);
   const filteredRows = filter ? rows.filter(filter) : rows;
 

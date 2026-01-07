@@ -55,7 +55,7 @@ describe('team commands', () => {
     });
   });
 
-  // CRUD operations - safe to run with fresh company registration
+  // CRUD operations - safe to run with fresh organization registration
   describe('team CRUD operations', () => {
     const testTeamName = `test-team-${Date.now()}`;
     let renamedTeamName: string;

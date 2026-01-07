@@ -1,37 +1,70 @@
 {
   "actions": {
+    "actions": "Eylemler",
     "addToQueue": "Kuyruğa Ekle",
     "advanced": "Gelişmiş",
+    "assign": "Ata",
     "back": "Geri",
     "cancel": "İptal",
-    "confirm": "Onayla",
     "clearSelection": "Seçimi Temizle",
     "close": "Kapat",
+    "confirm": "Onayla",
+    "copied": "Kopyalandı",
+    "copy": "Kopyala",
     "create": "Oluştur",
+    "createNew": "Yeni Oluştur",
     "createResource": "{{resource}} oluştur",
     "delete": "Sil",
+    "deleteSelected": "Seçilenleri Sil",
+    "download": "İndir",
+    "downloadSelected": "Seçilenleri İndir",
     "edit": "Düzenle",
     "editResource": "{{resource}} düzenle",
     "editVault": "Kasayı Düzenle",
     "exitFullscreen": "Tam Ekrandan Çık",
     "export": "Dışa Aktar",
     "exportSuccess": "Dışa aktarma başarılı",
+    "format": "Biçim",
     "fullscreen": "Tam Ekran",
+    "logoutNow": "Şimdi Çıkış Yap",
     "manage": "Yönet",
+    "newFolder": "Yeni Klasör",
     "refresh": "Yenile",
     "remote": "Uzak",
     "remove": "Kaldır",
+    "rename": "Yeniden Adlandır",
     "reset": "Sıfırla",
     "retry": "Yeniden Dene",
     "runFunction": "Fonksiyonu Çalıştır",
     "save": "Kaydet",
     "search": "Ara",
     "trace": "İz",
+    "upload": "Yükle",
+    "uploadFile": "Dosya Yükle",
     "viewTrace": "İzi Görüntüle"
   },
   "actionsColumn": "Eylemler",
+  "allCommandsCopied": "Tüm komutlar panoya kopyalandı!",
+  "alt": {
+    "logo": "Rediacc Logosu"
+  },
+  "aria": {
+    "cancel": "İptal",
+    "close": "Kapat",
+    "closeNotification": "Bildirimi kapat",
+    "collapsePanel": "Paneli daralt",
+    "expandPanel": "Paneli Genişlet",
+    "notifications": "Bildirimler",
+    "refresh": "Yenile",
+    "refreshMachines": "Makineleri yenile",
+    "trace": "İz"
+  },
+  "cancel": "İptal",
   "close": "Kapat",
+  "commandCopied": "Komut panoya kopyalandı!",
+  "commandCopyFailed": "Komut kopyalanamadı",
   "copiedToClipboard": "Panoya kopyalandı",
+  "copiedWithoutToken": "Güvenli token olmadan kopyalandı - lütfen manuel olarak giriş yapın",
   "copyFailed": "Panoya kopyalanamadı",
   "current": "Güncel",
   "dashboard": {
@@ -39,10 +72,122 @@
     "comparePlansDescription": "Farklı abonelik kademelerindeki özellikleri ve fiyatları karşılaştırın",
     "currentPlan": "Mevcut Plan",
     "enterprisePlanDescription": "Tüm özelliklerin açık olduğu en yüksek katmanlı planımızdasınız",
-    "upgradeOptions": "Yükseltme Seçenekleri"
+    "errors": {
+      "loadFailed": "Pano verileri yüklenemedi. Lütfen daha sonra tekrar deneyin.",
+      "noData": "Pano verisi mevcut değil",
+      "title": "Hata"
+    },
+    "title": "Pano",
+    "upgradeOptions": "Yükseltme Seçenekleri",
+    "widgets": {
+      "accountHealth": {
+        "noData": "Hesap sağlığı verisi mevcut değil",
+        "overallStatus": "Genel Durum",
+        "resourcesAtLimit": "limit'te kaynaklar",
+        "resourcesNearLimit": "limit'e yakın kaynaklar",
+        "title": "Hesap Sağlığı"
+      },
+      "ceph": {
+        "available": "kullanılabilir",
+        "clone": "klon",
+        "cluster": "küme",
+        "image": "görüntü",
+        "machines": "makineler"
+      },
+      "queueDetails": {
+        "active": "aktif",
+        "cancelled": "İptal Edildi",
+        "completed": "Tamamlandı",
+        "created": "Oluşturuldu",
+        "failedTotal": "Başarısız (Toplam)",
+        "highestPriority": "En Yüksek Öncelik",
+        "highPriority": "Yüksek Öncelik",
+        "lowPriority": "Düşük Öncelik",
+        "machine": "Makine",
+        "machineQueueStatus": "Makine Kuyruk Durumu",
+        "normalPriority": "Normal Öncelik",
+        "pending": "bekleme",
+        "priorityBreakdown": "Öncelik Dağılımı",
+        "stale": "eski",
+        "staleItems": "{{count}} eski öğe",
+        "status": "Durum",
+        "team": "Takım",
+        "teamQueueStatus": "Takım Kuyruk Durumu",
+        "title": "Kuyruk Ayrıntıları",
+        "todayActivity": "Bugünün Etkinliği"
+      },
+      "queueOverview": {
+        "manage": "Yönet",
+        "noData": "Kuyruk verisi mevcut değil",
+        "title": "Kuyruk Özeti"
+      },
+      "recentActivity": {
+        "noActivity": "Son etkinlik yok",
+        "title": "Son Etkinlikler",
+        "viewAll": "Tümünü Görüntüle"
+      },
+      "resourceUsage": {
+        "limitReached": "Limite ulaşıldı",
+        "machines": "Makineler",
+        "repositories": "Depolar",
+        "subtitle": "Kaynak tüketimini plan limitine karşı izleyin",
+        "title": "Kaynak Kullanımı"
+      },
+      "subscriptionPlan": {
+        "allActiveLicenses": "TÜM AKTİF LİSANSLAR",
+        "currentSubscription": "GÜNCEL ABONELİK",
+        "day": "gün",
+        "days": "gün",
+        "hours": "saat",
+        "remaining": "kalan",
+        "title": "Abonelik ve Plan Ayrıntıları",
+        "total": "Toplam",
+        "trial": "Deneme"
+      },
+      "systemVersion": {
+        "api": "API",
+        "apiUptime": "API Çalışma Süresi",
+        "console": "Konsol"
+      }
+    }
   },
   "dateColumn": "Tarih",
-  "export": "İhracat",
+  "defaults": {
+    "defaultRegion": "Varsayılan Bölge",
+    "globalBridges": "Küresel Köprüler",
+    "jsonError": "JSON Hatası",
+    "privateTeam": "Özel Takım"
+  },
+  "delete": "Sil",
+  "desktopConnectionFailed": "Masaüstü uygulaması için güvenli bağlantı oluşturulamadı",
+  "desktopPrompt": {
+    "downloadDesktop": "Masaüstü Uygulamasını İndir",
+    "machine": "Makine",
+    "openDesktop": "Masaüstü Uygulamasında Aç",
+    "repository": "Depo",
+    "securityExplanation": "Doğrudan dosya işlemleri, bilgisayarınızdan uzak makineye güvenli bir SSH bağlantısı gerektirir. Bu bağlantı güvenlik nedenleriyle tarayıcıdan kurulamaz.",
+    "subtitle": "{{feature}}, Rediacc masaüstü uygulamasını gerektiren güvenli SSH bağlantılarını kullanır.",
+    "title": "{{feature}} Masaüstü Uygulaması Gerektirir",
+    "whyDesktopOnly": "Neden yalnızca masaüstü?"
+  },
+  "errorBoundary": {
+    "componentStack": "Bileşen Yığını",
+    "description": "Beklenmeyen bir hata oluştu. Bu otomatik olarak bildirilmiştir.",
+    "error": "Hata",
+    "errorDetails": "Hata Ayrıntıları (Geliştirme Modu)",
+    "reloadPage": "Sayfayı Yeniden Yükle",
+    "stack": "Yığın",
+    "title": "Bir şey yanlış gitti",
+    "tryAgain": "Yeniden Deneyin"
+  },
+  "errors": {
+    "somethingWentWrong": "Bir şey yanlış gitti",
+    "schemaValidationFailed": "Veri senkronizasyon sorunu tespit edildi. Lütfen sayfayı yenileyin veya sorun devam ederse destek ile iletişime geçin."
+  },
+  "export": {
+    "label": "Dışa Aktar",
+    "success": "Dışa aktarma başarılı"
+  },
   "exportCSV": "CSV olarak dışa aktar",
   "exportJSON": "JSON olarak dışa aktar",
   "fieldGenerator": {
@@ -69,16 +214,48 @@
   "fields": {
     "vault": "Kasa Yapılandırması"
   },
+  "fileBrowser": {
+    "connecting": "Bağlanıyor...",
+    "created": "Oluşturulan klasör: {{name}}",
+    "createNewFolder": "Yeni Klasör Oluştur",
+    "deleteConfirmMessage": "'{{name}}'ı silmek istediğinizden emin misiniz?",
+    "deleteFileConfirm": "Dosyayı sil?",
+    "deleteFolderConfirm": "Klasörü sil?",
+    "deleteFolderWarning": " Bu, tüm içeriği silecektir.",
+    "downloaded": "İndirildi: {{name}}",
+    "error": "Hata",
+    "establishingConnection": "{{host}} SFTP bağlantısı kuruluyor...",
+    "fileBrowser": "Dosya Tarayıcısı",
+    "folder": "Klasör",
+    "folderName": "Klasör adı",
+    "items": "{{count}} öğe",
+    "modified": "Değiştirildi",
+    "name": "Ad",
+    "newName": "Yeni ad",
+    "originalFile": "Orijinal dosya",
+    "permissions": "İzinler",
+    "renamedSuccessfully": "Başarıyla yeniden adlandırıldı",
+    "root": "kök",
+    "size": "Boyut",
+    "uploaded": "Yüklendi: {{name}}"
+  },
   "general": {
     "cancel": "İptal",
     "defaultsApplied": "Uygulanan varsayılan değerler",
     "important": "Önemli",
     "loading": "Yükleniyor...",
+    "no": "Hayır",
+    "path": "Yol",
+    "refreshing": "Yenileniyor...",
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor",
+    "team": "Takım",
     "unknown": "Bilinmiyor",
     "vaultVersion": "Kasa Sürümü",
-    "versionFormat": "v{{version}}"
+    "versionFormat": "v{{version}}",
+    "warning": "Uyarı",
+    "yes": "Evet"
   },
+  "important": "Önemli",
   "language": {
     "ar": "Arapça",
     "de": "Alman",
@@ -86,12 +263,14 @@
     "es": "İspanyolca",
     "fr": "Fransızca",
     "ja": "Japonca",
+    "label": "Dil",
     "select": "Dil Seçiniz",
+    "switch": "Dili Değiştir",
     "tr": "Türkçe",
     "zh": "Çince"
   },
-  "last30Days": "Son 30 Gün",
   "last7Days": "Son 7 Gün",
+  "last30Days": "Son 30 Gün",
   "lastMonth": "Geçen Ay",
   "messages": {
     "error": "Hata",
@@ -101,11 +280,15 @@
     "success": "Başarı"
   },
   "navigation": {
-    "architecture": "Mimarlık",
     "audit": "Denetim",
+    "ceph": "Dağıtılmış Depolama",
+    "cephClusters": "Kümeler",
+    "cephMachines": "Makineler",
+    "cephPools": "Havuzlar",
+    "collapseSidebar": "Kenar çubuğunu daralt",
     "credentials": "Kimlik Bilgileri",
     "dashboard": "Gösterge Tablosu",
-    "ceph": "Dağıtılmış Depolama",
+    "expandSidebar": "Kenar çubuğunu genişlet",
     "logout": "Oturumu Kapat",
     "machines": "Makineler",
     "mainNavigation": "Ana navigasyon",
@@ -115,15 +298,13 @@
     "organizationUsers": "Kullanıcılar",
     "queue": "Kuyruk",
     "settings": "Ayarlar",
-    "settingsCompany": "Şirket",
     "settingsInfrastructure": "Altyapı",
+    "settingsOrganization": "Şirket",
     "settingsProfile": "Profil",
     "storage": "Depolama",
     "storageCloud": "Bulut",
     "storageDistributed": "Dağıtılmış",
-    "cephClusters": "Kümeler",
-    "cephPools": "Havuzlar",
-    "cephMachines": "Makineler"
+    "userMenu": "Kullanıcı menüsünü aç"
   },
   "nestedObjectEditor": {
     "Active": "Aktif",
@@ -164,7 +345,23 @@
       "warning": "Uyarı"
     }
   },
+  "powerMode": {
+    "advancedDisabled": "Gelişmiş seçenekler devre dışı",
+    "advancedEnabled": "Gelişmiş seçenekler etkin",
+    "localhostAllDisabled": "Localhost Modu - Tüm özellikler devre dışı",
+    "localhostAllEnabled": "Localhost Modu - Tüm özellikler etkin"
+  },
   "refresh": "Yenile",
+  "remote": "Uzak",
+  "resourceList": {
+    "createNew": "Yeni Oluştur",
+    "getStartedMessage": "İlk {{resource}} oluşturarak başlayın",
+    "noDataAvailable": "Veri mevcut değil",
+    "noResourcesFound": "{{resources}} bulunamadı. Arama kriterlerinizi ayarlamayı deneyin.",
+    "searchPlaceholder": "Ara...",
+    "showingRecords": "{{total}} kaydın {{start}}-{{end}} gösteriliyor"
+  },
+  "save": "Kaydet",
   "status": {
     "initializing": "Başlatılıyor...",
     "label": "Durum",
@@ -175,16 +372,37 @@
   "statusColumn": "Durum",
   "table": {
     "actions": "Eylemler",
+    "moreItems": "+{{count}} daha fazla",
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor"
+  },
+  "teamSelector": {
+    "moreTeams": "+{{count}} daha fazla",
+    "selectTeams": "Takımları seçin..."
+  },
+  "theme": {
+    "dark": "Koyu",
+    "label": "Tema",
+    "light": "Açık"
   },
   "thisMonth": "Bu Ay",
   "today": "Bugün",
+  "tokenGenerationFailed": "Token oluşturma başarısız: {{error}}",
+  "tooltips": {
+    "cancel": "İptal",
+    "close": "Kapat",
+    "expandPanel": "Paneli Genişlet",
+    "refresh": "Yenile",
+    "taskCancellable": "Bu görev iptal edilebilir",
+    "trace": "İz"
+  },
   "total": "Toplam",
   "uiMode": {
     "expert": "Uzman",
+    "label": "Arayüz Modu",
     "simple": "Basit",
     "switching": "{{mode}} moduna geçiliyor..."
   },
+  "unknown": "Bilinmiyor",
   "utilized": "Kullanılmış",
   "vaultEditor": {
     "advanced": "Gelişmiş",
@@ -258,37 +476,6 @@
           "label": "OSD Düğümleri"
         }
       },
-      "COMPANY": {
-        "DOCKER_JSON_CONF": {
-          "description": "Docker kayıt defteri kimlik doğrulama yapılandırması",
-          "label": "Docker Yapılandırması"
-        },
-        "LOG_FILE": {
-          "description": "Sistem günlük dosyasının yolu",
-          "label": "Günlük Dosyası Yolu"
-        },
-        "PLUGINS": {
-          "description": "Konteyner imajları ve aktivasyon durumu ile eklenti yapılandırmaları",
-          "label": "Eklentiler"
-        },
-        "SSH_PRIVATE_KEY": {
-          "description": "Şirket işlemleri için Base64 ile kodlanmış SSH özel anahtarı",
-          "label": "SSH Özel Anahtarı"
-        },
-        "SSH_PUBLIC_KEY": {
-          "description": "Şirket operasyonları için SSH açık anahtarı",
-          "label": "SSH Açık Anahtarı"
-        },
-        "UNIVERSAL_USER_ID": {
-          "description": "Sistem işlemleri için evrensel kullanıcı kimliği",
-          "label": "Evrensel Kullanıcı Kimliği"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "description": "Sistem işlemleri için evrensel kullanıcı adı",
-          "label": "Evrensel Kullanıcı Adı"
-        },
-        "description": "Kuruluş genelinde ayarlar için şirket yapılandırması"
-      },
       "IMAGE": {
         "data_pool": {
           "description": "Görüntü verilerini depolamak için ayrı havuz",
@@ -322,7 +509,7 @@
           "label": "Veri Deposu Yolu"
         },
         "description": "SSH erişimi ve depolama için makine yapılandırması",
-        "host_entry": {
+        "known_hosts": {
           "description": "Güvenlik doğrulaması için SSH bilinen ana bilgisayar girişi",
           "label": "Ev Sahibi Girişi"
         },
@@ -345,6 +532,37 @@
         "user": {
           "description": "Bağlantı için SSH kullanıcı adı",
           "label": "Kullanıcı Adı"
+        }
+      },
+      "ORGANIZATION": {
+        "description": "Kuruluş genelinde ayarlar için şirket yapılandırması",
+        "DOCKER_JSON_CONF": {
+          "description": "Docker kayıt defteri kimlik doğrulama yapılandırması",
+          "label": "Docker Yapılandırması"
+        },
+        "LOG_FILE": {
+          "description": "Sistem günlük dosyasının yolu",
+          "label": "Günlük Dosyası Yolu"
+        },
+        "PLUGINS": {
+          "description": "Konteyner imajları ve aktivasyon durumu ile eklenti yapılandırmaları",
+          "label": "Eklentiler"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Şirket işlemleri için Base64 ile kodlanmış SSH özel anahtarı",
+          "label": "SSH Özel Anahtarı"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Şirket operasyonları için SSH açık anahtarı",
+          "label": "SSH Açık Anahtarı"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "Sistem işlemleri için evrensel kullanıcı kimliği",
+          "label": "Evrensel Kullanıcı Kimliği"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "Sistem işlemleri için evrensel kullanıcı adı",
+          "label": "Evrensel Kullanıcı Adı"
         }
       },
       "POOL": {
@@ -380,6 +598,10 @@
           "label": "Bölge Kodu"
         },
         "description": "Coğrafi dağıtım için bölge yapılandırması",
+        "location": {
+          "description": "Bölge için konum ayrıntıları",
+          "label": "Konum"
+        },
         "name": {
           "description": "Coğrafi bölgenin adı",
           "label": "Bölge Adı"
@@ -447,6 +669,11 @@
         }
       },
       "TEAM": {
+        "description": "Organizasyon yapısı için ekip yapılandırması",
+        "name": {
+          "description": "Ekibin adı",
+          "label": "Takım Adı"
+        },
         "SSH_PRIVATE_KEY": {
           "description": "Ekip işlemleri için Base64 ile kodlanmış SSH özel anahtarı",
           "label": "SSH Özel Anahtarı"
@@ -455,17 +682,13 @@
           "description": "Ekip işlemleri için SSH genel anahtarı",
           "label": "SSH Açık Anahtarı"
         },
-        "description": "Organizasyon yapısı için ekip yapılandırması",
-        "name": {
-          "description": "Ekibin adı",
-          "label": "Takım Adı"
-        },
         "teamDescription": {
           "description": "Ekip amaç ve sorumluluklarının tanımı",
           "label": "Ekip Açıklaması"
         }
       },
       "USER": {
+        "description": "Kişisel ayarlar için kullanıcı yapılandırması",
         "SSH_PRIVATE_KEY": {
           "description": "Kullanıcı işlemleri için Base64 ile kodlanmış SSH özel anahtarı",
           "label": "SSH Özel Anahtarı"
@@ -473,8 +696,7 @@
         "SSH_PUBLIC_KEY": {
           "description": "Kullanıcı işlemleri için SSH açık anahtarı",
           "label": "SSH Açık Anahtarı"
-        },
-        "description": "Kişisel ayarlar için kullanıcı yapılandırması"
+        }
       }
     },
     "fields.CLONE.description": "RBD klon ayarlarını yapılandırma",
@@ -485,8 +707,8 @@
     "fieldsMovedFromExtra": "{{count}} alan(lar)ı extraFields'dan geri yüklendi: {{fields}}",
     "fieldsMovedToExtra": "{{count}} alan(lar)ı extraFields'a taşındı: {{fields}}",
     "formatJson": "JSON Biçimlendir",
-    "hostEntryHelp": "İsteğe bağlı. SSH bilinen ana bilgisayar girişi otomatik olarak algılanacaktır.",
-    "hostEntryPlaceholder": "Bağlantı testi sırasında otomatik olarak doldurulur",
+    "knownHostsHelp": "İsteğe bağlı. SSH bilinen ana bilgisayar girişi otomatik olarak algılanacaktır.",
+    "knownHostsPlaceholder": "Bağlantı testi sırasında otomatik olarak doldurulur",
     "importJson": "JSON içe aktarma",
     "invalidFormat": "Geçersiz biçim. {{description}}",
     "invalidJsonFormat": "Geçersiz JSON biçimi",

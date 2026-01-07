@@ -25,10 +25,7 @@ export const VaultEditorExtraFields: React.FC<VaultEditorExtraFieldsProps> = ({
           <Space>
             {t('vaultEditor.extraFields')}
             <Tooltip title={t('vaultEditor.extraFieldsTooltip')}>
-              <WarningOutlined
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ fontSize: 16 }}
-              />
+              <WarningOutlined className="text-base" />
             </Tooltip>
           </Space>
         }
@@ -40,7 +37,6 @@ export const VaultEditorExtraFields: React.FC<VaultEditorExtraFieldsProps> = ({
           message={t('vaultEditor.extraFieldsWarning')}
           description={t('vaultEditor.extraFieldsWarningDescription')}
           type="warning"
-          showIcon
         />
         <Card size="small">
           <pre className="overflow-auto">{JSON.stringify(extraFields, null, 2)}</pre>

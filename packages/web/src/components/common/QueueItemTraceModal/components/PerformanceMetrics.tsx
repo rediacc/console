@@ -26,14 +26,14 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
 
   return (
     <>
-      <Row gutter={16}>
-        <Col span={8}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title={t('trace.queueDepth')}
               value={queueDepth}
               prefix={<HourglassOutlined />}
-              suffix="tasks"
+              suffix={t('trace.tasks')}
             />
             <Progress
               percent={Math.min(100, (queueDepth / 100) * 100)}
@@ -42,20 +42,18 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title={t('trace.activeProcessing')}
               value={activeCount}
               prefix={<SyncOutlined spin />}
-              suffix="tasks"
+              suffix={t('trace.tasks')}
             />
-            <Typography.Text type="secondary">
-              Currently being processed on this machine
-            </Typography.Text>
+            <Typography.Text type="secondary">{t('trace.currentlyBeingProcessed')}</Typography.Text>
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title={t('trace.processingCapacity')}
@@ -73,24 +71,12 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ machineS
       <Divider />
       <Alert
         data-testid="queue-trace-performance-alert"
-        message="Performance Analysis"
+        message={t('trace.performanceAnalysis')}
         description={
           <Space direction="vertical">
-            {isHighQueue && (
-              <Typography.Text>
-                High queue depth detected. Tasks may experience delays.
-              </Typography.Text>
-            )}
-            {isAtCapacity && (
-              <Typography.Text>
-                Machine at full capacity. New tasks will wait in queue.
-              </Typography.Text>
-            )}
-            {isIdle && (
-              <Typography.Text>
-                Machine is idle and ready to process tasks immediately.
-              </Typography.Text>
-            )}
+            {isHighQueue && <Typography.Text>{t('trace.highQueueDepth')}</Typography.Text>}
+            {isAtCapacity && <Typography.Text>{t('trace.machineAtCapacity')}</Typography.Text>}
+            {isIdle && <Typography.Text>{t('trace.machineIdle')}</Typography.Text>}
           </Space>
         }
         type={isHighQueue ? 'warning' : 'info'}

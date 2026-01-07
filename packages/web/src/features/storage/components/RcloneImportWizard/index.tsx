@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, Flex, Modal, Space, Steps, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCreateStorage, useStorage } from '@/api/queries/storage';
-import { createStatusColumn, createTruncatedColumn } from '@/components/common/columns';
+import { useCreateStorage, useGetTeamStorages } from '@/api/api-hooks.generated';
+import {
+  createStatusColumn,
+  createTruncatedColumn,
+  RESPONSIVE_HIDE_XS,
+} from '@/components/common/columns';
 import { createSorter } from '@/platform';
 import {
   CheckCircleOutlined,
@@ -39,7 +43,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   const [parsingError, setParsingError] = useState<string | null>(null);
 
   const createStorageMutation = useCreateStorage();
-  const { data: existingStorages = [] } = useStorage(teamName);
+  const { data: existingStorages = [] } = useGetTeamStorages(teamName);
 
   // Parse INI-style rclone config
   const parseRcloneConfig = (content: string): RcloneConfig[] => {
@@ -365,6 +369,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       title: t('resources:storage.provider'),
       key: 'provider',
       width: 120,
+      responsive: RESPONSIVE_HIDE_XS,
       render: (_: unknown, record: ImportStatus) => {
         const config = parsedConfigs.find((c) => c.name === record.name);
         if (!config) return null;
@@ -427,6 +432,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       width={960}
       open={open}
       onCancel={handleClose}
+      data-testid="rclone-import-wizard-modal"
       footer={
         currentStep === 0 ? (
           <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">

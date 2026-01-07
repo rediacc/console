@@ -1,35 +1,36 @@
 import { EllipsisOutlined } from '@ant-design/icons';
 import { Space, Tag, Tooltip, Typography } from 'antd';
-import type { CephRbdImage } from '@/api/queries/ceph';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns';
+import { createTruncatedColumn, RESPONSIVE_HIDE_XS } from '@/components/common/columns';
+import { createActionColumn } from '@/components/common/columns/factories/action';
 import { createSorter } from '@/platform';
 import {
   CloudUploadOutlined,
   CloudServerOutlined,
   FileImageOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetCephRbdImages_ResultSet1 as CephImage } from '@rediacc/shared/types';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
 
 interface BuildRbdImageColumnsParams {
-  t: TFunction<'ceph' | 'common'>;
-  handleRunFunction: (functionName: string, image?: CephRbdImage) => void;
-  getImageMenuItems: (image: CephRbdImage) => MenuProps['items'];
+  t: TypedTFunction;
+  handleRunFunction: (functionName: string, image?: CephImage) => void;
+  getImageMenuItems: (image: CephImage) => MenuProps['items'];
 }
 
 export const buildRbdImageColumns = ({
   t,
   handleRunFunction,
   getImageMenuItems,
-}: BuildRbdImageColumnsParams): ColumnsType<CephRbdImage> => [
+}: BuildRbdImageColumnsParams): ColumnsType<CephImage> => [
   {
     title: t('images.name'),
     dataIndex: 'imageName',
     key: 'imageName',
-    sorter: createSorter<CephRbdImage>('imageName'),
-    render: (text: string, record: CephRbdImage) => (
+    sorter: createSorter<CephImage>('imageName'),
+    render: (text: string, record: CephImage) => (
       <Space data-testid={`rbd-image-name-${record.imageName}`}>
         <FileImageOutlined />
         <Typography.Text>{text}</Typography.Text>
@@ -41,22 +42,26 @@ export const buildRbdImageColumns = ({
       </Space>
     ),
   },
-  createTruncatedColumn<CephRbdImage>({
-    title: t('images.guid'),
-    dataIndex: 'imageGuid',
-    key: 'imageGuid',
-    width: 300,
-    maxLength: 8,
-    sorter: createSorter<CephRbdImage>('imageGuid'),
-    renderText: (value) => value ?? '',
-  }),
+  {
+    ...createTruncatedColumn<CephImage>({
+      title: t('images.guid'),
+      dataIndex: 'imageGuid',
+      key: 'imageGuid',
+      width: 300,
+      maxLength: 8,
+      sorter: createSorter<CephImage>('imageGuid'),
+      renderText: (value) => value ?? '',
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  },
   {
     title: t('images.assignedMachine'),
     dataIndex: 'machineName',
     key: 'machineName',
     width: 200,
-    sorter: createSorter<CephRbdImage>('machineName'),
-    render: (machineName: string, record: CephRbdImage) =>
+    responsive: RESPONSIVE_HIDE_XS,
+    sorter: createSorter<CephImage>('machineName'),
+    render: (machineName: string, record: CephImage) =>
       machineName ? (
         <Tag
           icon={<CloudServerOutlined />}
@@ -71,7 +76,7 @@ export const buildRbdImageColumns = ({
         </Tag>
       ),
   },
-  createActionColumn<CephRbdImage>({
+  createActionColumn<CephImage>({
     width: 150,
     renderActions: (record) => (
       <ActionButtonGroup

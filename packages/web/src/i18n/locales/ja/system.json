@@ -22,36 +22,6 @@
     "trace": "トレース",
     "twoFactorAuth": "二要素認証"
   },
-  "architecture": {
-    "bridges": "橋",
-    "clearAll": "すべてクリア",
-    "fetchError": "アーキテクチャ データの取得に失敗しました",
-    "filterEntities": "エンティティのフィルタリング",
-    "legend": "伝説",
-    "machines": "機械",
-    "noData": "利用可能なアーキテクチャ データがありません",
-    "noEntitiesSelected": "エンティティが選択されていません。 表示するエンティティ タイプを少なくとも 1 つ選択してください。",
-    "nodeBridge": "橋",
-    "nodeCompany": "会社",
-    "nodeMachine": "機械",
-    "nodeRegion": "地域",
-    "nodeRepository": "リポジトリ",
-    "nodeStorage": "ストレージ",
-    "nodeTeam": "チーム",
-    "nodeUser": "ユーザー",
-    "regions": "地域",
-    "repositories": "リポジトリ",
-    "schedules": "スケジュール",
-    "selectAll": "すべて選択",
-    "selectEntities": "表示するエンティティ タイプを選択してください",
-    "storages": "ストレージ",
-    "teams": "チーム",
-    "title": "会社概要",
-    "users": "ユーザー",
-    "viewForce": "力",
-    "viewHierarchy": "階層",
-    "viewRadial": "ラジアル"
-  },
   "audit": {
     "columns": {
       "action": "アクション",
@@ -92,24 +62,6 @@
     },
     "subtitle": "組織内のすべてのアクティビティと変更を追跡する",
     "title": "監査ログ"
-  },
-  "company": {
-    "errors": {
-      "blockRequestsFailed": "ユーザーリクエストのブロックステータスを更新できませんでした",
-      "importFailed": "会社データのインポートに失敗しました",
-      "noExportData": "エクスポート データが返されませんでした",
-      "vaultUpdateFailed": "ボールト構成の更新に失敗しました"
-    },
-    "success": {
-      "errorCount": "{{count}} 個のエラー",
-      "importComplete": "インポートが完了しました: {{summary}}",
-      "importedCount": "{{count}} 個のアイテムがインポートされました",
-      "requestsBlocked": "ユーザーリクエストは正常にブロックされました",
-      "requestsBlockedWithTerminations": "ユーザーリクエストはブロックされました。 {{count}} 個のアクティブなセッションが終了しました。",
-      "requestsUnblocked": "ユーザーリクエストのブロックが正常に解除されました",
-      "skippedCount": "{{count}} 個のアイテムがスキップされました",
-      "vaultUpdated": "ボールト構成が正常に更新されました"
-    }
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -155,8 +107,8 @@
         "cancel": "キャンセル",
         "fileRequired": "インポートするファイルを選択してください",
         "import": "輸入",
-        "importMode": "インポートモード",
         "importing": "インポート中...",
+        "importMode": "インポートモード",
         "invalidFile": "無効なファイル形式です。 有効な企業データ エクスポート ファイルを選択してください。",
         "modeOverride": "既存の項目を上書きする",
         "modeOverrideDesc": "既存のアイテムをインポートされたデータで置き換える",
@@ -244,6 +196,47 @@
       "warning": "新しいパスワードは安全な場所に保管してください。紛失した場合は回復できません。"
     }
   },
+  "dashboard": {
+    "activeLicenses": "アクティブなライセンス",
+    "completed": "完了",
+    "daysRemaining": "残り日数",
+    "failed": "失敗",
+    "jobTimeout": "ジョブタイムアウト",
+    "maxActiveJobs": "最大アクティブジョブ",
+    "maxRepoSize": "最大リポジトリサイズ",
+    "maxReservedJobs": "最大予約ジョブ",
+    "noPlanData": "プランの上限データがありません",
+    "noSubscription": "アクティブなサブスクリプションがありません",
+    "pending": "保留中",
+    "processing": "処理中"
+  },
+  "organization": {
+    "errors": {
+      "blockRequestsFailed": "ユーザーリクエストのブロックステータスを更新できませんでした",
+      "importFailed": "会社データのインポートに失敗しました",
+      "noExportData": "エクスポート データが返されませんでした",
+      "vaultUpdateFailed": "ボールト構成の更新に失敗しました",
+      "vaultsUpdateFailed": "ボールト構成の更新に失敗しました"
+    },
+    "success": {
+      "errorCount": "{{count}} 個のエラー",
+      "importComplete": "インポートが完了しました: {{summary}}",
+      "imported": "組織データが正常にインポートされました",
+      "importedCount": "{{count}} 個のアイテムがインポートされました",
+      "requestsBlocked": "ユーザーリクエストは正常にブロックされました",
+      "requestsBlockedWithTerminations": "ユーザーリクエストはブロックされました。 {{count}} 個のアクティブなセッションが終了しました。",
+      "requestsUnblocked": "ユーザーリクエストのブロックが正常に解除されました",
+      "skippedCount": "{{count}} 個のアイテムがスキップされました",
+      "vaultUpdated": "ボールト構成が正常に更新されました",
+      "vaultsUpdated": "すべてのボールト構成が正常に更新されました"
+    }
+  },
+  "personal": {
+    "changePassword": {
+      "successContent": "パスワードが変更されました。{{seconds}} 秒でログアウトします...",
+      "successTitle": "パスワード変更成功"
+    }
+  },
   "regionsInfrastructure": {
     "title": "地域とインフラ"
   },
@@ -259,6 +252,7 @@
       "machines": "機械",
       "members": "メンバー",
       "repositories": "リポジトリ",
+      "stats": "統計情報",
       "storage": "ストレージ",
       "teamName": "チーム名",
       "vaultVersion": "ボールトのバージョン"
@@ -269,6 +263,22 @@
       "lastActive": "最終アクティブ",
       "permissionGroup": "権限グループ",
       "status": "状態"
+    }
+  },
+  "teams": {
+    "delete": {
+      "confirmDescription": "チーム「{{teamName}}」を削除してもよろしいですか?",
+      "confirmTitle": "チームを削除する"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "「{{email}}」を有効にしてもよろしいですか?",
+      "confirmTitle": "ユーザーをアクティブ化する"
+    },
+    "deactivate": {
+      "confirmDescription": "「{{email}}」を無効にしてもよろしいですか?",
+      "confirmTitle": "ユーザーを非アクティブ化する"
     }
   },
   "userSessions": {
@@ -294,6 +304,7 @@
     "forkToken": "これはフォークトークン（子セッション）です",
     "hasChildren": "{{count}} 個の子セッション",
     "inactive": "非アクティブ",
+    "ipLabel": "IP",
     "minutes": "分",
     "notAvailable": "該当なし",
     "searchPlaceholder": "電子メール、IP、またはセッション名で検索します...",
@@ -304,21 +315,11 @@
     "totalSessions": "合計セッション数",
     "uniqueUsers": "ユニークユーザー"
   },
-  "users": {
-    "activate": {
-      "confirmDescription": "「{{email}}」を有効にしてもよろしいですか?",
-      "confirmTitle": "ユーザーをアクティブ化する"
-    },
-    "deactivate": {
-      "confirmDescription": "「{{email}}」を無効にしてもよろしいですか?",
-      "confirmTitle": "ユーザーを非アクティブ化する"
-    }
-  },
   "vaultProtocol": {
     "errors": {
       "disableFailed": "ボールトの暗号化を無効にできませんでした",
       "enableFailed": "ボールトの暗号化を有効にできませんでした",
-      "noCompanySelected": "会社が選択されていません。 暗号化を更新する前に会社を選択してください。"
+      "noOrganizationSelected": "会社が選択されていません。 暗号化を更新する前に会社を選択してください。"
     },
     "success": {
       "disabled": "ボールトの暗号化が無効になっています。 マスターパスワードは必要なくなりました。",

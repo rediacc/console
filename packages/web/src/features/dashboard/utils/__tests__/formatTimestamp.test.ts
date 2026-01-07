@@ -47,7 +47,7 @@ describe('formatTimestamp', () => {
   it('returns locale date string for timestamps older than 1 week', () => {
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const expected = oneMonthAgo.toLocaleDateString();
+    const expected = oneMonthAgo.toLocaleString();
     expect(formatTimestamp(oneMonthAgo.toISOString())).toBe(expected);
   });
 });

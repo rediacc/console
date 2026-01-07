@@ -1,9 +1,14 @@
 import { useCallback } from 'react';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { QueueFunction } from '@/api/queries/queue';
 import { useMessage } from '@/hooks';
 import { templateService } from '@/services/templateService';
+import {
+  isBridgeFunction,
+  safeValidateFunctionParams,
+  getValidationErrors,
+} from '@rediacc/shared/queue-vault';
+import type { QueueFunction } from '@rediacc/shared/types';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -85,6 +90,18 @@ export const useFunctionSubmission = ({
         content: t('functions:missingRequiredParams', { params: missingParams.join(', ') }),
       });
       return;
+    }
+
+    // Validate function parameters against Zod schemas (if available)
+    if (isBridgeFunction(selectedFunction.name)) {
+      const validationResult = safeValidateFunctionParams(selectedFunction.name, functionParams);
+      if (!validationResult.success) {
+        Modal.error({
+          title: t('functions:validationError'),
+          content: getValidationErrors(validationResult),
+        });
+        return;
+      }
     }
 
     // Clean up the params - remove the helper _value and _unit fields

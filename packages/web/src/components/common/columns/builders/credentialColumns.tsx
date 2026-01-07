@@ -1,7 +1,5 @@
 import { Space, Tag } from 'antd';
-import type { Repository } from '@/api/queries/repositories';
 import { ActionButtonGroup, type ActionButtonConfig } from '@/components/common/ActionButtonGroup';
-import { createActionColumn } from '@/components/common/columns';
 import { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from '@/components/common/ResourceListView';
 import { featureFlags } from '@/config/featureFlags';
 import {
@@ -10,14 +8,16 @@ import {
   HistoryOutlined,
   InboxOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
+import { createActionColumn } from '../factories/action';
 import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
 
 interface BuildRepositoryColumnsParams {
-  t: TFunction<'resources' | 'machines' | 'common'>;
-  onEdit: (repository: Repository) => void;
-  onTrace: (repository: Repository) => void;
-  onDelete: (repository: Repository) => void;
+  t: TypedTFunction;
+  onEdit: (repository: GetTeamRepositories_ResultSet1) => void;
+  onTrace: (repository: GetTeamRepositories_ResultSet1) => void;
+  onDelete: (repository: GetTeamRepositories_ResultSet1) => void;
 }
 
 export const buildRepositoryColumns = ({
@@ -25,7 +25,7 @@ export const buildRepositoryColumns = ({
   onEdit,
   onTrace,
   onDelete,
-}: BuildRepositoryColumnsParams): ColumnsType<Repository> => [
+}: BuildRepositoryColumnsParams): ColumnsType<GetTeamRepositories_ResultSet1> => [
   {
     title: t('repositories.repositoryName'),
     dataIndex: 'repositoryName',
@@ -60,10 +60,10 @@ export const buildRepositoryColumns = ({
         },
       ]
     : []),
-  createActionColumn<Repository>({
+  createActionColumn<GetTeamRepositories_ResultSet1>({
     width: COLUMN_WIDTHS.ACTIONS_WIDE,
     renderActions: (record) => {
-      const buttons: ActionButtonConfig<Repository>[] = [
+      const buttons: ActionButtonConfig<GetTeamRepositories_ResultSet1>[] = [
         {
           type: 'edit',
           icon: <EditOutlined />,
@@ -89,7 +89,7 @@ export const buildRepositoryColumns = ({
       ];
 
       return (
-        <ActionButtonGroup<Repository>
+        <ActionButtonGroup<GetTeamRepositories_ResultSet1>
           buttons={buttons}
           record={record}
           idField="repositoryGuid"

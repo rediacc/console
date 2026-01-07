@@ -1,9 +1,16 @@
 {
+  "advanced": "Advanced",
+  "functions": "Functions",
+  "noVaultData": "No vault data available",
+  "showingMachines": "Showing {{start}}-{{end}} of {{total}} machines",
+  "removeFromCluster": "Remove from Cluster",
+  "assignedDate": "Assigned Date",
   "addSystemFunction": "Add System Function to Queue",
   "addToQueue": "Add to Queue",
   "allMachinesConnected": "All {{count}} machines are connected successfully",
   "assignToCluster": "Assign to Cluster",
   "assignmentStatus": {
+    "assigned": "Assigned",
     "available": "Available",
     "clone": "Assigned to Clone",
     "cluster": "Assigned to Cluster",
@@ -106,6 +113,7 @@
   "machineCreatedButSetupFailed": "Machine created successfully, but setup could not be queued.",
   "machineName": "Machine Name",
   "machines": "Machines",
+  "searchMachines": "Search machines...",
   "machinesConnectedWithFailures": "{{successCount}} machines connected, {{failedCount}} failed",
   "manage": "Manage",
   "message": "Message",
@@ -167,6 +175,7 @@
     "alreadyAssigned": "Machine is already assigned to {{resourceType}}: {{resourceName}}",
     "machineNotAvailable": "Machine {{machineName}} is not available for assignment",
     "noMachinesSelected": "Please select at least one machine",
+    "sshConnectionNotTested": "SSH connection has not been tested",
     "sshPasswordNotAllowed": "SSH password cannot be used without SSH keys configured. Please set up SSH keys first or remove the password."
   },
   "vault": "Vault",

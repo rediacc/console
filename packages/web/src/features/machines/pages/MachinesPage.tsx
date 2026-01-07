@@ -2,18 +2,11 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  useCreateMachine,
-  useDeleteMachine,
-  useMachines,
-  useUpdateMachineBridge,
-  useUpdateMachineName,
-  useUpdateMachineVault,
-} from '@/api/queries/machines';
-import { Repository, useRepositories } from '@/api/queries/repositories';
-import { useStorage } from '@/api/queries/storage';
-import { SplitResourceView, type ContainerData } from '@/components/common';
+import { useMachineMutations, useGetTeamMachines } from '@/api/api-hooks.generated';
+import { useGetTeamRepositories } from '@/api/api-hooks.generated';
+import { useGetTeamStorages } from '@/api/api-hooks.generated';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
+import { SplitResourceView, type ContainerData } from '@/components/common/SplitResourceView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import ConnectivityTestModal from '@/features/machines/components/ConnectivityTestModal';
@@ -24,6 +17,7 @@ import { type Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useMachineFunctionHandlers } from './hooks/useMachineFunctionHandlers';
 import type { MachineFunctionData, MachineFormValues } from './types';
 
@@ -44,7 +38,7 @@ const MachinesPage: React.FC = () => {
 
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] =
-    useState<Repository | null>(null);
+    useState<GetTeamRepositories_ResultSet1 | null>(null);
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] =
     useState<ContainerData | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
@@ -58,29 +52,35 @@ const MachinesPage: React.FC = () => {
   } = useQueueTraceModal();
   const connectivityTest = useDialogState();
 
-  const { data: machines = [], refetch: refetchMachines } = useMachines(
-    selectedTeams.length > 0 ? selectedTeams : undefined,
-    selectedTeams.length > 0
+  const { data: machines = [], refetch: refetchMachines } = useGetTeamMachines(
+    selectedTeams.length > 0 ? selectedTeams[0] : undefined
   );
-  const { data: repositories = [] } = useRepositories(
-    selectedTeams.length > 0 ? selectedTeams : undefined
+  const { data: repositories = [] } = useGetTeamRepositories(
+    selectedTeams.length > 0 ? selectedTeams[0] : undefined
   );
-  const { data: storages = [] } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined);
+  const { data: storages = [] } = useGetTeamStorages(
+    selectedTeams.length > 0 ? selectedTeams[0] : undefined
+  );
 
-  const createMachineMutation = useCreateMachine();
-  const updateMachineNameMutation = useUpdateMachineName();
-  const updateMachineBridgeMutation = useUpdateMachineBridge();
-  const deleteMachineMutation = useDeleteMachine();
-  const updateMachineVaultMutation = useUpdateMachineVault();
-  const { executeAction, isExecuting } = useQueueAction();
+  const mutations = useMachineMutations();
+  const { executeDynamic, isExecuting } = useQueueAction();
 
   const { handleMachineFunctionSelected, handleDirectFunctionQueue } = useMachineFunctionHandlers({
     currentResource,
-    teams,
+    teams: teams.map((t) => ({
+      teamName: t.teamName ?? '',
+      vaultContent: t.vaultContent ?? undefined,
+    })),
     machines,
-    repositories,
-    storages,
-    executeAction,
+    repositories: repositories.map((r) => ({
+      repositoryGuid: r.repositoryGuid ?? '',
+      vaultContent: r.vaultContent ?? undefined,
+    })),
+    storages: storages.map((s) => ({
+      storageName: s.storageName ?? '',
+      vaultContent: s.vaultContent ?? undefined,
+    })),
+    executeDynamic,
     closeUnifiedModal,
     openQueueTrace: (taskId, machineName) => openQueueTrace(taskId, machineName),
     setRefreshKeys,
@@ -113,17 +113,17 @@ const MachinesPage: React.FC = () => {
         modal,
         t,
         resourceType: 'machine',
-        resourceName: machine.machineName,
+        resourceName: machine.machineName ?? '',
         translationNamespace: 'machines',
         onConfirm: () =>
-          deleteMachineMutation.mutateAsync({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
+          mutations.deleteMachine.mutateAsync({
+            teamName: machine.teamName ?? '',
+            machineName: machine.machineName ?? '',
           }),
         onSuccess: () => refetchMachines(),
       });
     },
-    [deleteMachineMutation, modal, refetchMachines, t]
+    [mutations.deleteMachine, modal, refetchMachines, t]
   );
 
   const handleUnifiedModalSubmit = useCallback(
@@ -131,25 +131,27 @@ const MachinesPage: React.FC = () => {
       try {
         if (unifiedModalState.mode === 'create') {
           const { autoSetup, ...machineData } = formData;
-          await createMachineMutation.mutateAsync(machineData);
+          await mutations.createMachine.mutateAsync({
+            ...machineData,
+            vaultContent: machineData.vaultContent ?? '{}',
+          });
           showMessage('success', t('machines:createSuccess'));
 
           if (autoSetup) {
             try {
               await new Promise((resolve) => setTimeout(resolve, 500));
-              const result = await executeAction({
-                teamName: formData.teamName,
-                machineName: formData.machineName,
-                bridgeName: formData.bridgeName,
-                functionName: 'setup',
+              const result = await executeDynamic('setup', {
                 params: {
                   datastore_size: '95%',
-                  source: 'apt-repo',
+                  from: 'apt-repo',
                   rclone_source: 'install-script',
                   docker_source: 'docker-repo',
                   install_amd_driver: 'auto',
                   install_nvidia_driver: 'auto',
                 },
+                teamName: formData.teamName,
+                machineName: formData.machineName,
+                bridgeName: formData.bridgeName,
                 priority: 3,
                 addedVia: 'machine-creation-auto-setup',
                 machineVault: formData.vaultContent ?? '{}',
@@ -175,7 +177,7 @@ const MachinesPage: React.FC = () => {
           const newName = formData.machineName;
 
           if (newName && newName !== currentName) {
-            await updateMachineNameMutation.mutateAsync({
+            await mutations.updateMachineName.mutateAsync({
               teamName: currentResource.teamName,
               currentMachineName: currentName,
               newMachineName: newName,
@@ -183,7 +185,7 @@ const MachinesPage: React.FC = () => {
           }
 
           if (formData.bridgeName && formData.bridgeName !== currentResource.bridgeName) {
-            await updateMachineBridgeMutation.mutateAsync({
+            await mutations.updateMachineAssignedBridge.mutateAsync({
               teamName: currentResource.teamName,
               machineName: newName || currentName,
               newBridgeName: formData.bridgeName,
@@ -192,11 +194,11 @@ const MachinesPage: React.FC = () => {
 
           const vaultData = formData.vaultContent;
           if (vaultData && vaultData !== currentResource.vaultContent) {
-            await updateMachineVaultMutation.mutateAsync({
+            await mutations.updateMachineVault.mutateAsync({
               teamName: currentResource.teamName,
               machineName: newName || currentName,
               vaultContent: vaultData,
-              vaultVersion: currentResource.vaultVersion + 1,
+              vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
             });
           }
 
@@ -209,16 +211,13 @@ const MachinesPage: React.FC = () => {
     },
     [
       closeUnifiedModal,
-      createMachineMutation,
+      mutations,
       currentResource,
-      executeAction,
+      executeDynamic,
       openQueueTrace,
       refetchMachines,
       t,
       unifiedModalState.mode,
-      updateMachineBridgeMutation,
-      updateMachineNameMutation,
-      updateMachineVaultMutation,
     ]
   );
 
@@ -226,7 +225,7 @@ const MachinesPage: React.FC = () => {
     async (vault: string, version: number) => {
       if (!currentResource) return;
       try {
-        await updateMachineVaultMutation.mutateAsync({
+        await mutations.updateMachineVault.mutateAsync({
           teamName: currentResource.teamName,
           machineName: currentResource.machineName,
           vaultContent: vault,
@@ -238,10 +237,12 @@ const MachinesPage: React.FC = () => {
         // Error handled by mutation toast
       }
     },
-    [closeUnifiedModal, currentResource, refetchMachines, updateMachineVaultMutation]
+    [closeUnifiedModal, currentResource, refetchMachines, mutations.updateMachineVault]
   );
 
-  const handleResourceSelection = (resource: Machine | Repository | ContainerData | null) => {
+  const handleResourceSelection = (
+    resource: Machine | GetTeamRepositories_ResultSet1 | ContainerData | null
+  ) => {
     if (resource && 'machineName' in resource) {
       handleMachineSelect(resource);
     } else if (resource && 'repositoryName' in resource) {
@@ -269,13 +270,14 @@ const MachinesPage: React.FC = () => {
     }));
   };
 
-  const isSubmitting =
-    createMachineMutation.isPending ||
-    updateMachineNameMutation.isPending ||
-    updateMachineBridgeMutation.isPending ||
-    isExecuting;
+  const isSubmitting = [
+    mutations.createMachine.isPending,
+    mutations.updateMachineName.isPending,
+    mutations.updateMachineAssignedBridge.isPending,
+    isExecuting,
+  ].some(Boolean);
 
-  const isUpdatingVault = updateMachineVaultMutation.isPending;
+  const isUpdatingVault = mutations.updateMachineVault.isPending;
 
   const modalExistingData = unifiedModalState.data ?? currentResource ?? undefined;
 
@@ -286,7 +288,7 @@ const MachinesPage: React.FC = () => {
     <>
       <Flex vertical>
         <Card>
-          <Flex justify="space-between" align="center" wrap gap={12}>
+          <Flex justify="space-between" align="center" wrap>
             {/* eslint-disable-next-line no-restricted-syntax */}
             <Flex style={{ flex: 1, minWidth: 260 }}>
               <TeamSelector
@@ -382,8 +384,7 @@ const MachinesPage: React.FC = () => {
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
         preselectedFunction={unifiedModalState.preselectedFunction}
         onSubmit={async (data) => {
-          const machineData = data as MachineFormValues;
-          await handleUnifiedModalSubmit(machineData);
+          await handleUnifiedModalSubmit(data as unknown as MachineFormValues);
         }}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={(functionData) => {

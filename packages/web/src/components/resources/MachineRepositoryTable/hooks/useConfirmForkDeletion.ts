@@ -1,6 +1,8 @@
-import { type TFunction } from 'i18next';
 import { getGrandVaultForOperation, prepareForkDeletion } from '@/platform';
+import { type QueueActionResult, type TypedQueueActionParams } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import type { Repository } from '../types';
 import type { HookAPI } from 'antd/es/modal/useModal';
 
@@ -21,21 +23,19 @@ interface UseConfirmForkDeletionParams {
     vaultContent?: string;
   };
   confirm: HookAPI['confirm'];
-  executeAction: (params: unknown) => Promise<{
-    success: boolean;
-    taskId?: string;
-    isQueued?: boolean;
-    error?: string;
-  }>;
+  executeTyped: <F extends BridgeFunctionName>(
+    functionName: F,
+    params: Omit<TypedQueueActionParams<F>, 'functionName'>
+  ) => Promise<QueueActionResult>;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const useConfirmForkDeletion = ({
   teamRepositories,
   machine,
   confirm,
-  executeAction,
+  executeTyped,
   onQueueItemCreated,
   t,
 }: UseConfirmForkDeletionParams) => {
@@ -47,11 +47,12 @@ export const useConfirmForkDeletion = ({
     );
 
     if (context.status === 'error') {
-      const errorKey =
+      showMessage(
+        'error',
         context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.cannotDeleteGrandRepo';
-      showMessage('error', t(errorKey));
+          ? t('resources:repositories.notFound')
+          : t('resources:repositories.cannotDeleteGrandRepository')
+      );
       return;
     }
 
@@ -76,24 +77,19 @@ export const useConfirmForkDeletion = ({
               teamRepositories
             ) ?? '{}';
 
-          const params: Record<string, unknown> = {
-            repository: context.repositoryGuid,
-            repositoryName: context.repositoryTag,
-            grand: context.grandGuid,
-          };
-
-          const result = await executeAction({
+          const result = await executeTyped('repository_delete', {
+            params: {
+              grand: context.grandGuid ?? undefined,
+            },
             teamName: machine.teamName,
             machineName: machine.machineName,
             bridgeName: machine.bridgeName,
-            functionName: 'rm',
-            params,
             priority: 4,
             addedVia: 'machine-Repository-list-delete-clone',
             machineVault: machine.vaultContent ?? '{}',
-            repositoryGuid: context.repositoryGuid,
+            repositoryGuid: context.repositoryGuid ?? undefined,
             vaultContent: grandRepoVault,
-            repositoryNetworkId: context.repositoryNetworkId,
+            repositoryNetworkId: context.repositoryNetworkId ?? undefined,
           });
 
           if (result.success) {

@@ -34,10 +34,17 @@
     "build:exe:all": "bun run build:exe:win && bun run build:exe:mac && bun run build:exe:mac-arm && bun run build:exe:linux"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/resources": "^1.30.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "@rediacc/shared-desktop": "*",
+    "i18next": "^23.16.5",
     "inquirer": "^13.1.0"
   },
   "devDependencies": {
-    "@rediacc/shared": "^0.1.0",
+    "@rediacc/shared": "*",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^25.0.3",
     "@vitest/coverage-v8": "^4.0.15",

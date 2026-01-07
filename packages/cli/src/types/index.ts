@@ -5,15 +5,48 @@
 // ============================================================================
 
 /**
+ * Machine configuration for local mode.
+ * Defines SSH connection details for a machine.
+ */
+export interface LocalMachineConfig {
+  /** Machine IP address or hostname */
+  ip: string;
+  /** SSH username */
+  user: string;
+  /** SSH port (default: 22) */
+  port?: number;
+  /** Datastore path on the machine */
+  datastore?: string;
+}
+
+/**
+ * SSH configuration for local mode.
+ * Points to local SSH key files.
+ */
+export interface LocalSSHConfig {
+  /** Path to SSH private key file (e.g., ~/.ssh/id_rsa) */
+  privateKeyPath: string;
+  /** Path to SSH public key file (optional) */
+  publicKeyPath?: string;
+}
+
+/**
+ * Context mode: 'cloud' uses middleware API, 'local' uses direct renet execution.
+ */
+export type ContextMode = 'cloud' | 'local';
+
+/**
  * A named context containing all configuration for a specific environment.
  * Each context has its own API endpoint, credentials, and default team/region.
  */
 export interface NamedContext {
   /** Unique name for this context (e.g., "production", "local", "staging") */
   name: string;
-  /** API endpoint URL */
+  /** Context mode: 'cloud' (default) or 'local' */
+  mode?: ContextMode;
+  /** API endpoint URL (required for cloud mode) */
   apiUrl: string;
-  /** Authentication token for this endpoint */
+  /** Authentication token for this endpoint (cloud mode) */
   token?: string;
   /** Encrypted master password for vault operations */
   masterPassword?: string;
@@ -27,6 +60,19 @@ export interface NamedContext {
   bridge?: string;
   /** Default machine for this context */
   machine?: string;
+  /** Preferred language code (en, de, es, fr, ja, ar, ru, tr, zh) */
+  language?: string;
+
+  // ============================================================================
+  // Local Mode Configuration (only used when mode === 'local')
+  // ============================================================================
+
+  /** Machine configurations for local mode (name -> config) */
+  machines?: Record<string, LocalMachineConfig>;
+  /** SSH configuration for local mode */
+  ssh?: LocalSSHConfig;
+  /** Path to renet binary (default: 'renet' in PATH) */
+  renetPath?: string;
 }
 
 /**

@@ -11,18 +11,17 @@ import {
   Tag,
   Tooltip,
   Typography,
-  theme,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CrownOutlined } from '@/utils/optimizedIcons';
-import type { CompanyDashboardData } from '@rediacc/shared/types';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 const CRITICAL_DAYS_THRESHOLD = 30;
 
 interface SubscriptionPlanWidgetProps {
-  activeSubscription?: CompanyDashboardData['activeSubscription'];
-  allActiveSubscriptions: CompanyDashboardData['allActiveSubscriptions'];
-  planLimits?: CompanyDashboardData['planLimits'];
+  activeSubscription?: OrganizationDashboardData['activeSubscription'];
+  allActiveSubscriptions: OrganizationDashboardData['allActiveSubscriptions'];
+  planLimits?: OrganizationDashboardData['planLimits'];
 }
 
 const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
@@ -30,16 +29,15 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
   allActiveSubscriptions,
   planLimits,
 }) => {
-  const { t } = useTranslation('system');
-  const { token } = theme.useToken();
+  const { t } = useTranslation(['system', 'common']);
 
   return (
     <Card
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <CrownOutlined />
           <Typography.Text>
-            Subscription & Plan Details - {planLimits?.planCode ?? 'N/A'}
+            {t('common:dashboard.widgets.subscriptionPlan.title')} - {planLimits?.planCode ?? 'N/A'}
           </Typography.Text>
           {allActiveSubscriptions.length > 0 && <Badge count={allActiveSubscriptions.length} />}
         </Flex>
@@ -49,27 +47,29 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
       <Row gutter={[24, 24]}>
         <Col xs={24} md={allActiveSubscriptions.length > 0 ? 12 : 24}>
           {activeSubscription ? (
-            <Flex vertical gap={16} className="w-full">
+            <Flex vertical className="w-full">
               <Flex vertical>
                 <Flex className="block">
-                  <Typography.Text>CURRENT SUBSCRIPTION</Typography.Text>
+                  <Typography.Text>
+                    {t('common:dashboard.widgets.subscriptionPlan.currentSubscription')}
+                  </Typography.Text>
                 </Flex>
                 <Typography.Title level={4}>{activeSubscription.planCode}</Typography.Title>
                 <Row gutter={[16, 16]}>
                   <Col span={12}>
                     <Statistic
-                      title={t('dashboard.activeLicenses')}
+                      title={t('system:dashboard.activeLicenses')}
                       value={activeSubscription.totalActivePurchases ?? undefined}
                       data-testid="dashboard-stat-active-licenses"
                     />
                   </Col>
                   <Col span={12}>
                     <Statistic
-                      title={t('dashboard.daysRemaining')}
+                      title={t('system:dashboard.daysRemaining')}
                       value={activeSubscription.daysRemaining ?? undefined}
                       valueStyle={
                         (activeSubscription.daysRemaining ?? 0) <= CRITICAL_DAYS_THRESHOLD
-                          ? { color: token.colorError }
+                          ? { color: '#ff4d4f' }
                           : undefined
                       }
                       data-testid="dashboard-stat-days-remaining"
@@ -79,22 +79,27 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
               </Flex>
             </Flex>
           ) : (
-            <Empty description={t('dashboard.noSubscription')} />
+            <Empty description={t('system:dashboard.noSubscription')} />
           )}
         </Col>
 
         {allActiveSubscriptions.length > 0 && (
           <Col xs={24} md={12}>
-            <Flex vertical gap={16} className="w-full">
+            <Flex vertical className="w-full">
               <Flex vertical>
                 <Flex className="block">
-                  <Typography.Text>ALL ACTIVE LICENSES</Typography.Text>
+                  <Typography.Text>
+                    {t('common:dashboard.widgets.subscriptionPlan.allActiveLicenses')}
+                  </Typography.Text>
                 </Flex>
-                <Typography.Title level={4}>{allActiveSubscriptions.length} Total</Typography.Title>
+                <Typography.Title level={4}>
+                  {allActiveSubscriptions.length}{' '}
+                  {t('common:dashboard.widgets.subscriptionPlan.total')}
+                </Typography.Title>
               </Flex>
               {/* eslint-disable-next-line no-restricted-syntax */}
               <Flex style={{ maxHeight: 320, overflowY: 'auto' }}>
-                <Flex vertical gap={8} className="w-full">
+                <Flex vertical className="gap-sm w-full">
                   {allActiveSubscriptions.map((sub, index) => {
                     const startDate = sub.startDate ? new Date(sub.startDate) : new Date();
                     const endDate = sub.endDate ? new Date(sub.endDate) : new Date();
@@ -109,9 +114,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                     })();
 
                     const strokeColor =
-                      (sub.daysRemaining ?? 0) <= CRITICAL_DAYS_THRESHOLD
-                        ? token.colorError
-                        : token.colorPrimary;
+                      (sub.daysRemaining ?? 0) <= CRITICAL_DAYS_THRESHOLD ? '#ff4d4f' : '#1677ff';
 
                     return (
                       <Flex
@@ -120,13 +123,19 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                         data-testid={`dashboard-license-item-${index}`}
                       >
                         <Flex align="center" justify="space-between">
-                          <Flex align="center" gap={8} wrap className="inline-flex">
+                          <Flex align="center" wrap className="inline-flex">
                             <Typography.Text strong>{sub.planCode}</Typography.Text>
                             <Badge count={sub.quantity} />
-                            {sub.isTrial === 1 && <Tag>Trial</Tag>}
+                            {sub.isTrial === true && (
+                              <Tag>{t('common:dashboard.widgets.subscriptionPlan.trial')}</Tag>
+                            )}
                           </Flex>
                           <Typography.Text>
-                            {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
+                            {sub.daysRemaining}{' '}
+                            {sub.daysRemaining === 1
+                              ? t('common:dashboard.widgets.subscriptionPlan.day')
+                              : t('common:dashboard.widgets.subscriptionPlan.days')}{' '}
+                            {t('common:dashboard.widgets.subscriptionPlan.remaining')}
                           </Typography.Text>
                         </Flex>
                         <Tooltip
@@ -154,33 +163,33 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
         <Row gutter={[24, 24]}>
           <Col xs={24} md={6}>
             <Statistic
-              title={t('dashboard.maxActiveJobs')}
+              title={t('system:dashboard.maxActiveJobs')}
               value={planLimits.maxActiveJobs ?? undefined}
             />
           </Col>
           <Col xs={24} md={6}>
             <Statistic
-              title={t('dashboard.maxReservedJobs')}
+              title={t('system:dashboard.maxReservedJobs')}
               value={planLimits.maxReservedJobs ?? undefined}
             />
           </Col>
           <Col xs={24} md={6}>
             <Statistic
-              title={t('dashboard.jobTimeout')}
+              title={t('system:dashboard.jobTimeout')}
               value={planLimits.jobTimeoutHours ?? undefined}
-              suffix="hours"
+              suffix={t('common:dashboard.widgets.subscriptionPlan.hours')}
             />
           </Col>
           <Col xs={24} md={6}>
             <Statistic
-              title={t('dashboard.maxRepoSize')}
+              title={t('system:dashboard.maxRepoSize')}
               value={planLimits.maxRepositorySize ?? undefined}
               suffix="GB"
             />
           </Col>
         </Row>
       ) : (
-        <Empty description={t('dashboard.noPlanData')} />
+        <Empty description={t('system:dashboard.noPlanData')} />
       )}
     </Card>
   );

@@ -1,16 +1,18 @@
 import { showMessage } from '@/utils/messages';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import { getGrandRepoVault, getRequiredTag } from '../hooks/useFunctionExecution';
-import type { FunctionExecutionContext, FunctionData } from '../hooks/useFunctionExecution';
+import type { ForkFunctionData } from './types';
+import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 
 export const handleForkFunction = async (
-  functionData: FunctionData,
+  functionData: ForkFunctionData,
   context: FunctionExecutionContext
 ): Promise<void> => {
   const {
     selectedRepository,
     teamRepositories,
     machine,
-    executeAction,
+    executeDynamic,
     createRepositoryCredential,
     onQueueItemCreated,
     closeModal,
@@ -49,11 +51,7 @@ export const handleForkFunction = async (
   const grandRepoVault = getGrandRepoVault(RepoData, teamRepositories);
 
   try {
-    const result = await executeAction({
-      teamName: machine.teamName,
-      machineName: machine.machineName,
-      bridgeName: machine.bridgeName,
-      functionName: 'push',
+    const result = await executeDynamic('backup_push' as BridgeFunctionName, {
       params: {
         repository: RepoData.repositoryGuid,
         repositoryName: RepoData.repositoryName,
@@ -64,6 +62,9 @@ export const handleForkFunction = async (
         state: selectedRepository.mounted ? 'online' : 'offline',
         grand: RepoData.grandGuid ?? RepoData.repositoryGuid,
       },
+      teamName: machine.teamName,
+      machineName: machine.machineName,
+      bridgeName: machine.bridgeName,
       priority: functionData.priority,
       addedVia: 'machine-Repository-list-fork',
       machineVault: machine.vaultContent ?? '{}',

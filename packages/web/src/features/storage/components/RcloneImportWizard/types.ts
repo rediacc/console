@@ -1,4 +1,4 @@
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 export type RcloneConfigFields = {
   [key: string]: string | number | boolean | Record<string, unknown> | undefined;
@@ -26,4 +26,4 @@ export interface RcloneImportWizardProps {
   onImportComplete?: () => void;
 }
 
-export type WizardTranslator = TFunction<'resources' | 'common'>;
+export type WizardTranslator = TypedTFunction;

@@ -1,5 +1,6 @@
-import functionsData from './functions.json';
-import type { FunctionRequirements } from '../types/requirements';
-
-export const FUNCTION_REQUIREMENTS: Record<string, { requirements: FunctionRequirements }> =
-  functionsData.functions as Record<string, { requirements: FunctionRequirements }>;
+// Re-export from generated file - type-safe function requirements from renet
+export {
+  FUNCTION_REQUIREMENTS,
+  isBridgeFunction,
+  type BridgeFunctionName,
+} from './functions.generated';

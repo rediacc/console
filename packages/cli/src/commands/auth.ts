@@ -5,6 +5,8 @@ import {
   parseUpdateUserTFA,
   parseGetRequestAuthenticationStatus,
 } from '@rediacc/shared/api';
+import { isValidEmail } from '@rediacc/shared/validation';
+import { t } from '../i18n/index.js';
 import { typedApi, apiClient } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -15,17 +17,17 @@ import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
 export function registerAuthCommands(program: Command): void {
-  const auth = program.command('auth').description('Authentication commands');
+  const auth = program.command('auth').description(t('commands.auth.description'));
 
   // auth login
   auth
     .command('login')
-    .description('Authenticate with Rediacc')
-    .option('-e, --email <email>', 'Email address')
-    .option('-p, --password <password>', 'Password (for non-interactive login)')
-    .option('-n, --name <name>', 'Session name')
-    .option('--endpoint <url>', 'API endpoint URL')
-    .option('--save-as <context>', 'Save credentials to a named context')
+    .description(t('commands.auth.login.description'))
+    .option('-e, --email <email>', t('options.email'))
+    .option('-p, --password <password>', t('options.password'))
+    .option('-n, --name <name>', t('options.sessionName'))
+    .option('--endpoint <url>', t('options.endpoint'))
+    .option('--save-as <context>', t('options.saveAs'))
     .action(async (options) => {
       try {
         // Determine context name (--save-as overrides current context)
@@ -43,7 +45,7 @@ export function registerAuthCommands(program: Command): void {
         }
 
         // Temporarily set API URL for this request
-        const originalUrl = apiClient.getApiUrl();
+        const originalUrl = await apiClient.getApiUrl();
         if (apiUrl !== originalUrl) {
           await apiClient.reinitialize();
         }
@@ -51,41 +53,41 @@ export function registerAuthCommands(program: Command): void {
         // Get email
         const email =
           options.email ??
-          (await askText('Email:', {
-            validate: (input) => input.includes('@') || 'Please enter a valid email',
+          (await askText(t('prompts.email'), {
+            validate: (input) => isValidEmail(input) || t('errors.invalidEmail'),
           }));
 
         // Get password
-        const password = options.password ?? (await askPassword('Password:'));
+        const password = options.password ?? (await askPassword(t('prompts.password')));
 
         // Attempt login with context info
         const result = await withSpinner(
-          'Authenticating...',
+          t('commands.auth.login.authenticating'),
           () =>
             authService.login(email, password, {
               sessionName: options.name,
               contextName: contextName ?? 'default',
               apiUrl,
             }),
-          'Authenticated successfully'
+          t('status.success')
         );
 
         // Handle 2FA if required
         if (result.isTFAEnabled) {
-          const tfaCode = await askText('Enter 2FA code:');
+          const tfaCode = await askText(t('commands.auth.login.tfaPrompt'));
           await withSpinner(
-            'Verifying 2FA...',
+            t('commands.auth.login.verifyingTfa'),
             () => authService.privilegeWithTFA(tfaCode),
-            '2FA verified successfully'
+            t('commands.auth.login.tfaVerified')
           );
         }
 
         if (!result.success && !result.isTFAEnabled) {
-          throw new ValidationError(result.message ?? 'Authentication failed');
+          throw new ValidationError(result.message ?? t('errors.authFailed'));
         }
 
         const savedTo = contextName ?? 'default';
-        outputService.success(`Login successful! Saved to context "${savedTo}"`);
+        outputService.success(t('commands.auth.login.success', { context: savedTo }));
       } catch (error) {
         handleError(error);
       }
@@ -94,10 +96,14 @@ export function registerAuthCommands(program: Command): void {
   // auth logout
   auth
     .command('logout')
-    .description('Clear stored credentials')
+    .description(t('commands.auth.logout.description'))
     .action(async () => {
       try {
-        await withSpinner('Logging out...', () => authService.logout(), 'Logged out successfully');
+        await withSpinner(
+          t('commands.auth.logout.loggingOut'),
+          () => authService.logout(),
+          t('commands.auth.logout.success')
+        );
       } catch (error) {
         handleError(error);
       }
@@ -106,16 +112,18 @@ export function registerAuthCommands(program: Command): void {
   // auth status
   auth
     .command('status')
-    .description('Check current authentication status')
+    .description(t('commands.auth.status.description'))
     .action(async () => {
       try {
         const isAuth = await authService.isAuthenticated();
         const email = await authService.getStoredEmail();
 
         if (isAuth) {
-          outputService.success(`Authenticated as: ${email ?? 'unknown'}`);
+          outputService.success(
+            t('commands.auth.status.authenticated', { email: email ?? 'unknown' })
+          );
         } else {
-          outputService.warn('Not authenticated. Run: rediacc login');
+          outputService.warn(t('commands.auth.status.notAuthenticated'));
         }
       } catch (error) {
         handleError(error);
@@ -125,30 +133,30 @@ export function registerAuthCommands(program: Command): void {
   // auth register
   auth
     .command('register')
-    .description('Register a new company and user account')
-    .requiredOption('--company <name>', 'Company name')
-    .requiredOption('-e, --email <email>', 'Email address')
-    .requiredOption('-p, --password <password>', 'Password')
-    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .description(t('commands.auth.register.description'))
+    .requiredOption('--organization <name>', t('options.organization'))
+    .requiredOption('-e, --email <email>', t('options.email'))
+    .requiredOption('-p, --password <password>', t('options.password'))
+    .option('--endpoint <url>', t('options.endpoint'))
     .action(async (options) => {
       try {
         // Set API endpoint if provided
         if (options.endpoint) {
-          await apiClient.setApiUrl(options.endpoint);
+          apiClient.setApiUrl(options.endpoint);
         }
 
         const result = await withSpinner(
-          'Registering account...',
-          () => authService.register(options.company, options.email, options.password),
-          'Registration submitted'
+          t('commands.auth.register.registering'),
+          () => authService.register(options.organization, options.email, options.password),
+          t('commands.auth.register.submitted')
         );
 
         if (!result.success) {
-          throw new ValidationError(result.message ?? 'Registration failed');
+          throw new ValidationError(result.message ?? t('errors.registrationFailed'));
         }
 
-        outputService.success('Registration successful! Check your email for the activation code.');
-        outputService.info('Then run: rdc auth activate -e <email> -p <password> --code <code>');
+        outputService.success(t('commands.auth.register.success'));
+        outputService.info(t('commands.auth.register.nextStep'));
       } catch (error) {
         handleError(error);
       }
@@ -157,55 +165,55 @@ export function registerAuthCommands(program: Command): void {
   // auth activate
   auth
     .command('activate')
-    .description('Activate account with verification code')
-    .requiredOption('-e, --email <email>', 'Email address')
-    .requiredOption('-p, --password <password>', 'Password')
-    .requiredOption('--code <code>', 'Activation code from email')
-    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .description(t('commands.auth.activate.description'))
+    .requiredOption('-e, --email <email>', t('options.email'))
+    .requiredOption('-p, --password <password>', t('options.password'))
+    .requiredOption('--code <code>', t('options.activationCode'))
+    .option('--endpoint <url>', t('options.endpoint'))
     .action(async (options) => {
       try {
         // Set API endpoint if provided
         if (options.endpoint) {
-          await apiClient.setApiUrl(options.endpoint);
+          apiClient.setApiUrl(options.endpoint);
         }
 
         const result = await withSpinner(
-          'Activating account...',
+          t('commands.auth.activate.activating'),
           () => authService.activate(options.email, options.password, options.code),
-          'Account activated'
+          t('commands.auth.activate.activated')
         );
 
         if (!result.success) {
-          throw new ValidationError(result.message ?? 'Activation failed');
+          throw new ValidationError(result.message ?? t('errors.activationFailed'));
         }
 
-        outputService.success('Account activated! You can now login with: rdc login');
+        outputService.success(t('commands.auth.activate.success'));
       } catch (error) {
         handleError(error);
       }
     });
 
   // auth token subcommand
-  const token = auth.command('token').description('Token management');
+  const token = auth.command('token').description(t('commands.auth.token.description'));
 
   // auth token list
   token
     .command('list')
-    .description('List active tokens/sessions')
+    .description(t('commands.auth.token.list.description'))
     .action(async () => {
       try {
         await authService.requireAuth();
         const apiResponse = await withSpinner(
-          'Fetching tokens...',
+          t('commands.auth.token.list.fetching'),
           () => typedApi.GetUserRequests({}),
-          'Tokens fetched'
+          t('status.success')
         );
 
         const tokens = parseGetUserRequests(apiResponse as never);
         const format = program.opts().output as OutputFormat;
 
         if (tokens.length === 0) {
-          outputService.info('No active tokens');
+          outputService.info(t('commands.auth.token.list.noTokens'));
           return;
         }
 
@@ -218,9 +226,9 @@ export function registerAuthCommands(program: Command): void {
   // auth token fork
   token
     .command('fork')
-    .description('Create a forked token for another application')
-    .option('-n, --name <name>', 'Token name', 'CLI Fork')
-    .option('-e, --expires <hours>', 'Expiration in hours (1-720)', '24')
+    .description(t('commands.auth.token.fork.description'))
+    .option('-n, --name <name>', t('options.tokenName'), 'CLI Fork')
+    .option('-e, --expires <hours>', t('options.expires'), '24')
     .action(async (options: { name: string; expires: string }) => {
       try {
         await authService.requireAuth();
@@ -228,26 +236,26 @@ export function registerAuthCommands(program: Command): void {
         // Validate expiration hours (must be between 1 and 720)
         const expiresHours = parseInt(options.expires, 10);
         if (isNaN(expiresHours) || expiresHours < 1 || expiresHours > 720) {
-          throw new ValidationError('Token expiration must be between 1 and 720 hours');
+          throw new ValidationError(t('errors.invalidExpiration'));
         }
 
         const apiResponse = await withSpinner(
-          'Creating forked token...',
+          t('commands.auth.token.fork.creating'),
           () =>
             typedApi.ForkAuthenticationRequest({
               childName: options.name,
               tokenExpirationHours: expiresHours,
             }),
-          'Token created'
+          t('commands.auth.token.fork.success')
         );
 
         const credentials = parseForkAuthenticationRequest(apiResponse as never);
 
-        const token = credentials.requestToken ?? credentials.nextRequestToken;
-        if (token) {
-          outputService.success(`Token: ${token}`);
+        const tokenValue = credentials.requestToken ?? credentials.nextRequestToken;
+        if (tokenValue) {
+          outputService.success(t('commands.auth.token.fork.tokenValue', { token: tokenValue }));
         } else {
-          outputService.info('Token created successfully');
+          outputService.info(t('commands.auth.token.fork.success'));
         }
       } catch (error) {
         handleError(error);
@@ -257,15 +265,15 @@ export function registerAuthCommands(program: Command): void {
   // auth token revoke
   token
     .command('revoke <requestId>')
-    .description('Revoke a specific token')
+    .description(t('commands.auth.token.revoke.description'))
     .action(async (requestId: string) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
-          'Revoking token...',
+          t('commands.auth.token.revoke.revoking'),
           () => typedApi.DeleteUserRequest({ targetRequestId: parseInt(requestId, 10) }),
-          'Token revoked'
+          t('commands.auth.token.revoke.success')
         );
       } catch (error) {
         handleError(error);
@@ -273,12 +281,12 @@ export function registerAuthCommands(program: Command): void {
     });
 
   // auth tfa subcommand
-  const tfa = auth.command('tfa').description('Two-factor authentication management');
+  const tfa = auth.command('tfa').description(t('commands.auth.tfa.description'));
 
   // auth tfa status
   tfa
     .command('status')
-    .description('Check TFA status')
+    .description(t('commands.auth.tfa.status.description'))
     .action(async () => {
       try {
         await authService.requireAuth();
@@ -287,9 +295,9 @@ export function registerAuthCommands(program: Command): void {
         const status = parseGetRequestAuthenticationStatus(apiResponse as never);
 
         if (status.isTFAEnabled) {
-          outputService.success('TFA is enabled');
+          outputService.success(t('commands.auth.tfa.status.enabled'));
         } else {
-          outputService.info('TFA is not enabled');
+          outputService.info(t('commands.auth.tfa.status.disabled'));
         }
       } catch (error) {
         handleError(error);
@@ -299,22 +307,22 @@ export function registerAuthCommands(program: Command): void {
   // auth tfa enable
   tfa
     .command('enable')
-    .description('Enable two-factor authentication')
+    .description(t('commands.auth.tfa.enable.description'))
     .action(async () => {
       try {
         await authService.requireAuth();
 
         const apiResponse = await withSpinner(
-          'Enabling TFA...',
+          t('commands.auth.tfa.enable.enabling'),
           () => typedApi.UpdateUserTFA({ enable: true }),
-          'TFA setup initiated'
+          t('commands.auth.tfa.enable.initiated')
         );
 
         const tfaSetup = parseUpdateUserTFA(apiResponse as never);
 
         if (tfaSetup?.secret) {
-          outputService.info(`Setup key: ${tfaSetup.secret}`);
-          outputService.info('Add this to your authenticator app');
+          outputService.info(t('commands.auth.tfa.enable.setupKey', { key: tfaSetup.secret }));
+          outputService.info(t('commands.auth.tfa.enable.addToApp'));
         }
       } catch (error) {
         handleError(error);
@@ -324,17 +332,17 @@ export function registerAuthCommands(program: Command): void {
   // auth tfa disable
   tfa
     .command('disable')
-    .description('Disable two-factor authentication')
-    .option('--code <code>', 'Current TFA code for verification')
-    .option('-y, --yes', 'Skip confirmation prompt')
+    .description(t('commands.auth.tfa.disable.description'))
+    .option('--code <code>', t('options.tfaCode'))
+    .option('-y, --yes', t('options.yes'))
     .action(async (options: { code?: string; yes?: boolean }) => {
       try {
         await authService.requireAuth();
 
         if (!options.yes) {
-          const confirm = await askConfirm('Are you sure you want to disable TFA?');
-          if (!confirm) {
-            outputService.info('Cancelled');
+          const confirmResult = await askConfirm(t('commands.auth.tfa.disable.confirm'));
+          if (!confirmResult) {
+            outputService.info(t('prompts.cancelled'));
             return;
           }
         }
@@ -346,9 +354,9 @@ export function registerAuthCommands(program: Command): void {
         }
 
         await withSpinner(
-          'Disabling TFA...',
+          t('commands.auth.tfa.disable.disabling'),
           () => typedApi.UpdateUserTFA(payload),
-          'TFA disabled'
+          t('commands.auth.tfa.disable.success')
         );
       } catch (error) {
         handleError(error);
@@ -358,11 +366,11 @@ export function registerAuthCommands(program: Command): void {
   // Top-level shortcuts
   program
     .command('login')
-    .description('Authenticate with Rediacc (shortcut for: auth login)')
-    .option('-e, --email <email>', 'Email address')
-    .option('-p, --password <password>', 'Password (for non-interactive login)')
-    .option('-n, --name <name>', 'Session name')
-    .option('--endpoint <url>', 'API endpoint URL (overrides REDIACC_API_URL)')
+    .description(t('commands.auth.login.shortcut'))
+    .option('-e, --email <email>', t('options.email'))
+    .option('-p, --password <password>', t('options.password'))
+    .option('-n, --name <name>', t('options.sessionName'))
+    .option('--endpoint <url>', t('options.endpoint'))
     .action(async (options) => {
       // Forward to auth login
       await auth.commands
@@ -379,7 +387,7 @@ export function registerAuthCommands(program: Command): void {
 
   program
     .command('logout')
-    .description('Clear stored credentials (shortcut for: auth logout)')
+    .description(t('commands.auth.logout.shortcut'))
     .action(async () => {
       // Forward to auth logout
       await auth.commands.find((c) => c.name() === 'logout')?.parseAsync(['node', 'rediacc']);

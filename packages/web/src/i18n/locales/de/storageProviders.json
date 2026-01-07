@@ -21,11 +21,12 @@
       "helpText": "Zusätzliche RClone-Parameter für erweiterte Konfiguration",
       "label": "Zusätzliche Parameter",
       "placeholder": "--transfers 4 --checkers 8"
-    }
+    },
+    "tips": "Tips"
   },
   "storageProviders": {
     "azureblob": {
-      "description": "Microsoft Azure Blob Storage",
+      "description": "Microsoft Azure Blob-Speicher",
       "fields": {
         "account": {
           "helpText": "Name Ihres Azure-Speicherkontos",
@@ -48,8 +49,8 @@
           "placeholder": "Geben Sie bei Verwendung die SAS-URL ein"
         }
       },
-      "helpText": "Azure Blob Storage für unstrukturierte Daten. Unterstützt mehrere Authentifizierungsmethoden.",
-      "name": "Azure Blob Storage",
+      "helpText": "Azure Blob-Speicher für unstrukturierte Daten. Unterstützt mehrere Authentifizierungsmethoden.",
+      "name": "Azure Blob-Speicher",
       "tips": [
         "Verwenden Sie SAS-Token für den temporären Zugriff",
         "Wählen Sie zur Kostenoptimierung eine geeignete Speicherebene",
@@ -81,7 +82,7 @@
         }
       },
       "helpText": "Backblaze B2 ist ein erschwinglicher Cloud-Backup-Dienst. Verwendet Anwendungsschlüssel zur Authentifizierung.",
-      "name": "Backblaze B2",
+      "name": "Backblaze B2-Cloud-Speicher",
       "tips": [
         "Erstellen Sie aus Sicherheitsgründen Anwendungsschlüssel mit eingeschränkten Berechtigungen",
         "B2 bietet 10 GB kostenlosen Speicherplatz und 1 GB täglichen Download",
@@ -146,7 +147,7 @@
         }
       },
       "helpText": "Cloudflare R2 ist ein S3-kompatibler Objektspeicher ohne Ausgangsgebühren.",
-      "name": "Cloudflare R2",
+      "name": "Cloudflare R2-Objektspeicher",
       "tips": [
         "Keine Ausgangsgebühren",
         "S3-kompatible API",
@@ -197,7 +198,7 @@
         }
       },
       "helpText": "Persönlicher Cloud-Speicher von Google Drive. Erfordert OAuth-Authentifizierung oder Dienstkonto.",
-      "name": "Google Drive",
+      "name": "Google Drive Cloud-Speicher",
       "tips": [
         "Verwenden Sie Dienstkonten für serverseitige Anwendungen",
         "Teamablagen haben andere Berechtigungen als persönliche Laufwerke",
@@ -256,7 +257,7 @@
       ]
     },
     "filefabric": {
-      "description": "Enterprise File Fabric",
+      "description": "Enterprise-Datei-Fabric",
       "fields": {
         "permanent_token": {
           "helpText": "Permanentes Authentifizierungstoken",
@@ -271,7 +272,7 @@
         "url": {
           "helpText": "FileFabric-Instanz-URL",
           "label": "URL",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "FileFabric bietet eine Multi-Cloud-Datenverwaltungsplattform für Unternehmen.",
@@ -734,7 +735,7 @@
       ]
     },
     "netstorage": {
-      "description": "Akamai NetStorage CDN",
+      "description": "Akamai NetStorage CDN-Netzwerk",
       "fields": {
         "account": {
           "helpText": "Name des NetStorage-Kontos",
@@ -753,7 +754,7 @@
         }
       },
       "helpText": "Akamai NetStorage ist eine weltweit verteilte Cloud-Speicherlösung, die für die Medienbereitstellung optimiert ist.",
-      "name": "Akamai NetStorage",
+      "name": "Akamai NetStorage-CDN",
       "tips": [
         "Optimiert für die CDN-Bereitstellung",
         "Globale Edge-Standorte",
@@ -784,7 +785,7 @@
         }
       },
       "helpText": "Persönlicher und geschäftlicher Cloud-Speicher von Microsoft OneDrive. Verwendet OAuth-Authentifizierung.",
-      "name": "Microsoft OneDrive",
+      "name": "Microsoft OneDrive Cloud-Speicher",
       "tips": [
         "Token verfallen alle 90 Tage und müssen aktualisiert werden",
         "Für Geschäftskonten gelten möglicherweise unterschiedliche API-Limits",
@@ -841,7 +842,7 @@
         "region": {
           "helpText": "OCI-Regionskennung",
           "label": "Region",
-          "placeholder": "us-ashburn-1"
+          "placeholder": "us-ashburn-1-Region-ID"
         },
         "tenancy": {
           "helpText": "Miet-OCID",
@@ -1110,7 +1111,7 @@
         "region": {
           "helpText": "AWS-Region, in der sich Ihr Bucket befindet",
           "label": "Region",
-          "placeholder": "us-east-1"
+          "placeholder": "us-east-1-AWS-Region"
         },
         "secret_access_key": {
           "helpText": "Ihr geheimer Zugangsschlüssel. Bewahren Sie dies sicher auf und geben Sie es niemals weiter",
@@ -1233,11 +1234,11 @@
         "upload_endpoint": {
           "helpText": "ShareFile-Upload-Endpunkt-URL",
           "label": "Endpunkt hochladen",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile ist eine Content-Collaboration-Plattform für Unternehmen mit sicherer Dateifreigabe.",
-      "name": "Citrix ShareFile",
+      "name": "Citrix ShareFile-Unternehmensplattform",
       "tips": [
         "Konzipiert für den Einsatz in Unternehmen",
         "Unterstützt große Dateiübertragungen",
@@ -1273,7 +1274,7 @@
       "fields": {
         "domain": {
           "helpText": "SMB-Domäne (Standard-ARBEITSGRUPPE)",
-          "label": "Domain",
+          "label": "Domäne",
           "placeholder": "ARBEITSGRUPPE"
         },
         "host": {
@@ -1298,7 +1299,7 @@
         }
       },
       "helpText": "Server Message Block (SMB)-Protokoll für den Zugriff auf Windows-Freigaben und NAS-Geräte.",
-      "name": "SMB / CIFS",
+      "name": "SMB / CIFS-Netzwerkprotokoll",
       "tips": [
         "Aus Sicherheitsgründen wird SMB3 empfohlen",
         "Stellen Sie sicher, dass die Netzwerkerkennung aktiviert ist",
@@ -1386,7 +1387,7 @@
         },
         "domain": {
           "helpText": "Benutzerdomänenname",
-          "label": "Domain",
+          "label": "Domäne",
           "placeholder": "Standard"
         },
         "key": {
@@ -1421,7 +1422,7 @@
         }
       },
       "helpText": "OpenStack Swift-Objektspeicher, der von Rackspace, OVH und anderen verwendet wird.",
-      "name": "OpenStack Swift",
+      "name": "OpenStack Swift-Objektspeicher",
       "tips": [
         "Erkundigen Sie sich bei Ihrem Anbieter nach der korrekten Authentifizierungs-URL",
         "Für neue Bereitstellungen wird die v3-Authentifizierung empfohlen",
@@ -1476,7 +1477,7 @@
       ]
     },
     "wasabi": {
-      "description": "Wasabi Hot Cloud Storage",
+      "description": "Wasabi Hot Cloud-Speicher",
       "fields": {
         "access_key_id": {
           "helpText": "Wasabi-Zugriffsschlüssel-ID",
@@ -1486,12 +1487,12 @@
         "endpoint": {
           "helpText": "Wasabi-Endpunkt-URL",
           "label": "Endpunkt",
-          "placeholder": "s3.wasabisys.com"
+          "placeholder": "s3.wasabisys.com-Endpunkt"
         },
         "region": {
           "helpText": "Wasabi-Region",
           "label": "Region",
-          "placeholder": "us-east-1"
+          "placeholder": "us-east-1-Wasabi-Region"
         },
         "secret_access_key": {
           "helpText": "Geheimer Wasabi-Zugangsschlüssel",
@@ -1500,7 +1501,7 @@
         }
       },
       "helpText": "Wasabi bietet schnellen Cloud-Objektspeicher ohne Ausgangsgebühren und zu vorhersehbaren Preisen.",
-      "name": "Wasabi",
+      "name": "Wasabi-Cloud-Speicher",
       "tips": [
         "Keine Ausgangsgebühren",
         "80 % weniger als AWS S3",
@@ -1591,7 +1592,7 @@
         }
       },
       "helpText": "Zoho WorkDrive ist eine Content-Collaboration-Plattform für Teams mit erweiterten Administratorkontrollen.",
-      "name": "Zoho WorkDrive",
+      "name": "Zoho WorkDrive Cloud-Plattform",
       "tips": [
         "Teil der Zoho-Produktivitätssuite",
         "Teamordner und Arbeitsbereiche",

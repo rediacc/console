@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import { parseGetCompanyUsers, parseCreateUser, parseIsRegistered } from '@rediacc/shared/api';
+import { parseGetOrganizationUsers, parseCreateUser, parseIsRegistered } from '@rediacc/shared/api';
+import { t } from '../i18n/index.js';
 import { apiClient, typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
@@ -7,23 +8,23 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 export function registerUserCommands(program: Command): void {
-  const user = program.command('user').description('User management commands');
+  const user = program.command('user').description(t('commands.user.description'));
 
   // user list
   user
     .command('list')
-    .description('List all users')
+    .description(t('commands.user.list.description'))
     .action(async () => {
       try {
         await authService.requireAuth();
 
         const apiResponse = await withSpinner(
-          'Fetching users...',
-          () => typedApi.GetCompanyUsers({}),
-          'Users fetched'
+          t('commands.user.list.fetching'),
+          () => typedApi.GetOrganizationUsers({}),
+          t('commands.user.list.success')
         );
 
-        const users = parseGetCompanyUsers(apiResponse as never);
+        const users = parseGetOrganizationUsers(apiResponse as never);
 
         const format = program.opts().output as OutputFormat;
 
@@ -36,8 +37,8 @@ export function registerUserCommands(program: Command): void {
   // user create
   user
     .command('create <email>')
-    .description('Create a new user')
-    .option('-p, --password <password>', 'Password for the new user')
+    .description(t('commands.user.create.description'))
+    .option('-p, --password <password>', t('options.userPassword'))
     .action(async (email, options) => {
       try {
         await authService.requireAuth();
@@ -48,11 +49,11 @@ export function registerUserCommands(program: Command): void {
           password = options.password;
         } else {
           const { askPassword } = await import('../utils/prompt.js');
-          password = await askPassword('Password for new user:');
-          const confirmPassword = await askPassword('Confirm password:');
+          password = await askPassword(t('prompts.passwordForUser'));
+          const confirmPassword = await askPassword(t('prompts.confirmPassword'));
 
           if (password !== confirmPassword) {
-            throw new ValidationError('Passwords do not match');
+            throw new ValidationError(t('errors.passwordsMismatch'));
           }
         }
 
@@ -62,19 +63,21 @@ export function registerUserCommands(program: Command): void {
         // Server generates secure activation code - do not send one from client
         // Middleware rejects requests that include activationCode, so we omit it
         const response = await withSpinner(
-          `Creating user "${email}"...`,
+          t('commands.user.create.creating', { email }),
           () =>
             typedApi.CreateNewUser({
               newUserEmail: email,
               newUserHash: passwordHash,
             } as Parameters<typeof typedApi.CreateNewUser>[0]),
-          'User created'
+          t('commands.user.create.success')
         );
 
         // Extract server-generated activation code from response
         const result = parseCreateUser(response as never);
         if (result?.activationCode) {
-          outputService.success(`Activation code: ${result.activationCode}`);
+          outputService.success(
+            t('commands.user.create.activationCode', { code: result.activationCode })
+          );
         }
       } catch (error) {
         handleError(error);
@@ -84,24 +87,24 @@ export function registerUserCommands(program: Command): void {
   // user activate
   user
     .command('activate <email> <activationCode>')
-    .description('Activate a user account')
+    .description(t('commands.user.activate.description'))
     .action(async (email, activationCode) => {
       try {
         const { askPassword } = await import('../utils/prompt.js');
-        const password = await askPassword('Set password for user:');
-        const confirmPassword = await askPassword('Confirm password:');
+        const password = await askPassword(t('prompts.setPassword'));
+        const confirmPassword = await askPassword(t('prompts.confirmPassword'));
 
         if (password !== confirmPassword) {
-          throw new ValidationError('Passwords do not match');
+          throw new ValidationError(t('errors.passwordsMismatch'));
         }
 
         const { nodeCryptoProvider } = await import('../adapters/crypto.js');
         const passwordHash = await nodeCryptoProvider.generateHash(password);
 
         await withSpinner(
-          `Activating user "${email}"...`,
+          t('commands.user.activate.activating', { email }),
           () => apiClient.activateUser(email, activationCode, passwordHash),
-          'User activated'
+          t('commands.user.activate.success')
         );
       } catch (error) {
         handleError(error);
@@ -111,25 +114,25 @@ export function registerUserCommands(program: Command): void {
   // user deactivate
   user
     .command('deactivate <email>')
-    .description('Deactivate a user account')
-    .option('-f, --force', 'Skip confirmation')
+    .description(t('commands.user.deactivate.description'))
+    .option('-f, --force', t('options.force'))
     .action(async (email, options) => {
       try {
         await authService.requireAuth();
 
         if (!options.force) {
           const { askConfirm } = await import('../utils/prompt.js');
-          const confirm = await askConfirm(`Deactivate user "${email}"?`);
+          const confirm = await askConfirm(t('commands.user.deactivate.confirm', { email }));
           if (!confirm) {
-            outputService.info('Cancelled');
+            outputService.info(t('prompts.cancelled'));
             return;
           }
         }
 
         await withSpinner(
-          `Deactivating user "${email}"...`,
+          t('commands.user.deactivate.deactivating', { email }),
           () => typedApi.UpdateUserToDeactivated({ userEmail: email }),
-          'User deactivated'
+          t('commands.user.deactivate.success')
         );
       } catch (error) {
         handleError(error);
@@ -139,15 +142,15 @@ export function registerUserCommands(program: Command): void {
   // user reactivate
   user
     .command('reactivate <email>')
-    .description('Reactivate a deactivated user account')
+    .description(t('commands.user.reactivate.description'))
     .action(async (email) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
-          `Reactivating user "${email}"...`,
+          t('commands.user.reactivate.reactivating', { email }),
           () => typedApi.UpdateUserToActivated({ userEmail: email }),
-          'User reactivated'
+          t('commands.user.reactivate.success')
         );
       } catch (error) {
         handleError(error);
@@ -157,16 +160,16 @@ export function registerUserCommands(program: Command): void {
   // user update-email
   user
     .command('update-email <currentEmail> <newEmail>')
-    .description("Change a user's email address")
+    .description(t('commands.user.updateEmail.description'))
     .action(async (currentEmail, newEmail) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
-          `Updating email for "${currentEmail}"...`,
+          t('commands.user.updateEmail.updating', { email: currentEmail }),
           () =>
             typedApi.UpdateUserEmail({ currentUserEmail: currentEmail, newUserEmail: newEmail }),
-          `Email updated to "${newEmail}"`
+          t('commands.user.updateEmail.success', { email: newEmail })
         );
       } catch (error) {
         handleError(error);
@@ -176,9 +179,9 @@ export function registerUserCommands(program: Command): void {
   // user update-password
   user
     .command('update-password')
-    .description('Change your password')
-    .option('--password <password>', 'New password (non-interactive mode)')
-    .option('--confirm <confirm>', 'Confirm password (non-interactive mode)')
+    .description(t('commands.user.updatePassword.description'))
+    .option('--password <password>', t('options.newPasswordNonInteractive'))
+    .option('--confirm <confirm>', t('options.confirmPasswordNonInteractive'))
     .action(async (options) => {
       try {
         await authService.requireAuth();
@@ -193,21 +196,21 @@ export function registerUserCommands(program: Command): void {
         } else {
           // Interactive mode
           const { askPassword } = await import('../utils/prompt.js');
-          newPassword = await askPassword('New password:');
-          confirmPassword = await askPassword('Confirm new password:');
+          newPassword = await askPassword(t('prompts.newPassword'));
+          confirmPassword = await askPassword(t('prompts.confirmNewPassword'));
         }
 
         if (newPassword !== confirmPassword) {
-          throw new ValidationError('Passwords do not match');
+          throw new ValidationError(t('errors.passwordsMismatch'));
         }
 
         const { nodeCryptoProvider } = await import('../adapters/crypto.js');
         const passwordHash = await nodeCryptoProvider.generateHash(newPassword);
 
         await withSpinner(
-          'Updating password...',
+          t('commands.user.updatePassword.updating'),
           () => typedApi.UpdateUserPassword({ userNewPass: passwordHash }),
-          'Password updated'
+          t('commands.user.updatePassword.success')
         );
       } catch (error) {
         handleError(error);
@@ -217,15 +220,15 @@ export function registerUserCommands(program: Command): void {
   // user update-language
   user
     .command('update-language <language>')
-    .description("Set current user's preferred language")
+    .description(t('commands.user.updateLanguage.description'))
     .action(async (language) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
-          `Updating language preference...`,
+          t('commands.user.updateLanguage.updating'),
           () => typedApi.UpdateUserLanguage({ preferredLanguage: language }),
-          `Language updated to "${language}"`
+          t('commands.user.updateLanguage.success', { language })
         );
       } catch (error) {
         handleError(error);
@@ -235,16 +238,16 @@ export function registerUserCommands(program: Command): void {
   // user exists
   user
     .command('exists <email>')
-    .description('Check if a user exists')
+    .description(t('commands.user.exists.description'))
     .action(async (email) => {
       try {
         const apiResponse = await typedApi.IsRegistered({ userName: email });
         const status = parseIsRegistered(apiResponse as never);
 
         if (status.isRegistered) {
-          outputService.success(`User "${email}" exists`);
+          outputService.success(t('commands.user.exists.exists', { email }));
         } else {
-          outputService.info(`User "${email}" does not exist`);
+          outputService.info(t('commands.user.exists.notExists', { email }));
         }
       } catch (error) {
         handleError(error);
@@ -252,20 +255,20 @@ export function registerUserCommands(program: Command): void {
     });
 
   // user vault subcommand
-  const vault = user.command('vault').description('User vault management');
+  const vault = user.command('vault').description(t('commands.user.vault.description'));
 
   // user vault get
   vault
     .command('get')
-    .description('Get current user vault data')
+    .description(t('commands.user.vault.get.description'))
     .action(async () => {
       try {
         await authService.requireAuth();
 
         const response = await withSpinner(
-          'Fetching user vault...',
+          t('commands.user.vault.get.fetching'),
           () => typedApi.GetUserVault({}),
-          'Vault fetched'
+          t('commands.user.vault.get.success')
         );
 
         const format = program.opts().output as OutputFormat;
@@ -282,13 +285,9 @@ export function registerUserCommands(program: Command): void {
   // user vault update
   vault
     .command('update')
-    .description('Update current user vault data')
-    .option('--vault <json>', 'Vault data as JSON string')
-    .option(
-      '--vault-version <n>',
-      'Current vault version (required for optimistic concurrency)',
-      parseInt
-    )
+    .description(t('commands.user.vault.update.description'))
+    .option('--vault <json>', t('options.vaultJson'))
+    .option('--vault-version <n>', t('options.vaultVersion'), parseInt)
     .action(async (options) => {
       try {
         await authService.requireAuth();
@@ -305,30 +304,28 @@ export function registerUserCommands(program: Command): void {
         }
 
         if (!vaultData) {
-          throw new ValidationError(
-            'Vault data required. Use --vault <json> or pipe JSON via stdin.'
-          );
+          throw new ValidationError(t('errors.vaultDataRequired'));
         }
 
         if (options.vaultVersion === undefined || options.vaultVersion === null) {
-          throw new ValidationError('Vault version required. Use --vault-version <n>.');
+          throw new ValidationError(t('errors.vaultVersionRequired'));
         }
 
         // Validate JSON
         try {
           JSON.parse(vaultData);
         } catch {
-          throw new ValidationError('Invalid JSON vault data.');
+          throw new ValidationError(t('errors.invalidJsonVault'));
         }
 
         await withSpinner(
-          'Updating user vault...',
+          t('commands.user.vault.update.updating'),
           () =>
             typedApi.UpdateUserVault({
               vaultContent: vaultData,
               vaultVersion: options.vaultVersion,
             }),
-          'User vault updated'
+          t('commands.user.vault.update.success')
         );
       } catch (error) {
         handleError(error);
@@ -336,21 +333,23 @@ export function registerUserCommands(program: Command): void {
     });
 
   // user permission subcommand
-  const permission = user.command('permission').description('User permission management');
+  const permission = user
+    .command('permission')
+    .description(t('commands.user.permission.description'));
 
   // user permission assign
   permission
     .command('assign <userEmail> <groupName>')
-    .description('Assign a permission group to a user')
+    .description(t('commands.user.permission.assign.description'))
     .action(async (userEmail, groupName) => {
       try {
         await authService.requireAuth();
 
         await withSpinner(
-          `Assigning "${groupName}" to user "${userEmail}"...`,
+          t('commands.user.permission.assign.assigning', { group: groupName, email: userEmail }),
           () =>
             typedApi.UpdateUserAssignedPermissions({ userEmail, permissionGroupName: groupName }),
-          'Permission assigned'
+          t('commands.user.permission.assign.success')
         );
       } catch (error) {
         handleError(error);

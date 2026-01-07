@@ -4,7 +4,7 @@ import { getConfig } from './config.js';
 import { TEST_EMAIL_DOMAIN } from './constants.js';
 
 export interface TestAccount {
-  companyName: string;
+  organizationName: string;
   email: string;
   password: string;
 }
@@ -15,14 +15,14 @@ export interface TestAccount {
 export function generateTestAccount(): TestAccount {
   const id = randomBytes(4).toString('hex');
   return {
-    companyName: `TestCo-${id}`,
+    organizationName: `TestOrg-${id}`,
     email: `test-${id}@${TEST_EMAIL_DOMAIN}`,
     password: `TestPass${id}!`,
   };
 }
 
 /**
- * Register a new company and activate the account
+ * Register a new organization and activate the account
  * Uses activation code 111111 which works when backend is in CI_MODE
  */
 export async function registerAndActivate(account: TestAccount): Promise<void> {
@@ -32,8 +32,8 @@ export async function registerAndActivate(account: TestAccount): Promise<void> {
   const registerResult = await runCli([
     'auth',
     'register',
-    '--company',
-    account.companyName,
+    '--organization',
+    account.organizationName,
     '-e',
     account.email,
     '-p',

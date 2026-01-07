@@ -1,5 +1,5 @@
 import { configStorage } from '../adapters/storage.js';
-import type { NamedContext } from '../types/index.js';
+import type { NamedContext, LocalMachineConfig, LocalSSHConfig } from '../types/index.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 
@@ -294,14 +294,80 @@ class ContextService {
     });
   }
 
-  async applyDefaults(options: {
-    team?: string;
-    region?: string;
-    bridge?: string;
-    machine?: string;
-    [key: string]: unknown;
-  }): Promise<typeof options> {
-    const result = { ...options };
+  // ============================================================================
+  // Language Settings
+  // ============================================================================
+
+  private readonly supportedLanguages = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+
+  /**
+   * Normalize a language code to a supported language.
+   * Handles variants like 'en-US' -> 'en', 'zh-CN' -> 'zh'.
+   */
+  private normalizeLanguage(lang: string): string {
+    const base = lang.split('-')[0].split('_')[0].toLowerCase();
+    return this.supportedLanguages.includes(base) ? base : 'en';
+  }
+
+  /**
+   * Detect system language from environment variables.
+   */
+  private detectSystemLanguage(): string {
+    const sysLang = process.env.LANG ?? process.env.LC_ALL ?? '';
+    return this.normalizeLanguage(sysLang);
+  }
+
+  /**
+   * Get the language for the current context.
+   * Priority: REDIACC_LANG env > context.language > system locale > 'en'
+   */
+  async getLanguage(): Promise<string> {
+    // Check env var first
+    if (process.env.REDIACC_LANG) {
+      return this.normalizeLanguage(process.env.REDIACC_LANG);
+    }
+    // Check context
+    const context = await this.getCurrent();
+    if (context?.language) {
+      return context.language;
+    }
+    // Fallback to system locale
+    return this.detectSystemLanguage();
+  }
+
+  /**
+   * Set the language for the current context.
+   */
+  async setLanguage(language: string): Promise<void> {
+    const name = await this.getEffectiveContextName();
+    if (!name) {
+      throw new Error('No active context. Create or select a context first.');
+    }
+    const normalized = this.normalizeLanguage(language);
+    await this.update(name, { language: normalized });
+  }
+
+  /**
+   * Check if a language code is supported.
+   */
+  isLanguageSupported(lang: string): boolean {
+    const base = lang.split('-')[0].split('_')[0].toLowerCase();
+    return this.supportedLanguages.includes(base);
+  }
+
+  /**
+   * Get the list of supported languages.
+   */
+  getSupportedLanguages(): string[] {
+    return [...this.supportedLanguages];
+  }
+
+  async applyDefaults<T extends object>(
+    options: T
+  ): Promise<T & { team?: string; region?: string; bridge?: string; machine?: string }> {
+    type Result = T & { team?: string; region?: string; bridge?: string; machine?: string };
+    const base = { ...options };
+    const result = base as Result;
     result.team ??= await this.getTeam();
     result.region ??= await this.getRegion();
     result.bridge ??= await this.getBridge();
@@ -362,6 +428,180 @@ class ContextService {
   async hasToken(): Promise<boolean> {
     const token = await this.getToken();
     return token !== null;
+  }
+
+  // ============================================================================
+  // Local Mode Support
+  // ============================================================================
+
+  /**
+   * Check if the current context is in local mode.
+   */
+  async isLocalMode(): Promise<boolean> {
+    const context = await this.getCurrent();
+    return context?.mode === 'local';
+  }
+
+  /**
+   * Check if a specific context is in local mode.
+   */
+  async isLocalContext(name: string): Promise<boolean> {
+    const context = await this.get(name);
+    return context?.mode === 'local';
+  }
+
+  /**
+   * Get local configuration for the current context.
+   * Throws if context is not in local mode.
+   */
+  async getLocalConfig(): Promise<{
+    machines: Record<string, LocalMachineConfig | undefined>;
+    ssh: LocalSSHConfig;
+    renetPath: string;
+  }> {
+    const context = await this.getCurrent();
+    if (!context) {
+      throw new Error('No active context');
+    }
+    if (context.mode !== 'local') {
+      throw new Error(`Context "${context.name}" is not in local mode`);
+    }
+    if (!context.machines || Object.keys(context.machines).length === 0) {
+      throw new Error(`Context "${context.name}" has no machines configured`);
+    }
+    if (!context.ssh?.privateKeyPath) {
+      throw new Error(`Context "${context.name}" has no SSH key configured`);
+    }
+    return {
+      machines: context.machines,
+      ssh: context.ssh,
+      renetPath: context.renetPath ?? 'renet',
+    };
+  }
+
+  /**
+   * Get a specific machine configuration from the current local context.
+   */
+  async getLocalMachine(machineName: string): Promise<LocalMachineConfig> {
+    const config = await this.getLocalConfig();
+    const machine = config.machines[machineName];
+    if (!machine) {
+      const available = Object.keys(config.machines).join(', ');
+      throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
+    }
+    return machine;
+  }
+
+  /**
+   * Create a new local context.
+   */
+  async createLocal(
+    name: string,
+    sshKeyPath: string,
+    options?: { renetPath?: string }
+  ): Promise<void> {
+    const context: NamedContext = {
+      name,
+      mode: 'local',
+      apiUrl: 'local://', // Not used in local mode but required by interface
+      ssh: {
+        privateKeyPath: sshKeyPath,
+        publicKeyPath: `${sshKeyPath}.pub`,
+      },
+      machines: {},
+      renetPath: options?.renetPath,
+    };
+    await this.create(context);
+  }
+
+  /**
+   * Add a machine to the current local context.
+   */
+  async addLocalMachine(machineName: string, config: LocalMachineConfig): Promise<void> {
+    const name = await this.getEffectiveContextName();
+    if (!name) {
+      throw new Error('No active context');
+    }
+    const context = await this.get(name);
+    if (context?.mode !== 'local') {
+      throw new Error('Current context is not in local mode');
+    }
+
+    const existingMachines = context.machines ?? {};
+    await this.update(name, {
+      machines: {
+        ...existingMachines,
+        [machineName]: config,
+      },
+    });
+  }
+
+  /**
+   * Remove a machine from the current local context.
+   */
+  async removeLocalMachine(machineName: string): Promise<void> {
+    const name = await this.getEffectiveContextName();
+    if (!name) {
+      throw new Error('No active context');
+    }
+    const context = await this.get(name);
+    if (context?.mode !== 'local') {
+      throw new Error('Current context is not in local mode');
+    }
+
+    if (!context.machines?.[machineName]) {
+      throw new Error(`Machine "${machineName}" not found`);
+    }
+
+    const { [machineName]: _, ...remaining } = context.machines;
+    await this.update(name, { machines: remaining });
+  }
+
+  /**
+   * List machines in the current local context.
+   */
+  async listLocalMachines(): Promise<{ name: string; config: LocalMachineConfig }[]> {
+    const context = await this.getCurrent();
+    if (!context) {
+      throw new Error('No active context');
+    }
+    if (context.mode !== 'local') {
+      throw new Error('Current context is not in local mode');
+    }
+    return Object.entries(context.machines ?? {}).map(([name, config]) => ({
+      name,
+      config,
+    }));
+  }
+
+  /**
+   * Update SSH configuration for the current local context.
+   */
+  async setLocalSSH(ssh: LocalSSHConfig): Promise<void> {
+    const name = await this.getEffectiveContextName();
+    if (!name) {
+      throw new Error('No active context');
+    }
+    const context = await this.get(name);
+    if (context?.mode !== 'local') {
+      throw new Error('Current context is not in local mode');
+    }
+    await this.update(name, { ssh });
+  }
+
+  /**
+   * Set renet binary path for the current local context.
+   */
+  async setRenetPath(renetPath: string): Promise<void> {
+    const name = await this.getEffectiveContextName();
+    if (!name) {
+      throw new Error('No active context');
+    }
+    const context = await this.get(name);
+    if (context?.mode !== 'local') {
+      throw new Error('Current context is not in local mode');
+    }
+    await this.update(name, { renetPath });
   }
 }
 

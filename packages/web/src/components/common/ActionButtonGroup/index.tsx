@@ -8,8 +8,8 @@ import {
   HistoryOutlined,
   LockOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { MenuProps } from 'antd';
-import type { TFunction } from 'i18next';
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -83,7 +83,7 @@ export interface ActionButtonGroupProps<T> {
   /** Test ID prefix */
   testIdPrefix?: string;
   /** Translation function */
-  t?: TFunction;
+  t?: TypedTFunction;
   /** Reserve space for hidden buttons to maintain consistent alignment across rows */
   reserveSpace?: boolean;
 }

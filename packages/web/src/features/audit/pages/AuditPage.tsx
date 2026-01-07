@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { useAuditLogs, type AuditLog } from '@/api/queries/audit';
+import { useGetAuditLogs } from '@/api/api-hooks.generated';
 import { buildAuditColumns } from '@/components/common/columns/builders/auditColumns';
 import { MobileCard } from '@/components/common/MobileCard';
 import ResourceListView from '@/components/common/ResourceListView';
@@ -38,6 +38,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
 } from '@/utils/optimizedIcons';
+import type { GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
 interface AuditPageFilters extends Record<string, unknown> {
   dateRange: [Dayjs | null, Dayjs | null];
@@ -72,12 +73,7 @@ const AuditPage = () => {
     refetch,
     error,
     isError,
-  } = useAuditLogs({
-    startDate,
-    endDate,
-    entityFilter: filters.entityFilter,
-    maxRecords: 1000,
-  });
+  } = useGetAuditLogs(startDate, endDate, filters.entityFilter, 1000);
 
   const getActionIcon = useCallback((action: string) => {
     const config = findActionConfig(action);
@@ -106,8 +102,8 @@ const AuditPage = () => {
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: AuditLog) => {
-      const config = findActionConfig(record.action);
+    () => (record: GetAuditLogs_ResultSet1) => {
+      const config = findActionConfig(record.action ?? '');
       const IconComponent = config.icon;
 
       const timestampDisplay = (
@@ -120,9 +116,9 @@ const AuditPage = () => {
         <MobileCard actions={timestampDisplay}>
           <Space>
             <IconComponent />
-            <Typography.Text strong>{record.action.replace(/_/g, ' ')}</Typography.Text>
+            <Typography.Text strong>{(record.action ?? '').replace(/_/g, ' ')}</Typography.Text>
           </Space>
-          <Flex gap={8} wrap align="center">
+          <Flex wrap align="center">
             <Tag>{record.entity}</Tag>
             {record.entityName && (
               <Typography.Text className="truncate">{record.entityName}</Typography.Text>
@@ -159,7 +155,7 @@ const AuditPage = () => {
     ];
     const rows = filteredLogs.map((log) => [
       dayjs(log.timestamp).format('YYYY-MM-DD HH:mm:ss'),
-      log.action.replace(/_/g, ' '),
+      (log.action ?? '').replace(/_/g, ' '),
       log.entity,
       log.entityName ?? '',
       log.actionByUser,
@@ -218,13 +214,13 @@ const AuditPage = () => {
 
   return (
     <Flex vertical>
-      <Flex vertical gap={24} className="w-full">
+      <Flex vertical className="w-full">
         {/* Filters */}
         <Card data-testid="audit-filter-card">
           <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
-                <Flex vertical gap={8} className="w-full">
+                <Flex vertical className="gap-sm w-full">
                   <Typography.Text>{t('system:audit.filters.dateRange')}</Typography.Text>
                   <RangePicker
                     data-testid="audit-filter-date"
@@ -274,7 +270,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Flex vertical gap={8} className="w-full">
+                <Flex vertical className="gap-sm w-full">
                   <Typography.Text>{t('system:audit.filters.entityType')}</Typography.Text>
                   <Select
                     data-testid="audit-filter-entity"
@@ -290,7 +286,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Flex vertical gap={8} className="w-full">
+                <Flex vertical className="gap-sm w-full">
                   <Typography.Text>{t('system:audit.filters.search')}</Typography.Text>
                   <Input
                     data-testid="audit-filter-search"
@@ -304,7 +300,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <Flex vertical gap={8} className="w-full">
+                <Flex vertical className="gap-sm w-full">
                   <Typography.Text>{t('system:audit.filters.actions')}</Typography.Text>
                   <Button
                     data-testid="audit-refresh-button"
@@ -325,7 +321,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <Flex vertical gap={8} className="w-full">
+                <Flex vertical className="gap-sm w-full">
                   <Typography.Text>{t('system:audit.filters.export')}</Typography.Text>
                   <Tooltip
                     title={
@@ -367,7 +363,6 @@ const AuditPage = () => {
             description={error.message || t('system:audit.errors.loadDescription')}
             type="error"
             closable
-            showIcon
             action={
               <Button onClick={() => refetch()} loading={isLoading}>
                 {t('system:audit.errors.tryAgain')}
@@ -378,7 +373,7 @@ const AuditPage = () => {
 
         {/* Audit Logs Table */}
         <Card data-testid="audit-table-card">
-          <ResourceListView<AuditLog>
+          <ResourceListView<GetAuditLogs_ResultSet1>
             data-testid="audit-table"
             columns={columns}
             data={filteredLogs ?? []}
