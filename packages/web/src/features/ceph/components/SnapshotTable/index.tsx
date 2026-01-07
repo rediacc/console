@@ -13,16 +13,11 @@ import {
 import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  type CephPool,
-  type CephRbdImage,
-  type CephRbdSnapshot,
-  useCephRbdSnapshots,
-} from '@/api/queries/ceph';
-import {
+  useGetCephRbdSnapshots,
   useCreateCephRbdSnapshot,
   useDeleteCephRbdSnapshot,
   useUpdateCephPoolVault,
-} from '@/api/queries/cephMutations';
+} from '@/api/api-hooks.generated';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
@@ -32,12 +27,17 @@ import CloneTable from '@/features/ceph/components/CloneTable';
 import { useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import type { SnapshotFormValues as FullSnapshotFormValues } from '@rediacc/shared/types';
+import type {
+  CreateCephRbdSnapshotParams,
+  GetCephPools_ResultSet1 as CephPool,
+  GetCephRbdImages_ResultSet1 as CephImage,
+  GetCephRbdSnapshots_ResultSet1 as CephSnapshot,
+} from '@rediacc/shared/types';
 import { buildSnapshotColumns } from './columns';
 import type { MenuProps } from 'antd';
 
 interface SnapshotTableProps {
-  image: CephRbdImage;
+  image: CephImage;
   pool: CephPool;
   teamFilter: string | string[];
 }
@@ -45,11 +45,14 @@ interface SnapshotTableProps {
 interface SnapshotModalState {
   open: boolean;
   mode: 'create' | 'edit' | 'vault';
-  data?: CephRbdSnapshot & { vaultContent?: string | null; vaultVersion?: number };
+  data?: CephSnapshot & { vaultContent?: string | null; vaultVersion?: number };
 }
 
-// Form-specific subset of shared SnapshotFormValues (image/pool/team context provided separately)
-type SnapshotFormValues = Pick<FullSnapshotFormValues, 'snapshotName'> & { vaultContent: string };
+// Form-specific subset (image/pool/team context provided separately)
+// Note: vaultContent and vaultVersion are already optional in generated types
+type SnapshotFormValues = Pick<CreateCephRbdSnapshotParams, 'snapshotName'> & {
+  vaultContent: string; // Required for form
+};
 
 const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }) => {
   const { t } = useTranslation('ceph');
@@ -60,7 +63,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: snapshots = [], isLoading } = useCephRbdSnapshots(String(image.imageGuid));
+  const { data: snapshots = [], isLoading } = useGetCephRbdSnapshots(String(image.imageGuid));
   const deleteSnapshotMutation = useDeleteCephRbdSnapshot();
   const createSnapshotMutation = useCreateCephRbdSnapshot();
   const updateVaultMutation = useUpdateCephPoolVault();
@@ -69,7 +72,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
     setModalState({ open: true, mode: 'create' });
   }, []);
 
-  const handleEdit = useCallback((snapshot: CephRbdSnapshot) => {
+  const handleEdit = useCallback((snapshot: CephSnapshot) => {
     setModalState({
       open: true,
       mode: 'edit',
@@ -81,12 +84,12 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   }, []);
 
   const handleDelete = useCallback(
-    (snapshot: CephRbdSnapshot) => {
+    (snapshot: CephSnapshot) => {
       deleteSnapshotMutation.mutate({
-        snapshotName: snapshot.snapshotName,
-        imageName: image.imageName,
-        poolName: pool.poolName,
-        teamName: snapshot.teamName,
+        snapshotName: snapshot.snapshotName ?? '',
+        imageName: image.imageName ?? '',
+        poolName: pool.poolName ?? '',
+        teamName: snapshot.teamName ?? '',
       });
     },
     [deleteSnapshotMutation, image.imageName, pool.poolName]
@@ -101,17 +104,17 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   );
 
   const handleRunFunction = useCallback(
-    async (functionName: string, snapshot?: CephRbdSnapshot) => {
+    async (functionName: string, snapshot?: CephSnapshot) => {
       try {
         const queueVault = await buildQueueVault({
           functionName,
-          teamName: pool.teamName,
-          machineName: pool.clusterName,
+          teamName: pool.teamName ?? '',
+          machineName: pool.clusterName ?? '',
           bridgeName: 'default',
           params: {
-            cluster_name: pool.clusterName,
-            pool_name: pool.poolName,
-            image_name: image.imageName,
+            cluster_name: pool.clusterName ?? '',
+            pool_name: pool.poolName ?? '',
+            image_name: image.imageName ?? '',
             snapshot_name: snapshot?.snapshotName ?? '',
           },
           priority: 3,
@@ -119,8 +122,8 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         });
 
         const response = await managedQueueMutation.mutateAsync({
-          teamName: pool.teamName,
-          machineName: pool.clusterName,
+          teamName: pool.teamName ?? '',
+          machineName: pool.clusterName ?? '',
           bridgeName: 'default',
           queueVault,
           priority: 3,
@@ -146,7 +149,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   );
 
   const getSnapshotMenuItems = useCallback(
-    (snapshot: CephRbdSnapshot): MenuProps['items'] => [
+    (snapshot: CephSnapshot): MenuProps['items'] => [
       {
         key: 'edit',
         label: (
@@ -241,7 +244,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: CephRbdSnapshot) => {
+    () => (record: CephSnapshot) => {
       const onExpand = () => {
         setExpandedRowKeys((prev) =>
           prev.includes(record.snapshotGuid ?? '')
@@ -259,15 +262,17 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
               icon={<CopyOutlined />}
               onClick={onExpand}
               aria-label={t('clones.title')}
+              data-testid={`snapshot-clones-${record.snapshotName}`}
             />
           </Tooltip>
-          <Tooltip title={t('common.remote')}>
+          <Tooltip title={t('common:actions.remote')}>
             <Button
               type="text"
               size="small"
               icon={<CloudUploadOutlined />}
               onClick={() => handleRunFunction('ceph_rbd_snapshot_list', record)}
-              aria-label={t('common.remote')}
+              aria-label={t('common:actions.remote')}
+              data-testid={`snapshot-info-${record.snapshotName}`}
             />
           </Tooltip>
           <ResourceActionsDropdown menuItems={getSnapshotMenuItems(record)} />
@@ -291,15 +296,19 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
   );
 
   const expandedRowRender = useCallback(
-    (record: CephRbdSnapshot) => (
+    (record: CephSnapshot) => (
       <CloneTable snapshot={record} image={image} pool={pool} teamFilter={teamFilter} />
     ),
     [image, pool, teamFilter]
   );
 
+  const isSubmitting = [createSnapshotMutation.isPending, updateVaultMutation.isPending].some(
+    Boolean
+  );
+
   return (
     <>
-      <Flex vertical gap={16} data-testid="snapshot-list-container">
+      <Flex vertical data-testid="snapshot-list-container">
         <Typography.Title level={4}>{t('snapshots.title')}</Typography.Title>
         <Flex align="center" wrap>
           <Tooltip title={t('snapshots.create')}>
@@ -313,7 +322,7 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         </Flex>
 
         <Flex className="overflow-hidden">
-          <ResourceListView<CephRbdSnapshot>
+          <ResourceListView<CephSnapshot>
             columns={columns}
             data={snapshots}
             rowKey="snapshotGuid"
@@ -329,8 +338,8 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
                 onExpand,
                 record,
               }: {
-                onExpand: (record: CephRbdSnapshot, event: React.MouseEvent<HTMLElement>) => void;
-                record: CephRbdSnapshot;
+                onExpand: (record: CephSnapshot, event: React.MouseEvent<HTMLElement>) => void;
+                record: CephSnapshot;
               }) => (
                 <Button
                   icon={<CopyOutlined />}
@@ -350,35 +359,35 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
         mode={modalState.mode}
         existingData={{
           ...modalState.data,
-          teamName: pool.teamName,
-          poolName: pool.poolName,
-          imageName: image.imageName,
-          pools: [pool],
-          images: [image],
+          teamName: pool.teamName ?? '',
+          poolName: pool.poolName ?? '',
+          imageName: image.imageName ?? '',
+          pools: [{ poolName: pool.poolName ?? '', clusterName: pool.clusterName ?? '' }],
+          images: [{ imageName: image.imageName ?? '' }],
           vaultContent: modalState.data?.vaultContent,
         }}
-        teamFilter={pool.teamName}
+        teamFilter={pool.teamName ?? ''}
         onSubmit={async (data) => {
           const snapshotData = data as SnapshotFormValues;
           if (modalState.mode === 'create') {
             await createSnapshotMutation.mutateAsync({
-              imageName: image.imageName,
-              poolName: pool.poolName,
-              teamName: pool.teamName,
+              imageName: image.imageName ?? '',
+              poolName: pool.poolName ?? '',
+              teamName: pool.teamName ?? '',
               snapshotName: snapshotData.snapshotName,
               vaultContent: snapshotData.vaultContent,
             });
           } else if (modalState.mode === 'edit') {
             await updateVaultMutation.mutateAsync({
-              poolName: pool.poolName,
-              teamName: pool.teamName,
+              poolName: pool.poolName ?? '',
+              teamName: pool.teamName ?? '',
               vaultContent: snapshotData.vaultContent,
               vaultVersion: modalState.data?.vaultVersion ?? 0,
             });
           }
           setModalState({ open: false, mode: 'create' });
         }}
-        isSubmitting={createSnapshotMutation.isPending || updateVaultMutation.isPending}
+        isSubmitting={isSubmitting}
         data-testid={`snapshot-list-modal-${modalState.mode}`}
       />
 

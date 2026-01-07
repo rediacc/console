@@ -449,9 +449,11 @@ jobs:
 
   desktop-build:
     name: 🖥️ Desktop - Electron Build (${{ matrix.os }})
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
+        # windows-latest works now that native module rebuild is skipped (beforeBuild hook)
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
@@ -462,11 +464,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
-          node-version: '20'
+          node-version: '22'  # Required for @electron/rebuild 4.x
           cache: 'npm'
 
       - name: Install dependencies
+        if: runner.os != 'Windows'
         run: npm ci
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        # Skip postinstall scripts to avoid electron-builder install-app-deps timeout.
+        # Native module rebuild is skipped entirely via beforeBuild hook (scripts/before-build.js).
+        run: npm ci --ignore-scripts
+
+      - name: Upload npm logs on failure (Windows)
+        if: (failure() || cancelled()) && runner.os == 'Windows'
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: npm-debug-logs-windows-${{ github.sha }}
+          path: C:\npm\cache\_logs\
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Build shared libraries
         run: npm run build:packages
@@ -530,6 +548,43 @@ jobs:
           Get-ChildItem packages/desktop/out/main/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
           Get-ChildItem packages/desktop/out/preload/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
           "``````" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+
+      # Create distribution packages for each platform
+      - name: Create distribution packages (Linux)
+        if: runner.os == 'Linux'
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist:linux
+
+      - name: Create distribution packages (macOS)
+        if: runner.os == 'macOS'
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run dist:mac
+
+      - name: Bundle MSYS2 for Windows
+        if: runner.os == 'Windows'
+        working-directory: packages/desktop
+        shell: bash
+        run: npm run bundle:msys2
+
+      - name: Create distribution packages (Windows)
+        if: runner.os == 'Windows'
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist:win
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: desktop-${{ matrix.os }}-${{ github.sha }}
+          path: dist/desktop/
+          retention-days: 30
+          if-no-files-found: error
 
   ci-summary:
     name: ✅ CI Summary

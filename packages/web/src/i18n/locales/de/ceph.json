@@ -1,13 +1,18 @@
 {
   "accessDenied": {
+    "currentPlan": "Aktueller Plan",
+    "debugInfo": "Debug-Informationen",
     "description": "Ihr aktueller Plan beinhaltet keinen verteilten Speicher. Führen Sie ein Upgrade auf Business oder Enterprise durch oder wenden Sie sich an den Support, um es zu aktivieren.",
+    "hasAccess": "Hat Zugriff",
+    "noPlanDetected": "Kein Plan erkannt",
+    "organizationData": "Organisationsdaten",
     "title": "Verteilter Speicher nicht verfügbar"
   },
   "assignment": {
     "actions": {
-      "assignToCluster": "Dem Cluster zugewiesen",
       "assignedToClone": "Dem Klonen zugewiesen",
       "assignedToImage": "Dem Bild zugewiesen",
+      "assignToCluster": "Dem Cluster zugewiesen",
       "reassignedImage": "Neu zugewiesenes Bild",
       "removedFromClone": "Aus Klon entfernt",
       "removedFromCluster": "Aus Cluster entfernt"
@@ -31,8 +36,9 @@
   },
   "clones": {
     "addMachine": "Maschine hinzufügen",
-    "assignMachines": "Maschinen zuweisen",
     "assignedMachines": "Zugewiesene Maschinen",
+    "assignMachines": "Maschinen zuweisen",
+    "assignMachinesInfo": "Wählen Sie die Maschinen aus, die diesem Klon zugewiesen werden sollen",
     "create": "Klon erstellen",
     "createSuccess": "Klon erfolgreich erstellt",
     "delete": "Klon löschen",
@@ -41,6 +47,7 @@
     "export": "Klon exportieren",
     "exportMachines": "Maschinen exportieren",
     "flatten": "Klon reduzieren",
+    "image": "Bild",
     "info": "Kloninformationen",
     "machineManager": "Maschinenmanager",
     "machinesAssignedSuccess": "Maschinen, denen das Klonen erfolgreich zugewiesen wurde",
@@ -48,18 +55,26 @@
     "manageMachines": "Maschinen verwalten",
     "name": "Klonname",
     "noMachinesAssigned": "Diesem Klon sind keine Maschinen zugewiesen",
+    "pool": "Speicherpool",
     "removeMachine": "Maschine entfernen",
+    "removeMachinesInfo": "Wählen Sie Maschinen aus, die aus diesem Klon entfernt werden sollen",
     "removeSelectedMachines": "Ausgewählte Maschinen entfernen",
     "searchMachines": "Suchmaschinen...",
+    "selectImage": "Bild auswählen",
+    "selectPool": "Speicherpool auswählen",
+    "selectSnapshot": "Snapshot auswählen",
+    "snapshot": "Snapshot",
     "split": "Geteilter Klon",
     "statistics": "Statistiken",
     "title": "Klone",
-    "totalMachines": "Gesamtmaschinen"
+    "totalMachines": "Gesamtmaschinen",
+    "viewMachines": "Maschinen anzeigen"
   },
   "clusters": {
-    "assignMachines": "Maschinen zuweisen",
     "assignedMachines": "Zugewiesene Maschinen",
+    "assignMachines": "Maschinen zuweisen",
     "availableMachines": "Verfügbare Maschinen",
+    "cluster": "Cluster-Speichersystem",
     "clusterDetails": "Clusterdetails",
     "clusterName": "Clustername",
     "configureVault": "Vault konfigurieren",
@@ -69,15 +84,16 @@
     "createSuccess": "Cluster erfolgreich erstellt",
     "deleteCluster": "Cluster löschen",
     "deleteSuccess": "Cluster erfolgreich gelöscht",
-    "deleteWarning": "Sind Sie sicher, dass Sie den Cluster „{{name}}“ löschen möchten?",
+    "deleteWarning": "Sind Sie sicher, dass Sie den Cluster '{{name}}' löschen möchten?",
     "editCluster": "Cluster bearbeiten",
     "fsid": "FSID",
     "manageMachines": "Maschinen verwalten",
-    "monitorHosts": "Überwachen Sie Hosts",
+    "monitorHosts": "Hosts überwachen",
     "name": "Clustername",
     "noClusters": "Keine Cluster gefunden",
     "noMachinesAssigned": "Diesem Cluster sind keine Maschinen zugewiesen",
     "removeFromCluster": "Aus Cluster entfernen",
+    "searchClusters": "Cluster durchsuchen...",
     "secretKey": "Geheimer Schlüssel",
     "title": "Cluster",
     "updateSuccess": "Cluster erfolgreich aktualisiert"
@@ -111,7 +127,7 @@
   },
   "description": "Verwalten Sie verteilte Speichercluster, Pools, Images und Snapshots",
   "errors": {
-    "operationFailed": "{{Operation}} {{resource}} ist fehlgeschlagen"
+    "operationFailed": "Fehler beim {{operation}} {{resource}}"
   },
   "functions": {
     "cluster_dashboard": "Öffnen Sie das Cluster-Dashboard",
@@ -131,31 +147,33 @@
     "export": "Bild exportieren",
     "flatten": "Bild reduzieren",
     "guid": "GUID",
-    "import": "Bild importieren",
-    "info": "Bildinformationen",
-    "map": "Kartenbild",
-    "name": "Bildname",
+    "image": "Abbild",
+    "import": "Abbild importieren",
+    "info": "Abbildinformationen",
+    "machine": "Maschine",
+    "map": "Abbild zuordnen",
+    "name": "Abbildname",
+    "pool": "Speicherpool",
     "reassignMachine": "Maschine neu zuweisen",
+    "reassignmentInfo": "Dies wird das Abbild einer anderen Maschine zuweisen",
     "reassignmentModal": {
-      "currentAssignment": "Aktueller Auftrag",
-      "noMachineAssigned": "Derzeit ist keine Maschine zugewiesen",
-      "selectNewMachine": "Wählen Sie Neue Maschine",
-      "title": "Bild der Maschine neu zuweisen",
-      "warning": "Warnung: Wenn Sie ein Image einem anderen Computer erneut zuweisen, ist es auf dem aktuellen Computer nicht verfügbar, bis die Daten migriert werden."
+      "currentAssignment": "Aktuelle Zuordnung",
+      "noMachineAssigned": "Aktuell ist keine Maschine zugewiesen",
+      "selectNewMachine": "Wählen Sie eine neue Maschine",
+      "title": "Abbild einer Maschine neu zuweisen",
+      "warning": "Warnung: Wenn Sie ein Abbild einer anderen Maschine zuweisen, ist es auf der aktuellen Maschine nicht verfügbar, bis die Daten migriert sind."
     },
-    "reassignmentSuccess": "Bildmaschinenzuweisung erfolgreich aktualisiert",
-    "resize": "Bildgröße ändern",
-    "showMapped": "Zugeordnete Bilder anzeigen",
-    "status": "Status",
+    "reassignmentSuccess": "Abbildmaschinenzuordnung erfolgreich aktualisiert",
+    "reassignmentWarning": "Die Neuzuweisung eines Abbildes erfordert Datenmigration und kann zu vorübergehender Nichtverfügbarkeit führen",
+    "resize": "Abbildgröße ändern",
+    "selectMachine": "Wählen Sie eine Maschine",
+    "selectNewMachine": "Wählen Sie eine neue Maschine",
+    "selectPool": "Speicherpool auswählen",
+    "showMapped": "Zugeordnete Abbilder anzeigen",
+    "status": "Zustand",
     "title": "Bilder",
     "unmap": "Bildzuordnung aufheben",
     "updateSuccess": "Bild erfolgreich aktualisiert"
-  },
-  "machineSection": {
-    "manageAssignment": "Aufgabe verwalten",
-    "notAssigned": "Keiner verteilten Speicherressource zugewiesen",
-    "title": "Verteilter Speicher",
-    "viewDetails": "Details anzeigen"
   },
   "machines": {
     "actions": {
@@ -164,6 +182,7 @@
       "viewDetails": "Details anzeigen"
     },
     "assignedDate": "Zugewiesenes Datum",
+    "assignMachine": "Maschine zuweisen",
     "bridgeName": "Brücke",
     "clusterAssignedSuccess": "Maschine wurde erfolgreich dem Cluster zugewiesen",
     "clusterRemovedSuccess": "Die Maschine wurde erfolgreich aus dem Cluster entfernt",
@@ -173,6 +192,7 @@
       "searchPlaceholder": "Suchmaschinen..."
     },
     "machineName": "Maschinenname",
+    "selectMachines": "Wählen Sie Maschinen",
     "summary": {
       "assignedToClones": "Klonen zugewiesen",
       "assignedToClusters": "Clustern zugewiesen",
@@ -181,7 +201,15 @@
       "title": "Maschinenverfügbarkeit",
       "total": "Gesamtmaschinen"
     },
+    "unassignError": "Maschine konnte nicht aufgehoben werden",
+    "unassignMachine": "Maschine aufheben",
     "updateSuccess": "Die Zuordnung des Maschinenclusters wurde erfolgreich aktualisiert"
+  },
+  "machineSection": {
+    "manageAssignment": "Aufgabe verwalten",
+    "notAssigned": "Keiner verteilten Speicherressource zugewiesen",
+    "title": "Verteilter Speicher",
+    "viewDetails": "Details anzeigen"
   },
   "mutations": {
     "operations": {
@@ -206,6 +234,7 @@
     }
   },
   "pools": {
+    "cluster": "Cluster-Speichersystem",
     "clusterPrefix": "Cluster",
     "configureVault": "Vault konfigurieren",
     "confirmDelete": "Pool löschen",
@@ -215,18 +244,20 @@
     "crush": "CRUSH-Regel",
     "deletePool": "Pool löschen",
     "deleteSuccess": "Pool erfolgreich gelöscht",
-    "deleteWarning": "Sind Sie sicher, dass Sie den Pool „{{name}}“ löschen möchten?",
+    "deleteWarning": "Sind Sie sicher, dass Sie den Pool '{{name}}' löschen möchten?",
     "editPool": "Pool bearbeiten",
     "minSize": "Mindestgröße",
     "name": "Poolname",
     "noPools": "Keine Pools gefunden",
     "pgNum": "PG-Nummer",
     "pgpNum": "PGP-Nummer",
+    "pool": "Speicherpool",
     "poolDetails": "Pooldetails",
     "poolId": "Pool-ID",
     "poolName": "Poolname",
+    "selectCluster": "Wählen Sie einen Cluster",
     "size": "Größe",
-    "title": "Pools",
+    "title": "Speicherpools",
     "updateSuccess": "Pool erfolgreich aktualisiert"
   },
   "queue": {
@@ -236,16 +267,20 @@
   "selectTeamPrompt": "Wählen Sie ein Team aus, um loszulegen",
   "selectTeamToView": "Wählen Sie ein Team aus",
   "snapshots": {
-    "create": "Schnappschuss erstellen",
+    "create": "Snapshot erstellen",
     "createSuccess": "Snapshot erfolgreich erstellt",
     "delete": "Snapshot löschen",
     "deleteSuccess": "Snapshot erfolgreich gelöscht",
-    "diff": "Diff-Schnappschuss",
-    "edit": "Schnappschuss bearbeiten",
+    "diff": "Snapshot vergleichen",
+    "edit": "Snapshot bearbeiten",
     "guid": "GUID",
+    "image": "Abbild",
     "name": "Snapshot-Name",
+    "pool": "Speicherpool",
     "protect": "Snapshot schützen",
     "rollback": "Rollback-Snapshot",
+    "selectImage": "Abbild auswählen",
+    "selectPool": "Speicherpool auswählen",
     "title": "Schnappschüsse",
     "unprotect": "Snapshot-Schutz aufheben",
     "vault": "Snapshot-Tresor"
@@ -253,7 +288,7 @@
   "tabs": {
     "clusters": "Cluster",
     "machines": "Maschinen",
-    "pools": "Pools"
+    "pools": "Speicherpools"
   },
   "title": "Verteilter Speicher",
   "warnings": {

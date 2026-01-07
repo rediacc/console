@@ -1,6 +1,6 @@
 import React from 'react';
 import { Flex } from 'antd';
-import { useMachineAssignmentStatus } from '@/api/queries/ceph';
+import { useGetMachineAssignmentStatus } from '@/api/api-hooks.generated';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';
 import type { Machine, MachineAssignmentType } from '@/types';
@@ -23,11 +23,11 @@ const getAssignmentDetails = (value?: string | null) => {
 };
 
 const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = ({ machine }) => {
-  // Always call hooks at the top level
-  const { data, isLoading } = useMachineAssignmentStatus(
-    machine.machineName,
-    machine.teamName,
-    !machine.cephClusterName // Only fetch if not already assigned to cluster
+  // Always call hooks at the top level - only fetch if not already assigned to cluster
+  const shouldFetch = !machine.cephClusterName;
+  const { data, isLoading } = useGetMachineAssignmentStatus(
+    shouldFetch ? (machine.machineName ?? '') : '',
+    shouldFetch ? (machine.teamName ?? '') : ''
   );
 
   // If machine already has cephClusterName, we know it's assigned to a cluster
@@ -51,7 +51,9 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
     );
   }
 
-  if (!data) {
+  const statusData = data?.[0];
+
+  if (!statusData) {
     return (
       <Flex align="flex-start" justify="flex-start" data-testid="machine-status-cell-available">
         <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
@@ -59,8 +61,8 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
     );
   }
 
-  const assignmentType = normalizeAssignmentType(data.assignmentType);
-  const assignmentDetails = getAssignmentDetails(data.assignmentDetails);
+  const assignmentType = normalizeAssignmentType(statusData.assignmentType);
+  const assignmentDetails = getAssignmentDetails(statusData.assignmentDetails);
 
   return (
     <Flex

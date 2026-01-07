@@ -1,6 +1,8 @@
-import { type TFunction } from 'i18next';
 import { getGrandVaultForOperation } from '@/platform';
+import { type DynamicQueueActionParams, type QueueActionResult } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import type { Repository } from '../types';
 
 interface UseQuickRepositoryActionParams {
@@ -19,20 +21,18 @@ interface UseQuickRepositoryActionParams {
     bridgeName: string;
     vaultContent?: string;
   };
-  executeAction: (params: unknown) => Promise<{
-    success: boolean;
-    taskId?: string;
-    isQueued?: boolean;
-    error?: string;
-  }>;
+  executeDynamic: (
+    functionName: BridgeFunctionName,
+    params: Omit<DynamicQueueActionParams, 'functionName'>
+  ) => Promise<QueueActionResult>;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const useQuickRepositoryAction = ({
   teamRepositories,
   machine,
-  executeAction,
+  executeDynamic,
   onQueueItemCreated,
   t,
 }: UseQuickRepositoryActionParams) => {
@@ -68,12 +68,11 @@ export const useQuickRepositoryAction = ({
       params.option = option;
     }
 
-    const result = await executeAction({
+    const result = await executeDynamic(functionName as BridgeFunctionName, {
+      params,
       teamName: machine.teamName,
       machineName: machine.machineName,
       bridgeName: machine.bridgeName,
-      functionName,
-      params,
       priority,
       addedVia: 'machine-Repository-list-quick',
       machineVault: machine.vaultContent ?? '{}',

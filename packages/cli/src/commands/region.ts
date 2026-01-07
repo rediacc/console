@@ -1,11 +1,11 @@
 import { Command } from 'commander';
-import { parseGetCompanyRegions, parseGetCompanyVaults } from '@rediacc/shared/api';
+import { parseGetOrganizationRegions, parseGetOrganizationVaults } from '@rediacc/shared/api';
 import type {
   CreateRegionParams,
   DeleteRegionParams,
   UpdateRegionNameParams,
   UpdateRegionVaultParams,
-  GetCompanyVaults_ResultSet1,
+  GetOrganizationVaults_ResultSet1,
 } from '@rediacc/shared/types';
 import { typedApi } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
@@ -18,8 +18,8 @@ export function registerRegionCommands(program: Command): void {
     parentOption: 'none',
     operations: {
       list: async () => {
-        const response = await typedApi.GetCompanyRegions({});
-        return parseGetCompanyRegions(response as never);
+        const response = await typedApi.GetOrganizationRegions({});
+        return parseGetOrganizationRegions(response as never);
       },
       create: async (payload) => {
         await typedApi.CreateRegion(payload as unknown as CreateRegionParams);
@@ -36,9 +36,9 @@ export function registerRegionCommands(program: Command): void {
     }),
     vaultConfig: {
       fetch: async () => {
-        const response = await typedApi.GetCompanyVaults({});
-        const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+        const response = await typedApi.GetOrganizationVaults({});
+        const vaults = parseGetOrganizationVaults(response as never);
+        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Region',
     },

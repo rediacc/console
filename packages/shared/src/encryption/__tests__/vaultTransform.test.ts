@@ -7,7 +7,7 @@ describe('vaultTransform', () => {
       expect(isVaultField('machineVault')).toBe(true);
       expect(isVaultField('teamVault')).toBe(true);
       expect(isVaultField('queueVault')).toBe(true);
-      expect(isVaultField('companyVault')).toBe(true);
+      expect(isVaultField('organizationVault')).toBe(true);
       expect(isVaultField('vault')).toBe(true);
       expect(isVaultField('VAULT')).toBe(true);
       expect(isVaultField('myVaultData')).toBe(true);

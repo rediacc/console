@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "Отменено",
+    "completed": "Завершено",
+    "failed": "Ошибка",
+    "pending": "Ожидание",
+    "processing": "Обработка",
+    "running": "Выполняется",
+    "success": "Успешно",
+    "unknown": "Неизвестно",
+    "inProgress": "В процессе",
+    "initializing": "Инициализация..."
+  },
+  "actions": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "create": "Создать",
+    "edit": "Редактировать",
+    "copy": "Копировать",
+    "retry": "Повторить",
+    "refresh": "Обновить",
+    "close": "Закрыть",
+    "download": "Скачать",
+    "upload": "Загрузить",
+    "remove": "Удалить",
+    "confirm": "Подтвердить",
+    "reset": "Сбросить",
+    "back": "Назад",
+    "search": "Поиск",
+    "export": "Экспорт"
+  },
+  "common": {
+    "yes": "Да",
+    "no": "Нет",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "warning": "Предупреждение",
+    "success": "Успешно",
+    "unknown": "Неизвестно",
+    "total": "Всего",
+    "none": "Нет"
+  },
+  "validation": {
+    "required": "Это поле обязательно",
+    "invalidEmail": "Введите корректный адрес электронной почты",
+    "invalidFormat": "Неверный формат"
+  },
+  "time": {
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "last7Days": "Последние 7 дней",
+    "last30Days": "Последние 30 дней",
+    "thisMonth": "Этот месяц",
+    "lastMonth": "Прошлый месяц"
+  },
+  "confirm": {
+    "areYouSure": "Вы уверены?",
+    "confirmDelete": "Вы уверены, что хотите удалить это?"
+  },
+  "notifications": {
+    "error": "Ошибка",
+    "warning": "Предупреждение",
+    "success": "Успешно",
+    "info": "Информация"
+  }
+}

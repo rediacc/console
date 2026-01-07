@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { createElement } from 'react';
 import { prepareGrandDeletion } from '@/platform';
 import { showMessage } from '@/utils/messages';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { BlockedDeletionContent, ConfirmDeletionContent } from './DeletionModalContent';
 import type { Repository } from '../types';
 import type { HookAPI } from 'antd/es/modal/useModal';
-import type { TFunction } from 'i18next';
 
 interface UseConfirmRepositoryDeletionParams {
   teamRepositories: {
@@ -17,7 +17,7 @@ interface UseConfirmRepositoryDeletionParams {
     repositoryNetworkId?: number;
   }[];
   modal: HookAPI;
-  t: TFunction;
+  t: TypedTFunction;
   onConfirm: (context: ReturnType<typeof prepareGrandDeletion>) => Promise<void>;
 }
 
@@ -37,11 +37,12 @@ export const useConfirmRepositoryDeletion = ({
     );
 
     if (context.status === 'error') {
-      const errorKey =
+      showMessage(
+        'error',
         context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.notAGrandRepo';
-      showMessage('error', t(errorKey));
+          ? t('resources:repositories.notFound')
+          : t('resources:repositories.notAGrandRepository')
+      );
       return;
     }
 
@@ -50,7 +51,12 @@ export const useConfirmRepositoryDeletion = ({
         title: t('resources:repositories.cannotDeleteHasClones'),
         content: createElement(BlockedDeletionContent, {
           repositoryName: repository.name,
-          childClones: context.childClones,
+          childClones: context.childClones
+            .filter((c) => c.repositoryGuid && c.repositoryName)
+            .map((c) => ({
+              repositoryGuid: c.repositoryGuid!,
+              repositoryName: c.repositoryName!,
+            })),
           t,
         }),
         okText: t('common:close'),

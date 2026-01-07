@@ -1,37 +1,70 @@
 {
   "actions": {
+    "actions": "操作",
     "addToQueue": "添加到队列",
     "advanced": "先进的",
+    "assign": "分配",
     "back": "返回",
     "cancel": "取消",
-    "confirm": "确认",
     "clearSelection": "清除选择",
     "close": "关闭",
+    "confirm": "确认",
+    "copied": "已复制",
+    "copy": "复制",
     "create": "创建",
+    "createNew": "创建新的",
     "createResource": "创建{{resource}}",
     "delete": "删除",
+    "deleteSelected": "删除选定的",
+    "download": "下载",
+    "downloadSelected": "下载选定的",
     "edit": "编辑",
     "editResource": "编辑{{resource}}",
     "editVault": "编辑保管库",
     "exitFullscreen": "退出全屏",
     "export": "出口",
     "exportSuccess": "出口成功",
+    "format": "格式化",
     "fullscreen": "全屏",
+    "logoutNow": "立即注销",
     "manage": "管理",
+    "newFolder": "新文件夹",
     "refresh": "刷新",
     "remote": "偏僻的",
     "remove": "消除",
+    "rename": "重命名",
     "reset": "重置",
     "retry": "重试",
     "runFunction": "运行功能",
     "save": "保存",
     "search": "搜索",
     "trace": "痕迹",
+    "upload": "上传",
+    "uploadFile": "上传文件",
     "viewTrace": "查看跟踪"
   },
   "actionsColumn": "行动",
+  "allCommandsCopied": "所有命令已复制到剪贴板！",
+  "alt": {
+    "logo": "Rediacc 标志"
+  },
+  "aria": {
+    "cancel": "取消",
+    "close": "关闭",
+    "closeNotification": "关闭通知",
+    "collapsePanel": "折叠面板",
+    "expandPanel": "展开面板",
+    "notifications": "通知",
+    "refresh": "刷新",
+    "refreshMachines": "刷新机器",
+    "trace": "追踪"
+  },
+  "cancel": "取消",
   "close": "关闭",
+  "commandCopied": "命令已复制到剪贴板！",
+  "commandCopyFailed": "无法复制命令",
   "copiedToClipboard": "已复制到剪贴板",
+  "copiedWithoutToken": "已复制但不含安全令牌 - 请手动登录",
   "copyFailed": "复制到剪贴板失败",
   "current": "当前的",
   "dashboard": {
@@ -39,10 +72,122 @@
     "comparePlansDescription": "比较不同订阅层级的功能和价格",
     "currentPlan": "当前计划",
     "enterprisePlanDescription": "您正在使用我们的最高级别计划，所有功能均已解锁",
-    "upgradeOptions": "升级选项"
+    "errors": {
+      "loadFailed": "无法加载仪表板数据。请稍后重试。",
+      "noData": "没有可用的仪表板数据",
+      "title": "错误"
+    },
+    "title": "仪表板",
+    "upgradeOptions": "升级选项",
+    "widgets": {
+      "accountHealth": {
+        "noData": "没有可用的帐户健康数据",
+        "overallStatus": "总体状态",
+        "resourcesAtLimit": "资源达到限制",
+        "resourcesNearLimit": "资源接近限制",
+        "title": "帐户健康状况"
+      },
+      "ceph": {
+        "available": "可用的",
+        "clone": "克隆",
+        "cluster": "集群",
+        "image": "镜像",
+        "machines": "机器"
+      },
+      "queueDetails": {
+        "active": "活跃的",
+        "cancelled": "已取消",
+        "completed": "已完成",
+        "created": "已创建",
+        "failedTotal": "失败（总计）",
+        "highestPriority": "最高优先级",
+        "highPriority": "高优先级",
+        "lowPriority": "低优先级",
+        "machine": "机器",
+        "machineQueueStatus": "机器队列状态",
+        "normalPriority": "普通优先级",
+        "pending": "待处理",
+        "priorityBreakdown": "优先级分配",
+        "stale": "陈旧的",
+        "staleItems": "{{count}} 个陈旧项",
+        "status": "状态",
+        "team": "团队",
+        "teamQueueStatus": "团队队列状态",
+        "title": "队列详情",
+        "todayActivity": "今天的活动"
+      },
+      "queueOverview": {
+        "manage": "管理",
+        "noData": "没有可用的队列数据",
+        "title": "队列概览"
+      },
+      "recentActivity": {
+        "noActivity": "没有最近的活动",
+        "title": "最近活动",
+        "viewAll": "查看全部"
+      },
+      "resourceUsage": {
+        "limitReached": "已达到限制",
+        "machines": "机器",
+        "repositories": "仓库",
+        "subtitle": "监控您的资源消耗与计划限制的关系",
+        "title": "资源使用"
+      },
+      "subscriptionPlan": {
+        "allActiveLicenses": "所有活跃许可证",
+        "currentSubscription": "当前订阅",
+        "day": "天",
+        "days": "天",
+        "hours": "小时",
+        "remaining": "剩余",
+        "title": "订阅和计划详情",
+        "total": "总计",
+        "trial": "试用"
+      },
+      "systemVersion": {
+        "api": "API",
+        "apiUptime": "API 正常运行时间",
+        "console": "控制台"
+      }
+    }
   },
   "dateColumn": "日期",
-  "export": "导出",
+  "defaults": {
+    "defaultRegion": "默认区域",
+    "globalBridges": "全局桥接",
+    "jsonError": "JSON 错误",
+    "privateTeam": "私有团队"
+  },
+  "delete": "删除",
+  "desktopConnectionFailed": "无法为桌面应用创建安全连接",
+  "desktopPrompt": {
+    "downloadDesktop": "下载桌面应用",
+    "machine": "机器",
+    "openDesktop": "在桌面应用中打开",
+    "repository": "仓库",
+    "securityExplanation": "直接文件操作需要从您的计算机到远程机器的安全 SSH 连接。由于安全原因，无法从浏览器建立此连接。",
+    "subtitle": "{{feature}} 使用安全 SSH 连接，需要 Rediacc 桌面应用程序。",
+    "title": "{{feature}} 需要桌面应用",
+    "whyDesktopOnly": "为什么仅限桌面？"
+  },
+  "errorBoundary": {
+    "componentStack": "组件堆栈",
+    "description": "发生了意外错误。这已被自动报告。",
+    "error": "错误",
+    "errorDetails": "错误详情（开发模式）",
+    "reloadPage": "重新加载页面",
+    "stack": "堆栈",
+    "title": "出现了问题",
+    "tryAgain": "重试"
+  },
+  "errors": {
+    "somethingWentWrong": "出现了问题",
+    "schemaValidationFailed": "检测到数据同步问题。请刷新页面，如果问题仍然存在，请联系支持。"
+  },
+  "export": {
+    "label": "导出",
+    "success": "导出成功"
+  },
   "exportCSV": "导出为CSV",
   "exportJSON": "导出为JSON",
   "fieldGenerator": {
@@ -69,16 +214,48 @@
   "fields": {
     "vault": "保险库配置"
   },
+  "fileBrowser": {
+    "connecting": "连接中...",
+    "created": "创建的文件夹：{{name}}",
+    "createNewFolder": "创建新文件夹",
+    "deleteConfirmMessage": "您确定要删除 \"{{name}}\" 吗？",
+    "deleteFileConfirm": "删除文件？",
+    "deleteFolderConfirm": "删除文件夹？",
+    "deleteFolderWarning": " 这将删除所有内容。",
+    "downloaded": "已下载：{{name}}",
+    "error": "错误",
+    "establishingConnection": "正在建立与 {{host}} 的 SFTP 连接...",
+    "fileBrowser": "文件浏览器",
+    "folder": "文件夹",
+    "folderName": "文件夹名称",
+    "items": "{{count}} 项",
+    "modified": "修改时间",
+    "name": "名称",
+    "newName": "新名称",
+    "originalFile": "原始文件",
+    "permissions": "权限",
+    "renamedSuccessfully": "重命名成功",
+    "root": "根目录",
+    "size": "大小",
+    "uploaded": "已上传：{{name}}"
+  },
   "general": {
     "cancel": "取消",
     "defaultsApplied": "已应用默认值",
     "important": "重要",
     "loading": "加载中...",
+    "no": "否",
+    "path": "路径",
+    "refreshing": "刷新中...",
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条",
+    "team": "团队",
     "unknown": "未知",
     "vaultVersion": "保险库版本",
-    "versionFormat": "v{{version}}"
+    "versionFormat": "v{{version}}版",
+    "warning": "警告",
+    "yes": "是"
   },
+  "important": "重要",
   "language": {
     "ar": "阿拉伯语",
     "de": "德语",
@@ -86,13 +263,14 @@
     "es": "西班牙语",
     "fr": "法语",
     "ja": "日语",
-    "ru": "俄语",
+    "label": "语言",
     "select": "选择语言",
+    "switch": "切换语言",
     "tr": "土耳其语",
     "zh": "中文"
   },
-  "last30Days": "最近30天",
   "last7Days": "最近7天",
+  "last30Days": "最近30天",
   "lastMonth": "上月",
   "messages": {
     "error": "错误",
@@ -102,31 +280,31 @@
     "success": "成功"
   },
   "navigation": {
-    "architecture": "架构",
     "audit": "审计",
+    "ceph": "分布式存储",
+    "cephClusters": "集群",
+    "cephMachines": "机器",
+    "cephPools": "存储池",
+    "collapseSidebar": "折叠侧边栏",
     "credentials": "凭据",
     "dashboard": "仪表板",
-    "ceph": "分布式存储",
+    "expandSidebar": "展开侧边栏",
     "logout": "退出",
     "machines": "机器",
     "mainNavigation": "主导航",
-    "marketplace": "Marketplace",
     "organization": "组织",
     "organizationAccess": "使用权",
     "organizationTeams": "团队",
     "organizationUsers": "用户",
     "queue": "队列",
     "settings": "设置",
-    "settingsCompany": "公司",
     "settingsInfrastructure": "基础设施",
+    "settingsOrganization": "公司",
     "settingsProfile": "轮廓",
     "storage": "存储",
-    "storageCloud": "Cloud",
-    "storageDistributed": "Distributed",
-    "cephClusters": "集群",
-    "cephPools": "存储池",
-    "cephMachines": "机器",
-    "system": "系统"
+    "storageCloud": "云存储",
+    "storageDistributed": "分布式存储",
+    "userMenu": "打开用户菜单"
   },
   "nestedObjectEditor": {
     "Active": "激活",
@@ -167,7 +345,23 @@
       "warning": "警告"
     }
   },
+  "powerMode": {
+    "advancedDisabled": "高级选项已禁用",
+    "advancedEnabled": "高级选项已启用",
+    "localhostAllDisabled": "本地主机模式 - 所有功能均已禁用",
+    "localhostAllEnabled": "本地主机模式 - 所有功能已启用"
+  },
   "refresh": "刷新",
+  "remote": "远程",
+  "resourceList": {
+    "createNew": "创建新的",
+    "getStartedMessage": "通过创建您的第一个 {{resource}} 开始",
+    "noDataAvailable": "没有可用数据",
+    "noResourcesFound": "未找到 {{resources}}。请尝试调整您的搜索条件。",
+    "searchPlaceholder": "搜索...",
+    "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"
+  },
+  "save": "保存",
   "status": {
     "initializing": "初始化中...",
     "label": "状态",
@@ -178,16 +372,37 @@
   "statusColumn": "地位",
   "table": {
     "actions": "操作",
+    "moreItems": "+{{count}} 更多",
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"
+  },
+  "teamSelector": {
+    "moreTeams": "+{{count}} 更多",
+    "selectTeams": "选择团队..."
+  },
+  "theme": {
+    "dark": "深色",
+    "label": "主题",
+    "light": "浅色"
   },
   "thisMonth": "本月",
   "today": "今天",
+  "tokenGenerationFailed": "令牌生成失败：{{error}}",
+  "tooltips": {
+    "cancel": "取消",
+    "close": "关闭",
+    "expandPanel": "展开面板",
+    "refresh": "刷新",
+    "taskCancellable": "此任务可以取消",
+    "trace": "追踪"
+  },
   "total": "全部的",
   "uiMode": {
     "expert": "专家",
+    "label": "界面模式",
     "simple": "简单",
     "switching": "切换到{{mode}}模式..."
   },
+  "unknown": "未知",
   "utilized": "已利用",
   "vaultEditor": {
     "advanced": "高级",
@@ -261,37 +476,6 @@
           "label": "OSD节点"
         }
       },
-      "COMPANY": {
-        "DOCKER_JSON_CONF": {
-          "description": "Docker注册表认证配置",
-          "label": "Docker配置"
-        },
-        "LOG_FILE": {
-          "description": "系统日志文件的路径",
-          "label": "日志文件路径"
-        },
-        "PLUGINS": {
-          "description": "带有容器镜像和激活状态的插件配置",
-          "label": "插件"
-        },
-        "SSH_PRIVATE_KEY": {
-          "description": "用于公司操作的Base64编码的SSH私钥",
-          "label": "SSH私钥"
-        },
-        "SSH_PUBLIC_KEY": {
-          "description": "用于公司操作的SSH公钥",
-          "label": "SSH公钥"
-        },
-        "UNIVERSAL_USER_ID": {
-          "description": "系统操作的通用用户ID",
-          "label": "通用用户ID"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "description": "系统操作的通用用户名",
-          "label": "通用用户名"
-        },
-        "description": "组织范围设置的公司配置"
-      },
       "IMAGE": {
         "data_pool": {
           "description": "用于存储图像数据的单独池",
@@ -325,7 +509,7 @@
           "label": "数据存储路径"
         },
         "description": "SSH访问和存储的机器配置",
-        "host_entry": {
+        "known_hosts": {
           "description": "用于安全验证的SSH已知主机条目",
           "label": "主机条目"
         },
@@ -348,6 +532,37 @@
         "user": {
           "description": "用于连接的SSH用户名",
           "label": "用户名"
+        }
+      },
+      "ORGANIZATION": {
+        "description": "组织范围设置的公司配置",
+        "DOCKER_JSON_CONF": {
+          "description": "Docker注册表认证配置",
+          "label": "Docker配置"
+        },
+        "LOG_FILE": {
+          "description": "系统日志文件的路径",
+          "label": "日志文件路径"
+        },
+        "PLUGINS": {
+          "description": "带有容器镜像和激活状态的插件配置",
+          "label": "插件"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "用于公司操作的Base64编码的SSH私钥",
+          "label": "SSH私钥"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "用于公司操作的SSH公钥",
+          "label": "SSH公钥"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "系统操作的通用用户ID",
+          "label": "通用用户ID"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "系统操作的通用用户名",
+          "label": "通用用户名"
         }
       },
       "POOL": {
@@ -383,6 +598,10 @@
           "label": "区域代码"
         },
         "description": "地理分布的区域配置",
+        "location": {
+          "description": "区域的位置详情",
+          "label": "位置"
+        },
         "name": {
           "description": "地理区域的名称",
           "label": "区域名称"
@@ -409,21 +628,6 @@
         "schedule": {
           "description": "自动备份的cron表达式",
           "label": "备份计划"
-        }
-      },
-      "SCHEDULE": {
-        "cron": {
-          "description": "定义计划的cron表达式",
-          "label": "Cron表达式"
-        },
-        "description": "自动任务的计划配置",
-        "enabled": {
-          "description": "此计划是否激活",
-          "label": "启用计划"
-        },
-        "timezone": {
-          "description": "计划执行的时区",
-          "label": "时区"
         }
       },
       "SNAPSHOT": {
@@ -465,6 +669,11 @@
         }
       },
       "TEAM": {
+        "description": "组织结构的团队配置",
+        "name": {
+          "description": "团队的名称",
+          "label": "团队名称"
+        },
         "SSH_PRIVATE_KEY": {
           "description": "用于团队操作的Base64编码的SSH私钥",
           "label": "SSH私钥"
@@ -473,17 +682,13 @@
           "description": "用于团队操作的SSH公钥",
           "label": "SSH公钥"
         },
-        "description": "组织结构的团队配置",
-        "name": {
-          "description": "团队的名称",
-          "label": "团队名称"
-        },
         "teamDescription": {
           "description": "团队目的和职责的描述",
           "label": "团队描述"
         }
       },
       "USER": {
+        "description": "个人设置的用户配置",
         "SSH_PRIVATE_KEY": {
           "description": "用于用户操作的Base64编码的SSH私钥",
           "label": "SSH私钥"
@@ -491,15 +696,19 @@
         "SSH_PUBLIC_KEY": {
           "description": "用于用户操作的SSH公钥",
           "label": "SSH公钥"
-        },
-        "description": "个人设置的用户配置"
+        }
       }
     },
+    "fields.CLONE.description": "配置 RBD 克隆设置",
+    "fields.CLUSTER.description": "配置 Ceph 集群设置",
+    "fields.IMAGE.description": "配置 RBD 镜像设置",
+    "fields.POOL.description": "配置 Ceph 存储池设置",
+    "fields.SNAPSHOT.description": "配置 RBD 快照设置",
     "fieldsMovedFromExtra": "{{count}} 个字段已从 extraFields 恢复：{{fields}}",
     "fieldsMovedToExtra": "{{count}} 个字段已移至 extraFields：{{fields}}",
     "formatJson": "格式化JSON",
-    "hostEntryHelp": "选修的。 将自动检测 SSH 已知主机条目。",
-    "hostEntryPlaceholder": "连接测试期间自动填充",
+    "knownHostsHelp": "选修的。 将自动检测 SSH 已知主机条目。",
+    "knownHostsPlaceholder": "连接测试期间自动填充",
     "importJson": "导入JSON",
     "invalidFormat": "格式无效。{{description}}",
     "invalidJsonFormat": "无效的JSON格式",

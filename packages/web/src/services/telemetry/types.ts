@@ -1,33 +1,13 @@
-export interface TelemetryConfig {
-  serviceName: string;
-  serviceVersion: string;
-  environment: string;
-  endpoint: string;
-  enabledInDevelopment?: boolean;
-  samplingRate?: number;
-  userConsent?: boolean;
-  enableAutoInstrumentation?: boolean;
-  enableWebVitals?: boolean;
-}
+// Re-export shared types
+export type {
+  TelemetryConfig,
+  TelemetryContext,
+  TelemetryMetric,
+  UserContext,
+} from '@rediacc/shared/telemetry';
 
-export interface UserContext {
-  userId?: string;
-  email?: string;
-  company?: string;
-  sessionId: string;
-  teamName?: string;
-}
-
-export interface WebVitalsMetric {
-  name: string;
-  value: number;
-  rating: 'good' | 'needs-improvement' | 'poor';
-  delta?: number;
-  id: string;
-}
-
-type TelemetryDetailValue = string | number | boolean | null | undefined;
-export type TelemetryContext = Record<string, TelemetryDetailValue>;
+// Alias for backward compatibility
+export type { TelemetryMetric as WebVitalsMetric } from '@rediacc/shared/telemetry';
 
 export interface LayoutShiftEntry extends PerformanceEntry {
   value: number;

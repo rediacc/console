@@ -1,11 +1,11 @@
 import { Command } from 'commander';
-import { parseGetTeamStorages, parseGetCompanyVaults } from '@rediacc/shared/api';
+import { parseGetTeamStorages, parseGetOrganizationVaults } from '@rediacc/shared/api';
 import type {
   CreateStorageParams,
   DeleteStorageParams,
   UpdateStorageNameParams,
   UpdateStorageVaultParams,
-  GetCompanyVaults_ResultSet1,
+  GetOrganizationVaults_ResultSet1,
 } from '@rediacc/shared/types';
 import { typedApi } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
@@ -37,9 +37,9 @@ export function registerStorageCommands(program: Command): void {
     }),
     vaultConfig: {
       fetch: async () => {
-        const response = await typedApi.GetCompanyVaults({});
-        const vaults = parseGetCompanyVaults(response as never);
-        return vaults as unknown as (GetCompanyVaults_ResultSet1 & { vaultType?: string })[];
+        const response = await typedApi.GetOrganizationVaults({});
+        const vaults = parseGetOrganizationVaults(response as never);
+        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
       },
       vaultType: 'Storage',
     },

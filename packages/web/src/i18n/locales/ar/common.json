@@ -1,37 +1,70 @@
 {
   "actions": {
+    "actions": "الإجراءات",
     "addToQueue": "إضافة إلى قائمة الانتظار",
     "advanced": "متقدم",
+    "assign": "تعيين",
     "back": "خلف",
     "cancel": "يلغي",
-    "confirm": "يؤكد",
     "clearSelection": "مسح التحديد",
     "close": "يغلق",
+    "confirm": "يؤكد",
+    "copied": "منسوخ",
+    "copy": "ينسخ",
     "create": "يخلق",
+    "createNew": "إنشاء جديد",
     "createResource": "إنشاء {{resource}}",
     "delete": "يمسح",
+    "deleteSelected": "حذف المحدد",
+    "download": "تحميل",
+    "downloadSelected": "تحميل المحدد",
     "edit": "يحرر",
     "editResource": "تحرير {{resource}}",
     "editVault": "تحرير قبو",
     "exitFullscreen": "الخروج من وضع ملء الشاشة",
     "export": "التصدير",
     "exportSuccess": "نجاح التصدير",
+    "format": "تنسيق",
     "fullscreen": "ملء الشاشة",
+    "logoutNow": "تسجيل الخروج الآن",
     "manage": "يدير",
+    "newFolder": "مجلد جديد",
     "refresh": "ينعش",
     "remote": "بعيد",
     "remove": "يزيل",
+    "rename": "إعادة تسمية",
     "reset": "إعادة ضبط",
     "retry": "أعد المحاولة",
     "runFunction": "وظيفة التشغيل",
     "save": "يحفظ",
     "search": "يبحث",
     "trace": "يتعقب",
+    "upload": "تحميل",
+    "uploadFile": "تحميل ملف",
     "viewTrace": "عرض التتبع"
   },
   "actionsColumn": "الإجراءات",
+  "allCommandsCopied": "تم نسخ جميع الأوامر إلى الحافظة!",
+  "alt": {
+    "logo": "ريدياك"
+  },
+  "aria": {
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "closeNotification": "إغلاق الإخطار",
+    "collapsePanel": "طي اللوحة",
+    "expandPanel": "توسيع اللوحة",
+    "notifications": "الإخطارات",
+    "refresh": "تحديث",
+    "refreshMachines": "تحديث الأجهزة",
+    "trace": "تتبع"
+  },
+  "cancel": "إلغاء",
   "close": "يغلق",
+  "commandCopied": "تم نسخ الأمر إلى الحافظة!",
+  "commandCopyFailed": "فشل نسخ الأمر",
   "copiedToClipboard": "تم النسخ إلى الحافظة",
+  "copiedWithoutToken": "تم النسخ بدون رمز آمن - يرجى تسجيل الدخول يدويًا",
   "copyFailed": "فشل النسخ إلى الحافظة",
   "current": "حاضِر",
   "dashboard": {
@@ -39,10 +72,122 @@
     "comparePlansDescription": "قارن الميزات والأسعار عبر مستويات الاشتراك المختلفة",
     "currentPlan": "الخطة الحالية",
     "enterprisePlanDescription": "أنت مشترك في خطتنا ذات المستوى الأعلى مع فتح جميع الميزات",
-    "upgradeOptions": "خيارات الترقية"
+    "errors": {
+      "loadFailed": "فشل تحميل بيانات لوحة القيادة. يرجى المحاولة لاحقًا.",
+      "noData": "لا توجد بيانات لوحة قيادة متاحة",
+      "title": "خطأ"
+    },
+    "title": "لوحة القيادة",
+    "upgradeOptions": "خيارات الترقية",
+    "widgets": {
+      "accountHealth": {
+        "noData": "لا توجد بيانات صحة الحساب متاحة",
+        "overallStatus": "الحالة العامة",
+        "resourcesAtLimit": "الموارد في الحد الأقصى",
+        "resourcesNearLimit": "الموارد بالقرب من الحد الأقصى",
+        "title": "صحة الحساب"
+      },
+      "ceph": {
+        "available": "متاح",
+        "clone": "نسخة",
+        "cluster": "مجموعة",
+        "image": "صورة",
+        "machines": "أجهزة"
+      },
+      "queueDetails": {
+        "active": "نشيط",
+        "cancelled": "ملغاة",
+        "completed": "مكتملة",
+        "created": "تم إنشاؤها",
+        "failedTotal": "فشل (الإجمالي)",
+        "highestPriority": "أعلى أولوية",
+        "highPriority": "أولوية عالية",
+        "lowPriority": "أولوية منخفضة",
+        "machine": "جهاز",
+        "machineQueueStatus": "حالة قائمة انتظار الجهاز",
+        "normalPriority": "أولوية عادية",
+        "pending": "قيد الانتظار",
+        "priorityBreakdown": "تفصيل الأولويات",
+        "stale": "قديمة",
+        "staleItems": "{{count}} عناصر قديمة",
+        "status": "الحالة",
+        "team": "فريق",
+        "teamQueueStatus": "حالة قائمة انتظار الفريق",
+        "title": "تفاصيل قائمة الانتظار",
+        "todayActivity": "نشاط اليوم"
+      },
+      "queueOverview": {
+        "manage": "إدارة",
+        "noData": "لا توجد بيانات قائمة انتظار متاحة",
+        "title": "نظرة عامة على قائمة الانتظار"
+      },
+      "recentActivity": {
+        "noActivity": "لا يوجد نشاط حديث",
+        "title": "النشاط الحديث",
+        "viewAll": "عرض الكل"
+      },
+      "resourceUsage": {
+        "limitReached": "تم الوصول إلى الحد الأقصى",
+        "machines": "الأجهزة",
+        "repositories": "المستودعات",
+        "subtitle": "راقب استهلاك موارد مقابل حدود الخطة",
+        "title": "استخدام الموارد"
+      },
+      "subscriptionPlan": {
+        "allActiveLicenses": "جميع الرخص النشطة",
+        "currentSubscription": "الاشتراك الحالي",
+        "day": "يوم",
+        "days": "أيام",
+        "hours": "ساعات",
+        "remaining": "متبقي",
+        "title": "تفاصيل الاشتراك والخطة",
+        "total": "الإجمالي",
+        "trial": "تجربة"
+      },
+      "systemVersion": {
+        "api": "API",
+        "apiUptime": "وقت تشغيل API",
+        "console": "وحدة تحكم"
+      }
+    }
   },
   "dateColumn": "التاريخ",
-  "export": "يصدّر",
+  "defaults": {
+    "defaultRegion": "المنطقة الافتراضية",
+    "globalBridges": "الجسور العالمية",
+    "jsonError": "خطأ JSON",
+    "privateTeam": "فريق خاص"
+  },
+  "delete": "حذف",
+  "desktopConnectionFailed": "فشل في إنشاء اتصال آمن لتطبيق سطح المكتب",
+  "desktopPrompt": {
+    "downloadDesktop": "تحميل تطبيق سطح المكتب",
+    "machine": "جهاز",
+    "openDesktop": "فتح في تطبيق سطح المكتب",
+    "repository": "المستودع",
+    "securityExplanation": "تتطلب عمليات الملفات المباشرة اتصال SSH آمن من جهاز الكمبيوتر إلى الجهاز البعيد. لا يمكن إنشاء هذا الاتصال من متصفح لأسباب أمنية.",
+    "subtitle": "يستخدم {{feature}} اتصالات SSH آمنة تتطلب تطبيق سطح المكتب Rediacc.",
+    "title": "{{feature}} يتطلب تطبيق سطح المكتب",
+    "whyDesktopOnly": "لماذا سطح المكتب فقط؟"
+  },
+  "errorBoundary": {
+    "componentStack": "مكدس المكونات",
+    "description": "حدث خطأ غير متوقع. تم إرسال التقرير تلقائيًا.",
+    "error": "خطأ",
+    "errorDetails": "تفاصيل الخطأ (وضع التطوير)",
+    "reloadPage": "إعادة تحميل الصفحة",
+    "stack": "مكدس",
+    "title": "حدث شيء ما خطأ",
+    "tryAgain": "حاول مجددًا"
+  },
+  "errors": {
+    "somethingWentWrong": "حدث شيء ما خطأ",
+    "schemaValidationFailed": "تم اكتشاف مشكلة في مزامنة البيانات. يرجى تحديث الصفحة أو الاتصال بالدعم إذا استمرت المشكلة."
+  },
+  "export": {
+    "label": "تصدير",
+    "success": "تم التصدير بنجاح"
+  },
   "exportCSV": "تصدير كملف CSV",
   "exportJSON": "تصدير كـ JSON",
   "fieldGenerator": {
@@ -69,16 +214,48 @@
   "fields": {
     "vault": "تكوين القبو"
   },
+  "fileBrowser": {
+    "connecting": "جاري الاتصال...",
+    "created": "تم إنشاء المجلد: {{name}}",
+    "createNewFolder": "إنشاء مجلد جديد",
+    "deleteConfirmMessage": "هل تريد بالتأكيد حذف \"{{name}}\"؟",
+    "deleteFileConfirm": "حذف الملف؟",
+    "deleteFolderConfirm": "حذف المجلد؟",
+    "deleteFolderWarning": "سيؤدي هذا إلى حذف جميع المحتويات.",
+    "downloaded": "تم التحميل: {{name}}",
+    "error": "خطأ",
+    "establishingConnection": "إنشاء اتصال SFTP إلى {{host}}...",
+    "fileBrowser": "متصفح الملفات",
+    "folder": "مجلد",
+    "folderName": "اسم المجلد",
+    "items": "{{count}} عنصر",
+    "modified": "تم التعديل",
+    "name": "الاسم",
+    "newName": "الاسم الجديد",
+    "originalFile": "الملف الأصلي",
+    "permissions": "الأذونات",
+    "renamedSuccessfully": "تمت إعادة التسمية بنجاح",
+    "root": "جذر",
+    "size": "الحجم",
+    "uploaded": "تم التحميل: {{name}}"
+  },
   "general": {
     "cancel": "يلغي",
     "defaultsApplied": "تم تطبيق القيم الافتراضية",
     "important": "مهم",
     "loading": "تحميل...",
+    "no": "لا",
+    "path": "المسار",
+    "refreshing": "جاري التحديث...",
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}",
+    "team": "فريق",
     "unknown": "مجهول",
     "vaultVersion": "نسخة قبو",
-    "versionFormat": "الإصدار {{version}}"
+    "versionFormat": "الإصدار {{version}}",
+    "warning": "تحذير",
+    "yes": "نعم"
   },
+  "important": "مهم",
   "language": {
     "ar": "عربي",
     "de": "الألمانية",
@@ -86,12 +263,14 @@
     "es": "الأسبانية",
     "fr": "فرنسي",
     "ja": "اليابانية",
+    "label": "اللغة",
     "select": "اختر اللغة",
+    "switch": "تبديل اللغة",
     "tr": "تركي",
     "zh": "الصينية"
   },
-  "last30Days": "آخر 30 يومًا",
   "last7Days": "آخر 7 أيام",
+  "last30Days": "آخر 30 يومًا",
   "lastMonth": "الشهر الماضي",
   "messages": {
     "error": "خطأ",
@@ -101,31 +280,31 @@
     "success": "نجاح"
   },
   "navigation": {
-    "architecture": "بنيان",
     "audit": "مراجعة",
-    "credentials": "أوراق اعتماد",
-    "dashboard": "لوحة القيادة",
     "ceph": "التخزين الموزع",
     "cephClusters": "مجموعات",
     "cephMachines": "آلات",
     "cephPools": "حمامات سباحة",
+    "collapseSidebar": "طي الشريط الجانبي",
+    "credentials": "أوراق اعتماد",
+    "dashboard": "لوحة القيادة",
+    "expandSidebar": "توسيع الشريط الجانبي",
     "logout": "تسجيل الخروج",
     "machines": "آلات",
     "mainNavigation": "الملاحة الرئيسية",
-    "marketplace": "السوق",
     "organization": "منظمة",
     "organizationAccess": "وصول",
     "organizationTeams": "فرق",
     "organizationUsers": "المستخدمين",
     "queue": "طابور",
     "settings": "إعدادات",
-    "settingsCompany": "شركة",
     "settingsInfrastructure": "بنية تحتية",
+    "settingsOrganization": "شركة",
     "settingsProfile": "حساب تعريفي",
     "storage": "تخزين",
     "storageCloud": "سحاب",
     "storageDistributed": "وزعت",
-    "system": "نظام"
+    "userMenu": "فتح قائمة المستخدم"
   },
   "nestedObjectEditor": {
     "Active": "نشيط",
@@ -166,7 +345,23 @@
       "warning": "تحذير"
     }
   },
+  "powerMode": {
+    "advancedDisabled": "الخيارات المتقدمة معطلة",
+    "advancedEnabled": "الخيارات المتقدمة مفعلة",
+    "localhostAllDisabled": "وضع Localhost - جميع الميزات معطلة",
+    "localhostAllEnabled": "وضع Localhost - جميع الميزات مفعلة"
+  },
   "refresh": "ينعش",
+  "remote": "بعيد",
+  "resourceList": {
+    "createNew": "إنشاء جديد",
+    "getStartedMessage": "ابدأ بإنشاء {{resource}} الأول",
+    "noDataAvailable": "لا توجد بيانات متاحة",
+    "noResourcesFound": "لم يتم العثور على {{resources}}. حاول تعديل معايير البحث.",
+    "searchPlaceholder": "بحث...",
+    "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"
+  },
+  "save": "حفظ",
   "status": {
     "initializing": "جارٍ التهيئة...",
     "label": "حالة",
@@ -177,16 +372,37 @@
   "statusColumn": "الحالة",
   "table": {
     "actions": "الإجراءات",
+    "moreItems": "+{{count}} عنصر آخر",
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"
+  },
+  "teamSelector": {
+    "moreTeams": "+{{count}} فريق آخر",
+    "selectTeams": "اختر الفرق..."
+  },
+  "theme": {
+    "dark": "مظلم",
+    "label": "المظهر",
+    "light": "فاتح"
   },
   "thisMonth": "هذا الشهر",
   "today": "اليوم",
+  "tokenGenerationFailed": "فشل إنشاء الرمز: {{error}}",
+  "tooltips": {
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "expandPanel": "توسيع اللوحة",
+    "refresh": "تحديث",
+    "taskCancellable": "يمكن إلغاء هذه المهمة",
+    "trace": "تتبع"
+  },
   "total": "المجموع",
   "uiMode": {
     "expert": "خبير",
+    "label": "وضع الواجهة",
     "simple": "بسيط",
     "switching": "التبديل إلى الوضع {{mode}}..."
   },
+  "unknown": "غير معروف",
   "utilized": "مستعمل",
   "vaultEditor": {
     "advanced": "متقدم",
@@ -260,37 +476,6 @@
           "label": "عقد OSD"
         }
       },
-      "COMPANY": {
-        "DOCKER_JSON_CONF": {
-          "description": "تكوين مصادقة تسجيل Docker",
-          "label": "تكوين عامل الميناء"
-        },
-        "LOG_FILE": {
-          "description": "المسار إلى ملف سجل النظام",
-          "label": "مسار ملف السجل"
-        },
-        "PLUGINS": {
-          "description": "تكوينات البرنامج المساعد مع صور الحاوية وحالة التنشيط",
-          "label": "الإضافات"
-        },
-        "SSH_PRIVATE_KEY": {
-          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات الشركة",
-          "label": "مفتاح SSH الخاص"
-        },
-        "SSH_PUBLIC_KEY": {
-          "description": "مفتاح SSH العام لعمليات الشركة",
-          "label": "مفتاح SSH العام"
-        },
-        "UNIVERSAL_USER_ID": {
-          "description": "معرف المستخدم العالمي لعمليات النظام",
-          "label": "معرف المستخدم العالمي"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "description": "اسم المستخدم العالمي لعمليات النظام",
-          "label": "اسم المستخدم العالمي"
-        },
-        "description": "تكوين الشركة للإعدادات على مستوى المؤسسة"
-      },
       "IMAGE": {
         "data_pool": {
           "description": "تجمع منفصل لتخزين بيانات الصورة",
@@ -324,7 +509,7 @@
           "label": "مسار مخزن البيانات"
         },
         "description": "تكوين الجهاز للوصول إلى SSH وتخزينه",
-        "host_entry": {
+        "known_hosts": {
           "description": "إدخال مضيف معروف لـ SSH للتحقق من الأمان",
           "label": "دخول المضيف"
         },
@@ -347,6 +532,37 @@
         "user": {
           "description": "اسم مستخدم SSH للاتصال",
           "label": "اسم المستخدم"
+        }
+      },
+      "ORGANIZATION": {
+        "description": "تكوين الشركة للإعدادات على مستوى المؤسسة",
+        "DOCKER_JSON_CONF": {
+          "description": "تكوين مصادقة تسجيل Docker",
+          "label": "تكوين عامل الميناء"
+        },
+        "LOG_FILE": {
+          "description": "المسار إلى ملف سجل النظام",
+          "label": "مسار ملف السجل"
+        },
+        "PLUGINS": {
+          "description": "تكوينات البرنامج المساعد مع صور الحاوية وحالة التنشيط",
+          "label": "الإضافات"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات الشركة",
+          "label": "مفتاح SSH الخاص"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "مفتاح SSH العام لعمليات الشركة",
+          "label": "مفتاح SSH العام"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "معرف المستخدم العالمي لعمليات النظام",
+          "label": "معرف المستخدم العالمي"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "اسم المستخدم العالمي لعمليات النظام",
+          "label": "اسم المستخدم العالمي"
         }
       },
       "POOL": {
@@ -382,6 +598,10 @@
           "label": "رمز المنطقة"
         },
         "description": "تكوين المنطقة للتوزيع الجغرافي",
+        "location": {
+          "description": "تفاصيل الموقع للمنطقة",
+          "label": "الموقع"
+        },
         "name": {
           "description": "اسم المنطقة الجغرافية",
           "label": "اسم المنطقة"
@@ -449,6 +669,11 @@
         }
       },
       "TEAM": {
+        "description": "تكوين الفريق للهيكل التنظيمي",
+        "name": {
+          "description": "اسم الفريق",
+          "label": "اسم الفريق"
+        },
         "SSH_PRIVATE_KEY": {
           "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات الفريق",
           "label": "مفتاح SSH الخاص"
@@ -457,17 +682,13 @@
           "description": "مفتاح SSH العام لعمليات الفريق",
           "label": "مفتاح SSH العام"
         },
-        "description": "تكوين الفريق للهيكل التنظيمي",
-        "name": {
-          "description": "اسم الفريق",
-          "label": "اسم الفريق"
-        },
         "teamDescription": {
           "description": "وصف غرض الفريق ومسؤولياته",
           "label": "وصف الفريق"
         }
       },
       "USER": {
+        "description": "تكوين المستخدم للإعدادات الشخصية",
         "SSH_PRIVATE_KEY": {
           "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات المستخدم",
           "label": "مفتاح SSH الخاص"
@@ -475,8 +696,7 @@
         "SSH_PUBLIC_KEY": {
           "description": "مفتاح SSH العام لعمليات المستخدم",
           "label": "مفتاح SSH العام"
-        },
-        "description": "تكوين المستخدم للإعدادات الشخصية"
+        }
       }
     },
     "fields.CLONE.description": "تكوين إعدادات استنساخ RBD",
@@ -487,8 +707,8 @@
     "fieldsMovedFromExtra": "تمت استعادة {{count}} الحقول من الحقول الإضافية: {{fields}}",
     "fieldsMovedToExtra": "تم نقل {{count}} الحقل (الحقول) إلى الحقول الإضافية: {{fields}}",
     "formatJson": "تنسيق جيسون",
-    "hostEntryHelp": "خياري. سيتم اكتشاف إدخال مضيف SSH المعروف تلقائيًا.",
-    "hostEntryPlaceholder": "يتم ملؤها تلقائيًا أثناء اختبار الاتصال",
+    "knownHostsHelp": "خياري. سيتم اكتشاف إدخال مضيف SSH المعروف تلقائيًا.",
+    "knownHostsPlaceholder": "يتم ملؤها تلقائيًا أثناء اختبار الاتصال",
     "importJson": "استيراد جسون",
     "invalidFormat": "التنسيق غير صالح. {{description}}",
     "invalidJsonFormat": "تنسيق JSON غير صالح",

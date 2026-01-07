@@ -32,6 +32,8 @@ export const VaultEditorRequiredFields: React.FC<VaultEditorRequiredFieldsProps>
     <>
       {fieldOrder.map((fieldName) => {
         const field = fields[fieldName];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!field) return null;
 
         const isRequired = !(
           isEditMode &&

@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handleForkFunction } from '../handleForkFunction';
-import type { FunctionExecutionContext, FunctionData } from '../../hooks/useFunctionExecution';
+import type { FunctionExecutionContext } from '../../hooks/useFunctionExecution';
+import type { ForkFunctionData } from '../types';
 
 describe('handleForkFunction', () => {
   let mockContext: FunctionExecutionContext;
-  let mockFunctionData: FunctionData;
+  let mockFunctionData: ForkFunctionData;
 
   beforeEach(() => {
     mockContext = {
@@ -30,7 +31,10 @@ describe('handleForkFunction', () => {
       },
       teamMachines: [],
       teamStorages: [],
-      executeAction: vi.fn().mockResolvedValue({ success: true, taskId: 'task-123' }),
+      executeTyped: vi.fn().mockResolvedValue({ success: true, taskId: 'task-123' }),
+      executeDynamic: vi
+        .fn()
+        .mockResolvedValue({ success: true, taskId: 'task-123' }) as ReturnType<typeof vi.fn>,
       createRepositoryCredential: vi.fn().mockResolvedValue({
         repositoryGuid: 'new-repo-123',
         repositoryName: 'test-repo',
@@ -42,8 +46,12 @@ describe('handleForkFunction', () => {
     } as unknown as FunctionExecutionContext;
 
     mockFunctionData = {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      function: { name: 'fork' } as any,
+      function: {
+        name: 'fork' as const,
+        description: 'Fork repository',
+        category: 'repository',
+        params: {},
+      },
       params: { tag: 'fork-tag' },
       priority: 4,
       description: 'Fork repository',
@@ -54,7 +62,7 @@ describe('handleForkFunction', () => {
     await handleForkFunction(mockFunctionData, mockContext);
 
     expect(mockContext.createRepositoryCredential).toHaveBeenCalledWith('test-repo', 'fork-tag');
-    expect(mockContext.executeAction).toHaveBeenCalled();
+    expect(mockContext.executeDynamic).toHaveBeenCalled();
     expect(mockContext.closeModal).toHaveBeenCalled();
     expect(mockContext.onQueueItemCreated).toHaveBeenCalledWith('task-123', 'test-machine');
   });
@@ -84,7 +92,7 @@ describe('handleForkFunction', () => {
     await handleForkFunction(mockFunctionData, mockContext);
 
     expect(mockContext.closeModal).toHaveBeenCalled();
-    expect(mockContext.executeAction).not.toHaveBeenCalled();
+    expect(mockContext.executeDynamic).not.toHaveBeenCalled();
   });
 
   it('should handle repository not found', async () => {

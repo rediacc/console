@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { typedApi } from '@/api/client';
 import { extractFirstByIndex } from '@rediacc/shared/api';
-import type { CompanyDropdownData } from '@rediacc/shared/types';
+import type { OrganizationDropdownData } from '@rediacc/shared/types';
 
-const EMPTY_DROPDOWN_DATA: CompanyDropdownData = {
+const EMPTY_DROPDOWN_DATA: OrganizationDropdownData = {
   teams: [],
   allTeams: [],
   regions: [],
@@ -21,7 +21,7 @@ const EMPTY_DROPDOWN_DATA: CompanyDropdownData = {
  * Safely merges parsed dropdown data with defaults, ensuring arrays are never null.
  * This prevents runtime errors like "users.filter is not a function" when API returns null.
  */
-function mergeDropdownData(parsed: Partial<CompanyDropdownData>): CompanyDropdownData {
+function mergeDropdownData(parsed: Partial<OrganizationDropdownData>): OrganizationDropdownData {
   return {
     teams: Array.isArray(parsed.teams) ? parsed.teams : [],
     allTeams: Array.isArray(parsed.allTeams) ? parsed.allTeams : [],
@@ -47,7 +47,7 @@ export const useDropdownData = (context?: string) => {
         extractFirstByIndex<{ dropdownValues?: string | null }>(response as never, 0);
       if (row?.dropdownValues) {
         try {
-          const parsed = JSON.parse(row.dropdownValues) as Partial<CompanyDropdownData>;
+          const parsed = JSON.parse(row.dropdownValues) as Partial<OrganizationDropdownData>;
           return mergeDropdownData(parsed);
         } catch {
           return EMPTY_DROPDOWN_DATA;

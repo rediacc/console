@@ -20,7 +20,7 @@ export function MobileCard({ children, onClick, className, actions }: MobileCard
   return (
     <Card size="small" className={combinedClassName} onClick={onClick}>
       <Flex justify="space-between" align="flex-start">
-        <Flex vertical gap={4} className="flex-1 min-w-0">
+        <Flex vertical className="gap-sm flex-1 min-w-0">
           {children}
         </Flex>
         {actions}

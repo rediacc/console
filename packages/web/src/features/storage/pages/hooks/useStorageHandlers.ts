@@ -1,19 +1,20 @@
 import { useCallback } from 'react';
 import type {
-  GetTeamStorages_ResultSet1,
   useCreateStorage,
   useDeleteStorage,
   useUpdateStorageName,
   useUpdateStorageVault,
-} from '@/api/queries/storage';
-import type { QueueActionParams } from '@/services/queue';
+} from '@/api/api-hooks.generated';
+import type { DynamicQueueActionParams, QueueActionResult } from '@/services/queue';
 import type { Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
-import type { CompanyDropdownData } from '@rediacc/shared/types';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
+import type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
+import type { OrganizationDropdownData } from '@rediacc/shared/types';
 import type { StorageFunctionData } from '../types';
 import type { HookAPI } from 'antd/es/modal/useModal';
-import type { TFunction } from 'i18next';
 
 interface Team {
   teamName: string;
@@ -21,7 +22,7 @@ interface Team {
 }
 
 interface UseStorageHandlersParams {
-  t: TFunction;
+  t: TypedTFunction;
   modal: HookAPI;
   execute: <T>(
     fn: () => Promise<T>,
@@ -35,13 +36,14 @@ interface UseStorageHandlersParams {
   closeUnifiedModal: () => void;
   unifiedModalMode: 'create' | 'edit' | 'view' | 'vault';
   currentResource: (GetTeamStorages_ResultSet1 & Record<string, unknown>) | null;
-  dropdownData: CompanyDropdownData | undefined;
+  dropdownData: OrganizationDropdownData | undefined;
   machines: Machine[];
   storages: GetTeamStorages_ResultSet1[];
   teams: Team[];
-  executeAction: (
-    params: QueueActionParams
-  ) => Promise<{ success: boolean; taskId?: string; isQueued?: boolean; error?: string }>;
+  executeDynamic: (
+    functionName: BridgeFunctionName,
+    params: Omit<DynamicQueueActionParams, 'functionName'>
+  ) => Promise<QueueActionResult>;
   openQueueTrace: (taskId: string, machineName: string) => void;
 }
 
@@ -61,7 +63,7 @@ export const useStorageHandlers = ({
   machines,
   storages,
   teams,
-  executeAction,
+  executeDynamic,
   openQueueTrace,
 }: UseStorageHandlersParams) => {
   const handleDeleteStorage = useCallback(
@@ -70,7 +72,7 @@ export const useStorageHandlers = ({
         modal,
         t,
         resourceType: 'storage',
-        resourceName: storage.storageName,
+        resourceName: storage.storageName ?? '',
         translationNamespace: 'storage',
         onConfirm: () =>
           deleteStorageMutation.mutateAsync({
@@ -99,7 +101,7 @@ export const useStorageHandlers = ({
             await createStorageMutation.mutateAsync({
               storageName: storageData.storageName,
               teamName: storageData.teamName,
-              vaultContent: storageData.vaultContent,
+              vaultContent: storageData.vaultContent ?? '{}',
             });
           } else if (currentResource) {
             const currentName = currentResource.storageName;
@@ -119,7 +121,7 @@ export const useStorageHandlers = ({
                 teamName: currentResource.teamName,
                 storageName: newName ?? currentName,
                 vaultContent: vaultData,
-                vaultVersion: currentResource.vaultVersion + 1,
+                vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
               });
             }
           }
@@ -188,24 +190,23 @@ export const useStorageHandlers = ({
           machine.teamName === currentResource.teamName
       );
 
-      const queuePayload: QueueActionParams = {
-        teamName: currentResource.teamName,
+      const queuePayload: Omit<DynamicQueueActionParams, 'functionName'> = {
+        params: functionData.params,
+        teamName: currentResource.teamName ?? '',
         machineName: machineEntry.value,
         bridgeName: machineEntry.bridgeName ?? '',
-        functionName: functionData.function.name,
-        params: functionData.params,
         priority: functionData.priority,
         description: functionData.description,
         addedVia: 'storage-table',
         teamVault:
           teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent ?? '{}',
-        storageName: currentResource.storageName,
+        storageName: currentResource.storageName ?? '',
         storageVault: currentResource.vaultContent ?? '{}',
         machineVault: selectedMachine?.vaultContent ?? '{}',
       };
 
       // Handle pull function source vaults
-      if (functionData.function.name === 'pull') {
+      if (functionData.function.name === 'backup_pull') {
         const sourceType = functionData.params.sourceType;
         const sourceIdentifier = functionData.params.from;
 
@@ -228,7 +229,10 @@ export const useStorageHandlers = ({
         }
       }
 
-      const result = await executeAction(queuePayload);
+      const result = await executeDynamic(
+        functionData.function.name as BridgeFunctionName,
+        queuePayload
+      );
       closeUnifiedModal();
 
       if (result.success) {
@@ -249,7 +253,7 @@ export const useStorageHandlers = ({
       closeUnifiedModal,
       currentResource,
       dropdownData,
-      executeAction,
+      executeDynamic,
       machines,
       openQueueTrace,
       storages,

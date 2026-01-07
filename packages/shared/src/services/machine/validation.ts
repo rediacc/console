@@ -254,7 +254,8 @@ export class MachineValidationService {
     // Convert invalidMachines to Record<string, ValidationError[]> format
     const errorsByMachine: Record<string, ValidationError[]> = {};
     invalidMachines.forEach((invalid) => {
-      errorsByMachine[invalid.machineName] = invalid.errors;
+      const name = invalid.machineName ?? 'Unknown';
+      errorsByMachine[name] = invalid.errors;
     });
 
     // Convert warnings to Record<string, ValidationWarning[]> format
@@ -262,7 +263,8 @@ export class MachineValidationService {
     machines.forEach((machine) => {
       const result = this.validateExclusivityRule(machine, targetType);
       if (result.warnings.length > 0) {
-        warningsByMachine[machine.machineName] = result.warnings;
+        const name = machine.machineName ?? 'Unknown';
+        warningsByMachine[name] = result.warnings;
       }
     });
 

@@ -1,9 +1,9 @@
 import { Alert, Flex, Input, Typography } from 'antd';
 import { preparePromotion } from '@/platform';
 import { showMessage } from '@/utils/messages';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { getAxiosErrorMessage } from '../utils';
 import type { Repository } from '../types';
-import type { TFunction } from 'i18next';
 
 interface UseRepositoryActionsProps {
   teamName: string;
@@ -48,7 +48,7 @@ interface UseRepositoryActionsProps {
     }) => Promise<any>;
   };
   onActionComplete?: () => void;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export function useRepositoryActions({
@@ -66,11 +66,12 @@ export function useRepositoryActions({
     const context = preparePromotion(repository.name, repository.repositoryTag, teamRepositories);
 
     if (context.status === 'error') {
-      const errorKey =
+      showMessage(
+        'error',
         context.errorCode === 'NOT_FOUND'
-          ? 'resources:repositories.RepoNotFound'
-          : 'resources:repositories.alreadyOriginalRepo';
-      showMessage('error', t(errorKey));
+          ? t('resources:repositories.notFound')
+          : t('resources:repositories.alreadyOriginalRepository')
+      );
       return;
     }
 
@@ -100,7 +101,7 @@ export function useRepositoryActions({
               </ul>
             </>
           )}
-          <Alert message={t('resources:repositories.promoteWarning')} type="warning" showIcon />
+          <Alert message={t('resources:repositories.promoteWarning')} type="warning" />
         </Flex>
       ),
       okText: t('resources:repositories.promoteButton'),
@@ -147,6 +148,7 @@ export function useRepositoryActions({
               e.preventDefault();
             }}
             autoFocus
+            data-testid="repository-rename-input"
           />
         </Flex>
       ),
@@ -226,6 +228,7 @@ export function useRepositoryActions({
               e.preventDefault();
             }}
             autoFocus
+            data-testid="repository-rename-tag-input"
           />
         </Flex>
       ),

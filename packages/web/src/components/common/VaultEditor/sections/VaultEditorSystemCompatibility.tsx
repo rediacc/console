@@ -9,6 +9,16 @@ import {
 import type { VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 
+type KernelCompatibilityData = {
+  compatibility_status?: string;
+  os_info?: { pretty_name?: string };
+  kernel_version?: string;
+  btrfs_available?: boolean;
+  sudo_available?: string;
+  compatibility_issues?: string[];
+  recommendations?: string[];
+};
+
 interface VaultEditorSystemCompatibilityProps {
   form: FormInstance<VaultFormValues>;
   osSetupCompleted: boolean | null;
@@ -20,7 +30,9 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
   osSetupCompleted,
   t,
 }) => {
-  const kernelCompatibility = form.getFieldValue('kernel_compatibility');
+  const kernelCompatibility = form.getFieldValue('kernel_compatibility') as
+    | KernelCompatibilityData
+    | undefined;
 
   if (!kernelCompatibility) {
     return null;
@@ -54,7 +66,7 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
     },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] ?? statusConfig.unknown;
 
   const sudoStatus = kernelCompatibility.sudo_available ?? 'unknown';
   const sudoConfig: Record<string, { color: string; text: string }> = {
@@ -72,7 +84,10 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
     },
   };
 
-  const sudoConfigValue = sudoConfig[sudoStatus];
+  const sudoConfigValue = sudoConfig[sudoStatus] ?? {
+    color: 'default',
+    text: t('vaultEditor.systemCompatibility.unknown'),
+  };
 
   return (
     <Col xs={24} lg={12}>
@@ -82,7 +97,7 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
         }
         colon={false}
       >
-        <Flex vertical gap={8} className="w-full">
+        <Flex vertical className="w-full gap-sm">
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label={t('vaultEditor.systemCompatibility.operatingSystem')}>
               {osInfo.pretty_name ?? t('vaultEditor.systemCompatibility.unknown')}
@@ -157,7 +172,6 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
                   )}
               </>
             }
-            showIcon
           />
         </Flex>
       </Form.Item>

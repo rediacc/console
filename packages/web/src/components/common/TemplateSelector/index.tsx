@@ -26,7 +26,7 @@ interface TemplateSelectorProps {
   multiple?: boolean;
 }
 
-const GRID_GUTTER: [number, number] = [16, 16];
+const GRID_GUTTER: [number, number] = [16, 16] as const;
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   value,
@@ -134,8 +134,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   return (
     <Flex vertical className="w-full">
       <Flex vertical>
-        <Flex vertical gap={16} className="w-full">
-          <Flex align="center" justify="space-between" wrap gap={12}>
+        <Flex vertical className="w-full">
+          <Flex align="center" justify="space-between" wrap className="gap-sm">
             <Typography.Text>
               {multiple
                 ? t('resources:templates.selectMultiple')
@@ -214,26 +214,20 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 onClick={handleClick}
               >
                 {isSelected && (
-                  <Typography.Text
-                    className="absolute"
-                    // eslint-disable-next-line no-restricted-syntax
-                    style={{ top: 12, right: 12 }}
-                  >
+                  <Typography.Text className="absolute top-3 right-3">
                     <CheckCircleOutlined />
                   </Typography.Text>
                 )}
 
-                <Flex vertical gap={8} className="w-full">
+                <Flex vertical className="gap-sm w-full">
                   <Flex className="text-center">
                     <TemplateIconComponent />
                   </Flex>
 
                   <Typography.Text strong>{getTemplateTitle(template.name)}</Typography.Text>
 
-                  <Typography.Text className="block">
-                    <Typography.Paragraph ellipsis={{ rows: 2 }}>
-                      {getTemplateDescription(template.readme)}
-                    </Typography.Paragraph>
+                  <Typography.Text type="secondary">
+                    {getTemplateDescription(template.readme)}
                   </Typography.Text>
 
                   <Button
@@ -262,16 +256,12 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               onClick={() => onChange?.(null)}
             >
               {!value && (
-                <Typography.Text
-                  className="absolute"
-                  // eslint-disable-next-line no-restricted-syntax
-                  style={{ top: 12, right: 12 }}
-                >
+                <Typography.Text className="absolute top-3 right-3">
                   <CheckCircleOutlined />
                 </Typography.Text>
               )}
 
-              <Flex vertical gap={8} className="w-full">
+              <Flex vertical className="gap-sm w-full">
                 <Flex className="text-center">
                   <AppstoreOutlined />
                 </Flex>

@@ -1,7 +1,8 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Col, Divider, Flex, Form, Row, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import VaultEditor from '@/components/common/VaultEditor';
+import { FORM_LAYOUTS } from '@/config/formLayouts';
 import { useMessage } from '@/hooks';
 import { DefaultsBanner } from './components/DefaultsBanner';
 import { FieldRenderer } from './components/FieldRenderer';
@@ -20,8 +21,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       fields,
       onSubmit,
       entityType,
-      vaultFieldName,
-      layout = 'vertical',
       showDefaultsAlert = false,
       defaultsContent,
       hideImportExport = false,
@@ -41,18 +40,16 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const { t } = useTranslation('common');
     const message = useMessage();
     const { token } = theme.useToken();
-    const rowGutter: [number, number] = [token.marginSM, token.marginSM];
-    const [vaultData, setVaultData] = useState<Record<string, unknown>>(initialVaultData);
+    const rowGutter = useMemo(
+      (): [number, number] => [token.marginSM, token.marginSM],
+      [token.marginSM]
+    );
+    const vaultDataRef = useRef<Record<string, unknown>>(initialVaultData);
     const [isVaultValid, setIsVaultValid] = useState(false);
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false);
     const importExportHandlers = useRef<ImportExportHandlers | null>(null);
 
-    // Update vault field value when vault data changes
-    useEffect(() => {
-      form.setFieldValue(vaultFieldName, JSON.stringify(vaultData));
-    }, [vaultData, form, vaultFieldName]);
-
-    const handleFormSubmit = async () => {
+    const handleFormSubmit = useCallback(async () => {
       // Only skip vault validation in edit mode, not in create mode (including credentials-only)
       const shouldSkipVaultValidation = entityType === 'REPOSITORY' && isEditMode;
 
@@ -67,49 +64,55 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         const formData = await form.validateFields();
         const dataWithVault = {
           ...formData,
-          [vaultFieldName]: JSON.stringify(vaultData),
+          vaultContent: JSON.stringify(vaultDataRef.current),
         };
         await onSubmit(dataWithVault);
       } catch {
         // Validation errors will be shown on form fields automatically
       }
-    };
+    }, [entityType, form, isEditMode, isVaultValid, message, onSubmit]);
 
-    const handleVaultChange = (data: Record<string, unknown>) => {
-      setVaultData(data);
-    };
+    const handleVaultChange = useCallback((data: Record<string, unknown>) => {
+      vaultDataRef.current = data;
+    }, []);
 
-    const handleVaultValidate = (valid: boolean) => {
+    const handleVaultValidate = useCallback((valid: boolean) => {
       setIsVaultValid(valid);
-    };
+    }, []);
 
-    const handleImport = (file: UploadFile) => {
+    const handleImport = useCallback((file: UploadFile) => {
       if (importExportHandlers.current) {
         return importExportHandlers.current.handleImport(file);
       }
       return false;
-    };
+    }, []);
 
-    const handleExport = () => {
+    const handleExport = useCallback(() => {
       importExportHandlers.current?.handleExport();
-    };
+    }, []);
 
-    useImperativeHandle(ref, () => ({
-      submit: handleFormSubmit,
-    }));
+    const handleImportExport = useCallback(
+      (handlers: ImportExportHandlers) => {
+        importExportHandlers.current = handlers;
+        onImportExportRef?.(handlers);
+      },
+      [onImportExportRef]
+    );
 
-    const formLayout = layout === 'vertical' ? 'horizontal' : layout;
-    const labelCol = { span: 6 };
-    const wrapperCol = { span: 18 };
+    useImperativeHandle(
+      ref,
+      () => ({
+        submit: handleFormSubmit,
+      }),
+      [handleFormSubmit]
+    );
 
     return (
       <Flex vertical>
         <Form
           form={form}
           data-testid="resource-modal-form"
-          layout={formLayout}
-          labelCol={labelCol}
-          wrapperCol={wrapperCol}
+          {...FORM_LAYOUTS.horizontal}
           labelAlign="right"
           colon
           className="flex-shrink-0"
@@ -138,8 +141,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
         {beforeVaultContent}
 
-        {/* eslint-disable-next-line no-restricted-syntax */}
-        <Divider style={{ margin: '16px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
+        <Divider className="my-4">{t('vaultEditor.vaultConfiguration')}</Divider>
 
         <Flex data-testid="resource-modal-vault-editor-section">
           <VaultEditor
@@ -154,10 +156,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             isModalOpen={isModalOpen}
             isEditMode={isEditMode}
             uiMode={uiMode}
-            onImportExport={(handlers) => {
-              importExportHandlers.current = handlers;
-              onImportExportRef?.(handlers);
-            }}
+            onImportExport={handleImportExport}
           />
         </Flex>
 

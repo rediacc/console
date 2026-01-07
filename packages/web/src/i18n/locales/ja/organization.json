@@ -7,27 +7,27 @@
       "deleteGroupFailed": "権限グループの削除に失敗しました",
       "removePermissionFailed": "グループから権限を削除できませんでした"
     },
-    "heading": "Access Control",
+    "heading": "アクセス制御",
     "modals": {
-      "addPermissionButton": "Add Permission",
-      "addPermissionsTab": "Add Permissions",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "createGroupTitle": "Create Permission Group",
-      "currentPermissionsTab": "Current Permissions",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?",
-      "deleteGroupTitle": "Delete Permission Group",
-      "groupNameRequired": "Please enter a group name",
-      "groupPlaceholder": "Enter group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "userPlaceholder": "Select user"
+      "addPermissionButton": "権限を追加",
+      "addPermissionsTab": "権限を追加",
+      "assignUserTitle": "ユーザーを割り当て",
+      "assignUserTo": "{{group}}へ",
+      "createGroupTitle": "権限グループを作成",
+      "currentPermissionsTab": "現在の権限",
+      "deleteGroupDescription": "グループ「{{group}}」を削除してもよろしいですか？",
+      "deleteGroupTitle": "権限グループを削除",
+      "groupNameRequired": "グループ名を入力してください",
+      "groupPlaceholder": "グループ名を入力してください",
+      "managePermissionsTitle": "権限を管理",
+      "noPermissions": "権限が割り当てられていません",
+      "permissionPlaceholder": "追加する権限を選択してください",
+      "userPlaceholder": "ユーザーを選択"
     },
     "permissions": {
-      "searchPlaceholder": "Search permission groups...",
-      "subtitle": "Manage permission groups and their assignments",
-      "title": "Permission Groups"
+      "searchPlaceholder": "権限グループを検索...",
+      "subtitle": "権限グループとその割り当てを管理する",
+      "title": "権限グループ"
     },
     "success": {
       "groupCreated": "権限グループ「{{group}}」が正常に作成されました",
@@ -37,28 +37,28 @@
       "userAssigned": "権限グループ「{{group}}」に割り当てられたユーザー"
     },
     "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "permissions": "権限",
+      "sessions": "セッション"
     }
   },
   "teams": {
-    "heading": "Teams",
+    "heading": "チーム",
     "manageMembers": {
-      "accessStatus": "Has Access",
-      "addTab": "Add Member",
-      "currentTab": "Current Members",
-      "empty": "No members in this team",
-      "memberStatus": "Member",
-      "pendingStatus": "Pending",
-      "removeButton": "Remove",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeTitle": "Remove Team Member",
-      "selectUser": "Select user",
-      "title": "Manage Team Members"
+      "accessStatus": "アクセス可能",
+      "addTab": "メンバーを追加",
+      "currentTab": "現在のメンバー",
+      "empty": "このチームにはメンバーがいません",
+      "memberStatus": "メンバー",
+      "pendingStatus": "保留中",
+      "removeButton": "削除",
+      "removeDescription": "「{{email}}」をこのチームから削除してもよろしいですか？",
+      "removeTitle": "チームメンバーを削除",
+      "selectUser": "ユーザーを選択",
+      "title": "チームメンバーを管理"
     },
-    "searchPlaceholder": "Search teams...",
-    "subtitle": "Manage teams and their members",
-    "title": "Teams"
+    "searchPlaceholder": "チームを検索...",
+    "subtitle": "チームとそのメンバーを管理する",
+    "title": "チーム"
   },
   "users": {
     "errors": {
@@ -74,31 +74,31 @@
       "userVaultUpdateFailed": "ユーザーボルトの更新に失敗しました"
     },
     "form": {
-      "emailLabel": "Email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password"
+      "emailLabel": "メール",
+      "passwordLabel": "パスワード",
+      "passwordPlaceholder": "パスワードを入力してください"
     },
-    "heading": "Users",
+    "heading": "ユーザー",
     "lastActive": {
-      "never": "Never"
+      "never": "なし"
     },
     "modals": {
-      "assignTitle": "Assign Permissions",
-      "createTitle": "Create User",
-      "permissionGroupLabel": "Permission Group",
-      "permissionGroupPlaceholder": "Select permission group",
-      "permissionsLabel": "permissions",
-      "usersLabel": "users"
+      "assignTitle": "権限を割り当て",
+      "createTitle": "ユーザーを作成",
+      "permissionGroupLabel": "権限グループ",
+      "permissionGroupPlaceholder": "権限グループを選択",
+      "permissionsLabel": "権限",
+      "usersLabel": "ユーザー"
     },
     "permissionGroups": {
-      "none": "No Group"
+      "none": "グループなし"
     },
-    "searchPlaceholder": "Search users...",
+    "searchPlaceholder": "ユーザーを検索...",
     "status": {
-      "active": "Active",
-      "inactive": "Inactive"
+      "active": "アクティブ",
+      "inactive": "非アクティブ"
     },
-    "subtitle": "Manage users and their permissions",
+    "subtitle": "ユーザーとその権限を管理する",
     "success": {
       "activated": "ユーザー「{{email}}」が有効になりました",
       "created": "ユーザー「{{email}}」が正常に作成されました",
@@ -111,6 +111,6 @@
       "sessionTerminated": "セッションは正常に終了しました",
       "userVaultUpdated": "ユーザーボルトが正常に更新されました"
     },
-    "title": "Users"
+    "title": "ユーザー"
   }
 }

@@ -95,7 +95,7 @@ describe('machine commands', () => {
     });
   });
 
-  // CRUD operations - safe to run with fresh company registration
+  // CRUD operations - safe to run with fresh organization registration
   describe('machine CRUD operations', () => {
     const testMachineName = `test-machine-${Date.now()}`;
     const testBridgeName = `test-bridge-machine-${Date.now()}`;

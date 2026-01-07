@@ -1,5 +1,5 @@
 import { Alert, Flex, Input, Typography } from 'antd';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface Clone {
   repositoryGuid: string;
@@ -9,7 +9,7 @@ interface Clone {
 interface BlockedDeletionContentProps {
   repositoryName: string;
   childClones: Clone[];
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const BlockedDeletionContent = ({
@@ -39,7 +39,7 @@ export const BlockedDeletionContent = ({
 
 interface ConfirmDeletionContentProps {
   repositoryName: string;
-  t: TFunction;
+  t: TypedTFunction;
   onInputChange: (value: string) => void;
 }
 
@@ -55,7 +55,6 @@ export const ConfirmDeletionContent = ({
         name: repositoryName,
       })}
       type="warning"
-      showIcon
     />
     <Typography.Text strong>
       {t('resources:repositories.deleteGrandConfirmPrompt', { name: repositoryName })}
@@ -65,6 +64,7 @@ export const ConfirmDeletionContent = ({
       placeholder={repositoryName}
       className="w-full"
       onChange={(e) => onInputChange(e.target.value)}
+      data-testid="repository-delete-confirm-input"
     />
   </Flex>
 );

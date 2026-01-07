@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Button, Card, Empty, Flex, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useCephClusters, useCephPools, type CephCluster, type CephPool } from '@/api/queries/ceph';
+import { useGetCephClusters, useGetCephPools } from '@/api/api-hooks.generated';
 import {
   useCreateCephCluster,
   useCreateCephPool,
@@ -9,8 +9,8 @@ import {
   useDeleteCephPool,
   useUpdateCephClusterVault,
   useUpdateCephPoolVault,
-} from '@/api/queries/cephMutations';
-import { useCompanyInfo } from '@/api/queries/dashboard';
+} from '@/api/api-hooks.generated';
+import { useGetUserOrganization } from '@/api/api-hooks.generated';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
@@ -21,8 +21,10 @@ import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
 import type {
-  ClusterFormValues as BaseClusterFormValues,
-  PoolFormValues as BasePoolFormValues,
+  CreateCephClusterParams,
+  CreateCephPoolParams,
+  GetCephClusters_ResultSet1 as CephCluster,
+  GetCephPools_ResultSet1 as CephPool,
 } from '@rediacc/shared/types';
 import { CephMachinesTab } from '../components/CephMachinesTab';
 import { ClusterTable } from '../components/ClusterTable';
@@ -38,9 +40,14 @@ type ModalData =
   | (Partial<CephCluster> & Record<string, unknown>)
   | (Partial<CephPool> & Record<string, unknown>);
 
-// Extend shared types with vault version for edit operations and required vaultContent
-type ClusterFormValues = BaseClusterFormValues & { vaultVersion?: number; vaultContent: string };
-type PoolFormValues = BasePoolFormValues & { vaultVersion?: number; vaultContent: string };
+// Form values with required vaultContent for form validation
+// Note: vaultContent and vaultVersion are already optional in generated types
+interface ClusterFormValues extends CreateCephClusterParams {
+  vaultContent: string; // Required for form
+}
+interface PoolFormValues extends CreateCephPoolParams {
+  vaultContent: string; // Required for form
+}
 
 type ModalFormValues = ClusterFormValues | PoolFormValues;
 
@@ -57,7 +64,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
 
   const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
   const queueTrace = useQueueTraceModal();
-  const { data: companyData } = useCompanyInfo();
+  const { data: organizationData } = useGetUserOrganization();
   const [modalState, setModalState] = useState<{
     open: boolean;
     type: 'cluster' | 'pool';
@@ -65,8 +72,9 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     data?: ModalData;
   }>({ open: false, type: 'cluster', mode: 'create' });
 
-  const planCode = companyData?.activeSubscription?.planCode;
-  const hasCephAccess = planCode === 'ENTERPRISE' || planCode === 'BUSINESS';
+  // TODO: Replace hardcoded value with actual subscription from API when available
+  const planCode = 'ENTERPRISE' as string;
+  const hasCephAccess = ['ENTERPRISE', 'BUSINESS'].includes(planCode);
   const hasSelectedTeam = selectedTeams.length > 0;
   const teamFilter = hasSelectedTeam ? selectedTeams : undefined;
   const primaryTeam = hasSelectedTeam ? selectedTeams[0] : undefined;
@@ -79,15 +87,13 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     data: clusters = [],
     isLoading: clustersLoading,
     refetch: refetchClusters,
-  } = useCephClusters(teamFilter, hasCephAccess && !!companyData);
-
-  const shouldLoadPools = hasCephAccess && !!companyData && hasSelectedTeam && isPoolsView;
+  } = useGetCephClusters();
 
   const {
     data: pools = [],
     isLoading: poolsLoading,
     refetch: refetchPools,
-  } = useCephPools(teamFilter, shouldLoadPools);
+  } = useGetCephPools(teamFilter?.[0]);
 
   const createClusterMutation = useCreateCephCluster();
   const createPoolMutation = useCreateCephPool();
@@ -99,15 +105,23 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   useManagedQueueItem();
   useQueueVaultBuilder();
 
-  if (!companyData) {
+  if (!organizationData) {
     return (
       <Flex>
         <Card>
-          <Alert message="Loading company data..." type="info" showIcon />
+          <Alert message={t('common:general.loading')} type="info" />
         </Card>
       </Flex>
     );
   }
+
+  const isSubmitting = [createClusterMutation.isPending, createPoolMutation.isPending].some(
+    Boolean
+  );
+  const isUpdatingVault = [
+    updateClusterVaultMutation.isPending,
+    updatePoolVaultMutation.isPending,
+  ].some(Boolean);
 
   const openModal = (
     type: 'cluster' | 'pool',
@@ -134,7 +148,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   const handleModalSubmit = async (data: Record<string, unknown>) => {
     try {
       const { type, mode } = modalState;
-      const formValues = data as ModalFormValues;
+      const formValues = data as unknown as ModalFormValues;
 
       if (mode === 'create') {
         if (type === 'cluster' && !isPoolFormValues(formValues)) {
@@ -205,17 +219,16 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
                 {t('accessDenied.description')}
                 <br />
                 <br />
-                <strong>Debug Info:</strong>
+                <strong>{t('accessDenied.debugInfo')}:</strong>
                 <br />
-                Current Plan: {planCode ?? 'No plan detected'}
+                {t('accessDenied.currentPlan')}: {planCode}
                 <br />
-                Has Access: {String(hasCephAccess)}
+                {t('accessDenied.hasAccess')}: {String(hasCephAccess)}
                 <br />
-                Company Data: {JSON.stringify(companyData, null, 2)}
+                {t('accessDenied.organizationData')}: {JSON.stringify(organizationData, null, 2)}
               </>
             }
             type="warning"
-            showIcon
             icon={<SettingOutlined />}
           />
         </Card>
@@ -349,8 +362,12 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             existingData={{
               ...modalState.data,
               teamName: primaryTeam,
-              clusters,
-              pools,
+              clusters: clusters.map((c) => ({ ...c, clusterName: c.clusterName ?? '' })),
+              pools: pools.map((p) => ({
+                ...p,
+                poolName: p.poolName ?? '',
+                clusterName: p.clusterName ?? '',
+              })),
               vaultContent: (modalState.data?.vaultContent ??
                 modalState.data?.[`${modalState.type}Vault`] ??
                 undefined) as string | undefined,
@@ -375,10 +392,8 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
                 });
               }
             }}
-            isSubmitting={createClusterMutation.isPending || createPoolMutation.isPending}
-            isUpdatingVault={
-              updateClusterVaultMutation.isPending || updatePoolVaultMutation.isPending
-            }
+            isSubmitting={isSubmitting}
+            isUpdatingVault={isUpdatingVault}
             functionCategories={modalState.data?.isFunction ? [modalState.type] : []}
             hiddenParams={
               modalState.data?.isFunction

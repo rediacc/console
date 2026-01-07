@@ -54,7 +54,7 @@ export const GroupedMachineCard: React.FC<GroupedMachineCardProps> = ({
     <Card
       key={groupKey}
       title={
-        <Flex align="center" gap={8} wrap>
+        <Flex align="center" wrap>
           {iconMap[groupBy]}
           <Typography.Text strong>{groupKey}</Typography.Text>
           <Tag bordered={false}>

@@ -2,8 +2,8 @@ import React from 'react';
 import { Button, Checkbox, Flex, Space, Upload } from 'antd';
 import type { ImportExportHandlers } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { ResourceType } from '../types';
-import type { TFunction } from 'i18next';
 
 interface ModalFooterProps {
   mode: 'create' | 'edit' | 'vault';
@@ -21,7 +21,7 @@ interface ModalFooterProps {
   onFunctionOpen: () => void;
   onSubmit: () => void;
   importExportHandlers: React.RefObject<ImportExportHandlers | null>;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const ModalFooter: React.FC<ModalFooterProps> = ({
@@ -43,8 +43,8 @@ export const ModalFooter: React.FC<ModalFooterProps> = ({
   t,
 }) => {
   return (
-    <Flex align="center" justify="space-between" gap={16} key="footer-container">
-      <Flex align="center" gap={8}>
+    <Flex align="center" justify="space-between" className="gap-md" key="footer-container">
+      <Flex align="center">
         {mode === 'create' && uiMode === 'expert' && (
           <Space>
             <Upload
@@ -76,7 +76,7 @@ export const ModalFooter: React.FC<ModalFooterProps> = ({
           </Space>
         )}
       </Flex>
-      <Flex align="center" gap={8}>
+      <Flex align="center">
         {mode === 'create' && resourceType === 'machine' && (
           <Checkbox
             data-testid="resource-modal-auto-setup-checkbox"

@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import type { QueueFunction } from '@/api/queries/queue';
+import type { QueueFunction } from '@rediacc/shared/types';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;

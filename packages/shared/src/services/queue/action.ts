@@ -4,16 +4,19 @@
  */
 
 import type { QueueRequestContext } from '../../queue-vault';
+import type {
+  BridgeFunctionName,
+  FunctionParamsMap,
+} from '../../queue-vault/data/functions.generated';
 
 /**
- * Parameters for queue action execution
+ * Base parameters for queue action execution (without function-specific fields).
+ * This is the foundation for both TypedQueueActionParams and DynamicQueueActionParams.
  */
-export interface QueueActionParams {
+export interface QueueActionBaseParams {
   teamName: string;
   machineName: string;
   bridgeName: string;
-  functionName: string;
-  params: Record<string, unknown>;
   priority: number;
   description?: string;
   addedVia: string;
@@ -32,6 +35,69 @@ export interface QueueActionParams {
   destinationStorageVault?: string;
   destinationVaultContent?: string;
   teamVault?: string;
+  /** User's preferred language for task output (en, de, es, fr, ja, ar, ru, tr, zh) */
+  language?: string;
+}
+
+/**
+ * Type-safe queue action params with compile-time parameter validation.
+ * Use this for type-safe function calls where params are validated against
+ * the function's expected parameter interface.
+ *
+ * @example
+ * const params: TypedQueueActionParams<'backup_create'> = {
+ *   functionName: 'backup_create',
+ *   params: { dest: 'backup.tar', storages: ['s3'] }, // Type-checked!
+ *   teamName: 'Production',
+ *   machineName: 'server-01',
+ *   // ... other required fields
+ * };
+ */
+export type TypedQueueActionParams<F extends BridgeFunctionName> = QueueActionBaseParams & {
+  functionName: F;
+  params: FunctionParamsMap[F];
+};
+
+/**
+ * Union of all typed queue action params.
+ * Useful for exhaustive matching and type guards.
+ */
+export type AnyTypedQueueActionParams = {
+  [F in BridgeFunctionName]: TypedQueueActionParams<F>;
+}[BridgeFunctionName];
+
+/**
+ * Dynamic queue action params with validated function name but untyped params.
+ * Use when function name is determined at runtime but comes from a trusted source.
+ *
+ * @example
+ * const params: DynamicQueueActionParams = {
+ *   functionName: functionData.function.name as BridgeFunctionName,
+ *   params: functionData.params,
+ *   teamName: 'Production',
+ *   // ... other required fields
+ * };
+ */
+export type DynamicQueueActionParams = QueueActionBaseParams & {
+  functionName: BridgeFunctionName;
+  params: Record<string, unknown>;
+};
+
+/**
+ * Type guard to check if params are for a specific function.
+ * Narrows the type to TypedQueueActionParams<F> when true.
+ *
+ * @example
+ * if (isTypedQueueAction(params, 'backup_create')) {
+ *   // params.params is now BackupCreateParams
+ *   console.log(params.params.storages);
+ * }
+ */
+export function isTypedQueueAction<F extends BridgeFunctionName>(
+  params: DynamicQueueActionParams | TypedQueueActionParams<BridgeFunctionName>,
+  functionName: F
+): params is TypedQueueActionParams<F> {
+  return params.functionName === functionName;
 }
 
 /**
@@ -70,11 +136,11 @@ export class QueueActionService {
 
   /**
    * Execute a queue action
-   * @param params - Action parameters
+   * @param params - Action parameters (typed or dynamic)
    * @param teamVault - Team vault content
    * @returns Result of the action execution
    */
-  async execute(params: QueueActionParams, teamVault: string): Promise<QueueActionResult> {
+  async execute(params: DynamicQueueActionParams, teamVault: string): Promise<QueueActionResult> {
     const queueVault = await this.deps.buildQueueVault({
       teamName: params.teamName,
       machineName: params.machineName,
@@ -98,6 +164,7 @@ export class QueueActionService {
       destinationMachineVault: params.destinationMachineVault,
       destinationStorageVault: params.destinationStorageVault,
       destinationRepositoryVault: params.destinationVaultContent,
+      language: params.language,
     });
 
     const response = await this.deps.createQueueItem({

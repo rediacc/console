@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "failed": "Failed",
+    "pending": "Pending",
+    "processing": "Processing",
+    "running": "Running",
+    "success": "Success",
+    "unknown": "Unknown",
+    "inProgress": "In Progress",
+    "initializing": "Initializing..."
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit",
+    "copy": "Copy",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "close": "Close",
+    "download": "Download",
+    "upload": "Upload",
+    "remove": "Remove",
+    "confirm": "Confirm",
+    "reset": "Reset",
+    "back": "Back",
+    "search": "Search",
+    "export": "Export"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "loading": "Loading...",
+    "error": "Error",
+    "warning": "Warning",
+    "success": "Success",
+    "unknown": "Unknown",
+    "total": "Total",
+    "none": "None"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email",
+    "invalidFormat": "Invalid format"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month"
+  },
+  "confirm": {
+    "areYouSure": "Are you sure?",
+    "confirmDelete": "Are you sure you want to delete this?"
+  },
+  "notifications": {
+    "error": "Error",
+    "warning": "Warning",
+    "success": "Success",
+    "info": "Information"
+  }
+}

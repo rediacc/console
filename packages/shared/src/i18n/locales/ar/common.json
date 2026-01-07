@@ -1,0 +1,67 @@
+{
+  "status": {
+    "cancelled": "ملغى",
+    "completed": "مكتمل",
+    "failed": "فشل",
+    "pending": "قيد الانتظار",
+    "processing": "جاري المعالجة",
+    "running": "قيد التشغيل",
+    "success": "نجاح",
+    "unknown": "غير معروف",
+    "inProgress": "قيد التقدم",
+    "initializing": "جاري التهيئة..."
+  },
+  "actions": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "create": "إنشاء",
+    "edit": "تحرير",
+    "copy": "نسخ",
+    "retry": "إعادة المحاولة",
+    "refresh": "تحديث",
+    "close": "إغلاق",
+    "download": "تحميل",
+    "upload": "رفع",
+    "remove": "إزالة",
+    "confirm": "تأكيد",
+    "reset": "إعادة تعيين",
+    "back": "رجوع",
+    "search": "بحث",
+    "export": "تصدير"
+  },
+  "common": {
+    "yes": "نعم",
+    "no": "لا",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "warning": "تحذير",
+    "success": "نجاح",
+    "unknown": "غير معروف",
+    "total": "المجموع",
+    "none": "لا شيء"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalidEmail": "يرجى إدخال بريد إلكتروني صالح",
+    "invalidFormat": "تنسيق غير صالح"
+  },
+  "time": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يوم",
+    "thisMonth": "هذا الشهر",
+    "lastMonth": "الشهر الماضي"
+  },
+  "confirm": {
+    "areYouSure": "هل أنت متأكد؟",
+    "confirmDelete": "هل أنت متأكد أنك تريد حذف هذا؟"
+  },
+  "notifications": {
+    "error": "خطأ",
+    "warning": "تحذير",
+    "success": "نجاح",
+    "info": "معلومات"
+  }
+}

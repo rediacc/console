@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Checkbox, Collapse, Flex, Space, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { SizedModal } from '@/components/common';
+import { SizedModal } from '@/components/common/SizedModal';
 import { useCopyToClipboard, useMessage } from '@/hooks';
 import { InstallOptions, pipInstallationService } from '@/services/pipInstallationService';
 import { ModalSize } from '@/types/modal';
@@ -111,12 +111,11 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   };
 
   const renderQuickInstall = () => (
-    <Flex vertical gap={24} className="w-full">
+    <Flex vertical className="w-full">
       <Alert
         message={t('resources:pipInstall.quickInstallTitle')}
         description={t('resources:pipInstall.quickInstallDesc')}
         type="info"
-        showIcon
         icon={<RocketOutlined />}
         data-testid="pip-install-quick-alert"
       />
@@ -236,11 +235,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   );
 
   const renderTroubleshooting = () => (
-    <Flex vertical gap={24} className="w-full">
+    <Flex vertical className="w-full">
       <Alert
         message={t('resources:pipInstall.commonIssues')}
         type="info"
-        showIcon
         data-testid="pip-install-issues-alert"
       />
 
@@ -324,7 +322,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 rel="noopener noreferrer"
                 data-testid="pip-install-github-link"
               >
-                GitHub Issues
+                {t('resources:pipInstall.githubIssues')}
               </a>
             </Text>
           </Flex>

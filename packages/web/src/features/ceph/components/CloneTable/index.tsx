@@ -13,17 +13,11 @@ import {
 import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  type CephPool,
-  type CephRbdClone,
-  type CephRbdImage,
-  type CephRbdSnapshot,
-  useCephRbdClones,
-} from '@/api/queries/ceph';
-import {
+  useGetCephRbdClones,
   useCreateCephRbdClone,
   useDeleteCephRbdClone,
   useUpdateCephPoolVault,
-} from '@/api/queries/cephMutations';
+} from '@/api/api-hooks.generated';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
@@ -35,19 +29,25 @@ import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import type {
+  GetCephPools_ResultSet1,
+  GetCephRbdClones_ResultSet1,
+  GetCephRbdImages_ResultSet1,
+  GetCephRbdSnapshots_ResultSet1,
+} from '@rediacc/shared/types';
 import { buildCloneColumns } from './columns';
 import { CloneMachineCountBadge } from '../CloneMachineCountBadge';
 import { CloneMachineTable } from '../CloneMachineTable';
 import type { MenuProps } from 'antd';
 
 interface CloneTableProps {
-  snapshot: CephRbdSnapshot;
-  image: CephRbdImage;
-  pool: CephPool;
+  snapshot: GetCephRbdSnapshots_ResultSet1;
+  image: GetCephRbdImages_ResultSet1;
+  pool: GetCephPools_ResultSet1;
   teamFilter: string | string[];
 }
 
-type CloneModalData = CephRbdClone & {
+type CloneModalData = GetCephRbdClones_ResultSet1 & {
   vaultContent?: string;
   vaultVersion?: number;
 };
@@ -57,13 +57,13 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   const message = useMessage();
   const cloneModal = useFormModal<CloneModalData>();
   const queueTrace = useQueueTraceModal();
-  const machineModal = useDialogState<CephRbdClone>();
+  const machineModal = useDialogState<GetCephRbdClones_ResultSet1>();
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
 
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: clones = [], isLoading } = useCephRbdClones(snapshot.snapshotGuid ?? undefined);
+  const { data: clones = [], isLoading } = useGetCephRbdClones(snapshot.snapshotGuid ?? undefined);
   const deleteCloneMutation = useDeleteCephRbdClone();
   const createCloneMutation = useCreateCephRbdClone();
   const updateVaultMutation = useUpdateCephPoolVault();
@@ -73,7 +73,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   }, [cloneModal]);
 
   const handleEdit = useCallback(
-    (clone: CephRbdClone) => {
+    (clone: GetCephRbdClones_ResultSet1) => {
       cloneModal.openEdit({
         ...clone,
         vaultContent: clone.vaultContent ?? '',
@@ -83,13 +83,13 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   );
 
   const handleDelete = useCallback(
-    (clone: CephRbdClone) => {
+    (clone: GetCephRbdClones_ResultSet1) => {
       deleteCloneMutation.mutate({
-        cloneName: clone.cloneName,
-        snapshotName: snapshot.snapshotName,
-        imageName: image.imageName,
-        poolName: pool.poolName,
-        teamName: clone.teamName,
+        cloneName: clone.cloneName ?? '',
+        snapshotName: snapshot.snapshotName ?? '',
+        imageName: image.imageName ?? '',
+        poolName: pool.poolName ?? '',
+        teamName: clone.teamName ?? '',
       });
     },
     [deleteCloneMutation, image.imageName, pool.poolName, snapshot.snapshotName]
@@ -104,25 +104,25 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   );
 
   const handleManageMachines = useCallback(
-    (clone: CephRbdClone) => {
+    (clone: GetCephRbdClones_ResultSet1) => {
       machineModal.open(clone);
     },
     [machineModal]
   );
 
   const handleRunFunction = useCallback(
-    async (functionName: string, clone?: CephRbdClone) => {
+    async (functionName: string, clone?: GetCephRbdClones_ResultSet1) => {
       try {
         const queueVault = await buildQueueVault({
           functionName,
-          teamName: pool.teamName,
-          machineName: pool.clusterName,
+          teamName: pool.teamName ?? '',
+          machineName: pool.clusterName ?? '',
           bridgeName: 'default',
           params: {
-            cluster_name: pool.clusterName,
-            pool_name: pool.poolName,
-            image_name: image.imageName,
-            snapshot_name: snapshot.snapshotName,
+            cluster_name: pool.clusterName ?? '',
+            pool_name: pool.poolName ?? '',
+            image_name: image.imageName ?? '',
+            snapshot_name: snapshot.snapshotName ?? '',
             clone_name: clone?.cloneName ?? '',
           },
           priority: 3,
@@ -130,8 +130,8 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         });
 
         const response = await managedQueueMutation.mutateAsync({
-          teamName: pool.teamName,
-          machineName: pool.clusterName,
+          teamName: pool.teamName ?? '',
+          machineName: pool.clusterName ?? '',
           bridgeName: 'default',
           queueVault,
           priority: 3,
@@ -158,7 +158,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   );
 
   const getCloneMenuItems = useCallback(
-    (clone: CephRbdClone): MenuProps['items'] => [
+    (clone: GetCephRbdClones_ResultSet1): MenuProps['items'] => [
       {
         key: 'edit',
         label: t('clones.edit'),
@@ -217,13 +217,13 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   );
 
   const renderMachineCount = useCallback(
-    (clone: CephRbdClone) => (
+    (clone: GetCephRbdClones_ResultSet1) => (
       <CloneMachineCountBadge
         clone={clone}
-        snapshotName={snapshot.snapshotName}
-        imageName={image.imageName}
-        poolName={pool.poolName}
-        teamName={pool.teamName}
+        snapshotName={snapshot.snapshotName ?? ''}
+        imageName={image.imageName ?? ''}
+        poolName={pool.poolName ?? ''}
+        teamName={pool.teamName ?? ''}
       />
     ),
     [image.imageName, pool.poolName, pool.teamName, snapshot.snapshotName]
@@ -242,12 +242,11 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: CephRbdClone) => {
+    () => (record: GetCephRbdClones_ResultSet1) => {
       const onExpand = () => {
+        const cloneKey = record.cloneName ?? '';
         setExpandedRowKeys((prev) =>
-          prev.includes(record.cloneName)
-            ? prev.filter((k) => k !== record.cloneName)
-            : [...prev, record.cloneName]
+          prev.includes(cloneKey) ? prev.filter((k) => k !== cloneKey) : [...prev, cloneKey]
         );
       };
 
@@ -260,15 +259,17 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
               icon={<CopyOutlined />}
               onClick={onExpand}
               aria-label={t('clones.viewMachines')}
+              data-testid={`clone-view-machines-${record.cloneName}`}
             />
           </Tooltip>
-          <Tooltip title={t('common.remote')}>
+          <Tooltip title={t('common:actions.remote')}>
             <Button
               type="text"
               size="small"
               icon={<CloudUploadOutlined />}
               onClick={() => handleRunFunction('ceph_rbd_info', record)}
-              aria-label={t('common.remote')}
+              aria-label={t('common:actions.remote')}
+              data-testid={`clone-remote-${record.cloneName}`}
             />
           </Tooltip>
           <ResourceActionsDropdown menuItems={getCloneMenuItems(record)} />
@@ -282,7 +283,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
             <Typography.Text strong>{record.cloneName}</Typography.Text>
             {record.vaultContent && <Tag bordered={false}>{t('common.vault')}</Tag>}
           </Space>
-          <Flex gap={8} align="center">
+          <Flex align="center">
             <Typography.Text type="secondary" className="text-xs">
               {t('machines:machines')}:
             </Typography.Text>
@@ -295,7 +296,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   );
 
   const expandedRowRender = useCallback(
-    (record: CephRbdClone) => (
+    (record: GetCephRbdClones_ResultSet1) => (
       <CloneMachineTable
         clone={record}
         snapshot={snapshot}
@@ -307,9 +308,11 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
     [handleManageMachines, image, pool, snapshot]
   );
 
+  const isSubmitting = [createCloneMutation.isPending, updateVaultMutation.isPending].some(Boolean);
+
   return (
     <>
-      <Flex vertical gap={16} data-testid="clone-list-container">
+      <Flex vertical data-testid="clone-list-container">
         <Typography.Title level={5}>{t('clones.title')}</Typography.Title>
         <Flex align="center" wrap>
           <Tooltip title={t('clones.create')}>
@@ -324,7 +327,7 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         </Flex>
 
         <Flex className="overflow-hidden">
-          <ResourceListView<CephRbdClone>
+          <ResourceListView<GetCephRbdClones_ResultSet1>
             columns={columns}
             data={clones}
             rowKey="cloneName"
@@ -342,8 +345,11 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
                 onExpand,
                 record,
               }: {
-                onExpand: (record: CephRbdClone, event: React.MouseEvent<HTMLElement>) => void;
-                record: CephRbdClone;
+                onExpand: (
+                  record: GetCephRbdClones_ResultSet1,
+                  event: React.MouseEvent<HTMLElement>
+                ) => void;
+                record: GetCephRbdClones_ResultSet1;
               }) => (
                 <Button
                   icon={<CopyOutlined />}
@@ -363,38 +369,38 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
         mode={cloneModal.mode}
         existingData={{
           ...(cloneModal.state.data ?? {}),
-          teamName: pool.teamName,
-          poolName: pool.poolName,
-          imageName: image.imageName,
-          snapshotName: snapshot.snapshotName,
-          pools: [pool],
-          images: [image],
-          snapshots: [snapshot],
+          teamName: pool.teamName ?? '',
+          poolName: pool.poolName ?? '',
+          imageName: image.imageName ?? '',
+          snapshotName: snapshot.snapshotName ?? '',
+          pools: [{ poolName: pool.poolName ?? '', clusterName: pool.clusterName ?? '' }],
+          images: [{ imageName: image.imageName ?? '' }],
+          snapshots: [{ snapshotName: snapshot.snapshotName ?? '' }],
           vaultContent: cloneModal.state.data?.vaultContent,
         }}
-        teamFilter={pool.teamName}
+        teamFilter={pool.teamName ?? ''}
         onSubmit={async (formValues) => {
           const data = formValues as { cloneName: string; vaultContent: string };
           if (cloneModal.mode === 'create') {
             await createCloneMutation.mutateAsync({
-              snapshotName: snapshot.snapshotName,
-              imageName: image.imageName,
-              poolName: pool.poolName,
-              teamName: pool.teamName,
+              snapshotName: snapshot.snapshotName ?? '',
+              imageName: image.imageName ?? '',
+              poolName: pool.poolName ?? '',
+              teamName: pool.teamName ?? '',
               cloneName: data.cloneName,
               vaultContent: data.vaultContent,
             });
           } else if (cloneModal.mode === 'edit') {
             await updateVaultMutation.mutateAsync({
-              poolName: pool.poolName,
-              teamName: pool.teamName,
+              poolName: pool.poolName ?? '',
+              teamName: pool.teamName ?? '',
               vaultContent: data.vaultContent,
               vaultVersion: cloneModal.state.data?.vaultVersion ?? 0,
             });
           }
           cloneModal.close();
         }}
-        isSubmitting={createCloneMutation.isPending || updateVaultMutation.isPending}
+        isSubmitting={isSubmitting}
       />
       <QueueItemTraceModal
         open={queueTrace.state.open}
@@ -405,10 +411,10 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
       <AssignMachinesToCloneModal
         open={machineModal.isOpen}
         clone={machineModal.state.data}
-        poolName={pool.poolName}
-        imageName={image.imageName}
-        snapshotName={snapshot.snapshotName}
-        teamName={pool.teamName}
+        poolName={pool.poolName ?? ''}
+        imageName={image.imageName ?? ''}
+        snapshotName={snapshot.snapshotName ?? ''}
+        teamName={pool.teamName ?? ''}
         onCancel={machineModal.close}
         onSuccess={machineModal.close}
       />

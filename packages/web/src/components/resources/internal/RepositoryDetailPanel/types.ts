@@ -1,34 +1,18 @@
 import type { Machine } from '@/types';
+import type {
+  RepositoryInfo,
+  ServiceInfo,
+  SystemInfo,
+} from '@rediacc/shared/queue-vault/data/list-types.generated';
 
-export interface RepositoryVaultData {
-  name: string;
-  size: number;
-  size_human: string;
-  modified: number;
-  modified_human: string;
-  image_path: string;
-  mounted: boolean;
-  mount_path: string;
-  accessible: boolean;
-  disk_space?: {
-    total: string;
-    used: string;
-    available: string;
-    use_percent: string;
-  };
-  has_rediaccfile: boolean;
-  docker_running: boolean;
-  container_count: number;
-  has_services: boolean;
-  service_count: number;
-  total_volumes?: number;
-  internal_volumes?: number;
-  external_volumes?: number;
-  external_volume_names?: string[];
-  volume_status?: 'safe' | 'warning' | 'none';
+// RepositoryVaultData extends generated RepositoryInfo
+// (kept for backward compatibility with existing code)
+export interface RepositoryVaultData extends RepositoryInfo {
+  // All fields now come from RepositoryInfo
 }
 
-export interface ServiceData {
+// ServiceData extends the generated ServiceInfo with optional fields
+export interface ServiceData extends Partial<ServiceInfo> {
   name: string;
   active_state: string;
   memory_human?: string;
@@ -43,6 +27,6 @@ export interface ServiceData {
 export interface RepositoryPanelData {
   machine: Machine;
   repositoryData: RepositoryVaultData;
-  systemData?: Record<string, unknown>;
+  systemData?: SystemInfo;
   services: ServiceData[];
 }

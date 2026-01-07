@@ -27,9 +27,9 @@ interface AuthStatusRow {
 interface AuthLoginRow {
   isAuthorized?: boolean | number | string;
   authenticationStatus?: string;
-  vaultCompany?: string | null;
-  companyName?: string | null;
-  company?: string | null;
+  vaultOrganization?: string | null;
+  organizationName?: string | null;
+  organization?: string | null;
   preferredLanguage?: string | null;
 }
 
@@ -64,9 +64,9 @@ export function parseCreateAuthenticationRequest(response: ApiResponse): AuthLog
     return {
       isAuthorized: false,
       authenticationStatus: 'unknown',
-      vaultCompany: null,
-      companyName: null,
-      company: null,
+      vaultOrganization: null,
+      organizationName: null,
+      organization: null,
       preferredLanguage: null,
     };
   }
@@ -74,9 +74,9 @@ export function parseCreateAuthenticationRequest(response: ApiResponse): AuthLog
   return {
     isAuthorized: toBoolean(row.isAuthorized),
     authenticationStatus: row.authenticationStatus ?? 'unknown',
-    vaultCompany: typeof row.vaultCompany === 'string' ? row.vaultCompany : null,
-    companyName: row.companyName ?? row.company ?? null,
-    company: row.company ?? null,
+    vaultOrganization: typeof row.vaultOrganization === 'string' ? row.vaultOrganization : null,
+    organizationName: row.organizationName ?? row.organization ?? null,
+    organization: row.organization ?? null,
     preferredLanguage: typeof row.preferredLanguage === 'string' ? row.preferredLanguage : null,
   };
 }
@@ -102,7 +102,7 @@ export function parsePrivilegeAuthenticationRequest(
   return {
     isAuthorized: toBoolean(row?.isAuthorized),
     result: row?.result,
-    hasTFAEnabled: row?.hasTFAEnabled,
+    isTFAEnabled: row?.isTFAEnabled,
   };
 }
 

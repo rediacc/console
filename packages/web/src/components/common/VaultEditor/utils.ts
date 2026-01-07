@@ -1,3 +1,4 @@
+import { validateSSHPrivateKey } from '@rediacc/shared/queue-vault';
 import type {
   ExtraFieldsResult,
   FieldDefinition,
@@ -182,7 +183,8 @@ export const buildValidationRules = (
   field: FieldDefinition,
   required: boolean,
   fieldLabel: string,
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: (key: string, options?: Record<string, unknown>) => string,
+  fieldName?: string
 ): Rule[] => {
   const rules: Rule[] = [];
 
@@ -197,6 +199,20 @@ export const buildValidationRules = (
       rules.push(ruleFn(field[key] as never));
     }
   });
+
+  // Add SSH private key format validation
+  if (fieldName === 'SSH_PRIVATE_KEY') {
+    rules.push({
+      validator: (_, value: string | undefined) => {
+        if (!value?.trim()) return Promise.resolve();
+        const result = validateSSHPrivateKey(value);
+        if (!result.valid) {
+          return Promise.reject(new Error(result.error));
+        }
+        return Promise.resolve();
+      },
+    });
+  }
 
   return rules;
 };

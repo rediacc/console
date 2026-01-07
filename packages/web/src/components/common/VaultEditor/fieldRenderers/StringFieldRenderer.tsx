@@ -36,19 +36,19 @@ export const StringFieldRenderer: React.FC<FieldRendererProps> = ({
     );
   }
 
-  // Special case: host_entry field
-  if (fieldName === 'host_entry') {
+  // Special case: known_hosts field
+  if (fieldName === 'known_hosts') {
     return (
       <Form.Item
         name={fieldName}
         label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
         rules={rules}
         initialValue={fieldDef.default}
-        extra={t('vaultEditor.hostEntryHelp')}
+        extra={t('vaultEditor.knownHostsHelp')}
       >
         <Input
           className="w-full"
-          placeholder={t('vaultEditor.hostEntryPlaceholder')}
+          placeholder={t('vaultEditor.knownHostsPlaceholder')}
           data-testid={`vault-editor-field-${fieldName}`}
         />
       </Form.Item>

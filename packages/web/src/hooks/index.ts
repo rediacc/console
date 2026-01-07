@@ -34,3 +34,14 @@ export { useMessage } from './useMessage';
 export type { UseCopyToClipboardOptions, UseCopyToClipboardReturn } from './useCopyToClipboard';
 // Clipboard copy hook with visual feedback
 export { useCopyToClipboard } from './useCopyToClipboard';
+export type { UseTerminalOptions, UseTerminalReturn, TerminalStatus } from './terminal';
+// Terminal hook for SSH sessions in Electron
+export { useTerminal } from './terminal';
+export type {
+  SFTPFile,
+  SFTPConnectionOptions,
+  UseSftpState,
+  UseSftpActions,
+} from './sftp/useSftp';
+// SFTP hook for file browser operations in Electron
+export { useSftp } from './sftp/useSftp';

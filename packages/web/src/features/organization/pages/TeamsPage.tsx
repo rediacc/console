@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Badge,
-  Button,
   Card,
   Flex,
   List,
@@ -11,33 +10,33 @@ import {
   Space,
   Tabs,
   Tag,
-  Tooltip,
   Typography,
   type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  Team,
-  TeamMember,
-  useAddTeamMember,
+  useCreateTeamMembership,
   useCreateTeam,
   useDeleteTeam,
-  useRemoveTeamMember,
-  useTeamMembers,
-  useTeams,
+  useDeleteUserFromTeam,
+  useGetTeamMembers,
+  useGetOrganizationTeams,
   useUpdateTeamName,
   useUpdateTeamVault,
-} from '@/api/queries/teams';
+} from '@/api/api-hooks.generated';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { TooltipButton } from '@/components/common/buttons';
 import { buildTeamColumns } from '@/components/common/columns/builders/teamColumns';
 import {
   buildDeleteMenuItem,
   buildDivider,
   buildEditMenuItem,
+  buildMembersMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
+import { PageHeader } from '@/components/common/PageHeader';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import UnifiedResourceModal, {
@@ -55,6 +54,10 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import type {
+  GetOrganizationTeams_ResultSet1,
+  GetTeamMembers_ResultSet1,
+} from '@rediacc/shared/types';
 
 const TeamsPage: React.FC = () => {
   const { t } = useTranslation('organization');
@@ -62,23 +65,25 @@ const TeamsPage: React.FC = () => {
   const { t: tCommon } = useTranslation('common');
 
   const { data: dropdownData } = useDropdownData();
-  const { data: teams = [], isLoading: teamsLoading } = useTeams();
-  const manageTeamModal = useDialogState<Team>();
+  const { data: teams = [], isLoading: teamsLoading } = useGetOrganizationTeams();
+  const manageTeamModal = useDialogState<GetOrganizationTeams_ResultSet1>();
   const [selectedMemberEmail, setSelectedMemberEmail] = useState('');
   const auditTrace = useTraceModal();
   const unifiedModal = useFormModal<ExistingResourceData>();
 
-  const { data: teamMembers = [], isLoading: membersLoading } = useTeamMembers(
+  const { data: teamMembers = [], isLoading: membersLoading } = useGetTeamMembers(
     manageTeamModal.state.data?.teamName ?? ''
   );
   const createTeamMutation = useCreateTeam();
   const updateTeamNameMutation = useUpdateTeamName();
   const deleteTeamMutation = useDeleteTeam();
   const updateTeamVaultMutation = useUpdateTeamVault();
-  const addTeamMemberMutation = useAddTeamMember();
-  const removeTeamMemberMutation = useRemoveTeamMember();
+  const addTeamMemberMutation = useCreateTeamMembership();
+  const removeTeamMemberMutation = useDeleteUserFromTeam();
 
-  const handleUnifiedModalSubmit = async (data: Partial<Team> & { vaultContent?: string }) => {
+  const handleUnifiedModalSubmit = async (
+    data: Partial<GetOrganizationTeams_ResultSet1> & { vaultContent?: string }
+  ) => {
     try {
       if (unifiedModal.mode === 'create') {
         if (!data.teamName) {
@@ -86,7 +91,7 @@ const TeamsPage: React.FC = () => {
         }
         await createTeamMutation.mutateAsync({
           teamName: data.teamName,
-          vaultContent: data.vaultContent,
+          vaultContent: data.vaultContent ?? '{}',
         });
       } else if (unifiedModal.state.data) {
         const existingData = unifiedModal.state.data;
@@ -168,17 +173,17 @@ const TeamsPage: React.FC = () => {
   };
 
   const columnParams = {
-    tSystem,
-    tCommon,
-    onEdit: (team: Team) => unifiedModal.openEdit(team as ExistingResourceData),
-    onManageMembers: (team: Team) => {
+    t,
+    onEdit: (team: GetOrganizationTeams_ResultSet1) =>
+      unifiedModal.openEdit(team as ExistingResourceData),
+    onManageMembers: (team: GetOrganizationTeams_ResultSet1) => {
       manageTeamModal.open(team);
     },
-    onTrace: (team: Team) =>
+    onTrace: (team: GetOrganizationTeams_ResultSet1) =>
       auditTrace.open({
         entityType: 'Team',
-        entityIdentifier: team.teamName,
-        entityName: team.teamName,
+        entityIdentifier: team.teamName ?? '',
+        entityName: team.teamName ?? undefined,
       }),
     onDelete: handleDeleteTeam,
     isDeleting: deleteTeamMutation.isPending,
@@ -188,24 +193,19 @@ const TeamsPage: React.FC = () => {
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: Team) => {
+    () => (record: GetOrganizationTeams_ResultSet1) => {
       const menuItems: MenuProps['items'] = [
         buildEditMenuItem(tCommon, () => unifiedModal.openEdit(record as ExistingResourceData)),
-        {
-          key: 'members',
-          label: tSystem('actions.members'),
-          icon: <UserOutlined />,
-          onClick: () => manageTeamModal.open(record),
-        },
+        buildMembersMenuItem(tCommon, () => manageTeamModal.open(record)),
         buildTraceMenuItem(tCommon, () =>
           auditTrace.open({
             entityType: 'Team',
-            entityIdentifier: record.teamName,
-            entityName: record.teamName,
+            entityIdentifier: record.teamName ?? '',
+            entityName: record.teamName ?? undefined,
           })
         ),
         buildDivider(),
-        buildDeleteMenuItem(tCommon, () => handleDeleteTeam(record.teamName)),
+        buildDeleteMenuItem(tCommon, () => handleDeleteTeam(record.teamName ?? '')),
       ];
 
       return (
@@ -216,7 +216,7 @@ const TeamsPage: React.FC = () => {
               {record.teamName}
             </Typography.Text>
           </Space>
-          <Flex gap={16} wrap>
+          <Flex className="gap-sm" wrap>
             <Space size="small">
               <Badge count={record.memberCount} showZero size="small">
                 <UserOutlined />
@@ -238,18 +238,13 @@ const TeamsPage: React.FC = () => {
         </MobileCard>
       );
     },
-    [tSystem, tCommon, unifiedModal, manageTeamModal, auditTrace, handleDeleteTeam]
+    [tCommon, unifiedModal, manageTeamModal, auditTrace, handleDeleteTeam]
   );
 
   return (
     <Flex vertical>
-      <ResourceListView<Team>
-        title={
-          <Space direction="vertical" size={0}>
-            <Typography.Text strong>{t('teams.title')}</Typography.Text>
-            <Typography.Text>{t('teams.subtitle')}</Typography.Text>
-          </Space>
-        }
+      <ResourceListView<GetOrganizationTeams_ResultSet1>
+        title={<PageHeader title={t('teams.title')} subtitle={t('teams.subtitle')} />}
         loading={teamsLoading}
         data={teams}
         columns={teamColumns}
@@ -258,15 +253,13 @@ const TeamsPage: React.FC = () => {
         searchPlaceholder={t('teams.searchPlaceholder')}
         data-testid="system-team-table"
         actions={
-          <Tooltip title={tSystem('actions.createTeam')}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => unifiedModal.openCreate()}
-              data-testid="system-create-team-button"
-              aria-label={tSystem('actions.createTeam')}
-            />
-          </Tooltip>
+          <TooltipButton
+            tooltip={tSystem('actions.createTeam')}
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => unifiedModal.openCreate()}
+            data-testid="system-create-team-button"
+          />
         }
       />
 
@@ -280,6 +273,7 @@ const TeamsPage: React.FC = () => {
         footer={null}
         className={ModalSize.Large}
         centered
+        data-testid="teams-manage-members-modal"
       >
         <Tabs
           items={[
@@ -294,7 +288,7 @@ const TeamsPage: React.FC = () => {
                     locale={{
                       emptyText: t('teams.manageMembers.empty'),
                     }}
-                    renderItem={(member: TeamMember) => (
+                    renderItem={(member: GetTeamMembers_ResultSet1) => (
                       <List.Item
                         actions={[
                           <Popconfirm
@@ -303,20 +297,18 @@ const TeamsPage: React.FC = () => {
                             description={t('teams.manageMembers.removeDescription', {
                               email: member.userEmail,
                             })}
-                            onConfirm={() => handleRemoveTeamMember(member.userEmail)}
+                            onConfirm={() => handleRemoveTeamMember(member.userEmail ?? '')}
                             okText={tCommon('general.yes')}
                             cancelText={tCommon('general.no')}
                             okButtonProps={{ danger: true }}
                           >
-                            <Tooltip title={tCommon('actions.remove')}>
-                              <Button
-                                type="text"
-                                danger
-                                loading={removeTeamMemberMutation.isPending}
-                                icon={<DeleteOutlined />}
-                                aria-label={tCommon('actions.remove')}
-                              />
-                            </Tooltip>
+                            <TooltipButton
+                              tooltip={tCommon('actions.remove')}
+                              type="text"
+                              danger
+                              loading={removeTeamMemberMutation.isPending}
+                              icon={<DeleteOutlined />}
+                            />
                           </Popconfirm>,
                         ]}
                       >
@@ -344,8 +336,8 @@ const TeamsPage: React.FC = () => {
               key: 'add',
               label: t('teams.manageMembers.addTab'),
               children: (
-                <Flex vertical gap={16}>
-                  <Flex gap={12} align="center" wrap>
+                <Flex vertical>
+                  <Flex align="center" wrap>
                     <Select
                       showSearch
                       placeholder={t('teams.manageMembers.selectUser')}
@@ -363,21 +355,19 @@ const TeamsPage: React.FC = () => {
                           value: user.value,
                           label: user.label,
                           disabled: teamMembers.some(
-                            (member: TeamMember) =>
+                            (member: GetTeamMembers_ResultSet1) =>
                               member.userEmail === user.value && member.isMember
                           ),
                         }))}
                     />
-                    <Tooltip title={tSystem('actions.addMember')}>
-                      <Button
-                        type="primary"
-                        onClick={handleAddTeamMember}
-                        loading={addTeamMemberMutation.isPending}
-                        disabled={!selectedMemberEmail}
-                        icon={<PlusOutlined />}
-                        aria-label={tSystem('actions.addMember')}
-                      />
-                    </Tooltip>
+                    <TooltipButton
+                      tooltip={tSystem('actions.addMember')}
+                      type="primary"
+                      onClick={handleAddTeamMember}
+                      loading={addTeamMemberMutation.isPending}
+                      disabled={!selectedMemberEmail}
+                      icon={<PlusOutlined />}
+                    />
                   </Flex>
                 </Flex>
               ),
@@ -394,7 +384,9 @@ const TeamsPage: React.FC = () => {
         existingData={unifiedModal.state.data ?? undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModal.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
-        isSubmitting={createTeamMutation.isPending || updateTeamNameMutation.isPending}
+        isSubmitting={[createTeamMutation.isPending, updateTeamNameMutation.isPending].some(
+          Boolean
+        )}
         isUpdatingVault={updateTeamVaultMutation.isPending}
       />
 

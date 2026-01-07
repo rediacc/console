@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import { parseGetTeamRepositories, parseGetCompanyVaults } from '@rediacc/shared/api';
+import { parseGetTeamRepositories, parseGetOrganizationVaults } from '@rediacc/shared/api';
+import { DEFAULT_REPOSITORY_TAG } from '@rediacc/shared/api/typedApi/defaults';
 import {
   canDeleteGrandRepo,
   canPromoteToGrand,
@@ -7,7 +8,8 @@ import {
   isCredential,
   type RepositoryWithRelations,
 } from '@rediacc/shared/services/repository';
-import type { GetCompanyVaults_ResultSet1 } from '@rediacc/shared/types';
+import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
+import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -17,26 +19,28 @@ import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
 export function registerRepositoryCommands(program: Command): void {
-  const repository = program.command('repository').description('Repository management commands');
+  const repository = program
+    .command('repository')
+    .description(t('commands.repository.description'));
 
   // repository list
   repository
     .command('list')
-    .description('List repositories')
-    .option('-t, --team <name>', 'Team name')
+    .description(t('commands.repository.list.description'))
+    .option('-t, --team <name>', t('options.team'))
     .action(async (options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         const apiResponse = await withSpinner(
-          'Fetching repositories...',
+          t('commands.repository.list.fetching'),
           () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
-          'Repositories fetched'
+          t('commands.repository.list.success')
         );
 
         const repositories = parseGetTeamRepositories(apiResponse as never);
@@ -52,18 +56,18 @@ export function registerRepositoryCommands(program: Command): void {
   // repository create
   repository
     .command('create <name>')
-    .description('Create a new repository')
-    .option('-t, --team <name>', 'Team name')
-    .option('--tag <tag>', 'Repository tag', 'main')
-    .option('--parent <name>', 'Parent repository (for forks)')
-    .option('--parent-tag <tag>', 'Parent repository tag')
+    .description(t('commands.repository.create.description'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
+    .option('--parent <name>', t('options.parentRepository'))
+    .option('--parent-tag <tag>', t('options.parentRepositoryTag'))
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         const createParams = {
@@ -71,13 +75,15 @@ export function registerRepositoryCommands(program: Command): void {
           repositoryName: name,
           repositoryTag: options.tag,
           parentRepositoryName: options.parent,
-          parentRepositoryTag: options.parent ? (options.parentTag ?? 'main') : undefined,
+          parentRepositoryTag: options.parent
+            ? (options.parentTag ?? DEFAULT_REPOSITORY_TAG)
+            : undefined,
         };
 
         await withSpinner(
-          `Creating repository "${name}:${options.tag}"...`,
+          t('commands.repository.create.creating', { name, tag: options.tag }),
           () => typedApi.CreateRepository(createParams as never),
-          `Repository "${name}:${options.tag}" created`
+          t('commands.repository.create.success', { name, tag: options.tag })
         );
       } catch (error) {
         handleError(error);
@@ -87,27 +93,27 @@ export function registerRepositoryCommands(program: Command): void {
   // repository rename
   repository
     .command('rename <oldName> <newName>')
-    .description('Rename a repository')
-    .option('-t, --team <name>', 'Team name')
-    .option('--tag <tag>', 'Repository tag', 'main')
+    .description(t('commands.repository.rename.description'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
     .action(async (oldName, newName, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         await withSpinner(
-          `Renaming repository "${oldName}" to "${newName}"...`,
+          t('commands.repository.rename.renaming', { oldName, newName }),
           () =>
             typedApi.UpdateRepositoryName({
               teamName: opts.team as string,
               currentRepositoryName: oldName,
               newRepositoryName: newName,
             }),
-          `Repository renamed to "${newName}"`
+          t('commands.repository.rename.success', { name: newName })
         );
       } catch (error) {
         handleError(error);
@@ -117,24 +123,24 @@ export function registerRepositoryCommands(program: Command): void {
   // repository delete - enhanced with shared orchestration
   repository
     .command('delete <name>')
-    .description('Delete a repository')
-    .option('-t, --team <name>', 'Team name')
-    .option('--tag <tag>', 'Repository tag', 'main')
-    .option('-f, --force', 'Skip confirmation')
+    .description(t('commands.repository.delete.description'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
+    .option('-f, --force', t('options.force'))
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         // Fetch all repositories to validate deletion
         const apiResponse = await withSpinner(
-          'Checking repository relationships...',
+          t('commands.repository.delete.checkingRelationships'),
           () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
-          'Repository relationships checked'
+          t('commands.repository.delete.relationshipsChecked')
         );
 
         const allRepositories = parseGetTeamRepositories(apiResponse as never);
@@ -146,7 +152,7 @@ export function registerRepositoryCommands(program: Command): void {
         );
 
         if (!targetRepository) {
-          throw new ValidationError(`Repository "${name}:${options.tag}" not found`);
+          throw new ValidationError(t('errors.repositoryNotFound', { name, tag: options.tag }));
         }
 
         // Use shared orchestration to validate deletion
@@ -154,7 +160,7 @@ export function registerRepositoryCommands(program: Command): void {
           const validation = canDeleteGrandRepo(targetRepository, allRepositories);
 
           if (!validation.canDelete) {
-            let errorMessage = `Cannot delete grand repository: ${validation.reason}`;
+            let errorMessage = t('errors.cannotDeleteGrandRepo', { reason: validation.reason });
 
             if (validation.childClones.length > 0) {
               const cloneNames = validation.childClones
@@ -163,7 +169,7 @@ export function registerRepositoryCommands(program: Command): void {
                     `${clone.repositoryName}${clone.repositoryTag ? `:${clone.repositoryTag}` : ''}`
                 )
                 .join(', ');
-              errorMessage += `. Affected child clones: ${cloneNames}. Delete or promote child clones first.`;
+              errorMessage += t('errors.affectedChildClones', { clones: cloneNames });
             }
             throw new ValidationError(errorMessage);
           }
@@ -174,29 +180,27 @@ export function registerRepositoryCommands(program: Command): void {
 
           // Show warning for grand repos
           if (isCredential(targetRepository)) {
-            outputService.warn(
-              'This is a grand repository (credential). Deleting it is irreversible.'
-            );
+            outputService.warn(t('commands.repository.delete.grandRepoWarning'));
           }
 
           const confirm = await askConfirm(
-            `Delete repository "${name}:${options.tag}"? This cannot be undone.`
+            t('commands.repository.delete.confirm', { name, tag: options.tag })
           );
           if (!confirm) {
-            outputService.info('Cancelled');
+            outputService.info(t('prompts.cancelled'));
             return;
           }
         }
 
         await withSpinner(
-          `Deleting repository "${name}:${options.tag}"...`,
+          t('commands.repository.delete.deleting', { name, tag: options.tag }),
           () =>
             typedApi.DeleteRepository({
               teamName: opts.team as string,
               repositoryName: name,
               repositoryTag: options.tag,
             }),
-          `Repository "${name}:${options.tag}" deleted`
+          t('commands.repository.delete.success', { name, tag: options.tag })
         );
       } catch (error) {
         handleError(error);
@@ -206,24 +210,24 @@ export function registerRepositoryCommands(program: Command): void {
   // repository promote - enhanced with shared orchestration
   repository
     .command('promote <name>')
-    .description('Promote a fork to grand status')
-    .option('-t, --team <name>', 'Team name')
-    .option('--tag <tag>', 'Repository tag', 'main')
-    .option('-f, --force', 'Skip confirmation')
+    .description(t('commands.repository.promote.description'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
+    .option('-f, --force', t('options.force'))
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         // Fetch all repositories to validate promotion
         const apiResponse = await withSpinner(
-          'Checking repository relationships...',
+          t('commands.repository.promote.checkingRelationships'),
           () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
-          'Repository relationships checked'
+          t('commands.repository.promote.relationshipsChecked')
         );
 
         const allRepositories = parseGetTeamRepositories(apiResponse as never);
@@ -235,14 +239,14 @@ export function registerRepositoryCommands(program: Command): void {
         );
 
         if (!targetRepository) {
-          throw new ValidationError(`Repository "${name}:${options.tag}" not found`);
+          throw new ValidationError(t('errors.repositoryNotFound', { name, tag: options.tag }));
         }
 
         // Use shared orchestration to validate promotion
         const validation = canPromoteToGrand(targetRepository);
 
         if (!validation.canPromote) {
-          throw new ValidationError(`Cannot promote: ${validation.reason}`);
+          throw new ValidationError(t('errors.cannotPromote', { reason: validation.reason }));
         }
 
         // Find and display affected siblings
@@ -253,10 +257,10 @@ export function registerRepositoryCommands(program: Command): void {
 
         if (!options.force && siblingClones.length > 0) {
           outputService.info(
-            `\nThis will separate "${name}" from grand repository "${currentGrandName}"`
+            t('commands.repository.promote.separateInfo', { name, grandName: currentGrandName })
           );
           outputService.info(
-            `\n${siblingClones.length} sibling clone(s) will remain linked to the original grand:`
+            t('commands.repository.promote.siblingsInfo', { count: siblingClones.length })
           );
           siblingClones.forEach((sibling) => {
             outputService.info(
@@ -265,21 +269,21 @@ export function registerRepositoryCommands(program: Command): void {
           });
 
           const { askConfirm } = await import('../utils/prompt.js');
-          const confirm = await askConfirm('\nProceed with promotion?');
+          const confirm = await askConfirm(t('commands.repository.promote.confirmPromote'));
           if (!confirm) {
-            outputService.info('Cancelled');
+            outputService.info(t('prompts.cancelled'));
             return;
           }
         }
 
         await withSpinner(
-          `Promoting repository "${name}:${options.tag}"...`,
+          t('commands.repository.promote.promoting', { name, tag: options.tag }),
           () =>
             typedApi.PromoteRepositoryToGrand({
               teamName: opts.team as string,
               repositoryName: name,
             }),
-          `Repository "${name}:${options.tag}" promoted to grand status`
+          t('commands.repository.promote.success', { name, tag: options.tag })
         );
       } catch (error) {
         handleError(error);
@@ -287,32 +291,32 @@ export function registerRepositoryCommands(program: Command): void {
     });
 
   // repository vault subcommand
-  const vault = repository.command('vault').description('Repository vault management');
+  const vault = repository.command('vault').description(t('commands.repository.vault.description'));
 
   // repository vault get
   vault
     .command('get <repositoryName>')
-    .description('Get repository vault data')
-    .option('-t, --team <name>', 'Team name')
-    .option('--tag <tag>', 'Repository tag', 'main')
+    .description(t('commands.repository.vault.get.description'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
     .action(async (repositoryName, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         const response = await withSpinner(
-          'Fetching repository vault...',
-          () => typedApi.GetCompanyVaults({}),
-          'Vault fetched'
+          t('commands.repository.vault.get.fetching'),
+          () => typedApi.GetOrganizationVaults({}),
+          t('commands.repository.vault.get.success')
         );
 
-        const vaults = parseGetCompanyVaults(
+        const vaults = parseGetOrganizationVaults(
           response as never
-        ) as unknown as (GetCompanyVaults_ResultSet1 & {
+        ) as unknown as (GetOrganizationVaults_ResultSet1 & {
           vaultType?: string;
           teamName?: string;
           repositoryName?: string;
@@ -331,7 +335,7 @@ export function registerRepositoryCommands(program: Command): void {
         if (repositoryVault) {
           outputService.print(repositoryVault, format);
         } else {
-          outputService.info('No repository vault found');
+          outputService.info(t('commands.repository.vault.get.notFound'));
         }
       } catch (error) {
         handleError(error);
@@ -341,22 +345,18 @@ export function registerRepositoryCommands(program: Command): void {
   // repository vault update
   vault
     .command('update <repositoryName>')
-    .description('Update repository vault data')
-    .option('-t, --team <name>', 'Team name')
-    .option('--tag <tag>', 'Repository tag', 'main')
-    .option('--vault <json>', 'Vault data as JSON string')
-    .option(
-      '--vault-version <n>',
-      'Current vault version (required for optimistic concurrency)',
-      parseInt
-    )
+    .description(t('commands.repository.vault.update.description'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
+    .option('--vault <json>', t('options.vaultJson'))
+    .option('--vault-version <n>', t('options.vaultVersion'), parseInt)
     .action(async (repositoryName, options) => {
       try {
         await authService.requireAuth();
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         // Get vault data from --vault flag or stdin
@@ -371,24 +371,22 @@ export function registerRepositoryCommands(program: Command): void {
         }
 
         if (!vaultData) {
-          throw new ValidationError(
-            'Vault data required. Use --vault <json> or pipe JSON via stdin.'
-          );
+          throw new ValidationError(t('errors.vaultDataRequired'));
         }
 
         if (options.vaultVersion === undefined || options.vaultVersion === null) {
-          throw new ValidationError('Vault version required. Use --vault-version <n>.');
+          throw new ValidationError(t('errors.vaultVersionRequired'));
         }
 
         // Validate JSON
         try {
           JSON.parse(vaultData);
         } catch {
-          throw new ValidationError('Invalid JSON vault data.');
+          throw new ValidationError(t('errors.invalidJsonVault'));
         }
 
         await withSpinner(
-          'Updating repository vault...',
+          t('commands.repository.vault.update.updating'),
           () =>
             typedApi.UpdateRepositoryVault({
               teamName: opts.team as string,
@@ -397,7 +395,7 @@ export function registerRepositoryCommands(program: Command): void {
               vaultContent: vaultData,
               vaultVersion: options.vaultVersion,
             }),
-          'Repository vault updated'
+          t('commands.repository.vault.update.success')
         );
       } catch (error) {
         handleError(error);

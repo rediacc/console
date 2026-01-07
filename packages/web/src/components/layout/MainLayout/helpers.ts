@@ -1,5 +1,5 @@
 import { featureFlags } from '@/config/featureFlags';
-import type { CompanyDashboardData } from '@rediacc/shared/types';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 import type { RouteItem } from './routes';
 import type { MenuConfig } from './types';
 
@@ -11,7 +11,7 @@ export type MenuItem = {
   children?: MenuItem[];
 };
 
-type CompanyData = Pick<CompanyDashboardData, 'companyInfo'>;
+type OrganizationData = Pick<OrganizationDashboardData, 'organizationInfo'>;
 
 type FilterContext = {
   uiMode: 'simple' | 'expert';
@@ -50,9 +50,9 @@ const shouldShowMenuItem = (
 const buildMenuItems = (
   items: MenuConfig[],
   uiMode: 'simple' | 'expert',
-  companyData?: CompanyData
+  organizationData?: OrganizationData
 ): MenuItem[] => {
-  const currentPlan = companyData?.companyInfo?.planCode ?? 'FREE';
+  const currentPlan = organizationData?.organizationInfo?.planCode ?? 'FREE';
   const isLocalhost =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -120,9 +120,9 @@ void flattenMenuRoutes;
 export const filterRouteItems = (
   routes: RouteItem[],
   uiMode: 'simple' | 'expert',
-  companyData?: CompanyData
+  organizationData?: OrganizationData
 ): RouteItem[] => {
-  const currentPlan = companyData?.companyInfo?.planCode ?? 'FREE';
+  const currentPlan = organizationData?.organizationInfo?.planCode ?? 'FREE';
   const isLocalhost =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');

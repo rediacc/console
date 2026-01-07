@@ -1,11 +1,11 @@
 import React from 'react';
 import { Alert, Flex } from 'antd';
 import { ClockCircleOutlined, ExclamationCircleOutlined } from '@/utils/optimizedIcons';
-import type { CompanyDashboardData } from '@rediacc/shared/types';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 interface DashboardAlertsWidgetProps {
-  dashboard: CompanyDashboardData;
-  accountHealth?: CompanyDashboardData['accountHealth'];
+  dashboard: OrganizationDashboardData;
+  accountHealth?: OrganizationDashboardData['accountHealth'];
 }
 
 const DashboardAlertsWidget: React.FC<DashboardAlertsWidgetProps> = ({
@@ -20,13 +20,12 @@ const DashboardAlertsWidget: React.FC<DashboardAlertsWidgetProps> = ({
   }
 
   return (
-    <Flex vertical gap={24} className="w-full">
+    <Flex vertical className="w-full">
       {showSubscriptionAlert && dashboard.activeSubscription && (
         <Alert
           message="Subscription Expiring Soon"
           description={`Your ${dashboard.activeSubscription.planCode} subscription expires in ${dashboard.activeSubscription.daysRemaining} days.`}
           type="warning"
-          showIcon
           icon={<ClockCircleOutlined />}
           data-testid="dashboard-alert-subscription-expiring"
         />
@@ -37,7 +36,6 @@ const DashboardAlertsWidget: React.FC<DashboardAlertsWidgetProps> = ({
           message="Resource Limits Reached"
           description={`${accountHealth.resourcesAtLimit} resource type(s) have reached their limits. Consider upgrading your plan to continue scaling.`}
           type="error"
-          showIcon
           icon={<ExclamationCircleOutlined />}
           data-testid="dashboard-alert-resource-limits"
         />

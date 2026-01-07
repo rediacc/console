@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { CompanyDropdownData } from '@rediacc/shared/types';
+import type { OrganizationDropdownData } from '@rediacc/shared/types';
 import type { ExistingResourceData, ResourceFormValues, ResourceType } from '../types';
 import type { FormInstance } from 'antd/es/form';
 
@@ -8,26 +8,23 @@ interface UseResourceDefaultsOptions {
   mode: 'create' | 'edit' | 'vault';
   resourceType: ResourceType;
   form: FormInstance<ResourceFormValues>;
-  dropdownData?: CompanyDropdownData;
+  dropdownData?: OrganizationDropdownData;
   existingData?: ExistingResourceData;
   teamFilter?: string | string[];
   setSelectedTemplate: (template: string | null) => void;
 }
 
-const getSingleTeamFromFilter = (teamFilter: string | string[] | undefined): string | undefined => {
+const getTeamFromFilter = (teamFilter: string | string[] | undefined): string | undefined => {
   if (!teamFilter) {
     return undefined;
   }
 
-  if (Array.isArray(teamFilter) && teamFilter.length === 1) {
+  // Return first team from array, or the string directly
+  if (Array.isArray(teamFilter)) {
     return teamFilter[0];
   }
 
-  if (!Array.isArray(teamFilter)) {
-    return teamFilter;
-  }
-
-  return undefined;
+  return teamFilter;
 };
 
 const setRepositoryDefaults = (
@@ -54,7 +51,7 @@ const setRepositoryDefaults = (
 
 const setMachineDefaults = (
   form: FormInstance<ResourceFormValues>,
-  dropdownData?: CompanyDropdownData
+  dropdownData?: OrganizationDropdownData
 ) => {
   if (!dropdownData?.regions || dropdownData.regions.length === 0) {
     return;
@@ -90,9 +87,9 @@ export const useResourceDefaults = (options: UseResourceDefaultsOptions): void =
       return;
     }
 
-    // Set team if available
-    const singleTeam = getSingleTeamFromFilter(teamFilter);
-    const teamName = existingData?.teamName ?? singleTeam;
+    // Set team if available (pre-select first team from filter in expert mode)
+    const teamFromFilter = getTeamFromFilter(teamFilter);
+    const teamName = existingData?.teamName ?? teamFromFilter;
     if (teamName) {
       form.setFieldValue('teamName', teamName);
     }

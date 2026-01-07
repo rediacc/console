@@ -21,20 +21,30 @@
     "visibleRecords": "Visible Records"
   },
   "bridges": {
+    "access": "Access",
     "bridge": "Bridge",
     "bridgeName": "Bridge Name",
+    "cannotDeleteDefault": "Cannot delete the default bridge",
     "confirmDelete": "Are you sure you want to delete bridge \"{{bridgeName}}\"? This will affect all machines using this bridge.",
     "createBridge": "Create Bridge",
     "deleteBridge": "Delete Bridge",
     "editBridge": "Edit Bridge",
+    "global": "Global",
+    "local": "Local",
+    "management": "Management",
     "noBridges": "No bridges found in this region",
     "placeholders": {
       "enterBridgeName": "Enter bridge name",
       "selectBridge": "Select bridge",
       "selectRegionFirst": "Select a region first"
     },
+    "regular": "Regular",
+    "searchBridges": "Search bridges...",
     "title": "Bridges",
-    "totalBridges": "Total {{total}} bridges"
+    "totalBridges": "Total {{total}} bridges",
+    "type": "Type",
+    "bridgeCount": "{{count}} bridges",
+    "machineCount": "{{count}} machines"
   },
   "containers": {
     "blockIO": "Block I/O",
@@ -71,7 +81,10 @@
     "status": "Status"
   },
   "errors": {
+    "failedToCreateQueueItem": "Failed to create queue item",
+    "failedToGetRepoGuid": "Failed to get repository GUID",
     "failedToGetRepositoryGuid": "Failed to get repository GUID",
+    "functionNotFound": "Function not found",
     "machineNotFound": "Selected machine not found"
   },
   "general": {
@@ -122,6 +135,7 @@
     "apiUrl": "API URL",
     "command": "Command (Optional)",
     "commandHelp": "Leave empty for interactive terminal. Example: docker ps",
+    "commandPlaceholder": "docker ps",
     "confirm": "Confirm",
     "confirmHelp": "Preview changes and ask for confirmation",
     "connectPlugin": "Connect to Plugin",
@@ -171,7 +185,11 @@
     "useNetworkHostHelp": "Required for localhost API access (e.g., http://localhost:7322)",
     "verify": "Verify",
     "verifyHelp": "Use checksums to verify all transfers",
-    "windows": "Windows"
+    "windows": "Windows",
+    "tokenGenerationFailed": "Token generation failed",
+    "copyWithoutTokenWarning": "Copy will attempt without secure token. You may need to login manually.",
+    "tokenGeneratedOnCopy": "Secure token will be generated on copy",
+    "token": "Token"
   },
   "machines": {
     "createMachine": "Add Machine",
@@ -182,6 +200,7 @@
   },
   "messages": {
     "highestPriorityQueued": "Highest priority {{resourceType}} function queued for submission",
+    "pullOperationQueued": "Pull operation queued successfully",
     "repositoryCreationQueued": "Repository creation queued for submission"
   },
   "pipInstall": {
@@ -231,7 +250,8 @@
     "userInstallOnly": "Install for current user only",
     "versionDesc": "Install a specific version or upgrade existing installation",
     "virtualEnvironment": "Virtual Environment",
-    "warning": "Warning"
+    "warning": "Warning",
+    "githubIssues": "GitHub Issues"
   },
   "regions": {
     "bridges": "Bridges",
@@ -271,6 +291,18 @@
     "subtitle": "Manage repository credentials and deployments"
   },
   "repositories": {
+    "Repository": "Repository",
+    "unmounted": "Unmounted",
+    "dockerRunning": "Docker Running",
+    "fork": "Fork",
+    "hasActiveClonesMessage": "This repository '{{name}}' has {{count}} active clones",
+    "clonesList": "Clones List",
+    "cannotDeleteHasClones": "Cannot delete repository with active clones",
+    "newRepoName": "New Repository Name",
+    "fetchingRepos": "Fetching repositories...",
+    "noRepoData": "No repository data available",
+    "repoInfo": "Repository Information",
+    "searchRepositories": "Search repositories...",
     "viewContainers": "View Containers",
     "accessible": "Accessible",
     "activeState": "State",
@@ -367,6 +399,7 @@
     "fetchingRepositories": "Fetching repositories...",
     "filePaths": "File Paths",
     "functionsFor": "Functions for {{name}}",
+    "grand": "Grand",
     "guid": "Repository GUID",
     "guidHelperText": "Optional: Specify a custom GUID for the repository. Leave empty to auto-generate.",
     "guidHelperTextNew": "Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)",
@@ -393,6 +426,7 @@
     "macAddress": "MAC Address",
     "machineSystemInfo": "Machine System Information",
     "memory": "Memory",
+    "mtu": "MTU",
     "model": "Model",
     "mount": "mount",
     "mountPath": "Mount Path",
@@ -447,6 +481,7 @@
     "emptyTagError": "Tag name cannot be empty",
     "tagUnchanged": "Tag name unchanged",
     "tagAlreadyExists": "Tag '{{tag}}' already exists for this repository",
+    "repoCreatedButQueueFailed": "Repository credentials created, but failed to queue physical creation",
     "repositoryCreatedButQueueFailed": "Repository credentials created, but failed to queue physical creation",
     "repositories": "Repositories",
     "repository": "Repository",
@@ -459,6 +494,21 @@
     "resourceUsage": "Resource Usage",
     "restarts": "Restarts",
     "rootDisk": "Root Disk",
+    "cpuLabel": "CPU",
+    "memoryLabel": "Memory",
+    "restartsLabel": "Restarts",
+    "pidLabel": "PID",
+    "uptimeLabel": "Uptime",
+    "dockerVolumes": {
+      "label": "Docker Volumes",
+      "safeVolume": "{{count}} Safe Volume",
+      "safeVolumes": "{{count}} Safe Volumes",
+      "external": "External",
+      "internal": "Internal",
+      "warningTitle": "External Docker Volumes Detected",
+      "warningDescription": "The following volumes are stored outside the repository:",
+      "orphanWarning": "If this repository is cloned, these volumes will be orphaned. Use bind mounts to {{path}} instead."
+    },
     "selectRepository": "Select repository",
     "serviceName": "Service Name",
     "services": "services",
@@ -467,7 +517,6 @@
     "servicesSection": "Services",
     "showDetails": "Show Details",
     "size": "Size",
-    "sizeHelperText": "e.g., 10G, 100G, 1T",
     "state": "State",
     "status": "Status",
     "statusMountedNotRunning": "Mounted (not running)",
@@ -501,6 +550,7 @@
     "heading": "Storage",
     "title": "Storage Locations",
     "subtitle": "Manage remote storage locations and rclone configurations",
+    "searchStorage": "Search storage...",
     "confirmDelete": "Are you sure you want to delete storage \"{{storageName}}\"?",
     "createStorage": "Add Storage",
     "deleteError": "Failed to delete storage",
@@ -520,6 +570,7 @@
       "imported": "Successfully imported",
       "importing": "Importing Storage Configurations...",
       "instructions": "Import Storage Configuration",
+      "instructionsCommand": "rclone config file",
       "instructionsDetail": "To import your existing rclone configurations, first run the following command on your machine to find your rclone config file:",
       "noConfigsFound": "No storage configurations found in the uploaded file",
       "parseError": "Failed to parse the rclone config file",
@@ -600,6 +651,16 @@
     "startEmpty": "Start with an empty repository",
     "templateDetails": "Template Details",
     "useTemplate": "Use Template",
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "security": "Security",
+    "securityReview": "Security Review",
+    "securityReviewDesc": "Please review the template files for security considerations before deployment.",
+    "bestPractices": "Best Practices",
+    "bestPractice1": "Review all configuration files before deployment",
+    "bestPractice2": "Update default passwords and credentials",
+    "bestPractice3": "Ensure proper network security configuration",
+    "bestPractice4": "Keep software components up to date",
+    "containerSecurity": "Container Security",
+    "containerSecurityDesc": "Always review container configurations and ensure they follow security best practices for your deployment environment."
   }
 }

@@ -281,8 +281,9 @@ export class MachineAssignmentService {
 
     // Add conflicted machines to failed list
     conflicts.forEach((conflict) => {
-      if (!failedMachines.includes(conflict.machine.machineName)) {
-        failedMachines.push(conflict.machine.machineName);
+      const name = conflict.machine.machineName;
+      if (name && !failedMachines.includes(name)) {
+        failedMachines.push(name);
       }
     });
 
@@ -360,7 +361,7 @@ export class MachineAssignmentService {
     // Group by team
     const machinesByTeam = new Map<string, MachineWithAssignmentStatus[]>();
     filteredMachines.forEach((machine) => {
-      const team = machine.teamName;
+      const team = machine.teamName ?? 'Unknown';
       if (!machinesByTeam.has(team)) {
         machinesByTeam.set(team, []);
       }

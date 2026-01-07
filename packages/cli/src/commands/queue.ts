@@ -4,18 +4,31 @@ import {
   parseGetQueueItemTrace,
   parseCreateQueueItem,
 } from '@rediacc/shared/api';
+import {
+  isBridgeFunction,
+  safeValidateFunctionParams,
+  getValidationErrors,
+} from '@rediacc/shared/queue-vault';
 import type {
   QueueTrace,
   QueueTraceSummary,
   GetTeamQueueItems_ResultSet1,
 } from '@rediacc/shared/types';
-import { searchInFields, compareValues, extractMostRecentProgress } from '@rediacc/shared/utils';
+import {
+  searchInFields,
+  compareValues,
+  extractMostRecentProgress,
+  unescapeLogOutput,
+  parseLogOutput,
+} from '@rediacc/shared/utils';
+import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { formatLogOutput, getLogHeader } from '../utils/logFormatters.js';
 import {
   formatAge,
   formatBoolean,
@@ -37,6 +50,7 @@ function printTrace(trace: QueueTraceSummary, program: Command): void {
   const format = program.opts().output as OutputFormat;
 
   if (format === 'table') {
+    // Print task summary
     const formattedTrace = {
       taskId: trace.taskId,
       status: formatStatus(trace.status ?? 'UNKNOWN'),
@@ -44,9 +58,16 @@ function printTrace(trace: QueueTraceSummary, program: Command): void {
       priority: trace.priority ? formatPriority(trace.priority) : '-',
       retries: trace.retryCount != null ? formatRetryCount(trace.retryCount) : '-',
       progress: trace.progress ?? '-',
-      consoleOutput: trace.consoleOutput ?? '-',
     };
     outputService.print(formattedTrace, format);
+
+    // Print structured console output if available
+    if (trace.consoleOutput) {
+      outputService.info(''); // Empty line
+      outputService.info(getLogHeader());
+      const parsedLogs = parseLogOutput(trace.consoleOutput);
+      outputService.info(formatLogOutput(parsedLogs));
+    }
   } else {
     outputService.print(trace, format);
   }
@@ -65,9 +86,12 @@ function mapTraceToSummary(trace: QueueTrace): QueueTraceSummary | null {
     healthStatus:
       summary?.healthStatus ?? (details?.healthStatus as QueueTraceSummary['healthStatus']),
     progress: summary?.progress,
-    consoleOutput: summary?.consoleOutput,
-    errorMessage: summary?.errorMessage,
-    lastFailureReason: summary?.lastFailureReason ?? details?.lastFailureReason ?? undefined,
+    consoleOutput: summary?.consoleOutput ? unescapeLogOutput(summary.consoleOutput) : undefined,
+    errorMessage: summary?.errorMessage ? unescapeLogOutput(summary.errorMessage) : undefined,
+    lastFailureReason:
+      (summary?.lastFailureReason ?? details?.lastFailureReason)
+        ? unescapeLogOutput(summary?.lastFailureReason ?? details?.lastFailureReason ?? '')
+        : undefined,
     priority: summary?.priority ?? details?.priority ?? undefined,
     retryCount: summary?.retryCount ?? details?.retryCount ?? undefined,
     ageInMinutes: summary?.ageInMinutes ?? details?.ageInMinutes ?? undefined,
@@ -102,7 +126,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
   const opts = await contextService.applyDefaults(options);
 
   if (!opts.team) {
-    throw new ValidationError('Team name required. Use --team or set context.');
+    throw new ValidationError(t('errors.teamRequired'));
   }
 
   let queueVault: string;
@@ -118,9 +142,25 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
       params[key] = valueParts.join('=');
     }
 
+    // Validate function parameters before building vault (early error detection)
+    if (isBridgeFunction(options.function)) {
+      const validationResult = safeValidateFunctionParams(options.function, params);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          t('errors.invalidFunctionParams', {
+            function: options.function,
+            errors: getValidationErrors(validationResult),
+          })
+        );
+      }
+    }
+
+    // Get language from context for task output localization
+    const language = await contextService.getLanguage();
+
     // Build proper queue vault using the queue service
     queueVault = await withSpinner(
-      'Building queue vault...',
+      t('commands.queue.create.buildingVault'),
       () =>
         queueService.buildQueueVault({
           teamName: opts.team as string,
@@ -129,13 +169,14 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
           functionName: options.function,
           params,
           priority: parseInt(options.priority, 10),
+          language,
         }),
-      'Queue vault built'
+      t('commands.queue.create.vaultBuilt')
     );
   }
 
   const apiResponse = await withSpinner(
-    `Creating queue item for function "${options.function}"...`,
+    t('commands.queue.create.creating', { function: options.function }),
     () =>
       typedApi.CreateQueueItem({
         teamName: opts.team as string,
@@ -144,13 +185,13 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
         vaultContent: queueVault,
         priority: parseInt(options.priority, 10),
       }),
-    'Queue item created'
+    t('commands.queue.create.success')
   );
 
   const response = parseCreateQueueItem(apiResponse as never);
 
   if (response.taskId) {
-    outputService.success(`Task ID: ${response.taskId}`);
+    outputService.success(t('commands.queue.create.taskId', { taskId: response.taskId }));
   }
 
   return { taskId: response.taskId ?? undefined };
@@ -173,7 +214,7 @@ export async function traceAction(
     const interval = parseInt(options.interval, 10);
     let isComplete = false;
 
-    const spinner = startSpinner('Watching queue item...');
+    const spinner = startSpinner(t('commands.queue.trace.watching'));
 
     while (!isComplete) {
       const trace = await fetchTrace();
@@ -181,15 +222,16 @@ export async function traceAction(
 
       if (summary) {
         const statusText = formatStatus(summary.status ?? 'UNKNOWN');
-        const ageText = summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : 'unknown';
+        const ageText =
+          summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : t('common.unknown');
 
         // Extract progress percentage from console output if available
         const percentage = extractMostRecentProgress(summary.consoleOutput ?? '');
         const progressText =
-          percentage !== null ? `${percentage}%` : (summary.progress ?? 'In progress');
+          percentage !== null ? `${percentage}%` : (summary.progress ?? t('common.inProgress'));
 
         if (spinner) {
-          spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`;
+          spinner.text = `${statusText} | ${t('commands.queue.trace.age')}: ${ageText} | ${progressText}`;
         }
 
         const terminalStatuses = ['COMPLETED', 'FAILED', 'CANCELLED'];
@@ -197,10 +239,13 @@ export async function traceAction(
         if (status && terminalStatuses.includes(status)) {
           isComplete = true;
           const success = status === 'COMPLETED';
-          stopSpinner(success, `Final status: ${formatStatus(status)}`);
+          stopSpinner(
+            success,
+            t('commands.queue.trace.finalStatus', { status: formatStatus(status) })
+          );
 
           if (!success && summary.lastFailureReason) {
-            outputService.error('\nError Details:');
+            outputService.error(t('commands.queue.trace.errorDetails'));
             outputService.error(formatError(summary.lastFailureReason, true));
           }
 
@@ -214,14 +259,18 @@ export async function traceAction(
     }
   } else {
     // Single fetch
-    const trace = await withSpinner('Fetching queue trace...', fetchTrace, 'Trace fetched');
+    const trace = await withSpinner(
+      t('commands.queue.trace.fetching'),
+      fetchTrace,
+      t('commands.queue.trace.fetched')
+    );
 
     const summary = mapTraceToSummary(trace);
 
     if (summary) {
       // Show formatted error if task failed
       if (summary.status === 'FAILED' && summary.lastFailureReason) {
-        outputService.error('\nError Details:');
+        outputService.error(t('commands.queue.trace.errorDetails'));
         outputService.error(formatError(summary.lastFailureReason, true));
         outputService.info(''); // Empty line for spacing
       }
@@ -229,7 +278,7 @@ export async function traceAction(
       // Output trace using helper function
       printTrace(summary, program);
     } else {
-      outputService.info('No trace found for this task');
+      outputService.info(t('commands.queue.trace.noTrace'));
     }
   }
 }
@@ -238,9 +287,9 @@ export async function cancelAction(taskId: string): Promise<void> {
   await authService.requireAuth();
 
   await withSpinner(
-    `Cancelling task ${taskId}...`,
+    t('commands.queue.cancel.cancelling', { taskId }),
     () => typedApi.CancelQueueItem({ taskId }),
-    'Task cancelled'
+    t('commands.queue.cancel.success')
   );
 }
 
@@ -248,27 +297,27 @@ export async function retryAction(taskId: string): Promise<void> {
   await authService.requireAuth();
 
   await withSpinner(
-    `Retrying task ${taskId}...`,
+    t('commands.queue.retry.retrying', { taskId }),
     () => typedApi.RetryFailedQueueItem({ taskId }),
-    'Task retry initiated'
+    t('commands.queue.retry.success')
   );
 }
 
 export function registerQueueCommands(program: Command): void {
-  const queue = program.command('queue').description('Queue management commands');
+  const queue = program.command('queue').description(t('commands.queue.description'));
 
   // queue list
   queue
     .command('list')
-    .description('List queue items')
-    .option('-t, --team <name>', 'Team name')
-    .option('--status <status>', 'Filter by status')
-    .option('--priority-min <n>', 'Minimum priority (1-5)')
-    .option('--priority-max <n>', 'Maximum priority (1-5)')
-    .option('--search <text>', 'Search in taskId, team, machine, bridge')
-    .option('--sort <field>', 'Sort by field (taskId, ageInMinutes, priority, status)')
-    .option('--desc', 'Sort in descending order')
-    .option('--limit <n>', 'Limit results', '50')
+    .description(t('commands.queue.list.description'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('--status <status>', t('options.filterStatus'))
+    .option('--priority-min <n>', t('options.priorityMin'))
+    .option('--priority-max <n>', t('options.priorityMax'))
+    .option('--search <text>', t('options.searchQueue'))
+    .option('--sort <field>', t('options.sortField'))
+    .option('--desc', t('options.sortDesc'))
+    .option('--limit <n>', t('options.limit'), '50')
     .action(async (options) => {
       try {
         await authService.requireAuth();
@@ -277,7 +326,7 @@ export function registerQueueCommands(program: Command): void {
         if (options.priorityMin !== undefined) {
           const min = parseInt(options.priorityMin, 10);
           if (isNaN(min) || min < 1 || min > 5) {
-            throw new ValidationError('Minimum priority must be between 1 and 5');
+            throw new ValidationError(t('errors.invalidPriorityMin'));
           }
         }
 
@@ -285,24 +334,24 @@ export function registerQueueCommands(program: Command): void {
         if (options.priorityMax !== undefined) {
           const max = parseInt(options.priorityMax, 10);
           if (isNaN(max) || max < 1 || max > 5) {
-            throw new ValidationError('Maximum priority must be between 1 and 5');
+            throw new ValidationError(t('errors.invalidPriorityMax'));
           }
         }
 
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
-          throw new ValidationError('Team name required. Use --team or set context.');
+          throw new ValidationError(t('errors.teamRequired'));
         }
 
         const apiResponse = await withSpinner(
-          'Fetching queue items...',
+          t('commands.queue.list.fetching'),
           () =>
             typedApi.GetTeamQueueItems({
               teamName: opts.team as string,
               maxRecords: parseInt(options.limit, 10),
             }),
-          'Queue items fetched'
+          t('commands.queue.list.success')
         );
 
         const response = parseGetTeamQueueItems(apiResponse as never);
@@ -366,7 +415,7 @@ export function registerQueueCommands(program: Command): void {
             machine: item.machineName ?? '-',
             bridge: item.bridgeName ?? '-',
             retries: item.retryCount != null ? formatRetryCount(item.retryCount) : '-',
-            hasResponse: formatBoolean(item.hasResponse === 1),
+            hasResponse: formatBoolean(item.hasResponse === true),
             error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-',
           }));
           outputService.print(formattedItems, format);
@@ -381,22 +430,22 @@ export function registerQueueCommands(program: Command): void {
   // queue create
   queue
     .command('create')
-    .description('Create a new queue item')
-    .requiredOption('-f, --function <name>', 'Function name')
-    .option('-t, --team <name>', 'Team name')
-    .option('-m, --machine <name>', 'Machine name')
-    .option('-b, --bridge <name>', 'Bridge name')
-    .option('-p, --priority <1-5>', 'Priority (1=highest)', '3')
+    .description(t('commands.queue.create.description'))
+    .requiredOption('-f, --function <name>', t('options.functionName'))
+    .option('-t, --team <name>', t('options.team'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('-b, --bridge <name>', t('options.bridge'))
+    .option('-p, --priority <1-5>', t('options.priority'), '3')
     .option(
       '--param <key=value>',
-      'Function parameters',
+      t('options.param'),
       (val, acc: string[]) => {
         acc.push(val);
         return acc;
       },
       []
     )
-    .option('--vault <json>', 'Raw vault content (bypasses auto-build)')
+    .option('--vault <json>', t('options.rawVault'))
     .action(async (options) => {
       try {
         await createAction(options);
@@ -408,9 +457,9 @@ export function registerQueueCommands(program: Command): void {
   // queue trace
   queue
     .command('trace <taskId>')
-    .description('Trace a queue item')
-    .option('-w, --watch', 'Watch for updates')
-    .option('--interval <ms>', 'Poll interval in milliseconds', '2000')
+    .description(t('commands.queue.trace.description'))
+    .option('-w, --watch', t('options.watchUpdates'))
+    .option('--interval <ms>', t('options.pollInterval'), '2000')
     .action(async (taskId, options) => {
       try {
         await traceAction(taskId, options, program);
@@ -422,7 +471,7 @@ export function registerQueueCommands(program: Command): void {
   // queue cancel
   queue
     .command('cancel <taskId>')
-    .description('Cancel a queue item')
+    .description(t('commands.queue.cancel.description'))
     .action(async (taskId) => {
       try {
         await cancelAction(taskId);
@@ -434,7 +483,7 @@ export function registerQueueCommands(program: Command): void {
   // queue retry
   queue
     .command('retry <taskId>')
-    .description('Retry a failed queue item')
+    .description(t('commands.queue.retry.description'))
     .action(async (taskId) => {
       try {
         await retryAction(taskId);
@@ -446,25 +495,25 @@ export function registerQueueCommands(program: Command): void {
   // queue delete
   queue
     .command('delete <taskId>')
-    .description('Delete a queue item')
-    .option('-f, --force', 'Skip confirmation')
+    .description(t('commands.queue.delete.description'))
+    .option('-f, --force', t('options.force'))
     .action(async (taskId, options) => {
       try {
         await authService.requireAuth();
 
         if (!options.force) {
           const { askConfirm } = await import('../utils/prompt.js');
-          const confirm = await askConfirm(`Delete task ${taskId}? This cannot be undone.`);
+          const confirm = await askConfirm(t('commands.queue.delete.confirm', { taskId }));
           if (!confirm) {
-            outputService.info('Cancelled');
+            outputService.info(t('prompts.cancelled'));
             return;
           }
         }
 
         await withSpinner(
-          `Deleting task ${taskId}...`,
+          t('commands.queue.delete.deleting', { taskId }),
           () => typedApi.DeleteQueueItem({ taskId }),
-          'Task deleted'
+          t('commands.queue.delete.success')
         );
       } catch (error) {
         handleError(error);

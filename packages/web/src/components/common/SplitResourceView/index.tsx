@@ -1,5 +1,5 @@
 import React from 'react';
-import { Drawer, Flex } from 'antd';
+import { Drawer, Flex, Grid, Modal } from 'antd';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineTable } from '@/components/resources/internal/MachineTable';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
@@ -62,6 +62,8 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
   const { type, selectedResource, onResourceSelect } = props;
 
   const panelWidth = usePanelWidth();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const handleMachineSelect = (machine: Machine) => {
     onResourceSelect(machine);
@@ -127,16 +129,30 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
           />
         </Flex>
 
-        <Drawer
-          open={!!selectedResource}
-          onClose={handlePanelClose}
-          width={panelWidth}
-          placement="right"
-          mask
-          data-testid="split-resource-view-drawer"
-        >
-          {renderPanelContent()}
-        </Drawer>
+        {isMobile ? (
+          <Modal
+            open={!!selectedResource}
+            onCancel={handlePanelClose}
+            footer={null}
+            width="100%"
+            styles={{ body: { padding: 0 } }}
+            data-testid="split-resource-view-modal"
+            centered
+          >
+            {renderPanelContent()}
+          </Modal>
+        ) : (
+          <Drawer
+            open={!!selectedResource}
+            onClose={handlePanelClose}
+            width={panelWidth}
+            placement="right"
+            mask
+            data-testid="split-resource-view-drawer"
+          >
+            {renderPanelContent()}
+          </Drawer>
+        )}
       </Flex>
     );
   }

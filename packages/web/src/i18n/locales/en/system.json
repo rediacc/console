@@ -105,42 +105,42 @@
       "unblockButton": "Unblock User Requests"
     },
     "exportData": {
-      "button": "Export Company Data",
-      "description": "Export all company data including users, teams, permissions, regions, bridges, machines, repositories, storage configurations, and schedules. This export can be used for backup or migration purposes.",
+      "button": "Export Organization Data",
+      "description": "Export all organization data including users, teams, permissions, regions, bridges, machines, repositories, storage configurations, and schedules. This export can be used for backup or migration purposes.",
       "downloading": "Preparing export...",
-      "error": "Failed to export company data",
-      "success": "Company data exported successfully",
-      "title": "Export Company Data"
+      "error": "Failed to export organization data",
+      "success": "Organization data exported successfully",
+      "title": "Export Organization Data"
     },
     "exportVaults": {
       "button": "Export All Vaults",
-      "description": "Download all company vault configurations including teams, regions, bridges, machines, repositories, storage, and schedules. This export contains sensitive credential information and should be handled securely.",
+      "description": "Download all organization vault configurations including teams, regions, bridges, machines, repositories, storage, and schedules. This export contains sensitive credential information and should be handled securely.",
       "error": "Failed to export vaults",
       "success": "Vaults exported successfully",
       "title": "Export All Vaults"
     },
     "importData": {
-      "button": "Import Company Data",
-      "description": "Import company data from a previously exported file. You can choose to skip existing items or override them with the imported data.",
-      "error": "Failed to import company data",
+      "button": "Import Organization Data",
+      "description": "Import organization data from a previously exported file. You can choose to skip existing items or override them with the imported data.",
+      "error": "Failed to import organization data",
       "modal": {
         "cancel": "Cancel",
         "fileRequired": "Please select a file to import",
         "import": "Import",
         "importMode": "Import Mode",
         "importing": "Importing...",
-        "invalidFile": "Invalid file format. Please select a valid company data export file.",
+        "invalidFile": "Invalid file format. Please select a valid organization data export file.",
         "modeOverride": "Override existing items",
         "modeOverrideDesc": "Replace existing items with imported data",
         "modeSkip": "Skip existing items",
         "modeSkipDesc": "Only import items that don't already exist",
         "selectFile": "Select File",
-        "title": "Import Company Data",
+        "title": "Import Organization Data",
         "warning": "Warning",
-        "warningText": "Importing data will modify your company configuration. Make sure you have a backup before proceeding."
+        "warningText": "Importing data will modify your organization configuration. Make sure you have a backup before proceeding."
       },
-      "success": "Company data imported successfully",
-      "title": "Import Company Data"
+      "success": "Organization data imported successfully",
+      "title": "Import Organization Data"
     },
     "title": "Danger Zone",
     "updateMasterPassword": {
@@ -162,7 +162,7 @@
         "confirmPasswordPlaceholder": "Confirm new master password",
         "confirmPasswordRequired": "Please confirm the master password",
         "importantNote": "After updating the encryption password, all users will need to use the new shared password to access vault configurations. This password should be securely distributed to all authorized users. Note: Global Bridges with RequestToken will need to be manually unblocked.",
-        "importantNoteCreate": "After creating the encryption password, all users will need this shared password to access vault configurations. Distribute it securely to all authorized company members - Rediacc does not have access to this password.",
+        "importantNoteCreate": "After creating the encryption password, all users will need this shared password to access vault configurations. Distribute it securely to all authorized organization members - Rediacc does not have access to this password.",
         "importantNoteRemove": "After removing the encryption password, vault configurations will be accessible without client-side encryption. Consider the security implications for your sensitive data.",
         "newPasswordLabel": "New Master Password",
         "newPasswordMinLength": "Password must be at least 12 characters long",
@@ -178,10 +178,10 @@
         "submitRemove": "Remove Encryption Password",
         "submitUpdate": "Update Encryption Password",
         "title": "Encryption Password Configuration",
-        "warningDescription": "You are about to modify the master password for your entire company. This will:",
-        "warningDescriptionCreate": "You are about to create a master password for your entire company. This will:",
-        "warningDescriptionRemove": "You are about to remove the master password for your entire company. This will:",
-        "warningDescriptionUpdate": "You are about to update the master password for your entire company. This will:",
+        "warningDescription": "You are about to modify the master password for your entire organization. This will:",
+        "warningDescriptionCreate": "You are about to create a master password for your entire organization. This will:",
+        "warningDescriptionRemove": "You are about to remove the master password for your entire organization. This will:",
+        "warningDescriptionUpdate": "You are about to update the master password for your entire organization. This will:",
         "warningEffect1": "Lock the system temporarily during the operation",
         "warningEffect2": "Sign out all active users except you",
         "warningEffect3": "Re-encrypt all vault data with the new password",
@@ -204,8 +204,8 @@
         "step2Remove": "Inform administrators that vaults are now unencrypted",
         "step3": "Your own bridges must be manually reconfigured with the new encryption password",
         "step3Remove": "Your own bridges must be manually reconfigured without client-side encryption",
-        "step4": "Update your company's password management system with the new shared encryption password",
-        "step4Remove": "Remove the encryption password from your company's password management system",
+        "step4": "Update your organization's password management system with the new shared encryption password",
+        "step4Remove": "Remove the encryption password from your organization's password management system",
         "systemReady": "The system is now unlocked and ready for use.",
         "title": "Operation Completed Successfully",
         "titleCreate": "Encryption Password Created Successfully",
@@ -283,6 +283,7 @@
     "forkToken": "This is a fork token (child session)",
     "hasChildren": "{{count}} child sessions",
     "inactive": "Inactive",
+    "ipLabel": "IP",
     "minutes": "minutes",
     "notAvailable": "N/A",
     "searchPlaceholder": "Search by email, IP, or session name...",
@@ -293,9 +294,11 @@
     "totalSessions": "Total Sessions",
     "uniqueUsers": "Unique Users"
   },
-  "company": {
+  "organization": {
     "success": {
       "vaultUpdated": "Vault configuration updated successfully",
+      "vaultsUpdated": "All vault configurations updated successfully",
+      "imported": "Organization data imported successfully",
       "requestsBlocked": "User requests blocked successfully",
       "requestsBlockedWithTerminations": "User requests blocked. {{count}} active sessions were terminated.",
       "requestsUnblocked": "User requests unblocked successfully",
@@ -306,8 +309,9 @@
     },
     "errors": {
       "vaultUpdateFailed": "Failed to update vault configuration",
+      "vaultsUpdateFailed": "Failed to update vault configurations",
       "blockRequestsFailed": "Failed to update user request blocking status",
-      "importFailed": "Failed to import company data",
+      "importFailed": "Failed to import organization data",
       "noExportData": "No export data returned"
     }
   },
@@ -319,7 +323,7 @@
     "errors": {
       "enableFailed": "Failed to enable vault encryption",
       "disableFailed": "Failed to disable vault encryption",
-      "noCompanySelected": "No company selected. Please choose a company before updating encryption."
+      "noOrganizationSelected": "No organization selected. Please choose an organization before updating encryption."
     }
   }
 }

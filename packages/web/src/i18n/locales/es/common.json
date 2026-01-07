@@ -1,37 +1,70 @@
 {
   "actions": {
+    "actions": "Acciones",
     "addToQueue": "Agregar a la cola",
     "advanced": "Avanzada",
+    "assign": "Asignar",
     "back": "Atrás",
     "cancel": "Cancelar",
-    "confirm": "Confirmar",
     "clearSelection": "Borrar selección",
     "close": "Cerrar",
+    "confirm": "Confirmar",
+    "copied": "Copiado",
+    "copy": "Copiar",
     "create": "Crear",
+    "createNew": "Crear nuevo",
     "createResource": "Crear {{resource}}",
     "delete": "Borrar",
+    "deleteSelected": "Eliminar seleccionados",
+    "download": "Descargar",
+    "downloadSelected": "Descargar seleccionados",
     "edit": "Editar",
     "editResource": "Editar {{resource}}",
     "editVault": "Editar bóveda",
     "exitFullscreen": "Salir de pantalla completa",
     "export": "Exportar",
     "exportSuccess": "Exportar con éxito",
+    "format": "Formato",
     "fullscreen": "Pantalla completa",
+    "logoutNow": "Cerrar sesión ahora",
     "manage": "Administrar",
+    "newFolder": "Carpeta nueva",
     "refresh": "Refrescar",
     "remote": "Remota",
     "remove": "Eliminar",
+    "rename": "Renombrar",
     "reset": "Reiniciar",
     "retry": "Rever",
     "runFunction": "Función de ejecución",
     "save": "Guardar",
     "search": "Buscar",
     "trace": "Rastro",
+    "upload": "Cargar",
+    "uploadFile": "Cargar archivo",
     "viewTrace": "Ver seguimiento"
   },
   "actionsColumn": "Acciones",
+  "allCommandsCopied": "¡Todos los comandos copiados al portapapeles!",
+  "alt": {
+    "logo": "Logotipo de Rediacc"
+  },
+  "aria": {
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "closeNotification": "Cerrar notificación",
+    "collapsePanel": "Contraer panel",
+    "expandPanel": "Expandir panel",
+    "notifications": "Notificaciones",
+    "refresh": "Actualizar",
+    "refreshMachines": "Actualizar máquinas",
+    "trace": "Rastrear"
+  },
+  "cancel": "Cancelar",
   "close": "Cerrar",
+  "commandCopied": "¡Comando copiado al portapapeles!",
+  "commandCopyFailed": "Error al copiar comando",
   "copiedToClipboard": "Copiada al portapapeles",
+  "copiedWithoutToken": "Copiado sin token seguro - por favor inicie sesión manualmente",
   "copyFailed": "No se pudo copiar al portapapeles",
   "current": "Actual",
   "dashboard": {
@@ -39,10 +72,122 @@
     "comparePlansDescription": "Compare características y precios entre diferentes niveles de suscripción",
     "currentPlan": "Plan actual",
     "enterprisePlanDescription": "Está en nuestro plan de nivel más alto con todas las funciones desbloqueadas",
-    "upgradeOptions": "Opciones de actualización"
+    "errors": {
+      "loadFailed": "Error al cargar los datos del panel. Por favor intente más tarde.",
+      "noData": "No hay datos de panel disponibles",
+      "title": "Error de carga"
+    },
+    "title": "Panel",
+    "upgradeOptions": "Opciones de actualización",
+    "widgets": {
+      "accountHealth": {
+        "noData": "No hay datos de salud de cuenta disponibles",
+        "overallStatus": "Estado general",
+        "resourcesAtLimit": "recursos en el límite",
+        "resourcesNearLimit": "recursos cerca del límite",
+        "title": "Salud de la cuenta"
+      },
+      "ceph": {
+        "available": "disponible",
+        "clone": "clon",
+        "cluster": "clúster",
+        "image": "imagen",
+        "machines": "máquinas"
+      },
+      "queueDetails": {
+        "active": "activo",
+        "cancelled": "Cancelado",
+        "completed": "Completado",
+        "created": "Creado",
+        "failedTotal": "Fallido (Total)",
+        "highestPriority": "Prioridad más alta",
+        "highPriority": "Prioridad alta",
+        "lowPriority": "Prioridad baja",
+        "machine": "Máquina",
+        "machineQueueStatus": "Estado de cola de máquina",
+        "normalPriority": "Prioridad normal",
+        "pending": "pendiente",
+        "priorityBreakdown": "Desglose de prioridad",
+        "stale": "antiguo",
+        "staleItems": "{{count}} elementos antiguos",
+        "status": "Estado",
+        "team": "Equipo",
+        "teamQueueStatus": "Estado de cola de equipo",
+        "title": "Detalles de la cola",
+        "todayActivity": "Actividad de hoy"
+      },
+      "queueOverview": {
+        "manage": "Administrar",
+        "noData": "No hay datos de cola disponibles",
+        "title": "Descripción general de la cola"
+      },
+      "recentActivity": {
+        "noActivity": "Sin actividad reciente",
+        "title": "Actividad reciente",
+        "viewAll": "Ver todo"
+      },
+      "resourceUsage": {
+        "limitReached": "Límite alcanzado",
+        "machines": "Máquinas",
+        "repositories": "Repositorios",
+        "subtitle": "Controle el consumo de recursos con respecto a los límites del plan",
+        "title": "Uso de recursos"
+      },
+      "subscriptionPlan": {
+        "allActiveLicenses": "TODAS LAS LICENCIAS ACTIVAS",
+        "currentSubscription": "SUSCRIPCIÓN ACTUAL",
+        "day": "día",
+        "days": "días",
+        "hours": "horas",
+        "remaining": "restante",
+        "title": "Detalles de suscripción y plan",
+        "total": "Cantidad total",
+        "trial": "Prueba"
+      },
+      "systemVersion": {
+        "api": "API",
+        "apiUptime": "Tiempo de actividad de API",
+        "console": "Consola"
+      }
+    }
   },
   "dateColumn": "Fecha",
-  "export": "Exportar",
+  "defaults": {
+    "defaultRegion": "Región predeterminada",
+    "globalBridges": "Puentes globales",
+    "jsonError": "Error JSON",
+    "privateTeam": "Equipo privado"
+  },
+  "delete": "Eliminar",
+  "desktopConnectionFailed": "Error al crear conexión segura para la aplicación de escritorio",
+  "desktopPrompt": {
+    "downloadDesktop": "Descargar aplicación de escritorio",
+    "machine": "Máquina",
+    "openDesktop": "Abrir en la aplicación de escritorio",
+    "repository": "Repositorio",
+    "securityExplanation": "Las operaciones directas de archivos requieren una conexión SSH segura desde su computadora a la máquina remota. Esta conexión no se puede establecer desde un navegador por razones de seguridad.",
+    "subtitle": "El {{feature}} utiliza conexiones SSH seguras que requieren la aplicación de escritorio Rediacc.",
+    "title": "{{feature}} requiere la aplicación de escritorio",
+    "whyDesktopOnly": "¿Por qué solo escritorio?"
+  },
+  "errorBoundary": {
+    "componentStack": "Pila de componentes",
+    "description": "Ocurrió un error inesperado. Esto ha sido informado automáticamente.",
+    "error": "Error inesperado",
+    "errorDetails": "Detalles del error (modo de desarrollo)",
+    "reloadPage": "Recargar página",
+    "stack": "Pila",
+    "title": "Algo salió mal",
+    "tryAgain": "Intentar de nuevo"
+  },
+  "errors": {
+    "somethingWentWrong": "Algo salió mal",
+    "schemaValidationFailed": "Se detectó un problema de sincronización de datos. Por favor, actualice la página o contacte al soporte si el problema persiste."
+  },
+  "export": {
+    "label": "Exportar",
+    "success": "Exportación exitosa"
+  },
   "exportCSV": "Exportar como CSV",
   "exportJSON": "Exportar como JSON",
   "fieldGenerator": {
@@ -69,16 +214,48 @@
   "fields": {
     "vault": "Configuración de la bóveda"
   },
+  "fileBrowser": {
+    "connecting": "Conectando...",
+    "created": "Carpeta creada: {{name}}",
+    "createNewFolder": "Crear carpeta nueva",
+    "deleteConfirmMessage": "¿Está seguro de que desea eliminar \"{{name}}\"?",
+    "deleteFileConfirm": "¿Eliminar archivo?",
+    "deleteFolderConfirm": "¿Eliminar carpeta?",
+    "deleteFolderWarning": " Esto eliminará todo el contenido.",
+    "downloaded": "Descargado: {{name}}",
+    "error": "Error del navegador",
+    "establishingConnection": "Estableciendo conexión SFTP a {{host}}...",
+    "fileBrowser": "Explorador de archivos",
+    "folder": "Carpeta",
+    "folderName": "Nombre de carpeta",
+    "items": "{{count}} elementos",
+    "modified": "Modificado",
+    "name": "Nombre",
+    "newName": "Nuevo nombre",
+    "originalFile": "Archivo original",
+    "permissions": "Permisos",
+    "renamedSuccessfully": "Renombrado correctamente",
+    "root": "raíz",
+    "size": "Tamaño",
+    "uploaded": "Cargado: {{name}}"
+  },
   "general": {
     "cancel": "Cancelar",
     "defaultsApplied": "Valores predeterminados aplicados",
     "important": "Importante",
     "loading": "Cargando...",
+    "no": "No",
+    "path": "Ruta",
+    "refreshing": "Actualizando...",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}",
+    "team": "Equipo",
     "unknown": "Desconocida",
     "vaultVersion": "Versión de bóveda",
-    "versionFormat": "v{{version}}"
+    "versionFormat": "versión {{version}}",
+    "warning": "Advertencia",
+    "yes": "Sí"
   },
+  "important": "Importante",
   "language": {
     "ar": "árabe",
     "de": "Alemana",
@@ -86,46 +263,48 @@
     "es": "Española",
     "fr": "Francesa",
     "ja": "Japonesa",
+    "label": "Idioma",
     "select": "Seleccionar idioma",
+    "switch": "Cambiar idioma",
     "tr": "Turca",
     "zh": "China"
   },
-  "last30Days": "Últimos 30 días",
   "last7Days": "Últimos 7 días",
+  "last30Days": "Últimos 30 días",
   "lastMonth": "Mes pasado",
   "messages": {
-    "error": "Error",
+    "error": "Error del mensaje",
     "invalidEmail": "Dirección de correo electrónico no válida",
     "loading": "Cargando...",
     "required": "Este campo es obligatorio",
     "success": "Éxito"
   },
   "navigation": {
-    "architecture": "Arquitectura",
     "audit": "Auditoría",
+    "ceph": "Almacenamiento distribuido",
+    "cephClusters": "Clústeres",
+    "cephMachines": "Máquinas",
+    "cephPools": "Piscinas",
+    "collapseSidebar": "Contraer barra lateral",
     "credentials": "Credenciales",
     "dashboard": "Panel",
-    "ceph": "Almacenamiento distribuido",
+    "expandSidebar": "Expandir barra lateral",
     "logout": "Cerrar sesión",
     "machines": "Máquinas",
     "mainNavigation": "Navegación principal",
-    "marketplace": "Mercado",
     "organization": "Organización",
     "organizationAccess": "Acceso",
     "organizationTeams": "equipos",
     "organizationUsers": "Usuarios",
     "queue": "Cola",
     "settings": "Ajustes",
-    "settingsCompany": "Compañía",
     "settingsInfrastructure": "Infraestructura",
+    "settingsOrganization": "Compañía",
     "settingsProfile": "Perfil",
     "storage": "Almacenamiento",
-    "storageCloud": "Cloud",
-    "storageDistributed": "Distributed",
-    "cephClusters": "Clústeres",
-    "cephPools": "Pools",
-    "cephMachines": "Máquinas",
-    "system": "Sistema"
+    "storageCloud": "Nube",
+    "storageDistributed": "Distribuido",
+    "userMenu": "Abrir menú de usuario"
   },
   "nestedObjectEditor": {
     "Active": "Activa",
@@ -160,13 +339,29 @@
     "markAllRead": "Marcar todo como leído",
     "title": "Notificaciones",
     "types": {
-      "error": "Error",
+      "error": "Notificación de error",
       "info": "Información",
       "success": "Éxito",
       "warning": "Advertencia"
     }
   },
+  "powerMode": {
+    "advancedDisabled": "Opciones avanzadas deshabilitadas",
+    "advancedEnabled": "Opciones avanzadas habilitadas",
+    "localhostAllDisabled": "Modo localhost - Todas las características deshabilitadas",
+    "localhostAllEnabled": "Modo localhost - Todas las características habilitadas"
+  },
   "refresh": "Refrescar",
+  "remote": "Remoto",
+  "resourceList": {
+    "createNew": "Crear nuevo",
+    "getStartedMessage": "Comience creando su primer {{resource}}",
+    "noDataAvailable": "No hay datos disponibles",
+    "noResourcesFound": "No {{resources}} encontrados. Intente ajustar sus criterios de búsqueda.",
+    "searchPlaceholder": "Buscar...",
+    "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
+  },
+  "save": "Guardar",
   "status": {
     "initializing": "Inicializando...",
     "label": "Estado",
@@ -177,16 +372,37 @@
   "statusColumn": "Estado",
   "table": {
     "actions": "Acciones",
+    "moreItems": "+{{count}} más",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
+  },
+  "teamSelector": {
+    "moreTeams": "+{{count}} más",
+    "selectTeams": "Seleccionar equipos..."
+  },
+  "theme": {
+    "dark": "Oscuro",
+    "label": "Tema",
+    "light": "Claro"
   },
   "thisMonth": "este mes",
   "today": "Hoy",
-  "total": "Total",
+  "tokenGenerationFailed": "Falló la generación de token: {{error}}",
+  "tooltips": {
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "expandPanel": "Expandir panel",
+    "refresh": "Actualizar",
+    "taskCancellable": "Esta tarea se puede cancelar",
+    "trace": "Rastrear"
+  },
+  "total": "Cantidad total",
   "uiMode": {
     "expert": "Experta",
+    "label": "Modo de interfaz",
     "simple": "Sencilla",
     "switching": "Cambiando al modo {{mode}}..."
   },
+  "unknown": "Desconocido",
   "utilized": "Utilizado",
   "vaultEditor": {
     "advanced": "Avanzada",
@@ -260,37 +476,6 @@
           "label": "Nodos OSD"
         }
       },
-      "COMPANY": {
-        "DOCKER_JSON_CONF": {
-          "description": "Configuración de autenticación del registro de Docker",
-          "label": "Configuración de la ventana acoplable"
-        },
-        "LOG_FILE": {
-          "description": "Ruta al archivo de registro del sistema",
-          "label": "Ruta del archivo de registro"
-        },
-        "PLUGINS": {
-          "description": "Configuraciones de complementos con imágenes de contenedores y estado de activación",
-          "label": "Complementos"
-        },
-        "SSH_PRIVATE_KEY": {
-          "description": "Clave privada SSH codificada en Base64 para operaciones de la empresa",
-          "label": "Clave privada SSH"
-        },
-        "SSH_PUBLIC_KEY": {
-          "description": "Clave pública SSH para operaciones de la empresa",
-          "label": "Clave pública SSH"
-        },
-        "UNIVERSAL_USER_ID": {
-          "description": "ID de usuario universal para operaciones del sistema",
-          "label": "Identificación de usuario universal"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "description": "Nombre de usuario universal para operaciones del sistema.",
-          "label": "Nombre de usuario universal"
-        },
-        "description": "Configuración de la empresa para configuraciones de toda la organización"
-      },
       "IMAGE": {
         "data_pool": {
           "description": "Grupo separado para almacenar datos de imágenes",
@@ -324,7 +509,7 @@
           "label": "Ruta del almacén de datos"
         },
         "description": "Configuración de la máquina para acceso y almacenamiento SSH",
-        "host_entry": {
+        "known_hosts": {
           "description": "Entrada de host conocido SSH para verificación de seguridad",
           "label": "Entrada de anfitrión"
         },
@@ -347,6 +532,37 @@
         "user": {
           "description": "Nombre de usuario SSH para conexión",
           "label": "Nombre de usuario"
+        }
+      },
+      "ORGANIZATION": {
+        "description": "Configuración de la empresa para configuraciones de toda la organización",
+        "DOCKER_JSON_CONF": {
+          "description": "Configuración de autenticación del registro de Docker",
+          "label": "Configuración de la ventana acoplable"
+        },
+        "LOG_FILE": {
+          "description": "Ruta al archivo de registro del sistema",
+          "label": "Ruta del archivo de registro"
+        },
+        "PLUGINS": {
+          "description": "Configuraciones de complementos con imágenes de contenedores y estado de activación",
+          "label": "Complementos"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Clave privada SSH codificada en Base64 para operaciones de la empresa",
+          "label": "Clave privada SSH"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Clave pública SSH para operaciones de la empresa",
+          "label": "Clave pública SSH"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "ID de usuario universal para operaciones del sistema",
+          "label": "Identificación de usuario universal"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "Nombre de usuario universal para operaciones del sistema.",
+          "label": "Nombre de usuario universal"
         }
       },
       "POOL": {
@@ -382,6 +598,10 @@
           "label": "Código de región"
         },
         "description": "Configuración de región para distribución geográfica.",
+        "location": {
+          "description": "Detalles de ubicación de la región",
+          "label": "Ubicación"
+        },
         "name": {
           "description": "Nombre de la región geográfica",
           "label": "Nombre de la región"
@@ -449,6 +669,11 @@
         }
       },
       "TEAM": {
+        "description": "Configuración del equipo para la estructura organizacional.",
+        "name": {
+          "description": "Nombre del equipo",
+          "label": "Nombre del equipo"
+        },
         "SSH_PRIVATE_KEY": {
           "description": "Clave privada SSH codificada en Base64 para operaciones en equipo",
           "label": "Clave privada SSH"
@@ -457,17 +682,13 @@
           "description": "Clave pública SSH para operaciones del equipo",
           "label": "Clave pública SSH"
         },
-        "description": "Configuración del equipo para la estructura organizacional.",
-        "name": {
-          "description": "Nombre del equipo",
-          "label": "Nombre del equipo"
-        },
         "teamDescription": {
           "description": "Descripción del propósito y responsabilidades del equipo.",
           "label": "Descripción del equipo"
         }
       },
       "USER": {
+        "description": "Configuración de usuario para ajustes personales",
         "SSH_PRIVATE_KEY": {
           "description": "Clave privada SSH codificada en Base64 para operaciones de usuario",
           "label": "Clave privada SSH"
@@ -475,8 +696,7 @@
         "SSH_PUBLIC_KEY": {
           "description": "Clave pública SSH para operaciones de usuario",
           "label": "Clave pública SSH"
-        },
-        "description": "Configuración de usuario para ajustes personales"
+        }
       }
     },
     "fields.CLONE.description": "Configurar los ajustes de clonación de RBD",
@@ -487,8 +707,8 @@
     "fieldsMovedFromExtra": "{{count}} campo(s) restaurados desde extraFields: {{fields}}",
     "fieldsMovedToExtra": "{{count}} campo(s) movido(s) a extraFields: {{fields}}",
     "formatJson": "Formato JSON",
-    "hostEntryHelp": "Opcional. La entrada de host conocida por SSH se detectará automáticamente.",
-    "hostEntryPlaceholder": "Autocompletado durante la prueba de conexión",
+    "knownHostsHelp": "Opcional. La entrada de host conocida por SSH se detectará automáticamente.",
+    "knownHostsPlaceholder": "Autocompletado durante la prueba de conexión",
     "importJson": "Importar JSON",
     "invalidFormat": "Formato no válido. {{description}}",
     "invalidJsonFormat": "Formato JSON no válido",
@@ -520,8 +740,8 @@
       "available": "Disponible",
       "btrfsAvailable": "BTRFS disponible",
       "compatibilityStatus": "Estado de compatibilidad",
-      "compatible": "Compatible",
-      "incompatible": "Incompatible",
+      "compatible": "Compatible con sistema",
+      "incompatible": "No es compatible",
       "kernelVersion": "Versión del núcleo",
       "knownIssues": "Problemas conocidos",
       "no": "No",

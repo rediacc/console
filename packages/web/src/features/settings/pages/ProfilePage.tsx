@@ -3,7 +3,11 @@ import { Alert, Button, Card, Flex, Form, Modal, Tooltip, Typography } from 'ant
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useUpdateUserPassword, useUpdateUserVault, useUserVault } from '@/api/queries/users';
+import {
+  useUpdateUserPassword,
+  useUpdateUserVault,
+  useGetUserVault,
+} from '@/api/api-hooks.generated';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
 import { featureFlags } from '@/config/featureFlags';
@@ -36,7 +40,7 @@ const ProfilePage: React.FC = () => {
   const twoFactorModal = useDialogState<void>();
   const userVaultModal = useDialogState<void>();
 
-  const { data: userVault, refetch: refetchUserVault } = useUserVault();
+  const { data: userVault, refetch: refetchUserVault } = useGetUserVault();
   const updateUserVaultMutation = useUpdateUserVault();
   const updateUserPasswordMutation = useUpdateUserPassword();
 
@@ -53,8 +57,7 @@ const ProfilePage: React.FC = () => {
 
     try {
       await updateUserPasswordMutation.mutateAsync({
-        userEmail: currentUser.email,
-        newPassword: values.newPassword,
+        userNewPass: values.newPassword,
       });
 
       closeChangePassword();
@@ -96,15 +99,15 @@ const ProfilePage: React.FC = () => {
     <Flex vertical>
       <Flex vertical>
         <Card>
-          <Flex vertical gap={16}>
-            <Flex align="center" gap={8}>
+          <Flex vertical>
+            <Flex align="center">
               <UserOutlined />
               <Typography.Title level={4}>{t('personal.title')}</Typography.Title>
             </Flex>
 
             <Typography.Text>{t('personal.description')}</Typography.Text>
 
-            <Flex wrap gap={8} align="center">
+            <Flex wrap align="center">
               {featureFlags.isEnabled('personalVaultConfiguration') && (
                 <Tooltip title={t('personal.configureVault')}>
                   <Button
@@ -145,8 +148,8 @@ const ProfilePage: React.FC = () => {
         onSave={handleUpdateUserVault}
         entityType="USER"
         title={t('personal.modalTitle')}
-        initialVault={userVault?.vault ?? '{}'}
-        initialVersion={userVault?.vaultVersion ?? 1}
+        initialVault={userVault?.[0]?.vaultContent ?? '{}'}
+        initialVersion={userVault?.[0]?.vaultVersion ?? 1}
         loading={updateUserVaultMutation.isPending}
       />
 
@@ -157,6 +160,7 @@ const ProfilePage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
         centered
+        data-testid="profile-change-password-modal"
       >
         <Form
           form={changePasswordForm}
@@ -175,7 +179,6 @@ const ProfilePage: React.FC = () => {
               </ul>
             }
             type="info"
-            showIcon
           />
 
           <PasswordField
@@ -198,9 +201,18 @@ const ProfilePage: React.FC = () => {
           />
 
           <Form.Item>
-            <Flex className="w-full" justify="flex-end" gap={8}>
-              <Button onClick={closeChangePassword}>{tCommon('actions.cancel')}</Button>
-              <Button htmlType="submit" loading={updateUserPasswordMutation.isPending}>
+            <Flex className="w-full" justify="flex-end">
+              <Button
+                onClick={closeChangePassword}
+                data-testid="profile-change-password-cancel-button"
+              >
+                {tCommon('actions.cancel')}
+              </Button>
+              <Button
+                htmlType="submit"
+                loading={updateUserPasswordMutation.isPending}
+                data-testid="profile-change-password-submit-button"
+              >
                 {t('personal.changePassword.submit')}
               </Button>
             </Flex>

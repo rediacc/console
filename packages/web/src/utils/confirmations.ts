@@ -1,10 +1,10 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { showMessage } from './messages';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
-import type { TFunction } from 'i18next';
 
 interface ConfirmDeleteConfig {
   modal: ModalHookAPI;
-  t: TFunction;
+  t: TypedTFunction;
   resourceType: string;
   resourceName: string;
   translationNamespace?: string;

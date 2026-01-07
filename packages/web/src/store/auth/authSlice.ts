@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface User {
   email: string;
-  company?: string;
+  organization?: string;
   role?: string;
   preferredLanguage?: string;
 }
@@ -10,10 +10,10 @@ interface User {
 interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
-  company: string | null;
+  organization: string | null;
   // masterPassword removed from Redux state for security - now managed by masterPasswordService
-  companyEncryptionEnabled: boolean;
-  vaultCompany: string | null; // Stores the VaultCompany sentinel value
+  organizationEncryptionEnabled: boolean;
+  vaultOrganization: string | null; // Stores the VaultOrganization sentinel value
   // Token removed from Redux state for security - now managed by tokenService
   showSessionExpiredModal: boolean;
   stayLoggedOutMode: boolean; // User chose to stay on page after session expired
@@ -22,9 +22,9 @@ interface AuthState {
 const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
-  company: null,
-  companyEncryptionEnabled: false,
-  vaultCompany: null,
+  organization: null,
+  organizationEncryptionEnabled: false,
+  vaultOrganization: null,
   showSessionExpiredModal: false,
   stayLoggedOutMode: false,
 };
@@ -37,25 +37,25 @@ const authSlice = createSlice({
       state,
       action: PayloadAction<{
         user: User;
-        company?: string;
-        vaultCompany?: string;
-        companyEncryptionEnabled?: boolean;
+        organization?: string;
+        vaultOrganization?: string;
+        organizationEncryptionEnabled?: boolean;
       }>
     ) => {
       state.isAuthenticated = true;
       state.user = action.payload.user;
-      state.company = action.payload.company ?? null;
-      state.vaultCompany = action.payload.vaultCompany ?? null;
-      state.companyEncryptionEnabled = action.payload.companyEncryptionEnabled ?? false;
+      state.organization = action.payload.organization ?? null;
+      state.vaultOrganization = action.payload.vaultOrganization ?? null;
+      state.organizationEncryptionEnabled = action.payload.organizationEncryptionEnabled ?? false;
       // Token is now handled separately by tokenService for security
       // masterPassword is now handled separately by masterPasswordService for security
     },
     logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
-      state.company = null;
-      state.companyEncryptionEnabled = false;
-      state.vaultCompany = null;
+      state.organization = null;
+      state.organizationEncryptionEnabled = false;
+      state.vaultOrganization = null;
       state.showSessionExpiredModal = false;
       state.stayLoggedOutMode = false;
       // Token cleanup is handled by tokenService
@@ -63,18 +63,21 @@ const authSlice = createSlice({
     },
     // setMasterPassword action removed - masterPassword updates now handled by masterPasswordService
     // updateToken action removed - token updates now handled by tokenService
-    updateCompany: (state, action: PayloadAction<string>) => {
-      state.company = action.payload;
+    updateOrganization: (state, action: PayloadAction<string>) => {
+      state.organization = action.payload;
       if (state.user) {
-        state.user.company = action.payload;
+        state.user.organization = action.payload;
       }
     },
-    setVaultCompany: (
+    setVaultOrganization: (
       state,
-      action: PayloadAction<{ vaultCompany: string | null; companyEncryptionEnabled: boolean }>
+      action: PayloadAction<{
+        vaultOrganization: string | null;
+        organizationEncryptionEnabled: boolean;
+      }>
     ) => {
-      state.vaultCompany = action.payload.vaultCompany;
-      state.companyEncryptionEnabled = action.payload.companyEncryptionEnabled;
+      state.vaultOrganization = action.payload.vaultOrganization;
+      state.organizationEncryptionEnabled = action.payload.organizationEncryptionEnabled;
     },
     showSessionExpiredModal: (state) => {
       state.showSessionExpiredModal = true;
@@ -91,7 +94,7 @@ const authSlice = createSlice({
 export const {
   loginSuccess,
   logout,
-  updateCompany,
+  updateOrganization,
   showSessionExpiredModal,
   hideSessionExpiredModal,
   setStayLoggedOutMode,

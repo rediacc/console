@@ -28,13 +28,12 @@ export const StepConfigForm: React.FC<StepConfigFormProps> = ({
         <Flex vertical>
           <Paragraph>{t('resources:storage.import.instructionsDetail')}</Paragraph>
           <Paragraph>
-            <Text code>rclone config file</Text>
+            <Text code>{t('resources:storage.import.instructionsCommand')}</Text>
           </Paragraph>
           <Paragraph>{t('resources:storage.import.uploadPrompt')}</Paragraph>
         </Flex>
       }
       type="info"
-      showIcon
       icon={<InfoCircleOutlined />}
     />
 
@@ -53,6 +52,6 @@ export const StepConfigForm: React.FC<StepConfigFormProps> = ({
       <p className="ant-upload-hint">{t('resources:storage.import.supportedFormats')}</p>
     </Upload.Dragger>
 
-    {parsingError && <Alert message={parsingError} type="error" showIcon />}
+    {parsingError && <Alert message={parsingError} type="error" />}
   </Flex>
 );

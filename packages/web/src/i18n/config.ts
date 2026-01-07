@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
+import { getSharedTranslations, SHARED_NAMESPACE } from '@rediacc/shared/i18n';
 import { cookieDetector } from './cookieDetector';
 // Only load default language initially (English)
 import enAuth from './locales/en/auth.json';
@@ -8,13 +9,13 @@ import enCeph from './locales/en/ceph.json';
 import enCommon from './locales/en/common.json';
 import enFunctions from './locales/en/functions.json';
 import enMachines from './locales/en/machines.json';
-import enMarketplace from './locales/en/marketplace.json';
 import enOrganization from './locales/en/organization.json';
 import enQueue from './locales/en/queue.json';
 import enResources from './locales/en/resources.json';
 import enSettings from './locales/en/settings.json';
 import enStorageProviders from './locales/en/storageProviders.json';
 import enSystem from './locales/en/system.json';
+// Import shared translations from @rediacc/shared
 
 const defaultNS = 'common';
 
@@ -32,7 +33,7 @@ const initialResources = {
     functions: enFunctions,
     ceph: enCeph,
     organization: enOrganization,
-    marketplace: enMarketplace,
+    [SHARED_NAMESPACE]: getSharedTranslations('en'),
   },
 };
 
@@ -50,6 +51,13 @@ const loadLanguageResources = async (lng: string) => {
     // Dynamic imports for other languages
     const resources: LanguageResources = {};
 
+    // Load shared translations synchronously (already bundled)
+    const sharedLng = lng as 'de' | 'es' | 'fr' | 'ja' | 'ar' | 'ru' | 'tr' | 'zh';
+    resources[SHARED_NAMESPACE] = getSharedTranslations(sharedLng) as unknown as Record<
+      string,
+      unknown
+    >;
+
     switch (lng) {
       case 'es':
         resources.auth = (await import('./locales/es/auth.json')).default;
@@ -61,7 +69,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/es/settings.json')).default;
         resources.storageProviders = (await import('./locales/es/storageProviders.json')).default;
         resources.functions = (await import('./locales/es/functions.json')).default;
-        resources.marketplace = (await import('./locales/es/marketplace.json')).default;
         resources.ceph = (await import('./locales/es/ceph.json')).default;
         resources.organization = (await import('./locales/es/organization.json')).default;
         break;
@@ -75,7 +82,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/tr/settings.json')).default;
         resources.storageProviders = (await import('./locales/tr/storageProviders.json')).default;
         resources.functions = (await import('./locales/tr/functions.json')).default;
-        resources.marketplace = (await import('./locales/tr/marketplace.json')).default;
         resources.ceph = (await import('./locales/tr/ceph.json')).default;
         resources.organization = (await import('./locales/tr/organization.json')).default;
         break;
@@ -89,7 +95,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/fr/settings.json')).default;
         resources.storageProviders = (await import('./locales/fr/storageProviders.json')).default;
         resources.functions = (await import('./locales/fr/functions.json')).default;
-        resources.marketplace = (await import('./locales/fr/marketplace.json')).default;
         resources.ceph = (await import('./locales/fr/ceph.json')).default;
         resources.organization = (await import('./locales/fr/organization.json')).default;
         break;
@@ -103,7 +108,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/de/settings.json')).default;
         resources.storageProviders = (await import('./locales/de/storageProviders.json')).default;
         resources.functions = (await import('./locales/de/functions.json')).default;
-        resources.marketplace = (await import('./locales/de/marketplace.json')).default;
         resources.ceph = (await import('./locales/de/ceph.json')).default;
         resources.organization = (await import('./locales/de/organization.json')).default;
         break;
@@ -117,7 +121,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/zh/settings.json')).default;
         resources.storageProviders = (await import('./locales/zh/storageProviders.json')).default;
         resources.functions = (await import('./locales/zh/functions.json')).default;
-        resources.marketplace = (await import('./locales/zh/marketplace.json')).default;
         resources.ceph = (await import('./locales/zh/ceph.json')).default;
         resources.organization = (await import('./locales/zh/organization.json')).default;
         break;
@@ -131,7 +134,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/ja/settings.json')).default;
         resources.storageProviders = (await import('./locales/ja/storageProviders.json')).default;
         resources.functions = (await import('./locales/ja/functions.json')).default;
-        resources.marketplace = (await import('./locales/ja/marketplace.json')).default;
         resources.ceph = (await import('./locales/ja/ceph.json')).default;
         resources.organization = (await import('./locales/ja/organization.json')).default;
         break;
@@ -145,7 +147,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/ar/settings.json')).default;
         resources.storageProviders = (await import('./locales/ar/storageProviders.json')).default;
         resources.functions = (await import('./locales/ar/functions.json')).default;
-        resources.marketplace = (await import('./locales/ar/marketplace.json')).default;
         resources.ceph = (await import('./locales/ar/ceph.json')).default;
         resources.organization = (await import('./locales/ar/organization.json')).default;
         break;
@@ -159,7 +160,6 @@ const loadLanguageResources = async (lng: string) => {
         resources.settings = (await import('./locales/ru/settings.json')).default;
         resources.storageProviders = (await import('./locales/ru/storageProviders.json')).default;
         resources.functions = (await import('./locales/ru/functions.json')).default;
-        resources.marketplace = (await import('./locales/ru/marketplace.json')).default;
         resources.ceph = (await import('./locales/ru/ceph.json')).default;
         resources.organization = (await import('./locales/ru/organization.json')).default;
         break;
@@ -197,8 +197,8 @@ void i18n
       'storageProviders',
       'functions',
       'ceph',
-      'marketplace',
       'organization',
+      SHARED_NAMESPACE,
     ],
     defaultNS,
     resources: initialResources,

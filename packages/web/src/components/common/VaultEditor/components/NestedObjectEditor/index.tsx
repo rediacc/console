@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -97,8 +97,10 @@ const detectStructurePattern = (
   };
 };
 
+const EMPTY_RECORD: NestedRecord = {};
+
 export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
-  value = {},
+  value,
   onChange,
   fieldDefinition,
   readOnly = false,
@@ -107,8 +109,17 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   'data-testid': dataTestId,
 }) => {
   const { t } = useTranslation('common');
+  const safeValue = value ?? EMPTY_RECORD;
+  const serializedValue = useMemo(() => JSON.stringify(safeValue), [safeValue]);
+  const parsedValue = useMemo(() => {
+    try {
+      return JSON.parse(serializedValue) as NestedRecord;
+    } catch {
+      return EMPTY_RECORD;
+    }
+  }, [serializedValue]);
   const [entries, setEntries] = useState<ObjectEntry[]>(() =>
-    Object.entries(value).map(([key, val]) => ({
+    Object.entries(safeValue).map(([key, val]) => ({
       key,
       value: val,
       isEditing: false,
@@ -116,22 +127,22 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   );
   const [newKey, setNewKey] = useState('');
   const [showRawJson, setShowRawJson] = useState(false);
-  const [rawJsonValue, setRawJsonValue] = useState(() => JSON.stringify(value, null, 2));
+  const [rawJsonValue, setRawJsonValue] = useState(() => JSON.stringify(safeValue, null, 2));
   const [rawJsonError, setRawJsonError] = useState<string | null>(null);
   const [structureInfo, setStructureInfo] = useState<ReturnType<typeof detectStructurePattern>>(
-    () => detectStructurePattern(value)
+    () => detectStructurePattern(safeValue)
   );
 
   useEffect(() => {
-    const entriesArray = Object.entries(value).map(([key, val]) => ({
+    const entriesArray = Object.entries(parsedValue).map(([key, val]) => ({
       key,
       value: val,
       isEditing: false,
     }));
     setEntries(entriesArray);
-    setRawJsonValue(JSON.stringify(value, null, 2));
-    setStructureInfo(detectStructurePattern(value));
-  }, [value]);
+    setRawJsonValue(JSON.stringify(parsedValue, null, 2));
+    setStructureInfo(detectStructurePattern(parsedValue));
+  }, [parsedValue, serializedValue]);
 
   const updateValue = (newEntries: ObjectEntry[]) => {
     const newValue = newEntries.reduce<NestedRecord>((acc, entry) => {
@@ -267,7 +278,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                       })
                     }
                     disabled={readOnly}
-                    placeholder="e.g., registry/image:tag"
+                    placeholder={t('functions:imagePlaceholder')}
                     data-testid={
                       dataTestId
                         ? `${dataTestId}-field-${entry.key}-image`
@@ -374,7 +385,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             </Typography.Text>
           )}
           {structureInfo.isUniform && (
-            <Flex wrap gap={8}>
+            <Flex wrap>
               <Tag>{t('nestedObjectEditor.Uniform Structure')}</Tag>
               {structureInfo.keys && (
                 <Typography.Text>
@@ -389,7 +400,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         </Flex>
       )}
 
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         {!readOnly && (
           <Card
             size="small"
@@ -397,7 +408,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               <Typography.Text strong>{t('nestedObjectEditor.Add New Entry')}</Typography.Text>
             }
           >
-            <Flex align="center" wrap gap={8}>
+            <Flex align="center" wrap>
               <Flex
                 className="max-w-full"
                 // eslint-disable-next-line no-restricted-syntax
@@ -449,7 +460,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             items={entries.map((entry, index) => ({
               key: entry.key,
               label: (
-                <Flex align="center" wrap gap={8}>
+                <Flex align="center" wrap>
                   <Tag>{entry.key}</Tag>
                   {isRecordLike(entry.value) && <Tag>{t('nestedObjectEditor.Object')}</Tag>}
                   {Array.isArray(entry.value) && <Tag>{t('nestedObjectEditor.Array')}</Tag>}

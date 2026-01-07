@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import ReactMarkdown, { type Components as MarkdownComponents } from 'react-markdown';
 import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { SizedModal } from '@/components/common';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
+import { SizedModal } from '@/components/common/SizedModal';
 import { templateService } from '@/services/templateService';
 import { ModalSize } from '@/types/modal';
 import {
@@ -14,7 +14,6 @@ import {
   CodeOutlined,
   FileOutlined,
   FileTextOutlined,
-  RocketOutlined,
   SafetyOutlined,
 } from '@/utils/optimizedIcons';
 
@@ -47,7 +46,6 @@ interface TemplatePreviewModalProps {
   templateName?: string | null; // For backward compatibility with TemplateDetailsModal
   onClose: () => void;
   onUseTemplate: (template: Template | string) => void;
-  context?: 'marketplace' | 'repository-creation';
 }
 
 type CodeRendererProps = ComponentPropsWithoutRef<'code'> & {
@@ -60,9 +58,8 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   templateName,
   onClose,
   onUseTemplate,
-  context = 'marketplace',
 }) => {
-  const { t } = useTranslation(['marketplace', 'resources', 'common']);
+  const { t } = useTranslation(['resources', 'common']);
   const [loading, setLoading] = useState(false);
   const [templateDetails, setTemplateDetails] = useState<TemplateDetails | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -111,8 +108,8 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       try {
         setLoading(true);
 
-        // For repository creation context, fetch the template from templates.json to get README
-        if (context === 'repository-creation' && templateName && !baseTemplate.readme) {
+        // Fetch the template from templates.json to get README if not already provided
+        if (templateName && !baseTemplate.readme) {
           try {
             const templates: Template[] = await templateService.fetchTemplates();
             const foundTemplate = templates.find(
@@ -151,7 +148,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     void fetchTemplateDetails();
     setActiveTab('overview');
     setSelectedFileIndex(0);
-  }, [open, template, templateName, context]);
+  }, [open, template, templateName]);
 
   useEffect(() => {
     setIconFailed(false);
@@ -161,8 +158,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   // Use generic icon for all templates (backend provides proper names)
   const getTemplateIcon = () => (
-    // eslint-disable-next-line no-restricted-syntax
-    <Typography.Text className="inline-flex" style={{ fontSize: 32 }}>
+    <Typography.Text className="inline-flex text-2xl">
       <AppstoreOutlined />
     </Typography.Text>
   );
@@ -193,104 +189,48 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     );
   };
 
-  const getActionButtonText = () => {
-    if (context === 'marketplace') {
-      return t('marketplace:deployNow');
-    }
-    return t('resources:templates.useTemplate');
-  };
-
-  const getActionButtonIcon = () => {
-    if (context === 'marketplace') {
-      return <RocketOutlined />;
-    }
-    return <CheckCircleOutlined />;
-  };
-
   const handleAction = () => {
-    if (context === 'marketplace') {
-      onUseTemplate(effectiveTemplate);
-    } else {
-      // For repository creation, pass the template name
-      onUseTemplate(effectiveTemplate.name);
-    }
+    onUseTemplate(effectiveTemplate.name);
     onClose();
   };
 
-  const modalTitle =
-    context === 'marketplace' ? effectiveTemplate.name : t('resources:templates.templateDetails');
+  const modalTitle = t('resources:templates.templateDetails');
 
   const overviewContent = (
     <Flex className="overflow-auto">
       <Row gutter={[24, 24]}>
-        <Col xs={24} md={context === 'marketplace' ? 16 : 24}>
+        <Col xs={24}>
           <Card
-            title={
-              <Typography.Text strong>
-                {context === 'marketplace'
-                  ? t('marketplace:description')
-                  : t('resources:templates.overview')}
-              </Typography.Text>
-            }
-            data-testid={context === 'marketplace' ? undefined : 'template-details-readme-content'}
+            title={<Typography.Text strong>{t('resources:templates.overview')}</Typography.Text>}
+            data-testid="template-details-readme-content"
           >
-            {/* eslint-disable-next-line no-restricted-syntax */}
-            <Flex style={{ lineHeight: 1.5 }}>
+            <Flex className="line-height-normal">
               <ReactMarkdown>{templateDetails?.readme ?? effectiveTemplate.readme}</ReactMarkdown>
             </Flex>
           </Card>
         </Col>
-        {context === 'marketplace' && (
-          <Col xs={24} md={8}>
-            <Card title={<Typography.Text strong>{t('marketplace:features')}</Typography.Text>}>
-              <Flex vertical gap={8} className="w-full">
-                {effectiveTemplate.tags?.map((tag) => (
-                  <Flex key={tag} gap={8} align="center" className="w-full">
-                    <Flex align="center" className="inline-flex">
-                      <CheckCircleOutlined />
-                    </Flex>
-                    <Typography.Text>{tag}</Typography.Text>
-                  </Flex>
-                ))}
-              </Flex>
-            </Card>
-          </Col>
-        )}
       </Row>
     </Flex>
   );
 
   const filesContent = loading ? (
-    <Flex
-      vertical
-      align="center"
-      gap={8}
-      className="w-full"
-      data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}
-    >
+    <Flex vertical align="center" className="gap-sm w-full" data-testid="template-details-loading">
       <LoadingWrapper loading centered minHeight={160}>
         <Flex />
       </LoadingWrapper>
-      <Typography.Text>
-        {context === 'marketplace'
-          ? t('marketplace:loadingFiles')
-          : t('resources:templates.loadingDetails')}
-      </Typography.Text>
+      <Typography.Text>{t('resources:templates.loadingDetails')}</Typography.Text>
     </Flex>
   ) : templateDetails && templateDetails.files.length > 0 ? (
-    <Flex gap={16} wrap className="w-full">
-      {/* eslint-disable-next-line no-restricted-syntax */}
-      <Flex style={{ width: '32%' }}>
+    <Flex className="gap-md w-full" wrap>
+      <Flex className="w-[32%]">
         <Card
           title={
-            <Flex align="center" gap={8} className="inline-flex">
+            <Flex align="center" className="inline-flex">
               <FileOutlined />
-              {context === 'marketplace'
-                ? t('marketplace:fileList')
-                : t('resources:templates.files')}
+              {t('resources:templates.files')}
             </Flex>
           }
-          data-testid={context === 'marketplace' ? undefined : 'template-details-files-content'}
+          data-testid="template-details-files-content"
         >
           <Flex className="h-full">
             <List
@@ -298,14 +238,10 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               renderItem={(file, index) => (
                 <List.Item
                   onClick={() => setSelectedFileIndex(index)}
-                  data-testid={
-                    context === 'marketplace'
-                      ? `marketplace-preview-file-item-${index}`
-                      : `template-details-file-header-${index}`
-                  }
+                  data-testid={`template-details-file-header-${index}`}
                 >
-                  <Flex vertical gap={4}>
-                    <Flex align="center" gap={8} className="inline-flex">
+                  <Flex vertical className="gap-sm">
+                    <Flex align="center" className="inline-flex">
                       <CodeOutlined />
                       <Typography.Text code>{file.path || file.name}</Typography.Text>
                     </Flex>
@@ -319,22 +255,17 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       <Flex className="flex-1">
         <Card
           title={
-            <Flex gap={8} align="center" justify="space-between">
-              <Flex align="center" gap={8} className="inline-flex">
+            <Flex align="center" justify="space-between">
+              <Flex align="center" className="inline-flex">
                 <CodeOutlined />
-                {/* eslint-disable-next-line no-restricted-syntax */}
-                <Typography.Text style={{ fontFamily: 'monospace' }}>
+                <Typography.Text className="font-mono">
                   {templateDetails.files[selectedFileIndex]?.path ||
                     templateDetails.files[selectedFileIndex]?.name}
                 </Typography.Text>
               </Flex>
             </Flex>
           }
-          data-testid={
-            context === 'marketplace'
-              ? undefined
-              : `template-details-file-content-${selectedFileIndex}`
-          }
+          data-testid={`template-details-file-content-${selectedFileIndex}`}
         >
           <Flex className="flex-1 overflow-auto">
             {templateDetails.files[selectedFileIndex] &&
@@ -345,56 +276,41 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     </Flex>
   ) : (
     <Alert
-      message={
-        context === 'marketplace' ? t('marketplace:noFiles') : t('resources:templates.noReadme')
-      }
-      description={context === 'marketplace' ? t('marketplace:noFilesDesc') : undefined}
+      message={t('resources:templates.noReadme')}
       type="info"
-      showIcon
-      data-testid={context === 'marketplace' ? undefined : 'template-details-readme-empty'}
+      data-testid="template-details-readme-empty"
     />
   );
 
   const securityContent = (
     <Flex className="overflow-auto">
       <Card>
-        <Flex vertical gap={16}>
+        <Flex vertical>
           <Alert
             message={
-              <Typography.Text strong>
-                {context === 'marketplace' ? t('marketplace:securityReview') : 'Security Review'}
-              </Typography.Text>
+              <Typography.Text strong>{t('resources:templates.securityReview')}</Typography.Text>
             }
             description={
-              <Typography.Text>
-                {context === 'marketplace'
-                  ? t('marketplace:securityReviewDesc')
-                  : 'Please review the template files for security considerations before deployment.'}
-              </Typography.Text>
+              <Typography.Text>{t('resources:templates.securityReviewDesc')}</Typography.Text>
             }
             type="info"
-            showIcon
           />
 
-          <Typography.Title level={5}>
-            {context === 'marketplace' ? t('marketplace:bestPractices') : 'Best Practices'}
-          </Typography.Title>
-          {/* eslint-disable-next-line no-restricted-syntax */}
-          <ul style={{ lineHeight: 1.5 }}>
-            <li>Review all configuration files before deployment</li>
-            <li>Update default passwords and credentials</li>
-            <li>Ensure proper network security configuration</li>
-            <li>Keep software components up to date</li>
+          <Typography.Title level={5}>{t('resources:templates.bestPractices')}</Typography.Title>
+          <ul className="line-height-normal">
+            <li>{t('resources:templates.bestPractice1')}</li>
+            <li>{t('resources:templates.bestPractice2')}</li>
+            <li>{t('resources:templates.bestPractice3')}</li>
+            <li>{t('resources:templates.bestPractice4')}</li>
           </ul>
 
-          {/* eslint-disable-next-line no-restricted-syntax */}
-          <Divider style={{ margin: '24px 0' }} />
+          <Divider className="my-6" />
 
-          <Typography.Title level={5}>Container Security</Typography.Title>
-          {/* eslint-disable-next-line no-restricted-syntax */}
-          <Typography.Paragraph style={{ lineHeight: 1.5 }}>
-            Always review container configurations and ensure they follow security best practices
-            for your deployment environment.
+          <Typography.Title level={5}>
+            {t('resources:templates.containerSecurity')}
+          </Typography.Title>
+          <Typography.Paragraph className="line-height-normal">
+            {t('resources:templates.containerSecurityDesc')}
           </Typography.Paragraph>
         </Flex>
       </Card>
@@ -405,11 +321,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     {
       key: 'overview',
       label: (
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <FileTextOutlined />
-          {context === 'marketplace'
-            ? t('marketplace:overview')
-            : t('resources:templates.overview')}
+          {t('resources:templates.overview')}
         </Flex>
       ),
       children: overviewContent,
@@ -417,9 +331,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     {
       key: 'files',
       label: (
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <CodeOutlined />
-          {context === 'marketplace' ? t('marketplace:files') : t('resources:templates.files')}
+          {t('resources:templates.files')}
           {templateDetails?.files && ` (${templateDetails.files.length})`}
         </Flex>
       ),
@@ -429,9 +343,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     {
       key: 'security',
       label: (
-        <Flex align="center" gap={8}>
+        <Flex align="center">
           <SafetyOutlined />
-          {context === 'marketplace' ? t('marketplace:security') : 'Security'}
+          {t('resources:templates.security')}
         </Flex>
       ),
       children: securityContent,
@@ -440,36 +354,22 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   return (
     <SizedModal
-      data-testid={
-        context === 'marketplace' ? 'marketplace-preview-modal' : 'template-details-modal'
-      }
+      data-testid="template-details-modal"
       title={
-        <Flex gap={16} align="center">
+        <Flex className="gap-md" align="center">
           {effectiveTemplate.iconUrl && !iconFailed ? (
             <img
               src={effectiveTemplate.iconUrl}
               alt={effectiveTemplate.name}
               onError={() => setIconFailed(true)}
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ objectFit: 'contain' }}
+              className="object-contain"
             />
           ) : (
             getTemplateIcon()
           )}
           <Flex vertical>
             <Typography.Title level={4}>{modalTitle}</Typography.Title>
-            {context === 'repository-creation' && (
-              <Tag data-testid="template-details-name-tag">{effectiveTemplate.name}</Tag>
-            )}
-            {context === 'marketplace' && effectiveTemplate.difficulty && (
-              <Tag>
-                {t(
-                  `difficulty${effectiveTemplate.difficulty.charAt(0).toUpperCase()}${effectiveTemplate.difficulty.slice(
-                    1
-                  )}`
-                )}
-              </Tag>
-            )}
+            <Tag data-testid="template-details-name-tag">{effectiveTemplate.name}</Tag>
           </Flex>
         </Flex>
       }
@@ -477,28 +377,16 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       onCancel={onClose}
       size={ModalSize.Large}
       footer={[
-        <Button
-          key="close"
-          onClick={onClose}
-          data-testid={
-            context === 'marketplace'
-              ? 'marketplace-preview-close-button'
-              : 'template-details-close-button'
-          }
-        >
+        <Button key="close" onClick={onClose} data-testid="template-details-close-button">
           {t('common:actions.close')}
         </Button>,
         <Button
           key="action"
-          icon={getActionButtonIcon()}
+          icon={<CheckCircleOutlined />}
           onClick={handleAction}
-          data-testid={
-            context === 'marketplace'
-              ? 'marketplace-preview-deploy-button'
-              : 'template-details-select-button'
-          }
+          data-testid="template-details-select-button"
         >
-          {getActionButtonText()}
+          {t('resources:templates.useTemplate')}
         </Button>,
       ]}
     >
@@ -507,9 +395,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         onChange={setActiveTab}
         items={tabItems}
         size="middle"
-        data-testid={
-          context === 'marketplace' ? 'marketplace-preview-tabs' : 'template-details-tabs'
-        }
+        data-testid="template-details-tabs"
       />
     </SizedModal>
   );

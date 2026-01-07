@@ -18,16 +18,12 @@ import {
 import { Button, Flex, Space, Tag, Tooltip, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  type CephPool,
-  type CephRbdImage,
-  useAvailableMachinesForClone,
-  useCephRbdImages,
-} from '@/api/queries/ceph';
-import {
+  useGetAvailableMachinesForClone,
+  useGetCephRbdImages,
   useCreateCephRbdImage,
   useDeleteCephRbdImage,
   useUpdateCephPoolVault,
-} from '@/api/queries/cephMutations';
+} from '@/api/api-hooks.generated';
 import { MobileCard } from '@/components/common/MobileCard';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
@@ -37,7 +33,11 @@ import { ImageMachineReassignmentModal } from '@/features/ceph/components/modals
 import { useDialogState, useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import type { ImageFormValues as FullImageFormValues } from '@rediacc/shared/types';
+import type {
+  CreateCephRbdImageParams,
+  GetCephPools_ResultSet1 as CephPool,
+  GetCephRbdImages_ResultSet1 as CephImage,
+} from '@rediacc/shared/types';
 import { buildRbdImageColumns } from './columns';
 import SnapshotTable from '../SnapshotTable';
 
@@ -49,12 +49,13 @@ interface RbdImageTableProps {
 interface RbdImageModalState {
   open: boolean;
   mode: 'create' | 'edit' | 'vault';
-  data?: CephRbdImage & { vaultContent?: string | null; vaultVersion?: number };
+  data?: CephImage & { vaultContent?: string | null; vaultVersion?: number };
 }
 
-// Form-specific subset of shared ImageFormValues (pool/team context provided separately)
-type ImageFormValues = Pick<FullImageFormValues, 'imageName' | 'machineName'> & {
-  vaultContent: string;
+// Form-specific subset (pool/team context provided separately)
+// Note: vaultContent and vaultVersion are already optional in generated types
+type ImageFormValues = Pick<CreateCephRbdImageParams, 'imageName' | 'machineName'> & {
+  vaultContent: string; // Required for form
 };
 
 const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
@@ -63,21 +64,18 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable();
   const [modalState, setModalState] = useState<RbdImageModalState>({ open: false, mode: 'create' });
   const queueTrace = useQueueTraceModal();
-  const reassignMachineModal = useDialogState<CephRbdImage>();
+  const reassignMachineModal = useDialogState<CephImage>();
   const managedQueueMutation = useManagedQueueItem();
   const { buildQueueVault } = useQueueVaultBuilder();
 
-  const { data: images = [], isLoading } = useCephRbdImages(pool.poolGuid ?? undefined);
+  const { data: images = [], isLoading } = useGetCephRbdImages(pool.poolGuid ?? undefined);
   const deleteImageMutation = useDeleteCephRbdImage();
   const createImageMutation = useCreateCephRbdImage();
   const updateImageVaultMutation = useUpdateCephPoolVault();
 
   // Fetch available machines for the team
-  const { data: availableMachines = [] } = useAvailableMachinesForClone(
-    pool.teamName,
-    modalState.open && modalState.mode === 'create'
-  );
-  const getRowProps = (record: CephRbdImage): Record<string, unknown> => ({
+  const { data: availableMachines = [] } = useGetAvailableMachinesForClone(pool.teamName ?? '');
+  const getRowProps = (record: CephImage): Record<string, unknown> => ({
     'data-testid': `rbd-image-row-${record.imageName}`,
   });
 
@@ -85,7 +83,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     setModalState({ open: true, mode: 'create' });
   };
 
-  const handleEdit = (image: CephRbdImage) => {
+  const handleEdit = (image: CephImage) => {
     setModalState({
       open: true,
       mode: 'edit',
@@ -96,15 +94,15 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     });
   };
 
-  const handleDelete = (image: CephRbdImage) => {
+  const handleDelete = (image: CephImage) => {
     deleteImageMutation.mutate({
-      imageName: image.imageName,
-      poolName: pool.poolName,
-      teamName: image.teamName,
+      imageName: image.imageName ?? '',
+      poolName: pool.poolName ?? '',
+      teamName: image.teamName ?? '',
     });
   };
 
-  const handleReassignMachine = (image: CephRbdImage) => {
+  const handleReassignMachine = (image: CephImage) => {
     reassignMachineModal.open(image);
   };
 
@@ -117,16 +115,16 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   );
 
   const handleRunFunction = useCallback(
-    async (functionName: string, image?: CephRbdImage) => {
+    async (functionName: string, image?: CephImage) => {
       try {
         const queueVault = await buildQueueVault({
           functionName,
-          teamName: pool.teamName,
-          machineName: pool.clusterName,
+          teamName: pool.teamName ?? '',
+          machineName: pool.clusterName ?? '',
           bridgeName: 'default',
           params: {
-            cluster_name: pool.clusterName,
-            pool_name: pool.poolName,
+            cluster_name: pool.clusterName ?? '',
+            pool_name: pool.poolName ?? '',
             image_name: image?.imageName ?? '',
           },
           priority: 3,
@@ -134,8 +132,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         });
 
         const response = await managedQueueMutation.mutateAsync({
-          teamName: pool.teamName,
-          machineName: pool.clusterName, // Using cluster as machine for Ceph
+          teamName: pool.teamName ?? '',
+          machineName: pool.clusterName ?? '', // Using cluster as machine for Ceph
           bridgeName: 'default',
           queueVault,
           priority: 3,
@@ -153,7 +151,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   );
 
   const getImageMenuItems = useCallback(
-    (image: CephRbdImage): MenuProps['items'] => [
+    (image: CephImage): MenuProps['items'] => [
       {
         key: 'edit',
         label: (
@@ -317,8 +315,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   );
 
   const handleExpand = useCallback(
-    (image: CephRbdImage) => {
-      const imageKey = String(image.imageGuid || '');
+    (image: CephImage) => {
+      const imageKey = String(image.imageGuid ?? '');
       setExpandedRowKeys((prev) =>
         prev.includes(imageKey) ? prev.filter((k) => k !== imageKey) : [...prev, imageKey]
       );
@@ -328,7 +326,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: CephRbdImage) => {
+    () => (record: CephImage) => {
       const actions = (
         <Space>
           <Tooltip title={t('snapshots.title')}>
@@ -338,15 +336,17 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
               icon={<CameraOutlined />}
               onClick={() => handleExpand(record)}
               aria-label={t('snapshots.title')}
+              data-testid={`rbd-image-snapshots-${record.imageName}`}
             />
           </Tooltip>
-          <Tooltip title={t('common.remote')}>
+          <Tooltip title={t('common:actions.remote')}>
             <Button
               type="text"
               size="small"
               icon={<CloudUploadOutlined />}
               onClick={() => handleRunFunction('ceph_rbd_info', record)}
-              aria-label={t('common.remote')}
+              aria-label={t('common:actions.remote')}
+              data-testid={`rbd-image-info-${record.imageName}`}
             />
           </Tooltip>
           <ResourceActionsDropdown menuItems={getImageMenuItems(record)} />
@@ -361,7 +361,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
             {record.vaultContent && <Tag bordered={false}>{t('common.vault')}</Tag>}
           </Space>
           <Typography.Text type="secondary" className="text-xs truncate">
-            {String(record.imageGuid || '').substring(0, 8)}...
+            {String(record.imageGuid ?? '').substring(0, 8)}...
           </Typography.Text>
           {record.machineName ? (
             <Tag icon={<CloudServerOutlined />} bordered={false}>
@@ -376,10 +376,14 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
     [t, getImageMenuItems, handleRunFunction, handleExpand]
   );
 
-  const expandedRowRender = (record: CephRbdImage) => (
+  const expandedRowRender = (record: CephImage) => (
     <Flex data-testid={`rbd-snapshot-list-${record.imageName}`}>
       <SnapshotTable image={record} pool={pool} teamFilter={teamFilter} />
     </Flex>
+  );
+
+  const isSubmitting = [createImageMutation.isPending, updateImageVaultMutation.isPending].some(
+    Boolean
   );
 
   return (
@@ -398,7 +402,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
       </Flex>
 
       <Flex className="overflow-hidden">
-        <ResourceListView<CephRbdImage>
+        <ResourceListView<CephImage>
           columns={columns}
           data={images}
           rowKey="imageGuid"
@@ -417,8 +421,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
               record,
             }: {
               expanded: boolean;
-              onExpand: (record: CephRbdImage, event: React.MouseEvent<HTMLElement>) => void;
-              record: CephRbdImage;
+              onExpand: (record: CephImage, event: React.MouseEvent<HTMLElement>) => void;
+              record: CephImage;
             }) => (
               <Button
                 icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
@@ -438,39 +442,39 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         existingData={{
           ...modalState.data,
           machineName: modalState.data?.machineName ?? undefined,
-          teamName: pool.teamName,
-          poolName: pool.poolName,
-          pools: [pool],
+          teamName: pool.teamName ?? '',
+          poolName: pool.poolName ?? '',
+          pools: [{ poolName: pool.poolName ?? '', clusterName: pool.clusterName ?? '' }],
           availableMachines: availableMachines.map((machine) => ({
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName ?? '',
-            regionName: machine.regionName ?? '',
-            status: machine.status,
+            machineName: machine.machineName ?? '',
+            bridgeName: '',
+            regionName: '',
+            status: machine.status ?? '',
           })),
           vaultContent: modalState.data?.vaultContent ?? undefined,
         }}
-        teamFilter={pool.teamName}
+        teamFilter={pool.teamName ?? ''}
         onSubmit={async (data) => {
           const imageData = data as ImageFormValues;
           if (modalState.mode === 'create') {
             await createImageMutation.mutateAsync({
-              poolName: pool.poolName,
-              teamName: pool.teamName,
+              poolName: pool.poolName ?? '',
+              teamName: pool.teamName ?? '',
               imageName: imageData.imageName,
               machineName: imageData.machineName,
               vaultContent: imageData.vaultContent,
             });
           } else if (modalState.mode === 'edit') {
             await updateImageVaultMutation.mutateAsync({
-              poolName: pool.poolName,
-              teamName: pool.teamName,
+              poolName: pool.poolName ?? '',
+              teamName: pool.teamName ?? '',
               vaultContent: imageData.vaultContent,
               vaultVersion: modalState.data?.vaultVersion ?? 0,
             });
           }
           setModalState({ open: false, mode: 'create' });
         }}
-        isSubmitting={createImageMutation.isPending || updateImageVaultMutation.isPending}
+        isSubmitting={isSubmitting}
       />
 
       <QueueItemTraceModal
@@ -483,8 +487,8 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         <ImageMachineReassignmentModal
           open={reassignMachineModal.isOpen}
           image={reassignMachineModal.state.data}
-          teamName={pool.teamName}
-          poolName={pool.poolName}
+          teamName={pool.teamName ?? ''}
+          poolName={pool.poolName ?? ''}
           onCancel={reassignMachineModal.close}
           onSuccess={() => {
             reassignMachineModal.close();

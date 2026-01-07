@@ -12,29 +12,17 @@ import {
   ReloadOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
+import { getContainerStateColor } from '@/utils/statusColors';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { Container } from '../types';
-import type { TFunction } from 'i18next';
 
 interface ContainerMobileCardProps {
   record: Container;
   onContainerClick?: (container: Container | PluginContainer) => void;
   onContainerAction: (container: Container, action: string) => void;
   isExecuting: boolean;
-  t: TFunction;
+  t: TypedTFunction;
 }
-
-const getStateColor = (state: string) => {
-  switch (state) {
-    case 'running':
-      return 'success';
-    case 'paused':
-      return 'warning';
-    case 'restarting':
-      return 'processing';
-    default:
-      return 'default';
-  }
-};
 
 export const ContainerMobileCard: React.FC<ContainerMobileCardProps> = ({
   record,
@@ -138,8 +126,8 @@ export const ContainerMobileCard: React.FC<ContainerMobileCardProps> = ({
           {record.name}
         </Typography.Text>
       </Space>
-      <Flex gap={8} wrap>
-        <Tag color={getStateColor(record.state)}>{getStateLabel(record.state)}</Tag>
+      <Flex wrap>
+        <Tag color={getContainerStateColor(record.state)}>{getStateLabel(record.state)}</Tag>
         {record.status && (
           <Typography.Text type="secondary" className="text-xs">
             {record.status}

@@ -20,8 +20,9 @@
     "parameters": {
       "helpText": "Parámetros adicionales de rclone para configuración avanzada",
       "label": "Parámetros adicionales",
-      "placeholder": "--transferencias 4 --damas 8"
-    }
+      "placeholder": "--transfers 4 --checkers 8"
+    },
+    "tips": "Consejos y trucos"
   },
   "storageProviders": {
     "azureblob": {
@@ -197,7 +198,7 @@
         }
       },
       "helpText": "Almacenamiento personal en la nube de Google Drive. Requiere autenticación OAuth o cuenta de servicio.",
-      "name": "Google Drive",
+      "name": "Google Drive (Almacenamiento de Google)",
       "tips": [
         "Utilice cuentas de servicio para aplicaciones del lado del servidor",
         "Las unidades de equipo tienen permisos diferentes a los de las unidades personales",
@@ -271,7 +272,7 @@
         "url": {
           "helpText": "URL de instancia de FileFabric",
           "label": "URL",
-          "placeholder": "https://yourcompany.filefabric.com"
+          "placeholder": "https://yourorganization.filefabric.com"
         }
       },
       "helpText": "FileFabric proporciona una plataforma de gestión de datos multinube para empresas.",
@@ -308,7 +309,7 @@
         }
       },
       "helpText": "Files.com es un servicio FTP/SFTP en la nube con funciones avanzadas de seguridad y automatización.",
-      "name": "Files.com",
+      "name": "Files.com (Almacenamiento en la nube)",
       "tips": [
         "Seguridad de nivel empresarial",
         "Flujos de trabajo de automatización",
@@ -627,7 +628,7 @@
         }
       },
       "helpText": "Koofr es un servicio europeo de almacenamiento en la nube que también puede conectarse a otras cuentas de almacenamiento en la nube.",
-      "name": "Koofr",
+      "name": "Koofr (Almacenamiento universal)",
       "tips": [
         "Puede conectar varias cuentas en la nube",
         "Datos almacenados en la UE (cumple con GDPR)",
@@ -725,7 +726,7 @@
         }
       },
       "helpText": "MEGA proporciona almacenamiento en la nube cifrado del lado del cliente. Tiene límites estrictos de tasa de inicio de sesión.",
-      "name": "Mega",
+      "name": "Mega (Almacenamiento encriptado)",
       "tips": [
         "MEGA tiene límites de tarifas estrictos: evite inicios de sesión frecuentes",
         "Todos los archivos están cifrados del lado del cliente.",
@@ -807,7 +808,7 @@
         }
       },
       "helpText": "OpenDrive proporciona servicios de almacenamiento en la nube, copias de seguridad en línea y reemplazo de FTP.",
-      "name": "OpenDrive",
+      "name": "OpenDrive (Almacenamiento personal)",
       "tips": [
         "Planes de almacenamiento ilimitados disponibles",
         "Visor de documentos incorporado",
@@ -892,7 +893,7 @@
         }
       },
       "helpText": "pCloud ofrece almacenamiento seguro en la nube con opción de cifrado del lado del cliente. Tiene regiones de la UE y EE. UU.",
-      "name": "pCloud",
+      "name": "pCloud (Almacenamiento en la nube europeo)",
       "tips": [
         "Elija la región de UE o EE. UU. según su ubicación",
         "La carpeta Crypto proporciona cifrado del lado del cliente",
@@ -915,7 +916,7 @@
         }
       },
       "helpText": "PikPak ​​es un servicio de almacenamiento en la nube que admite descargas sin conexión y transmisión de medios.",
-      "name": "PikPak",
+      "name": "PikPak (Almacenamiento en nube)",
       "tips": [
         "Admite descargas sin conexión",
         "Reproductor multimedia incorporado",
@@ -956,7 +957,7 @@
         }
       },
       "helpText": "Premiumize.me es un servicio de alojamiento múltiple que proporciona capacidades de descarga y almacenamiento en la nube.",
-      "name": "Premiumize.me",
+      "name": "Premiumize.me (Almacenamiento de contenido)",
       "tips": [
         "Combina almacenamiento en la nube con servicio de descarga",
         "Admite muchos sitios de alojamiento de archivos",
@@ -1002,7 +1003,7 @@
         }
       },
       "helpText": "Put.io es un servicio de almacenamiento en la nube que puede buscar y transmitir torrents.",
-      "name": "Put.io",
+      "name": "Put.io (Almacenamiento de torrentes)",
       "tips": [
         "Especializados en manejo de torrents",
         "Conversión automática de vídeo",
@@ -1035,7 +1036,7 @@
         }
       },
       "helpText": "QingStor es un servicio de almacenamiento de objetos de QingCloud, popular en China.",
-      "name": "QingStor",
+      "name": "QingStor (Almacenamiento en la nube de China)",
       "tips": [
         "Popular en el mercado chino",
         "S3-compatible API",
@@ -1233,11 +1234,11 @@
         "upload_endpoint": {
           "helpText": "URL del punto final de carga de ShareFile",
           "label": "Cargar punto final",
-          "placeholder": "https://company.sf-api.com"
+          "placeholder": "https://organization.sf-api.com"
         }
       },
       "helpText": "Citrix ShareFile es una plataforma de colaboración de contenido empresarial con intercambio seguro de archivos.",
-      "name": "Citrix ShareFile",
+      "name": "Citrix ShareFile (Empresa)",
       "tips": [
         "Diseñado para uso empresarial",
         "Admite transferencias de archivos grandes",
@@ -1331,7 +1332,7 @@
         }
       },
       "helpText": "Storj es una red descentralizada de almacenamiento en la nube que cifra y distribuye archivos a través de una red global.",
-      "name": "Storj",
+      "name": "Storj (Almacenamiento descentralizado)",
       "tips": [
         "El almacenamiento descentralizado proporciona una alta durabilidad",
         "Todos los datos están cifrados del lado del cliente",
@@ -1449,7 +1450,7 @@
         }
       },
       "helpText": "Uloz.to es un servicio de alojamiento de archivos popular en la República Checa y Eslovaquia.",
-      "name": "Uloz.to",
+      "name": "Uloz.to (Almacenamiento de archivos)",
       "tips": [
         "Popular en los mercados checo y eslovaco",
         "Admite cargas de archivos grandes",
@@ -1467,7 +1468,7 @@
         }
       },
       "helpText": "Uptobox es un servicio de alojamiento de archivos con soporte para torrents y capacidades de transmisión.",
-      "name": "Uptobox",
+      "name": "Uptobox (Almacenamiento remoto)",
       "tips": [
         "Las cuentas premium tienen mejores velocidades",
         "Admite carga remota desde URL",
@@ -1591,7 +1592,7 @@
         }
       },
       "helpText": "Zoho WorkDrive es una plataforma de colaboración de contenido para equipos con controles administrativos avanzados.",
-      "name": "Zoho WorkDrive",
+      "name": "Zoho WorkDrive (Colaboración empresarial)",
       "tips": [
         "Parte del paquete de productividad de Zoho",
         "Carpetas de equipo y espacios de trabajo",

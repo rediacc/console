@@ -1,6 +1,6 @@
 /**
  * Progress parsing utilities for console output
- * Supports bash scripts, rsync, and rclone progress formats
+ * Supports bash scripts, rsync, rclone, and renet bridge progress formats
  */
 
 /**
@@ -8,6 +8,7 @@
  * Supports multiple formats:
  * - bash msg_progress "- N%"
  * - rsync/rclone "N%"
+ * - renet bridge "[operation] N% - message"
  *
  * @param output - Console output string
  * @returns Progress percentage (0-100) or null if not found
@@ -44,6 +45,20 @@ export function extractMostRecentProgress(output: string): number | null {
     }
   }
 
+  // Pattern 3: renet bridge format "[operation] N% - message"
+  // Examples: "[setup] 45% - Installing packages" or "[sync] 100% - Complete"
+  const renetProgressPattern = /\[[^\]]+\]\s+(\d+(?:\.\d+)?)%/g;
+  const renetMatches = [...output.matchAll(renetProgressPattern)];
+
+  if (renetMatches.length > 0) {
+    const lastMatch = renetMatches[renetMatches.length - 1];
+    const matchIndex = lastMatch.index || -1;
+    if (matchIndex > lastIndex) {
+      lastPercentage = parseFloat(lastMatch[1]);
+      lastIndex = matchIndex;
+    }
+  }
+
   if (lastPercentage === null) return null;
 
   // Clamp to valid range (0-100)
@@ -52,7 +67,7 @@ export function extractMostRecentProgress(output: string): number | null {
 
 /**
  * Extract the most recent progress message from console output
- * Looks for text before "- N%" format or transfer progress lines
+ * Looks for text before "- N%" format, renet format, or transfer progress lines
  *
  * @param output - Console output string
  * @returns Progress message or null if not found
@@ -67,11 +82,31 @@ export function extractProgressMessage(output: string): string | null {
   // Pattern 1: msg_progress format "message - N%"
   const msgProgressLinePattern = /^(.+)\s+-\s+\d+(?:\.\d+)?%\s*$/;
 
-  // Search from end to find the most recent msg_progress message
+  // Pattern 1b: renet bridge format "[operation] N% - message"
+  const renetProgressLinePattern = /^\[([^\]]+)\]\s+\d+(?:\.\d+)?%\s+-\s+(.+)$/;
+
+  // Search from end to find the most recent progress message
   for (let i = lines.length - 1; i >= 0; i--) {
     const line = lines[i].trim();
     if (!line) continue;
 
+    // Try renet format first: "[operation] N% - message"
+    const renetMatch = line.match(renetProgressLinePattern);
+    if (renetMatch?.[2]) {
+      const message = renetMatch[2]
+        // eslint-disable-next-line no-control-regex
+        .replace(/\x1b\[[0-9;]*m/g, '')
+        .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+        .trim();
+
+      if (message) {
+        lastMessage = `[${renetMatch[1]}] ${message}`;
+        lastIndex = i;
+        break;
+      }
+    }
+
+    // Try msg_progress format: "message - N%"
     const match = line.match(msgProgressLinePattern);
     if (match?.[1]) {
       // Clean up the message - remove any ANSI color codes and trim

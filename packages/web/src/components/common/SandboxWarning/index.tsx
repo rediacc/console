@@ -48,14 +48,7 @@ const SandboxWarning: React.FC = () => {
         minHeight: 40,
       }}
       message={
-        <Flex
-          align="center"
-          gap={8}
-          wrap
-          className="text-center"
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ fontWeight: 500 }}
-        >
+        <Flex align="center" wrap className="text-center font-medium">
           <ExclamationCircleOutlined />
           <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
         </Flex>

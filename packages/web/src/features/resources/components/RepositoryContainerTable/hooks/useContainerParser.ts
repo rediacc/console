@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import type { Container, Repository, VaultStatusRepo, VaultStatusResult } from '../types';
-import type { TFunction } from 'i18next';
 
 interface UseContainerParserProps {
   vaultStatus?: string;
   repository: Repository;
   refreshKey?: number;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 interface UseContainerParserResult {

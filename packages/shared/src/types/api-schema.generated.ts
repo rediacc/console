@@ -2,12 +2,12 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2025-12-26T19:29:31Z
+ * Generated at: 2026-01-04T11:59:36Z
  * Schema version: 3.0.0
- * Schema generated: 2025-12-26T19:19:11.4388227Z
+ * Schema generated: 2026-01-04T11:59:34.8284318Z
  *
  * To regenerate, run: ./go deploy prep
- * Or directly: ./_scripts/console-schema.sh --generate
+ * Or directly: dotnet run -- --generate-types
  *
  * This file provides compile-time type safety for API calls by ensuring
  * parameter names and types match the middleware's expected schema.
@@ -77,14 +77,18 @@ export interface CreateBridgeParams {
   /** @sqlType nvarchar */
   bridgeName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
 export interface CreateCephClusterParams {
   /** @sqlType nvarchar */
   clusterName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
 export interface CreateCephPoolParams {
@@ -95,7 +99,9 @@ export interface CreateCephPoolParams {
   /** @sqlType nvarchar */
   poolName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
 export interface CreateCephRbdCloneParams {
@@ -121,7 +127,9 @@ export interface CreateCephRbdImageParams {
   /** @sqlType nvarchar */
   imageName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
   /** @sqlType nvarchar */
   machineName: string;
 }
@@ -136,7 +144,9 @@ export interface CreateCephRbdSnapshotParams {
   /** @sqlType nvarchar */
   snapshotName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
 export interface CreateMachineParams {
@@ -147,18 +157,20 @@ export interface CreateMachineParams {
   /** @sqlType nvarchar */
   machineName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
-export interface CreateNewCompanyParams {
+export interface CreateNewOrganizationParams {
   /** @sqlType nvarchar */
-  companyName: string;
+  organizationName: string;
   /** @sqlType char */
   activationCode: string;
   /** @sqlType nvarchar */
   subscriptionPlan?: string;
   /** @sqlType nvarchar */
-  companyVaultDefaults: string;
+  organizationVaultDefaults: string;
   /** @sqlType nvarchar */
   languagePreference?: string;
   /** @sqlType nvarchar */
@@ -207,7 +219,9 @@ export interface CreateRegionParams {
   /** @sqlType nvarchar */
   regionName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
 export interface CreateRepositoryParams {
@@ -216,7 +230,9 @@ export interface CreateRepositoryParams {
   /** @sqlType nvarchar */
   repositoryName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
   /** @sqlType nvarchar */
   parentRepositoryName?: string;
   /** @sqlType uniqueidentifier */
@@ -233,14 +249,18 @@ export interface CreateStorageParams {
   /** @sqlType nvarchar */
   storageName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
 export interface CreateTeamParams {
   /** @sqlType nvarchar */
   teamName: string;
   /** @sqlType nvarchar */
-  vaultContent: string;
+  vaultContent?: string;
+  /** @sqlType int */
+  vaultVersion?: number;
 }
 
 export interface CreateTeamMembershipParams {
@@ -364,7 +384,7 @@ export interface DeleteUserRequestParams {
   targetRequestId?: number;
 }
 
-export type ExportCompanyDataParams = Record<string, never>;
+export type ExportOrganizationDataParams = Record<string, never>;
 
 export interface ForkAuthenticationRequestParams {
   /** @sqlType nvarchar */
@@ -450,20 +470,6 @@ export interface GetCloneMachinesParams {
   teamName: string;
 }
 
-export type GetCompanyDashboardParams = Record<string, never>;
-
-export type GetCompanyPermissionGroupsParams = Record<string, never>;
-
-export type GetCompanyRegionsParams = Record<string, never>;
-
-export type GetCompanyTeamsParams = Record<string, never>;
-
-export type GetCompanyUsersParams = Record<string, never>;
-
-export type GetCompanyVaultParams = Record<string, never>;
-
-export type GetCompanyVaultsParams = Record<string, never>;
-
 export interface GetEntityAuditTraceParams {
   /** @sqlType nvarchar */
   entityType: string;
@@ -491,6 +497,20 @@ export interface GetMachineAssignmentStatusParams {
   /** @sqlType nvarchar */
   teamName: string;
 }
+
+export type GetOrganizationDashboardParams = Record<string, never>;
+
+export type GetOrganizationPermissionGroupsParams = Record<string, never>;
+
+export type GetOrganizationRegionsParams = Record<string, never>;
+
+export type GetOrganizationTeamsParams = Record<string, never>;
+
+export type GetOrganizationUsersParams = Record<string, never>;
+
+export type GetOrganizationVaultParams = Record<string, never>;
+
+export type GetOrganizationVaultsParams = Record<string, never>;
 
 export interface GetPermissionGroupDetailsParams {
   /** @sqlType nvarchar */
@@ -576,15 +596,15 @@ export interface GetTeamStoragesParams {
   teamName?: string;
 }
 
-export type GetUserCompanyParams = Record<string, never>;
+export type GetUserOrganizationParams = Record<string, never>;
 
 export type GetUserRequestsParams = Record<string, never>;
 
 export type GetUserVaultParams = Record<string, never>;
 
-export interface ImportCompanyDataParams {
+export interface ImportOrganizationDataParams {
   /** @sqlType nvarchar */
-  companyDataJson: string;
+  organizationDataJson: string;
   /** @sqlType nvarchar */
   importMode?: string;
 }
@@ -688,23 +708,6 @@ export interface UpdateCloneMachineRemovalsParams {
   machineNames: string;
 }
 
-export interface UpdateCompanyBlockUserRequestsParams {
-  /** @sqlType bit */
-  blockUserRequests: boolean;
-}
-
-export interface UpdateCompanyVaultParams {
-  /** @sqlType nvarchar */
-  vaultContent: string;
-  /** @sqlType int */
-  vaultVersion: number;
-}
-
-export interface UpdateCompanyVaultsParams {
-  /** @sqlType nvarchar */
-  updates: string;
-}
-
 export interface UpdateImageMachineAssignmentParams {
   /** @sqlType nvarchar */
   imageName: string;
@@ -777,6 +780,23 @@ export interface UpdateMachineVaultParams {
   vaultContent: string;
   /** @sqlType int */
   vaultVersion: number;
+}
+
+export interface UpdateOrganizationBlockUserRequestsParams {
+  /** @sqlType bit */
+  blockUserRequests: boolean;
+}
+
+export interface UpdateOrganizationVaultParams {
+  /** @sqlType nvarchar */
+  vaultContent: string;
+  /** @sqlType int */
+  vaultVersion: number;
+}
+
+export interface UpdateOrganizationVaultsParams {
+  /** @sqlType nvarchar */
+  updates: string;
 }
 
 export interface UpdateQueueItemResponseParams {
@@ -946,7 +966,7 @@ export interface ActivateUserAccount_ResultSet0 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type ActivateUserAccountResults = [ActivateUserAccount_ResultSet0[]];
@@ -959,21 +979,21 @@ export interface CancelQueueItem_ResultSet1 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType nvarchar */
   previousStatus: string | null;
   /** @sqlType varchar */
-  newStatus: string;
+  newStatus: string | null;
 }
 export interface CancelQueueItem_ResultSet2 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType nvarchar */
   previousStatus: string | null;
   /** @sqlType varchar */
-  newStatus: string;
+  newStatus: string | null;
 }
 
 export type CancelQueueItemResults = [
@@ -990,13 +1010,13 @@ export interface CreateAuthenticationRequest_ResultSet0 {
   /** @sqlType int */
   expirationHours: number | null;
   /** @sqlType nvarchar */
-  vaultCompany: string | null;
+  vaultOrganization: string | null;
   /** @sqlType bit */
   isAuthorized: boolean | null;
   /** @sqlType nvarchar */
   preferredLanguage: string | null;
   /** @sqlType varchar */
-  authenticationStatus: string;
+  authenticationStatus: string | null;
 }
 
 export type CreateAuthenticationRequestResults = [CreateAuthenticationRequest_ResultSet0[]];
@@ -1007,9 +1027,9 @@ export interface CreateBridge_ResultSet0 {
 }
 export interface CreateBridge_ResultSet1 {
   /** @sqlType int */
-  bridgeId: number;
+  bridgeId: number | null;
   /** @sqlType nvarchar */
-  name: string;
+  name: string | null;
 }
 
 export type CreateBridgeResults = [
@@ -1023,7 +1043,7 @@ export interface CreateCephCluster_ResultSet0 {
 }
 export interface CreateCephCluster_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type CreateCephClusterResults = [
@@ -1037,7 +1057,7 @@ export interface CreateCephPool_ResultSet0 {
 }
 export interface CreateCephPool_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type CreateCephPoolResults = [
@@ -1051,7 +1071,7 @@ export interface CreateCephRbdClone_ResultSet0 {
 }
 export interface CreateCephRbdClone_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type CreateCephRbdCloneResults = [
@@ -1065,7 +1085,7 @@ export interface CreateCephRbdImage_ResultSet0 {
 }
 export interface CreateCephRbdImage_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type CreateCephRbdImageResults = [
@@ -1079,7 +1099,7 @@ export interface CreateCephRbdSnapshot_ResultSet0 {
 }
 export interface CreateCephRbdSnapshot_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type CreateCephRbdSnapshotResults = [
@@ -1093,7 +1113,7 @@ export interface CreateMachine_ResultSet0 {
 }
 export interface CreateMachine_ResultSet1 {
   /** @sqlType nvarchar */
-  name: string;
+  name: string | null;
 }
 
 export type CreateMachineResults = [
@@ -1101,20 +1121,20 @@ export type CreateMachineResults = [
   CreateMachine_ResultSet1[],
 ];
 
-export interface CreateNewCompany_ResultSet0 {
+export interface CreateNewOrganization_ResultSet0 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType nvarchar */
   languagePreference: string | null;
   /** @sqlType char */
   activationCode: string | null;
   /** @sqlType nvarchar */
-  companyName: string | null;
+  organizationName: string | null;
 }
 
-export type CreateNewCompanyResults = [CreateNewCompany_ResultSet0[]];
+export type CreateNewOrganizationResults = [CreateNewOrganization_ResultSet0[]];
 
 export interface CreateNewUser_ResultSet0 {
   /** @sqlType uniqueidentifier */
@@ -1124,7 +1144,7 @@ export interface CreateNewUser_ResultSet1 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType nvarchar */
   languagePreference: string | null;
   /** @sqlType char */
@@ -1144,9 +1164,9 @@ export interface CreatePermissionGroup_ResultSet0 {
 }
 export interface CreatePermissionGroup_ResultSet1 {
   /** @sqlType nvarchar */
-  permissionGroupName: string;
+  permissionGroupName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type CreatePermissionGroupResults = [
@@ -1160,11 +1180,11 @@ export interface CreatePermissionInGroup_ResultSet0 {
 }
 export interface CreatePermissionInGroup_ResultSet1 {
   /** @sqlType nvarchar */
-  permissionName: string;
+  permissionName: string | null;
   /** @sqlType nvarchar */
-  permissionGroupName: string;
+  permissionGroupName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type CreatePermissionInGroupResults = [
@@ -1178,21 +1198,21 @@ export interface CreateQueueItem_ResultSet0 {
 }
 export interface CreateQueueItem_ResultSet1 {
   /** @sqlType uniqueidentifier */
-  taskId: string;
+  taskId: string | null;
   /** @sqlType datetimeoffset */
-  time: string;
+  time: string | null;
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType uniqueidentifier */
-  bridgeCredential: string;
+  bridgeCredential: string | null;
   /** @sqlType nvarchar */
-  status: string;
+  status: string | null;
   /** @sqlType int */
-  priority: number;
+  priority: number | null;
   /** @sqlType nvarchar */
-  createdBy: string;
+  createdBy: string | null;
   /** @sqlType nvarchar */
   highPriorityInfo: string | null;
 }
@@ -1208,7 +1228,7 @@ export interface CreateRegion_ResultSet0 {
 }
 export interface CreateRegion_ResultSet1 {
   /** @sqlType nvarchar */
-  name: string;
+  name: string | null;
 }
 
 export type CreateRegionResults = [
@@ -1222,7 +1242,7 @@ export interface CreateRepository_ResultSet0 {
 }
 export interface CreateRepository_ResultSet1 {
   /** @sqlType nvarchar */
-  name: string;
+  name: string | null;
 }
 
 export type CreateRepositoryResults = [
@@ -1236,7 +1256,7 @@ export interface CreateStorage_ResultSet0 {
 }
 export interface CreateStorage_ResultSet1 {
   /** @sqlType nvarchar */
-  name: string;
+  name: string | null;
 }
 
 export type CreateStorageResults = [
@@ -1250,7 +1270,7 @@ export interface CreateTeam_ResultSet0 {
 }
 export interface CreateTeam_ResultSet1 {
   /** @sqlType nvarchar */
-  name: string;
+  name: string | null;
 }
 
 export type CreateTeamResults = [
@@ -1268,7 +1288,7 @@ export interface CreateTeamMembership_ResultSet1 {
   /** @sqlType nvarchar */
   teamName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type CreateTeamMembershipResults = [
@@ -1289,7 +1309,7 @@ export interface DeleteCephCluster_ResultSet0 {
 }
 export interface DeleteCephCluster_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type DeleteCephClusterResults = [
@@ -1303,7 +1323,7 @@ export interface DeleteCephPool_ResultSet0 {
 }
 export interface DeleteCephPool_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type DeleteCephPoolResults = [
@@ -1317,7 +1337,7 @@ export interface DeleteCephRbdClone_ResultSet0 {
 }
 export interface DeleteCephRbdClone_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type DeleteCephRbdCloneResults = [
@@ -1331,7 +1351,7 @@ export interface DeleteCephRbdImage_ResultSet0 {
 }
 export interface DeleteCephRbdImage_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type DeleteCephRbdImageResults = [
@@ -1345,7 +1365,7 @@ export interface DeleteCephRbdSnapshot_ResultSet0 {
 }
 export interface DeleteCephRbdSnapshot_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type DeleteCephRbdSnapshotResults = [
@@ -1370,11 +1390,11 @@ export interface DeletePermissionFromGroup_ResultSet1 {
   /** @sqlType nvarchar */
   permissionGroupName: string | null;
   /** @sqlType int */
-  companyId: number | null;
+  organizationId: number | null;
   /** @sqlType nvarchar */
   removedPermissionName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type DeletePermissionFromGroupResults = [
@@ -1390,7 +1410,7 @@ export interface DeletePermissionGroup_ResultSet1 {
   /** @sqlType nvarchar */
   removedPermissionGroupName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type DeletePermissionGroupResults = [
@@ -1404,7 +1424,7 @@ export interface DeleteQueueItem_ResultSet0 {
 }
 export interface DeleteQueueItem_ResultSet1 {
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type DeleteQueueItemResults = [
@@ -1450,7 +1470,7 @@ export interface DeleteUserFromTeam_ResultSet1 {
   /** @sqlType nvarchar */
   teamName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type DeleteUserFromTeamResults = [
@@ -1468,7 +1488,7 @@ export interface DeleteUserRequest_ResultSet1 {
   /** @sqlType nvarchar */
   sessionName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type DeleteUserRequestResults = [
@@ -1476,18 +1496,18 @@ export type DeleteUserRequestResults = [
   DeleteUserRequest_ResultSet1[],
 ];
 
-export interface ExportCompanyData_ResultSet0 {
+export interface ExportOrganizationData_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
-export interface ExportCompanyData_ResultSet1 {
+export interface ExportOrganizationData_ResultSet1 {
   /** @sqlType nvarchar */
   exportData: string | null;
 }
 
-export type ExportCompanyDataResults = [
-  ExportCompanyData_ResultSet0[],
-  ExportCompanyData_ResultSet1[],
+export type ExportOrganizationDataResults = [
+  ExportOrganizationData_ResultSet0[],
+  ExportOrganizationData_ResultSet1[],
 ];
 
 export interface ForkAuthenticationRequest_ResultSet0 {
@@ -1502,11 +1522,11 @@ export interface ForkAuthenticationRequest_ResultSet1 {
   /** @sqlType int */
   expirationHours: number | null;
   /** @sqlType nvarchar */
-  vaultCompany: string | null;
+  vaultOrganization: string | null;
   /** @sqlType bit */
   isAuthorized: boolean | null;
   /** @sqlType varchar */
-  authenticationStatus: string;
+  authenticationStatus: string | null;
   /** @sqlType int */
   parentRequestId: number | null;
 }
@@ -1522,31 +1542,31 @@ export interface GetAuditLogs_ResultSet0 {
 }
 export interface GetAuditLogs_ResultSet1 {
   /** @sqlType nvarchar */
-  entity: string;
+  entity: string | null;
   /** @sqlType nvarchar */
   entityName: string | null;
   /** @sqlType nvarchar */
-  action: string;
+  action: string | null;
   /** @sqlType nvarchar */
   details: string | null;
   /** @sqlType nvarchar */
   actionByUser: string | null;
   /** @sqlType datetime2 */
-  timestamp: string;
+  timestamp: string | null;
 }
 export interface GetAuditLogs_ResultSet2 {
   /** @sqlType nvarchar */
-  entity: string;
+  entity: string | null;
   /** @sqlType nvarchar */
   entityName: string | null;
   /** @sqlType nvarchar */
-  action: string;
+  action: string | null;
   /** @sqlType nvarchar */
   details: string | null;
   /** @sqlType nvarchar */
   actionByUser: string | null;
   /** @sqlType datetime2 */
-  timestamp: string;
+  timestamp: string | null;
 }
 
 export type GetAuditLogsResults = [
@@ -1561,11 +1581,11 @@ export interface GetAvailableMachinesForClone_ResultSet0 {
 }
 export interface GetAvailableMachinesForClone_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType varchar */
-  status: string;
+  status: string | null;
   /** @sqlType varchar */
-  description: string;
+  description: string | null;
 }
 
 export type GetAvailableMachinesForCloneResults = [
@@ -1579,15 +1599,15 @@ export interface GetCephClusterMachines_ResultSet0 {
 }
 export interface GetCephClusterMachines_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
   /** @sqlType nvarchar */
-  clusterName: string;
+  clusterName: string | null;
   /** @sqlType datetime2 */
   assignedDate: string | null;
 }
@@ -1603,9 +1623,9 @@ export interface GetCephClusters_ResultSet0 {
 }
 export interface GetCephClusters_ResultSet1 {
   /** @sqlType nvarchar */
-  clusterName: string;
+  clusterName: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType int */
   assignedMachineCount: number | null;
   /** @sqlType int */
@@ -1627,13 +1647,13 @@ export interface GetCephPools_ResultSet0 {
 }
 export interface GetCephPools_ResultSet1 {
   /** @sqlType nvarchar */
-  poolName: string;
+  poolName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType nvarchar */
-  clusterName: string;
+  clusterName: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType int */
   rbdImageCount: number | null;
   /** @sqlType nvarchar */
@@ -1653,19 +1673,19 @@ export interface GetCephRbdClones_ResultSet0 {
 }
 export interface GetCephRbdClones_ResultSet1 {
   /** @sqlType nvarchar */
-  cloneName: string;
+  cloneName: string | null;
   /** @sqlType nvarchar */
-  snapshotName: string;
+  snapshotName: string | null;
   /** @sqlType nvarchar */
-  imageName: string;
+  imageName: string | null;
   /** @sqlType nvarchar */
-  poolName: string;
+  poolName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType nvarchar */
-  clusterName: string;
+  clusterName: string | null;
   /** @sqlType datetime2 */
-  snapshotCreatedDate: string;
+  snapshotCreatedDate: string | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType nvarchar */
@@ -1683,17 +1703,17 @@ export interface GetCephRbdImages_ResultSet0 {
 }
 export interface GetCephRbdImages_ResultSet1 {
   /** @sqlType nvarchar */
-  imageName: string;
+  imageName: string | null;
   /** @sqlType nvarchar */
-  poolName: string;
+  poolName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType nvarchar */
-  clusterName: string;
+  clusterName: string | null;
   /** @sqlType nvarchar */
   machineName: string | null;
   /** @sqlType int */
-  imageGuid: number;
+  imageGuid: number | null;
   /** @sqlType int */
   snapshotCount: number | null;
   /** @sqlType nvarchar */
@@ -1711,17 +1731,17 @@ export interface GetCephRbdSnapshots_ResultSet0 {
 }
 export interface GetCephRbdSnapshots_ResultSet1 {
   /** @sqlType nvarchar */
-  snapshotName: string;
+  snapshotName: string | null;
   /** @sqlType nvarchar */
-  imageName: string;
+  imageName: string | null;
   /** @sqlType nvarchar */
-  poolName: string;
+  poolName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType nvarchar */
-  clusterName: string;
+  clusterName: string | null;
   /** @sqlType datetime2 */
-  createdDate: string;
+  createdDate: string | null;
   /** @sqlType int */
   cloneCount: number | null;
   /** @sqlType nvarchar */
@@ -1753,11 +1773,11 @@ export interface GetCloneMachineAssignmentValidation_ResultSet2 {
   /** @sqlType nvarchar */
   machineName: string | null;
   /** @sqlType varchar */
-  validationStatus: string;
+  validationStatus: string | null;
   /** @sqlType nvarchar */
   currentAssignment: string | null;
   /** @sqlType nvarchar */
-  message: string;
+  message: string | null;
 }
 
 export type GetCloneMachineAssignmentValidationResults = [
@@ -1772,507 +1792,16 @@ export interface GetCloneMachines_ResultSet0 {
 }
 export interface GetCloneMachines_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType int */
-  assignmentId: number;
+  assignmentId: number | null;
 }
 
 export type GetCloneMachinesResults = [
   GetCloneMachines_ResultSet0[],
   GetCloneMachines_ResultSet1[],
-];
-
-export interface GetCompanyDashboard_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyDashboard_ResultSet1 {
-  /** @sqlType nvarchar */
-  companyName: string;
-  /** @sqlType nvarchar */
-  companyGuid: string | null;
-  /** @sqlType nvarchar */
-  planCode: string | null;
-}
-export interface GetCompanyDashboard_ResultSet2 {
-  /** @sqlType nvarchar */
-  planCode: string | null;
-  /** @sqlType int */
-  quantity: number | null;
-  /** @sqlType int */
-  totalActivePurchases: number | null;
-  /** @sqlType datetime2 */
-  startDate: string | null;
-  /** @sqlType datetime2 */
-  endDate: string | null;
-  /** @sqlType int */
-  daysRemaining: number | null;
-  /** @sqlType nvarchar */
-  status: string | null;
-  /** @sqlType int */
-  isActive: number;
-  /** @sqlType int */
-  isTrial: number;
-  /** @sqlType int */
-  isExpiringSoon: number;
-}
-export interface GetCompanyDashboard_ResultSet3 {
-  /** @sqlType nvarchar */
-  planCode: string | null;
-  /** @sqlType int */
-  quantity: number | null;
-  /** @sqlType datetime2 */
-  startDate: string | null;
-  /** @sqlType datetime2 */
-  endDate: string | null;
-  /** @sqlType int */
-  daysRemaining: number | null;
-  /** @sqlType nvarchar */
-  status: string | null;
-  /** @sqlType int */
-  isTrial: number;
-}
-export interface GetCompanyDashboard_ResultSet4 {
-  /** @sqlType varchar */
-  resourceType: string;
-  /** @sqlType int */
-  resourceLimit: number | null;
-  /** @sqlType nvarchar */
-  activeSubscriptionTier: string | null;
-  /** @sqlType int */
-  currentUsage: number | null;
-  /** @sqlType int */
-  isLimitReached: number;
-  /** @sqlType decimal */
-  usagePercentage: number | null;
-}
-export interface GetCompanyDashboard_ResultSet5 {
-  /** @sqlType int */
-  resourcesAtLimit: number | null;
-  /** @sqlType int */
-  resourcesNearLimit: number | null;
-  /** @sqlType varchar */
-  subscriptionStatus: string | null;
-  /** @sqlType varchar */
-  upgradeRecommendation: string;
-}
-export interface GetCompanyDashboard_ResultSet6 {
-  /** @sqlType int */
-  hasAdvancedAnalytics: number;
-  /** @sqlType int */
-  hasPrioritySupport: number;
-  /** @sqlType int */
-  hasDedicatedAccount: number;
-  /** @sqlType int */
-  hasCustomBranding: number;
-  /** @sqlType int */
-  ceph: number;
-  /** @sqlType int */
-  auditLog: number;
-  /** @sqlType int */
-  advancedQueue: number;
-}
-export interface GetCompanyDashboard_ResultSet7 {
-  /** @sqlType nvarchar */
-  planCode: string | null;
-  /** @sqlType int */
-  machineLimit: number | null;
-  /** @sqlType int */
-  repositoryLimit: number | null;
-  /** @sqlType int */
-  userLimit: number | null;
-  /** @sqlType int */
-  maxActiveJobs: number | null;
-  /** @sqlType int */
-  maxReservedJobs: number | null;
-  /** @sqlType int */
-  jobTimeoutHours: number | null;
-  /** @sqlType int */
-  maxRepositorySize: number | null;
-}
-export interface GetCompanyDashboard_ResultSet8 {
-  /** @sqlType int */
-  pendingCount: number | null;
-  /** @sqlType int */
-  assignedCount: number | null;
-  /** @sqlType int */
-  processingCount: number | null;
-  /** @sqlType int */
-  activeCount: number | null;
-  /** @sqlType int */
-  completedCount: number | null;
-  /** @sqlType int */
-  cancelledCount: number | null;
-  /** @sqlType int */
-  failedCount: number | null;
-  /** @sqlType int */
-  totalCount: number | null;
-  /** @sqlType int */
-  staleCount: number | null;
-  /** @sqlType int */
-  stalePendingCount: number | null;
-  /** @sqlType int */
-  completedToday: number | null;
-  /** @sqlType int */
-  cancelledToday: number | null;
-  /** @sqlType int */
-  createdToday: number | null;
-  /** @sqlType int */
-  itemsWithRetries: number | null;
-  /** @sqlType int */
-  maxRetryCount: number | null;
-  /** @sqlType int */
-  avgRetryCount: number | null;
-  /** @sqlType int */
-  oldestPendingAgeMinutes: number | null;
-  /** @sqlType int */
-  avgPendingAgeMinutes: number | null;
-  /** @sqlType int */
-  highestPriorityPending: number | null;
-  /** @sqlType int */
-  highPriorityPending: number | null;
-  /** @sqlType int */
-  normalPriorityPending: number | null;
-  /** @sqlType int */
-  lowPriorityPending: number | null;
-  /** @sqlType int */
-  hasStaleItems: number;
-  /** @sqlType int */
-  hasOldPendingItems: number;
-}
-export interface GetCompanyDashboard_ResultSet9 {
-  /** @sqlType int */
-  totalUserItems: number | null;
-  /** @sqlType int */
-  userPendingItems: number | null;
-  /** @sqlType int */
-  userActiveItems: number | null;
-  /** @sqlType int */
-  userCompletedToday: number | null;
-  /** @sqlType int */
-  userHighPriorityActive: number | null;
-}
-export interface GetCompanyDashboard_ResultSet10 {
-  /** @sqlType nvarchar */
-  teamName: string;
-  /** @sqlType int */
-  totalItems: number | null;
-  /** @sqlType int */
-  pendingItems: number | null;
-  /** @sqlType int */
-  activeItems: number | null;
-  /** @sqlType int */
-  staleItems: number | null;
-}
-export interface GetCompanyDashboard_ResultSet11 {
-  /** @sqlType nvarchar */
-  machineName: string;
-  /** @sqlType nvarchar */
-  teamName: string;
-  /** @sqlType nvarchar */
-  bridgeName: string;
-  /** @sqlType int */
-  totalItems: number | null;
-  /** @sqlType int */
-  pendingItems: number | null;
-  /** @sqlType int */
-  activeItems: number | null;
-  /** @sqlType int */
-  staleItems: number | null;
-}
-export interface GetCompanyDashboard_ResultSet12 {
-  /** @sqlType nvarchar */
-  userName: string;
-  /** @sqlType int */
-  totalItems: number | null;
-  /** @sqlType int */
-  activeItems: number | null;
-  /** @sqlType int */
-  completedToday: number | null;
-  /** @sqlType int */
-  highPriorityActive: number | null;
-}
-export interface GetCompanyDashboard_ResultSet13 {
-  /** @sqlType int */
-  totalMachines: number | null;
-  /** @sqlType int */
-  availableMachines: number | null;
-  /** @sqlType int */
-  clusterAssignedMachines: number | null;
-  /** @sqlType int */
-  imageAssignedMachines: number;
-  /** @sqlType int */
-  cloneAssignedMachines: number;
-  /** @sqlType int */
-  trulyAvailableMachines: number | null;
-  /** @sqlType decimal */
-  availablePercentage: number | null;
-  /** @sqlType decimal */
-  clusterPercentage: number | null;
-  /** @sqlType decimal */
-  imagePercentage: number | null;
-  /** @sqlType decimal */
-  clonePercentage: number | null;
-  /** @sqlType int */
-  totalClusters: number;
-  /** @sqlType int */
-  activeClusters: number;
-  /** @sqlType int */
-  avgMachinesPerCluster: number;
-}
-export interface GetCompanyDashboard_ResultSet14 {
-  /** @sqlType int */
-  totalMachines: number | null;
-  /** @sqlType int */
-  availableMachines: number | null;
-  /** @sqlType int */
-  clusterAssignedMachines: number | null;
-  /** @sqlType int */
-  imageAssignedMachines: number | null;
-  /** @sqlType int */
-  cloneAssignedMachines: number | null;
-  /** @sqlType int */
-  trulyAvailableMachines: number | null;
-  /** @sqlType decimal */
-  availablePercentage: number | null;
-  /** @sqlType decimal */
-  clusterPercentage: number | null;
-  /** @sqlType decimal */
-  imagePercentage: number | null;
-  /** @sqlType decimal */
-  clonePercentage: number | null;
-  /** @sqlType int */
-  totalClusters: number | null;
-  /** @sqlType int */
-  activeClusters: number | null;
-  /** @sqlType int */
-  avgMachinesPerCluster: number | null;
-}
-export interface GetCompanyDashboard_ResultSet15 {
-  /** @sqlType nvarchar */
-  teamName: string;
-  /** @sqlType int */
-  totalMachines: number | null;
-  /** @sqlType int */
-  availableMachines: number | null;
-  /** @sqlType int */
-  clusterMachines: number | null;
-  /** @sqlType int */
-  imageMachines: number | null;
-  /** @sqlType int */
-  cloneMachines: number | null;
-}
-export interface GetCompanyDashboard_ResultSet16 {
-  /** @sqlType nvarchar */
-  teamName: string | null;
-  /** @sqlType int */
-  totalMachines: number | null;
-  /** @sqlType int */
-  availableMachines: number | null;
-  /** @sqlType int */
-  clusterMachines: number | null;
-  /** @sqlType int */
-  imageMachines: number | null;
-  /** @sqlType int */
-  cloneMachines: number | null;
-}
-
-export type GetCompanyDashboardResults = [
-  GetCompanyDashboard_ResultSet0[],
-  GetCompanyDashboard_ResultSet1[],
-  GetCompanyDashboard_ResultSet2[],
-  GetCompanyDashboard_ResultSet3[],
-  GetCompanyDashboard_ResultSet4[],
-  GetCompanyDashboard_ResultSet5[],
-  GetCompanyDashboard_ResultSet6[],
-  GetCompanyDashboard_ResultSet7[],
-  GetCompanyDashboard_ResultSet8[],
-  GetCompanyDashboard_ResultSet9[],
-  GetCompanyDashboard_ResultSet10[],
-  GetCompanyDashboard_ResultSet11[],
-  GetCompanyDashboard_ResultSet12[],
-  GetCompanyDashboard_ResultSet13[],
-  GetCompanyDashboard_ResultSet14[],
-  GetCompanyDashboard_ResultSet15[],
-  GetCompanyDashboard_ResultSet16[],
-];
-
-export interface GetCompanyPermissionGroups_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyPermissionGroups_ResultSet1 {
-  /** @sqlType nvarchar */
-  permissionGroupName: string;
-  /** @sqlType int */
-  userCount: number | null;
-  /** @sqlType int */
-  permissionCount: number | null;
-  /** @sqlType nvarchar */
-  permissions: string | null;
-}
-
-export type GetCompanyPermissionGroupsResults = [
-  GetCompanyPermissionGroups_ResultSet0[],
-  GetCompanyPermissionGroups_ResultSet1[],
-];
-
-export interface GetCompanyRegions_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyRegions_ResultSet1 {
-  /** @sqlType nvarchar */
-  regionName: string;
-  /** @sqlType int */
-  vaultVersion: number | null;
-  /** @sqlType nvarchar */
-  vaultContent: string | null;
-  /** @sqlType int */
-  bridgeCount: number | null;
-}
-
-export type GetCompanyRegionsResults = [
-  GetCompanyRegions_ResultSet0[],
-  GetCompanyRegions_ResultSet1[],
-];
-
-export interface GetCompanyTeams_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyTeams_ResultSet1 {
-  /** @sqlType nvarchar */
-  teamName: string;
-  /** @sqlType int */
-  vaultVersion: number | null;
-  /** @sqlType nvarchar */
-  vaultContent: string | null;
-  /** @sqlType nvarchar */
-  companyName: string;
-  /** @sqlType int */
-  isMember: number;
-  /** @sqlType int */
-  memberCount: number | null;
-  /** @sqlType int */
-  machineCount: number | null;
-  /** @sqlType int */
-  repositoryCount: number | null;
-  /** @sqlType int */
-  storageCount: number | null;
-}
-
-export type GetCompanyTeamsResults = [
-  GetCompanyTeams_ResultSet0[],
-  GetCompanyTeams_ResultSet1[],
-];
-
-export interface GetCompanyUsers_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyUsers_ResultSet1 {
-  /** @sqlType nvarchar */
-  userEmail: string;
-  /** @sqlType bit */
-  activated: boolean;
-  /** @sqlType int */
-  vaultVersion: number;
-  /** @sqlType nvarchar */
-  vaultContent: string | null;
-  /** @sqlType nvarchar */
-  permissionsName: string;
-  /** @sqlType nvarchar */
-  companyName: string;
-  /** @sqlType int */
-  teamCount: number | null;
-}
-export interface GetCompanyUsers_ResultSet2 {
-  /** @sqlType nvarchar */
-  userEmail: string;
-  /** @sqlType bit */
-  activated: boolean;
-  /** @sqlType int */
-  vaultVersion: number | null;
-  /** @sqlType int */
-  vaultContent: number | null;
-  /** @sqlType nvarchar */
-  permissionsName: string;
-  /** @sqlType nvarchar */
-  companyName: string;
-  /** @sqlType int */
-  teamCount: number | null;
-}
-
-export type GetCompanyUsersResults = [
-  GetCompanyUsers_ResultSet0[],
-  GetCompanyUsers_ResultSet1[],
-  GetCompanyUsers_ResultSet2[],
-];
-
-export interface GetCompanyVault_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyVault_ResultSet1 {
-  /** @sqlType nvarchar */
-  companyName: string;
-  /** @sqlType uniqueidentifier */
-  companyCredential: string;
-  /** @sqlType int */
-  vaultVersion: number;
-  /** @sqlType nvarchar */
-  vaultContent: string | null;
-}
-
-export type GetCompanyVaultResults = [
-  GetCompanyVault_ResultSet0[],
-  GetCompanyVault_ResultSet1[],
-];
-
-export interface GetCompanyVaults_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface GetCompanyVaults_ResultSet1 {
-  /** @sqlType nvarchar */
-  entityType: string;
-  /** @sqlType int */
-  entityId: number;
-  /** @sqlType nvarchar */
-  entityName: string | null;
-  /** @sqlType int */
-  vaultId: number;
-  /** @sqlType nvarchar */
-  vaultName: string;
-  /** @sqlType uniqueidentifier */
-  credential: string;
-  /** @sqlType int */
-  chunkOrder: number;
-  /** @sqlType int */
-  version: number;
-  /** @sqlType varbinary */
-  encryptedVault: string;
-  /** @sqlType nvarchar */
-  decryptedVault: string | null;
-}
-export interface GetCompanyVaults_ResultSet2 {
-  /** @sqlType int */
-  bridgeId: number;
-  /** @sqlType nvarchar */
-  bridgeName: string;
-  /** @sqlType uniqueidentifier */
-  requestToken: string | null;
-  /** @sqlType int */
-  hasRequestToken: number;
-}
-
-export type GetCompanyVaultsResults = [
-  GetCompanyVaults_ResultSet0[],
-  GetCompanyVaults_ResultSet1[],
-  GetCompanyVaults_ResultSet2[],
 ];
 
 export interface GetEntityAuditTrace_ResultSet0 {
@@ -2281,19 +1810,19 @@ export interface GetEntityAuditTrace_ResultSet0 {
 }
 export interface GetEntityAuditTrace_ResultSet1 {
   /** @sqlType nvarchar */
-  action: string;
+  action: string | null;
   /** @sqlType nvarchar */
   details: string | null;
   /** @sqlType nvarchar */
   performedBy: string | null;
   /** @sqlType datetime2 */
-  timestamp: string;
+  timestamp: string | null;
   /** @sqlType varchar */
-  actionType: string;
+  actionType: string | null;
   /** @sqlType nvarchar */
   timeAgo: string | null;
   /** @sqlType varchar */
-  iconHint: string;
+  iconHint: string | null;
 }
 export interface GetEntityAuditTrace_ResultSet2 {
   /** @sqlType nvarchar */
@@ -2318,8 +1847,8 @@ export interface GetEntityAuditTrace_ResultSet2 {
   subscriptionTier: string | null;
   /** @sqlType int */
   auditRetentionDays: number | null;
-  /** @sqlType int */
-  hasOlderRecords: number;
+  /** @sqlType bit */
+  hasOlderRecords: boolean | null;
   /** @sqlType int */
   relatedCount: number | null;
 }
@@ -2336,15 +1865,15 @@ export interface GetEntityHistory_ResultSet0 {
 }
 export interface GetEntityHistory_ResultSet1 {
   /** @sqlType int */
-  auditId: number;
+  auditId: number | null;
   /** @sqlType nvarchar */
-  entity: string;
+  entity: string | null;
   /** @sqlType int */
-  entityId: number;
+  entityId: number | null;
   /** @sqlType nvarchar */
   entityName: string | null;
   /** @sqlType nvarchar */
-  action: string;
+  action: string | null;
   /** @sqlType nvarchar */
   details: string | null;
   /** @sqlType int */
@@ -2352,9 +1881,9 @@ export interface GetEntityHistory_ResultSet1 {
   /** @sqlType nvarchar */
   actionByUser: string | null;
   /** @sqlType datetime2 */
-  timestamp: string;
+  timestamp: string | null;
   /** @sqlType varchar */
-  actionCategory: string;
+  actionCategory: string | null;
 }
 export interface GetEntityHistory_ResultSet2 {
   /** @sqlType nvarchar */
@@ -2426,15 +1955,510 @@ export type GetMachineAssignmentStatusResults = [
   GetMachineAssignmentStatus_ResultSet2[],
 ];
 
+export interface GetOrganizationDashboard_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetOrganizationDashboard_ResultSet1 {
+  /** @sqlType nvarchar */
+  organizationName: string | null;
+  /** @sqlType nvarchar */
+  organizationGuid: string | null;
+  /** @sqlType nvarchar */
+  planCode: string | null;
+}
+export interface GetOrganizationDashboard_ResultSet2 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  quantity: number | null;
+  /** @sqlType int */
+  totalActivePurchases: number | null;
+  /** @sqlType datetime2 */
+  startDate: string | null;
+  /** @sqlType datetime2 */
+  endDate: string | null;
+  /** @sqlType int */
+  daysRemaining: number | null;
+  /** @sqlType nvarchar */
+  status: string | null;
+  /** @sqlType bit */
+  isActive: boolean | null;
+  /** @sqlType bit */
+  isTrial: boolean | null;
+  /** @sqlType bit */
+  isExpiringSoon: boolean | null;
+}
+export interface GetOrganizationDashboard_ResultSet3 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  quantity: number | null;
+  /** @sqlType datetime2 */
+  startDate: string | null;
+  /** @sqlType datetime2 */
+  endDate: string | null;
+  /** @sqlType int */
+  daysRemaining: number | null;
+  /** @sqlType nvarchar */
+  status: string | null;
+  /** @sqlType bit */
+  isTrial: boolean | null;
+}
+export interface GetOrganizationDashboard_ResultSet4 {
+  /** @sqlType varchar */
+  resourceType: string | null;
+  /** @sqlType int */
+  resourceLimit: number | null;
+  /** @sqlType nvarchar */
+  activeSubscriptionTier: string | null;
+  /** @sqlType int */
+  currentUsage: number | null;
+  /** @sqlType bit */
+  isLimitReached: boolean | null;
+  /** @sqlType decimal */
+  usagePercentage: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet5 {
+  /** @sqlType int */
+  resourcesAtLimit: number | null;
+  /** @sqlType int */
+  resourcesNearLimit: number | null;
+  /** @sqlType varchar */
+  subscriptionStatus: string | null;
+  /** @sqlType varchar */
+  upgradeRecommendation: string | null;
+}
+export interface GetOrganizationDashboard_ResultSet6 {
+  /** @sqlType bit */
+  hasAdvancedAnalytics: boolean | null;
+  /** @sqlType bit */
+  hasPrioritySupport: boolean | null;
+  /** @sqlType bit */
+  hasDedicatedAccount: boolean | null;
+  /** @sqlType bit */
+  hasCustomBranding: boolean | null;
+  /** @sqlType bit */
+  ceph: boolean | null;
+  /** @sqlType bit */
+  auditLog: boolean | null;
+  /** @sqlType bit */
+  advancedQueue: boolean | null;
+}
+export interface GetOrganizationDashboard_ResultSet7 {
+  /** @sqlType nvarchar */
+  planCode: string | null;
+  /** @sqlType int */
+  machineLimit: number | null;
+  /** @sqlType int */
+  repositoryLimit: number | null;
+  /** @sqlType int */
+  userLimit: number | null;
+  /** @sqlType int */
+  maxActiveJobs: number | null;
+  /** @sqlType int */
+  maxReservedJobs: number | null;
+  /** @sqlType int */
+  jobTimeoutHours: number | null;
+  /** @sqlType int */
+  maxRepositorySize: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet8 {
+  /** @sqlType int */
+  pendingCount: number | null;
+  /** @sqlType int */
+  assignedCount: number | null;
+  /** @sqlType int */
+  processingCount: number | null;
+  /** @sqlType int */
+  activeCount: number | null;
+  /** @sqlType int */
+  completedCount: number | null;
+  /** @sqlType int */
+  cancelledCount: number | null;
+  /** @sqlType int */
+  failedCount: number | null;
+  /** @sqlType int */
+  totalCount: number | null;
+  /** @sqlType int */
+  staleCount: number | null;
+  /** @sqlType int */
+  stalePendingCount: number | null;
+  /** @sqlType int */
+  completedToday: number | null;
+  /** @sqlType int */
+  cancelledToday: number | null;
+  /** @sqlType int */
+  createdToday: number | null;
+  /** @sqlType int */
+  itemsWithRetries: number | null;
+  /** @sqlType int */
+  maxRetryCount: number | null;
+  /** @sqlType int */
+  avgRetryCount: number | null;
+  /** @sqlType int */
+  oldestPendingAgeMinutes: number | null;
+  /** @sqlType int */
+  avgPendingAgeMinutes: number | null;
+  /** @sqlType int */
+  highestPriorityPending: number | null;
+  /** @sqlType int */
+  highPriorityPending: number | null;
+  /** @sqlType int */
+  normalPriorityPending: number | null;
+  /** @sqlType int */
+  lowPriorityPending: number | null;
+  /** @sqlType bit */
+  hasStaleItems: boolean | null;
+  /** @sqlType bit */
+  hasOldPendingItems: boolean | null;
+}
+export interface GetOrganizationDashboard_ResultSet9 {
+  /** @sqlType int */
+  totalUserItems: number | null;
+  /** @sqlType int */
+  userPendingItems: number | null;
+  /** @sqlType int */
+  userActiveItems: number | null;
+  /** @sqlType int */
+  userCompletedToday: number | null;
+  /** @sqlType int */
+  userHighPriorityActive: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet10 {
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  pendingItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  staleItems: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet11 {
+  /** @sqlType nvarchar */
+  machineName: string | null;
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType nvarchar */
+  bridgeName: string | null;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  pendingItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  staleItems: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet12 {
+  /** @sqlType nvarchar */
+  userName: string | null;
+  /** @sqlType int */
+  totalItems: number | null;
+  /** @sqlType int */
+  activeItems: number | null;
+  /** @sqlType int */
+  completedToday: number | null;
+  /** @sqlType int */
+  highPriorityActive: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet13 {
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterAssignedMachines: number | null;
+  /** @sqlType int */
+  imageAssignedMachines: number | null;
+  /** @sqlType int */
+  cloneAssignedMachines: number | null;
+  /** @sqlType int */
+  trulyAvailableMachines: number | null;
+  /** @sqlType decimal */
+  availablePercentage: number | null;
+  /** @sqlType decimal */
+  clusterPercentage: number | null;
+  /** @sqlType decimal */
+  imagePercentage: number | null;
+  /** @sqlType decimal */
+  clonePercentage: number | null;
+  /** @sqlType int */
+  totalClusters: number | null;
+  /** @sqlType int */
+  activeClusters: number | null;
+  /** @sqlType int */
+  avgMachinesPerCluster: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet14 {
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterAssignedMachines: number | null;
+  /** @sqlType int */
+  imageAssignedMachines: number | null;
+  /** @sqlType int */
+  cloneAssignedMachines: number | null;
+  /** @sqlType int */
+  trulyAvailableMachines: number | null;
+  /** @sqlType decimal */
+  availablePercentage: number | null;
+  /** @sqlType decimal */
+  clusterPercentage: number | null;
+  /** @sqlType decimal */
+  imagePercentage: number | null;
+  /** @sqlType decimal */
+  clonePercentage: number | null;
+  /** @sqlType int */
+  totalClusters: number | null;
+  /** @sqlType int */
+  activeClusters: number | null;
+  /** @sqlType int */
+  avgMachinesPerCluster: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet15 {
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterMachines: number | null;
+  /** @sqlType int */
+  imageMachines: number | null;
+  /** @sqlType int */
+  cloneMachines: number | null;
+}
+export interface GetOrganizationDashboard_ResultSet16 {
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType int */
+  totalMachines: number | null;
+  /** @sqlType int */
+  availableMachines: number | null;
+  /** @sqlType int */
+  clusterMachines: number | null;
+  /** @sqlType int */
+  imageMachines: number | null;
+  /** @sqlType int */
+  cloneMachines: number | null;
+}
+
+export type GetOrganizationDashboardResults = [
+  GetOrganizationDashboard_ResultSet0[],
+  GetOrganizationDashboard_ResultSet1[],
+  GetOrganizationDashboard_ResultSet2[],
+  GetOrganizationDashboard_ResultSet3[],
+  GetOrganizationDashboard_ResultSet4[],
+  GetOrganizationDashboard_ResultSet5[],
+  GetOrganizationDashboard_ResultSet6[],
+  GetOrganizationDashboard_ResultSet7[],
+  GetOrganizationDashboard_ResultSet8[],
+  GetOrganizationDashboard_ResultSet9[],
+  GetOrganizationDashboard_ResultSet10[],
+  GetOrganizationDashboard_ResultSet11[],
+  GetOrganizationDashboard_ResultSet12[],
+  GetOrganizationDashboard_ResultSet13[],
+  GetOrganizationDashboard_ResultSet14[],
+  GetOrganizationDashboard_ResultSet15[],
+  GetOrganizationDashboard_ResultSet16[],
+];
+
+export interface GetOrganizationPermissionGroups_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetOrganizationPermissionGroups_ResultSet1 {
+  /** @sqlType nvarchar */
+  permissionGroupName: string | null;
+  /** @sqlType int */
+  userCount: number | null;
+  /** @sqlType int */
+  permissionCount: number | null;
+  /** @sqlType nvarchar */
+  permissions: string | null;
+}
+
+export type GetOrganizationPermissionGroupsResults = [
+  GetOrganizationPermissionGroups_ResultSet0[],
+  GetOrganizationPermissionGroups_ResultSet1[],
+];
+
+export interface GetOrganizationRegions_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetOrganizationRegions_ResultSet1 {
+  /** @sqlType nvarchar */
+  regionName: string | null;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType int */
+  bridgeCount: number | null;
+}
+
+export type GetOrganizationRegionsResults = [
+  GetOrganizationRegions_ResultSet0[],
+  GetOrganizationRegions_ResultSet1[],
+];
+
+export interface GetOrganizationTeams_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetOrganizationTeams_ResultSet1 {
+  /** @sqlType nvarchar */
+  teamName: string | null;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  organizationName: string | null;
+  /** @sqlType bit */
+  isMember: boolean | null;
+  /** @sqlType int */
+  memberCount: number | null;
+  /** @sqlType int */
+  machineCount: number | null;
+  /** @sqlType int */
+  repositoryCount: number | null;
+  /** @sqlType int */
+  storageCount: number | null;
+}
+
+export type GetOrganizationTeamsResults = [
+  GetOrganizationTeams_ResultSet0[],
+  GetOrganizationTeams_ResultSet1[],
+];
+
+export interface GetOrganizationUsers_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetOrganizationUsers_ResultSet1 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType bit */
+  activated: boolean | null;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+  /** @sqlType nvarchar */
+  permissionsName: string | null;
+  /** @sqlType nvarchar */
+  organizationName: string | null;
+  /** @sqlType int */
+  teamCount: number | null;
+  /** @sqlType datetimeoffset */
+  lastActive: string | null;
+}
+export interface GetOrganizationUsers_ResultSet2 {
+  /** @sqlType nvarchar */
+  userEmail: string | null;
+  /** @sqlType bit */
+  activated: boolean | null;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType int */
+  vaultContent: number | null;
+  /** @sqlType nvarchar */
+  permissionsName: string | null;
+  /** @sqlType nvarchar */
+  organizationName: string | null;
+  /** @sqlType int */
+  teamCount: number | null;
+  /** @sqlType datetimeoffset */
+  lastActive: string | null;
+}
+
+export type GetOrganizationUsersResults = [
+  GetOrganizationUsers_ResultSet0[],
+  GetOrganizationUsers_ResultSet1[],
+  GetOrganizationUsers_ResultSet2[],
+];
+
+export interface GetOrganizationVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetOrganizationVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  organizationName: string | null;
+  /** @sqlType uniqueidentifier */
+  organizationCredential: string | null;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType nvarchar */
+  vaultContent: string | null;
+}
+
+export type GetOrganizationVaultResults = [
+  GetOrganizationVault_ResultSet0[],
+  GetOrganizationVault_ResultSet1[],
+];
+
+export interface GetOrganizationVaults_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface GetOrganizationVaults_ResultSet1 {
+  /** @sqlType nvarchar */
+  entityType: string | null;
+  /** @sqlType int */
+  entityId: number | null;
+  /** @sqlType nvarchar */
+  entityName: string | null;
+  /** @sqlType int */
+  vaultId: number | null;
+  /** @sqlType nvarchar */
+  vaultName: string | null;
+  /** @sqlType uniqueidentifier */
+  credential: string | null;
+  /** @sqlType int */
+  chunkOrder: number | null;
+  /** @sqlType int */
+  version: number | null;
+  /** @sqlType varbinary */
+  encryptedVault: string | null;
+  /** @sqlType nvarchar */
+  decryptedVault: string | null;
+}
+export interface GetOrganizationVaults_ResultSet2 {
+  /** @sqlType int */
+  bridgeId: number | null;
+  /** @sqlType nvarchar */
+  bridgeName: string | null;
+  /** @sqlType uniqueidentifier */
+  requestToken: string | null;
+  /** @sqlType bit */
+  hasRequestToken: boolean | null;
+}
+
+export type GetOrganizationVaultsResults = [
+  GetOrganizationVaults_ResultSet0[],
+  GetOrganizationVaults_ResultSet1[],
+  GetOrganizationVaults_ResultSet2[],
+];
+
 export interface GetPermissionGroupDetails_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
 export interface GetPermissionGroupDetails_ResultSet1 {
   /** @sqlType nvarchar */
-  permissionGroupName: string;
+  permissionGroupName: string | null;
   /** @sqlType nvarchar */
-  permissionName: string;
+  permissionName: string | null;
 }
 
 export type GetPermissionGroupDetailsResults = [
@@ -2448,17 +2472,17 @@ export interface GetQueueItemTrace_ResultSet0 {
 }
 export interface GetQueueItemTrace_ResultSet1 {
   /** @sqlType uniqueidentifier */
-  taskId: string;
+  taskId: string | null;
   /** @sqlType nvarchar */
-  status: string;
+  status: string | null;
   /** @sqlType datetimeoffset */
-  createdTime: string;
+  createdTime: string | null;
   /** @sqlType datetimeoffset */
   assignedTime: string | null;
   /** @sqlType datetimeoffset */
   lastAssigned: string | null;
   /** @sqlType int */
-  retryCount: number;
+  retryCount: number | null;
   /** @sqlType datetimeoffset */
   lastRetryAt: string | null;
   /** @sqlType nvarchar */
@@ -2476,65 +2500,65 @@ export interface GetQueueItemTrace_ResultSet1 {
   /** @sqlType int */
   totalDurationSeconds: number | null;
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType int */
   machineId: number | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType int */
-  bridgeId: number;
+  bridgeId: number | null;
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
   /** @sqlType int */
-  regionId: number;
+  regionId: number | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType int */
   teamId: number | null;
   /** @sqlType nvarchar */
-  companyName: string;
+  organizationName: string | null;
   /** @sqlType int */
-  companyId: number;
+  organizationId: number | null;
   /** @sqlType nvarchar */
-  createdBy: string;
+  createdBy: string | null;
   /** @sqlType int */
-  createdByUserId: number;
+  createdByUserId: number | null;
   /** @sqlType varchar */
-  healthStatus: string;
-  /** @sqlType int */
-  isStale: number;
-  /** @sqlType int */
-  isStalePending: number;
-  /** @sqlType int */
-  canBeCancelled: number;
+  healthStatus: string | null;
+  /** @sqlType bit */
+  isStale: boolean | null;
+  /** @sqlType bit */
+  isStalePending: boolean | null;
+  /** @sqlType bit */
+  canBeCancelled: boolean | null;
 }
 export interface GetQueueItemTrace_ResultSet2 {
   /** @sqlType varchar */
-  vaultType: string;
+  vaultType: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
-  /** @sqlType int */
-  hasContent: number;
+  /** @sqlType bit */
+  hasContent: boolean | null;
 }
 export interface GetQueueItemTrace_ResultSet3 {
   /** @sqlType varchar */
-  vaultType: string;
+  vaultType: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
-  /** @sqlType int */
-  hasContent: number;
+  /** @sqlType bit */
+  hasContent: boolean | null;
 }
 export interface GetQueueItemTrace_ResultSet4 {
   /** @sqlType nvarchar */
-  action: string;
+  action: string | null;
   /** @sqlType nvarchar */
   details: string | null;
   /** @sqlType datetime2 */
-  timestamp: string;
+  timestamp: string | null;
   /** @sqlType nvarchar */
   actionByUser: string | null;
   /** @sqlType int */
@@ -2542,19 +2566,19 @@ export interface GetQueueItemTrace_ResultSet4 {
 }
 export interface GetQueueItemTrace_ResultSet5 {
   /** @sqlType uniqueidentifier */
-  taskId: string;
+  taskId: string | null;
   /** @sqlType nvarchar */
-  status: string;
+  status: string | null;
   /** @sqlType datetimeoffset */
-  createdTime: string;
+  createdTime: string | null;
   /** @sqlType int */
   priority: number | null;
   /** @sqlType int */
   secondsDifference: number | null;
   /** @sqlType varchar */
-  relativePosition: string;
+  relativePosition: string | null;
   /** @sqlType nvarchar */
-  createdBy: string;
+  createdBy: string | null;
 }
 export interface GetQueueItemTrace_ResultSet6 {
   /** @sqlType int */
@@ -2566,7 +2590,7 @@ export interface GetQueueItemTrace_ResultSet6 {
   /** @sqlType int */
   activeProcessingCount: number | null;
   /** @sqlType int */
-  maxConcurrentTasks: number;
+  maxConcurrentTasks: number | null;
 }
 
 export type GetQueueItemTraceResults = [
@@ -2585,35 +2609,35 @@ export interface GetQueueItemsNext_ResultSet0 {
 }
 export interface GetQueueItemsNext_ResultSet1 {
   /** @sqlType nvarchar */
-  companyLicense: string | null;
+  organizationLicense: string | null;
   /** @sqlType nvarchar */
-  companyCredential: string | null;
+  organizationCredential: string | null;
   /** @sqlType nvarchar */
   bridgeCredential: string | null;
 }
 export interface GetQueueItemsNext_ResultSet2 {
   /** @sqlType uniqueidentifier */
-  taskId: string;
+  taskId: string | null;
   /** @sqlType datetimeoffset */
-  time: string;
+  time: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType datetimeoffset */
   assigned: string | null;
   /** @sqlType nvarchar */
-  status: string;
+  status: string | null;
   /** @sqlType int */
   priority: number | null;
   /** @sqlType int */
-  retryCount: number;
+  retryCount: number | null;
   /** @sqlType nvarchar */
   subscriptionTier: string | null;
   /** @sqlType int */
@@ -2633,27 +2657,27 @@ export interface GetQueueItemsNext_ResultSet3 {
 }
 export interface GetQueueItemsNext_ResultSet4 {
   /** @sqlType uniqueidentifier */
-  taskId: string;
+  taskId: string | null;
   /** @sqlType datetimeoffset */
-  time: string;
+  time: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType datetimeoffset */
   assigned: string | null;
   /** @sqlType nvarchar */
-  status: string;
+  status: string | null;
   /** @sqlType int */
   priority: number | null;
   /** @sqlType int */
-  retryCount: number;
+  retryCount: number | null;
   /** @sqlType nvarchar */
   subscriptionTier: string | null;
   /** @sqlType int */
@@ -2663,7 +2687,7 @@ export interface GetQueueItemsNext_ResultSet4 {
 }
 export interface GetQueueItemsNext_ResultSet5 {
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType nvarchar */
   subscriptionTier: string | null;
   /** @sqlType int */
@@ -2673,7 +2697,7 @@ export interface GetQueueItemsNext_ResultSet5 {
 }
 export interface GetQueueItemsNext_ResultSet6 {
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType nvarchar */
   subscriptionTier: string | null;
   /** @sqlType int */
@@ -2683,7 +2707,7 @@ export interface GetQueueItemsNext_ResultSet6 {
 }
 export interface GetQueueItemsNext_ResultSet7 {
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType nvarchar */
   subscriptionTier: string | null;
   /** @sqlType int */
@@ -2709,7 +2733,7 @@ export interface GetRegionBridges_ResultSet0 {
 }
 export interface GetRegionBridges_ResultSet1 {
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType nvarchar */
@@ -2719,17 +2743,17 @@ export interface GetRegionBridges_ResultSet1 {
   /** @sqlType nvarchar */
   bridgeCredentials: string | null;
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
   /** @sqlType int */
   machineCount: number | null;
-  /** @sqlType int */
-  hasAccess: number;
+  /** @sqlType bit */
+  hasAccess: boolean | null;
   /** @sqlType nvarchar */
   bridgeUserEmail: string | null;
   /** @sqlType varchar */
-  managementMode: string;
-  /** @sqlType int */
-  isGlobalBridge: number;
+  managementMode: string | null;
+  /** @sqlType bit */
+  isGlobalBridge: boolean | null;
 }
 
 export type GetRegionBridgesResults = [
@@ -2757,7 +2781,7 @@ export interface GetRequestAuthenticationStatus_ResultSet1 {
   /** @sqlType int */
   activeTokenCount: number | null;
   /** @sqlType varchar */
-  authenticationStatus: string;
+  authenticationStatus: string | null;
 }
 
 export type GetRequestAuthenticationStatusResults = [
@@ -2777,7 +2801,7 @@ export interface GetSystemConfiguration_ResultSet0 {
 }
 export interface GetSystemConfiguration_ResultSet1 {
   /** @sqlType nvarchar */
-  configKey: string;
+  configKey: string | null;
   /** @sqlType nvarchar */
   configValue: string | null;
   /** @sqlType nvarchar */
@@ -2787,7 +2811,7 @@ export interface GetSystemConfiguration_ResultSet1 {
 }
 export interface GetSystemConfiguration_ResultSet2 {
   /** @sqlType nvarchar */
-  configKey: string;
+  configKey: string | null;
   /** @sqlType nvarchar */
   configValue: string | null;
   /** @sqlType nvarchar */
@@ -2808,9 +2832,9 @@ export interface GetTeamMachines_ResultSet0 {
 }
 export interface GetTeamMachines_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType nvarchar */
@@ -2818,11 +2842,11 @@ export interface GetTeamMachines_ResultSet1 {
   /** @sqlType datetime2 */
   vaultStatusTime: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType int */
   queueCount: number | null;
   /** @sqlType nvarchar */
@@ -2830,7 +2854,7 @@ export interface GetTeamMachines_ResultSet1 {
   /** @sqlType nvarchar */
   cephClusterName: string | null;
   /** @sqlType varchar */
-  assignmentStatus: string;
+  assignmentStatus: string | null;
 }
 
 export type GetTeamMachinesResults = [
@@ -2844,13 +2868,13 @@ export interface GetTeamMembers_ResultSet0 {
 }
 export interface GetTeamMembers_ResultSet1 {
   /** @sqlType nvarchar */
-  userEmail: string;
+  userEmail: string | null;
   /** @sqlType bit */
-  activated: boolean;
+  activated: boolean | null;
   /** @sqlType nvarchar */
   teams: string | null;
   /** @sqlType nvarchar */
-  companyName: string;
+  organizationName: string | null;
   /** @sqlType bit */
   isMember: boolean | null;
   /** @sqlType bit */
@@ -2858,13 +2882,13 @@ export interface GetTeamMembers_ResultSet1 {
 }
 export interface GetTeamMembers_ResultSet2 {
   /** @sqlType nvarchar */
-  userEmail: string;
+  userEmail: string | null;
   /** @sqlType bit */
-  activated: boolean;
+  activated: boolean | null;
   /** @sqlType nvarchar */
   teams: string | null;
   /** @sqlType nvarchar */
-  companyName: string;
+  organizationName: string | null;
   /** @sqlType bit */
   isMember: boolean | null;
   /** @sqlType bit */
@@ -2889,7 +2913,7 @@ export interface GetTeamQueueItems_ResultSet1 {
   /** @sqlType int */
   ageInMinutes: number | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType int */
@@ -2917,11 +2941,11 @@ export interface GetTeamQueueItems_ResultSet1 {
   /** @sqlType nvarchar */
   priorityLabel: string | null;
   /** @sqlType varchar */
-  healthStatus: string;
-  /** @sqlType int */
-  canBeCancelled: number;
-  /** @sqlType int */
-  hasResponse: number;
+  healthStatus: string | null;
+  /** @sqlType bit */
+  canBeCancelled: boolean | null;
+  /** @sqlType bit */
+  hasResponse: boolean | null;
   /** @sqlType nvarchar */
   createdBy: string | null;
   /** @sqlType int */
@@ -2930,8 +2954,8 @@ export interface GetTeamQueueItems_ResultSet1 {
   lastRetryAt: string | null;
   /** @sqlType nvarchar */
   lastFailureReason: string | null;
-  /** @sqlType int */
-  permanentlyFailed: number;
+  /** @sqlType bit */
+  permanentlyFailed: boolean | null;
   /** @sqlType int */
   totalDurationSeconds: number | null;
   /** @sqlType int */
@@ -2972,25 +2996,25 @@ export interface GetTeamRepositories_ResultSet0 {
 }
 export interface GetTeamRepositories_ResultSet1 {
   /** @sqlType nvarchar */
-  repositoryName: string;
+  repositoryName: string | null;
   /** @sqlType uniqueidentifier */
-  repositoryGuid: string;
+  repositoryGuid: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType uniqueidentifier */
-  grandGuid: string;
+  grandGuid: string | null;
   /** @sqlType uniqueidentifier */
   parentGuid: string | null;
   /** @sqlType int */
-  repositoryNetworkId: number;
+  repositoryNetworkId: number | null;
   /** @sqlType nvarchar */
-  repositoryNetworkMode: string;
+  repositoryNetworkMode: string | null;
   /** @sqlType nvarchar */
-  repositoryTag: string;
+  repositoryTag: string | null;
 }
 
 export type GetTeamRepositoriesResults = [
@@ -3004,13 +3028,13 @@ export interface GetTeamStorages_ResultSet0 {
 }
 export interface GetTeamStorages_ResultSet1 {
   /** @sqlType nvarchar */
-  storageName: string;
+  storageName: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
 }
 
 export type GetTeamStoragesResults = [
@@ -3018,15 +3042,15 @@ export type GetTeamStoragesResults = [
   GetTeamStorages_ResultSet1[],
 ];
 
-export interface GetUserCompany_ResultSet0 {
+export interface GetUserOrganization_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
-export interface GetUserCompany_ResultSet1 {
+export interface GetUserOrganization_ResultSet1 {
   /** @sqlType nvarchar */
-  companyName: string;
+  organizationName: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType int */
@@ -3037,9 +3061,9 @@ export interface GetUserCompany_ResultSet1 {
   userCount: number | null;
 }
 
-export type GetUserCompanyResults = [
-  GetUserCompany_ResultSet0[],
-  GetUserCompany_ResultSet1[],
+export type GetUserOrganizationResults = [
+  GetUserOrganization_ResultSet0[],
+  GetUserOrganization_ResultSet1[],
 ];
 
 export interface GetUserRequests_ResultSet0 {
@@ -3048,21 +3072,21 @@ export interface GetUserRequests_ResultSet0 {
 }
 export interface GetUserRequests_ResultSet1 {
   /** @sqlType int */
-  requestId: number;
+  requestId: number | null;
   /** @sqlType nvarchar */
-  userEmail: string;
+  userEmail: string | null;
   /** @sqlType nvarchar */
-  sessionName: string;
+  sessionName: string | null;
   /** @sqlType nvarchar */
   ipAddress: string | null;
   /** @sqlType nvarchar */
   userAgent: string | null;
   /** @sqlType datetimeoffset */
-  createdAt: string;
+  createdAt: string | null;
   /** @sqlType datetimeoffset */
-  lastActivity: string;
+  lastActivity: string | null;
   /** @sqlType bit */
-  isActive: boolean;
+  isActive: boolean | null;
   /** @sqlType int */
   parentRequestId: number | null;
   /** @sqlType nvarchar */
@@ -3086,7 +3110,7 @@ export interface GetUserVault_ResultSet1 {
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType uniqueidentifier */
   userCredential: string | null;
 }
@@ -3096,31 +3120,21 @@ export type GetUserVaultResults = [
   GetUserVault_ResultSet1[],
 ];
 
-export interface ImportCompanyData_ResultSet0 {
+export interface ImportOrganizationData_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
-export interface ImportCompanyData_ResultSet1 {
+export interface ImportOrganizationData_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
   /** @sqlType int */
-  importedCount: number;
+  importedCount: number | null;
   /** @sqlType int */
-  skippedCount: number;
+  skippedCount: number | null;
   /** @sqlType int */
-  errorCount: number;
+  errorCount: number | null;
 }
-export interface ImportCompanyData_ResultSet2 {
-  /** @sqlType int */
-  importedCount: number;
-  /** @sqlType int */
-  skippedCount: number;
-  /** @sqlType int */
-  errorCount: number;
-  /** @sqlType varchar */
-  result: string;
-}
-export interface ImportCompanyData_ResultSet3 {
+export interface ImportOrganizationData_ResultSet2 {
   /** @sqlType int */
   importedCount: number | null;
   /** @sqlType int */
@@ -3128,14 +3142,24 @@ export interface ImportCompanyData_ResultSet3 {
   /** @sqlType int */
   errorCount: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
+}
+export interface ImportOrganizationData_ResultSet3 {
+  /** @sqlType int */
+  importedCount: number | null;
+  /** @sqlType int */
+  skippedCount: number | null;
+  /** @sqlType int */
+  errorCount: number | null;
+  /** @sqlType varchar */
+  result: string | null;
 }
 
-export type ImportCompanyDataResults = [
-  ImportCompanyData_ResultSet0[],
-  ImportCompanyData_ResultSet1[],
-  ImportCompanyData_ResultSet2[],
-  ImportCompanyData_ResultSet3[],
+export type ImportOrganizationDataResults = [
+  ImportOrganizationData_ResultSet0[],
+  ImportOrganizationData_ResultSet1[],
+  ImportOrganizationData_ResultSet2[],
+  ImportOrganizationData_ResultSet3[],
 ];
 
 export interface IsRegistered_ResultSet0 {
@@ -3164,19 +3188,19 @@ export interface PrivilegeAuthenticationRequest_ResultSet1 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType bit */
   isAuthorized: boolean | null;
   /** @sqlType bit */
-  hasTFAEnabled: boolean | null;
+  isTFAEnabled: boolean | null;
 }
 export interface PrivilegeAuthenticationRequest_ResultSet2 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
-  /** @sqlType int */
-  isAuthorized: number;
+  result: string | null;
+  /** @sqlType bit */
+  isAuthorized: boolean | null;
 }
 
 export type PrivilegeAuthenticationRequestResults = [
@@ -3200,9 +3224,9 @@ export interface ResetBridgeAuthorization_ResultSet1 {
   /** @sqlType nvarchar */
   bridgeName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType varchar */
-  managementMode: string;
+  managementMode: string | null;
 }
 
 export type ResetBridgeAuthorizationResults = [
@@ -3218,7 +3242,7 @@ export interface RetryFailedQueueItem_ResultSet1 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType int */
   newRetryCount: number | null;
 }
@@ -3234,9 +3258,9 @@ export interface UpdateBridgeName_ResultSet0 {
 }
 export interface UpdateBridgeName_ResultSet1 {
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
 }
 
 export type UpdateBridgeNameResults = [
@@ -3250,11 +3274,11 @@ export interface UpdateBridgeVault_ResultSet0 {
 }
 export interface UpdateBridgeVault_ResultSet1 {
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateBridgeVaultResults = [
@@ -3268,7 +3292,7 @@ export interface UpdateCephClusterVault_ResultSet0 {
 }
 export interface UpdateCephClusterVault_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type UpdateCephClusterVaultResults = [
@@ -3282,7 +3306,7 @@ export interface UpdateCephPoolVault_ResultSet0 {
 }
 export interface UpdateCephPoolVault_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type UpdateCephPoolVaultResults = [
@@ -3296,7 +3320,7 @@ export interface UpdateCloneMachineAssignments_ResultSet0 {
 }
 export interface UpdateCloneMachineAssignments_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateCloneMachineAssignments_ResultSet2 {
   /** @sqlType nvarchar */
@@ -3320,7 +3344,7 @@ export interface UpdateCloneMachineRemovals_ResultSet0 {
 }
 export interface UpdateCloneMachineRemovals_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateCloneMachineRemovals_ResultSet2 {
   /** @sqlType nvarchar */
@@ -3333,75 +3357,17 @@ export type UpdateCloneMachineRemovalsResults = [
   UpdateCloneMachineRemovals_ResultSet2[],
 ];
 
-export interface UpdateCompanyBlockUserRequests_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface UpdateCompanyBlockUserRequests_ResultSet1 {
-  /** @sqlType int */
-  companyId: number | null;
-  /** @sqlType bit */
-  blockUserRequests: boolean | null;
-  /** @sqlType int */
-  deactivatedTokenCount: number | null;
-  /** @sqlType nvarchar */
-  result: string | null;
-}
-
-export type UpdateCompanyBlockUserRequestsResults = [
-  UpdateCompanyBlockUserRequests_ResultSet0[],
-  UpdateCompanyBlockUserRequests_ResultSet1[],
-];
-
-export interface UpdateCompanyVault_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface UpdateCompanyVault_ResultSet1 {
-  /** @sqlType nvarchar */
-  companyName: string;
-  /** @sqlType int */
-  vaultVersion: number | null;
-  /** @sqlType varchar */
-  result: string;
-}
-
-export type UpdateCompanyVaultResults = [
-  UpdateCompanyVault_ResultSet0[],
-  UpdateCompanyVault_ResultSet1[],
-];
-
-export interface UpdateCompanyVaults_ResultSet0 {
-  /** @sqlType uniqueidentifier */
-  nextRequestToken: string | null;
-}
-export interface UpdateCompanyVaults_ResultSet1 {
-  /** @sqlType int */
-  companyId: number | null;
-  /** @sqlType int */
-  blockUserRequests: number;
-  /** @sqlType int */
-  vaultsUpdated: number | null;
-  /** @sqlType nvarchar */
-  result: string | null;
-}
-
-export type UpdateCompanyVaultsResults = [
-  UpdateCompanyVaults_ResultSet0[],
-  UpdateCompanyVaults_ResultSet1[],
-];
-
 export interface UpdateImageMachineAssignment_ResultSet0 {
   /** @sqlType uniqueidentifier */
   nextRequestToken: string | null;
 }
 export interface UpdateImageMachineAssignment_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateImageMachineAssignment_ResultSet2 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type UpdateImageMachineAssignmentResults = [
@@ -3416,13 +3382,13 @@ export interface UpdateMachineAssignedBridge_ResultSet0 {
 }
 export interface UpdateMachineAssignedBridge_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
 }
 
 export type UpdateMachineAssignedBridgeResults = [
@@ -3436,11 +3402,11 @@ export interface UpdateMachineCeph_ResultSet0 {
 }
 export interface UpdateMachineCeph_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateMachineCeph_ResultSet2 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type UpdateMachineCephResults = [
@@ -3455,7 +3421,7 @@ export interface UpdateMachineClusterAssignment_ResultSet0 {
 }
 export interface UpdateMachineClusterAssignment_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type UpdateMachineClusterAssignmentResults = [
@@ -3469,7 +3435,7 @@ export interface UpdateMachineClusterRemoval_ResultSet0 {
 }
 export interface UpdateMachineClusterRemoval_ResultSet1 {
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type UpdateMachineClusterRemovalResults = [
@@ -3483,11 +3449,11 @@ export interface UpdateMachineName_ResultSet0 {
 }
 export interface UpdateMachineName_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
 }
 
 export type UpdateMachineNameResults = [
@@ -3501,9 +3467,9 @@ export interface UpdateMachineStatus_ResultSet0 {
 }
 export interface UpdateMachineStatus_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType int */
-  vaultVersion: number;
+  vaultVersion: number | null;
   /** @sqlType nvarchar */
   vaultContent: string | null;
   /** @sqlType nvarchar */
@@ -3511,11 +3477,11 @@ export interface UpdateMachineStatus_ResultSet1 {
   /** @sqlType datetime2 */
   vaultStatusTime: string | null;
   /** @sqlType nvarchar */
-  bridgeName: string;
+  bridgeName: string | null;
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType int */
   queueCount: number | null;
 }
@@ -3531,16 +3497,74 @@ export interface UpdateMachineVault_ResultSet0 {
 }
 export interface UpdateMachineVault_ResultSet1 {
   /** @sqlType nvarchar */
-  machineName: string;
+  machineName: string | null;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateMachineVaultResults = [
   UpdateMachineVault_ResultSet0[],
   UpdateMachineVault_ResultSet1[],
+];
+
+export interface UpdateOrganizationBlockUserRequests_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateOrganizationBlockUserRequests_ResultSet1 {
+  /** @sqlType int */
+  organizationId: number | null;
+  /** @sqlType bit */
+  blockUserRequests: boolean | null;
+  /** @sqlType int */
+  deactivatedTokenCount: number | null;
+  /** @sqlType nvarchar */
+  result: string | null;
+}
+
+export type UpdateOrganizationBlockUserRequestsResults = [
+  UpdateOrganizationBlockUserRequests_ResultSet0[],
+  UpdateOrganizationBlockUserRequests_ResultSet1[],
+];
+
+export interface UpdateOrganizationVault_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateOrganizationVault_ResultSet1 {
+  /** @sqlType nvarchar */
+  organizationName: string | null;
+  /** @sqlType int */
+  vaultVersion: number | null;
+  /** @sqlType varchar */
+  result: string | null;
+}
+
+export type UpdateOrganizationVaultResults = [
+  UpdateOrganizationVault_ResultSet0[],
+  UpdateOrganizationVault_ResultSet1[],
+];
+
+export interface UpdateOrganizationVaults_ResultSet0 {
+  /** @sqlType uniqueidentifier */
+  nextRequestToken: string | null;
+}
+export interface UpdateOrganizationVaults_ResultSet1 {
+  /** @sqlType int */
+  organizationId: number | null;
+  /** @sqlType bit */
+  blockUserRequests: boolean | null;
+  /** @sqlType int */
+  vaultsUpdated: number | null;
+  /** @sqlType nvarchar */
+  result: string | null;
+}
+
+export type UpdateOrganizationVaultsResults = [
+  UpdateOrganizationVaults_ResultSet0[],
+  UpdateOrganizationVaults_ResultSet1[],
 ];
 
 export interface UpdateQueueItemResponse_ResultSet0 {
@@ -3551,53 +3575,53 @@ export interface UpdateQueueItemResponse_ResultSet1 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateQueueItemResponse_ResultSet2 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateQueueItemResponse_ResultSet3 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateQueueItemResponse_ResultSet4 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 export interface UpdateQueueItemResponse_ResultSet5 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateQueueItemResponse_ResultSet6 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 export interface UpdateQueueItemResponse_ResultSet7 {
   /** @sqlType uniqueidentifier */
   taskId: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateQueueItemResponseResults = [
@@ -3633,7 +3657,7 @@ export interface UpdateRegionName_ResultSet0 {
 }
 export interface UpdateRegionName_ResultSet1 {
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
 }
 
 export type UpdateRegionNameResults = [
@@ -3647,11 +3671,11 @@ export interface UpdateRegionVault_ResultSet0 {
 }
 export interface UpdateRegionVault_ResultSet1 {
   /** @sqlType nvarchar */
-  regionName: string;
+  regionName: string | null;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateRegionVaultResults = [
@@ -3665,9 +3689,9 @@ export interface UpdateRepositoryName_ResultSet0 {
 }
 export interface UpdateRepositoryName_ResultSet1 {
   /** @sqlType nvarchar */
-  repositoryName: string;
+  repositoryName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
 }
 
 export type UpdateRepositoryNameResults = [
@@ -3681,11 +3705,11 @@ export interface UpdateRepositoryTag_ResultSet0 {
 }
 export interface UpdateRepositoryTag_ResultSet1 {
   /** @sqlType nvarchar */
-  repositoryName: string;
+  repositoryName: string | null;
   /** @sqlType nvarchar */
-  repositoryTag: string;
+  repositoryTag: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
 }
 
 export type UpdateRepositoryTagResults = [
@@ -3699,11 +3723,11 @@ export interface UpdateRepositoryVault_ResultSet0 {
 }
 export interface UpdateRepositoryVault_ResultSet1 {
   /** @sqlType nvarchar */
-  repositoryName: string;
+  repositoryName: string | null;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateRepositoryVaultResults = [
@@ -3717,9 +3741,9 @@ export interface UpdateStorageName_ResultSet0 {
 }
 export interface UpdateStorageName_ResultSet1 {
   /** @sqlType nvarchar */
-  storageName: string;
+  storageName: string | null;
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
 }
 
 export type UpdateStorageNameResults = [
@@ -3733,11 +3757,11 @@ export interface UpdateStorageVault_ResultSet0 {
 }
 export interface UpdateStorageVault_ResultSet1 {
   /** @sqlType nvarchar */
-  storageName: string;
+  storageName: string | null;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateStorageVaultResults = [
@@ -3751,9 +3775,9 @@ export interface UpdateTeamName_ResultSet0 {
 }
 export interface UpdateTeamName_ResultSet1 {
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType nvarchar */
-  companyName: string;
+  organizationName: string | null;
   /** @sqlType int */
   memberCount: number | null;
 }
@@ -3769,11 +3793,11 @@ export interface UpdateTeamVault_ResultSet0 {
 }
 export interface UpdateTeamVault_ResultSet1 {
   /** @sqlType nvarchar */
-  teamName: string;
+  teamName: string | null;
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateTeamVaultResults = [
@@ -3787,11 +3811,11 @@ export interface UpdateUserAssignedPermissions_ResultSet0 {
 }
 export interface UpdateUserAssignedPermissions_ResultSet1 {
   /** @sqlType nvarchar */
-  userEmail: string;
+  userEmail: string | null;
   /** @sqlType nvarchar */
-  permissionGroupName: string;
+  permissionGroupName: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
   /** @sqlType int */
   totalTokenCount: number | null;
   /** @sqlType int */
@@ -3809,9 +3833,9 @@ export interface UpdateUserEmail_ResultSet0 {
 }
 export interface UpdateUserEmail_ResultSet1 {
   /** @sqlType nvarchar */
-  userEmail: string;
+  userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateUserEmailResults = [
@@ -3827,7 +3851,7 @@ export interface UpdateUserLanguage_ResultSet1 {
   /** @sqlType nvarchar */
   preferredLanguage: string | null;
   /** @sqlType varchar */
-  message: string;
+  message: string | null;
 }
 
 export type UpdateUserLanguageResults = [
@@ -3843,7 +3867,7 @@ export interface UpdateUserPassword_ResultSet1 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateUserPasswordResults = [
@@ -3861,15 +3885,15 @@ export interface UpdateUserTFA_ResultSet1 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  authType: string;
+  authType: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 export interface UpdateUserTFA_ResultSet2 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 export interface UpdateUserTFA_ResultSet3 {
   /** @sqlType nvarchar */
@@ -3877,15 +3901,15 @@ export interface UpdateUserTFA_ResultSet3 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  authType: string;
+  authType: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 export interface UpdateUserTFA_ResultSet4 {
   /** @sqlType nvarchar */
   userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateUserTFAResults = [
@@ -3902,9 +3926,9 @@ export interface UpdateUserToActivated_ResultSet0 {
 }
 export interface UpdateUserToActivated_ResultSet1 {
   /** @sqlType nvarchar */
-  userEmail: string;
+  userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateUserToActivatedResults = [
@@ -3918,9 +3942,9 @@ export interface UpdateUserToDeactivated_ResultSet0 {
 }
 export interface UpdateUserToDeactivated_ResultSet1 {
   /** @sqlType nvarchar */
-  userEmail: string;
+  userEmail: string | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateUserToDeactivatedResults = [
@@ -3938,7 +3962,7 @@ export interface UpdateUserVault_ResultSet1 {
   /** @sqlType int */
   vaultVersion: number | null;
   /** @sqlType varchar */
-  result: string;
+  result: string | null;
 }
 
 export type UpdateUserVaultResults = [
@@ -4019,9 +4043,9 @@ export interface CreateMachineTypedResponse extends ApiResponseBase {
   ];
 }
 
-export interface CreateNewCompanyTypedResponse extends ApiResponseBase {
+export interface CreateNewOrganizationTypedResponse extends ApiResponseBase {
   resultSets: [
-    ResultSet<CreateNewCompany_ResultSet0>,
+    ResultSet<CreateNewOrganization_ResultSet0>,
   ];
 }
 
@@ -4194,10 +4218,10 @@ export interface DeleteUserRequestTypedResponse extends ApiResponseBase {
   ];
 }
 
-export interface ExportCompanyDataTypedResponse extends ApiResponseBase {
+export interface ExportOrganizationDataTypedResponse extends ApiResponseBase {
   resultSets: [
-    ResultSet<ExportCompanyData_ResultSet0>,
-    ResultSet<ExportCompanyData_ResultSet1>,
+    ResultSet<ExportOrganizationData_ResultSet0>,
+    ResultSet<ExportOrganizationData_ResultSet1>,
   ];
 }
 
@@ -4280,72 +4304,6 @@ export interface GetCloneMachinesTypedResponse extends ApiResponseBase {
   ];
 }
 
-export interface GetCompanyDashboardTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<GetCompanyDashboard_ResultSet0>,
-    ResultSet<GetCompanyDashboard_ResultSet1>,
-    ResultSet<GetCompanyDashboard_ResultSet2>,
-    ResultSet<GetCompanyDashboard_ResultSet3>,
-    ResultSet<GetCompanyDashboard_ResultSet4>,
-    ResultSet<GetCompanyDashboard_ResultSet5>,
-    ResultSet<GetCompanyDashboard_ResultSet6>,
-    ResultSet<GetCompanyDashboard_ResultSet7>,
-    ResultSet<GetCompanyDashboard_ResultSet8>,
-    ResultSet<GetCompanyDashboard_ResultSet9>,
-    ResultSet<GetCompanyDashboard_ResultSet10>,
-    ResultSet<GetCompanyDashboard_ResultSet11>,
-    ResultSet<GetCompanyDashboard_ResultSet12>,
-    ResultSet<GetCompanyDashboard_ResultSet13>,
-    ResultSet<GetCompanyDashboard_ResultSet14>,
-    ResultSet<GetCompanyDashboard_ResultSet15>,
-    ResultSet<GetCompanyDashboard_ResultSet16>,
-  ];
-}
-
-export interface GetCompanyPermissionGroupsTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<GetCompanyPermissionGroups_ResultSet0>,
-    ResultSet<GetCompanyPermissionGroups_ResultSet1>,
-  ];
-}
-
-export interface GetCompanyRegionsTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<GetCompanyRegions_ResultSet0>,
-    ResultSet<GetCompanyRegions_ResultSet1>,
-  ];
-}
-
-export interface GetCompanyTeamsTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<GetCompanyTeams_ResultSet0>,
-    ResultSet<GetCompanyTeams_ResultSet1>,
-  ];
-}
-
-export interface GetCompanyUsersTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<GetCompanyUsers_ResultSet0>,
-    ResultSet<GetCompanyUsers_ResultSet1>,
-    ResultSet<GetCompanyUsers_ResultSet2>,
-  ];
-}
-
-export interface GetCompanyVaultTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<GetCompanyVault_ResultSet0>,
-    ResultSet<GetCompanyVault_ResultSet1>,
-  ];
-}
-
-export interface GetCompanyVaultsTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<GetCompanyVaults_ResultSet0>,
-    ResultSet<GetCompanyVaults_ResultSet1>,
-    ResultSet<GetCompanyVaults_ResultSet2>,
-  ];
-}
-
 export interface GetEntityAuditTraceTypedResponse extends ApiResponseBase {
   resultSets: [
     ResultSet<GetEntityAuditTrace_ResultSet0>,
@@ -4374,6 +4332,72 @@ export interface GetMachineAssignmentStatusTypedResponse extends ApiResponseBase
     ResultSet<GetMachineAssignmentStatus_ResultSet0>,
     ResultSet<GetMachineAssignmentStatus_ResultSet1>,
     ResultSet<GetMachineAssignmentStatus_ResultSet2>,
+  ];
+}
+
+export interface GetOrganizationDashboardTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetOrganizationDashboard_ResultSet0>,
+    ResultSet<GetOrganizationDashboard_ResultSet1>,
+    ResultSet<GetOrganizationDashboard_ResultSet2>,
+    ResultSet<GetOrganizationDashboard_ResultSet3>,
+    ResultSet<GetOrganizationDashboard_ResultSet4>,
+    ResultSet<GetOrganizationDashboard_ResultSet5>,
+    ResultSet<GetOrganizationDashboard_ResultSet6>,
+    ResultSet<GetOrganizationDashboard_ResultSet7>,
+    ResultSet<GetOrganizationDashboard_ResultSet8>,
+    ResultSet<GetOrganizationDashboard_ResultSet9>,
+    ResultSet<GetOrganizationDashboard_ResultSet10>,
+    ResultSet<GetOrganizationDashboard_ResultSet11>,
+    ResultSet<GetOrganizationDashboard_ResultSet12>,
+    ResultSet<GetOrganizationDashboard_ResultSet13>,
+    ResultSet<GetOrganizationDashboard_ResultSet14>,
+    ResultSet<GetOrganizationDashboard_ResultSet15>,
+    ResultSet<GetOrganizationDashboard_ResultSet16>,
+  ];
+}
+
+export interface GetOrganizationPermissionGroupsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetOrganizationPermissionGroups_ResultSet0>,
+    ResultSet<GetOrganizationPermissionGroups_ResultSet1>,
+  ];
+}
+
+export interface GetOrganizationRegionsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetOrganizationRegions_ResultSet0>,
+    ResultSet<GetOrganizationRegions_ResultSet1>,
+  ];
+}
+
+export interface GetOrganizationTeamsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetOrganizationTeams_ResultSet0>,
+    ResultSet<GetOrganizationTeams_ResultSet1>,
+  ];
+}
+
+export interface GetOrganizationUsersTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetOrganizationUsers_ResultSet0>,
+    ResultSet<GetOrganizationUsers_ResultSet1>,
+    ResultSet<GetOrganizationUsers_ResultSet2>,
+  ];
+}
+
+export interface GetOrganizationVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetOrganizationVault_ResultSet0>,
+    ResultSet<GetOrganizationVault_ResultSet1>,
+  ];
+}
+
+export interface GetOrganizationVaultsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<GetOrganizationVaults_ResultSet0>,
+    ResultSet<GetOrganizationVaults_ResultSet1>,
+    ResultSet<GetOrganizationVaults_ResultSet2>,
   ];
 }
 
@@ -4468,10 +4492,10 @@ export interface GetTeamStoragesTypedResponse extends ApiResponseBase {
   ];
 }
 
-export interface GetUserCompanyTypedResponse extends ApiResponseBase {
+export interface GetUserOrganizationTypedResponse extends ApiResponseBase {
   resultSets: [
-    ResultSet<GetUserCompany_ResultSet0>,
-    ResultSet<GetUserCompany_ResultSet1>,
+    ResultSet<GetUserOrganization_ResultSet0>,
+    ResultSet<GetUserOrganization_ResultSet1>,
   ];
 }
 
@@ -4489,12 +4513,12 @@ export interface GetUserVaultTypedResponse extends ApiResponseBase {
   ];
 }
 
-export interface ImportCompanyDataTypedResponse extends ApiResponseBase {
+export interface ImportOrganizationDataTypedResponse extends ApiResponseBase {
   resultSets: [
-    ResultSet<ImportCompanyData_ResultSet0>,
-    ResultSet<ImportCompanyData_ResultSet1>,
-    ResultSet<ImportCompanyData_ResultSet2>,
-    ResultSet<ImportCompanyData_ResultSet3>,
+    ResultSet<ImportOrganizationData_ResultSet0>,
+    ResultSet<ImportOrganizationData_ResultSet1>,
+    ResultSet<ImportOrganizationData_ResultSet2>,
+    ResultSet<ImportOrganizationData_ResultSet3>,
   ];
 }
 
@@ -4578,27 +4602,6 @@ export interface UpdateCloneMachineRemovalsTypedResponse extends ApiResponseBase
   ];
 }
 
-export interface UpdateCompanyBlockUserRequestsTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<UpdateCompanyBlockUserRequests_ResultSet0>,
-    ResultSet<UpdateCompanyBlockUserRequests_ResultSet1>,
-  ];
-}
-
-export interface UpdateCompanyVaultTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<UpdateCompanyVault_ResultSet0>,
-    ResultSet<UpdateCompanyVault_ResultSet1>,
-  ];
-}
-
-export interface UpdateCompanyVaultsTypedResponse extends ApiResponseBase {
-  resultSets: [
-    ResultSet<UpdateCompanyVaults_ResultSet0>,
-    ResultSet<UpdateCompanyVaults_ResultSet1>,
-  ];
-}
-
 export interface UpdateImageMachineAssignmentTypedResponse extends ApiResponseBase {
   resultSets: [
     ResultSet<UpdateImageMachineAssignment_ResultSet0>,
@@ -4654,6 +4657,27 @@ export interface UpdateMachineVaultTypedResponse extends ApiResponseBase {
   resultSets: [
     ResultSet<UpdateMachineVault_ResultSet0>,
     ResultSet<UpdateMachineVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateOrganizationBlockUserRequestsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateOrganizationBlockUserRequests_ResultSet0>,
+    ResultSet<UpdateOrganizationBlockUserRequests_ResultSet1>,
+  ];
+}
+
+export interface UpdateOrganizationVaultTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateOrganizationVault_ResultSet0>,
+    ResultSet<UpdateOrganizationVault_ResultSet1>,
+  ];
+}
+
+export interface UpdateOrganizationVaultsTypedResponse extends ApiResponseBase {
+  resultSets: [
+    ResultSet<UpdateOrganizationVaults_ResultSet0>,
+    ResultSet<UpdateOrganizationVaults_ResultSet1>,
   ];
 }
 
@@ -4825,16 +4849,6 @@ export function extractCancelQueueItemFirst(response: ApiResponseBase): CancelQu
   return items[0] ?? null;
 }
 
-export function extractCreateAuthenticationRequest(response: ApiResponseBase): CreateAuthenticationRequest_ResultSet0[] {
-  const resultSet = response.resultSets[0] as { data: CreateAuthenticationRequest_ResultSet0[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractCreateAuthenticationRequestFirst(response: ApiResponseBase): CreateAuthenticationRequest_ResultSet0 | null {
-  const items = extractCreateAuthenticationRequest(response);
-  return items[0] ?? null;
-}
-
 export function extractCreateBridge(response: ApiResponseBase): CreateBridge_ResultSet1[] {
   const resultSet = response.resultSets[1] as { data: CreateBridge_ResultSet1[] } | undefined;
   return resultSet?.data ?? [];
@@ -4905,13 +4919,13 @@ export function extractCreateMachineFirst(response: ApiResponseBase): CreateMach
   return items[0] ?? null;
 }
 
-export function extractCreateNewCompany(response: ApiResponseBase): CreateNewCompany_ResultSet0[] {
-  const resultSet = response.resultSets[0] as { data: CreateNewCompany_ResultSet0[] } | undefined;
+export function extractCreateNewOrganization(response: ApiResponseBase): CreateNewOrganization_ResultSet0[] {
+  const resultSet = response.resultSets[0] as { data: CreateNewOrganization_ResultSet0[] } | undefined;
   return resultSet?.data ?? [];
 }
 
-export function extractCreateNewCompanyFirst(response: ApiResponseBase): CreateNewCompany_ResultSet0 | null {
-  const items = extractCreateNewCompany(response);
+export function extractCreateNewOrganizationFirst(response: ApiResponseBase): CreateNewOrganization_ResultSet0 | null {
+  const items = extractCreateNewOrganization(response);
   return items[0] ?? null;
 }
 
@@ -5105,13 +5119,13 @@ export function extractDeleteUserRequestFirst(response: ApiResponseBase): Delete
   return items[0] ?? null;
 }
 
-export function extractExportCompanyData(response: ApiResponseBase): ExportCompanyData_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: ExportCompanyData_ResultSet1[] } | undefined;
+export function extractExportOrganizationData(response: ApiResponseBase): ExportOrganizationData_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: ExportOrganizationData_ResultSet1[] } | undefined;
   return resultSet?.data ?? [];
 }
 
-export function extractExportCompanyDataFirst(response: ApiResponseBase): ExportCompanyData_ResultSet1 | null {
-  const items = extractExportCompanyData(response);
+export function extractExportOrganizationDataFirst(response: ApiResponseBase): ExportOrganizationData_ResultSet1 | null {
+  const items = extractExportOrganizationData(response);
   return items[0] ?? null;
 }
 
@@ -5225,76 +5239,6 @@ export function extractGetCloneMachinesFirst(response: ApiResponseBase): GetClon
   return items[0] ?? null;
 }
 
-export function extractGetCompanyDashboard(response: ApiResponseBase): GetCompanyDashboard_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyDashboard_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractGetCompanyDashboardFirst(response: ApiResponseBase): GetCompanyDashboard_ResultSet1 | null {
-  const items = extractGetCompanyDashboard(response);
-  return items[0] ?? null;
-}
-
-export function extractGetCompanyPermissionGroups(response: ApiResponseBase): GetCompanyPermissionGroups_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyPermissionGroups_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractGetCompanyPermissionGroupsFirst(response: ApiResponseBase): GetCompanyPermissionGroups_ResultSet1 | null {
-  const items = extractGetCompanyPermissionGroups(response);
-  return items[0] ?? null;
-}
-
-export function extractGetCompanyRegions(response: ApiResponseBase): GetCompanyRegions_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyRegions_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractGetCompanyRegionsFirst(response: ApiResponseBase): GetCompanyRegions_ResultSet1 | null {
-  const items = extractGetCompanyRegions(response);
-  return items[0] ?? null;
-}
-
-export function extractGetCompanyTeams(response: ApiResponseBase): GetCompanyTeams_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyTeams_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractGetCompanyTeamsFirst(response: ApiResponseBase): GetCompanyTeams_ResultSet1 | null {
-  const items = extractGetCompanyTeams(response);
-  return items[0] ?? null;
-}
-
-export function extractGetCompanyUsers(response: ApiResponseBase): GetCompanyUsers_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyUsers_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractGetCompanyUsersFirst(response: ApiResponseBase): GetCompanyUsers_ResultSet1 | null {
-  const items = extractGetCompanyUsers(response);
-  return items[0] ?? null;
-}
-
-export function extractGetCompanyVault(response: ApiResponseBase): GetCompanyVault_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyVault_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractGetCompanyVaultFirst(response: ApiResponseBase): GetCompanyVault_ResultSet1 | null {
-  const items = extractGetCompanyVault(response);
-  return items[0] ?? null;
-}
-
-export function extractGetCompanyVaults(response: ApiResponseBase): GetCompanyVaults_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetCompanyVaults_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractGetCompanyVaultsFirst(response: ApiResponseBase): GetCompanyVaults_ResultSet1 | null {
-  const items = extractGetCompanyVaults(response);
-  return items[0] ?? null;
-}
-
 export function extractGetEntityAuditTrace(response: ApiResponseBase): GetEntityAuditTrace_ResultSet1[] {
   const resultSet = response.resultSets[1] as { data: GetEntityAuditTrace_ResultSet1[] } | undefined;
   return resultSet?.data ?? [];
@@ -5332,6 +5276,76 @@ export function extractGetMachineAssignmentStatus(response: ApiResponseBase): Ge
 
 export function extractGetMachineAssignmentStatusFirst(response: ApiResponseBase): GetMachineAssignmentStatus_ResultSet1 | null {
   const items = extractGetMachineAssignmentStatus(response);
+  return items[0] ?? null;
+}
+
+export function extractGetOrganizationDashboard(response: ApiResponseBase): GetOrganizationDashboard_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetOrganizationDashboard_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetOrganizationDashboardFirst(response: ApiResponseBase): GetOrganizationDashboard_ResultSet1 | null {
+  const items = extractGetOrganizationDashboard(response);
+  return items[0] ?? null;
+}
+
+export function extractGetOrganizationPermissionGroups(response: ApiResponseBase): GetOrganizationPermissionGroups_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetOrganizationPermissionGroups_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetOrganizationPermissionGroupsFirst(response: ApiResponseBase): GetOrganizationPermissionGroups_ResultSet1 | null {
+  const items = extractGetOrganizationPermissionGroups(response);
+  return items[0] ?? null;
+}
+
+export function extractGetOrganizationRegions(response: ApiResponseBase): GetOrganizationRegions_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetOrganizationRegions_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetOrganizationRegionsFirst(response: ApiResponseBase): GetOrganizationRegions_ResultSet1 | null {
+  const items = extractGetOrganizationRegions(response);
+  return items[0] ?? null;
+}
+
+export function extractGetOrganizationTeams(response: ApiResponseBase): GetOrganizationTeams_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetOrganizationTeams_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetOrganizationTeamsFirst(response: ApiResponseBase): GetOrganizationTeams_ResultSet1 | null {
+  const items = extractGetOrganizationTeams(response);
+  return items[0] ?? null;
+}
+
+export function extractGetOrganizationUsers(response: ApiResponseBase): GetOrganizationUsers_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetOrganizationUsers_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetOrganizationUsersFirst(response: ApiResponseBase): GetOrganizationUsers_ResultSet1 | null {
+  const items = extractGetOrganizationUsers(response);
+  return items[0] ?? null;
+}
+
+export function extractGetOrganizationVault(response: ApiResponseBase): GetOrganizationVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetOrganizationVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetOrganizationVaultFirst(response: ApiResponseBase): GetOrganizationVault_ResultSet1 | null {
+  const items = extractGetOrganizationVault(response);
+  return items[0] ?? null;
+}
+
+export function extractGetOrganizationVaults(response: ApiResponseBase): GetOrganizationVaults_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetOrganizationVaults_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractGetOrganizationVaultsFirst(response: ApiResponseBase): GetOrganizationVaults_ResultSet1 | null {
+  const items = extractGetOrganizationVaults(response);
   return items[0] ?? null;
 }
 
@@ -5445,13 +5459,13 @@ export function extractGetTeamStoragesFirst(response: ApiResponseBase): GetTeamS
   return items[0] ?? null;
 }
 
-export function extractGetUserCompany(response: ApiResponseBase): GetUserCompany_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: GetUserCompany_ResultSet1[] } | undefined;
+export function extractGetUserOrganization(response: ApiResponseBase): GetUserOrganization_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: GetUserOrganization_ResultSet1[] } | undefined;
   return resultSet?.data ?? [];
 }
 
-export function extractGetUserCompanyFirst(response: ApiResponseBase): GetUserCompany_ResultSet1 | null {
-  const items = extractGetUserCompany(response);
+export function extractGetUserOrganizationFirst(response: ApiResponseBase): GetUserOrganization_ResultSet1 | null {
+  const items = extractGetUserOrganization(response);
   return items[0] ?? null;
 }
 
@@ -5475,13 +5489,13 @@ export function extractGetUserVaultFirst(response: ApiResponseBase): GetUserVaul
   return items[0] ?? null;
 }
 
-export function extractImportCompanyData(response: ApiResponseBase): ImportCompanyData_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: ImportCompanyData_ResultSet1[] } | undefined;
+export function extractImportOrganizationData(response: ApiResponseBase): ImportOrganizationData_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: ImportOrganizationData_ResultSet1[] } | undefined;
   return resultSet?.data ?? [];
 }
 
-export function extractImportCompanyDataFirst(response: ApiResponseBase): ImportCompanyData_ResultSet1 | null {
-  const items = extractImportCompanyData(response);
+export function extractImportOrganizationDataFirst(response: ApiResponseBase): ImportOrganizationData_ResultSet1 | null {
+  const items = extractImportOrganizationData(response);
   return items[0] ?? null;
 }
 
@@ -5585,36 +5599,6 @@ export function extractUpdateCloneMachineRemovalsFirst(response: ApiResponseBase
   return items[0] ?? null;
 }
 
-export function extractUpdateCompanyBlockUserRequests(response: ApiResponseBase): UpdateCompanyBlockUserRequests_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: UpdateCompanyBlockUserRequests_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractUpdateCompanyBlockUserRequestsFirst(response: ApiResponseBase): UpdateCompanyBlockUserRequests_ResultSet1 | null {
-  const items = extractUpdateCompanyBlockUserRequests(response);
-  return items[0] ?? null;
-}
-
-export function extractUpdateCompanyVault(response: ApiResponseBase): UpdateCompanyVault_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: UpdateCompanyVault_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractUpdateCompanyVaultFirst(response: ApiResponseBase): UpdateCompanyVault_ResultSet1 | null {
-  const items = extractUpdateCompanyVault(response);
-  return items[0] ?? null;
-}
-
-export function extractUpdateCompanyVaults(response: ApiResponseBase): UpdateCompanyVaults_ResultSet1[] {
-  const resultSet = response.resultSets[1] as { data: UpdateCompanyVaults_ResultSet1[] } | undefined;
-  return resultSet?.data ?? [];
-}
-
-export function extractUpdateCompanyVaultsFirst(response: ApiResponseBase): UpdateCompanyVaults_ResultSet1 | null {
-  const items = extractUpdateCompanyVaults(response);
-  return items[0] ?? null;
-}
-
 export function extractUpdateImageMachineAssignment(response: ApiResponseBase): UpdateImageMachineAssignment_ResultSet1[] {
   const resultSet = response.resultSets[1] as { data: UpdateImageMachineAssignment_ResultSet1[] } | undefined;
   return resultSet?.data ?? [];
@@ -5692,6 +5676,36 @@ export function extractUpdateMachineVault(response: ApiResponseBase): UpdateMach
 
 export function extractUpdateMachineVaultFirst(response: ApiResponseBase): UpdateMachineVault_ResultSet1 | null {
   const items = extractUpdateMachineVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateOrganizationBlockUserRequests(response: ApiResponseBase): UpdateOrganizationBlockUserRequests_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateOrganizationBlockUserRequests_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateOrganizationBlockUserRequestsFirst(response: ApiResponseBase): UpdateOrganizationBlockUserRequests_ResultSet1 | null {
+  const items = extractUpdateOrganizationBlockUserRequests(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateOrganizationVault(response: ApiResponseBase): UpdateOrganizationVault_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateOrganizationVault_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateOrganizationVaultFirst(response: ApiResponseBase): UpdateOrganizationVault_ResultSet1 | null {
+  const items = extractUpdateOrganizationVault(response);
+  return items[0] ?? null;
+}
+
+export function extractUpdateOrganizationVaults(response: ApiResponseBase): UpdateOrganizationVaults_ResultSet1[] {
+  const resultSet = response.resultSets[1] as { data: UpdateOrganizationVaults_ResultSet1[] } | undefined;
+  return resultSet?.data ?? [];
+}
+
+export function extractUpdateOrganizationVaultsFirst(response: ApiResponseBase): UpdateOrganizationVaults_ResultSet1 | null {
+  const items = extractUpdateOrganizationVaults(response);
   return items[0] ?? null;
 }
 
@@ -5903,7 +5917,7 @@ export type StoredProcedureName =
   | 'CreateCephRbdImage'
   | 'CreateCephRbdSnapshot'
   | 'CreateMachine'
-  | 'CreateNewCompany'
+  | 'CreateNewOrganization'
   | 'CreateNewUser'
   | 'CreatePermissionGroup'
   | 'CreatePermissionInGroup'
@@ -5929,7 +5943,7 @@ export type StoredProcedureName =
   | 'DeleteTeam'
   | 'DeleteUserFromTeam'
   | 'DeleteUserRequest'
-  | 'ExportCompanyData'
+  | 'ExportOrganizationData'
   | 'ForkAuthenticationRequest'
   | 'GetAuditLogs'
   | 'GetAvailableMachinesForClone'
@@ -5941,17 +5955,17 @@ export type StoredProcedureName =
   | 'GetCephRbdSnapshots'
   | 'GetCloneMachineAssignmentValidation'
   | 'GetCloneMachines'
-  | 'GetCompanyDashboard'
-  | 'GetCompanyPermissionGroups'
-  | 'GetCompanyRegions'
-  | 'GetCompanyTeams'
-  | 'GetCompanyUsers'
-  | 'GetCompanyVault'
-  | 'GetCompanyVaults'
   | 'GetEntityAuditTrace'
   | 'GetEntityHistory'
   | 'GetLookupData'
   | 'GetMachineAssignmentStatus'
+  | 'GetOrganizationDashboard'
+  | 'GetOrganizationPermissionGroups'
+  | 'GetOrganizationRegions'
+  | 'GetOrganizationTeams'
+  | 'GetOrganizationUsers'
+  | 'GetOrganizationVault'
+  | 'GetOrganizationVaults'
   | 'GetPermissionGroupDetails'
   | 'GetQueueItemTrace'
   | 'GetQueueItemsNext'
@@ -5963,10 +5977,10 @@ export type StoredProcedureName =
   | 'GetTeamQueueItems'
   | 'GetTeamRepositories'
   | 'GetTeamStorages'
-  | 'GetUserCompany'
+  | 'GetUserOrganization'
   | 'GetUserRequests'
   | 'GetUserVault'
-  | 'ImportCompanyData'
+  | 'ImportOrganizationData'
   | 'IsRegistered'
   | 'PrivilegeAuthenticationRequest'
   | 'PromoteRepositoryToGrand'
@@ -5978,9 +5992,6 @@ export type StoredProcedureName =
   | 'UpdateCephPoolVault'
   | 'UpdateCloneMachineAssignments'
   | 'UpdateCloneMachineRemovals'
-  | 'UpdateCompanyBlockUserRequests'
-  | 'UpdateCompanyVault'
-  | 'UpdateCompanyVaults'
   | 'UpdateImageMachineAssignment'
   | 'UpdateMachineAssignedBridge'
   | 'UpdateMachineCeph'
@@ -5989,6 +6000,9 @@ export type StoredProcedureName =
   | 'UpdateMachineName'
   | 'UpdateMachineStatus'
   | 'UpdateMachineVault'
+  | 'UpdateOrganizationBlockUserRequests'
+  | 'UpdateOrganizationVault'
+  | 'UpdateOrganizationVaults'
   | 'UpdateQueueItemResponse'
   | 'UpdateQueueItemToCompleted'
   | 'UpdateRegionName'
@@ -6023,7 +6037,7 @@ export interface ProcedureParamsMap {
   CreateCephRbdImage: CreateCephRbdImageParams;
   CreateCephRbdSnapshot: CreateCephRbdSnapshotParams;
   CreateMachine: CreateMachineParams;
-  CreateNewCompany: CreateNewCompanyParams;
+  CreateNewOrganization: CreateNewOrganizationParams;
   CreateNewUser: CreateNewUserParams;
   CreatePermissionGroup: CreatePermissionGroupParams;
   CreatePermissionInGroup: CreatePermissionInGroupParams;
@@ -6049,7 +6063,7 @@ export interface ProcedureParamsMap {
   DeleteTeam: DeleteTeamParams;
   DeleteUserFromTeam: DeleteUserFromTeamParams;
   DeleteUserRequest: DeleteUserRequestParams;
-  ExportCompanyData: ExportCompanyDataParams;
+  ExportOrganizationData: ExportOrganizationDataParams;
   ForkAuthenticationRequest: ForkAuthenticationRequestParams;
   GetAuditLogs: GetAuditLogsParams;
   GetAvailableMachinesForClone: GetAvailableMachinesForCloneParams;
@@ -6061,17 +6075,17 @@ export interface ProcedureParamsMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsParams;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationParams;
   GetCloneMachines: GetCloneMachinesParams;
-  GetCompanyDashboard: GetCompanyDashboardParams;
-  GetCompanyPermissionGroups: GetCompanyPermissionGroupsParams;
-  GetCompanyRegions: GetCompanyRegionsParams;
-  GetCompanyTeams: GetCompanyTeamsParams;
-  GetCompanyUsers: GetCompanyUsersParams;
-  GetCompanyVault: GetCompanyVaultParams;
-  GetCompanyVaults: GetCompanyVaultsParams;
   GetEntityAuditTrace: GetEntityAuditTraceParams;
   GetEntityHistory: GetEntityHistoryParams;
   GetLookupData: GetLookupDataParams;
   GetMachineAssignmentStatus: GetMachineAssignmentStatusParams;
+  GetOrganizationDashboard: GetOrganizationDashboardParams;
+  GetOrganizationPermissionGroups: GetOrganizationPermissionGroupsParams;
+  GetOrganizationRegions: GetOrganizationRegionsParams;
+  GetOrganizationTeams: GetOrganizationTeamsParams;
+  GetOrganizationUsers: GetOrganizationUsersParams;
+  GetOrganizationVault: GetOrganizationVaultParams;
+  GetOrganizationVaults: GetOrganizationVaultsParams;
   GetPermissionGroupDetails: GetPermissionGroupDetailsParams;
   GetQueueItemTrace: GetQueueItemTraceParams;
   GetQueueItemsNext: GetQueueItemsNextParams;
@@ -6083,10 +6097,10 @@ export interface ProcedureParamsMap {
   GetTeamQueueItems: GetTeamQueueItemsParams;
   GetTeamRepositories: GetTeamRepositoriesParams;
   GetTeamStorages: GetTeamStoragesParams;
-  GetUserCompany: GetUserCompanyParams;
+  GetUserOrganization: GetUserOrganizationParams;
   GetUserRequests: GetUserRequestsParams;
   GetUserVault: GetUserVaultParams;
-  ImportCompanyData: ImportCompanyDataParams;
+  ImportOrganizationData: ImportOrganizationDataParams;
   IsRegistered: IsRegisteredParams;
   PrivilegeAuthenticationRequest: PrivilegeAuthenticationRequestParams;
   PromoteRepositoryToGrand: PromoteRepositoryToGrandParams;
@@ -6098,9 +6112,6 @@ export interface ProcedureParamsMap {
   UpdateCephPoolVault: UpdateCephPoolVaultParams;
   UpdateCloneMachineAssignments: UpdateCloneMachineAssignmentsParams;
   UpdateCloneMachineRemovals: UpdateCloneMachineRemovalsParams;
-  UpdateCompanyBlockUserRequests: UpdateCompanyBlockUserRequestsParams;
-  UpdateCompanyVault: UpdateCompanyVaultParams;
-  UpdateCompanyVaults: UpdateCompanyVaultsParams;
   UpdateImageMachineAssignment: UpdateImageMachineAssignmentParams;
   UpdateMachineAssignedBridge: UpdateMachineAssignedBridgeParams;
   UpdateMachineCeph: UpdateMachineCephParams;
@@ -6109,6 +6120,9 @@ export interface ProcedureParamsMap {
   UpdateMachineName: UpdateMachineNameParams;
   UpdateMachineStatus: UpdateMachineStatusParams;
   UpdateMachineVault: UpdateMachineVaultParams;
+  UpdateOrganizationBlockUserRequests: UpdateOrganizationBlockUserRequestsParams;
+  UpdateOrganizationVault: UpdateOrganizationVaultParams;
+  UpdateOrganizationVaults: UpdateOrganizationVaultsParams;
   UpdateQueueItemResponse: UpdateQueueItemResponseParams;
   UpdateQueueItemToCompleted: UpdateQueueItemToCompletedParams;
   UpdateRegionName: UpdateRegionNameParams;
@@ -6144,7 +6158,7 @@ export interface ProcedurePrefixMap {
   CreateCephRbdImage: 'Public';
   CreateCephRbdSnapshot: 'Public';
   CreateMachine: 'Public';
-  CreateNewCompany: 'Protected';
+  CreateNewOrganization: 'Protected';
   CreateNewUser: 'Protected';
   CreatePermissionGroup: 'Public';
   CreatePermissionInGroup: 'Public';
@@ -6170,7 +6184,7 @@ export interface ProcedurePrefixMap {
   DeleteTeam: 'Public';
   DeleteUserFromTeam: 'Public';
   DeleteUserRequest: 'Public';
-  ExportCompanyData: 'Public';
+  ExportOrganizationData: 'Public';
   ForkAuthenticationRequest: 'Public';
   GetAuditLogs: 'Public';
   GetAvailableMachinesForClone: 'Public';
@@ -6182,17 +6196,17 @@ export interface ProcedurePrefixMap {
   GetCephRbdSnapshots: 'Public';
   GetCloneMachineAssignmentValidation: 'Public';
   GetCloneMachines: 'Public';
-  GetCompanyDashboard: 'Public';
-  GetCompanyPermissionGroups: 'Public';
-  GetCompanyRegions: 'Public';
-  GetCompanyTeams: 'Public';
-  GetCompanyUsers: 'Public';
-  GetCompanyVault: 'Public';
-  GetCompanyVaults: 'Public';
   GetEntityAuditTrace: 'Public';
   GetEntityHistory: 'Public';
   GetLookupData: 'Public';
   GetMachineAssignmentStatus: 'Public';
+  GetOrganizationDashboard: 'Public';
+  GetOrganizationPermissionGroups: 'Public';
+  GetOrganizationRegions: 'Public';
+  GetOrganizationTeams: 'Public';
+  GetOrganizationUsers: 'Public';
+  GetOrganizationVault: 'Public';
+  GetOrganizationVaults: 'Public';
   GetPermissionGroupDetails: 'Public';
   GetQueueItemTrace: 'Public';
   GetQueueItemsNext: 'Protected';
@@ -6204,10 +6218,10 @@ export interface ProcedurePrefixMap {
   GetTeamQueueItems: 'Public';
   GetTeamRepositories: 'Public';
   GetTeamStorages: 'Public';
-  GetUserCompany: 'Public';
+  GetUserOrganization: 'Public';
   GetUserRequests: 'Public';
   GetUserVault: 'Public';
-  ImportCompanyData: 'Public';
+  ImportOrganizationData: 'Public';
   IsRegistered: 'Protected';
   PrivilegeAuthenticationRequest: 'Public';
   PromoteRepositoryToGrand: 'Public';
@@ -6219,9 +6233,6 @@ export interface ProcedurePrefixMap {
   UpdateCephPoolVault: 'Public';
   UpdateCloneMachineAssignments: 'Public';
   UpdateCloneMachineRemovals: 'Public';
-  UpdateCompanyBlockUserRequests: 'Public';
-  UpdateCompanyVault: 'Public';
-  UpdateCompanyVaults: 'Public';
   UpdateImageMachineAssignment: 'Public';
   UpdateMachineAssignedBridge: 'Public';
   UpdateMachineCeph: 'Public';
@@ -6230,6 +6241,9 @@ export interface ProcedurePrefixMap {
   UpdateMachineName: 'Public';
   UpdateMachineStatus: 'Public';
   UpdateMachineVault: 'Public';
+  UpdateOrganizationBlockUserRequests: 'Public';
+  UpdateOrganizationVault: 'Public';
+  UpdateOrganizationVaults: 'Public';
   UpdateQueueItemResponse: 'Public';
   UpdateQueueItemToCompleted: 'Public';
   UpdateRegionName: 'Public';
@@ -6265,7 +6279,7 @@ export interface ProcedureResultsMap {
   CreateCephRbdImage: CreateCephRbdImageResults;
   CreateCephRbdSnapshot: CreateCephRbdSnapshotResults;
   CreateMachine: CreateMachineResults;
-  CreateNewCompany: CreateNewCompanyResults;
+  CreateNewOrganization: CreateNewOrganizationResults;
   CreateNewUser: CreateNewUserResults;
   CreatePermissionGroup: CreatePermissionGroupResults;
   CreatePermissionInGroup: CreatePermissionInGroupResults;
@@ -6291,7 +6305,7 @@ export interface ProcedureResultsMap {
   DeleteTeam: DeleteTeamResults;
   DeleteUserFromTeam: DeleteUserFromTeamResults;
   DeleteUserRequest: DeleteUserRequestResults;
-  ExportCompanyData: ExportCompanyDataResults;
+  ExportOrganizationData: ExportOrganizationDataResults;
   ForkAuthenticationRequest: ForkAuthenticationRequestResults;
   GetAuditLogs: GetAuditLogsResults;
   GetAvailableMachinesForClone: GetAvailableMachinesForCloneResults;
@@ -6303,17 +6317,17 @@ export interface ProcedureResultsMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsResults;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationResults;
   GetCloneMachines: GetCloneMachinesResults;
-  GetCompanyDashboard: GetCompanyDashboardResults;
-  GetCompanyPermissionGroups: GetCompanyPermissionGroupsResults;
-  GetCompanyRegions: GetCompanyRegionsResults;
-  GetCompanyTeams: GetCompanyTeamsResults;
-  GetCompanyUsers: GetCompanyUsersResults;
-  GetCompanyVault: GetCompanyVaultResults;
-  GetCompanyVaults: GetCompanyVaultsResults;
   GetEntityAuditTrace: GetEntityAuditTraceResults;
   GetEntityHistory: GetEntityHistoryResults;
   GetLookupData: GetLookupDataResults;
   GetMachineAssignmentStatus: GetMachineAssignmentStatusResults;
+  GetOrganizationDashboard: GetOrganizationDashboardResults;
+  GetOrganizationPermissionGroups: GetOrganizationPermissionGroupsResults;
+  GetOrganizationRegions: GetOrganizationRegionsResults;
+  GetOrganizationTeams: GetOrganizationTeamsResults;
+  GetOrganizationUsers: GetOrganizationUsersResults;
+  GetOrganizationVault: GetOrganizationVaultResults;
+  GetOrganizationVaults: GetOrganizationVaultsResults;
   GetPermissionGroupDetails: GetPermissionGroupDetailsResults;
   GetQueueItemTrace: GetQueueItemTraceResults;
   GetQueueItemsNext: GetQueueItemsNextResults;
@@ -6325,10 +6339,10 @@ export interface ProcedureResultsMap {
   GetTeamQueueItems: GetTeamQueueItemsResults;
   GetTeamRepositories: GetTeamRepositoriesResults;
   GetTeamStorages: GetTeamStoragesResults;
-  GetUserCompany: GetUserCompanyResults;
+  GetUserOrganization: GetUserOrganizationResults;
   GetUserRequests: GetUserRequestsResults;
   GetUserVault: GetUserVaultResults;
-  ImportCompanyData: ImportCompanyDataResults;
+  ImportOrganizationData: ImportOrganizationDataResults;
   IsRegistered: IsRegisteredResults;
   PrivilegeAuthenticationRequest: PrivilegeAuthenticationRequestResults;
   PromoteRepositoryToGrand: PromoteRepositoryToGrandResults;
@@ -6340,9 +6354,6 @@ export interface ProcedureResultsMap {
   UpdateCephPoolVault: UpdateCephPoolVaultResults;
   UpdateCloneMachineAssignments: UpdateCloneMachineAssignmentsResults;
   UpdateCloneMachineRemovals: UpdateCloneMachineRemovalsResults;
-  UpdateCompanyBlockUserRequests: UpdateCompanyBlockUserRequestsResults;
-  UpdateCompanyVault: UpdateCompanyVaultResults;
-  UpdateCompanyVaults: UpdateCompanyVaultsResults;
   UpdateImageMachineAssignment: UpdateImageMachineAssignmentResults;
   UpdateMachineAssignedBridge: UpdateMachineAssignedBridgeResults;
   UpdateMachineCeph: UpdateMachineCephResults;
@@ -6351,6 +6362,9 @@ export interface ProcedureResultsMap {
   UpdateMachineName: UpdateMachineNameResults;
   UpdateMachineStatus: UpdateMachineStatusResults;
   UpdateMachineVault: UpdateMachineVaultResults;
+  UpdateOrganizationBlockUserRequests: UpdateOrganizationBlockUserRequestsResults;
+  UpdateOrganizationVault: UpdateOrganizationVaultResults;
+  UpdateOrganizationVaults: UpdateOrganizationVaultsResults;
   UpdateQueueItemResponse: UpdateQueueItemResponseResults;
   UpdateQueueItemToCompleted: UpdateQueueItemToCompletedResults;
   UpdateRegionName: UpdateRegionNameResults;
@@ -6386,7 +6400,7 @@ export interface TypedResponseMap {
   CreateCephRbdImage: CreateCephRbdImageTypedResponse;
   CreateCephRbdSnapshot: CreateCephRbdSnapshotTypedResponse;
   CreateMachine: CreateMachineTypedResponse;
-  CreateNewCompany: CreateNewCompanyTypedResponse;
+  CreateNewOrganization: CreateNewOrganizationTypedResponse;
   CreateNewUser: CreateNewUserTypedResponse;
   CreatePermissionGroup: CreatePermissionGroupTypedResponse;
   CreatePermissionInGroup: CreatePermissionInGroupTypedResponse;
@@ -6412,7 +6426,7 @@ export interface TypedResponseMap {
   DeleteTeam: DeleteTeamTypedResponse;
   DeleteUserFromTeam: DeleteUserFromTeamTypedResponse;
   DeleteUserRequest: DeleteUserRequestTypedResponse;
-  ExportCompanyData: ExportCompanyDataTypedResponse;
+  ExportOrganizationData: ExportOrganizationDataTypedResponse;
   ForkAuthenticationRequest: ForkAuthenticationRequestTypedResponse;
   GetAuditLogs: GetAuditLogsTypedResponse;
   GetAvailableMachinesForClone: GetAvailableMachinesForCloneTypedResponse;
@@ -6424,17 +6438,17 @@ export interface TypedResponseMap {
   GetCephRbdSnapshots: GetCephRbdSnapshotsTypedResponse;
   GetCloneMachineAssignmentValidation: GetCloneMachineAssignmentValidationTypedResponse;
   GetCloneMachines: GetCloneMachinesTypedResponse;
-  GetCompanyDashboard: GetCompanyDashboardTypedResponse;
-  GetCompanyPermissionGroups: GetCompanyPermissionGroupsTypedResponse;
-  GetCompanyRegions: GetCompanyRegionsTypedResponse;
-  GetCompanyTeams: GetCompanyTeamsTypedResponse;
-  GetCompanyUsers: GetCompanyUsersTypedResponse;
-  GetCompanyVault: GetCompanyVaultTypedResponse;
-  GetCompanyVaults: GetCompanyVaultsTypedResponse;
   GetEntityAuditTrace: GetEntityAuditTraceTypedResponse;
   GetEntityHistory: GetEntityHistoryTypedResponse;
   GetLookupData: GetLookupDataTypedResponse;
   GetMachineAssignmentStatus: GetMachineAssignmentStatusTypedResponse;
+  GetOrganizationDashboard: GetOrganizationDashboardTypedResponse;
+  GetOrganizationPermissionGroups: GetOrganizationPermissionGroupsTypedResponse;
+  GetOrganizationRegions: GetOrganizationRegionsTypedResponse;
+  GetOrganizationTeams: GetOrganizationTeamsTypedResponse;
+  GetOrganizationUsers: GetOrganizationUsersTypedResponse;
+  GetOrganizationVault: GetOrganizationVaultTypedResponse;
+  GetOrganizationVaults: GetOrganizationVaultsTypedResponse;
   GetPermissionGroupDetails: GetPermissionGroupDetailsTypedResponse;
   GetQueueItemTrace: GetQueueItemTraceTypedResponse;
   GetQueueItemsNext: GetQueueItemsNextTypedResponse;
@@ -6446,10 +6460,10 @@ export interface TypedResponseMap {
   GetTeamQueueItems: GetTeamQueueItemsTypedResponse;
   GetTeamRepositories: GetTeamRepositoriesTypedResponse;
   GetTeamStorages: GetTeamStoragesTypedResponse;
-  GetUserCompany: GetUserCompanyTypedResponse;
+  GetUserOrganization: GetUserOrganizationTypedResponse;
   GetUserRequests: GetUserRequestsTypedResponse;
   GetUserVault: GetUserVaultTypedResponse;
-  ImportCompanyData: ImportCompanyDataTypedResponse;
+  ImportOrganizationData: ImportOrganizationDataTypedResponse;
   IsRegistered: IsRegisteredTypedResponse;
   PrivilegeAuthenticationRequest: PrivilegeAuthenticationRequestTypedResponse;
   PromoteRepositoryToGrand: PromoteRepositoryToGrandTypedResponse;
@@ -6461,9 +6475,6 @@ export interface TypedResponseMap {
   UpdateCephPoolVault: UpdateCephPoolVaultTypedResponse;
   UpdateCloneMachineAssignments: UpdateCloneMachineAssignmentsTypedResponse;
   UpdateCloneMachineRemovals: UpdateCloneMachineRemovalsTypedResponse;
-  UpdateCompanyBlockUserRequests: UpdateCompanyBlockUserRequestsTypedResponse;
-  UpdateCompanyVault: UpdateCompanyVaultTypedResponse;
-  UpdateCompanyVaults: UpdateCompanyVaultsTypedResponse;
   UpdateImageMachineAssignment: UpdateImageMachineAssignmentTypedResponse;
   UpdateMachineAssignedBridge: UpdateMachineAssignedBridgeTypedResponse;
   UpdateMachineCeph: UpdateMachineCephTypedResponse;
@@ -6472,6 +6483,9 @@ export interface TypedResponseMap {
   UpdateMachineName: UpdateMachineNameTypedResponse;
   UpdateMachineStatus: UpdateMachineStatusTypedResponse;
   UpdateMachineVault: UpdateMachineVaultTypedResponse;
+  UpdateOrganizationBlockUserRequests: UpdateOrganizationBlockUserRequestsTypedResponse;
+  UpdateOrganizationVault: UpdateOrganizationVaultTypedResponse;
+  UpdateOrganizationVaults: UpdateOrganizationVaultsTypedResponse;
   UpdateQueueItemResponse: UpdateQueueItemResponseTypedResponse;
   UpdateQueueItemToCompleted: UpdateQueueItemToCompletedTypedResponse;
   UpdateRegionName: UpdateRegionNameTypedResponse;
@@ -6502,7 +6516,7 @@ export interface TypedResponseMap {
 export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   ActivateUserAccount: 0,
   CancelQueueItem: 1,
-  CreateAuthenticationRequest: 0,
+  CreateAuthenticationRequest: -1,
   CreateBridge: 1,
   CreateCephCluster: 1,
   CreateCephPool: 1,
@@ -6510,7 +6524,7 @@ export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   CreateCephRbdImage: 1,
   CreateCephRbdSnapshot: 1,
   CreateMachine: 1,
-  CreateNewCompany: 0,
+  CreateNewOrganization: 0,
   CreateNewUser: 1,
   CreatePermissionGroup: 1,
   CreatePermissionInGroup: 1,
@@ -6536,7 +6550,7 @@ export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   DeleteTeam: -1,
   DeleteUserFromTeam: 1,
   DeleteUserRequest: 1,
-  ExportCompanyData: 1,
+  ExportOrganizationData: 1,
   ForkAuthenticationRequest: 1,
   GetAuditLogs: 1,
   GetAvailableMachinesForClone: 1,
@@ -6548,17 +6562,17 @@ export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   GetCephRbdSnapshots: 1,
   GetCloneMachineAssignmentValidation: 1,
   GetCloneMachines: 1,
-  GetCompanyDashboard: 1,
-  GetCompanyPermissionGroups: 1,
-  GetCompanyRegions: 1,
-  GetCompanyTeams: 1,
-  GetCompanyUsers: 1,
-  GetCompanyVault: 1,
-  GetCompanyVaults: 1,
   GetEntityAuditTrace: 1,
   GetEntityHistory: 1,
   GetLookupData: 1,
   GetMachineAssignmentStatus: 1,
+  GetOrganizationDashboard: 1,
+  GetOrganizationPermissionGroups: 1,
+  GetOrganizationRegions: 1,
+  GetOrganizationTeams: 1,
+  GetOrganizationUsers: 1,
+  GetOrganizationVault: 1,
+  GetOrganizationVaults: 1,
   GetPermissionGroupDetails: 1,
   GetQueueItemTrace: 1,
   GetQueueItemsNext: 1,
@@ -6570,10 +6584,10 @@ export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   GetTeamQueueItems: 1,
   GetTeamRepositories: 1,
   GetTeamStorages: 1,
-  GetUserCompany: 1,
+  GetUserOrganization: 1,
   GetUserRequests: 1,
   GetUserVault: 1,
-  ImportCompanyData: 1,
+  ImportOrganizationData: 1,
   IsRegistered: 0,
   PrivilegeAuthenticationRequest: 1,
   PromoteRepositoryToGrand: -1,
@@ -6585,9 +6599,6 @@ export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   UpdateCephPoolVault: 1,
   UpdateCloneMachineAssignments: 1,
   UpdateCloneMachineRemovals: 1,
-  UpdateCompanyBlockUserRequests: 1,
-  UpdateCompanyVault: 1,
-  UpdateCompanyVaults: 1,
   UpdateImageMachineAssignment: 1,
   UpdateMachineAssignedBridge: 1,
   UpdateMachineCeph: 1,
@@ -6596,6 +6607,9 @@ export const PROCEDURE_PRIMARY_INDEX: Record<StoredProcedureName, number> = {
   UpdateMachineName: 1,
   UpdateMachineStatus: 1,
   UpdateMachineVault: 1,
+  UpdateOrganizationBlockUserRequests: 1,
+  UpdateOrganizationVault: 1,
+  UpdateOrganizationVaults: 1,
   UpdateQueueItemResponse: 1,
   UpdateQueueItemToCompleted: 1,
   UpdateRegionName: 1,
@@ -6665,7 +6679,7 @@ export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2025-12-26T19:19:11.4388227Z',
+  generated: '2026-01-04T11:59:34.8284318Z',
   procedureCount: 115,
 } as const;
 

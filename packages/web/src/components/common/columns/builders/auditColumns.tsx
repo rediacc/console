@@ -1,18 +1,19 @@
 import { Space, Tag, Typography } from 'antd';
-import { TFunction } from 'i18next';
-import { GetAuditLogs_ResultSet1 } from '@/api/queries/audit';
 import {
   createDateColumn,
   createStatusColumn,
   createTruncatedColumn,
+  RESPONSIVE_HIDE_XS,
   type StatusConfig,
 } from '@/components/common/columns';
 import { createDateSorter } from '@/platform';
 import { FilterOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ColumnBuilderParams {
-  t: TFunction<'system' | 'common'>;
+  t: TypedTFunction;
   auditLogs?: GetAuditLogs_ResultSet1[];
   getActionIcon: (action: string) => React.ReactNode;
 }
@@ -23,24 +24,28 @@ export const buildAuditColumns = ({
   getActionIcon,
 }: ColumnBuilderParams): ColumnsType<GetAuditLogs_ResultSet1> => {
   const actionStatusMap = auditLogs.reduce<Record<string, StatusConfig>>((acc, log) => {
-    const existingConfig = acc[log.action] as StatusConfig | undefined;
+    const action = log.action ?? '';
+    const existingConfig = acc[action] as StatusConfig | undefined;
     if (existingConfig === undefined) {
-      acc[log.action] = {
-        icon: getActionIcon(log.action),
-        label: log.action.replace(/_/g, ' '),
+      acc[action] = {
+        icon: getActionIcon(action),
+        label: action.replace(/_/g, ' '),
       };
     }
     return acc;
   }, {});
 
-  const timestampColumn = createDateColumn<GetAuditLogs_ResultSet1>({
-    title: t('system:audit.columns.timestamp'),
-    dataIndex: 'timestamp',
-    key: 'timestamp',
-    width: 180,
-    sorter: createDateSorter<GetAuditLogs_ResultSet1>('timestamp'),
-    defaultSortOrder: 'descend',
-  });
+  const timestampColumn = {
+    ...createDateColumn<GetAuditLogs_ResultSet1>({
+      title: t('system:audit.columns.timestamp'),
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      width: 180,
+      sorter: createDateSorter<GetAuditLogs_ResultSet1>('timestamp'),
+      defaultSortOrder: 'descend',
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  };
 
   const actionColumn = createStatusColumn<GetAuditLogs_ResultSet1>({
     title: (
@@ -54,27 +59,30 @@ export const buildAuditColumns = ({
     width: 200,
     statusMap: actionStatusMap,
     defaultConfig: {},
-    sorter: (a, b) => a.action.localeCompare(b.action),
+    sorter: (a, b) => (a.action ?? '').localeCompare(b.action ?? ''),
   });
-  actionColumn.filters = [...new Set(auditLogs.map((log) => log.action))].map((action) => ({
+  actionColumn.filters = [...new Set(auditLogs.map((log) => log.action ?? ''))].map((action) => ({
     text: action.replace(/_/g, ' '),
     value: action,
   }));
   actionColumn.onFilter = (value, record) => record.action === value;
   actionColumn.filterIcon = (_filtered: boolean) => <FilterOutlined />;
 
-  const entityNameColumn = createTruncatedColumn<GetAuditLogs_ResultSet1>({
-    title: (
-      <Space>
-        {t('system:audit.columns.entityName')}
-        <FilterOutlined />
-      </Space>
-    ),
-    dataIndex: 'entityName',
-    key: 'entityName',
-    width: 220,
-    maxLength: 24,
-  });
+  const entityNameColumn = {
+    ...createTruncatedColumn<GetAuditLogs_ResultSet1>({
+      title: (
+        <Space>
+          {t('system:audit.columns.entityName')}
+          <FilterOutlined />
+        </Space>
+      ),
+      dataIndex: 'entityName',
+      key: 'entityName',
+      width: 220,
+      maxLength: 24,
+    }),
+    responsive: RESPONSIVE_HIDE_XS,
+  };
   entityNameColumn.filters = [
     ...new Set(
       auditLogs.map((log) => log.entityName).filter((name): name is string => name != null)
@@ -117,12 +125,13 @@ export const buildAuditColumns = ({
       dataIndex: 'entity',
       key: 'entity',
       width: 160,
-      render: (entity: string) => <Tag>{entity}</Tag>,
-      filters: [...new Set(auditLogs.map((log) => log.entity))].map((entity) => ({
+      responsive: RESPONSIVE_HIDE_XS,
+      render: (entity: string | null) => <Tag>{entity ?? ''}</Tag>,
+      filters: [...new Set(auditLogs.map((log) => log.entity ?? ''))].map((entity) => ({
         text: entity,
         value: entity,
       })),
-      onFilter: (value, record) => record.entity === value,
+      onFilter: (value, record) => (record.entity ?? '') === value,
       filterIcon: (_filtered: boolean) => <FilterOutlined />,
     },
     entityNameColumn,
@@ -136,8 +145,9 @@ export const buildAuditColumns = ({
       dataIndex: 'actionByUser',
       key: 'actionByUser',
       width: 200,
+      responsive: RESPONSIVE_HIDE_XS,
       filters: userColumnFilters,
-      onFilter: (value, record) => record.actionByUser === value,
+      onFilter: (value, record) => (record.actionByUser ?? '') === value,
       filterIcon: (_filtered: boolean) => <FilterOutlined />,
     },
     detailsColumn,

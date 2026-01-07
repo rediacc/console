@@ -145,10 +145,10 @@ export function generateRandomEmail(): string {
   return `user_${timestamp}_${randomNum}@sandbox.test`;
 }
 
-// Generate random company name for sandbox quick registration
-export function generateRandomCompanyName(): string {
+// Generate random organization name for sandbox quick registration
+export function generateRandomOrganizationName(): string {
   const adjectives = ['Test', 'Demo', 'Sample', 'Trial', 'Sandbox'];
-  const nouns = ['Company', 'Organization', 'Enterprise', 'Corp', 'Inc'];
+  const nouns = ['Organization', 'Organization', 'Enterprise', 'Corp', 'Inc'];
   const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
   const noun = nouns[Math.floor(Math.random() * nouns.length)];
   const randomNum = Math.floor(Math.random() * 100000);

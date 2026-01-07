@@ -3,22 +3,18 @@ import { Flex, Result, Space, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
-  Bridge,
-  useBridges,
+  useGetRegionBridges,
   useCreateBridge,
   useDeleteBridge,
   useResetBridgeAuthorization,
   useUpdateBridgeName,
   useUpdateBridgeVault,
-} from '@/api/queries/bridges';
-import {
-  Region,
   useCreateRegion,
   useDeleteRegion,
-  useRegions,
+  useGetOrganizationRegions,
   useUpdateRegionName,
   useUpdateRegionVault,
-} from '@/api/queries/regions';
+} from '@/api/api-hooks.generated';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import {
   buildBridgeColumns,
@@ -28,6 +24,8 @@ import {
   buildDeleteMenuItem,
   buildDivider,
   buildEditMenuItem,
+  buildResetAuthMenuItem,
+  buildTokenMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
 import { MobileCard } from '@/components/common/MobileCard';
@@ -38,6 +36,10 @@ import { useCopyToClipboard } from '@/hooks';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ApiOutlined, EnvironmentOutlined } from '@/utils/optimizedIcons';
+import type {
+  GetRegionBridges_ResultSet1,
+  GetOrganizationRegions_ResultSet1,
+} from '@rediacc/shared/types';
 import { BridgeCredentialsModal } from '../components/infrastructure/BridgeCredentialsModal';
 import { BridgeSection } from '../components/infrastructure/BridgeSection';
 import { RegionSection } from '../components/infrastructure/RegionSection';
@@ -53,7 +55,7 @@ const InfrastructurePage: React.FC = () => {
   });
 
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const bridgeCredentialsModal = useDialogState<Bridge>();
+  const bridgeCredentialsModal = useDialogState<GetRegionBridges_ResultSet1>();
   const resetAuthModal = useDialogState<{
     bridgeName: string;
     regionName: string;
@@ -63,16 +65,20 @@ const InfrastructurePage: React.FC = () => {
   const unifiedModal = useDialogState<{
     resourceType: 'region' | 'bridge';
     mode: 'create' | 'edit';
-    data?: Partial<Region> | Partial<Bridge> | null;
+    data?: Partial<GetOrganizationRegions_ResultSet1> | Partial<GetRegionBridges_ResultSet1> | null;
   }>();
 
-  const { data: regions, isLoading: regionsLoading } = useRegions(true);
-  const regionsList: Region[] = useMemo(() => regions ?? [], [regions]);
+  const { data: regions, isLoading: regionsLoading } = useGetOrganizationRegions();
+  const regionsList: GetOrganizationRegions_ResultSet1[] = useMemo(() => regions ?? [], [regions]);
 
-  const effectiveRegion = selectedRegion ?? regionsList[0]?.regionName;
+  const effectiveRegion = useMemo(() => {
+    if (selectedRegion) return selectedRegion;
+    if (regionsList.length > 0) return regionsList[0].regionName ?? '';
+    return '';
+  }, [selectedRegion, regionsList]);
 
-  const { data: bridges, isLoading: bridgesLoading } = useBridges(effectiveRegion);
-  const bridgesList: Bridge[] = useMemo(() => bridges ?? [], [bridges]);
+  const { data: bridges, isLoading: bridgesLoading } = useGetRegionBridges(effectiveRegion);
+  const bridgesList: GetRegionBridges_ResultSet1[] = useMemo(() => bridges ?? [], [bridges]);
 
   const createRegionMutation = useCreateRegion();
   const updateRegionNameMutation = useUpdateRegionName();
@@ -89,16 +95,19 @@ const InfrastructurePage: React.FC = () => {
     (
       resourceType: 'region' | 'bridge',
       mode: 'create' | 'edit',
-      data?: Partial<Region> | Partial<Bridge> | null
+      data?:
+        | Partial<GetOrganizationRegions_ResultSet1>
+        | Partial<GetRegionBridges_ResultSet1>
+        | null
     ) => {
       unifiedModal.open({ resourceType, mode, data });
     },
     [unifiedModal]
   );
 
-  const closeUnifiedModal = () => {
+  const closeUnifiedModal = useCallback(() => {
     unifiedModal.close();
-  };
+  }, [unifiedModal]);
 
   type UnifiedFormData = {
     regionName?: string;
@@ -108,93 +117,108 @@ const InfrastructurePage: React.FC = () => {
     [key: string]: unknown;
   };
 
-  const handleUnifiedModalSubmit = async (data: UnifiedFormData) => {
-    const modalData = unifiedModal.state.data;
-    if (!modalData) return;
+  const handleUnifiedModalSubmit = useCallback(
+    async (data: UnifiedFormData) => {
+      const modalData = unifiedModal.state.data;
+      if (!modalData) return;
 
-    try {
-      switch (modalData.resourceType) {
-        case 'region':
-          if (modalData.mode === 'create') {
-            await createRegionMutation.mutateAsync({
-              regionName: data.regionName as string,
-              vaultContent: data.vaultContent,
-            });
-          } else if (modalData.data) {
-            if (data.regionName && data.regionName !== modalData.data.regionName) {
-              await updateRegionNameMutation.mutateAsync({
-                currentRegionName: modalData.data.regionName as string,
-                newRegionName: data.regionName,
+      try {
+        switch (modalData.resourceType) {
+          case 'region':
+            if (modalData.mode === 'create') {
+              await createRegionMutation.mutateAsync({
+                regionName: data.regionName as string,
+                vaultContent: data.vaultContent ?? '',
               });
+            } else if (modalData.data) {
+              if (data.regionName && data.regionName !== modalData.data.regionName) {
+                await updateRegionNameMutation.mutateAsync({
+                  currentRegionName: modalData.data.regionName as string,
+                  newRegionName: data.regionName,
+                });
+              }
+              const vaultData = data.vaultContent;
+              if (vaultData && vaultData !== modalData.data.vaultContent) {
+                await updateRegionVaultMutation.mutateAsync({
+                  regionName: (data.regionName ?? modalData.data.regionName) as string,
+                  vaultContent: vaultData,
+                  vaultVersion: (modalData.data.vaultVersion ?? 0) + 1,
+                });
+              }
             }
-            const vaultData = data.vaultContent;
-            if (vaultData && vaultData !== modalData.data.vaultContent) {
-              await updateRegionVaultMutation.mutateAsync({
-                regionName: (data.regionName ?? modalData.data.regionName) as string,
-                vaultContent: vaultData,
-                vaultVersion: (modalData.data.vaultVersion ?? 0) + 1,
+            break;
+          case 'bridge':
+            if (modalData.mode === 'create') {
+              await createBridgeMutation.mutateAsync({
+                regionName: data.regionName as string,
+                bridgeName: data.bridgeName as string,
+                vaultContent: data.vaultContent ?? '',
               });
+            } else if (modalData.data) {
+              const bridgeData = modalData.data as Partial<GetRegionBridges_ResultSet1>;
+              if (data.bridgeName && data.bridgeName !== bridgeData.bridgeName) {
+                await updateBridgeNameMutation.mutateAsync({
+                  regionName: bridgeData.regionName as string,
+                  currentBridgeName: bridgeData.bridgeName as string,
+                  newBridgeName: data.bridgeName,
+                });
+              }
+              const vaultData = data.vaultContent;
+              if (vaultData && vaultData !== bridgeData.vaultContent) {
+                await updateBridgeVaultMutation.mutateAsync({
+                  regionName: (data.regionName ?? bridgeData.regionName) as string,
+                  bridgeName: (data.bridgeName ?? bridgeData.bridgeName) as string,
+                  vaultContent: vaultData,
+                  vaultVersion: (bridgeData.vaultVersion ?? 0) + 1,
+                });
+              }
             }
-          }
-          break;
-        case 'bridge':
-          if (modalData.mode === 'create') {
-            await createBridgeMutation.mutateAsync({
-              regionName: data.regionName as string,
-              bridgeName: data.bridgeName as string,
-              vaultContent: data.vaultContent,
-            });
-          } else if (modalData.data) {
-            const bridgeData = modalData.data as Partial<Bridge>;
-            if (data.bridgeName && data.bridgeName !== bridgeData.bridgeName) {
-              await updateBridgeNameMutation.mutateAsync({
-                regionName: bridgeData.regionName as string,
-                currentBridgeName: bridgeData.bridgeName as string,
-                newBridgeName: data.bridgeName,
-              });
-            }
-            const vaultData = data.vaultContent;
-            if (vaultData && vaultData !== bridgeData.vaultContent) {
-              await updateBridgeVaultMutation.mutateAsync({
-                regionName: (data.regionName ?? bridgeData.regionName) as string,
-                bridgeName: (data.bridgeName ?? bridgeData.bridgeName) as string,
-                vaultContent: vaultData,
-                vaultVersion: (bridgeData.vaultVersion ?? 0) + 1,
-              });
-            }
-          }
-          break;
+            break;
+        }
+        closeUnifiedModal();
+      } catch {
+        // handled by mutation
       }
-      closeUnifiedModal();
-    } catch {
-      // handled by mutation
-    }
-  };
+    },
+    [
+      unifiedModal.state.data,
+      closeUnifiedModal,
+      createRegionMutation,
+      updateRegionNameMutation,
+      updateRegionVaultMutation,
+      createBridgeMutation,
+      updateBridgeNameMutation,
+      updateBridgeVaultMutation,
+    ]
+  );
 
-  const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
-    const modalData = unifiedModal.state.data;
-    if (!modalData?.data) return;
+  const handleUnifiedVaultUpdate = useCallback(
+    async (vault: string, version: number) => {
+      const modalData = unifiedModal.state.data;
+      if (!modalData?.data) return;
 
-    try {
-      if (modalData.resourceType === 'region') {
-        await updateRegionVaultMutation.mutateAsync({
-          regionName: modalData.data.regionName as string,
-          vaultContent: vault,
-          vaultVersion: version,
-        });
-      } else {
-        const bridgeData = modalData.data as Partial<Bridge>;
-        await updateBridgeVaultMutation.mutateAsync({
-          regionName: bridgeData.regionName as string,
-          bridgeName: bridgeData.bridgeName as string,
-          vaultContent: vault,
-          vaultVersion: version,
-        });
+      try {
+        if (modalData.resourceType === 'region') {
+          await updateRegionVaultMutation.mutateAsync({
+            regionName: modalData.data.regionName as string,
+            vaultContent: vault,
+            vaultVersion: version,
+          });
+        } else {
+          const bridgeData = modalData.data as Partial<GetRegionBridges_ResultSet1>;
+          await updateBridgeVaultMutation.mutateAsync({
+            regionName: bridgeData.regionName as string,
+            bridgeName: bridgeData.bridgeName as string,
+            vaultContent: vault,
+            vaultVersion: version,
+          });
+        }
+      } catch {
+        // handled by mutation
       }
-    } catch {
-      // handled by mutation
-    }
-  };
+    },
+    [unifiedModal.state.data, updateRegionVaultMutation, updateBridgeVaultMutation]
+  );
 
   const handleDeleteRegion = useCallback(
     async (regionName: string) => {
@@ -211,7 +235,7 @@ const InfrastructurePage: React.FC = () => {
   );
 
   const handleDeleteBridge = useCallback(
-    async (bridge: Bridge) => {
+    async (bridge: GetRegionBridges_ResultSet1) => {
       try {
         await deleteBridgeMutation.mutateAsync({
           regionName: bridge.regionName,
@@ -243,56 +267,42 @@ const InfrastructurePage: React.FC = () => {
     () =>
       buildRegionColumns({
         t,
-        tCommon,
-        tSystem,
         onEdit: (record) => openUnifiedModal('region', 'edit', record),
         onTrace: (record) =>
           auditTrace.open({
             entityType: 'Region',
-            entityIdentifier: record.regionName,
-            entityName: record.regionName,
+            entityIdentifier: record.regionName ?? '',
+            entityName: record.regionName ?? undefined,
           }),
         onDelete: handleDeleteRegion,
         isDeleting: deleteRegionMutation.isPending,
       }),
-    [
-      t,
-      tCommon,
-      tSystem,
-      auditTrace,
-      handleDeleteRegion,
-      openUnifiedModal,
-      deleteRegionMutation.isPending,
-    ]
+    [t, auditTrace, handleDeleteRegion, openUnifiedModal, deleteRegionMutation.isPending]
   );
 
   const bridgeColumns = useMemo(
     () =>
       buildBridgeColumns({
         t,
-        tCommon,
-        tSystem,
         onEdit: (record) => openUnifiedModal('bridge', 'edit', record),
         onOpenToken: bridgeCredentialsModal.open,
         onResetAuth: (record) =>
           resetAuthModal.open({
-            bridgeName: record.bridgeName,
-            regionName: record.regionName,
+            bridgeName: record.bridgeName ?? '',
+            regionName: record.regionName ?? '',
             isCloudManaged: false,
           }),
         onTrace: (record) =>
           auditTrace.open({
             entityType: 'Bridge',
-            entityIdentifier: record.bridgeName,
-            entityName: record.bridgeName,
+            entityIdentifier: record.bridgeName ?? '',
+            entityName: record.bridgeName ?? undefined,
           }),
         onDelete: handleDeleteBridge,
         isDeleting: deleteBridgeMutation.isPending,
       }),
     [
       t,
-      tCommon,
-      tSystem,
       auditTrace,
       bridgeCredentialsModal.open,
       handleDeleteBridge,
@@ -304,18 +314,18 @@ const InfrastructurePage: React.FC = () => {
 
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: Region) => {
+    () => (record: GetOrganizationRegions_ResultSet1) => {
       const menuItems: MenuProps['items'] = [
         buildEditMenuItem(tCommon, () => openUnifiedModal('region', 'edit', record)),
         buildTraceMenuItem(tCommon, () =>
           auditTrace.open({
             entityType: 'Region',
-            entityIdentifier: record.regionName,
-            entityName: record.regionName,
+            entityIdentifier: record.regionName ?? '',
+            entityName: record.regionName ?? undefined,
           })
         ),
         buildDivider(),
-        buildDeleteMenuItem(tCommon, () => handleDeleteRegion(record.regionName)),
+        buildDeleteMenuItem(tCommon, () => handleDeleteRegion(record.regionName ?? '')),
       ];
 
       return (
@@ -328,13 +338,66 @@ const InfrastructurePage: React.FC = () => {
           </Space>
           <Space size="small">
             <ApiOutlined />
-            <Typography.Text>{record.bridgeCount} bridges</Typography.Text>
+            <Typography.Text>
+              {t('resources:bridges.bridgeCount', { count: record.bridgeCount ?? 0 })}
+            </Typography.Text>
           </Space>
         </MobileCard>
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [t, tCommon, auditTrace, handleDeleteRegion, openUnifiedModal]
+  );
+
+  const bridgeMobileRender = useMemo(
+    // eslint-disable-next-line react/display-name
+    () => (record: GetRegionBridges_ResultSet1) => {
+      const menuItems: MenuProps['items'] = [
+        buildEditMenuItem(tCommon, () => openUnifiedModal('bridge', 'edit', record)),
+        buildTokenMenuItem(tCommon, () => bridgeCredentialsModal.open(record)),
+        buildResetAuthMenuItem(tCommon, () =>
+          resetAuthModal.open({
+            bridgeName: record.bridgeName ?? '',
+            regionName: record.regionName ?? '',
+            isCloudManaged: false,
+          })
+        ),
+        buildTraceMenuItem(tCommon, () =>
+          auditTrace.open({
+            entityType: 'Bridge',
+            entityIdentifier: record.bridgeName ?? '',
+            entityName: record.bridgeName ?? undefined,
+          })
+        ),
+        buildDivider(),
+        buildDeleteMenuItem(tCommon, () => handleDeleteBridge(record)),
+      ];
+
+      return (
+        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
+          <Space>
+            <ApiOutlined />
+            <Typography.Text strong className="truncate">
+              {record.bridgeName}
+            </Typography.Text>
+          </Space>
+          <Space size="small">
+            <Typography.Text>
+              {t('resources:bridges.machineCount', { count: record.machineCount ?? 0 })}
+            </Typography.Text>
+          </Space>
+        </MobileCard>
+      );
+    },
+    [
+      t,
+      tCommon,
+      auditTrace,
+      bridgeCredentialsModal,
+      resetAuthModal,
+      handleDeleteBridge,
+      openUnifiedModal,
+    ]
   );
 
   if (uiMode === 'simple') {
@@ -349,21 +412,9 @@ const InfrastructurePage: React.FC = () => {
     );
   }
 
-  if (!featureFlags.isEnabled('regionsInfrastructure')) {
-    return (
-      <Flex vertical>
-        <Result
-          status="info"
-          title={t('regionsInfrastructure.unavailableTitle')}
-          subTitle={t('regionsInfrastructure.unavailableDescription')}
-        />
-      </Flex>
-    );
-  }
-
   return (
     <Flex vertical>
-      <Flex vertical gap={24}>
+      <Flex vertical>
         <RegionSection
           t={t}
           regionsLoading={regionsLoading}
@@ -375,23 +426,22 @@ const InfrastructurePage: React.FC = () => {
           onCreateRegion={() => openUnifiedModal('region', 'create')}
         />
 
-        {!featureFlags.isEnabled('disableBridge') && (
+        {featureFlags.isEnabled('bridgeManageEnabled') && (
           <BridgeSection
             t={t}
-            tCommon={tCommon}
             bridgesLoading={bridgesLoading}
             bridgesList={bridgesList}
             columns={bridgeColumns}
+            mobileRender={bridgeMobileRender}
             effectiveRegion={effectiveRegion}
             onCreateBridge={(regionName) => openUnifiedModal('bridge', 'create', { regionName })}
           />
         )}
       </Flex>
 
-      {!featureFlags.isEnabled('disableBridge') && (
+      {featureFlags.isEnabled('bridgeManageEnabled') && (
         <BridgeCredentialsModal
           t={t}
-          tCommon={tCommon}
           open={bridgeCredentialsModal.isOpen}
           bridge={bridgeCredentialsModal.state.data ?? undefined}
           tokenCopied={tokenCopied}
@@ -414,30 +464,30 @@ const InfrastructurePage: React.FC = () => {
         resourceType={unifiedModal.state.data?.resourceType ?? 'region'}
         mode={unifiedModal.state.data?.mode ?? 'create'}
         existingData={
-          unifiedModal.state.data?.data
-            ? {
-                ...unifiedModal.state.data.data,
-                vaultVersion: unifiedModal.state.data.data.vaultVersion ?? undefined,
-              }
-            : undefined
+          unifiedModal.state.data?.data as
+            | (Partial<GetOrganizationRegions_ResultSet1> & { vaultVersion?: number })
+            | (Partial<GetRegionBridges_ResultSet1> & { vaultVersion?: number })
+            | undefined
         }
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={
           unifiedModal.state.data?.mode === 'edit' ? handleUnifiedVaultUpdate : undefined
         }
-        isSubmitting={
-          createRegionMutation.isPending ||
-          updateRegionNameMutation.isPending ||
-          createBridgeMutation.isPending ||
-          updateBridgeNameMutation.isPending
-        }
-        isUpdatingVault={updateRegionVaultMutation.isPending || updateBridgeVaultMutation.isPending}
+        isSubmitting={[
+          createRegionMutation.isPending,
+          updateRegionNameMutation.isPending,
+          createBridgeMutation.isPending,
+          updateBridgeNameMutation.isPending,
+        ].some(Boolean)}
+        isUpdatingVault={[
+          updateRegionVaultMutation.isPending,
+          updateBridgeVaultMutation.isPending,
+        ].some(Boolean)}
       />
 
-      {!featureFlags.isEnabled('disableBridge') && (
+      {featureFlags.isEnabled('bridgeManageEnabled') && (
         <ResetAuthModal
           t={t}
-          tCommon={tCommon}
           open={resetAuthModal.isOpen}
           data={resetAuthModal.state.data ?? undefined}
           isSubmitting={resetBridgeAuthMutation.isPending}

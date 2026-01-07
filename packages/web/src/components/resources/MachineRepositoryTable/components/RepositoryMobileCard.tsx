@@ -14,8 +14,8 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { Repository, RepositoryTableRow } from '../types';
-import type { TFunction } from 'i18next';
 
 interface RepositoryMobileCardProps {
   record: RepositoryTableRow;
@@ -28,7 +28,7 @@ interface RepositoryMobileCardProps {
   onRunFunction: (record: Repository) => void;
   onConfirmForkDeletion: (record: Repository) => void;
   onConfirmRepositoryDeletion: (record: Repository) => void;
-  t: TFunction;
+  t: TypedTFunction;
 }
 
 export const RepositoryMobileCard: React.FC<RepositoryMobileCardProps> = ({
@@ -64,18 +64,18 @@ export const RepositoryMobileCard: React.FC<RepositoryMobileCardProps> = ({
       },
       { type: 'divider' as const },
       {
-        key: 'up',
-        label: t('functions:functions.up.name'),
+        key: 'repository_up',
+        label: t('functions:functions.repository_up.name'),
         icon: <PlayCircleOutlined />,
-        onClick: () => onQuickAction(record, 'up', 4, 'mount'),
+        onClick: () => onQuickAction(record, 'repository_up', 4, 'mount'),
       },
       ...(record.mounted
         ? [
             {
-              key: 'down',
-              label: t('functions:functions.down.name'),
+              key: 'repository_down',
+              label: t('functions:functions.repository_down.name'),
               icon: <PauseCircleOutlined />,
-              onClick: () => onQuickAction(record, 'down', 4),
+              onClick: () => onQuickAction(record, 'repository_down', 4),
             },
           ]
         : []),
@@ -119,7 +119,7 @@ export const RepositoryMobileCard: React.FC<RepositoryMobileCardProps> = ({
         </Typography.Text>
         {record.repositoryTag && <Tag>{record.repositoryTag}</Tag>}
       </Space>
-      <Flex gap={8} wrap>
+      <Flex wrap>
         {record.mounted ? (
           <Tag icon={<CheckCircleOutlined />} color="success">
             {t('resources:repositories.mounted')}

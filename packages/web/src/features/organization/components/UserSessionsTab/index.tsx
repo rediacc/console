@@ -17,13 +17,13 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { type UserRequest, useDeleteUserRequest, useUserRequests } from '@/api/queries/users';
+import { useDeleteUserRequest, useGetUserRequests } from '@/api/api-hooks.generated';
 import {
-  createActionColumn,
   createDateColumn,
   createStatusColumn,
   createTruncatedColumn,
 } from '@/components/common/columns';
+import { createActionColumn } from '@/components/common/columns/factories/action';
 import { MobileCard } from '@/components/common/MobileCard';
 import ResourceListView from '@/components/common/ResourceListView';
 import { useMessage } from '@/hooks';
@@ -38,6 +38,7 @@ import {
   SearchOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
+import type { GetUserRequests_ResultSet1 } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 
 dayjs.extend(relativeTime);
@@ -48,12 +49,12 @@ const UserSessionsTab: React.FC = () => {
   const user = useSelector(selectUser);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: sessions = [], isLoading, refetch } = useUserRequests();
+  const { data: sessions = [], isLoading, refetch } = useGetUserRequests();
   const deleteUserRequestMutation = useDeleteUserRequest();
 
   /* eslint-disable react-hooks/preserve-manual-memoization */
   const handleTerminateSession = useCallback(
-    async (session: UserRequest) => {
+    async (session: GetUserRequests_ResultSet1) => {
       try {
         await deleteUserRequestMutation.mutateAsync({ targetRequestId: session.requestId });
         if (session.userEmail === user?.email) {
@@ -67,7 +68,7 @@ const UserSessionsTab: React.FC = () => {
   );
   /* eslint-enable react-hooks/preserve-manual-memoization */
 
-  const filteredSessions = sessions.filter((session: UserRequest) => {
+  const filteredSessions = sessions.filter((session: GetUserRequests_ResultSet1) => {
     const searchLower = searchTerm.toLowerCase();
     const searchFields = [
       session.userEmail,
@@ -78,11 +79,11 @@ const UserSessionsTab: React.FC = () => {
     return searchFields.some((field) => field?.toLowerCase().includes(searchLower));
   });
 
-  const activeSessions = sessions.filter((session: UserRequest) => session.isActive);
+  const activeSessions = sessions.filter((session: GetUserRequests_ResultSet1) => session.isActive);
 
   const userAgentFallback = t('userSessions.notAvailable');
 
-  const userAgentColumn = createTruncatedColumn<UserRequest>({
+  const userAgentColumn = createTruncatedColumn<GetUserRequests_ResultSet1>({
     title: t('userSessions.columns.userAgent'),
     dataIndex: 'userAgent',
     key: 'userAgent',
@@ -91,7 +92,7 @@ const UserSessionsTab: React.FC = () => {
     renderWrapper: (content) => <Typography.Text>{content}</Typography.Text>,
   });
 
-  const statusColumn = createStatusColumn<UserRequest>({
+  const statusColumn = createStatusColumn<GetUserRequests_ResultSet1>({
     title: t('userSessions.columns.status'),
     dataIndex: 'isActive',
     key: 'isActive',
@@ -101,22 +102,22 @@ const UserSessionsTab: React.FC = () => {
     },
   });
 
-  const createdAtColumn = createDateColumn<UserRequest>({
+  const createdAtColumn = createDateColumn<GetUserRequests_ResultSet1>({
     title: t('userSessions.columns.createdAt'),
     dataIndex: 'createdAt',
     key: 'createdAt',
     width: 180,
     format: 'YYYY-MM-DD HH:mm:ss',
-    sorter: createDateSorter<UserRequest>('createdAt'),
+    sorter: createDateSorter<GetUserRequests_ResultSet1>('createdAt'),
     defaultSortOrder: 'descend',
   });
 
-  const lastActivityColumn = createDateColumn<UserRequest>({
+  const lastActivityColumn = createDateColumn<GetUserRequests_ResultSet1>({
     title: t('userSessions.columns.lastActivity'),
     dataIndex: 'lastActivity',
     key: 'lastActivity',
     width: 150,
-    sorter: createDateSorter<UserRequest>('lastActivity'),
+    sorter: createDateSorter<GetUserRequests_ResultSet1>('lastActivity'),
     render: (value: string | Date | null | undefined) => {
       if (!value) return '-';
       const timestamp = typeof value === 'string' ? value : value.toString();
@@ -124,17 +125,14 @@ const UserSessionsTab: React.FC = () => {
     },
   });
 
-  const actionsColumn = createActionColumn<UserRequest>({
+  const actionsColumn = createActionColumn<GetUserRequests_ResultSet1>({
     title: t('userSessions.columns.actions'),
     width: 140,
     fixed: 'right',
     renderActions: (record) => (
       <Popconfirm
         title={
-          <Typography.Text
-            /* eslint-disable-next-line no-restricted-syntax */
-            style={{ fontSize: 14, fontWeight: 500 }}
-          >
+          <Typography.Text className="text-sm font-medium">
             {t('userSessions.confirmTerminate')}
           </Typography.Text>
         }
@@ -165,7 +163,7 @@ const UserSessionsTab: React.FC = () => {
     ),
   });
 
-  const columns: ColumnsType<UserRequest> = [
+  const columns: ColumnsType<GetUserRequests_ResultSet1> = [
     {
       title: t('userSessions.columns.user'),
       dataIndex: 'userEmail',
@@ -175,11 +173,7 @@ const UserSessionsTab: React.FC = () => {
         <Space size="small">
           <Typography.Text>{email}</Typography.Text>
           {email === user?.email && (
-            <Tag
-              /* eslint-disable-next-line no-restricted-syntax */
-              style={{ fontSize: 12, fontWeight: 500 }}
-              data-testid="sessions-current-session-tag"
-            >
+            <Tag className="text-xs font-medium" data-testid="sessions-current-session-tag">
               {t('userSessions.currentSession')}
             </Tag>
           )}
@@ -191,7 +185,7 @@ const UserSessionsTab: React.FC = () => {
       dataIndex: 'sessionName',
       key: 'sessionName',
       width: 220,
-      render: (name: string, record: UserRequest) => {
+      render: (name: string, record: GetUserRequests_ResultSet1) => {
         const childCount = filteredSessions.filter(
           (session) => session.parentRequestId === record.requestId
         ).length;
@@ -203,8 +197,7 @@ const UserSessionsTab: React.FC = () => {
               <Tooltip title={t('userSessions.forkToken')}>
                 <Tag
                   icon={<LinkOutlined />}
-                  /* eslint-disable-next-line no-restricted-syntax */
-                  style={{ fontSize: 12, fontWeight: 500 }}
+                  className="text-xs font-medium"
                   data-testid="sessions-fork-tag"
                 >
                   {t('userSessions.fork')}
@@ -215,8 +208,7 @@ const UserSessionsTab: React.FC = () => {
               <Tooltip title={t('userSessions.hasChildren', { count: childCount })}>
                 <Tag
                   icon={<BranchesOutlined />}
-                  /* eslint-disable-next-line no-restricted-syntax */
-                  style={{ fontSize: 12, fontWeight: 500 }}
+                  className="text-xs font-medium"
                   data-testid="sessions-child-tag"
                 >
                   {childCount}
@@ -259,7 +251,7 @@ const UserSessionsTab: React.FC = () => {
   /* eslint-disable react-hooks/preserve-manual-memoization */
   const mobileRender = useMemo(
     // eslint-disable-next-line react/display-name
-    () => (record: UserRequest) => {
+    () => (record: GetUserRequests_ResultSet1) => {
       const childCount = filteredSessions.filter(
         (session) => session.parentRequestId === record.requestId
       ).length;
@@ -318,7 +310,7 @@ const UserSessionsTab: React.FC = () => {
             )}
           </Space>
           <Typography.Text type="secondary" className="text-xs">
-            IP: {record.ipAddress ?? t('userSessions.notAvailable')}
+            {t('userSessions.ipLabel')}: {record.ipAddress ?? t('userSessions.notAvailable')}
           </Typography.Text>
           <Typography.Text type="secondary" className="text-xs">
             {t('userSessions.columns.lastActivity')}: {dayjs(record.lastActivity).fromNow()}
@@ -331,16 +323,13 @@ const UserSessionsTab: React.FC = () => {
   /* eslint-enable react-hooks/preserve-manual-memoization */
 
   return (
-    <Flex vertical gap={16} data-testid="user-sessions-tab">
+    <Flex vertical data-testid="user-sessions-tab">
       <Row gutter={16}>
         <Col span={6}>
           <Card data-testid="sessions-stat-total">
             <Statistic
               title={
-                <Typography.Text
-                  /* eslint-disable-next-line no-restricted-syntax */
-                  style={{ fontSize: 14, fontWeight: 500 }}
-                >
+                <Typography.Text className="text-sm font-medium">
                   {t('userSessions.totalSessions')}
                 </Typography.Text>
               }
@@ -352,10 +341,7 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-active">
             <Statistic
               title={
-                <Typography.Text
-                  /* eslint-disable-next-line no-restricted-syntax */
-                  style={{ fontSize: 14, fontWeight: 500 }}
-                >
+                <Typography.Text className="text-sm font-medium">
                   {t('userSessions.activeSessions')}
                 </Typography.Text>
               }
@@ -367,10 +353,7 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-unique-users">
             <Statistic
               title={
-                <Typography.Text
-                  /* eslint-disable-next-line no-restricted-syntax */
-                  style={{ fontSize: 14, fontWeight: 500 }}
-                >
+                <Typography.Text className="text-sm font-medium">
                   {t('userSessions.uniqueUsers')}
                 </Typography.Text>
               }
@@ -382,17 +365,14 @@ const UserSessionsTab: React.FC = () => {
           <Card data-testid="sessions-stat-average-duration">
             <Statistic
               title={
-                <Typography.Text
-                  /* eslint-disable-next-line no-restricted-syntax */
-                  style={{ fontSize: 14, fontWeight: 500 }}
-                >
+                <Typography.Text className="text-sm font-medium">
                   {t('userSessions.averageDuration')}
                 </Typography.Text>
               }
               value={
                 sessions.length > 0
                   ? Math.round(
-                      sessions.reduce((acc: number, session: UserRequest) => {
+                      sessions.reduce((acc: number, session: GetUserRequests_ResultSet1) => {
                         const duration = dayjs(session.lastActivity).diff(
                           dayjs(session.createdAt),
                           'minute'
@@ -412,16 +392,12 @@ const UserSessionsTab: React.FC = () => {
         title={
           <Flex justify="space-between" align="center">
             <Space size={8}>
-              <Typography.Text
-                /* eslint-disable-next-line no-restricted-syntax */
-                style={{ fontSize: 16, fontWeight: 600 }}
-              >
+              <Typography.Text className="text-base font-semibold">
                 {t('userSessions.title')}
               </Typography.Text>
               <Tooltip title={t('common:actions.refresh')}>
                 <Button
-                  /* eslint-disable-next-line no-restricted-syntax */
-                  style={{ minWidth: 40, minHeight: 40, fontSize: 16 }}
+                  className="min-w-btn min-h-btn text-base"
                   data-testid="sessions-refresh-button"
                   icon={<ReloadOutlined />}
                   onClick={() => refetch()}
@@ -431,8 +407,7 @@ const UserSessionsTab: React.FC = () => {
               </Tooltip>
             </Space>
             <Input
-              /* eslint-disable-next-line no-restricted-syntax */
-              style={{ width: 'min(360px, 100%)', maxWidth: '100%' }}
+              className="w-full-max-sm"
               data-testid="sessions-search-input"
               placeholder={t('userSessions.searchPlaceholder')}
               prefix={<SearchOutlined />}
@@ -443,11 +418,11 @@ const UserSessionsTab: React.FC = () => {
           </Flex>
         }
       >
-        <ResourceListView<UserRequest>
+        <ResourceListView<GetUserRequests_ResultSet1>
           data-testid="sessions-table"
           columns={columns}
           data={filteredSessions}
-          rowKey={(record) => record.requestId.toString()}
+          rowKey={(record) => (record.requestId ?? '').toString()}
           loading={isLoading}
           mobileRender={mobileRender}
           pagination={{
@@ -459,7 +434,7 @@ const UserSessionsTab: React.FC = () => {
           }}
           onRow={(record) => {
             const props: React.HTMLAttributes<HTMLElement> & Record<string, string> = {
-              'data-testid': `sessions-row-${record.requestId}`,
+              'data-testid': `sessions-row-${record.requestId ?? ''}`,
             };
             return props;
           }}

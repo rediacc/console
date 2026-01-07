@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Alert, Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useUpdateMachineClusterAssignment } from '@/api/queries/cephMutations';
-import { SizedModal } from '@/components/common';
+import { useUpdateMachineClusterAssignment } from '@/api/api-hooks.generated';
 import { createTruncatedColumn } from '@/components/common/columns';
+import { SizedModal } from '@/components/common/SizedModal';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
@@ -38,7 +38,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   const targetMachines: Machine[] =
     machines ??
     (selectedMachines && allMachines
-      ? allMachines.filter((machine) => selectedMachines.includes(machine.machineName))
+      ? allMachines.filter((machine) => selectedMachines.includes(machine.machineName ?? ''))
       : []);
 
   // Filter machines that have cluster assignments
@@ -54,8 +54,8 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       const results = await Promise.allSettled(
         machinesWithClusters.map((machine) =>
           updateMutation.mutateAsync({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
+            teamName: machine.teamName ?? '',
+            machineName: machine.machineName ?? '',
             clusterName: '', // Empty string to remove assignment
           })
         )
@@ -93,7 +93,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
     dataIndex: 'machineName',
     key: 'machineName',
     renderWrapper: (content) => (
-      <Flex align="center" gap={8}>
+      <Flex align="center">
         <CloudServerOutlined />
         <Typography.Text>{content}</Typography.Text>
       </Flex>
@@ -118,7 +118,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   return (
     <SizedModal
       title={
-        <Flex align="center" gap={8} wrap>
+        <Flex align="center" wrap>
           <WarningOutlined />
           {t('machines:bulkActions.removeFromCluster')}
         </Flex>
@@ -142,14 +142,13 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       data-testid="ds-remove-cluster-modal"
     >
       {machinesWithClusters.length === 0 ? (
-        <Alert message={t('machines:noMachinesWithClusters')} type="info" showIcon />
+        <Alert message={t('machines:noMachinesWithClusters')} type="info" />
       ) : (
         <>
           <Alert
             message={t('machines:removeFromClusterWarning', { count: machinesWithClusters.length })}
             description={t('machines:removeFromClusterDescription')}
             type="warning"
-            showIcon
             // eslint-disable-next-line no-restricted-syntax
             style={{ marginBottom: 16 }}
           />
@@ -158,9 +157,8 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
             columns={columns}
             dataSource={machinesWithClusters}
             rowKey="machineName"
-            size="small"
             pagination={false}
-            scroll={{ y: 300 }}
+            scroll={{ x: 'max-content', y: 300 }}
             data-testid="ds-remove-cluster-table"
           />
         </>

@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { app, BrowserWindow, session, shell } from 'electron';
-import { registerIpcHandlers } from './ipc';
+import { registerIpcHandlers, cleanupIpcHandlers } from './ipc';
+import { setupProtocolHandler } from './protocol';
 import { setupAutoUpdater } from './updater/autoUpdater';
 import { WindowManager } from './windowManager';
 
@@ -55,14 +56,14 @@ function createWindow(): void {
       "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
       "style-src 'self' 'unsafe-inline'; " +
-      "connect-src 'self' https://*.rediacc.com wss://*.rediacc.com http://localhost:* https://localhost:* ws://localhost:*; " +
+      "connect-src 'self' https://*.rediacc.com wss://*.rediacc.com https://*.trycloudflare.com http://localhost:* https://localhost:* ws://localhost:*; " +
       "img-src 'self' data: https:; " +
       "font-src 'self' data:;"
     : // Production: Strict CSP without unsafe-inline/eval
       "default-src 'self'; " +
       "script-src 'self'; " +
       "style-src 'self' 'unsafe-inline'; " + // unsafe-inline still needed for Ant Design runtime styles
-      "connect-src 'self' https://*.rediacc.com wss://*.rediacc.com; " +
+      "connect-src 'self' https://*.rediacc.com wss://*.rediacc.com https://*.trycloudflare.com http://localhost:* https://localhost:* ws://localhost:*; " +
       "img-src 'self' data: https:; " +
       "font-src 'self' data:;";
 
@@ -98,6 +99,10 @@ void app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  // Set up protocol handler (rediacc:// URLs)
+  // Must be done before registering IPC handlers
+  setupProtocolHandler(() => mainWindow);
+
   // Register IPC handlers before creating window
   registerIpcHandlers();
 
@@ -121,6 +126,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Cleanup before quitting
+app.on('before-quit', async () => {
+  await cleanupIpcHandlers();
 });
 
 // Security: Prevent navigation to untrusted URLs

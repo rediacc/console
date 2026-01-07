@@ -18,7 +18,7 @@ import { masterPasswordService } from '@/services/auth';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { hashPassword, saveAuthData } from '@/utils/auth';
 import {
-  generateRandomCompanyName,
+  generateRandomOrganizationName,
   generateRandomEmail,
   generateRandomPassword,
 } from '@/utils/generators';
@@ -31,7 +31,8 @@ import {
   validateMasterPassword,
 } from '@/utils/vaultProtocol';
 import { parseLoginResult as parseAuthenticationResult } from '@rediacc/shared/api';
-import type { AuthLoginResult } from '@rediacc/shared/types';
+import { parseResponse } from '@rediacc/shared/api';
+import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
 import { TFAModal } from './components/TFAModal';
 import { handleProtocolState } from './hooks/useProtocolStateHandler';
@@ -53,7 +54,7 @@ const LoginPage: React.FC = () => {
     | {
         email: string;
         password: string;
-        companyName: string;
+        organizationName: string;
         activationCode: string;
       }
     | undefined
@@ -82,7 +83,7 @@ const LoginPage: React.FC = () => {
             const randomData = {
               email: generateRandomEmail(),
               password: generateRandomPassword(),
-              companyName: generateRandomCompanyName(),
+              organizationName: generateRandomOrganizationName(),
               activationCode: '111111',
             };
             setQuickRegistrationData(randomData);
@@ -180,18 +181,18 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      const vaultCompany = authResult.vaultCompany;
-      const companyName = authResult.companyName ?? authResult.company ?? null;
-      const companyHasEncryption = isEncrypted(vaultCompany);
+      const vaultOrganization = authResult.vaultOrganization;
+      const organizationName = authResult.organizationName ?? authResult.organization ?? null;
+      const organizationHasEncryption = isEncrypted(vaultOrganization);
       const userProvidedPassword = !!values.masterPassword;
 
       let passwordValid: boolean | undefined = undefined;
-      if (companyHasEncryption && userProvidedPassword && vaultCompany) {
-        passwordValid = await validateMasterPassword(vaultCompany, values.masterPassword!);
+      if (organizationHasEncryption && userProvidedPassword && vaultOrganization) {
+        passwordValid = await validateMasterPassword(vaultOrganization, values.masterPassword!);
       }
 
       const protocolState = analyzeVaultProtocolState(
-        vaultCompany,
+        vaultOrganization,
         userProvidedPassword,
         passwordValid
       );
@@ -204,9 +205,9 @@ const LoginPage: React.FC = () => {
       );
       if (protocolResult.shouldReturn) return;
 
-      await saveAuthData(values.email, companyName ?? undefined);
+      await saveAuthData(values.email, organizationName ?? undefined);
 
-      if (companyHasEncryption && values.masterPassword) {
+      if (organizationHasEncryption && values.masterPassword) {
         await masterPasswordService.setMasterPassword(values.masterPassword);
       }
 
@@ -217,17 +218,21 @@ const LoginPage: React.FC = () => {
 
       dispatch(
         loginSuccess({
-          user: { email: values.email, company: companyName ?? undefined, preferredLanguage },
-          company: companyName ?? undefined,
-          vaultCompany: vaultCompany ?? undefined,
-          companyEncryptionEnabled: companyHasEncryption,
+          user: {
+            email: values.email,
+            organization: organizationName ?? undefined,
+            preferredLanguage,
+          },
+          organization: organizationName ?? undefined,
+          vaultOrganization: vaultOrganization ?? undefined,
+          organizationEncryptionEnabled: organizationHasEncryption,
         })
       );
 
       trackUserAction('login_success', 'login_form', {
         email_domain: values.email.split('@')[1] ?? 'unknown',
-        company: companyName ?? 'unknown',
-        has_encryption: companyHasEncryption,
+        organization: organizationName ?? 'unknown',
+        has_encryption: organizationHasEncryption,
         vault_protocol_state: vaultProtocolState?.toString() ?? 'none',
       });
 
@@ -248,10 +253,13 @@ const LoginPage: React.FC = () => {
 
   const handleTFAVerification = async () => {
     try {
-      const result = await verifyTFAMutation.mutateAsync({ code: twoFACode });
+      const response = await verifyTFAMutation.mutateAsync({ tFACode: twoFACode });
+      // Parse the result to get the TFA verification status
+      const tfaResults = parseResponse<VerifyTfaResult>(response as never);
+      const tfaResult = tfaResults[0] as VerifyTfaResult | undefined;
 
-      if (result.isAuthorized) {
-        if (result.hasTFAEnabled === false) {
+      if (tfaResult?.isAuthorized === true) {
+        if (tfaResult.isTFAEnabled === false) {
           showMessage('info', 'Two-factor authentication is not enabled for this account.');
           setShowTFAModal(false);
           setTwoFACode('');
@@ -266,13 +274,14 @@ const LoginPage: React.FC = () => {
         }
 
         const { email, authResult: storedAuthResult, masterPassword } = pendingTFAData;
-        const vaultCompany = storedAuthResult.vaultCompany;
-        const companyName = storedAuthResult.companyName ?? storedAuthResult.company ?? null;
+        const vaultOrganization = storedAuthResult.vaultOrganization;
+        const organizationName =
+          storedAuthResult.organizationName ?? storedAuthResult.organization ?? null;
 
-        await saveAuthData(email, companyName ?? undefined);
+        await saveAuthData(email, organizationName ?? undefined);
 
-        const companyHasEncryption = isEncrypted(vaultCompany);
-        if (companyHasEncryption && masterPassword) {
+        const organizationHasEncryption = isEncrypted(vaultOrganization);
+        if (organizationHasEncryption && masterPassword) {
           await masterPasswordService.setMasterPassword(masterPassword);
         }
 
@@ -283,10 +292,10 @@ const LoginPage: React.FC = () => {
 
         dispatch(
           loginSuccess({
-            user: { email, company: companyName ?? undefined, preferredLanguage },
-            company: companyName ?? undefined,
-            vaultCompany: vaultCompany ?? undefined,
-            companyEncryptionEnabled: companyHasEncryption,
+            user: { email, organization: organizationName ?? undefined, preferredLanguage },
+            organization: organizationName ?? undefined,
+            vaultOrganization: vaultOrganization ?? undefined,
+            organizationEncryptionEnabled: organizationHasEncryption,
           })
         );
 
@@ -309,12 +318,11 @@ const LoginPage: React.FC = () => {
       <SandboxWarning />
       {/* eslint-disable-next-line no-restricted-syntax */}
       <Flex className="w-full" style={{ maxWidth: 400 }}>
-        <Flex vertical gap={24} className="w-full">
+        <Flex vertical className="w-full">
           {error && (
             <Alert
               type="error"
               message={error}
-              showIcon
               closable
               onClose={() => setError(null)}
               data-testid="login-error-alert"
@@ -352,7 +360,7 @@ const LoginPage: React.FC = () => {
             </Typography.Text>
           </Flex>
 
-          <Flex vertical align="center" gap={8}>
+          <Flex vertical align="center" className="gap-sm">
             {!showAdvancedOptions &&
               vaultProtocolState !== VaultProtocolState.PASSWORD_REQUIRED &&
               vaultProtocolState !== VaultProtocolState.INVALID_PASSWORD && (
@@ -367,7 +375,7 @@ const LoginPage: React.FC = () => {
               )}
 
             {showAdvancedOptions && (
-              <Flex vertical gap={8} className="w-full" align="center">
+              <Flex vertical className="w-full gap-sm" align="center">
                 <EndpointSelector />
               </Flex>
             )}

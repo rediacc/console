@@ -1,5 +1,5 @@
 import type { StatusConfig } from './renderers';
-import type { TooltipProps } from 'antd';
+import type { Breakpoint, TooltipProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 export type ColumnDataIndex = string;
@@ -31,6 +31,7 @@ export interface ActionColumnOptions<T> {
   onDelete?: (record: T) => void;
   getMenuItems?: (record: T) => ActionMenuItem<T>[];
   renderActions?: (record: T) => React.ReactNode;
+  responsive?: Breakpoint[];
 }
 
 export interface StatusColumnOptions<T> {

@@ -73,12 +73,12 @@ export const STALE_TASK_CONSTANTS = {
 /**
  * Terminal statuses that indicate a task has finished
  */
-export const TERMINAL_STATUSES: QueueStatus[] = ['COMPLETED', 'CANCELLED', 'FAILED'];
+export const TERMINAL_STATUSES: QueueStatus[] = ['COMPLETED', 'CANCELLED', 'FAILED'] as const;
 
 /**
  * Active statuses that indicate a task is still running
  */
-export const ACTIVE_STATUSES: QueueStatus[] = ['PENDING', 'ASSIGNED', 'PROCESSING'];
+export const ACTIVE_STATUSES: QueueStatus[] = ['PENDING', 'ASSIGNED', 'PROCESSING'] as const;
 
 /**
  * Permanent failure message patterns
@@ -87,7 +87,7 @@ export const PERMANENT_FAILURE_MESSAGES = [
   'Bridge reported failure',
   'Task permanently failed',
   'Fatal error',
-];
+] as const;
 
 export function isTerminalStatus(status: string): boolean {
   return TERMINAL_STATUSES.includes(status as QueueStatus);

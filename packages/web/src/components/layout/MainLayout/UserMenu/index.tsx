@@ -11,12 +11,12 @@ import {
   SunOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type { CompanyDashboardData } from '@rediacc/shared/types';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 type UserMenuProps = {
   user: { email: string } | null;
-  company: string | null;
-  companyData?: Pick<CompanyDashboardData, 'companyInfo' | 'activeSubscription'>;
+  organization: string | null;
+  organizationData?: Pick<OrganizationDashboardData, 'organizationInfo' | 'activeSubscription'>;
   uiMode: 'simple' | 'expert';
   themeMode: ThemeMode;
   onModeToggle: () => void;
@@ -26,8 +26,8 @@ type UserMenuProps = {
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   user,
-  company,
-  companyData,
+  organization,
+  organizationData,
   uiMode,
   themeMode,
   onModeToggle,
@@ -38,34 +38,31 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   return (
     <Card styles={{ body: { padding: 0 } }}>
-      <Flex
-        vertical
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ width: 280 }}
-      >
-        <Flex align="center" gap={12} wrap data-testid="user-info">
+      <Flex vertical className="w-280">
+        <Flex align="center" wrap data-testid="user-info">
           <Avatar icon={<UserOutlined />} size={48} />
           <Flex vertical className="flex-1 min-w-0">
             <Typography.Text strong className="block" data-testid="user-info-email">
               {user?.email}
             </Typography.Text>
-            {company && (
-              <Typography.Text type="secondary" className="block" data-testid="user-info-company">
-                {company}
+            {organization && (
+              <Typography.Text
+                type="secondary"
+                className="block"
+                data-testid="user-info-organization"
+              >
+                {organization}
               </Typography.Text>
             )}
-            {companyData?.activeSubscription && (
+            {organizationData?.activeSubscription && (
               <Tag data-testid="user-info-plan">
-                {companyData.activeSubscription.planCode ?? 'UNKNOWN'}
+                {organizationData.activeSubscription.planCode ?? 'UNKNOWN'}
               </Tag>
             )}
           </Flex>
         </Flex>
 
-        <Divider
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ margin: '12px 0' }}
-        />
+        <Divider className="my-3" />
 
         <Flex vertical>
           <Typography.Text type="secondary">{t('uiMode.label')}</Typography.Text>
@@ -101,10 +98,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           />
         </Flex>
 
-        <Divider
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ margin: '12px 0' }}
-        />
+        <Divider className="my-3" />
 
         <Flex vertical>
           <Typography.Text type="secondary">{t('theme.label')}</Typography.Text>
@@ -140,10 +134,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           />
         </Flex>
 
-        <Divider
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ margin: '12px 0' }}
-        />
+        <Divider className="my-3" />
 
         <Flex vertical>
           <Typography.Text strong className="block">
@@ -152,10 +143,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <LanguageSelector iconOnly={false} />
         </Flex>
 
-        <Divider
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ margin: '12px 0' }}
-        />
+        <Divider className="my-3" />
 
         <Button
           type="text"
@@ -163,9 +151,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           icon={<LogoutOutlined />}
           onClick={onLogout}
           data-testid="main-logout-button"
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ justifyContent: 'flex-start' }}
-          className="w-full"
+          className="w-full justify-start"
         >
           {t('navigation.logout')}
         </Button>

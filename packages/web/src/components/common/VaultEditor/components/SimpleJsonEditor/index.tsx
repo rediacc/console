@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Flex, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 interface SimpleJsonEditorProps {
   value: string;
@@ -21,61 +22,36 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   'data-testid': dataTestId,
   onFormatReady,
 }) => {
-  const [internalValue, setInternalValue] = useState(value);
-  const [error, setError] = useState<string | null>(null);
-  const [prevValue, setPrevValue] = useState(value);
+  const { t } = useTranslation('common');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync state with value prop during render
-  if (value !== prevValue) {
-    setPrevValue(value);
-    setInternalValue(value);
-    // Validate immediately
-    if (!value.trim()) {
-      setError(null);
-    } else {
-      try {
-        JSON.parse(value);
-        setError(null);
-      } catch (e) {
-        setError((e as Error).message);
-      }
-    }
-  }
-
-  const validateJson = (text: string) => {
-    if (!text.trim()) {
-      setError(null);
-      return;
-    }
-
+  // Derive validation error from value (pure computation, no side effects)
+  const error = useMemo(() => {
+    if (!value.trim()) return null;
     try {
-      JSON.parse(text);
-      setError(null);
+      JSON.parse(value);
+      return null;
     } catch (e) {
-      setError((e as Error).message);
+      return (e as Error).message;
     }
-  };
+  }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    setInternalValue(newValue);
-    validateJson(newValue);
     onChange?.(newValue);
   };
 
   const formatJson = useCallback(() => {
-    if (!internalValue.trim()) return;
+    if (!value.trim()) return;
 
     try {
-      const parsed = JSON.parse(internalValue);
+      const parsed = JSON.parse(value);
       const formatted = JSON.stringify(parsed, null, 2);
-      setInternalValue(formatted);
       onChange?.(formatted);
-      setError(null);
-    } catch (e) {
-      setError((e as Error).message);
+    } catch {
+      // Error is already shown via the derived error state
     }
-  }, [internalValue, onChange]);
+  }, [value, onChange]);
 
   // Pass format function to parent
   useEffect(() => {
@@ -90,12 +66,15 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       const target = e.currentTarget;
       const start = target.selectionStart;
       const end = target.selectionEnd;
-      const newValue = `${internalValue.substring(0, start)}  ${internalValue.substring(end)}`;
-      setInternalValue(newValue);
+      const newValue = `${value.substring(0, start)}  ${value.substring(end)}`;
       onChange?.(newValue);
 
-      // Set cursor position immediately - no async operations
-      target.selectionStart = target.selectionEnd = start + 2;
+      // Set cursor position after React updates the value
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2;
+        }
+      });
     }
   };
 
@@ -112,7 +91,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       }}
     >
       <textarea
-        value={internalValue}
+        ref={textareaRef}
+        value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         readOnly={readOnly}
@@ -145,7 +125,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
             fontWeight: 500,
           }}
         >
-          JSON Error: {error}
+          {t('defaults.jsonError')}: {error}
         </Typography.Text>
       )}
     </Flex>

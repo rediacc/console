@@ -17,8 +17,8 @@ export interface PromotionValidationResult {
  * Sibling clone information
  */
 export interface SiblingClone {
-  repositoryGuid: string;
-  repositoryName: string;
+  repositoryGuid: string | null;
+  repositoryName: string | null;
   repositoryTag?: string | null;
 }
 
@@ -27,7 +27,7 @@ export interface SiblingClone {
  */
 export interface SiblingClonesResult {
   siblingClones: SiblingClone[];
-  currentGrandName: string;
+  currentGrandName: string | null;
 }
 
 /**
@@ -67,7 +67,7 @@ export function findSiblingClones(
   if (!grandGuid) {
     return {
       siblingClones: [],
-      currentGrandName: '',
+      currentGrandName: null,
     };
   }
 
@@ -108,7 +108,7 @@ export function getPromotionContext(
   canPromote: boolean;
   reason?: string;
   siblingClones: SiblingClone[];
-  currentGrandName: string;
+  currentGrandName: string | null;
 } {
   const validation = canPromoteToGrand(repository);
 

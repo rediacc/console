@@ -84,6 +84,16 @@ export default defineConfig(({ mode }) => {
       },
       chunkSizeWarningLimit: 1000, // 1MB warning threshold
       reportCompressedSize: false, // Disable gzip size reporting for faster builds
+      rollupOptions: {
+        onwarn(warning, warn) {
+          // Fail build on circular dependency warnings in our own code
+          // (ignore node_modules which may have internal circular deps)
+          if (warning.code === 'CIRCULAR_DEPENDENCY' && !warning.message.includes('node_modules')) {
+            throw new Error(warning.message);
+          }
+          warn(warning);
+        },
+      },
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'antd', '@ant-design/icons'],

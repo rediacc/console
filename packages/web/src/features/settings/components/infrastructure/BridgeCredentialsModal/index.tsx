@@ -1,15 +1,14 @@
 import React from 'react';
 import { Alert, Button, Flex, Input, Modal, Space, Typography } from 'antd';
-import type { Bridge } from '@/api/queries/bridges';
 import { ModalSize } from '@/types/modal';
 import { CheckCircleOutlined, KeyOutlined } from '@/utils/optimizedIcons';
-import type { TFunction } from 'i18next';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetRegionBridges_ResultSet1 } from '@rediacc/shared/types';
 
 interface BridgeCredentialsModalProps {
-  t: TFunction<'resources'>;
-  tCommon: TFunction<'common'>;
+  t: TypedTFunction;
   open: boolean;
-  bridge?: Bridge;
+  bridge?: GetRegionBridges_ResultSet1;
   tokenCopied: boolean;
   onCopyToken: (token: string) => void;
   onClose: () => void;
@@ -17,88 +16,91 @@ interface BridgeCredentialsModalProps {
 
 export const BridgeCredentialsModal: React.FC<BridgeCredentialsModalProps> = ({
   t,
-  tCommon,
   open,
   bridge,
   tokenCopied,
   onCopyToken,
   onClose,
-}) => (
-  <Modal
-    title={`${t('bridges.bridgeToken')} - ${bridge?.bridgeName ?? ''}`}
-    open={open}
-    onCancel={onClose}
-    footer={[
-      <Button key="close" onClick={onClose}>
-        {tCommon('actions.close')}
-      </Button>,
-    ]}
-    className={ModalSize.Medium}
-    centered
-  >
-    {(() => {
-      if (!bridge) return null;
+}) => {
+  return (
+    <Modal
+      title={`${t('bridges.bridgeToken')} - ${bridge?.bridgeName ?? ''}`}
+      open={open}
+      onCancel={onClose}
+      footer={[
+        <Button key="close" onClick={onClose} data-testid="bridge-credentials-close-button">
+          {t('common:actions.close')}
+        </Button>,
+      ]}
+      className={ModalSize.Medium}
+      centered
+      data-testid="bridge-credentials-modal"
+    >
+      {(() => {
+        if (!bridge) return null;
 
-      const token = bridge.bridgeCredentials;
+        const token = bridge.bridgeCredentials;
 
-      if (bridge.hasAccess === 0) {
+        if (bridge.hasAccess === false) {
+          return (
+            <Flex className="w-full-max-md">
+              <Alert
+                message={t('bridges.accessDenied')}
+                description={t('bridges.accessDeniedDescription')}
+                type="error"
+              />
+            </Flex>
+          );
+        }
+
+        if (!token) {
+          return (
+            <Flex className="w-full-max-md">
+              <Alert
+                message={t('bridges.noToken')}
+                description={t('bridges.noTokenDescription')}
+                type="info"
+              />
+            </Flex>
+          );
+        }
+
         return (
-          /* eslint-disable-next-line no-restricted-syntax */
-          <Flex style={{ maxWidth: 600, width: '100%' }}>
+          <Flex vertical className="w-full">
             <Alert
-              message={t('bridges.accessDenied')}
-              description={t('bridges.accessDeniedDescription')}
-              type="error"
-              showIcon
+              message={t('bridges.tokenHeading')}
+              description={t('bridges.tokenDescription')}
+              type="warning"
             />
-          </Flex>
-        );
-      }
 
-      if (!token) {
-        return (
-          /* eslint-disable-next-line no-restricted-syntax */
-          <Flex style={{ maxWidth: 600, width: '100%' }}>
+            <Flex vertical>
+              <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
+              <Space.Compact className="w-full">
+                <Input
+                  className="w-full"
+                  value={token}
+                  readOnly
+                  autoComplete="off"
+                  data-testid="bridge-credentials-token-input"
+                />
+                <Button
+                  icon={tokenCopied ? <CheckCircleOutlined /> : <KeyOutlined />}
+                  onClick={() => onCopyToken(token)}
+                  data-testid="bridge-credentials-copy-button"
+                >
+                  {tokenCopied ? t('common:actions.copied') : t('common:actions.copy')}
+                </Button>
+              </Space.Compact>
+            </Flex>
+
             <Alert
-              message={t('bridges.noToken')}
-              description={t('bridges.noTokenDescription')}
+              message={t('common:general.important')}
+              description={t('bridges.tokenImportant')}
               type="info"
-              showIcon
             />
           </Flex>
         );
-      }
-
-      return (
-        <Flex vertical gap={16} className="w-full">
-          <Alert
-            message={t('bridges.tokenHeading')}
-            description={t('bridges.tokenDescription')}
-            type="warning"
-            showIcon
-          />
-
-          <Flex vertical>
-            <Typography.Text strong>{t('bridges.tokenLabel')}</Typography.Text>
-            <Space.Compact className="w-full">
-              <Input className="w-full" value={token} readOnly autoComplete="off" />
-              <Button
-                icon={tokenCopied ? <CheckCircleOutlined /> : <KeyOutlined />}
-                onClick={() => onCopyToken(token)}
-              >
-                {tokenCopied ? tCommon('actions.copied') : tCommon('actions.copy')}
-              </Button>
-            </Space.Compact>
-          </Flex>
-
-          <Alert
-            message={tCommon('general.important')}
-            description={t('bridges.tokenImportant')}
-            type="info"
-            showIcon
-          />
-        </Flex>
-      );
-    })()}
-  </Modal>
-);
+      })()}
+    </Modal>
+  );
+};

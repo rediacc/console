@@ -53,16 +53,16 @@ describe('repository commands', () => {
       const repos = (listResult.json ?? []) as unknown[];
 
       if (repos.length > 0) {
-        const repoName = (repos[0] as Record<string, unknown>).repositoryName as string;
+        const repositoryName = (repos[0] as Record<string, unknown>).repositoryName as string;
 
-        const result = await runCli(['repository', 'inspect', repoName, '--team', teamName]);
+        const result = await runCli(['repository', 'inspect', repositoryName, '--team', teamName]);
 
         expect(result.success).toBe(true);
       }
     });
   });
 
-  // CRUD operations - safe to run with fresh company registration
+  // CRUD operations - safe to run with fresh organization registration
   describe('repository CRUD operations', () => {
     const testRepoName = `test-repo-${Date.now()}`;
 

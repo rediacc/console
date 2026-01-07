@@ -7,8 +7,8 @@ import {
   KeyOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { MenuProps } from 'antd';
-import type { TFunction } from 'i18next';
 
 // Helper to create menu labels with consistent data-testid
 const createClusterActionLabel = (actionKey: string, label: React.ReactNode) =>
@@ -29,9 +29,7 @@ const createPoolActionLabel = (actionKey: string, label: React.ReactNode) =>
     label
   );
 
-export const buildClusterMenuItems = (
-  t: TFunction<'ceph' | 'common' | 'machines'>
-): MenuProps['items'] => [
+export const buildClusterMenuItems = (t: TypedTFunction): MenuProps['items'] => [
   {
     key: 'status',
     label: createClusterActionLabel('status', t('functions.cluster_status')),
@@ -50,7 +48,7 @@ export const buildClusterMenuItems = (
   },
 ];
 
-export const buildPoolMenuItems = (t: TFunction<'ceph' | 'common'>): MenuProps['items'] => [
+export const buildPoolMenuItems = (t: TypedTFunction): MenuProps['items'] => [
   {
     key: 'list',
     label: createPoolActionLabel('list', t('functions.pool_list')),

@@ -8,7 +8,7 @@ import {
   HddOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
-import type { CephTeamBreakdown } from '@rediacc/shared/types';
+import type { GetOrganizationDashboard_ResultSet15 } from '@rediacc/shared/types';
 import { CephDashboardWidgetProps } from './types';
 
 const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBreakdown = [] }) => {
@@ -56,44 +56,46 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
     totalMachines > 0 ? Math.round(((totalMachines - trulyAvailable) / totalMachines) * 100) : 0;
 
   const renderTeamItem = (item: unknown) => {
-    const team = item as CephTeamBreakdown | null | undefined;
+    const team = item as GetOrganizationDashboard_ResultSet15 | null | undefined;
     if (team === null || team === undefined) {
       return null;
     }
 
-    const teamKey = team.teamName.toLowerCase().replace(/\s+/g, '-');
+    const teamKey = (team.teamName ?? '').toLowerCase().replace(/\s+/g, '-');
 
     return (
       <List.Item key={teamKey} data-testid={`ds-widget-team-item-${teamKey}`}>
         <Flex vertical className="w-full">
           <Flex align="center" justify="space-between">
             <Typography.Text strong>{team.teamName}</Typography.Text>
-            <Typography.Text>{team.totalMachines} machines</Typography.Text>
+            <Typography.Text>
+              {team.totalMachines} {t('common:dashboard.widgets.ceph.machines')}
+            </Typography.Text>
           </Flex>
-          <Flex align="center" gap={8} wrap>
+          <Flex align="center" wrap>
             <Tooltip title={t('ceph:assignmentStatus.available')}>
               <Tag data-testid={`ds-widget-team-tag-available-${teamKey}`}>
-                {team.availableMachines} available
+                {team.availableMachines} {t('common:dashboard.widgets.ceph.available')}
               </Tag>
             </Tooltip>
             {(team.clusterMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.cluster')}>
                 <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`}>
-                  {team.clusterMachines} cluster
+                  {team.clusterMachines} {t('common:dashboard.widgets.ceph.cluster')}
                 </Tag>
               </Tooltip>
             )}
             {(team.imageMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.image')}>
                 <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`}>
-                  {team.imageMachines} image
+                  {team.imageMachines} {t('common:dashboard.widgets.ceph.image')}
                 </Tag>
               </Tooltip>
             )}
             {(team.cloneMachines ?? 0) > 0 && (
               <Tooltip title={t('ceph:assignmentStatus.clone')}>
                 <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`}>
-                  {team.cloneMachines} clone
+                  {team.cloneMachines} {t('common:dashboard.widgets.ceph.clone')}
                 </Tag>
               </Tooltip>
             )}
@@ -107,7 +109,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
     <Card
       data-testid="ds-widget-card"
       title={
-        <Flex align="center" gap={8} wrap className="inline-flex">
+        <Flex align="center" wrap className="inline-flex">
           <Flex align="center" className="inline-flex">
             <CloudServerOutlined />
           </Flex>
@@ -118,7 +120,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
         <Typography.Text>{t('ceph:dashboard.subtitle', { total: totalMachines })}</Typography.Text>
       }
     >
-      <Flex vertical gap={16} className="w-full">
+      <Flex vertical className="w-full">
         <Row gutter={[16, 16]}>
           {assignmentData.map((item) => (
             <Col key={item.type} xs={12} sm={12} md={6}>
@@ -128,7 +130,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
                   <Statistic
                     data-testid={`ds-widget-stat-value-${item.type}`}
                     title={item.label}
-                    value={item.count}
+                    value={item.count ?? 0}
                     suffix={<Typography.Text>({item.percentage}%)</Typography.Text>}
                   />
                 </Flex>
@@ -139,21 +141,21 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
 
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
-            <Flex vertical gap={8} data-testid="ds-widget-cluster-summary">
+            <Flex vertical className="gap-sm" data-testid="ds-widget-cluster-summary">
               <Typography.Text strong>{t('ceph:dashboard.clusterSummary')}</Typography.Text>
               <Row gutter={16}>
                 <Col span={12}>
                   <Statistic
                     data-testid="ds-widget-stat-total-clusters"
                     title={t('ceph:dashboard.totalClusters')}
-                    value={stats.totalClusters}
+                    value={stats.totalClusters ?? 0}
                   />
                 </Col>
                 <Col span={12}>
                   <Statistic
                     data-testid="ds-widget-stat-avg-machines"
                     title={t('ceph:dashboard.avgMachinesPerCluster')}
-                    value={stats.avgMachinesPerCluster}
+                    value={stats.avgMachinesPerCluster ?? 0}
                     precision={1}
                   />
                 </Col>
@@ -162,7 +164,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
           </Col>
 
           <Col xs={24} md={12}>
-            <Flex vertical gap={8} data-testid="ds-widget-machine-utilization">
+            <Flex vertical className="gap-sm" data-testid="ds-widget-machine-utilization">
               <Typography.Text strong>{t('ceph:dashboard.machineUtilization')}</Typography.Text>
               <Progress
                 data-testid="ds-widget-progress-utilization"
@@ -180,8 +182,8 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
         </Row>
 
         {teamBreakdown.length > 0 && (
-          <Flex vertical gap={8} data-testid="ds-widget-team-breakdown">
-            <Flex align="center" gap={8}>
+          <Flex vertical className="gap-sm" data-testid="ds-widget-team-breakdown">
+            <Flex align="center">
               <Flex align="center" className="inline-flex">
                 <TeamOutlined />
               </Flex>

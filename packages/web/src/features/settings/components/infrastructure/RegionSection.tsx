@@ -1,17 +1,19 @@
 import React from 'react';
-import { Button, Col, Flex, Row, Space, Tooltip, Typography } from 'antd';
-import type { Region } from '@/api/queries/regions';
+import { Col, Flex, Row } from 'antd';
+import { TooltipButton } from '@/components/common/buttons';
+import { PageHeader } from '@/components/common/PageHeader';
 import ResourceListView from '@/components/common/ResourceListView';
 import { PlusOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetOrganizationRegions_ResultSet1 } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
-import type { TFunction } from 'i18next';
 
 interface RegionSectionProps {
-  t: TFunction<'resources'>;
+  t: TypedTFunction;
   regionsLoading: boolean;
-  regionsList: Region[];
-  columns: ColumnsType<Region>;
-  mobileRender: (record: Region) => React.ReactNode;
+  regionsList: GetOrganizationRegions_ResultSet1[];
+  columns: ColumnsType<GetOrganizationRegions_ResultSet1>;
+  mobileRender: (record: GetOrganizationRegions_ResultSet1) => React.ReactNode;
   effectiveRegion: string | null;
   onSelectRegion: (regionName: string | null) => void;
   onCreateRegion: () => void;
@@ -32,10 +34,7 @@ export const RegionSection: React.FC<RegionSectionProps> = ({
       <Flex vertical>
         <ResourceListView
           title={
-            <Space direction="vertical" size={0}>
-              <Typography.Text strong>{t('regions.title')}</Typography.Text>
-              <Typography.Text>{t('regions.selectRegionPrompt')}</Typography.Text>
-            </Space>
+            <PageHeader title={t('regions.title')} subtitle={t('regions.selectRegionPrompt')} />
           }
           loading={regionsLoading}
           data={regionsList}
@@ -45,15 +44,13 @@ export const RegionSection: React.FC<RegionSectionProps> = ({
           searchPlaceholder={t('regions.searchRegions')}
           data-testid="system-region-table"
           actions={
-            <Tooltip title={t('regions.createRegion')}>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={onCreateRegion}
-                data-testid="system-create-region-button"
-                aria-label={t('regions.createRegion')}
-              />
-            </Tooltip>
+            <TooltipButton
+              tooltip={t('regions.createRegion')}
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={onCreateRegion}
+              data-testid="system-create-region-button"
+            />
           }
           rowSelection={{
             type: 'radio',
@@ -63,7 +60,7 @@ export const RegionSection: React.FC<RegionSectionProps> = ({
               onSelectRegion(typeof first === 'string' ? first : null);
             },
           }}
-          onRow={(record: Region) => ({
+          onRow={(record: GetOrganizationRegions_ResultSet1) => ({
             onClick: () => onSelectRegion(record.regionName),
             className: [
               'clickable-row',
