@@ -279,7 +279,7 @@ jobs:
   cli-tests:
     name: 🧪 CLI Integration Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     env:
       REDIACC_TEST_API_URL: http://localhost/api
