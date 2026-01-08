@@ -22,13 +22,20 @@ export interface RunCliOptions {
 
 /**
  * Run a CLI command and return the result
+ *
+ * Uses pre-built CLI bundle (dist/cli-bundle.cjs) for faster execution.
+ * Falls back to tsx for development if bundle doesn't exist.
  */
 export async function runCli(args: string[], options: RunCliOptions = {}): Promise<CliResult> {
   const config = getConfig();
 
   // Build arguments with output format
   const outputFormat = options.outputFormat ?? 'json';
-  const fullArgs = ['tsx', 'src/index.ts', '--output', outputFormat, ...args];
+
+  // Use pre-built bundle for faster execution (avoids tsx transpilation overhead)
+  // The bundle is created by `npm run build:cli` before tests run
+  const cliBundlePath = 'dist/cli-bundle.cjs';
+  const fullArgs = [cliBundlePath, '--output', outputFormat, ...args];
 
   const execaOptions: Options = {
     cwd: config.cliDir,
@@ -46,7 +53,7 @@ export async function runCli(args: string[], options: RunCliOptions = {}): Promi
     reject: false, // Don't throw on non-zero exit codes
   };
 
-  const result = await execa('npx', fullArgs, execaOptions);
+  const result = await execa('node', fullArgs, execaOptions);
 
   const stdout = String(result.stdout ?? '');
   const stderr = String(result.stderr ?? '');
