@@ -28,7 +28,9 @@ export function getOutputFormat(): OutputFormat {
  */
 export function handleError(error: unknown): never {
   // DEBUG: Log that error handler was called
-  console.error(`[DEBUG handleError] Called with error: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(
+    `[DEBUG handleError] Called with error: ${error instanceof Error ? error.message : String(error)}`
+  );
   console.error(`[DEBUG handleError] Error type: ${error?.constructor?.name ?? typeof error}`);
 
   const cliError = normalizeError(error);
