@@ -120,6 +120,7 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
   function updateApiUrl(url: string): void {
     apiBaseUrl = url;
     httpClient.defaults.baseURL = `${apiBaseUrl}${API_PREFIX}`;
+    initialized = true; // Prevent initialize() from overwriting
   }
 
   /**
