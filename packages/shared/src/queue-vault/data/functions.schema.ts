@@ -11,20 +11,26 @@ import type { BridgeFunctionName, FunctionParamsMap } from './functions.generate
 
 /** Pull repository from remote source (machine or storage) */
 export const BackupPullParamsSchema = z.object({
-  sourceType: z.enum(["machine", "storage"]).default('storage').describe('Source type: machine (SSH) or storage (rclone)'),
+  sourceType: z
+    .enum(['machine', 'storage'])
+    .default('storage')
+    .describe('Source type: machine (SSH) or storage (rclone)'),
   from: z.string().min(1).describe('Source machine or storage name'),
   grand: z.string().optional().describe('Grand repository GUID for CoW pre-seeding optimization'),
 });
 
 /** Push repository to remote destination (machine or storage) */
 export const BackupPushParamsSchema = z.object({
-  destinationType: z.enum(["machine", "storage"]).default('machine').describe('Destination type: machine (SSH) or storage (rclone)'),
+  destinationType: z
+    .enum(['machine', 'storage'])
+    .default('machine')
+    .describe('Destination type: machine (SSH) or storage (rclone)'),
   to: z.string().optional().describe('Single destination (machine or storage name)'),
   machines: z.array(z.string()).optional().describe('Target machines for parallel deployment'),
   storages: z.array(z.string()).optional().describe('Target storage systems for parallel backup'),
   dest: z.string().min(1).describe('Backup filename'),
   tag: z.string().optional().describe('Deployment/version tag'),
-  state: z.enum(["online", "offline"]).optional().describe('Repository state validation'),
+  state: z.enum(['online', 'offline']).optional().describe('Repository state validation'),
   checkpoint: z.boolean().default(false).optional().describe('CRIU hot backup (zero-downtime)'),
   override: z.boolean().optional().describe('Overwrite existing backup'),
   grand: z.string().optional().describe('Grand repository GUID for differential/CoW optimization'),
@@ -371,72 +377,101 @@ export const RepositoryValidateParamsSchema = z.object({
 
 /** Install and configure renet */
 export const SetupParamsSchema = z.object({
-  datastoreSize: z.string().regex(/^\d+(%|G|T)$/).default('95%').optional().describe('Datastore size'),
-  from: z.enum(["apt-repo", "tar-static", "deb-local"]).default('apt-repo').optional().describe('Installation source'),
-  rcloneSource: z.enum(["install-script", "package-manager", "manual"]).default('install-script').optional().describe('Rclone installation source'),
-  dockerSource: z.enum(["docker-repo", "package-manager", "snap", "manual"]).default('docker-repo').optional().describe('Docker installation source'),
-  installAmdDriver: z.enum(["auto", "true", "false"]).default('auto').optional().describe('Install AMD driver'),
-  installCriu: z.enum(["auto", "true", "false", "manual"]).default('auto').optional().describe('Install CRIU'),
-  installNvidiaDriver: z.enum(["auto", "true", "false"]).default('auto').optional().describe('Install NVIDIA driver'),
+  datastoreSize: z
+    .string()
+    .regex(/^\d+(%|G|T)$/)
+    .default('95%')
+    .optional()
+    .describe('Datastore size'),
+  from: z
+    .enum(['apt-repo', 'tar-static', 'deb-local'])
+    .default('apt-repo')
+    .optional()
+    .describe('Installation source'),
+  rcloneSource: z
+    .enum(['install-script', 'package-manager', 'manual'])
+    .default('install-script')
+    .optional()
+    .describe('Rclone installation source'),
+  dockerSource: z
+    .enum(['docker-repo', 'package-manager', 'snap', 'manual'])
+    .default('docker-repo')
+    .optional()
+    .describe('Docker installation source'),
+  installAmdDriver: z
+    .enum(['auto', 'true', 'false'])
+    .default('auto')
+    .optional()
+    .describe('Install AMD driver'),
+  installCriu: z
+    .enum(['auto', 'true', 'false', 'manual'])
+    .default('auto')
+    .optional()
+    .describe('Install CRIU'),
+  installNvidiaDriver: z
+    .enum(['auto', 'true', 'false'])
+    .default('auto')
+    .optional()
+    .describe('Install NVIDIA driver'),
 });
 
 export const FUNCTION_SCHEMAS = {
-  'backup_pull': BackupPullParamsSchema,
-  'backup_push': BackupPushParamsSchema,
-  'ceph_client_mount': CephClientMountParamsSchema,
-  'ceph_client_unmount': CephClientUnmountParamsSchema,
-  'ceph_clone_delete': CephCloneDeleteParamsSchema,
-  'ceph_clone_flatten': CephCloneFlattenParamsSchema,
-  'ceph_clone_image': CephCloneImageParamsSchema,
-  'ceph_clone_list': CephCloneListParamsSchema,
-  'ceph_clone_mount': CephCloneMountParamsSchema,
-  'ceph_clone_unmount': CephCloneUnmountParamsSchema,
-  'ceph_image_create': CephImageCreateParamsSchema,
-  'ceph_image_delete': CephImageDeleteParamsSchema,
-  'ceph_image_format': CephImageFormatParamsSchema,
-  'ceph_image_info': CephImageInfoParamsSchema,
-  'ceph_image_list': CephImageListParamsSchema,
-  'ceph_image_map': CephImageMapParamsSchema,
-  'ceph_image_resize': CephImageResizeParamsSchema,
-  'ceph_image_unmap': CephImageUnmapParamsSchema,
-  'ceph_snapshot_create': CephSnapshotCreateParamsSchema,
-  'ceph_snapshot_delete': CephSnapshotDeleteParamsSchema,
-  'ceph_snapshot_list': CephSnapshotListParamsSchema,
-  'ceph_snapshot_protect': CephSnapshotProtectParamsSchema,
-  'ceph_snapshot_rollback': CephSnapshotRollbackParamsSchema,
-  'ceph_snapshot_unprotect': CephSnapshotUnprotectParamsSchema,
-  'container_exec': ContainerExecParamsSchema,
-  'container_inspect': ContainerInspectParamsSchema,
-  'container_kill': ContainerKillParamsSchema,
-  'container_list': ContainerListParamsSchema,
-  'container_logs': ContainerLogsParamsSchema,
-  'container_pause': ContainerPauseParamsSchema,
-  'container_remove': ContainerRemoveParamsSchema,
-  'container_restart': ContainerRestartParamsSchema,
-  'container_start': ContainerStartParamsSchema,
-  'container_stats': ContainerStatsParamsSchema,
-  'container_stop': ContainerStopParamsSchema,
-  'container_unpause': ContainerUnpauseParamsSchema,
-  'machine_ping': MachinePingParamsSchema,
-  'machine_ssh_test': MachineSshTestParamsSchema,
-  'machine_uninstall': MachineUninstallParamsSchema,
-  'machine_version': MachineVersionParamsSchema,
-  'repository_create': RepositoryCreateParamsSchema,
-  'repository_delete': RepositoryDeleteParamsSchema,
-  'repository_down': RepositoryDownParamsSchema,
-  'repository_expand': RepositoryExpandParamsSchema,
-  'repository_fork': RepositoryForkParamsSchema,
-  'repository_info': RepositoryInfoParamsSchema,
-  'repository_list': RepositoryListParamsSchema,
-  'repository_mount': RepositoryMountParamsSchema,
-  'repository_ownership': RepositoryOwnershipParamsSchema,
-  'repository_resize': RepositoryResizeParamsSchema,
-  'repository_status': RepositoryStatusParamsSchema,
-  'repository_template_apply': RepositoryTemplateApplyParamsSchema,
-  'repository_unmount': RepositoryUnmountParamsSchema,
-  'repository_up': RepositoryUpParamsSchema,
-  'repository_validate': RepositoryValidateParamsSchema,
-  'setup': SetupParamsSchema,
+  backup_pull: BackupPullParamsSchema,
+  backup_push: BackupPushParamsSchema,
+  ceph_client_mount: CephClientMountParamsSchema,
+  ceph_client_unmount: CephClientUnmountParamsSchema,
+  ceph_clone_delete: CephCloneDeleteParamsSchema,
+  ceph_clone_flatten: CephCloneFlattenParamsSchema,
+  ceph_clone_image: CephCloneImageParamsSchema,
+  ceph_clone_list: CephCloneListParamsSchema,
+  ceph_clone_mount: CephCloneMountParamsSchema,
+  ceph_clone_unmount: CephCloneUnmountParamsSchema,
+  ceph_image_create: CephImageCreateParamsSchema,
+  ceph_image_delete: CephImageDeleteParamsSchema,
+  ceph_image_format: CephImageFormatParamsSchema,
+  ceph_image_info: CephImageInfoParamsSchema,
+  ceph_image_list: CephImageListParamsSchema,
+  ceph_image_map: CephImageMapParamsSchema,
+  ceph_image_resize: CephImageResizeParamsSchema,
+  ceph_image_unmap: CephImageUnmapParamsSchema,
+  ceph_snapshot_create: CephSnapshotCreateParamsSchema,
+  ceph_snapshot_delete: CephSnapshotDeleteParamsSchema,
+  ceph_snapshot_list: CephSnapshotListParamsSchema,
+  ceph_snapshot_protect: CephSnapshotProtectParamsSchema,
+  ceph_snapshot_rollback: CephSnapshotRollbackParamsSchema,
+  ceph_snapshot_unprotect: CephSnapshotUnprotectParamsSchema,
+  container_exec: ContainerExecParamsSchema,
+  container_inspect: ContainerInspectParamsSchema,
+  container_kill: ContainerKillParamsSchema,
+  container_list: ContainerListParamsSchema,
+  container_logs: ContainerLogsParamsSchema,
+  container_pause: ContainerPauseParamsSchema,
+  container_remove: ContainerRemoveParamsSchema,
+  container_restart: ContainerRestartParamsSchema,
+  container_start: ContainerStartParamsSchema,
+  container_stats: ContainerStatsParamsSchema,
+  container_stop: ContainerStopParamsSchema,
+  container_unpause: ContainerUnpauseParamsSchema,
+  machine_ping: MachinePingParamsSchema,
+  machine_ssh_test: MachineSshTestParamsSchema,
+  machine_uninstall: MachineUninstallParamsSchema,
+  machine_version: MachineVersionParamsSchema,
+  repository_create: RepositoryCreateParamsSchema,
+  repository_delete: RepositoryDeleteParamsSchema,
+  repository_down: RepositoryDownParamsSchema,
+  repository_expand: RepositoryExpandParamsSchema,
+  repository_fork: RepositoryForkParamsSchema,
+  repository_info: RepositoryInfoParamsSchema,
+  repository_list: RepositoryListParamsSchema,
+  repository_mount: RepositoryMountParamsSchema,
+  repository_ownership: RepositoryOwnershipParamsSchema,
+  repository_resize: RepositoryResizeParamsSchema,
+  repository_status: RepositoryStatusParamsSchema,
+  repository_template_apply: RepositoryTemplateApplyParamsSchema,
+  repository_unmount: RepositoryUnmountParamsSchema,
+  repository_up: RepositoryUpParamsSchema,
+  repository_validate: RepositoryValidateParamsSchema,
+  setup: SetupParamsSchema,
 } satisfies Record<BridgeFunctionName, z.ZodType<FunctionParamsMap[BridgeFunctionName]>>;
 
 export function validateFunctionParams<F extends BridgeFunctionName>(
@@ -455,9 +490,7 @@ export function safeValidateFunctionParams<F extends BridgeFunctionName>(
   return schema.safeParse(params) as ZodSafeParseResult<FunctionParamsMap[F]>;
 }
 
-export function getValidationErrors<T>(
-  result: ZodSafeParseResult<T>
-): string | null {
+export function getValidationErrors<T>(result: ZodSafeParseResult<T>): string | null {
   if (result.success) return null;
   return result.error.issues
     .map((issue) => `${String(issue.path.join('.'))}: ${issue.message}`)

@@ -60,7 +60,10 @@ export const ContextSectionSchema = z.object({
 
 /** Locale-related preferences */
 export const LocalePreferencesSchema = z.object({
-  language: z.string().optional().describe('User\'s preferred language (en, de, es, fr, ja, ar, ru, tr, zh)'),
+  language: z
+    .string()
+    .optional()
+    .describe("User's preferred language (en, de, es, fr, ja, ar, ru, tr, zh)"),
 });
 
 /** User preferences for task execution */
@@ -75,11 +78,26 @@ export const QueueVaultV2Schema = z.object({
   task: TaskSectionSchema,
   ssh: SSHSectionSchema,
   machine: MachineSectionSchema,
-  params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().describe('Function parameters'),
-  extra_machines: z.record(z.string(), MachineSectionSchema).optional().describe('Additional machines for multi-machine operations'),
-  storage_systems: z.record(z.string(), StorageSectionSchema).optional().describe('Storage system configurations'),
-  repository_credentials: z.record(z.string(), z.string()).optional().describe('Repository credentials by GUID'),
-  repositories: z.record(z.string(), RepositoryInfoSchema).optional().describe('Repository info by name'),
+  params: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .optional()
+    .describe('Function parameters'),
+  extra_machines: z
+    .record(z.string(), MachineSectionSchema)
+    .optional()
+    .describe('Additional machines for multi-machine operations'),
+  storage_systems: z
+    .record(z.string(), StorageSectionSchema)
+    .optional()
+    .describe('Storage system configurations'),
+  repository_credentials: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe('Repository credentials by GUID'),
+  repositories: z
+    .record(z.string(), RepositoryInfoSchema)
+    .optional()
+    .describe('Repository info by name'),
   context: ContextSectionSchema.optional(),
   preferences: PreferencesSectionSchema.optional(),
 });
@@ -108,7 +126,5 @@ export function parseQueueVault(vault: unknown): QueueVaultV2Type {
  */
 export function getVaultValidationErrors(result: VaultValidationResult): string | null {
   if (result.success) return null;
-  return result.error.issues
-    .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-    .join('; ');
+  return result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ');
 }
