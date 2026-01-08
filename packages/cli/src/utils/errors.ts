@@ -61,18 +61,13 @@ export function handleError(error: unknown): never {
     }
   }
 
-  // Shutdown telemetry before exit (fire and forget with short timeout)
-  void telemetryService.shutdown().finally(() => {
-    process.exit(cliError.exitCode);
+  // Fire-and-forget telemetry shutdown (don't block exit)
+  void telemetryService.shutdown().catch(() => {
+    // Ignore shutdown errors - we're exiting anyway
   });
 
-  // If shutdown takes too long, exit anyway after 2 seconds
-  setTimeout(() => {
-    process.exit(cliError.exitCode);
-  }, 2000).unref();
-
-  // This never returns, but TypeScript needs a return type
-  throw new Error('Unreachable');
+  // Exit synchronously - process.exit() never returns, satisfying the `never` return type
+  process.exit(cliError.exitCode);
 }
 
 /**
