@@ -1,5 +1,5 @@
 import { execa, type Options } from 'execa';
-import { getConfig } from './config.js';
+import { getConfig, getTestContextName } from './config.js';
 
 export interface CliResult {
   stdout: string;
@@ -12,8 +12,8 @@ export interface CliResult {
 export interface RunCliOptions {
   /** Override the default JSON output format */
   outputFormat?: 'json' | 'table' | 'yaml' | 'csv';
-  /** Additional environment variables */
-  env?: Record<string, string>;
+  /** Context name for test isolation (uses --context flag) */
+  context?: string;
   /** Timeout in milliseconds */
   timeout?: number;
   /** Skip JSON parsing */
@@ -29,13 +29,16 @@ export interface RunCliOptions {
 export async function runCli(args: string[], options: RunCliOptions = {}): Promise<CliResult> {
   const config = getConfig();
 
-  // Build arguments with output format
+  // Build arguments with output format and optional context
   const outputFormat = options.outputFormat ?? 'json';
-
-  // Use pre-built bundle for faster execution (avoids tsx transpilation overhead)
-  // The bundle is created by `npm run build:cli` before tests run
   const cliBundlePath = 'dist/cli-bundle.cjs';
-  const fullArgs = [cliBundlePath, '--output', outputFormat, ...args];
+
+  // Use explicit context, or fall back to test context if set
+  const effectiveContext = options.context ?? getTestContextName();
+
+  // Build full args: context flag (if available), output format, then user args
+  const contextArgs = effectiveContext ? ['--context', effectiveContext] : [];
+  const fullArgs = [cliBundlePath, ...contextArgs, '--output', outputFormat, ...args];
 
   const execaOptions: Options = {
     cwd: config.cliDir,
@@ -48,7 +51,6 @@ export async function runCli(args: string[], options: RunCliOptions = {}): Promi
       // Force no color for easier parsing
       NO_COLOR: '1',
       FORCE_COLOR: '0',
-      ...options.env,
     },
     reject: false, // Don't throw on non-zero exit codes
   };

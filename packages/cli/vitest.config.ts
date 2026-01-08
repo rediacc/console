@@ -15,13 +15,7 @@ export default defineConfig({
     // This ensures module-level state (like currentTestAccount) is not shared
     fileParallelism: true,
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        // Limit concurrent processes to avoid overwhelming the API
-        maxForks: 4,
-        minForks: 1,
-      },
-    },
+    maxWorkers: 4,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

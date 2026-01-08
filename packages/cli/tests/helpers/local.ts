@@ -67,7 +67,6 @@ export async function createTestLocalContext(
   options?: {
     sshKeyPath?: string;
     renetPath?: string;
-    autoSwitch?: boolean;
   }
 ): Promise<CliResult> {
   const sshKey = options?.sshKeyPath ?? '~/.ssh/id_rsa';
@@ -75,10 +74,6 @@ export async function createTestLocalContext(
 
   if (options?.renetPath) {
     args.push('--renet-path', options.renetPath);
-  }
-
-  if (options?.autoSwitch) {
-    args.push('--switch');
   }
 
   return runCli(args, { skipJsonParse: true });

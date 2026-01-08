@@ -1,6 +1,7 @@
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { DEFAULT_TEST_API_URL, DEFAULT_TEST_TIMEOUT } from './constants.js';
+import type { TestAccount } from './registration.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,11 +14,8 @@ export interface TestConfig {
   timeout: number;
 }
 
-export interface TestAccount {
-  organizationName: string;
-  email: string;
-  password: string;
-}
+// Re-export TestAccount from registration.ts (single source of truth)
+export type { TestAccount } from './registration.js';
 
 let config: TestConfig | null = null;
 let currentTestAccount: TestAccount | null = null;
@@ -60,4 +58,24 @@ export function getTestAccount(): TestAccount | null {
 export function resetConfig(): void {
   config = null;
   currentTestAccount = null;
+  testContextName = null;
+}
+
+// Test context name for isolation during parallel test execution
+let testContextName: string | null = null;
+
+/**
+ * Set the test context name (used by setup.ts).
+ * The context will be passed via --context flag to CLI commands.
+ */
+export function setTestContextName(name: string | null): void {
+  testContextName = name;
+}
+
+/**
+ * Get the current test context name.
+ * Returns null if no test context is set.
+ */
+export function getTestContextName(): string | null {
+  return testContextName;
 }

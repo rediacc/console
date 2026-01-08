@@ -887,6 +887,7 @@
     "sshPrivateKey": "Path to SSH private key",
     "sshPublicKey": "Path to SSH public key",
     "sshUser": "SSH username",
+    "subscriptionPlan": "Subscription plan (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "Switch to this context after creation",
     "team": "Team name",
     "tfaCode": "Current TFA code for verification",

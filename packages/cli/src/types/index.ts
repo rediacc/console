@@ -77,10 +77,10 @@ export interface NamedContext {
 
 /**
  * Root configuration containing multiple named contexts.
+ * Note: No currentContext field - context is always specified explicitly via
+ * --context flag, REDIACC_CONTEXT env var, or defaults to "default".
  */
 export interface CliConfig {
-  /** Name of the currently active context */
-  currentContext: string;
   /** Map of context names to their configurations */
   contexts: { [name: string]: NamedContext | undefined };
 }
@@ -90,7 +90,6 @@ export interface CliConfig {
  */
 export function createEmptyConfig(): CliConfig {
   return {
-    currentContext: '',
     contexts: {},
   };
 }

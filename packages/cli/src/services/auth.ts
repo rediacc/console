@@ -205,12 +205,13 @@ class AuthService {
   async register(
     organizationName: string,
     email: string,
-    password: string
+    password: string,
+    plan = 'COMMUNITY'
   ): Promise<{ success: boolean; message?: string }> {
     const passwordHash = await nodeCryptoProvider.generateHash(password);
 
     try {
-      await apiClient.register(organizationName, email, passwordHash);
+      await apiClient.register(organizationName, email, passwordHash, plan);
       return { success: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';

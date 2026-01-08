@@ -227,6 +227,7 @@ export const ErrorPatterns = {
 
   // Queue parameter validation
   QUEUE_PARAM_INVALID_CHARS: 'Invalid characters in',
-  QUEUE_PRIORITY_MIN_INVALID: 'Minimum priority must be between 1 and 5',
-  QUEUE_PRIORITY_MAX_INVALID: 'Maximum priority must be between 1 and 5',
+  // CLI validates priority before API - these match CLI i18n messages
+  QUEUE_PRIORITY_MIN_INVALID: 'invalid priority-min value',
+  QUEUE_PRIORITY_MAX_INVALID: 'invalid priority-max value',
 } as const;

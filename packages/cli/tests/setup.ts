@@ -1,19 +1,22 @@
-import { afterAll, beforeAll } from 'vitest';
-import { getErrorMessage, logout, runCli } from './helpers/cli.js';
-import { getConfig, setTestAccount } from './helpers/config.js';
+import { afterAll, beforeAll, beforeEach } from 'vitest';
+import { getErrorMessage, runCli } from './helpers/cli.js';
+import { getConfig, getTestContextName, setTestAccount, setTestContextName } from './helpers/config.js';
 import {
   generateTestAccount,
   registerAndActivate,
   type TestAccount,
 } from './helpers/registration.js';
 
+// Store setup error to fail tests explicitly instead of skipping
+let setupError: Error | null = null;
+
 /**
  * Verify that default infrastructure (region, bridge) was created.
  * This catches middleware bugs where organization setup fails silently.
  */
-async function verifyDefaultInfrastructure(): Promise<void> {
+async function verifyDefaultInfrastructure(context: string): Promise<void> {
   // Verify default region exists
-  const regionsResult = await runCli(['region', 'list']);
+  const regionsResult = await runCli(['region', 'list'], { context });
   if (!regionsResult.success) {
     throw new Error(`Failed to list regions: ${getErrorMessage(regionsResult)}`);
   }
@@ -24,7 +27,7 @@ async function verifyDefaultInfrastructure(): Promise<void> {
 
   // Verify default bridge exists in the default region
   const defaultRegion = regions[0].regionName;
-  const bridgesResult = await runCli(['bridge', 'list', '--region', defaultRegion]);
+  const bridgesResult = await runCli(['bridge', 'list', '--region', defaultRegion], { context });
   if (!bridgesResult.success) {
     throw new Error(`Failed to list bridges: ${getErrorMessage(bridgesResult)}`);
   }
@@ -69,19 +72,46 @@ beforeAll(async () => {
   console.log(`[Setup] Registering: ${testAccount.email}`);
 
   try {
+    // Create isolated context for this test file (enables parallel execution)
+    // Pass --api-url to avoid interactive prompt
+    const createResult = await runCli([
+      'context',
+      'create',
+      testAccount.contextName,
+      '--api-url',
+      config.apiUrl,
+    ]);
+    if (!createResult.success) {
+      throw new Error(`Context creation failed: ${getErrorMessage(createResult)}`);
+    }
+
+    // Store context name for use by runCli (auto-injects --context flag)
+    setTestContextName(testAccount.contextName);
+
     await registerAndActivate(testAccount);
     // Store the account in config for use by login helper
     setTestAccount(testAccount);
 
     // Verify default infrastructure was created (region, bridge)
-    await verifyDefaultInfrastructure();
+    await verifyDefaultInfrastructure(testAccount.contextName);
 
     setupComplete = true;
     // eslint-disable-next-line no-console -- Test setup logging
-    console.log('[Setup] Registration and login complete\n');
+    console.log(`[Setup] Registration complete (context: ${testAccount.contextName})\n`);
   } catch (error) {
+    // Store error to fail tests explicitly in beforeEach (instead of skipping)
+    setupError = error instanceof Error ? error : new Error(String(error));
     console.error('[Setup] Registration failed:', error);
-    throw error;
+  }
+});
+
+// Fail each test explicitly if setup failed (instead of skipping)
+beforeEach(() => {
+  if (process.env.SKIP_TEST_SETUP === '1') {
+    return;
+  }
+  if (setupError) {
+    throw setupError;
   }
 });
 
@@ -91,10 +121,19 @@ afterAll(async () => {
     return;
   }
 
+  const contextName = getTestContextName();
+
   // Logout after all tests
-  await logout();
-  // eslint-disable-next-line no-console -- Test teardown logging
-  console.log('\n[Teardown] Logged out');
+  await runCli(['logout']);
+
+  // Delete the isolated test context to clean up
+  if (contextName) {
+    // Clear context name first so delete command uses "default"
+    setTestContextName(null);
+    await runCli(['context', 'delete', contextName, '--force']);
+    // eslint-disable-next-line no-console -- Test teardown logging
+    console.log(`\n[Teardown] Logged out and cleaned up context: ${contextName}`);
+  }
 });
 
 export { testAccount };

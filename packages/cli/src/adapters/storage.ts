@@ -66,7 +66,6 @@ class ConfigStorage {
       const content = await fs.readFile(CONFIG_PATH, 'utf-8');
       const data = JSON.parse(content);
       return {
-        currentContext: data.currentContext ?? '',
         contexts: data.contexts ?? {},
       };
     } catch (error) {

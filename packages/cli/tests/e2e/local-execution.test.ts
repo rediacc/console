@@ -103,9 +103,6 @@ describe('E2E local execution', () => {
 
   describe('error handling', () => {
     it.skipIf(!config.enabled)('should handle non-existent machine', async () => {
-      // Ensure we're on the E2E local context
-      await runCli(['context', 'use', contextName], { skipJsonParse: true });
-
       const result = await runLocalFunction('machine_ping', 'nonexistent-machine');
 
       expect(result.success).toBe(false);
@@ -113,9 +110,6 @@ describe('E2E local execution', () => {
     });
 
     it.skipIf(!config.enabled)('should handle unknown function', async () => {
-      // Ensure we're on the E2E local context
-      await runCli(['context', 'use', contextName], { skipJsonParse: true });
-
       const result = await runLocalFunction('unknown_function_xyz_123', 'vm1');
 
       // Unknown function should fail
@@ -130,23 +124,25 @@ describe('E2E local execution', () => {
         const timeoutContext = `timeout-test-${Date.now()}`;
 
         await runCli(
-          ['context', 'create-local', timeoutContext, '--ssh-key', config.sshKeyPath, '--switch'],
+          ['context', 'create-local', timeoutContext, '--ssh-key', config.sshKeyPath],
           { skipJsonParse: true }
         );
 
         // Add a non-routable machine
         await runCli(
-          ['context', 'add-machine', 'timeout-vm', '--ip', '10.255.255.1', '--user', 'test'],
+          ['--context', timeoutContext, 'context', 'add-machine', 'timeout-vm', '--ip', '10.255.255.1', '--user', 'test'],
           { skipJsonParse: true }
         );
 
-        // This should timeout (set short timeout)
-        const result = await runLocalFunction('machine_ping', 'timeout-vm', { timeout: 30000 });
+        // This should timeout (set short timeout) - use -C flag to specify context
+        const result = await runCli(
+          ['--context', timeoutContext, 'run', 'machine_ping', '--machine', 'timeout-vm'],
+          { skipJsonParse: true, timeout: 30000 }
+        );
 
         expect(result.success).toBe(false);
 
-        // Cleanup and restore original context
-        await runCli(['context', 'use', contextName], { skipJsonParse: true });
+        // Cleanup
         await runCli(['context', 'delete', timeoutContext], { skipJsonParse: true });
       }
     );
@@ -157,9 +153,6 @@ describe('E2E local execution', () => {
       'should pass parameters to function',
       { timeout: 300000 },
       async () => {
-        // Ensure we're on the E2E local context
-        await runCli(['context', 'use', contextName], { skipJsonParse: true });
-
         const result = await runLocalFunction('machine_ping', 'vm1', {
           params: { test_param: 'test_value' },
           debug: true,
@@ -179,9 +172,6 @@ describe('E2E local execution', () => {
       'should switch between machines',
       { timeout: 600000 },
       async () => {
-        // Ensure we're on the E2E local context
-        await runCli(['context', 'use', contextName], { skipJsonParse: true });
-
         // Execute on vm1
         const result1 = await runLocalFunction('machine_ping', 'vm1', { timeout: 300000 });
         console.log('VM1 result:', result1.success);
@@ -214,10 +204,9 @@ describe('E2E context switching', () => {
       skipJsonParse: true,
     });
 
-    // Add a machine to local context
-    await runCli(['context', 'use', localContext], { skipJsonParse: true });
+    // Add a machine to local context using -C flag
     await runCli(
-      ['context', 'add-machine', 'e2e-vm', '--ip', config.vm1Ip, '--user', config.sshUser],
+      ['--context', localContext, 'context', 'add-machine', 'e2e-vm', '--ip', config.vm1Ip, '--user', config.sshUser],
       { skipJsonParse: true }
     );
   });
@@ -227,15 +216,13 @@ describe('E2E context switching', () => {
     await runCli(['context', 'delete', cloudContext], { skipJsonParse: true });
   });
 
-  it.skipIf(!config.enabled)('should detect mode correctly after switching', async () => {
-    // Use local context
-    await runCli(['context', 'use', localContext], { skipJsonParse: true });
-    const localShow = await runCli(['context', 'show']);
+  it.skipIf(!config.enabled)('should detect mode correctly with -C flag', async () => {
+    // Check local context with -C
+    const localShow = await runCli(['--context', localContext, 'context', 'show']);
     expect((localShow.json as { mode: string }).mode).toBe('local');
 
-    // Use cloud context
-    await runCli(['context', 'use', cloudContext], { skipJsonParse: true });
-    const cloudShow = await runCli(['context', 'show']);
+    // Check cloud context with -C
+    const cloudShow = await runCli(['--context', cloudContext, 'context', 'show']);
     expect((cloudShow.json as { mode: string }).mode).toBe('cloud');
   });
 
@@ -243,12 +230,9 @@ describe('E2E context switching', () => {
     'should execute with -C flag override',
     { timeout: 300000 },
     async () => {
-      // Start on cloud context
-      await runCli(['context', 'use', cloudContext], { skipJsonParse: true });
-
       // Execute on local context using -C flag
       const result = await runCli(
-        ['-C', localContext, 'run', 'machine_ping', '--machine', 'e2e-vm'],
+        ['--context', localContext, 'run', 'machine_ping', '--machine', 'e2e-vm'],
         { skipJsonParse: true, timeout: 300000 }
       );
 
@@ -270,22 +254,22 @@ describe('E2E renet availability', () => {
 
     // Create minimal local context
     const createResult = await runCli(
-      ['context', 'create-local', renetContextName, '--ssh-key', config.sshKeyPath, '--switch'],
+      ['context', 'create-local', renetContextName, '--ssh-key', config.sshKeyPath],
       { skipJsonParse: true }
     );
     assertSuccess(createResult, 'Failed to create local context');
 
-    // Add machine
+    // Add machine using -C flag
     await runCli(
-      ['context', 'add-machine', 'check-vm', '--ip', config.vm1Ip, '--user', config.sshUser],
+      ['--context', renetContextName, 'context', 'add-machine', 'check-vm', '--ip', config.vm1Ip, '--user', config.sshUser],
       { skipJsonParse: true }
     );
 
     // Try to run - this tests if renet is available
-    const runResult = await runLocalFunction('machine_ping', 'check-vm', {
-      debug: true,
-      timeout: 300000,
-    });
+    const runResult = await runCli(
+      ['--context', renetContextName, 'run', 'machine_ping', '--machine', 'check-vm', '--debug'],
+      { skipJsonParse: true, timeout: 300000 }
+    );
 
     console.log('Renet check output:', runResult.stdout);
 

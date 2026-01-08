@@ -143,10 +143,11 @@ class CliApiClient {
     organizationName: string,
     email: string,
     passwordHash: string,
+    subscriptionPlan = 'COMMUNITY',
     languagePreference = 'en'
   ): Promise<ApiResponse> {
     const client = this.ensureInitialized();
-    return client.register(organizationName, email, passwordHash, { languagePreference });
+    return client.register(organizationName, email, passwordHash, { languagePreference, subscriptionPlan });
   }
 
   // CRUD methods (typed - only accepts known endpoints)

@@ -135,6 +135,7 @@ export function registerAuthCommands(program: Command): void {
     .requiredOption('-e, --email <email>', t('options.email'))
     .requiredOption('-p, --password <password>', t('options.password'))
     .option('--endpoint <url>', t('options.endpoint'))
+    .option('--plan <plan>', t('options.subscriptionPlan'), 'COMMUNITY')
     .action(async (options) => {
       try {
         // Set API endpoint if provided
@@ -144,7 +145,7 @@ export function registerAuthCommands(program: Command): void {
 
         const result = await withSpinner(
           t('commands.auth.register.registering'),
-          () => authService.register(options.organization, options.email, options.password),
+          () => authService.register(options.organization, options.email, options.password, options.plan),
           t('commands.auth.register.submitted')
         );
 

@@ -60,7 +60,7 @@ cli
   .description(t('cli.description'))
   .version(VERSION)
   .option('-o, --output <format>', t('options.output'), 'table')
-  .option('-C, --context <name>', t('options.context'))
+  .option('--context <name>', t('options.context'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();

@@ -1,3 +1,6 @@
+// Skip global test setup - local mode operations don't need API auth
+process.env.SKIP_TEST_SETUP = '1';
+
 /**
  * Integration tests for local mode CLI commands.
  *
@@ -5,31 +8,21 @@
  * the actual process execution. Tests the context create-local,
  * add-machine, remove-machine, machines, and run commands.
  */
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { runCli } from './helpers/cli.js';
+import { setTestContextName } from './helpers/config.js';
+
+// Clear any inherited context from previous test files
+setTestContextName(null);
 
 describe('local context commands', () => {
   const timestamp = Date.now();
   const testLocalContext = `test-local-cli-${timestamp}`;
   const testMachine = 'test-server';
-  let originalContext: string | null = null;
-
-  beforeAll(async () => {
-    // Save current context
-    const result = await runCli(['context', 'current'], { skipJsonParse: true });
-    if (result.success) {
-      originalContext = result.stdout.trim();
-    }
-  });
 
   afterAll(async () => {
     // Cleanup: delete test context
     await runCli(['context', 'delete', testLocalContext], { skipJsonParse: true });
-
-    // Restore original context if it existed
-    if (originalContext) {
-      await runCli(['context', 'use', originalContext], { skipJsonParse: true });
-    }
   });
 
   describe('context create-local', () => {
@@ -53,26 +46,6 @@ describe('local context commands', () => {
       expect(result.stdout + result.stderr).toContain('--ssh-key');
     });
 
-    it('should create and switch with --switch flag', async () => {
-      const switchContext = `test-switch-${timestamp}`;
-
-      const result = await runCli(
-        ['context', 'create-local', switchContext, '--ssh-key', '~/.ssh/id_rsa', '--switch'],
-        { skipJsonParse: true }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.stdout).toContain('Switched');
-
-      // Verify we're on the new context
-      const currentResult = await runCli(['context', 'current'], { skipJsonParse: true });
-      expect(currentResult.stdout.trim()).toBe(switchContext);
-
-      // Cleanup
-      await runCli(['context', 'use', testLocalContext], { skipJsonParse: true });
-      await runCli(['context', 'delete', switchContext], { skipJsonParse: true });
-    });
-
     it('should accept custom renet path', async () => {
       const customPathContext = `test-custom-${timestamp}`;
 
@@ -91,9 +64,8 @@ describe('local context commands', () => {
 
       expect(result.success).toBe(true);
 
-      // Switch to the new context and check the path
-      await runCli(['context', 'use', customPathContext], { skipJsonParse: true });
-      const showResult = await runCli(['context', 'show']);
+      // Check the path using -C flag
+      const showResult = await runCli(['--context', customPathContext, 'context', 'show']);
 
       expect(showResult.json).toBeDefined();
       expect((showResult.json as { renetPath: string }).renetPath).toBe('/opt/bin/renet');
@@ -114,14 +86,9 @@ describe('local context commands', () => {
   });
 
   describe('context add-machine', () => {
-    beforeAll(async () => {
-      // Ensure we're on the local context
-      await runCli(['context', 'use', testLocalContext], { skipJsonParse: true });
-    });
-
     it('should add a machine to the local context', async () => {
       const result = await runCli(
-        ['context', 'add-machine', testMachine, '--ip', '192.168.1.100', '--user', 'testuser'],
+        ['--context', testLocalContext, 'context', 'add-machine', testMachine, '--ip', '192.168.1.100', '--user', 'testuser'],
         { skipJsonParse: true }
       );
 
@@ -133,6 +100,7 @@ describe('local context commands', () => {
     it('should accept optional port and datastore', async () => {
       const result = await runCli(
         [
+          '--context', testLocalContext,
           'context',
           'add-machine',
           'full-machine',
@@ -152,7 +120,7 @@ describe('local context commands', () => {
     });
 
     it('should fail without required --ip', async () => {
-      const result = await runCli(['context', 'add-machine', 'no-ip', '--user', 'testuser'], {
+      const result = await runCli(['--context', testLocalContext, 'context', 'add-machine', 'no-ip', '--user', 'testuser'], {
         skipJsonParse: true,
       });
 
@@ -161,7 +129,7 @@ describe('local context commands', () => {
     });
 
     it('should fail without required --user', async () => {
-      const result = await runCli(['context', 'add-machine', 'no-user', '--ip', '10.0.0.1'], {
+      const result = await runCli(['--context', testLocalContext, 'context', 'add-machine', 'no-user', '--ip', '10.0.0.1'], {
         skipJsonParse: true,
       });
 
@@ -172,7 +140,7 @@ describe('local context commands', () => {
 
   describe('context machines', () => {
     it('should list all machines', async () => {
-      const result = await runCli(['context', 'machines']);
+      const result = await runCli(['--context', testLocalContext, 'context', 'machines']);
 
       expect(result.success).toBe(true);
       expect(Array.isArray(result.json)).toBe(true);
@@ -186,7 +154,7 @@ describe('local context commands', () => {
     });
 
     it('should show machine details in table format', async () => {
-      const result = await runCli(['context', 'machines'], { outputFormat: 'table' });
+      const result = await runCli(['--context', testLocalContext, 'context', 'machines'], { outputFormat: 'table' });
 
       expect(result.success).toBe(true);
       expect(result.stdout).toContain(testMachine);
@@ -196,7 +164,7 @@ describe('local context commands', () => {
 
   describe('context show (local mode)', () => {
     it('should show local context details', async () => {
-      const result = await runCli(['context', 'show']);
+      const result = await runCli(['--context', testLocalContext, 'context', 'show']);
 
       expect(result.success).toBe(true);
       expect(result.json).toBeDefined();
@@ -236,6 +204,7 @@ describe('local context commands', () => {
     it('should update SSH configuration', async () => {
       const result = await runCli(
         [
+          '--context', testLocalContext,
           'context',
           'set-ssh',
           '--private-key',
@@ -253,7 +222,7 @@ describe('local context commands', () => {
 
   describe('context set-renet', () => {
     it('should update renet path', async () => {
-      const result = await runCli(['context', 'set-renet', '/usr/local/bin/renet'], {
+      const result = await runCli(['--context', testLocalContext, 'context', 'set-renet', '/usr/local/bin/renet'], {
         skipJsonParse: true,
       });
 
@@ -261,7 +230,7 @@ describe('local context commands', () => {
       expect(result.stdout).toContain('set to');
 
       // Verify in show
-      const showResult = await runCli(['context', 'show']);
+      const showResult = await runCli(['--context', testLocalContext, 'context', 'show']);
       expect((showResult.json as { renetPath: string }).renetPath).toBe('/usr/local/bin/renet');
     });
   });
@@ -269,11 +238,11 @@ describe('local context commands', () => {
   describe('context remove-machine', () => {
     it('should remove a machine', async () => {
       // First add a machine to remove
-      await runCli(['context', 'add-machine', 'to-remove', '--ip', '1.1.1.1', '--user', 'test'], {
+      await runCli(['--context', testLocalContext, 'context', 'add-machine', 'to-remove', '--ip', '1.1.1.1', '--user', 'test'], {
         skipJsonParse: true,
       });
 
-      const result = await runCli(['context', 'remove-machine', 'to-remove'], {
+      const result = await runCli(['--context', testLocalContext, 'context', 'remove-machine', 'to-remove'], {
         skipJsonParse: true,
       });
 
@@ -281,13 +250,13 @@ describe('local context commands', () => {
       expect(result.stdout).toContain('removed');
 
       // Verify it's gone
-      const machinesResult = await runCli(['context', 'machines']);
+      const machinesResult = await runCli(['--context', testLocalContext, 'context', 'machines']);
       const machines = machinesResult.json as { name: string }[];
       expect(machines.find((m) => m.name === 'to-remove')).toBeUndefined();
     });
 
     it('should fail for non-existent machine', async () => {
-      const result = await runCli(['context', 'remove-machine', 'nonexistent'], {
+      const result = await runCli(['--context', testLocalContext, 'context', 'remove-machine', 'nonexistent'], {
         skipJsonParse: true,
       });
 
@@ -300,7 +269,7 @@ describe('local context commands', () => {
     it('should detect local mode and show local prefix', async () => {
       // This test verifies that run command detects local mode
       // It will fail if renet isn't installed, but that's expected
-      const result = await runCli(['run', 'machine_ping', '--machine', testMachine], {
+      const result = await runCli(['--context', testLocalContext, 'run', 'machine_ping', '--machine', testMachine], {
         skipJsonParse: true,
       });
 
@@ -321,16 +290,16 @@ describe('local context commands', () => {
 
     it('should require machine in local mode', async () => {
       // Clear the default machine first
-      await runCli(['context', 'clear', 'machine'], { skipJsonParse: true });
+      await runCli(['--context', testLocalContext, 'context', 'clear', 'machine'], { skipJsonParse: true });
 
-      const result = await runCli(['run', 'machine_ping'], { skipJsonParse: true });
+      const result = await runCli(['--context', testLocalContext, 'run', 'machine_ping'], { skipJsonParse: true });
 
       expect(result.success).toBe(false);
       expect(result.stdout + result.stderr).toContain('machine');
     });
 
     it('should accept --debug flag', async () => {
-      const result = await runCli(['run', 'machine_ping', '--machine', testMachine, '--debug'], {
+      const result = await runCli(['--context', testLocalContext, 'run', 'machine_ping', '--machine', testMachine, '--debug'], {
         skipJsonParse: true,
       });
 
@@ -347,7 +316,12 @@ describe('switching between local and cloud contexts', () => {
   const localContext = `switch-local-${timestamp}`;
   const cloudContext = `switch-cloud-${timestamp}`;
 
-  beforeAll(async () => {
+  afterAll(async () => {
+    await runCli(['context', 'delete', localContext], { skipJsonParse: true });
+    await runCli(['context', 'delete', cloudContext], { skipJsonParse: true });
+  });
+
+  it('should use correct mode for each context with -C flag', async () => {
     // Create both contexts
     await runCli(['context', 'create-local', localContext, '--ssh-key', '~/.ssh/id_rsa'], {
       skipJsonParse: true,
@@ -355,40 +329,13 @@ describe('switching between local and cloud contexts', () => {
     await runCli(['context', 'create', cloudContext, '--api-url', 'https://test.example.com/api'], {
       skipJsonParse: true,
     });
-  });
 
-  afterAll(async () => {
-    await runCli(['context', 'delete', localContext], { skipJsonParse: true });
-    await runCli(['context', 'delete', cloudContext], { skipJsonParse: true });
-  });
-
-  it('should switch from cloud to local context', async () => {
-    await runCli(['context', 'use', cloudContext], { skipJsonParse: true });
-
-    let showResult = await runCli(['context', 'show']);
-    expect((showResult.json as { mode: string }).mode).toBe('cloud');
-
-    await runCli(['context', 'use', localContext], { skipJsonParse: true });
-
-    showResult = await runCli(['context', 'show']);
-    expect((showResult.json as { mode: string }).mode).toBe('local');
-  });
-
-  it('should switch from local to cloud context', async () => {
-    await runCli(['context', 'use', localContext], { skipJsonParse: true });
-    await runCli(['context', 'use', cloudContext], { skipJsonParse: true });
-
-    const showResult = await runCli(['context', 'show']);
-    expect((showResult.json as { mode: string }).mode).toBe('cloud');
-  });
-
-  it('should use correct mode for each context with -C flag', async () => {
     // Check local context with -C
-    const localResult = await runCli(['-C', localContext, 'context', 'show']);
+    const localResult = await runCli(['--context', localContext, 'context', 'show']);
     expect((localResult.json as { mode: string }).mode).toBe('local');
 
     // Check cloud context with -C
-    const cloudResult = await runCli(['-C', cloudContext, 'context', 'show']);
+    const cloudResult = await runCli(['--context', cloudContext, 'context', 'show']);
     expect((cloudResult.json as { mode: string }).mode).toBe('cloud');
   });
 });

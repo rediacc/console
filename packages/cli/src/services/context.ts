@@ -19,18 +19,12 @@ class ContextService {
   }
 
   /**
-   * Get the effective context name (runtime override > env var > stored).
+   * Get the effective context name (--context flag or "default").
+   * Always returns a context name - never null.
    */
-  private async getEffectiveContextName(): Promise<string | null> {
-    // Priority: runtime override > env var > stored
-    if (this.runtimeContextOverride) {
-      return this.runtimeContextOverride;
-    }
-    if (process.env.REDIACC_CONTEXT) {
-      return process.env.REDIACC_CONTEXT;
-    }
-    const config = await configStorage.load();
-    return config.currentContext || null;
+  private async getEffectiveContextName(): Promise<string> {
+    // Only two options: --context flag or "default"
+    return this.runtimeContextOverride ?? 'default';
   }
 
   // ============================================================================
@@ -58,14 +52,14 @@ class ContextService {
    */
   async getCurrent(): Promise<NamedContext | null> {
     const name = await this.getEffectiveContextName();
-    if (!name) return null;
     return this.get(name);
   }
 
   /**
    * Get the current context name.
+   * Always returns a context name (from flag, env var, or "default").
    */
-  async getCurrentName(): Promise<string | null> {
+  async getCurrentName(): Promise<string> {
     return this.getEffectiveContextName();
   }
 
@@ -115,10 +109,7 @@ class ContextService {
         throw new Error(`Context "${name}" not found`);
       }
       const { [name]: _, ...remaining } = config.contexts;
-      return {
-        currentContext: config.currentContext === name ? '' : config.currentContext,
-        contexts: remaining,
-      };
+      return { contexts: remaining };
     });
   }
 
@@ -136,26 +127,10 @@ class ContextService {
       }
       const { [oldName]: _, ...remaining } = config.contexts;
       return {
-        currentContext: config.currentContext === oldName ? newName : config.currentContext,
         contexts: {
           ...remaining,
           [newName]: { ...existing, name: newName },
         },
-      };
-    });
-  }
-
-  /**
-   * Switch to a different context.
-   */
-  async use(name: string): Promise<void> {
-    await configStorage.update((config) => {
-      if (!config.contexts[name]) {
-        throw new Error(`Context "${name}" not found`);
-      }
-      return {
-        ...config,
-        currentContext: name,
       };
     });
   }
@@ -190,15 +165,9 @@ class ContextService {
 
   /**
    * Set the token for the current context.
-   * If no context exists, silently skips (token will be saved via saveLoginCredentials).
    */
   async setToken(token: string): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      // No context yet - this can happen during login before saveLoginCredentials.
-      // The token will be saved when saveLoginCredentials creates the context.
-      return;
-    }
     await this.update(name, { token });
   }
 
@@ -215,9 +184,6 @@ class ContextService {
    */
   async setMasterPassword(password: string): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context. Create or select a context first.');
-    }
     await this.update(name, { masterPassword: password });
   }
 
@@ -267,25 +233,16 @@ class ContextService {
 
   async set(key: 'team' | 'region' | 'bridge' | 'machine', value: string): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context. Create or select a context first.');
-    }
     await this.update(name, { [key]: value });
   }
 
   async remove(key: 'team' | 'region' | 'bridge' | 'machine'): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context. Create or select a context first.');
-    }
     await this.update(name, { [key]: undefined });
   }
 
   async clearDefaults(): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context. Create or select a context first.');
-    }
     await this.update(name, {
       team: undefined,
       region: undefined,
@@ -340,9 +297,6 @@ class ContextService {
    */
   async setLanguage(language: string): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context. Create or select a context first.');
-    }
     const normalized = this.normalizeLanguage(language);
     await this.update(name, { language: normalized });
   }
@@ -404,7 +358,6 @@ class ContextService {
         region: existing?.region,
       };
       return {
-        currentContext: contextName,
         contexts: {
           ...config.contexts,
           [contextName]: context,
@@ -418,7 +371,6 @@ class ContextService {
    */
   async clearCredentials(): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) return;
     await this.update(name, { token: undefined, masterPassword: undefined });
   }
 
@@ -519,9 +471,6 @@ class ContextService {
    */
   async addLocalMachine(machineName: string, config: LocalMachineConfig): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context');
-    }
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');
@@ -541,9 +490,6 @@ class ContextService {
    */
   async removeLocalMachine(machineName: string): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context');
-    }
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');
@@ -579,9 +525,6 @@ class ContextService {
    */
   async setLocalSSH(ssh: LocalSSHConfig): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context');
-    }
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');
@@ -594,9 +537,6 @@ class ContextService {
    */
   async setRenetPath(renetPath: string): Promise<void> {
     const name = await this.getEffectiveContextName();
-    if (!name) {
-      throw new Error('No active context');
-    }
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');
