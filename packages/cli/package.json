@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/cli",
-  "version": "0.3.6",
+  "version": "0.4.8",
   "type": "module",
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "main": "dist/index.js",
@@ -34,17 +34,16 @@
     "build:exe:all": "bun run build:exe:win && bun run build:exe:mac && bun run build:exe:mac-arm && bun run build:exe:linux"
   },
   "dependencies": {
+    "inquirer": "^13.1.0"
+  },
+  "devDependencies": {
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
     "@opentelemetry/resources": "^1.30.0",
     "@opentelemetry/sdk-node": "^0.57.0",
     "@opentelemetry/semantic-conventions": "^1.28.0",
-    "@rediacc/shared-desktop": "*",
-    "i18next": "^23.16.5",
-    "inquirer": "^13.1.0"
-  },
-  "devDependencies": {
     "@rediacc/shared": "*",
+    "@rediacc/shared-desktop": "*",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^25.0.3",
     "@vitest/coverage-v8": "^4.0.15",
@@ -54,6 +53,7 @@
     "commander": "^14.0.2",
     "esbuild": "^0.27.1",
     "execa": "^9.6.1",
+    "i18next": "^23.16.5",
     "ora": "^9.0.0",
     "otpauth": "^9.4.1",
     "rimraf": "^6.1.2",
