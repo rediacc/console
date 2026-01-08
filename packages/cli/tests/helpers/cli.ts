@@ -30,6 +30,10 @@ export async function runCli(args: string[], options: RunCliOptions = {}): Promi
   const outputFormat = options.outputFormat ?? 'json';
   const fullArgs = ['tsx', 'src/index.ts', '--output', outputFormat, ...args];
 
+  // DEBUG: Log command being executed
+  console.log(`[DEBUG runCli] Executing: npx ${fullArgs.join(' ')}`);
+  console.log(`[DEBUG runCli] API URL: ${config.apiUrl}`);
+
   const execaOptions: Options = {
     cwd: config.cliDir,
     timeout: options.timeout ?? config.timeout,
@@ -51,6 +55,16 @@ export async function runCli(args: string[], options: RunCliOptions = {}): Promi
   const stdout = String(result.stdout ?? '');
   const stderr = String(result.stderr ?? '');
   const exitCode = result.exitCode ?? 0;
+
+  // DEBUG: Log command result
+  console.log(`[DEBUG runCli] Exit code: ${exitCode}`);
+  console.log(`[DEBUG runCli] Stdout length: ${stdout.length}`);
+  if (stderr) {
+    console.log(`[DEBUG runCli] Stderr: ${stderr.substring(0, 500)}`);
+  }
+  if (exitCode !== 0) {
+    console.log(`[DEBUG runCli] Failed stdout: ${stdout.substring(0, 1000)}`);
+  }
 
   return {
     stdout,
