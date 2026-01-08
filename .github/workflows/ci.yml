@@ -281,6 +281,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    env:
+      REDIACC_TEST_API_URL: http://localhost/api
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+      REDIACC_TEST_TIMEOUT: 30000
+
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -329,9 +335,9 @@ jobs:
         run: |
           # Login with test credentials
           npx tsx src/index.ts login \
-            --endpoint http://localhost/api \
-            -e admin@rediacc.io \
-            -p admin
+            --endpoint "$REDIACC_TEST_API_URL" \
+            -e "$REDIACC_TEST_EMAIL" \
+            -p "$REDIACC_TEST_PASSWORD"
 
           # Get team vault with SSH keys
           TEAM_VAULT=$(npx tsx src/index.ts team list -o json | jq -r '.[0].vaultContent')
@@ -347,9 +353,6 @@ jobs:
 
       - name: Run CLI Tests
         working-directory: packages/cli
-        env:
-          REDIACC_TEST_API_URL: http://localhost/api
-          REDIACC_TEST_TIMEOUT: 30000
         run: npm test
 
       - name: Cleanup Elite Services
