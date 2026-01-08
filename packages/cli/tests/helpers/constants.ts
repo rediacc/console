@@ -9,7 +9,7 @@
  * Default API URL for testing
  * Override with REDIACC_TEST_API_URL environment variable
  */
-export const DEFAULT_TEST_API_URL = 'https://draft-profits-speeches-antivirus.trycloudflare.com';
+export const DEFAULT_TEST_API_URL = 'http://localhost/api';
 
 /**
  * Default timeout for CLI commands in milliseconds
