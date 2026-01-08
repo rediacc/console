@@ -4,7 +4,7 @@
  * Zod schemas for runtime validation of API responses.
  * Generated alongside api-schema.generated.ts for fail-fast validation.
  *
- * Generated at: 2026-01-07T11:38:14Z
+ * Generated at: 2026-01-08T11:36:18Z
  * Schema version: 3.0.0
  *
  * To regenerate, run: ./go deploy prep
@@ -2076,9 +2076,7 @@ export class ApiValidationError extends Error {
     public resultSetIndex: number,
     public zodError: z.ZodError
   ) {
-    super(
-      `API validation failed for ${procedure} resultSet[${resultSetIndex}]: ${zodError.message}`
-    );
+    super(`API validation failed for ${procedure} resultSet[${resultSetIndex}]: ${zodError.message}`);
     this.name = 'ApiValidationError';
   }
 }
@@ -2109,3 +2107,4 @@ export function validateApiResponse<T>(
 
   return response as T;
 }
+
