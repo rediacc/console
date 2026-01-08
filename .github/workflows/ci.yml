@@ -324,6 +324,12 @@ jobs:
           echo "Waiting for Elite services to be ready..."
           timeout 120 bash -c 'until curl -sf http://localhost/health; do sleep 2; done'
 
+      - name: Generate Test SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keygen -t ed25519 -f ~/.ssh/id_rsa -N "" -q
+          echo "Test SSH key generated at ~/.ssh/id_rsa"
+
       - name: Run CLI Tests
         working-directory: packages/cli
         env:
