@@ -27,12 +27,6 @@ export function getOutputFormat(): OutputFormat {
  * - Other modes: outputs error message to stderr
  */
 export function handleError(error: unknown): never {
-  // DEBUG: Log that error handler was called
-  console.error(
-    `[DEBUG handleError] Called with error: ${error instanceof Error ? error.message : String(error)}`
-  );
-  console.error(`[DEBUG handleError] Error type: ${error?.constructor?.name ?? typeof error}`);
-
   const cliError = normalizeError(error);
 
   // Track error in telemetry
@@ -71,9 +65,6 @@ export function handleError(error: unknown): never {
   void telemetryService.shutdown().catch(() => {
     // Ignore shutdown errors - we're exiting anyway
   });
-
-  // DEBUG: Log before exit
-  console.error(`[DEBUG handleError] About to exit with code: ${cliError.exitCode}`);
 
   // Exit synchronously - process.exit() never returns, satisfying the `never` return type
   process.exit(cliError.exitCode);
