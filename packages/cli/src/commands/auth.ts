@@ -44,11 +44,8 @@ export function registerAuthCommands(program: Command): void {
           apiUrl = await contextService.getApiUrl();
         }
 
-        // Temporarily set API URL for this request
-        const originalUrl = await apiClient.getApiUrl();
-        if (apiUrl !== originalUrl) {
-          await apiClient.reinitialize();
-        }
+        // Set API URL for this login request
+        apiClient.setApiUrl(apiUrl);
 
         // Get email
         const email =
