@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { execa, type Options } from 'execa';
+import { loadGlobalState } from '../base/globalState.js';
 import { CLI_BUNDLE_PATH, DEFAULT_CLI_TIMEOUT, getApiUrl, getCliTimeout } from '../constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -92,6 +93,22 @@ export class CliTestRunner {
   static withCredentials(email: string, password: string): CliTestRunner {
     return new CliTestRunner({
       credentials: { email, password },
+    });
+  }
+
+  /**
+   * Factory: Create runner from global test state (set by global setup).
+   * This is the recommended way to get a runner in tests.
+   */
+  static fromGlobalState(): CliTestRunner {
+    const state = loadGlobalState();
+    return new CliTestRunner({
+      context: state.contextName,
+      apiUrl: state.apiUrl,
+      credentials: {
+        email: state.email,
+        password: state.password,
+      },
     });
   }
 

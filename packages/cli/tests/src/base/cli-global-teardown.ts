@@ -1,3 +1,4 @@
+import { cleanupGlobalState, loadGlobalState } from './globalState.js';
 import { getApiUrl } from '../constants.js';
 import { AccountManager } from '../utils/AccountManager.js';
 import type { FullConfig } from '@playwright/test';
@@ -8,6 +9,7 @@ import type { FullConfig } from '@playwright/test';
  * Cleanup:
  * 1. Logout from master context
  * 2. Delete master test context
+ * 3. Clean up state file
  */
 async function cliGlobalTeardown(_config: FullConfig): Promise<void> {
   console.warn('');
@@ -15,10 +17,14 @@ async function cliGlobalTeardown(_config: FullConfig): Promise<void> {
   console.warn('CLI Test Teardown');
   console.warn('='.repeat(60));
 
-  const masterContext = process.env.CLI_MASTER_CONTEXT;
+  let masterContext: string | undefined;
 
-  if (!masterContext) {
+  try {
+    const state = loadGlobalState();
+    masterContext = state.contextName;
+  } catch {
     console.warn('No master context to clean up (setup may have failed)');
+    cleanupGlobalState();
     return;
   }
 
@@ -31,6 +37,9 @@ async function cliGlobalTeardown(_config: FullConfig): Promise<void> {
     // Log but don't fail - teardown errors shouldn't affect test results
     console.error(`  Teardown error (non-fatal): ${error}`);
   }
+
+  // Clean up state file
+  cleanupGlobalState();
 
   console.warn('');
   console.warn('='.repeat(60));

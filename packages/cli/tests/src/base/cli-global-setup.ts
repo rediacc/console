@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { saveGlobalState } from './globalState.js';
 import { getApiUrl } from '../constants.js';
 import { AccountManager } from '../utils/AccountManager.js';
 import { CliTestRunner } from '../utils/CliTestRunner.js';
@@ -67,10 +68,14 @@ async function cliGlobalSetup(_config: FullConfig): Promise<void> {
     const accountManager = new AccountManager(apiUrl);
     const masterAccount = await accountManager.createMasterContext();
 
-    // Store credentials in environment for test access
-    process.env.CLI_MASTER_CONTEXT = masterAccount.contextName;
-    process.env.CLI_MASTER_EMAIL = masterAccount.email;
-    process.env.CLI_MASTER_PASSWORD = masterAccount.password;
+    // Store credentials in state file for test access
+    // (Environment variables don't propagate from global setup to test workers)
+    saveGlobalState({
+      contextName: masterAccount.contextName,
+      email: masterAccount.email,
+      password: masterAccount.password,
+      apiUrl,
+    });
 
     console.warn(`  Context: ${masterAccount.contextName}`);
     console.warn(`  Email: ${masterAccount.email}`);

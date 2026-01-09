@@ -8,16 +8,7 @@ test.describe('TFA (Two-Factor Authentication) @cli @security', () => {
   let tfaSecret: string | null = null;
 
   test.beforeAll(async () => {
-    const contextName = process.env.CLI_MASTER_CONTEXT;
-    if (!contextName) {
-      throw new Error('CLI_MASTER_CONTEXT not set - global setup may have failed');
-    }
-
-    runner = CliTestRunner.withContext(contextName);
-    runner.config.credentials = {
-      email: process.env.CLI_MASTER_EMAIL!,
-      password: process.env.CLI_MASTER_PASSWORD!,
-    };
+    runner = CliTestRunner.fromGlobalState();
 
     // Ensure we're authenticated
     await runner.teamList();

@@ -11,18 +11,8 @@ test.describe('Team Error Scenarios @cli @errors', () => {
   let defaultTeamName: string;
 
   test.beforeAll(async () => {
-    const contextName = process.env.CLI_MASTER_CONTEXT;
-    if (!contextName) {
-      throw new Error('CLI_MASTER_CONTEXT not set - global setup may have failed');
-    }
-
-    runner = CliTestRunner.withContext(contextName);
-    runner.config.credentials = {
-      email: process.env.CLI_MASTER_EMAIL!,
-      password: process.env.CLI_MASTER_PASSWORD!,
-    };
-
-    currentUserEmail = process.env.CLI_MASTER_EMAIL!;
+    runner = CliTestRunner.fromGlobalState();
+    currentUserEmail = runner.config.credentials!.email;
 
     const teamsResult = await runner.teamList();
     const teams = runner.expectSuccessArray<{ teamName: string }>(teamsResult);

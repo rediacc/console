@@ -10,16 +10,7 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
   let defaultRegionName: string;
 
   test.beforeAll(async () => {
-    const contextName = process.env.CLI_MASTER_CONTEXT;
-    if (!contextName) {
-      throw new Error('CLI_MASTER_CONTEXT not set - global setup may have failed');
-    }
-
-    runner = CliTestRunner.withContext(contextName);
-    runner.config.credentials = {
-      email: process.env.CLI_MASTER_EMAIL!,
-      password: process.env.CLI_MASTER_PASSWORD!,
-    };
+    runner = CliTestRunner.fromGlobalState();
 
     // Get default region
     const regionsResult = await runner.run(['region', 'list']);
