@@ -1,12 +1,7 @@
-import { execa, type Options } from "execa";
-import * as path from "path";
-import { fileURLToPath } from "url";
-import {
-  CLI_BUNDLE_PATH,
-  DEFAULT_CLI_TIMEOUT,
-  getApiUrl,
-  getCliTimeout,
-} from "../constants.js";
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+import { execa, type Options } from 'execa';
+import { CLI_BUNDLE_PATH, DEFAULT_CLI_TIMEOUT, getApiUrl, getCliTimeout } from '../constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +22,7 @@ export interface CliResult {
  */
 export interface RunOptions {
   /** Override the default JSON output format */
-  outputFormat?: "json" | "table" | "yaml" | "csv";
+  outputFormat?: 'json' | 'table' | 'yaml' | 'csv';
   /** Timeout in milliseconds */
   timeout?: number;
   /** Skip JSON parsing (for commands that don't output JSON) */
@@ -81,7 +76,7 @@ export class CliTestRunner {
       credentials: config.credentials,
     };
     // CLI package root (tests/src/utils -> tests/src -> tests -> cli)
-    this.cliDir = path.resolve(__dirname, "../../..");
+    this.cliDir = path.resolve(__dirname, '../../..');
   }
 
   /**
@@ -109,16 +104,16 @@ export class CliTestRunner {
    * Logs command and output to console for Playwright to capture.
    */
   async run(args: string[], options: RunOptions = {}): Promise<CliResult> {
-    const outputFormat = options.outputFormat ?? "json";
+    const outputFormat = options.outputFormat ?? 'json';
     const timeout = options.timeout ?? this.config.timeout ?? DEFAULT_CLI_TIMEOUT;
     const context = options.context ?? this.config.context;
 
     // Build args: context flag (if available), output format, then user args
-    const contextArgs = context ? ["--context", context] : [];
-    const fullArgs = [CLI_BUNDLE_PATH, ...contextArgs, "--output", outputFormat, ...args];
+    const contextArgs = context ? ['--context', context] : [];
+    const fullArgs = [CLI_BUNDLE_PATH, ...contextArgs, '--output', outputFormat, ...args];
 
     // Log command for Playwright capture
-    console.log(`\n[CLI] ${args.join(" ")}`);
+    console.warn(`\n[CLI] ${args.join(' ')}`);
 
     const execaOptions: Options = {
       cwd: this.cliDir,
@@ -127,28 +122,29 @@ export class CliTestRunner {
         ...process.env,
         REDIACC_API_URL: this.config.apiUrl,
         // Provide master password for vault operations (non-interactive mode)
-        REDIACC_MASTER_PASSWORD: this.config.credentials?.password ?? process.env.CLI_MASTER_PASSWORD ?? "",
+        REDIACC_MASTER_PASSWORD:
+          this.config.credentials?.password ?? process.env.CLI_MASTER_PASSWORD ?? '',
         // Force no color for easier parsing
-        NO_COLOR: "1",
-        FORCE_COLOR: "0",
+        NO_COLOR: '1',
+        FORCE_COLOR: '0',
       },
       reject: false, // Don't throw on non-zero exit codes
     };
 
-    const result = await execa("node", fullArgs, execaOptions);
+    const result = await execa('node', fullArgs, execaOptions);
 
-    const stdout = String(result.stdout ?? "");
-    const stderr = String(result.stderr ?? "");
+    const stdout = String(result.stdout ?? '');
+    const stderr = String(result.stderr ?? '');
     const exitCode = result.exitCode ?? 0;
 
     // Log output for Playwright capture
     if (stdout.trim()) {
-      console.log(`[STDOUT]\n${stdout}`);
+      console.warn(`[STDOUT]\n${stdout}`);
     }
     if (stderr.trim()) {
-      console.log(`[STDERR]\n${stderr}`);
+      console.warn(`[STDERR]\n${stderr}`);
     }
-    console.log(`[EXIT] ${exitCode}`);
+    console.warn(`[EXIT] ${exitCode}`);
 
     return {
       stdout,
@@ -164,41 +160,51 @@ export class CliTestRunner {
   // ===========================================================================
 
   async login(email?: string, password?: string): Promise<CliResult> {
-    const e = email ?? this.config.credentials?.email ?? "";
-    const p = password ?? this.config.credentials?.password ?? "";
-    return this.run(["login", "--endpoint", this.config.apiUrl, "-e", e, "-p", p]);
+    const e = email ?? this.config.credentials?.email ?? '';
+    const p = password ?? this.config.credentials?.password ?? '';
+    return this.run(['login', '--endpoint', this.config.apiUrl, '-e', e, '-p', p]);
   }
 
   async logout(): Promise<CliResult> {
-    return this.run(["logout"]);
+    return this.run(['logout']);
   }
 
   async register(org: string, email: string, password: string, plan?: string): Promise<CliResult> {
     const args = [
-      "auth", "register",
-      "--organization", org,
-      "-e", email,
-      "-p", password,
-      "--endpoint", this.config.apiUrl,
+      'auth',
+      'register',
+      '--organization',
+      org,
+      '-e',
+      email,
+      '-p',
+      password,
+      '--endpoint',
+      this.config.apiUrl,
     ];
     if (plan) {
-      args.push("--plan", plan);
+      args.push('--plan', plan);
     }
     return this.run(args);
   }
 
-  async activate(email: string, password: string, code = "111111"): Promise<CliResult> {
+  async activate(email: string, password: string, code = '111111'): Promise<CliResult> {
     return this.run([
-      "auth", "activate",
-      "-e", email,
-      "-p", password,
-      "--code", code,
-      "--endpoint", this.config.apiUrl,
+      'auth',
+      'activate',
+      '-e',
+      email,
+      '-p',
+      password,
+      '--code',
+      code,
+      '--endpoint',
+      this.config.apiUrl,
     ]);
   }
 
   async authStatus(): Promise<CliResult> {
-    return this.run(["auth", "status"], { skipJsonParse: true });
+    return this.run(['auth', 'status'], { skipJsonParse: true });
   }
 
   // ===========================================================================
@@ -206,19 +212,19 @@ export class CliTestRunner {
   // ===========================================================================
 
   async contextCreate(name: string): Promise<CliResult> {
-    return this.run(["context", "create", name, "--api-url", this.config.apiUrl]);
+    return this.run(['context', 'create', name, '--api-url', this.config.apiUrl]);
   }
 
   async contextDelete(name: string): Promise<CliResult> {
-    return this.run(["context", "delete", name]);
+    return this.run(['context', 'delete', name]);
   }
 
   async contextList(): Promise<CliResult> {
-    return this.run(["context", "list"]);
+    return this.run(['context', 'list']);
   }
 
   async contextUse(name: string): Promise<CliResult> {
-    return this.run(["context", "use", name]);
+    return this.run(['context', 'use', name]);
   }
 
   // ===========================================================================
@@ -226,31 +232,31 @@ export class CliTestRunner {
   // ===========================================================================
 
   async teamList(): Promise<CliResult> {
-    return this.run(["team", "list"]);
+    return this.run(['team', 'list']);
   }
 
   async teamCreate(name: string): Promise<CliResult> {
-    return this.run(["team", "create", name]);
+    return this.run(['team', 'create', name]);
   }
 
   async teamDelete(name: string): Promise<CliResult> {
-    return this.run(["team", "delete", name, "--force"]);
+    return this.run(['team', 'delete', name, '--force']);
   }
 
   async teamRename(oldName: string, newName: string): Promise<CliResult> {
-    return this.run(["team", "rename", oldName, newName]);
+    return this.run(['team', 'rename', oldName, newName]);
   }
 
   async teamMemberList(teamName: string): Promise<CliResult> {
-    return this.run(["team", "member", "list", teamName]);
+    return this.run(['team', 'member', 'list', teamName]);
   }
 
   async teamMemberAdd(teamName: string, email: string): Promise<CliResult> {
-    return this.run(["team", "member", "add", teamName, email]);
+    return this.run(['team', 'member', 'add', teamName, email]);
   }
 
   async teamMemberRemove(teamName: string, email: string): Promise<CliResult> {
-    return this.run(["team", "member", "remove", teamName, email]);
+    return this.run(['team', 'member', 'remove', teamName, email]);
   }
 
   // ===========================================================================
@@ -258,19 +264,19 @@ export class CliTestRunner {
   // ===========================================================================
 
   async machineList(teamName: string): Promise<CliResult> {
-    return this.run(["machine", "list", "--team", teamName]);
+    return this.run(['machine', 'list', '--team', teamName]);
   }
 
   async machineCreate(name: string, teamName: string, bridgeName: string): Promise<CliResult> {
-    return this.run(["machine", "create", name, "--team", teamName, "--bridge", bridgeName]);
+    return this.run(['machine', 'create', name, '--team', teamName, '--bridge', bridgeName]);
   }
 
   async machineDelete(name: string, teamName: string): Promise<CliResult> {
-    return this.run(["machine", "delete", name, "--team", teamName, "--force"]);
+    return this.run(['machine', 'delete', name, '--team', teamName, '--force']);
   }
 
   async machineHealth(machineName: string, teamName: string): Promise<CliResult> {
-    return this.run(["machine", "health", machineName, "--team", teamName]);
+    return this.run(['machine', 'health', machineName, '--team', teamName]);
   }
 
   // ===========================================================================
@@ -278,15 +284,15 @@ export class CliTestRunner {
   // ===========================================================================
 
   async regionList(): Promise<CliResult> {
-    return this.run(["region", "list"]);
+    return this.run(['region', 'list']);
   }
 
   async regionCreate(name: string): Promise<CliResult> {
-    return this.run(["region", "create", name]);
+    return this.run(['region', 'create', name]);
   }
 
   async regionDelete(name: string): Promise<CliResult> {
-    return this.run(["region", "delete", name, "--force"]);
+    return this.run(['region', 'delete', name, '--force']);
   }
 
   // ===========================================================================
@@ -294,15 +300,15 @@ export class CliTestRunner {
   // ===========================================================================
 
   async bridgeList(regionName: string): Promise<CliResult> {
-    return this.run(["bridge", "list", "--region", regionName]);
+    return this.run(['bridge', 'list', '--region', regionName]);
   }
 
   async bridgeCreate(name: string, regionName: string): Promise<CliResult> {
-    return this.run(["bridge", "create", name, "--region", regionName]);
+    return this.run(['bridge', 'create', name, '--region', regionName]);
   }
 
   async bridgeDelete(name: string, regionName: string): Promise<CliResult> {
-    return this.run(["bridge", "delete", name, "--region", regionName, "--force"]);
+    return this.run(['bridge', 'delete', name, '--region', regionName, '--force']);
   }
 
   // ===========================================================================
@@ -310,15 +316,15 @@ export class CliTestRunner {
   // ===========================================================================
 
   async repositoryList(teamName: string): Promise<CliResult> {
-    return this.run(["repository", "list", "--team", teamName]);
+    return this.run(['repository', 'list', '--team', teamName]);
   }
 
   async repositoryCreate(name: string, teamName: string, machineName: string): Promise<CliResult> {
-    return this.run(["repository", "create", name, "--team", teamName, "--machine", machineName]);
+    return this.run(['repository', 'create', name, '--team', teamName, '--machine', machineName]);
   }
 
   async repositoryDelete(name: string, teamName: string): Promise<CliResult> {
-    return this.run(["repository", "delete", name, "--team", teamName, "--force"]);
+    return this.run(['repository', 'delete', name, '--team', teamName, '--force']);
   }
 
   // ===========================================================================
@@ -326,38 +332,41 @@ export class CliTestRunner {
   // ===========================================================================
 
   async storageList(): Promise<CliResult> {
-    return this.run(["storage", "list"]);
+    return this.run(['storage', 'list']);
   }
 
   async storageCreate(name: string): Promise<CliResult> {
-    return this.run(["storage", "create", name]);
+    return this.run(['storage', 'create', name]);
   }
 
   async storageDelete(name: string): Promise<CliResult> {
-    return this.run(["storage", "delete", name, "--force"]);
+    return this.run(['storage', 'delete', name, '--force']);
   }
 
   // ===========================================================================
   // Queue Commands
   // ===========================================================================
 
-  async queueList(teamName: string, options?: { status?: string; limit?: number }): Promise<CliResult> {
-    const args = ["queue", "list", "--team", teamName];
-    if (options?.status) args.push("--status", options.status);
-    if (options?.limit) args.push("--limit", String(options.limit));
+  async queueList(
+    teamName: string,
+    options?: { status?: string; limit?: number }
+  ): Promise<CliResult> {
+    const args = ['queue', 'list', '--team', teamName];
+    if (options?.status) args.push('--status', options.status);
+    if (options?.limit) args.push('--limit', String(options.limit));
     return this.run(args);
   }
 
   async queueTrace(taskId: string): Promise<CliResult> {
-    return this.run(["queue", "trace", taskId]);
+    return this.run(['queue', 'trace', taskId]);
   }
 
   async queueCancel(taskId: string): Promise<CliResult> {
-    return this.run(["queue", "cancel", taskId]);
+    return this.run(['queue', 'cancel', taskId]);
   }
 
   async queueRetry(taskId: string): Promise<CliResult> {
-    return this.run(["queue", "retry", taskId]);
+    return this.run(['queue', 'retry', taskId]);
   }
 
   // ===========================================================================
@@ -365,15 +374,15 @@ export class CliTestRunner {
   // ===========================================================================
 
   async userList(): Promise<CliResult> {
-    return this.run(["user", "list"]);
+    return this.run(['user', 'list']);
   }
 
   async userCreate(email: string, password: string): Promise<CliResult> {
-    return this.run(["user", "create", email, "-p", password]);
+    return this.run(['user', 'create', email, '-p', password]);
   }
 
   async userDeactivate(email: string): Promise<CliResult> {
-    return this.run(["user", "deactivate", email, "--force"]);
+    return this.run(['user', 'deactivate', email, '--force']);
   }
 
   // ===========================================================================
@@ -381,11 +390,11 @@ export class CliTestRunner {
   // ===========================================================================
 
   async organizationGet(): Promise<CliResult> {
-    return this.run(["organization", "info"]);
+    return this.run(['organization', 'info']);
   }
 
   async organizationRename(newName: string): Promise<CliResult> {
-    return this.run(["organization", "rename", newName]);
+    return this.run(['organization', 'rename', newName]);
   }
 
   // ===========================================================================
@@ -393,8 +402,8 @@ export class CliTestRunner {
   // ===========================================================================
 
   async auditList(options?: { limit?: number }): Promise<CliResult> {
-    const args = ["audit", "list"];
-    if (options?.limit) args.push("--limit", String(options.limit));
+    const args = ['audit', 'list'];
+    if (options?.limit) args.push('--limit', String(options.limit));
     return this.run(args);
   }
 
@@ -403,7 +412,7 @@ export class CliTestRunner {
   // ===========================================================================
 
   async permissionList(): Promise<CliResult> {
-    return this.run(["permission", "list"]);
+    return this.run(['permission', 'list']);
   }
 
   // ===========================================================================
@@ -411,27 +420,41 @@ export class CliTestRunner {
   // ===========================================================================
 
   async cephClusterStatus(): Promise<CliResult> {
-    return this.run(["ceph", "cluster", "status"]);
+    return this.run(['ceph', 'cluster', 'status']);
   }
 
   async cephPoolList(): Promise<CliResult> {
-    return this.run(["ceph", "pool", "list"]);
+    return this.run(['ceph', 'pool', 'list']);
   }
 
   async cephPoolCreate(name: string): Promise<CliResult> {
-    return this.run(["ceph", "pool", "create", name]);
+    return this.run(['ceph', 'pool', 'create', name]);
   }
 
   async cephImageList(poolName: string): Promise<CliResult> {
-    return this.run(["ceph", "image", "list", "--pool", poolName]);
+    return this.run(['ceph', 'image', 'list', '--pool', poolName]);
   }
 
   async cephSnapshotList(poolName: string, imageName: string): Promise<CliResult> {
-    return this.run(["ceph", "snapshot", "list", "--pool", poolName, "--image", imageName]);
+    return this.run(['ceph', 'snapshot', 'list', '--pool', poolName, '--image', imageName]);
   }
 
-  async cephCloneList(poolName: string, imageName: string, snapshotName: string): Promise<CliResult> {
-    return this.run(["ceph", "clone", "list", "--pool", poolName, "--image", imageName, "--snapshot", snapshotName]);
+  async cephCloneList(
+    poolName: string,
+    imageName: string,
+    snapshotName: string
+  ): Promise<CliResult> {
+    return this.run([
+      'ceph',
+      'clone',
+      'list',
+      '--pool',
+      poolName,
+      '--image',
+      imageName,
+      '--snapshot',
+      snapshotName,
+    ]);
   }
 
   // ===========================================================================
@@ -442,7 +465,7 @@ export class CliTestRunner {
    * Get CLI version
    */
   async version(): Promise<CliResult> {
-    return this.run(["--version"], { skipJsonParse: true });
+    return this.run(['--version'], { skipJsonParse: true });
   }
 
   // ===========================================================================
@@ -460,7 +483,7 @@ export class CliTestRunner {
    * Get combined output (stdout + stderr) for logging
    */
   getCombinedOutput(result: CliResult): string {
-    return [result.stdout, result.stderr].filter(Boolean).join("\n");
+    return [result.stdout, result.stderr].filter(Boolean).join('\n');
   }
 
   /**
@@ -469,22 +492,22 @@ export class CliTestRunner {
    */
   getErrorMessage(result: CliResult): string {
     // Check for JSON error response
-    if (result.json && typeof result.json === "object" && !Array.isArray(result.json)) {
+    if (result.json && typeof result.json === 'object' && !Array.isArray(result.json)) {
       const jsonResult = result.json as {
         success?: boolean;
         error?: { code?: string; message?: string; details?: string[] };
       };
       if (jsonResult.success === false && jsonResult.error) {
         const { code, message, details } = jsonResult.error;
-        let errorMsg = message ?? "Unknown error";
+        let errorMsg = message ?? 'Unknown error';
         if (code) errorMsg = `[${code}] ${errorMsg}`;
-        if (details?.length) errorMsg += ` - Details: ${details.join(", ")}`;
+        if (details?.length) errorMsg += ` - Details: ${details.join(', ')}`;
         return errorMsg;
       }
     }
 
     // Fallback to stderr/stdout
-    return result.stderr || result.stdout || "No error details available";
+    return result.stderr || result.stdout || 'No error details available';
   }
 
   /**
@@ -493,13 +516,15 @@ export class CliTestRunner {
    */
   expectSuccessArray<T = unknown>(result: CliResult): T[] {
     if (!result.success) {
-      throw new Error(`CLI command failed (exit ${result.exitCode}): ${this.getErrorMessage(result)}`);
+      throw new Error(
+        `CLI command failed (exit ${result.exitCode}): ${this.getErrorMessage(result)}`
+      );
     }
     if (!Array.isArray(result.json)) {
-      const preview = JSON.stringify(result.json)?.slice(0, 200) ?? "null";
+      const preview = JSON.stringify(result.json).slice(0, 200);
       throw new Error(
         `Expected JSON array but got ${typeof result.json}: ${preview}\n` +
-        `stdout: ${result.stdout.slice(0, 500)}`
+          `stdout: ${result.stdout.slice(0, 500)}`
       );
     }
     return result.json as T[];
@@ -511,13 +536,15 @@ export class CliTestRunner {
    */
   expectSuccessObject<T = Record<string, unknown>>(result: CliResult): T {
     if (!result.success) {
-      throw new Error(`CLI command failed (exit ${result.exitCode}): ${this.getErrorMessage(result)}`);
+      throw new Error(
+        `CLI command failed (exit ${result.exitCode}): ${this.getErrorMessage(result)}`
+      );
     }
-    if (result.json === null || typeof result.json !== "object" || Array.isArray(result.json)) {
-      const preview = JSON.stringify(result.json)?.slice(0, 200) ?? "null";
+    if (result.json === null || typeof result.json !== 'object' || Array.isArray(result.json)) {
+      const preview = JSON.stringify(result.json).slice(0, 200);
       throw new Error(
         `Expected JSON object but got ${typeof result.json}: ${preview}\n` +
-        `stdout: ${result.stdout.slice(0, 500)}`
+          `stdout: ${result.stdout.slice(0, 500)}`
       );
     }
     return result.json as T;
@@ -529,7 +556,9 @@ export class CliTestRunner {
    */
   expectSuccess(result: CliResult): void {
     if (!result.success) {
-      throw new Error(`CLI command failed (exit ${result.exitCode}): ${this.getErrorMessage(result)}`);
+      throw new Error(
+        `CLI command failed (exit ${result.exitCode}): ${this.getErrorMessage(result)}`
+      );
     }
   }
 

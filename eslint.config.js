@@ -600,5 +600,23 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-assertions': 'off',
       '@typescript-eslint/no-deprecated': 'off',
     }
+  },
+
+  // CLI test files - relaxed rules for test patterns
+  {
+    files: ['packages/cli/tests/**/*.ts'],
+    rules: {
+      // Test files legitimately use boolean || for condition checks
+      // e.g., output.includes("foo") || output.includes("bar")
+      '@typescript-eslint/prefer-nullish-coalescing': ['error', {
+        ignorePrimitives: {
+          boolean: true,
+          number: true,
+          string: true,
+        },
+      }],
+      // Tests can be longer than production code
+      'max-lines': 'off',
+    },
   }
 );

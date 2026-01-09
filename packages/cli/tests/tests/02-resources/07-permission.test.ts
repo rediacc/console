@@ -1,14 +1,14 @@
-import { test, expect } from "@playwright/test";
-import { CliTestRunner } from "../../src/utils/CliTestRunner";
+import { expect, test } from '@playwright/test';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
 
-test.describe("Permission Commands @cli @resources", () => {
+test.describe('Permission Commands @cli @resources', () => {
   let runner: CliTestRunner;
   let teamName: string;
 
   test.beforeAll(async () => {
     const contextName = process.env.CLI_MASTER_CONTEXT;
     if (!contextName) {
-      throw new Error("CLI_MASTER_CONTEXT not set - global setup may have failed");
+      throw new Error('CLI_MASTER_CONTEXT not set - global setup may have failed');
     }
 
     runner = CliTestRunner.withContext(contextName);
@@ -23,10 +23,10 @@ test.describe("Permission Commands @cli @resources", () => {
     teamName = teams[0].teamName;
   });
 
-  test.describe("permission list", () => {
-    test("should list permissions for a team", async () => {
+  test.describe('permission list', () => {
+    test('should list permissions for a team', async () => {
       // Permission list requires team context
-      const result = await runner.run(["permission", "list", "--team", teamName]);
+      const result = await runner.run(['permission', 'list', '--team', teamName]);
 
       // Fresh accounts should have at least the command run
       // May fail due to permission requirements
@@ -34,25 +34,25 @@ test.describe("Permission Commands @cli @resources", () => {
     });
   });
 
-  test.describe("permission modifications", () => {
+  test.describe('permission modifications', () => {
     let testGroupName: string;
     let featureAvailable = true;
 
     test.beforeAll(async () => {
       testGroupName = `test-group-${Date.now()}`;
       // Create a test permission group
-      const result = await runner.run(["permission", "group", "create", testGroupName]);
+      const result = await runner.run(['permission', 'group', 'create', testGroupName]);
       if (!result.success) {
         const errorMsg = runner.getErrorMessage(result);
         // Check if this is a feature limitation (Community edition)
-        if (errorMsg.includes("Community edition") || errorMsg.includes("not available")) {
+        if (errorMsg.includes('Community edition') || errorMsg.includes('not available')) {
           console.warn(
-            "Skipping permission modification tests - feature not available in this edition"
+            'Skipping permission modification tests - feature not available in this edition'
           );
           featureAvailable = false;
           return;
         }
-        console.error("Permission group create failed:", errorMsg);
+        console.error('Permission group create failed:', errorMsg);
         expect(result.success, `Failed: ${errorMsg}`).toBe(true);
       }
     });
@@ -60,53 +60,53 @@ test.describe("Permission Commands @cli @resources", () => {
     test.afterAll(async () => {
       // Cleanup - delete test group (only if it was created)
       if (featureAvailable) {
-        await runner.run(["permission", "group", "delete", testGroupName, "--force"]);
+        await runner.run(['permission', 'group', 'delete', testGroupName, '--force']);
       }
     });
 
-    test("should add a permission to a group", async () => {
+    test('should add a permission to a group', async () => {
       if (!featureAvailable) {
-        console.warn("Skipped: feature not available in Community edition");
+        console.warn('Skipped: feature not available in Community edition');
         return;
       }
 
-      const result = await runner.run(["permission", "add", testGroupName, "GetTeamMachines"]);
+      const result = await runner.run(['permission', 'add', testGroupName, 'GetTeamMachines']);
 
       if (!result.success) {
-        console.error("Permission add failed:", runner.getErrorMessage(result));
+        console.error('Permission add failed:', runner.getErrorMessage(result));
       }
       expect(result.success, `Failed: ${runner.getErrorMessage(result)}`).toBe(true);
-      expect(result.stdout).toContain("Permission added");
+      expect(result.stdout).toContain('Permission added');
     });
 
-    test("should show permission group with added permission", async () => {
+    test('should show permission group with added permission', async () => {
       if (!featureAvailable) {
-        console.warn("Skipped: feature not available in Community edition");
+        console.warn('Skipped: feature not available in Community edition');
         return;
       }
 
-      const result = await runner.run(["permission", "group", "show", testGroupName]);
+      const result = await runner.run(['permission', 'group', 'show', testGroupName]);
 
       if (!result.success) {
-        console.error("Permission group show failed:", runner.getErrorMessage(result));
+        console.error('Permission group show failed:', runner.getErrorMessage(result));
       }
       expect(result.success, `Failed: ${runner.getErrorMessage(result)}`).toBe(true);
       expect(result.json).not.toBeNull();
     });
 
-    test("should remove a permission from a group", async () => {
+    test('should remove a permission from a group', async () => {
       if (!featureAvailable) {
-        console.warn("Skipped: feature not available in Community edition");
+        console.warn('Skipped: feature not available in Community edition');
         return;
       }
 
-      const result = await runner.run(["permission", "remove", testGroupName, "GetTeamMachines"]);
+      const result = await runner.run(['permission', 'remove', testGroupName, 'GetTeamMachines']);
 
       if (!result.success) {
-        console.error("Permission remove failed:", runner.getErrorMessage(result));
+        console.error('Permission remove failed:', runner.getErrorMessage(result));
       }
       expect(result.success, `Failed: ${runner.getErrorMessage(result)}`).toBe(true);
-      expect(result.stdout).toContain("Permission removed");
+      expect(result.stdout).toContain('Permission removed');
     });
   });
 });

@@ -1,15 +1,13 @@
-import { test, expect } from "@playwright/test";
-import { CliTestRunner } from "../../src/utils/CliTestRunner";
+import { expect, test } from '@playwright/test';
 import {
   createEditionContext,
   EditionErrorPatterns,
   type EditionTestContext,
   expectEditionError,
-  expectEditionSuccess,
   RESOURCE_LIMITS,
-  uniqueName,
   type SubscriptionPlan,
-} from "../../src/utils/edition";
+  uniqueName,
+} from '../../src/utils/edition';
 
 /**
  * Edition Resource Limits Tests
@@ -17,9 +15,9 @@ import {
  * Tests that verify resource limits are correctly enforced by subscription edition.
  * Tests both boundary cases (creating up to limit) and exceeding limits.
  */
-test.describe("Resource Limits by Edition @cli @edition", () => {
-  test.describe("Machine Limits", () => {
-    test.describe("COMMUNITY edition - 5 machines limit", () => {
+test.describe('Resource Limits by Edition @cli @edition', () => {
+  test.describe('Machine Limits', () => {
+    test.describe('COMMUNITY edition - 5 machines limit', () => {
       let ctx: EditionTestContext;
       let teamName: string;
       let bridgeName: string;
@@ -27,25 +25,27 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
       const LIMIT = RESOURCE_LIMITS.COMMUNITY.machines;
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("COMMUNITY");
+        ctx = await createEditionContext('COMMUNITY');
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? "Private Team";
+        teamName = teams[0]?.teamName ?? 'Private Team';
 
         // Get region first, then bridges
-        const regionResult = await ctx.runner.run(["region", "list"]);
+        const regionResult = await ctx.runner.run(['region', 'list']);
         const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-        const regionName = regions[0]?.regionName ?? "Default Region";
+        const regionName = regions[0]?.regionName ?? 'Default Region';
 
-        const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+        const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
         const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-        bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+        bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
       });
 
       test.afterAll(async () => {
         for (const machine of createdMachines) {
-          await ctx.runner.run(["machine", "delete", machine, "--team", teamName, "--force"]).catch(() => {});
+          await ctx.runner
+            .run(['machine', 'delete', machine, '--team', teamName, '--force'])
+            .catch(() => {});
         }
         await ctx?.cleanup();
       });
@@ -55,12 +55,12 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
         for (let i = 0; i < LIMIT; i++) {
           const machineName = uniqueName(`machine-${i}`);
           const result = await ctx.runner.run([
-            "machine",
-            "create",
+            'machine',
+            'create',
             machineName,
-            "--team",
+            '--team',
             teamName,
-            "--bridge",
+            '--bridge',
             bridgeName,
           ]);
 
@@ -73,14 +73,14 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
       });
 
       test(`should return 402 when exceeding ${LIMIT} machines`, async () => {
-        const machineName = uniqueName("machine-excess");
+        const machineName = uniqueName('machine-excess');
         const result = await ctx.runner.run([
-          "machine",
-          "create",
+          'machine',
+          'create',
           machineName,
-          "--team",
+          '--team',
           teamName,
-          "--bridge",
+          '--bridge',
           bridgeName,
         ]);
 
@@ -88,48 +88,50 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
       });
     });
 
-    test.describe("PROFESSIONAL edition - 20 machines limit", () => {
+    test.describe('PROFESSIONAL edition - 20 machines limit', () => {
       let ctx: EditionTestContext;
       let teamName: string;
       let bridgeName: string;
       const createdMachines: string[] = [];
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("PROFESSIONAL");
+        ctx = await createEditionContext('PROFESSIONAL');
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? "Private Team";
+        teamName = teams[0]?.teamName ?? 'Private Team';
 
         // Get region first, then bridges
-        const regionResult = await ctx.runner.run(["region", "list"]);
+        const regionResult = await ctx.runner.run(['region', 'list']);
         const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-        const regionName = regions[0]?.regionName ?? "Default Region";
+        const regionName = regions[0]?.regionName ?? 'Default Region';
 
-        const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+        const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
         const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-        bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+        bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
       });
 
       test.afterAll(async () => {
         for (const machine of createdMachines) {
-          await ctx.runner.run(["machine", "delete", machine, "--team", teamName, "--force"]).catch(() => {});
+          await ctx.runner
+            .run(['machine', 'delete', machine, '--team', teamName, '--force'])
+            .catch(() => {});
         }
         await ctx?.cleanup();
       });
 
-      test("should allow creating machines up to limit boundary", async () => {
+      test('should allow creating machines up to limit boundary', async () => {
         test.setTimeout(120000);
         // Only create a few to test basic functionality
         for (let i = 0; i < 5; i++) {
           const machineName = uniqueName(`machine-${i}`);
           const result = await ctx.runner.run([
-            "machine",
-            "create",
+            'machine',
+            'create',
             machineName,
-            "--team",
+            '--team',
             teamName,
-            "--bridge",
+            '--bridge',
             bridgeName,
           ]);
 
@@ -143,25 +145,27 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
     });
   });
 
-  test.describe("Repository Limits", () => {
-    test.describe("COMMUNITY edition - 10 repositories limit", () => {
+  test.describe('Repository Limits', () => {
+    test.describe('COMMUNITY edition - 10 repositories limit', () => {
       let ctx: EditionTestContext;
       let teamName: string;
       const createdRepos: string[] = [];
       const LIMIT = RESOURCE_LIMITS.COMMUNITY.repositories;
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("COMMUNITY");
+        ctx = await createEditionContext('COMMUNITY');
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? "Private Team";
+        teamName = teams[0]?.teamName ?? 'Private Team';
       });
 
-      test.afterAll(async ({ }, testInfo) => {
+      test.afterAll(async (_fixtures, testInfo) => {
         testInfo.setTimeout(120000); // 2 minutes for cleanup
         for (const repo of createdRepos) {
-          await ctx.runner.run(["repository", "delete", repo, "--team", teamName, "--force"]).catch(() => {});
+          await ctx.runner
+            .run(['repository', 'delete', repo, '--team', teamName, '--force'])
+            .catch(() => {});
         }
         await ctx?.cleanup();
       });
@@ -170,7 +174,13 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
         test.setTimeout(300000);
         for (let i = 0; i < LIMIT; i++) {
           const repoName = uniqueName(`repo-${i}`);
-          const result = await ctx.runner.run(["repository", "create", repoName, "--team", teamName]);
+          const result = await ctx.runner.run([
+            'repository',
+            'create',
+            repoName,
+            '--team',
+            teamName,
+          ]);
 
           expect(
             result.success,
@@ -181,39 +191,47 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
       });
 
       test(`should return 402 when exceeding ${LIMIT} repositories`, async () => {
-        const repoName = uniqueName("repo-excess");
-        const result = await ctx.runner.run(["repository", "create", repoName, "--team", teamName]);
+        const repoName = uniqueName('repo-excess');
+        const result = await ctx.runner.run(['repository', 'create', repoName, '--team', teamName]);
 
         expectEditionError(result, 402, EditionErrorPatterns.REPOSITORY_LIMIT_EXCEEDED);
       });
     });
 
-    test.describe("PROFESSIONAL edition - higher repository limit", () => {
+    test.describe('PROFESSIONAL edition - higher repository limit', () => {
       let ctx: EditionTestContext;
       let teamName: string;
       const createdRepos: string[] = [];
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("PROFESSIONAL");
+        ctx = await createEditionContext('PROFESSIONAL');
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? "Private Team";
+        teamName = teams[0]?.teamName ?? 'Private Team';
       });
 
-      test.afterAll(async ({ }, testInfo) => {
+      test.afterAll(async (_fixtures, testInfo) => {
         testInfo.setTimeout(120000); // 2 minutes for cleanup
         for (const repo of createdRepos) {
-          await ctx.runner.run(["repository", "delete", repo, "--team", teamName, "--force"]).catch(() => {});
+          await ctx.runner
+            .run(['repository', 'delete', repo, '--team', teamName, '--force'])
+            .catch(() => {});
         }
         await ctx?.cleanup();
       });
 
-      test("should allow creating more than Community limit (10+)", async () => {
+      test('should allow creating more than Community limit (10+)', async () => {
         test.setTimeout(300000);
         for (let i = 0; i < 11; i++) {
           const repoName = uniqueName(`repo-${i}`);
-          const result = await ctx.runner.run(["repository", "create", repoName, "--team", teamName]);
+          const result = await ctx.runner.run([
+            'repository',
+            'create',
+            repoName,
+            '--team',
+            teamName,
+          ]);
 
           expect(
             result.success,
@@ -225,45 +243,47 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
     });
   });
 
-  test.describe("Storage Limits", () => {
-    test.describe("COMMUNITY edition storage limits", () => {
+  test.describe('Storage Limits', () => {
+    test.describe('COMMUNITY edition storage limits', () => {
       let ctx: EditionTestContext;
       let teamName: string;
       const createdStorages: string[] = [];
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("COMMUNITY");
+        ctx = await createEditionContext('COMMUNITY');
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? "Private Team";
+        teamName = teams[0]?.teamName ?? 'Private Team';
       });
 
       test.afterAll(async () => {
         for (const storage of createdStorages) {
-          await ctx.runner.run(["storage", "delete", storage, "--team", teamName, "--force"]).catch(() => {});
+          await ctx.runner
+            .run(['storage', 'delete', storage, '--team', teamName, '--force'])
+            .catch(() => {});
         }
         await ctx?.cleanup();
       });
 
-      test("should allow creating storage within limits", async () => {
-        const storageName = uniqueName("storage");
-        const result = await ctx.runner.run(["storage", "create", storageName, "--team", teamName]);
+      test('should allow creating storage within limits', async () => {
+        const storageName = uniqueName('storage');
+        const result = await ctx.runner.run(['storage', 'create', storageName, '--team', teamName]);
 
         if (result.success) {
           createdStorages.push(storageName);
         }
         // Don't fail test if storage command doesn't exist yet
-        expect(result.success || result.stderr.includes("unknown command")).toBe(true);
+        expect(result.success || result.stderr.includes('unknown command')).toBe(true);
       });
     });
   });
 
-  test.describe("Cross-Edition Limit Comparison", () => {
-    const editions: SubscriptionPlan[] = ["COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"];
+  test.describe('Cross-Edition Limit Comparison', () => {
+    const editions: SubscriptionPlan[] = ['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'];
 
     for (const plan of editions) {
-      test(`should have increasing limits for ${plan} edition`, async () => {
+      test(`should have increasing limits for ${plan} edition`, () => {
         const limits = RESOURCE_LIMITS[plan];
 
         expect(limits.machines).toBeGreaterThanOrEqual(0);
@@ -273,22 +293,38 @@ test.describe("Resource Limits by Edition @cli @edition", () => {
       });
     }
 
-    test("should have progressively higher machine limits", async () => {
-      expect(RESOURCE_LIMITS.PROFESSIONAL.machines).toBeGreaterThan(RESOURCE_LIMITS.COMMUNITY.machines);
-      expect(RESOURCE_LIMITS.BUSINESS.machines).toBeGreaterThan(RESOURCE_LIMITS.PROFESSIONAL.machines);
-      expect(RESOURCE_LIMITS.ENTERPRISE.machines).toBeGreaterThan(RESOURCE_LIMITS.BUSINESS.machines);
+    test('should have progressively higher machine limits', () => {
+      expect(RESOURCE_LIMITS.PROFESSIONAL.machines).toBeGreaterThan(
+        RESOURCE_LIMITS.COMMUNITY.machines
+      );
+      expect(RESOURCE_LIMITS.BUSINESS.machines).toBeGreaterThan(
+        RESOURCE_LIMITS.PROFESSIONAL.machines
+      );
+      expect(RESOURCE_LIMITS.ENTERPRISE.machines).toBeGreaterThan(
+        RESOURCE_LIMITS.BUSINESS.machines
+      );
     });
 
-    test("should have progressively higher repository limits", async () => {
-      expect(RESOURCE_LIMITS.PROFESSIONAL.repositories).toBeGreaterThan(RESOURCE_LIMITS.COMMUNITY.repositories);
-      expect(RESOURCE_LIMITS.BUSINESS.repositories).toBeGreaterThan(RESOURCE_LIMITS.PROFESSIONAL.repositories);
-      expect(RESOURCE_LIMITS.ENTERPRISE.repositories).toBeGreaterThan(RESOURCE_LIMITS.BUSINESS.repositories);
+    test('should have progressively higher repository limits', () => {
+      expect(RESOURCE_LIMITS.PROFESSIONAL.repositories).toBeGreaterThan(
+        RESOURCE_LIMITS.COMMUNITY.repositories
+      );
+      expect(RESOURCE_LIMITS.BUSINESS.repositories).toBeGreaterThan(
+        RESOURCE_LIMITS.PROFESSIONAL.repositories
+      );
+      expect(RESOURCE_LIMITS.ENTERPRISE.repositories).toBeGreaterThan(
+        RESOURCE_LIMITS.BUSINESS.repositories
+      );
     });
 
-    test("should have progressively higher bridge limits", async () => {
+    test('should have progressively higher bridge limits', () => {
       expect(RESOURCE_LIMITS.COMMUNITY.bridges).toBe(0);
-      expect(RESOURCE_LIMITS.PROFESSIONAL.bridges).toBeGreaterThan(RESOURCE_LIMITS.COMMUNITY.bridges);
-      expect(RESOURCE_LIMITS.BUSINESS.bridges).toBeGreaterThan(RESOURCE_LIMITS.PROFESSIONAL.bridges);
+      expect(RESOURCE_LIMITS.PROFESSIONAL.bridges).toBeGreaterThan(
+        RESOURCE_LIMITS.COMMUNITY.bridges
+      );
+      expect(RESOURCE_LIMITS.BUSINESS.bridges).toBeGreaterThan(
+        RESOURCE_LIMITS.PROFESSIONAL.bridges
+      );
       expect(RESOURCE_LIMITS.ENTERPRISE.bridges).toBeGreaterThan(RESOURCE_LIMITS.BUSINESS.bridges);
     });
   });

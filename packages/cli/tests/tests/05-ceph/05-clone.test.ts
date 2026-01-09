@@ -4,16 +4,16 @@
  * Tests for Ceph RBD clone CRUD operations and machine assignment management.
  */
 
-import { test, expect } from "@playwright/test";
+import { expect, test } from '@playwright/test';
 import {
   createEditionContext,
   type EditionTestContext,
   expectEditionSuccess,
   uniqueName,
-} from "../../src/utils/edition";
+} from '../../src/utils/edition';
 
-test.describe("Ceph Clone Commands @cli @ceph", () => {
-  test.describe("ENTERPRISE edition - clone operations", () => {
+test.describe('Ceph Clone Commands @cli @ceph', () => {
+  test.describe('ENTERPRISE edition - clone operations', () => {
     let ctx: EditionTestContext;
     let teamName: string;
     let clusterName: string;
@@ -26,87 +26,87 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
     const createdClones: string[] = [];
 
     test.beforeAll(async () => {
-      ctx = await createEditionContext("ENTERPRISE");
+      ctx = await createEditionContext('ENTERPRISE');
 
       // Get team
       const teamResult = await ctx.runner.teamList();
       const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-      teamName = teams[0]?.teamName ?? "Private Team";
+      teamName = teams[0]?.teamName ?? 'Private Team';
 
       // Get region and bridge
-      const regionResult = await ctx.runner.run(["region", "list"]);
+      const regionResult = await ctx.runner.run(['region', 'list']);
       const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-      const regionName = regions[0]?.regionName ?? "Default Region";
+      const regionName = regions[0]?.regionName ?? 'Default Region';
 
-      const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+      const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
       const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-      bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+      bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
 
       // Create machine for image
-      machineName = uniqueName("clone-test-machine");
+      machineName = uniqueName('clone-test-machine');
       await ctx.runner.run([
-        "machine",
-        "create",
+        'machine',
+        'create',
         machineName,
-        "--team",
+        '--team',
         teamName,
-        "--bridge",
+        '--bridge',
         bridgeName,
       ]);
 
       // Create second machine for clone assignment (machines can only be used for one purpose)
-      assignMachineName = uniqueName("clone-assign-machine");
+      assignMachineName = uniqueName('clone-assign-machine');
       await ctx.runner.run([
-        "machine",
-        "create",
+        'machine',
+        'create',
         assignMachineName,
-        "--team",
+        '--team',
         teamName,
-        "--bridge",
+        '--bridge',
         bridgeName,
       ]);
 
       // Create cluster, pool, image, and snapshot
-      clusterName = uniqueName("clone-test-cluster");
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+      clusterName = uniqueName('clone-test-cluster');
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
 
-      poolName = uniqueName("clone-test-pool");
+      poolName = uniqueName('clone-test-pool');
       await ctx.runner.run([
-        "ceph",
-        "pool",
-        "create",
+        'ceph',
+        'pool',
+        'create',
         poolName,
-        "--cluster",
+        '--cluster',
         clusterName,
-        "--team",
+        '--team',
         teamName,
       ]);
 
-      imageName = uniqueName("clone-test-image");
+      imageName = uniqueName('clone-test-image');
       await ctx.runner.run([
-        "ceph",
-        "image",
-        "create",
+        'ceph',
+        'image',
+        'create',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--machine",
+        '--machine',
         machineName,
       ]);
 
-      snapshotName = uniqueName("clone-test-snapshot");
+      snapshotName = uniqueName('clone-test-snapshot');
       await ctx.runner.run([
-        "ceph",
-        "snapshot",
-        "create",
+        'ceph',
+        'snapshot',
+        'create',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
       ]);
     });
@@ -116,19 +116,19 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
       for (const clone of createdClones) {
         await ctx.runner
           .run([
-            "ceph",
-            "clone",
-            "delete",
+            'ceph',
+            'clone',
+            'delete',
             clone,
-            "--snapshot",
+            '--snapshot',
             snapshotName,
-            "--image",
+            '--image',
             imageName,
-            "--pool",
+            '--pool',
             poolName,
-            "--team",
+            '--team',
             teamName,
-            "--force",
+            '--force',
           ])
           .catch(() => {});
       }
@@ -136,76 +136,76 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
       // Cleanup snapshot
       await ctx.runner
         .run([
-          "ceph",
-          "snapshot",
-          "delete",
+          'ceph',
+          'snapshot',
+          'delete',
           snapshotName,
-          "--image",
+          '--image',
           imageName,
-          "--pool",
+          '--pool',
           poolName,
-          "--team",
+          '--team',
           teamName,
-          "--force",
+          '--force',
         ])
         .catch(() => {});
 
       // Cleanup image
       await ctx.runner
         .run([
-          "ceph",
-          "image",
-          "delete",
+          'ceph',
+          'image',
+          'delete',
           imageName,
-          "--pool",
+          '--pool',
           poolName,
-          "--team",
+          '--team',
           teamName,
-          "--force",
+          '--force',
         ])
         .catch(() => {});
 
       // Cleanup pool and cluster
       await ctx.runner
-        .run(["ceph", "pool", "delete", poolName, "--team", teamName, "--force"])
+        .run(['ceph', 'pool', 'delete', poolName, '--team', teamName, '--force'])
         .catch(() => {});
-      await ctx.runner.run(["ceph", "cluster", "delete", clusterName, "--force"]).catch(() => {});
+      await ctx.runner.run(['ceph', 'cluster', 'delete', clusterName, '--force']).catch(() => {});
 
       // Cleanup machines
       await ctx.runner
-        .run(["machine", "delete", machineName, "--team", teamName, "--force"])
+        .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
         .catch(() => {});
       await ctx.runner
-        .run(["machine", "delete", assignMachineName, "--team", teamName, "--force"])
+        .run(['machine', 'delete', assignMachineName, '--team', teamName, '--force'])
         .catch(() => {});
 
       await ctx?.cleanup();
     });
 
-    test("should list clones (initially empty)", async () => {
-      const result = await ctx.runner.run(["ceph", "clone", "list"]);
+    test('should list clones (initially empty)', async () => {
+      const result = await ctx.runner.run(['ceph', 'clone', 'list']);
 
       expectEditionSuccess(result);
       expect(result.json).toBeInstanceOf(Array);
     });
 
-    test("should create a clone from snapshot", async () => {
-      const cloneName = uniqueName("test-clone");
-      const vault = JSON.stringify({ description: "test clone" });
+    test('should create a clone from snapshot', async () => {
+      const cloneName = uniqueName('test-clone');
+      const vault = JSON.stringify({ description: 'test clone' });
       const result = await ctx.runner.run([
-        "ceph",
-        "clone",
-        "create",
+        'ceph',
+        'clone',
+        'create',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
 
@@ -213,23 +213,23 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
       createdClones.push(cloneName);
     });
 
-    test("should create a clone with vault", async () => {
-      const cloneName = uniqueName("clone-with-vault");
-      const vault = JSON.stringify({ mountPoint: "/mnt/data" });
+    test('should create a clone with vault', async () => {
+      const cloneName = uniqueName('clone-with-vault');
+      const vault = JSON.stringify({ mountPoint: '/mnt/data' });
       const result = await ctx.runner.run([
-        "ceph",
-        "clone",
-        "create",
+        'ceph',
+        'clone',
+        'create',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
 
@@ -237,29 +237,29 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
       createdClones.push(cloneName);
     });
 
-    test("should list clones with filters", async () => {
-      const cloneName = uniqueName("filter-clone");
-      const vault = JSON.stringify({ description: "filter test clone" });
+    test('should list clones with filters', async () => {
+      const cloneName = uniqueName('filter-clone');
+      const vault = JSON.stringify({ description: 'filter test clone' });
       await ctx.runner.run([
-        "ceph",
-        "clone",
-        "create",
+        'ceph',
+        'clone',
+        'create',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
       createdClones.push(cloneName);
 
       // Filter by snapshot
-      const result = await ctx.runner.run(["ceph", "clone", "list", "--snapshot", snapshotName]);
+      const result = await ctx.runner.run(['ceph', 'clone', 'list', '--snapshot', snapshotName]);
 
       expectEditionSuccess(result);
       const clones = ctx.runner.expectSuccessArray<{
@@ -272,8 +272,8 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
       expect(found, `Expected to find clone "${cloneName}" in filtered list`).toBe(true);
     });
 
-    test("should list clones filtered by image", async () => {
-      const result = await ctx.runner.run(["ceph", "clone", "list", "--image", imageName]);
+    test('should list clones filtered by image', async () => {
+      const result = await ctx.runner.run(['ceph', 'clone', 'list', '--image', imageName]);
 
       expectEditionSuccess(result);
       const clones = ctx.runner.expectSuccessArray<{ imageName: string }>(result);
@@ -282,39 +282,39 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
       }
     });
 
-    test("should list machines for a clone (initially empty)", async () => {
-      const cloneName = uniqueName("machines-clone");
-      const vault = JSON.stringify({ description: "machines test clone" });
+    test('should list machines for a clone (initially empty)', async () => {
+      const cloneName = uniqueName('machines-clone');
+      const vault = JSON.stringify({ description: 'machines test clone' });
       await ctx.runner.run([
-        "ceph",
-        "clone",
-        "create",
+        'ceph',
+        'clone',
+        'create',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
       createdClones.push(cloneName);
 
       const result = await ctx.runner.run([
-        "ceph",
-        "clone",
-        "machines",
+        'ceph',
+        'clone',
+        'machines',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
       ]);
 
@@ -322,141 +322,141 @@ test.describe("Ceph Clone Commands @cli @ceph", () => {
       expect(result.json).toBeInstanceOf(Array);
     });
 
-    test("should assign machines to a clone", async () => {
-      const cloneName = uniqueName("assign-clone");
-      const vault = JSON.stringify({ description: "assign test clone" });
+    test('should assign machines to a clone', async () => {
+      const cloneName = uniqueName('assign-clone');
+      const vault = JSON.stringify({ description: 'assign test clone' });
       await ctx.runner.run([
-        "ceph",
-        "clone",
-        "create",
+        'ceph',
+        'clone',
+        'create',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
       createdClones.push(cloneName);
 
       const result = await ctx.runner.run([
-        "ceph",
-        "clone",
-        "assign",
+        'ceph',
+        'clone',
+        'assign',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--machines",
+        '--machines',
         assignMachineName,
       ]);
 
       expectEditionSuccess(result);
     });
 
-    test("should unassign machines from a clone", async () => {
-      const cloneName = uniqueName("unassign-clone");
-      const vault = JSON.stringify({ description: "unassign test clone" });
+    test('should unassign machines from a clone', async () => {
+      const cloneName = uniqueName('unassign-clone');
+      const vault = JSON.stringify({ description: 'unassign test clone' });
       await ctx.runner.run([
-        "ceph",
-        "clone",
-        "create",
+        'ceph',
+        'clone',
+        'create',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
       createdClones.push(cloneName);
 
       // First assign
       await ctx.runner.run([
-        "ceph",
-        "clone",
-        "assign",
+        'ceph',
+        'clone',
+        'assign',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--machines",
+        '--machines',
         assignMachineName,
       ]);
 
       // Then unassign
       const result = await ctx.runner.run([
-        "ceph",
-        "clone",
-        "unassign",
+        'ceph',
+        'clone',
+        'unassign',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--machines",
+        '--machines',
         assignMachineName,
       ]);
 
       expectEditionSuccess(result);
     });
 
-    test("should delete a clone", async () => {
-      const cloneName = uniqueName("delete-clone");
-      const vault = JSON.stringify({ description: "delete test clone" });
+    test('should delete a clone', async () => {
+      const cloneName = uniqueName('delete-clone');
+      const vault = JSON.stringify({ description: 'delete test clone' });
       await ctx.runner.run([
-        "ceph",
-        "clone",
-        "create",
+        'ceph',
+        'clone',
+        'create',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
 
       const result = await ctx.runner.run([
-        "ceph",
-        "clone",
-        "delete",
+        'ceph',
+        'clone',
+        'delete',
         cloneName,
-        "--snapshot",
+        '--snapshot',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--force",
+        '--force',
       ]);
 
       expectEditionSuccess(result);

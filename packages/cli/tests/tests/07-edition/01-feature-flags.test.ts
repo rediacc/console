@@ -1,11 +1,11 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from '@playwright/test';
 import {
   createEditionContext,
   type EditionTestContext,
   FEATURE_MATRIX,
   isFeatureAvailable,
   type SubscriptionPlan,
-} from "../../src/utils/edition";
+} from '../../src/utils/edition';
 
 /**
  * Edition Feature Flags Tests
@@ -13,8 +13,8 @@ import {
  * Tests that verify feature flags returned by the dashboard/organization API
  * correctly reflect the subscription edition.
  */
-test.describe("Feature Flags by Edition @cli @edition", () => {
-  const allEditions: SubscriptionPlan[] = ["COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"];
+test.describe('Feature Flags by Edition @cli @edition', () => {
+  const allEditions: SubscriptionPlan[] = ['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'];
 
   for (const plan of allEditions) {
     test.describe(`${plan} edition feature flags`, () => {
@@ -25,14 +25,14 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         ctx = await createEditionContext(plan);
 
         // Try to get dashboard/organization info
-        const infoResult = await ctx.runner.run(["organization", "info"]);
+        const infoResult = await ctx.runner.run(['organization', 'info']);
 
-        if (infoResult.success && infoResult.json && typeof infoResult.json === "object") {
+        if (infoResult.success && infoResult.json && typeof infoResult.json === 'object') {
           dashboardData = infoResult.json as Record<string, unknown>;
         } else {
           // Try alternate command if organization info doesn't exist
-          const dashResult = await ctx.runner.run(["dashboard"]);
-          if (dashResult.success && dashResult.json && typeof dashResult.json === "object") {
+          const dashResult = await ctx.runner.run(['dashboard']);
+          if (dashResult.success && dashResult.json && typeof dashResult.json === 'object') {
             dashboardData = dashResult.json as Record<string, unknown>;
           }
         }
@@ -42,11 +42,11 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         await ctx?.cleanup();
       });
 
-      test("should return feature flags in API response", async () => {
+      test('should return feature flags in API response', () => {
         if (!dashboardData) {
           console.warn(
             `Dashboard/organization info command not available for ${plan} edition test. ` +
-              "Skipping feature flag verification."
+              'Skipping feature flag verification.'
           );
           return;
         }
@@ -54,12 +54,12 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         expect(dashboardData).toBeDefined();
       });
 
-      test("should report correct HasAdvancedAnalytics flag", async () => {
+      test('should report correct HasAdvancedAnalytics flag', () => {
         if (!dashboardData) {
           return;
         }
 
-        const expected = isFeatureAvailable("advancedAnalytics", plan);
+        const expected = isFeatureAvailable('advancedAnalytics', plan);
         const featureAccess = dashboardData.featureAccess as Record<string, boolean> | undefined;
         const actual = featureAccess?.HasAdvancedAnalytics ?? dashboardData.HasAdvancedAnalytics;
 
@@ -68,12 +68,12 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         }
       });
 
-      test("should report correct HasPrioritySupport flag", async () => {
+      test('should report correct HasPrioritySupport flag', () => {
         if (!dashboardData) {
           return;
         }
 
-        const expected = isFeatureAvailable("prioritySupport", plan);
+        const expected = isFeatureAvailable('prioritySupport', plan);
         const featureAccess = dashboardData.featureAccess as Record<string, boolean> | undefined;
         const actual = featureAccess?.HasPrioritySupport ?? dashboardData.HasPrioritySupport;
 
@@ -82,12 +82,12 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         }
       });
 
-      test("should report correct Ceph flag", async () => {
+      test('should report correct Ceph flag', () => {
         if (!dashboardData) {
           return;
         }
 
-        const expected = isFeatureAvailable("ceph", plan);
+        const expected = isFeatureAvailable('ceph', plan);
         const featureAccess = dashboardData.featureAccess as Record<string, boolean> | undefined;
         const actual = featureAccess?.Ceph ?? dashboardData.Ceph;
 
@@ -96,12 +96,12 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         }
       });
 
-      test("should report correct AuditLog flag", async () => {
+      test('should report correct AuditLog flag', () => {
         if (!dashboardData) {
           return;
         }
 
-        const expected = isFeatureAvailable("auditLog", plan);
+        const expected = isFeatureAvailable('auditLog', plan);
         const featureAccess = dashboardData.featureAccess as Record<string, boolean> | undefined;
         const actual = featureAccess?.AuditLog ?? dashboardData.AuditLog;
 
@@ -110,12 +110,12 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         }
       });
 
-      test("should report correct AdvancedQueue flag", async () => {
+      test('should report correct AdvancedQueue flag', () => {
         if (!dashboardData) {
           return;
         }
 
-        const expected = isFeatureAvailable("advancedQueue", plan);
+        const expected = isFeatureAvailable('advancedQueue', plan);
         const featureAccess = dashboardData.featureAccess as Record<string, boolean> | undefined;
         const actual = featureAccess?.AdvancedQueue ?? dashboardData.AdvancedQueue;
 
@@ -124,12 +124,12 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         }
       });
 
-      test("should report correct HasCustomBranding flag", async () => {
+      test('should report correct HasCustomBranding flag', () => {
         if (!dashboardData) {
           return;
         }
 
-        const expected = isFeatureAvailable("customBranding", plan);
+        const expected = isFeatureAvailable('customBranding', plan);
         const featureAccess = dashboardData.featureAccess as Record<string, boolean> | undefined;
         const actual = featureAccess?.HasCustomBranding ?? dashboardData.HasCustomBranding;
 
@@ -138,12 +138,12 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
         }
       });
 
-      test("should report correct HasDedicatedAccount flag", async () => {
+      test('should report correct HasDedicatedAccount flag', () => {
         if (!dashboardData) {
           return;
         }
 
-        const expected = isFeatureAvailable("dedicatedAccount", plan);
+        const expected = isFeatureAvailable('dedicatedAccount', plan);
         const featureAccess = dashboardData.featureAccess as Record<string, boolean> | undefined;
         const actual = featureAccess?.HasDedicatedAccount ?? dashboardData.HasDedicatedAccount;
 
@@ -154,72 +154,72 @@ test.describe("Feature Flags by Edition @cli @edition", () => {
     });
   }
 
-  test.describe("Feature Flag Matrix Consistency", () => {
-    test("should have Community as the most restricted edition", async () => {
-      expect(isFeatureAvailable("advancedAnalytics", "COMMUNITY")).toBe(false);
-      expect(isFeatureAvailable("ceph", "COMMUNITY")).toBe(false);
-      expect(isFeatureAvailable("queuePriority", "COMMUNITY")).toBe(false);
-      expect(isFeatureAvailable("advancedQueue", "COMMUNITY")).toBe(false);
-      expect(isFeatureAvailable("dedicatedAccount", "COMMUNITY")).toBe(false);
+  test.describe('Feature Flag Matrix Consistency', () => {
+    test('should have Community as the most restricted edition', () => {
+      expect(isFeatureAvailable('advancedAnalytics', 'COMMUNITY')).toBe(false);
+      expect(isFeatureAvailable('ceph', 'COMMUNITY')).toBe(false);
+      expect(isFeatureAvailable('queuePriority', 'COMMUNITY')).toBe(false);
+      expect(isFeatureAvailable('advancedQueue', 'COMMUNITY')).toBe(false);
+      expect(isFeatureAvailable('dedicatedAccount', 'COMMUNITY')).toBe(false);
     });
 
-    test("should have Professional as mid-tier with some features", async () => {
-      expect(isFeatureAvailable("permissionGroups", "PROFESSIONAL")).toBe(true);
-      expect(isFeatureAvailable("prioritySupport", "PROFESSIONAL")).toBe(true);
-      expect(isFeatureAvailable("auditLog", "PROFESSIONAL")).toBe(true);
-      expect(isFeatureAvailable("customBranding", "PROFESSIONAL")).toBe(true);
+    test('should have Professional as mid-tier with some features', () => {
+      expect(isFeatureAvailable('permissionGroups', 'PROFESSIONAL')).toBe(true);
+      expect(isFeatureAvailable('prioritySupport', 'PROFESSIONAL')).toBe(true);
+      expect(isFeatureAvailable('auditLog', 'PROFESSIONAL')).toBe(true);
+      expect(isFeatureAvailable('customBranding', 'PROFESSIONAL')).toBe(true);
 
-      expect(isFeatureAvailable("ceph", "PROFESSIONAL")).toBe(false);
-      expect(isFeatureAvailable("queuePriority", "PROFESSIONAL")).toBe(false);
-      expect(isFeatureAvailable("advancedQueue", "PROFESSIONAL")).toBe(false);
+      expect(isFeatureAvailable('ceph', 'PROFESSIONAL')).toBe(false);
+      expect(isFeatureAvailable('queuePriority', 'PROFESSIONAL')).toBe(false);
+      expect(isFeatureAvailable('advancedQueue', 'PROFESSIONAL')).toBe(false);
     });
 
-    test("should have Business with most features except dedicated account", async () => {
-      expect(isFeatureAvailable("permissionGroups", "BUSINESS")).toBe(true);
-      expect(isFeatureAvailable("ceph", "BUSINESS")).toBe(true);
-      expect(isFeatureAvailable("queuePriority", "BUSINESS")).toBe(true);
-      expect(isFeatureAvailable("advancedAnalytics", "BUSINESS")).toBe(true);
-      expect(isFeatureAvailable("advancedQueue", "BUSINESS")).toBe(true);
+    test('should have Business with most features except dedicated account', () => {
+      expect(isFeatureAvailable('permissionGroups', 'BUSINESS')).toBe(true);
+      expect(isFeatureAvailable('ceph', 'BUSINESS')).toBe(true);
+      expect(isFeatureAvailable('queuePriority', 'BUSINESS')).toBe(true);
+      expect(isFeatureAvailable('advancedAnalytics', 'BUSINESS')).toBe(true);
+      expect(isFeatureAvailable('advancedQueue', 'BUSINESS')).toBe(true);
 
-      expect(isFeatureAvailable("dedicatedAccount", "BUSINESS")).toBe(false);
+      expect(isFeatureAvailable('dedicatedAccount', 'BUSINESS')).toBe(false);
     });
 
-    test("should have Enterprise with all features", async () => {
-      expect(isFeatureAvailable("permissionGroups", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("ceph", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("queuePriority", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("advancedAnalytics", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("advancedQueue", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("dedicatedAccount", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("prioritySupport", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("auditLog", "ENTERPRISE")).toBe(true);
-      expect(isFeatureAvailable("customBranding", "ENTERPRISE")).toBe(true);
+    test('should have Enterprise with all features', () => {
+      expect(isFeatureAvailable('permissionGroups', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('ceph', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('queuePriority', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('advancedAnalytics', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('advancedQueue', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('dedicatedAccount', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('prioritySupport', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('auditLog', 'ENTERPRISE')).toBe(true);
+      expect(isFeatureAvailable('customBranding', 'ENTERPRISE')).toBe(true);
     });
   });
 
-  test.describe("Feature Availability Helper Functions", () => {
-    test("isFeatureAvailable should return correct values", async () => {
-      expect(isFeatureAvailable("permissionGroups", "COMMUNITY")).toBe(false);
-      expect(isFeatureAvailable("permissionGroups", "PROFESSIONAL")).toBe(true);
+  test.describe('Feature Availability Helper Functions', () => {
+    test('isFeatureAvailable should return correct values', () => {
+      expect(isFeatureAvailable('permissionGroups', 'COMMUNITY')).toBe(false);
+      expect(isFeatureAvailable('permissionGroups', 'PROFESSIONAL')).toBe(true);
 
-      expect(isFeatureAvailable("ceph", "PROFESSIONAL")).toBe(false);
-      expect(isFeatureAvailable("ceph", "BUSINESS")).toBe(true);
+      expect(isFeatureAvailable('ceph', 'PROFESSIONAL')).toBe(false);
+      expect(isFeatureAvailable('ceph', 'BUSINESS')).toBe(true);
 
-      expect(isFeatureAvailable("dedicatedAccount", "BUSINESS")).toBe(false);
-      expect(isFeatureAvailable("dedicatedAccount", "ENTERPRISE")).toBe(true);
+      expect(isFeatureAvailable('dedicatedAccount', 'BUSINESS')).toBe(false);
+      expect(isFeatureAvailable('dedicatedAccount', 'ENTERPRISE')).toBe(true);
     });
 
-    test("FEATURE_MATRIX should define all expected features", async () => {
+    test('FEATURE_MATRIX should define all expected features', () => {
       const expectedFeatures = [
-        "permissionGroups",
-        "ceph",
-        "queuePriority",
-        "advancedAnalytics",
-        "prioritySupport",
-        "auditLog",
-        "advancedQueue",
-        "customBranding",
-        "dedicatedAccount",
+        'permissionGroups',
+        'ceph',
+        'queuePriority',
+        'advancedAnalytics',
+        'prioritySupport',
+        'auditLog',
+        'advancedQueue',
+        'customBranding',
+        'dedicatedAccount',
       ];
 
       for (const feature of expectedFeatures) {

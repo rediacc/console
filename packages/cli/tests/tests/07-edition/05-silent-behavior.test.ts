@@ -1,5 +1,4 @@
-import { test, expect } from "@playwright/test";
-import { CliTestRunner } from "../../src/utils/CliTestRunner";
+import { expect, test } from '@playwright/test';
 import {
   createEditionContext,
   type EditionTestContext,
@@ -7,10 +6,10 @@ import {
   extractTaskId,
   getEditionsWithFeature,
   getEditionsWithoutFeature,
-  uniqueName,
   sleep,
   TEST_MACHINE_VAULT,
-} from "../../src/utils/edition";
+  uniqueName,
+} from '../../src/utils/edition';
 
 /**
  * Edition Silent Behavior Tests
@@ -18,13 +17,13 @@ import {
  * Tests for features that behave differently by edition without returning errors.
  * These features silently adjust behavior rather than blocking operations.
  */
-test.describe("Silent Edition Behavior @cli @edition", () => {
-  test.describe("Queue Priority Behavior", () => {
+test.describe('Silent Edition Behavior @cli @edition', () => {
+  test.describe('Queue Priority Behavior', () => {
     // Non-Business/Enterprise editions: Priority is silently reset to 4 (default)
     // Business/Enterprise editions: Custom priorities (1-5) are respected
 
-    const restrictedEditions = getEditionsWithoutFeature("queuePriority");
-    const unrestrictedEditions = getEditionsWithFeature("queuePriority");
+    const restrictedEditions = getEditionsWithoutFeature('queuePriority');
+    const unrestrictedEditions = getEditionsWithFeature('queuePriority');
 
     for (const plan of restrictedEditions) {
       test.describe(`${plan} edition - priority silently reset`, () => {
@@ -39,54 +38,54 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
 
           const teamResult = await ctx.runner.teamList();
           const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-          teamName = teams[0]?.teamName ?? "Private Team";
+          teamName = teams[0]?.teamName ?? 'Private Team';
 
           // Get region first, then bridges
-          const regionResult = await ctx.runner.run(["region", "list"]);
+          const regionResult = await ctx.runner.run(['region', 'list']);
           const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-          const regionName = regions[0]?.regionName ?? "Default Region";
+          const regionName = regions[0]?.regionName ?? 'Default Region';
 
-          const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+          const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
           const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-          bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+          bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
 
-          machineName = uniqueName("priority-machine");
+          machineName = uniqueName('priority-machine');
           await ctx.runner.run([
-            "machine",
-            "create",
+            'machine',
+            'create',
             machineName,
-            "--team",
+            '--team',
             teamName,
-            "--bridge",
+            '--bridge',
             bridgeName,
-            "--vault",
+            '--vault',
             TEST_MACHINE_VAULT,
           ]);
         });
 
         test.afterAll(async () => {
           for (const taskId of createdTaskIds) {
-            await ctx.runner.run(["cancel", taskId]).catch(() => {});
+            await ctx.runner.run(['cancel', taskId]).catch(() => {});
           }
           await sleep(1000);
           await ctx.runner
-            .run(["machine", "delete", machineName, "--team", teamName, "--force"])
+            .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
             .catch(() => {});
           await ctx?.cleanup();
         });
 
-        test("should accept priority parameter without error", async () => {
+        test('should accept priority parameter without error', async () => {
           const result = await ctx.runner.run([
-            "run",
-            "machine_ping",
-            "--team",
+            'run',
+            'machine_ping',
+            '--team',
             teamName,
-            "--machine",
+            '--machine',
             machineName,
-            "--bridge",
+            '--bridge',
             bridgeName,
-            "--priority",
-            "2",
+            '--priority',
+            '2',
           ]);
 
           expectEditionSuccess(result);
@@ -97,24 +96,24 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
           }
         });
 
-        test("should reset custom priority to default (4)", async () => {
+        test('should reset custom priority to default (4)', async () => {
           const createResult = await ctx.runner.run([
-            "run",
-            "machine_ping",
-            "--team",
+            'run',
+            'machine_ping',
+            '--team',
             teamName,
-            "--machine",
+            '--machine',
             machineName,
-            "--bridge",
+            '--bridge',
             bridgeName,
-            "--priority",
-            "2",
+            '--priority',
+            '2',
           ]);
 
           expectEditionSuccess(createResult);
 
           const taskId = extractTaskId(createResult.stdout);
-          expect(taskId, "Failed to extract task ID from output").toBeTruthy();
+          expect(taskId, 'Failed to extract task ID from output').toBeTruthy();
           createdTaskIds.push(taskId);
 
           await sleep(500);
@@ -136,18 +135,18 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
           }
         });
 
-        test("should accept priority 1 without modification", async () => {
+        test('should accept priority 1 without modification', async () => {
           const createResult = await ctx.runner.run([
-            "run",
-            "machine_ping",
-            "--team",
+            'run',
+            'machine_ping',
+            '--team',
             teamName,
-            "--machine",
+            '--machine',
             machineName,
-            "--bridge",
+            '--bridge',
             bridgeName,
-            "--priority",
-            "1",
+            '--priority',
+            '1',
           ]);
 
           expectEditionSuccess(createResult);
@@ -173,60 +172,60 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
 
           const teamResult = await ctx.runner.teamList();
           const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-          teamName = teams[0]?.teamName ?? "Private Team";
+          teamName = teams[0]?.teamName ?? 'Private Team';
 
           // Get region first, then bridges
-          const regionResult = await ctx.runner.run(["region", "list"]);
+          const regionResult = await ctx.runner.run(['region', 'list']);
           const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-          const regionName = regions[0]?.regionName ?? "Default Region";
+          const regionName = regions[0]?.regionName ?? 'Default Region';
 
-          const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+          const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
           const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-          bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+          bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
 
-          machineName = uniqueName("priority-machine");
+          machineName = uniqueName('priority-machine');
           await ctx.runner.run([
-            "machine",
-            "create",
+            'machine',
+            'create',
             machineName,
-            "--team",
+            '--team',
             teamName,
-            "--bridge",
+            '--bridge',
             bridgeName,
-            "--vault",
+            '--vault',
             TEST_MACHINE_VAULT,
           ]);
         });
 
         test.afterAll(async () => {
           for (const taskId of createdTaskIds) {
-            await ctx.runner.run(["cancel", taskId]).catch(() => {});
+            await ctx.runner.run(['cancel', taskId]).catch(() => {});
           }
           await sleep(1000);
           await ctx.runner
-            .run(["machine", "delete", machineName, "--team", teamName, "--force"])
+            .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
             .catch(() => {});
           await ctx?.cleanup();
         });
 
-        test("should respect custom priority 2", async () => {
+        test('should respect custom priority 2', async () => {
           const createResult = await ctx.runner.run([
-            "run",
-            "machine_ping",
-            "--team",
+            'run',
+            'machine_ping',
+            '--team',
             teamName,
-            "--machine",
+            '--machine',
             machineName,
-            "--bridge",
+            '--bridge',
             bridgeName,
-            "--priority",
-            "2",
+            '--priority',
+            '2',
           ]);
 
           expectEditionSuccess(createResult);
 
           const taskId = extractTaskId(createResult.stdout);
-          expect(taskId, "Failed to extract task ID from output").toBeTruthy();
+          expect(taskId, 'Failed to extract task ID from output').toBeTruthy();
           createdTaskIds.push(taskId);
 
           await sleep(500);
@@ -242,20 +241,20 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
           }
         });
 
-        test("should respect all priority levels (1-5)", async () => {
+        test('should respect all priority levels (1-5)', async () => {
           const priorities = [1, 3, 5];
 
           for (const priority of priorities) {
             const createResult = await ctx.runner.run([
-              "run",
-              "machine_ping",
-              "--team",
+              'run',
+              'machine_ping',
+              '--team',
               teamName,
-              "--machine",
+              '--machine',
               machineName,
-              "--bridge",
+              '--bridge',
               bridgeName,
-              "--priority",
+              '--priority',
               String(priority),
             ]);
 
@@ -273,8 +272,8 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
     }
   });
 
-  test.describe("Concurrent Tasks Per Machine Throttling", () => {
-    test.describe("COMMUNITY edition - 1 task per machine", () => {
+  test.describe('Concurrent Tasks Per Machine Throttling', () => {
+    test.describe('COMMUNITY edition - 1 task per machine', () => {
       let ctx: EditionTestContext;
       let teamName: string;
       let bridgeName: string;
@@ -282,58 +281,58 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
       const createdTaskIds: string[] = [];
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("COMMUNITY");
+        ctx = await createEditionContext('COMMUNITY');
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? "Private Team";
+        teamName = teams[0]?.teamName ?? 'Private Team';
 
         // Get region first, then bridges
-        const regionResult = await ctx.runner.run(["region", "list"]);
+        const regionResult = await ctx.runner.run(['region', 'list']);
         const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-        const regionName = regions[0]?.regionName ?? "Default Region";
+        const regionName = regions[0]?.regionName ?? 'Default Region';
 
-        const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+        const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
         const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-        bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+        bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
 
-        machineName = uniqueName("concurrent-machine");
+        machineName = uniqueName('concurrent-machine');
         await ctx.runner.run([
-          "machine",
-          "create",
+          'machine',
+          'create',
           machineName,
-          "--team",
+          '--team',
           teamName,
-          "--bridge",
+          '--bridge',
           bridgeName,
-          "--vault",
+          '--vault',
           TEST_MACHINE_VAULT,
         ]);
       });
 
       test.afterAll(async () => {
         for (const taskId of createdTaskIds) {
-          await ctx.runner.run(["cancel", taskId]).catch(() => {});
+          await ctx.runner.run(['cancel', taskId]).catch(() => {});
         }
         await sleep(1000);
         await ctx.runner
-          .run(["machine", "delete", machineName, "--team", teamName, "--force"])
+          .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
           .catch(() => {});
         await ctx?.cleanup();
       });
 
-      test("should accept multiple tasks (they queue, not reject)", async () => {
+      test('should accept multiple tasks (they queue, not reject)', async () => {
         // Submit multiple tasks - they should all be accepted
         // but only 1 will run at a time for Community edition
         for (let i = 0; i < 3; i++) {
           const result = await ctx.runner.run([
-            "run",
-            "machine_ping",
-            "--team",
+            'run',
+            'machine_ping',
+            '--team',
             teamName,
-            "--machine",
+            '--machine',
             machineName,
-            "--bridge",
+            '--bridge',
             bridgeName,
           ]);
 
@@ -351,24 +350,24 @@ test.describe("Silent Edition Behavior @cli @edition", () => {
     });
   });
 
-  test.describe("Audit Log Retention by Edition", () => {
-    test.describe("COMMUNITY edition - 7 day retention", () => {
+  test.describe('Audit Log Retention by Edition', () => {
+    test.describe('COMMUNITY edition - 7 day retention', () => {
       let ctx: EditionTestContext;
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("COMMUNITY");
+        ctx = await createEditionContext('COMMUNITY');
       });
 
       test.afterAll(async () => {
         await ctx?.cleanup();
       });
 
-      test("should allow accessing audit logs", async () => {
-        const result = await ctx.runner.run(["audit", "list", "--limit", "10"]);
+      test('should allow accessing audit logs', async () => {
+        const result = await ctx.runner.run(['audit', 'list', '--limit', '10']);
 
         // Audit may require specific permissions or may not have CLI command
-        if (!result.success && result.stderr.includes("unknown command")) {
-          console.warn("Audit CLI command not available - skipping test");
+        if (!result.success && result.stderr.includes('unknown command')) {
+          console.warn('Audit CLI command not available - skipping test');
           return;
         }
 

@@ -1,14 +1,14 @@
-import { test, expect } from "@playwright/test";
-import { CliTestRunner } from "../../src/utils/CliTestRunner";
+import { expect, test } from '@playwright/test';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
 
-test.describe("Shortcut Commands @cli @operations", () => {
+test.describe('Shortcut Commands @cli @operations', () => {
   let runner: CliTestRunner;
   let teamName: string;
 
   test.beforeAll(async () => {
     const contextName = process.env.CLI_MASTER_CONTEXT;
     if (!contextName) {
-      throw new Error("CLI_MASTER_CONTEXT not set - global setup may have failed");
+      throw new Error('CLI_MASTER_CONTEXT not set - global setup may have failed');
     }
 
     runner = CliTestRunner.withContext(contextName);
@@ -23,21 +23,21 @@ test.describe("Shortcut Commands @cli @operations", () => {
     teamName = teams[0].teamName;
   });
 
-  test.describe("trace shortcut", () => {
-    test("should trace a task if queue items exist", async () => {
+  test.describe('trace shortcut', () => {
+    test('should trace a task if queue items exist', async () => {
       // First get a queue item (requires --team)
-      const listResult = await runner.run(["queue", "list", "--team", teamName, "--limit", "1"]);
+      const listResult = await runner.run(['queue', 'list', '--team', teamName, '--limit', '1']);
       if (!listResult.success) {
         // No queue items to trace - skip the trace part
         return;
       }
       const items = listResult.json as { taskId: string }[];
 
-      if (items && items.length > 0) {
+      if (items.length > 0) {
         const taskId = items[0].taskId;
 
         // Use the shortcut command
-        const result = await runner.run(["trace", taskId]);
+        const result = await runner.run(['trace', taskId]);
 
         expect(runner.isSuccess(result)).toBe(true);
       }
@@ -45,29 +45,32 @@ test.describe("Shortcut Commands @cli @operations", () => {
   });
 
   // Note: run, cancel, retry shortcuts require specific setup
-  test.describe.skip("run shortcut", () => {
-    test("should run a function via shortcut", async () => {
-      const result = await runner.run([
-        "run",
-        "test-function",
-        "--team",
-        teamName,
-        "--machine",
-        "test-machine",
-      ]);
-      expect(result.exitCode).toBe(0);
+  test.describe
+    .skip('run shortcut', () => {
+      test('should run a function via shortcut', async () => {
+        const result = await runner.run([
+          'run',
+          'test-function',
+          '--team',
+          teamName,
+          '--machine',
+          'test-machine',
+        ]);
+        expect(result.exitCode).toBe(0);
+      });
     });
-  });
 
-  test.describe.skip("cancel shortcut", () => {
-    test("should cancel a task via shortcut", async () => {
-      // Requires an active task to cancel
+  test.describe
+    .skip('cancel shortcut', () => {
+      test('should cancel a task via shortcut', async () => {
+        // Requires an active task to cancel
+      });
     });
-  });
 
-  test.describe.skip("retry shortcut", () => {
-    test("should retry a failed task via shortcut", async () => {
-      // Requires a failed task to retry
+  test.describe
+    .skip('retry shortcut', () => {
+      test('should retry a failed task via shortcut', async () => {
+        // Requires a failed task to retry
+      });
     });
-  });
 });

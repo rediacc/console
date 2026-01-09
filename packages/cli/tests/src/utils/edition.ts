@@ -5,12 +5,12 @@
  * resource limits, and subscription-specific behavior.
  */
 
-import { expect } from "@playwright/test";
-import { randomBytes } from "crypto";
-import { CliTestRunner, type CliResult } from "./CliTestRunner";
-import { TEST_EMAIL_DOMAIN, DEFAULT_API_URL, CI_ACTIVATION_CODE } from "../constants";
+import { randomBytes } from 'crypto';
+import { expect } from '@playwright/test';
+import { CI_ACTIVATION_CODE, DEFAULT_API_URL, TEST_EMAIL_DOMAIN } from '../constants';
+import { type CliResult, CliTestRunner } from './CliTestRunner';
 
-export type SubscriptionPlan = "COMMUNITY" | "PROFESSIONAL" | "BUSINESS" | "ENTERPRISE";
+export type SubscriptionPlan = 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 
 export interface TestAccount {
   organizationName: string;
@@ -38,7 +38,7 @@ export interface EditionTestContext {
  * @param plan Optional subscription plan (defaults to COMMUNITY)
  */
 export function generateTestAccount(plan?: SubscriptionPlan): TestAccount {
-  const id = randomBytes(4).toString("hex");
+  const id = randomBytes(4).toString('hex');
   return {
     organizationName: `TestOrg-${id}`,
     email: `test-${id}@${TEST_EMAIL_DOMAIN}`,
@@ -63,7 +63,7 @@ export function uniqueName(prefix: string): string {
  * @returns EditionTestContext with account details and cleanup function
  */
 export async function createEditionContext(plan: SubscriptionPlan): Promise<EditionTestContext> {
-  const apiUrl = process.env.CLI_API_URL || DEFAULT_API_URL;
+  const apiUrl = process.env.CLI_API_URL ?? DEFAULT_API_URL;
   const account = generateTestAccount(plan);
 
   // Create a base runner without context
@@ -71,12 +71,14 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
 
   // Create CLI context for isolated credentials
   const contextResult = await baseRunner.run(
-    ["context", "create", account.contextName, "--api-url", apiUrl],
-    { context: "" }
+    ['context', 'create', account.contextName, '--api-url', apiUrl],
+    { context: '' }
   );
 
   if (!contextResult.success) {
-    throw new Error(`Failed to create context for ${plan}: ${baseRunner.getErrorMessage(contextResult)}`);
+    throw new Error(
+      `Failed to create context for ${plan}: ${baseRunner.getErrorMessage(contextResult)}`
+    );
   }
 
   // Create runner with the new context
@@ -84,21 +86,19 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
 
   // Register with plan
   const registerArgs = [
-    "auth",
-    "register",
-    "--organization",
+    'auth',
+    'register',
+    '--organization',
     account.organizationName,
-    "-e",
+    '-e',
     account.email,
-    "-p",
+    '-p',
     account.password,
-    "--endpoint",
+    '--endpoint',
     apiUrl,
   ];
 
-  if (plan) {
-    registerArgs.push("--plan", plan);
-  }
+  registerArgs.push('--plan', plan);
 
   const registerResult = await runner.run(registerArgs);
   if (!registerResult.success) {
@@ -107,15 +107,15 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
 
   // Activate with CI_MODE activation code
   const activateResult = await runner.run([
-    "auth",
-    "activate",
-    "-e",
+    'auth',
+    'activate',
+    '-e',
     account.email,
-    "-p",
+    '-p',
     account.password,
-    "--code",
+    '--code',
     CI_ACTIVATION_CODE,
-    "--endpoint",
+    '--endpoint',
     apiUrl,
   ]);
 
@@ -125,12 +125,12 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
 
   // Login
   const loginResult = await runner.run([
-    "login",
-    "-e",
+    'login',
+    '-e',
     account.email,
-    "-p",
+    '-p',
     account.password,
-    "--endpoint",
+    '--endpoint',
     apiUrl,
   ]);
 
@@ -145,9 +145,11 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
     runner,
     cleanup: async () => {
       // Logout from this context
-      await runner.run(["logout"]).catch(() => {});
+      await runner.run(['logout']).catch(() => {});
       // Delete the context (no --force flag for context delete)
-      await baseRunner.run(["context", "delete", account.contextName], { context: "" }).catch(() => {});
+      await baseRunner
+        .run(['context', 'delete', account.contextName], { context: '' })
+        .catch(() => {});
     },
   };
 }
@@ -158,21 +160,21 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
  */
 export const EditionErrorPatterns = {
   // 402 Payment Required - Feature blocks
-  CEPH_NOT_AVAILABLE: "only available for ENTERPRISE and BUSINESS",
-  CEPH_POOL_LIMIT_BUSINESS: "Business plan customers are limited to 1 Ceph pool",
-  PERMISSION_GROUP_COMMUNITY: "not available in the Community edition",
-  RESOURCE_LIMIT_EXCEEDED: "Resource limit exceeded",
+  CEPH_NOT_AVAILABLE: 'only available for ENTERPRISE and BUSINESS',
+  CEPH_POOL_LIMIT_BUSINESS: 'Business plan customers are limited to 1 Ceph pool',
+  PERMISSION_GROUP_COMMUNITY: 'not available in the Community edition',
+  RESOURCE_LIMIT_EXCEEDED: 'Resource limit exceeded',
 
   // Specific resource limit messages
-  BRIDGE_LIMIT_EXCEEDED: "Resource limit exceeded for customer bridges",
-  MACHINE_LIMIT_EXCEEDED: "Resource limit exceeded for machines",
-  REPOSITORY_LIMIT_EXCEEDED: "Resource limit exceeded",
+  BRIDGE_LIMIT_EXCEEDED: 'Resource limit exceeded for customer bridges',
+  MACHINE_LIMIT_EXCEEDED: 'Resource limit exceeded for machines',
+  REPOSITORY_LIMIT_EXCEEDED: 'Resource limit exceeded',
 
   // 429 Too Many Requests - Rate limits
-  TOO_MANY_PENDING_ITEMS: "too many pending queue items",
+  TOO_MANY_PENDING_ITEMS: 'too many pending queue items',
 
   // Generic upgrade message
-  UPGRADE_REQUIRED: "Please upgrade",
+  UPGRADE_REQUIRED: 'Please upgrade',
 } as const;
 
 /**
@@ -231,15 +233,15 @@ export const RESOURCE_LIMITS = {
  * Feature availability matrix by edition.
  */
 export const FEATURE_MATRIX = {
-  permissionGroups: ["PROFESSIONAL", "BUSINESS", "ENTERPRISE"],
-  ceph: ["BUSINESS", "ENTERPRISE"],
-  queuePriority: ["BUSINESS", "ENTERPRISE"],
-  advancedAnalytics: ["BUSINESS", "ENTERPRISE"],
-  prioritySupport: ["PROFESSIONAL", "BUSINESS", "ENTERPRISE"],
-  auditLog: ["PROFESSIONAL", "BUSINESS", "ENTERPRISE"],
-  advancedQueue: ["BUSINESS", "ENTERPRISE"],
-  customBranding: ["PROFESSIONAL", "BUSINESS", "ENTERPRISE"],
-  dedicatedAccount: ["ENTERPRISE"],
+  permissionGroups: ['PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'],
+  ceph: ['BUSINESS', 'ENTERPRISE'],
+  queuePriority: ['BUSINESS', 'ENTERPRISE'],
+  advancedAnalytics: ['BUSINESS', 'ENTERPRISE'],
+  prioritySupport: ['PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'],
+  auditLog: ['PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'],
+  advancedQueue: ['BUSINESS', 'ENTERPRISE'],
+  customBranding: ['PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'],
+  dedicatedAccount: ['ENTERPRISE'],
 } as const;
 
 export type FeatureName = keyof typeof FEATURE_MATRIX;
@@ -250,9 +252,9 @@ export type FeatureName = keyof typeof FEATURE_MATRIX;
  * The IP is a valid format but not necessarily a real machine.
  */
 export const TEST_MACHINE_VAULT = JSON.stringify({
-  IP: "192.168.111.99",
-  USER: "testuser",
-  DATASTORE: "/mnt/test",
+  IP: '192.168.111.99',
+  USER: 'testuser',
+  DATASTORE: '/mnt/test',
 });
 
 /**
@@ -289,7 +291,7 @@ export function expectEditionError(
   ).toBe(expectedExitCode);
 
   const errorResponse = result.json as { success: false; error: { message: string } } | null;
-  const errorMsg = errorResponse?.error?.message || result.stderr || result.stdout;
+  const errorMsg = errorResponse?.error.message ?? result.stderr ?? result.stdout;
 
   expect(
     errorMsg.toLowerCase(),
@@ -302,7 +304,7 @@ export function expectEditionError(
  */
 export function expectEditionSuccess(result: CliResult): void {
   const errorResponse = result.json as { success: false; error: { message: string } } | null;
-  const errorMsg = errorResponse?.error?.message || result.stderr;
+  const errorMsg = errorResponse?.error.message ?? result.stderr;
   expect(result.success, `Expected success but got failure. Error: ${errorMsg}`).toBe(true);
 }
 
@@ -317,7 +319,7 @@ export function getEditionsWithFeature(feature: FeatureName): SubscriptionPlan[]
  * Get all editions that do NOT have access to a feature
  */
 export function getEditionsWithoutFeature(feature: FeatureName): SubscriptionPlan[] {
-  const allEditions: SubscriptionPlan[] = ["COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"];
+  const allEditions: SubscriptionPlan[] = ['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'];
   const withFeature = FEATURE_MATRIX[feature] as readonly string[];
   return allEditions.filter((edition) => !withFeature.includes(edition));
 }
@@ -327,7 +329,7 @@ export function getEditionsWithoutFeature(feature: FeatureName): SubscriptionPla
  */
 export function extractTaskId(stdout: string): string {
   const match = stdout.match(/Task ID:\s*([a-f0-9-]+)/i);
-  return match?.[1] ?? "";
+  return match?.[1] ?? '';
 }
 
 /**
@@ -342,7 +344,7 @@ export function sleep(ms: number): Promise<void> {
  */
 export function getResourceLimit(
   plan: SubscriptionPlan,
-  resource: keyof (typeof RESOURCE_LIMITS)["COMMUNITY"]
+  resource: keyof (typeof RESOURCE_LIMITS)['COMMUNITY']
 ): number {
   return RESOURCE_LIMITS[plan][resource];
 }

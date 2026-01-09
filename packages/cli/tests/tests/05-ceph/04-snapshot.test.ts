@@ -4,16 +4,16 @@
  * Tests for Ceph RBD snapshot CRUD operations.
  */
 
-import { test, expect } from "@playwright/test";
+import { expect, test } from '@playwright/test';
 import {
   createEditionContext,
   type EditionTestContext,
   expectEditionSuccess,
   uniqueName,
-} from "../../src/utils/edition";
+} from '../../src/utils/edition';
 
-test.describe("Ceph Snapshot Commands @cli @ceph", () => {
-  test.describe("ENTERPRISE edition - snapshot operations", () => {
+test.describe('Ceph Snapshot Commands @cli @ceph', () => {
+  test.describe('ENTERPRISE edition - snapshot operations', () => {
     let ctx: EditionTestContext;
     let teamName: string;
     let clusterName: string;
@@ -23,61 +23,61 @@ test.describe("Ceph Snapshot Commands @cli @ceph", () => {
     const createdSnapshots: string[] = [];
 
     test.beforeAll(async () => {
-      ctx = await createEditionContext("ENTERPRISE");
+      ctx = await createEditionContext('ENTERPRISE');
 
       // Get team
       const teamResult = await ctx.runner.teamList();
       const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-      teamName = teams[0]?.teamName ?? "Private Team";
+      teamName = teams[0]?.teamName ?? 'Private Team';
 
       // Get region and bridge
-      const regionResult = await ctx.runner.run(["region", "list"]);
+      const regionResult = await ctx.runner.run(['region', 'list']);
       const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-      const regionName = regions[0]?.regionName ?? "Default Region";
+      const regionName = regions[0]?.regionName ?? 'Default Region';
 
-      const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+      const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
       const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-      const bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+      const bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
 
       // Create machine
-      machineName = uniqueName("snapshot-test-machine");
+      machineName = uniqueName('snapshot-test-machine');
       await ctx.runner.run([
-        "machine",
-        "create",
+        'machine',
+        'create',
         machineName,
-        "--team",
+        '--team',
         teamName,
-        "--bridge",
+        '--bridge',
         bridgeName,
       ]);
 
       // Create cluster, pool, and image
-      clusterName = uniqueName("snapshot-test-cluster");
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+      clusterName = uniqueName('snapshot-test-cluster');
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
 
-      poolName = uniqueName("snapshot-test-pool");
+      poolName = uniqueName('snapshot-test-pool');
       await ctx.runner.run([
-        "ceph",
-        "pool",
-        "create",
+        'ceph',
+        'pool',
+        'create',
         poolName,
-        "--cluster",
+        '--cluster',
         clusterName,
-        "--team",
+        '--team',
         teamName,
       ]);
 
-      imageName = uniqueName("snapshot-test-image");
+      imageName = uniqueName('snapshot-test-image');
       await ctx.runner.run([
-        "ceph",
-        "image",
-        "create",
+        'ceph',
+        'image',
+        'create',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--machine",
+        '--machine',
         machineName,
       ]);
     });
@@ -87,17 +87,17 @@ test.describe("Ceph Snapshot Commands @cli @ceph", () => {
       for (const snapshot of createdSnapshots) {
         await ctx.runner
           .run([
-            "ceph",
-            "snapshot",
-            "delete",
+            'ceph',
+            'snapshot',
+            'delete',
             snapshot,
-            "--image",
+            '--image',
             imageName,
-            "--pool",
+            '--pool',
             poolName,
-            "--team",
+            '--team',
             teamName,
-            "--force",
+            '--force',
           ])
           .catch(() => {});
       }
@@ -105,51 +105,51 @@ test.describe("Ceph Snapshot Commands @cli @ceph", () => {
       // Cleanup image
       await ctx.runner
         .run([
-          "ceph",
-          "image",
-          "delete",
+          'ceph',
+          'image',
+          'delete',
           imageName,
-          "--pool",
+          '--pool',
           poolName,
-          "--team",
+          '--team',
           teamName,
-          "--force",
+          '--force',
         ])
         .catch(() => {});
 
       // Cleanup pool and cluster
       await ctx.runner
-        .run(["ceph", "pool", "delete", poolName, "--team", teamName, "--force"])
+        .run(['ceph', 'pool', 'delete', poolName, '--team', teamName, '--force'])
         .catch(() => {});
-      await ctx.runner.run(["ceph", "cluster", "delete", clusterName, "--force"]).catch(() => {});
+      await ctx.runner.run(['ceph', 'cluster', 'delete', clusterName, '--force']).catch(() => {});
 
       // Cleanup machine
       await ctx.runner
-        .run(["machine", "delete", machineName, "--team", teamName, "--force"])
+        .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
         .catch(() => {});
 
       await ctx?.cleanup();
     });
 
-    test("should list snapshots (initially empty)", async () => {
-      const result = await ctx.runner.run(["ceph", "snapshot", "list"]);
+    test('should list snapshots (initially empty)', async () => {
+      const result = await ctx.runner.run(['ceph', 'snapshot', 'list']);
 
       expectEditionSuccess(result);
       expect(result.json).toBeInstanceOf(Array);
     });
 
-    test("should create a snapshot", async () => {
-      const snapshotName = uniqueName("test-snapshot");
+    test('should create a snapshot', async () => {
+      const snapshotName = uniqueName('test-snapshot');
       const result = await ctx.runner.run([
-        "ceph",
-        "snapshot",
-        "create",
+        'ceph',
+        'snapshot',
+        'create',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
       ]);
 
@@ -157,21 +157,21 @@ test.describe("Ceph Snapshot Commands @cli @ceph", () => {
       createdSnapshots.push(snapshotName);
     });
 
-    test("should create a snapshot with vault", async () => {
-      const snapshotName = uniqueName("snapshot-with-vault");
+    test('should create a snapshot with vault', async () => {
+      const snapshotName = uniqueName('snapshot-with-vault');
       const vault = JSON.stringify({ timestamp: Date.now() });
       const result = await ctx.runner.run([
-        "ceph",
-        "snapshot",
-        "create",
+        'ceph',
+        'snapshot',
+        'create',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--vault",
+        '--vault',
         vault,
       ]);
 
@@ -179,24 +179,24 @@ test.describe("Ceph Snapshot Commands @cli @ceph", () => {
       createdSnapshots.push(snapshotName);
     });
 
-    test("should list snapshots with filters", async () => {
-      const snapshotName = uniqueName("filter-snapshot");
+    test('should list snapshots with filters', async () => {
+      const snapshotName = uniqueName('filter-snapshot');
       await ctx.runner.run([
-        "ceph",
-        "snapshot",
-        "create",
+        'ceph',
+        'snapshot',
+        'create',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
       ]);
       createdSnapshots.push(snapshotName);
 
       // Filter by image
-      const result = await ctx.runner.run(["ceph", "snapshot", "list", "--image", imageName]);
+      const result = await ctx.runner.run(['ceph', 'snapshot', 'list', '--image', imageName]);
 
       expectEditionSuccess(result);
       const snapshots = ctx.runner.expectSuccessArray<{
@@ -209,8 +209,8 @@ test.describe("Ceph Snapshot Commands @cli @ceph", () => {
       expect(found, `Expected to find snapshot "${snapshotName}" in filtered list`).toBe(true);
     });
 
-    test("should list snapshots filtered by pool", async () => {
-      const result = await ctx.runner.run(["ceph", "snapshot", "list", "--pool", poolName]);
+    test('should list snapshots filtered by pool', async () => {
+      const result = await ctx.runner.run(['ceph', 'snapshot', 'list', '--pool', poolName]);
 
       expectEditionSuccess(result);
       const snapshots = ctx.runner.expectSuccessArray<{ poolName: string }>(result);
@@ -219,33 +219,33 @@ test.describe("Ceph Snapshot Commands @cli @ceph", () => {
       }
     });
 
-    test("should delete a snapshot", async () => {
-      const snapshotName = uniqueName("delete-snapshot");
+    test('should delete a snapshot', async () => {
+      const snapshotName = uniqueName('delete-snapshot');
       await ctx.runner.run([
-        "ceph",
-        "snapshot",
-        "create",
+        'ceph',
+        'snapshot',
+        'create',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
       ]);
 
       const result = await ctx.runner.run([
-        "ceph",
-        "snapshot",
-        "delete",
+        'ceph',
+        'snapshot',
+        'delete',
         snapshotName,
-        "--image",
+        '--image',
         imageName,
-        "--pool",
+        '--pool',
         poolName,
-        "--team",
+        '--team',
         teamName,
-        "--force",
+        '--force',
       ]);
 
       expectEditionSuccess(result);

@@ -4,10 +4,10 @@
  * Provides utilities for creating test contexts, managing SSH keys,
  * and cleaning up after tests.
  */
-import * as fs from "fs/promises";
-import * as os from "os";
-import * as path from "path";
-import { CliTestRunner, type CliResult } from "./CliTestRunner";
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
+import { type CliResult, CliTestRunner } from './CliTestRunner';
 
 /**
  * Configuration for local mode E2E testing.
@@ -34,14 +34,14 @@ export function getE2EConfig(): E2EConfig {
   const vm1Ip = process.env.E2E_VM1_IP;
   const vm2Ip = process.env.E2E_VM2_IP;
   const sshUser = process.env.E2E_SSH_USER;
-  const sshKeyPath = process.env.E2E_SSH_KEY ?? "~/.ssh/id_rsa";
+  const sshKeyPath = process.env.E2E_SSH_KEY ?? '~/.ssh/id_rsa';
 
   const enabled = !!(vm1Ip && sshUser);
 
   return {
-    vm1Ip: vm1Ip ?? "192.168.111.11",
-    vm2Ip: vm2Ip ?? "192.168.111.12",
-    sshUser: sshUser ?? "root",
+    vm1Ip: vm1Ip ?? '192.168.111.11',
+    vm2Ip: vm2Ip ?? '192.168.111.12',
+    sshUser: sshUser ?? 'root',
     sshKeyPath,
     enabled,
   };
@@ -50,7 +50,7 @@ export function getE2EConfig(): E2EConfig {
 /**
  * Create a test local context with standard configuration.
  */
-export async function createTestLocalContext(
+export function createTestLocalContext(
   name: string,
   options?: {
     sshKeyPath?: string;
@@ -58,11 +58,11 @@ export async function createTestLocalContext(
   }
 ): Promise<CliResult> {
   const runner = new CliTestRunner();
-  const sshKey = options?.sshKeyPath ?? "~/.ssh/id_rsa";
-  const args = ["context", "create-local", name, "--ssh-key", sshKey];
+  const sshKey = options?.sshKeyPath ?? '~/.ssh/id_rsa';
+  const args = ['context', 'create-local', name, '--ssh-key', sshKey];
 
   if (options?.renetPath) {
-    args.push("--renet-path", options.renetPath);
+    args.push('--renet-path', options.renetPath);
   }
 
   return runner.run(args);
@@ -71,7 +71,7 @@ export async function createTestLocalContext(
 /**
  * Add a test machine to a local context.
  */
-export async function addTestMachine(
+export function addTestMachine(
   contextName: string,
   name: string,
   ip: string,
@@ -82,14 +82,14 @@ export async function addTestMachine(
   }
 ): Promise<CliResult> {
   const runner = CliTestRunner.withContext(contextName);
-  const args = ["context", "add-machine", name, "--ip", ip, "--user", user];
+  const args = ['context', 'add-machine', name, '--ip', ip, '--user', user];
 
   if (options?.port) {
-    args.push("--port", String(options.port));
+    args.push('--port', String(options.port));
   }
 
   if (options?.datastore) {
-    args.push("--datastore", options.datastore);
+    args.push('--datastore', options.datastore);
   }
 
   return runner.run(args);
@@ -114,22 +114,22 @@ export async function setupE2EEnvironment(
   });
 
   // Add real VMs
-  await addTestMachine(contextName, "vm1", config.vm1Ip, config.sshUser);
+  await addTestMachine(contextName, 'vm1', config.vm1Ip, config.sshUser);
 
   if (config.vm2Ip) {
-    await addTestMachine(contextName, "vm2", config.vm2Ip, config.sshUser);
+    await addTestMachine(contextName, 'vm2', config.vm2Ip, config.sshUser);
   }
 
   return async () => {
     const runner = new CliTestRunner();
-    await runner.run(["context", "delete", contextName]);
+    await runner.run(['context', 'delete', contextName]);
   };
 }
 
 /**
  * Execute a function in local mode and return the result.
  */
-export async function runLocalFunction(
+export function runLocalFunction(
   functionName: string,
   machineName: string,
   options?: {
@@ -143,16 +143,16 @@ export async function runLocalFunction(
     ? CliTestRunner.withContext(options.contextName)
     : new CliTestRunner();
 
-  const args = ["run", functionName, "--machine", machineName];
+  const args = ['run', functionName, '--machine', machineName];
 
   if (options?.params) {
     for (const [key, value] of Object.entries(options.params)) {
-      args.push("--param", `${key}=${value}`);
+      args.push('--param', `${key}=${value}`);
     }
   }
 
   if (options?.debug) {
-    args.push("--debug");
+    args.push('--debug');
   }
 
   return runner.run(args, { timeout: options?.timeout });
@@ -189,7 +189,7 @@ export function sleep(ms: number): Promise<void> {
  * Check if SSH key exists and is readable.
  */
 export async function checkSSHKeyExists(keyPath: string): Promise<boolean> {
-  const expandedPath = keyPath.startsWith("~")
+  const expandedPath = keyPath.startsWith('~')
     ? path.join(os.homedir(), keyPath.slice(1))
     : keyPath;
 
@@ -204,7 +204,7 @@ export async function checkSSHKeyExists(keyPath: string): Promise<boolean> {
 /**
  * Generate a unique test context name.
  */
-export function generateTestContextName(prefix = "test"): string {
+export function generateTestContextName(prefix = 'test'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -219,13 +219,13 @@ export function isSuccessfulResult(result: CliResult): boolean {
  * Extract error message from CLI result.
  */
 export function getErrorFromResult(result: CliResult): string {
-  if (result.json && typeof result.json === "object") {
+  if (result.json && typeof result.json === 'object') {
     const json = result.json as { error?: { message?: string } };
     if (json.error?.message) {
       return json.error.message;
     }
   }
-  return result.stderr || result.stdout || "Unknown error";
+  return result.stderr ?? result.stdout ?? 'Unknown error';
 }
 
 /**
@@ -234,7 +234,7 @@ export function getErrorFromResult(result: CliResult): string {
  */
 export function assertSuccess(result: CliResult, message?: string): void {
   if (!isSuccessfulResult(result)) {
-    const errorMsg = message ?? "CLI command failed";
+    const errorMsg = message ?? 'CLI command failed';
     const details = getErrorFromResult(result);
     throw new Error(`${errorMsg}: ${details}`);
   }
@@ -247,7 +247,7 @@ export async function cleanupContexts(...contextNames: string[]): Promise<void> 
   const runner = new CliTestRunner();
   for (const name of contextNames) {
     try {
-      await runner.run(["context", "delete", name]);
+      await runner.run(['context', 'delete', name]);
     } catch {
       // Ignore errors during cleanup
     }

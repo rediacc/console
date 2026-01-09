@@ -1,11 +1,11 @@
-import { test, expect } from "@playwright/test";
-import { CliTestRunner } from "../../src/utils/CliTestRunner";
-import { expectError, ErrorPatterns, nonExistentName } from "../../src/utils/errors";
+import { expect, test } from '@playwright/test';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
+import { ErrorPatterns, expectError, nonExistentName } from '../../src/utils/errors';
 
 /**
  * Negative test cases for team commands.
  */
-test.describe("Team Error Scenarios @cli @errors", () => {
+test.describe('Team Error Scenarios @cli @errors', () => {
   let runner: CliTestRunner;
   let currentUserEmail: string;
   let defaultTeamName: string;
@@ -13,7 +13,7 @@ test.describe("Team Error Scenarios @cli @errors", () => {
   test.beforeAll(async () => {
     const contextName = process.env.CLI_MASTER_CONTEXT;
     if (!contextName) {
-      throw new Error("CLI_MASTER_CONTEXT not set - global setup may have failed");
+      throw new Error('CLI_MASTER_CONTEXT not set - global setup may have failed');
     }
 
     runner = CliTestRunner.withContext(contextName);
@@ -26,12 +26,11 @@ test.describe("Team Error Scenarios @cli @errors", () => {
 
     const teamsResult = await runner.teamList();
     const teams = runner.expectSuccessArray<{ teamName: string }>(teamsResult);
-    defaultTeamName =
-      teams.find((t) => t.teamName !== "Private Team")?.teamName ?? "Private Team";
+    defaultTeamName = teams.find((t) => t.teamName !== 'Private Team')?.teamName ?? 'Private Team';
   });
 
-  test.describe("CreateTeam errors", () => {
-    test("should fail when creating team with duplicate name", async () => {
+  test.describe('CreateTeam errors', () => {
+    test('should fail when creating team with duplicate name', async () => {
       const teamName = `error-test-dup-${Date.now()}`;
 
       // Create the team first
@@ -53,30 +52,30 @@ test.describe("Team Error Scenarios @cli @errors", () => {
     });
   });
 
-  test.describe("DeleteTeam errors", () => {
-    test("should fail when deleting non-existent team", async () => {
-      const result = await runner.run(["team", "delete", nonExistentName("team"), "--force"]);
+  test.describe('DeleteTeam errors', () => {
+    test('should fail when deleting non-existent team', async () => {
+      const result = await runner.run(['team', 'delete', nonExistentName('team'), '--force']);
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
     });
 
-    test("should fail when deleting Private Team (system entity)", async () => {
-      const result = await runner.run(["team", "delete", "Private Team", "--force"]);
+    test('should fail when deleting Private Team (system entity)', async () => {
+      const result = await runner.run(['team', 'delete', 'Private Team', '--force']);
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_CANNOT_DELETE_DEFAULT });
     });
   });
 
-  test.describe("RenameTeam errors", () => {
-    test("should fail when renaming non-existent team", async () => {
-      const result = await runner.teamRename(nonExistentName("team"), "new-name");
+  test.describe('RenameTeam errors', () => {
+    test('should fail when renaming non-existent team', async () => {
+      const result = await runner.teamRename(nonExistentName('team'), 'new-name');
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
     });
 
-    test("should fail when renaming Private Team (system entity)", async () => {
-      const result = await runner.teamRename("Private Team", "New Name");
+    test('should fail when renaming Private Team (system entity)', async () => {
+      const result = await runner.teamRename('Private Team', 'New Name');
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_CANNOT_RENAME_DEFAULT });
     });
 
-    test("should fail when renaming to an existing team name", async () => {
+    test('should fail when renaming to an existing team name', async () => {
       const tempTeamName = `error-test-rename-${Date.now()}`;
 
       // Create a temp team
@@ -87,7 +86,7 @@ test.describe("Team Error Scenarios @cli @errors", () => {
 
       try {
         // Try to rename temp team to "Private Team" (which exists)
-        const renameResult = await runner.teamRename(tempTeamName, "Private Team");
+        const renameResult = await runner.teamRename(tempTeamName, 'Private Team');
         expectError(runner, renameResult, { messageContains: ErrorPatterns.TEAM_ALREADY_EXISTS });
       } finally {
         // Cleanup
@@ -96,61 +95,63 @@ test.describe("Team Error Scenarios @cli @errors", () => {
     });
   });
 
-  test.describe("Team member list errors", () => {
-    test("should return empty list for non-existent team", async () => {
-      const result = await runner.run(["team", "member", "list", nonExistentName("team")]);
+  test.describe('Team member list errors', () => {
+    test('should return empty list for non-existent team', async () => {
+      const result = await runner.run(['team', 'member', 'list', nonExistentName('team')]);
       // API returns success with empty array for non-existent team
       expect(result.success).toBe(true);
       expect(result.json).toEqual([]);
     });
   });
 
-  test.describe("Team member add errors", () => {
-    test("should fail when adding user to non-existent team", async () => {
+  test.describe('Team member add errors', () => {
+    test('should fail when adding user to non-existent team', async () => {
       const result = await runner.run([
-        "team",
-        "member",
-        "add",
-        nonExistentName("team"),
-        "test@example.com",
+        'team',
+        'member',
+        'add',
+        nonExistentName('team'),
+        'test@example.com',
       ]);
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
     });
 
-    test("should fail when adding non-existent user to team", async () => {
+    test('should fail when adding non-existent user to team', async () => {
       const result = await runner.run([
-        "team",
-        "member",
-        "add",
+        'team',
+        'member',
+        'add',
         defaultTeamName,
-        "nonexistent-user@nowhere.invalid",
+        'nonexistent-user@nowhere.invalid',
       ]);
-      expectError(runner, result, { messageContains: ErrorPatterns.USER_NOT_FOUND_IN_ORGANIZATION });
+      expectError(runner, result, {
+        messageContains: ErrorPatterns.USER_NOT_FOUND_IN_ORGANIZATION,
+      });
     });
 
-    test("should fail when adding user who is already a member", async () => {
-      const result = await runner.run(["team", "member", "add", defaultTeamName, currentUserEmail]);
+    test('should fail when adding user who is already a member', async () => {
+      const result = await runner.run(['team', 'member', 'add', defaultTeamName, currentUserEmail]);
       expectError(runner, result, { messageContains: ErrorPatterns.USER_ALREADY_MEMBER });
     });
   });
 
-  test.describe("Team member remove errors", () => {
-    test("should fail when removing user from non-existent team", async () => {
+  test.describe('Team member remove errors', () => {
+    test('should fail when removing user from non-existent team', async () => {
       const result = await runner.run([
-        "team",
-        "member",
-        "remove",
-        nonExistentName("team"),
-        "test@example.com",
+        'team',
+        'member',
+        'remove',
+        nonExistentName('team'),
+        'test@example.com',
       ]);
       expectError(runner, result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
     });
 
-    test("should fail when removing yourself from team", async () => {
+    test('should fail when removing yourself from team', async () => {
       const result = await runner.run([
-        "team",
-        "member",
-        "remove",
+        'team',
+        'member',
+        'remove',
         defaultTeamName,
         currentUserEmail,
       ]);

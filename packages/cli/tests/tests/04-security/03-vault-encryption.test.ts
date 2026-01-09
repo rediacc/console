@@ -1,36 +1,36 @@
-import { test, expect } from "@playwright/test";
-import { createVaultEncryptor, isEncrypted } from "@rediacc/shared/encryption";
-import { nodeCryptoProvider } from "../../../src/adapters/crypto.js";
+import { expect, test } from '@playwright/test';
+import { createVaultEncryptor, isEncrypted } from '@rediacc/shared/encryption';
+import { nodeCryptoProvider } from '../../../src/adapters/crypto.js';
 
-test.describe("Vault Encryption Integration @cli @security", () => {
+test.describe('Vault Encryption Integration @cli @security', () => {
   const encryptor = createVaultEncryptor(nodeCryptoProvider);
-  const masterPassword = "test-master-password-secure!";
+  const masterPassword = 'test-master-password-secure!';
 
-  test.describe("vault field encryption", () => {
-    test("should encrypt vault fields and leave others untouched", async () => {
+  test.describe('vault field encryption', () => {
+    test('should encrypt vault fields and leave others untouched', async () => {
       const data = {
-        name: "test-machine",
-        machineVault: JSON.stringify({ ip: "192.168.1.1", user: "admin" }),
-        status: "active",
+        name: 'test-machine',
+        machineVault: JSON.stringify({ ip: '192.168.1.1', user: 'admin' }),
+        status: 'active',
       };
 
       const encrypted = await encryptor.encrypt(data, masterPassword);
 
       // Non-vault fields should be unchanged
-      expect(encrypted.name).toBe("test-machine");
-      expect(encrypted.status).toBe("active");
+      expect(encrypted.name).toBe('test-machine');
+      expect(encrypted.status).toBe('active');
 
       // Vault field should be encrypted (different from original)
-      expect(typeof encrypted.machineVault).toBe("string");
+      expect(typeof encrypted.machineVault).toBe('string');
       expect(encrypted.machineVault).not.toBe(data.machineVault);
-      expect(encrypted.machineVault).not.toContain("192.168.1.1");
+      expect(encrypted.machineVault).not.toContain('192.168.1.1');
       expect(isEncrypted(encrypted.machineVault)).toBe(true);
     });
 
-    test("should decrypt vault fields back to original", async () => {
+    test('should decrypt vault fields back to original', async () => {
       const original = {
-        teamVault: JSON.stringify({ SSH_PRIVATE_KEY: "secret-key-value" }),
-        teamName: "Default",
+        teamVault: JSON.stringify({ SSH_PRIVATE_KEY: 'secret-key-value' }),
+        teamName: 'Default',
       };
 
       const encrypted = await encryptor.encrypt(original, masterPassword);
@@ -40,17 +40,17 @@ test.describe("Vault Encryption Integration @cli @security", () => {
       expect(decrypted.teamVault).toBe(original.teamVault);
     });
 
-    test("should handle multiple vault fields", async () => {
+    test('should handle multiple vault fields', async () => {
       const original = {
-        machineVault: JSON.stringify({ ip: "10.0.0.1" }),
-        teamVault: JSON.stringify({ key: "team-secret" }),
+        machineVault: JSON.stringify({ ip: '10.0.0.1' }),
+        teamVault: JSON.stringify({ key: 'team-secret' }),
         queueVault: JSON.stringify({ params: { a: 1 } }),
-        name: "multi-vault-test",
+        name: 'multi-vault-test',
       };
 
       const encrypted = await encryptor.encrypt(original, masterPassword);
 
-      expect(encrypted.name).toBe("multi-vault-test");
+      expect(encrypted.name).toBe('multi-vault-test');
       expect(isEncrypted(encrypted.machineVault)).toBe(true);
       expect(isEncrypted(encrypted.teamVault)).toBe(true);
       expect(isEncrypted(encrypted.queueVault)).toBe(true);
@@ -59,28 +59,28 @@ test.describe("Vault Encryption Integration @cli @security", () => {
       expect(decrypted).toEqual(original);
     });
 
-    test("should handle nested vault fields in objects", async () => {
+    test('should handle nested vault fields in objects', async () => {
       const original = {
         machine: {
-          machineVault: JSON.stringify({ ip: "192.168.1.100" }),
-          name: "nested-machine",
+          machineVault: JSON.stringify({ ip: '192.168.1.100' }),
+          name: 'nested-machine',
         },
       };
 
       const encrypted = await encryptor.encrypt(original, masterPassword);
 
-      expect(encrypted.machine.name).toBe("nested-machine");
+      expect(encrypted.machine.name).toBe('nested-machine');
       expect(isEncrypted(encrypted.machine.machineVault)).toBe(true);
 
       const decrypted = await encryptor.decrypt(encrypted, masterPassword);
       expect(decrypted).toEqual(original);
     });
 
-    test("should handle vault fields in arrays", async () => {
+    test('should handle vault fields in arrays', async () => {
       const original = {
         items: [
-          { queueVault: JSON.stringify({ param: "value1" }), id: 1 },
-          { queueVault: JSON.stringify({ param: "value2" }), id: 2 },
+          { queueVault: JSON.stringify({ param: 'value1' }), id: 1 },
+          { queueVault: JSON.stringify({ param: 'value2' }), id: 2 },
         ],
       };
 
@@ -96,49 +96,49 @@ test.describe("Vault Encryption Integration @cli @security", () => {
     });
   });
 
-  test.describe("hasVaultFields detection", () => {
-    test("should detect vault fields in simple objects", () => {
-      expect(encryptor.hasVaultFields({ machineVault: "data" })).toBe(true);
-      expect(encryptor.hasVaultFields({ name: "test" })).toBe(false);
+  test.describe('hasVaultFields detection', () => {
+    test('should detect vault fields in simple objects', () => {
+      expect(encryptor.hasVaultFields({ machineVault: 'data' })).toBe(true);
+      expect(encryptor.hasVaultFields({ name: 'test' })).toBe(false);
     });
 
-    test("should detect nested vault fields", () => {
-      expect(encryptor.hasVaultFields({ data: { machineVault: "nested" } })).toBe(true);
+    test('should detect nested vault fields', () => {
+      expect(encryptor.hasVaultFields({ data: { machineVault: 'nested' } })).toBe(true);
     });
 
-    test("should detect vault fields in arrays", () => {
-      expect(encryptor.hasVaultFields([{ queueVault: "item" }])).toBe(true);
+    test('should detect vault fields in arrays', () => {
+      expect(encryptor.hasVaultFields([{ queueVault: 'item' }])).toBe(true);
     });
   });
 
-  test.describe("edge cases", () => {
-    test("should handle null input", async () => {
+  test.describe('edge cases', () => {
+    test('should handle null input', async () => {
       const result = await encryptor.encrypt(null, masterPassword);
       expect(result).toBe(null);
     });
 
-    test("should handle undefined input", async () => {
+    test('should handle undefined input', async () => {
       const result = await encryptor.encrypt(undefined, masterPassword);
       expect(result).toBe(undefined);
     });
 
-    test("should handle empty password (skip encryption)", async () => {
-      const data = { machineVault: "secret" };
-      const result = await encryptor.encrypt(data, "");
+    test('should handle empty password (skip encryption)', async () => {
+      const data = { machineVault: 'secret' };
+      const result = await encryptor.encrypt(data, '');
 
       expect(result).toEqual(data);
     });
 
-    test("should handle empty vault field values", async () => {
-      const data = { machineVault: "", name: "test" };
+    test('should handle empty vault field values', async () => {
+      const data = { machineVault: '', name: 'test' };
       const encrypted = await encryptor.encrypt(data, masterPassword);
 
       // Empty vault values should not be encrypted
-      expect(encrypted.machineVault).toBe("");
+      expect(encrypted.machineVault).toBe('');
     });
 
-    test("should handle re-encryption of already encrypted data", async () => {
-      const original = { machineVault: "secret-data" };
+    test('should handle re-encryption of already encrypted data', async () => {
+      const original = { machineVault: 'secret-data' };
 
       const encrypted1 = await encryptor.encrypt(original, masterPassword);
 
@@ -147,53 +147,53 @@ test.describe("Vault Encryption Integration @cli @security", () => {
 
       // Decrypt should recover original
       const decrypted = await encryptor.decrypt(encrypted1, masterPassword);
-      expect(decrypted.machineVault).toBe("secret-data");
+      expect(decrypted.machineVault).toBe('secret-data');
     });
   });
 
-  test.describe("wrong password handling", () => {
-    test("should fail silently with wrong password (return encrypted value)", async () => {
-      const original = { machineVault: "secret-data" };
+  test.describe('wrong password handling', () => {
+    test('should fail silently with wrong password (return encrypted value)', async () => {
+      const original = { machineVault: 'secret-data' };
       const encrypted = await encryptor.encrypt(original, masterPassword);
 
       // With wrong password, decrypt should fail gracefully and return the encrypted value
-      const result = await encryptor.decrypt(encrypted, "wrong-password");
+      const result = await encryptor.decrypt(encrypted, 'wrong-password');
 
       // The value should still be the encrypted string (not decrypted)
       expect(result.machineVault).toBe(encrypted.machineVault);
     });
   });
 
-  test.describe("realistic vault data", () => {
-    test("should handle machine vault with connection details", async () => {
+  test.describe('realistic vault data', () => {
+    test('should handle machine vault with connection details', async () => {
       const machineData = {
-        machineName: "production-server",
+        machineName: 'production-server',
         machineVault: JSON.stringify({
-          ip: "10.0.0.50",
+          ip: '10.0.0.50',
           port: 22,
-          username: "deploy",
+          username: 'deploy',
           privateKey:
-            "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----",
+            '-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----',
         }),
-        status: "ONLINE",
+        status: 'ONLINE',
       };
 
       const encrypted = await encryptor.encrypt(machineData, masterPassword);
-      expect(encrypted.machineName).toBe("production-server");
+      expect(encrypted.machineName).toBe('production-server');
       expect(isEncrypted(encrypted.machineVault)).toBe(true);
 
       const decrypted = await encryptor.decrypt(encrypted, masterPassword);
       expect(decrypted).toEqual(machineData);
     });
 
-    test("should handle team vault with SSH keys", async () => {
+    test('should handle team vault with SSH keys', async () => {
       const teamData = {
-        teamName: "Development",
+        teamName: 'Development',
         teamVault: JSON.stringify({
           SSH_PRIVATE_KEY:
-            "-----BEGIN OPENSSH PRIVATE KEY-----\nbase64data...\n-----END OPENSSH PRIVATE KEY-----",
-          SSH_PUBLIC_KEY: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ...",
-          DEPLOY_TOKEN: "ghp_xxxxxxxxxxxxxxxxxxxx",
+            '-----BEGIN OPENSSH PRIVATE KEY-----\nbase64data...\n-----END OPENSSH PRIVATE KEY-----',
+          SSH_PUBLIC_KEY: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ...',
+          DEPLOY_TOKEN: 'ghp_xxxxxxxxxxxxxxxxxxxx',
         }),
       };
 
@@ -202,19 +202,19 @@ test.describe("Vault Encryption Integration @cli @security", () => {
       expect(decrypted).toEqual(teamData);
     });
 
-    test("should handle queue vault with task parameters", async () => {
+    test('should handle queue vault with task parameters', async () => {
       const queueData = {
-        taskId: "abc-123",
+        taskId: 'abc-123',
         queueVault: JSON.stringify({
-          function: "backup_deploy",
-          repository: "main-app",
-          version: "1.2.3",
+          function: 'backup_deploy',
+          repository: 'main-app',
+          version: '1.2.3',
           environment: {
-            DATABASE_URL: "postgres://user:pass@host:5432/db",
-            API_KEY: "sk-xxxxxxxxxxxx",
+            DATABASE_URL: 'postgres://user:pass@host:5432/db',
+            API_KEY: 'sk-xxxxxxxxxxxx',
           },
         }),
-        status: "PENDING",
+        status: 'PENDING',
       };
 
       const encrypted = await encryptor.encrypt(queueData, masterPassword);

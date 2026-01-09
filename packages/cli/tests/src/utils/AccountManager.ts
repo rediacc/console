@@ -1,17 +1,17 @@
-import { randomBytes } from "crypto";
-import { CliTestRunner } from "./CliTestRunner.js";
+import { randomBytes } from 'crypto';
 import {
   CI_ACTIVATION_CODE,
+  getApiUrl,
   TEST_CONTEXT_PREFIX,
   TEST_EMAIL_DOMAIN,
   TEST_ORG_PREFIX,
-  getApiUrl,
-} from "../constants.js";
+} from '../constants.js';
+import { CliTestRunner } from './CliTestRunner.js';
 
 /**
  * Subscription plans available for test accounts
  */
-export type SubscriptionPlan = "COMMUNITY" | "PROFESSIONAL" | "BUSINESS" | "ENTERPRISE";
+export type SubscriptionPlan = 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 
 /**
  * Test account credentials and metadata
@@ -45,7 +45,7 @@ export class AccountManager {
    * Each call generates a new unique account.
    */
   generateAccount(plan?: SubscriptionPlan): TestAccount {
-    const id = randomBytes(4).toString("hex");
+    const id = randomBytes(4).toString('hex');
     return {
       organizationName: `${TEST_ORG_PREFIX}${id}`,
       email: `test-${id}@${TEST_EMAIL_DOMAIN}`,
@@ -71,14 +71,16 @@ export class AccountManager {
     const account = this.generateAccount();
     const runner = new CliTestRunner({ apiUrl: this.apiUrl });
 
-    console.log(`[AccountManager] Creating master context: ${account.contextName}`);
-    console.log(`[AccountManager] Email: ${account.email}`);
+    console.warn(`[AccountManager] Creating master context: ${account.contextName}`);
+    console.warn(`[AccountManager] Email: ${account.email}`);
 
     // 1. Create CLI context (allows storing credentials separately)
     const createResult = await runner.run([
-      "context", "create",
+      'context',
+      'create',
       account.contextName,
-      "--api-url", this.apiUrl,
+      '--api-url',
+      this.apiUrl,
     ]);
 
     if (!createResult.success) {
@@ -99,7 +101,7 @@ export class AccountManager {
 
     if (!registerResult.success) {
       // Cleanup context on failure
-      await runner.run(["context", "delete", account.contextName, "--force"]);
+      await runner.run(['context', 'delete', account.contextName, '--force']);
       throw new Error(`Registration failed: ${contextRunner.getErrorMessage(registerResult)}`);
     }
 
@@ -111,7 +113,7 @@ export class AccountManager {
     );
 
     if (!activateResult.success) {
-      await runner.run(["context", "delete", account.contextName, "--force"]);
+      await runner.run(['context', 'delete', account.contextName, '--force']);
       throw new Error(`Activation failed: ${contextRunner.getErrorMessage(activateResult)}`);
     }
 
@@ -119,11 +121,11 @@ export class AccountManager {
     const loginResult = await contextRunner.login(account.email, account.password);
 
     if (!loginResult.success) {
-      await runner.run(["context", "delete", account.contextName, "--force"]);
+      await runner.run(['context', 'delete', account.contextName, '--force']);
       throw new Error(`Login failed: ${contextRunner.getErrorMessage(loginResult)}`);
     }
 
-    console.log(`[AccountManager] Master context created successfully`);
+    console.warn(`[AccountManager] Master context created successfully`);
 
     return account;
   }
@@ -139,13 +141,15 @@ export class AccountManager {
     const account = this.generateAccount(plan);
     const runner = new CliTestRunner({ apiUrl: this.apiUrl });
 
-    console.log(`[AccountManager] Creating edition context: ${account.contextName} (${plan})`);
+    console.warn(`[AccountManager] Creating edition context: ${account.contextName} (${plan})`);
 
     // 1. Create CLI context
     const createResult = await runner.run([
-      "context", "create",
+      'context',
+      'create',
       account.contextName,
-      "--api-url", this.apiUrl,
+      '--api-url',
+      this.apiUrl,
     ]);
 
     if (!createResult.success) {
@@ -164,7 +168,7 @@ export class AccountManager {
     );
 
     if (!registerResult.success) {
-      await runner.run(["context", "delete", account.contextName, "--force"]);
+      await runner.run(['context', 'delete', account.contextName, '--force']);
       throw new Error(`Registration failed: ${contextRunner.getErrorMessage(registerResult)}`);
     }
 
@@ -176,7 +180,7 @@ export class AccountManager {
     );
 
     if (!activateResult.success) {
-      await runner.run(["context", "delete", account.contextName, "--force"]);
+      await runner.run(['context', 'delete', account.contextName, '--force']);
       throw new Error(`Activation failed: ${contextRunner.getErrorMessage(activateResult)}`);
     }
 
@@ -184,11 +188,11 @@ export class AccountManager {
     const loginResult = await contextRunner.login(account.email, account.password);
 
     if (!loginResult.success) {
-      await runner.run(["context", "delete", account.contextName, "--force"]);
+      await runner.run(['context', 'delete', account.contextName, '--force']);
       throw new Error(`Login failed: ${contextRunner.getErrorMessage(loginResult)}`);
     }
 
-    console.log(`[AccountManager] Edition context created successfully`);
+    console.warn(`[AccountManager] Edition context created successfully`);
 
     return account;
   }
@@ -202,15 +206,15 @@ export class AccountManager {
   async cleanupContext(contextName: string): Promise<void> {
     const runner = new CliTestRunner({ apiUrl: this.apiUrl });
 
-    console.log(`[AccountManager] Cleaning up context: ${contextName}`);
+    console.warn(`[AccountManager] Cleaning up context: ${contextName}`);
 
     // Logout (ignore errors - may already be logged out)
-    await runner.run(["logout"], { context: contextName }).catch(() => {});
+    await runner.run(['logout'], { context: contextName }).catch(() => {});
 
     // Delete context (no --force flag needed for context delete)
-    await runner.run(["context", "delete", contextName]).catch(() => {});
+    await runner.run(['context', 'delete', contextName]).catch(() => {});
 
-    console.log(`[AccountManager] Context cleanup complete`);
+    console.warn(`[AccountManager] Context cleanup complete`);
   }
 
   /**
@@ -231,7 +235,7 @@ export class AccountManager {
 
     const regions = runner.expectSuccessArray<{ regionName: string }>(regionsResult);
     if (regions.length === 0) {
-      throw new Error("No default region found after organization registration");
+      throw new Error('No default region found after organization registration');
     }
 
     // Verify default bridge exists
@@ -248,6 +252,6 @@ export class AccountManager {
       );
     }
 
-    console.log(`[AccountManager] Default infrastructure verified (region: ${defaultRegion})`);
+    console.warn(`[AccountManager] Default infrastructure verified (region: ${defaultRegion})`);
   }
 }

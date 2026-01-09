@@ -1,12 +1,12 @@
-import * as test from "@playwright/test";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import * as test from '@playwright/test';
+import dotenv from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * Playwright configuration for CLI tests.
@@ -18,11 +18,11 @@ dotenv.config({ path: path.resolve(__dirname, ".env") });
  * - Each test logs output for TextFileReporter to capture
  */
 export default test.defineConfig({
-  testDir: "./tests",
+  testDir: './tests',
 
   /* Global setup/teardown */
-  globalSetup: path.resolve(__dirname, "./src/base/cli-global-setup.ts"),
-  globalTeardown: path.resolve(__dirname, "./src/base/cli-global-teardown.ts"),
+  globalSetup: path.resolve(__dirname, './src/base/cli-global-setup.ts'),
+  globalTeardown: path.resolve(__dirname, './src/base/cli-global-teardown.ts'),
 
   /* Run tests in files sequentially to preserve ordering in reports */
   fullyParallel: false,
@@ -41,8 +41,8 @@ export default test.defineConfig({
 
   /* Reporters: HTML + text file output per test */
   reporter: [
-    ["html", { outputFolder: "reports/cli" }],
-    ["./src/reporters/TextFileReporter.ts", { outputDir: "reports/cli-logs" }],
+    ['html', { outputFolder: 'reports/cli' }],
+    ['./src/reporters/TextFileReporter.ts', { outputDir: 'reports/cli-logs' }],
   ],
 
   /* No browser needed for CLI tests */
@@ -50,13 +50,13 @@ export default test.defineConfig({
 
   /* Projects for category-based execution */
   projects: [
-    { name: "core", testMatch: "01-core/**/*.test.ts" },
-    { name: "resources", testMatch: "02-resources/**/*.test.ts" },
-    { name: "operations", testMatch: "03-operations/**/*.test.ts" },
-    { name: "security", testMatch: "04-security/**/*.test.ts" },
-    { name: "ceph", testMatch: "05-ceph/**/*.test.ts" },
-    { name: "errors", testMatch: "06-errors/**/*.test.ts" },
-    { name: "edition", testMatch: "07-edition/**/*.test.ts" },
-    { name: "e2e", testMatch: "08-e2e/**/*.test.ts" },
+    { name: 'core', testMatch: '01-core/**/*.test.ts' },
+    { name: 'resources', testMatch: '02-resources/**/*.test.ts' },
+    { name: 'operations', testMatch: '03-operations/**/*.test.ts' },
+    { name: 'security', testMatch: '04-security/**/*.test.ts' },
+    { name: 'ceph', testMatch: '05-ceph/**/*.test.ts' },
+    { name: 'errors', testMatch: '06-errors/**/*.test.ts' },
+    { name: 'edition', testMatch: '07-edition/**/*.test.ts' },
+    { name: 'e2e', testMatch: '08-e2e/**/*.test.ts' },
   ],
 });

@@ -4,55 +4,55 @@
  * Tests for Ceph cluster CRUD operations and vault management.
  */
 
-import { test, expect } from "@playwright/test";
+import { expect, test } from '@playwright/test';
 import {
   createEditionContext,
   type EditionTestContext,
   expectEditionSuccess,
   uniqueName,
-} from "../../src/utils/edition";
+} from '../../src/utils/edition';
 
-test.describe("Ceph Cluster Commands @cli @ceph", () => {
-  test.describe("BUSINESS edition - cluster operations", () => {
+test.describe('Ceph Cluster Commands @cli @ceph', () => {
+  test.describe('BUSINESS edition - cluster operations', () => {
     let ctx: EditionTestContext;
     const createdClusters: string[] = [];
 
     test.beforeAll(async () => {
-      ctx = await createEditionContext("BUSINESS");
+      ctx = await createEditionContext('BUSINESS');
     });
 
     test.afterAll(async () => {
       // Cleanup created clusters
       for (const cluster of createdClusters) {
-        await ctx.runner.run(["ceph", "cluster", "delete", cluster, "--force"]).catch(() => {});
+        await ctx.runner.run(['ceph', 'cluster', 'delete', cluster, '--force']).catch(() => {});
       }
       await ctx?.cleanup();
     });
 
-    test("should list clusters (initially empty)", async () => {
-      const result = await ctx.runner.run(["ceph", "cluster", "list"]);
+    test('should list clusters (initially empty)', async () => {
+      const result = await ctx.runner.run(['ceph', 'cluster', 'list']);
 
       expectEditionSuccess(result);
       expect(result.json).toBeInstanceOf(Array);
     });
 
-    test("should create a cluster", async () => {
-      const clusterName = uniqueName("test-cluster");
-      const result = await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+    test('should create a cluster', async () => {
+      const clusterName = uniqueName('test-cluster');
+      const result = await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
 
       expectEditionSuccess(result);
       createdClusters.push(clusterName);
     });
 
-    test("should create a cluster with vault", async () => {
-      const clusterName = uniqueName("cluster-with-vault");
-      const vault = JSON.stringify({ config: "test" });
+    test('should create a cluster with vault', async () => {
+      const clusterName = uniqueName('cluster-with-vault');
+      const vault = JSON.stringify({ config: 'test' });
       const result = await ctx.runner.run([
-        "ceph",
-        "cluster",
-        "create",
+        'ceph',
+        'cluster',
+        'create',
         clusterName,
-        "--vault",
+        '--vault',
         vault,
       ]);
 
@@ -60,12 +60,12 @@ test.describe("Ceph Cluster Commands @cli @ceph", () => {
       createdClusters.push(clusterName);
     });
 
-    test("should list clusters after creation", async () => {
-      const clusterName = uniqueName("list-test-cluster");
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+    test('should list clusters after creation', async () => {
+      const clusterName = uniqueName('list-test-cluster');
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
       createdClusters.push(clusterName);
 
-      const result = await ctx.runner.run(["ceph", "cluster", "list"]);
+      const result = await ctx.runner.run(['ceph', 'cluster', 'list']);
 
       expectEditionSuccess(result);
       const clusters = ctx.runner.expectSuccessArray<{ clusterName: string }>(result);
@@ -73,13 +73,13 @@ test.describe("Ceph Cluster Commands @cli @ceph", () => {
       expect(found, `Expected to find cluster "${clusterName}" in list`).toBe(true);
     });
 
-    test("should get cluster vault", async () => {
-      const clusterName = uniqueName("vault-get-cluster");
-      const vaultContent = JSON.stringify({ key: "value" });
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName, "--vault", vaultContent]);
+    test('should get cluster vault', async () => {
+      const clusterName = uniqueName('vault-get-cluster');
+      const vaultContent = JSON.stringify({ key: 'value' });
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName, '--vault', vaultContent]);
       createdClusters.push(clusterName);
 
-      const result = await ctx.runner.run(["ceph", "cluster", "vault", "get", clusterName]);
+      const result = await ctx.runner.run(['ceph', 'cluster', 'vault', 'get', clusterName]);
 
       expectEditionSuccess(result);
       const vault = result.json as { clusterName: string; vaultVersion: number };
@@ -87,59 +87,59 @@ test.describe("Ceph Cluster Commands @cli @ceph", () => {
       expect(vault.vaultVersion).toBeGreaterThanOrEqual(0);
     });
 
-    test("should update cluster vault", async () => {
-      const clusterName = uniqueName("vault-update-cluster");
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+    test('should update cluster vault', async () => {
+      const clusterName = uniqueName('vault-update-cluster');
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
       createdClusters.push(clusterName);
 
       // Get current vault version
-      const getResult = await ctx.runner.run(["ceph", "cluster", "vault", "get", clusterName]);
+      const getResult = await ctx.runner.run(['ceph', 'cluster', 'vault', 'get', clusterName]);
       const currentVault = getResult.json as { vaultVersion: number };
 
       // Update vault
       const newVault = JSON.stringify({ updated: true });
       const result = await ctx.runner.run([
-        "ceph",
-        "cluster",
-        "vault",
-        "update",
+        'ceph',
+        'cluster',
+        'vault',
+        'update',
         clusterName,
-        "--vault",
+        '--vault',
         newVault,
-        "--version",
+        '--version',
         String(currentVault.vaultVersion),
       ]);
 
       expectEditionSuccess(result);
     });
 
-    test("should list machines in cluster (initially empty)", async () => {
-      const clusterName = uniqueName("machines-cluster");
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+    test('should list machines in cluster (initially empty)', async () => {
+      const clusterName = uniqueName('machines-cluster');
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
       createdClusters.push(clusterName);
 
-      const result = await ctx.runner.run(["ceph", "cluster", "machines", clusterName]);
+      const result = await ctx.runner.run(['ceph', 'cluster', 'machines', clusterName]);
 
       expectEditionSuccess(result);
       expect(result.json).toBeInstanceOf(Array);
     });
 
-    test("should delete a cluster", async () => {
-      const clusterName = uniqueName("delete-cluster");
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+    test('should delete a cluster', async () => {
+      const clusterName = uniqueName('delete-cluster');
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
 
-      const result = await ctx.runner.run(["ceph", "cluster", "delete", clusterName, "--force"]);
+      const result = await ctx.runner.run(['ceph', 'cluster', 'delete', clusterName, '--force']);
 
       expectEditionSuccess(result);
       // Remove from cleanup list since it's already deleted
     });
 
-    test("should reject duplicate cluster names", async () => {
-      const clusterName = uniqueName("duplicate-cluster");
-      await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+    test('should reject duplicate cluster names', async () => {
+      const clusterName = uniqueName('duplicate-cluster');
+      await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
       createdClusters.push(clusterName);
 
-      const result = await ctx.runner.run(["ceph", "cluster", "create", clusterName]);
+      const result = await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);
 
       expect(result.success).toBe(false);
     });

@@ -1,17 +1,16 @@
-import { test, expect } from "@playwright/test";
-import { CliTestRunner } from "../../src/utils/CliTestRunner";
+import { expect, test } from '@playwright/test';
 import {
   createEditionContext,
   EditionErrorPatterns,
   type EditionTestContext,
   expectEditionError,
-  RESOURCE_LIMITS,
-  uniqueName,
   extractTaskId,
-  sleep,
+  RESOURCE_LIMITS,
   type SubscriptionPlan,
+  sleep,
   TEST_MACHINE_VAULT,
-} from "../../src/utils/edition";
+  uniqueName,
+} from '../../src/utils/edition';
 
 /**
  * Edition Rate Limits Tests
@@ -19,11 +18,11 @@ import {
  * Tests that verify rate limiting is correctly enforced by subscription edition.
  * Rate limits return 429 Too Many Requests when exceeded.
  */
-test.describe("Rate Limits by Edition @cli @edition", () => {
-  test.describe("Pending Queue Items Rate Limit", () => {
+test.describe('Rate Limits by Edition @cli @edition', () => {
+  test.describe('Pending Queue Items Rate Limit', () => {
     const testCases: [SubscriptionPlan, number][] = [
-      ["COMMUNITY", RESOURCE_LIMITS.COMMUNITY.maxPendingPerUser],
-      ["PROFESSIONAL", RESOURCE_LIMITS.PROFESSIONAL.maxPendingPerUser],
+      ['COMMUNITY', RESOURCE_LIMITS.COMMUNITY.maxPendingPerUser],
+      ['PROFESSIONAL', RESOURCE_LIMITS.PROFESSIONAL.maxPendingPerUser],
     ];
 
     for (const [plan, limit] of testCases) {
@@ -39,42 +38,44 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
 
           const teamResult = await ctx.runner.teamList();
           const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-          teamName = teams[0]?.teamName ?? "Private Team";
+          teamName = teams[0]?.teamName ?? 'Private Team';
 
           // Get region first, then bridges
-          const regionResult = await ctx.runner.run(["region", "list"]);
+          const regionResult = await ctx.runner.run(['region', 'list']);
           const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-          const regionName = regions[0]?.regionName ?? "Default Region";
+          const regionName = regions[0]?.regionName ?? 'Default Region';
 
-          const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+          const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
           const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-          bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+          bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
 
-          machineName = uniqueName("rate-machine");
+          machineName = uniqueName('rate-machine');
           const machineResult = await ctx.runner.run([
-            "machine",
-            "create",
+            'machine',
+            'create',
             machineName,
-            "--team",
+            '--team',
             teamName,
-            "--bridge",
+            '--bridge',
             bridgeName,
-            "--vault",
+            '--vault',
             TEST_MACHINE_VAULT,
           ]);
 
           if (!machineResult.success) {
-            throw new Error(`Failed to create test machine: ${ctx.runner.getErrorMessage(machineResult)}`);
+            throw new Error(
+              `Failed to create test machine: ${ctx.runner.getErrorMessage(machineResult)}`
+            );
           }
         });
 
         test.afterAll(async () => {
           for (const taskId of createdTaskIds) {
-            await ctx.runner.run(["cancel", taskId]).catch(() => {});
+            await ctx.runner.run(['cancel', taskId]).catch(() => {});
           }
           await sleep(1000);
           await ctx.runner
-            .run(["machine", "delete", machineName, "--team", teamName, "--force"])
+            .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
             .catch(() => {});
           await ctx?.cleanup();
         });
@@ -84,13 +85,13 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
 
           for (let i = 0; i < limit; i++) {
             const result = await ctx.runner.run([
-              "run",
-              "machine_ping",
-              "--team",
+              'run',
+              'machine_ping',
+              '--team',
               teamName,
-              "--machine",
+              '--machine',
               machineName,
-              "--bridge",
+              '--bridge',
               bridgeName,
             ]);
 
@@ -108,20 +109,22 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
           }
         });
 
-        test("should return 429 when exceeding pending limit", async () => {
+        test('should return 429 when exceeding pending limit', async () => {
           if (createdTaskIds.length < limit) {
-            console.warn(`Skipping 429 test - only created ${createdTaskIds.length}/${limit} items`);
+            console.warn(
+              `Skipping 429 test - only created ${createdTaskIds.length}/${limit} items`
+            );
             return;
           }
 
           const result = await ctx.runner.run([
-            "run",
-            "machine_ping",
-            "--team",
+            'run',
+            'machine_ping',
+            '--team',
             teamName,
-            "--machine",
+            '--machine',
             machineName,
-            "--bridge",
+            '--bridge',
             bridgeName,
           ]);
 
@@ -131,8 +134,8 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
           } else if (result.success) {
             // Tasks may have completed, freeing up slots
             console.warn(
-              "Rate limit not hit - earlier tasks may have completed. " +
-                "This is expected behavior if the bridge is processing tasks quickly."
+              'Rate limit not hit - earlier tasks may have completed. ' +
+                'This is expected behavior if the bridge is processing tasks quickly.'
             );
             const taskId = extractTaskId(result.stdout);
             if (taskId) {
@@ -143,7 +146,7 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
       });
     }
 
-    test.describe("BUSINESS edition - exceeds Community limit", () => {
+    test.describe('BUSINESS edition - exceeds Community limit', () => {
       let ctx: EditionTestContext;
       let teamName: string;
       let bridgeName: string;
@@ -152,42 +155,42 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
       const COMMUNITY_LIMIT = RESOURCE_LIMITS.COMMUNITY.maxPendingPerUser;
 
       test.beforeAll(async () => {
-        ctx = await createEditionContext("BUSINESS");
+        ctx = await createEditionContext('BUSINESS');
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? "Private Team";
+        teamName = teams[0]?.teamName ?? 'Private Team';
 
         // Get region first, then bridges
-        const regionResult = await ctx.runner.run(["region", "list"]);
+        const regionResult = await ctx.runner.run(['region', 'list']);
         const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-        const regionName = regions[0]?.regionName ?? "Default Region";
+        const regionName = regions[0]?.regionName ?? 'Default Region';
 
-        const bridgeResult = await ctx.runner.run(["bridge", "list", "--region", regionName]);
+        const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
         const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-        bridgeName = bridges[0]?.bridgeName ?? "Global Bridges";
+        bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
 
-        machineName = uniqueName("business-rate-machine");
+        machineName = uniqueName('business-rate-machine');
         await ctx.runner.run([
-          "machine",
-          "create",
+          'machine',
+          'create',
           machineName,
-          "--team",
+          '--team',
           teamName,
-          "--bridge",
+          '--bridge',
           bridgeName,
-          "--vault",
+          '--vault',
           TEST_MACHINE_VAULT,
         ]);
       });
 
       test.afterAll(async () => {
         for (const taskId of createdTaskIds) {
-          await ctx.runner.run(["cancel", taskId]).catch(() => {});
+          await ctx.runner.run(['cancel', taskId]).catch(() => {});
         }
         await sleep(1000);
         await ctx.runner
-          .run(["machine", "delete", machineName, "--team", teamName, "--force"])
+          .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
           .catch(() => {});
         await ctx?.cleanup();
       });
@@ -198,13 +201,13 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
 
         for (let i = 0; i < targetCount; i++) {
           const result = await ctx.runner.run([
-            "run",
-            "machine_ping",
-            "--team",
+            'run',
+            'machine_ping',
+            '--team',
             teamName,
-            "--machine",
+            '--machine',
             machineName,
-            "--bridge",
+            '--bridge',
             bridgeName,
           ]);
 
@@ -225,11 +228,11 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
     });
   });
 
-  test.describe("Cross-Edition Rate Limit Comparison", () => {
-    const editions: SubscriptionPlan[] = ["COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"];
+  test.describe('Cross-Edition Rate Limit Comparison', () => {
+    const editions: SubscriptionPlan[] = ['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'];
 
     for (const plan of editions) {
-      test(`should have rate limits defined for ${plan} edition`, async () => {
+      test(`should have rate limits defined for ${plan} edition`, () => {
         const limits = RESOURCE_LIMITS[plan];
 
         expect(limits.maxPendingPerUser).toBeGreaterThan(0);
@@ -237,7 +240,7 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
       });
     }
 
-    test("should have progressively higher pending item limits", async () => {
+    test('should have progressively higher pending item limits', () => {
       expect(RESOURCE_LIMITS.PROFESSIONAL.maxPendingPerUser).toBeGreaterThan(
         RESOURCE_LIMITS.COMMUNITY.maxPendingPerUser
       );
@@ -249,7 +252,7 @@ test.describe("Rate Limits by Edition @cli @edition", () => {
       );
     });
 
-    test("should have progressively higher tasks per machine limits", async () => {
+    test('should have progressively higher tasks per machine limits', () => {
       expect(RESOURCE_LIMITS.PROFESSIONAL.maxTasksPerMachine).toBeGreaterThan(
         RESOURCE_LIMITS.COMMUNITY.maxTasksPerMachine
       );

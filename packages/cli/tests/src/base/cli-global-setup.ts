@@ -1,10 +1,10 @@
-import * as fs from "fs";
-import * as path from "path";
-import { fileURLToPath } from "url";
-import type { FullConfig } from "@playwright/test";
-import { CliTestRunner } from "../utils/CliTestRunner.js";
-import { AccountManager } from "../utils/AccountManager.js";
-import { getApiUrl } from "../constants.js";
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+import { getApiUrl } from '../constants.js';
+import { AccountManager } from '../utils/AccountManager.js';
+import { CliTestRunner } from '../utils/CliTestRunner.js';
+import type { FullConfig } from '@playwright/test';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,14 +13,14 @@ const __dirname = path.dirname(__filename);
  * Ensure .env file exists by copying from .env.example if not present.
  */
 function ensureEnvFile(): void {
-  const testsDir = path.resolve(__dirname, "../..");
-  const envPath = path.join(testsDir, ".env");
-  const envExamplePath = path.join(testsDir, ".env.example");
+  const testsDir = path.resolve(__dirname, '../..');
+  const envPath = path.join(testsDir, '.env');
+  const envExamplePath = path.join(testsDir, '.env.example');
 
   if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
-    console.log("Creating .env from .env.example...");
+    console.warn('Creating .env from .env.example...');
     fs.copyFileSync(envExamplePath, envPath);
-    console.log("Created .env file");
+    console.warn('Created .env file');
   }
 }
 
@@ -43,27 +43,27 @@ async function cliGlobalSetup(_config: FullConfig): Promise<void> {
   // Ensure .env file exists
   ensureEnvFile();
 
-  console.log("");
-  console.log("=".repeat(60));
-  console.log("CLI Test Setup");
-  console.log("=".repeat(60));
+  console.warn('');
+  console.warn('='.repeat(60));
+  console.warn('CLI Test Setup');
+  console.warn('='.repeat(60));
 
   const apiUrl = getApiUrl();
-  console.log(`\nTarget API: ${apiUrl}`);
+  console.warn(`\nTarget API: ${apiUrl}`);
 
   try {
     // Step 1: Validate CLI is working
-    console.log("\nStep 1: Validating CLI...");
+    console.warn('\nStep 1: Validating CLI...');
     const runner = new CliTestRunner({ apiUrl });
 
     const versionResult = await runner.version();
     if (!versionResult.success) {
       throw new Error(`CLI not working: ${runner.getErrorMessage(versionResult)}`);
     }
-    console.log(`  CLI version: ${versionResult.stdout.trim()}`);
+    console.warn(`  CLI version: ${versionResult.stdout.trim()}`);
 
     // Step 2: Create master test context
-    console.log("\nStep 2: Creating master test context...");
+    console.warn('\nStep 2: Creating master test context...');
     const accountManager = new AccountManager(apiUrl);
     const masterAccount = await accountManager.createMasterContext();
 
@@ -72,61 +72,60 @@ async function cliGlobalSetup(_config: FullConfig): Promise<void> {
     process.env.CLI_MASTER_EMAIL = masterAccount.email;
     process.env.CLI_MASTER_PASSWORD = masterAccount.password;
 
-    console.log(`  Context: ${masterAccount.contextName}`);
-    console.log(`  Email: ${masterAccount.email}`);
+    console.warn(`  Context: ${masterAccount.contextName}`);
+    console.warn(`  Email: ${masterAccount.email}`);
 
     // Step 3: Verify default infrastructure
-    console.log("\nStep 3: Verifying default infrastructure...");
+    console.warn('\nStep 3: Verifying default infrastructure...');
     await accountManager.verifyDefaultInfrastructure(masterAccount.contextName);
-    console.log("  Default infrastructure verified");
+    console.warn('  Default infrastructure verified');
 
-    console.log("");
-    console.log("=".repeat(60));
-    console.log("CLI Test Setup Complete");
-    console.log("=".repeat(60));
-    console.log("");
-
+    console.warn('');
+    console.warn('='.repeat(60));
+    console.warn('CLI Test Setup Complete');
+    console.warn('='.repeat(60));
+    console.warn('');
   } catch (error) {
-    console.error("");
-    console.error("=".repeat(60));
-    console.error("Setup failed:", error);
-    console.error("=".repeat(60));
+    console.error('');
+    console.error('='.repeat(60));
+    console.error('Setup failed:', error);
+    console.error('='.repeat(60));
 
     // Write setup error to reports for visibility
     try {
-      const testsDir = path.resolve(__dirname, "../..");
-      const errorLogDir = path.join(testsDir, "reports", "cli-logs");
-      const errorLogPath = path.join(errorLogDir, "setup-error.txt");
+      const testsDir = path.resolve(__dirname, '../..');
+      const errorLogDir = path.join(testsDir, 'reports', 'cli-logs');
+      const errorLogPath = path.join(errorLogDir, 'setup-error.txt');
 
       fs.mkdirSync(errorLogDir, { recursive: true });
 
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : "No stack trace";
+      const errorStack = error instanceof Error ? error.stack : 'No stack trace';
       const timestamp = new Date().toISOString();
 
       const errorContent = [
-        "================================================================================",
-        "GLOBAL SETUP FAILED",
-        "================================================================================",
-        "",
+        '================================================================================',
+        'GLOBAL SETUP FAILED',
+        '================================================================================',
+        '',
         `Timestamp: ${timestamp}`,
         `API URL: ${getApiUrl()}`,
-        "",
-        "----------------------------------------",
-        "ERROR MESSAGE:",
-        "----------------------------------------",
+        '',
+        '----------------------------------------',
+        'ERROR MESSAGE:',
+        '----------------------------------------',
         errorMessage,
-        "",
-        "----------------------------------------",
-        "STACK TRACE:",
-        "----------------------------------------",
-        errorStack ?? "N/A",
-        "",
-        "================================================================================",
-        "Tests did not run because setup failed.",
-        "Fix the setup issue and run tests again.",
-        "================================================================================",
-      ].join("\n");
+        '',
+        '----------------------------------------',
+        'STACK TRACE:',
+        '----------------------------------------',
+        errorStack ?? 'N/A',
+        '',
+        '================================================================================',
+        'Tests did not run because setup failed.',
+        'Fix the setup issue and run tests again.',
+        '================================================================================',
+      ].join('\n');
 
       fs.writeFileSync(errorLogPath, errorContent);
       console.error(`\nSetup error logged to: ${errorLogPath}`);
