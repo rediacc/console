@@ -95,6 +95,7 @@ export default tseslint.config(
             'packages/web/tsconfig.json',
             'packages/shared/tsconfig.json',
             'packages/cli/tsconfig.json',
+            'packages/cli/tests/tsconfig.json',
           ],
           // Suppress warning about multiple tsconfig files (expected in monorepo)
           noWarnOnMultipleProjects: true,

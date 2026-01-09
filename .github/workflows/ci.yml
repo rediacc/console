@@ -351,9 +351,48 @@ jobs:
 
           echo "✓ SSH keys extracted from team vault"
 
+      - name: Create CLI Test Environment
+        working-directory: packages/cli/tests
+        run: |
+          echo "CLI_API_URL=http://localhost/api" > .env
+          echo "CLI_MASTER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "CLI_MASTER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "CLI_TIMEOUT=30000" >> .env
+          echo "CI=true" >> .env
+          echo "DEBUG=false" >> .env
+          echo "✓ Created .env for CLI tests"
+        env:
+          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
+          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
+
       - name: Run CLI Tests
         working-directory: packages/cli
         run: npm test
+
+      - name: Upload CLI Test Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: cli-test-report-${{ github.sha }}
+          path: packages/cli/tests/reports/cli/
+          retention-days: 7
+
+      - name: Upload CLI Test Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: cli-test-logs-${{ github.sha }}
+          path: packages/cli/tests/reports/cli-logs/
+          retention-days: 7
+
+      - name: Upload CLI Test Screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: cli-test-screenshots-${{ github.sha }}
+          path: packages/cli/tests/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Cleanup Elite Services
         if: always()

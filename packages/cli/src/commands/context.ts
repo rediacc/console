@@ -96,7 +96,7 @@ export function registerContextCommands(program: Command): void {
     });
 
   // context current - Show current context name (for scripting)
-  // Returns the context that would be used: from --context flag, REDIACC_CONTEXT env, or "default"
+  // Returns the context that would be used: from --context flag or "default"
   context
     .command('current')
     .description(t('commands.context.current.description'))

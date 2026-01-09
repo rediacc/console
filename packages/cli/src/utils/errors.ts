@@ -1,9 +1,10 @@
+import { ApiClientError } from '@rediacc/shared/api';
 import { CliApiError } from '../services/api.js';
 import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { telemetryService } from '../services/telemetry.js';
 import { type CliError, ValidationError } from '../types/errors.js';
-import { EXIT_CODES, type OutputFormat } from '../types/index.js';
+import { EXIT_CODES, httpStatusToExitCode, type OutputFormat } from '../types/index.js';
 
 // Global output format (set by main program before command execution)
 let currentOutputFormat: OutputFormat = 'table';
@@ -80,6 +81,20 @@ export function normalizeError(error: unknown): CliError {
       message: error.message,
       details: error.details,
       exitCode: error.exitCode,
+    };
+  }
+
+  // Handle ApiClientError (base class) - map HTTP status to exit code
+  // This must come AFTER CliApiError check since CliApiError extends ApiClientError
+  if (error instanceof ApiClientError) {
+    // Map HTTP status code to Unix-compatible exit code
+    const httpStatus = error.response?.failure ?? 0;
+    const exitCode = httpStatus > 0 ? httpStatusToExitCode(httpStatus) : EXIT_CODES.GENERAL_ERROR;
+    return {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      exitCode,
     };
   }
 
