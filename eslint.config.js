@@ -20,6 +20,7 @@ export default tseslint.config(
     ignores: [
       'dist/',
       'packages/*/dist/',
+      'packages/*/dist-typecheck/',
       'packages/*/node_modules/',
       'packages/*/bin/',
       'bin/',
