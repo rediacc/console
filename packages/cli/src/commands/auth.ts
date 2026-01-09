@@ -31,7 +31,7 @@ export function registerAuthCommands(program: Command): void {
     .action(async (options) => {
       try {
         // Determine context name (--save-as overrides current context)
-        const contextName = options.saveAs ?? (await contextService.getCurrentName());
+        const contextName = options.saveAs ?? contextService.getCurrentName();
 
         // Determine API URL
         let apiUrl: string;
@@ -145,7 +145,13 @@ export function registerAuthCommands(program: Command): void {
 
         const result = await withSpinner(
           t('commands.auth.register.registering'),
-          () => authService.register(options.organization, options.email, options.password, options.plan),
+          () =>
+            authService.register(
+              options.organization,
+              options.email,
+              options.password,
+              options.plan
+            ),
           t('commands.auth.register.submitted')
         );
 

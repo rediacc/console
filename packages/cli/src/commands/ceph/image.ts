@@ -55,7 +55,10 @@ export function registerImageCommands(ceph: Command, program: Command): void {
     .requiredOption('--machine <name>', t('options.machine'))
     .option('--vault <content>', t('options.vaultContent'))
     .action(
-      async (name: string, options: { pool: string; team: string; machine: string; vault?: string }) => {
+      async (
+        name: string,
+        options: { pool: string; team: string; machine: string; vault?: string }
+      ) => {
         try {
           await authService.requireAuth();
 

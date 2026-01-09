@@ -22,7 +22,7 @@ class ContextService {
    * Get the effective context name (--context flag or "default").
    * Always returns a context name - never null.
    */
-  private async getEffectiveContextName(): Promise<string> {
+  private getEffectiveContextName(): string {
     // Only two options: --context flag or "default"
     return this.runtimeContextOverride ?? 'default';
   }
@@ -51,7 +51,7 @@ class ContextService {
    * Get the current active context.
    */
   async getCurrent(): Promise<NamedContext | null> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     return this.get(name);
   }
 
@@ -59,7 +59,7 @@ class ContextService {
    * Get the current context name.
    * Always returns a context name (from flag, env var, or "default").
    */
-  async getCurrentName(): Promise<string> {
+  getCurrentName(): string {
     return this.getEffectiveContextName();
   }
 
@@ -167,7 +167,15 @@ class ContextService {
    * Set the token for the current context.
    */
   async setToken(token: string): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
+    const existing = await this.get(name);
+
+    // Skip token save if context doesn't exist yet (e.g., during first login)
+    // The context will be created properly after login completes
+    if (!existing) {
+      return;
+    }
+
     await this.update(name, { token });
   }
 
@@ -183,7 +191,7 @@ class ContextService {
    * Set the master password for the current context.
    */
   async setMasterPassword(password: string): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     await this.update(name, { masterPassword: password });
   }
 
@@ -232,17 +240,17 @@ class ContextService {
   }
 
   async set(key: 'team' | 'region' | 'bridge' | 'machine', value: string): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     await this.update(name, { [key]: value });
   }
 
   async remove(key: 'team' | 'region' | 'bridge' | 'machine'): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     await this.update(name, { [key]: undefined });
   }
 
   async clearDefaults(): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     await this.update(name, {
       team: undefined,
       region: undefined,
@@ -296,7 +304,7 @@ class ContextService {
    * Set the language for the current context.
    */
   async setLanguage(language: string): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     const normalized = this.normalizeLanguage(language);
     await this.update(name, { language: normalized });
   }
@@ -370,7 +378,7 @@ class ContextService {
    * Clear credentials from the current context (logout).
    */
   async clearCredentials(): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     await this.update(name, { token: undefined, masterPassword: undefined });
   }
 
@@ -470,7 +478,7 @@ class ContextService {
    * Add a machine to the current local context.
    */
   async addLocalMachine(machineName: string, config: LocalMachineConfig): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');
@@ -489,7 +497,7 @@ class ContextService {
    * Remove a machine from the current local context.
    */
   async removeLocalMachine(machineName: string): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');
@@ -524,7 +532,7 @@ class ContextService {
    * Update SSH configuration for the current local context.
    */
   async setLocalSSH(ssh: LocalSSHConfig): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');
@@ -536,7 +544,7 @@ class ContextService {
    * Set renet binary path for the current local context.
    */
   async setRenetPath(renetPath: string): Promise<void> {
-    const name = await this.getEffectiveContextName();
+    const name = this.getEffectiveContextName();
     const context = await this.get(name);
     if (context?.mode !== 'local') {
       throw new Error('Current context is not in local mode');

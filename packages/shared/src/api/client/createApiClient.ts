@@ -379,7 +379,11 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
     organizationName: string,
     email: string,
     passwordHash: string,
-    options: { languagePreference?: string; turnstileToken?: string; subscriptionPlan?: string } = {}
+    options: {
+      languagePreference?: string;
+      turnstileToken?: string;
+      subscriptionPlan?: string;
+    } = {}
   ): Promise<ApiResponse> {
     await initialize();
 

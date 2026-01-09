@@ -61,7 +61,7 @@ class AuthService {
     }
 
     // Determine the context name to use
-    const contextName = options.contextName ?? (await contextService.getCurrentName()) ?? 'default';
+    const contextName = options.contextName ?? contextService.getCurrentName();
     const apiUrl = options.apiUrl ?? (await apiClient.getApiUrl());
 
     // Prepare credentials to save

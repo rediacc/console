@@ -100,9 +100,9 @@ export function registerContextCommands(program: Command): void {
   context
     .command('current')
     .description(t('commands.context.current.description'))
-    .action(async () => {
+    .action(() => {
       try {
-        const name = await contextService.getCurrentName();
+        const name = contextService.getCurrentName();
         // eslint-disable-next-line no-console -- Raw output for scripting
         console.log(name);
       } catch (error) {

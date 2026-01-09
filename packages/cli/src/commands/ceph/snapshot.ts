@@ -92,7 +92,10 @@ export function registerSnapshotCommands(ceph: Command, program: Command): void 
     .requiredOption('--team <name>', t('options.team'))
     .option('-f, --force', t('options.force'))
     .action(
-      async (name: string, options: { image: string; pool: string; team: string; force?: boolean }) => {
+      async (
+        name: string,
+        options: { image: string; pool: string; team: string; force?: boolean }
+      ) => {
         try {
           await authService.requireAuth();
 

@@ -124,7 +124,9 @@ export function registerClusterCommands(ceph: Command, program: Command): void {
     });
 
   // cluster vault subcommand
-  const clusterVault = cluster.command('vault').description(t('commands.ceph.cluster.vault.description'));
+  const clusterVault = cluster
+    .command('vault')
+    .description(t('commands.ceph.cluster.vault.description'));
 
   // cluster vault get
   clusterVault

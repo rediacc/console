@@ -27,31 +27,33 @@ export function registerCloneCommands(ceph: Command, program: Command): void {
     .option('--image <name>', t('options.image'))
     .option('--pool <name>', t('options.pool'))
     .option('--team <name>', t('options.team'))
-    .action(async (options: { snapshot?: string; image?: string; pool?: string; team?: string }) => {
-      try {
-        await authService.requireAuth();
+    .action(
+      async (options: { snapshot?: string; image?: string; pool?: string; team?: string }) => {
+        try {
+          await authService.requireAuth();
 
-        const params: GetCephRbdClonesParams = {
-          snapshotName: options.snapshot,
-          imageName: options.image,
-          poolName: options.pool,
-          teamName: options.team,
-        };
+          const params: GetCephRbdClonesParams = {
+            snapshotName: options.snapshot,
+            imageName: options.image,
+            poolName: options.pool,
+            teamName: options.team,
+          };
 
-        const apiResponse = await withSpinner(
-          t('commands.ceph.clone.list.fetching'),
-          () => typedApi.GetCephRbdClones(params),
-          t('commands.ceph.clone.list.success')
-        );
+          const apiResponse = await withSpinner(
+            t('commands.ceph.clone.list.fetching'),
+            () => typedApi.GetCephRbdClones(params),
+            t('commands.ceph.clone.list.success')
+          );
 
-        const clones = parseGetCephRbdClones(apiResponse as never);
-        const format = program.opts().output as OutputFormat;
+          const clones = parseGetCephRbdClones(apiResponse as never);
+          const format = program.opts().output as OutputFormat;
 
-        outputService.print(clones, format);
-      } catch (error) {
-        handleError(error);
+          outputService.print(clones, format);
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // clone create
   clone
