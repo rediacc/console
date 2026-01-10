@@ -2,7 +2,7 @@
 # This is for open-source users who want to run the console independently
 
 # Base image ARGs must be declared before any FROM for multi-stage build
-ARG NODE_IMAGE=node:18-alpine
+ARG NODE_IMAGE=node:22-alpine
 ARG NGINX_IMAGE=nginx:alpine
 
 # Build stage

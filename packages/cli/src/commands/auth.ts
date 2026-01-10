@@ -25,13 +25,14 @@ export function registerAuthCommands(program: Command): void {
     .description(t('commands.auth.login.description'))
     .option('-e, --email <email>', t('options.email'))
     .option('-p, --password <password>', t('options.password'))
+    .option('-m, --master-password <password>', t('options.masterPassword'))
     .option('-n, --name <name>', t('options.sessionName'))
     .option('--endpoint <url>', t('options.endpoint'))
     .option('--save-as <context>', t('options.saveAs'))
     .action(async (options) => {
       try {
         // Determine context name (--save-as overrides current context)
-        const contextName = options.saveAs ?? (await contextService.getCurrentName());
+        const contextName = options.saveAs ?? contextService.getCurrentName();
 
         // Determine API URL
         let apiUrl: string;
@@ -65,6 +66,7 @@ export function registerAuthCommands(program: Command): void {
               sessionName: options.name,
               contextName: contextName ?? 'default',
               apiUrl,
+              masterPassword: options.masterPassword,
             }),
           t('status.success')
         );
@@ -134,7 +136,9 @@ export function registerAuthCommands(program: Command): void {
     .requiredOption('--organization <name>', t('options.organization'))
     .requiredOption('-e, --email <email>', t('options.email'))
     .requiredOption('-p, --password <password>', t('options.password'))
+    .option('-m, --master-password <password>', t('options.masterPassword'))
     .option('--endpoint <url>', t('options.endpoint'))
+    .option('--plan <plan>', t('options.subscriptionPlan'), 'COMMUNITY')
     .action(async (options) => {
       try {
         // Set API endpoint if provided
@@ -144,7 +148,14 @@ export function registerAuthCommands(program: Command): void {
 
         const result = await withSpinner(
           t('commands.auth.register.registering'),
-          () => authService.register(options.organization, options.email, options.password),
+          () =>
+            authService.register(
+              options.organization,
+              options.email,
+              options.password,
+              options.plan,
+              options.masterPassword
+            ),
           t('commands.auth.register.submitted')
         );
 
@@ -366,6 +377,7 @@ export function registerAuthCommands(program: Command): void {
     .description(t('commands.auth.login.shortcut'))
     .option('-e, --email <email>', t('options.email'))
     .option('-p, --password <password>', t('options.password'))
+    .option('-m, --master-password <password>', t('options.masterPassword'))
     .option('-n, --name <name>', t('options.sessionName'))
     .option('--endpoint <url>', t('options.endpoint'))
     .action(async (options) => {
@@ -377,6 +389,7 @@ export function registerAuthCommands(program: Command): void {
           'rediacc',
           ...(options.email ? ['-e', options.email] : []),
           ...(options.password ? ['-p', options.password] : []),
+          ...(options.masterPassword ? ['-m', options.masterPassword] : []),
           ...(options.name ? ['-n', options.name] : []),
           ...(options.endpoint ? ['--endpoint', options.endpoint] : []),
         ]);

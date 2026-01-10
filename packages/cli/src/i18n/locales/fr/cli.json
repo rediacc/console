@@ -3,6 +3,28 @@
     "description": "Rediacc Console CLI - Interface en ligne de commande pour les opérations Rediacc"
   },
   "commands": {
+    "audit": {
+      "description": "Commandes de journal d'audit",
+      "list": {
+        "description": "Lister les entrées du journal d'audit",
+        "fetching": "Récupération des journaux d'audit..."
+      },
+      "log": {
+        "description": "Afficher les journaux d'audit",
+        "fetching": "Récupération des journaux d'audit...",
+        "success": "Journaux d'audit récupérés"
+      },
+      "trace": {
+        "description": "Tracer l'historique d'audit pour une entité",
+        "fetching": "Récupération de la trace d'audit de l'entité...",
+        "success": "Trace d'audit récupérée"
+      },
+      "history": {
+        "description": "Afficher l'historique de l'entité",
+        "fetching": "Récupération de l'historique de l'entité...",
+        "success": "Historique récupéré"
+      }
+    },
     "auth": {
       "description": "Commandes d'authentification",
       "login": {
@@ -81,28 +103,6 @@
         }
       }
     },
-    "audit": {
-      "description": "Commandes de journal d'audit",
-      "list": {
-        "description": "Lister les entrées du journal d'audit",
-        "fetching": "Récupération des journaux d'audit..."
-      },
-      "log": {
-        "description": "Afficher les journaux d'audit",
-        "fetching": "Récupération des journaux d'audit...",
-        "success": "Journaux d'audit récupérés"
-      },
-      "trace": {
-        "description": "Tracer l'historique d'audit pour une entité",
-        "fetching": "Récupération de la trace d'audit de l'entité...",
-        "success": "Trace d'audit récupérée"
-      },
-      "history": {
-        "description": "Afficher l'historique de l'entité",
-        "fetching": "Récupération de l'historique de l'entité...",
-        "success": "Historique récupéré"
-      }
-    },
     "bridge": {
       "description": "Gestion du pont",
       "list": {
@@ -114,6 +114,150 @@
         "newToken": "Nouveau jeton : {{token}}",
         "resetting": "Réinitialisation de l'autorisation pour le pont \"{{name}}\"...",
         "success": "Autorisation réinitialisée"
+      }
+    },
+    "ceph": {
+      "description": "Gestion du stockage distribué Ceph",
+      "cluster": {
+        "description": "Gestion des clusters Ceph",
+        "list": {
+          "description": "Lister les clusters Ceph",
+          "fetching": "Récupération des clusters Ceph...",
+          "success": "Clusters récupérés"
+        },
+        "create": {
+          "description": "Créer un nouveau cluster Ceph",
+          "creating": "Création du cluster Ceph \"{{name}}\"...",
+          "success": "Cluster Ceph \"{{name}}\" créé"
+        },
+        "delete": {
+          "description": "Supprimer un cluster Ceph",
+          "confirm": "Supprimer le cluster Ceph \"{{name}}\" ?",
+          "deleting": "Suppression du cluster Ceph \"{{name}}\"...",
+          "success": "Cluster Ceph \"{{name}}\" supprimé"
+        },
+        "machines": {
+          "description": "Lister les machines dans un cluster Ceph",
+          "fetching": "Récupération des machines du cluster...",
+          "success": "Machines du cluster récupérées"
+        },
+        "vault": {
+          "description": "Gestion du coffre-fort du cluster Ceph",
+          "get": {
+            "description": "Obtenir les données du coffre-fort du cluster",
+            "fetching": "Récupération du coffre-fort du cluster...",
+            "success": "Coffre-fort du cluster récupéré"
+          },
+          "update": {
+            "description": "Mettre à jour les données du coffre-fort du cluster",
+            "updating": "Mise à jour du coffre-fort du cluster pour \"{{name}}\"...",
+            "success": "Coffre-fort du cluster pour \"{{name}}\" mis à jour"
+          }
+        }
+      },
+      "pool": {
+        "description": "Gestion des pools Ceph",
+        "list": {
+          "description": "Lister les pools Ceph",
+          "fetching": "Récupération des pools Ceph...",
+          "success": "Pools récupérés"
+        },
+        "create": {
+          "description": "Créer un nouveau pool Ceph",
+          "creating": "Création du pool Ceph \"{{name}}\"...",
+          "success": "Pool Ceph \"{{name}}\" créé"
+        },
+        "delete": {
+          "description": "Supprimer un pool Ceph",
+          "confirm": "Supprimer le pool Ceph \"{{name}}\" ?",
+          "deleting": "Suppression du pool Ceph \"{{name}}\"...",
+          "success": "Pool Ceph \"{{name}}\" supprimé"
+        },
+        "vault": {
+          "description": "Gestion du coffre-fort du pool Ceph",
+          "get": {
+            "description": "Obtenir les données du coffre-fort du pool",
+            "fetching": "Récupération du coffre-fort du pool...",
+            "success": "Coffre-fort du pool récupéré"
+          },
+          "update": {
+            "description": "Mettre à jour les données du coffre-fort du pool",
+            "updating": "Mise à jour du coffre-fort du pool pour \"{{name}}\"...",
+            "success": "Coffre-fort du pool pour \"{{name}}\" mis à jour"
+          }
+        }
+      },
+      "image": {
+        "description": "Gestion des images RBD Ceph",
+        "list": {
+          "description": "Lister les images RBD",
+          "fetching": "Récupération des images RBD...",
+          "success": "Images récupérées"
+        },
+        "create": {
+          "description": "Créer une nouvelle image RBD",
+          "creating": "Création de l'image RBD \"{{name}}\"...",
+          "success": "Image RBD \"{{name}}\" créée"
+        },
+        "delete": {
+          "description": "Supprimer une image RBD",
+          "confirm": "Supprimer l'image RBD \"{{name}}\" ?",
+          "deleting": "Suppression de l'image RBD \"{{name}}\"...",
+          "success": "Image RBD \"{{name}}\" supprimée"
+        }
+      },
+      "snapshot": {
+        "description": "Gestion des snapshots RBD Ceph",
+        "list": {
+          "description": "Lister les snapshots RBD",
+          "fetching": "Récupération des snapshots RBD...",
+          "success": "Snapshots récupérés"
+        },
+        "create": {
+          "description": "Créer un nouveau snapshot RBD",
+          "creating": "Création du snapshot RBD \"{{name}}\"...",
+          "success": "Snapshot RBD \"{{name}}\" créé"
+        },
+        "delete": {
+          "description": "Supprimer un snapshot RBD",
+          "confirm": "Supprimer le snapshot RBD \"{{name}}\" ?",
+          "deleting": "Suppression du snapshot RBD \"{{name}}\"...",
+          "success": "Snapshot RBD \"{{name}}\" supprimé"
+        }
+      },
+      "clone": {
+        "description": "Gestion des clones RBD Ceph",
+        "list": {
+          "description": "Lister les clones RBD",
+          "fetching": "Récupération des clones RBD...",
+          "success": "Clones récupérés"
+        },
+        "create": {
+          "description": "Créer un nouveau clone RBD à partir d'un snapshot",
+          "creating": "Création du clone RBD \"{{name}}\"...",
+          "success": "Clone RBD \"{{name}}\" créé"
+        },
+        "delete": {
+          "description": "Supprimer un clone RBD",
+          "confirm": "Supprimer le clone RBD \"{{name}}\" ?",
+          "deleting": "Suppression du clone RBD \"{{name}}\"...",
+          "success": "Clone RBD \"{{name}}\" supprimé"
+        },
+        "machines": {
+          "description": "Lister les machines assignées à un clone",
+          "fetching": "Récupération des machines du clone...",
+          "success": "Machines du clone récupérées"
+        },
+        "assign": {
+          "description": "Assigner des machines à un clone",
+          "assigning": "Assignation des machines au clone \"{{name}}\"...",
+          "success": "Machines assignées au clone \"{{name}}\""
+        },
+        "unassign": {
+          "description": "Retirer des machines d'un clone",
+          "unassigning": "Retrait des machines du clone \"{{name}}\"...",
+          "success": "Machines retirées du clone \"{{name}}\""
+        }
       }
     },
     "context": {
@@ -362,6 +506,47 @@
         "enabling": "Activation du mode maintenance..."
       }
     },
+    "permission": {
+      "description": "Commandes de gestion des permissions",
+      "list": {
+        "description": "Lister les permissions",
+        "fetching": "Récupération des permissions..."
+      },
+      "group": {
+        "description": "Gestion des groupes de permissions",
+        "list": {
+          "description": "Lister tous les groupes de permissions",
+          "fetching": "Récupération des groupes de permissions...",
+          "success": "Groupes de permissions récupérés"
+        },
+        "create": {
+          "description": "Créer un nouveau groupe de permissions",
+          "creating": "Création du groupe de permissions \"{{name}}\"...",
+          "success": "Groupe de permissions \"{{name}}\" créé"
+        },
+        "delete": {
+          "confirm": "Supprimer le groupe de permissions \"{{name}}\" ?",
+          "deleting": "Suppression du groupe de permissions \"{{name}}\"...",
+          "description": "Supprimer un groupe de permissions",
+          "success": "Groupe de permissions \"{{name}}\" supprimé"
+        },
+        "show": {
+          "description": "Afficher les détails du groupe de permissions",
+          "fetching": "Récupération des détails du groupe de permissions...",
+          "success": "Détails récupérés"
+        }
+      },
+      "add": {
+        "adding": "Ajout de la permission \"{{permission}}\" au groupe \"{{group}}\"...",
+        "description": "Ajouter une permission à un groupe",
+        "success": "Permission ajoutée"
+      },
+      "remove": {
+        "description": "Supprimer une permission d'un groupe",
+        "removing": "Suppression de la permission \"{{permission}}\" du groupe \"{{group}}\"...",
+        "success": "Permission supprimée"
+      }
+    },
     "protocol": {
       "description": "Gérer l'enregistrement du gestionnaire de protocole {{scheme}}:// et la gestion des URL",
       "register": {
@@ -409,47 +594,6 @@
         "description": "Analyser une URL {{scheme}}:// et afficher les composants",
         "parsedUrl": "\nURL du protocole analysée :",
         "cliCommand": "\nCommande CLI :"
-      }
-    },
-    "permission": {
-      "description": "Commandes de gestion des permissions",
-      "list": {
-        "description": "Lister les permissions",
-        "fetching": "Récupération des permissions..."
-      },
-      "group": {
-        "description": "Gestion des groupes de permissions",
-        "list": {
-          "description": "Lister tous les groupes de permissions",
-          "fetching": "Récupération des groupes de permissions...",
-          "success": "Groupes de permissions récupérés"
-        },
-        "create": {
-          "description": "Créer un nouveau groupe de permissions",
-          "creating": "Création du groupe de permissions \"{{name}}\"...",
-          "success": "Groupe de permissions \"{{name}}\" créé"
-        },
-        "delete": {
-          "confirm": "Supprimer le groupe de permissions \"{{name}}\" ?",
-          "deleting": "Suppression du groupe de permissions \"{{name}}\"...",
-          "description": "Supprimer un groupe de permissions",
-          "success": "Groupe de permissions \"{{name}}\" supprimé"
-        },
-        "show": {
-          "description": "Afficher les détails du groupe de permissions",
-          "fetching": "Récupération des détails du groupe de permissions...",
-          "success": "Détails récupérés"
-        }
-      },
-      "add": {
-        "adding": "Ajout de la permission \"{{permission}}\" au groupe \"{{group}}\"...",
-        "description": "Ajouter une permission à un groupe",
-        "success": "Permission ajoutée"
-      },
-      "remove": {
-        "description": "Supprimer une permission d'un groupe",
-        "removing": "Suppression de la permission \"{{permission}}\" du groupe \"{{group}}\"...",
-        "success": "Permission supprimée"
       }
     },
     "queue": {
@@ -552,6 +696,24 @@
         }
       }
     },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[local] Terminé en {{duration}}ms",
+        "description": "Exécuter une fonction (raccourci pour : queue create)",
+        "executingLocal": "[local] Exécution de '{{function}}' sur {{machine}}...",
+        "failedLocal": "[local] Échoué : {{error}}",
+        "watching": "Surveillance de l'achèvement..."
+      },
+      "trace": {
+        "description": "Tracer une tâche (raccourci pour : queue trace)"
+      },
+      "cancel": {
+        "description": "Annuler une tâche (raccourci pour : queue cancel)"
+      },
+      "retry": {
+        "description": "Réessayer une tâche échouée (raccourci pour : queue retry)"
+      }
+    },
     "storage": {
       "description": "Gestion du stockage",
       "list": {
@@ -617,24 +779,6 @@
         }
       }
     },
-    "shortcuts": {
-      "run": {
-        "completedLocal": "[local] Terminé en {{duration}}ms",
-        "description": "Exécuter une fonction (raccourci pour : queue create)",
-        "executingLocal": "[local] Exécution de '{{function}}' sur {{machine}}...",
-        "failedLocal": "[local] Échoué : {{error}}",
-        "watching": "Surveillance de l'achèvement..."
-      },
-      "trace": {
-        "description": "Tracer une tâche (raccourci pour : queue trace)"
-      },
-      "cancel": {
-        "description": "Annuler une tâche (raccourci pour : queue cancel)"
-      },
-      "retry": {
-        "description": "Réessayer une tâche échouée (raccourci pour : queue retry)"
-      }
-    },
     "term": {
       "description": "Accès terminal SSH aux machines et dépôts",
       "connecting": "Connexion à {{machine}} en cours...",
@@ -646,57 +790,6 @@
       "launchSuccess": "Terminal lancé avec succès.",
       "launchingTerminal": "Lancement du terminal {{type}}...",
       "testingConnectivity": "Test de la connectivité à {{host}}:{{port}}..."
-    },
-    "vscode": {
-      "description": "Intégration VS Code Remote SSH",
-      "connect": {
-        "description": "Se connecter à une machine ou un dépôt dans VS Code",
-        "detecting": "Détection de VS Code...",
-        "extensionWarning": "Avertissement : L'extension Remote SSH peut ne pas être installée.\nInstallez depuis : https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
-        "fetchingDetails": "Récupération des détails de connexion...",
-        "testingConnectivity": "Test de la connectivité à {{host}}:{{port}}...",
-        "persistingKey": "Persistance de la clé SSH...",
-        "configuringSSH": "Configuration de SSH...",
-        "configuringVSCode": "Configuration des paramètres VS Code...",
-        "settingsWarning": "Avertissement : Impossible de configurer les paramètres VS Code : {{error}}",
-        "settingUpEnv": "Configuration de l'environnement distant...",
-        "opening": "Ouverture de VS Code : {{connection}} → {{path}}",
-        "success": "VS Code lancé avec succès."
-      },
-      "list": {
-        "description": "Lister les connexions SSH VS Code configurées",
-        "noConnections": "Aucune connexion SSH VS Code configurée.",
-        "configFile": "\nFichier de configuration : {{path}}",
-        "header": "Connexions SSH VS Code configurées :\n",
-        "keyPersisted": " (clé persistée)",
-        "total": "\nTotal : {{count}} connexion(s)"
-      },
-      "cleanup": {
-        "description": "Supprimer les configurations SSH VS Code",
-        "cleanedAll": "Nettoyage de {{count}} connexion(s) SSH VS Code.",
-        "removedKeys": "Suppression de toutes les clés SSH persistées.",
-        "cleaned": "Nettoyage de : {{connection}}"
-      },
-      "check": {
-        "description": "Vérifier l'installation et la configuration de VS Code",
-        "title": "Vérification de la configuration VS Code\n",
-        "installation": "Installation :",
-        "vscodeFound": "  VS Code : {{path}}",
-        "version": "  Version : {{version}}",
-        "variant": "  Variante : Insiders",
-        "vscodeNotFound": "  VS Code : Non trouvé",
-        "remoteSSH": "  Extension Remote SSH : {{status}}",
-        "installed": "Installée",
-        "notDetected": "Non détectée",
-        "configuration": "\nConfiguration :",
-        "settingsPath": "  Chemin des paramètres : {{path}}",
-        "configured": "  Configuré : {{status}}",
-        "yes": "Oui",
-        "no": "Non",
-        "missingSettings": "  Paramètres manquants :",
-        "sshConfig": "\nConfiguration SSH : {{path}}",
-        "activeConnections": "Connexions actives : {{count}}"
-      }
     },
     "user": {
       "description": "Commandes de gestion des utilisateurs",
@@ -768,6 +861,57 @@
           "success": "Permission attribuée"
         }
       }
+    },
+    "vscode": {
+      "description": "Intégration VS Code Remote SSH",
+      "connect": {
+        "description": "Se connecter à une machine ou un dépôt dans VS Code",
+        "detecting": "Détection de VS Code...",
+        "extensionWarning": "Avertissement : L'extension Remote SSH peut ne pas être installée.\nInstallez depuis : https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "Récupération des détails de connexion...",
+        "testingConnectivity": "Test de la connectivité à {{host}}:{{port}}...",
+        "persistingKey": "Persistance de la clé SSH...",
+        "configuringSSH": "Configuration de SSH...",
+        "configuringVSCode": "Configuration des paramètres VS Code...",
+        "settingsWarning": "Avertissement : Impossible de configurer les paramètres VS Code : {{error}}",
+        "settingUpEnv": "Configuration de l'environnement distant...",
+        "opening": "Ouverture de VS Code : {{connection}} → {{path}}",
+        "success": "VS Code lancé avec succès."
+      },
+      "list": {
+        "description": "Lister les connexions SSH VS Code configurées",
+        "noConnections": "Aucune connexion SSH VS Code configurée.",
+        "configFile": "\nFichier de configuration : {{path}}",
+        "header": "Connexions SSH VS Code configurées :\n",
+        "keyPersisted": " (clé persistée)",
+        "total": "\nTotal : {{count}} connexion(s)"
+      },
+      "cleanup": {
+        "description": "Supprimer les configurations SSH VS Code",
+        "cleanedAll": "Nettoyage de {{count}} connexion(s) SSH VS Code.",
+        "removedKeys": "Suppression de toutes les clés SSH persistées.",
+        "cleaned": "Nettoyage de : {{connection}}"
+      },
+      "check": {
+        "description": "Vérifier l'installation et la configuration de VS Code",
+        "title": "Vérification de la configuration VS Code\n",
+        "installation": "Installation :",
+        "vscodeFound": "  VS Code : {{path}}",
+        "version": "  Version : {{version}}",
+        "variant": "  Variante : Insiders",
+        "vscodeNotFound": "  VS Code : Non trouvé",
+        "remoteSSH": "  Extension Remote SSH : {{status}}",
+        "installed": "Installée",
+        "notDetected": "Non détectée",
+        "configuration": "\nConfiguration :",
+        "settingsPath": "  Chemin des paramètres : {{path}}",
+        "configured": "  Configuré : {{status}}",
+        "yes": "Oui",
+        "no": "Non",
+        "missingSettings": "  Paramètres manquants :",
+        "sshConfig": "\nConfiguration SSH : {{path}}",
+        "activeConnections": "Connexions actives : {{count}}"
+      }
     }
   },
   "errors": {
@@ -778,6 +922,7 @@
     "contextNotFound": "Contexte \"{{name}}\" non trouvé",
     "invalidCredentials": "Identifiants invalides",
     "invalidEmail": "Veuillez entrer une adresse email valide",
+    "invalidMasterPassword": "Mot de passe principal invalide pour le chiffrement du coffre",
     "invalidExpiration": "L'expiration du jeton doit être entre 1 et 720 heures",
     "invalidAction": "Action invalide \"{{action}}\". Utilisez \"{{valid}}\".",
     "invalidFunctionParams": "Paramètres invalides pour la fonction \"{{function}}\" : {{errors}}",
@@ -797,6 +942,8 @@
     "cannotDeleteGrandRepo": "Impossible de supprimer le grand dépôt : {{reason}}",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "cannotPromote": "Impossible de promouvoir : {{reason}}",
+    "clusterNotFound": "Cluster Ceph \"{{name}}\" non trouvé",
+    "poolNotFound": "Pool Ceph \"{{name}}\" non trouvé",
     "protocol": {
       "notSupported": "L'enregistrement du protocole n'est pas supporté sur {{platform}}",
       "invalidUrl": "URL du protocole invalide : {{error}}",
@@ -856,6 +1003,7 @@
     "activationCode": "Code d'activation reçu par email",
     "apiUrl": "URL de l'API",
     "bridge": "Nom du pont",
+    "cluster": "Nom du cluster Ceph",
     "command": "Exécuter une commande au lieu d'un shell interactif",
     "container": "Se connecter à un conteneur Docker spécifique",
     "containerAction": "Action du conteneur : terminal, logs, stats, exec",
@@ -864,6 +1012,11 @@
     "email": "Adresse email",
     "external": "Forcer le lancement dans une fenêtre de terminal externe",
     "follow": "Suivre la sortie des journaux",
+    "image": "Nom de l'image RBD",
+    "pool": "Nom du pool Ceph",
+    "snapshot": "Nom du snapshot RBD",
+    "vaultContent": "Contenu du coffre en tant que chaîne JSON",
+    "machineNames": "Noms des machines (séparés par des virgules)",
     "endpoint": "URL du point de terminaison de l'API",
     "expires": "Expiration en heures (1-720)",
     "force": "Ignorer les invites de confirmation",
@@ -876,6 +1029,7 @@
     "organization": "Nom de l'organisation",
     "output": "Format de sortie (table|json|yaml|csv)",
     "password": "Mot de passe (pour connexion non-interactive)",
+    "masterPassword": "Mot de passe principal pour le chiffrement du coffre",
     "region": "Nom de la région",
     "renetPath": "Chemin vers le binaire renet (par défaut : renet dans PATH)",
     "repository": "Nom du dépôt (se connecte à l'environnement du dépôt)",
@@ -887,6 +1041,7 @@
     "sshPrivateKey": "Chemin vers la clé privée SSH",
     "sshPublicKey": "Chemin vers la clé publique SSH",
     "sshUser": "Nom d'utilisateur SSH",
+    "subscriptionPlan": "Plan d'abonnement (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "Basculer vers ce contexte après création",
     "team": "Nom de l'équipe",
     "tfaCode": "Code TFA actuel pour vérification",
@@ -964,7 +1119,8 @@
     "setPassword": "Définir le mot de passe pour l'utilisateur :",
     "newPassword": "Nouveau mot de passe :",
     "confirmNewPassword": "Confirmer le nouveau mot de passe :",
-    "masterPassword": "Entrez votre mot de passe principal :"
+    "masterPassword": "Entrez votre mot de passe principal :",
+    "masterPasswordForVault": "Entrez le mot de passe principal pour le chiffrement du coffre :"
   },
   "spinners": {
     "connecting": "Connexion en cours...",

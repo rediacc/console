@@ -18,7 +18,9 @@ export const responseExtractors = {
   primary: getPrimaryResultSet,
   primaryOrSecondary: <T>(response: ApiResponse<T>): T[] => {
     const secondary = response.resultSets[1]?.data;
-    if (Array.isArray(secondary) && secondary.length > 0) {
+    // If secondary result set exists (even if empty), use it
+    // Only fall back to primary if secondary doesn't exist at all
+    if (Array.isArray(secondary)) {
       return secondary;
     }
     return getPrimaryResultSet(response);

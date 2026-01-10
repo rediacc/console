@@ -5,7 +5,14 @@ node_modules/
 dist/
 bin/
 packages/*/dist
+packages/*/dist-typecheck
 *.tsbuildinfo
+
+# Compiled test helpers (TypeScript artifacts)
+packages/*/tests/**/*.js
+packages/*/tests/**/*.js.map
+packages/*/tests/**/*.d.ts
+packages/*/tests/**/*.d.ts.map
 
 # Editor directories and files
 .vscode/*
@@ -46,6 +53,7 @@ playwright/__pycache__/
 # Test artifacts (consolidated)
 playwright/artifacts/
 logs/
+packages/cli/tests/reports/
 
 # Screenshots (removed from tracking)
 error_screenshot.png
@@ -60,3 +68,4 @@ playwright/*.py/
 playwright/**/*.png
 playwright_env/
 .playwright-mcp/
+packages/cli/reports/
