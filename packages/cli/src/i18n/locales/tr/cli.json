@@ -3,6 +3,28 @@
     "description": "Rediacc Console CLI - Rediacc işlemleri için komut satırı arayüzü"
   },
   "commands": {
+    "audit": {
+      "description": "Denetim günlüğü komutları",
+      "list": {
+        "description": "Denetim günlüğü girdilerini listeleyin",
+        "fetching": "Denetim günlükleri alınıyor..."
+      },
+      "log": {
+        "description": "Denetim günlüklerini görüntüleyin",
+        "fetching": "Denetim günlükleri alınıyor...",
+        "success": "Denetim günlükleri alındı"
+      },
+      "trace": {
+        "description": "Bir varlık için denetim geçmişini izleyin",
+        "fetching": "Varlık denetim izi alınıyor...",
+        "success": "Denetim izi alındı"
+      },
+      "history": {
+        "description": "Varlık geçmişini görüntüleyin",
+        "fetching": "Varlık geçmişi alınıyor...",
+        "success": "Geçmiş alındı"
+      }
+    },
     "auth": {
       "description": "Kimlik doğrulama komutları",
       "login": {
@@ -81,28 +103,6 @@
         }
       }
     },
-    "audit": {
-      "description": "Denetim günlüğü komutları",
-      "list": {
-        "description": "Denetim günlüğü girdilerini listeleyin",
-        "fetching": "Denetim günlükleri alınıyor..."
-      },
-      "log": {
-        "description": "Denetim günlüklerini görüntüleyin",
-        "fetching": "Denetim günlükleri alınıyor...",
-        "success": "Denetim günlükleri alındı"
-      },
-      "trace": {
-        "description": "Bir varlık için denetim geçmişini izleyin",
-        "fetching": "Varlık denetim izi alınıyor...",
-        "success": "Denetim izi alındı"
-      },
-      "history": {
-        "description": "Varlık geçmişini görüntüleyin",
-        "fetching": "Varlık geçmişi alınıyor...",
-        "success": "Geçmiş alındı"
-      }
-    },
     "bridge": {
       "description": "Köprü yönetimi",
       "list": {
@@ -114,6 +114,150 @@
         "newToken": "Yeni token: {{token}}",
         "resetting": "\"{{name}}\" köprüsü için yetkilendirme sıfırlanıyor...",
         "success": "Yetkilendirme sıfırlandı"
+      }
+    },
+    "ceph": {
+      "description": "Ceph dağıtık depolama yönetimi",
+      "cluster": {
+        "description": "Ceph küme yönetimi",
+        "list": {
+          "description": "Ceph kümelerini listele",
+          "fetching": "Ceph kümeleri getiriliyor...",
+          "success": "Kümeler getirildi"
+        },
+        "create": {
+          "description": "Yeni bir Ceph kümesi oluştur",
+          "creating": "Ceph kümesi \"{{name}}\" oluşturuluyor...",
+          "success": "Ceph kümesi \"{{name}}\" oluşturuldu"
+        },
+        "delete": {
+          "description": "Bir Ceph kümesini sil",
+          "confirm": "Ceph kümesi \"{{name}}\" silinsin mi?",
+          "deleting": "Ceph kümesi \"{{name}}\" siliniyor...",
+          "success": "Ceph kümesi \"{{name}}\" silindi"
+        },
+        "machines": {
+          "description": "Bir Ceph kümesindeki makineleri listele",
+          "fetching": "Küme makineleri getiriliyor...",
+          "success": "Küme makineleri getirildi"
+        },
+        "vault": {
+          "description": "Ceph küme kasası yönetimi",
+          "get": {
+            "description": "Küme kasası verilerini al",
+            "fetching": "Küme kasası getiriliyor...",
+            "success": "Küme kasası getirildi"
+          },
+          "update": {
+            "description": "Küme kasası verilerini güncelle",
+            "updating": "\"{{name}}\" için küme kasası güncelleniyor...",
+            "success": "\"{{name}}\" için küme kasası güncellendi"
+          }
+        }
+      },
+      "pool": {
+        "description": "Ceph havuz yönetimi",
+        "list": {
+          "description": "Ceph havuzlarını listele",
+          "fetching": "Ceph havuzları getiriliyor...",
+          "success": "Havuzlar getirildi"
+        },
+        "create": {
+          "description": "Yeni bir Ceph havuzu oluştur",
+          "creating": "Ceph havuzu \"{{name}}\" oluşturuluyor...",
+          "success": "Ceph havuzu \"{{name}}\" oluşturuldu"
+        },
+        "delete": {
+          "description": "Bir Ceph havuzunu sil",
+          "confirm": "Ceph havuzu \"{{name}}\" silinsin mi?",
+          "deleting": "Ceph havuzu \"{{name}}\" siliniyor...",
+          "success": "Ceph havuzu \"{{name}}\" silindi"
+        },
+        "vault": {
+          "description": "Ceph havuz kasası yönetimi",
+          "get": {
+            "description": "Havuz kasası verilerini al",
+            "fetching": "Havuz kasası getiriliyor...",
+            "success": "Havuz kasası getirildi"
+          },
+          "update": {
+            "description": "Havuz kasası verilerini güncelle",
+            "updating": "\"{{name}}\" için havuz kasası güncelleniyor...",
+            "success": "\"{{name}}\" için havuz kasası güncellendi"
+          }
+        }
+      },
+      "image": {
+        "description": "Ceph RBD imaj yönetimi",
+        "list": {
+          "description": "RBD imajlarını listele",
+          "fetching": "RBD imajları getiriliyor...",
+          "success": "İmajlar getirildi"
+        },
+        "create": {
+          "description": "Yeni bir RBD imajı oluştur",
+          "creating": "RBD imajı \"{{name}}\" oluşturuluyor...",
+          "success": "RBD imajı \"{{name}}\" oluşturuldu"
+        },
+        "delete": {
+          "description": "Bir RBD imajını sil",
+          "confirm": "RBD imajı \"{{name}}\" silinsin mi?",
+          "deleting": "RBD imajı \"{{name}}\" siliniyor...",
+          "success": "RBD imajı \"{{name}}\" silindi"
+        }
+      },
+      "snapshot": {
+        "description": "Ceph RBD anlık görüntü yönetimi",
+        "list": {
+          "description": "RBD anlık görüntülerini listele",
+          "fetching": "RBD anlık görüntüleri getiriliyor...",
+          "success": "Anlık görüntüler getirildi"
+        },
+        "create": {
+          "description": "Yeni bir RBD anlık görüntüsü oluştur",
+          "creating": "RBD anlık görüntüsü \"{{name}}\" oluşturuluyor...",
+          "success": "RBD anlık görüntüsü \"{{name}}\" oluşturuldu"
+        },
+        "delete": {
+          "description": "Bir RBD anlık görüntüsünü sil",
+          "confirm": "RBD anlık görüntüsü \"{{name}}\" silinsin mi?",
+          "deleting": "RBD anlık görüntüsü \"{{name}}\" siliniyor...",
+          "success": "RBD anlık görüntüsü \"{{name}}\" silindi"
+        }
+      },
+      "clone": {
+        "description": "Ceph RBD klon yönetimi",
+        "list": {
+          "description": "RBD klonlarını listele",
+          "fetching": "RBD klonları getiriliyor...",
+          "success": "Klonlar getirildi"
+        },
+        "create": {
+          "description": "Anlık görüntüden yeni bir RBD klonu oluştur",
+          "creating": "RBD klonu \"{{name}}\" oluşturuluyor...",
+          "success": "RBD klonu \"{{name}}\" oluşturuldu"
+        },
+        "delete": {
+          "description": "Bir RBD klonunu sil",
+          "confirm": "RBD klonu \"{{name}}\" silinsin mi?",
+          "deleting": "RBD klonu \"{{name}}\" siliniyor...",
+          "success": "RBD klonu \"{{name}}\" silindi"
+        },
+        "machines": {
+          "description": "Bir klona atanan makineleri listele",
+          "fetching": "Klon makineleri getiriliyor...",
+          "success": "Klon makineleri getirildi"
+        },
+        "assign": {
+          "description": "Bir klona makine ata",
+          "assigning": "\"{{name}}\" klonuna makineler atanıyor...",
+          "success": "\"{{name}}\" klonuna makineler atandı"
+        },
+        "unassign": {
+          "description": "Bir klondan makineleri kaldır",
+          "unassigning": "\"{{name}}\" klonundan makineler kaldırılıyor...",
+          "success": "\"{{name}}\" klonundan makineler kaldırıldı"
+        }
       }
     },
     "context": {
@@ -362,6 +506,47 @@
         "enabling": "Bakım modu etkinleştiriliyor..."
       }
     },
+    "permission": {
+      "description": "İzin yönetimi komutları",
+      "list": {
+        "description": "İzinleri listeleyin",
+        "fetching": "İzinler alınıyor..."
+      },
+      "group": {
+        "description": "İzin grubu yönetimi",
+        "list": {
+          "description": "Tüm izin gruplarını listeleyin",
+          "fetching": "İzin grupları alınıyor...",
+          "success": "İzin grupları alındı"
+        },
+        "create": {
+          "description": "Yeni bir izin grubu oluşturun",
+          "creating": "\"{{name}}\" izin grubu oluşturuluyor...",
+          "success": "\"{{name}}\" izin grubu oluşturuldu"
+        },
+        "delete": {
+          "confirm": "\"{{name}}\" izin grubu silinsin mi?",
+          "deleting": "\"{{name}}\" izin grubu siliniyor...",
+          "description": "Bir izin grubunu silin",
+          "success": "\"{{name}}\" izin grubu silindi"
+        },
+        "show": {
+          "description": "İzin grubu ayrıntılarını gösterin",
+          "fetching": "İzin grubu ayrıntıları alınıyor...",
+          "success": "Ayrıntılar alındı"
+        }
+      },
+      "add": {
+        "adding": "\"{{permission}}\" izni \"{{group}}\" grubuna ekleniyor...",
+        "description": "Bir izni bir gruba ekleyin",
+        "success": "İzin eklendi"
+      },
+      "remove": {
+        "description": "Bir izni bir gruptan kaldırın",
+        "removing": "\"{{permission}}\" izni \"{{group}}\" grubundan kaldırılıyor...",
+        "success": "İzin kaldırıldı"
+      }
+    },
     "protocol": {
       "description": "{{scheme}}:// protokol işleyicisi kaydını ve URL işlemesini yönetin",
       "register": {
@@ -409,47 +594,6 @@
         "description": "Bir {{scheme}}:// URL'sini ayrıştırın ve bileşenleri gösterin",
         "parsedUrl": "\nAyrıştırılmış Protokol URL'si:",
         "cliCommand": "\nCLI Komutu:"
-      }
-    },
-    "permission": {
-      "description": "İzin yönetimi komutları",
-      "list": {
-        "description": "İzinleri listeleyin",
-        "fetching": "İzinler alınıyor..."
-      },
-      "group": {
-        "description": "İzin grubu yönetimi",
-        "list": {
-          "description": "Tüm izin gruplarını listeleyin",
-          "fetching": "İzin grupları alınıyor...",
-          "success": "İzin grupları alındı"
-        },
-        "create": {
-          "description": "Yeni bir izin grubu oluşturun",
-          "creating": "\"{{name}}\" izin grubu oluşturuluyor...",
-          "success": "\"{{name}}\" izin grubu oluşturuldu"
-        },
-        "delete": {
-          "confirm": "\"{{name}}\" izin grubu silinsin mi?",
-          "deleting": "\"{{name}}\" izin grubu siliniyor...",
-          "description": "Bir izin grubunu silin",
-          "success": "\"{{name}}\" izin grubu silindi"
-        },
-        "show": {
-          "description": "İzin grubu ayrıntılarını gösterin",
-          "fetching": "İzin grubu ayrıntıları alınıyor...",
-          "success": "Ayrıntılar alındı"
-        }
-      },
-      "add": {
-        "adding": "\"{{permission}}\" izni \"{{group}}\" grubuna ekleniyor...",
-        "description": "Bir izni bir gruba ekleyin",
-        "success": "İzin eklendi"
-      },
-      "remove": {
-        "description": "Bir izni bir gruptan kaldırın",
-        "removing": "\"{{permission}}\" izni \"{{group}}\" grubundan kaldırılıyor...",
-        "success": "İzin kaldırıldı"
       }
     },
     "queue": {
@@ -552,6 +696,24 @@
         }
       }
     },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[yerel] {{duration}}ms içinde tamamlandı",
+        "description": "Bir işlevi çalıştırın (kısayol: queue create)",
+        "executingLocal": "[yerel] '{{function}}' işlevi {{machine}} üzerinde yürütülüyor...",
+        "failedLocal": "[yerel] Başarısız: {{error}}",
+        "watching": "Tamamlanma bekleniyor..."
+      },
+      "trace": {
+        "description": "Bir görevi izleyin (kısayol: queue trace)"
+      },
+      "cancel": {
+        "description": "Bir görevi iptal edin (kısayol: queue cancel)"
+      },
+      "retry": {
+        "description": "Başarısız bir görevi yeniden deneyin (kısayol: queue retry)"
+      }
+    },
     "storage": {
       "description": "Depolama yönetimi",
       "list": {
@@ -617,24 +779,6 @@
         }
       }
     },
-    "shortcuts": {
-      "run": {
-        "completedLocal": "[yerel] {{duration}}ms içinde tamamlandı",
-        "description": "Bir işlevi çalıştırın (kısayol: queue create)",
-        "executingLocal": "[yerel] '{{function}}' işlevi {{machine}} üzerinde yürütülüyor...",
-        "failedLocal": "[yerel] Başarısız: {{error}}",
-        "watching": "Tamamlanma bekleniyor..."
-      },
-      "trace": {
-        "description": "Bir görevi izleyin (kısayol: queue trace)"
-      },
-      "cancel": {
-        "description": "Bir görevi iptal edin (kısayol: queue cancel)"
-      },
-      "retry": {
-        "description": "Başarısız bir görevi yeniden deneyin (kısayol: queue retry)"
-      }
-    },
     "term": {
       "description": "Makinelere ve depolara SSH terminal erişimi",
       "connecting": "{{machine}} adresine bağlanılıyor...",
@@ -646,57 +790,6 @@
       "launchSuccess": "Terminal başarıyla başlatıldı.",
       "launchingTerminal": "{{type}} terminali başlatılıyor...",
       "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor..."
-    },
-    "vscode": {
-      "description": "VS Code Uzaktan SSH entegrasyonu",
-      "connect": {
-        "description": "VS Code'da bir makineye veya depoya bağlanın",
-        "detecting": "VS Code algılanıyor...",
-        "extensionWarning": "Uyarı: Uzaktan SSH uzantısı yüklü olmayabilir.\nYüklemek için: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
-        "fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
-        "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor...",
-        "persistingKey": "SSH anahtarı kalıcı kılınıyor...",
-        "configuringSSH": "SSH yapılandırılıyor...",
-        "configuringVSCode": "VS Code ayarları yapılandırılıyor...",
-        "settingsWarning": "Uyarı: VS Code ayarları yapılandırılamadı: {{error}}",
-        "settingUpEnv": "Uzak ortam ayarlanıyor...",
-        "opening": "VS Code açılıyor: {{connection}} → {{path}}",
-        "success": "VS Code başarıyla başlatıldı."
-      },
-      "list": {
-        "description": "Yapılandırılmış VS Code SSH bağlantılarını listeleyin",
-        "noConnections": "Yapılandırılmış VS Code SSH bağlantısı yok.",
-        "configFile": "\nYapılandırma dosyası: {{path}}",
-        "header": "Yapılandırılmış VS Code SSH bağlantıları:\n",
-        "keyPersisted": " (anahtar kalıcı kılındı)",
-        "total": "\nToplam: {{count}} bağlantı(lar)"
-      },
-      "cleanup": {
-        "description": "VS Code SSH yapılandırmalarını kaldırın",
-        "cleanedAll": "{{count}} VS Code SSH bağlantısı temizlendi.",
-        "removedKeys": "Tüm kalıcı SSH anahtarları kaldırıldı.",
-        "cleaned": "Temizlendi: {{connection}}"
-      },
-      "check": {
-        "description": "VS Code yüklemesi ve yapılandırmasını kontrol edin",
-        "title": "VS Code Kurulum Kontrolü\n",
-        "installation": "Yükleme:",
-        "vscodeFound": "  VS Code: {{path}}",
-        "version": "  Sürüm: {{version}}",
-        "variant": "  Varyant: Insiders",
-        "vscodeNotFound": "  VS Code: Bulunamadı",
-        "remoteSSH": "  Uzaktan SSH Uzantısı: {{status}}",
-        "installed": "Yüklü",
-        "notDetected": "Algılanmadı",
-        "configuration": "\nYapılandırma:",
-        "settingsPath": "  Ayarlar Yolu: {{path}}",
-        "configured": "  Yapılandırılmış: {{status}}",
-        "yes": "Evet",
-        "no": "Hayır",
-        "missingSettings": "  Eksik Ayarlar:",
-        "sshConfig": "\nSSH Yapılandırması: {{path}}",
-        "activeConnections": "Etkin Bağlantılar: {{count}}"
-      }
     },
     "user": {
       "description": "Kullanıcı yönetimi komutları",
@@ -768,6 +861,57 @@
           "success": "İzin atandı"
         }
       }
+    },
+    "vscode": {
+      "description": "VS Code Uzaktan SSH entegrasyonu",
+      "connect": {
+        "description": "VS Code'da bir makineye veya depoya bağlanın",
+        "detecting": "VS Code algılanıyor...",
+        "extensionWarning": "Uyarı: Uzaktan SSH uzantısı yüklü olmayabilir.\nYüklemek için: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
+        "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor...",
+        "persistingKey": "SSH anahtarı kalıcı kılınıyor...",
+        "configuringSSH": "SSH yapılandırılıyor...",
+        "configuringVSCode": "VS Code ayarları yapılandırılıyor...",
+        "settingsWarning": "Uyarı: VS Code ayarları yapılandırılamadı: {{error}}",
+        "settingUpEnv": "Uzak ortam ayarlanıyor...",
+        "opening": "VS Code açılıyor: {{connection}} → {{path}}",
+        "success": "VS Code başarıyla başlatıldı."
+      },
+      "list": {
+        "description": "Yapılandırılmış VS Code SSH bağlantılarını listeleyin",
+        "noConnections": "Yapılandırılmış VS Code SSH bağlantısı yok.",
+        "configFile": "\nYapılandırma dosyası: {{path}}",
+        "header": "Yapılandırılmış VS Code SSH bağlantıları:\n",
+        "keyPersisted": " (anahtar kalıcı kılındı)",
+        "total": "\nToplam: {{count}} bağlantı(lar)"
+      },
+      "cleanup": {
+        "description": "VS Code SSH yapılandırmalarını kaldırın",
+        "cleanedAll": "{{count}} VS Code SSH bağlantısı temizlendi.",
+        "removedKeys": "Tüm kalıcı SSH anahtarları kaldırıldı.",
+        "cleaned": "Temizlendi: {{connection}}"
+      },
+      "check": {
+        "description": "VS Code yüklemesi ve yapılandırmasını kontrol edin",
+        "title": "VS Code Kurulum Kontrolü\n",
+        "installation": "Yükleme:",
+        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  Sürüm: {{version}}",
+        "variant": "  Varyant: Insiders",
+        "vscodeNotFound": "  VS Code: Bulunamadı",
+        "remoteSSH": "  Uzaktan SSH Uzantısı: {{status}}",
+        "installed": "Yüklü",
+        "notDetected": "Algılanmadı",
+        "configuration": "\nYapılandırma:",
+        "settingsPath": "  Ayarlar Yolu: {{path}}",
+        "configured": "  Yapılandırılmış: {{status}}",
+        "yes": "Evet",
+        "no": "Hayır",
+        "missingSettings": "  Eksik Ayarlar:",
+        "sshConfig": "\nSSH Yapılandırması: {{path}}",
+        "activeConnections": "Etkin Bağlantılar: {{count}}"
+      }
     }
   },
   "errors": {
@@ -778,6 +922,7 @@
     "contextNotFound": "\"{{name}}\" bağlamı bulunamadı",
     "invalidCredentials": "Geçersiz kimlik bilgileri",
     "invalidEmail": "Lütfen geçerli bir e-posta girin",
+    "invalidMasterPassword": "Kasa şifrelemesi için geçersiz ana şifre",
     "invalidExpiration": "Token süresi 1 ile 720 saat arasında olmalıdır",
     "invalidAction": "Geçersiz işlem \"{{action}}\". \"{{valid}}\" kullanın.",
     "invalidFunctionParams": "\"{{function}}\" işlevi için geçersiz parametreler: {{errors}}",
@@ -797,6 +942,8 @@
     "cannotDeleteGrandRepo": "Ana depo silinemiyor: {{reason}}",
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "cannotPromote": "Yükseltilemez: {{reason}}",
+    "clusterNotFound": "Ceph kümesi \"{{name}}\" bulunamadı",
+    "poolNotFound": "Ceph havuzu \"{{name}}\" bulunamadı",
     "protocol": {
       "notSupported": "Protokol kaydı {{platform}} üzerinde desteklenmiyor",
       "invalidUrl": "Geçersiz protokol URL'si: {{error}}",
@@ -856,6 +1003,7 @@
     "activationCode": "E-postadan gelen etkinleştirme kodu",
     "apiUrl": "API URL'si",
     "bridge": "Köprü adı",
+    "cluster": "Ceph kümesi adı",
     "command": "Etkileşimli kabuk yerine bir komut yürütün",
     "container": "Belirli bir Docker konteynerine bağlanın",
     "containerAction": "Konteyner işlemi: terminal, günlükler, istatistikler, yürütme",
@@ -864,6 +1012,11 @@
     "email": "E-posta adresi",
     "external": "Dış terminal penceresinde başlatmaya zorla",
     "follow": "Günlük çıkışını izleyin",
+    "image": "RBD görüntü adı",
+    "pool": "Ceph havuz adı",
+    "snapshot": "RBD anlık görüntü adı",
+    "vaultContent": "Kasa içeriği JSON dizesi olarak",
+    "machineNames": "Makine adları (virgülle ayrılmış)",
     "endpoint": "API uç noktası URL'si",
     "expires": "Saat cinsinden sona erme süresi (1-720)",
     "force": "Onay istemlerini atla",
@@ -876,6 +1029,7 @@
     "organization": "Kuruluş adı",
     "output": "Çıkış biçimi (table|json|yaml|csv)",
     "password": "Parola (etkileşimli olmayan giriş için)",
+    "masterPassword": "Kasa şifrelemesi için ana şifre",
     "region": "Bölge adı",
     "renetPath": "Renet ikili dosyasının yolu (varsayılan: PATH'te renet)",
     "repository": "Depo adı (depo ortamına bağlanır)",
@@ -887,6 +1041,7 @@
     "sshPrivateKey": "SSH özel anahtarının yolu",
     "sshPublicKey": "SSH ortak anahtarının yolu",
     "sshUser": "SSH kullanıcı adı",
+    "subscriptionPlan": "Abonelik planı (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "Oluşturulduktan sonra bu bağlama geçin",
     "team": "Takım adı",
     "tfaCode": "Doğrulama için güncel TFA kodu",
@@ -964,7 +1119,8 @@
     "setPassword": "Kullanıcı için parola ayarlayın:",
     "newPassword": "Yeni parola:",
     "confirmNewPassword": "Yeni parolayı onayla:",
-    "masterPassword": "Ana şifrenizi girin:"
+    "masterPassword": "Ana şifrenizi girin:",
+    "masterPasswordForVault": "Kasa şifrelemesi için ana şifreyi girin:"
   },
   "spinners": {
     "connecting": "Bağlanılıyor...",

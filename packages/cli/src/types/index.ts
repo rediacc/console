@@ -77,10 +77,10 @@ export interface NamedContext {
 
 /**
  * Root configuration containing multiple named contexts.
+ * Note: No currentContext field - context is always specified explicitly via
+ * --context flag, or defaults to "default".
  */
 export interface CliConfig {
-  /** Name of the currently active context */
-  currentContext: string;
   /** Map of context names to their configurations */
   contexts: { [name: string]: NamedContext | undefined };
 }
@@ -90,7 +90,6 @@ export interface CliConfig {
  */
 export function createEmptyConfig(): CliConfig {
   return {
-    currentContext: '',
     contexts: {},
   };
 }
@@ -129,7 +128,34 @@ export const EXIT_CODES = {
   NOT_FOUND: 5,
   NETWORK_ERROR: 6,
   API_ERROR: 7, // Server returned error
+  PAYMENT_REQUIRED: 8, // HTTP 402 - edition/subscription limit reached
+  RATE_LIMITED: 9, // HTTP 429 - too many requests
 } as const;
+
+/**
+ * Map HTTP status codes to CLI exit codes.
+ * Used for converting API responses to Unix-compatible exit codes.
+ */
+export function httpStatusToExitCode(httpStatus: number): number {
+  switch (httpStatus) {
+    case 400:
+      return EXIT_CODES.INVALID_ARGUMENTS;
+    case 401:
+      return EXIT_CODES.AUTH_REQUIRED;
+    case 402:
+      return EXIT_CODES.PAYMENT_REQUIRED;
+    case 403:
+      return EXIT_CODES.PERMISSION_DENIED;
+    case 404:
+      return EXIT_CODES.NOT_FOUND;
+    case 429:
+      return EXIT_CODES.RATE_LIMITED;
+    default:
+      return httpStatus >= 400 && httpStatus < 500
+        ? EXIT_CODES.API_ERROR
+        : EXIT_CODES.GENERAL_ERROR;
+  }
+}
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 

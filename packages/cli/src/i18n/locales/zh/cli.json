@@ -3,6 +3,28 @@
     "description": "Rediacc 控制台命令行界面 - 用于 Rediacc 操作的命令行接口"
   },
   "commands": {
+    "audit": {
+      "description": "审计日志命令",
+      "list": {
+        "description": "列出审计日志条目",
+        "fetching": "正在获取审计日志..."
+      },
+      "log": {
+        "description": "查看审计日志",
+        "fetching": "正在获取审计日志...",
+        "success": "审计日志已获取"
+      },
+      "trace": {
+        "description": "跟踪实体的审计历史",
+        "fetching": "正在获取实体审计跟踪...",
+        "success": "审计跟踪已获取"
+      },
+      "history": {
+        "description": "查看实体历史",
+        "fetching": "正在获取实体历史...",
+        "success": "历史已获取"
+      }
+    },
     "auth": {
       "description": "身份验证命令",
       "login": {
@@ -81,28 +103,6 @@
         }
       }
     },
-    "audit": {
-      "description": "审计日志命令",
-      "list": {
-        "description": "列出审计日志条目",
-        "fetching": "正在获取审计日志..."
-      },
-      "log": {
-        "description": "查看审计日志",
-        "fetching": "正在获取审计日志...",
-        "success": "审计日志已获取"
-      },
-      "trace": {
-        "description": "跟踪实体的审计历史",
-        "fetching": "正在获取实体审计跟踪...",
-        "success": "审计跟踪已获取"
-      },
-      "history": {
-        "description": "查看实体历史",
-        "fetching": "正在获取实体历史...",
-        "success": "历史已获取"
-      }
-    },
     "bridge": {
       "description": "网桥管理",
       "list": {
@@ -114,6 +114,150 @@
         "newToken": "新令牌：{{token}}",
         "resetting": "正在重置网桥 \"{{name}}\" 的授权...",
         "success": "授权已重置"
+      }
+    },
+    "ceph": {
+      "description": "Ceph 分布式存储管理",
+      "cluster": {
+        "description": "Ceph 集群管理",
+        "list": {
+          "description": "列出 Ceph 集群",
+          "fetching": "正在获取 Ceph 集群...",
+          "success": "集群已获取"
+        },
+        "create": {
+          "description": "创建新的 Ceph 集群",
+          "creating": "正在创建 Ceph 集群 \"{{name}}\"...",
+          "success": "Ceph 集群 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "description": "删除 Ceph 集群",
+          "confirm": "确定要删除 Ceph 集群 \"{{name}}\"？",
+          "deleting": "正在删除 Ceph 集群 \"{{name}}\"...",
+          "success": "Ceph 集群 \"{{name}}\" 已删除"
+        },
+        "machines": {
+          "description": "列出 Ceph 集群中的机器",
+          "fetching": "正在获取集群机器...",
+          "success": "集群机器已获取"
+        },
+        "vault": {
+          "description": "Ceph 集群保险库管理",
+          "get": {
+            "description": "获取集群保险库数据",
+            "fetching": "正在获取集群保险库...",
+            "success": "集群保险库已获取"
+          },
+          "update": {
+            "description": "更新集群保险库数据",
+            "updating": "正在更新 \"{{name}}\" 的集群保险库...",
+            "success": "\"{{name}}\" 的集群保险库已更新"
+          }
+        }
+      },
+      "pool": {
+        "description": "Ceph 存储池管理",
+        "list": {
+          "description": "列出 Ceph 存储池",
+          "fetching": "正在获取 Ceph 存储池...",
+          "success": "存储池已获取"
+        },
+        "create": {
+          "description": "创建新的 Ceph 存储池",
+          "creating": "正在创建 Ceph 存储池 \"{{name}}\"...",
+          "success": "Ceph 存储池 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "description": "删除 Ceph 存储池",
+          "confirm": "确定要删除 Ceph 存储池 \"{{name}}\"？",
+          "deleting": "正在删除 Ceph 存储池 \"{{name}}\"...",
+          "success": "Ceph 存储池 \"{{name}}\" 已删除"
+        },
+        "vault": {
+          "description": "Ceph 存储池保险库管理",
+          "get": {
+            "description": "获取存储池保险库数据",
+            "fetching": "正在获取存储池保险库...",
+            "success": "存储池保险库已获取"
+          },
+          "update": {
+            "description": "更新存储池保险库数据",
+            "updating": "正在更新 \"{{name}}\" 的存储池保险库...",
+            "success": "\"{{name}}\" 的存储池保险库已更新"
+          }
+        }
+      },
+      "image": {
+        "description": "Ceph RBD 镜像管理",
+        "list": {
+          "description": "列出 RBD 镜像",
+          "fetching": "正在获取 RBD 镜像...",
+          "success": "镜像已获取"
+        },
+        "create": {
+          "description": "创建新的 RBD 镜像",
+          "creating": "正在创建 RBD 镜像 \"{{name}}\"...",
+          "success": "RBD 镜像 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "description": "删除 RBD 镜像",
+          "confirm": "确定要删除 RBD 镜像 \"{{name}}\"？",
+          "deleting": "正在删除 RBD 镜像 \"{{name}}\"...",
+          "success": "RBD 镜像 \"{{name}}\" 已删除"
+        }
+      },
+      "snapshot": {
+        "description": "Ceph RBD 快照管理",
+        "list": {
+          "description": "列出 RBD 快照",
+          "fetching": "正在获取 RBD 快照...",
+          "success": "快照已获取"
+        },
+        "create": {
+          "description": "创建新的 RBD 快照",
+          "creating": "正在创建 RBD 快照 \"{{name}}\"...",
+          "success": "RBD 快照 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "description": "删除 RBD 快照",
+          "confirm": "确定要删除 RBD 快照 \"{{name}}\"？",
+          "deleting": "正在删除 RBD 快照 \"{{name}}\"...",
+          "success": "RBD 快照 \"{{name}}\" 已删除"
+        }
+      },
+      "clone": {
+        "description": "Ceph RBD 克隆管理",
+        "list": {
+          "description": "列出 RBD 克隆",
+          "fetching": "正在获取 RBD 克隆...",
+          "success": "克隆已获取"
+        },
+        "create": {
+          "description": "从快照创建新的 RBD 克隆",
+          "creating": "正在创建 RBD 克隆 \"{{name}}\"...",
+          "success": "RBD 克隆 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "description": "删除 RBD 克隆",
+          "confirm": "确定要删除 RBD 克隆 \"{{name}}\"？",
+          "deleting": "正在删除 RBD 克隆 \"{{name}}\"...",
+          "success": "RBD 克隆 \"{{name}}\" 已删除"
+        },
+        "machines": {
+          "description": "列出分配给克隆的机器",
+          "fetching": "正在获取克隆机器...",
+          "success": "克隆机器已获取"
+        },
+        "assign": {
+          "description": "将机器分配给克隆",
+          "assigning": "正在将机器分配给克隆 \"{{name}}\"...",
+          "success": "机器已分配给克隆 \"{{name}}\""
+        },
+        "unassign": {
+          "description": "从克隆移除机器",
+          "unassigning": "正在从克隆 \"{{name}}\" 移除机器...",
+          "success": "已从克隆 \"{{name}}\" 移除机器"
+        }
       }
     },
     "context": {
@@ -362,6 +506,47 @@
         "enabling": "正在启用维护模式..."
       }
     },
+    "permission": {
+      "description": "权限管理命令",
+      "list": {
+        "description": "列出权限",
+        "fetching": "正在获取权限..."
+      },
+      "group": {
+        "description": "权限组管理",
+        "list": {
+          "description": "列出所有权限组",
+          "fetching": "正在获取权限组...",
+          "success": "权限组已获取"
+        },
+        "create": {
+          "description": "创建新权限组",
+          "creating": "正在创建权限组 \"{{name}}\"...",
+          "success": "权限组 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "confirm": "删除权限组 \"{{name}}\" 吗？",
+          "deleting": "正在删除权限组 \"{{name}}\"...",
+          "description": "删除权限组",
+          "success": "权限组 \"{{name}}\" 已删除"
+        },
+        "show": {
+          "description": "显示权限组详情",
+          "fetching": "正在获取权限组详情...",
+          "success": "详情已获取"
+        }
+      },
+      "add": {
+        "adding": "正在将权限 \"{{permission}}\" 添加到组 \"{{group}}\"...",
+        "description": "向组添加权限",
+        "success": "权限已添加"
+      },
+      "remove": {
+        "description": "从组中移除权限",
+        "removing": "正在从组 \"{{group}}\" 中移除权限 \"{{permission}}\"...",
+        "success": "权限已移除"
+      }
+    },
     "protocol": {
       "description": "管理 {{scheme}}:// 协议处理程序注册和 URL 处理",
       "register": {
@@ -409,47 +594,6 @@
         "description": "解析 {{scheme}}:// URL 并显示组件",
         "parsedUrl": "\n已解析的协议 URL：",
         "cliCommand": "\n命令行界面命令："
-      }
-    },
-    "permission": {
-      "description": "权限管理命令",
-      "list": {
-        "description": "列出权限",
-        "fetching": "正在获取权限..."
-      },
-      "group": {
-        "description": "权限组管理",
-        "list": {
-          "description": "列出所有权限组",
-          "fetching": "正在获取权限组...",
-          "success": "权限组已获取"
-        },
-        "create": {
-          "description": "创建新权限组",
-          "creating": "正在创建权限组 \"{{name}}\"...",
-          "success": "权限组 \"{{name}}\" 已创建"
-        },
-        "delete": {
-          "confirm": "删除权限组 \"{{name}}\" 吗？",
-          "deleting": "正在删除权限组 \"{{name}}\"...",
-          "description": "删除权限组",
-          "success": "权限组 \"{{name}}\" 已删除"
-        },
-        "show": {
-          "description": "显示权限组详情",
-          "fetching": "正在获取权限组详情...",
-          "success": "详情已获取"
-        }
-      },
-      "add": {
-        "adding": "正在将权限 \"{{permission}}\" 添加到组 \"{{group}}\"...",
-        "description": "向组添加权限",
-        "success": "权限已添加"
-      },
-      "remove": {
-        "description": "从组中移除权限",
-        "removing": "正在从组 \"{{group}}\" 中移除权限 \"{{permission}}\"...",
-        "success": "权限已移除"
       }
     },
     "queue": {
@@ -552,6 +696,24 @@
         }
       }
     },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[本地] 在 {{duration}}ms 内完成",
+        "description": "运行函数（快捷方式：queue create）",
+        "executingLocal": "[本地] 在 {{machine}} 上执行 '{{function}}'...",
+        "failedLocal": "[本地] 失败：{{error}}",
+        "watching": "正在监视完成情况..."
+      },
+      "trace": {
+        "description": "跟踪任务（快捷方式：queue trace）"
+      },
+      "cancel": {
+        "description": "取消任务（快捷方式：queue cancel）"
+      },
+      "retry": {
+        "description": "重试失败的任务（快捷方式：queue retry）"
+      }
+    },
     "storage": {
       "description": "存储管理",
       "list": {
@@ -617,24 +779,6 @@
         }
       }
     },
-    "shortcuts": {
-      "run": {
-        "completedLocal": "[本地] 在 {{duration}}ms 内完成",
-        "description": "运行函数（快捷方式：queue create）",
-        "executingLocal": "[本地] 在 {{machine}} 上执行 '{{function}}'...",
-        "failedLocal": "[本地] 失败：{{error}}",
-        "watching": "正在监视完成情况..."
-      },
-      "trace": {
-        "description": "跟踪任务（快捷方式：queue trace）"
-      },
-      "cancel": {
-        "description": "取消任务（快捷方式：queue cancel）"
-      },
-      "retry": {
-        "description": "重试失败的任务（快捷方式：queue retry）"
-      }
-    },
     "term": {
       "description": "SSH 终端访问机器和仓库",
       "connecting": "正在连接到 {{machine}}...",
@@ -646,57 +790,6 @@
       "launchSuccess": "终端已成功启动。",
       "launchingTerminal": "正在启动 {{type}} 终端...",
       "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
-    },
-    "vscode": {
-      "description": "VS Code 远程 SSH 集成",
-      "connect": {
-        "description": "在 VS Code 中连接到机器或仓库",
-        "detecting": "正在检测 VS Code...",
-        "extensionWarning": "警告：可能未安装远程 SSH 扩展。\n从以下地址安装：https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
-        "fetchingDetails": "正在获取连接详情...",
-        "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接...",
-        "persistingKey": "正在保存 SSH 密钥...",
-        "configuringSSH": "正在配置 SSH...",
-        "configuringVSCode": "正在配置 VS Code 设置...",
-        "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
-        "settingUpEnv": "正在设置远程环境...",
-        "opening": "正在打开 VS Code：{{connection}} → {{path}}",
-        "success": "VS Code 已成功启动。"
-      },
-      "list": {
-        "description": "列出已配置的 VS Code SSH 连接",
-        "noConnections": "未配置任何 VS Code SSH 连接。",
-        "configFile": "\n配置文件：{{path}}",
-        "header": "已配置的 VS Code SSH 连接：\n",
-        "keyPersisted": "（密钥已保存）",
-        "total": "\n总计：{{count}} 个连接"
-      },
-      "cleanup": {
-        "description": "移除 VS Code SSH 配置",
-        "cleanedAll": "已清除 {{count}} 个 VS Code SSH 连接。",
-        "removedKeys": "已移除所有保存的 SSH 密钥。",
-        "cleaned": "已清除：{{connection}}"
-      },
-      "check": {
-        "description": "检查 VS Code 安装和配置",
-        "title": "VS Code 设置检查\n",
-        "installation": "安装：",
-        "vscodeFound": "  VS Code：{{path}}",
-        "version": "  版本：{{version}}",
-        "variant": "  变体：Insiders",
-        "vscodeNotFound": "  VS Code：未找到",
-        "remoteSSH": "  远程 SSH 扩展：{{status}}",
-        "installed": "已安装",
-        "notDetected": "未检测到",
-        "configuration": "\n配置：",
-        "settingsPath": "  设置路径：{{path}}",
-        "configured": "  已配置：{{status}}",
-        "yes": "是",
-        "no": "否",
-        "missingSettings": "  缺失的设置：",
-        "sshConfig": "\nSSH 配置：{{path}}",
-        "activeConnections": "活跃连接：{{count}}"
-      }
     },
     "user": {
       "description": "用户管理命令",
@@ -768,6 +861,57 @@
           "success": "权限已分配"
         }
       }
+    },
+    "vscode": {
+      "description": "VS Code 远程 SSH 集成",
+      "connect": {
+        "description": "在 VS Code 中连接到机器或仓库",
+        "detecting": "正在检测 VS Code...",
+        "extensionWarning": "警告：可能未安装远程 SSH 扩展。\n从以下地址安装：https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "正在获取连接详情...",
+        "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接...",
+        "persistingKey": "正在保存 SSH 密钥...",
+        "configuringSSH": "正在配置 SSH...",
+        "configuringVSCode": "正在配置 VS Code 设置...",
+        "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
+        "settingUpEnv": "正在设置远程环境...",
+        "opening": "正在打开 VS Code：{{connection}} → {{path}}",
+        "success": "VS Code 已成功启动。"
+      },
+      "list": {
+        "description": "列出已配置的 VS Code SSH 连接",
+        "noConnections": "未配置任何 VS Code SSH 连接。",
+        "configFile": "\n配置文件：{{path}}",
+        "header": "已配置的 VS Code SSH 连接：\n",
+        "keyPersisted": "（密钥已保存）",
+        "total": "\n总计：{{count}} 个连接"
+      },
+      "cleanup": {
+        "description": "移除 VS Code SSH 配置",
+        "cleanedAll": "已清除 {{count}} 个 VS Code SSH 连接。",
+        "removedKeys": "已移除所有保存的 SSH 密钥。",
+        "cleaned": "已清除：{{connection}}"
+      },
+      "check": {
+        "description": "检查 VS Code 安装和配置",
+        "title": "VS Code 设置检查\n",
+        "installation": "安装：",
+        "vscodeFound": "  VS Code：{{path}}",
+        "version": "  版本：{{version}}",
+        "variant": "  变体：Insiders",
+        "vscodeNotFound": "  VS Code：未找到",
+        "remoteSSH": "  远程 SSH 扩展：{{status}}",
+        "installed": "已安装",
+        "notDetected": "未检测到",
+        "configuration": "\n配置：",
+        "settingsPath": "  设置路径：{{path}}",
+        "configured": "  已配置：{{status}}",
+        "yes": "是",
+        "no": "否",
+        "missingSettings": "  缺失的设置：",
+        "sshConfig": "\nSSH 配置：{{path}}",
+        "activeConnections": "活跃连接：{{count}}"
+      }
     }
   },
   "errors": {
@@ -778,6 +922,7 @@
     "contextNotFound": "上下文 \"{{name}}\" 未找到",
     "invalidCredentials": "凭证无效",
     "invalidEmail": "请输入有效的电子邮件",
+    "invalidMasterPassword": "保险箱加密的主密码无效",
     "invalidExpiration": "令牌过期时间必须在 1 到 720 小时之间",
     "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
     "invalidFunctionParams": "函数 \"{{function}}\" 的参数无效：{{errors}}",
@@ -797,6 +942,8 @@
     "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "cannotPromote": "无法提升：{{reason}}",
+    "clusterNotFound": "Ceph 集群 \"{{name}}\" 未找到",
+    "poolNotFound": "Ceph 池 \"{{name}}\" 未找到",
     "protocol": {
       "notSupported": "{{platform}} 上不支持协议注册",
       "invalidUrl": "无效的协议 URL：{{error}}",
@@ -856,6 +1003,7 @@
     "activationCode": "来自电子邮件的激活码",
     "apiUrl": "API 网址",
     "bridge": "网桥名称",
+    "cluster": "Ceph 集群名称",
     "command": "执行命令而不是交互式 shell",
     "container": "连接到特定 Docker 容器",
     "containerAction": "容器操作：terminal、logs、stats、exec",
@@ -864,6 +1012,11 @@
     "email": "电子邮件地址",
     "external": "强制在外部终端窗口中启动",
     "follow": "跟踪日志输出",
+    "image": "RBD 镜像名称",
+    "pool": "Ceph 池名称",
+    "snapshot": "RBD 快照名称",
+    "vaultContent": "保险箱内容为 JSON 字符串",
+    "machineNames": "机器名称（逗号分隔）",
     "endpoint": "API 端点 URL",
     "expires": "过期时间（小时数，1-720）",
     "force": "跳过确认提示",
@@ -876,6 +1029,7 @@
     "organization": "组织名称",
     "output": "输出格式（table|json|yaml|csv）",
     "password": "密码（用于非交互式登录）",
+    "masterPassword": "保险箱加密的主密码",
     "region": "区域名称",
     "renetPath": "renet 二进制文件的路径（默认：PATH 中的 renet）",
     "repository": "仓库名称（连接到仓库环境）",
@@ -887,6 +1041,7 @@
     "sshPrivateKey": "SSH 私钥路径",
     "sshPublicKey": "SSH 公钥路径",
     "sshUser": "SSH 用户名",
+    "subscriptionPlan": "订阅计划（COMMUNITY、PROFESSIONAL、BUSINESS、ENTERPRISE）",
     "switch": "创建后切换到此上下文",
     "team": "团队名称",
     "tfaCode": "用于验证的当前双因素认证代码",
@@ -964,7 +1119,8 @@
     "setPassword": "为用户设置密码：",
     "newPassword": "新密码：",
     "confirmNewPassword": "确认新密码：",
-    "masterPassword": "请输入您的主密码："
+    "masterPassword": "请输入您的主密码：",
+    "masterPasswordForVault": "请输入保险箱加密的主密码："
   },
   "spinners": {
     "connecting": "正在连接...",

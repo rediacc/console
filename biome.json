@@ -61,5 +61,19 @@
       "!**/*.generated.ts"
     ],
     "ignoreUnknown": true
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/cli/tests/**/*.ts"],
+      "assist": {
+        "actions": {
+          "source": {
+            "organizeImports": {
+              "level": "off"
+            }
+          }
+        }
+      }
+    }
+  ]
 }

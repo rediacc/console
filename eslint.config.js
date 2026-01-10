@@ -20,6 +20,7 @@ export default tseslint.config(
     ignores: [
       'dist/',
       'packages/*/dist/',
+      'packages/*/dist-typecheck/',
       'packages/*/node_modules/',
       'packages/*/bin/',
       'bin/',
@@ -95,6 +96,7 @@ export default tseslint.config(
             'packages/web/tsconfig.json',
             'packages/shared/tsconfig.json',
             'packages/cli/tsconfig.json',
+            'packages/cli/tests/tsconfig.json',
           ],
           // Suppress warning about multiple tsconfig files (expected in monorepo)
           noWarnOnMultipleProjects: true,
@@ -599,5 +601,23 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-assertions': 'off',
       '@typescript-eslint/no-deprecated': 'off',
     }
+  },
+
+  // CLI test files - relaxed rules for test patterns
+  {
+    files: ['packages/cli/tests/**/*.ts'],
+    rules: {
+      // Test files legitimately use boolean || for condition checks
+      // e.g., output.includes("foo") || output.includes("bar")
+      '@typescript-eslint/prefer-nullish-coalescing': ['error', {
+        ignorePrimitives: {
+          boolean: true,
+          number: true,
+          string: true,
+        },
+      }],
+      // Tests can be longer than production code
+      'max-lines': 'off',
+    },
   }
 );
