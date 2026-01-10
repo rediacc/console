@@ -1,9 +1,10 @@
+import { ApiClientError } from '@rediacc/shared/api';
 import { CliApiError } from '../services/api.js';
 import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { telemetryService } from '../services/telemetry.js';
 import { type CliError, ValidationError } from '../types/errors.js';
-import { EXIT_CODES, type OutputFormat } from '../types/index.js';
+import { EXIT_CODES, httpStatusToExitCode, type OutputFormat } from '../types/index.js';
 
 // Global output format (set by main program before command execution)
 let currentOutputFormat: OutputFormat = 'table';
@@ -61,30 +62,39 @@ export function handleError(error: unknown): never {
     }
   }
 
-  // Shutdown telemetry before exit (fire and forget with short timeout)
-  void telemetryService.shutdown().finally(() => {
-    process.exit(cliError.exitCode);
+  // Fire-and-forget telemetry shutdown (don't block exit)
+  void telemetryService.shutdown().catch(() => {
+    // Ignore shutdown errors - we're exiting anyway
   });
 
-  // If shutdown takes too long, exit anyway after 2 seconds
-  setTimeout(() => {
-    process.exit(cliError.exitCode);
-  }, 2000).unref();
-
-  // This never returns, but TypeScript needs a return type
-  throw new Error('Unreachable');
+  // Exit synchronously - process.exit() never returns, satisfying the `never` return type
+  process.exit(cliError.exitCode);
 }
 
 /**
  * Normalize various error types into a consistent CliError structure.
  */
-export function normalizeError(error: unknown): CliError {
+function normalizeError(error: unknown): CliError {
   if (error instanceof CliApiError) {
     return {
       code: error.code,
       message: error.message,
       details: error.details,
       exitCode: error.exitCode,
+    };
+  }
+
+  // Handle ApiClientError (base class) - map HTTP status to exit code
+  // This must come AFTER CliApiError check since CliApiError extends ApiClientError
+  if (error instanceof ApiClientError) {
+    // Map HTTP status code to Unix-compatible exit code
+    const httpStatus = error.response?.failure ?? 0;
+    const exitCode = httpStatus > 0 ? httpStatusToExitCode(httpStatus) : EXIT_CODES.GENERAL_ERROR;
+    return {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      exitCode,
     };
   }
 

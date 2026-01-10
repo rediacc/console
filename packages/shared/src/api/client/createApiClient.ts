@@ -379,7 +379,11 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
     organizationName: string,
     email: string,
     passwordHash: string,
-    options: { languagePreference?: string; turnstileToken?: string } = {}
+    options: {
+      languagePreference?: string;
+      turnstileToken?: string;
+      subscriptionPlan?: string;
+    } = {}
   ): Promise<ApiResponse> {
     await initialize();
 
@@ -390,6 +394,7 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
           organizationName,
           userEmailAddress: email,
           languagePreference: options.languagePreference ?? 'en',
+          subscriptionPlan: options.subscriptionPlan ?? 'COMMUNITY',
           turnstileToken: options.turnstileToken,
         },
         { headers: buildAuthHeaders(email, passwordHash) }

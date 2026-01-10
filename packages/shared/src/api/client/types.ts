@@ -60,7 +60,7 @@ export interface AuthClient {
     organizationName: string,
     email: string,
     passwordHash: string,
-    options?: { languagePreference?: string; turnstileToken?: string }
+    options?: { languagePreference?: string; turnstileToken?: string; subscriptionPlan?: string }
   ): Promise<ApiResponse>;
 }
 

@@ -3,6 +3,28 @@
     "description": "Rediacc コンソール CLI - Rediacc 操作用コマンドラインインターフェース"
   },
   "commands": {
+    "audit": {
+      "description": "監査ログコマンド",
+      "list": {
+        "description": "監査ログエントリをリスト表示する",
+        "fetching": "監査ログを取得中です..."
+      },
+      "log": {
+        "description": "監査ログを表示する",
+        "fetching": "監査ログを取得中です...",
+        "success": "監査ログが取得されました"
+      },
+      "trace": {
+        "description": "エンティティの監査履歴をトレースする",
+        "fetching": "エンティティの監査トレースを取得中です...",
+        "success": "監査トレースが取得されました"
+      },
+      "history": {
+        "description": "エンティティ履歴を表示する",
+        "fetching": "エンティティ履歴を取得中です...",
+        "success": "履歴が取得されました"
+      }
+    },
     "auth": {
       "description": "認証コマンド",
       "login": {
@@ -81,28 +103,6 @@
         }
       }
     },
-    "audit": {
-      "description": "監査ログコマンド",
-      "list": {
-        "description": "監査ログエントリをリスト表示する",
-        "fetching": "監査ログを取得中です..."
-      },
-      "log": {
-        "description": "監査ログを表示する",
-        "fetching": "監査ログを取得中です...",
-        "success": "監査ログが取得されました"
-      },
-      "trace": {
-        "description": "エンティティの監査履歴をトレースする",
-        "fetching": "エンティティの監査トレースを取得中です...",
-        "success": "監査トレースが取得されました"
-      },
-      "history": {
-        "description": "エンティティ履歴を表示する",
-        "fetching": "エンティティ履歴を取得中です...",
-        "success": "履歴が取得されました"
-      }
-    },
     "bridge": {
       "description": "ブリッジ管理",
       "list": {
@@ -114,6 +114,150 @@
         "newToken": "新しいトークン: {{token}}",
         "resetting": "ブリッジ \"{{name}}\" の認可をリセット中です...",
         "success": "認可がリセットされました"
+      }
+    },
+    "ceph": {
+      "description": "Ceph 分散ストレージ管理",
+      "cluster": {
+        "description": "Ceph クラスター管理",
+        "list": {
+          "description": "Ceph クラスターを一覧表示する",
+          "fetching": "Ceph クラスターを取得中...",
+          "success": "クラスターを取得しました"
+        },
+        "create": {
+          "description": "新しい Ceph クラスターを作成する",
+          "creating": "Ceph クラスター \"{{name}}\" を作成中...",
+          "success": "Ceph クラスター \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "description": "Ceph クラスターを削除する",
+          "confirm": "Ceph クラスター \"{{name}}\" を削除しますか？",
+          "deleting": "Ceph クラスター \"{{name}}\" を削除中...",
+          "success": "Ceph クラスター \"{{name}}\" を削除しました"
+        },
+        "machines": {
+          "description": "Ceph クラスター内のマシンを一覧表示する",
+          "fetching": "クラスターのマシンを取得中...",
+          "success": "クラスターのマシンを取得しました"
+        },
+        "vault": {
+          "description": "Ceph クラスター Vault 管理",
+          "get": {
+            "description": "クラスター Vault データを取得する",
+            "fetching": "クラスター Vault を取得中...",
+            "success": "クラスター Vault を取得しました"
+          },
+          "update": {
+            "description": "クラスター Vault データを更新する",
+            "updating": "\"{{name}}\" のクラスター Vault を更新中...",
+            "success": "\"{{name}}\" のクラスター Vault を更新しました"
+          }
+        }
+      },
+      "pool": {
+        "description": "Ceph プール管理",
+        "list": {
+          "description": "Ceph プールを一覧表示する",
+          "fetching": "Ceph プールを取得中...",
+          "success": "プールを取得しました"
+        },
+        "create": {
+          "description": "新しい Ceph プールを作成する",
+          "creating": "Ceph プール \"{{name}}\" を作成中...",
+          "success": "Ceph プール \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "description": "Ceph プールを削除する",
+          "confirm": "Ceph プール \"{{name}}\" を削除しますか？",
+          "deleting": "Ceph プール \"{{name}}\" を削除中...",
+          "success": "Ceph プール \"{{name}}\" を削除しました"
+        },
+        "vault": {
+          "description": "Ceph プール Vault 管理",
+          "get": {
+            "description": "プール Vault データを取得する",
+            "fetching": "プール Vault を取得中...",
+            "success": "プール Vault を取得しました"
+          },
+          "update": {
+            "description": "プール Vault データを更新する",
+            "updating": "\"{{name}}\" のプール Vault を更新中...",
+            "success": "\"{{name}}\" のプール Vault を更新しました"
+          }
+        }
+      },
+      "image": {
+        "description": "Ceph RBD イメージ管理",
+        "list": {
+          "description": "RBD イメージを一覧表示する",
+          "fetching": "RBD イメージを取得中...",
+          "success": "イメージを取得しました"
+        },
+        "create": {
+          "description": "新しい RBD イメージを作成する",
+          "creating": "RBD イメージ \"{{name}}\" を作成中...",
+          "success": "RBD イメージ \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "description": "RBD イメージを削除する",
+          "confirm": "RBD イメージ \"{{name}}\" を削除しますか？",
+          "deleting": "RBD イメージ \"{{name}}\" を削除中...",
+          "success": "RBD イメージ \"{{name}}\" を削除しました"
+        }
+      },
+      "snapshot": {
+        "description": "Ceph RBD スナップショット管理",
+        "list": {
+          "description": "RBD スナップショットを一覧表示する",
+          "fetching": "RBD スナップショットを取得中...",
+          "success": "スナップショットを取得しました"
+        },
+        "create": {
+          "description": "新しい RBD スナップショットを作成する",
+          "creating": "RBD スナップショット \"{{name}}\" を作成中...",
+          "success": "RBD スナップショット \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "description": "RBD スナップショットを削除する",
+          "confirm": "RBD スナップショット \"{{name}}\" を削除しますか？",
+          "deleting": "RBD スナップショット \"{{name}}\" を削除中...",
+          "success": "RBD スナップショット \"{{name}}\" を削除しました"
+        }
+      },
+      "clone": {
+        "description": "Ceph RBD クローン管理",
+        "list": {
+          "description": "RBD クローンを一覧表示する",
+          "fetching": "RBD クローンを取得中...",
+          "success": "クローンを取得しました"
+        },
+        "create": {
+          "description": "スナップショットから新しい RBD クローンを作成する",
+          "creating": "RBD クローン \"{{name}}\" を作成中...",
+          "success": "RBD クローン \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "description": "RBD クローンを削除する",
+          "confirm": "RBD クローン \"{{name}}\" を削除しますか？",
+          "deleting": "RBD クローン \"{{name}}\" を削除中...",
+          "success": "RBD クローン \"{{name}}\" を削除しました"
+        },
+        "machines": {
+          "description": "クローンに割り当てられたマシンを一覧表示する",
+          "fetching": "クローンのマシンを取得中...",
+          "success": "クローンのマシンを取得しました"
+        },
+        "assign": {
+          "description": "クローンにマシンを割り当てる",
+          "assigning": "クローン \"{{name}}\" にマシンを割り当て中...",
+          "success": "クローン \"{{name}}\" にマシンを割り当てました"
+        },
+        "unassign": {
+          "description": "クローンからマシンを削除する",
+          "unassigning": "クローン \"{{name}}\" からマシンを削除中...",
+          "success": "クローン \"{{name}}\" からマシンを削除しました"
+        }
       }
     },
     "context": {
@@ -362,6 +506,47 @@
         "enabling": "メンテナンスモードを有効化中です..."
       }
     },
+    "permission": {
+      "description": "権限管理コマンド",
+      "list": {
+        "description": "権限をリスト表示する",
+        "fetching": "権限を取得中です..."
+      },
+      "group": {
+        "description": "権限グループ管理",
+        "list": {
+          "description": "すべての権限グループをリスト表示する",
+          "fetching": "権限グループを取得中です...",
+          "success": "権限グループが取得されました"
+        },
+        "create": {
+          "description": "新しい権限グループを作成する",
+          "creating": "権限グループ \"{{name}}\" を作成中です...",
+          "success": "権限グループ \"{{name}}\" が作成されました"
+        },
+        "delete": {
+          "confirm": "権限グループ \"{{name}}\" を削除しますか？",
+          "deleting": "権限グループ \"{{name}}\" を削除中です...",
+          "description": "権限グループを削除する",
+          "success": "権限グループ \"{{name}}\" が削除されました"
+        },
+        "show": {
+          "description": "権限グループの詳細を表示する",
+          "fetching": "権限グループの詳細を取得中です...",
+          "success": "詳細が取得されました"
+        }
+      },
+      "add": {
+        "adding": "権限 \"{{permission}}\" をグループ \"{{group}}\" に追加中です...",
+        "description": "グループに権限を追加する",
+        "success": "権限が追加されました"
+      },
+      "remove": {
+        "description": "グループから権限を削除する",
+        "removing": "権限 \"{{permission}}\" をグループ \"{{group}}\" から削除中です...",
+        "success": "権限が削除されました"
+      }
+    },
     "protocol": {
       "description": "{{scheme}}:// プロトコルハンドラーの登録と URL 処理を管理する",
       "register": {
@@ -409,47 +594,6 @@
         "description": "{{scheme}}:// URL を解析してコンポーネントを表示する",
         "parsedUrl": "\n解析されたプロトコル URL:",
         "cliCommand": "\nCLI コマンド:"
-      }
-    },
-    "permission": {
-      "description": "権限管理コマンド",
-      "list": {
-        "description": "権限をリスト表示する",
-        "fetching": "権限を取得中です..."
-      },
-      "group": {
-        "description": "権限グループ管理",
-        "list": {
-          "description": "すべての権限グループをリスト表示する",
-          "fetching": "権限グループを取得中です...",
-          "success": "権限グループが取得されました"
-        },
-        "create": {
-          "description": "新しい権限グループを作成する",
-          "creating": "権限グループ \"{{name}}\" を作成中です...",
-          "success": "権限グループ \"{{name}}\" が作成されました"
-        },
-        "delete": {
-          "confirm": "権限グループ \"{{name}}\" を削除しますか？",
-          "deleting": "権限グループ \"{{name}}\" を削除中です...",
-          "description": "権限グループを削除する",
-          "success": "権限グループ \"{{name}}\" が削除されました"
-        },
-        "show": {
-          "description": "権限グループの詳細を表示する",
-          "fetching": "権限グループの詳細を取得中です...",
-          "success": "詳細が取得されました"
-        }
-      },
-      "add": {
-        "adding": "権限 \"{{permission}}\" をグループ \"{{group}}\" に追加中です...",
-        "description": "グループに権限を追加する",
-        "success": "権限が追加されました"
-      },
-      "remove": {
-        "description": "グループから権限を削除する",
-        "removing": "権限 \"{{permission}}\" をグループ \"{{group}}\" から削除中です...",
-        "success": "権限が削除されました"
       }
     },
     "queue": {
@@ -552,6 +696,24 @@
         }
       }
     },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[ローカル] {{duration}}ms で完了しました",
+        "description": "関数を実行する (短縮形: queue create)",
+        "executingLocal": "[ローカル] {{machine}} で '{{function}}' を実行中です...",
+        "failedLocal": "[ローカル] 失敗: {{error}}",
+        "watching": "完了を監視中です..."
+      },
+      "trace": {
+        "description": "タスクをトレースする (短縮形: queue trace)"
+      },
+      "cancel": {
+        "description": "タスクをキャンセルする (短縮形: queue cancel)"
+      },
+      "retry": {
+        "description": "失敗したタスクを再試行する (短縮形: queue retry)"
+      }
+    },
     "storage": {
       "description": "ストレージ管理",
       "list": {
@@ -617,24 +779,6 @@
         }
       }
     },
-    "shortcuts": {
-      "run": {
-        "completedLocal": "[ローカル] {{duration}}ms で完了しました",
-        "description": "関数を実行する (短縮形: queue create)",
-        "executingLocal": "[ローカル] {{machine}} で '{{function}}' を実行中です...",
-        "failedLocal": "[ローカル] 失敗: {{error}}",
-        "watching": "完了を監視中です..."
-      },
-      "trace": {
-        "description": "タスクをトレースする (短縮形: queue trace)"
-      },
-      "cancel": {
-        "description": "タスクをキャンセルする (短縮形: queue cancel)"
-      },
-      "retry": {
-        "description": "失敗したタスクを再試行する (短縮形: queue retry)"
-      }
-    },
     "term": {
       "description": "マシンとリポジトリへの SSH ターミナルアクセス",
       "connecting": "{{machine}} に接続中です...",
@@ -646,57 +790,6 @@
       "launchSuccess": "ターミナルが正常に起動されました。",
       "launchingTerminal": "{{type}} ターミナルを起動中です...",
       "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
-    },
-    "vscode": {
-      "description": "VS Code リモート SSH 統合",
-      "connect": {
-        "description": "VS Code でマシンまたはリポジトリに接続する",
-        "detecting": "VS Code を検出中です...",
-        "extensionWarning": "警告: Remote SSH 拡張機能がインストールされていない可能性があります。\nインストール: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
-        "fetchingDetails": "接続詳細を取得中です...",
-        "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です...",
-        "persistingKey": "SSH キーを永続化中です...",
-        "configuringSSH": "SSH を設定中です...",
-        "configuringVSCode": "VS Code 設定を設定中です...",
-        "settingsWarning": "警告: VS Code 設定を設定できませんでした: {{error}}",
-        "settingUpEnv": "リモート環境をセットアップ中です...",
-        "opening": "VS Code を開いています: {{connection}} → {{path}}",
-        "success": "VS Code が正常に起動されました。"
-      },
-      "list": {
-        "description": "設定済みの VS Code SSH 接続をリスト表示する",
-        "noConnections": "VS Code SSH 接続が設定されていません。",
-        "configFile": "\n設定ファイル: {{path}}",
-        "header": "設定済みの VS Code SSH 接続:\n",
-        "keyPersisted": " (キー永続化済み)",
-        "total": "\n合計: {{count}} 個の接続"
-      },
-      "cleanup": {
-        "description": "VS Code SSH 設定を削除する",
-        "cleanedAll": "{{count}} 個の VS Code SSH 接続をクリーンアップしました。",
-        "removedKeys": "すべての永続化された SSH キーを削除しました。",
-        "cleaned": "クリーンアップ: {{connection}}"
-      },
-      "check": {
-        "description": "VS Code のインストールと設定を確認する",
-        "title": "VS Code セットアップ確認\n",
-        "installation": "インストール:",
-        "vscodeFound": "  VS Code: {{path}}",
-        "version": "  バージョン: {{version}}",
-        "variant": "  バリアント: Insiders",
-        "vscodeNotFound": "  VS Code: 見つかりません",
-        "remoteSSH": "  Remote SSH 拡張機能: {{status}}",
-        "installed": "インストール済み",
-        "notDetected": "検出されません",
-        "configuration": "\n設定:",
-        "settingsPath": "  設定パス: {{path}}",
-        "configured": "  設定済み: {{status}}",
-        "yes": "はい",
-        "no": "いいえ",
-        "missingSettings": "  不足している設定:",
-        "sshConfig": "\nSSH 設定: {{path}}",
-        "activeConnections": "アクティブな接続: {{count}}"
-      }
     },
     "user": {
       "description": "ユーザー管理コマンド",
@@ -768,6 +861,57 @@
           "success": "権限が割り当てられました"
         }
       }
+    },
+    "vscode": {
+      "description": "VS Code リモート SSH 統合",
+      "connect": {
+        "description": "VS Code でマシンまたはリポジトリに接続する",
+        "detecting": "VS Code を検出中です...",
+        "extensionWarning": "警告: Remote SSH 拡張機能がインストールされていない可能性があります。\nインストール: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "接続詳細を取得中です...",
+        "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です...",
+        "persistingKey": "SSH キーを永続化中です...",
+        "configuringSSH": "SSH を設定中です...",
+        "configuringVSCode": "VS Code 設定を設定中です...",
+        "settingsWarning": "警告: VS Code 設定を設定できませんでした: {{error}}",
+        "settingUpEnv": "リモート環境をセットアップ中です...",
+        "opening": "VS Code を開いています: {{connection}} → {{path}}",
+        "success": "VS Code が正常に起動されました。"
+      },
+      "list": {
+        "description": "設定済みの VS Code SSH 接続をリスト表示する",
+        "noConnections": "VS Code SSH 接続が設定されていません。",
+        "configFile": "\n設定ファイル: {{path}}",
+        "header": "設定済みの VS Code SSH 接続:\n",
+        "keyPersisted": " (キー永続化済み)",
+        "total": "\n合計: {{count}} 個の接続"
+      },
+      "cleanup": {
+        "description": "VS Code SSH 設定を削除する",
+        "cleanedAll": "{{count}} 個の VS Code SSH 接続をクリーンアップしました。",
+        "removedKeys": "すべての永続化された SSH キーを削除しました。",
+        "cleaned": "クリーンアップ: {{connection}}"
+      },
+      "check": {
+        "description": "VS Code のインストールと設定を確認する",
+        "title": "VS Code セットアップ確認\n",
+        "installation": "インストール:",
+        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  バージョン: {{version}}",
+        "variant": "  バリアント: Insiders",
+        "vscodeNotFound": "  VS Code: 見つかりません",
+        "remoteSSH": "  Remote SSH 拡張機能: {{status}}",
+        "installed": "インストール済み",
+        "notDetected": "検出されません",
+        "configuration": "\n設定:",
+        "settingsPath": "  設定パス: {{path}}",
+        "configured": "  設定済み: {{status}}",
+        "yes": "はい",
+        "no": "いいえ",
+        "missingSettings": "  不足している設定:",
+        "sshConfig": "\nSSH 設定: {{path}}",
+        "activeConnections": "アクティブな接続: {{count}}"
+      }
     }
   },
   "errors": {
@@ -778,6 +922,7 @@
     "contextNotFound": "コンテキスト \"{{name}}\" が見つかりません",
     "invalidCredentials": "認証情報が無効です",
     "invalidEmail": "有効なメールアドレスを入力してください",
+    "invalidMasterPassword": "ボルト暗号化のマスターパスワードが無効です",
     "invalidExpiration": "トークン有効期限は 1 時間から 720 時間の間である必要があります",
     "invalidAction": "無効なアクション \"{{action}}\"。\"{{valid}}\" を使用してください。",
     "invalidFunctionParams": "関数 \"{{function}}\" のパラメータが無効です: {{errors}}",
@@ -797,6 +942,8 @@
     "cannotDeleteGrandRepo": "グランドリポジトリを削除できません: {{reason}}",
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "cannotPromote": "昇格できません: {{reason}}",
+    "clusterNotFound": "Ceph クラスター \"{{name}}\" が見つかりません",
+    "poolNotFound": "Ceph プール \"{{name}}\" が見つかりません",
     "protocol": {
       "notSupported": "{{platform}} ではプロトコル登録がサポートされていません",
       "invalidUrl": "無効なプロトコル URL: {{error}}",
@@ -856,6 +1003,7 @@
     "activationCode": "メールからの認証コード",
     "apiUrl": "API の URL",
     "bridge": "ブリッジ名",
+    "cluster": "Ceph クラスター名",
     "command": "インタラクティブシェルの代わりにコマンドを実行する",
     "container": "特定の Docker コンテナに接続する",
     "containerAction": "コンテナアクション: terminal, logs, stats, exec",
@@ -864,6 +1012,11 @@
     "email": "メールアドレス",
     "external": "外部ターミナルウィンドウで起動を強制する",
     "follow": "ログ出力をフォローする",
+    "image": "RBD イメージ名",
+    "pool": "Ceph プール名",
+    "snapshot": "RBD スナップショット名",
+    "vaultContent": "JSON 文字列としてのボルトコンテンツ",
+    "machineNames": "マシン名 (カンマ区切り)",
     "endpoint": "API エンドポイント URL",
     "expires": "有効期限 (時間単位: 1-720)",
     "force": "確認プロンプトをスキップする",
@@ -876,6 +1029,7 @@
     "organization": "組織名",
     "output": "出力形式 (table|json|yaml|csv)",
     "password": "パスワード (非対話型ログイン用)",
+    "masterPassword": "ボルト暗号化のマスターパスワード",
     "region": "リージョン名",
     "renetPath": "renet バイナリへのパス (デフォルト: PATH の renet)",
     "repository": "リポジトリ名 (リポジトリ環境に接続)",
@@ -887,6 +1041,7 @@
     "sshPrivateKey": "SSH 秘密鍵へのパス",
     "sshPublicKey": "SSH 公開鍵へのパス",
     "sshUser": "SSH ユーザー名",
+    "subscriptionPlan": "サブスクリプションプラン (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "作成後このコンテキストに切り替える",
     "team": "チーム名",
     "tfaCode": "検証用の現在の TFA コード",
@@ -964,7 +1119,8 @@
     "setPassword": "ユーザーのパスワードを設定:",
     "newPassword": "新しいパスワード:",
     "confirmNewPassword": "新しいパスワード確認:",
-    "masterPassword": "マスターパスワードを入力してください:"
+    "masterPassword": "マスターパスワードを入力してください:",
+    "masterPasswordForVault": "ボルト暗号化のマスターパスワードを入力してください:"
   },
   "spinners": {
     "connecting": "接続中です...",

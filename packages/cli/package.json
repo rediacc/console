@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/cli",
-  "version": "0.4.8",
+  "version": "0.4.14",
   "type": "module",
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "main": "dist/index.js",
@@ -13,12 +13,17 @@
     "build:bundle": "node bundle.mjs",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:unit": "SKIP_TEST_SETUP=1 vitest run src/__tests__",
-    "test:integration": "vitest run tests/",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest run --coverage",
+    "test": "playwright test --config tests/playwright.config.ts",
+    "test:run": "playwright test --config tests/playwright.config.ts",
+    "test:core": "playwright test --config tests/playwright.config.ts --project=core",
+    "test:resources": "playwright test --config tests/playwright.config.ts --project=resources",
+    "test:operations": "playwright test --config tests/playwright.config.ts --project=operations",
+    "test:security": "playwright test --config tests/playwright.config.ts --project=security",
+    "test:ceph": "playwright test --config tests/playwright.config.ts --project=ceph",
+    "test:errors": "playwright test --config tests/playwright.config.ts --project=errors",
+    "test:edition": "playwright test --config tests/playwright.config.ts --project=edition",
+    "test:e2e": "playwright test --config tests/playwright.config.ts --project=e2e",
+    "test:report": "playwright show-report tests/reports/cli",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist",
@@ -37,6 +42,7 @@
     "inquirer": "^13.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
     "@opentelemetry/resources": "^1.30.0",
@@ -46,11 +52,11 @@
     "@rediacc/shared-desktop": "*",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^25.0.3",
-    "@vitest/coverage-v8": "^4.0.15",
     "axios": "^1.13.2",
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
+    "dotenv": "^16.3.1",
     "esbuild": "^0.27.1",
     "execa": "^9.6.1",
     "i18next": "^23.16.5",
@@ -59,11 +65,10 @@
     "rimraf": "^6.1.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^4.0.15",
     "yaml": "^2.7.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "files": [
     "dist/cli-bundle.cjs"

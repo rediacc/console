@@ -21,7 +21,6 @@ export function registerContextCommands(program: Command): void {
     .action(async () => {
       try {
         const contexts = await contextService.list();
-        const currentName = await contextService.getCurrentName();
         const format = program.opts().output as OutputFormat;
 
         if (contexts.length === 0) {
@@ -29,9 +28,7 @@ export function registerContextCommands(program: Command): void {
           return;
         }
 
-        // Add 'current' indicator and mode to the output
         const displayData = contexts.map((ctx) => ({
-          current: ctx.name === currentName ? '*' : '',
           name: ctx.name,
           mode: ctx.mode ?? 'cloud',
           apiUrl: ctx.mode === 'local' ? '-' : ctx.apiUrl,
@@ -46,27 +43,11 @@ export function registerContextCommands(program: Command): void {
       }
     });
 
-  // context use - Switch to a context
-  context
-    .command('use <name>')
-    .description(t('commands.context.use.description'))
-    .action(async (name) => {
-      try {
-        await contextService.use(name);
-        // Reinitialize API client with new context
-        await apiClient.reinitialize();
-        outputService.success(t('commands.context.use.switched', { name }));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
   // context create - Create a new context
   context
     .command('create <name>')
     .description(t('commands.context.create.description'))
     .option('-u, --api-url <url>', t('options.apiUrl'))
-    .option('-s, --switch', t('options.switch'))
     .action(async (name, options) => {
       try {
         // If no API URL provided, prompt for it, then normalize
@@ -82,13 +63,6 @@ export function registerContextCommands(program: Command): void {
 
         await contextService.create(newContext);
         outputService.success(t('commands.context.create.success', { name }));
-
-        // Optionally switch to the new context
-        if (options.switch) {
-          await contextService.use(name);
-          await apiClient.reinitialize();
-          outputService.success(t('commands.context.use.switched', { name }));
-        }
       } catch (error) {
         handleError(error);
       }
@@ -122,19 +96,15 @@ export function registerContextCommands(program: Command): void {
     });
 
   // context current - Show current context name (for scripting)
+  // Returns the context that would be used: from --context flag or "default"
   context
     .command('current')
     .description(t('commands.context.current.description'))
-    .action(async () => {
+    .action(() => {
       try {
-        const name = await contextService.getCurrentName();
-        if (name) {
-          // eslint-disable-next-line no-console -- Raw output for scripting
-          console.log(name);
-        } else {
-          outputService.info(t('commands.context.current.noContext'));
-          process.exitCode = 1;
-        }
+        const name = contextService.getCurrentName();
+        // eslint-disable-next-line no-console -- Raw output for scripting
+        console.log(name);
       } catch (error) {
         handleError(error);
       }
@@ -233,7 +203,6 @@ export function registerContextCommands(program: Command): void {
     .description(t('commands.context.createLocal.description'))
     .requiredOption('--ssh-key <path>', t('options.sshKey'))
     .option('--renet-path <path>', t('options.renetPath'))
-    .option('-s, --switch', t('options.switch'))
     .action(async (name, options) => {
       try {
         // Expand ~ in path
@@ -253,12 +222,6 @@ export function registerContextCommands(program: Command): void {
         });
         outputService.success(t('commands.context.createLocal.success', { name }));
         outputService.info(t('commands.context.createLocal.nextStep'));
-
-        // Optionally switch to the new context
-        if (options.switch) {
-          await contextService.use(name);
-          outputService.success(t('commands.context.use.switched', { name }));
-        }
       } catch (error) {
         handleError(error);
       }

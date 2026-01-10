@@ -45,12 +45,14 @@ export interface AuthService {
    * @param organizationName Organization name
    * @param email User's email address
    * @param passwordHash Hashed password
+   * @param plan Optional subscription plan (default: 'COMMUNITY')
    * @param language Optional language preference (default: 'en')
    */
   register(
     organizationName: string,
     email: string,
     passwordHash: string,
+    plan?: string,
     language?: string
   ): Promise<ApiResponse>;
 }
@@ -101,12 +103,13 @@ export function createAuthService(client: AuthHttpClient, apiPrefix = ''): AuthS
       return response.data;
     },
 
-    async register(organizationName, email, passwordHash, language = 'en') {
+    async register(organizationName, email, passwordHash, plan = 'COMMUNITY', language = 'en') {
       const response = await client.post<ApiResponse>(
         buildUrl('/CreateNewOrganization'),
         {
           organizationName,
           userEmailAddress: email,
+          subscriptionPlan: plan,
           languagePreference: language,
         },
         { headers: buildAuthHeaders(email, passwordHash) }

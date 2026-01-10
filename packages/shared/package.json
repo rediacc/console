@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/shared",
-  "version": "0.3.6",
+  "version": "0.4.14",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",

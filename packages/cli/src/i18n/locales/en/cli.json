@@ -116,6 +116,150 @@
         "success": "Authorization reset"
       }
     },
+    "ceph": {
+      "description": "Ceph distributed storage management",
+      "cluster": {
+        "description": "Ceph cluster management",
+        "list": {
+          "description": "List Ceph clusters",
+          "fetching": "Fetching Ceph clusters...",
+          "success": "Clusters fetched"
+        },
+        "create": {
+          "description": "Create a new Ceph cluster",
+          "creating": "Creating Ceph cluster \"{{name}}\"...",
+          "success": "Ceph cluster \"{{name}}\" created"
+        },
+        "delete": {
+          "description": "Delete a Ceph cluster",
+          "confirm": "Delete Ceph cluster \"{{name}}\"?",
+          "deleting": "Deleting Ceph cluster \"{{name}}\"...",
+          "success": "Ceph cluster \"{{name}}\" deleted"
+        },
+        "machines": {
+          "description": "List machines in a Ceph cluster",
+          "fetching": "Fetching cluster machines...",
+          "success": "Cluster machines fetched"
+        },
+        "vault": {
+          "description": "Ceph cluster vault management",
+          "get": {
+            "description": "Get cluster vault data",
+            "fetching": "Fetching cluster vault...",
+            "success": "Cluster vault fetched"
+          },
+          "update": {
+            "description": "Update cluster vault data",
+            "updating": "Updating cluster vault for \"{{name}}\"...",
+            "success": "Cluster vault for \"{{name}}\" updated"
+          }
+        }
+      },
+      "pool": {
+        "description": "Ceph pool management",
+        "list": {
+          "description": "List Ceph pools",
+          "fetching": "Fetching Ceph pools...",
+          "success": "Pools fetched"
+        },
+        "create": {
+          "description": "Create a new Ceph pool",
+          "creating": "Creating Ceph pool \"{{name}}\"...",
+          "success": "Ceph pool \"{{name}}\" created"
+        },
+        "delete": {
+          "description": "Delete a Ceph pool",
+          "confirm": "Delete Ceph pool \"{{name}}\"?",
+          "deleting": "Deleting Ceph pool \"{{name}}\"...",
+          "success": "Ceph pool \"{{name}}\" deleted"
+        },
+        "vault": {
+          "description": "Ceph pool vault management",
+          "get": {
+            "description": "Get pool vault data",
+            "fetching": "Fetching pool vault...",
+            "success": "Pool vault fetched"
+          },
+          "update": {
+            "description": "Update pool vault data",
+            "updating": "Updating pool vault for \"{{name}}\"...",
+            "success": "Pool vault for \"{{name}}\" updated"
+          }
+        }
+      },
+      "image": {
+        "description": "Ceph RBD image management",
+        "list": {
+          "description": "List RBD images",
+          "fetching": "Fetching RBD images...",
+          "success": "Images fetched"
+        },
+        "create": {
+          "description": "Create a new RBD image",
+          "creating": "Creating RBD image \"{{name}}\"...",
+          "success": "RBD image \"{{name}}\" created"
+        },
+        "delete": {
+          "description": "Delete an RBD image",
+          "confirm": "Delete RBD image \"{{name}}\"?",
+          "deleting": "Deleting RBD image \"{{name}}\"...",
+          "success": "RBD image \"{{name}}\" deleted"
+        }
+      },
+      "snapshot": {
+        "description": "Ceph RBD snapshot management",
+        "list": {
+          "description": "List RBD snapshots",
+          "fetching": "Fetching RBD snapshots...",
+          "success": "Snapshots fetched"
+        },
+        "create": {
+          "description": "Create a new RBD snapshot",
+          "creating": "Creating RBD snapshot \"{{name}}\"...",
+          "success": "RBD snapshot \"{{name}}\" created"
+        },
+        "delete": {
+          "description": "Delete an RBD snapshot",
+          "confirm": "Delete RBD snapshot \"{{name}}\"?",
+          "deleting": "Deleting RBD snapshot \"{{name}}\"...",
+          "success": "RBD snapshot \"{{name}}\" deleted"
+        }
+      },
+      "clone": {
+        "description": "Ceph RBD clone management",
+        "list": {
+          "description": "List RBD clones",
+          "fetching": "Fetching RBD clones...",
+          "success": "Clones fetched"
+        },
+        "create": {
+          "description": "Create a new RBD clone from snapshot",
+          "creating": "Creating RBD clone \"{{name}}\"...",
+          "success": "RBD clone \"{{name}}\" created"
+        },
+        "delete": {
+          "description": "Delete an RBD clone",
+          "confirm": "Delete RBD clone \"{{name}}\"?",
+          "deleting": "Deleting RBD clone \"{{name}}\"...",
+          "success": "RBD clone \"{{name}}\" deleted"
+        },
+        "machines": {
+          "description": "List machines assigned to a clone",
+          "fetching": "Fetching clone machines...",
+          "success": "Clone machines fetched"
+        },
+        "assign": {
+          "description": "Assign machines to a clone",
+          "assigning": "Assigning machines to clone \"{{name}}\"...",
+          "success": "Machines assigned to clone \"{{name}}\""
+        },
+        "unassign": {
+          "description": "Remove machines from a clone",
+          "unassigning": "Removing machines from clone \"{{name}}\"...",
+          "success": "Machines removed from clone \"{{name}}\""
+        }
+      }
+    },
     "context": {
       "description": "Manage CLI contexts",
       "list": {
@@ -778,6 +922,7 @@
     "contextNotFound": "Context \"{{name}}\" not found",
     "invalidCredentials": "Invalid credentials",
     "invalidEmail": "Please enter a valid email",
+    "invalidMasterPassword": "Invalid master password for vault encryption",
     "invalidExpiration": "Token expiration must be between 1 and 720 hours",
     "invalidAction": "Invalid action \"{{action}}\". Use \"{{valid}}\".",
     "invalidFunctionParams": "Invalid parameters for function \"{{function}}\": {{errors}}",
@@ -797,6 +942,8 @@
     "cannotDeleteGrandRepo": "Cannot delete grand repository: {{reason}}",
     "affectedChildClones": ". Affected child clones: {{clones}}. Delete or promote child clones first.",
     "cannotPromote": "Cannot promote: {{reason}}",
+    "clusterNotFound": "Ceph cluster \"{{name}}\" not found",
+    "poolNotFound": "Ceph pool \"{{name}}\" not found",
     "protocol": {
       "notSupported": "Protocol registration is not supported on {{platform}}",
       "invalidUrl": "Invalid protocol URL: {{error}}",
@@ -856,6 +1003,7 @@
     "activationCode": "Activation code from email",
     "apiUrl": "API URL",
     "bridge": "Bridge name",
+    "cluster": "Ceph cluster name",
     "command": "Execute a command instead of interactive shell",
     "container": "Connect to a specific Docker container",
     "containerAction": "Container action: terminal, logs, stats, exec",
@@ -864,6 +1012,11 @@
     "email": "Email address",
     "external": "Force launching in external terminal window",
     "follow": "Follow logs output",
+    "image": "RBD image name",
+    "pool": "Ceph pool name",
+    "snapshot": "RBD snapshot name",
+    "vaultContent": "Vault content as JSON string",
+    "machineNames": "Machine names (comma-separated)",
     "endpoint": "API endpoint URL",
     "expires": "Expiration in hours (1-720)",
     "force": "Skip confirmation prompts",
@@ -876,6 +1029,7 @@
     "organization": "Organization name",
     "output": "Output format (table|json|yaml|csv)",
     "password": "Password (for non-interactive login)",
+    "masterPassword": "Master password for vault encryption",
     "region": "Region name",
     "renetPath": "Path to renet binary (default: renet in PATH)",
     "repository": "Repository name (connects to repository environment)",
@@ -887,6 +1041,7 @@
     "sshPrivateKey": "Path to SSH private key",
     "sshPublicKey": "Path to SSH public key",
     "sshUser": "SSH username",
+    "subscriptionPlan": "Subscription plan (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "Switch to this context after creation",
     "team": "Team name",
     "tfaCode": "Current TFA code for verification",
@@ -964,7 +1119,8 @@
     "setPassword": "Set password for user:",
     "newPassword": "New password:",
     "confirmNewPassword": "Confirm new password:",
-    "masterPassword": "Enter your master password:"
+    "masterPassword": "Enter your master password:",
+    "masterPasswordForVault": "Enter master password for vault encryption:"
   },
   "spinners": {
     "connecting": "Connecting...",

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerBridgeCommands } from './commands/bridge.js';
+import { registerCephCommands } from './commands/ceph/index.js';
 import { registerContextCommands } from './commands/context.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerOrganizationCommands } from './commands/organization.js';
@@ -60,7 +61,7 @@ cli
   .description(t('cli.description'))
   .version(VERSION)
   .option('-o, --output <format>', t('options.output'), 'table')
-  .option('-C, --context <name>', t('options.context'))
+  .option('--context <name>', t('options.context'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
@@ -125,6 +126,7 @@ registerStorageCommands(cli);
 registerQueueCommands(cli);
 registerRegionCommands(cli);
 registerBridgeCommands(cli);
+registerCephCommands(cli);
 registerOrganizationCommands(cli);
 registerUserCommands(cli);
 registerContextCommands(cli);

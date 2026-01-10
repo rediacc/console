@@ -3,6 +3,28 @@
     "description": "Rediacc Console CLI - Интерфейс командной строки для операций Rediacc"
   },
   "commands": {
+    "audit": {
+      "description": "Команды журнала аудита",
+      "list": {
+        "description": "Список записей журнала аудита",
+        "fetching": "Получение журналов аудита..."
+      },
+      "log": {
+        "description": "Просмотр журналов аудита",
+        "fetching": "Получение журналов аудита...",
+        "success": "Журналы аудита получены"
+      },
+      "trace": {
+        "description": "Отследить историю аудита объекта",
+        "fetching": "Получение трассировки аудита объекта...",
+        "success": "Трассировка аудита получена"
+      },
+      "history": {
+        "description": "Просмотреть историю объекта",
+        "fetching": "Получение истории объекта...",
+        "success": "История получена"
+      }
+    },
     "auth": {
       "description": "Команды аутентификации",
       "login": {
@@ -81,28 +103,6 @@
         }
       }
     },
-    "audit": {
-      "description": "Команды журнала аудита",
-      "list": {
-        "description": "Список записей журнала аудита",
-        "fetching": "Получение журналов аудита..."
-      },
-      "log": {
-        "description": "Просмотр журналов аудита",
-        "fetching": "Получение журналов аудита...",
-        "success": "Журналы аудита получены"
-      },
-      "trace": {
-        "description": "Отследить историю аудита объекта",
-        "fetching": "Получение трассировки аудита объекта...",
-        "success": "Трассировка аудита получена"
-      },
-      "history": {
-        "description": "Просмотреть историю объекта",
-        "fetching": "Получение истории объекта...",
-        "success": "История получена"
-      }
-    },
     "bridge": {
       "description": "Управление мостом",
       "list": {
@@ -114,6 +114,150 @@
         "newToken": "Новый токен: {{token}}",
         "resetting": "Сброс авторизации для моста \"{{name}}\"...",
         "success": "Авторизация сброшена"
+      }
+    },
+    "ceph": {
+      "description": "Управление распределённым хранилищем Ceph",
+      "cluster": {
+        "description": "Управление кластерами Ceph",
+        "list": {
+          "description": "Показать список кластеров Ceph",
+          "fetching": "Получение кластеров Ceph...",
+          "success": "Кластеры получены"
+        },
+        "create": {
+          "description": "Создать новый кластер Ceph",
+          "creating": "Создание кластера Ceph \"{{name}}\"...",
+          "success": "Кластер Ceph \"{{name}}\" создан"
+        },
+        "delete": {
+          "description": "Удалить кластер Ceph",
+          "confirm": "Удалить кластер Ceph \"{{name}}\"?",
+          "deleting": "Удаление кластера Ceph \"{{name}}\"...",
+          "success": "Кластер Ceph \"{{name}}\" удалён"
+        },
+        "machines": {
+          "description": "Показать список машин в кластере Ceph",
+          "fetching": "Получение машин кластера...",
+          "success": "Машины кластера получены"
+        },
+        "vault": {
+          "description": "Управление хранилищем кластера Ceph",
+          "get": {
+            "description": "Получить данные хранилища кластера",
+            "fetching": "Получение хранилища кластера...",
+            "success": "Хранилище кластера получено"
+          },
+          "update": {
+            "description": "Обновить данные хранилища кластера",
+            "updating": "Обновление хранилища кластера для \"{{name}}\"...",
+            "success": "Хранилище кластера для \"{{name}}\" обновлено"
+          }
+        }
+      },
+      "pool": {
+        "description": "Управление пулами Ceph",
+        "list": {
+          "description": "Показать список пулов Ceph",
+          "fetching": "Получение пулов Ceph...",
+          "success": "Пулы получены"
+        },
+        "create": {
+          "description": "Создать новый пул Ceph",
+          "creating": "Создание пула Ceph \"{{name}}\"...",
+          "success": "Пул Ceph \"{{name}}\" создан"
+        },
+        "delete": {
+          "description": "Удалить пул Ceph",
+          "confirm": "Удалить пул Ceph \"{{name}}\"?",
+          "deleting": "Удаление пула Ceph \"{{name}}\"...",
+          "success": "Пул Ceph \"{{name}}\" удалён"
+        },
+        "vault": {
+          "description": "Управление хранилищем пула Ceph",
+          "get": {
+            "description": "Получить данные хранилища пула",
+            "fetching": "Получение хранилища пула...",
+            "success": "Хранилище пула получено"
+          },
+          "update": {
+            "description": "Обновить данные хранилища пула",
+            "updating": "Обновление хранилища пула для \"{{name}}\"...",
+            "success": "Хранилище пула для \"{{name}}\" обновлено"
+          }
+        }
+      },
+      "image": {
+        "description": "Управление образами RBD Ceph",
+        "list": {
+          "description": "Показать список образов RBD",
+          "fetching": "Получение образов RBD...",
+          "success": "Образы получены"
+        },
+        "create": {
+          "description": "Создать новый образ RBD",
+          "creating": "Создание образа RBD \"{{name}}\"...",
+          "success": "Образ RBD \"{{name}}\" создан"
+        },
+        "delete": {
+          "description": "Удалить образ RBD",
+          "confirm": "Удалить образ RBD \"{{name}}\"?",
+          "deleting": "Удаление образа RBD \"{{name}}\"...",
+          "success": "Образ RBD \"{{name}}\" удалён"
+        }
+      },
+      "snapshot": {
+        "description": "Управление снимками RBD Ceph",
+        "list": {
+          "description": "Показать список снимков RBD",
+          "fetching": "Получение снимков RBD...",
+          "success": "Снимки получены"
+        },
+        "create": {
+          "description": "Создать новый снимок RBD",
+          "creating": "Создание снимка RBD \"{{name}}\"...",
+          "success": "Снимок RBD \"{{name}}\" создан"
+        },
+        "delete": {
+          "description": "Удалить снимок RBD",
+          "confirm": "Удалить снимок RBD \"{{name}}\"?",
+          "deleting": "Удаление снимка RBD \"{{name}}\"...",
+          "success": "Снимок RBD \"{{name}}\" удалён"
+        }
+      },
+      "clone": {
+        "description": "Управление клонами RBD Ceph",
+        "list": {
+          "description": "Показать список клонов RBD",
+          "fetching": "Получение клонов RBD...",
+          "success": "Клоны получены"
+        },
+        "create": {
+          "description": "Создать новый клон RBD из снимка",
+          "creating": "Создание клона RBD \"{{name}}\"...",
+          "success": "Клон RBD \"{{name}}\" создан"
+        },
+        "delete": {
+          "description": "Удалить клон RBD",
+          "confirm": "Удалить клон RBD \"{{name}}\"?",
+          "deleting": "Удаление клона RBD \"{{name}}\"...",
+          "success": "Клон RBD \"{{name}}\" удалён"
+        },
+        "machines": {
+          "description": "Показать список машин, назначенных клону",
+          "fetching": "Получение машин клона...",
+          "success": "Машины клона получены"
+        },
+        "assign": {
+          "description": "Назначить машины клону",
+          "assigning": "Назначение машин клону \"{{name}}\"...",
+          "success": "Машины назначены клону \"{{name}}\""
+        },
+        "unassign": {
+          "description": "Удалить машины из клона",
+          "unassigning": "Удаление машин из клона \"{{name}}\"...",
+          "success": "Машины удалены из клона \"{{name}}\""
+        }
       }
     },
     "context": {
@@ -362,6 +506,47 @@
         "enabling": "Включение режима обслуживания..."
       }
     },
+    "permission": {
+      "description": "Команды управления разрешениями",
+      "list": {
+        "description": "Список разрешений",
+        "fetching": "Получение разрешений..."
+      },
+      "group": {
+        "description": "Управление группой разрешений",
+        "list": {
+          "description": "Список всех групп разрешений",
+          "fetching": "Получение групп разрешений...",
+          "success": "Группы разрешений получены"
+        },
+        "create": {
+          "description": "Создать новую группу разрешений",
+          "creating": "Создание группы разрешений \"{{name}}\"...",
+          "success": "Группа разрешений \"{{name}}\" создана"
+        },
+        "delete": {
+          "confirm": "Удалить группу разрешений \"{{name}}\"?",
+          "deleting": "Удаление группы разрешений \"{{name}}\"...",
+          "description": "Удалить группу разрешений",
+          "success": "Группа разрешений \"{{name}}\" удалена"
+        },
+        "show": {
+          "description": "Показать детали группы разрешений",
+          "fetching": "Получение деталей группы разрешений...",
+          "success": "Детали получены"
+        }
+      },
+      "add": {
+        "adding": "Добавление разрешения \"{{permission}}\" в группу \"{{group}}\"...",
+        "description": "Добавить разрешение в группу",
+        "success": "Разрешение добавлено"
+      },
+      "remove": {
+        "description": "Удалить разрешение из группы",
+        "removing": "Удаление разрешения \"{{permission}}\" из группы \"{{group}}\"...",
+        "success": "Разрешение удалено"
+      }
+    },
     "protocol": {
       "description": "Управление регистрацией обработчика протокола {{scheme}}:// и обработкой URL",
       "register": {
@@ -409,47 +594,6 @@
         "description": "Разобрать {{scheme}}:// URL и показать компоненты",
         "parsedUrl": "\nРазобранный URL протокола:",
         "cliCommand": "\nКоманда CLI:"
-      }
-    },
-    "permission": {
-      "description": "Команды управления разрешениями",
-      "list": {
-        "description": "Список разрешений",
-        "fetching": "Получение разрешений..."
-      },
-      "group": {
-        "description": "Управление группой разрешений",
-        "list": {
-          "description": "Список всех групп разрешений",
-          "fetching": "Получение групп разрешений...",
-          "success": "Группы разрешений получены"
-        },
-        "create": {
-          "description": "Создать новую группу разрешений",
-          "creating": "Создание группы разрешений \"{{name}}\"...",
-          "success": "Группа разрешений \"{{name}}\" создана"
-        },
-        "delete": {
-          "confirm": "Удалить группу разрешений \"{{name}}\"?",
-          "deleting": "Удаление группы разрешений \"{{name}}\"...",
-          "description": "Удалить группу разрешений",
-          "success": "Группа разрешений \"{{name}}\" удалена"
-        },
-        "show": {
-          "description": "Показать детали группы разрешений",
-          "fetching": "Получение деталей группы разрешений...",
-          "success": "Детали получены"
-        }
-      },
-      "add": {
-        "adding": "Добавление разрешения \"{{permission}}\" в группу \"{{group}}\"...",
-        "description": "Добавить разрешение в группу",
-        "success": "Разрешение добавлено"
-      },
-      "remove": {
-        "description": "Удалить разрешение из группы",
-        "removing": "Удаление разрешения \"{{permission}}\" из группы \"{{group}}\"...",
-        "success": "Разрешение удалено"
       }
     },
     "queue": {
@@ -552,6 +696,24 @@
         }
       }
     },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[локально] Завершено за {{duration}}ms",
+        "description": "Запустить функцию (ярлык для: queue create)",
+        "executingLocal": "[локально] Выполнение '{{function}}' на {{machine}}...",
+        "failedLocal": "[локально] Ошибка: {{error}}",
+        "watching": "Ожидание завершения..."
+      },
+      "trace": {
+        "description": "Трассировка задачи (ярлык для: queue trace)"
+      },
+      "cancel": {
+        "description": "Отменить задачу (ярлык для: queue cancel)"
+      },
+      "retry": {
+        "description": "Повторить неудачную задачу (ярлык для: queue retry)"
+      }
+    },
     "storage": {
       "description": "Управление хранилищем",
       "list": {
@@ -617,24 +779,6 @@
         }
       }
     },
-    "shortcuts": {
-      "run": {
-        "completedLocal": "[локально] Завершено за {{duration}}ms",
-        "description": "Запустить функцию (ярлык для: queue create)",
-        "executingLocal": "[локально] Выполнение '{{function}}' на {{machine}}...",
-        "failedLocal": "[локально] Ошибка: {{error}}",
-        "watching": "Ожидание завершения..."
-      },
-      "trace": {
-        "description": "Трассировка задачи (ярлык для: queue trace)"
-      },
-      "cancel": {
-        "description": "Отменить задачу (ярлык для: queue cancel)"
-      },
-      "retry": {
-        "description": "Повторить неудачную задачу (ярлык для: queue retry)"
-      }
-    },
     "term": {
       "description": "SSH терминал доступ к машинам и репозиториям",
       "connecting": "Подключение к {{machine}}...",
@@ -646,57 +790,6 @@
       "launchSuccess": "Терминал успешно запущен.",
       "launchingTerminal": "Запуск {{type}} терминала...",
       "testingConnectivity": "Тестирование подключения к {{host}}:{{port}}..."
-    },
-    "vscode": {
-      "description": "VS Code Remote SSH интеграция",
-      "connect": {
-        "description": "Подключиться к машине или репозиторию в VS Code",
-        "detecting": "Обнаружение VS Code...",
-        "extensionWarning": "Предупреждение: Расширение Remote SSH может быть не установлено.\nУстановите из: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
-        "fetchingDetails": "Получение деталей подключения...",
-        "testingConnectivity": "Тестирование подключения к {{host}}:{{port}}...",
-        "persistingKey": "Сохранение SSH ключа...",
-        "configuringSSH": "Настройка SSH...",
-        "configuringVSCode": "Настройка параметров VS Code...",
-        "settingsWarning": "Предупреждение: Не удалось настроить параметры VS Code: {{error}}",
-        "settingUpEnv": "Настройка удаленной среды...",
-        "opening": "Открытие VS Code: {{connection}} → {{path}}",
-        "success": "VS Code успешно запущен."
-      },
-      "list": {
-        "description": "Список настроенных SSH-соединений VS Code",
-        "noConnections": "Нет настроенных SSH-соединений VS Code.",
-        "configFile": "\nФайл конфигурации: {{path}}",
-        "header": "Настроенные SSH-соединения VS Code:\n",
-        "keyPersisted": " (ключ сохранен)",
-        "total": "\nВсего: {{count}} соединений"
-      },
-      "cleanup": {
-        "description": "Удалить конфигурации SSH VS Code",
-        "cleanedAll": "Очищено {{count}} SSH-соединений VS Code.",
-        "removedKeys": "Удалены все сохраненные SSH ключи.",
-        "cleaned": "Очищено: {{connection}}"
-      },
-      "check": {
-        "description": "Проверить установку и конфигурацию VS Code",
-        "title": "Проверка настройки VS Code\n",
-        "installation": "Установка:",
-        "vscodeFound": "  VS Code: {{path}}",
-        "version": "  Версия: {{version}}",
-        "variant": "  Вариант: Insiders",
-        "vscodeNotFound": "  VS Code: Не найден",
-        "remoteSSH": "  Расширение Remote SSH: {{status}}",
-        "installed": "Установлено",
-        "notDetected": "Не обнаружено",
-        "configuration": "\nКонфигурация:",
-        "settingsPath": "  Путь к параметрам: {{path}}",
-        "configured": "  Настроено: {{status}}",
-        "yes": "Да",
-        "no": "Нет",
-        "missingSettings": "  Отсутствующие параметры:",
-        "sshConfig": "\nКонфигурация SSH: {{path}}",
-        "activeConnections": "Активные соединения: {{count}}"
-      }
     },
     "user": {
       "description": "Команды управления пользователем",
@@ -768,6 +861,57 @@
           "success": "Разрешение назначено"
         }
       }
+    },
+    "vscode": {
+      "description": "VS Code Remote SSH интеграция",
+      "connect": {
+        "description": "Подключиться к машине или репозиторию в VS Code",
+        "detecting": "Обнаружение VS Code...",
+        "extensionWarning": "Предупреждение: Расширение Remote SSH может быть не установлено.\nУстановите из: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "Получение деталей подключения...",
+        "testingConnectivity": "Тестирование подключения к {{host}}:{{port}}...",
+        "persistingKey": "Сохранение SSH ключа...",
+        "configuringSSH": "Настройка SSH...",
+        "configuringVSCode": "Настройка параметров VS Code...",
+        "settingsWarning": "Предупреждение: Не удалось настроить параметры VS Code: {{error}}",
+        "settingUpEnv": "Настройка удаленной среды...",
+        "opening": "Открытие VS Code: {{connection}} → {{path}}",
+        "success": "VS Code успешно запущен."
+      },
+      "list": {
+        "description": "Список настроенных SSH-соединений VS Code",
+        "noConnections": "Нет настроенных SSH-соединений VS Code.",
+        "configFile": "\nФайл конфигурации: {{path}}",
+        "header": "Настроенные SSH-соединения VS Code:\n",
+        "keyPersisted": " (ключ сохранен)",
+        "total": "\nВсего: {{count}} соединений"
+      },
+      "cleanup": {
+        "description": "Удалить конфигурации SSH VS Code",
+        "cleanedAll": "Очищено {{count}} SSH-соединений VS Code.",
+        "removedKeys": "Удалены все сохраненные SSH ключи.",
+        "cleaned": "Очищено: {{connection}}"
+      },
+      "check": {
+        "description": "Проверить установку и конфигурацию VS Code",
+        "title": "Проверка настройки VS Code\n",
+        "installation": "Установка:",
+        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  Версия: {{version}}",
+        "variant": "  Вариант: Insiders",
+        "vscodeNotFound": "  VS Code: Не найден",
+        "remoteSSH": "  Расширение Remote SSH: {{status}}",
+        "installed": "Установлено",
+        "notDetected": "Не обнаружено",
+        "configuration": "\nКонфигурация:",
+        "settingsPath": "  Путь к параметрам: {{path}}",
+        "configured": "  Настроено: {{status}}",
+        "yes": "Да",
+        "no": "Нет",
+        "missingSettings": "  Отсутствующие параметры:",
+        "sshConfig": "\nКонфигурация SSH: {{path}}",
+        "activeConnections": "Активные соединения: {{count}}"
+      }
     }
   },
   "errors": {
@@ -778,6 +922,7 @@
     "contextNotFound": "Контекст \"{{name}}\" не найден",
     "invalidCredentials": "Неверные учетные данные",
     "invalidEmail": "Пожалуйста, введите корректный адрес электронной почты",
+    "invalidMasterPassword": "Неверный мастер-пароль для шифрования хранилища",
     "invalidExpiration": "Истечение токена должно быть от 1 до 720 часов",
     "invalidAction": "Неверное действие \"{{action}}\". Используйте \"{{valid}}\".",
     "invalidFunctionParams": "Неверные параметры для функции \"{{function}}\": {{errors}}",
@@ -797,6 +942,8 @@
     "cannotDeleteGrandRepo": "Невозможно удалить главный репозиторий: {{reason}}",
     "affectedChildClones": ". Затронутые дочерние клоны: {{clones}}. Сначала удалите или повысьте уровень дочерних клонов.",
     "cannotPromote": "Невозможно повысить уровень: {{reason}}",
+    "clusterNotFound": "Кластер Ceph \"{{name}}\" не найден",
+    "poolNotFound": "Пул Ceph \"{{name}}\" не найден",
     "protocol": {
       "notSupported": "Регистрация протокола не поддерживается на {{platform}}",
       "invalidUrl": "Неверный URL протокола: {{error}}",
@@ -856,6 +1003,7 @@
     "activationCode": "Код активации из электронного письма",
     "apiUrl": "URL API",
     "bridge": "Имя моста",
+    "cluster": "Имя кластера Ceph",
     "command": "Выполнить команду вместо интерактивной оболочки",
     "container": "Подключиться к определенному контейнеру Docker",
     "containerAction": "Действие контейнера: terminal, logs, stats, exec",
@@ -864,6 +1012,11 @@
     "email": "Адрес электронной почты",
     "external": "Открыть в отдельном окне терминала",
     "follow": "Следить за выводом логов",
+    "image": "Имя RBD образа",
+    "pool": "Имя пула Ceph",
+    "snapshot": "Имя RBD снимка",
+    "vaultContent": "Содержимое хранилища в виде строки JSON",
+    "machineNames": "Имена машин (через запятую)",
     "endpoint": "URL конечной точки API",
     "expires": "Истечение в часах (1-720)",
     "force": "Пропустить подсказки подтверждения",
@@ -876,6 +1029,7 @@
     "organization": "Имя организации",
     "output": "Формат вывода (table|json|yaml|csv)",
     "password": "Пароль (для не интерактивного входа)",
+    "masterPassword": "Мастер-пароль для шифрования хранилища",
     "region": "Имя региона",
     "renetPath": "Путь к двоичному файлу renet (по умолчанию: renet в PATH)",
     "repository": "Имя репозитория (подключается к среде репозитория)",
@@ -887,6 +1041,7 @@
     "sshPrivateKey": "Путь к SSH приватному ключу",
     "sshPublicKey": "Путь к SSH открытому ключу",
     "sshUser": "Имя пользователя SSH",
+    "subscriptionPlan": "План подписки (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "Переключиться на этот контекст после создания",
     "team": "Имя команды",
     "tfaCode": "Текущий код двухфакторной аутентификации для проверки",
@@ -964,7 +1119,8 @@
     "setPassword": "Установите пароль для пользователя:",
     "newPassword": "Новый пароль:",
     "confirmNewPassword": "Подтвердите новый пароль:",
-    "masterPassword": "Введите ваш мастер-пароль:"
+    "masterPassword": "Введите ваш мастер-пароль:",
+    "masterPasswordForVault": "Введите мастер-пароль для шифрования хранилища:"
   },
   "spinners": {
     "connecting": "Подключение...",

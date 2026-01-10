@@ -3,6 +3,28 @@
     "description": "واجهة سطر الأوامر الخاصة بـ Rediacc - واجهة سطر الأوامر لعمليات Rediacc"
   },
   "commands": {
+    "audit": {
+      "description": "أوامر سجل التدقيق",
+      "list": {
+        "description": "قائمة إدخالات سجل التدقيق",
+        "fetching": "جاري جلب سجلات التدقيق..."
+      },
+      "log": {
+        "description": "عرض سجلات التدقيق",
+        "fetching": "جاري جلب سجلات التدقيق...",
+        "success": "تم جلب سجلات التدقيق"
+      },
+      "trace": {
+        "description": "تتبع سجل التدقيق لكيان",
+        "fetching": "جاري جلب آثار التدقيق للكيان...",
+        "success": "تم جلب آثار التدقيق"
+      },
+      "history": {
+        "description": "عرض سجل الكيان",
+        "fetching": "جاري جلب سجل الكيان...",
+        "success": "تم جلب السجل"
+      }
+    },
     "auth": {
       "description": "أوامر المصادقة",
       "login": {
@@ -81,28 +103,6 @@
         }
       }
     },
-    "audit": {
-      "description": "أوامر سجل التدقيق",
-      "list": {
-        "description": "قائمة إدخالات سجل التدقيق",
-        "fetching": "جاري جلب سجلات التدقيق..."
-      },
-      "log": {
-        "description": "عرض سجلات التدقيق",
-        "fetching": "جاري جلب سجلات التدقيق...",
-        "success": "تم جلب سجلات التدقيق"
-      },
-      "trace": {
-        "description": "تتبع سجل التدقيق لكيان",
-        "fetching": "جاري جلب آثار التدقيق للكيان...",
-        "success": "تم جلب آثار التدقيق"
-      },
-      "history": {
-        "description": "عرض سجل الكيان",
-        "fetching": "جاري جلب سجل الكيان...",
-        "success": "تم جلب السجل"
-      }
-    },
     "bridge": {
       "description": "إدارة الجسور",
       "list": {
@@ -114,6 +114,150 @@
         "newToken": "الرمز الجديد: {{token}}",
         "resetting": "جاري إعادة تعيين التفويض للجسر \"{{name}}\"...",
         "success": "تم إعادة تعيين التفويض"
+      }
+    },
+    "ceph": {
+      "description": "إدارة التخزين الموزع Ceph",
+      "cluster": {
+        "description": "إدارة مجموعات Ceph",
+        "list": {
+          "description": "عرض قائمة مجموعات Ceph",
+          "fetching": "جارٍ جلب مجموعات Ceph...",
+          "success": "تم جلب المجموعات"
+        },
+        "create": {
+          "description": "إنشاء مجموعة Ceph جديدة",
+          "creating": "جارٍ إنشاء مجموعة Ceph \"{{name}}\"...",
+          "success": "تم إنشاء مجموعة Ceph \"{{name}}\""
+        },
+        "delete": {
+          "description": "حذف مجموعة Ceph",
+          "confirm": "هل تريد حذف مجموعة Ceph \"{{name}}\"؟",
+          "deleting": "جارٍ حذف مجموعة Ceph \"{{name}}\"...",
+          "success": "تم حذف مجموعة Ceph \"{{name}}\""
+        },
+        "machines": {
+          "description": "عرض قائمة الأجهزة في مجموعة Ceph",
+          "fetching": "جارٍ جلب أجهزة المجموعة...",
+          "success": "تم جلب أجهزة المجموعة"
+        },
+        "vault": {
+          "description": "إدارة خزنة مجموعة Ceph",
+          "get": {
+            "description": "الحصول على بيانات خزنة المجموعة",
+            "fetching": "جارٍ جلب خزنة المجموعة...",
+            "success": "تم جلب خزنة المجموعة"
+          },
+          "update": {
+            "description": "تحديث بيانات خزنة المجموعة",
+            "updating": "جارٍ تحديث خزنة المجموعة لـ \"{{name}}\"...",
+            "success": "تم تحديث خزنة المجموعة لـ \"{{name}}\""
+          }
+        }
+      },
+      "pool": {
+        "description": "إدارة تجمعات Ceph",
+        "list": {
+          "description": "عرض قائمة تجمعات Ceph",
+          "fetching": "جارٍ جلب تجمعات Ceph...",
+          "success": "تم جلب التجمعات"
+        },
+        "create": {
+          "description": "إنشاء تجمع Ceph جديد",
+          "creating": "جارٍ إنشاء تجمع Ceph \"{{name}}\"...",
+          "success": "تم إنشاء تجمع Ceph \"{{name}}\""
+        },
+        "delete": {
+          "description": "حذف تجمع Ceph",
+          "confirm": "هل تريد حذف تجمع Ceph \"{{name}}\"؟",
+          "deleting": "جارٍ حذف تجمع Ceph \"{{name}}\"...",
+          "success": "تم حذف تجمع Ceph \"{{name}}\""
+        },
+        "vault": {
+          "description": "إدارة خزنة تجمع Ceph",
+          "get": {
+            "description": "الحصول على بيانات خزنة التجمع",
+            "fetching": "جارٍ جلب خزنة التجمع...",
+            "success": "تم جلب خزنة التجمع"
+          },
+          "update": {
+            "description": "تحديث بيانات خزنة التجمع",
+            "updating": "جارٍ تحديث خزنة التجمع لـ \"{{name}}\"...",
+            "success": "تم تحديث خزنة التجمع لـ \"{{name}}\""
+          }
+        }
+      },
+      "image": {
+        "description": "إدارة صور RBD في Ceph",
+        "list": {
+          "description": "عرض قائمة صور RBD",
+          "fetching": "جارٍ جلب صور RBD...",
+          "success": "تم جلب الصور"
+        },
+        "create": {
+          "description": "إنشاء صورة RBD جديدة",
+          "creating": "جارٍ إنشاء صورة RBD \"{{name}}\"...",
+          "success": "تم إنشاء صورة RBD \"{{name}}\""
+        },
+        "delete": {
+          "description": "حذف صورة RBD",
+          "confirm": "هل تريد حذف صورة RBD \"{{name}}\"؟",
+          "deleting": "جارٍ حذف صورة RBD \"{{name}}\"...",
+          "success": "تم حذف صورة RBD \"{{name}}\""
+        }
+      },
+      "snapshot": {
+        "description": "إدارة لقطات RBD في Ceph",
+        "list": {
+          "description": "عرض قائمة لقطات RBD",
+          "fetching": "جارٍ جلب لقطات RBD...",
+          "success": "تم جلب اللقطات"
+        },
+        "create": {
+          "description": "إنشاء لقطة RBD جديدة",
+          "creating": "جارٍ إنشاء لقطة RBD \"{{name}}\"...",
+          "success": "تم إنشاء لقطة RBD \"{{name}}\""
+        },
+        "delete": {
+          "description": "حذف لقطة RBD",
+          "confirm": "هل تريد حذف لقطة RBD \"{{name}}\"؟",
+          "deleting": "جارٍ حذف لقطة RBD \"{{name}}\"...",
+          "success": "تم حذف لقطة RBD \"{{name}}\""
+        }
+      },
+      "clone": {
+        "description": "إدارة نسخ RBD في Ceph",
+        "list": {
+          "description": "عرض قائمة نسخ RBD",
+          "fetching": "جارٍ جلب نسخ RBD...",
+          "success": "تم جلب النسخ"
+        },
+        "create": {
+          "description": "إنشاء نسخة RBD جديدة من لقطة",
+          "creating": "جارٍ إنشاء نسخة RBD \"{{name}}\"...",
+          "success": "تم إنشاء نسخة RBD \"{{name}}\""
+        },
+        "delete": {
+          "description": "حذف نسخة RBD",
+          "confirm": "هل تريد حذف نسخة RBD \"{{name}}\"؟",
+          "deleting": "جارٍ حذف نسخة RBD \"{{name}}\"...",
+          "success": "تم حذف نسخة RBD \"{{name}}\""
+        },
+        "machines": {
+          "description": "عرض قائمة الأجهزة المخصصة للنسخة",
+          "fetching": "جارٍ جلب أجهزة النسخة...",
+          "success": "تم جلب أجهزة النسخة"
+        },
+        "assign": {
+          "description": "تخصيص أجهزة للنسخة",
+          "assigning": "جارٍ تخصيص أجهزة للنسخة \"{{name}}\"...",
+          "success": "تم تخصيص الأجهزة للنسخة \"{{name}}\""
+        },
+        "unassign": {
+          "description": "إزالة أجهزة من النسخة",
+          "unassigning": "جارٍ إزالة الأجهزة من النسخة \"{{name}}\"...",
+          "success": "تم إزالة الأجهزة من النسخة \"{{name}}\""
+        }
       }
     },
     "context": {
@@ -362,6 +506,47 @@
         "enabling": "جاري تفعيل وضع الصيانة..."
       }
     },
+    "permission": {
+      "description": "أوامر إدارة الأذونات",
+      "list": {
+        "description": "قائمة الأذونات",
+        "fetching": "جاري جلب الأذونات..."
+      },
+      "group": {
+        "description": "إدارة مجموعات الأذونات",
+        "list": {
+          "description": "قائمة جميع مجموعات الأذونات",
+          "fetching": "جاري جلب مجموعات الأذونات...",
+          "success": "تم جلب مجموعات الأذونات"
+        },
+        "create": {
+          "description": "إنشاء مجموعة أذونات جديدة",
+          "creating": "جاري إنشاء مجموعة الأذونات \"{{name}}\"...",
+          "success": "تم إنشاء مجموعة الأذونات \"{{name}}\""
+        },
+        "delete": {
+          "confirm": "حذف مجموعة الأذونات \"{{name}}\"؟",
+          "deleting": "جاري حذف مجموعة الأذونات \"{{name}}\"...",
+          "description": "حذف مجموعة أذونات",
+          "success": "تم حذف مجموعة الأذونات \"{{name}}\""
+        },
+        "show": {
+          "description": "عرض تفاصيل مجموعة الأذونات",
+          "fetching": "جاري جلب تفاصيل مجموعة الأذونات...",
+          "success": "تم جلب التفاصيل"
+        }
+      },
+      "add": {
+        "adding": "جاري إضافة الإذن \"{{permission}}\" إلى المجموعة \"{{group}}\"...",
+        "description": "إضافة إذن إلى مجموعة",
+        "success": "تم إضافة الإذن"
+      },
+      "remove": {
+        "description": "إزالة إذن من مجموعة",
+        "removing": "جاري إزالة الإذن \"{{permission}}\" من المجموعة \"{{group}}\"...",
+        "success": "تم إزالة الإذن"
+      }
+    },
     "protocol": {
       "description": "إدارة تسجيل معالج البروتوكول {{scheme}}:// والتعامل مع عناوين URL",
       "register": {
@@ -409,47 +594,6 @@
         "description": "تحليل عنوان URL {{scheme}}:// وعرض المكونات",
         "parsedUrl": "\nعنوان URL المحلل للبروتوكول:",
         "cliCommand": "\nأمر سطر الأوامر:"
-      }
-    },
-    "permission": {
-      "description": "أوامر إدارة الأذونات",
-      "list": {
-        "description": "قائمة الأذونات",
-        "fetching": "جاري جلب الأذونات..."
-      },
-      "group": {
-        "description": "إدارة مجموعات الأذونات",
-        "list": {
-          "description": "قائمة جميع مجموعات الأذونات",
-          "fetching": "جاري جلب مجموعات الأذونات...",
-          "success": "تم جلب مجموعات الأذونات"
-        },
-        "create": {
-          "description": "إنشاء مجموعة أذونات جديدة",
-          "creating": "جاري إنشاء مجموعة الأذونات \"{{name}}\"...",
-          "success": "تم إنشاء مجموعة الأذونات \"{{name}}\""
-        },
-        "delete": {
-          "confirm": "حذف مجموعة الأذونات \"{{name}}\"؟",
-          "deleting": "جاري حذف مجموعة الأذونات \"{{name}}\"...",
-          "description": "حذف مجموعة أذونات",
-          "success": "تم حذف مجموعة الأذونات \"{{name}}\""
-        },
-        "show": {
-          "description": "عرض تفاصيل مجموعة الأذونات",
-          "fetching": "جاري جلب تفاصيل مجموعة الأذونات...",
-          "success": "تم جلب التفاصيل"
-        }
-      },
-      "add": {
-        "adding": "جاري إضافة الإذن \"{{permission}}\" إلى المجموعة \"{{group}}\"...",
-        "description": "إضافة إذن إلى مجموعة",
-        "success": "تم إضافة الإذن"
-      },
-      "remove": {
-        "description": "إزالة إذن من مجموعة",
-        "removing": "جاري إزالة الإذن \"{{permission}}\" من المجموعة \"{{group}}\"...",
-        "success": "تم إزالة الإذن"
       }
     },
     "queue": {
@@ -552,6 +696,24 @@
         }
       }
     },
+    "shortcuts": {
+      "run": {
+        "completedLocal": "[محلي] تم الإكمال في {{duration}}ms",
+        "description": "تنفيذ دالة (اختصار لـ: queue create)",
+        "executingLocal": "[محلي] جاري تنفيذ '{{function}}' على {{machine}}...",
+        "failedLocal": "[محلي] فشل: {{error}}",
+        "watching": "جاري الانتظار للإكمال..."
+      },
+      "trace": {
+        "description": "تتبع مهمة (اختصار لـ: queue trace)"
+      },
+      "cancel": {
+        "description": "إلغاء مهمة (اختصار لـ: queue cancel)"
+      },
+      "retry": {
+        "description": "إعادة محاولة مهمة فاشلة (اختصار لـ: queue retry)"
+      }
+    },
     "storage": {
       "description": "إدارة التخزين",
       "list": {
@@ -617,24 +779,6 @@
         }
       }
     },
-    "shortcuts": {
-      "run": {
-        "completedLocal": "[محلي] تم الإكمال في {{duration}}ms",
-        "description": "تنفيذ دالة (اختصار لـ: queue create)",
-        "executingLocal": "[محلي] جاري تنفيذ '{{function}}' على {{machine}}...",
-        "failedLocal": "[محلي] فشل: {{error}}",
-        "watching": "جاري الانتظار للإكمال..."
-      },
-      "trace": {
-        "description": "تتبع مهمة (اختصار لـ: queue trace)"
-      },
-      "cancel": {
-        "description": "إلغاء مهمة (اختصار لـ: queue cancel)"
-      },
-      "retry": {
-        "description": "إعادة محاولة مهمة فاشلة (اختصار لـ: queue retry)"
-      }
-    },
     "term": {
       "description": "وصول طرفية SSH إلى الآلات والمستودعات",
       "connecting": "جاري الاتصال بـ {{machine}}...",
@@ -646,57 +790,6 @@
       "launchSuccess": "تم تشغيل الطرفية بنجاح.",
       "launchingTerminal": "جاري تشغيل طرفية {{type}}...",
       "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}..."
-    },
-    "vscode": {
-      "description": "تكامل VS Code Remote SSH",
-      "connect": {
-        "description": "الاتصال بآلة أو مستودع في VS Code",
-        "detecting": "جاري كشف VS Code...",
-        "extensionWarning": "تحذير: قد لا يكون امتداد Remote SSH مثبتاً.\nقم بالتثبيت من: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
-        "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
-        "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}...",
-        "persistingKey": "جاري حفظ مفتاح SSH...",
-        "configuringSSH": "جاري إعدادات SSH...",
-        "configuringVSCode": "جاري إعدادات VS Code...",
-        "settingsWarning": "تحذير: لم يتمكن من إعدادات VS Code: {{error}}",
-        "settingUpEnv": "جاري إعداد البيئة البعيدة...",
-        "opening": "جاري فتح VS Code: {{connection}} → {{path}}",
-        "success": "تم تشغيل VS Code بنجاح."
-      },
-      "list": {
-        "description": "قائمة اتصالات VS Code SSH المكونة",
-        "noConnections": "لا توجد اتصالات VS Code SSH مكونة.",
-        "configFile": "\nملف الإعدادات: {{path}}",
-        "header": "اتصالات VS Code SSH المكونة:\n",
-        "keyPersisted": " (تم حفظ المفتاح)",
-        "total": "\nالإجمالي: {{count}} اتصال(اتصالات)"
-      },
-      "cleanup": {
-        "description": "إزالة إعدادات VS Code SSH",
-        "cleanedAll": "تم تنظيف {{count}} اتصال(اتصالات) VS Code SSH.",
-        "removedKeys": "تم إزالة جميع مفاتيح SSH المحفوظة.",
-        "cleaned": "تم التنظيف: {{connection}}"
-      },
-      "check": {
-        "description": "التحقق من تثبيت VS Code والإعدادات",
-        "title": "فحص إعداد VS Code\n",
-        "installation": "التثبيت:",
-        "vscodeFound": "  VS Code: {{path}}",
-        "version": "  الإصدار: {{version}}",
-        "variant": "  النوع: Insiders",
-        "vscodeNotFound": "  VS Code: غير مثبت",
-        "remoteSSH": "  امتداد Remote SSH: {{status}}",
-        "installed": "مثبت",
-        "notDetected": "لم يتم الكشف عنه",
-        "configuration": "\nالإعدادات:",
-        "settingsPath": "  مسار الإعدادات: {{path}}",
-        "configured": "  مكون: {{status}}",
-        "yes": "نعم",
-        "no": "لا",
-        "missingSettings": "  الإعدادات المفقودة:",
-        "sshConfig": "\nإعدادات SSH: {{path}}",
-        "activeConnections": "الاتصالات النشطة: {{count}}"
-      }
     },
     "user": {
       "description": "أوامر إدارة المستخدم",
@@ -768,6 +861,57 @@
           "success": "تم تعيين الإذن"
         }
       }
+    },
+    "vscode": {
+      "description": "تكامل VS Code Remote SSH",
+      "connect": {
+        "description": "الاتصال بآلة أو مستودع في VS Code",
+        "detecting": "جاري كشف VS Code...",
+        "extensionWarning": "تحذير: قد لا يكون امتداد Remote SSH مثبتاً.\nقم بالتثبيت من: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
+        "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
+        "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}...",
+        "persistingKey": "جاري حفظ مفتاح SSH...",
+        "configuringSSH": "جاري إعدادات SSH...",
+        "configuringVSCode": "جاري إعدادات VS Code...",
+        "settingsWarning": "تحذير: لم يتمكن من إعدادات VS Code: {{error}}",
+        "settingUpEnv": "جاري إعداد البيئة البعيدة...",
+        "opening": "جاري فتح VS Code: {{connection}} → {{path}}",
+        "success": "تم تشغيل VS Code بنجاح."
+      },
+      "list": {
+        "description": "قائمة اتصالات VS Code SSH المكونة",
+        "noConnections": "لا توجد اتصالات VS Code SSH مكونة.",
+        "configFile": "\nملف الإعدادات: {{path}}",
+        "header": "اتصالات VS Code SSH المكونة:\n",
+        "keyPersisted": " (تم حفظ المفتاح)",
+        "total": "\nالإجمالي: {{count}} اتصال(اتصالات)"
+      },
+      "cleanup": {
+        "description": "إزالة إعدادات VS Code SSH",
+        "cleanedAll": "تم تنظيف {{count}} اتصال(اتصالات) VS Code SSH.",
+        "removedKeys": "تم إزالة جميع مفاتيح SSH المحفوظة.",
+        "cleaned": "تم التنظيف: {{connection}}"
+      },
+      "check": {
+        "description": "التحقق من تثبيت VS Code والإعدادات",
+        "title": "فحص إعداد VS Code\n",
+        "installation": "التثبيت:",
+        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  الإصدار: {{version}}",
+        "variant": "  النوع: Insiders",
+        "vscodeNotFound": "  VS Code: غير مثبت",
+        "remoteSSH": "  امتداد Remote SSH: {{status}}",
+        "installed": "مثبت",
+        "notDetected": "لم يتم الكشف عنه",
+        "configuration": "\nالإعدادات:",
+        "settingsPath": "  مسار الإعدادات: {{path}}",
+        "configured": "  مكون: {{status}}",
+        "yes": "نعم",
+        "no": "لا",
+        "missingSettings": "  الإعدادات المفقودة:",
+        "sshConfig": "\nإعدادات SSH: {{path}}",
+        "activeConnections": "الاتصالات النشطة: {{count}}"
+      }
     }
   },
   "errors": {
@@ -778,6 +922,7 @@
     "contextNotFound": "لم يتم العثور على السياق \"{{name}}\"",
     "invalidCredentials": "بيانات اعتماد غير صحيحة",
     "invalidEmail": "الرجاء إدخال بريد إلكتروني صحيح",
+    "invalidMasterPassword": "كلمة المرور الرئيسية غير صالحة لتشفير الخزنة",
     "invalidExpiration": "انتهاء الصلاحية يجب أن يكون بين 1 و 720 ساعة",
     "invalidAction": "إجراء غير صحيح \"{{action}}\". استخدم \"{{valid}}\".",
     "invalidFunctionParams": "معاملات غير صحيحة للدالة \"{{function}}\": {{errors}}",
@@ -797,6 +942,8 @@
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
+    "clusterNotFound": "مجموعة Ceph \"{{name}}\" غير موجودة",
+    "poolNotFound": "تجمع Ceph \"{{name}}\" غير موجود",
     "protocol": {
       "notSupported": "تسجيل البروتوكول غير مدعوم على {{platform}}",
       "invalidUrl": "عنوان URL بروتوكول غير صحيح: {{error}}",
@@ -856,6 +1003,7 @@
     "activationCode": "رمز التفعيل من البريد الإلكتروني",
     "apiUrl": "عنوان URL للـ API",
     "bridge": "اسم الجسر",
+    "cluster": "اسم مجموعة Ceph",
     "command": "تنفيذ أمر بدلاً من الصدفة التفاعلية",
     "container": "الاتصال بحاوية Docker معينة",
     "containerAction": "إجراء الحاوية: terminal أو logs أو stats أو exec",
@@ -864,6 +1012,11 @@
     "email": "عنوان البريد الإلكتروني",
     "external": "فرض تشغيل في نافذة طرفية خارجية",
     "follow": "متابعة إخراج السجلات",
+    "image": "اسم صورة RBD",
+    "pool": "اسم تجمع Ceph",
+    "snapshot": "اسم لقطة RBD",
+    "vaultContent": "محتوى الخزينة كسلسلة JSON",
+    "machineNames": "أسماء الآلات (مفصولة بفواصل)",
     "endpoint": "عنوان URL لنقطة نهاية API",
     "expires": "انتهاء الصلاحية بالساعات (1-720)",
     "force": "تخطي نوافذ التأكيد",
@@ -876,6 +1029,7 @@
     "organization": "اسم المؤسسة",
     "output": "صيغة المخرجات (table|json|yaml|csv)",
     "password": "كلمة المرور (لتسجيل الدخول غير التفاعلي)",
+    "masterPassword": "كلمة المرور الرئيسية لتشفير الخزنة",
     "region": "اسم المنطقة",
     "renetPath": "المسار إلى ثنائي renet (افتراضي: renet في PATH)",
     "repository": "اسم المستودع (يتصل ببيئة المستودع)",
@@ -887,6 +1041,7 @@
     "sshPrivateKey": "المسار إلى مفتاح SSH الخاص",
     "sshPublicKey": "المسار إلى مفتاح SSH العام",
     "sshUser": "اسم مستخدم SSH",
+    "subscriptionPlan": "خطة الاشتراك (COMMUNITY أو PROFESSIONAL أو BUSINESS أو ENTERPRISE)",
     "switch": "الانتقال إلى هذا السياق بعد الإنشاء",
     "team": "اسم الفريق",
     "tfaCode": "رمز TFA الحالي للتحقق",
@@ -964,7 +1119,8 @@
     "setPassword": "تعيين كلمة مرور للمستخدم:",
     "newPassword": "كلمة مرور جديدة:",
     "confirmNewPassword": "تأكيد كلمة المرور الجديدة:",
-    "masterPassword": "أدخل كلمة المرور الرئيسية:"
+    "masterPassword": "أدخل كلمة المرور الرئيسية:",
+    "masterPasswordForVault": "أدخل كلمة المرور الرئيسية لتشفير الخزنة:"
   },
   "spinners": {
     "connecting": "جاري الاتصال...",

@@ -22,7 +22,12 @@ class AuthService {
   async login(
     email: string,
     password: string,
-    options: { sessionName?: string; contextName?: string; apiUrl?: string } = {}
+    options: {
+      sessionName?: string;
+      contextName?: string;
+      apiUrl?: string;
+      masterPassword?: string;
+    } = {}
   ): Promise<{ success: boolean; isTFAEnabled?: boolean; message?: string }> {
     // Hash the password
     const passwordHash = await nodeCryptoProvider.generateHash(password);
@@ -61,7 +66,7 @@ class AuthService {
     }
 
     // Determine the context name to use
-    const contextName = options.contextName ?? (await contextService.getCurrentName()) ?? 'default';
+    const contextName = options.contextName ?? contextService.getCurrentName();
     const apiUrl = options.apiUrl ?? (await apiClient.getApiUrl());
 
     // Prepare credentials to save
@@ -77,10 +82,72 @@ class AuthService {
     };
 
     // Only store master password if organization has encryption enabled
-    if (isEncrypted(authResult.vaultOrganization)) {
-      const encryptedPassword = await nodeCryptoProvider.encrypt(password, password);
+    const encryptedVaultOrg = authResult.vaultOrganization;
+    if (encryptedVaultOrg && isEncrypted(encryptedVaultOrg)) {
+      let effectiveMasterPassword = options.masterPassword;
+
+      if (!effectiveMasterPassword) {
+        // Try login password as master password first (common case)
+        const loginPasswordValid = await this.validateMasterPassword(encryptedVaultOrg, password);
+
+        if (loginPasswordValid) {
+          effectiveMasterPassword = password;
+        } else if (process.stdin.isTTY) {
+          // Prompt interactively for master password
+          effectiveMasterPassword = await askPassword(t('prompts.masterPasswordForVault'));
+
+          // Validate the provided master password
+          const isValid = await this.validateMasterPassword(
+            encryptedVaultOrg,
+            effectiveMasterPassword
+          );
+
+          if (!isValid) {
+            return {
+              success: false,
+              message: t('errors.invalidMasterPassword'),
+            };
+          }
+        } else {
+          // Non-interactive mode, check env var
+          const envPassword = process.env.REDIACC_MASTER_PASSWORD;
+          if (envPassword) {
+            const isValid = await this.validateMasterPassword(encryptedVaultOrg, envPassword);
+            if (isValid) {
+              effectiveMasterPassword = envPassword;
+            }
+          }
+
+          if (!effectiveMasterPassword) {
+            return {
+              success: false,
+              message:
+                'Master password required but not provided. Use --master-password option or REDIACC_MASTER_PASSWORD environment variable.',
+            };
+          }
+        }
+      } else {
+        // Explicit master password provided, validate it
+        const isValid = await this.validateMasterPassword(
+          encryptedVaultOrg,
+          effectiveMasterPassword
+        );
+
+        if (!isValid) {
+          return {
+            success: false,
+            message: t('errors.invalidMasterPassword'),
+          };
+        }
+      }
+
+      // Store encrypted master password (encrypted with itself as key)
+      const encryptedPassword = await nodeCryptoProvider.encrypt(
+        effectiveMasterPassword,
+        effectiveMasterPassword
+      );
       credentials.masterPassword = encryptedPassword;
-      this.cachedMasterPassword = password;
+      this.cachedMasterPassword = effectiveMasterPassword;
     } else {
       this.cachedMasterPassword = null;
     }
@@ -147,6 +214,27 @@ class AuthService {
     this.cachedMasterPassword = password;
   }
 
+  /**
+   * Validate a master password by attempting to decrypt the vaultOrganization.
+   * Returns true if the password successfully decrypts the vault.
+   */
+  private async validateMasterPassword(
+    encryptedVaultOrganization: string,
+    masterPassword: string
+  ): Promise<boolean> {
+    try {
+      const decrypted = await nodeCryptoProvider.decrypt(
+        encryptedVaultOrganization,
+        masterPassword
+      );
+      // If decryption succeeded, try to parse as JSON to verify
+      JSON.parse(decrypted);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async requireMasterPassword(): Promise<string> {
     // Return cached password if available
     if (this.cachedMasterPassword) {
@@ -205,12 +293,16 @@ class AuthService {
   async register(
     organizationName: string,
     email: string,
-    password: string
+    password: string,
+    plan = 'COMMUNITY',
+    _masterPassword?: string
   ): Promise<{ success: boolean; message?: string }> {
+    // Note: masterPassword is accepted for API consistency but not used during registration.
+    // Encryption is typically configured after organization setup.
     const passwordHash = await nodeCryptoProvider.generateHash(password);
 
     try {
-      await apiClient.register(organizationName, email, passwordHash);
+      await apiClient.register(organizationName, email, passwordHash, plan);
       return { success: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
