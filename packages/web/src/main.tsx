@@ -1,13 +1,16 @@
 import '@ant-design/v5-patch-for-react-19';
+import 'normalize.css';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { setup } from 'goober';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import App from './App';
 import { AppProviders } from './components/app/AppProviders';
 import i18n from './i18n/config';
 import { store } from './store/store';
-import './styles/global.css';
+
+setup(React.createElement);
 
 const queryClient = new QueryClient({
   defaultOptions: {

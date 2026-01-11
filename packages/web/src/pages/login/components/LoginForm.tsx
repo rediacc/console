@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Flex, Form, Input, Tooltip, Typography } from 'antd';
+import { Button, Flex, Form, Input, Space, Tooltip, Typography } from 'antd';
 import type { LoginFormValues } from '@/features/auth/types';
 import {
   InfoCircleOutlined,
@@ -90,12 +90,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             name="masterPassword"
             label={
               <label htmlFor="login-master-password-input">
-                <Flex align="center" className="flex">
+                <Space align="center" className="flex">
                   <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
                   <Tooltip title={t('auth:login.masterPasswordTooltip')}>
                     <InfoCircleOutlined />
                   </Tooltip>
-                </Flex>
+                </Space>
               </label>
             }
             validateStatus={

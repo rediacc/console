@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Flex, Form, Input, Modal, Select, Typography } from 'antd';
+import { Button, Flex, Form, Input, Modal, Select, Space, Typography } from 'antd';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import apiClient from '@/api/client';
@@ -328,7 +328,7 @@ const EndpointSelector: React.FC = () => {
 
   return (
     <>
-      <Flex vertical className="gap-sm" align="center">
+      <Space direction="vertical" size="small" align="center">
         {/* Display selected endpoint URL with version */}
         {selectedEndpoint && (
           <Typography.Text>
@@ -345,7 +345,12 @@ const EndpointSelector: React.FC = () => {
         <Select
           value={displayValue}
           onChange={handleEndpointChange}
-          suffixIcon={<ApiOutlined />}
+          optionLabelProp="label"
+          suffixIcon={
+            <Space size={8} align="center">
+              <ApiOutlined />
+            </Space>
+          }
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
         >
@@ -359,14 +364,20 @@ const EndpointSelector: React.FC = () => {
 
             // Label for selected value (with health indicator)
             const labelContent = (
-              <Flex align="center">
+              <Space size={8} align="center">
                 {isChecking ? (
                   <LoadingOutlined />
                 ) : (
                   <Typography.Text>{HEALTH_INDICATOR_SYMBOL}</Typography.Text>
                 )}
                 <Typography.Text>{endpoint.name}</Typography.Text>
-              </Flex>
+                {endpoint.type === 'custom' && (
+                  <DeleteOutlined
+                    className="cursor-pointer"
+                    onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
+                  />
+                )}
+              </Space>
             );
 
             return (
@@ -378,7 +389,7 @@ const EndpointSelector: React.FC = () => {
                 label={labelContent}
               >
                 <Flex justify="space-between" align="center">
-                  <Flex align="center">
+                  <Space size={8} align="center">
                     {/* Health indicator */}
                     {isChecking ? (
                       <LoadingOutlined />
@@ -392,14 +403,16 @@ const EndpointSelector: React.FC = () => {
                     >
                       {endpoint.name}
                     </Typography.Text>
-                  </Flex>
+                  </Space>
 
                   {/* Delete button for custom endpoints */}
                   {endpoint.type === 'custom' && (
-                    <DeleteOutlined
-                      className="cursor-pointer"
-                      onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
-                    />
+                    <Space size={8} align="center">
+                      <DeleteOutlined
+                        className="cursor-pointer"
+                        onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
+                      />
+                    </Space>
                   )}
                 </Flex>
               </Select.Option>
@@ -417,7 +430,7 @@ const EndpointSelector: React.FC = () => {
             </Typography.Text>
           </Select.Option>
         </Select>
-      </Flex>
+      </Space>
 
       {/* Add Custom Endpoint Modal */}
       <Modal
@@ -427,11 +440,36 @@ const EndpointSelector: React.FC = () => {
           customModal.close();
           customForm.resetFields();
         }}
-        footer={null}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              customModal.close();
+              customForm.resetFields();
+            }}
+            data-testid="custom-endpoint-cancel-button"
+          >
+            {t('endpointSelector.cancel')}
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            htmlType="submit"
+            form="custom-endpoint-form"
+            data-testid="custom-endpoint-submit-button"
+          >
+            {t('endpointSelector.addEndpoint')}
+          </Button>,
+        ]}
         centered
         data-testid="custom-endpoint-modal"
       >
-        <Form form={customForm} layout="vertical" onFinish={handleAddCustomEndpoint}>
+        <Form
+          id="custom-endpoint-form"
+          form={customForm}
+          layout="vertical"
+          onFinish={handleAddCustomEndpoint}
+        >
           <Form.Item
             name="name"
             label={t('endpointSelector.nameLabel')}
@@ -462,23 +500,6 @@ const EndpointSelector: React.FC = () => {
               placeholder={t('endpointSelector.urlPlaceholder')}
               data-testid="custom-endpoint-url-input"
             />
-          </Form.Item>
-
-          <Form.Item>
-            <Flex justify="flex-end" className="w-full">
-              <Button
-                onClick={() => {
-                  customModal.close();
-                  customForm.resetFields();
-                }}
-                data-testid="custom-endpoint-cancel-button"
-              >
-                {t('endpointSelector.cancel')}
-              </Button>
-              <Button type="primary" htmlType="submit" data-testid="custom-endpoint-submit-button">
-                {t('endpointSelector.addEndpoint')}
-              </Button>
-            </Flex>
           </Form.Item>
         </Form>
       </Modal>

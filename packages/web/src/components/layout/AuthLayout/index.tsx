@@ -8,6 +8,7 @@ import logoWhite from '@/assets/logo_white.png';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import { RootState } from '@/store/store';
 import { getThemeConfig } from '@/theme';
+import { AuthContent, AuthHeader, AuthLayoutBody, AuthLayoutContainer, AuthLayoutRoot } from './styled';
 
 const AuthLayout: React.FC = () => {
   const { t } = useTranslation('common');
@@ -17,28 +18,25 @@ const AuthLayout: React.FC = () => {
 
   return (
     <ConfigProvider theme={getThemeConfig(isDark)}>
-      <Flex vertical className="auth-layout" data-testid="auth-layout-container">
+      <AuthLayoutRoot>
+        <AuthLayoutContainer vertical align="stretch" data-testid="auth-layout-container">
         {/* Language selector - top right corner */}
-        <Flex className="auth-header" justify="flex-end" align="center">
+        <AuthHeader>
           <LanguageSelector iconOnly />
-        </Flex>
+        </AuthHeader>
 
         {/* Content - split screen on desktop */}
-        <Flex className="auth-content flex-1">
-          <Flex className="auth-branding-panel" />
-          <Flex
-            vertical
-            align="center"
-            justify="center"
-            className="auth-form-panel flex-1"
-            data-testid="auth-layout-content"
-          >
-            {/* Logo centered above form */}
-            <img src={logo} alt={t('alt.logo')} className="auth-logo" />
-            <Outlet />
-          </Flex>
-        </Flex>
-      </Flex>
+        <AuthLayoutBody>
+          <AuthContent>
+            <Flex vertical align="center" justify="center" gap={32} data-testid="auth-layout-content">
+              {/* Logo centered above form */}
+              <img src={logo} alt={t('alt.logo')} className="auth-logo" height={40} />
+              <Outlet />
+            </Flex>
+          </AuthContent>
+        </AuthLayoutBody>
+        </AuthLayoutContainer>
+      </AuthLayoutRoot>
     </ConfigProvider>
   );
 };

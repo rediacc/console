@@ -1,7 +1,6 @@
 import { theme } from 'antd';
 import type { ThemeConfig } from 'antd';
 
-// Light: bg #FFFFFF, text #3B3B3B, accent #6B7280
 const lightThemeTokens = {
   colorPrimary: '#6B7280',
   colorLink: '#6B7280',
@@ -10,7 +9,6 @@ const lightThemeTokens = {
   colorTextBase: '#3B3B3B',
 };
 
-// Dark: bg #1F1F1F, text #CCCCCC, accent #9CA3AF
 const darkThemeTokens = {
   colorPrimary: '#9CA3AF',
   colorLink: '#9CA3AF',

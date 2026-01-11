@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Flex, Typography } from 'antd';
+import { Alert, Button, Flex, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -36,6 +36,7 @@ import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
 import { TFAModal } from './components/TFAModal';
 import { handleProtocolState } from './hooks/useProtocolStateHandler';
+import { LoginPanel } from './styled';
 
 const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -327,9 +328,8 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      {/* eslint-disable-next-line no-restricted-syntax */}
-      <Flex className="w-full" style={{ maxWidth: 400 }}>
-        <Flex vertical className="w-full">
+      <LoginPanel>
+        <Flex vertical>
           {error && (
             <Alert
               type="error"
@@ -355,44 +355,46 @@ const LoginPage: React.FC = () => {
             t={t}
           />
 
-          <Flex justify="center">
-            <Typography.Text>
-              {t('auth:login.noAccount')}{' '}
-              <a
-                onClick={() => setShowRegistration(true)}
-                tabIndex={0}
-                role="button"
-                aria-label={t('auth:login.register')}
-                data-testid="login-register-link"
-                className="cursor-pointer inline-block"
-              >
-                {t('auth:login.register')}
-              </a>
-            </Typography.Text>
-          </Flex>
-
-          <Flex vertical align="center" className="gap-sm">
-            {!showAdvancedOptions &&
-              vaultProtocolState !== VaultProtocolState.PASSWORD_REQUIRED &&
-              vaultProtocolState !== VaultProtocolState.INVALID_PASSWORD && (
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => setShowAdvancedOptions(true)}
-                  data-testid="login-advanced-options-toggle"
+          <Space direction="vertical" size="middle">
+            <Flex justify="center">
+              <Typography.Text>
+                {t('auth:login.noAccount')}{' '}
+                <a
+                  onClick={() => setShowRegistration(true)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={t('auth:login.register')}
+                  data-testid="login-register-link"
+                  className="cursor-pointer inline-block"
                 >
-                  {t('auth:login.advancedOptions')} →
-                </Button>
-              )}
+                  {t('auth:login.register')}
+                </a>
+              </Typography.Text>
+            </Flex>
 
-            {showAdvancedOptions && (
-              <Flex vertical className="w-full gap-sm" align="center">
-                <EndpointSelector />
-              </Flex>
-            )}
-          </Flex>
+            <Flex vertical align="center">
+              {!showAdvancedOptions &&
+                vaultProtocolState !== VaultProtocolState.PASSWORD_REQUIRED &&
+                vaultProtocolState !== VaultProtocolState.INVALID_PASSWORD && (
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={() => setShowAdvancedOptions(true)}
+                    data-testid="login-advanced-options-toggle"
+                  >
+                    {t('auth:login.advancedOptions')} →
+                  </Button>
+                )}
+
+              {showAdvancedOptions && (
+                <Space direction="vertical" size="small" align="center">
+                  <EndpointSelector />
+                </Space>
+              )}
+            </Flex>
+          </Space>
         </Flex>
-      </Flex>
+      </LoginPanel>
 
       <TFAModal
         open={showTFAModal}
