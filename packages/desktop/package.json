@@ -45,7 +45,7 @@
     "electron-log": "^5.4.3",
     "electron-vite": "^5.0.0",
     "typescript": "^5.9.3",
-    "vite": "^6.0.6",
+    "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "optionalDependencies": {
