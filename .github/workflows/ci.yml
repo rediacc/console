@@ -159,6 +159,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
 
+      - name: Block legacy-peer-deps workarounds
+        run: |
+          # Fail if .npmrc contains legacy-peer-deps or force
+          if [ -f .npmrc ]; then
+            if grep -qiE "legacy-peer-deps|force" .npmrc; then
+              echo "❌ .npmrc contains legacy-peer-deps or force=true"
+              echo "Fix peer dependency conflicts properly instead of bypassing checks."
+              exit 1
+            fi
+          fi
+          echo "✅ No legacy-peer-deps workarounds detected"
+
       - name: Setup Node.js
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
@@ -167,6 +179,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify no peer dependency conflicts
+        run: |
+          # npm ls returns non-zero if there are invalid peer deps
+          if ! npm ls 2>&1 | grep -q "invalid"; then
+            echo "✅ No peer dependency conflicts"
+          else
+            echo "❌ Peer dependency conflicts detected:"
+            npm ls 2>&1 | grep "invalid" || true
+            echo ""
+            echo "Fix by aligning versions in package.json, not with --legacy-peer-deps"
+            exit 1
+          fi
 
       - name: Check version consistency
         run: npm run version:check

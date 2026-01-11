@@ -73,8 +73,7 @@
     "@rediacc/shared",
     "loupe",
     "@vitest/runner",
-    "@vitest/utils",
-    "rimraf"
+    "@vitest/utils"
   ],
   "ignoreBinaries": ["rimraf"]
 }
