@@ -1,6 +1,7 @@
 #!/bin/bash
 # Check GitHub Actions CI status after push
 # Returns JSON for Stop hook: {"decision": "block", "reason": "..."} or allows stop
+# Version: 1.0.0
 
 set -e
 
