@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { ProtocolAction, ProtocolUrl } from '../types/index.js';
 
 /**
@@ -226,7 +227,7 @@ function buildSyncCommand(parsed: ProtocolUrl): string[] {
   const { token, teamName, machineName, repositoryName, params } = parsed;
   const cmd: string[] = ['sync'];
 
-  const direction = params?.direction ?? 'download';
+  const direction = params?.direction ?? DEFAULTS.PROTOCOL.ACTION;
   if (direction !== 'upload' && direction !== 'download') {
     throw new Error(`Invalid sync direction: ${direction}`);
   }

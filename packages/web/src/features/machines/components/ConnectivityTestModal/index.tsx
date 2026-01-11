@@ -19,6 +19,7 @@ import {
   SyncOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { ColumnsType } from 'antd/es/table/interface';
 
 interface ConnectivityTestModalProps {
@@ -124,7 +125,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           )
         );
       } else {
-        throw new Error(result.error ?? 'Failed to create test task');
+        throw new Error(result.error ?? DEFAULTS.ERROR.FAILED_TO_CREATE_TASK);
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create test task';

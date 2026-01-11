@@ -3,6 +3,7 @@ import {
   parsePrivilegeAuthenticationRequest,
   parseLoginResult,
 } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { isEncrypted } from '@rediacc/shared/encryption';
 import { typedApi, apiClient } from './api.js';
 import { contextService } from './context.js';
@@ -204,7 +205,7 @@ class AuthService {
     if (!result.isAuthorized) {
       return {
         success: false,
-        message: result.result ?? 'TFA verification failed',
+        message: result.result ?? DEFAULTS.ERROR.TFA_VERIFICATION_FAILED,
       };
     }
 

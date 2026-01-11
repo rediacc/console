@@ -1,5 +1,6 @@
 import { typedApi } from '@/api/client';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
+import { DEFAULTS, SUCCESS_MESSAGES } from '@rediacc/shared/config';
 import type { GetTeamQueueItems_ResultSet1, QueueTrace } from '@rediacc/shared/types';
 
 interface HelloResponseData {
@@ -92,7 +93,7 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
   const responseVault = trace.responseVaultContent;
 
   if (!responseVault?.vaultContent) {
-    return createSuccessResult('Hello function completed successfully', 'COMPLETED');
+    return createSuccessResult(SUCCESS_MESSAGES.HELLO_SUCCESS, 'COMPLETED');
   }
 
   const vaultData = parseResponseVaultContent(responseVault.vaultContent);
@@ -100,19 +101,19 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
   const isError = resultMessage?.includes('Error');
 
   return isError
-    ? createErrorResult(resultMessage ?? 'Hello function reported an error', 'COMPLETED', vaultData)
-    : createSuccessResult(
-        resultMessage ?? 'Hello function completed successfully',
+    ? createErrorResult(
+        resultMessage ?? DEFAULTS.ERROR.HELLO_FUNCTION_ERROR,
         'COMPLETED',
         vaultData
-      );
+      )
+    : createSuccessResult(resultMessage ?? SUCCESS_MESSAGES.HELLO_SUCCESS, 'COMPLETED', vaultData);
 }
 
 function handleFailedStatus(
   queueDetails: GetTeamQueueItems_ResultSet1,
   status: string
 ): QueueItemCompletionResult {
-  const failureReason = queueDetails.lastFailureReason ?? 'Operation failed';
+  const failureReason = queueDetails.lastFailureReason ?? DEFAULTS.ERROR.OPERATION_FAILED;
 
   return createErrorResult(failureReason, status);
 }

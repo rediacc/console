@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Machine } from '@/types';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
 import type { GroupByMode } from '../types';
 
@@ -39,7 +40,7 @@ const getBasicGroupKey = (machine: Machine, groupBy: GroupByMode): string => {
     case 'team':
       return machine.teamName ?? '';
     case 'region':
-      return machine.regionName ?? 'Unknown';
+      return machine.regionName ?? DEFAULTS.STATUS.UNKNOWN;
     default:
       return '';
   }

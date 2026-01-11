@@ -1,6 +1,7 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
 import { Button, Dropdown, type MenuProps } from 'antd';
 import i18n from '@/i18n/config';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { RESPONSIVE_HIDE_XS } from '../constants';
 import type { ActionColumnOptions, ActionMenuItem } from '../types';
 import type { ColumnsType } from 'antd/es/table';
@@ -13,7 +14,7 @@ export const createActionColumn = <T,>(
 ): ColumnsType<T>[number] => ({
   title: options.title ?? i18n.t('common:actionsColumn'),
   key: 'actions',
-  width: options.width ?? 120,
+  width: options.width ?? DEFAULTS.UI.ACTION_COLUMN_WIDTH,
   fixed: options.fixed,
   responsive: options.responsive ?? RESPONSIVE_HIDE_XS,
   render: (_: unknown, record: T) => {

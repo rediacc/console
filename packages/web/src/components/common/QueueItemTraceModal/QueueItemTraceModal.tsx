@@ -28,7 +28,9 @@ import { getSimplifiedStatus, getTaskStaleness } from './utils';
 import { buildDetailedCollapseItems } from './utils/collapseItemsBuilder';
 import { isTaskInTerminalState } from './utils/taskStateUtils';
 import type { ConsoleViewMode, QueueItemTraceModalProps } from './types';
-import type { TFunction } from 'i18next';
+
+// Generic translation function type that accepts any namespace configuration
+type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
 dayjs.extend(relativeTime);
 
@@ -58,7 +60,7 @@ interface ModalContentProps {
   processingDurationSeconds: number;
   isDetailedConsoleExpanded: boolean;
   setIsDetailedConsoleExpanded: (expanded: boolean) => void;
-  t: TFunction;
+  t: TranslateFn;
 }
 
 const LoadingState: React.FC = () => (
@@ -79,7 +81,7 @@ const SimpleModeContent: React.FC<{
   setConsoleViewMode: (mode: ConsoleViewMode) => void;
   accumulatedOutput: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
-  t: TFunction;
+  t: TranslateFn;
 }> = ({
   traceData,
   progressMessage,
@@ -161,7 +163,7 @@ const DetailedModeContent: React.FC<{
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   consoleViewMode: ConsoleViewMode;
   setConsoleViewMode: (mode: ConsoleViewMode) => void;
-  t: TFunction;
+  t: TranslateFn;
 }> = ({
   traceData,
   activeKeys,

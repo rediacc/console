@@ -11,6 +11,7 @@ import {
   SunOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 type UserMenuProps = {
@@ -56,7 +57,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             )}
             {organizationData?.activeSubscription && (
               <Tag data-testid="user-info-plan">
-                {organizationData.activeSubscription.planCode ?? 'UNKNOWN'}
+                {organizationData.activeSubscription.planCode ?? DEFAULTS.TELEMETRY.UNKNOWN_UPPER}
               </Tag>
             )}
           </Flex>

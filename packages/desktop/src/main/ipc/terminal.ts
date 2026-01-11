@@ -7,6 +7,7 @@ import {
   removeTempKnownHostsFile,
 } from '@rediacc/shared-desktop/ssh';
 import { ipcMain } from 'electron';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { PTYSession } from '@rediacc/shared-desktop';
 
 /**
@@ -81,8 +82,8 @@ export function registerTerminalHandlers(): void {
 
       // Create PTY session
       const ptySession = await createSSHPTYSession(destination, sshOptions, {
-        cols: params.cols ?? 80,
-        rows: params.rows ?? 24,
+        cols: params.cols ?? DEFAULTS.SSH.TERMINAL_COLS,
+        rows: params.rows ?? DEFAULTS.SSH.TERMINAL_ROWS,
         env: params.env,
       });
 

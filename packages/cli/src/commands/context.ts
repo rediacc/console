@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { Command } from 'commander';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { apiClient } from '../services/api.js';
 import { contextService } from '../services/context.js';
@@ -30,7 +31,7 @@ export function registerContextCommands(program: Command): void {
 
         const displayData = contexts.map((ctx) => ({
           name: ctx.name,
-          mode: ctx.mode ?? 'cloud',
+          mode: ctx.mode ?? DEFAULTS.CONTEXT.MODE,
           apiUrl: ctx.mode === 'local' ? '-' : ctx.apiUrl,
           userEmail: ctx.userEmail ?? '-',
           team: ctx.team ?? '-',
@@ -131,7 +132,7 @@ export function registerContextCommands(program: Command): void {
               name: ctx.name,
               mode: 'local',
               sshKey: ctx.ssh?.privateKeyPath ?? '-',
-              renetPath: ctx.renetPath ?? 'renet (in PATH)',
+              renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
               machines: Object.keys(ctx.machines ?? {}).length,
               defaultMachine: ctx.machine ?? '-',
             }
@@ -284,8 +285,8 @@ export function registerContextCommands(program: Command): void {
           name: m.name,
           ip: m.config.ip,
           user: m.config.user,
-          port: m.config.port ?? 22,
-          datastore: m.config.datastore ?? '/mnt/rediacc',
+          port: m.config.port ?? DEFAULTS.SSH.PORT,
+          datastore: m.config.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
         }));
 
         outputService.print(displayData, format);

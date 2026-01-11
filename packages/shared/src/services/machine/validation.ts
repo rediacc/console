@@ -3,6 +3,7 @@
  * Platform-agnostic validation rules for machine assignment operations
  */
 
+import { DEFAULTS } from '../../config';
 import type {
   BulkValidationResult,
   CapacityValidation,
@@ -254,7 +255,7 @@ export class MachineValidationService {
     // Convert invalidMachines to Record<string, ValidationError[]> format
     const errorsByMachine: Record<string, ValidationError[]> = {};
     invalidMachines.forEach((invalid) => {
-      const name = invalid.machineName ?? 'Unknown';
+      const name = invalid.machineName ?? DEFAULTS.STATUS.UNKNOWN;
       errorsByMachine[name] = invalid.errors;
     });
 
@@ -263,7 +264,7 @@ export class MachineValidationService {
     machines.forEach((machine) => {
       const result = this.validateExclusivityRule(machine, targetType);
       if (result.warnings.length > 0) {
-        const name = machine.machineName ?? 'Unknown';
+        const name = machine.machineName ?? DEFAULTS.STATUS.UNKNOWN;
         warningsByMachine[name] = result.warnings;
       }
     });

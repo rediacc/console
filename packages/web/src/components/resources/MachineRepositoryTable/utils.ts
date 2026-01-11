@@ -1,9 +1,10 @@
 import { isAxiosError } from 'axios';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { GroupedRepository, Repository } from './types';
 
 export const getRepositoryDisplayName = (repository: Repository): string => {
-  return `${repository.name}:${repository.repositoryTag ?? 'latest'}`;
+  return `${repository.name}:${repository.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`;
 };
 
 export const getAxiosErrorMessage = (error: unknown, fallback: string) => {

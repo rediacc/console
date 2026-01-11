@@ -1,5 +1,6 @@
 import { telemetryService } from '@/services/telemetryService';
 import type { RootState } from '@/store/store';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
 
 // Actions to track for business intelligence
@@ -153,7 +154,7 @@ function trackUserPreferences(
 
   if (action.type === 'ui/setTheme') {
     const actionWithPayload = action as UnknownAction & { payload?: string };
-    preferences['ui.theme'] = actionWithPayload.payload ?? 'unknown';
+    preferences['ui.theme'] = actionWithPayload.payload ?? DEFAULTS.TELEMETRY.UNKNOWN;
   }
 
   if (action.type === 'ui/toggleUiMode') {
@@ -181,7 +182,7 @@ function trackWorkflowProgression(action: UnknownAction, stateAfter: RootState):
         ...workflowData,
         'workflow.name': 'authentication',
         'workflow.step': 'login_completed',
-        'user.organization': stateAfter.auth.organization ?? 'unknown',
+        'user.organization': stateAfter.auth.organization ?? DEFAULTS.TELEMETRY.UNKNOWN,
       };
       break;
 
@@ -208,7 +209,7 @@ function trackWorkflowProgression(action: UnknownAction, stateAfter: RootState):
 
 function trackLoginSuccess(payload: Record<string, unknown> | undefined): void {
   telemetryService.trackEvent('business.user_session_start', {
-    'session.organization': String(payload?.organization ?? 'unknown'),
+    'session.organization': String(payload?.organization ?? DEFAULTS.TELEMETRY.UNKNOWN),
     'session.has_encryption': !!payload?.organizationEncryptionEnabled,
     'auth.method': 'standard',
   });
@@ -218,7 +219,7 @@ function trackLogout(stateBefore: RootState): void {
   const sessionStartTime = (window as TelemetryWindow).sessionStartTime ?? Date.now();
   telemetryService.trackEvent('business.user_session_end', {
     'session.duration_ms': Date.now() - sessionStartTime,
-    'session.organization': stateBefore.auth.organization ?? 'unknown',
+    'session.organization': stateBefore.auth.organization ?? DEFAULTS.TELEMETRY.UNKNOWN,
   });
 }
 
@@ -227,7 +228,7 @@ function trackNotification(
   stateAfter: RootState
 ): void {
   telemetryService.trackEvent('business.notification_created', {
-    'notification.type': String(payload?.type ?? 'unknown'),
+    'notification.type': String(payload?.type ?? DEFAULTS.TELEMETRY.UNKNOWN),
     'notification.has_title': !!payload?.title,
     'ux.notification_frequency': getNotificationCount(stateAfter),
   });
@@ -238,8 +239,8 @@ function trackMachineAssignment(
   stateAfter: RootState
 ): void {
   telemetryService.trackEvent('business.machine_assignment', {
-    'machine.id': String(payload?.id ?? 'unknown'),
-    'assignment.pool_type': String(payload?.poolType ?? 'unknown'),
+    'machine.id': String(payload?.id ?? DEFAULTS.TELEMETRY.UNKNOWN),
+    'assignment.pool_type': String(payload?.poolType ?? DEFAULTS.TELEMETRY.UNKNOWN),
     'assignment.total_assigned': stateAfter.machineAssignment.selectedMachines.length,
   });
 }

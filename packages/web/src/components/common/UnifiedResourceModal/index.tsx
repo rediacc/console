@@ -17,6 +17,7 @@ import { useDialogState } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { QueueFunction } from '@rediacc/shared/types';
 import { InfrastructurePills } from './components/InfrastructurePills';
 import { ModalFooter } from './components/ModalFooter';
@@ -405,7 +406,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       if (mode === 'create' && resourceType === 'machine') {
         const validation = validateMachineCreation(data, testConnectionSuccess);
         if (!validation.valid) {
-          message.error(validation.errorKey ?? 'machines:validation.error');
+          message.error(validation.errorKey ?? DEFAULTS.ERROR.MACHINES_VALIDATION_ERROR);
           return;
         }
         if ('warn' in validation && validation.warn) {

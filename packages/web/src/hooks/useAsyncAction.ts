@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { showMessage } from '@/utils/messages';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 /**
  * Result of an async action
@@ -96,7 +97,9 @@ export function useAsyncAction(): UseAsyncActionReturn {
         return { success: true, data };
       } catch (error) {
         const errorMessage =
-          error instanceof Error ? error.message : (config?.errorMessage ?? 'An error occurred');
+          error instanceof Error
+            ? error.message
+            : (config?.errorMessage ?? DEFAULTS.ERROR.AN_ERROR_OCCURRED);
 
         setError(errorMessage);
 

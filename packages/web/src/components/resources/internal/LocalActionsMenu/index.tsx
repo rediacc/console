@@ -23,6 +23,7 @@ import {
   DesktopOutlined,
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   handleElectronFlow,
   handleWebProtocolFlow,
@@ -273,7 +274,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       <PipInstallationModal
         open={installModal.isOpen}
         onClose={installModal.close}
-        errorType={installModal.state.data ?? 'not-installed'}
+        errorType={installModal.state.data ?? DEFAULTS.VSCODE.NOT_INSTALLED}
       />
 
       {!isContainerMenu && (

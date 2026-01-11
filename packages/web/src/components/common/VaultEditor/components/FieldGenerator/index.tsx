@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMessage } from '@/hooks';
 import { GenerationOptions, generateRepoCredential, generateSSHKeyPair } from '@/utils/generators';
 import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS, SSH_KEY_DEFAULTS, UI_IDS } from '@rediacc/shared/config';
 
 interface FieldGeneratorProps {
   fieldType: 'ssh_keys' | 'repo_credential';
@@ -20,9 +21,9 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   const [generating, setGenerating] = useState(false);
   const [generatedValues, setGeneratedValues] = useState<Record<string, string>>({});
   const [keyOptions, setKeyOptions] = useState<GenerationOptions>({
-    keyType: 'rsa',
-    keySize: 2048,
-    comment: `${entityType ?? 'generated'}-${new Date().toISOString().split('T')[0]}`,
+    keyType: SSH_KEY_DEFAULTS.ALGORITHM as 'rsa' | 'ed25519',
+    keySize: SSH_KEY_DEFAULTS.KEY_SIZE as 2048 | 4096,
+    comment: `${entityType ?? DEFAULTS.RESOURCE.FIELD_ID}-${new Date().toISOString().split('T')[0]}`,
   });
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -109,8 +110,10 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     </Flex>
   );
 
-  const currentKeyType: 'rsa' | 'ed25519' = keyOptions.keyType ?? 'rsa';
-  const currentKeySize: 2048 | 4096 = keyOptions.keySize ?? 2048;
+  const currentKeyType: 'rsa' | 'ed25519' =
+    keyOptions.keyType ?? (SSH_KEY_DEFAULTS.ALGORITHM as 'rsa' | 'ed25519');
+  const currentKeySize: 2048 | 4096 =
+    keyOptions.keySize ?? (SSH_KEY_DEFAULTS.KEY_SIZE as 2048 | 4096);
 
   const renderSSHKeyOptions = () => (
     <Flex vertical className="w-full">
@@ -231,7 +234,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             </Typography.Text>
           }
           aria-label={t('fieldGenerator.tooltip')}
-          data-testid={props['data-testid'] ?? 'vault-editor-field-generator'}
+          data-testid={props['data-testid'] ?? UI_IDS.VAULT_EDITOR_FIELD}
         />
       </Tooltip>
     </Popover>

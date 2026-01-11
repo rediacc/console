@@ -116,6 +116,7 @@
  */
 
 import { apiConnectionService } from '@/services/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 export interface FeatureFlag {
   enabled?: boolean; // If not specified, defaults to true. Only use false for truly disabled/deprecated features
@@ -276,7 +277,8 @@ class FeatureFlags {
     if (flag.requiresPowerMode && !this.isPowerModeActive) return false;
     if (flag.requiresLocalhost && !this.isDevelopment) return false;
     if (flag.requiresBuildType) {
-      const currentBuildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
+      const currentBuildType =
+        (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
       if (currentBuildType !== flag.requiresBuildType) return false;
     }
     return true;
@@ -358,7 +360,8 @@ class FeatureFlags {
    * @returns 'DEBUG' or 'RELEASE'
    */
   getBuildType(): 'DEBUG' | 'RELEASE' {
-    const buildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
+    const buildType =
+      (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
     return buildType === 'RELEASE' ? 'RELEASE' : 'DEBUG';
   }
 

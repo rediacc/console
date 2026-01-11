@@ -5,6 +5,7 @@
  */
 
 import { expect, test } from '@playwright/test';
+import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import {
   createEditionContext,
   type EditionTestContext,
@@ -31,16 +32,16 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       // Get team
       const teamResult = await ctx.runner.teamList();
       const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-      teamName = teams[0]?.teamName ?? 'Private Team';
+      teamName = teams[0]?.teamName ?? SYSTEM_DEFAULTS.TEAM_NAME;
 
       // Get region and bridge
       const regionResult = await ctx.runner.run(['region', 'list']);
       const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-      const regionName = regions[0]?.regionName ?? 'Default Region';
+      const regionName = regions[0]?.regionName ?? SYSTEM_DEFAULTS.REGION_NAME;
 
       const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
       const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
-      bridgeName = bridges[0]?.bridgeName ?? 'Global Bridges';
+      bridgeName = bridges[0]?.bridgeName ?? SYSTEM_DEFAULTS.BRIDGE_NAME;
 
       // Create machine for image
       machineName = uniqueName('clone-test-machine');

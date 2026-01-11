@@ -1,4 +1,5 @@
 export * from './api';
+export * from './config';
 export * from './encryption';
 export * from './error-parser';
 export * from './formatters';

@@ -4,6 +4,7 @@ import {
   parseGetQueueItemTrace,
   parseCreateQueueItem,
 } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   isBridgeFunction,
   safeValidateFunctionParams,
@@ -53,7 +54,7 @@ function printTrace(trace: QueueTraceSummary, program: Command): void {
     // Print task summary
     const formattedTrace = {
       taskId: trace.taskId,
-      status: formatStatus(trace.status ?? 'UNKNOWN'),
+      status: formatStatus(trace.status ?? DEFAULTS.STATUS.UNKNOWN_UPPERCASE),
       age: trace.ageInMinutes == null ? '-' : formatAge(trace.ageInMinutes),
       priority: trace.priority ? formatPriority(trace.priority) : '-',
       retries: trace.retryCount == null ? '-' : formatRetryCount(trace.retryCount),
@@ -204,7 +205,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
 const TERMINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED'] as const;
 
 function buildSpinnerText(summary: QueueTraceSummary): string {
-  const statusText = formatStatus(summary.status ?? 'UNKNOWN');
+  const statusText = formatStatus(summary.status ?? DEFAULTS.STATUS.UNKNOWN_UPPERCASE);
   const ageText =
     summary.ageInMinutes == null ? t('common.unknown') : formatAge(summary.ageInMinutes);
   const percentage = extractMostRecentProgress(summary.consoleOutput ?? '');
@@ -226,7 +227,7 @@ function displayFailureReason(summary: QueueTraceSummary): void {
 }
 
 function handleTerminalStatus(summary: QueueTraceSummary, program: Command): void {
-  const status = summary.status?.toUpperCase() ?? 'UNKNOWN';
+  const status = summary.status?.toUpperCase() ?? DEFAULTS.STATUS.UNKNOWN_UPPERCASE;
   const success = status === 'COMPLETED';
 
   stopSpinner(success, t('commands.queue.trace.finalStatus', { status: formatStatus(status) }));

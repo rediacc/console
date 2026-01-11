@@ -22,6 +22,7 @@ import { getGrandVaultForOperation } from '@/platform';
 import { useAppSelector } from '@/store/store';
 import { showMessage } from '@/utils/messages';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { useRepositoryColumns, useSystemContainerColumns } from './columns';
 import { FunctionModalWrapper } from './components/FunctionModalWrapper';
 import { RepositoryActionsMenu } from './components/RepositoryActionsMenu';
@@ -159,7 +160,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           showMessage(
             'success',
             t('resources:repositories.deleteGrandQueued', {
-              name: repoData?.repositoryName ?? 'repository',
+              name: repoData?.repositoryName ?? DEFAULTS.RESOURCE.TYPE,
             })
           );
           if (onQueueItemCreated) {
@@ -279,14 +280,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
       if (group.grandTag) {
         tableData.push({
           ...group.grandTag,
-          key: `repo-${group.name}-${group.grandTag.repositoryTag ?? 'latest'}`,
+          key: `repo-${group.name}-${group.grandTag.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`,
         });
       }
 
       group.forkTags.forEach((fork) => {
         tableData.push({
           ...fork,
-          key: `repo-${fork.name}-${fork.repositoryTag ?? 'latest'}`,
+          key: `repo-${fork.name}-${fork.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`,
         });
       });
     });
@@ -452,7 +453,9 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({
           loading={loading}
           data={getTableDataSource()}
           columns={columns}
-          rowKey={(record) => record.key ?? `${record.name}-${record.repositoryTag ?? 'latest'}`}
+          rowKey={(record) =>
+            record.key ?? `${record.name}-${record.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`
+          }
           pagination={false}
           emptyDescription={t('resources:repositories.noRepositories')}
           mobileRender={mobileRender}

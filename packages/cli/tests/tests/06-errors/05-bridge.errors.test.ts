@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { ErrorPatterns, expectError, nonExistentName } from '../../src/utils/errors';
 
@@ -16,7 +17,7 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
     const regionsResult = await runner.run(['region', 'list']);
     const regions = runner.expectSuccessArray<{ regionName: string }>(regionsResult);
     defaultRegionName =
-      regions.find((r) => r.regionName !== 'Global')?.regionName ?? 'Default Region';
+      regions.find((r) => r.regionName !== 'Global')?.regionName ?? SYSTEM_DEFAULTS.REGION_NAME;
   });
 
   test.describe('CreateBridge errors', () => {
@@ -82,7 +83,7 @@ test.describe('Bridge Error Scenarios @cli @errors', () => {
       // Get the actual default region name and default bridge
       const regionsResult = await runner.run(['region', 'list']);
       const regions = runner.expectSuccessArray<{ regionName: string }>(regionsResult);
-      const defaultRegion = regions[0]?.regionName ?? 'Default Region';
+      const defaultRegion = regions[0]?.regionName ?? SYSTEM_DEFAULTS.REGION_NAME;
 
       const bridgesResult = await runner.run(['bridge', 'list', '--region', defaultRegion]);
       const bridges = runner.expectSuccessArray<{ bridgeName: string }>(bridgesResult);

@@ -9,5 +9,5 @@
     "skipLibCheck": true
   },
   "include": [],
-  "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

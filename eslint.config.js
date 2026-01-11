@@ -15,6 +15,7 @@ import { noHardcodedCliText } from './eslint-rules/no-hardcoded-cli-text.js';
 import { noRawApiCalls } from './eslint-rules/no-raw-api-calls.js';
 import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-translation-props.js';
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
+import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-defaults.js';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
 export default tseslint.config(
@@ -72,6 +73,7 @@ export default tseslint.config(
           'no-raw-api-calls': noRawApiCalls,
           'no-duplicate-translation-props': noDuplicateTranslationProps,
           'prefer-const-arrays': preferConstArrays,
+          'no-hardcoded-nullish-defaults': noHardcodedNullishDefaults,
         },
       },
     },
@@ -103,6 +105,7 @@ export default tseslint.config(
             'packages/shared/tsconfig.json',
             'packages/cli/tsconfig.json',
             'packages/cli/tests/tsconfig.json',
+            'packages/e2e/tsconfig.json',
           ],
           // Suppress warning about multiple tsconfig files (expected in monorepo)
           noWarnOnMultipleProjects: true,
@@ -165,6 +168,28 @@ export default tseslint.config(
       // === Type Safety Rules ===
       // Enforce `as const` on UPPER_SNAKE_CASE constant arrays for narrow literal types
       'custom/prefer-const-arrays': 'error',
+
+      // === Centralized Defaults Rule ===
+      // Disallow hardcoded numbers and strings in nullish coalescing - use DEFAULTS from @rediacc/shared/config
+      'custom/no-hardcoded-nullish-defaults': ['error', {
+        allowZero: true,
+        allowNegativeOne: true,
+        // Allow 1 for vault version initialization
+        allowedNumbers: [1],
+        // Allow common acceptable string patterns
+        allowedStrings: [
+          '',             // Empty string clearing
+          'file-based',   // SSH connection method enum
+          '-',            // Table cell placeholder for empty values
+          'N/A',          // Not applicable placeholder
+          'none',         // No value placeholder
+          '!',            // Test reporter symbols
+          '{}',           // Empty JSON object for vault defaults
+          '[]',           // Empty JSON array
+          'default',      // CLI context default name
+          '(none)',       // Display placeholder
+        ],
+      }],
 
       // === E2E Testing Rules ===
       // Enforce data-testid on interactive elements for E2E test coverage
@@ -637,6 +662,7 @@ export default tseslint.config(
       '@typescript-eslint/array-type': 'off',
       '@typescript-eslint/consistent-type-assertions': 'off',
       '@typescript-eslint/no-deprecated': 'off',
+      'custom/no-hardcoded-nullish-defaults': 'off',
     }
   },
 
@@ -659,5 +685,6 @@ export default tseslint.config(
       // Limit of 3 is too restrictive for test patterns like find(), some(), map()
       'max-nested-callbacks': ['error', 5],
     },
-  }
+  },
+
 );

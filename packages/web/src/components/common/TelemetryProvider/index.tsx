@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { createTelemetryConfig, telemetryService } from '@/services/telemetryService';
 import { selectOrganization, selectUser } from '@/store/auth/authSelectors';
 import { isElectron } from '@/utils/environment';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;
 
@@ -343,7 +344,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
     const handleResourceError = (event: Event) => {
       const target = event.target;
       if (isResourceElement(target)) {
-        const resourceUrl = getResourceUrl(target) ?? 'unknown';
+        const resourceUrl = getResourceUrl(target) ?? DEFAULTS.TELEMETRY.UNKNOWN;
         telemetryService.trackError(new Error('Resource loading failed'), {
           source: 'resource_error',
           resource_type: target.tagName.toLowerCase(),

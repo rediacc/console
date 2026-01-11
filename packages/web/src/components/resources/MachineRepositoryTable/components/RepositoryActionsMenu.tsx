@@ -26,6 +26,7 @@ import {
   RiseOutlined,
   ShrinkOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { MenuClickEvent, RepositoryContainersState, RepositoryTableRow } from '../types';
 import type { MenuProps } from 'antd';
@@ -307,7 +308,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
 
   const actionRecord: RepositoryTableRow = {
     ...record,
-    actionId: `${record.name}-${record.repositoryTag ?? 'latest'}`,
+    actionId: `${record.name}-${record.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`,
   };
 
   return (
@@ -320,7 +321,7 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
           variant: 'default',
           onClick: (row) => onViewContainers?.(row),
           testId: (row) =>
-            `machine-repo-view-containers-${row.name}-${row.repositoryTag ?? 'latest'}`,
+            `machine-repo-view-containers-${row.name}-${row.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`,
         },
         {
           type: 'view',
@@ -328,7 +329,8 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
           tooltip: 'common:viewDetails',
           variant: 'default',
           onClick: (row) => onRepositoryClick?.(row),
-          testId: (row) => `machine-repo-view-details-${row.name}-${row.repositoryTag ?? 'latest'}`,
+          testId: (row) =>
+            `machine-repo-view-details-${row.name}-${row.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`,
         },
         {
           type: 'editTag',
@@ -337,7 +339,8 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
           variant: 'default',
           onClick: (row) => onRenameTag(row),
           visible: (row) => Boolean(row.repositoryTag && row.repositoryTag !== 'latest'),
-          testId: (row) => `machine-repo-rename-tag-${row.name}-${row.repositoryTag ?? 'latest'}`,
+          testId: (row) =>
+            `machine-repo-rename-tag-${row.name}-${row.repositoryTag ?? DEFAULTS.REPOSITORY.TAG}`,
         },
         {
           type: 'remote',

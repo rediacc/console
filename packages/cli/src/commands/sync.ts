@@ -12,6 +12,7 @@ import {
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -74,10 +75,10 @@ async function getRsyncConnectionDetails(
   );
 
   const host = (machineVault.ip ?? machineVault.host) as string | undefined;
-  const port = (machineVault.port ?? 22) as number;
+  const port = (machineVault.port ?? DEFAULTS.SSH.PORT) as number;
   const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
   const knownHosts = (machineVault.known_hosts ?? '') as string;
-  const datastore = (machineVault.datastore ?? '/mnt/rediacc') as string;
+  const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
   const universalUser = machineVault.universalUser as string | undefined;
 
   if (!host) {

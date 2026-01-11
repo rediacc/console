@@ -13,6 +13,7 @@ import {
   HistoryOutlined,
 } from '@/utils/optimizedIcons';
 import { renderQueueStatus } from '@/utils/queueRenderers';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { RESPONSIVE_HIDE_XS } from '..';
@@ -61,7 +62,9 @@ export const buildQueueColumns = ({
     render: (priorityLabel: string | undefined, record: GetTeamQueueItems_ResultSet1) => (
       <PriorityWithTooltip priorityLabel={priorityLabel} record={record} />
     ),
-    sorter: (a, b) => (a.priority ?? 3) - (b.priority ?? 3),
+    sorter: (a, b) =>
+      (a.priority ?? DEFAULTS.PRIORITY.QUEUE_PRIORITY) -
+      (b.priority ?? DEFAULTS.PRIORITY.QUEUE_PRIORITY),
   },
   {
     title: t('queue:columns.age'),

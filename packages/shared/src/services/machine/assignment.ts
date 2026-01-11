@@ -4,6 +4,7 @@
  */
 
 import { MachineValidationService } from './validation';
+import { DEFAULTS } from '../../config';
 import type {
   AssignmentConflict,
   AssignmentResult,
@@ -361,7 +362,7 @@ export class MachineAssignmentService {
     // Group by team
     const machinesByTeam = new Map<string, MachineWithAssignmentStatus[]>();
     filteredMachines.forEach((machine) => {
-      const team = machine.teamName ?? 'Unknown';
+      const team = machine.teamName ?? DEFAULTS.STATUS.UNKNOWN;
       if (!machinesByTeam.has(team)) {
         machinesByTeam.set(team, []);
       }

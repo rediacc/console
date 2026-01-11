@@ -3,6 +3,7 @@ import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Button, Flex, Result, Typography } from 'antd';
 import i18n from '@/i18n/config';
 import { telemetryService } from '@/services/telemetryService';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -48,7 +49,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         page_url: window.location.href,
         user_agent: navigator.userAgent,
         timestamp: Date.now(),
-        error_id: this.state.errorId ?? 'unknown',
+        error_id: this.state.errorId ?? DEFAULTS.TELEMETRY.UNKNOWN,
         react_error_info: JSON.stringify({
           componentStack: errorInfo.componentStack?.substring(0, 1000) ?? 'N/A', // Limit length
           // Add any other relevant React error info
@@ -70,8 +71,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Track retry attempt
     try {
       telemetryService.trackEvent('error_boundary.retry', {
-        error_id: this.state.errorId ?? 'unknown',
-        error_type: this.state.error?.constructor.name ?? 'unknown',
+        error_id: this.state.errorId ?? DEFAULTS.TELEMETRY.UNKNOWN,
+        error_type: this.state.error?.constructor.name ?? DEFAULTS.TELEMETRY.UNKNOWN,
         page_url: window.location.href,
       });
     } catch (error) {
@@ -86,8 +87,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Track page reload
     try {
       telemetryService.trackEvent('error_boundary.reload', {
-        error_id: this.state.errorId ?? 'unknown',
-        error_type: this.state.error?.constructor.name ?? 'unknown',
+        error_id: this.state.errorId ?? DEFAULTS.TELEMETRY.UNKNOWN,
+        error_type: this.state.error?.constructor.name ?? DEFAULTS.TELEMETRY.UNKNOWN,
         page_url: window.location.href,
       });
     } catch (error) {

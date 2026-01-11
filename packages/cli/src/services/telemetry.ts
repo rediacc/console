@@ -9,10 +9,11 @@
 
 import { trace, SpanStatusCode, type Span, type Tracer } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import type { TelemetryConfig, TelemetryHandler, UserContext } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   generateSessionId,
   anonymizeObject,
@@ -109,11 +110,11 @@ class CliTelemetryService implements TelemetryHandler {
 
     try {
       const endpoint = config?.endpoint ?? this.getEndpoint();
-      const serviceName = config?.serviceName ?? 'rediacc-cli';
+      const serviceName = config?.serviceName ?? DEFAULTS.TELEMETRY.SERVICE_NAME;
       const serviceVersion = config?.serviceVersion ?? CLI_VERSION;
-      const environment = config?.environment ?? 'production';
+      const environment = config?.environment ?? DEFAULTS.TELEMETRY.ENVIRONMENT;
 
-      const resource = new Resource({
+      const resource = resourceFromAttributes({
         [ATTR_SERVICE_NAME]: serviceName,
         [ATTR_SERVICE_VERSION]: serviceVersion,
         'deployment.environment': environment,
@@ -334,7 +335,7 @@ class CliTelemetryService implements TelemetryHandler {
       span.setAttributes({
         'metric.name': name,
         'metric.value': value,
-        'metric.unit': unit ?? 'ms',
+        'metric.unit': unit ?? DEFAULTS.TELEMETRY.UNIT,
         'session.id': this.sessionId,
       });
 
