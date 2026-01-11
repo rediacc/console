@@ -1,6 +1,6 @@
-import { test, expect } from '../../src/base/BaseTest';
-import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { LoginPage } from '../../pages/auth/LoginPage';
+import { DashboardPage } from '../../pages/dashboard/DashboardPage';
+import { test, expect } from '../../src/base/BaseTest';
 import { skipIfNoVm } from '../../src/utils/vm';
 
 // Machine FX Hello tests
@@ -26,11 +26,11 @@ test.describe('Machine FX Hello Tests', () => {
 
   test('should run hello function on machine and verify success @resources @fx @hello @regression', async ({
     page,
-    screenshotManager,
+    screenshotManager: _screenshotManager,
     testReporter,
-    testDataManager
+    testDataManager,
   }) => {
-    const stepLocateMachine = await testReporter.startStep('Locate machine for FX execution');
+    testReporter.startStep('Locate machine for FX execution');
 
     const machine = testDataManager.getMachine();
 
@@ -39,7 +39,9 @@ test.describe('Machine FX Hello Tests', () => {
     await expect(machineList).toBeVisible({ timeout: 10000 });
 
     // Tablo verilerinin gelmesini bekle (en az bir satir gorunene kadar)
-    await expect(machineList.locator('tbody tr.machine-table-row').first()).toBeVisible({ timeout: 20000 });
+    await expect(machineList.locator('tbody tr.machine-table-row').first()).toBeVisible({
+      timeout: 20000,
+    });
 
     // Try to find the specific machine row by data-row-key
     let machineRow = machineList.locator(`tbody tr[data-row-key*="${machine.name}"]`);
@@ -49,7 +51,11 @@ test.describe('Machine FX Hello Tests', () => {
       const machineCandidates = machineList.locator('tbody tr.machine-table-row');
 
       if ((await machineCandidates.count()) === 0) {
-        await testReporter.completeStep('Locate machine for FX execution','skipped','No machine rows found in resources table');
+        testReporter.completeStep(
+          'Locate machine for FX execution',
+          'skipped',
+          'No machine rows found in resources table'
+        );
         return;
       }
 
@@ -57,7 +63,7 @@ test.describe('Machine FX Hello Tests', () => {
       machineRow = machineCandidates.first();
     }
 
-    const stepOpenFxMenu = await testReporter.startStep('Open FX menu and navigate to hello');
+    testReporter.startStep('Open FX menu and navigate to hello');
 
     // Find and click remote button to open dropdown menu
     const remoteButton = machineRow.locator('[data-testid^="machine-remote-"]').first();
@@ -68,10 +74,12 @@ test.describe('Machine FX Hello Tests', () => {
     const dropdownMenu = page.locator('.ant-dropdown-menu-root');
     await expect(dropdownMenu).toBeVisible({ timeout: 5000 });
 
-    const stepNavigateToRunOnServer = await testReporter.startStep('Navigate to Run on Server submenu');
+    testReporter.startStep('Navigate to Run on Server submenu');
 
     // Find and hover over "Run on Server" to open submenu
-    const runOnServerSubmenu = dropdownMenu.locator('.ant-dropdown-menu-submenu-title').filter({ hasText: 'Run on Server' });
+    const runOnServerSubmenu = dropdownMenu
+      .locator('.ant-dropdown-menu-submenu-title')
+      .filter({ hasText: 'Run on Server' });
     await expect(runOnServerSubmenu).toBeVisible({ timeout: 5000 });
     await runOnServerSubmenu.hover();
 
@@ -79,23 +87,25 @@ test.describe('Machine FX Hello Tests', () => {
     const functionsPopup = page.locator('#rc-menu-uuid-functions-popup');
     await expect(functionsPopup).toBeVisible({ timeout: 5000 });
 
-    const stepClickHello = await testReporter.startStep('Click hello function');
+    testReporter.startStep('Click hello function');
 
     // Click on hello menu item from the functions popup
     const helloMenuItem = functionsPopup.locator('li[data-menu-id*="function-hello"]');
     await expect(helloMenuItem).toBeVisible({ timeout: 5000 });
     await helloMenuItem.click();
 
-    const stepVerifySuccess = await testReporter.startStep('Verify hello function execution success');
+    testReporter.startStep('Verify hello function execution success');
 
     // Verify success state in the queue trace modal (Wait up to 30s)
     const queueOverview = page.getByTestId('queue-trace-simple-overview');
     await expect(queueOverview).toBeVisible({ timeout: 5000 });
-    await expect(queueOverview.locator('.queue-trace-status-icon .anticon-check-circle')).toBeVisible({ timeout: 30000 });
+    await expect(
+      queueOverview.locator('.queue-trace-status-icon .anticon-check-circle')
+    ).toBeVisible({ timeout: 30000 });
 
-    await testReporter.completeStep('Verify hello function execution success', 'passed');
+    testReporter.completeStep('Verify hello function execution success', 'passed');
 
-    const stepCloseModal = await testReporter.startStep('Close queue trace modal');
+    testReporter.startStep('Close queue trace modal');
 
     // Close the queue trace modal
     const closeQueueButton = page.getByTestId('queue-trace-close-button');
@@ -105,7 +115,7 @@ test.describe('Machine FX Hello Tests', () => {
     // Verify modal is closed
     await expect(queueOverview).not.toBeVisible({ timeout: 5000 });
 
-    await testReporter.completeStep('Close queue trace modal', 'passed');
+    testReporter.completeStep('Close queue trace modal', 'passed');
 
     await testReporter.finalizeTest();
   });

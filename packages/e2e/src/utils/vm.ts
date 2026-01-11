@@ -37,19 +37,22 @@ export function skipIfNoVm(): void {
 export function getVmWorkerIps(): string[] {
   const ips = process.env.VM_WORKER_IPS;
   if (!ips) return [];
-  return ips.split(',').map((ip) => ip.trim()).filter(Boolean);
+  return ips
+    .split(',')
+    .map((ip) => ip.trim())
+    .filter(Boolean);
 }
 
 /**
  * Get VM machine user from environment.
  */
 export function getVmMachineUser(): string {
-  return process.env.VM_MACHINE_USER || 'muhammed';
+  return process.env.VM_MACHINE_USER ?? 'muhammed';
 }
 
 /**
  * Get VM machine password from environment.
  */
 export function getVmMachinePassword(): string {
-  return process.env.VM_MACHINE_PASSWORD || '';
+  return process.env.VM_MACHINE_PASSWORD ?? '';
 }

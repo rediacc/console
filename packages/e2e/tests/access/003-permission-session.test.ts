@@ -1,45 +1,46 @@
-import { test, expect } from '../../src/base/BaseTest';
-import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { LoginPage } from '../../pages/auth/LoginPage';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { DashboardPage } from '../../pages/dashboard/DashboardPage';
+import { test, expect } from '../../src/base/BaseTest';
 
 test.describe('Permission Session Tests', () => {
-    let dashboardPage: DashboardPage;
-    let loginPage: LoginPage;
-    let testDataManager: TestDataManager;
+  let dashboardPage: DashboardPage;
+  let loginPage: LoginPage;
 
-    test.beforeEach(async ({ page }) => {
-        loginPage = new LoginPage(page);
-        dashboardPage = new DashboardPage(page);
-        testDataManager = new TestDataManager();
+  test.beforeEach(async ({ page }) => {
+    loginPage = new LoginPage(page);
+    dashboardPage = new DashboardPage(page);
 
-        await loginPage.navigate();
-        await loginPage.performQuickLogin();
-        await dashboardPage.waitForNetworkIdle();
-    });
+    await loginPage.navigate();
+    await loginPage.performQuickLogin();
+    await dashboardPage.waitForNetworkIdle();
+  });
 
-    test('should check permission sessions @system @organization @access @session @regression', async ({
-        page,
-        screenshotManager,
-        testReporter
-    }) => {
-        const stepNavigate = await testReporter.startStep('Navigate to Organization Access section');
+  test('should check permission sessions @system @organization @access @session @regression', async ({
+    page,
+    screenshotManager: _screenshotManager,
+    testReporter,
+  }) => {
+    testReporter.startStep('Navigate to Organization Access section');
 
-        await page.getByTestId('main-nav-organization-access').click();
-        
-        await testReporter.completeStep('Navigate to Organization Access section', 'passed');
+    await page.getByTestId('main-nav-organization-access').click();
 
-        const stepSession = await testReporter.startStep('Check permission sessions');
+    testReporter.completeStep('Navigate to Organization Access section', 'passed');
 
-        await page.getByRole('tab', { name: 'Sessions' }).click();
-        await expect(page.getByTestId('sessions-stat-total')).toBeVisible();
-        await page.getByTestId('sessions-stat-total').click();
-        
-        // Return to Permissions tab
-        await page.locator('div').filter({ hasText: /^Permissions$/ }).first().click();
+    testReporter.startStep('Check permission sessions');
 
-        await testReporter.completeStep('Check permission sessions', 'passed');
+    await page.getByRole('tab', { name: 'Sessions' }).click();
+    await expect(page.getByTestId('sessions-stat-total')).toBeVisible();
+    await page.getByTestId('sessions-stat-total').click();
 
-        await testReporter.finalizeTest();
-    });
+    // Return to Permissions tab
+    await page
+      .locator('div')
+      .filter({ hasText: /^Permissions$/ })
+      .first()
+      .click();
+
+    testReporter.completeStep('Check permission sessions', 'passed');
+
+    await testReporter.finalizeTest();
+  });
 });

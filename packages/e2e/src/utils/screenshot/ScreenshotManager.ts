@@ -1,6 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { Page, TestInfo } from '@playwright/test';
-import path from 'path';
-import fs from 'fs';
 import { format } from 'date-fns';
 
 export interface ScreenshotOptions {
@@ -17,10 +17,10 @@ export interface ScreenshotOptions {
 }
 
 export class ScreenshotManager {
-  private page: Page;
-  private testInfo: TestInfo;
-  private screenshotDir: string;
-  private testCaseDir: string;
+  private readonly page: Page;
+  private readonly testInfo: TestInfo;
+  private readonly screenshotDir: string;
+  private readonly testCaseDir: string;
 
   constructor(page: Page, testInfo: TestInfo) {
     this.page = page;
@@ -33,21 +33,21 @@ export class ScreenshotManager {
     const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
     const testName = this.sanitizeFileName(this.testInfo.title);
     const projectName = this.testInfo.project.name;
-    
+
     const dirName = `${timestamp}_${projectName}_${testName}`;
     const fullPath = path.join(this.screenshotDir, dirName);
-    
+
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath, { recursive: true });
     }
-    
+
     return fullPath;
   }
 
   private sanitizeFileName(fileName: string): string {
     return fileName
-      .replace(/[^a-zA-Z0-9\-_\.]/g, '_')
-      .replace(/_+/g, '_')
+      .replaceAll(/[^a-zA-Z0-9\-_.]/g, '_')
+      .replaceAll(/_+/g, '_')
       .toLowerCase();
   }
 
@@ -61,13 +61,13 @@ export class ScreenshotManager {
       fullPage: true,
       type: 'png',
       timeout: 30000,
-      ...options
+      ...options,
     };
 
     try {
       await this.page.screenshot({
         path: filePath,
-        ...defaultOptions
+        ...defaultOptions,
       });
 
       // Removed console.log for cleaner output - screenshot info is captured in step reporting
@@ -79,8 +79,8 @@ export class ScreenshotManager {
   }
 
   async captureElementScreenshot(
-    selector: string, 
-    stepName: string, 
+    selector: string,
+    stepName: string,
     options: ScreenshotOptions = {}
   ): Promise<string> {
     const timestamp = format(new Date(), 'HH-mm-ss-SSS');
@@ -89,12 +89,12 @@ export class ScreenshotManager {
     const filePath = path.join(this.testCaseDir, fileName);
 
     const element = this.page.locator(selector);
-    
+
     try {
       await element.screenshot({
         path: filePath,
-        type: options.type || 'png',
-        timeout: options.timeout || 30000
+        type: options.type ?? 'png',
+        timeout: options.timeout ?? 30000,
       });
 
       // Removed console.log for cleaner output
@@ -111,28 +111,28 @@ export class ScreenshotManager {
     afterAction: () => Promise<void>
   ): Promise<{ before: string; after: string }> {
     const beforePath = await this.captureStep(`${stepName}_before`);
-    
+
     await beforeAction();
     await this.page.waitForLoadState('networkidle');
-    
+
     const afterPath = await this.captureStep(`${stepName}_after`);
-    
+
     await afterAction();
 
     return {
       before: beforePath,
-      after: afterPath
+      after: afterPath,
     };
   }
 
-  async capturePageFlow(steps: Array<{ name: string; action: () => Promise<void> }>): Promise<string[]> {
+  async capturePageFlow(steps: { name: string; action: () => Promise<void> }[]): Promise<string[]> {
     const screenshots: string[] = [];
 
     for (const [index, step] of steps.entries()) {
       const stepNumber = String(index + 1).padStart(2, '0');
       const screenshotPath = await this.captureStep(`${stepNumber}_${step.name}`);
       screenshots.push(screenshotPath);
-      
+
       await step.action();
       await this.page.waitForLoadState('networkidle');
     }
@@ -149,11 +149,14 @@ export class ScreenshotManager {
       await this.page.screenshot({
         path: filePath,
         fullPage: true,
-        type: 'png'
+        type: 'png',
       });
 
       const errorLogPath = path.join(this.testCaseDir, `${timestamp}_error.log`);
-      fs.writeFileSync(errorLogPath, `Error: ${errorMessage}\nURL: ${this.page.url()}\nTimestamp: ${new Date().toISOString()}`);
+      fs.writeFileSync(
+        errorLogPath,
+        `Error: ${errorMessage}\nURL: ${this.page.url()}\nTimestamp: ${new Date().toISOString()}`
+      );
 
       // Keep error screenshot log as it's important for debugging
       return filePath;
@@ -167,7 +170,7 @@ export class ScreenshotManager {
     const viewports = [
       { name: 'desktop', width: 1440, height: 900 },
       { name: 'tablet', width: 768, height: 1024 },
-      { name: 'mobile', width: 375, height: 667 }
+      { name: 'mobile', width: 375, height: 667 },
     ];
 
     const screenshots: string[] = [];
@@ -175,7 +178,7 @@ export class ScreenshotManager {
     for (const viewport of viewports) {
       await this.page.setViewportSize({ width: viewport.width, height: viewport.height });
       await this.page.waitForTimeout(1000);
-      
+
       const screenshotPath = await this.captureStep(`viewport_${viewport.name}`);
       screenshots.push(screenshotPath);
     }
@@ -195,15 +198,15 @@ export class ScreenshotManager {
         project: this.testInfo.project.name,
         status: this.testInfo.status,
         duration: this.testInfo.duration,
-        timeout: this.testInfo.timeout
+        timeout: this.testInfo.timeout,
       },
       screenshots: this.getScreenshotList(),
       environment: {
         url: this.page.url(),
         userAgent: await this.page.evaluate(() => navigator.userAgent),
-        viewport: await this.page.viewportSize()
+        viewport: this.page.viewportSize(),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const reportPath = path.join(this.testCaseDir, 'test-report.json');
@@ -212,8 +215,9 @@ export class ScreenshotManager {
 
   private getScreenshotList(): string[] {
     try {
-      return fs.readdirSync(this.testCaseDir)
-        .filter(file => file.endsWith('.png') || file.endsWith('.jpg'))
+      return fs
+        .readdirSync(this.testCaseDir)
+        .filter((file) => file.endsWith('.png') || file.endsWith('.jpg'))
         .sort();
     } catch {
       return [];

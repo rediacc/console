@@ -662,27 +662,4 @@ export default tseslint.config(
     },
   },
 
-  // E2E test files - relaxed rules for Playwright test patterns
-  {
-    files: ['packages/e2e/**/*.ts'],
-    rules: {
-      // Test files legitimately use boolean || for condition checks
-      '@typescript-eslint/prefer-nullish-coalescing': ['error', {
-        ignorePrimitives: {
-          boolean: true,
-          number: true,
-          string: true,
-        },
-      }],
-      // Tests can be longer than production code
-      'max-lines': 'off',
-      // Test files use nested callbacks: describe -> test -> async
-      'max-nested-callbacks': ['error', 5],
-      // Disable translation requirement for test files
-      'custom/require-translation': 'off',
-      'custom/no-hardcoded-text': 'off',
-      // Disable testid requirement for test utilities (not React components)
-      'custom/require-testid': 'off',
-    },
-  }
 );

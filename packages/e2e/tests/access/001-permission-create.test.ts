@@ -1,44 +1,41 @@
-import { test, expect } from '../../src/base/BaseTest';
-import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { LoginPage } from '../../pages/auth/LoginPage';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { DashboardPage } from '../../pages/dashboard/DashboardPage';
+import { test, expect } from '../../src/base/BaseTest';
 
 test.describe('Permission Creation Tests', () => {
-    let dashboardPage: DashboardPage;
-    let loginPage: LoginPage;
-    let testDataManager: TestDataManager;
+  let dashboardPage: DashboardPage;
+  let loginPage: LoginPage;
 
-    test.beforeEach(async ({ page }) => {
-        loginPage = new LoginPage(page);
-        dashboardPage = new DashboardPage(page);
-        testDataManager = new TestDataManager();
+  test.beforeEach(async ({ page }) => {
+    loginPage = new LoginPage(page);
+    dashboardPage = new DashboardPage(page);
 
-        await loginPage.navigate();
-        await loginPage.performQuickLogin();
-        await dashboardPage.waitForNetworkIdle();
-    });
+    await loginPage.navigate();
+    await loginPage.performQuickLogin();
+    await dashboardPage.waitForNetworkIdle();
+  });
 
-    test('should create new permission group @system @organization @access @regression', async ({
-        page,
-        screenshotManager,
-        testReporter
-    }) => {
-        const stepNavigate = await testReporter.startStep('Navigate to Organization Access section');
+  test('should create new permission group @system @organization @access @regression', async ({
+    page,
+    screenshotManager: _screenshotManager,
+    testReporter,
+  }) => {
+    testReporter.startStep('Navigate to Organization Access section');
 
-        await page.getByTestId('main-nav-organization-access').click();
-        
-        await testReporter.completeStep('Navigate to Organization Access section', 'passed');
+    await page.getByTestId('main-nav-organization-access').click();
 
-        const stepCreate = await testReporter.startStep('Create new permission group');
+    testReporter.completeStep('Navigate to Organization Access section', 'passed');
 
-        await page.getByTestId('system-create-permission-group-button').click();
-        await page.getByTestId('system-permission-group-name-input').click();
-        await page.getByTestId('system-permission-group-name-input').fill('test-PERMISSION');
-        await page.getByTestId('modal-create-permission-group-ok').click();
-        await expect(page.getByText('test-PERMISSION')).toBeVisible();
+    testReporter.startStep('Create new permission group');
 
-        await testReporter.completeStep('Create new permission group', 'passed');
+    await page.getByTestId('system-create-permission-group-button').click();
+    await page.getByTestId('system-permission-group-name-input').click();
+    await page.getByTestId('system-permission-group-name-input').fill('test-PERMISSION');
+    await page.getByTestId('modal-create-permission-group-ok').click();
+    await expect(page.getByText('test-PERMISSION')).toBeVisible();
 
-        await testReporter.finalizeTest();
-    });
+    testReporter.completeStep('Create new permission group', 'passed');
+
+    await testReporter.finalizeTest();
+  });
 });

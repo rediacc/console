@@ -1,6 +1,6 @@
-import { test, expect } from '../../src/base/BaseTest';
-import { LoginPage } from '../../pages/auth/LoginPage';
 import { Page } from '@playwright/test';
+import { LoginPage } from '../../pages/auth/LoginPage';
+import { test, expect } from '../../src/base/BaseTest';
 import { TestReporter } from '../../src/utils/report/TestReporter';
 import { skipIfNoVm } from '../../src/utils/vm';
 
@@ -35,7 +35,10 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     // User requested: "login işlemeleri için tarayıcının localstorage'ını kullan" -> implied: check state
 
     const isLoginPage = page.url().includes('/login');
-    const loginButtonVisible = await page.locator('[data-testid="login-submit-button"]').isVisible().catch(() => false);
+    const loginButtonVisible = await page
+      .locator('[data-testid="login-submit-button"]')
+      .isVisible()
+      .catch(() => false);
 
     if (isLoginPage || loginButtonVisible) {
       await loginPage.performQuickLogin();
@@ -55,26 +58,26 @@ test.describe('Machine Creation Tests - Authenticated', () => {
   });
 
   test('should open machine creation dialog @resources @smoke', async ({
-    testDataManager // Keep fixtures that don't depend on page
+    testDataManager: _testDataManager,
   }, testInfo) => {
     // Manually instantiate reporter with shared page
     const testReporter = new TestReporter(page, testInfo);
 
-    const step1 = await testReporter.startStep('Navigate to machines section');
+    testReporter.startStep('Navigate to machines section');
 
     const createMachineButton = page.getByTestId('machines-create-machine-button');
     await expect(createMachineButton).toBeVisible({ timeout: 10000 });
 
-    const step2 = await testReporter.startStep('Open machine creation dialog');
+    testReporter.startStep('Open machine creation dialog');
 
     await createMachineButton.click();
 
     const createMachineDialog = page.getByTestId('resource-modal-form');
     await expect(createMachineDialog).toBeVisible();
 
-    await testReporter.completeStep('Open machine creation dialog', 'passed');
+    testReporter.completeStep('Open machine creation dialog', 'passed');
 
-    const step3 = await testReporter.startStep('Verify dialog fields');
+    testReporter.startStep('Verify dialog fields');
 
     const nameField = page.getByTestId('resource-modal-field-machineName-input');
     const ipField = page.getByTestId('vault-editor-field-ip');
@@ -82,18 +85,18 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     await expect(nameField).toBeVisible();
     await expect(ipField).toBeVisible();
 
-    await testReporter.completeStep('Verify dialog fields', 'passed');
+    testReporter.completeStep('Verify dialog fields', 'passed');
 
     await testReporter.finalizeTest();
   });
 
   test('should create a new machine @resources @regression', async ({
-    testDataManager
+    testDataManager,
   }, testInfo) => {
     const testReporter = new TestReporter(page, testInfo);
 
     // Step 1: Open machine creation dialog
-    const step1 = await testReporter.startStep('Open machine creation dialog');
+    testReporter.startStep('Open machine creation dialog');
 
     const createMachineButton = page.getByTestId('machines-create-machine-button');
     await expect(createMachineButton).toBeVisible({ timeout: 10000 });
@@ -103,17 +106,16 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     const createMachineDialog = page.getByTestId('resource-modal-form');
     await expect(createMachineDialog).toBeVisible();
 
-    await testReporter.completeStep('Open machine creation dialog', 'passed');
+    testReporter.completeStep('Open machine creation dialog', 'passed');
 
     // Step 2: Fill machine details with unique name
-    const step2 = await testReporter.startStep('Fill machine details');
+    testReporter.startStep('Fill machine details');
 
     const testMachine = testDataManager.getMachine();
 
     // Fill basic info
     await page.getByTestId('resource-modal-field-machineName-input').fill(testMachine.name);
     await page.getByTestId('vault-editor-field-ip').fill(testMachine.ip);
-
 
     // Fill Vault info
     const userField = page.getByTestId('vault-editor-field-user');
@@ -130,9 +132,11 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     const vaultSection = page.getByTestId('resource-modal-vault-editor-section');
     const connectionAlert = vaultSection.getByRole('alert');
     await expect(connectionAlert).toBeVisible({ timeout: 50000 });
-    await expect(connectionAlert.locator('.ant-alert-title .ant-space-item').nth(1)).toContainText('Compatible');
+    await expect(connectionAlert.locator('.ant-alert-title .ant-space-item').nth(1)).toContainText(
+      'Compatible'
+    );
 
-    const step3 = await testReporter.startStep('Submit machine creation');
+    testReporter.startStep('Submit machine creation');
 
     const submitButton = page.getByTestId('resource-modal-ok-button');
     await submitButton.click();
@@ -140,15 +144,17 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     // Verify success state in the queue trace modal (Wait up to 30s)
     const queueOverview = page.getByTestId('queue-trace-simple-overview');
     await expect(queueOverview).toBeVisible({ timeout: 5000 });
-    await expect(queueOverview.locator('.queue-trace-status-icon .anticon-check-circle')).toBeVisible({ timeout: 30000 });
+    await expect(
+      queueOverview.locator('.queue-trace-status-icon .anticon-check-circle')
+    ).toBeVisible({ timeout: 30000 });
 
     const closeQueueButton = page.getByTestId('queue-trace-close-button');
     await expect(closeQueueButton).toBeVisible();
     await closeQueueButton.click();
 
-    await testReporter.completeStep('Submit machine creation', 'passed');
+    testReporter.completeStep('Submit machine creation', 'passed');
 
-    const step4 = await testReporter.startStep('Verify machine created');
+    testReporter.startStep('Verify machine created');
 
     // Check if machine appears in the list
     const machineList = page.getByTestId('machines-machines-table');
@@ -156,18 +162,18 @@ test.describe('Machine Creation Tests - Authenticated', () => {
 
     try {
       await expect(newMachineRow).toBeVisible({ timeout: 10000 });
-      await testReporter.completeStep('Verify machine created', 'passed');
-    } catch (error) {
-      await testReporter.completeStep('Verify machine created', 'failed', 'Machine not found in list');
+      testReporter.completeStep('Verify machine created', 'passed');
+    } catch {
+      testReporter.completeStep('Verify machine created', 'failed', 'Machine not found in list');
     }
 
     await testReporter.finalizeTest();
   });
 
-  test('should validate required fields @resources', async ({ }, testInfo) => {
+  test('should validate required fields @resources', async ({ testDataManager: _dm }, testInfo) => {
     const testReporter = new TestReporter(page, testInfo);
 
-    const step1 = await testReporter.startStep('Open machine creation dialog');
+    testReporter.startStep('Open machine creation dialog');
 
     const createMachineButton = page.getByTestId('machines-create-machine-button');
     await expect(createMachineButton).toBeVisible({ timeout: 10000 });
@@ -176,30 +182,34 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     const createMachineDialog = page.getByTestId('resource-modal-form');
     await expect(createMachineDialog).toBeVisible();
 
-    await testReporter.completeStep('Open machine creation dialog', 'passed');
+    testReporter.completeStep('Open machine creation dialog', 'passed');
 
-    const step2 = await testReporter.startStep('Test validation without filling fields');
+    testReporter.startStep('Test validation without filling fields');
 
     const submitButton = page.getByTestId('resource-modal-ok-button');
-    
+
     // Verify that submit button is disabled when required fields are empty
     const isDisabled = await submitButton.isDisabled();
-    
+
     if (isDisabled) {
-      console.log(`   ℹ️  Submit button is disabled - validation working correctly`);
-      await testReporter.completeStep('Test validation without filling fields', 'passed');
+      console.warn('Submit button is disabled - validation working correctly');
+      testReporter.completeStep('Test validation without filling fields', 'passed');
     } else {
-      console.log(`   ⚠️  Submit button is NOT disabled - validation may not be working`);
-      await testReporter.completeStep('Test validation without filling fields', 'failed', 'Submit button should be disabled when fields are empty');
+      console.warn('Submit button is NOT disabled - validation may not be working');
+      testReporter.completeStep(
+        'Test validation without filling fields',
+        'failed',
+        'Submit button should be disabled when fields are empty'
+      );
     }
 
     await testReporter.finalizeTest();
   });
 
-  test('should cancel machine creation @resources', async ({ }, testInfo) => {
+  test('should cancel machine creation @resources', async ({ testDataManager: _dm }, testInfo) => {
     const testReporter = new TestReporter(page, testInfo);
 
-    const step1 = await testReporter.startStep('Open machine creation dialog');
+    testReporter.startStep('Open machine creation dialog');
 
     const createMachineButton = page.getByTestId('machines-create-machine-button');
     await expect(createMachineButton).toBeVisible({ timeout: 10000 });
@@ -209,20 +219,19 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     const createMachineDialog = page.getByTestId('resource-modal-form');
     await expect(createMachineDialog).toBeVisible();
 
-    await testReporter.completeStep('Open machine creation dialog', 'passed');
+    testReporter.completeStep('Open machine creation dialog', 'passed');
 
-    const step2 = await testReporter.startStep('Fill partial data and cancel');
+    testReporter.startStep('Fill partial data and cancel');
 
     const nameField = page.getByTestId('resource-modal-field-machineName-input');
     await nameField.fill('test-machine-to-cancel');
-
 
     const cancelButton = page.getByTestId('resource-modal-cancel-button');
     await cancelButton.click();
 
     await expect(createMachineDialog).not.toBeVisible();
 
-    await testReporter.completeStep('Fill partial data and cancel', 'passed');
+    testReporter.completeStep('Fill partial data and cancel', 'passed');
 
     await testReporter.finalizeTest();
   });

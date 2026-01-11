@@ -5,7 +5,7 @@ import { Page } from '@playwright/test';
  * The modal appears when the user's session has expired for security reasons.
  */
 export class SessionHandler {
-  constructor(private page: Page) {}
+  constructor(private readonly page: Page) {}
 
   /**
    * Check if session expired modal is visible and dismiss it.
@@ -17,21 +17,25 @@ export class SessionHandler {
       const isVisible = await sessionExpiredModal.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (isVisible) {
-        console.log('⚠️ Session expired modal detected - dismissing...');
+        console.warn('Session expired modal detected - dismissing...');
 
         // Click the "Stay Logged Out" button to dismiss the modal
-        const stayLoggedOutButton = this.page.locator('[data-testid="session-expired-stay-button"]');
+        const stayLoggedOutButton = this.page.locator(
+          '[data-testid="session-expired-stay-button"]'
+        );
         if (await stayLoggedOutButton.isVisible({ timeout: 500 }).catch(() => false)) {
           await stayLoggedOutButton.click();
-          console.log('✅ Session expired modal dismissed via Stay Logged Out button');
+          console.warn('Session expired modal dismissed via Stay Logged Out button');
           return true;
         }
 
         // Fallback: Click "Continue to Login" button
-        const continueToLoginButton = this.page.locator('[data-testid="session-expired-login-button"]');
+        const continueToLoginButton = this.page.locator(
+          '[data-testid="session-expired-login-button"]'
+        );
         if (await continueToLoginButton.isVisible({ timeout: 500 }).catch(() => false)) {
           await continueToLoginButton.click();
-          console.log('✅ Session expired modal dismissed via Continue to Login button');
+          console.warn('Session expired modal dismissed via Continue to Login button');
           return true;
         }
       }
@@ -45,13 +49,15 @@ export class SessionHandler {
    * Setup a listener that automatically dismisses session expired modals.
    * Call this once at the start of a test that might run long.
    */
-  setupAutoHandler(): void {
+  async setupAutoHandler(): Promise<void> {
     // Set up a mutation observer to detect when modal appears
-    this.page.addLocatorHandler(
+    await this.page.addLocatorHandler(
       this.page.locator('[data-testid="session-expired-modal"]'),
       async () => {
-        console.log('⚠️ Session expired modal appeared - auto-dismissing...');
-        const stayLoggedOutButton = this.page.locator('[data-testid="session-expired-stay-button"]');
+        console.warn('Session expired modal appeared - auto-dismissing...');
+        const stayLoggedOutButton = this.page.locator(
+          '[data-testid="session-expired-stay-button"]'
+        );
         if (await stayLoggedOutButton.isVisible({ timeout: 500 }).catch(() => false)) {
           await stayLoggedOutButton.click();
         }

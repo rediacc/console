@@ -1,12 +1,12 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { requireEnvVar } from '../env';
 
 // UUID v4 function
 function v4(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replaceAll(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -52,10 +52,10 @@ export interface TestData {
 }
 
 export class TestDataManager {
-  private dataDir: string;
-  private testDataFile: string;
+  private readonly dataDir: string;
+  private readonly testDataFile: string;
 
-  constructor(dataDir: string = 'utils/data') {
+  constructor(dataDir = 'utils/data') {
     this.dataDir = dataDir;
     this.testDataFile = path.join(this.dataDir, 'test-data.json');
     this.ensureDataDirectory();
@@ -72,8 +72,11 @@ export class TestDataManager {
   }
 
   private initializeTestData(): void {
-    const machineIps = requireEnvVar('VM_WORKER_IPS').split(',').map(ip => ip.trim()).filter(ip => ip);
-    console.log(`Using VM_WORKER_IPS from environment: ${machineIps.join(', ')}`);
+    const machineIps = requireEnvVar('VM_WORKER_IPS')
+      .split(',')
+      .map((ip) => ip.trim())
+      .filter((ip) => ip);
+    console.warn(`Using VM_WORKER_IPS from environment: ${machineIps.join(', ')}`);
 
     const defaultData: TestData = {
       users: [
@@ -83,7 +86,7 @@ export class TestDataManager {
           firstName: 'Admin',
           lastName: 'User',
           role: 'admin',
-          team: requireEnvVar('TEAM_NAME')
+          team: requireEnvVar('TEAM_NAME'),
         },
         {
           email: requireEnvVar('TEST_USER_EMAIL'),
@@ -91,7 +94,7 @@ export class TestDataManager {
           firstName: 'Standard',
           lastName: 'User',
           role: 'user',
-          team: requireEnvVar('TEAM_NAME')
+          team: requireEnvVar('TEAM_NAME'),
         },
         {
           email: requireEnvVar('TEMP_USER_EMAIL'),
@@ -99,27 +102,27 @@ export class TestDataManager {
           firstName: 'TempUser',
           lastName: 'User999',
           role: 'tempuser',
-          team: requireEnvVar('TEAM_NAME')
-        }
+          team: requireEnvVar('TEAM_NAME'),
+        },
       ],
       machines: machineIps.map((ip, index) => ({
         name: `machine-${index + 1}`,
-        ip: ip,
+        ip,
         password: requireEnvVar('VM_MACHINE_PASSWORD'),
         user: requireEnvVar('VM_MACHINE_USER'),
         team: requireEnvVar('TEAM_NAME'),
-        datastore: '/mnt/datastore'
+        datastore: '/mnt/datastore',
       })),
       repositories: [
         {
           name: requireEnvVar('REPO_NAME'),
           machine: 'machine-1',
           team: requireEnvVar('TEAM_NAME'),
-          version: '1.0.0'
-        }
+          version: '1.0.0',
+        },
       ],
       teams: [requireEnvVar('TEAM_NAME')],
-      createdUsers: []
+      createdUsers: [],
     };
 
     this.saveTestData(defaultData);
@@ -130,7 +133,7 @@ export class TestDataManager {
     try {
       const fileCurrent = fs.readFileSync(this.testDataFile, 'utf8');
       data = JSON.parse(fileCurrent);
-    } catch (error) {
+    } catch {
       console.warn('Failed to load test data, using defaults');
       this.initializeTestData();
       // Re-read the newly initialized file
@@ -148,10 +151,13 @@ export class TestDataManager {
     const userPass = requireEnvVar('TEST_USER_PASSWORD');
     const teamName = requireEnvVar('TEAM_NAME');
     const vmUser = requireEnvVar('VM_MACHINE_USER');
-    const vmIps = requireEnvVar('VM_WORKER_IPS').split(',').map(s => s.trim()).filter(Boolean);
+    const vmIps = requireEnvVar('VM_WORKER_IPS')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     // Override Admin
-    const admin = data.users.find(u => u.role === 'admin');
+    const admin = data.users.find((u) => u.role === 'admin');
     if (admin) {
       admin.email = adminEmail;
       admin.password = adminPass;
@@ -159,7 +165,7 @@ export class TestDataManager {
     }
 
     // Override Standard User
-    const user = data.users.find(u => u.role === 'user');
+    const user = data.users.find((u) => u.role === 'user');
     if (user) {
       user.email = userEmail;
       user.password = userPass;
@@ -180,7 +186,7 @@ export class TestDataManager {
 
     // Override Repo
     const repoName = requireEnvVar('REPO_NAME');
-    data.repositories.forEach(r => {
+    data.repositories.forEach((r) => {
       // Assuming we want to override all or just find specific?
       // Since we initialized with REPO_NAME, let's just make sure it matches?
       // But if we have multiple repos, this might be aggressive.
@@ -212,9 +218,9 @@ export class TestDataManager {
     fs.writeFileSync(this.testDataFile, JSON.stringify(data, null, 2));
   }
 
-  getUser(role: string = 'user'): TestUser {
+  getUser(role = 'user'): TestUser {
     const data = this.loadTestData();
-    const user = data.users.find(u => u.role === role);
+    const user = data.users.find((u) => u.role === role);
 
     if (!user) {
       throw new Error(`No user found with role: ${role}`);
@@ -229,16 +235,16 @@ export class TestDataManager {
     return data.users[randomIndex];
   }
 
-  createTemporaryUser(role: string = 'user', team?: string): TestUser {
+  createTemporaryUser(role = 'user', team?: string): TestUser {
     const timestamp = Date.now();
-    const useTeam = team || requireEnvVar('TEAM_NAME');
+    const useTeam = team ?? requireEnvVar('TEAM_NAME');
     return {
       email: `temp_user_${timestamp}@example.com`,
       password: 'temppassword123',
       firstName: 'Temp',
       lastName: `User${timestamp}`,
       role,
-      team: useTeam
+      team: useTeam,
     };
   }
 
@@ -246,7 +252,7 @@ export class TestDataManager {
     const data = this.loadTestData();
 
     if (name) {
-      const machine = data.machines.find(m => m.name === name);
+      const machine = data.machines.find((m) => m.name === name);
       if (!machine) {
         throw new Error(`No machine found with name: ${name}`);
       }
@@ -259,11 +265,11 @@ export class TestDataManager {
   createTemporaryMachine(team?: string): TestMachine {
     const timestamp = Date.now();
     const data = this.loadTestData();
-    const useTeam = team || requireEnvVar('TEAM_NAME');
+    const useTeam = team ?? requireEnvVar('TEAM_NAME');
 
     // Use first machine's IP or strictly require env var
-    const machineIp = data.machines[0]?.ip || requireEnvVar('VM_WORKER_IPS').split(',')[0].trim();
-    const machineUser = data.machines[0]?.user || requireEnvVar('VM_MACHINE_USER');
+    const machineIp = data.machines[0]?.ip ?? requireEnvVar('VM_WORKER_IPS').split(',')[0].trim();
+    const machineUser = data.machines[0]?.user ?? requireEnvVar('VM_MACHINE_USER');
     const machinePassword = requireEnvVar('VM_MACHINE_PASSWORD');
 
     return {
@@ -272,7 +278,7 @@ export class TestDataManager {
       user: machineUser,
       password: machinePassword,
       team: useTeam,
-      datastore: '/mnt/rediacc'
+      datastore: '/mnt/rediacc',
     };
   }
 
@@ -280,7 +286,7 @@ export class TestDataManager {
     const data = this.loadTestData();
 
     if (name) {
-      const repo = data.repositories.find(r => r.name === name);
+      const repo = data.repositories.find((r) => r.name === name);
       if (!repo) {
         throw new Error(`No repository found with name: ${name}`);
       }
@@ -293,20 +299,21 @@ export class TestDataManager {
   createTemporaryRepository(machine?: string, team?: string): TestRepository {
     const timestamp = Date.now();
     const data = this.loadTestData();
-    const targetMachine = machine || data.machines[0]?.name || 'machine-1';
-    const useTeam = team || requireEnvVar('TEAM_NAME');
+    const defaultMachine = data.machines[0]?.name ?? 'machine-1';
+    const targetMachine = machine ?? defaultMachine;
+    const useTeam = team ?? requireEnvVar('TEAM_NAME');
 
     return {
       name: `temp-repo-${timestamp}`,
       machine: targetMachine,
       team: useTeam,
-      version: '1.0.0'
+      version: '1.0.0',
     };
   }
 
-  getTeam(index: number = 0): string {
+  getTeam(index = 0): string {
     const data = this.loadTestData();
-    return data.teams[index] || requireEnvVar('TEAM_NAME');
+    return data.teams[index] ?? requireEnvVar('TEAM_NAME');
   }
 
   getRandomTeam(): string {
@@ -319,12 +326,12 @@ export class TestDataManager {
     return v4();
   }
 
-  generateTestEmail(prefix: string = 'test'): string {
+  generateTestEmail(prefix = 'test'): string {
     const timestamp = Date.now();
     return `${prefix}_${timestamp}@example.com`;
   }
 
-  generateRandomString(length: number = 10): string {
+  generateRandomString(length = 10): string {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
 
@@ -335,29 +342,29 @@ export class TestDataManager {
     return result;
   }
 
-  loadTestDataFromFile(filePath: string): any {
+  loadTestDataFromFile(filePath: string): unknown {
     try {
       const fullPath = path.resolve(filePath);
       const data = fs.readFileSync(fullPath, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      throw new Error(`Failed to load test data from ${filePath}: ${error}`);
+      return JSON.parse(data) as unknown;
+    } catch (loadError) {
+      throw new Error(`Failed to load test data from ${filePath}: ${loadError}`);
     }
   }
 
-  saveTestResults(testName: string, results: any): void {
+  saveTestResults(testName: string, results: unknown): void {
     const resultsDir = path.join(this.dataDir, 'results');
 
     if (!fs.existsSync(resultsDir)) {
       fs.mkdirSync(resultsDir, { recursive: true });
     }
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-');
     const fileName = `${testName}_${timestamp}.json`;
     const filePath = path.join(resultsDir, fileName);
 
     fs.writeFileSync(filePath, JSON.stringify(results, null, 2));
-    console.log(`💾 Test results saved: ${filePath}`);
+    console.warn(`Test results saved: ${filePath}`);
   }
 
   addUser(user: TestUser): void {
@@ -378,11 +385,11 @@ export class TestDataManager {
     this.saveTestData(data);
   }
 
-  addCreatedUser(email: string, password: string, activated: boolean = false): void {
+  addCreatedUser(email: string, password: string, activated = false): void {
     const data = this.loadTestData();
 
     // Check if user already exists
-    const existingUser = data.createdUsers.find(u => u.email === email);
+    const existingUser = data.createdUsers.find((u) => u.email === email);
     if (existingUser) {
       // Update existing user
       existingUser.password = password;
@@ -394,19 +401,19 @@ export class TestDataManager {
         email,
         password,
         activated,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
     }
 
     this.saveTestData(data);
-    console.log(`✅ Created user saved: ${email}`);
+    console.warn(`Created user saved: ${email}`);
   }
 
   getCreatedUser(email?: string): CreatedUser {
     const data = this.loadTestData();
 
     if (email) {
-      const user = data.createdUsers.find(u => u.email === email);
+      const user = data.createdUsers.find((u) => u.email === email);
       if (!user) {
         throw new Error(`No created user found with email: ${email}`);
       }
@@ -428,7 +435,7 @@ export class TestDataManager {
 
   updateCreatedUserActivation(email: string, activated: boolean): void {
     const data = this.loadTestData();
-    const user = data.createdUsers.find(u => u.email === email);
+    const user = data.createdUsers.find((u) => u.email === email);
 
     if (!user) {
       throw new Error(`No created user found with email: ${email}`);
@@ -436,24 +443,24 @@ export class TestDataManager {
 
     user.activated = activated;
     this.saveTestData(data);
-    console.log(`✅ User activation updated: ${email} -> ${activated}`);
+    console.warn(`User activation updated: ${email} -> ${activated}`);
   }
 
   removeCreatedUser(email: string): void {
     const data = this.loadTestData();
-    data.createdUsers = data.createdUsers.filter(u => u.email !== email);
+    data.createdUsers = data.createdUsers.filter((u) => u.email !== email);
     this.saveTestData(data);
-    console.log(`🗑️ Removed created user: ${email}`);
+    console.warn(`Removed created user: ${email}`);
   }
 
   cleanup(): void {
-    console.log('🧹 Cleaning up test data...');
+    console.warn('Cleaning up test data...');
 
     const data = this.loadTestData();
 
-    data.users = data.users.filter(user => !user.email.includes('temp_user_'));
-    data.machines = data.machines.filter(machine => !machine.name.includes('temp-machine-'));
-    data.repositories = data.repositories.filter(repo => !repo.name.includes('temp-repo-'));
+    data.users = data.users.filter((user) => !user.email.includes('temp_user_'));
+    data.machines = data.machines.filter((machine) => !machine.name.includes('temp-machine-'));
+    data.repositories = data.repositories.filter((repo) => !repo.name.includes('temp-repo-'));
     data.createdUsers = [];
 
     this.saveTestData(data);

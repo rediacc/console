@@ -1,6 +1,6 @@
-import { test, expect } from '../../src/base/BaseTest';
-import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { LoginPage } from '../../pages/auth/LoginPage';
+import { DashboardPage } from '../../pages/dashboard/DashboardPage';
+import { test, expect } from '../../src/base/BaseTest';
 import { skipIfNoVm } from '../../src/utils/vm';
 
 // Machine delete tests
@@ -26,11 +26,11 @@ test.describe('Machine Delete Tests', () => {
 
   test('should delete machine and verify deletion @resources @delete @regression', async ({
     page,
-    screenshotManager,
+    screenshotManager: _screenshotManager,
     testReporter,
-    testDataManager
+    testDataManager,
   }) => {
-    const stepLocateMachine = await testReporter.startStep('Locate machine for deletion');
+    testReporter.startStep('Locate machine for deletion');
 
     const machine = testDataManager.getMachine();
 
@@ -39,7 +39,9 @@ test.describe('Machine Delete Tests', () => {
     await expect(machineList).toBeVisible({ timeout: 10000 });
 
     // Tablo verilerinin gelmesini bekle (en az bir satir gorunene kadar)
-    await expect(machineList.locator('tbody tr.machine-table-row').first()).toBeVisible({ timeout: 20000 });
+    await expect(machineList.locator('tbody tr.machine-table-row').first()).toBeVisible({
+      timeout: 20000,
+    });
 
     // Try to find the specific machine row by data-row-key
     let machineRow = machineList.locator(`tbody tr[data-row-key*="${machine.name}"]`);
@@ -49,7 +51,11 @@ test.describe('Machine Delete Tests', () => {
       const machineCandidates = machineList.locator('tbody tr.machine-table-row');
 
       if ((await machineCandidates.count()) === 0) {
-        await testReporter.completeStep('Locate machine for deletion','skipped','No machine rows found in resources table');
+        testReporter.completeStep(
+          'Locate machine for deletion',
+          'skipped',
+          'No machine rows found in resources table'
+        );
         return;
       }
 
@@ -59,20 +65,24 @@ test.describe('Machine Delete Tests', () => {
 
     // Get machine name before deletion from data-row-key attribute
     const machineNameToDelete = await machineRow.getAttribute('data-row-key');
-    
+
     if (!machineNameToDelete) {
-      await testReporter.completeStep('Locate machine for deletion', 'failed', 'Could not get machine name');
+      testReporter.completeStep(
+        'Locate machine for deletion',
+        'failed',
+        'Could not get machine name'
+      );
       return;
     }
 
-    const stepClickDelete = await testReporter.startStep('Click delete button');
+    testReporter.startStep('Click delete button');
 
     // Find delete button within the row
     const deleteButton = machineRow.locator('[data-testid^="machine-delete-"]').first();
     await expect(deleteButton).toBeVisible({ timeout: 10000 });
     await deleteButton.click();
 
-    const stepConfirmDelete = await testReporter.startStep('Confirm deletion in modal');
+    testReporter.startStep('Confirm deletion in modal');
 
     // Wait for confirmation modal to appear
     const deleteModal = page.locator('.ant-modal-confirm');
@@ -92,7 +102,7 @@ test.describe('Machine Delete Tests', () => {
     await expect(deleteConfirmButton).toContainText('Delete');
     await deleteConfirmButton.click();
 
-    const stepVerifyDeletion = await testReporter.startStep('Verify machine is deleted');
+    testReporter.startStep('Verify machine is deleted');
 
     // Wait for modal to close
     await expect(deleteModal).not.toBeVisible({ timeout: 10000 });
@@ -101,16 +111,20 @@ test.describe('Machine Delete Tests', () => {
     await page.waitForTimeout(2000);
 
     // Verify the specific machine is no longer in the table
-    const deletedMachineRow = machineList.locator(`tbody tr[data-row-key="${machineNameToDelete}"]`);
+    const deletedMachineRow = machineList.locator(
+      `tbody tr[data-row-key="${machineNameToDelete}"]`
+    );
     await expect(deletedMachineRow).not.toBeVisible({ timeout: 10000 });
 
     // Alternative verification: check by data-testid if available
     const deletedMachineByTestId = page.getByTestId(`machine-row-${machineNameToDelete}`);
-    await expect(deletedMachineByTestId).not.toBeVisible({ timeout: 5000 }).catch(() => {
-      // Ignore if testid doesn't exist, primary check above is sufficient
-    });
+    await expect(deletedMachineByTestId)
+      .not.toBeVisible({ timeout: 5000 })
+      .catch(() => {
+        // Ignore if testid doesn't exist, primary check above is sufficient
+      });
 
-    await testReporter.completeStep('Verify machine is deleted', 'passed');
+    testReporter.completeStep('Verify machine is deleted', 'passed');
 
     await testReporter.finalizeTest();
   });

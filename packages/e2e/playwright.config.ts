@@ -1,6 +1,6 @@
+import path from 'node:path';
 import * as test from '@playwright/test';
 import dotenv from 'dotenv';
-import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
@@ -18,6 +18,25 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  *
  * @see https://playwright.dev/docs/test-configuration
  */
+
+function getScreenshotMode(): 'off' | 'on' | 'only-on-failure' {
+  if (process.env.CI) {
+    return 'only-on-failure';
+  }
+  if (process.env.SCREENSHOT_ON_FAILURE === 'true') {
+    return 'only-on-failure';
+  }
+  return 'off';
+}
+
+function getVideoMode(): 'off' | 'on' | 'retain-on-failure' {
+  const value = process.env.RECORD_VIDEO;
+  if (value === 'on' || value === 'retain-on-failure') {
+    return value;
+  }
+  return 'off';
+}
+
 export default test.defineConfig({
   testDir: './tests',
 
@@ -42,20 +61,20 @@ export default test.defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL - uses tunnel URL in CI or localhost for local dev */
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:7322',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:7322',
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
 
     /* Screenshot settings - enabled on failure in CI */
-    screenshot: process.env.CI ? 'only-on-failure' : (process.env.SCREENSHOT_ON_FAILURE === 'true' ? 'only-on-failure' : 'off'),
+    screenshot: getScreenshotMode(),
 
     /* Video settings */
-    video: (process.env.RECORD_VIDEO as 'off' | 'on' | 'retain-on-failure') || 'off',
+    video: getVideoMode(),
 
     /* Timeout settings with sensible defaults */
-    actionTimeout: parseInt(process.env.API_TIMEOUT || '10000'),
-    navigationTimeout: parseInt(process.env.PAGE_TIMEOUT || '30000'),
+    actionTimeout: Number.parseInt(process.env.API_TIMEOUT ?? '10000', 10),
+    navigationTimeout: Number.parseInt(process.env.PAGE_TIMEOUT ?? '30000', 10),
   },
 
   /* Configure projects for major browsers */

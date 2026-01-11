@@ -29,13 +29,19 @@ export class LoginPage extends BasePage {
     this.registerLink = page.locator('[data-testid="login-register-link"]');
     this.errorMessage = page.locator('[data-testid="login-error-alert"]');
     this.loadingSpinner = page.locator('.ant-spin');
-    this.registrationOrganizationInput = page.locator('[data-testid="registration-organization-input"]');
+    this.registrationOrganizationInput = page.locator(
+      '[data-testid="registration-organization-input"]'
+    );
     this.registrationEmailInput = page.locator('[data-testid="registration-email-input"]');
     this.registrationPasswordInput = page.locator('[data-testid="registration-password-input"]');
-    this.registrationPasswordConfirmInput = page.locator('[data-testid="registration-password-confirm-input"]');
+    this.registrationPasswordConfirmInput = page.locator(
+      '[data-testid="registration-password-confirm-input"]'
+    );
     this.registrationTermsCheckbox = page.locator('#termsAccepted');
     this.registrationSubmitButton = page.locator('[data-testid="registration-submit-button"]');
-    this.registrationActivationCodeInput = page.locator('[data-testid="registration-activation-code-input"]');
+    this.registrationActivationCodeInput = page.locator(
+      '[data-testid="registration-activation-code-input"]'
+    );
     this.registrationVerifyButton = page.locator('[data-testid="registration-verify-button"]');
   }
 
@@ -55,12 +61,12 @@ export class LoginPage extends BasePage {
       registrationTermsCheckbox: this.registrationTermsCheckbox,
       registrationSubmitButton: this.registrationSubmitButton,
       registrationActivationCodeInput: this.registrationActivationCodeInput,
-      registrationVerifyButton: this.registrationVerifyButton
+      registrationVerifyButton: this.registrationVerifyButton,
     };
   }
 
   async login(email: string, password: string): Promise<void> {
-    console.log(`   @ Logging in with email: ${email}`);
+    console.warn(`Logging in with email: ${email}`);
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.loginButton.click();
@@ -71,7 +77,7 @@ export class LoginPage extends BasePage {
     await this.verifyElementVisible(this.emailInput);
     await this.verifyElementVisible(this.passwordInput);
     await this.verifyElementVisible(this.loginButton);
-    
+
     await this.login(email, password);
   }
 
@@ -82,18 +88,18 @@ export class LoginPage extends BasePage {
 
   async getErrorMessage(): Promise<string> {
     await this.waitForElement(this.errorMessage);
-    return await this.errorMessage.textContent() || '';
+    return (await this.errorMessage.textContent()) ?? '';
   }
 
   async validateErrorMessage(expectedMessage?: string): Promise<boolean> {
     try {
       await this.waitForElement(this.errorMessage, 5000);
-      const actualMessage = await this.errorMessage.textContent() || '';
-      
+      const actualMessage = (await this.errorMessage.textContent()) ?? '';
+
       if (expectedMessage) {
         return actualMessage.includes(expectedMessage);
       }
-      
+
       return actualMessage.length > 0;
     } catch {
       return false;
@@ -134,11 +140,11 @@ export class LoginPage extends BasePage {
   async performQuickLogin(): Promise<void> {
     const email = requireEnvVar('TEST_USER_EMAIL');
     const password = requireEnvVar('TEST_USER_PASSWORD');
-    
-    console.log('   🔐 Performing authentication...');
+
+    console.warn('Performing authentication...');
     await this.login(email, password);
     await this.waitForLoginCompletion();
-    console.log('   ✅ Authentication successful');
+    console.warn('Authentication successful');
   }
 
   async fillRegistrationForm(
@@ -146,7 +152,7 @@ export class LoginPage extends BasePage {
     email: string,
     password: string,
     passwordConfirm: string,
-    acceptTerms: boolean = true
+    acceptTerms = true
   ): Promise<void> {
     await this.registrationOrganizationInput.fill(organizationName);
     await this.registrationEmailInput.fill(email);
@@ -170,13 +176,19 @@ export class LoginPage extends BasePage {
     email: string,
     password: string,
     passwordConfirm: string,
-    acceptTerms: boolean = true
+    acceptTerms = true
   ): Promise<void> {
-    await this.fillRegistrationForm(organizationName, email, password, passwordConfirm, acceptTerms);
+    await this.fillRegistrationForm(
+      organizationName,
+      email,
+      password,
+      passwordConfirm,
+      acceptTerms
+    );
     await this.submitRegistrationForm();
   }
 
-  async completeRegistrationVerification(code: string = '11111'): Promise<void> {
+  async completeRegistrationVerification(code = '11111'): Promise<void> {
     await this.registrationActivationCodeInput.fill(code);
     await this.registrationVerifyButton.click();
     await this.waitForNetworkIdle();

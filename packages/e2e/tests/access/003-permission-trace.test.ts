@@ -1,45 +1,42 @@
-import { test, expect } from '../../src/base/BaseTest';
-import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { LoginPage } from '../../pages/auth/LoginPage';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { DashboardPage } from '../../pages/dashboard/DashboardPage';
+import { test, expect } from '../../src/base/BaseTest';
 
 test.describe('Permission Trace Tests', () => {
-    let dashboardPage: DashboardPage;
-    let loginPage: LoginPage;
-    let testDataManager: TestDataManager;
+  let dashboardPage: DashboardPage;
+  let loginPage: LoginPage;
 
-    test.beforeEach(async ({ page }) => {
-        loginPage = new LoginPage(page);
-        dashboardPage = new DashboardPage(page);
-        testDataManager = new TestDataManager();
+  test.beforeEach(async ({ page }) => {
+    loginPage = new LoginPage(page);
+    dashboardPage = new DashboardPage(page);
 
-        await loginPage.navigate();
-        await loginPage.performQuickLogin();
-        await dashboardPage.waitForNetworkIdle();
-    });
+    await loginPage.navigate();
+    await loginPage.performQuickLogin();
+    await dashboardPage.waitForNetworkIdle();
+  });
 
-    test('should trace permission group audit records @system @organization @access @audit @regression', async ({
-        page,
-        screenshotManager,
-        testReporter
-    }) => {
-        const stepNavigate = await testReporter.startStep('Navigate to Organization Access section');
+  test('should trace permission group audit records @system @organization @access @audit @regression', async ({
+    page,
+    screenshotManager: _screenshotManager,
+    testReporter,
+  }) => {
+    testReporter.startStep('Navigate to Organization Access section');
 
-        await page.getByTestId('main-nav-organization-access').click();
-        
-        await testReporter.completeStep('Navigate to Organization Access section', 'passed');
+    await page.getByTestId('main-nav-organization-access').click();
 
-        const stepTrace = await testReporter.startStep('Trace permission group audit records');
+    testReporter.completeStep('Navigate to Organization Access section', 'passed');
 
-        await page.getByTestId('system-permission-group-trace-button-test-PERMISSION').click();
-        const auditRecordsText = await page.getByTestId('audit-trace-total-records').textContent();
-        const recordCount = parseInt(auditRecordsText || '0');
-        expect(recordCount).toBeGreaterThan(0);
-        
-        await page.getByRole('button', { name: 'Close' }).click();
+    testReporter.startStep('Trace permission group audit records');
 
-        await testReporter.completeStep('Trace permission group audit records', 'passed');
+    await page.getByTestId('system-permission-group-trace-button-test-PERMISSION').click();
+    const auditRecordsText = await page.getByTestId('audit-trace-total-records').textContent();
+    const recordCount = Number.parseInt(auditRecordsText ?? '0');
+    expect(recordCount).toBeGreaterThan(0);
 
-        await testReporter.finalizeTest();
-    });
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    testReporter.completeStep('Trace permission group audit records', 'passed');
+
+    await testReporter.finalizeTest();
+  });
 });

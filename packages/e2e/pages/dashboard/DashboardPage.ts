@@ -6,15 +6,15 @@ export class DashboardPage extends BasePage {
   private readonly navOrganization: Locator;
   private readonly navMachines: Locator;
   private readonly navSettings: Locator;
-  
+
   // Header / Top Bar
   private readonly notificationBell: Locator;
   private readonly userMenu: Locator;
   private readonly teamSelector: Locator;
-  
+
   // Main Content
   private readonly mainContent: Locator;
-  
+
   // Machines / Resources Views
   private readonly machinesCreateButton: Locator;
   private readonly machinesTestRefreshButton: Locator;
@@ -22,7 +22,7 @@ export class DashboardPage extends BasePage {
   private readonly splitResourceViewLeftPanel: Locator;
   private readonly resourceListContainer: Locator;
   private readonly resourceListEmpty: Locator;
-  
+
   // Global
   private readonly toasterContainer: Locator;
 
@@ -44,9 +44,13 @@ export class DashboardPage extends BasePage {
 
     // Machines / Resources
     this.machinesCreateButton = page.locator('[data-testid="machines-create-machine-button"]');
-    this.machinesTestRefreshButton = page.locator('[data-testid="machines-test-and-refresh-button"]');
+    this.machinesTestRefreshButton = page.locator(
+      '[data-testid="machines-test-and-refresh-button"]'
+    );
     this.splitResourceViewContainer = page.locator('[data-testid="split-resource-view-container"]');
-    this.splitResourceViewLeftPanel = page.locator('[data-testid="split-resource-view-left-panel"]');
+    this.splitResourceViewLeftPanel = page.locator(
+      '[data-testid="split-resource-view-left-panel"]'
+    );
     this.resourceListContainer = page.locator('[data-testid="resource-list-container"]');
     this.resourceListEmpty = page.locator('[data-testid="resource-list-empty"]');
 
@@ -69,7 +73,7 @@ export class DashboardPage extends BasePage {
       splitResourceViewLeftPanel: this.splitResourceViewLeftPanel,
       resourceListContainer: this.resourceListContainer,
       resourceListEmpty: this.resourceListEmpty,
-      toasterContainer: this.toasterContainer
+      toasterContainer: this.toasterContainer,
     };
   }
 
@@ -85,7 +89,7 @@ export class DashboardPage extends BasePage {
   async clickNotificationBell(): Promise<void> {
     await this.clickWithRetry(this.notificationBell);
   }
-  
+
   async openDeviceSettings(): Promise<void> {
     await this.clickWithRetry(this.navSettings);
   }
@@ -104,12 +108,12 @@ export class DashboardPage extends BasePage {
     return this.page.locator(`[data-testid="team-selector-tag-${teamName}"]`);
   }
 
-  async selectTeam(teamName: string): Promise<void> {
+  async selectTeam(_teamName: string): Promise<void> {
     await this.clickWithRetry(this.teamSelector);
-    // Logic for selecting team from dropdown would go here, 
+    // Logic for selecting team from dropdown would go here,
     // assuming the tags might also be used in the selector or similar.
   }
-  
+
   async clickCreateMachine(): Promise<void> {
     await this.clickWithRetry(this.machinesCreateButton);
   }

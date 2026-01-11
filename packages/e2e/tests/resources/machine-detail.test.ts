@@ -1,6 +1,6 @@
-import { test, expect } from '../../src/base/BaseTest';
-import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { LoginPage } from '../../pages/auth/LoginPage';
+import { DashboardPage } from '../../pages/dashboard/DashboardPage';
+import { test, expect } from '../../src/base/BaseTest';
 import { skipIfNoVm } from '../../src/utils/vm';
 
 // Machine detail tests
@@ -26,11 +26,11 @@ test.describe('Machine Detail Tests', () => {
 
   test('should open machine detail sidebar and verify machine name @resources @detail @regression', async ({
     page,
-    screenshotManager,
+    screenshotManager: _screenshotManager,
     testReporter,
-    testDataManager
+    testDataManager,
   }) => {
-    const stepLocateMachine = await testReporter.startStep('Locate machine for detail view');
+    testReporter.startStep('Locate machine for detail view');
 
     const machine = testDataManager.getMachine();
 
@@ -39,7 +39,9 @@ test.describe('Machine Detail Tests', () => {
     await expect(machineList).toBeVisible({ timeout: 10000 });
 
     // Tablo verilerinin gelmesini bekle (en az bir satir gorunene kadar)
-    await expect(machineList.locator('tbody tr.machine-table-row').first()).toBeVisible({ timeout: 20000 });
+    await expect(machineList.locator('tbody tr.machine-table-row').first()).toBeVisible({
+      timeout: 20000,
+    });
 
     // Try to find the specific machine row by data-row-key
     let machineRow = machineList.locator(`tbody tr[data-row-key*="${machine.name}"]`);
@@ -49,7 +51,11 @@ test.describe('Machine Detail Tests', () => {
       const machineCandidates = machineList.locator('tbody tr.machine-table-row');
 
       if ((await machineCandidates.count()) === 0) {
-        await testReporter.completeStep('Locate machine for detail view','skipped','No machine rows found in resources table');
+        testReporter.completeStep(
+          'Locate machine for detail view',
+          'skipped',
+          'No machine rows found in resources table'
+        );
         return;
       }
 
@@ -61,29 +67,25 @@ test.describe('Machine Detail Tests', () => {
     const viewDetailsButton = machineRow.locator('[data-testid^="machine-view-details-"]').first();
     await expect(viewDetailsButton).toBeVisible({ timeout: 10000 });
     await viewDetailsButton.click();
-    
-//    await testReporter.completeStep('Locate machine for detail view', 'passed');
-    const stepOpenDetail = await testReporter.startStep('Open machine detail sidebar');
+
+    testReporter.startStep('Open machine detail sidebar');
 
     // Wait for detail sidebar to open
     const detailPanel = page.getByTestId('unified-detail-panel');
     await expect(detailPanel).toBeVisible({ timeout: 10000 });
-    
-//    await testReporter.completeStep('Open machine detail sidebar', 'passed');
-    const stepVerifyMachineName = await testReporter.startStep('Verify machine name in sidebar');
+
+    testReporter.startStep('Verify machine name in sidebar');
 
     // Get machine name from sidebar
     const machineNameElement = page.getByTestId('vault-status-machine-name');
     await expect(machineNameElement).toBeVisible({ timeout: 10000 });
-    
+
     const displayedMachineName = await machineNameElement.textContent();
-    
+
     // Verify machine name matches
     expect(displayedMachineName?.trim()).toBe(machine.name);
-    
-    //await testReporter.completeStep('Verify machine name in sidebar', 'passed');
 
-    const stepCloseSidebar = await testReporter.startStep('Close detail sidebar');
+    testReporter.startStep('Close detail sidebar');
 
     // Use getByTestId for collapse button
     const collapseButton = page.getByTestId('vault-status-collapse');
@@ -96,7 +98,7 @@ test.describe('Machine Detail Tests', () => {
     }
 
     await expect(detailPanel).not.toBeVisible({ timeout: 10000 });
-    await testReporter.completeStep('Close detail sidebar', 'passed');
+    testReporter.completeStep('Close detail sidebar', 'passed');
 
     await testReporter.finalizeTest();
   });

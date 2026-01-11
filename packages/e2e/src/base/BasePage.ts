@@ -22,15 +22,15 @@ export abstract class BasePage {
     return await this.page.title();
   }
 
-  async getCurrentUrl(): Promise<string> {
+  getCurrentUrl(): string {
     return this.page.url();
   }
 
   async takeScreenshot(name: string): Promise<string> {
     const screenshotPath = `screenshots/${Date.now()}-${name}.png`;
-    await this.page.screenshot({ 
-      path: screenshotPath, 
-      fullPage: true 
+    await this.page.screenshot({
+      path: screenshotPath,
+      fullPage: true,
     });
     return screenshotPath;
   }
@@ -39,15 +39,15 @@ export abstract class BasePage {
     await locator.scrollIntoViewIfNeeded();
   }
 
-  async waitForElement(locator: Locator, timeout: number = 10000): Promise<void> {
+  async waitForElement(locator: Locator, timeout = 10000): Promise<void> {
     await locator.waitFor({ state: 'visible', timeout });
   }
 
-  async waitForElementToDisappear(locator: Locator, timeout: number = 10000): Promise<void> {
+  async waitForElementToDisappear(locator: Locator, timeout = 10000): Promise<void> {
     await locator.waitFor({ state: 'hidden', timeout });
   }
 
-  async clickWithRetry(locator: Locator, maxRetries: number = 3): Promise<void> {
+  async clickWithRetry(locator: Locator, maxRetries = 3): Promise<void> {
     for (let i = 0; i < maxRetries; i++) {
       try {
         await locator.click();
@@ -72,11 +72,10 @@ export abstract class BasePage {
     await locator.setInputFiles(filePath);
   }
 
-  async waitForAPIResponse(url: string | RegExp, timeout: number = 30000): Promise<void> {
-    await this.page.waitForResponse(response => 
-      typeof url === 'string' 
-        ? response.url().includes(url) 
-        : url.test(response.url()),
+  async waitForAPIResponse(url: string | RegExp, timeout = 30000): Promise<void> {
+    await this.page.waitForResponse(
+      (response) =>
+        typeof url === 'string' ? response.url().includes(url) : url.test(response.url()),
       { timeout }
     );
   }
@@ -144,12 +143,12 @@ export abstract class BasePage {
     await this.page.waitForLoadState('networkidle');
   }
 
-  async mockAPIResponse(url: string | RegExp, responseData: any): Promise<void> {
-    await this.page.route(url, route => {
-      route.fulfill({
+  async mockAPIResponse(url: string | RegExp, responseData: unknown): Promise<void> {
+    await this.page.route(url, async (route) => {
+      await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(responseData)
+        body: JSON.stringify(responseData),
       });
     });
   }

@@ -1,9 +1,6 @@
 {
   "suites": {
-    "auth": [
-      "tests/auth/register.test.ts",
-      "tests/auth/login.test.ts"
-    ],
+    "auth": ["tests/auth/register.test.ts", "tests/auth/login.test.ts"],
     "resources": [
       "tests/resources/machine-creation.test.ts",
       "tests/resources/machine-detail.test.ts",

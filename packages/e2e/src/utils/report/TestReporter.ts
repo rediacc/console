@@ -1,6 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { Page, TestInfo } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
 import { format } from 'date-fns';
 import { requireEnvVar } from '../env';
 
@@ -12,7 +12,7 @@ export interface TestStep {
   endTime?: Date;
   error?: string;
   screenshot?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface TestMetrics {
@@ -23,13 +23,32 @@ export interface TestMetrics {
   networkFailures?: number;
 }
 
+interface NetworkLog {
+  type: string;
+  method?: string;
+  status?: number;
+  url: string;
+  headers?: Record<string, string>;
+  failure?: { errorText: string } | null;
+  timestamp: string;
+}
+
+interface ConsoleLog {
+  type: string;
+  text: string;
+  location?: { url: string; lineNumber: number; columnNumber: number };
+  stack?: string;
+  timestamp: string;
+}
+
 export class TestReporter {
-  private page: Page;
-  private testInfo: TestInfo;
-  private steps: TestStep[] = [];
-  private reportDir: string;
-  private testStartTime: Date;
+  private readonly page: Page;
+  private readonly testInfo: TestInfo;
+  private readonly steps: TestStep[] = [];
+  private readonly reportDir: string;
+  private readonly testStartTime: Date;
   private metrics: TestMetrics = {};
+  private hasStartedFirstStep = false;
 
   constructor(page: Page, testInfo: TestInfo) {
     this.page = page;
@@ -48,21 +67,21 @@ export class TestReporter {
   private getRetryLabel(): string {
     const maxRetries = this.testInfo.project.retries;
     const currentRetry = this.testInfo.retry;
-    
+
     // Only show retry label if we're actually on a retry (not the first attempt)
     if (currentRetry === 0) return '';
-    
+
     const currentAttempt = currentRetry + 1;
     const totalAttempts = maxRetries + 1;
     return `[${currentAttempt}/${totalAttempts}] `;
   }
 
-  async startStep(stepName: string, details?: Record<string, any>): Promise<TestStep> {
+  startStep(stepName: string, details?: Record<string, unknown>): TestStep {
     // Add separator line before the first step
     if (!this.hasStartedFirstStep) {
-      console.log('═══════════════════════════════════════════════════════════════════');
-      console.log(`🎯 TEST : ${this.testInfo.title}`);
-      console.log('═══════════════════════════════════════════════════════════════════');
+      console.warn('===================================================================');
+      console.warn(`TEST : ${this.testInfo.title}`);
+      console.warn('===================================================================');
       this.hasStartedFirstStep = true;
     }
 
@@ -70,34 +89,47 @@ export class TestReporter {
       name: stepName,
       status: 'passed',
       startTime: new Date(),
-      details
+      details,
     };
 
     this.steps.push(step);
-    console.log(`${this.getRetryLabel()}   🚀 Starting step: ${stepName}`);
+    console.warn(`${this.getRetryLabel()}   Starting step: ${stepName}`);
 
     return step;
   }
 
-  async completeStep(stepName: string, status: 'passed' | 'failed' | 'skipped', error?: string): Promise<void> {
-    const step = this.steps.find(s => s.name === stepName && !s.endTime);
-    
+  completeStep(stepName: string, status: 'passed' | 'failed' | 'skipped', error?: string): void {
+    const step = this.steps.find((s) => s.name === stepName && !s.endTime);
+
     if (step) {
       step.endTime = new Date();
       step.status = status;
       step.duration = step.endTime.getTime() - step.startTime.getTime();
-      
+
       if (error) {
         step.error = error;
       }
 
-      const statusEmoji = status === 'passed' ? '✅' : status === 'failed' ? '❌' : '⏭️';
-      console.log(`${this.getRetryLabel()}   ${statusEmoji} Completed step: ${stepName} (${step.duration}ms)`);
+      const statusLabel = this.getStatusLabel(status);
+      console.warn(
+        `${this.getRetryLabel()}   ${statusLabel} Completed step: ${stepName} (${step.duration}ms)`
+      );
     }
   }
 
-  async addStepScreenshot(stepName: string, screenshotPath: string): Promise<void> {
-    const step = this.steps.find(s => s.name === stepName);
+  private getStatusLabel(status: 'passed' | 'failed' | 'skipped'): string {
+    switch (status) {
+      case 'passed':
+        return '[PASS]';
+      case 'failed':
+        return '[FAIL]';
+      case 'skipped':
+        return '[SKIP]';
+    }
+  }
+
+  addStepScreenshot(stepName: string, screenshotPath: string): void {
+    const step = this.steps.find((s) => s.name === stepName);
     if (step) {
       step.screenshot = screenshotPath;
     }
@@ -111,64 +143,59 @@ export class TestReporter {
       }
 
       const performanceMetrics = await this.page.evaluate(() => {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-        const resources = performance.getEntriesByType('resource');
+        const navigation = performance.getEntriesByType(
+          'navigation'
+        )[0] as PerformanceNavigationTiming;
+        const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
 
         return {
-          pageLoadTime: navigation ? navigation.loadEventEnd - navigation.fetchStart : 0,
-          responseTime: navigation ? navigation.responseEnd - navigation.requestStart : 0,
+          pageLoadTime: navigation.loadEventEnd - navigation.fetchStart,
+          responseTime: navigation.responseEnd - navigation.requestStart,
           resourceCount: resources.length,
-          networkFailures: resources.filter((r: any) => r.transferSize === 0).length
+          networkFailures: resources.filter((r) => r.transferSize === 0).length,
         };
       });
 
       this.metrics = { ...this.metrics, ...performanceMetrics };
-
-      if ('memory' in performance && !this.page.isClosed()) {
-        const memoryInfo = await this.page.evaluate(() => (performance as any).memory);
-        if (memoryInfo) {
-          this.metrics.memoryUsage = memoryInfo.usedJSHeapSize;
-        }
-      }
-    } catch (error) {
+    } catch (metricsError) {
       // Silently handle page closure errors to avoid noisy logs on test failures
-      const errorMessage = String(error);
+      const errorMessage = String(metricsError);
       if (!errorMessage.includes('Target page, context or browser has been closed')) {
-        console.warn(`⚠️ Failed to collect performance metrics: ${error}`);
+        console.warn(`Failed to collect performance metrics: ${metricsError}`);
       }
     }
   }
 
-  async recordNetworkActivity(): Promise<void> {
-    const networkLogs: any[] = [];
+  recordNetworkActivity(): void {
+    const networkLogs: NetworkLog[] = [];
 
-    this.page.on('request', request => {
+    this.page.on('request', (request) => {
       networkLogs.push({
         type: 'request',
         method: request.method(),
         url: request.url(),
         headers: request.headers(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
 
-    this.page.on('response', response => {
+    this.page.on('response', (response) => {
       networkLogs.push({
         type: 'response',
         status: response.status(),
         url: response.url(),
         headers: response.headers(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
 
-    this.page.on('requestfailed', request => {
+    this.page.on('requestfailed', (request) => {
       networkLogs.push({
         type: 'failed',
         method: request.method(),
         url: request.url(),
         failure: request.failure(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
 
@@ -176,24 +203,24 @@ export class TestReporter {
     fs.writeFileSync(networkLogPath, JSON.stringify(networkLogs, null, 2));
   }
 
-  async recordConsoleActivity(): Promise<void> {
-    const consoleLogs: any[] = [];
+  recordConsoleActivity(): void {
+    const consoleLogs: ConsoleLog[] = [];
 
-    this.page.on('console', message => {
+    this.page.on('console', (message) => {
       consoleLogs.push({
         type: message.type(),
         text: message.text(),
         location: message.location(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
 
-    this.page.on('pageerror', error => {
+    this.page.on('pageerror', (error) => {
       consoleLogs.push({
         type: 'error',
         text: error.message,
         stack: error.stack,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
 
@@ -203,6 +230,12 @@ export class TestReporter {
 
   async generateDetailedReport(): Promise<string> {
     await this.recordMetrics();
+
+    const pageUrl = this.page.isClosed() ? 'page closed' : this.page.url();
+    const viewport = this.page.isClosed() ? null : this.page.viewportSize();
+    const userAgent = this.page.isClosed()
+      ? 'page closed'
+      : await this.page.evaluate(() => navigator.userAgent);
 
     const report = {
       testInfo: {
@@ -215,15 +248,15 @@ export class TestReporter {
         duration: this.testInfo.duration,
         timeout: this.testInfo.timeout,
         annotations: this.testInfo.annotations,
-        tags: this.testInfo.tags
+        tags: this.testInfo.tags,
       },
       execution: {
         startTime: this.testStartTime.toISOString(),
         endTime: new Date().toISOString(),
         duration: Date.now() - this.testStartTime.getTime(),
-        url: this.page.isClosed() ? 'page closed' : this.page.url(),
-        viewport: this.page.isClosed() ? null : await this.page.viewportSize(),
-        userAgent: this.page.isClosed() ? 'page closed' : await this.page.evaluate(() => navigator.userAgent)
+        url: pageUrl,
+        viewport,
+        userAgent,
       },
       steps: this.steps,
       metrics: this.metrics,
@@ -231,23 +264,64 @@ export class TestReporter {
         baseURL: requireEnvVar('BASE_URL'),
         nodeVersion: process.version,
         platform: process.platform,
-        ci: !!process.env.CI
+        ci: !!process.env.CI,
       },
-      errors: this.testInfo.errors || []
+      errors: this.testInfo.errors,
     };
 
     const reportPath = path.join(this.reportDir, `detailed-${this.getTestFileName()}.json`);
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 
-    console.log(`═══════════════════════════════════════════════════════════════════`);
-    console.log(`📊 Report: ${reportPath}`);
-    console.log(`═══════════════════════════════════════════════════════════════════`);
+    console.warn('===================================================================');
+    console.warn(`Report: ${reportPath}`);
+    console.warn('===================================================================');
     return reportPath;
   }
 
   async generateHTMLReport(): Promise<string> {
     const detailedReportPath = await this.generateDetailedReport();
-    const report = JSON.parse(fs.readFileSync(detailedReportPath, 'utf8'));
+    const reportData = JSON.parse(fs.readFileSync(detailedReportPath, 'utf8')) as {
+      testInfo: { title: string; status: string; duration: number; project: string };
+      execution: { url: string };
+      metrics: Record<string, unknown>;
+      steps: TestStep[];
+      errors: { message: string }[];
+    };
+
+    const metricsHtml = Object.entries(reportData.metrics)
+      .map(
+        ([key, value]) => `
+                <div class="metric-card">
+                    <h4>${key.replaceAll(/([A-Z])/g, ' $1').toUpperCase()}</h4>
+                    <p>${typeof value === 'number' ? value.toLocaleString() : String(value)}</p>
+                </div>
+            `
+      )
+      .join('');
+
+    const stepsHtml = reportData.steps
+      .map(
+        (step) => `
+            <div class="step ${step.status}">
+                <h4>${step.name}</h4>
+                <p><strong>Status:</strong> ${step.status}</p>
+                <p><strong>Duration:</strong> ${step.duration ?? 0}ms</p>
+                ${step.error ? `<div class="error">Error: ${step.error}</div>` : ''}
+                ${step.screenshot ? `<img src="${step.screenshot}" alt="Screenshot" class="screenshot">` : ''}
+            </div>
+        `
+      )
+      .join('');
+
+    const errorsHtml =
+      reportData.errors.length > 0
+        ? `
+        <div class="section">
+            <h3>Errors</h3>
+            ${reportData.errors.map((error) => `<div class="error">${error.message}</div>`).join('')}
+        </div>
+    `
+        : '';
 
     const html = `
 <!DOCTYPE html>
@@ -255,7 +329,7 @@ export class TestReporter {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Report - ${report.testInfo.title}</title>
+    <title>Test Report - ${reportData.testInfo.title}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
         .header { background: #f4f4f4; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
@@ -273,57 +347,39 @@ export class TestReporter {
 <body>
     <div class="header">
         <h1>Test Report</h1>
-        <h2>${report.testInfo.title}</h2>
-        <p><strong>Status:</strong> ${report.testInfo.status}</p>
-        <p><strong>Duration:</strong> ${report.testInfo.duration}ms</p>
-        <p><strong>Project:</strong> ${report.testInfo.project}</p>
-        <p><strong>URL:</strong> ${report.execution.url}</p>
+        <h2>${reportData.testInfo.title}</h2>
+        <p><strong>Status:</strong> ${reportData.testInfo.status}</p>
+        <p><strong>Duration:</strong> ${reportData.testInfo.duration}ms</p>
+        <p><strong>Project:</strong> ${reportData.testInfo.project}</p>
+        <p><strong>URL:</strong> ${reportData.execution.url}</p>
     </div>
 
     <div class="section">
         <h3>Performance Metrics</h3>
         <div class="metrics">
-            ${Object.entries(report.metrics).map(([key, value]) => `
-                <div class="metric-card">
-                    <h4>${key.replace(/([A-Z])/g, ' $1').toUpperCase()}</h4>
-                    <p>${typeof value === 'number' ? value.toLocaleString() : value}</p>
-                </div>
-            `).join('')}
+            ${metricsHtml}
         </div>
     </div>
 
     <div class="section">
         <h3>Test Steps</h3>
-        ${report.steps.map((step: any) => `
-            <div class="step ${step.status}">
-                <h4>${step.name}</h4>
-                <p><strong>Status:</strong> ${step.status}</p>
-                <p><strong>Duration:</strong> ${step.duration || 0}ms</p>
-                ${step.error ? `<div class="error">Error: ${step.error}</div>` : ''}
-                ${step.screenshot ? `<img src="${step.screenshot}" alt="Screenshot" class="screenshot">` : ''}
-            </div>
-        `).join('')}
+        ${stepsHtml}
     </div>
 
-    ${report.errors.length > 0 ? `
-        <div class="section">
-            <h3>Errors</h3>
-            ${report.errors.map((error: any) => `<div class="error">${error.message}</div>`).join('')}
-        </div>
-    ` : ''}
+    ${errorsHtml}
 </body>
 </html>`;
 
     const htmlPath = path.join(this.reportDir, `report-${this.getTestFileName()}.html`);
     fs.writeFileSync(htmlPath, html);
 
-    console.log(`   📄 HTML report generated: ${htmlPath}`);
+    console.warn(`   HTML report generated: ${htmlPath}`);
     return htmlPath;
   }
 
   private getTestFileName(): string {
     const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
-    const testName = this.testInfo.title.replace(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
+    const testName = this.testInfo.title.replaceAll(/[^a-zA-Z0-9\-_]/g, '_').toLowerCase();
     return `${timestamp}_${testName}`;
   }
 
@@ -337,15 +393,18 @@ export class TestReporter {
 
   logTestCompletion(): void {
     const totalDuration = Date.now() - this.testStartTime.getTime();
-    const passedSteps = this.steps.filter(s => s.status === 'passed').length;
-    const failedSteps = this.steps.filter(s => s.status === 'failed').length;
-    const skippedSteps = this.steps.filter(s => s.status === 'skipped').length;
-    
-    console.log('═══════════════════════════════════════════════════════════════════');
-    console.log(`🏁 Test completed: ${this.testInfo.title}`);
-    console.log(`   ⏱️  Total duration: ${totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(2)}s`}`);
-    console.log(`   📊 Steps: ${passedSteps} passed, ${failedSteps} failed, ${skippedSteps} skipped`);
-    console.log('═══════════════════════════════════════════════════════════════════');
+    const passedSteps = this.steps.filter((s) => s.status === 'passed').length;
+    const failedSteps = this.steps.filter((s) => s.status === 'failed').length;
+    const skippedSteps = this.steps.filter((s) => s.status === 'skipped').length;
+
+    const durationStr =
+      totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(2)}s`;
+
+    console.warn('===================================================================');
+    console.warn(`Test completed: ${this.testInfo.title}`);
+    console.warn(`   Total duration: ${durationStr}`);
+    console.warn(`   Steps: ${passedSteps} passed, ${failedSteps} failed, ${skippedSteps} skipped`);
+    console.warn('===================================================================');
   }
 
   /**
