@@ -42,7 +42,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <Form.Item
         name="email"
         label={
-          <label htmlFor="login-email-input" className="block">
+          <label htmlFor="login-email-input">
             {t('auth:login.email')}
           </label>
         }
@@ -66,7 +66,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <Form.Item
         name="password"
         label={
-          <label htmlFor="login-password-input" className="block">
+          <label htmlFor="login-password-input">
             {t('auth:login.password')}
           </label>
         }
@@ -90,7 +90,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             name="masterPassword"
             label={
               <label htmlFor="login-master-password-input">
-                <Space align="center" className="flex">
+                <Space align="center">
                   <Typography.Text>{t('auth:login.masterPassword')}</Typography.Text>
                   <Tooltip title={t('auth:login.masterPasswordTooltip')}>
                     <InfoCircleOutlined />

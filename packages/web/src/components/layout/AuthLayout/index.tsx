@@ -20,17 +20,14 @@ const AuthLayout: React.FC = () => {
     <ConfigProvider theme={getThemeConfig(isDark)}>
       <AuthLayoutRoot>
         <AuthLayoutContainer vertical align="stretch" data-testid="auth-layout-container">
-        {/* Language selector - top right corner */}
         <AuthHeader>
           <LanguageSelector iconOnly />
         </AuthHeader>
 
-        {/* Content - split screen on desktop */}
         <AuthLayoutBody>
           <AuthContent>
             <Flex vertical align="center" justify="center" gap={32} data-testid="auth-layout-content">
-              {/* Logo centered above form */}
-              <img src={logo} alt={t('alt.logo')} className="auth-logo" height={40} />
+              <img src={logo} alt={t('alt.logo')} height={40} />
               <Outlet />
             </Flex>
           </AuthContent>
