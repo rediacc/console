@@ -31,7 +31,7 @@ for (const testFile of tests) {
   try {
     console.log(`\n🔍 Executing: ${testFile}`);
     // Forwarding extraArgs to playwright command
-    execSync(`pnpm playwright test ${testFile} --workers=1 ${extraArgs}`, { stdio: 'inherit' });
+    execSync(`npx playwright test ${testFile} --workers=1 ${extraArgs}`, { stdio: 'inherit' });
     console.log(`✅ Passed: ${testFile}`);
   } catch (error) {
     console.error(`❌ Failed: ${testFile}`);
