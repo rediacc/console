@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { TEST_CREDENTIALS } from '@rediacc/shared';
 import { BasePage } from '../../src/base/BasePage';
 import { requireEnvVar } from '../../src/utils/env';
 
@@ -188,7 +189,9 @@ export class LoginPage extends BasePage {
     await this.submitRegistrationForm();
   }
 
-  async completeRegistrationVerification(code = '11111'): Promise<void> {
+  async completeRegistrationVerification(
+    code: string = TEST_CREDENTIALS.CI_ACTIVATION_CODE
+  ): Promise<void> {
     await this.registrationActivationCodeInput.fill(code);
     await this.registrationVerifyButton.click();
     await this.waitForNetworkIdle();

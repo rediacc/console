@@ -1,4 +1,4 @@
-import { requireEnvVar } from '@/utils/env';
+import { getEnvVarWithDefault } from '@/utils/env';
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { test } from '../../src/base/BaseTest';
 
@@ -21,9 +21,9 @@ test.describe('Registration Tests', () => {
 
     const timestamp = Date.now();
     const organizationName = `E2E Test Organization ${timestamp}`;
-    const email = requireEnvVar('TEST_USER_EMAIL');
-    const password = requireEnvVar('TEST_USER_PASSWORD');
-    const verificationCode = requireEnvVar('TEST_VERIFICATION_CODE');
+    const email = getEnvVarWithDefault('TEST_USER_EMAIL');
+    const password = getEnvVarWithDefault('TEST_USER_PASSWORD');
+    const verificationCode = getEnvVarWithDefault('TEST_VERIFICATION_CODE');
 
     await loginPage.fillRegistrationForm(organizationName, email, password, password, true);
 
