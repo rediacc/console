@@ -1,7 +1,7 @@
 #!/bin/bash
 # Check GitHub Actions CI status after push
 # Returns JSON for Stop hook: {"decision": "block", "reason": "..."} or allows stop
-# Version: 1.0.0
+# Version: 1.1.0 - Fixed: Only JSON on stdout, info messages to stderr
 
 set -e
 
@@ -13,7 +13,6 @@ cd "$PROJECT_ROOT"
 # Get repository info from git remote
 REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
 if [ -z "$REMOTE_URL" ]; then
-    # No remote, allow stop
     exit 0
 fi
 
@@ -22,7 +21,6 @@ if [[ "$REMOTE_URL" =~ github\.com[:/]([^/]+)/([^/.]+)(\.git)?$ ]]; then
     OWNER="${BASH_REMATCH[1]}"
     REPO="${BASH_REMATCH[2]}"
 else
-    # Not a GitHub repo, allow stop
     exit 0
 fi
 
@@ -35,7 +33,6 @@ fi
 # Check if we recently pushed (within last 5 minutes)
 LAST_PUSH_FILE="/tmp/.claude-last-push-${OWNER}-${REPO}-${BRANCH}"
 if [ ! -f "$LAST_PUSH_FILE" ]; then
-    # No recent push tracked, allow stop
     exit 0
 fi
 
@@ -51,13 +48,11 @@ fi
 
 # Check GitHub token
 if [ -z "$GITHUB_TOKEN" ] && [ -z "$GH_TOKEN" ]; then
-    # Try to get token from gh CLI
     GITHUB_TOKEN=$(gh auth token 2>/dev/null || echo "")
 fi
 TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}"
 
 if [ -z "$TOKEN" ]; then
-    # No token available, allow stop
     exit 0
 fi
 
@@ -67,7 +62,7 @@ if [ -z "$COMMIT_SHA" ]; then
     exit 0
 fi
 
-# Wait a moment for CI to start (GitHub needs time to register the push)
+# Wait a moment for CI to start
 sleep 3
 
 # Get check runs for the commit
@@ -77,9 +72,8 @@ RESPONSE=$(curl -s -H "Authorization: token $TOKEN" \
 
 TOTAL_COUNT=$(echo "$RESPONSE" | jq -r '.total_count // 0' 2>/dev/null || echo "0")
 
-# If no checks yet, might still be starting
+# If no checks yet, check workflow runs
 if [ "$TOTAL_COUNT" = "0" ]; then
-    # Check workflow runs instead
     WORKFLOW_RESPONSE=$(curl -s -H "Authorization: token $TOKEN" \
         -H "Accept: application/vnd.github.v3+json" \
         "https://api.github.com/repos/$OWNER/$REPO/actions/runs?head_sha=$COMMIT_SHA&per_page=5" 2>/dev/null || echo "{}")
@@ -87,7 +81,6 @@ if [ "$TOTAL_COUNT" = "0" ]; then
     WORKFLOW_COUNT=$(echo "$WORKFLOW_RESPONSE" | jq -r '.total_count // 0' 2>/dev/null || echo "0")
 
     if [ "$WORKFLOW_COUNT" = "0" ]; then
-        # No workflows yet, CI might still be starting - wait and check again
         sleep 5
         WORKFLOW_RESPONSE=$(curl -s -H "Authorization: token $TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
@@ -96,7 +89,6 @@ if [ "$TOTAL_COUNT" = "0" ]; then
     fi
 
     if [ "$WORKFLOW_COUNT" = "0" ]; then
-        # Still no workflows, allow stop
         rm -f "$LAST_PUSH_FILE"
         exit 0
     fi
@@ -106,33 +98,22 @@ if [ "$TOTAL_COUNT" = "0" ]; then
     FAILED=$(echo "$WORKFLOW_RESPONSE" | jq -r '[.workflow_runs[] | select(.conclusion == "failure")] | length' 2>/dev/null || echo "0")
 
     if [ "$IN_PROGRESS" -gt 0 ]; then
-        echo "⏳ CI is still running. Waiting for completion..."
-        # Block and wait
-        echo '{"decision": "block", "reason": "CI is still running. Please wait for CI to complete before stopping. You can check status with: gh run list --limit 3"}'
+        echo '{"decision":"block","reason":"CI is still running. Please wait for CI to complete. Check status with: gh run list --limit 3"}'
         exit 0
     fi
 
     if [ "$FAILED" -gt 0 ]; then
-        # Get failure details
         FAILED_RUNS=$(echo "$WORKFLOW_RESPONSE" | jq -r '[.workflow_runs[] | select(.conclusion == "failure")] | .[0]' 2>/dev/null)
         RUN_ID=$(echo "$FAILED_RUNS" | jq -r '.id' 2>/dev/null)
-        RUN_NAME=$(echo "$FAILED_RUNS" | jq -r '.name' 2>/dev/null)
-
-        # Get job failures
-        JOBS_RESPONSE=$(curl -s -H "Authorization: token $TOKEN" \
+        FAILED_JOBS=$(curl -s -H "Authorization: token $TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$RUN_ID/jobs" 2>/dev/null || echo "{}")
+            "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$RUN_ID/jobs" 2>/dev/null | \
+            jq -r '[.jobs[] | select(.conclusion == "failure")] | map(.name) | join(", ")' 2>/dev/null || echo "unknown")
 
-        FAILED_JOBS=$(echo "$JOBS_RESPONSE" | jq -r '[.jobs[] | select(.conclusion == "failure")] | map(.name) | join(", ")' 2>/dev/null || echo "unknown")
-
-        echo "❌ CI FAILED: $RUN_NAME"
-        echo "Failed jobs: $FAILED_JOBS"
-        echo ""
-        echo '{"decision": "block", "reason": "CI is failing! Please investigate and fix the issues. Run: gh run view '"$RUN_ID"' --log-failed to see error details. Failed jobs: '"$FAILED_JOBS"'"}'
+        echo '{"decision":"block","reason":"CI FAILED! Run: gh run view '"$RUN_ID"' --log-failed to see errors. Failed jobs: '"$FAILED_JOBS"'"}'
         exit 0
     fi
 
-    # All passed
     rm -f "$LAST_PUSH_FILE"
     exit 0
 fi
@@ -142,20 +123,16 @@ IN_PROGRESS=$(echo "$RESPONSE" | jq -r '[.check_runs[] | select(.status == "in_p
 FAILED=$(echo "$RESPONSE" | jq -r '[.check_runs[] | select(.conclusion == "failure")] | length' 2>/dev/null || echo "0")
 
 if [ "$IN_PROGRESS" -gt 0 ]; then
-    echo "⏳ CI checks still running..."
-    echo '{"decision": "block", "reason": "CI checks are still running. Please wait for completion."}'
+    echo '{"decision":"block","reason":"CI checks are still running. Please wait for completion."}'
     exit 0
 fi
 
 if [ "$FAILED" -gt 0 ]; then
     FAILED_CHECKS=$(echo "$RESPONSE" | jq -r '[.check_runs[] | select(.conclusion == "failure")] | map(.name) | join(", ")' 2>/dev/null || echo "unknown")
-    echo "❌ CI FAILED"
-    echo "Failed checks: $FAILED_CHECKS"
-    echo '{"decision": "block", "reason": "CI checks failed: '"$FAILED_CHECKS"'. Please investigate with: gh run list --limit 3 and fix the issues."}'
+    echo '{"decision":"block","reason":"CI checks failed: '"$FAILED_CHECKS"'. Run: gh run list --limit 3 to investigate."}'
     exit 0
 fi
 
 # All checks passed
 rm -f "$LAST_PUSH_FILE"
-echo "✅ CI passed"
 exit 0
