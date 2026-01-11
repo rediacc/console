@@ -1,6 +1,6 @@
 {
   "name": "rediacc-console",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -8,7 +8,8 @@
     "packages/shared-desktop",
     "packages/cli",
     "packages/web",
-    "packages/desktop"
+    "packages/desktop",
+    "packages/e2e"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli && npm run build:web",

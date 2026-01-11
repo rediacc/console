@@ -428,7 +428,7 @@ jobs:
           echo "Waiting for test jobs to complete..."
           MAX_WAIT=7200  # 2 hours
           ELAPSED=0
-          PLATFORMS=("linux" "windows" "macos")
+          PLATFORMS=("linux" "windows" "macos" "e2e")
           COMPLETED=()
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
@@ -842,6 +842,115 @@ jobs:
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 7
 
+  # ============================================================================
+  # WEB E2E TESTS
+  # Browser-based Playwright tests for the web UI
+  # ============================================================================
+  web-e2e-tests:
+    name: 🌐 Web E2E Tests
+    runs-on: ubuntu-latest
+    needs: [lint, format-check, type-check]
+    timeout-minutes: 45
+
+    env:
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Install Playwright Browsers
+        working-directory: packages/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAX_WAIT=1500
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
+              TUNNEL_URL=$(cat tunnel-url.txt)
+              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
+              exit 0
+            fi
+            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "✗ Failed to download tunnel URL"
+          exit 1
+
+      - name: Verify Tunnel Connectivity
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
+
+      - name: Create E2E Test Environment
+        working-directory: packages/e2e
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "E2E_BASE_URL=${TUNNEL_URL}" > .env
+          echo "TEST_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "TEST_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "ADMIN_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "ADMIN_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "CI=true" >> .env
+          echo "✓ Created .env for E2E tests"
+        env:
+          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
+          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
+
+      - name: Run E2E Tests
+        working-directory: packages/e2e
+        run: npm run test:e2e
+
+      - name: Create Completion Signal
+        if: always()
+        run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Upload Completion Signal
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 1
+
+      - name: Upload E2E Test Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-test-report-${{ github.sha }}
+          path: packages/e2e/reports/e2e/
+          retention-days: 7
+          if-no-files-found: ignore
+
   build:
     name: 🏗️ Build - DEBUG & RELEASE
     runs-on: ubuntu-latest
@@ -1095,7 +1204,7 @@ jobs:
   ci-summary:
     name: ✅ CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, format-check, type-check, unit-tests, cli-check, vscode-detection-tests, shared-backend, cli-tests-linux, cli-tests-windows, cli-tests-macos, build, security-scan, desktop-build]
+    needs: [lint, format-check, type-check, unit-tests, cli-check, vscode-detection-tests, shared-backend, cli-tests-linux, cli-tests-windows, cli-tests-macos, web-e2e-tests, build, security-scan, desktop-build]
     if: always()
 
     steps:
@@ -1117,6 +1226,9 @@ jobs:
           echo "- CLI Tests (Windows): ${{ needs.cli-tests-windows.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI Tests (macOS): ${{ needs.cli-tests-macos.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Web E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Web E2E: ${{ needs.web-e2e-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Build & Security" >> $GITHUB_STEP_SUMMARY
           echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Desktop Build: ${{ needs.desktop-build.result }}" >> $GITHUB_STEP_SUMMARY
@@ -1131,6 +1243,7 @@ jobs:
              [ "${{ needs.cli-tests-linux.result }}" != "success" ] || \
              [ "${{ needs.cli-tests-windows.result }}" != "success" ] || \
              [ "${{ needs.cli-tests-macos.result }}" != "success" ] || \
+             [ "${{ needs.web-e2e-tests.result }}" != "success" ] || \
              [ "${{ needs.build.result }}" != "success" ] || \
              [ "${{ needs.desktop-build.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY

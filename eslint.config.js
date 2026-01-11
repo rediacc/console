@@ -103,6 +103,7 @@ export default tseslint.config(
             'packages/shared/tsconfig.json',
             'packages/cli/tsconfig.json',
             'packages/cli/tests/tsconfig.json',
+            'packages/e2e/tsconfig.json',
           ],
           // Suppress warning about multiple tsconfig files (expected in monorepo)
           noWarnOnMultipleProjects: true,
@@ -658,6 +659,30 @@ export default tseslint.config(
       // Test files use nested callbacks: describe -> test -> async -> array methods
       // Limit of 3 is too restrictive for test patterns like find(), some(), map()
       'max-nested-callbacks': ['error', 5],
+    },
+  },
+
+  // E2E test files - relaxed rules for Playwright test patterns
+  {
+    files: ['packages/e2e/**/*.ts'],
+    rules: {
+      // Test files legitimately use boolean || for condition checks
+      '@typescript-eslint/prefer-nullish-coalescing': ['error', {
+        ignorePrimitives: {
+          boolean: true,
+          number: true,
+          string: true,
+        },
+      }],
+      // Tests can be longer than production code
+      'max-lines': 'off',
+      // Test files use nested callbacks: describe -> test -> async
+      'max-nested-callbacks': ['error', 5],
+      // Disable translation requirement for test files
+      'custom/require-translation': 'off',
+      'custom/no-hardcoded-text': 'off',
+      // Disable testid requirement for test utilities (not React components)
+      'custom/require-testid': 'off',
     },
   }
 );

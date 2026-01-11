@@ -1,0 +1,33 @@
+{
+  "suites": {
+    "auth": [
+      "tests/auth/register.test.ts",
+      "tests/auth/login.test.ts"
+    ],
+    "resources": [
+      "tests/resources/machine-creation.test.ts",
+      "tests/resources/machine-detail.test.ts",
+      "tests/resources/machine-trace.test.ts",
+      "tests/resources/machine-delete.test.ts"
+    ],
+    "team": [
+      "tests/team/001-temp-team-create.test.ts",
+      "tests/team/002-temp-team-edit.test.ts",
+      "tests/team/003-temp-team-trace.test.ts",
+      "tests/team/004-temp-team-delete.test.ts"
+    ],
+    "user": [
+      "tests/user/001-user-create.test.ts",
+      "tests/user/002-user-active-deactive.test.ts",
+      "tests/user/003-user-add-to-team.test.ts",
+      "tests/user/004-user-trace.test.ts",
+      "tests/user/005-user-permission.test.ts"
+    ],
+    "full-e2e": [
+      "tests/auth/register.test.ts",
+      "tests/auth/login.test.ts",
+      "tests/user/001-user-create.test.ts",
+      "tests/team/001-temp-team-create.test.ts"
+    ]
+  }
+}
