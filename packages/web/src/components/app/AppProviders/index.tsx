@@ -40,7 +40,12 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
 
   return (
     <Flex vertical data-testid="app-providers-container">
-      <ConfigProvider key={i18n.language} locale={currentLocale} theme={themeConfig}>
+      <ConfigProvider
+        key={i18n.language}
+        locale={currentLocale}
+        theme={themeConfig}
+        flex={{ className: 'rediacc-flex' }}
+      >
         <AntApp>{children}</AntApp>
       </ConfigProvider>
     </Flex>

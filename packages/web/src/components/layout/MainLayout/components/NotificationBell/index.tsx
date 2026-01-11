@@ -97,7 +97,7 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <Card styles={{ body: { padding: 0 } }} data-testid="notification-dropdown">
+    <Card data-testid="notification-dropdown">
       <Flex vertical className="notification-dropdown max-h-scroll-md min-w-dropdown">
         <Flex align="center" justify="space-between">
           <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>

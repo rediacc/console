@@ -784,6 +784,24 @@
     "advancedEnabled": "Advanced options enabled",
     "advancedDisabled": "Advanced options disabled"
   },
+  "terminal": {
+    "terminal": "Terminal",
+    "connecting": "Connecting",
+    "connectionFailed": "Connection Failed",
+    "connectedTo": "Connected to {{host}}",
+    "establishingConnection": "Establishing SSH connection to {{host}}...",
+    "waitingForConnection": "Waiting for connection...",
+    "reconnect": "Reconnect",
+    "popout": "Pop out to window"
+  },
+  "vscodeSelection": {
+    "title": "Choose VS Code Installation",
+    "open": "Open",
+    "description": "Multiple VS Code installations detected. Choose which one to use:",
+    "windowsVSCode": "Windows VS Code",
+    "wslVSCode": "WSL VS Code (Linux)",
+    "rememberChoice": "Remember my choice"
+  },
   "yes": "Yes",
   "yesterday": "Yesterday"
 }

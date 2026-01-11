@@ -16,7 +16,7 @@ export function decodeKnownHosts(known_hosts: string): string {
   let entry = known_hosts.trim();
 
   // Normalize line endings to Unix format
-  entry = entry.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  entry = entry.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
   // Remove trailing newlines (we'll add one when writing to file)
   entry = entry.replace(/\n+$/, '');
@@ -117,7 +117,7 @@ export function extractHostname(known_hosts: string): string | null {
 
   // Hostname may include port: [hostname]:port
   const hostPart = parts[0];
-  const match = hostPart.match(/^\[?([^\]]+)\]?(?::\d+)?$/);
+  const match = /^\[?([^\]]+)\]?(?::\d+)?$/.exec(hostPart);
 
   return match ? match[1] : hostPart;
 }

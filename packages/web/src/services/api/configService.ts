@@ -40,7 +40,7 @@ class ConfigService {
         instanceName: rConfig.instanceName || undefined,
         apiUrl: rConfig.apiUrl || undefined,
         domain: rConfig.domain || undefined,
-        httpPort: rConfig.httpPort ? parseInt(rConfig.httpPort) : undefined,
+        httpPort: rConfig.httpPort ? Number.parseInt(rConfig.httpPort) : undefined,
         environment: rConfig.environment
           ? (rConfig.environment as 'development' | 'production')
           : undefined,
@@ -49,8 +49,10 @@ class ConfigService {
         enableMaintenance: rConfig.enableMaintenance === 'true',
         version: rConfig.version || undefined,
         buildTime: rConfig.buildTime || undefined,
-        maxUploadSize: rConfig.maxUploadSize ? parseInt(rConfig.maxUploadSize) : undefined,
-        sessionTimeout: rConfig.sessionTimeout ? parseInt(rConfig.sessionTimeout) : undefined,
+        maxUploadSize: rConfig.maxUploadSize ? Number.parseInt(rConfig.maxUploadSize) : undefined,
+        sessionTimeout: rConfig.sessionTimeout
+          ? Number.parseInt(rConfig.sessionTimeout)
+          : undefined,
         defaultLanguage: rConfig.defaultLanguage || undefined,
         docsUrl: rConfig.docsUrl || undefined,
         supportUrl: rConfig.supportUrl || undefined,
@@ -82,7 +84,7 @@ class ConfigService {
     const viteConfig = {
       apiUrl: selectedEndpoint.url,
       domain: (import.meta.env.VITE_SYSTEM_DOMAIN as string | undefined) ?? 'localhost',
-      httpPort: parseInt((import.meta.env.VITE_HTTP_PORT as string | undefined) ?? '7322'),
+      httpPort: Number.parseInt((import.meta.env.VITE_HTTP_PORT as string | undefined) ?? '7322'),
       environment: import.meta.env.MODE as 'development' | 'production',
       buildType: apiConnectionService.getBuildType(),
     };

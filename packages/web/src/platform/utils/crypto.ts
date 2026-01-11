@@ -42,7 +42,7 @@ export class CryptoService {
 }
 
 export class SecureMemoryStorage {
-  private storage = new Map<string, string>();
+  private readonly storage = new Map<string, string>();
   private masterPassword: string;
 
   constructor(private readonly cryptoService: CryptoService) {

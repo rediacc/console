@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type {
   FullConfig,
   FullResult,
@@ -22,8 +22,8 @@ import type {
  *   └── summary.txt
  */
 export default class TextFileReporter implements Reporter {
-  private outputDir: string;
-  private testResults: Map<string, { test: TestCase; result: TestResult }> = new Map();
+  private readonly outputDir: string;
+  private readonly testResults: Map<string, { test: TestCase; result: TestResult }> = new Map();
   private startTime: Date = new Date();
 
   constructor(options: { outputDir?: string } = {}) {
@@ -87,8 +87,8 @@ export default class TextFileReporter implements Reporter {
   private sanitizeFilename(title: string): string {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+      .replaceAll(/[^a-z0-9]+/g, '-')
+      .replaceAll(/^-+|-+$/g, '')
       .substring(0, 100);
   }
 
@@ -96,27 +96,39 @@ export default class TextFileReporter implements Reporter {
    * Unescape literal \n and \t sequences in log output.
    */
   private unescapeLogOutput(text: string): string {
-    return text.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+    return text.replaceAll('\\n', '\n').replaceAll('\\t', '\t');
   }
 
-  private buildTestOutput(test: TestCase, result: TestResult): string {
-    const lines: string[] = [];
+  /**
+   * Convert output buffer or string to unescaped text.
+   */
+  private formatOutput(output: string | Buffer): string {
+    const text = typeof output === 'string' ? output : output.toString('utf-8');
+    return this.unescapeLogOutput(text);
+  }
 
-    // Header
-    lines.push('='.repeat(80));
-    lines.push(`TEST: ${test.title}`);
-    lines.push('='.repeat(80));
-    lines.push('');
+  /**
+   * Build header section for test output.
+   */
+  private buildTestHeader(test: TestCase, result: TestResult): string[] {
+    return [
+      '='.repeat(80),
+      `TEST: ${test.title}`,
+      '='.repeat(80),
+      '',
+      `File: ${test.location.file}:${test.location.line}`,
+      `Status: ${result.status.toUpperCase()}`,
+      `Duration: ${result.duration}ms`,
+      `Retry: ${result.retry}`,
+      `Start Time: ${result.startTime.toISOString()}`,
+      '',
+    ];
+  }
 
-    // Test info
-    lines.push(`File: ${test.location.file}:${test.location.line}`);
-    lines.push(`Status: ${result.status.toUpperCase()}`);
-    lines.push(`Duration: ${result.duration}ms`);
-    lines.push(`Retry: ${result.retry}`);
-    lines.push(`Start Time: ${result.startTime.toISOString()}`);
-    lines.push('');
-
-    // Parent describe blocks
+  /**
+   * Build suite path section if test has parent describe blocks.
+   */
+  private buildSuiteSection(test: TestCase): string[] {
     const parents: string[] = [];
     let parent: Suite | undefined = test.parent;
     while (parent) {
@@ -125,95 +137,124 @@ export default class TextFileReporter implements Reporter {
       }
       parent = parent.parent;
     }
-    if (parents.length > 0) {
-      lines.push(`Suite: ${parents.join(' > ')}`);
-      lines.push('');
+
+    if (parents.length === 0) {
+      return [];
     }
 
-    // Stdout
-    if (result.stdout.length > 0) {
-      lines.push('-'.repeat(40));
-      lines.push('STDOUT:');
-      lines.push('-'.repeat(40));
-      for (const output of result.stdout) {
-        const text = typeof output === 'string' ? output : output.toString('utf-8');
-        lines.push(this.unescapeLogOutput(text));
-      }
-      lines.push('');
-    }
-
-    // Stderr
-    if (result.stderr.length > 0) {
-      lines.push('-'.repeat(40));
-      lines.push('STDERR:');
-      lines.push('-'.repeat(40));
-      for (const output of result.stderr) {
-        const text = typeof output === 'string' ? output : output.toString('utf-8');
-        lines.push(this.unescapeLogOutput(text));
-      }
-      lines.push('');
-    }
-
-    // Errors
-    if (result.errors.length > 0) {
-      lines.push('-'.repeat(40));
-      lines.push('ERRORS:');
-      lines.push('-'.repeat(40));
-      for (const error of result.errors) {
-        if (error.message) {
-          lines.push(`Message: ${error.message}`);
-        }
-        if (error.stack) {
-          lines.push('Stack:');
-          lines.push(error.stack);
-        }
-        lines.push('');
-      }
-    }
-
-    // Attachments
-    if (result.attachments.length > 0) {
-      lines.push('-'.repeat(40));
-      lines.push('ATTACHMENTS:');
-      lines.push('-'.repeat(40));
-      for (const attachment of result.attachments) {
-        lines.push('');
-        lines.push(`- ${attachment.name}: ${attachment.contentType}`);
-        if (attachment.body) {
-          const bodyStr = attachment.body.toString('utf-8');
-          lines.push('');
-          if (bodyStr.length < 10000) {
-            lines.push(this.unescapeLogOutput(bodyStr));
-          } else {
-            lines.push(`[Content too large: ${bodyStr.length} bytes]`);
-          }
-        }
-      }
-      lines.push('');
-    }
-
-    lines.push('='.repeat(80));
-    lines.push(`Generated: ${new Date().toISOString()}`);
-    lines.push('='.repeat(80));
-
-    return lines.join('\n');
+    return [`Suite: ${parents.join(' > ')}`, ''];
   }
 
-  private buildSummary(result: FullResult, durationSeconds: number): string {
-    const lines: string[] = [];
+  /**
+   * Build a labeled section with outputs (stdout/stderr).
+   */
+  private buildOutputSection(label: string, outputs: (string | Buffer)[]): string[] {
+    if (outputs.length === 0) {
+      return [];
+    }
 
-    lines.push('='.repeat(80));
-    lines.push('TEST RUN SUMMARY');
-    lines.push('='.repeat(80));
+    const lines: string[] = ['-'.repeat(40), `${label}:`, '-'.repeat(40)];
+    for (const output of outputs) {
+      lines.push(this.formatOutput(output));
+    }
     lines.push('');
-    lines.push(`Start Time: ${this.startTime.toISOString()}`);
-    lines.push(`End Time: ${new Date().toISOString()}`);
-    lines.push(`Duration: ${durationSeconds.toFixed(2)}s`);
-    lines.push(`Status: ${result.status.toUpperCase()}`);
-    lines.push('');
+    return lines;
+  }
 
-    // Count by status
-    const counts = {
+  /**
+   * Build errors section from test result.
+   */
+  private buildErrorsSection(errors: TestResult['errors']): string[] {
+    if (errors.length === 0) {
+      return [];
+    }
+
+    const lines: string[] = ['-'.repeat(40), 'ERRORS:', '-'.repeat(40)];
+    for (const error of errors) {
+      if (error.message) {
+        lines.push(`Message: ${error.message}`);
+      }
+      if (error.stack) {
+        lines.push('Stack:', error.stack);
+      }
+      lines.push('');
+    }
+    return lines;
+  }
+
+  /**
+   * Format a single attachment's body content.
+   */
+  private formatAttachmentBody(body: Buffer): string {
+    const bodyStr = body.toString('utf-8');
+    if (bodyStr.length < 10000) {
+      return this.unescapeLogOutput(bodyStr);
+    }
+    return `[Content too large: ${bodyStr.length} bytes]`;
+  }
+
+  /**
+   * Build attachments section from test result.
+   */
+  private buildAttachmentsSection(attachments: TestResult['attachments']): string[] {
+    if (attachments.length === 0) {
+      return [];
+    }
+
+    const lines: string[] = ['-'.repeat(40), 'ATTACHMENTS:', '-'.repeat(40)];
+    for (const attachment of attachments) {
+      lines.push('', `- ${attachment.name}: ${attachment.contentType}`);
+      if (attachment.body) {
+        lines.push('', this.formatAttachmentBody(attachment.body));
+      }
+    }
+    lines.push('');
+    return lines;
+  }
+
+  /**
+   * Build footer section for test output.
+   */
+  private buildTestFooter(): string[] {
+    return ['='.repeat(80), `Generated: ${new Date().toISOString()}`, '='.repeat(80)];
+  }
+
+  private buildTestOutput(test: TestCase, result: TestResult): string {
+    const sections: string[][] = [
+      this.buildTestHeader(test, result),
+      this.buildSuiteSection(test),
+      this.buildOutputSection('STDOUT', result.stdout),
+      this.buildOutputSection('STDERR', result.stderr),
+      this.buildErrorsSection(result.errors),
+      this.buildAttachmentsSection(result.attachments),
+      this.buildTestFooter(),
+    ];
+
+    return sections.flat().join('\n');
+  }
+
+  /**
+   * Build summary header section with timing information.
+   */
+  private buildSummaryHeader(result: FullResult, durationSeconds: number): string[] {
+    return [
+      '='.repeat(80),
+      'TEST RUN SUMMARY',
+      '='.repeat(80),
+      '',
+      `Start Time: ${this.startTime.toISOString()}`,
+      `End Time: ${new Date().toISOString()}`,
+      `Duration: ${durationSeconds.toFixed(2)}s`,
+      `Status: ${result.status.toUpperCase()}`,
+      '',
+    ];
+  }
+
+  /**
+   * Count test results by status.
+   */
+  private countResultsByStatus(): Record<string, number> {
+    const counts: Record<string, number> = {
       passed: 0,
       failed: 0,
       timedOut: 0,
@@ -225,74 +266,134 @@ export default class TextFileReporter implements Reporter {
       counts[testResult.status]++;
     }
 
-    lines.push('-'.repeat(40));
-    lines.push('RESULTS:');
-    lines.push('-'.repeat(40));
-    lines.push(`  Passed:      ${counts.passed}`);
-    lines.push(`  Failed:      ${counts.failed}`);
-    lines.push(`  Timed Out:   ${counts.timedOut}`);
-    lines.push(`  Skipped:     ${counts.skipped}`);
-    lines.push(`  Interrupted: ${counts.interrupted}`);
-    lines.push(`  Total:       ${this.testResults.size}`);
-    lines.push('');
+    return counts;
+  }
 
-    // List failed tests
+  /**
+   * Build results counts section.
+   */
+  private buildResultsCountSection(counts: Record<string, number>): string[] {
+    return [
+      '-'.repeat(40),
+      'RESULTS:',
+      '-'.repeat(40),
+      `  Passed:      ${counts.passed}`,
+      `  Failed:      ${counts.failed}`,
+      `  Timed Out:   ${counts.timedOut}`,
+      `  Skipped:     ${counts.skipped}`,
+      `  Interrupted: ${counts.interrupted}`,
+      `  Total:       ${this.testResults.size}`,
+      '',
+    ];
+  }
+
+  /**
+   * Format a single failed test entry.
+   */
+  private formatFailedTestEntry(test: TestCase, testResult: TestResult): string[] {
+    const lines: string[] = [
+      `  [${testResult.status.toUpperCase()}] ${test.title}`,
+      `    File: ${test.location.file}:${test.location.line}`,
+    ];
+
+    const hasErrorMessage = testResult.errors.length > 0 && testResult.errors[0].message;
+    if (hasErrorMessage) {
+      const msg = testResult.errors[0].message.split('\n')[0];
+      lines.push(`    Error: ${msg.substring(0, 100)}`);
+    }
+
+    return lines;
+  }
+
+  /**
+   * Build failed tests section.
+   */
+  private buildFailedTestsSection(): string[] {
     const failedTests = Array.from(this.testResults.values()).filter(
       ({ result }) => result.status === 'failed' || result.status === 'timedOut'
     );
 
-    if (failedTests.length > 0) {
-      lines.push('-'.repeat(40));
-      lines.push('FAILED TESTS:');
-      lines.push('-'.repeat(40));
-      for (const { test, result: testResult } of failedTests) {
-        lines.push(`  [${testResult.status.toUpperCase()}] ${test.title}`);
-        lines.push(`    File: ${test.location.file}:${test.location.line}`);
-        if (testResult.errors.length > 0 && testResult.errors[0].message) {
-          const msg = testResult.errors[0].message.split('\n')[0];
-          lines.push(`    Error: ${msg.substring(0, 100)}`);
-        }
-      }
-      lines.push('');
+    if (failedTests.length === 0) {
+      return [];
     }
 
-    // List all tests by file
-    lines.push('-'.repeat(40));
-    lines.push('ALL TESTS BY FILE:');
-    lines.push('-'.repeat(40));
+    const lines: string[] = ['-'.repeat(40), 'FAILED TESTS:', '-'.repeat(40)];
+    for (const { test, result: testResult } of failedTests) {
+      lines.push(...this.formatFailedTestEntry(test, testResult));
+    }
+    lines.push('');
+    return lines;
+  }
 
+  /**
+   * Group test results by file name.
+   */
+  private groupResultsByFile(): Map<string, { test: TestCase; result: TestResult }[]> {
     const byFile = new Map<string, { test: TestCase; result: TestResult }[]>();
     for (const entry of this.testResults.values()) {
       const file = path.basename(entry.test.location.file);
-      if (!byFile.has(file)) {
-        byFile.set(file, []);
-      }
-      byFile.get(file)!.push(entry);
+      const existing = byFile.get(file) ?? [];
+      existing.push(entry);
+      byFile.set(file, existing);
     }
+    return byFile;
+  }
 
+  /**
+   * Lookup table for status icons.
+   */
+  private static readonly STATUS_ICONS: Record<string, string> = {
+    passed: '✓',
+    failed: '✗',
+    skipped: '○',
+  };
+
+  /**
+   * Get status icon for a test result status.
+   */
+  private getStatusIcon(status: string): string {
+    return TextFileReporter.STATUS_ICONS[status] ?? '!';
+  }
+
+  /**
+   * Build tests by file section.
+   */
+  private buildTestsByFileSection(): string[] {
+    const lines: string[] = ['-'.repeat(40), 'ALL TESTS BY FILE:', '-'.repeat(40)];
+
+    const byFile = this.groupResultsByFile();
     const sortedFiles = Array.from(byFile.keys()).sort();
+
     for (const file of sortedFiles) {
-      lines.push('');
-      lines.push(`  ${file}:`);
+      lines.push('', `  ${file}:`);
       const tests = byFile.get(file)!;
       for (const { test, result: testResult } of tests) {
-        const statusIcon =
-          testResult.status === 'passed'
-            ? '✓'
-            : testResult.status === 'failed'
-              ? '✗'
-              : testResult.status === 'skipped'
-                ? '○'
-                : '!';
+        const statusIcon = this.getStatusIcon(testResult.status);
         lines.push(`    ${statusIcon} ${test.title} (${testResult.duration}ms)`);
       }
     }
 
-    lines.push('');
-    lines.push('='.repeat(80));
-    lines.push(`Generated: ${new Date().toISOString()}`);
-    lines.push('='.repeat(80));
+    return lines;
+  }
 
-    return lines.join('\n');
+  /**
+   * Build summary footer section.
+   */
+  private buildSummaryFooter(): string[] {
+    return ['', '='.repeat(80), `Generated: ${new Date().toISOString()}`, '='.repeat(80)];
+  }
+
+  private buildSummary(result: FullResult, durationSeconds: number): string {
+    const counts = this.countResultsByStatus();
+
+    const sections: string[][] = [
+      this.buildSummaryHeader(result, durationSeconds),
+      this.buildResultsCountSection(counts),
+      this.buildFailedTestsSection(),
+      this.buildTestsByFileSection(),
+      this.buildSummaryFooter(),
+    ];
+
+    return sections.flat().join('\n');
   }
 }

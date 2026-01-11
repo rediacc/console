@@ -379,6 +379,16 @@
     "moreTeams": "+{{count}} daha fazla",
     "selectTeams": "Takımları seçin..."
   },
+  "terminal": {
+    "terminal": "Terminal",
+    "connecting": "Bağlanıyor",
+    "connectionFailed": "Bağlantı başarısız",
+    "connectedTo": "{{host}} adresine bağlandı",
+    "establishingConnection": "{{host}} adresine SSH bağlantısı kuruluyor...",
+    "waitingForConnection": "Bağlantı bekleniyor...",
+    "reconnect": "Yeniden bağlan",
+    "popout": "Yeni pencerede aç"
+  },
   "theme": {
     "dark": "Koyu",
     "label": "Tema",
@@ -783,6 +793,14 @@
   "warnings": {
     "sandboxEnvironment": "Sandbox Ortamı",
     "sandboxMessage": "Güncellemeler sırasında veriler sıfırlanabilir. Sadece test içindir."
+  },
+  "vscodeSelection": {
+    "title": "VS Code Kurulumunu Seçin",
+    "open": "Aç",
+    "description": "Birden fazla VS Code kurulumu tespit edildi. Hangisini kullanmak istediğinizi seçin:",
+    "windowsVSCode": "Windows için VS Code",
+    "wslVSCode": "WSL için VS Code (Linux)",
+    "rememberChoice": "Seçimimi hatırla"
   },
   "yes": "Evet",
   "yesterday": "Dün"

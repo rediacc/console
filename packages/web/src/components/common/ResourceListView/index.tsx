@@ -90,8 +90,9 @@ function ResourceListView<T extends object = Record<string, unknown>>({
     : resourceType;
 
   const resolvedPagination =
-    pagination !== false
-      ? {
+    pagination === false
+      ? false
+      : {
           showSizeChanger: true,
           size: 'small' as const,
           showTotal: (total: number, range: [number, number]) =>
@@ -103,8 +104,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
           pageSizeOptions: ['10', '20', '50', '100'],
           defaultPageSize: 20,
           ...pagination,
-        }
-      : false;
+        };
 
   const getRowKey = (record: T, index: number): Key => {
     if (typeof rowKey === 'function') return rowKey(record);
@@ -151,88 +151,95 @@ function ResourceListView<T extends object = Record<string, unknown>>({
       )}
 
       <LoadingWrapper loading={loading} centered minHeight={240}>
-        {data.length === 0 ? (
-          <Empty
-            description={
-              <Flex vertical align="center">
-                <Typography.Text strong>{resolvedEmptyDescription}</Typography.Text>
-                <Typography.Text>
-                  {onCreateNew
-                    ? t('resourceList.getStartedMessage', { resource: singularResourceType })
-                    : t('resourceList.noResourcesFound', { resources: resourceType })}
-                </Typography.Text>
-                {(onCreateNew ?? onRefresh) && (
-                  <Flex align="center" justify="center">
-                    {onCreateNew && (
-                      <Tooltip title={resolvedCreateButtonText}>
-                        <Button
-                          icon={<PlusOutlined />}
-                          onClick={onCreateNew}
-                          data-testid="resource-list-create-new"
-                          aria-label={resolvedCreateButtonText}
-                        />
-                      </Tooltip>
-                    )}
-                    {onRefresh && (
-                      <Tooltip title={t('actions.refresh')}>
-                        <Button
-                          shape="circle"
-                          icon={<ReloadOutlined />}
-                          onClick={onRefresh}
-                          data-testid={refreshTestId ?? 'resource-list-refresh'}
-                          aria-label={t('actions.refresh')}
-                        />
-                      </Tooltip>
+        {(() => {
+          if (data.length === 0) {
+            return (
+              <Empty
+                description={
+                  <Flex vertical align="center">
+                    <Typography.Text strong>{resolvedEmptyDescription}</Typography.Text>
+                    <Typography.Text>
+                      {onCreateNew
+                        ? t('resourceList.getStartedMessage', { resource: singularResourceType })
+                        : t('resourceList.noResourcesFound', { resources: resourceType })}
+                    </Typography.Text>
+                    {(onCreateNew ?? onRefresh) && (
+                      <Flex align="center" justify="center">
+                        {onCreateNew && (
+                          <Tooltip title={resolvedCreateButtonText}>
+                            <Button
+                              icon={<PlusOutlined />}
+                              onClick={onCreateNew}
+                              data-testid="resource-list-create-new"
+                              aria-label={resolvedCreateButtonText}
+                            />
+                          </Tooltip>
+                        )}
+                        {onRefresh && (
+                          <Tooltip title={t('actions.refresh')}>
+                            <Button
+                              shape="circle"
+                              icon={<ReloadOutlined />}
+                              onClick={onRefresh}
+                              data-testid={refreshTestId ?? 'resource-list-refresh'}
+                              aria-label={t('actions.refresh')}
+                            />
+                          </Tooltip>
+                        )}
+                      </Flex>
                     )}
                   </Flex>
+                }
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                data-testid="resource-list-empty"
+              />
+            );
+          } else if (isMobile && mobileRender) {
+            return (
+              <List
+                dataSource={data}
+                renderItem={(record, index) => (
+                  <List.Item
+                    key={getRowKey(record, index)}
+                    className="mobile-list-item"
+                    data-testid={getRowDataTestId(record)}
+                  >
+                    {mobileRender(record, index)}
+                  </List.Item>
                 )}
-              </Flex>
-            }
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            data-testid="resource-list-empty"
-          />
-        ) : isMobile && mobileRender ? (
-          <List
-            dataSource={data}
-            renderItem={(record, index) => (
-              <List.Item
-                key={getRowKey(record, index)}
-                className="mobile-list-item"
-                data-testid={getRowDataTestId(record)}
-              >
-                {mobileRender(record, index)}
-              </List.Item>
-            )}
-            pagination={
-              resolvedPagination
-                ? {
-                    size: resolvedPagination.size,
-                    showSizeChanger: resolvedPagination.showSizeChanger,
-                    showTotal: resolvedPagination.showTotal,
-                    pageSizeOptions: resolvedPagination.pageSizeOptions,
-                    defaultPageSize: resolvedPagination.defaultPageSize,
-                  }
-                : false
-            }
-            split={false}
-          />
-        ) : (
-          <Table<T>
-            columns={columns}
-            dataSource={data}
-            rowKey={rowKey}
-            pagination={resolvedPagination}
-            onRow={(record, index) => ({
-              ...onRow?.(record, index),
-              'data-testid': getRowDataTestId(record),
-            })}
-            rowSelection={rowSelection}
-            expandable={expandable}
-            rowClassName={rowClassName}
-            scroll={{ x: true }}
-            data-testid={dataTestId ?? 'resource-list-table'}
-          />
-        )}
+                pagination={
+                  resolvedPagination
+                    ? {
+                        size: resolvedPagination.size,
+                        showSizeChanger: resolvedPagination.showSizeChanger,
+                        showTotal: resolvedPagination.showTotal,
+                        pageSizeOptions: resolvedPagination.pageSizeOptions,
+                        defaultPageSize: resolvedPagination.defaultPageSize,
+                      }
+                    : false
+                }
+                split={false}
+              />
+            );
+          }
+          return (
+            <Table<T>
+              columns={columns}
+              dataSource={data}
+              rowKey={rowKey}
+              pagination={resolvedPagination}
+              onRow={(record, index) => ({
+                ...onRow?.(record, index),
+                'data-testid': getRowDataTestId(record),
+              })}
+              rowSelection={rowSelection}
+              expandable={expandable}
+              rowClassName={rowClassName}
+              scroll={{ x: true }}
+              data-testid={dataTestId ?? 'resource-list-table'}
+            />
+          );
+        })()}
       </LoadingWrapper>
     </Card>
   );

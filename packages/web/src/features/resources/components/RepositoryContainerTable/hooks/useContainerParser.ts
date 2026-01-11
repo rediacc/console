@@ -17,6 +17,42 @@ interface UseContainerParserResult {
   pluginContainers: Container[];
 }
 
+function isContainerForRepository(
+  container: Container,
+  repositoryProps: Pick<Repository, 'mount_path' | 'image_path'>,
+  vaultRepositories: VaultStatusRepo[] | undefined
+): boolean {
+  const containerRepoGuid = container.repository;
+  if (!containerRepoGuid) return false;
+
+  const vaultRepo = vaultRepositories?.find((r: VaultStatusRepo) => r.name === containerRepoGuid);
+  if (!vaultRepo) return false;
+
+  return (
+    repositoryProps.mount_path === vaultRepo.mount_path ||
+    repositoryProps.image_path === vaultRepo.image_path
+  );
+}
+
+function extractContainersFromResult(
+  result: VaultStatusResult,
+  repositoryProps: Pick<Repository, 'mount_path' | 'image_path'>
+): { regular: Container[]; plugins: Container[] } {
+  const containerList = result.containers?.containers;
+  if (!containerList || !Array.isArray(containerList)) {
+    return { regular: [], plugins: [] };
+  }
+
+  const repoContainers = containerList.filter((container: Container) =>
+    isContainerForRepository(container, repositoryProps, result.repositories)
+  );
+
+  return {
+    plugins: repoContainers.filter((c: Container) => c.name.startsWith('plugin-')),
+    regular: repoContainers.filter((c: Container) => !c.name.startsWith('plugin-')),
+  };
+}
+
 export function useContainerParser({
   vaultStatus,
   repository,
@@ -49,46 +85,21 @@ export function useContainerParser({
           return;
         }
 
-        if (parsed.status === 'completed' && parsed.rawResult) {
-          const result = JSON.parse(parsed.rawResult) as VaultStatusResult;
-
-          if (result.containers?.containers && Array.isArray(result.containers.containers)) {
-            const repoContainers = result.containers.containers.filter((container: Container) => {
-              const containerRepoGuid = container.repository;
-
-              if (!containerRepoGuid) {
-                return false;
-              }
-
-              const vaultRepo = result.repositories?.find(
-                (r: VaultStatusRepo) => r.name === containerRepoGuid
-              );
-
-              if (!vaultRepo) {
-                return false;
-              }
-
-              return (
-                repository.mount_path === vaultRepo.mount_path ||
-                repository.image_path === vaultRepo.image_path
-              );
-            });
-
-            const plugins = repoContainers.filter((c: Container) => c.name.startsWith('plugin-'));
-
-            const regular = repoContainers.filter((c: Container) => !c.name.startsWith('plugin-'));
-
-            setPluginContainers(plugins);
-            setContainers(regular);
-          } else {
-            setContainers([]);
-            setPluginContainers([]);
-          }
-        } else {
+        if (parsed.status !== 'completed' || !parsed.rawResult) {
           setContainers([]);
           setPluginContainers([]);
+          setLoading(false);
+          return;
         }
 
+        const result = JSON.parse(parsed.rawResult) as VaultStatusResult;
+        const repositoryProps = {
+          mount_path: repository.mount_path,
+          image_path: repository.image_path,
+        };
+        const { regular, plugins } = extractContainersFromResult(result, repositoryProps);
+        setPluginContainers(plugins);
+        setContainers(regular);
         setLoading(false);
       } catch (err: unknown) {
         const errorMessage =
@@ -99,7 +110,7 @@ export function useContainerParser({
     };
 
     parseContainers();
-  }, [vaultStatus, repository.image_path, repository.mount_path, repository.name, refreshKey, t]);
+  }, [vaultStatus, repository.image_path, repository.mount_path, refreshKey, t]);
 
   return { loading, error, containers, pluginContainers };
 }

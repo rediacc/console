@@ -69,5 +69,14 @@ export type {
   SFTPConnectResult,
   SFTPFileInfo,
   SFTPSessionInfo,
+  ContainerExecParams,
+  ContainerLogsParams,
+  ContainerStatsParams,
+  ContainerSessionResult,
+  VSCodeInfo,
+  VSCodeInstallations,
+  VSCodePreference,
+  VSCodeLaunchOptions,
+  VSCodeLaunchResult,
 } from './electron';
 export { isElectron, getElectronAPI } from './electron';

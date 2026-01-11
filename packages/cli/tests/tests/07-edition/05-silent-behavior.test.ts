@@ -135,7 +135,11 @@ test.describe('Silent Edition Behavior @cli @edition', () => {
           }
         });
 
+        // Add retry to handle occasional timing issues on macOS
         test('should accept priority 1 without modification', async () => {
+          // Small delay to ensure previous test's API operations are complete
+          await sleep(300);
+
           const createResult = await ctx.runner.run([
             'run',
             'machine_ping',

@@ -94,14 +94,14 @@ export function parseLogLine(line: string, index: number): ParsedLogLine {
   }
 
   // Extract prefix [function_name]
-  const prefixMatch = trimmedLine.match(PREFIX_PATTERN);
+  const prefixMatch = PREFIX_PATTERN.exec(trimmedLine);
   const prefix = prefixMatch ? prefixMatch[1] : undefined;
   const content = prefixMatch ? trimmedLine.slice(prefixMatch[0].length) : trimmedLine;
 
   // Check for structured log format
-  const timeMatch = content.match(TIME_PATTERN);
-  const levelMatch = content.match(LEVEL_PATTERN);
-  const msgMatch = content.match(MSG_PATTERN);
+  const timeMatch = TIME_PATTERN.exec(content);
+  const levelMatch = LEVEL_PATTERN.exec(content);
+  const msgMatch = MSG_PATTERN.exec(content);
 
   // Structured log line (has both time and level)
   if (timeMatch && levelMatch) {

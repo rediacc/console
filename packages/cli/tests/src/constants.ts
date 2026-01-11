@@ -55,7 +55,7 @@ export const DEFAULT_CLI_TIMEOUT = 30000;
 /** Get configured CLI timeout */
 export function getCliTimeout(): number {
   const timeout = process.env.CLI_TIMEOUT;
-  return timeout ? parseInt(timeout, 10) : DEFAULT_CLI_TIMEOUT;
+  return timeout ? Number.parseInt(timeout, 10) : DEFAULT_CLI_TIMEOUT;
 }
 
 // =============================================================================

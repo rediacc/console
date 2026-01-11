@@ -1,6 +1,6 @@
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { apiClient } from '../services/api.js';
@@ -240,7 +240,7 @@ export function registerContextCommands(program: Command): void {
         const config: LocalMachineConfig = {
           ip: options.ip,
           user: options.user,
-          port: parseInt(options.port, 10),
+          port: Number.parseInt(options.port, 10),
           datastore: options.datastore,
         };
 

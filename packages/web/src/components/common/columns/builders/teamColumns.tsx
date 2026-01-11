@@ -1,4 +1,4 @@
-import { Badge, Button, Flex, Popconfirm, Space, Tooltip, Typography, type TableProps } from 'antd';
+import { Badge, Button, Popconfirm, Space, Tooltip, Typography, type TableProps } from 'antd';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { featureFlags } from '@/config/featureFlags';
 import {
@@ -100,37 +100,35 @@ export const buildTeamColumns = ({
       width: 140,
       responsive: ['xs'],
       render: (_, record: GetOrganizationTeams_ResultSet1) => (
-        <Flex className="w-full">
-          <Space direction="vertical" size={4}>
-            <Tooltip title={`${record.memberCount} ${t('system:tables.teams.members')}`}>
-              <Space size="small">
-                <Badge count={record.memberCount} showZero size="small">
-                  <UserOutlined />
-                </Badge>
-              </Space>
-            </Tooltip>
-            <Tooltip title={`${record.machineCount} ${t('system:tables.teams.machines')}`}>
-              <Space size="small">
-                <DesktopOutlined />
-                <Typography.Text>{record.machineCount}</Typography.Text>
-              </Space>
-            </Tooltip>
-            <Tooltip
-              title={`${record.repositoryCount ?? 0} ${t('system:tables.teams.repositories')}`}
-            >
-              <Space size="small">
-                <DatabaseOutlined />
-                <Typography.Text>{record.repositoryCount ?? 0}</Typography.Text>
-              </Space>
-            </Tooltip>
-            <Tooltip title={`${record.storageCount ?? 0} ${t('system:tables.teams.storage')}`}>
-              <Space size="small">
-                <CloudServerOutlined />
-                <Typography.Text>{record.storageCount ?? 0}</Typography.Text>
-              </Space>
-            </Tooltip>
-          </Space>
-        </Flex>
+        <Space direction="vertical" size={4}>
+          <Tooltip title={`${record.memberCount} ${t('system:tables.teams.members')}`}>
+            <Space size="small">
+              <Badge count={record.memberCount} showZero size="small">
+                <UserOutlined />
+              </Badge>
+            </Space>
+          </Tooltip>
+          <Tooltip title={`${record.machineCount} ${t('system:tables.teams.machines')}`}>
+            <Space size="small">
+              <DesktopOutlined />
+              <Typography.Text>{record.machineCount}</Typography.Text>
+            </Space>
+          </Tooltip>
+          <Tooltip
+            title={`${record.repositoryCount ?? 0} ${t('system:tables.teams.repositories')}`}
+          >
+            <Space size="small">
+              <DatabaseOutlined />
+              <Typography.Text>{record.repositoryCount ?? 0}</Typography.Text>
+            </Space>
+          </Tooltip>
+          <Tooltip title={`${record.storageCount ?? 0} ${t('system:tables.teams.storage')}`}>
+            <Space size="small">
+              <CloudServerOutlined />
+              <Typography.Text>{record.storageCount ?? 0}</Typography.Text>
+            </Space>
+          </Tooltip>
+        </Space>
       ),
     },
     // Separate columns for desktop (show on sm and above)

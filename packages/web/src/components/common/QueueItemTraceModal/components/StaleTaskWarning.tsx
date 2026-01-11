@@ -19,6 +19,50 @@ interface StaleTaskWarningProps {
   onCancel: () => void;
 }
 
+interface AlertConfig {
+  testId: string;
+  titleKey: string;
+  descriptionKey: string;
+  type: 'info' | 'warning' | 'error';
+  icon: React.ReactNode;
+  showAction?: boolean;
+  buttonType?: 'default' | 'primary';
+  buttonTextKey?: string;
+}
+
+const ACTIVE_STATUSES = ['PENDING', 'ASSIGNED', 'PROCESSING'] as const;
+type ActiveStatus = (typeof ACTIVE_STATUSES)[number];
+
+const STALENESS_ALERT_CONFIG: Record<Exclude<TaskStalenessLevel, 'none'>, AlertConfig> = {
+  early: {
+    testId: 'queue-trace-alert-early',
+    titleKey: 'trace.earlyStaleTitle',
+    descriptionKey: 'trace.earlyStaleDescription',
+    type: 'info',
+    icon: <ClockCircleOutlined />,
+  },
+  stale: {
+    testId: 'queue-trace-alert-stale',
+    titleKey: 'trace.staleTitle',
+    descriptionKey: 'trace.staleDescription',
+    type: 'warning',
+    icon: <WarningOutlined />,
+    showAction: true,
+    buttonType: 'default',
+    buttonTextKey: 'trace.cancelTask',
+  },
+  critical: {
+    testId: 'queue-trace-alert-critical',
+    titleKey: 'trace.criticalTitle',
+    descriptionKey: 'trace.criticalDescription',
+    type: 'error',
+    icon: <ExclamationCircleOutlined />,
+    showAction: true,
+    buttonType: 'primary',
+    buttonTextKey: 'trace.cancelStuckTask',
+  },
+};
+
 export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
   taskStaleness,
   queueDetails,
@@ -30,10 +74,7 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
   if (!queueDetails) return null;
 
   const status = normalizeToString(queueDetails, 'status', 'Status');
-  const canBeCancelled = queueDetails.canBeCancelled;
-  const isActive = status === 'PENDING' || status === 'ASSIGNED' || status === 'PROCESSING';
 
-  // Cancelling status
   if (status === 'CANCELLING') {
     return (
       <Alert
@@ -46,68 +87,34 @@ export const StaleTaskWarning: React.FC<StaleTaskWarningProps> = ({
     );
   }
 
-  // Progressive staleness warnings
-  if (taskStaleness === 'early') {
-    return (
-      <Alert
-        data-testid="queue-trace-alert-early"
-        message={t('trace.earlyStaleTitle')}
-        description={t('trace.earlyStaleDescription')}
-        type="info"
-        icon={<ClockCircleOutlined />}
-      />
-    );
-  }
+  if (taskStaleness === 'none') return null;
 
-  if (taskStaleness === 'stale') {
-    return (
-      <Alert
-        data-testid="queue-trace-alert-stale"
-        message={t('trace.staleTitle')}
-        description={t('trace.staleDescription')}
-        type="warning"
-        icon={<WarningOutlined />}
-        action={
-          canBeCancelled && isActive ? (
-            <Button
-              danger
-              size="small"
-              icon={<CloseCircleOutlined />}
-              onClick={onCancel}
-              loading={isCancelling}
-            >
-              {t('trace.cancelTask')}
-            </Button>
-          ) : null
-        }
-      />
-    );
-  }
+  const config = STALENESS_ALERT_CONFIG[taskStaleness];
+  const canBeCancelled = queueDetails.canBeCancelled;
+  const isActive = ACTIVE_STATUSES.includes(status as ActiveStatus);
+  const shouldShowAction = config.showAction && canBeCancelled && isActive;
 
-  if (taskStaleness === 'critical') {
-    return (
-      <Alert
-        data-testid="queue-trace-alert-critical"
-        message={t('trace.criticalTitle')}
-        description={t('trace.criticalDescription')}
-        type="error"
-        icon={<ExclamationCircleOutlined />}
-        action={
-          canBeCancelled && isActive ? (
-            <Button
-              danger
-              type="primary"
-              icon={<CloseCircleOutlined />}
-              onClick={onCancel}
-              loading={isCancelling}
-            >
-              {t('trace.cancelStuckTask')}
-            </Button>
-          ) : null
-        }
-      />
-    );
-  }
-
-  return null;
+  return (
+    <Alert
+      data-testid={config.testId}
+      message={t(config.titleKey)}
+      description={t(config.descriptionKey)}
+      type={config.type}
+      icon={config.icon}
+      action={
+        shouldShowAction ? (
+          <Button
+            danger
+            size={config.buttonType === 'primary' ? undefined : 'small'}
+            type={config.buttonType}
+            icon={<CloseCircleOutlined />}
+            onClick={onCancel}
+            loading={isCancelling}
+          >
+            {t(config.buttonTextKey!)}
+          </Button>
+        ) : undefined
+      }
+    />
+  );
 };

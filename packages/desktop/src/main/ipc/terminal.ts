@@ -25,6 +25,12 @@ interface TerminalConnectParams {
 }
 
 /**
+ * Maximum number of output chunks to buffer for session transfer
+ * This allows history to be replayed when popping out to a new window
+ */
+const OUTPUT_BUFFER_MAX_SIZE = 10000;
+
+/**
  * Active terminal session
  */
 interface TerminalSession {
@@ -33,6 +39,8 @@ interface TerminalSession {
   knownHostsPath?: string;
   cleanupData: () => void;
   cleanupExit: () => void;
+  /** Output buffer for preserving terminal history on transfer */
+  outputBuffer: string[];
 }
 
 /**
@@ -80,8 +88,18 @@ export function registerTerminalHandlers(): void {
 
       const sessionId = ptySession.sessionId;
 
-      // Set up data forwarding to renderer
+      // Output buffer for preserving history on session transfer
+      const outputBuffer: string[] = [];
+
+      // Set up data forwarding to renderer with buffering
       const cleanupData = ptySession.onData((data: string) => {
+        // Buffer the output (circular buffer - keep last N chunks)
+        outputBuffer.push(data);
+        if (outputBuffer.length > OUTPUT_BUFFER_MAX_SIZE) {
+          outputBuffer.shift();
+        }
+
+        // Forward to renderer
         if (!event.sender.isDestroyed()) {
           event.sender.send(`terminal:data:${sessionId}`, data);
         }
@@ -103,6 +121,7 @@ export function registerTerminalHandlers(): void {
         knownHostsPath,
         cleanupData,
         cleanupExit,
+        outputBuffer,
       });
 
       return { sessionId };
@@ -134,6 +153,52 @@ export function registerTerminalHandlers(): void {
   ipcMain.handle('terminal:getSessionCount', (): number => {
     return sessions.size;
   });
+
+  // Transfer terminal session to a new window
+  // Re-registers event listeners to send data to the calling window
+  // Returns buffered output for history replay
+  ipcMain.handle(
+    'terminal:transfer',
+    (event, sessionId: string): { success: boolean; error?: string; buffer?: string } => {
+      const session = sessions.get(sessionId);
+      if (!session) {
+        return { success: false, error: 'Session not found' };
+      }
+
+      // Capture buffer before re-registering listeners
+      const buffer = session.outputBuffer.join('');
+
+      // Cleanup old listeners (pointing to previous window)
+      session.cleanupData();
+      session.cleanupExit();
+
+      // Re-register listeners with new window's webContents
+      const cleanupData = session.ptySession.onData((data: string) => {
+        // Continue buffering for potential future transfers
+        session.outputBuffer.push(data);
+        if (session.outputBuffer.length > OUTPUT_BUFFER_MAX_SIZE) {
+          session.outputBuffer.shift();
+        }
+
+        if (!event.sender.isDestroyed()) {
+          event.sender.send(`terminal:data:${sessionId}`, data);
+        }
+      });
+
+      const cleanupExit = session.ptySession.onExit((exitCode: number) => {
+        if (!event.sender.isDestroyed()) {
+          event.sender.send(`terminal:exit:${sessionId}`, exitCode);
+        }
+        void cleanupSession(sessionId);
+      });
+
+      // Update session with new cleanup functions
+      session.cleanupData = cleanupData;
+      session.cleanupExit = cleanupExit;
+
+      return { success: true, buffer };
+    }
+  );
 }
 
 /**

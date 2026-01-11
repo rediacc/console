@@ -131,7 +131,7 @@ class FeatureFlags {
   private isDevelopment = false;
   private isPowerModeActive = false; // Global power mode state (session-only)
   private isLocalhostModeActive = false; // Localhost mode state (session-only)
-  private listeners: Set<() => void> = new Set();
+  private readonly listeners: Set<() => void> = new Set();
 
   constructor() {
     // Will be initialized after API connection is established
@@ -151,7 +151,7 @@ class FeatureFlags {
    * Define all feature flags here
    * This is the single source of truth for all beta features
    */
-  private flags: Record<string, FeatureFlag> = {
+  private readonly flags: Record<string, FeatureFlag> = {
     // Ceph Storage - Disabled
     ceph: {
       enabled: false,
@@ -247,65 +247,65 @@ class FeatureFlags {
   };
 
   /**
+   * Check basic flag requirements (explicit disable, localhost-only)
+   */
+  private checkBasicRequirements(flag: FeatureFlag, onLocalhost: boolean): boolean | null {
+    // Feature is explicitly disabled (enabled: false)
+    if (flag.enabled === false) return false;
+    // Localhost-only feature check
+    if (flag.localhostOnly) return onLocalhost;
+    return null; // Continue checking
+  }
+
+  /**
+   * Check if feature is hidden on localhost (when mode not active)
+   */
+  private checkLocalhostHiddenFeatures(flag: FeatureFlag, onLocalhost: boolean): boolean | null {
+    if (!onLocalhost) return null;
+    // Hide features with requirement flags until Ctrl+Shift+E is pressed
+    if (flag.requiresLocalhost || flag.requiresPowerMode || flag.requiresExpertMode) {
+      return false;
+    }
+    return true; // Production features show on localhost
+  }
+
+  /**
+   * Check feature requirements on non-localhost domains
+   */
+  private checkNonLocalhostRequirements(flag: FeatureFlag): boolean {
+    if (flag.requiresPowerMode && !this.isPowerModeActive) return false;
+    if (flag.requiresLocalhost && !this.isDevelopment) return false;
+    if (flag.requiresBuildType) {
+      const currentBuildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
+      if (currentBuildType !== flag.requiresBuildType) return false;
+    }
+    return true;
+  }
+
+  /**
    * Check if a feature is enabled
    * @param featureName - The name of the feature to check
    * @returns true if the feature should be visible/enabled
    */
   isEnabled(featureName: string): boolean {
     const flag = this.flags[featureName] as FeatureFlag | undefined;
-
-    // Feature doesn't exist
-    if (flag === undefined) {
-      return false;
-    }
+    if (flag === undefined) return false;
 
     const onLocalhost = this.isRunningOnLocalhost();
 
-    // Localhost mode: Enable ALL features when active (ignore enabled flag)
-    if (onLocalhost && this.isLocalhostModeActive) {
-      return true;
-    }
+    // Localhost mode: Enable ALL features when active
+    if (onLocalhost && this.isLocalhostModeActive) return true;
 
-    // Feature is explicitly disabled (enabled: false)
-    // If enabled is not specified, it defaults to true
-    if (flag.enabled === false) {
-      return false;
-    }
+    // Check basic requirements
+    const basicResult = this.checkBasicRequirements(flag, onLocalhost);
+    if (basicResult !== null) return basicResult;
 
-    if (flag.localhostOnly) {
-      return onLocalhost;
-    }
+    // Check localhost-specific hiding
+    const localhostResult = this.checkLocalhostHiddenFeatures(flag, onLocalhost);
+    if (localhostResult !== null) return localhostResult;
 
-    // On localhost domain (but mode not active), hide features with requirement flags
-    // This prevents auto-showing of beta/power features until Ctrl+Shift+E is pressed
-    if (onLocalhost) {
-      if (flag.requiresLocalhost || flag.requiresPowerMode || flag.requiresExpertMode) {
-        return false;
-      }
-      // Production features (no requirement flags) still show
-      return true;
-    }
-
-    // On non-localhost domains, check requirements normally
-    // Check power mode requirement
-    if (flag.requiresPowerMode && !this.isPowerModeActive) {
-      return false;
-    }
-
-    // Check localhost requirement
-    if (flag.requiresLocalhost && !this.isDevelopment) {
-      return false;
-    }
-
-    // Check build type requirement
-    if (flag.requiresBuildType) {
-      const currentBuildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
-      if (currentBuildType !== flag.requiresBuildType) {
-        return false;
-      }
-    }
-
-    return true;
+    // Check non-localhost requirements
+    return this.checkNonLocalhostRequirements(flag);
   }
 
   /**

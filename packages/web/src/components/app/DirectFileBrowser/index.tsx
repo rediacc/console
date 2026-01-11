@@ -35,8 +35,8 @@ import { useTranslation } from 'react-i18next';
 import { MobileCard } from '@/components/common/MobileCard';
 import { SizedModal } from '@/components/common/SizedModal';
 import { useSftp, type SFTPFile } from '@/hooks/sftp/useSftp';
+import { isElectron } from '@/types';
 import { ModalSize } from '@/types/modal';
-import { isElectron } from '@/utils/environment';
 import { formatBytes } from '@/utils/formatters';
 import { showMessage } from '@/utils/messages';
 import { DesktopPrompt } from './DesktopPrompt';
@@ -284,23 +284,27 @@ export const DirectFileBrowser: React.FC<DirectFileBrowserProps> = ({
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
-      render: (name: string, file: SFTPFile) => (
-        <Dropdown menu={{ items: getContextMenu(file) }} trigger={['contextMenu']}>
-          <Space
-            className={file.isDirectory ? 'cursor-pointer' : 'cursor-default'}
-            onClick={() => handleItemClick(file)}
-          >
-            {file.isDirectory ? (
-              <FolderOpenOutlined style={{ color: token.colorPrimary }} />
-            ) : file.isSymlink ? (
-              <LinkOutlined style={{ color: token.purple }} />
-            ) : (
-              <FileOutlined />
-            )}
-            <Text className="max-w-[300px]">{name}</Text>
-          </Space>
-        </Dropdown>
-      ),
+      render: (name: string, file: SFTPFile) => {
+        let fileIcon: React.ReactNode;
+        if (file.isDirectory) {
+          fileIcon = <FolderOpenOutlined style={{ color: token.colorPrimary }} />;
+        } else if (file.isSymlink) {
+          fileIcon = <LinkOutlined style={{ color: token.purple }} />;
+        } else {
+          fileIcon = <FileOutlined />;
+        }
+        return (
+          <Dropdown menu={{ items: getContextMenu(file) }} trigger={['contextMenu']}>
+            <Space
+              className={file.isDirectory ? 'cursor-pointer' : 'cursor-default'}
+              onClick={() => handleItemClick(file)}
+            >
+              {fileIcon}
+              <Text className="max-w-[300px]">{name}</Text>
+            </Space>
+          </Dropdown>
+        );
+      },
     },
     {
       title: t('common:fileBrowser.size'),
@@ -456,13 +460,14 @@ export const DirectFileBrowser: React.FC<DirectFileBrowserProps> = ({
                                 if (!file.isDirectory) setSelectedFile(file);
                               }}
                             />
-                            {file.isDirectory ? (
-                              <FolderOpenOutlined style={{ color: token.colorPrimary }} />
-                            ) : file.isSymlink ? (
-                              <LinkOutlined style={{ color: token.purple }} />
-                            ) : (
-                              <FileOutlined />
-                            )}
+                            {(() => {
+                              if (file.isDirectory) {
+                                return <FolderOpenOutlined style={{ color: token.colorPrimary }} />;
+                              } else if (file.isSymlink) {
+                                return <LinkOutlined style={{ color: token.purple }} />;
+                              }
+                              return <FileOutlined />;
+                            })()}
                             <Flex vertical className="flex-1 min-w-0">
                               {file.isDirectory ? (
                                 <Typography.Link strong className="truncate">

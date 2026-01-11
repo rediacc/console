@@ -13,11 +13,11 @@ export function parseMemorySize(sizeStr: string): number {
   if (!sizeStr || typeof sizeStr !== 'string') return 0;
 
   // Extract number and unit from string like "685Mi", "3.8Gi", "2.5 G", "15GB" etc.
-  const match = sizeStr.match(/^([\d.]+)\s*([KMGT]i?B?)?$/i);
+  const match = /^([\d.]+)\s*([KMGT]i?B?)?$/i.exec(sizeStr);
   if (!match) return 0;
 
-  const value = parseFloat(match[1]);
-  if (isNaN(value)) return 0;
+  const value = Number.parseFloat(match[1]);
+  if (Number.isNaN(value)) return 0;
 
   const unit = (match[2] || '').toUpperCase();
 
@@ -72,8 +72,8 @@ export function calculateResourcePercent(
 ): number {
   // Use backend-provided percentage if available and valid
   if (usePercent) {
-    const backendPercent = parseInt(usePercent);
-    if (!isNaN(backendPercent) && backendPercent >= 0) {
+    const backendPercent = Number.parseInt(usePercent);
+    if (!Number.isNaN(backendPercent) && backendPercent >= 0) {
       return Math.min(100, backendPercent);
     }
   }

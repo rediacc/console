@@ -80,9 +80,9 @@ export interface MachineConnectionInfo {
  * Repository connection class for managing SSH connections to repositories
  */
 export class RepositoryConnection {
-  private teamName: string;
-  private machineName: string;
-  private repositoryName: string;
+  private readonly teamName: string;
+  private readonly machineName: string;
+  private readonly repositoryName: string;
 
   private machineInfo: Record<string, unknown> | null = null;
   private repoInfo: Record<string, unknown> | null = null;

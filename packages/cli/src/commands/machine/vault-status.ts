@@ -6,6 +6,8 @@ import {
   parseListResult,
   type MachineWithVaultStatus,
   parseVaultStatus,
+  type ParsedVaultStatus,
+  type SystemInfo,
 } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
@@ -15,6 +17,76 @@ import { outputService } from '../../services/output.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
 import type { OutputFormat } from '../../types/index.js';
+
+function displaySystemInfo(systemInfo: SystemInfo): void {
+  outputService.info(t('commands.machine.vaultStatus.systemSection'));
+
+  if (systemInfo.hostname) {
+    outputService.info(
+      t('commands.machine.vaultStatus.systemHostname', { hostname: systemInfo.hostname })
+    );
+  }
+  if (systemInfo.uptime) {
+    outputService.info(
+      t('commands.machine.vaultStatus.systemUptime', { uptime: systemInfo.uptime })
+    );
+  }
+
+  const resourceDisplays = [
+    { key: 'systemMemory', data: systemInfo.memory },
+    { key: 'systemDisk', data: systemInfo.disk },
+    { key: 'systemDatastore', data: systemInfo.datastore },
+  ];
+
+  for (const { key, data } of resourceDisplays) {
+    outputService.info(
+      t(`commands.machine.vaultStatus.${key}`, {
+        used: data.used,
+        total: data.total,
+        percent: data.use_percent ?? 'N/A',
+      })
+    );
+  }
+}
+
+function displaySummary(summary: ReturnType<typeof getDeploymentSummary>): void {
+  outputService.info(
+    t('commands.machine.vaultStatus.totalRepos', { count: summary.totalRepositories })
+  );
+  outputService.info(t('commands.machine.vaultStatus.mounted', { count: summary.mountedCount }));
+  outputService.info(
+    t('commands.machine.vaultStatus.dockerRunning', { count: summary.dockerRunningCount })
+  );
+}
+
+function displayRepository(repository: ParsedVaultStatus['repositories'][0]): void {
+  const sizeInfo = repository.size_human ? ` (${repository.size_human})` : '';
+  outputService.info(`  - ${repository.name}${sizeInfo}`);
+
+  if (repository.mounted !== undefined) {
+    outputService.info(
+      t('commands.machine.vaultStatus.repoMounted', {
+        mounted: repository.mounted ? t('common.yes') : t('common.no'),
+      })
+    );
+  }
+  if (repository.docker_running !== undefined) {
+    outputService.info(
+      t('commands.machine.vaultStatus.repoDocker', {
+        status: repository.docker_running ? t('common.running') : t('common.stopped'),
+      })
+    );
+  }
+}
+
+function displayRepositories(parsed: ParsedVaultStatus): void {
+  if (parsed.repositories.length === 0) return;
+
+  outputService.info(t('commands.machine.vaultStatus.deployedRepos'));
+  for (const repository of parsed.repositories) {
+    displayRepository(repository);
+  }
+}
 
 export function registerVaultStatusCommand(machine: Command, program: Command): void {
   machine
@@ -43,8 +115,6 @@ export function registerVaultStatusCommand(machine: Command, program: Command): 
         }
 
         const format = program.opts().output as OutputFormat;
-
-        // Use shared parsing service
         const parsed = parseVaultStatus(machine.vaultStatus);
         const summary = getDeploymentSummary(machine);
         const systemInfo = getMachineSystemInfo(machine);
@@ -52,79 +122,18 @@ export function registerVaultStatusCommand(machine: Command, program: Command): 
 
         if (format === 'json') {
           outputService.print({ parsed, summary, systemInfo, listResult }, format);
-        } else {
-          outputService.info(t('commands.machine.vaultStatus.header', { name }));
-          outputService.info(t('commands.machine.vaultStatus.status', { status: summary.status }));
-
-          // Show system info if available
-          if (systemInfo) {
-            outputService.info(t('commands.machine.vaultStatus.systemSection'));
-            if (systemInfo.hostname) {
-              outputService.info(
-                t('commands.machine.vaultStatus.systemHostname', { hostname: systemInfo.hostname })
-              );
-            }
-            if (systemInfo.uptime) {
-              outputService.info(
-                t('commands.machine.vaultStatus.systemUptime', { uptime: systemInfo.uptime })
-              );
-            }
-            outputService.info(
-              t('commands.machine.vaultStatus.systemMemory', {
-                used: systemInfo.memory.used,
-                total: systemInfo.memory.total,
-                percent: systemInfo.memory.use_percent ?? 'N/A',
-              })
-            );
-            outputService.info(
-              t('commands.machine.vaultStatus.systemDisk', {
-                used: systemInfo.disk.used,
-                total: systemInfo.disk.total,
-                percent: systemInfo.disk.use_percent ?? 'N/A',
-              })
-            );
-            outputService.info(
-              t('commands.machine.vaultStatus.systemDatastore', {
-                used: systemInfo.datastore.used,
-                total: systemInfo.datastore.total,
-                percent: systemInfo.datastore.use_percent ?? 'N/A',
-              })
-            );
-          }
-
-          outputService.info(
-            t('commands.machine.vaultStatus.totalRepos', { count: summary.totalRepositories })
-          );
-          outputService.info(
-            t('commands.machine.vaultStatus.mounted', { count: summary.mountedCount })
-          );
-          outputService.info(
-            t('commands.machine.vaultStatus.dockerRunning', { count: summary.dockerRunningCount })
-          );
-
-          if (parsed.repositories.length > 0) {
-            outputService.info(t('commands.machine.vaultStatus.deployedRepos'));
-            parsed.repositories.forEach((repository) => {
-              outputService.info(
-                `  - ${repository.name}${repository.size_human ? ` (${repository.size_human})` : ''}`
-              );
-              if (repository.mounted !== undefined) {
-                outputService.info(
-                  t('commands.machine.vaultStatus.repoMounted', {
-                    mounted: repository.mounted ? t('common.yes') : t('common.no'),
-                  })
-                );
-              }
-              if (repository.docker_running !== undefined) {
-                outputService.info(
-                  t('commands.machine.vaultStatus.repoDocker', {
-                    status: repository.docker_running ? t('common.running') : t('common.stopped'),
-                  })
-                );
-              }
-            });
-          }
+          return;
         }
+
+        outputService.info(t('commands.machine.vaultStatus.header', { name }));
+        outputService.info(t('commands.machine.vaultStatus.status', { status: summary.status }));
+
+        if (systemInfo) {
+          displaySystemInfo(systemInfo);
+        }
+
+        displaySummary(summary);
+        displayRepositories(parsed);
       } catch (error) {
         handleError(error);
       }

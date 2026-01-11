@@ -101,7 +101,7 @@ export interface FieldFormItemProps {
 export interface JsonFieldValidatorResult {
   validator: (rule: unknown, value: unknown) => Promise<void>;
   getValueFromEvent: (e: React.ChangeEvent<HTMLTextAreaElement>) => unknown;
-  getValueProps: (value: unknown) => { value: string | unknown };
+  getValueProps: (value: unknown) => { value: unknown };
 }
 
 export interface ExtraFieldsResult {

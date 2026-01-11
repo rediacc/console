@@ -17,9 +17,9 @@ import LoginPage from '@/pages/login';
 import { selectIsAuthenticated } from '@/store/auth/authSelectors';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { RootState } from '@/store/store';
+import { isElectron } from '@/types';
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth';
 import { getBasePath } from '@/utils/basePath';
-import { isElectron } from '@/utils/environment';
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() =>
@@ -60,6 +60,11 @@ const OrganizationPage = lazy(() =>
 );
 const InfrastructurePage = lazy(() =>
   import('@/features/settings').then((m) => ({ default: m.InfrastructurePage }))
+);
+
+// Electron-only pages (popout windows)
+const TerminalPopout = lazy(() =>
+  import('@/pages/TerminalPopout').then((m) => ({ default: m.TerminalPopout }))
 );
 
 // Loading component
@@ -151,6 +156,16 @@ const AppContent: React.FC = () => {
           <ErrorBoundary>
             <InteractionTracker>
               <Routes>
+                {/* Electron popout windows (standalone, no layout) */}
+                <Route
+                  path="/terminal-popout"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <TerminalPopout />
+                    </Suspense>
+                  }
+                />
+
                 {/* Auth routes */}
                 <Route element={<AuthLayout />}>
                   <Route path="/login" element={<LoginPage />} />

@@ -63,7 +63,7 @@ export function normalizeToNumber<T extends object>(
   const value = normalizeProperty(obj, ...propertyNames);
   if (value === null || value === undefined) return defaultValue;
   const num = Number(value);
-  return isNaN(num) ? defaultValue : num;
+  return Number.isNaN(num) ? defaultValue : num;
 }
 
 /**

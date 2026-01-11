@@ -21,6 +21,34 @@ export function getOutputFormat(): OutputFormat {
   return currentOutputFormat;
 }
 
+/** Output error in JSON format */
+function outputJsonError(cliError: CliError): void {
+  const errorResponse = {
+    success: false,
+    error: {
+      code: cliError.code,
+      message: cliError.message,
+      ...(cliError.details?.length && { details: cliError.details }),
+    },
+    exitCode: cliError.exitCode,
+  };
+  // eslint-disable-next-line no-console -- JSON errors must go to stdout for piping
+  console.log(JSON.stringify(errorResponse, null, 2));
+}
+
+/** Output error in text format */
+function outputTextError(cliError: CliError): void {
+  outputService.error(`Error: ${cliError.message}`);
+  if (!cliError.details?.length) {
+    return;
+  }
+  for (const detail of cliError.details) {
+    if (detail !== cliError.message) {
+      outputService.error(`  - ${detail}`);
+    }
+  }
+}
+
 /**
  * Handle errors with format-aware output.
  *
@@ -38,28 +66,9 @@ export function handleError(error: unknown): never {
   });
 
   if (currentOutputFormat === 'json') {
-    // JSON mode: output error as JSON to stdout for piping
-    const errorResponse = {
-      success: false,
-      error: {
-        code: cliError.code,
-        message: cliError.message,
-        ...(cliError.details?.length && { details: cliError.details }),
-      },
-      exitCode: cliError.exitCode,
-    };
-    // eslint-disable-next-line no-console -- JSON errors must go to stdout for piping
-    console.log(JSON.stringify(errorResponse, null, 2));
+    outputJsonError(cliError);
   } else {
-    // Non-JSON mode: output to stderr
-    outputService.error(`Error: ${cliError.message}`);
-    if (cliError.details?.length) {
-      for (const detail of cliError.details) {
-        if (detail !== cliError.message) {
-          outputService.error(`  - ${detail}`);
-        }
-      }
-    }
+    outputTextError(cliError);
   }
 
   // Fire-and-forget telemetry shutdown (don't block exit)

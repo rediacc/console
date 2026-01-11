@@ -117,79 +117,104 @@ const InfrastructurePage: React.FC = () => {
     [key: string]: unknown;
   };
 
+  const handleRegionSubmit = useCallback(
+    async (
+      data: UnifiedFormData,
+      mode: 'create' | 'edit',
+      existingData?: Partial<GetOrganizationRegions_ResultSet1> | null
+    ) => {
+      if (mode === 'create') {
+        await createRegionMutation.mutateAsync({
+          regionName: data.regionName as string,
+          vaultContent: data.vaultContent ?? '',
+        });
+        return;
+      }
+
+      if (!existingData) return;
+
+      if (data.regionName && data.regionName !== existingData.regionName) {
+        await updateRegionNameMutation.mutateAsync({
+          currentRegionName: existingData.regionName as string,
+          newRegionName: data.regionName,
+        });
+      }
+
+      const vaultData = data.vaultContent;
+      if (vaultData && vaultData !== existingData.vaultContent) {
+        await updateRegionVaultMutation.mutateAsync({
+          regionName: (data.regionName ?? existingData.regionName) as string,
+          vaultContent: vaultData,
+          vaultVersion: (existingData.vaultVersion ?? 0) + 1,
+        });
+      }
+    },
+    [createRegionMutation, updateRegionNameMutation, updateRegionVaultMutation]
+  );
+
+  const handleBridgeSubmit = useCallback(
+    async (
+      data: UnifiedFormData,
+      mode: 'create' | 'edit',
+      existingData?: Partial<GetRegionBridges_ResultSet1> | null
+    ) => {
+      if (mode === 'create') {
+        await createBridgeMutation.mutateAsync({
+          regionName: data.regionName as string,
+          bridgeName: data.bridgeName as string,
+          vaultContent: data.vaultContent ?? '',
+        });
+        return;
+      }
+
+      if (!existingData) return;
+
+      if (data.bridgeName && data.bridgeName !== existingData.bridgeName) {
+        await updateBridgeNameMutation.mutateAsync({
+          regionName: existingData.regionName as string,
+          currentBridgeName: existingData.bridgeName as string,
+          newBridgeName: data.bridgeName,
+        });
+      }
+
+      const vaultData = data.vaultContent;
+      if (vaultData && vaultData !== existingData.vaultContent) {
+        await updateBridgeVaultMutation.mutateAsync({
+          regionName: (data.regionName ?? existingData.regionName) as string,
+          bridgeName: (data.bridgeName ?? existingData.bridgeName) as string,
+          vaultContent: vaultData,
+          vaultVersion: (existingData.vaultVersion ?? 0) + 1,
+        });
+      }
+    },
+    [createBridgeMutation, updateBridgeNameMutation, updateBridgeVaultMutation]
+  );
+
   const handleUnifiedModalSubmit = useCallback(
     async (data: UnifiedFormData) => {
       const modalData = unifiedModal.state.data;
       if (!modalData) return;
 
       try {
-        switch (modalData.resourceType) {
-          case 'region':
-            if (modalData.mode === 'create') {
-              await createRegionMutation.mutateAsync({
-                regionName: data.regionName as string,
-                vaultContent: data.vaultContent ?? '',
-              });
-            } else if (modalData.data) {
-              if (data.regionName && data.regionName !== modalData.data.regionName) {
-                await updateRegionNameMutation.mutateAsync({
-                  currentRegionName: modalData.data.regionName as string,
-                  newRegionName: data.regionName,
-                });
-              }
-              const vaultData = data.vaultContent;
-              if (vaultData && vaultData !== modalData.data.vaultContent) {
-                await updateRegionVaultMutation.mutateAsync({
-                  regionName: (data.regionName ?? modalData.data.regionName) as string,
-                  vaultContent: vaultData,
-                  vaultVersion: (modalData.data.vaultVersion ?? 0) + 1,
-                });
-              }
-            }
-            break;
-          case 'bridge':
-            if (modalData.mode === 'create') {
-              await createBridgeMutation.mutateAsync({
-                regionName: data.regionName as string,
-                bridgeName: data.bridgeName as string,
-                vaultContent: data.vaultContent ?? '',
-              });
-            } else if (modalData.data) {
-              const bridgeData = modalData.data as Partial<GetRegionBridges_ResultSet1>;
-              if (data.bridgeName && data.bridgeName !== bridgeData.bridgeName) {
-                await updateBridgeNameMutation.mutateAsync({
-                  regionName: bridgeData.regionName as string,
-                  currentBridgeName: bridgeData.bridgeName as string,
-                  newBridgeName: data.bridgeName,
-                });
-              }
-              const vaultData = data.vaultContent;
-              if (vaultData && vaultData !== bridgeData.vaultContent) {
-                await updateBridgeVaultMutation.mutateAsync({
-                  regionName: (data.regionName ?? bridgeData.regionName) as string,
-                  bridgeName: (data.bridgeName ?? bridgeData.bridgeName) as string,
-                  vaultContent: vaultData,
-                  vaultVersion: (bridgeData.vaultVersion ?? 0) + 1,
-                });
-              }
-            }
-            break;
+        if (modalData.resourceType === 'region') {
+          await handleRegionSubmit(
+            data,
+            modalData.mode,
+            modalData.data as Partial<GetOrganizationRegions_ResultSet1> | null
+          );
+        } else {
+          await handleBridgeSubmit(
+            data,
+            modalData.mode,
+            modalData.data as Partial<GetRegionBridges_ResultSet1> | null
+          );
         }
         closeUnifiedModal();
       } catch {
         // handled by mutation
       }
     },
-    [
-      unifiedModal.state.data,
-      closeUnifiedModal,
-      createRegionMutation,
-      updateRegionNameMutation,
-      updateRegionVaultMutation,
-      createBridgeMutation,
-      updateBridgeNameMutation,
-      updateBridgeVaultMutation,
-    ]
+    [unifiedModal.state.data, closeUnifiedModal, handleRegionSubmit, handleBridgeSubmit]
   );
 
   const handleUnifiedVaultUpdate = useCallback(

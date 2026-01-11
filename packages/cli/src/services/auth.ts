@@ -11,6 +11,92 @@ import { t } from '../i18n/index.js';
 import { EXIT_CODES } from '../types/index.js';
 import { askPassword } from '../utils/prompt.js';
 
+interface MasterPasswordResult {
+  success: boolean;
+  password?: string;
+  error?: string;
+}
+
+async function validateMasterPasswordWithVault(
+  encryptedVault: string,
+  masterPassword: string
+): Promise<boolean> {
+  try {
+    const decrypted = await nodeCryptoProvider.decrypt(encryptedVault, masterPassword);
+    JSON.parse(decrypted);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function promptForMasterPassword(encryptedVault: string): Promise<MasterPasswordResult> {
+  if (!process.stdin.isTTY) {
+    return { success: false, error: 'Cannot prompt in non-interactive mode' };
+  }
+
+  const password = await askPassword(t('prompts.masterPasswordForVault'));
+  const isValid = await validateMasterPasswordWithVault(encryptedVault, password);
+
+  if (!isValid) {
+    return { success: false, error: t('errors.invalidMasterPassword') };
+  }
+
+  return { success: true, password };
+}
+
+async function tryEnvMasterPassword(encryptedVault: string): Promise<MasterPasswordResult> {
+  const envPassword = process.env.REDIACC_MASTER_PASSWORD;
+  if (!envPassword) {
+    return { success: false };
+  }
+
+  const isValid = await validateMasterPasswordWithVault(encryptedVault, envPassword);
+  if (isValid) {
+    return { success: true, password: envPassword };
+  }
+
+  return { success: false };
+}
+
+async function resolveMasterPassword(
+  encryptedVault: string,
+  loginPassword: string,
+  explicitPassword?: string
+): Promise<MasterPasswordResult> {
+  // Explicit password provided - validate it
+  if (explicitPassword) {
+    const isValid = await validateMasterPasswordWithVault(encryptedVault, explicitPassword);
+    if (!isValid) {
+      return { success: false, error: t('errors.invalidMasterPassword') };
+    }
+    return { success: true, password: explicitPassword };
+  }
+
+  // Try login password as master password (common case)
+  const loginValid = await validateMasterPasswordWithVault(encryptedVault, loginPassword);
+  if (loginValid) {
+    return { success: true, password: loginPassword };
+  }
+
+  // Try interactive prompt
+  if (process.stdin.isTTY) {
+    return promptForMasterPassword(encryptedVault);
+  }
+
+  // Non-interactive mode - try env var
+  const envResult = await tryEnvMasterPassword(encryptedVault);
+  if (envResult.success) {
+    return envResult;
+  }
+
+  return {
+    success: false,
+    error:
+      'Master password required but not provided. Use --master-password option or REDIACC_MASTER_PASSWORD environment variable.',
+  };
+}
+
 class AuthService {
   private cachedMasterPassword: string | null = null;
 
@@ -84,70 +170,23 @@ class AuthService {
     // Only store master password if organization has encryption enabled
     const encryptedVaultOrg = authResult.vaultOrganization;
     if (encryptedVaultOrg && isEncrypted(encryptedVaultOrg)) {
-      let effectiveMasterPassword = options.masterPassword;
+      const masterResult = await resolveMasterPassword(
+        encryptedVaultOrg,
+        password,
+        options.masterPassword
+      );
 
-      if (!effectiveMasterPassword) {
-        // Try login password as master password first (common case)
-        const loginPasswordValid = await this.validateMasterPassword(encryptedVaultOrg, password);
-
-        if (loginPasswordValid) {
-          effectiveMasterPassword = password;
-        } else if (process.stdin.isTTY) {
-          // Prompt interactively for master password
-          effectiveMasterPassword = await askPassword(t('prompts.masterPasswordForVault'));
-
-          // Validate the provided master password
-          const isValid = await this.validateMasterPassword(
-            encryptedVaultOrg,
-            effectiveMasterPassword
-          );
-
-          if (!isValid) {
-            return {
-              success: false,
-              message: t('errors.invalidMasterPassword'),
-            };
-          }
-        } else {
-          // Non-interactive mode, check env var
-          const envPassword = process.env.REDIACC_MASTER_PASSWORD;
-          if (envPassword) {
-            const isValid = await this.validateMasterPassword(encryptedVaultOrg, envPassword);
-            if (isValid) {
-              effectiveMasterPassword = envPassword;
-            }
-          }
-
-          if (!effectiveMasterPassword) {
-            return {
-              success: false,
-              message:
-                'Master password required but not provided. Use --master-password option or REDIACC_MASTER_PASSWORD environment variable.',
-            };
-          }
-        }
-      } else {
-        // Explicit master password provided, validate it
-        const isValid = await this.validateMasterPassword(
-          encryptedVaultOrg,
-          effectiveMasterPassword
-        );
-
-        if (!isValid) {
-          return {
-            success: false,
-            message: t('errors.invalidMasterPassword'),
-          };
-        }
+      if (!masterResult.success || !masterResult.password) {
+        return { success: false, message: masterResult.error };
       }
 
       // Store encrypted master password (encrypted with itself as key)
       const encryptedPassword = await nodeCryptoProvider.encrypt(
-        effectiveMasterPassword,
-        effectiveMasterPassword
+        masterResult.password,
+        masterResult.password
       );
       credentials.masterPassword = encryptedPassword;
-      this.cachedMasterPassword = effectiveMasterPassword;
+      this.cachedMasterPassword = masterResult.password;
     } else {
       this.cachedMasterPassword = null;
     }
@@ -212,27 +251,6 @@ class AuthService {
     const encrypted = await nodeCryptoProvider.encrypt(password, password);
     await contextService.setMasterPassword(encrypted);
     this.cachedMasterPassword = password;
-  }
-
-  /**
-   * Validate a master password by attempting to decrypt the vaultOrganization.
-   * Returns true if the password successfully decrypts the vault.
-   */
-  private async validateMasterPassword(
-    encryptedVaultOrganization: string,
-    masterPassword: string
-  ): Promise<boolean> {
-    try {
-      const decrypted = await nodeCryptoProvider.decrypt(
-        encryptedVaultOrganization,
-        masterPassword
-      );
-      // If decryption succeeded, try to parse as JSON to verify
-      JSON.parse(decrypted);
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   async requireMasterPassword(): Promise<string> {

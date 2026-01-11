@@ -113,24 +113,26 @@ const LoginPage: React.FC = () => {
     void checkRegistrationMode();
   }, [searchParams]);
 
+  // Helper to get power mode toggle message
+  const getPowerModeToggleMessage = (newState: boolean, onLocalhost: boolean): string => {
+    if (onLocalhost) {
+      return newState
+        ? 'Localhost Mode - All features enabled'
+        : 'Localhost Mode - All features disabled';
+    }
+    return newState ? 'Advanced options enabled' : 'Advanced options disabled';
+  };
+
   // Keyboard shortcut handler for global power mode (Ctrl+Shift+E)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-        e.preventDefault();
-        const onLocalhost =
-          window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const newState = featureFlags.togglePowerMode();
-        setShowAdvancedOptions(newState);
-        const message = onLocalhost
-          ? newState
-            ? 'Localhost Mode - All features enabled'
-            : 'Localhost Mode - All features disabled'
-          : newState
-            ? 'Advanced options enabled'
-            : 'Advanced options disabled';
-        showMessage('info', message);
-      }
+      if (!e.ctrlKey || !e.shiftKey || e.key !== 'E') return;
+      e.preventDefault();
+      const onLocalhost =
+        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const newState = featureFlags.togglePowerMode();
+      setShowAdvancedOptions(newState);
+      showMessage('info', getPowerModeToggleMessage(newState, onLocalhost));
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
@@ -144,6 +146,65 @@ const LoginPage: React.FC = () => {
       console.warn('[LoginPage] Insecure connection detected. Web Crypto API unavailable.');
     }
   }, []);
+
+  const processSuccessfulLogin = async (values: LoginFormValues, authResult: AuthLoginResult) => {
+    const vaultOrganization = authResult.vaultOrganization;
+    const organizationName = authResult.organizationName ?? authResult.organization ?? null;
+    const organizationHasEncryption = isEncrypted(vaultOrganization);
+    const userProvidedPassword = !!values.masterPassword;
+
+    let passwordValid: boolean | undefined = undefined;
+    if (organizationHasEncryption && userProvidedPassword && vaultOrganization) {
+      passwordValid = await validateMasterPassword(vaultOrganization, values.masterPassword!);
+    }
+
+    const protocolState = analyzeVaultProtocolState(
+      vaultOrganization,
+      userProvidedPassword,
+      passwordValid
+    );
+    const protocolResult = handleProtocolState(
+      protocolState,
+      t,
+      form,
+      setError,
+      setVaultProtocolState
+    );
+    if (protocolResult.shouldReturn) return false;
+
+    await saveAuthData(values.email, organizationName ?? undefined);
+
+    if (organizationHasEncryption && values.masterPassword) {
+      await masterPasswordService.setMasterPassword(values.masterPassword);
+    }
+
+    const preferredLanguage = authResult.preferredLanguage ?? undefined;
+    if (preferredLanguage && preferredLanguage !== i18n.language) {
+      await i18n.changeLanguage(preferredLanguage);
+    }
+
+    dispatch(
+      loginSuccess({
+        user: {
+          email: values.email,
+          organization: organizationName ?? undefined,
+          preferredLanguage,
+        },
+        organization: organizationName ?? undefined,
+        vaultOrganization: vaultOrganization ?? undefined,
+        organizationEncryptionEnabled: organizationHasEncryption,
+      })
+    );
+
+    trackUserAction('login_success', 'login_form', {
+      email_domain: values.email.split('@')[1] ?? 'unknown',
+      organization: organizationName ?? 'unknown',
+      has_encryption: organizationHasEncryption,
+      vault_protocol_state: vaultProtocolState?.toString() ?? 'none',
+    });
+
+    return true;
+  };
 
   const handleLogin = async (values: LoginFormValues) => {
     setLoading(true);
@@ -162,15 +223,12 @@ const LoginPage: React.FC = () => {
 
       if (loginResponse.failure !== 0) {
         const errors = loginResponse.errors;
-        const errorMsg = errors.length > 0 ? errors.join('; ') : 'Login failed';
-        throw new Error(errorMsg);
+        throw new Error(errors.length > 0 ? errors.join('; ') : 'Login failed');
       }
 
       const authResult = parseAuthenticationResult(loginResponse);
-      const isAuthorized = authResult.isAuthorized;
-      const authenticationStatus = authResult.authenticationStatus;
 
-      if (authenticationStatus === 'TFA_REQUIRED' && !isAuthorized) {
+      if (authResult.authenticationStatus === 'TFA_REQUIRED' && !authResult.isAuthorized) {
         setPendingTFAData({
           email: values.email,
           authResult,
@@ -181,62 +239,10 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      const vaultOrganization = authResult.vaultOrganization;
-      const organizationName = authResult.organizationName ?? authResult.organization ?? null;
-      const organizationHasEncryption = isEncrypted(vaultOrganization);
-      const userProvidedPassword = !!values.masterPassword;
-
-      let passwordValid: boolean | undefined = undefined;
-      if (organizationHasEncryption && userProvidedPassword && vaultOrganization) {
-        passwordValid = await validateMasterPassword(vaultOrganization, values.masterPassword!);
+      const success = await processSuccessfulLogin(values, authResult);
+      if (success) {
+        void navigate('/machines');
       }
-
-      const protocolState = analyzeVaultProtocolState(
-        vaultOrganization,
-        userProvidedPassword,
-        passwordValid
-      );
-      const protocolResult = handleProtocolState(
-        protocolState,
-        t,
-        form,
-        setError,
-        setVaultProtocolState
-      );
-      if (protocolResult.shouldReturn) return;
-
-      await saveAuthData(values.email, organizationName ?? undefined);
-
-      if (organizationHasEncryption && values.masterPassword) {
-        await masterPasswordService.setMasterPassword(values.masterPassword);
-      }
-
-      const preferredLanguage = authResult.preferredLanguage ?? undefined;
-      if (preferredLanguage && preferredLanguage !== i18n.language) {
-        await i18n.changeLanguage(preferredLanguage);
-      }
-
-      dispatch(
-        loginSuccess({
-          user: {
-            email: values.email,
-            organization: organizationName ?? undefined,
-            preferredLanguage,
-          },
-          organization: organizationName ?? undefined,
-          vaultOrganization: vaultOrganization ?? undefined,
-          organizationEncryptionEnabled: organizationHasEncryption,
-        })
-      );
-
-      trackUserAction('login_success', 'login_form', {
-        email_domain: values.email.split('@')[1] ?? 'unknown',
-        organization: organizationName ?? 'unknown',
-        has_encryption: organizationHasEncryption,
-        vault_protocol_state: vaultProtocolState?.toString() ?? 'none',
-      });
-
-      void navigate('/machines');
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : t('login.errors.invalidCredentials');
@@ -251,57 +257,62 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const completeTFALogin = async () => {
+    if (!pendingTFAData) return;
+
+    const { email, authResult: storedAuthResult, masterPassword } = pendingTFAData;
+    const vaultOrganization = storedAuthResult.vaultOrganization;
+    const organizationName =
+      storedAuthResult.organizationName ?? storedAuthResult.organization ?? null;
+
+    await saveAuthData(email, organizationName ?? undefined);
+
+    const organizationHasEncryption = isEncrypted(vaultOrganization);
+    if (organizationHasEncryption && masterPassword) {
+      await masterPasswordService.setMasterPassword(masterPassword);
+    }
+
+    const preferredLanguage = storedAuthResult.preferredLanguage ?? undefined;
+    if (preferredLanguage && preferredLanguage !== i18n.language) {
+      await i18n.changeLanguage(preferredLanguage);
+    }
+
+    dispatch(
+      loginSuccess({
+        user: { email, organization: organizationName ?? undefined, preferredLanguage },
+        organization: organizationName ?? undefined,
+        vaultOrganization: vaultOrganization ?? undefined,
+        organizationEncryptionEnabled: organizationHasEncryption,
+      })
+    );
+
+    setShowTFAModal(false);
+    void navigate('/machines');
+  };
+
   const handleTFAVerification = async () => {
     try {
       const response = await verifyTFAMutation.mutateAsync({ tFACode: twoFACode });
-      // Parse the result to get the TFA verification status
       const tfaResults = parseResponse<VerifyTfaResult>(response as never);
       const tfaResult = tfaResults[0] as VerifyTfaResult | undefined;
 
-      if (tfaResult?.isAuthorized === true) {
-        if (tfaResult.isTFAEnabled === false) {
-          showMessage('info', 'Two-factor authentication is not enabled for this account.');
-          setShowTFAModal(false);
-          setTwoFACode('');
-          return;
-        }
+      if (tfaResult?.isAuthorized !== true) return;
 
-        if (!pendingTFAData) {
-          setLoading(false);
-          setShowTFAModal(false);
-          setTwoFACode('');
-          return;
-        }
-
-        const { email, authResult: storedAuthResult, masterPassword } = pendingTFAData;
-        const vaultOrganization = storedAuthResult.vaultOrganization;
-        const organizationName =
-          storedAuthResult.organizationName ?? storedAuthResult.organization ?? null;
-
-        await saveAuthData(email, organizationName ?? undefined);
-
-        const organizationHasEncryption = isEncrypted(vaultOrganization);
-        if (organizationHasEncryption && masterPassword) {
-          await masterPasswordService.setMasterPassword(masterPassword);
-        }
-
-        const preferredLanguage = storedAuthResult.preferredLanguage ?? undefined;
-        if (preferredLanguage && preferredLanguage !== i18n.language) {
-          await i18n.changeLanguage(preferredLanguage);
-        }
-
-        dispatch(
-          loginSuccess({
-            user: { email, organization: organizationName ?? undefined, preferredLanguage },
-            organization: organizationName ?? undefined,
-            vaultOrganization: vaultOrganization ?? undefined,
-            organizationEncryptionEnabled: organizationHasEncryption,
-          })
-        );
-
+      if (tfaResult.isTFAEnabled === false) {
+        showMessage('info', 'Two-factor authentication is not enabled for this account.');
         setShowTFAModal(false);
-        void navigate('/machines');
+        setTwoFACode('');
+        return;
       }
+
+      if (!pendingTFAData) {
+        setLoading(false);
+        setShowTFAModal(false);
+        setTwoFACode('');
+        return;
+      }
+
+      await completeTFALogin();
     } catch {
       // Error is handled by the mutation
     }

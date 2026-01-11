@@ -99,6 +99,31 @@ export function anonymizeValue(key: string, value: unknown): unknown {
 }
 
 /**
+ * Anonymize a nested object value
+ */
+function anonymizeNestedObject(key: string, value: object): unknown {
+  if (isSensitiveKey(key)) {
+    return '[REDACTED]';
+  }
+  return anonymizeObject(value as Record<string, unknown>);
+}
+
+/**
+ * Anonymize an array value
+ */
+function anonymizeArrayValue(key: string, value: unknown[]): unknown {
+  if (isSensitiveKey(key)) {
+    return '[REDACTED]';
+  }
+  return value.map((item, index) => {
+    if (typeof item === 'object' && item !== null) {
+      return anonymizeObject(item as Record<string, unknown>);
+    }
+    return anonymizeValue(`${key}[${index}]`, item);
+  });
+}
+
+/**
  * Recursively anonymize an object, redacting sensitive keys and emails.
  * Returns a new object with anonymized values.
  */
@@ -108,20 +133,10 @@ export function anonymizeObject(obj: Record<string, unknown>): Record<string, un
   for (const [key, value] of Object.entries(obj)) {
     if (value === null || value === undefined) {
       result[key] = value;
-    } else if (typeof value === 'object' && !Array.isArray(value)) {
-      // Recursively anonymize nested objects
-      result[key] = isSensitiveKey(key)
-        ? '[REDACTED]'
-        : anonymizeObject(value as Record<string, unknown>);
     } else if (Array.isArray(value)) {
-      // Handle arrays
-      result[key] = isSensitiveKey(key)
-        ? '[REDACTED]'
-        : value.map((item, index) =>
-            typeof item === 'object' && item !== null
-              ? anonymizeObject(item as Record<string, unknown>)
-              : anonymizeValue(`${key}[${index}]`, item)
-          );
+      result[key] = anonymizeArrayValue(key, value);
+    } else if (typeof value === 'object') {
+      result[key] = anonymizeNestedObject(key, value);
     } else {
       result[key] = anonymizeValue(key, value);
     }
@@ -130,41 +145,71 @@ export function anonymizeObject(obj: Record<string, unknown>): Record<string, un
   return result;
 }
 
+/** Check if arg is a value following a sensitive flag */
+function isSensitiveFlagValue(arg: string, prevArg: string | undefined): boolean {
+  if (!prevArg?.startsWith('-')) {
+    return false;
+  }
+  return isSensitiveKey(prevArg.replace(/^-+/, ''));
+}
+
+/** Handle key=value pattern anonymization */
+function anonymizeKeyValueArg(arg: string): string | null {
+  if (!arg.includes('=')) {
+    return null;
+  }
+
+  const [key, ...valueParts] = arg.split('=');
+  if (key && isSensitiveKey(key)) {
+    return `${key}=[REDACTED]`;
+  }
+
+  const value = valueParts.join('=');
+  if (value.includes('@')) {
+    return `${key}=${anonymizeEmail(value)}`;
+  }
+
+  return null;
+}
+
+/** Check if string looks like an email and anonymize it */
+function anonymizeIfEmail(arg: string): string | null {
+  if (!arg.includes('@') || !arg.includes('.')) {
+    return null;
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailPattern.test(arg)) {
+    return anonymizeEmail(arg);
+  }
+
+  return null;
+}
+
 /**
  * Anonymize command-line arguments array.
  * Redacts values that look like secrets or contain email addresses.
  */
 export function anonymizeArgs(args: string[]): string[] {
   return args.map((arg, index) => {
-    // Check if it's a flag value (previous arg was a flag like --password)
     const prevArg = args[index - 1];
-    if (prevArg && prevArg.startsWith('-') && isSensitiveKey(prevArg.replace(/^-+/, ''))) {
+
+    if (isSensitiveFlagValue(arg, prevArg)) {
       return '[REDACTED]';
     }
 
-    // Check if the arg itself contains sensitive patterns
     if (isSensitiveKey(arg)) {
       return '[REDACTED]';
     }
 
-    // Check for key=value patterns
-    if (arg.includes('=')) {
-      const [key, ...valueParts] = arg.split('=');
-      if (key && isSensitiveKey(key)) {
-        return `${key}=[REDACTED]`;
-      }
-      const value = valueParts.join('=');
-      if (value.includes('@')) {
-        return `${key}=${anonymizeEmail(value)}`;
-      }
+    const keyValueResult = anonymizeKeyValueArg(arg);
+    if (keyValueResult !== null) {
+      return keyValueResult;
     }
 
-    // Anonymize email addresses
-    if (arg.includes('@') && arg.includes('.')) {
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailPattern.test(arg)) {
-        return anonymizeEmail(arg);
-      }
+    const emailResult = anonymizeIfEmail(arg);
+    if (emailResult !== null) {
+      return emailResult;
     }
 
     return arg;
@@ -175,7 +220,7 @@ export function anonymizeArgs(args: string[]): string[] {
  * Convert an error to telemetry attributes.
  * Limits stack trace length to avoid excessive data.
  */
-export function errorToAttributes(error: Error | unknown): Record<string, string> {
+export function errorToAttributes(error: unknown): Record<string, string> {
   if (error instanceof Error) {
     return {
       'error.type': error.constructor.name,

@@ -126,99 +126,113 @@ const MachinesPage: React.FC = () => {
     [mutations.deleteMachine, modal, refetchMachines, t]
   );
 
+  const executeAutoSetup = useCallback(
+    async (formData: MachineFormValues) => {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const result = await executeDynamic('setup', {
+        params: {
+          datastore_size: '95%',
+          from: 'apt-repo',
+          rclone_source: 'install-script',
+          docker_source: 'docker-repo',
+          install_amd_driver: 'auto',
+          install_nvidia_driver: 'auto',
+        },
+        teamName: formData.teamName,
+        machineName: formData.machineName,
+        bridgeName: formData.bridgeName,
+        priority: 3,
+        addedVia: 'machine-creation-auto-setup',
+        machineVault: formData.vaultContent ?? '{}',
+      });
+
+      if (!result.success) return;
+
+      if (result.taskId) {
+        showMessage('info', t('machines:setupQueued'));
+        openQueueTrace(result.taskId, formData.machineName);
+      } else if (result.isQueued) {
+        showMessage('info', t('machines:setupQueuedForSubmission'));
+      }
+    },
+    [executeDynamic, openQueueTrace, t]
+  );
+
+  const handleCreateMachine = useCallback(
+    async (formData: MachineFormValues) => {
+      const { autoSetup, ...machineData } = formData;
+      await mutations.createMachine.mutateAsync({
+        ...machineData,
+        vaultContent: machineData.vaultContent ?? '{}',
+      });
+      showMessage('success', t('machines:createSuccess'));
+
+      if (autoSetup) {
+        try {
+          await executeAutoSetup(formData);
+        } catch {
+          showMessage('warning', t('machines:machineCreatedButSetupFailed'));
+        }
+      }
+
+      closeUnifiedModal();
+      void refetchMachines();
+    },
+    [closeUnifiedModal, executeAutoSetup, mutations, refetchMachines, t]
+  );
+
+  const handleEditMachine = useCallback(
+    async (formData: MachineFormValues) => {
+      if (!currentResource) return;
+
+      const currentName = currentResource.machineName;
+      const newName = formData.machineName;
+
+      if (newName && newName !== currentName) {
+        await mutations.updateMachineName.mutateAsync({
+          teamName: currentResource.teamName,
+          currentMachineName: currentName,
+          newMachineName: newName,
+        });
+      }
+
+      if (formData.bridgeName && formData.bridgeName !== currentResource.bridgeName) {
+        await mutations.updateMachineAssignedBridge.mutateAsync({
+          teamName: currentResource.teamName,
+          machineName: newName || currentName,
+          newBridgeName: formData.bridgeName,
+        });
+      }
+
+      const vaultData = formData.vaultContent;
+      if (vaultData && vaultData !== currentResource.vaultContent) {
+        await mutations.updateMachineVault.mutateAsync({
+          teamName: currentResource.teamName,
+          machineName: newName || currentName,
+          vaultContent: vaultData,
+          vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
+        });
+      }
+
+      closeUnifiedModal();
+      void refetchMachines();
+    },
+    [closeUnifiedModal, currentResource, mutations, refetchMachines]
+  );
+
   const handleUnifiedModalSubmit = useCallback(
     async (formData: MachineFormValues) => {
       try {
         if (unifiedModalState.mode === 'create') {
-          const { autoSetup, ...machineData } = formData;
-          await mutations.createMachine.mutateAsync({
-            ...machineData,
-            vaultContent: machineData.vaultContent ?? '{}',
-          });
-          showMessage('success', t('machines:createSuccess'));
-
-          if (autoSetup) {
-            try {
-              await new Promise((resolve) => setTimeout(resolve, 500));
-              const result = await executeDynamic('setup', {
-                params: {
-                  datastore_size: '95%',
-                  from: 'apt-repo',
-                  rclone_source: 'install-script',
-                  docker_source: 'docker-repo',
-                  install_amd_driver: 'auto',
-                  install_nvidia_driver: 'auto',
-                },
-                teamName: formData.teamName,
-                machineName: formData.machineName,
-                bridgeName: formData.bridgeName,
-                priority: 3,
-                addedVia: 'machine-creation-auto-setup',
-                machineVault: formData.vaultContent ?? '{}',
-              });
-
-              if (result.success) {
-                if (result.taskId) {
-                  showMessage('info', t('machines:setupQueued'));
-                  openQueueTrace(result.taskId, formData.machineName);
-                } else if (result.isQueued) {
-                  showMessage('info', t('machines:setupQueuedForSubmission'));
-                }
-              }
-            } catch {
-              showMessage('warning', t('machines:machineCreatedButSetupFailed'));
-            }
-          }
-
-          closeUnifiedModal();
-          void refetchMachines();
+          await handleCreateMachine(formData);
         } else if (currentResource) {
-          const currentName = currentResource.machineName;
-          const newName = formData.machineName;
-
-          if (newName && newName !== currentName) {
-            await mutations.updateMachineName.mutateAsync({
-              teamName: currentResource.teamName,
-              currentMachineName: currentName,
-              newMachineName: newName,
-            });
-          }
-
-          if (formData.bridgeName && formData.bridgeName !== currentResource.bridgeName) {
-            await mutations.updateMachineAssignedBridge.mutateAsync({
-              teamName: currentResource.teamName,
-              machineName: newName || currentName,
-              newBridgeName: formData.bridgeName,
-            });
-          }
-
-          const vaultData = formData.vaultContent;
-          if (vaultData && vaultData !== currentResource.vaultContent) {
-            await mutations.updateMachineVault.mutateAsync({
-              teamName: currentResource.teamName,
-              machineName: newName || currentName,
-              vaultContent: vaultData,
-              vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
-            });
-          }
-
-          closeUnifiedModal();
-          void refetchMachines();
+          await handleEditMachine(formData);
         }
       } catch {
         // Errors surfaced via mutation toasts
       }
     },
-    [
-      closeUnifiedModal,
-      mutations,
-      currentResource,
-      executeDynamic,
-      openQueueTrace,
-      refetchMachines,
-      t,
-      unifiedModalState.mode,
-    ]
+    [currentResource, handleCreateMachine, handleEditMachine, unifiedModalState.mode]
   );
 
   const handleUnifiedVaultUpdate = useCallback(

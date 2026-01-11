@@ -87,3 +87,6 @@ export interface ActionButtonsProps {
 
 export type TraceLog = QueueTraceLog;
 export type TaskStaleness = TaskStalenessLevel;
+
+/** QueueItemTraceData is an alias for the trace data structure */
+export type { QueueTrace as QueueItemTraceData } from '@rediacc/shared/types';

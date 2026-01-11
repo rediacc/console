@@ -6,7 +6,8 @@
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "lib": ["ESNext"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
   "exclude": ["node_modules", "dist"]

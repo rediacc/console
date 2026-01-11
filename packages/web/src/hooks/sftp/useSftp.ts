@@ -191,7 +191,7 @@ export function useSftp(
 
       try {
         const buffer = await file.arrayBuffer();
-        const targetPath = `${state.currentPath}/${file.name}`.replace(/\/+/g, '/');
+        const targetPath = `${state.currentPath}/${file.name}`.replaceAll(/\/+/g, '/');
         await window.electronAPI!.sftp.writeFile(state.sessionId, targetPath, buffer);
         await loadDirectory(state.sessionId, state.currentPath);
       } catch (error) {
@@ -266,7 +266,7 @@ export function useSftp(
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        const folderPath = `${state.currentPath}/${name}`.replace(/\/+/g, '/');
+        const folderPath = `${state.currentPath}/${name}`.replaceAll(/\/+/g, '/');
         await window.electronAPI!.sftp.mkdir(state.sessionId, folderPath);
         await loadDirectory(state.sessionId, state.currentPath);
       } catch (error) {
@@ -289,7 +289,7 @@ export function useSftp(
 
       try {
         const dir = oldPath.substring(0, oldPath.lastIndexOf('/'));
-        const newPath = `${dir}/${newName}`.replace(/\/+/g, '/');
+        const newPath = `${dir}/${newName}`.replaceAll(/\/+/g, '/');
         await window.electronAPI!.sftp.rename(state.sessionId, oldPath, newPath);
         await loadDirectory(state.sessionId, state.currentPath);
       } catch (error) {

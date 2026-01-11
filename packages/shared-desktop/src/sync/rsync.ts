@@ -1,6 +1,6 @@
-import { spawn } from 'child_process';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { prepareRsyncPaths } from './pathConverter.js';
 import {
   getRsyncPath,
@@ -89,7 +89,7 @@ export async function getRsyncSSHCommand(sshOptions: string): Promise<string> {
   const sshPath = getSshPath();
   if (sshPath !== 'ssh' && existsSync(sshPath)) {
     // Convert backslashes to forward slashes for MSYS2 compatibility
-    const normalizedPath = sshPath.replace(/\\/g, '/');
+    const normalizedPath = sshPath.replaceAll('\\', '/');
     return `${normalizedPath} ${sshOptions}`;
   }
 
@@ -112,6 +112,55 @@ export interface RsyncChanges {
 }
 
 /**
+ * Prefixes to skip in rsync output
+ */
+const RSYNC_SKIP_PREFIXES = ['sending ', 'receiving ', 'sent ', 'total size'] as const;
+
+/**
+ * Checks if a line should be skipped
+ */
+function shouldSkipLine(line: string): boolean {
+  if (!line.trim()) return true;
+  return RSYNC_SKIP_PREFIXES.some((prefix) => line.startsWith(prefix));
+}
+
+/**
+ * Parses a single rsync itemize-changes line
+ * Returns the category and filename, or null if not parseable
+ */
+function parseItemizeLine(line: string): { category: keyof RsyncChanges; filename: string } | null {
+  // Handle deletion lines
+  if (line.startsWith('deleting ')) {
+    return { category: 'deletedFiles', filename: line.substring(9).trim() };
+  }
+
+  // Parse itemize-changes format: YXcstpoguax filename
+  // Format: 11 characters of flags, space, filename
+  if (line.length <= 11 || line[11] !== ' ') {
+    return { category: 'other', filename: line };
+  }
+
+  const flags = line.substring(0, 11);
+  const filename = line.substring(12).trim();
+
+  if (line.includes('*deleting')) {
+    return { category: 'deletedFiles', filename };
+  }
+
+  if (flags.startsWith('cd')) {
+    return { category: 'newDirs', filename };
+  }
+
+  const isFileTransfer = (flags.startsWith('>') || flags.startsWith('<')) && flags[1] === 'f';
+  if (isFileTransfer) {
+    const isNewFile = flags[2] === '+';
+    return { category: isNewFile ? 'newFiles' : 'modifiedFiles', filename };
+  }
+
+  return { category: 'other', filename: line };
+}
+
+/**
  * Parses rsync dry-run output to extract changes
  *
  * @param dryRunOutput - Output from rsync --dry-run --itemize-changes
@@ -126,42 +175,12 @@ export function parseRsyncChanges(dryRunOutput: string): RsyncChanges {
     other: [],
   };
 
-  const skipPrefixes = ['sending ', 'receiving ', 'sent ', 'total size'];
-
   for (const line of dryRunOutput.split('\n')) {
-    if (!line.trim()) continue;
-    if (skipPrefixes.some((prefix) => line.startsWith(prefix))) continue;
+    if (shouldSkipLine(line)) continue;
 
-    // Handle deletion lines
-    if (line.startsWith('deleting ')) {
-      changes.deletedFiles.push(line.substring(9).trim());
-      continue;
-    }
-
-    // Parse itemize-changes format: YXcstpoguax filename
-    // Format: 11 characters of flags, space, filename
-    if (line.length > 11 && line[11] === ' ') {
-      const flags = line.substring(0, 11);
-      const filename = line.substring(12).trim();
-
-      if (line.includes('*deleting')) {
-        changes.deletedFiles.push(filename);
-      } else if (flags.startsWith('cd')) {
-        // New directory
-        changes.newDirs.push(filename);
-      } else if ((flags.startsWith('>') || flags.startsWith('<')) && flags[1] === 'f') {
-        // File transfer: > = sending, < = receiving
-        // flags[2]: + = new file, . = existing file
-        if (flags[2] === '+') {
-          changes.newFiles.push(filename);
-        } else {
-          changes.modifiedFiles.push(filename);
-        }
-      } else {
-        changes.other.push(line);
-      }
-    } else {
-      changes.other.push(line);
+    const parsed = parseItemizeLine(line);
+    if (parsed) {
+      changes[parsed.category].push(parsed.filename);
     }
   }
 
@@ -302,14 +321,14 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
 
       // Parse progress from rsync output
       // Format: "   123,456,789 100%   12.34MB/s    0:00:00 (xfr#123, to-chk=456/789)"
-      const progressMatch = output.match(/(\d[\d,]*)\s+(\d+)%\s+([\d.]+\w+\/s)\s+([\d:]+)/);
+      const progressMatch = /(\d[\d,]*)\s+(\d+)%\s+([\d.]+\w+\/s)\s+([\d:]+)/.exec(output);
       if (progressMatch && options.onProgress) {
-        const bytes = parseInt(progressMatch[1].replace(/,/g, ''), 10);
+        const bytes = Number.parseInt(progressMatch[1].replaceAll(',', ''), 10);
         options.onProgress({
           currentFile: '',
           bytesTransferred: bytes,
           totalBytes: 0,
-          percentage: parseInt(progressMatch[2], 10),
+          percentage: Number.parseInt(progressMatch[2], 10),
           speed: progressMatch[3],
           eta: progressMatch[4],
         });
@@ -318,9 +337,9 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
 
       // Count transferred files
       if (output.includes('xfr#')) {
-        const xfrMatch = output.match(/xfr#(\d+)/);
+        const xfrMatch = /xfr#(\d+)/.exec(output);
         if (xfrMatch) {
-          filesTransferred = parseInt(xfrMatch[1], 10);
+          filesTransferred = Number.parseInt(xfrMatch[1], 10);
         }
       }
     });
@@ -440,10 +459,10 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
     });
 
     rsync.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`rsync dry-run failed: ${errorOutput}`));
-      } else {
+      if (code === 0) {
         resolve(parseRsyncChanges(output));
+      } else {
+        reject(new Error(`rsync dry-run failed: ${errorOutput}`));
       }
     });
 

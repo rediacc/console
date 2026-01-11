@@ -1,6 +1,6 @@
-import { execSync } from 'child_process';
-import { existsSync, writeFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { execSync } from 'node:child_process';
+import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
 import { PROTOCOL_SCHEME } from './parser.js';
 import { getPlatform, getHomePath } from '../utils/platform.js';
 
@@ -35,44 +35,38 @@ export function isProtocolSupported(): boolean {
 }
 
 /**
+ * Electron app paths by platform
+ */
+const ELECTRON_APP_PATHS: Record<string, () => string[]> = {
+  windows: () => [
+    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Rediacc Console', 'Rediacc Console.exe'),
+    join(process.env.PROGRAMFILES ?? '', 'Rediacc Console', 'Rediacc Console.exe'),
+  ],
+  macos: () => ['/Applications/Rediacc Console.app/Contents/MacOS/Rediacc Console'],
+  linux: () => [
+    '/usr/bin/rediacc-console',
+    '/opt/rediacc-console/rediacc-console',
+    join(getHomePath(), '.local', 'bin', 'rediacc-console'),
+  ],
+};
+
+/**
+ * Finds the first existing path from a list
+ */
+function findFirstExistingPath(paths: string[]): string | null {
+  for (const p of paths) {
+    if (existsSync(p)) return p;
+  }
+  return null;
+}
+
+/**
  * Gets the executable path for the Electron app
  */
 export function getElectronExecutablePath(): string | null {
   const platform = getPlatform();
-
-  // Try to find the installed Electron app
-  switch (platform) {
-    case 'windows': {
-      // Look in common installation paths
-      const paths = [
-        join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Rediacc Console', 'Rediacc Console.exe'),
-        join(process.env.PROGRAMFILES ?? '', 'Rediacc Console', 'Rediacc Console.exe'),
-      ];
-      for (const p of paths) {
-        if (existsSync(p)) return p;
-      }
-      break;
-    }
-    case 'macos': {
-      const appPath = '/Applications/Rediacc Console.app/Contents/MacOS/Rediacc Console';
-      if (existsSync(appPath)) return appPath;
-      break;
-    }
-    case 'linux': {
-      // Check common installation paths
-      const paths = [
-        '/usr/bin/rediacc-console',
-        '/opt/rediacc-console/rediacc-console',
-        join(getHomePath(), '.local', 'bin', 'rediacc-console'),
-      ];
-      for (const p of paths) {
-        if (existsSync(p)) return p;
-      }
-      break;
-    }
-  }
-
-  return null;
+  const pathsGetter = ELECTRON_APP_PATHS[platform];
+  return findFirstExistingPath(pathsGetter());
 }
 
 /**
@@ -229,7 +223,7 @@ export class WindowsProtocolHandler {
           stdio: 'pipe',
           timeout: 10000,
         });
-        const match = result.match(/REG_SZ\s+(.+)/);
+        const match = /REG_SZ\s+(.+)/.exec(result);
         if (match) {
           command = match[1].trim();
         }

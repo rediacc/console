@@ -125,94 +125,106 @@ const EndpointSelector: React.FC = () => {
     []
   );
 
+  /**
+   * Add dynamic endpoint for current domain if applicable
+   */
+  const addDynamicEndpoint = (endpoints: Endpoint[]): Endpoint[] => {
+    const currentOrigin = window.location.origin;
+    const currentDomain = window.location.hostname;
+
+    if (currentDomain === 'localhost' || currentDomain === '127.0.0.1') {
+      return endpoints;
+    }
+
+    const dynamicApiUrl = `${currentOrigin}/api`;
+    const existingEndpoint = endpoints.find((e) => e.url === dynamicApiUrl);
+    if (existingEndpoint) return endpoints;
+
+    const dynamicEndpoint: Endpoint = {
+      id: 'dynamic-current-domain',
+      name: 'Current Domain',
+      url: dynamicApiUrl,
+      type: 'dynamic',
+      description: `API at ${currentDomain}`,
+      icon: '🌍',
+    };
+
+    return [...endpoints, dynamicEndpoint];
+  };
+
+  /**
+   * Auto-select localhost endpoint when running locally
+   */
+  const autoSelectLocalhostEndpoint = (
+    allEndpoints: Endpoint[],
+    healthChecks: Record<string, EndpointHealth>
+  ): Endpoint | null => {
+    const localhostEndpoints = allEndpoints.filter((e) => e.type === 'localhost');
+    const healthyLocalhostEndpoint = localhostEndpoints.find((e) => {
+      const health = healthChecks[e.id] as EndpointHealth | undefined;
+      return health?.isHealthy;
+    });
+
+    if (healthyLocalhostEndpoint) {
+      endpointService.setSelectedEndpoint(healthyLocalhostEndpoint);
+      console.warn(
+        `[EndpointSelector] Auto-selected healthy localhost endpoint: ${healthyLocalhostEndpoint.url}`
+      );
+      return healthyLocalhostEndpoint;
+    }
+
+    if (localhostEndpoints.length > 0) {
+      endpointService.setSelectedEndpoint(localhostEndpoints[0]);
+      console.warn(
+        `[EndpointSelector] No healthy localhost found, using first: ${localhostEndpoints[0].url}`
+      );
+      return localhostEndpoints[0];
+    }
+
+    return null;
+  };
+
+  /**
+   * Auto-select dynamic endpoint for non-localhost domains
+   */
+  const autoSelectDynamicEndpoint = useCallback(
+    async (allEndpoints: Endpoint[]): Promise<Endpoint | null> => {
+      const dynamicEndpoint = allEndpoints.find((e) => e.type === 'dynamic');
+      if (!dynamicEndpoint) return null;
+
+      const health = await checkEndpointHealth(dynamicEndpoint);
+      if (health.isHealthy) {
+        endpointService.setSelectedEndpoint(dynamicEndpoint);
+        console.warn(
+          `[EndpointSelector] Auto-selected healthy dynamic endpoint: ${dynamicEndpoint.url}`
+        );
+        return dynamicEndpoint;
+      }
+
+      console.warn(`[EndpointSelector] Dynamic endpoint is not healthy, skipping auto-selection`);
+      return null;
+    },
+    []
+  );
+
   useEffect(() => {
     const fetchEndpointsAndSelection = async () => {
       try {
-        // Fetch all available endpoints
-        let allEndpoints = await endpointService.fetchEndpoints();
-
-        // Add dynamic endpoint based on current domain (if not already present)
-        const currentOrigin = window.location.origin;
-        const currentDomain = window.location.hostname;
-
-        // Only add dynamic endpoint if:
-        // 1. Not localhost (we already have localhost endpoint)
-        // 2. Not already in the list
-        if (currentDomain !== 'localhost' && currentDomain !== '127.0.0.1') {
-          const dynamicApiUrl = `${currentOrigin}/api`;
-
-          // Check if this URL already exists
-          const existingEndpoint = allEndpoints.find((e) => e.url === dynamicApiUrl);
-
-          if (!existingEndpoint) {
-            // Add dynamic endpoint
-            const dynamicEndpoint: Endpoint = {
-              id: 'dynamic-current-domain',
-              name: 'Current Domain',
-              url: dynamicApiUrl,
-              type: 'dynamic',
-              description: `API at ${currentDomain}`,
-              icon: '🌍',
-            };
-
-            // Add at the beginning of the list (after production/sandbox if they exist)
-            allEndpoints = [...allEndpoints, dynamicEndpoint];
-          }
-        }
-
+        const fetchedEndpoints = await endpointService.fetchEndpoints();
+        const allEndpoints = addDynamicEndpoint(fetchedEndpoints);
         setEndpoints(allEndpoints);
 
-        // Run health checks on all endpoints
         const healthChecks = await checkAllEndpointsHealth(allEndpoints);
-
-        // Get currently selected endpoint or determine from connection service
         let selected = endpointService.getSelectedEndpoint();
 
-        // Auto-select localhost when running locally ONLY if no endpoint is already selected
-        if (selected) {
-          // Endpoint already selected, no action needed
-        } else if (endpointService.isLocalhost()) {
-          // Find all localhost endpoints and select the first healthy one
-          const localhostEndpoints = allEndpoints.filter((e) => e.type === 'localhost');
-          const healthyLocalhostEndpoint = localhostEndpoints.find(
-            (e) => healthChecks[e.id].isHealthy
-          );
-
-          if (healthyLocalhostEndpoint) {
-            selected = healthyLocalhostEndpoint;
-            endpointService.setSelectedEndpoint(healthyLocalhostEndpoint);
-            console.warn(
-              `[EndpointSelector] Auto-selected healthy localhost endpoint: ${healthyLocalhostEndpoint.url}`
-            );
-          } else if (localhostEndpoints.length > 0) {
-            // Fallback to first localhost if none are healthy (user can still try)
-            selected = localhostEndpoints[0];
-            endpointService.setSelectedEndpoint(localhostEndpoints[0]);
-            console.warn(
-              `[EndpointSelector] No healthy localhost found, using first: ${localhostEndpoints[0].url}`
-            );
-          }
-        } else {
-          // For non-localhost domains, if no saved selection exists, check and auto-select dynamic endpoint
-          const dynamicEndpoint = allEndpoints.find((e) => e.type === 'dynamic');
-          if (dynamicEndpoint) {
-            // Check if dynamic endpoint is healthy
-            const health = await checkEndpointHealth(dynamicEndpoint);
-            if (health.isHealthy) {
-              selected = dynamicEndpoint;
-              endpointService.setSelectedEndpoint(dynamicEndpoint);
-              console.warn(
-                `[EndpointSelector] Auto-selected healthy dynamic endpoint: ${dynamicEndpoint.url}`
-              );
-            } else {
-              console.warn(
-                `[EndpointSelector] Dynamic endpoint is not healthy, skipping auto-selection`
-              );
-            }
+        if (!selected) {
+          if (endpointService.isLocalhost()) {
+            selected = autoSelectLocalhostEndpoint(allEndpoints, healthChecks);
+          } else {
+            selected = await autoSelectDynamicEndpoint(allEndpoints);
           }
         }
 
-        // If no selection (not localhost), get from connection service
         if (!selected) {
           const connectionInfo = apiConnectionService.getSelectedEndpoint();
           if (connectionInfo) {
@@ -222,7 +234,6 @@ const EndpointSelector: React.FC = () => {
 
         setSelectedEndpoint(selected);
 
-        // If we have a selected endpoint, update the API client immediately
         if (selected) {
           apiClient.updateApiUrl(selected.url);
           console.warn(`[EndpointSelector] Applied endpoint: ${selected.name} (${selected.url})`);
@@ -235,7 +246,7 @@ const EndpointSelector: React.FC = () => {
     };
 
     void fetchEndpointsAndSelection();
-  }, [checkAllEndpointsHealth]);
+  }, [checkAllEndpointsHealth, autoSelectDynamicEndpoint]);
 
   const handleEndpointChange = (value: unknown) => {
     if (typeof value !== 'string') {

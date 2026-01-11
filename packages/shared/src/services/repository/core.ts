@@ -110,6 +110,74 @@ export function findCredential(
 }
 
 /**
+ * Find affected repositories based on credential relationship
+ */
+function findAffectedRepositories(
+  repository: RepositoryWithRelations,
+  allRepositories: RepositoryWithRelations[],
+  repoIsCredential: boolean,
+  credentialGuid: string | null | undefined
+): RepositoryWithRelations[] {
+  if (!repoIsCredential) {
+    return [repository]; // For forks, only the fork itself is affected
+  }
+  return allRepositories.filter(
+    (repo) => repo.grandGuid === credentialGuid || repo.repositoryGuid === credentialGuid
+  );
+}
+
+/**
+ * Get display name for a deployed repository
+ */
+function getDeployedRepoDisplayName(
+  deployed: { name: string; repositoryGuid?: string },
+  affectedRepos: RepositoryWithRelations[]
+): string {
+  const repository = affectedRepos.find(
+    (r) => r.repositoryGuid === deployed.name || r.repositoryGuid === deployed.repositoryGuid
+  );
+  if (!repository) {
+    return deployed.name;
+  }
+  const tag = repository.repositoryTag ? `:${repository.repositoryTag}` : '';
+  return `${repository.repositoryName}${tag}`;
+}
+
+/**
+ * Find affected machine from parsed vault status
+ */
+function findAffectedMachine(
+  machine: MachineWithVaultStatus,
+  affectedRepoGuids: (string | null)[],
+  affectedRepos: RepositoryWithRelations[]
+): AffectedMachine | null {
+  const parsed = parseVaultStatus(machine.vaultStatus);
+
+  if (parsed.status !== 'completed' || parsed.repositories.length === 0) {
+    return null;
+  }
+
+  const deployedAffected = parsed.repositories.filter(
+    (deployedRepo) =>
+      affectedRepoGuids.includes(deployedRepo.name) ||
+      (deployedRepo.repositoryGuid && affectedRepoGuids.includes(deployedRepo.repositoryGuid))
+  );
+
+  if (deployedAffected.length === 0) {
+    return null;
+  }
+
+  const repositoryNames = deployedAffected.map((deployed) =>
+    getDeployedRepoDisplayName(deployed, affectedRepos)
+  );
+
+  return {
+    machineName: machine.machineName,
+    repositoryNames,
+  };
+}
+
+/**
  * Get affected resources when deleting a repository
  * @param repository - Repository being deleted
  * @param allRepositories - Array of all repositories
@@ -124,57 +192,21 @@ export function getAffectedResources(
   const repoIsCredential = isCredential(repository);
   const credentialGuid = repoIsCredential ? repository.repositoryGuid : repository.grandGuid;
 
-  // Find all repositories that use this credential
-  const affectedRepos = repoIsCredential
-    ? allRepositories.filter(
-        (repository) =>
-          repository.grandGuid === credentialGuid || repository.repositoryGuid === credentialGuid
-      )
-    : [repository]; // For forks, only the fork itself is affected
+  const affectedRepos = findAffectedRepositories(
+    repository,
+    allRepositories,
+    repoIsCredential,
+    credentialGuid
+  );
+  const affectedRepoGuids = affectedRepos.map((repo) => repo.repositoryGuid);
 
-  const affectedRepoGuids = affectedRepos.map((repository) => repository.repositoryGuid);
+  const affectedMachines = machines
+    .map((machine) => findAffectedMachine(machine, affectedRepoGuids, affectedRepos))
+    .filter((result): result is AffectedMachine => result !== null);
 
-  // Find machines that have any of these repositories deployed
-  const affectedMachines: AffectedMachine[] = [];
-
-  for (const machine of machines) {
-    const parsed = parseVaultStatus(machine.vaultStatus);
-
-    if (parsed.status === 'completed' && parsed.repositories.length > 0) {
-      // Find deployed repositories that match our affected GUIDs
-      const deployedAffected = parsed.repositories.filter(
-        (deployedRepo) =>
-          affectedRepoGuids.includes(deployedRepo.name) ||
-          (deployedRepo.repositoryGuid && affectedRepoGuids.includes(deployedRepo.repositoryGuid))
-      );
-
-      if (deployedAffected.length > 0) {
-        // Map GUIDs back to repository names for display
-        const repositoryNames = deployedAffected.map((deployed) => {
-          const repository = affectedRepos.find(
-            (r) =>
-              r.repositoryGuid === deployed.name || r.repositoryGuid === deployed.repositoryGuid
-          );
-          return repository
-            ? `${repository.repositoryName}${repository.repositoryTag ? `:${repository.repositoryTag}` : ''}`
-            : deployed.name;
-        });
-
-        affectedMachines.push({
-          machineName: machine.machineName,
-          repositoryNames,
-        });
-      }
-    }
-  }
-
-  // Get forks (repositories that use this as their grand, excluding the credential itself)
   const forks =
     repoIsCredential && credentialGuid
-      ? allRepositories.filter(
-          (repository) =>
-            repository.grandGuid === credentialGuid && repository.repositoryGuid !== credentialGuid
-        )
+      ? findForksOfCredential(credentialGuid, allRepositories)
       : [];
 
   return {
@@ -289,6 +321,65 @@ export interface DeletionValidationResult {
   childClones?: RepositoryWithRelations[];
 }
 
+/** Format count with plural suffix */
+function pluralize(count: number, singular: string): string {
+  return `${count} ${singular}${count > 1 ? 's' : ''}`;
+}
+
+/** Build block result for credential with deployments */
+function buildCredentialWithDeploymentsBlock(
+  affectedMachines: AffectedMachine[],
+  forks: RepositoryWithRelations[]
+): DeletionValidationResult {
+  const deploymentText = pluralize(affectedMachines.length, 'deployment');
+  const reason =
+    forks.length > 0
+      ? `Credential has ${deploymentText} with ${pluralize(forks.length, 'fork')}`
+      : `Credential has ${pluralize(affectedMachines.length, 'active deployment')}`;
+
+  return {
+    canDelete: false,
+    shouldBlock: true,
+    shouldWarn: false,
+    reason,
+    affectedMachines,
+    childClones: forks,
+  };
+}
+
+/** Build block result for credential with forks */
+function buildCredentialWithForksBlock(forks: RepositoryWithRelations[]): DeletionValidationResult {
+  return {
+    canDelete: false,
+    shouldBlock: true,
+    shouldWarn: false,
+    reason: `Credential has ${pluralize(forks.length, 'fork')} that must be deleted first`,
+    childClones: forks,
+  };
+}
+
+/** Build warning result for fork with deployments */
+function buildForkWithDeploymentsWarning(
+  affectedMachines: AffectedMachine[]
+): DeletionValidationResult {
+  return {
+    canDelete: true,
+    shouldBlock: false,
+    shouldWarn: true,
+    reason: `Fork has ${pluralize(affectedMachines.length, 'deployment')} that will lose access`,
+    affectedMachines,
+  };
+}
+
+/** Build allow result */
+function buildAllowResult(): DeletionValidationResult {
+  return {
+    canDelete: true,
+    shouldBlock: false,
+    shouldWarn: false,
+  };
+}
+
 /**
  * Comprehensive repository deletion validation
  * Provides detailed information for UI to display appropriate dialogs
@@ -305,50 +396,26 @@ export function validateRepoDeletion(
   const repoIsCredential = isCredential(repository);
   const { affectedMachines, forks } = getAffectedResources(repository, allRepositories, machines);
 
+  const hasDeployments = affectedMachines.length > 0;
+  const hasForks = forks.length > 0;
+
   // Case 1: Credential with deployments - BLOCK
-  if (repoIsCredential && affectedMachines.length > 0) {
-    return {
-      canDelete: false,
-      shouldBlock: true,
-      shouldWarn: false,
-      reason:
-        forks.length > 0
-          ? `Credential has ${affectedMachines.length} deployment${affectedMachines.length > 1 ? 's' : ''} with ${forks.length} fork${forks.length > 1 ? 's' : ''}`
-          : `Credential has ${affectedMachines.length} active deployment${affectedMachines.length > 1 ? 's' : ''}`,
-      affectedMachines,
-      childClones: forks,
-    };
+  if (repoIsCredential && hasDeployments) {
+    return buildCredentialWithDeploymentsBlock(affectedMachines, forks);
   }
 
   // Case 2: Credential with forks but no deployments - BLOCK
-  // (Can't delete credential if forks exist, they would become orphaned)
-  if (repoIsCredential && forks.length > 0) {
-    return {
-      canDelete: false,
-      shouldBlock: true,
-      shouldWarn: false,
-      reason: `Credential has ${forks.length} fork${forks.length > 1 ? 's' : ''} that must be deleted first`,
-      childClones: forks,
-    };
+  if (repoIsCredential && hasForks) {
+    return buildCredentialWithForksBlock(forks);
   }
 
   // Case 3: Fork with deployments - WARN but allow
-  if (!repoIsCredential && affectedMachines.length > 0) {
-    return {
-      canDelete: true,
-      shouldBlock: false,
-      shouldWarn: true,
-      reason: `Fork has ${affectedMachines.length} deployment${affectedMachines.length > 1 ? 's' : ''} that will lose access`,
-      affectedMachines,
-    };
+  if (!repoIsCredential && hasDeployments) {
+    return buildForkWithDeploymentsWarning(affectedMachines);
   }
 
-  // Case 4: Credential without deployments or forks, or fork without deployments - ALLOW
-  return {
-    canDelete: true,
-    shouldBlock: false,
-    shouldWarn: false,
-  };
+  // Case 4: No issues - ALLOW
+  return buildAllowResult();
 }
 
 /**

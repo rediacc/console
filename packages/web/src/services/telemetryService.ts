@@ -43,7 +43,7 @@ class TelemetryService {
   private isInitialized = false;
   private config: TelemetryConfig | null = null;
   private userContext: UserContext | null = null;
-  private sessionStartTime = Date.now();
+  private readonly sessionStartTime = Date.now();
   private webVitalsObserver: PerformanceObserver | null = null;
 
   initialize(config: TelemetryConfig): void {

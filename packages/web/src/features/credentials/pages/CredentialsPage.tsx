@@ -1,30 +1,18 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Flex, Space, Tag, Typography, type MenuProps } from 'antd';
+import { Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   useCreateRepository,
   useDeleteRepository,
-  useGetTeamMachines,
-  useGetTeamRepositories,
-  useGetTeamStorages,
   useUpdateRepositoryName,
   useUpdateRepositoryVault,
 } from '@/api/api-hooks.generated';
-import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { TooltipButton } from '@/components/common/buttons';
 import { buildRepositoryColumns } from '@/components/common/columns/builders/credentialColumns';
-import {
-  buildDeleteMenuItem,
-  buildDivider,
-  buildEditMenuItem,
-  buildTraceMenuItem,
-} from '@/components/common/menuBuilders';
-import { MobileCard } from '@/components/common/MobileCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
@@ -39,13 +27,14 @@ import { useQueueAction } from '@/hooks/useQueueAction';
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation';
 import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { getAffectedResources as coreGetAffectedResources } from '@/platform';
-import type { DynamicQueueActionParams } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
-import { InboxOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
-import type { QueueFunction } from '@rediacc/shared/types';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
+import type { GetTeamRepositories_ResultSet1, QueueFunction } from '@rediacc/shared/types';
 import { useDeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { RepositoryMobileCard } from './components/RepositoryMobileCard';
+import { addBackupPullVaults, buildQueuePayload } from './helpers/credentialsHelpers';
+import { useCredentialsData } from './hooks/useCredentialsData';
 
 interface CredentialsLocationState {
   createRepository?: boolean;
@@ -68,7 +57,6 @@ const CredentialsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Use custom hooks for common patterns
   const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
   const {
     modalState: unifiedModalState,
@@ -82,35 +70,17 @@ const CredentialsPage: React.FC = () => {
     setPage: setRepositoryPage,
     setPageSize: setRepositoryPageSize,
   } = usePagination({ defaultPageSize: 15 });
-
-  // Modal state management with new hooks
   const queueTrace = useQueueTraceModal();
   const auditTrace = useTraceModal();
-
-  // Async action handler
   const { execute } = useAsyncAction();
 
-  const { data: dropdownData } = useDropdownData();
-
-  const {
-    data: repositories = [],
-    isLoading: repositoriesLoading,
-    refetch: refetchRepos,
-  } = useGetTeamRepositories(selectedTeams.length > 0 ? selectedTeams[0] : undefined);
-
-  const { data: machines = [] } = useGetTeamMachines(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
-  );
-
-  const { data: storages = [] } = useGetTeamStorages(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
-  );
+  const { dropdownData, repositories, repositoriesLoading, refetchRepos, machines, storages } =
+    useCredentialsData(selectedTeams);
 
   const createRepositoryMutation = useCreateRepository();
   const updateRepoNameMutation = useUpdateRepositoryName();
   const deleteRepoMutation = useDeleteRepository();
   const updateRepoVaultMutation = useUpdateRepositoryVault();
-
   const { createRepository: createRepositoryWithQueue, isCreating } =
     useRepositoryCreation(machines);
   const { executeDynamic, isExecuting } = useQueueAction();
@@ -140,68 +110,79 @@ const CredentialsPage: React.FC = () => {
     onDeleted: refetchRepos,
   });
 
+  const handleCreateSubmit = useCallback(
+    async (data: RepositoryFormValues) => {
+      const result = await createRepositoryWithQueue(
+        data as RepositoryFormValues & { repositoryName: string; teamName: string }
+      );
+
+      if (!result.success) {
+        showMessage('error', result.error ?? t('repositories.failedToCreateRepository'));
+        return;
+      }
+
+      closeUnifiedModal();
+      if (result.taskId) {
+        queueTrace.open(result.taskId, result.machineName);
+      } else {
+        void refetchRepos();
+      }
+    },
+    [closeUnifiedModal, createRepositoryWithQueue, queueTrace, refetchRepos, t]
+  );
+
+  const handleEditSubmit = useCallback(
+    async (data: RepositoryFormValues) => {
+      if (!currentResource) return;
+
+      const currentName = currentResource.repositoryName;
+      const newName = data.repositoryName;
+
+      if (newName && newName !== currentName) {
+        await updateRepoNameMutation.mutateAsync({
+          teamName: currentResource.teamName,
+          currentRepositoryName: currentName,
+          newRepositoryName: newName,
+        });
+      }
+
+      const vaultData = data.vaultContent;
+      if (vaultData && vaultData !== currentResource.vaultContent) {
+        await updateRepoVaultMutation.mutateAsync({
+          teamName: currentResource.teamName,
+          repositoryName: newName ?? currentName,
+          repositoryTag: currentResource.repositoryTag ?? 'latest',
+          vaultContent: vaultData,
+          vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
+        });
+      }
+
+      closeUnifiedModal();
+      void refetchRepos();
+    },
+    [
+      closeUnifiedModal,
+      currentResource,
+      refetchRepos,
+      updateRepoNameMutation,
+      updateRepoVaultMutation,
+    ]
+  );
+
   const handleUnifiedModalSubmit = useCallback(
     async (data: RepositoryFormValues) => {
       await execute(
         async () => {
           if (unifiedModalState.mode === 'create') {
-            const result = await createRepositoryWithQueue(
-              data as RepositoryFormValues & { repositoryName: string; teamName: string }
-            );
-
-            if (result.success) {
-              closeUnifiedModal();
-
-              if (result.taskId) {
-                queueTrace.open(result.taskId, result.machineName);
-              } else {
-                void refetchRepos();
-              }
-            } else {
-              showMessage('error', result.error ?? t('repositories.failedToCreateRepository'));
-            }
-          } else if (currentResource) {
-            const currentName = currentResource.repositoryName;
-            const newName = data.repositoryName;
-
-            if (newName && newName !== currentName) {
-              await updateRepoNameMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                currentRepositoryName: currentName,
-                newRepositoryName: newName,
-              });
-            }
-
-            const vaultData = data.vaultContent;
-            if (vaultData && vaultData !== currentResource.vaultContent) {
-              await updateRepoVaultMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                repositoryName: newName ?? currentName,
-                repositoryTag: currentResource.repositoryTag ?? 'latest',
-                vaultContent: vaultData,
-                vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
-              });
-            }
-
-            closeUnifiedModal();
-            void refetchRepos();
+            await handleCreateSubmit(data);
+          } else {
+            await handleEditSubmit(data);
           }
         },
         { skipSuccessMessage: true }
       );
     },
-    [
-      closeUnifiedModal,
-      createRepositoryWithQueue,
-      currentResource,
-      execute,
-      queueTrace,
-      refetchRepos,
-      t,
-      unifiedModalState.mode,
-      updateRepoNameMutation,
-      updateRepoVaultMutation,
-    ]
+    [execute, handleCreateSubmit, handleEditSubmit, unifiedModalState.mode]
   );
 
   const handleUnifiedVaultUpdate = useCallback(
@@ -233,13 +214,12 @@ const CredentialsPage: React.FC = () => {
       description: string;
       selectedMachine?: string;
     }) => {
-      if (!currentResource) return;
-      try {
-        if (!functionData.selectedMachine) {
-          showMessage('error', t('resources:errors.machineNotFound'));
-          return;
-        }
+      if (!currentResource || !functionData.selectedMachine) {
+        showMessage('error', t('resources:errors.machineNotFound'));
+        return;
+      }
 
+      try {
         const teamEntry = dropdownData?.machinesByTeam.find(
           (team) => team.teamName === currentResource.teamName
         );
@@ -258,42 +238,17 @@ const CredentialsPage: React.FC = () => {
             machine.teamName === currentResource.teamName
         );
 
-        const queuePayload: Omit<DynamicQueueActionParams, 'functionName'> = {
-          params: functionData.params,
-          teamName: currentResource.teamName ?? '',
-          machineName: machineEntry.value,
-          bridgeName: machineEntry.bridgeName ?? '',
-          priority: functionData.priority,
-          description: functionData.description,
-          addedVia: 'repository-table',
-          teamVault:
-            teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent ?? '{}',
-          repositoryGuid: currentResource.repositoryGuid ?? undefined,
-          vaultContent: currentResource.vaultContent ?? '{}',
-          repositoryNetworkId: currentResource.repositoryNetworkId ?? undefined,
-          repositoryNetworkMode: currentResource.repositoryNetworkMode ?? undefined,
-          repositoryTag: currentResource.repositoryTag ?? undefined,
-          machineVault: selectedMachine?.vaultContent ?? '{}',
-        };
+        const queuePayload = buildQueuePayload(
+          functionData,
+          machineEntry,
+          selectedMachine,
+          currentResource,
+          teams
+        );
+        if (!queuePayload) return;
 
         if (functionData.function.name === 'backup_pull') {
-          if (functionData.params.sourceType === 'machine' && functionData.params.from) {
-            const sourceMachine = machines.find(
-              (machine) => machine.machineName === functionData.params.from
-            );
-            if (sourceMachine?.vaultContent) {
-              queuePayload.sourceMachineVault = sourceMachine.vaultContent;
-            }
-          }
-
-          if (functionData.params.sourceType === 'storage' && functionData.params.from) {
-            const sourceStorage = storages.find(
-              (storage) => storage.storageName === functionData.params.from
-            );
-            if (sourceStorage?.vaultContent) {
-              queuePayload.sourceStorageVault = sourceStorage.vaultContent;
-            }
-          }
+          addBackupPullVaults(queuePayload, functionData.params, machines, storages);
         }
 
         const result = await executeDynamic(
@@ -302,18 +257,19 @@ const CredentialsPage: React.FC = () => {
         );
         closeUnifiedModal();
 
-        if (result.success) {
-          if (result.taskId) {
-            showMessage('success', t('repositories.queueItemCreated'));
-            queueTrace.open(result.taskId, machineEntry.value);
-          } else if (result.isQueued) {
-            showMessage(
-              'info',
-              t('resources:messages.highestPriorityQueued', { resourceType: 'repository' })
-            );
-          }
-        } else {
+        if (!result.success) {
           showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
+          return;
+        }
+
+        if (result.taskId) {
+          showMessage('success', t('repositories.queueItemCreated'));
+          queueTrace.open(result.taskId, machineEntry.value);
+        } else if (result.isQueued) {
+          showMessage(
+            'info',
+            t('resources:messages.highestPriorityQueued', { resourceType: 'repository' })
+          );
         }
       } catch {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'));
@@ -325,10 +281,10 @@ const CredentialsPage: React.FC = () => {
       dropdownData,
       executeDynamic,
       machines,
-      queueTrace,
       storages,
-      t,
       teams,
+      queueTrace,
+      t,
     ]
   );
 
@@ -343,22 +299,22 @@ const CredentialsPage: React.FC = () => {
 
   useEffect(() => {
     const state = location.state as CredentialsLocationState | null;
-    if (state?.createRepository) {
-      if (state.selectedTeam) {
-        setSelectedTeams([state.selectedTeam]);
-      }
+    if (!state?.createRepository) return;
 
-      setTimeout(() => {
-        const modalData: RepoModalData = {
-          teamName: state.selectedTeam,
-          machineName: state.selectedMachine,
-          preselectedTemplate: state.selectedTemplate,
-        };
-        openUnifiedModal('create', modalData, 'credentials-only');
-      }, 100);
-
-      void navigate(location.pathname, { replace: true });
+    if (state.selectedTeam) {
+      setSelectedTeams([state.selectedTeam]);
     }
+
+    setTimeout(() => {
+      const modalData: RepoModalData = {
+        teamName: state.selectedTeam,
+        machineName: state.selectedMachine,
+        preselectedTemplate: state.selectedTemplate,
+      };
+      openUnifiedModal('create', modalData, 'credentials-only');
+    }, 100);
+
+    void navigate(location.pathname, { replace: true });
   }, [location, navigate, openUnifiedModal, setSelectedTeams]);
 
   const repositoryColumns = useMemo(
@@ -387,39 +343,16 @@ const CredentialsPage: React.FC = () => {
     ? t('repositories.noRepositories')
     : t('teams.selectTeamPrompt');
 
-  const mobileRender = useMemo(
-    // eslint-disable-next-line react/display-name
-    () => (record: GetTeamRepositories_ResultSet1) => {
-      const menuItems: MenuProps['items'] = [
-        buildEditMenuItem(t, () =>
-          openUnifiedModal(
-            'edit',
-            record as GetTeamRepositories_ResultSet1 & Record<string, unknown>
-          )
-        ),
-        buildTraceMenuItem(t, () =>
-          auditTrace.open({
-            entityType: 'Repository',
-            entityIdentifier: record.repositoryName ?? '',
-            entityName: record.repositoryName ?? '',
-          })
-        ),
-        buildDivider(),
-        buildDeleteMenuItem(t, () => handleDeleteRepository(record)),
-      ];
-
-      return (
-        <MobileCard actions={<ResourceActionsDropdown menuItems={menuItems} />}>
-          <Space>
-            <InboxOutlined />
-            <Typography.Text strong className="truncate">
-              {record.repositoryName}
-            </Typography.Text>
-          </Space>
-          <Tag>{record.teamName}</Tag>
-        </MobileCard>
-      );
-    },
+  const mobileRender = useCallback(
+    (record: GetTeamRepositories_ResultSet1) => (
+      <RepositoryMobileCard
+        record={record}
+        t={t}
+        onEdit={openUnifiedModal.bind(null, 'edit')}
+        onTrace={auditTrace.open}
+        onDelete={handleDeleteRepository}
+      />
+    ),
     [t, openUnifiedModal, auditTrace, handleDeleteRepository]
   );
 

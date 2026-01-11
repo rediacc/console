@@ -55,6 +55,187 @@ interface RepositoryActionsMenuProps {
   t: ReturnType<typeof useTranslation>['t'];
 }
 
+// Helper to create menu labels with consistent data-testid
+const createActionLabel = (actionKey: string, label: React.ReactNode) => (
+  <Typography.Text data-testid={`repo-action-${actionKey.replaceAll('_', '-')}`}>
+    {label}
+  </Typography.Text>
+);
+
+// Helper to create a standard menu item with click handler
+const createMenuItem = (
+  key: string,
+  label: React.ReactNode,
+  icon: React.ReactNode,
+  _record: RepositoryTableRow,
+  handler: () => void,
+  danger?: boolean
+): NonNullable<MenuProps['items']>[number] => ({
+  key,
+  label: createActionLabel(key, label),
+  icon,
+  onClick: (info: MenuClickEvent) => {
+    info.domEvent.stopPropagation();
+    handler();
+  },
+  danger,
+});
+
+// Build main menu items
+const buildMainMenuItems = (
+  record: RepositoryTableRow,
+  t: ReturnType<typeof useTranslation>['t'],
+  onQuickAction: RepositoryActionsMenuProps['onQuickAction'],
+  onRunFunction: RepositoryActionsMenuProps['onRunFunction']
+): MenuProps['items'] => {
+  const items: MenuProps['items'] = [];
+
+  items.push(
+    createMenuItem(
+      'repository_up',
+      t('functions:functions.repository_up.name'),
+      <PlayCircleOutlined />,
+      record,
+      () => onQuickAction(record, 'repository_up', 4, 'mount')
+    )
+  );
+
+  if (record.mounted) {
+    items.push(
+      createMenuItem(
+        'repository_down',
+        t('functions:functions.repository_down.name'),
+        <PauseCircleOutlined />,
+        record,
+        () => onQuickAction(record, 'repository_down', 4, 'unmount')
+      )
+    );
+  }
+
+  if (!record.mounted) {
+    items.push(
+      createMenuItem(
+        'repository_validate',
+        t('functions:functions.repository_validate.name'),
+        <CheckCircleOutlined />,
+        record,
+        () => onRunFunction(record, 'repository_validate')
+      )
+    );
+  }
+
+  items.push(
+    createMenuItem('fork', t('functions:functions.fork.name'), <CopyOutlined />, record, () =>
+      onRunFunction(record, 'fork')
+    ),
+    createMenuItem(
+      'backup_push',
+      t('functions:functions.backup_push.name'),
+      <CloudUploadOutlined />,
+      record,
+      () => onRunFunction(record, 'backup_push')
+    ),
+    createMenuItem(
+      'backup_pull',
+      t('functions:functions.backup_pull.name'),
+      <CloudDownloadOutlined />,
+      record,
+      () => onRunFunction(record, 'backup_pull')
+    ),
+    createMenuItem(
+      'repository_template_apply',
+      t('functions:functions.repository_template_apply.name'),
+      <AppstoreOutlined />,
+      record,
+      () => onRunFunction(record, 'repository_template_apply')
+    )
+  );
+
+  return items;
+};
+
+// Build advanced submenu items
+const buildAdvancedSubmenuItems = (
+  record: RepositoryTableRow,
+  t: ReturnType<typeof useTranslation>['t'],
+  onQuickAction: RepositoryActionsMenuProps['onQuickAction'],
+  onRunFunction: RepositoryActionsMenuProps['onRunFunction']
+): MenuProps['items'] => {
+  const items: MenuProps['items'] = [];
+
+  if (record.mounted) {
+    items.push(
+      createMenuItem(
+        'repository_unmount',
+        t('resources:repositories.unmount'),
+        <DisconnectOutlined />,
+        record,
+        () => onQuickAction(record, 'repository_unmount', 4)
+      ),
+      createMenuItem(
+        'repository_expand',
+        t('functions:functions.repository_expand.name'),
+        <ExpandOutlined />,
+        record,
+        () => onRunFunction(record, 'repository_expand')
+      )
+    );
+  } else {
+    items.push(
+      createMenuItem(
+        'repository_mount',
+        t('resources:repositories.mount'),
+        <DatabaseOutlined />,
+        record,
+        () => onQuickAction(record, 'repository_mount', 4)
+      ),
+      createMenuItem(
+        'repository_resize',
+        t('functions:functions.repository_resize.name'),
+        <ShrinkOutlined />,
+        record,
+        () => onRunFunction(record, 'repository_resize')
+      )
+    );
+  }
+
+  if (items.length > 0) {
+    items.push({ type: 'divider' as const });
+  }
+
+  items.push(
+    createMenuItem('experimental', t('machines:experimental'), <FunctionOutlined />, record, () =>
+      onRunFunction(record)
+    )
+  );
+
+  return items;
+};
+
+// Build fork-specific menu items
+const buildForkMenuItems = (
+  record: RepositoryTableRow,
+  t: ReturnType<typeof useTranslation>['t'],
+  onPromoteToGrand: RepositoryActionsMenuProps['onPromoteToGrand'],
+  onDeleteFork: RepositoryActionsMenuProps['onDeleteFork']
+): MenuProps['items'] => [
+  createMenuItem(
+    'promote-to-grand',
+    t('resources:repositories.promoteToGrand'),
+    <RiseOutlined />,
+    record,
+    () => onPromoteToGrand(record)
+  ),
+  createMenuItem(
+    'delete-fork',
+    t('resources:repositories.deleteFork'),
+    <DeleteOutlined />,
+    record,
+    () => onDeleteFork(record),
+    true
+  ),
+];
+
 export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   record,
   teamRepositories,
@@ -74,173 +255,18 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
   onCreateRepository,
   t,
 }) => {
-  // Helper to create menu labels with consistent data-testid
-  const createActionLabel = (actionKey: string, label: React.ReactNode) => (
-    <Typography.Text data-testid={`repo-action-${actionKey.replace(/_/g, '-')}`}>
-      {label}
-    </Typography.Text>
-  );
-
   const RepoData = teamRepositories.find(
     (r) => r.repositoryName === record.name && r.repositoryTag === record.repositoryTag
   );
 
-  const menuItems: MenuProps['items'] = [];
+  // Build menu items using helper functions
+  const menuItems: NonNullable<MenuProps['items']> = [
+    ...(buildMainMenuItems(record, t, onQuickAction, onRunFunction) ?? []),
+  ];
 
-  menuItems.push({
-    key: 'repository_up',
-    label: createActionLabel('repository_up', t('functions:functions.repository_up.name')),
-    icon: <PlayCircleOutlined />,
-    onClick: (info: MenuClickEvent) => {
-      info.domEvent.stopPropagation();
-      onQuickAction(record, 'repository_up', 4, 'mount');
-    },
-  });
-
-  if (record.mounted) {
-    menuItems.push({
-      key: 'repository_down',
-      label: createActionLabel('repository_down', t('functions:functions.repository_down.name')),
-      icon: <PauseCircleOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onQuickAction(record, 'repository_down', 4, 'unmount');
-      },
-    });
-  }
-
-  if (!record.mounted) {
-    menuItems.push({
-      key: 'repository_validate',
-      label: createActionLabel(
-        'repository_validate',
-        t('functions:functions.repository_validate.name')
-      ),
-      icon: <CheckCircleOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onRunFunction(record, 'repository_validate');
-      },
-    });
-  }
-
-  menuItems.push({
-    key: 'fork',
-    label: createActionLabel('fork', t('functions:functions.fork.name')),
-    icon: <CopyOutlined />,
-    onClick: (info: MenuClickEvent) => {
-      info.domEvent.stopPropagation();
-      onRunFunction(record, 'fork');
-    },
-  });
-
-  // TODO: Refactor to use backup_push submenu with target selection (machine/storage)
-  // See plan: cached-whistling-hopcroft.md for full UI design
-  // Current: backup_deploy → backup_push with destinationType=machine
-  menuItems.push({
-    key: 'backup_push',
-    label: createActionLabel('backup_push', t('functions:functions.backup_push.name')),
-    icon: <CloudUploadOutlined />,
-    onClick: (info: MenuClickEvent) => {
-      info.domEvent.stopPropagation();
-      onRunFunction(record, 'backup_push');
-    },
-  });
-
-  // TODO: Refactor to use backup_pull submenu with source selection (machine/storage)
-  // Current: New menu item for pulling repositories
-  menuItems.push({
-    key: 'backup_pull',
-    label: createActionLabel('backup_pull', t('functions:functions.backup_pull.name')),
-    icon: <CloudDownloadOutlined />,
-    onClick: (info: MenuClickEvent) => {
-      info.domEvent.stopPropagation();
-      onRunFunction(record, 'backup_pull');
-    },
-  });
-
-  menuItems.push({
-    key: 'repository_template_apply',
-    label: createActionLabel(
-      'repository_template_apply',
-      t('functions:functions.repository_template_apply.name')
-    ),
-    icon: <AppstoreOutlined />,
-    onClick: (info: MenuClickEvent) => {
-      info.domEvent.stopPropagation();
-      onRunFunction(record, 'repository_template_apply');
-    },
-  });
-
-  const advancedSubmenuItems: MenuProps['items'] = [];
-
-  if (!record.mounted) {
-    advancedSubmenuItems.push({
-      key: 'repository_mount',
-      label: createActionLabel('repository_mount', t('resources:repositories.mount')),
-      icon: <DatabaseOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onQuickAction(record, 'repository_mount', 4);
-      },
-    });
-  } else {
-    advancedSubmenuItems.push({
-      key: 'repository_unmount',
-      label: createActionLabel('repository_unmount', t('resources:repositories.unmount')),
-      icon: <DisconnectOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onQuickAction(record, 'repository_unmount', 4);
-      },
-    });
-  }
-
-  if (!record.mounted) {
-    advancedSubmenuItems.push({
-      key: 'repository_resize',
-      label: createActionLabel(
-        'repository_resize',
-        t('functions:functions.repository_resize.name')
-      ),
-      icon: <ShrinkOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onRunFunction(record, 'repository_resize');
-      },
-    });
-  }
-
-  if (record.mounted) {
-    advancedSubmenuItems.push({
-      key: 'repository_expand',
-      label: createActionLabel(
-        'repository_expand',
-        t('functions:functions.repository_expand.name')
-      ),
-      icon: <ExpandOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onRunFunction(record, 'repository_expand');
-      },
-    });
-  }
-
-  if (advancedSubmenuItems.length > 0) {
-    advancedSubmenuItems.push({ type: 'divider' as const });
-  }
-
-  advancedSubmenuItems.push({
-    key: 'experimental',
-    label: createActionLabel('experimental', t('machines:experimental')),
-    icon: <FunctionOutlined />,
-    onClick: (info: MenuClickEvent) => {
-      info.domEvent.stopPropagation();
-      onRunFunction(record);
-    },
-  });
-
-  if (advancedSubmenuItems.length > 0) {
+  // Add advanced submenu
+  const advancedSubmenuItems = buildAdvancedSubmenuItems(record, t, onQuickAction, onRunFunction);
+  if (advancedSubmenuItems && advancedSubmenuItems.length > 0) {
     menuItems.push({
       key: 'advanced',
       label: t('resources:repositories.advanced'),
@@ -249,53 +275,34 @@ export const RepositoryActionsMenu: React.FC<RepositoryActionsMenuProps> = ({
     });
   }
 
+  // Add fork-specific items
   if (RepoData && coreIsFork(RepoData)) {
-    menuItems.push({
-      key: 'promote-to-grand',
-      label: createActionLabel('promote-to-grand', t('resources:repositories.promoteToGrand')),
-      icon: <RiseOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onPromoteToGrand(record);
-      },
-    });
-    menuItems.push({
-      key: 'delete-fork',
-      label: createActionLabel('delete-fork', t('resources:repositories.deleteFork')),
-      icon: <DeleteOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onDeleteFork(record);
-      },
-      danger: true,
-    });
+    menuItems.push(...(buildForkMenuItems(record, t, onPromoteToGrand, onDeleteFork) ?? []));
   }
 
+  // Add divider and rename option
   if (menuItems.length > 0) {
     menuItems.push({ type: 'divider' as const });
   }
 
-  menuItems.push({
-    key: 'rename',
-    label: createActionLabel('rename', t('resources:repositories.rename')),
-    icon: <EditOutlined />,
-    onClick: (info: MenuClickEvent) => {
-      info.domEvent.stopPropagation();
-      onRenameRepository(record);
-    },
-  });
+  menuItems.push(
+    createMenuItem('rename', t('resources:repositories.rename'), <EditOutlined />, record, () =>
+      onRenameRepository(record)
+    )
+  );
 
+  // Add delete grand option for credentials
   if (RepoData && coreIsCredential(RepoData)) {
-    menuItems.push({
-      key: 'delete-grand',
-      label: createActionLabel('delete-grand', t('resources:repositories.deleteGrand')),
-      icon: <DeleteOutlined />,
-      onClick: (info: MenuClickEvent) => {
-        info.domEvent.stopPropagation();
-        onDeleteGrandRepository(record);
-      },
-      danger: true,
-    });
+    menuItems.push(
+      createMenuItem(
+        'delete-grand',
+        t('resources:repositories.deleteGrand'),
+        <DeleteOutlined />,
+        record,
+        () => onDeleteGrandRepository(record),
+        true
+      )
+    );
   }
 
   const actionRecord: RepositoryTableRow = {

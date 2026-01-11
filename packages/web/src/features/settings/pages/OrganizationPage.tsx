@@ -99,7 +99,7 @@ const OrganizationPage: React.FC = () => {
     try {
       const result = await exportVaultsQuery.refetch();
       if (result.data) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+        const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-').split('T')[0];
         const { allVaults } = result.data;
 
         const exportData = {
@@ -131,7 +131,7 @@ const OrganizationPage: React.FC = () => {
     try {
       const result = await exportOrganizationDataQuery.refetch();
       if (result.data) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+        const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-').split('T')[0];
         const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -175,13 +175,51 @@ const OrganizationPage: React.FC = () => {
     }
   };
 
+  const decryptVaultContent = async (content: string): Promise<string> => {
+    if (typeof content !== 'string') return content;
+    if (!currentMasterPassword) return content;
+    if (masterPasswordOperation === 'create') return content;
+    if (!/^[A-Za-z0-9+/]+=*$/.exec(content)) return content;
+
+    try {
+      return await cryptoService.decryptString(content, currentMasterPassword);
+    } catch {
+      return content;
+    }
+  };
+
+  const processVaultForPasswordChange = async (
+    vault: { decryptedVault?: string; credential?: string; vaultName?: string; version?: number },
+    newPassword: string
+  ): Promise<{ credential: string; name: string; content: string; version: number } | null> => {
+    if (!vault.decryptedVault || !vault.credential || !vault.vaultName) {
+      return null;
+    }
+
+    try {
+      let vaultContent = await decryptVaultContent(vault.decryptedVault);
+
+      if (typeof vaultContent === 'string' && masterPasswordOperation !== 'remove') {
+        vaultContent = await cryptoService.encryptString(vaultContent, newPassword);
+      }
+
+      return {
+        credential: vault.credential,
+        name: vault.vaultName,
+        content: vaultContent,
+        version: vault.version ?? 1,
+      };
+    } catch {
+      showMessage('error', `Failed to process vault ${vault.vaultName}`);
+      return null;
+    }
+  };
+
   const handleUpdateMasterPassword = async (values: {
     password?: string;
     confirmPassword?: string;
   }) => {
-    if (updateVaultsMutation.isPending) {
-      return;
-    }
+    if (updateVaultsMutation.isPending) return;
 
     try {
       const vaultsResult = await exportVaultsQuery.refetch();
@@ -190,52 +228,13 @@ const OrganizationPage: React.FC = () => {
         return;
       }
 
-      const vaultUpdates: {
-        credential: string;
-        name: string;
-        content: string;
-        version: number;
-      }[] = [];
       const newPassword = masterPasswordOperation === 'remove' ? '' : values.password!;
-
-      for (const vault of vaultsResult.data.allVaults) {
-        if (vault.decryptedVault && vault.credential && vault.vaultName) {
-          try {
-            let vaultContent = vault.decryptedVault;
-
-            if (
-              typeof vaultContent === 'string' &&
-              currentMasterPassword &&
-              masterPasswordOperation !== 'create'
-            ) {
-              try {
-                if (vaultContent.match(/^[A-Za-z0-9+/]+=*$/)) {
-                  vaultContent = await cryptoService.decryptString(
-                    vaultContent,
-                    currentMasterPassword
-                  );
-                }
-              } catch {
-                // ignore
-              }
-            }
-
-            let finalContent = vaultContent;
-            if (typeof vaultContent === 'string' && masterPasswordOperation !== 'remove') {
-              finalContent = await cryptoService.encryptString(vaultContent, newPassword);
-            }
-
-            vaultUpdates.push({
-              credential: vault.credential,
-              name: vault.vaultName,
-              content: finalContent,
-              version: vault.version ?? 1,
-            });
-          } catch {
-            showMessage('error', `Failed to process vault ${vault.vaultName}`);
-          }
-        }
-      }
+      const processedVaults = await Promise.all(
+        vaultsResult.data.allVaults.map((vault) =>
+          processVaultForPasswordChange(vault, newPassword)
+        )
+      );
+      const vaultUpdates = processedVaults.filter((v): v is NonNullable<typeof v> => v !== null);
 
       if (!vaultUpdates.length) {
         showMessage('error', tSystem('dangerZone.updateMasterPassword.error.noVaults'));
@@ -245,10 +244,9 @@ const OrganizationPage: React.FC = () => {
       await updateVaultsMutation.mutateAsync(vaultUpdates);
       await blockUserRequestsMutation.mutateAsync(false);
 
-      await masterPasswordService.setMasterPassword(
-        masterPasswordOperation === 'remove' ? null : newPassword
-      );
-      setCurrentMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword);
+      const finalPassword = masterPasswordOperation === 'remove' ? null : newPassword;
+      await masterPasswordService.setMasterPassword(finalPassword);
+      setCurrentMasterPassword(finalPassword);
 
       masterPasswordModal.close();
       setCompletedOperation(masterPasswordOperation);

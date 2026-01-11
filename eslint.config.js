@@ -4,6 +4,9 @@ import tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import importPlugin from 'eslint-plugin-import';
+import unicornPlugin from 'eslint-plugin-unicorn';
+import sonarjsPlugin from 'eslint-plugin-sonarjs';
+import regexpPlugin from 'eslint-plugin-regexp';
 import globals from 'globals';
 import { requireTestId } from './eslint-rules/require-testid.js';
 import { requireTranslation } from './eslint-rules/require-translation.js';
@@ -57,6 +60,9 @@ export default tseslint.config(
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       import: importPlugin,
+      unicorn: unicornPlugin,
+      sonarjs: sonarjsPlugin,
+      regexp: regexpPlugin,
       'custom': {
         rules: {
           'require-testid': requireTestId,
@@ -209,6 +215,37 @@ export default tseslint.config(
       'no-lonely-if': 'error',
       'no-implicit-coercion': ['error', { allow: ['!!'] }],
 
+      // === SonarQube Parity Rules (with stricter limits) ===
+
+      // CRITICAL - Cognitive Complexity (SonarQube S3776 default is 15, we use 10 for stricter enforcement)
+      'sonarjs/cognitive-complexity': ['error', 10],
+
+      // CRITICAL - Nested callbacks (SonarQube S2004 default is 4, we use 3 for stricter enforcement)
+      'max-nested-callbacks': ['error', 3],
+
+      // CRITICAL - Sort without compare function (SonarQube S2871)
+      '@typescript-eslint/require-array-sort-compare': 'error',
+
+      // MAJOR - Prefer readonly class members (SonarQube S2933)
+      '@typescript-eslint/prefer-readonly': 'error',
+
+      // MAJOR - No nested ternary operators (SonarQube S3358)
+      'no-nested-ternary': 'error',
+
+      // MAJOR - Regex best practices (SonarQube S5850)
+      'regexp/strict': 'error',
+
+      // MINOR - Modern JS patterns (unicorn plugin)
+      'unicorn/prefer-node-protocol': 'error',        // S7772: prefer node: imports
+      'unicorn/prefer-number-properties': 'error',    // S7773: Number.parseInt
+      'unicorn/prefer-string-replace-all': 'error',   // S7781: String.replaceAll
+      'unicorn/no-array-push-push': 'error',          // S7778: batch Array.push
+      'unicorn/no-negated-condition': 'error',        // S7735: avoid negated conditions
+
+      // MINOR - TypeScript patterns (already installed)
+      '@typescript-eslint/prefer-regexp-exec': 'error',           // S6594: RegExp.exec
+      '@typescript-eslint/no-redundant-type-constituents': 'error', // S6571: unknown in union
+
       // Import rules - enforce consistent import paths
       // Note: no-relative-parent-imports is not used because @/ aliases resolve to parent
       // directories and the rule cannot distinguish between ../foo and @/foo patterns.
@@ -279,8 +316,8 @@ export default tseslint.config(
           message: 'Do not use defaultValue in translation calls. Add the key to English translation JSON files instead.',
         },
         {
-          selector: 'JSXAttribute[name.name="style"]',
-          message: 'Inline styles are not allowed. Use CSS utility classes from global.css instead (e.g., className="w-full inline-flex"). For dynamic styles, use // eslint-disable-next-line no-restricted-syntax',
+          selector: 'JSXAttribute[name.name=/^styles?$/]',
+          message: 'Inline styles are not allowed. Use CSS utility classes from global.css or Ant Design component props instead. For dynamic styles, use // eslint-disable-next-line no-restricted-syntax',
         },
         {
           selector: "ExportNamedDeclaration > TSTypeAliasDeclaration:not([typeParameters]) > TSTypeAnnotation > TSTypeReference",
@@ -618,6 +655,9 @@ export default tseslint.config(
       }],
       // Tests can be longer than production code
       'max-lines': 'off',
+      // Test files use nested callbacks: describe -> test -> async -> array methods
+      // Limit of 3 is too restrictive for test patterns like find(), some(), map()
+      'max-nested-callbacks': ['error', 5],
     },
   }
 );

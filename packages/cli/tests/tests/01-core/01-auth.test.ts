@@ -20,41 +20,37 @@ test.describe('Auth Commands @cli @core', () => {
     });
   });
 
-  test.describe('auth token', () => {
-    test.describe('auth token list', () => {
-      test('should list active sessions', async () => {
-        const result = await runner.run(['auth', 'token', 'list']);
+  test.describe('auth token - list', () => {
+    test('should list active sessions', async () => {
+      const result = await runner.run(['auth', 'token', 'list']);
 
-        expect(result.exitCode).toBe(0);
-        expect(result.json).not.toBeNull();
-        expect(Array.isArray(result.json)).toBe(true);
-      });
-    });
-
-    test.describe('auth token fork', () => {
-      test('should create a forked token', async () => {
-        const result = await runner.run(['auth', 'token', 'fork', '-n', 'Test Fork Token']);
-
-        expect(result.exitCode).toBe(0);
-        expect(result.stdout).toContain('Token');
-      });
+      expect(result.exitCode).toBe(0);
+      expect(result.json).not.toBeNull();
+      expect(Array.isArray(result.json)).toBe(true);
     });
   });
 
-  test.describe('auth tfa', () => {
-    test.describe('auth tfa status', () => {
-      test('should show TFA status or error for fresh account', async () => {
-        const result = await runner.run(['auth', 'tfa', 'status'], { skipJsonParse: true });
+  test.describe('auth token - fork', () => {
+    test('should create a forked token', async () => {
+      const result = await runner.run(['auth', 'token', 'fork', '-n', 'Test Fork Token']);
 
-        // TFA status may fail for fresh accounts (400 error) or succeed with status
-        const output = result.stdout + result.stderr;
-        expect(
-          output.includes('TFA is enabled') ||
-            output.includes('TFA is not enabled') ||
-            output.includes('Error') ||
-            result.exitCode !== 0
-        ).toBe(true);
-      });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Token');
+    });
+  });
+
+  test.describe('auth tfa - status', () => {
+    test('should show TFA status or error for fresh account', async () => {
+      const result = await runner.run(['auth', 'tfa', 'status'], { skipJsonParse: true });
+
+      // TFA status may fail for fresh accounts (400 error) or succeed with status
+      const output = result.stdout + result.stderr;
+      expect(
+        output.includes('TFA is enabled') ||
+          output.includes('TFA is not enabled') ||
+          output.includes('Error') ||
+          result.exitCode !== 0
+      ).toBe(true);
     });
   });
 

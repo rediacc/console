@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { BrowserWindow, screen } from 'electron';
 import { app } from 'electron';
 
@@ -12,7 +12,7 @@ interface WindowState {
 }
 
 export class WindowManager {
-  private statePath: string;
+  private readonly statePath: string;
   private state: WindowState = { width: 1280, height: 800 };
 
   constructor() {

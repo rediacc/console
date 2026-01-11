@@ -23,6 +23,7 @@
     "test:errors": "playwright test --config tests/playwright.config.ts --project=errors",
     "test:edition": "playwright test --config tests/playwright.config.ts --project=edition",
     "test:e2e": "playwright test --config tests/playwright.config.ts --project=e2e",
+    "test:vscode": "playwright test --config tests/playwright.config.ts --project=vscode",
     "test:report": "playwright show-report tests/reports/cli",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",

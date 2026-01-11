@@ -33,58 +33,65 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ auditLogs, 
       }
       data-testid="dashboard-card-recent-activity"
     >
-      {isLoading ? (
-        <Flex vertical align="center" justify="center">
-          <LoadingWrapper loading centered minHeight={120}>
-            <Flex />
-          </LoadingWrapper>
-        </Flex>
-      ) : auditLogs && auditLogs.length > 0 ? (
-        <Timeline
-          items={auditLogs
-            .filter((log) => {
-              const action = (log.action ?? '').toLowerCase();
-              const isTokenValidation = action.includes('token') && action.includes('validat');
-              const isRoutineAuth = action.includes('login') && action.includes('success');
-              return !isTokenValidation && !isRoutineAuth;
-            })
-            .slice(0, 5)
-            .map((log, index) => ({
-              key: index,
-              dot: getActionIcon(log.action ?? ''),
-              children: (
-                <Flex vertical className="gap-sm w-full">
-                  <Flex align="center" justify="space-between">
-                    <Flex align="center" wrap className="inline-flex">
-                      <Typography.Text strong>
-                        {(log.action ?? '').replace(/_/g, ' ')}
+      {(() => {
+        if (isLoading) {
+          return (
+            <Flex vertical align="center" justify="center">
+              <LoadingWrapper loading centered minHeight={120}>
+                <Flex />
+              </LoadingWrapper>
+            </Flex>
+          );
+        } else if (auditLogs && auditLogs.length > 0) {
+          return (
+            <Timeline
+              items={auditLogs
+                .filter((log) => {
+                  const action = (log.action ?? '').toLowerCase();
+                  const isTokenValidation = action.includes('token') && action.includes('validat');
+                  const isRoutineAuth = action.includes('login') && action.includes('success');
+                  return !isTokenValidation && !isRoutineAuth;
+                })
+                .slice(0, 5)
+                .map((log, index) => ({
+                  key: index,
+                  dot: getActionIcon(log.action ?? ''),
+                  children: (
+                    <Flex vertical className="gap-sm w-full">
+                      <Flex align="center" justify="space-between">
+                        <Flex align="center" wrap className="inline-flex">
+                          <Typography.Text strong>
+                            {(log.action ?? '').replaceAll('_', ' ')}
+                          </Typography.Text>
+                          <Tag bordered={false}>{log.entity}</Tag>
+                        </Flex>
+                        <Typography.Text>{formatTimestamp(log.timestamp ?? '')}</Typography.Text>
+                      </Flex>
+                      <Typography.Text>
+                        {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
                       </Typography.Text>
-                      <Tag bordered={false}>{log.entity}</Tag>
+                      {log.details?.trim() && (
+                        <Typography.Text>
+                          {log.details.length > DESCRIPTION_TRUNCATE_LENGTH
+                            ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...`
+                            : log.details}
+                        </Typography.Text>
+                      )}
                     </Flex>
-                    <Typography.Text>{formatTimestamp(log.timestamp ?? '')}</Typography.Text>
-                  </Flex>
-                  <Typography.Text>
-                    {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
-                  </Typography.Text>
-                  {log.details?.trim() && (
-                    <Typography.Text>
-                      {log.details.length > DESCRIPTION_TRUNCATE_LENGTH
-                        ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...`
-                        : log.details}
-                    </Typography.Text>
-                  )}
-                </Flex>
-              ),
-            }))}
-        />
-      ) : (
-        <Flex vertical align="center" justify="center">
-          <Empty
-            description={t('dashboard.widgets.recentActivity.noActivity')}
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
-        </Flex>
-      )}
+                  ),
+                }))}
+            />
+          );
+        }
+        return (
+          <Flex vertical align="center" justify="center">
+            <Empty
+              description={t('dashboard.widgets.recentActivity.noActivity')}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          </Flex>
+        );
+      })()}
     </Card>
   );
 };

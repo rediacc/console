@@ -8,8 +8,8 @@
  */
 export function unescapeLogOutput(text: string): string {
   return text
-    .replace(/\\r\\n/g, '\n')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t');
+    .replaceAll('\\r\\n', '\n')
+    .replaceAll('\\n', '\n')
+    .replaceAll('\\r', '\r')
+    .replaceAll('\\t', '\t');
 }

@@ -17,7 +17,7 @@ const _ERROR_CODES = {
 export type ErrorCode = (typeof _ERROR_CODES)[keyof typeof _ERROR_CODES];
 
 export interface CliError {
-  code: ErrorCode | string;
+  code: string;
   message: string;
   details?: string[];
   exitCode: number;

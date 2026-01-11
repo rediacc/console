@@ -311,7 +311,6 @@ const RepoContainersPage: React.FC = () => {
       onCancel={handlePanelClose}
       footer={null}
       width="100%"
-      styles={{ body: { padding: 0 } }}
       data-testid="repository-containers-modal"
       centered
     >

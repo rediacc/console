@@ -15,7 +15,7 @@ interface TableColumn {
 }
 
 class OutputService {
-  private colorEnabled: boolean;
+  private readonly colorEnabled: boolean;
 
   constructor() {
     this.colorEnabled = !process.env.REDIACC_NO_COLOR && process.stdout.isTTY !== false;

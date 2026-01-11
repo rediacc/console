@@ -54,6 +54,8 @@ playwright/__pycache__/
 playwright/artifacts/
 logs/
 packages/cli/tests/reports/
+packages/cli/test-results/
+**/test-results/
 
 # Screenshots (removed from tracking)
 error_screenshot.png

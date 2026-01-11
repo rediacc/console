@@ -23,10 +23,4 @@ export const getThemeConfig = (isDark: boolean): ThemeConfig => ({
   cssVar: true,
   algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
   token: isDark ? darkThemeTokens : lightThemeTokens,
-  components: {
-    Card: {
-      bodyPadding: 0,
-      bodyPaddingSM: 0,
-    },
-  },
 });

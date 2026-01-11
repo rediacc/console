@@ -22,7 +22,7 @@ export type ActionButtonVariant = 'primary' | 'default' | 'link';
  */
 export interface StandardButtonConfig<T = unknown> {
   /** Button type/identifier */
-  type: ActionButtonType | string;
+  type: string;
   /** Icon component */
   icon: React.ReactNode;
   /** Tooltip text (can be i18n key if t is provided) */
@@ -142,6 +142,101 @@ function isButtonVisible<T>(btn: ActionButtonConfig<T>, record: T): boolean {
   return btn.visible(record);
 }
 
+const VARIANT_TO_TYPE: Record<ActionButtonVariant | 'default', 'primary' | 'link' | 'default'> = {
+  primary: 'primary',
+  link: 'link',
+  default: 'default',
+};
+
+function getButtonType(variant?: ActionButtonVariant): 'primary' | 'link' | 'default' {
+  return VARIANT_TO_TYPE[variant ?? 'default'];
+}
+
+function resolveTestId<T>(
+  config: StandardButtonConfig<T>,
+  record: T,
+  prefix: string,
+  recordId: string
+): string {
+  if (typeof config.testId === 'function') return config.testId(record);
+  if (config.testId) return config.testId;
+  if (config.testIdSuffix) return `${prefix}${config.testIdSuffix}-${recordId}`;
+  return `${prefix}${config.type}-${recordId}`;
+}
+
+function resolveBoolean<T>(
+  value: boolean | ((record: T) => boolean) | undefined,
+  record: T,
+  defaultValue = false
+): boolean {
+  if (value === undefined) return defaultValue;
+  if (typeof value === 'boolean') return value;
+  return value(record);
+}
+
+interface StandardButtonRendererProps<T> {
+  config: StandardButtonConfig<T>;
+  record: T;
+  prefix: string;
+  recordId: string;
+  getTooltipText: (text: string) => string;
+}
+
+function StandardButtonRenderer<T>({
+  config,
+  record,
+  prefix,
+  recordId,
+  getTooltipText,
+}: StandardButtonRendererProps<T>): React.ReactElement {
+  const isDisabled = resolveBoolean(config.disabled, record);
+  const isLoading = resolveBoolean(config.loading, record);
+  const testId = resolveTestId(config, record, prefix, recordId);
+  const tooltipText = getTooltipText(config.tooltip);
+  const ariaLabel = config.ariaLabel ? getTooltipText(config.ariaLabel) : tooltipText;
+  const labelText = config.label ? getTooltipText(config.label) : undefined;
+  const buttonType = getButtonType(config.variant);
+
+  const buttonElement = (
+    <Button
+      type={buttonType}
+      icon={config.icon}
+      danger={config.danger}
+      disabled={isDisabled}
+      onClick={config.onClick ? () => config.onClick?.(record) : undefined}
+      loading={isLoading}
+      data-testid={testId}
+      aria-label={ariaLabel}
+      shape={labelText ? 'default' : 'circle'}
+    >
+      {labelText}
+    </Button>
+  );
+
+  if (config.dropdownItems) {
+    return (
+      <Dropdown
+        key={config.type}
+        menu={{
+          items: config.dropdownItems,
+          onClick: config.onDropdownClick
+            ? ({ key }) => config.onDropdownClick?.(key, record)
+            : undefined,
+        }}
+        trigger={['click']}
+      >
+        <Tooltip title={tooltipText}>{buttonElement}</Tooltip>
+      </Dropdown>
+    );
+  }
+
+  return (
+    <Tooltip key={config.type} title={tooltipText}>
+      {buttonElement}
+    </Tooltip>
+  );
+}
+
 export function ActionButtonGroup<T>({
   buttons,
   record,
@@ -150,15 +245,11 @@ export function ActionButtonGroup<T>({
   t,
   reserveSpace = false,
 }: ActionButtonGroupProps<T>): React.ReactElement {
-  // Type-safe access to record ID field
   const recordValue = record[idField];
   const recordId = String(recordValue ?? '');
   const prefix = testIdPrefix ? `${testIdPrefix}-` : '';
-
   const getTooltipText = (text: string) => (t ? t(text) : text);
 
-  // When reserveSpace is enabled, iterate over all buttons and render placeholders for hidden ones
-  // Otherwise, filter to only visible buttons (original behavior)
   const buttonsToRender = reserveSpace
     ? buttons
     : buttons.filter((btn) => isButtonVisible(btn, record));
@@ -168,78 +259,23 @@ export function ActionButtonGroup<T>({
       {buttonsToRender.map((config, index) => {
         const isVisible = isButtonVisible(config, record);
 
-        // If reserveSpace is enabled and button is not visible, render a placeholder
         if (reserveSpace && !isVisible) {
           return <ButtonPlaceholder key={`placeholder-${index}`} />;
         }
 
-        // Handle custom render slot
         if (isCustomConfig(config)) {
           return <React.Fragment key={`custom-${index}`}>{config.render(record)}</React.Fragment>;
         }
 
-        const isDisabled =
-          config.disabled === true ||
-          (typeof config.disabled === 'function' && config.disabled(record));
-        const isLoading =
-          typeof config.loading === 'function' ? config.loading(record) : config.loading;
-
-        const testId =
-          typeof config.testId === 'function'
-            ? config.testId(record)
-            : (config.testId ??
-              (config.testIdSuffix
-                ? `${prefix}${config.testIdSuffix}-${recordId}`
-                : `${prefix}${config.type}-${recordId}`));
-
-        const tooltipText = getTooltipText(config.tooltip);
-        const ariaLabel = config.ariaLabel ? getTooltipText(config.ariaLabel) : tooltipText;
-        const labelText = config.label ? getTooltipText(config.label) : undefined;
-
-        const buttonElement = (
-          <Button
-            type={
-              config.variant === 'primary'
-                ? 'primary'
-                : config.variant === 'link'
-                  ? 'link'
-                  : 'default'
-            }
-            icon={config.icon}
-            danger={config.danger}
-            disabled={isDisabled}
-            onClick={config.onClick ? () => config.onClick?.(record) : undefined}
-            loading={isLoading}
-            data-testid={testId}
-            aria-label={ariaLabel}
-            shape={labelText ? 'default' : 'circle'}
-          >
-            {labelText}
-          </Button>
-        );
-
-        // Wrap in dropdown if needed
-        if (config.dropdownItems) {
-          return (
-            <Dropdown
-              key={config.type}
-              menu={{
-                items: config.dropdownItems,
-                onClick: config.onDropdownClick
-                  ? ({ key }) => config.onDropdownClick?.(key, record)
-                  : undefined,
-              }}
-              trigger={['click']}
-            >
-              <Tooltip title={tooltipText}>{buttonElement}</Tooltip>
-            </Dropdown>
-          );
-        }
-
         return (
-          <Tooltip key={config.type} title={tooltipText}>
-            {buttonElement}
-          </Tooltip>
+          <StandardButtonRenderer
+            key={config.type}
+            config={config}
+            record={record}
+            prefix={prefix}
+            recordId={recordId}
+            getTooltipText={getTooltipText}
+          />
         );
       })}
     </Container>

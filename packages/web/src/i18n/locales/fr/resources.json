@@ -109,9 +109,20 @@
   },
   "local": "Locale",
   "localActions": {
+    "containerConnectedTo": "Connecté à {{container}} sur {{host}}",
+    "containerConnectionFailed": "Échec de la connexion au conteneur",
+    "containerConnecting": "Connexion au conteneur",
+    "containerEstablishingConnection": "Établissement de la connexion à {{container}}...",
     "containerExec": "Exécutif de conteneur",
     "containerLocal": "Conteneur local",
+    "containerLogs": "Journaux du conteneur",
+    "containerLogsLoading": "Chargement des journaux de {{container}}...",
+    "containerLogsStreaming": "Diffusion des journaux de {{container}}",
     "containerStats": "Statistiques des conteneurs",
+    "containerStatsLoading": "Chargement des statistiques de {{container}}...",
+    "containerStatsStreaming": "Diffusion des statistiques de {{container}}",
+    "containerTerminal": "Terminal du conteneur",
+    "containerWaitingForConnection": "En attente de connexion...",
     "downloadCli": "Téléchargez la CLI Rediacc à partir de",
     "howToInstall": "Comment installer",
     "installationSteps": "Étapes d'installation",
@@ -133,7 +144,12 @@
     "troubleshootingBrowser": "Redémarrez votre navigateur après l'inscription",
     "troubleshootingRestart": "Sous Linux, déconnectez-vous et reconnectez-vous",
     "viewContainerLogs": "Afficher les journaux du conteneur",
-    "windowsInstructions": "Windows : exécutez rediacc.bat -RegisterProtocol en tant qu'administrateur"
+    "windowsInstructions": "Windows : exécutez rediacc.bat -RegisterProtocol en tant qu'administrateur",
+    "popoutConnecting": "Connexion à la session du terminal...",
+    "popoutElectronOnly": "Cette page n'est disponible que dans l'application Electron.",
+    "popoutNoSession": "Aucun ID de session de terminal fourni.",
+    "popoutTransferFailed": "Échec du transfert de session",
+    "terminalError": "Erreur du terminal"
   },
   "localCommandBuilder": {
     "action": "Acte",
@@ -147,9 +163,6 @@
     "copyCommand": "Copier la commande",
     "copyWithoutTokenWarning": "La copie s'effectuera sans jeton sécurisé. Vous devrez peut-être vous connecter manuellement.",
     "description": "Créez des commandes CLI pour la machine {{machine}} et le référentiel {{repository}}",
-    "desktopDescription": "Ouvrir le référentiel dans le gestionnaire de fichiers du bureau ou dans le terminal",
-    "desktopHelp": "Cliquez pour ouvrir le référentiel dans votre application de bureau par défaut",
-    "desktopTab": "Bureau",
     "devMode": "Mode développement",
     "devModeHelp": "Assouplit la vérification des clés d'hôte SSH",
     "download": "Télécharger (à distance → local)",
@@ -194,7 +207,10 @@
     "vscodeDescription": "Lancez VS Code avec une connexion à distance SSH au référentiel",
     "vscodeHelp": "Ouvre VS Code avec l'extension SSH distante configurée pour ce référentiel",
     "vscodeTab": "Code VS",
-    "windows": "Fenêtres"
+    "windows": "Fenêtres",
+    "fileManagerDescription": "Ouvrir le référentiel dans le gestionnaire de fichiers du bureau ou dans le terminal",
+    "fileManagerHelp": "Cliquez pour ouvrir le référentiel dans votre application de bureau par défaut",
+    "fileManagerTab": "Gestionnaire de fichiers"
   },
   "machines": {
     "createMachine": "Ajouter une machine",

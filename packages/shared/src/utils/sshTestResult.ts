@@ -13,39 +13,45 @@ export interface SSHTestResult {
 
 type SSHTestResultWrapper = SSHTestResult & { result?: string };
 
-function parseCandidate(candidate: unknown): SSHTestResult | null {
-  if (!candidate) return null;
+/** Try to parse JSON string safely */
+function tryParseJson(content: string): unknown {
+  try {
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
 
-  if (typeof candidate === 'object') {
-    const wrapped = candidate as SSHTestResultWrapper;
-    if (typeof wrapped.result === 'string') {
-      try {
-        return JSON.parse(wrapped.result) as SSHTestResult;
-      } catch {
-        return null;
-      }
-    }
+/** Unwrap a result wrapper if it contains a nested result string */
+function unwrapResult(parsed: SSHTestResultWrapper): SSHTestResult | null {
+  if (typeof parsed.result === 'string') {
+    const inner = tryParseJson(parsed.result);
+    return inner as SSHTestResult | null;
+  }
+  return parsed as SSHTestResult;
+}
 
+/** Try to parse an object candidate */
+function parseObjectCandidate(candidate: object): SSHTestResult | null {
+  const wrapped = candidate as SSHTestResultWrapper;
+  if (typeof wrapped.result !== 'string') {
     return wrapped as SSHTestResult;
   }
+  const inner = tryParseJson(wrapped.result);
+  return inner as SSHTestResult | null;
+}
 
-  if (typeof candidate !== 'string') return null;
-
-  const content = candidate.trim();
-  if (!content) return null;
-
-  // Try full JSON first
-  try {
-    const parsed = JSON.parse(content) as SSHTestResultWrapper;
-    if (typeof parsed.result === 'string') {
-      return JSON.parse(parsed.result) as SSHTestResult;
-    }
-    return parsed as SSHTestResult;
-  } catch {
-    // Fall through to line scanning
+/** Try to parse full JSON content */
+function parseFullJson(content: string): SSHTestResult | null {
+  const parsed = tryParseJson(content);
+  if (!parsed || typeof parsed !== 'object') {
+    return null;
   }
+  return unwrapResult(parsed as SSHTestResultWrapper);
+}
 
-  // Scan log lines for the last JSON object (renet emits logs + JSON)
+/** Scan lines from end for JSON object */
+function scanLinesForJson(content: string): SSHTestResult | null {
   const lines = content
     .split('\n')
     .map((line) => line.trim())
@@ -54,26 +60,52 @@ function parseCandidate(candidate: unknown): SSHTestResult | null {
   for (let i = lines.length - 1; i >= 0; i -= 1) {
     const line = lines[i];
     if (line.startsWith('{') && line.endsWith('}')) {
-      try {
-        return JSON.parse(line) as SSHTestResult;
-      } catch {
-        // Keep scanning
+      const parsed = tryParseJson(line);
+      if (parsed) {
+        return parsed as SSHTestResult;
       }
     }
   }
+  return null;
+}
 
-  // Last resort: parse from the final '{' to the end
+/** Try to parse from the last '{' to end of content */
+function parseFromLastBrace(content: string): SSHTestResult | null {
   const lastBrace = content.lastIndexOf('{');
-  if (lastBrace >= 0) {
-    const tail = content.slice(lastBrace).trim();
-    try {
-      return JSON.parse(tail) as SSHTestResult;
-    } catch {
-      return null;
-    }
+  if (lastBrace < 0) {
+    return null;
+  }
+  const tail = content.slice(lastBrace).trim();
+  const parsed = tryParseJson(tail);
+  return parsed as SSHTestResult | null;
+}
+
+function parseCandidate(candidate: unknown): SSHTestResult | null {
+  if (!candidate) return null;
+
+  if (typeof candidate === 'object') {
+    return parseObjectCandidate(candidate);
   }
 
-  return null;
+  if (typeof candidate !== 'string') return null;
+
+  const content = candidate.trim();
+  if (!content) return null;
+
+  // Try full JSON first
+  const fullJsonResult = parseFullJson(content);
+  if (fullJsonResult) {
+    return fullJsonResult;
+  }
+
+  // Scan log lines for the last JSON object (renet emits logs + JSON)
+  const lineResult = scanLinesForJson(content);
+  if (lineResult) {
+    return lineResult;
+  }
+
+  // Last resort: parse from the final '{' to the end
+  return parseFromLastBrace(content);
 }
 
 export function parseSshTestResult(params: {

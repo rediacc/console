@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { startSSHAgent, addKeyToAgent, stopSSHAgent, isSSHAgentAvailable } from './agent.js';
 import { createTempSSHKeyFile, removeTempSSHKeyFile, decodeSSHKey } from './keyManager.js';
 import { createTempKnownHostsFile, removeTempKnownHostsFile } from './knownHosts.js';
@@ -46,7 +46,7 @@ export function convertPathForSSH(path: string, sshExecutable?: string): string 
     return windowsToUnixPath(path);
   }
   // For Windows OpenSSH, just normalize backslashes to forward slashes
-  return path.replace(/\\/g, '/');
+  return path.replaceAll('\\', '/');
 }
 
 /**
@@ -248,7 +248,7 @@ export async function cleanupSSHConnection(result: SSHSetupResult): Promise<void
   if (result.agentPid) {
     // Kill SSH agent process
     try {
-      process.kill(parseInt(result.agentPid, 10));
+      process.kill(Number.parseInt(result.agentPid, 10));
     } catch {
       // Ignore errors when killing agent
     }
@@ -274,11 +274,11 @@ export interface SSHConnectionCtorOptions {
  * Provides automatic resource cleanup on exit
  */
 export class SSHConnection {
-  private sshKey: string;
-  private known_hosts: string;
-  private port: number;
-  private preferAgent: boolean;
-  private forceTTY: boolean;
+  private readonly sshKey: string;
+  private readonly known_hosts: string;
+  private readonly port: number;
+  private readonly preferAgent: boolean;
+  private readonly forceTTY: boolean;
   private setupResult: SSHSetupResult | null = null;
   private isSetup = false;
 
@@ -472,7 +472,7 @@ export async function testSSHConnectivity(
   port = 22,
   timeout = 5000
 ): Promise<{ success: boolean; error?: string }> {
-  const net = await import('net');
+  const net = await import('node:net');
 
   return new Promise((resolve) => {
     const socket = new net.Socket();

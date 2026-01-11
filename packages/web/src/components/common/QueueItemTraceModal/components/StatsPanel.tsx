@@ -27,13 +27,14 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
       <Col xs={24} sm={8}>
         <Statistic
           title={t('queue:statistics.processing')}
-          value={
-            processingDurationSeconds
-              ? processingDurationSeconds < 60
-                ? processingDurationSeconds
-                : Math.floor(processingDurationSeconds / 60)
-              : 0
-          }
+          value={(() => {
+            if (!processingDurationSeconds) {
+              return 0;
+            } else if (processingDurationSeconds < 60) {
+              return processingDurationSeconds;
+            }
+            return Math.floor(processingDurationSeconds / 60);
+          })()}
           suffix={processingDurationSeconds && processingDurationSeconds < 60 ? 'sec' : 'min'}
           prefix={<SyncOutlined />}
         />

@@ -1,5 +1,5 @@
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execa, type Options } from 'execa';
 import { loadGlobalState } from '../base/globalState.js';
 import { CLI_BUNDLE_PATH, DEFAULT_CLI_TIMEOUT, getApiUrl, getCliTimeout } from '../constants.js';
@@ -14,7 +14,7 @@ export interface CliResult {
   stdout: string;
   stderr: string;
   exitCode: number;
-  json: unknown | null;
+  json: unknown;
   success: boolean;
 }
 
@@ -69,7 +69,7 @@ export interface RunnerConfig {
  */
 export class CliTestRunner {
   public config: RunnerConfig;
-  private cliDir: string;
+  private readonly cliDir: string;
 
   constructor(config: Partial<RunnerConfig> = {}) {
     this.config = {
@@ -440,6 +440,67 @@ export class CliTestRunner {
   }
 
   // ===========================================================================
+  // VS Code Commands
+  // ===========================================================================
+
+  /**
+   * Check VS Code installation status
+   * @param insiders - Check for VS Code Insiders variant
+   */
+  async vscodeCheck(insiders?: boolean): Promise<CliResult> {
+    const args = ['vscode', 'check'];
+    if (insiders) args.push('--insiders');
+    return this.run(args, { skipJsonParse: true });
+  }
+
+  /**
+   * List VS Code SSH connections
+   */
+  async vscodeList(): Promise<CliResult> {
+    return this.run(['vscode', 'list'], { skipJsonParse: true });
+  }
+
+  /**
+   * Cleanup VS Code SSH configurations
+   * @param all - Remove all connections
+   * @param connection - Remove specific connection by name
+   */
+  async vscodeCleanup(all?: boolean, connection?: string): Promise<CliResult> {
+    const args = ['vscode', 'cleanup'];
+    if (all) args.push('--all');
+    if (connection) args.push('-c', connection);
+    return this.run(args, { skipJsonParse: true });
+  }
+
+  /**
+   * Connect to a machine via VS Code Remote SSH
+   * @param teamName - Team name
+   * @param machineName - Machine name
+   * @param options - Additional connection options
+   */
+  async vscodeConnect(
+    teamName: string,
+    machineName: string,
+    options?: {
+      repository?: string;
+      folder?: string;
+      urlOnly?: boolean;
+      newWindow?: boolean;
+      skipEnvSetup?: boolean;
+      insiders?: boolean;
+    }
+  ): Promise<CliResult> {
+    const args = ['vscode', 'connect', '--team', teamName, '--machine', machineName];
+    if (options?.repository) args.push('-r', options.repository);
+    if (options?.folder) args.push('-f', options.folder);
+    if (options?.urlOnly) args.push('--url-only');
+    if (options?.newWindow) args.push('-n');
+    if (options?.skipEnvSetup) args.push('--skip-env-setup');
+    if (options?.insiders) args.push('--insiders');
+    return this.run(args, { skipJsonParse: true });
+  }
+
+  // ===========================================================================
   // Ceph Commands
   // ===========================================================================
 
@@ -511,26 +572,42 @@ export class CliTestRunner {
   }
 
   /**
+   * Type guard to check if JSON result is a valid error response object.
+   */
+  private isJsonErrorResponse(
+    json: unknown
+  ): json is { success: false; error: { code?: string; message?: string; details?: string[] } } {
+    if (!json || typeof json !== 'object' || Array.isArray(json)) {
+      return false;
+    }
+    const obj = json as { success?: boolean; error?: unknown };
+    return obj.success === false && typeof obj.error === 'object' && obj.error !== null;
+  }
+
+  /**
+   * Format error message from structured error object.
+   */
+  private formatJsonError(error: { code?: string; message?: string; details?: string[] }): string {
+    const { code, message, details } = error;
+    let errorMsg = message ?? 'Unknown error';
+    if (code) {
+      errorMsg = `[${code}] ${errorMsg}`;
+    }
+    if (details?.length) {
+      errorMsg += ` - Details: ${details.join(', ')}`;
+    }
+    return errorMsg;
+  }
+
+  /**
    * Extract error message from CLI result.
    * Handles both JSON error format and plain text.
    */
   getErrorMessage(result: CliResult): string {
-    // Check for JSON error response
-    if (result.json && typeof result.json === 'object' && !Array.isArray(result.json)) {
-      const jsonResult = result.json as {
-        success?: boolean;
-        error?: { code?: string; message?: string; details?: string[] };
-      };
-      if (jsonResult.success === false && jsonResult.error) {
-        const { code, message, details } = jsonResult.error;
-        let errorMsg = message ?? 'Unknown error';
-        if (code) errorMsg = `[${code}] ${errorMsg}`;
-        if (details?.length) errorMsg += ` - Details: ${details.join(', ')}`;
-        return errorMsg;
-      }
+    if (this.isJsonErrorResponse(result.json)) {
+      return this.formatJsonError(result.json.error);
     }
 
-    // Fallback to stderr/stdout
     return result.stderr || result.stdout || 'No error details available';
   }
 
@@ -594,7 +671,7 @@ export class CliTestRunner {
    * Try to parse JSON from CLI output.
    * Handles spinner output by finding JSON array or object.
    */
-  private tryParseJson(str: string): unknown | null {
+  private tryParseJson(str: string): unknown {
     if (!str.trim()) return null;
 
     // First try direct parse
@@ -606,12 +683,12 @@ export class CliTestRunner {
 
     // Try to extract JSON array or object from output
     try {
-      const arrayMatch = str.match(/\[[\s\S]*\]/);
+      const arrayMatch = /\[[\s\S]*\]/.exec(str);
       if (arrayMatch) {
         return JSON.parse(arrayMatch[0]);
       }
 
-      const objectMatch = str.match(/\{[\s\S]*\}/);
+      const objectMatch = /\{[\s\S]*\}/.exec(str);
       if (objectMatch) {
         return JSON.parse(objectMatch[0]);
       }

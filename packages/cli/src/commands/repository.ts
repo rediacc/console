@@ -18,6 +18,43 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
+function validateGrandRepoDeletion(
+  repository: RepositoryWithRelations,
+  allRepositories: RepositoryWithRelations[]
+): void {
+  if (!isCredential(repository)) return;
+
+  const validation = canDeleteGrandRepo(repository, allRepositories);
+  if (validation.canDelete) return;
+
+  let errorMessage = t('errors.cannotDeleteGrandRepo', { reason: validation.reason });
+
+  if (validation.childClones.length > 0) {
+    const cloneNames = validation.childClones
+      .map(
+        (clone) => `${clone.repositoryName}${clone.repositoryTag ? `:${clone.repositoryTag}` : ''}`
+      )
+      .join(', ');
+    errorMessage += t('errors.affectedChildClones', { clones: cloneNames });
+  }
+
+  throw new ValidationError(errorMessage);
+}
+
+async function confirmDeletion(
+  repository: RepositoryWithRelations,
+  name: string,
+  tag: string
+): Promise<boolean> {
+  const { askConfirm } = await import('../utils/prompt.js');
+
+  if (isCredential(repository)) {
+    outputService.warn(t('commands.repository.delete.grandRepoWarning'));
+  }
+
+  return askConfirm(t('commands.repository.delete.confirm', { name, tag }));
+}
+
 export function registerRepositoryCommands(program: Command): void {
   const repository = program
     .command('repository')
@@ -136,7 +173,6 @@ export function registerRepositoryCommands(program: Command): void {
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        // Fetch all repositories to validate deletion
         const apiResponse = await withSpinner(
           t('commands.repository.delete.checkingRelationships'),
           () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
@@ -145,7 +181,6 @@ export function registerRepositoryCommands(program: Command): void {
 
         const allRepositories = parseGetTeamRepositories(apiResponse as never);
 
-        // Find the target repo
         const targetRepository = allRepositories.find(
           (r: RepositoryWithRelations) =>
             r.repositoryName === name && (r.repositoryTag === options.tag || !options.tag)
@@ -155,38 +190,11 @@ export function registerRepositoryCommands(program: Command): void {
           throw new ValidationError(t('errors.repositoryNotFound', { name, tag: options.tag }));
         }
 
-        // Use shared orchestration to validate deletion
-        if (isCredential(targetRepository)) {
-          const validation = canDeleteGrandRepo(targetRepository, allRepositories);
-
-          if (!validation.canDelete) {
-            let errorMessage = t('errors.cannotDeleteGrandRepo', { reason: validation.reason });
-
-            if (validation.childClones.length > 0) {
-              const cloneNames = validation.childClones
-                .map(
-                  (clone) =>
-                    `${clone.repositoryName}${clone.repositoryTag ? `:${clone.repositoryTag}` : ''}`
-                )
-                .join(', ');
-              errorMessage += t('errors.affectedChildClones', { clones: cloneNames });
-            }
-            throw new ValidationError(errorMessage);
-          }
-        }
+        validateGrandRepoDeletion(targetRepository, allRepositories);
 
         if (!options.force) {
-          const { askConfirm } = await import('../utils/prompt.js');
-
-          // Show warning for grand repos
-          if (isCredential(targetRepository)) {
-            outputService.warn(t('commands.repository.delete.grandRepoWarning'));
-          }
-
-          const confirm = await askConfirm(
-            t('commands.repository.delete.confirm', { name, tag: options.tag })
-          );
-          if (!confirm) {
+          const confirmed = await confirmDeletion(targetRepository, name, options.tag);
+          if (!confirmed) {
             outputService.info(t('prompts.cancelled'));
             return;
           }
@@ -349,7 +357,7 @@ export function registerRepositoryCommands(program: Command): void {
     .option('-t, --team <name>', t('options.team'))
     .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
     .option('--vault <json>', t('options.vaultJson'))
-    .option('--vault-version <n>', t('options.vaultVersion'), parseInt)
+    .option('--vault-version <n>', t('options.vaultVersion'), Number.parseInt)
     .action(async (repositoryName, options) => {
       try {
         await authService.requireAuth();

@@ -29,8 +29,8 @@ export class QueueStateManager {
   private readonly HIGHEST_PRIORITY = 1;
   private isProcessing = false;
   private processingInterval: ReturnType<TimerProvider['setInterval']> | null = null;
-  private activeTasks: Map<string, ActiveTask> = new Map();
-  private taskIdToBridge: Map<string, string> = new Map();
+  private readonly activeTasks: Map<string, ActiveTask> = new Map();
+  private readonly taskIdToBridge: Map<string, string> = new Map();
 
   private readonly timer: TimerProvider;
   private readonly isExtensionContext: boolean;
@@ -212,20 +212,11 @@ export class QueueStateManager {
     const pendingItem = this.queue.find((item) => item.status === 'pending');
 
     if (!pendingItem) {
-      this.queue = this.queue.filter(
-        (item) => item.status === 'pending' || item.status === 'submitting'
-      );
-      if (this.queue.length === 0) {
-        this.stopProcessing();
-      }
-      this.notifyListeners();
+      this.cleanupQueue();
       return;
     }
 
-    if (
-      pendingItem.data.priority === this.HIGHEST_PRIORITY &&
-      this.hasActivePriorityTask(pendingItem.data.bridgeName, pendingItem.id)
-    ) {
+    if (this.shouldCancelDueToPriorityConflict(pendingItem)) {
       pendingItem.status = 'cancelled';
       this.notifyListeners();
       this.notify('info', 'Task cancelled: Already have a priority 1 task on this bridge');
@@ -236,52 +227,85 @@ export class QueueStateManager {
     this.notifyListeners();
 
     try {
-      const response = await pendingItem.submitFunction(pendingItem.data);
-      const taskId = (response as { taskId?: string }).taskId;
-
-      if (
-        taskId &&
-        pendingItem.data.priority === this.HIGHEST_PRIORITY &&
-        pendingItem.data.bridgeName
-      ) {
-        pendingItem.taskId = taskId;
-        const activeTask: ActiveTask = {
-          bridgeName: pendingItem.data.bridgeName,
-          machineName: pendingItem.data.machineName ?? '',
-          taskId,
-          priority: pendingItem.data.priority ?? this.HIGHEST_PRIORITY,
-          status: 'pending',
-          timestamp: Date.now(),
-        };
-        this.trackActiveTask(activeTask);
-        this.startMonitoringTask(taskId, pendingItem.data);
-      }
-
-      pendingItem.status = 'submitted';
-      this.notifyListeners();
-      if (taskId) {
-        this.notify('success', `Queue item submitted successfully (ID: ${taskId})`);
-      } else {
-        this.notify('success', 'Queue item submitted successfully');
-      }
+      await this.submitPendingItem(pendingItem);
     } catch (error) {
-      pendingItem.retryCount += 1;
-      if (pendingItem.retryCount < this.MAX_RETRIES) {
-        pendingItem.status = 'pending';
-        this.notify(
-          'warning',
-          `Queue submission failed, will retry (${pendingItem.retryCount}/${this.MAX_RETRIES})`
-        );
-      } else {
-        pendingItem.status = 'failed';
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        this.notify(
-          'error',
-          `Queue submission failed after ${this.MAX_RETRIES} attempts: ${message}`
-        );
-      }
-      this.notifyListeners();
+      this.handleSubmissionError(pendingItem, error);
     }
+  }
+
+  private cleanupQueue(): void {
+    this.queue = this.queue.filter(
+      (item) => item.status === 'pending' || item.status === 'submitting'
+    );
+    if (this.queue.length === 0) {
+      this.stopProcessing();
+    }
+    this.notifyListeners();
+  }
+
+  private shouldCancelDueToPriorityConflict(item: LocalQueueItem): boolean {
+    return (
+      item.data.priority === this.HIGHEST_PRIORITY &&
+      this.hasActivePriorityTask(item.data.bridgeName, item.id)
+    );
+  }
+
+  private async submitPendingItem(pendingItem: LocalQueueItem): Promise<void> {
+    const response = await pendingItem.submitFunction(pendingItem.data);
+    const taskId = (response as { taskId?: string }).taskId;
+
+    if (taskId && this.isHighestPriorityWithBridge(pendingItem)) {
+      this.registerActiveTask(pendingItem, taskId);
+    }
+
+    pendingItem.status = 'submitted';
+    this.notifyListeners();
+    this.notifySubmissionSuccess(taskId);
+  }
+
+  private isHighestPriorityWithBridge(item: LocalQueueItem): boolean {
+    return item.data.priority === this.HIGHEST_PRIORITY && Boolean(item.data.bridgeName);
+  }
+
+  private registerActiveTask(pendingItem: LocalQueueItem, taskId: string): void {
+    pendingItem.taskId = taskId;
+    const activeTask: ActiveTask = {
+      bridgeName: pendingItem.data.bridgeName!,
+      machineName: pendingItem.data.machineName ?? '',
+      taskId,
+      priority: pendingItem.data.priority ?? this.HIGHEST_PRIORITY,
+      status: 'pending',
+      timestamp: Date.now(),
+    };
+    this.trackActiveTask(activeTask);
+    this.startMonitoringTask(taskId, pendingItem.data);
+  }
+
+  private notifySubmissionSuccess(taskId?: string): void {
+    if (taskId) {
+      this.notify('success', `Queue item submitted successfully (ID: ${taskId})`);
+    } else {
+      this.notify('success', 'Queue item submitted successfully');
+    }
+  }
+
+  private handleSubmissionError(pendingItem: LocalQueueItem, error: unknown): void {
+    pendingItem.retryCount += 1;
+    if (pendingItem.retryCount < this.MAX_RETRIES) {
+      pendingItem.status = 'pending';
+      this.notify(
+        'warning',
+        `Queue submission failed, will retry (${pendingItem.retryCount}/${this.MAX_RETRIES})`
+      );
+    } else {
+      pendingItem.status = 'failed';
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.notify(
+        'error',
+        `Queue submission failed after ${this.MAX_RETRIES} attempts: ${message}`
+      );
+    }
+    this.notifyListeners();
   }
 
   removeFromQueue(id: string) {
@@ -319,50 +343,7 @@ export class QueueStateManager {
   }
 
   updateTaskStatus(taskId: string, status: 'completed' | 'failed' | 'cancelled') {
-    let bridgeCleared: string | null = null;
-    const mappedBridge = this.taskIdToBridge.get(taskId);
-    if (mappedBridge) {
-      const activeTask = this.activeTasks.get(mappedBridge);
-      if (activeTask?.taskId === taskId) {
-        if (this.isTerminalStatus(status)) {
-          this.activeTasks.delete(mappedBridge);
-          this.taskIdToBridge.delete(taskId);
-          bridgeCleared = mappedBridge;
-        }
-      }
-    }
-
-    if (!bridgeCleared) {
-      for (const [bridgeName, task] of this.activeTasks) {
-        if (task.taskId === taskId && task.priority === this.HIGHEST_PRIORITY) {
-          if (this.isTerminalStatus(status)) {
-            this.activeTasks.delete(bridgeName);
-            this.taskIdToBridge.delete(taskId);
-            bridgeCleared = bridgeName;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!bridgeCleared) {
-      const queueItem = this.queue.find((item) => item.taskId === taskId);
-      if (queueItem?.data.priority === this.HIGHEST_PRIORITY) {
-        const bridgeName = queueItem.data.bridgeName;
-        if (bridgeName && this.activeTasks.has(bridgeName)) {
-          const activeTask = this.activeTasks.get(bridgeName);
-          if (activeTask?.taskId === taskId) {
-            this.activeTasks.delete(bridgeName);
-            this.taskIdToBridge.delete(taskId);
-            bridgeCleared = bridgeName;
-          }
-        }
-
-        if (this.isTerminalStatus(status)) {
-          queueItem.status = 'submitted';
-        }
-      }
-    }
+    this.clearTaskFromActiveTasks(taskId, status);
 
     this.emitMonitoringEvent({
       type: 'task-status',
@@ -371,6 +352,77 @@ export class QueueStateManager {
     });
 
     this.notifyListeners();
+  }
+
+  private clearTaskFromActiveTasks(
+    taskId: string,
+    status: 'completed' | 'failed' | 'cancelled'
+  ): void {
+    // Try to clear from mapped bridge first
+    if (this.clearFromMappedBridge(taskId, status)) {
+      return;
+    }
+
+    // Try to clear from active tasks by iterating
+    if (this.clearFromActiveTasksIteration(taskId, status)) {
+      return;
+    }
+
+    // Try to clear from queue item
+    this.clearFromQueueItem(taskId, status);
+  }
+
+  private clearFromMappedBridge(taskId: string, status: LocalQueueItemStatus): boolean {
+    const mappedBridge = this.taskIdToBridge.get(taskId);
+    if (!mappedBridge) {
+      return false;
+    }
+
+    const activeTask = this.activeTasks.get(mappedBridge);
+    if (activeTask?.taskId !== taskId) {
+      return false;
+    }
+
+    if (this.isTerminalStatus(status)) {
+      this.activeTasks.delete(mappedBridge);
+      this.taskIdToBridge.delete(taskId);
+      return true;
+    }
+
+    return false;
+  }
+
+  private clearFromActiveTasksIteration(taskId: string, status: LocalQueueItemStatus): boolean {
+    if (!this.isTerminalStatus(status)) {
+      return false;
+    }
+
+    for (const [bridgeName, task] of this.activeTasks) {
+      if (task.taskId === taskId && task.priority === this.HIGHEST_PRIORITY) {
+        this.activeTasks.delete(bridgeName);
+        this.taskIdToBridge.delete(taskId);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private clearFromQueueItem(taskId: string, status: LocalQueueItemStatus): void {
+    const queueItem = this.queue.find((item) => item.taskId === taskId);
+    if (queueItem?.data.priority !== this.HIGHEST_PRIORITY) {
+      return;
+    }
+
+    const bridgeName = queueItem.data.bridgeName;
+    if (bridgeName && this.activeTasks.get(bridgeName)?.taskId === taskId) {
+      this.activeTasks.delete(bridgeName);
+      this.taskIdToBridge.delete(taskId);
+    }
+
+    if (this.isTerminalStatus(status)) {
+      queueItem.status = 'submitted';
+    }
   }
 
   getActiveTasks(): ActiveTask[] {

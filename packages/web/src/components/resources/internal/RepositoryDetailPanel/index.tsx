@@ -71,14 +71,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
       data-testid="repository-detail-panel"
     >
       <DetailPanelBody data-testid="repository-detail-content">
-        {!repositoryData ? (
-          <Flex>
-            <Empty
-              description={t('resources:repositories.noRepoData')}
-              data-testid="repository-detail-empty-state"
-            />
-          </Flex>
-        ) : (
+        {repositoryData ? (
           <>
             <RepoInfoSection repository={repository} panelData={repositoryData} t={t} />
             <ExternalVolumeWarning repository={repository} panelData={repositoryData} t={t} />
@@ -91,6 +84,13 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               <ServicesSection repository={repository} panelData={repositoryData} t={t} />
             )}
           </>
+        ) : (
+          <Flex>
+            <Empty
+              description={t('resources:repositories.noRepoData')}
+              data-testid="repository-detail-empty-state"
+            />
+          </Flex>
         )}
       </DetailPanelBody>
     </DetailPanelSurface>

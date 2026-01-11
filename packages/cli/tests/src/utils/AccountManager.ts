@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import {
   CI_ACTIVATION_CODE,
   getApiUrl,
@@ -36,7 +36,7 @@ export interface TestAccount {
  * - Cleanup after tests
  */
 export class AccountManager {
-  private apiUrl: string;
+  private readonly apiUrl: string;
 
   constructor(apiUrl?: string) {
     this.apiUrl = apiUrl ?? getApiUrl();

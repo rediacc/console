@@ -8,8 +8,8 @@
  * @module msys2/paths
  */
 
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { getPlatform } from '../utils/platform.js';
 
 /**
@@ -136,6 +136,47 @@ export function findSystemMsys2Path(): string | null {
 }
 
 /**
+ * Helper to find a binary in bundled or system MSYS2
+ * Reduces cognitive complexity by centralizing search logic
+ *
+ * @param binaryName - Name of the binary (with .exe extension)
+ * @param cacheKey - Key for caching the result
+ * @param fallback - Fallback value if not found
+ * @returns Path to the binary or fallback
+ */
+function findMsys2Binary(binaryName: string, cacheKey: string, fallback: string): string {
+  if (pathCache.has(cacheKey)) {
+    return pathCache.get(cacheKey) ?? fallback;
+  }
+
+  // Check bundled first
+  const bundled = getBundledMsys2Path();
+  if (bundled) {
+    const binaryPath = join(bundled, 'usr', 'bin', binaryName);
+    if (existsSync(binaryPath)) {
+      pathCache.set(cacheKey, binaryPath);
+      return binaryPath;
+    }
+  }
+
+  // Check system MSYS2
+  const systemMsys2 = findSystemMsys2Path();
+  if (systemMsys2) {
+    for (const subdir of MSYS2_BIN_SUBDIRS) {
+      const binaryPath = join(systemMsys2, subdir, binaryName);
+      if (existsSync(binaryPath)) {
+        pathCache.set(cacheKey, binaryPath);
+        return binaryPath;
+      }
+    }
+  }
+
+  // Last resort: assume in PATH
+  pathCache.set(cacheKey, fallback);
+  return fallback;
+}
+
+/**
  * Gets the path to rsync executable
  *
  * Checks in order:
@@ -149,37 +190,7 @@ export function getRsyncPath(): string {
   if (getPlatform() !== 'windows') {
     return 'rsync';
   }
-
-  const cacheKey = 'rsync_path';
-  if (pathCache.has(cacheKey)) {
-    return pathCache.get(cacheKey) ?? 'rsync';
-  }
-
-  // Check bundled first
-  const bundled = getBundledMsys2Path();
-  if (bundled) {
-    const rsyncPath = join(bundled, 'usr', 'bin', 'rsync.exe');
-    if (existsSync(rsyncPath)) {
-      pathCache.set(cacheKey, rsyncPath);
-      return rsyncPath;
-    }
-  }
-
-  // Check system MSYS2
-  const systemMsys2 = findSystemMsys2Path();
-  if (systemMsys2) {
-    for (const subdir of MSYS2_BIN_SUBDIRS) {
-      const rsyncPath = join(systemMsys2, subdir, 'rsync.exe');
-      if (existsSync(rsyncPath)) {
-        pathCache.set(cacheKey, rsyncPath);
-        return rsyncPath;
-      }
-    }
-  }
-
-  // Last resort: assume in PATH
-  pathCache.set(cacheKey, 'rsync');
-  return 'rsync';
+  return findMsys2Binary('rsync.exe', 'rsync_path', 'rsync');
 }
 
 /**
@@ -196,36 +207,7 @@ export function getSshPath(): string {
   if (getPlatform() !== 'windows') {
     return 'ssh';
   }
-
-  const cacheKey = 'ssh_path';
-  if (pathCache.has(cacheKey)) {
-    return pathCache.get(cacheKey) ?? 'ssh';
-  }
-
-  // Check bundled first
-  const bundled = getBundledMsys2Path();
-  if (bundled) {
-    const sshPath = join(bundled, 'usr', 'bin', 'ssh.exe');
-    if (existsSync(sshPath)) {
-      pathCache.set(cacheKey, sshPath);
-      return sshPath;
-    }
-  }
-
-  // Check system MSYS2
-  const systemMsys2 = findSystemMsys2Path();
-  if (systemMsys2) {
-    for (const subdir of MSYS2_BIN_SUBDIRS) {
-      const sshPath = join(systemMsys2, subdir, 'ssh.exe');
-      if (existsSync(sshPath)) {
-        pathCache.set(cacheKey, sshPath);
-        return sshPath;
-      }
-    }
-  }
-
-  pathCache.set(cacheKey, 'ssh');
-  return 'ssh';
+  return findMsys2Binary('ssh.exe', 'ssh_path', 'ssh');
 }
 
 /**
@@ -237,36 +219,7 @@ export function getSshKeygenPath(): string {
   if (getPlatform() !== 'windows') {
     return 'ssh-keygen';
   }
-
-  const cacheKey = 'ssh_keygen_path';
-  if (pathCache.has(cacheKey)) {
-    return pathCache.get(cacheKey) ?? 'ssh-keygen';
-  }
-
-  // Check bundled first
-  const bundled = getBundledMsys2Path();
-  if (bundled) {
-    const keygenPath = join(bundled, 'usr', 'bin', 'ssh-keygen.exe');
-    if (existsSync(keygenPath)) {
-      pathCache.set(cacheKey, keygenPath);
-      return keygenPath;
-    }
-  }
-
-  // Check system MSYS2
-  const systemMsys2 = findSystemMsys2Path();
-  if (systemMsys2) {
-    for (const subdir of MSYS2_BIN_SUBDIRS) {
-      const keygenPath = join(systemMsys2, subdir, 'ssh-keygen.exe');
-      if (existsSync(keygenPath)) {
-        pathCache.set(cacheKey, keygenPath);
-        return keygenPath;
-      }
-    }
-  }
-
-  pathCache.set(cacheKey, 'ssh-keygen');
-  return 'ssh-keygen';
+  return findMsys2Binary('ssh-keygen.exe', 'ssh_keygen_path', 'ssh-keygen');
 }
 
 /**

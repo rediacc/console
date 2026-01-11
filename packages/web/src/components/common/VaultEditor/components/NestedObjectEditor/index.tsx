@@ -99,6 +99,86 @@ const detectStructurePattern = (
 
 const EMPTY_RECORD: NestedRecord = {};
 
+// Type-based default value map for cleaner branching
+const getTypeBasedDefault = (value: unknown): NestedEntryValue => {
+  if (typeof value === 'boolean') return false;
+  if (typeof value === 'number') return 0;
+  if (typeof value === 'string') return '';
+  if (Array.isArray(value)) return [];
+  if (isRecordLike(value)) return {};
+  return '';
+};
+
+// Creates default value based on existing structure pattern
+const createDefaultFromStructure = (
+  firstEntry: NestedRecord,
+  hasImagePattern: boolean
+): NestedRecord => {
+  return Object.keys(firstEntry).reduce<NestedRecord>((acc, keyName) => {
+    const existingValue = firstEntry[keyName];
+
+    if (keyName === 'active' || keyName === 'enabled') {
+      acc[keyName] = true;
+    } else if (keyName === 'image' && hasImagePattern) {
+      acc[keyName] = '';
+    } else {
+      acc[keyName] = getTypeBasedDefault(existingValue);
+    }
+
+    return acc;
+  }, {});
+};
+
+// Creates default value from field definition schema
+const createDefaultFromSchema = (propDef: FieldSchema): NestedEntryValue => {
+  if (propDef.type === 'object' && propDef.properties) {
+    return Object.keys(propDef.properties).reduce<NestedRecord>((acc, keyName) => {
+      const schema = propDef.properties?.[keyName];
+      if (schema) {
+        if (schema.default !== undefined) {
+          acc[keyName] = schema.default;
+        } else if (schema.type === 'boolean') {
+          acc[keyName] = false;
+        } else if (schema.type === 'number') {
+          acc[keyName] = 0;
+        } else {
+          acc[keyName] = '';
+        }
+      }
+      return acc;
+    }, {});
+  }
+
+  if (propDef.type === 'boolean') return false;
+  if (propDef.type === 'number') return 0;
+  return '';
+};
+
+// Determines the default value for a new entry based on structure info or field definition
+const getDefaultValueForNewEntry = (
+  structureInfo: ReturnType<typeof detectStructurePattern>,
+  entries: ObjectEntry[],
+  fieldDefinition?: FieldSchema
+): NestedEntryValue => {
+  // Try to infer from existing uniform structure
+  if (structureInfo.isUniform && structureInfo.keys && entries.length > 0) {
+    const firstEntry = entries[0]?.value;
+    if (isRecordLike(firstEntry)) {
+      return createDefaultFromStructure(firstEntry, structureInfo.hasImagePattern ?? false);
+    }
+  }
+
+  // Try to infer from field definition schema
+  if (
+    fieldDefinition?.additionalProperties &&
+    typeof fieldDefinition.additionalProperties === 'object'
+  ) {
+    return createDefaultFromSchema(fieldDefinition.additionalProperties);
+  }
+
+  return '';
+};
+
 export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   value,
   onChange,
@@ -164,60 +244,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
       return;
     }
 
-    let defaultValue: NestedEntryValue = '';
-
-    if (structureInfo.isUniform && structureInfo.keys && entries.length > 0) {
-      const firstEntry = entries[0]?.value;
-      if (isRecordLike(firstEntry)) {
-        defaultValue = Object.keys(firstEntry).reduce<NestedRecord>((acc, keyName) => {
-          const existingValue = firstEntry[keyName];
-          if (keyName === 'active' || keyName === 'enabled') {
-            acc[keyName] = true;
-          } else if (keyName === 'image' && structureInfo.hasImagePattern) {
-            acc[keyName] = '';
-          } else if (typeof existingValue === 'boolean') {
-            acc[keyName] = false;
-          } else if (typeof existingValue === 'number') {
-            acc[keyName] = 0;
-          } else if (typeof existingValue === 'string') {
-            acc[keyName] = '';
-          } else if (Array.isArray(existingValue)) {
-            acc[keyName] = [];
-          } else if (isRecordLike(existingValue)) {
-            acc[keyName] = {};
-          } else {
-            acc[keyName] = '';
-          }
-          return acc;
-        }, {});
-      }
-    } else if (
-      fieldDefinition?.additionalProperties &&
-      typeof fieldDefinition.additionalProperties === 'object'
-    ) {
-      const propDef = fieldDefinition.additionalProperties;
-      if (propDef.type === 'object' && propDef.properties) {
-        defaultValue = Object.keys(propDef.properties).reduce<NestedRecord>((acc, keyName) => {
-          const schema = propDef.properties?.[keyName];
-          if (schema) {
-            if (schema.default !== undefined) {
-              acc[keyName] = schema.default;
-            } else if (schema.type === 'boolean') {
-              acc[keyName] = false;
-            } else if (schema.type === 'number') {
-              acc[keyName] = 0;
-            } else {
-              acc[keyName] = '';
-            }
-          }
-          return acc;
-        }, {});
-      } else if (propDef.type === 'boolean') {
-        defaultValue = false;
-      } else if (propDef.type === 'number') {
-        defaultValue = 0;
-      }
-    }
+    const defaultValue = getDefaultValueForNewEntry(structureInfo, entries, fieldDefinition);
 
     const nextEntries = [...entries, { key: newKey, value: defaultValue, isEditing: true }];
     updateValue(nextEntries);
@@ -249,83 +276,93 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     }
   };
 
-  const renderEntryValue = (entry: ObjectEntry, index: number): React.ReactNode => {
+  const getFieldTestId = (entryKey: string, suffix?: string): string => {
+    const baseSuffix = suffix ? `-${suffix}` : '';
+    return dataTestId
+      ? `${dataTestId}-field-${entryKey}${baseSuffix}`
+      : `vault-editor-nested-field-${entryKey}${baseSuffix}`;
+  };
+
+  const isImageActivePattern = (
+    entryValue: NestedRecord
+  ): entryValue is NestedRecord & { image: string; active: boolean } => {
+    const imageValue = entryValue.image;
+    const activeValue = entryValue.active;
+    return (
+      typeof imageValue === 'string' &&
+      typeof activeValue === 'boolean' &&
+      (structureInfo.hasImagePattern ?? looksLikeImageReference(imageValue))
+    );
+  };
+
+  const renderImageActiveEditor = (
+    entry: ObjectEntry,
+    index: number,
+    entryValue: NestedRecord & { image: string; active: boolean }
+  ): React.ReactNode => (
+    <Card size="small">
+      <Row gutter={16}>
+        <Col span={18}>
+          <Form.Item label={<Typography.Text>{t('nestedObjectEditor.Image')}</Typography.Text>}>
+            <Input
+              value={entryValue.image}
+              onChange={(event) =>
+                handleUpdateEntry(index, {
+                  value: { ...entryValue, image: event.target.value },
+                })
+              }
+              disabled={readOnly}
+              placeholder={t('functions:imagePlaceholder')}
+              data-testid={getFieldTestId(entry.key, 'image')}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={6}>
+          <Form.Item label={<Typography.Text>{t('nestedObjectEditor.Active')}</Typography.Text>}>
+            <Switch
+              checked={entryValue.active}
+              onChange={(checked) =>
+                handleUpdateEntry(index, {
+                  value: { ...entryValue, active: checked },
+                })
+              }
+              disabled={readOnly}
+              data-testid={getFieldTestId(entry.key, 'active')}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+    </Card>
+  );
+
+  const renderRecordEntry = (entry: ObjectEntry, index: number): React.ReactNode => {
+    const entryValue = entry.value as NestedRecord;
+
+    if (isImageActivePattern(entryValue)) {
+      return renderImageActiveEditor(entry, index, entryValue);
+    }
+
     const entryDef =
       fieldDefinition?.properties?.[entry.key] ?? fieldDefinition?.additionalProperties;
     const nestedDefinition = typeof entryDef === 'object' ? entryDef : undefined;
 
-    if (isRecordLike(entry.value)) {
-      const imageValue = entry.value.image;
-      const activeValue = entry.value.active;
+    return (
+      <NestedObjectEditor
+        value={entryValue}
+        onChange={(newValue) => handleUpdateEntry(index, { value: newValue })}
+        fieldDefinition={nestedDefinition}
+        readOnly={readOnly}
+        data-testid={
+          dataTestId
+            ? `${dataTestId}-nested-${entry.key}`
+            : `vault-editor-nested-nested-${entry.key}`
+        }
+      />
+    );
+  };
 
-      if (
-        typeof imageValue === 'string' &&
-        typeof activeValue === 'boolean' &&
-        (structureInfo.hasImagePattern || looksLikeImageReference(imageValue))
-      ) {
-        return (
-          <Card size="small">
-            <Row gutter={16}>
-              <Col span={18}>
-                <Form.Item
-                  label={<Typography.Text>{t('nestedObjectEditor.Image')}</Typography.Text>}
-                >
-                  <Input
-                    value={imageValue}
-                    onChange={(event) =>
-                      handleUpdateEntry(index, {
-                        value: { ...(entry.value as NestedRecord), image: event.target.value },
-                      })
-                    }
-                    disabled={readOnly}
-                    placeholder={t('functions:imagePlaceholder')}
-                    data-testid={
-                      dataTestId
-                        ? `${dataTestId}-field-${entry.key}-image`
-                        : `vault-editor-nested-field-${entry.key}-image`
-                    }
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={6}>
-                <Form.Item
-                  label={<Typography.Text>{t('nestedObjectEditor.Active')}</Typography.Text>}
-                >
-                  <Switch
-                    checked={activeValue}
-                    onChange={(checked) =>
-                      handleUpdateEntry(index, {
-                        value: { ...(entry.value as NestedRecord), active: checked },
-                      })
-                    }
-                    disabled={readOnly}
-                    data-testid={
-                      dataTestId
-                        ? `${dataTestId}-field-${entry.key}-active`
-                        : `vault-editor-nested-field-${entry.key}-active`
-                    }
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
-        );
-      }
-
-      return (
-        <NestedObjectEditor
-          value={entry.value}
-          onChange={(newValue) => handleUpdateEntry(index, { value: newValue })}
-          fieldDefinition={nestedDefinition}
-          readOnly={readOnly}
-          data-testid={
-            dataTestId
-              ? `${dataTestId}-nested-${entry.key}`
-              : `vault-editor-nested-nested-${entry.key}`
-          }
-        />
-      );
-    }
+  const renderPrimitiveEntry = (entry: ObjectEntry, index: number): React.ReactNode => {
+    const testId = getFieldTestId(entry.key);
 
     if (typeof entry.value === 'boolean') {
       return (
@@ -333,11 +370,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           checked={entry.value}
           onChange={(checked) => handleUpdateEntry(index, { value: checked })}
           disabled={readOnly}
-          data-testid={
-            dataTestId
-              ? `${dataTestId}-field-${entry.key}`
-              : `vault-editor-nested-field-${entry.key}`
-          }
+          data-testid={testId}
         />
       );
     }
@@ -353,11 +386,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             handleUpdateEntry(index, { value: Number(event.currentTarget.value) })
           }
           disabled={readOnly}
-          data-testid={
-            dataTestId
-              ? `${dataTestId}-field-${entry.key}`
-              : `vault-editor-nested-field-${entry.key}`
-          }
+          data-testid={testId}
         />
       );
     }
@@ -367,11 +396,16 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         value={entry.value as string | undefined}
         onChange={(event) => handleUpdateEntry(index, { value: event.target.value })}
         disabled={readOnly}
-        data-testid={
-          dataTestId ? `${dataTestId}-field-${entry.key}` : `vault-editor-nested-field-${entry.key}`
-        }
+        data-testid={testId}
       />
     );
+  };
+
+  const renderEntryValue = (entry: ObjectEntry, index: number): React.ReactNode => {
+    if (isRecordLike(entry.value)) {
+      return renderRecordEntry(entry, index);
+    }
+    return renderPrimitiveEntry(entry, index);
   };
 
   return (
@@ -471,7 +505,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                   )}
                 </Flex>
               ),
-              extra: !readOnly ? (
+              extra: readOnly ? undefined : (
                 <Flex onClick={(event) => event.stopPropagation()}>
                   <Popconfirm
                     title={t('nestedObjectEditor.Delete this entry?')}
@@ -491,7 +525,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                     />
                   </Popconfirm>
                 </Flex>
-              ) : undefined,
+              ),
               children: renderEntryValue(entry, index),
             }))}
           />

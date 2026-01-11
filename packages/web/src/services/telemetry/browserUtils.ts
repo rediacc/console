@@ -15,7 +15,7 @@ export function getBrowserName(): string {
 
 export function getBrowserVersion(): string {
   const userAgent = navigator.userAgent;
-  const match = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera)\/(\d+\.\d+)/);
+  const match = /(Chrome|Firefox|Safari|Edge|Opera)\/(\d+\.\d+)/.exec(userAgent);
   return match ? match[2] : 'unknown';
 }
 

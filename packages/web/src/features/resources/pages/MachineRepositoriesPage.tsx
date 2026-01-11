@@ -43,40 +43,29 @@ type MachineReposLocationState = {
   machine?: Machine;
 } | null;
 
-const MachineReposPage: React.FC = () => {
+// Hooks and state setup for the page
+const useMachineReposSetup = () => {
   const { machineName } = useParams<{ machineName: string }>();
   const navigate = useNavigate();
   const location = useLocation() as { state?: MachineReposLocationState };
   const { t } = useTranslation(['resources', 'machines', 'common']);
 
-  // State for machine data - can come from route state or API
   const routeState = location.state;
-
-  // Use shared panel width hook (33% of window, min 300px, max 700px)
   const panelWidth = usePanelWidth();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
 
-  // Queue trace modal state
   const queueTrace = useQueueTraceModal();
-
-  // Remote file browser modal state
   const fileBrowserModal = useDialogState<Machine>();
-
-  // Unified resource modal state
   const unifiedModal = useDialogState<{
     mode: 'create' | 'edit' | 'vault';
     data?: Record<string, unknown>;
     creationContext?: 'credentials-only' | 'normal';
   }>();
-
-  // Connectivity test modal state
   const connectivityTest = useDialogState();
 
-  // Get team name from route state for initial queries
   const initialTeamName = routeState?.machine?.teamName;
 
-  // Fetch all machines to find our specific machine if not passed via state
   const {
     data: machines = [],
     isLoading: machinesLoading,
@@ -84,24 +73,115 @@ const MachineReposPage: React.FC = () => {
     refetch: refetchMachines,
   } = useGetTeamMachines(initialTeamName ?? undefined);
 
-  // Derive machine from route state or API data (no setState needed)
   const machine = useMemo(() => {
-    // First try to find fresh data from API
     if (machines.length > 0 && machineName) {
       const foundMachine = machines.find((m) => m.machineName === machineName);
       if (foundMachine) return foundMachine;
     }
-    // Fall back to route state
     return routeState?.machine ?? null;
   }, [machines, machineName, routeState?.machine]);
 
-  // Repository creation hook (handles credentials + queue item)
   const { createRepository } = useRepositoryCreation(machines);
-
-  // Fetch repositories (needed for MachineRepositoryTable)
   const { data: repositories = [], refetch: refetchRepos } = useGetTeamRepositories(
     machine?.teamName ?? undefined
   );
+
+  return {
+    machineName,
+    navigate,
+    t,
+    routeState,
+    panelWidth,
+    isMobile,
+    queueTrace,
+    fileBrowserModal,
+    unifiedModal,
+    connectivityTest,
+    machines,
+    machinesLoading,
+    machinesError,
+    refetchMachines,
+    machine,
+    createRepository,
+    repositories,
+    refetchRepos,
+  };
+};
+
+// Loading state component
+const LoadingState: React.FC<{ t: ReturnType<typeof useTranslation>['t'] }> = ({ t }) => (
+  <Flex vertical>
+    <Card>
+      <Flex vertical align="center" className="w-full">
+        <LoadingWrapper loading centered minHeight={160}>
+          <Flex />
+        </LoadingWrapper>
+        <Typography.Text>{t('common:general.loading')}</Typography.Text>
+      </Flex>
+    </Card>
+  </Flex>
+);
+
+// Error state component
+const ErrorState: React.FC<{
+  t: ReturnType<typeof useTranslation>['t'];
+  machineName?: string;
+  onBack: () => void;
+}> = ({ t, machineName, onBack }) => (
+  <Flex vertical>
+    <Card>
+      <Flex vertical>
+        <Alert
+          message={t('machines:machineNotFound')}
+          description={
+            <Flex vertical>
+              <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
+              <Button type="primary" onClick={onBack}>
+                {t('machines:backToMachines')}
+              </Button>
+            </Flex>
+          }
+          type="error"
+        />
+      </Flex>
+    </Card>
+  </Flex>
+);
+
+// Helper to create mapped repository
+const createMappedRepository = (repoRow: RepositoryRowData, teamName: string): Repository => ({
+  repositoryName: repoRow.name,
+  repositoryGuid: repoRow.originalGuid ?? repoRow.name,
+  teamName,
+  vaultVersion: 0,
+  vaultContent: null,
+  grandGuid: '',
+  parentGuid: null,
+  repositoryNetworkMode: '',
+  repositoryNetworkId: 0,
+  repositoryTag: repoRow.repositoryTag ?? '',
+});
+
+const MachineReposPage: React.FC = () => {
+  const setup = useMachineReposSetup();
+  const {
+    machineName,
+    navigate,
+    t,
+    panelWidth,
+    isMobile,
+    queueTrace,
+    fileBrowserModal,
+    unifiedModal,
+    connectivityTest,
+    machinesLoading,
+    machinesError,
+    refetchMachines,
+    machine,
+    createRepository,
+    repositories,
+    refetchRepos,
+  } = setup;
 
   const refreshData = useCallback(async () => {
     await Promise.all([refetchRepos(), refetchMachines()]);
@@ -110,120 +190,57 @@ const MachineReposPage: React.FC = () => {
   const { selectedResource, setSelectedResource, refreshKey, handleRefresh, handlePanelClose } =
     useResourcePageState<Repository | ContainerData | PluginContainer>(refreshData, !!machine);
 
-  const handleBackToMachines = () => {
-    void navigate('/machines');
-  };
-
-  const handleCreateRepo = () => {
-    if (!machine) return;
-
-    // Open the Repository creation modal with prefilled machine
-    unifiedModal.open({
-      mode: 'create',
-      data: {
-        machineName: machine.machineName,
-        teamName: machine.teamName,
-        prefilledMachine: true,
-      },
-      creationContext: 'normal',
-    });
-  };
-
-  const handlePull = () => {
-    if (!machine) return;
-
-    fileBrowserModal.open(machine);
-  };
-
-  const handleUnifiedModalSubmit = async (data: Record<string, unknown>) => {
-    const result = await createRepository(
-      data as unknown as Parameters<typeof createRepository>[0]
-    );
-
-    if (result.success) {
+  const handleBackToMachines = useCallback(() => void navigate('/machines'), [navigate]);
+  const handleCreateRepo = useCallback(() => {
+    if (machine)
+      unifiedModal.open({
+        mode: 'create',
+        data: {
+          machineName: machine.machineName,
+          teamName: machine.teamName,
+          prefilledMachine: true,
+        },
+        creationContext: 'normal',
+      });
+  }, [machine, unifiedModal]);
+  const handlePull = useCallback(() => {
+    if (machine) fileBrowserModal.open(machine);
+  }, [machine, fileBrowserModal]);
+  const handleUnifiedModalSubmit = useCallback(
+    async (data: Record<string, unknown>) => {
+      const result = await createRepository(
+        data as unknown as Parameters<typeof createRepository>[0]
+      );
+      if (!result.success) return;
       unifiedModal.close();
+      if (result.taskId) queueTrace.open(result.taskId, result.machineName ?? undefined);
+      else await handleRefresh();
+    },
+    [createRepository, handleRefresh, queueTrace, unifiedModal]
+  );
+  const handleRepositoryClick = useCallback(
+    (repoRow: RepositoryRowData) => {
+      const actualRepo = repositories.find((r) => r.repositoryName === repoRow.name);
+      const matchingRepo =
+        actualRepo?.repositoryTag === repoRow.repositoryTag ? actualRepo : undefined;
+      setSelectedResource(matchingRepo ?? createMappedRepository(repoRow, machine?.teamName ?? ''));
+    },
+    [machine?.teamName, repositories, setSelectedResource]
+  );
+  const handleContainerClick = useCallback(
+    (
+      container:
+        | PluginContainer
+        | ContainerData
+        | { id: string; name: string; state: string; [key: string]: unknown }
+    ) => setSelectedResource(container),
+    [setSelectedResource]
+  );
 
-      // If we have a taskId, open the queue trace modal
-      if (result.taskId) {
-        queueTrace.open(result.taskId, result.machineName ?? undefined);
-      } else {
-        // No queue item (credentials-only mode), just refresh
-        await handleRefresh();
-      }
-    }
-  };
-
-  const handleRepositoryClick = (repoRow: RepositoryRowData) => {
-    // Map Repository data to Repository type
-    const mappedRepo: Repository = {
-      repositoryName: repoRow.name,
-      repositoryGuid: repoRow.originalGuid ?? repoRow.name,
-      teamName: machine!.teamName ?? '',
-      vaultVersion: 0,
-      vaultContent: null,
-      grandGuid: '',
-      parentGuid: null,
-      repositoryNetworkMode: '',
-      repositoryNetworkId: 0,
-      repositoryTag: repoRow.repositoryTag ?? '',
-    };
-
-    // Find the actual Repository from the API data - must match both name AND tag to distinguish forks
-    const actualRepository = repositories.find(
-      (r) => r.repositoryName === repoRow.name && r.repositoryTag === repoRow.repositoryTag
-    );
-
-    setSelectedResource(actualRepository ?? mappedRepo);
-  };
-
-  const handleContainerClick = (
-    container:
-      | PluginContainer
-      | ContainerData
-      | { id: string; name: string; state: string; [key: string]: unknown }
-  ) => {
-    setSelectedResource(container);
-  };
-
-  // Loading state
-  if (machinesLoading && !machine) {
-    return (
-      <Flex vertical>
-        <Card>
-          <Flex vertical align="center" className="w-full">
-            <LoadingWrapper loading centered minHeight={160}>
-              <Flex />
-            </LoadingWrapper>
-            <Typography.Text>{t('common:general.loading')}</Typography.Text>
-          </Flex>
-        </Card>
-      </Flex>
-    );
-  }
-
-  // Error state - machine not found
-  if (machinesError || (!machinesLoading && !machine)) {
-    return (
-      <Flex vertical>
-        <Card>
-          <Flex vertical>
-            <Alert
-              message={t('machines:machineNotFound')}
-              description={
-                <Flex vertical>
-                  <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                  <Button type="primary" onClick={handleBackToMachines}>
-                    {t('machines:backToMachines')}
-                  </Button>
-                </Flex>
-              }
-              type="error"
-            />
-          </Flex>
-        </Card>
-      </Flex>
-    );
-  }
+  if (machinesLoading) return <LoadingState t={t} />;
+  if (machinesError)
+    return <ErrorState t={t} machineName={machineName} onBack={handleBackToMachines} />;
+  if (!machine) return <ErrorState t={t} machineName={machineName} onBack={handleBackToMachines} />;
 
   const breadcrumbItems = [
     {
@@ -231,7 +248,7 @@ const MachineReposPage: React.FC = () => {
       onClick: () => navigate('/machines'),
     },
     {
-      title: machine?.machineName ?? machineName,
+      title: machine.machineName ?? machineName,
     },
     {
       title: t('resources:repositories.repositories'),
@@ -253,7 +270,7 @@ const MachineReposPage: React.FC = () => {
         <Space>
           <DesktopOutlined />
           <Typography.Text>
-            {t('machines:machine')}: {machine?.machineName}
+            {t('machines:machine')}: {machine.machineName}
           </Typography.Text>
         </Space>
       </Typography.Title>
@@ -263,12 +280,12 @@ const MachineReposPage: React.FC = () => {
   const tags = (
     <Flex align="center" wrap>
       <Tag>
-        {t('machines:team')}: {machine?.teamName}
+        {t('machines:team')}: {machine.teamName}
       </Tag>
       <Tag>
-        {t('machines:bridge')}: {machine?.bridgeName}
+        {t('machines:bridge')}: {machine.bridgeName}
       </Tag>
-      {machine?.regionName && (
+      {machine.regionName && (
         <Tag>
           {t('machines:region')}: {machine.regionName}
         </Tag>
@@ -299,7 +316,7 @@ const MachineReposPage: React.FC = () => {
           type="text"
           icon={<ReloadOutlined />}
           onClick={() => connectivityTest.open()}
-          disabled={!machine}
+          disabled={false}
           data-testid="machine-repositories-test-and-refresh-button"
           aria-label={t('machines:checkAndRefresh')}
         />
@@ -307,7 +324,7 @@ const MachineReposPage: React.FC = () => {
     </>
   );
 
-  const content = machine ? (
+  const content = (
     <MachineRepositoryTable
       machine={machine}
       key={`${machine.machineName}-${refreshKey}`}
@@ -319,7 +336,7 @@ const MachineReposPage: React.FC = () => {
         queueTrace.open(taskId, machineName);
       }}
     />
-  ) : null;
+  );
 
   const panelContent =
     selectedResource &&
@@ -345,7 +362,6 @@ const MachineReposPage: React.FC = () => {
       onCancel={handlePanelClose}
       footer={null}
       width="100%"
-      styles={{ body: { padding: 0 } }}
       data-testid="machine-repositories-modal"
       centered
     >
@@ -405,7 +421,7 @@ const MachineReposPage: React.FC = () => {
         resourceType="repository"
         mode={unifiedModal.state.data?.mode ?? 'create'}
         existingData={unifiedModal.state.data?.data}
-        teamFilter={machine?.teamName ? [machine.teamName] : undefined}
+        teamFilter={machine.teamName ? [machine.teamName] : undefined}
         creationContext={unifiedModal.state.data?.creationContext}
         onSubmit={handleUnifiedModalSubmit}
       />
@@ -418,8 +434,8 @@ const MachineReposPage: React.FC = () => {
           connectivityTest.close();
           void handleRefresh();
         }}
-        machines={machine ? [machine] : []}
-        teamFilter={machine?.teamName ? [machine.teamName] : undefined}
+        machines={[machine]}
+        teamFilter={machine.teamName ? [machine.teamName] : undefined}
       />
     </>
   );

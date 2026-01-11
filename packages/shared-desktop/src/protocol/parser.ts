@@ -43,6 +43,116 @@ export function validateToken(token: string): boolean {
 }
 
 /**
+ * Sanitizes a token by removing newlines
+ */
+function sanitizeToken(rawToken: string): string {
+  return decodeURIComponent(rawToken).replaceAll(/[\n\r]/g, '');
+}
+
+/**
+ * Validates and returns a sanitized token, or throws an error
+ */
+function extractAndValidateToken(rawToken: string): string {
+  const token = sanitizeToken(rawToken);
+  if (!validateToken(token)) {
+    throw new Error('Invalid or missing authentication token in protocol URL');
+  }
+  return token;
+}
+
+/**
+ * Determines if a path part is an action
+ */
+function isAction(part: string): boolean {
+  return VALID_ACTIONS.includes(part as ProtocolAction);
+}
+
+/**
+ * Parses repository and action index from path parts
+ */
+function parseRepositoryAndActionIndex(
+  pathParts: string[],
+  startIndex: number
+): { repositoryName: string | undefined; actionIndex: number } {
+  if (pathParts.length <= startIndex) {
+    return { repositoryName: undefined, actionIndex: startIndex };
+  }
+
+  const nextPart = pathParts[startIndex];
+  if (isAction(nextPart)) {
+    return { repositoryName: undefined, actionIndex: startIndex };
+  }
+
+  return {
+    repositoryName: decodeURIComponent(nextPart),
+    actionIndex: startIndex + 1,
+  };
+}
+
+/**
+ * Extracts action from path parts
+ */
+function extractAction(pathParts: string[], actionIndex: number): ProtocolAction {
+  if (pathParts.length <= actionIndex) {
+    return 'desktop';
+  }
+
+  const actionStr = pathParts[actionIndex].toLowerCase();
+  if (!VALID_ACTIONS.includes(actionStr as ProtocolAction)) {
+    throw new Error(`Invalid action '${actionStr}'. Must be one of: ${VALID_ACTIONS.join(', ')}`);
+  }
+  return actionStr as ProtocolAction;
+}
+
+/**
+ * Parses query parameters from a URL
+ */
+function parseQueryParams(parsed: URL): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const [key, value] of parsed.searchParams) {
+    params[key] = value;
+  }
+  return params;
+}
+
+/**
+ * Parses URL with token in hostname format
+ */
+function parseHostnameFormat(
+  parsed: URL,
+  pathParts: string[]
+): {
+  token: string;
+  teamName: string;
+  machineName: string;
+  repositoryName: string | undefined;
+  actionIndex: number;
+} {
+  const token = extractAndValidateToken(parsed.hostname);
+  const teamName = decodeURIComponent(pathParts[0]);
+  const machineName = decodeURIComponent(pathParts[1]);
+  const { repositoryName, actionIndex } = parseRepositoryAndActionIndex(pathParts, 2);
+  return { token, teamName, machineName, repositoryName, actionIndex };
+}
+
+/**
+ * Parses URL with token in path format
+ */
+function parsePathFormat(pathParts: string[]): {
+  token: string;
+  teamName: string;
+  machineName: string;
+  repositoryName: string | undefined;
+  actionIndex: number;
+} {
+  const token = extractAndValidateToken(pathParts[0]);
+  const teamName = decodeURIComponent(pathParts[1]);
+  const machineName = decodeURIComponent(pathParts[2]);
+  const { repositoryName, actionIndex } = parseRepositoryAndActionIndex(pathParts, 3);
+  return { token, teamName, machineName, repositoryName, actionIndex };
+}
+
+/**
  * Parses a rediacc:// protocol URL
  *
  * URL formats supported:
@@ -63,94 +173,21 @@ export function parseProtocolUrl(url: string): ProtocolUrl {
     const parsed = new URL(url);
     const pathParts = parsed.pathname.split('/').filter((p) => p.length > 0);
 
-    let token: string;
-    let teamName: string;
-    let machineName: string;
-    let repositoryName: string | undefined;
-    let actionIndex: number;
+    const hasHostnameToken = parsed.hostname && pathParts.length >= 2;
+    const hasPathToken = pathParts.length >= 3;
 
-    // Check if token is in hostname (netloc) or path
-    if (parsed.hostname && pathParts.length >= 2) {
-      // Format: rediacc://token/team/machine[/repository][/action]
-      token = decodeURIComponent(parsed.hostname).replace(/[\n\r]/g, '');
-      if (!validateToken(token)) {
-        throw new Error('Invalid or missing authentication token in protocol URL');
-      }
-      teamName = decodeURIComponent(pathParts[0]);
-      machineName = decodeURIComponent(pathParts[1]);
-
-      // Check if we have repository or action next
-      if (pathParts.length >= 3) {
-        const thirdPart = pathParts[2];
-        if (VALID_ACTIONS.includes(thirdPart as ProtocolAction)) {
-          // Third part is action, no repository
-          repositoryName = undefined;
-          actionIndex = 2;
-        } else {
-          // Third part is repository
-          repositoryName = decodeURIComponent(thirdPart);
-          actionIndex = 3;
-        }
-      } else {
-        repositoryName = undefined;
-        actionIndex = 2;
-      }
-    } else if (pathParts.length >= 3) {
-      // Format: rediacc:///token/team/machine[/repository][/action] in path
-      token = decodeURIComponent(pathParts[0]).replace(/[\n\r]/g, '');
-      if (!validateToken(token)) {
-        throw new Error('Invalid or missing authentication token in protocol URL');
-      }
-      teamName = decodeURIComponent(pathParts[1]);
-      machineName = decodeURIComponent(pathParts[2]);
-
-      // Check if we have repository or action next
-      if (pathParts.length >= 4) {
-        const fourthPart = pathParts[3];
-        if (VALID_ACTIONS.includes(fourthPart as ProtocolAction)) {
-          // Fourth part is action, no repository
-          repositoryName = undefined;
-          actionIndex = 3;
-        } else {
-          // Fourth part is repository
-          repositoryName = decodeURIComponent(fourthPart);
-          actionIndex = 4;
-        }
-      } else {
-        repositoryName = undefined;
-        actionIndex = 3;
-      }
-    } else {
+    if (!hasHostnameToken && !hasPathToken) {
       throw new Error('URL must contain at least token, team, and machine');
     }
 
-    // Extract action if present
-    let action: ProtocolAction = 'desktop'; // Default action
-    if (pathParts.length > actionIndex) {
-      const actionStr = pathParts[actionIndex].toLowerCase();
-      if (VALID_ACTIONS.includes(actionStr as ProtocolAction)) {
-        action = actionStr as ProtocolAction;
-      } else {
-        throw new Error(
-          `Invalid action '${actionStr}'. Must be one of: ${VALID_ACTIONS.join(', ')}`
-        );
-      }
-    }
+    const { token, teamName, machineName, repositoryName, actionIndex } = hasHostnameToken
+      ? parseHostnameFormat(parsed, pathParts)
+      : parsePathFormat(pathParts);
 
-    // Parse query parameters
-    const params: Record<string, string> = {};
-    for (const [key, value] of parsed.searchParams) {
-      params[key] = value;
-    }
+    const action = extractAction(pathParts, actionIndex);
+    const params = parseQueryParams(parsed);
 
-    return {
-      token,
-      teamName,
-      machineName,
-      repositoryName,
-      action,
-      params,
-    };
+    return { token, teamName, machineName, repositoryName, action, params };
   } catch (e) {
     if (e instanceof Error) {
       throw new Error(`Failed to parse URL '${url}': ${e.message}`);
@@ -160,145 +197,197 @@ export function parseProtocolUrl(url: string): ProtocolUrl {
 }
 
 /**
+ * Adds common authentication arguments to command
+ */
+function addAuthArgs(cmd: string[], token: string, teamName: string, machineName: string): void {
+  cmd.push('--token', token, '--team', teamName, '--machine', machineName);
+}
+
+/**
+ * Adds repository argument if present
+ */
+function addRepositoryArg(cmd: string[], repositoryName: string | undefined): void {
+  if (repositoryName) {
+    cmd.push('--repository', repositoryName);
+  }
+}
+
+/**
+ * Checks if a param value is truthy ('true')
+ */
+function isTrueParam(value: string | undefined): boolean {
+  return (value ?? '').toLowerCase() === 'true';
+}
+
+/**
+ * Builds sync command arguments
+ */
+function buildSyncCommand(parsed: ProtocolUrl): string[] {
+  const { token, teamName, machineName, repositoryName, params } = parsed;
+  const cmd: string[] = ['sync'];
+
+  const direction = params?.direction ?? 'download';
+  if (direction !== 'upload' && direction !== 'download') {
+    throw new Error(`Invalid sync direction: ${direction}`);
+  }
+  cmd.push(direction);
+  addAuthArgs(cmd, token, teamName, machineName);
+  addRepositoryArg(cmd, repositoryName);
+
+  if (params?.localPath) {
+    cmd.push('--local', params.localPath);
+  }
+  if (isTrueParam(params?.mirror)) {
+    cmd.push('--mirror');
+  }
+  if (isTrueParam(params?.verify)) {
+    cmd.push('--verify');
+  }
+
+  return cmd;
+}
+
+/**
+ * Builds docker command string for container operations
+ */
+function buildContainerCommand(params: Record<string, string>): string {
+  const containerAction = params.action || 'terminal';
+  const containerId = params.containerId;
+  const shell = params.shell || 'bash';
+
+  switch (containerAction) {
+    case 'logs': {
+      const lines = params.lines || '50';
+      const follow = params.follow === 'true' ? '-f' : '';
+      return `docker logs --tail ${lines} ${follow} ${containerId}`.trim();
+    }
+    case 'stats':
+      return `docker stats ${containerId}`;
+    case 'exec': {
+      const execCommand = params.command || shell;
+      return `docker exec -it ${containerId} ${execCommand}`;
+    }
+    default:
+      return `docker exec -it ${containerId} ${shell}`;
+  }
+}
+
+/**
+ * Builds terminal command arguments
+ */
+function buildTerminalCommand(parsed: ProtocolUrl): string[] {
+  const { token, teamName, machineName, repositoryName, params } = parsed;
+  const cmd: string[] = ['term'];
+  addAuthArgs(cmd, token, teamName, machineName);
+
+  // Handle terminal type
+  if (params?.terminalType === 'machine') {
+    // Connect to machine directly (no repository)
+    return cmd;
+  }
+
+  if (params?.terminalType === 'container' && params.containerId) {
+    addRepositoryArg(cmd, repositoryName);
+    cmd.push('--command', buildContainerCommand(params));
+    return cmd;
+  }
+
+  // Regular repository terminal
+  addRepositoryArg(cmd, repositoryName);
+  if (params?.command) {
+    cmd.push('--command', params.command);
+  }
+  return cmd;
+}
+
+/**
+ * Builds browser command arguments
+ */
+function buildBrowserCommand(parsed: ProtocolUrl): string[] {
+  const { token, teamName, machineName, repositoryName, params } = parsed;
+  const cmd: string[] = ['desktop'];
+  addAuthArgs(cmd, token, teamName, machineName);
+  addRepositoryArg(cmd, repositoryName);
+
+  if (params?.path) {
+    cmd.push('--path', params.path);
+  }
+  return cmd;
+}
+
+/**
+ * Builds vscode command arguments
+ */
+function buildVSCodeCommand(parsed: ProtocolUrl): string[] {
+  const { token, teamName, machineName, repositoryName, params } = parsed;
+  const cmd: string[] = ['vscode'];
+  addAuthArgs(cmd, token, teamName, machineName);
+  addRepositoryArg(cmd, repositoryName);
+
+  if (params?.path) {
+    cmd.push('--path', params.path);
+  }
+  return cmd;
+}
+
+/**
+ * Builds plugin command arguments
+ */
+function buildPluginCommand(parsed: ProtocolUrl): string[] {
+  const { token, teamName, machineName, repositoryName, params } = parsed;
+  const cmd: string[] = ['plugin'];
+  addAuthArgs(cmd, token, teamName, machineName);
+  addRepositoryArg(cmd, repositoryName);
+
+  if (params?.pluginName) {
+    cmd.push('--name', params.pluginName);
+  }
+  if (params?.pluginAction) {
+    cmd.push('--action', params.pluginAction);
+  }
+  return cmd;
+}
+
+/**
+ * Builds desktop command arguments (default action)
+ */
+function buildDesktopCommand(parsed: ProtocolUrl): string[] {
+  const { token, teamName, machineName, repositoryName, params } = parsed;
+  const cmd: string[] = ['desktop'];
+  addAuthArgs(cmd, token, teamName, machineName);
+  addRepositoryArg(cmd, repositoryName);
+
+  if (params?.containerId) {
+    cmd.push('--container-id', params.containerId);
+  }
+  return cmd;
+}
+
+/**
+ * Command builders map for each action type
+ */
+const COMMAND_BUILDERS: Record<ProtocolAction, (parsed: ProtocolUrl) => string[]> = {
+  sync: buildSyncCommand,
+  terminal: buildTerminalCommand,
+  browser: buildBrowserCommand,
+  vscode: buildVSCodeCommand,
+  plugin: buildPluginCommand,
+  desktop: buildDesktopCommand,
+};
+
+/**
  * Builds CLI command arguments from a parsed protocol URL
  *
  * @param parsed - Parsed protocol URL
  * @returns Array of CLI command arguments
  */
 export function buildCliCommand(parsed: ProtocolUrl): string[] {
-  const { token, teamName, machineName, repositoryName, action, params } = parsed;
-
-  const cmd: string[] = [];
-
-  switch (action) {
-    case 'sync': {
-      cmd.push('sync');
-      const direction = params?.direction ?? 'download';
-      if (direction !== 'upload' && direction !== 'download') {
-        throw new Error(`Invalid sync direction: ${direction}`);
-      }
-      cmd.push(direction);
-      cmd.push('--token', token, '--team', teamName, '--machine', machineName);
-      if (repositoryName) {
-        cmd.push('--repository', repositoryName);
-      }
-      if (params?.localPath) {
-        cmd.push('--local', params.localPath);
-      }
-      if ((params?.mirror ?? '').toLowerCase() === 'true') {
-        cmd.push('--mirror');
-      }
-      if ((params?.verify ?? '').toLowerCase() === 'true') {
-        cmd.push('--verify');
-      }
-      break;
-    }
-
-    case 'terminal': {
-      cmd.push('term');
-      cmd.push('--token', token, '--team', teamName, '--machine', machineName);
-
-      // Handle terminal type
-      if (params?.terminalType === 'machine') {
-        // Connect to machine directly (no repository)
-        // Already have the base command, just don't add repository
-      } else if (params?.terminalType === 'container' && params.containerId) {
-        // Container terminal operations
-        const containerAction = params.action || 'terminal';
-        const containerId = params.containerId;
-
-        if (repositoryName) {
-          cmd.push('--repository', repositoryName);
-        }
-
-        if (containerAction === 'logs') {
-          // Docker logs with optional tail and follow
-          const lines = params.lines || '50'; // Default to 50 lines like Python CLI
-          const follow = params.follow === 'true' ? '-f' : '';
-          cmd.push('--command', `docker logs --tail ${lines} ${follow} ${containerId}`.trim());
-        } else if (containerAction === 'stats') {
-          // Docker stats for the container
-          cmd.push('--command', `docker stats ${containerId}`);
-        } else if (containerAction === 'exec') {
-          // Docker exec with specified shell
-          const shell = params.shell || 'bash';
-          const execCommand = params.command || shell;
-          cmd.push('--command', `docker exec -it ${containerId} ${execCommand}`);
-        } else {
-          // Default: interactive shell in container
-          const shell = params.shell || 'bash';
-          cmd.push('--command', `docker exec -it ${containerId} ${shell}`);
-        }
-      } else {
-        // Regular repository terminal
-        if (repositoryName) {
-          cmd.push('--repository', repositoryName);
-        }
-        if (params?.command) {
-          cmd.push('--command', params.command);
-        }
-      }
-      break;
-    }
-
-    case 'browser': {
-      // Route browser action to desktop command (file browser functionality)
-      // There is no separate 'browser' CLI command - it's handled by 'desktop'
-      cmd.push('desktop');
-      cmd.push('--token', token, '--team', teamName, '--machine', machineName);
-      if (repositoryName) {
-        cmd.push('--repository', repositoryName);
-      }
-      if (params?.path) {
-        cmd.push('--path', params.path);
-      }
-      break;
-    }
-
-    case 'vscode': {
-      cmd.push('vscode');
-      cmd.push('--token', token, '--team', teamName, '--machine', machineName);
-      if (repositoryName) {
-        cmd.push('--repository', repositoryName);
-      }
-      if (params?.path) {
-        cmd.push('--path', params.path);
-      }
-      break;
-    }
-
-    case 'plugin': {
-      cmd.push('plugin');
-      cmd.push('--token', token, '--team', teamName, '--machine', machineName);
-      if (repositoryName) {
-        cmd.push('--repository', repositoryName);
-      }
-      if (params?.pluginName) {
-        cmd.push('--name', params.pluginName);
-      }
-      if (params?.pluginAction) {
-        cmd.push('--action', params.pluginAction);
-      }
-      break;
-    }
-
-    case 'desktop':
-    default: {
-      cmd.push('desktop');
-      cmd.push('--token', token, '--team', teamName, '--machine', machineName);
-      if (repositoryName) {
-        cmd.push('--repository', repositoryName);
-      }
-      if (params?.containerId) {
-        cmd.push('--container-id', params.containerId);
-      }
-      break;
-    }
-  }
+  const builder = COMMAND_BUILDERS[parsed.action];
+  const cmd = builder(parsed);
 
   // Add API URL if specified (applies to all commands)
-  if (params?.apiUrl) {
-    cmd.push('--api-url', params.apiUrl);
+  if (parsed.params?.apiUrl) {
+    cmd.push('--api-url', parsed.params.apiUrl);
   }
 
   return cmd;

@@ -21,14 +21,14 @@ test.describe('Permission Error Scenarios @cli @errors', () => {
 
       // This test expects Community edition restriction
       // If this fails with a different error, it means we're on a paid plan
-      if (!result.success) {
-        expectError(runner, result, {
-          messageContains: ErrorPatterns.PERMISSION_GROUP_COMMUNITY_RESTRICTION,
-        });
-      } else {
+      if (result.success) {
         // We're on a paid plan, clean up the created group
         await runner.run(['permission', 'group', 'delete', groupName, '--force']);
         console.warn('Note: Test skipped - running on paid plan, not Community edition');
+      } else {
+        expectError(runner, result, {
+          messageContains: ErrorPatterns.PERMISSION_GROUP_COMMUNITY_RESTRICTION,
+        });
       }
     });
 

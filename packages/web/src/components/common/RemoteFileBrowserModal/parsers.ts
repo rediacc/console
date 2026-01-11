@@ -23,7 +23,7 @@ const getNumberValue = (value: unknown): number => {
     return value;
   }
   if (typeof value === 'string') {
-    const parsed = parseInt(value, 10);
+    const parsed = Number.parseInt(value, 10);
     return Number.isNaN(parsed) ? 0 : parsed;
   }
   return 0;
@@ -138,12 +138,12 @@ export function parsePlainTextFileList(textData: string, currentPath: string): R
   );
 
   return fileLines.map((line) => {
-    const match = line.match(/^\s*(\d+)\s+(.+)$/);
+    const match = /^\s*(\d+)\s+(.+)$/.exec(line);
     if (match) {
       const [, sizeStr, name] = match;
       return {
         name: name.trim(),
-        size: parseInt(sizeStr),
+        size: Number.parseInt(sizeStr),
         isDirectory: name.endsWith('/'),
         path: currentPath ? `${currentPath}/${name.trim()}` : name.trim(),
       };
@@ -195,7 +195,7 @@ export function cleanJsonOutput(dataToProcess: string): string {
     const jsonEndIndex = dataToProcess.lastIndexOf(']');
     if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
       const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
-      return jsonString.replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
+      return jsonString.replaceAll('\\\\', '\\').replaceAll('\\n', '\n');
     }
   }
   return dataToProcess;
@@ -203,8 +203,8 @@ export function cleanJsonOutput(dataToProcess: string): string {
 
 export class FileListParserFactory {
   constructor(
-    private currentPath: string,
-    private mapGuidToRepository: RepositoryMapper
+    private readonly currentPath: string,
+    private readonly mapGuidToRepository: RepositoryMapper
   ) {}
 
   parse(dataToProcess: string): RemoteFile[] {

@@ -6,6 +6,8 @@
 // Types
 export type {
   VSCodeInfo,
+  VSCodeInstallations,
+  VSCodePreference,
   SSHConfigEntry,
   VSCodeLaunchOptions,
   VSCodeRemoteSettings,
@@ -15,6 +17,8 @@ export type {
 // Executable detection and launching
 export {
   findVSCode,
+  findVSCodeInWSL,
+  findAllVSCodeInstallations,
   generateRemoteUri,
   launchVSCode,
   isRemoteSSHExtensionInstalled,

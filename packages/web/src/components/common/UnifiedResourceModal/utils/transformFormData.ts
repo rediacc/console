@@ -10,61 +10,99 @@ interface TransformFormDataOptions {
   autoSetupEnabled: boolean;
 }
 
+// --- Helper Functions ---
+
+const applySimpleModeDefaults = (
+  data: ResourceFormValues,
+  resourceType: ResourceType,
+  existingData?: ExistingResourceData
+): void => {
+  data.teamName ??= existingData?.teamName ?? 'Private Team';
+
+  if (resourceType === 'machine') {
+    data.regionName = 'Default Region';
+    data.bridgeName = 'Global Bridges';
+  }
+};
+
+const applyRepositoryMachineData = (
+  data: ResourceFormValues,
+  existingData?: ExistingResourceData
+): void => {
+  if (!existingData?.machineName || !existingData.prefilledMachine) {
+    return;
+  }
+
+  data.machineName = existingData.machineName;
+
+  if (existingData.teamName && !data.teamName) {
+    data.teamName = existingData.teamName;
+  }
+};
+
+const applyRepositoryTemplate = async (
+  data: ResourceFormValues,
+  selectedTemplate: string | null
+): Promise<void> => {
+  if (!selectedTemplate) {
+    return;
+  }
+
+  try {
+    data.tmpl = await templateService.getEncodedTemplateDataById(selectedTemplate);
+  } catch (error) {
+    console.error('Failed to load template:', error);
+  }
+};
+
+const applyRepositoryGuid = (
+  data: ResourceFormValues,
+  existingData?: ExistingResourceData
+): void => {
+  if (existingData?.repositoryGuid) {
+    data.repositoryGuid = existingData.repositoryGuid;
+  }
+};
+
+const applyRepositoryTransformations = async (
+  data: ResourceFormValues,
+  mode: TransformFormDataOptions['mode'],
+  existingData?: ExistingResourceData,
+  selectedTemplate?: string | null
+): Promise<void> => {
+  applyRepositoryMachineData(data, existingData);
+
+  if (mode === 'create') {
+    await applyRepositoryTemplate(data, selectedTemplate ?? null);
+    data.keep_open = true;
+    applyRepositoryGuid(data, existingData);
+  }
+};
+
+const applyMachineTransformations = (data: ResourceFormValues, autoSetupEnabled: boolean): void => {
+  data.autoSetup = autoSetupEnabled;
+};
+
+// --- Main Function ---
+
 export const transformFormData = async (
   data: ResourceFormValues,
   options: TransformFormDataOptions
 ): Promise<ResourceFormValues> => {
   const { resourceType, mode, uiMode, existingData, selectedTemplate, autoSetupEnabled } = options;
 
-  // Set Simple mode defaults
+  // Apply simple mode defaults
   if (uiMode === 'simple' && mode === 'create') {
-    const defaults: ResourceFormValues = {};
-
-    if (!data.teamName) {
-      defaults.teamName = existingData?.teamName ?? 'Private Team';
-    }
-
-    if (resourceType === 'machine') {
-      defaults.regionName = 'Default Region';
-      defaults.bridgeName = 'Global Bridges';
-    }
-
-    Object.assign(data, defaults);
+    applySimpleModeDefaults(data, resourceType, existingData);
   }
 
-  // Repository-specific transformations
+  // Apply resource-specific transformations
   if (resourceType === 'repository') {
-    // Ensure machine name is included when creating from machine
-    if (existingData?.machineName && existingData.prefilledMachine) {
-      data.machineName = existingData.machineName;
-      if (existingData.teamName && !data.teamName) {
-        data.teamName = existingData.teamName;
-      }
-    }
-
-    // Add template parameter
-    if (mode === 'create' && selectedTemplate) {
-      try {
-        data.tmpl = await templateService.getEncodedTemplateDataById(selectedTemplate);
-      } catch (error) {
-        console.error('Failed to load template:', error);
-      }
-    }
-
-    // Always keep repository open after creation
-    if (mode === 'create') {
-      data.keep_open = true;
-    }
-
-    // Add repositoryGuid for credential-only creation
-    if (mode === 'create' && existingData?.repositoryGuid) {
-      data.repositoryGuid = existingData.repositoryGuid;
-    }
+    await applyRepositoryTransformations(data, mode, existingData, selectedTemplate);
   }
 
-  // Machine-specific transformations
   if (resourceType === 'machine' && mode === 'create') {
-    data.autoSetup = autoSetupEnabled;
+    applyMachineTransformations(data, autoSetupEnabled);
   }
 
   return data;

@@ -53,7 +53,7 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
   const nameColumn = createTruncatedColumn<RemoteFile>({
@@ -203,41 +203,46 @@ export const BrowserFileTable: React.FC<BrowserFileTableProps> = ({
 
   return (
     <LoadingWrapper loading={loading} centered minHeight={240} tip={t('common:general.loading')}>
-      {filteredFiles.length === 0 ? (
-        <Empty
-          description={t('resources:remoteFiles.noFiles')}
-          data-testid="file-browser-empty-state"
-        />
-      ) : isMobile ? (
-        renderMobileList()
-      ) : (
-        <Table<RemoteFile>
-          dataSource={filteredFiles}
-          columns={columns}
-          rowKey="name"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total, range) =>
-              t('common:table.showingRecords', {
-                start: range[0],
-                end: range[1],
-                total,
+      {(() => {
+        if (filteredFiles.length === 0) {
+          return (
+            <Empty
+              description={t('resources:remoteFiles.noFiles')}
+              data-testid="file-browser-empty-state"
+            />
+          );
+        } else if (isMobile) {
+          return renderMobileList();
+        }
+        return (
+          <Table<RemoteFile>
+            dataSource={filteredFiles}
+            columns={columns}
+            rowKey="name"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total, range) =>
+                t('common:table.showingRecords', {
+                  start: range[0],
+                  end: range[1],
+                  total,
+                }),
+            }}
+            rowSelection={{
+              type: 'radio',
+              selectedRowKeys: selectedFile ? [selectedFile] : [],
+              onChange: (keys) => onSelectFile((keys[0] as string) || ''),
+              getCheckboxProps: (record) => ({
+                disabled: record.isDirectory,
               }),
-          }}
-          rowSelection={{
-            type: 'radio',
-            selectedRowKeys: selectedFile ? [selectedFile] : [],
-            onChange: (keys) => onSelectFile((keys[0] as string) || ''),
-            getCheckboxProps: (record) => ({
-              disabled: record.isDirectory,
-            }),
-          }}
-          scroll={{ y: 400 }}
-          data-testid="file-browser-table"
-          onRow={getRowProps}
-        />
-      )}
+            }}
+            scroll={{ y: 400 }}
+            data-testid="file-browser-table"
+            onRow={getRowProps}
+          />
+        );
+      })()}
     </LoadingWrapper>
   );
 };

@@ -29,7 +29,7 @@ interface QueueMonitoringDebug {
 }
 
 class QueueMonitoringService {
-  private monitoredTasks: Map<string, MonitoredTask> = new Map();
+  private readonly monitoredTasks: Map<string, MonitoredTask> = new Map();
   private intervalId: NodeJS.Timeout | null = null;
   private statusHandler?: (taskId: string, status: 'completed' | 'failed' | 'cancelled') => void;
 
@@ -197,265 +197,235 @@ class QueueMonitoringService {
     }
   }
 
-  private async checkTask(task: MonitoredTask) {
-    // Checking task - current status
+  private async fetchTaskTrace(task: MonitoredTask): Promise<QueueTrace | null> {
+    if (!this.isExtensionContext()) {
+      const response = await typedApi.GetQueueItemTrace({ taskId: task.taskId });
+      return parseGetQueueItemTrace(response as never);
+    }
+
     try {
-      // Update last check time
-      task.lastCheckTime = Date.now();
-
-      // Add Chrome extension protection to API calls
-      let trace: QueueTrace;
-      if (this.isExtensionContext()) {
-        // In Chrome extension context, wrap API call with additional error handling
-        try {
-          const response = (await Promise.race([
-            typedApi.GetQueueItemTrace({ taskId: task.taskId }),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
-            ),
-          ])) as Awaited<ReturnType<typeof typedApi.GetQueueItemTrace>>;
-          trace = parseGetQueueItemTrace(response as never);
-        } catch (extensionError: unknown) {
-          if (
-            extensionError instanceof Error &&
-            extensionError.message === 'Chrome extension timeout'
-          ) {
-            return; // Skip this check to avoid blocking
-          }
-          throw extensionError;
-        }
-      } else {
-        // Fetch the latest status normally
-        const response = await typedApi.GetQueueItemTrace({ taskId: task.taskId });
-        trace = parseGetQueueItemTrace(response as never);
-      }
-
-      // Extract queue details from response
-      const queueDetails = this.extractQueueDetails(trace);
-
-      if (!queueDetails) {
-        return;
-      }
-
-      const currentStatus = queueDetails.status;
-
-      // Skip if status is null
-      if (!currentStatus) {
-        return;
-      }
-
-      // Check for permanent failure flag
-      if (queueDetails.permanentlyFailed) {
-        this.notifyQueue(task.taskId, 'failed');
-
-        const lastFailureReason = this.getLastFailureReason(queueDetails);
-        if (lastFailureReason) {
-          showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', {
-            taskId: task.taskId,
-            reason: lastFailureReason,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-        } else {
-          showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', {
-            taskId: task.taskId,
-            attempts: this.MAX_RETRY_COUNT,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-        }
-        this.removeTask(task.taskId);
-        return; // Stop processing this task
-      }
-
-      // Check if status has changed
-      if (currentStatus !== task.lastStatus) {
-        const oldStatus = task.lastStatus;
-        task.lastStatus = currentStatus;
-
-        // Notify user of status change
-        if (currentStatus === 'COMPLETED') {
-          this.notifyQueue(task.taskId, 'completed');
-
-          showTranslatedMessage('success', 'queue:monitoring.completed', {
-            taskId: task.taskId,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-          this.removeTask(task.taskId);
-          return; // Stop processing this task
-        } else if (currentStatus === 'CANCELLED') {
-          this.notifyQueue(task.taskId, 'cancelled');
-
-          showTranslatedMessage('warning', 'queue:monitoring.cancelled', {
-            taskId: task.taskId,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-          this.removeTask(task.taskId);
-          return; // Stop processing this task
-        } else if (currentStatus === 'CANCELLING' && oldStatus !== 'CANCELLING') {
-          showTranslatedMessage('info', 'queue:monitoring.cancelling', {
-            taskId: task.taskId,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-          // Continue monitoring until it transitions to CANCELLED
-          this.monitoredTasks.set(task.taskId, task);
-          this.saveToStorage();
-        } else if (currentStatus === 'FAILED') {
-          // Note: In the middleware, FAILED status with retryCount < 2 gets reset to PENDING immediately
-          // So we might not see FAILED status for long, but handle it just in case
-          const retryCount = this.getRetryCount(queueDetails);
-          const lastFailureReason = this.getLastFailureReason(queueDetails);
-
-          // Check for permanent failure messages
-          if (isPermanentFailure(lastFailureReason)) {
-            this.notifyQueue(task.taskId, 'failed');
-
-            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', {
-              taskId: task.taskId,
-              reason: lastFailureReason ?? '',
-              teamName: task.teamName,
-              machineName: task.machineName,
-            });
-            this.removeTask(task.taskId);
-            return; // Stop processing this task
-          }
-
-          if (retryCount >= this.MAX_RETRY_COUNT) {
-            this.notifyQueue(task.taskId, 'failed');
-
-            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', {
-              taskId: task.taskId,
-              attempts: this.MAX_RETRY_COUNT,
-              teamName: task.teamName,
-              machineName: task.machineName,
-            });
-            this.removeTask(task.taskId);
-            return; // Stop processing this task
-          }
-          // This should be rare as middleware immediately resets to PENDING
-          showTranslatedMessage('warning', 'queue:monitoring.failedWaitingRetry', {
-            taskId: task.taskId,
-            attempt: retryCount,
-            maxAttempts: this.MAX_RETRY_COUNT,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-          // Continue monitoring as it should become PENDING soon
-          this.monitoredTasks.set(task.taskId, task);
-          this.saveToStorage();
-        } else if (currentStatus === 'PROCESSING' && oldStatus !== 'PROCESSING') {
-          showTranslatedMessage('info', 'queue:monitoring.startedProcessing', {
-            taskId: task.taskId,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-          // Update the task with new status
-          this.monitoredTasks.set(task.taskId, task);
-          this.saveToStorage();
-        } else if (currentStatus === 'ASSIGNED' && oldStatus === 'PENDING') {
-          showTranslatedMessage('info', 'queue:monitoring.assigned', {
-            taskId: task.taskId,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-          // Update the task with new status
-          this.monitoredTasks.set(task.taskId, task);
-          this.saveToStorage();
-        } else if (
-          currentStatus === 'PENDING' &&
-          oldStatus !== 'PENDING' &&
-          this.getRetryCount(queueDetails) > 0
-        ) {
-          // Task has been reset to PENDING for retry
-          const retryCount = this.getRetryCount(queueDetails);
-          const lastFailureReason = this.getLastFailureReason(queueDetails);
-
-          // Check for permanent failure messages
-          if (isPermanentFailure(lastFailureReason)) {
-            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', {
-              taskId: task.taskId,
-              reason: lastFailureReason ?? '',
-              teamName: task.teamName,
-              machineName: task.machineName,
-            });
-            this.removeTask(task.taskId);
-            return;
-          }
-
-          // Check if we've reached max retries
-          if (retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
-            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', {
-              taskId: task.taskId,
-              attempts: this.MAX_RETRY_COUNT,
-              teamName: task.teamName,
-              machineName: task.machineName,
-            });
-            this.removeTask(task.taskId);
-            return;
-          }
-
-          showTranslatedMessage('info', 'queue:monitoring.queuedForRetry', {
-            taskId: task.taskId,
-            attempt: retryCount,
-            maxAttempts: this.MAX_RETRY_COUNT,
-            teamName: task.teamName,
-            machineName: task.machineName,
-          });
-          // Update the task with new status
-          this.monitoredTasks.set(task.taskId, task);
-          this.saveToStorage();
-        } else if (currentStatus === 'PENDING') {
-          const retryCount = this.getRetryCount(queueDetails);
-          const lastFailureReason = this.getLastFailureReason(queueDetails);
-
-          // Check for permanent failure messages
-          if (isPermanentFailure(lastFailureReason)) {
-            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', {
-              taskId: task.taskId,
-              reason: lastFailureReason ?? '',
-              teamName: task.teamName,
-              machineName: task.machineName,
-            });
-            this.removeTask(task.taskId);
-            return;
-          }
-
-          // Task is stuck in PENDING with max retries - treat as permanently failed
-          if (retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
-            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', {
-              taskId: task.taskId,
-              attempts: this.MAX_RETRY_COUNT,
-              teamName: task.teamName,
-              machineName: task.machineName,
-            });
-            this.removeTask(task.taskId);
-            return;
-          }
-        }
-      }
-
-      // Check for stale tasks (no assignment update for more than 5 minutes during processing)
+      const response = (await Promise.race([
+        typedApi.GetQueueItemTrace({ taskId: task.taskId }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
+        ),
+      ])) as Awaited<ReturnType<typeof typedApi.GetQueueItemTrace>>;
+      return parseGetQueueItemTrace(response as never);
+    } catch (extensionError: unknown) {
       if (
-        currentStatus === 'PROCESSING' &&
-        queueDetails.minutesSinceAssigned &&
-        queueDetails.minutesSinceAssigned > this.STALE_PROCESSING_MINUTES
+        extensionError instanceof Error &&
+        extensionError.message === 'Chrome extension timeout'
       ) {
-        showTranslatedMessage('error', 'queue:monitoring.staleTask', {
-          taskId: task.taskId,
-          minutes: queueDetails.minutesSinceAssigned,
-        });
-        // Continue monitoring but less frequently
-        task.checkInterval = this.CHECK_INTERVAL_MS * 2; // Double the check interval for stale tasks
-        this.monitoredTasks.set(task.taskId, task);
-        this.saveToStorage();
+        return null;
       }
-    } catch (error: unknown) {
-      // Failed to check queue task
+      throw extensionError;
+    }
+  }
 
-      // If we get a 404, the task might have been deleted
+  private handlePermanentFailure(task: MonitoredTask, lastFailureReason: string | undefined): void {
+    this.notifyQueue(task.taskId, 'failed');
+
+    const messageKey = lastFailureReason
+      ? 'queue:monitoring.permanentlyFailedWithReason'
+      : 'queue:monitoring.permanentlyFailed';
+
+    showTranslatedMessage('error', messageKey, {
+      taskId: task.taskId,
+      reason: lastFailureReason ?? '',
+      attempts: this.MAX_RETRY_COUNT,
+      teamName: task.teamName,
+      machineName: task.machineName,
+    });
+    this.removeTask(task.taskId);
+  }
+
+  private checkForPermanentFailure(
+    task: MonitoredTask,
+    queueDetails: GetTeamQueueItems_ResultSet1
+  ): boolean {
+    const lastFailureReason = this.getLastFailureReason(queueDetails);
+    const retryCount = this.getRetryCount(queueDetails);
+
+    if (isPermanentFailure(lastFailureReason)) {
+      this.handlePermanentFailure(task, lastFailureReason);
+      return true;
+    }
+
+    if (retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
+      this.handlePermanentFailure(task, undefined);
+      return true;
+    }
+
+    return false;
+  }
+
+  private handleTerminalStatus(task: MonitoredTask, status: string): boolean {
+    if (status === 'COMPLETED') {
+      this.notifyQueue(task.taskId, 'completed');
+      showTranslatedMessage('success', 'queue:monitoring.completed', {
+        taskId: task.taskId,
+        teamName: task.teamName,
+        machineName: task.machineName,
+      });
+      this.removeTask(task.taskId);
+      return true;
+    }
+
+    if (status === 'CANCELLED') {
+      this.notifyQueue(task.taskId, 'cancelled');
+      showTranslatedMessage('warning', 'queue:monitoring.cancelled', {
+        taskId: task.taskId,
+        teamName: task.teamName,
+        machineName: task.machineName,
+      });
+      this.removeTask(task.taskId);
+      return true;
+    }
+
+    return false;
+  }
+
+  private notifyStatusTransition(
+    task: MonitoredTask,
+    messageKey: string,
+    extraParams?: Record<string, unknown>
+  ): void {
+    showTranslatedMessage('info', messageKey, {
+      taskId: task.taskId,
+      teamName: task.teamName,
+      machineName: task.machineName,
+      ...extraParams,
+    });
+  }
+
+  private handleFailedStatus(
+    task: MonitoredTask,
+    queueDetails: GetTeamQueueItems_ResultSet1
+  ): boolean {
+    if (this.checkForPermanentFailure(task, queueDetails)) return true;
+
+    showTranslatedMessage('warning', 'queue:monitoring.failedWaitingRetry', {
+      taskId: task.taskId,
+      attempt: this.getRetryCount(queueDetails),
+      maxAttempts: this.MAX_RETRY_COUNT,
+      teamName: task.teamName,
+      machineName: task.machineName,
+    });
+    return false;
+  }
+
+  private processStatusChange(
+    task: MonitoredTask,
+    oldStatus: string,
+    currentStatus: string,
+    queueDetails: GetTeamQueueItems_ResultSet1
+  ): boolean {
+    if (currentStatus === 'CANCELLING' && oldStatus !== 'CANCELLING') {
+      this.notifyStatusTransition(task, 'queue:monitoring.cancelling');
+      return false;
+    }
+    if (currentStatus === 'FAILED') {
+      return this.handleFailedStatus(task, queueDetails);
+    }
+    if (currentStatus === 'PROCESSING' && oldStatus !== 'PROCESSING') {
+      this.notifyStatusTransition(task, 'queue:monitoring.startedProcessing');
+      return false;
+    }
+    if (currentStatus === 'ASSIGNED' && oldStatus === 'PENDING') {
+      this.notifyStatusTransition(task, 'queue:monitoring.assigned');
+      return false;
+    }
+    if (currentStatus === 'PENDING' && oldStatus !== 'PENDING') {
+      this.handlePendingRetry(task, queueDetails);
+      return true;
+    }
+    if (currentStatus === 'PENDING') {
+      return this.checkForPermanentFailure(task, queueDetails);
+    }
+    return false;
+  }
+
+  private handleStatusTransition(
+    task: MonitoredTask,
+    oldStatus: string,
+    currentStatus: string,
+    queueDetails: GetTeamQueueItems_ResultSet1
+  ): void {
+    if (this.processStatusChange(task, oldStatus, currentStatus, queueDetails)) {
+      return;
+    }
+    this.monitoredTasks.set(task.taskId, task);
+    this.saveToStorage();
+  }
+
+  private handlePendingRetry(
+    task: MonitoredTask,
+    queueDetails: GetTeamQueueItems_ResultSet1
+  ): void {
+    const retryCount = this.getRetryCount(queueDetails);
+    if (retryCount === 0) return;
+
+    if (this.checkForPermanentFailure(task, queueDetails)) return;
+
+    showTranslatedMessage('info', 'queue:monitoring.queuedForRetry', {
+      taskId: task.taskId,
+      attempt: retryCount,
+      maxAttempts: this.MAX_RETRY_COUNT,
+      teamName: task.teamName,
+      machineName: task.machineName,
+    });
+    this.monitoredTasks.set(task.taskId, task);
+    this.saveToStorage();
+  }
+
+  private handleStaleTask(
+    task: MonitoredTask,
+    queueDetails: GetTeamQueueItems_ResultSet1,
+    currentStatus: string
+  ): void {
+    if (currentStatus !== 'PROCESSING') return;
+    if (!queueDetails.minutesSinceAssigned) return;
+    if (queueDetails.minutesSinceAssigned <= this.STALE_PROCESSING_MINUTES) return;
+
+    showTranslatedMessage('error', 'queue:monitoring.staleTask', {
+      taskId: task.taskId,
+      minutes: queueDetails.minutesSinceAssigned,
+    });
+    task.checkInterval = this.CHECK_INTERVAL_MS * 2;
+    this.monitoredTasks.set(task.taskId, task);
+    this.saveToStorage();
+  }
+
+  private processTaskCheck(task: MonitoredTask, queueDetails: GetTeamQueueItems_ResultSet1): void {
+    const currentStatus = queueDetails.status;
+    if (!currentStatus) return;
+
+    if (queueDetails.permanentlyFailed) {
+      this.handlePermanentFailure(task, this.getLastFailureReason(queueDetails));
+      return;
+    }
+
+    if (currentStatus !== task.lastStatus) {
+      const oldStatus = task.lastStatus;
+      task.lastStatus = currentStatus;
+      if (this.handleTerminalStatus(task, currentStatus)) return;
+      this.handleStatusTransition(task, oldStatus, currentStatus, queueDetails);
+    }
+
+    this.handleStaleTask(task, queueDetails, currentStatus);
+  }
+
+  private async checkTask(task: MonitoredTask) {
+    try {
+      task.lastCheckTime = Date.now();
+      const trace = await this.fetchTaskTrace(task);
+      if (!trace) return;
+
+      const queueDetails = this.extractQueueDetails(trace);
+      if (!queueDetails) return;
+
+      this.processTaskCheck(task, queueDetails);
+    } catch (error: unknown) {
       if (isAxiosError(error) && error.response?.status === 404) {
         showTranslatedMessage('error', 'queue:monitoring.taskNotFound', {
           taskId: task.taskId,

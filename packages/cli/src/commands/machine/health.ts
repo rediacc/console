@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import { parseGetTeamMachines } from '@rediacc/shared/api';
-import { getMachineHealth, type MachineWithVaultStatus } from '@rediacc/shared/services/machine';
+import {
+  getMachineHealth,
+  type MachineWithVaultStatus,
+  type MachineHealthResult,
+} from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';
@@ -9,6 +13,119 @@ import { outputService } from '../../services/output.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
 import type { OutputFormat } from '../../types/index.js';
+
+const exitCodeStatusHandlers: Record<number, () => void> = {
+  0: () => outputService.success(t('commands.machine.health.statusHealthy')),
+  1: () => outputService.warn(t('commands.machine.health.statusWarning')),
+  2: () => outputService.error(t('commands.machine.health.statusError')),
+};
+
+function displayStatusByExitCode(exitCode: number): void {
+  const handler = exitCodeStatusHandlers[exitCode] as (() => void) | undefined;
+  if (handler === undefined) {
+    outputService.error(t('commands.machine.health.statusCritical'));
+  } else {
+    handler();
+  }
+}
+
+function displaySystemSection(sys: MachineHealthResult['details']['system']): void {
+  const hasData = sys.uptime ?? sys.memoryPercent ?? sys.diskPercent ?? sys.datastorePercent;
+  if (!hasData) return;
+
+  outputService.info(t('commands.machine.health.systemSection'));
+
+  const systemFields: { value: unknown; key: string; param: string }[] = [
+    { value: sys.uptime, key: 'systemUptime', param: 'uptime' },
+    { value: sys.memoryPercent, key: 'systemMemory', param: 'percent' },
+    { value: sys.diskPercent, key: 'systemDisk', param: 'percent' },
+    { value: sys.datastorePercent, key: 'systemDatastore', param: 'percent' },
+  ];
+
+  for (const field of systemFields) {
+    if (field.value) {
+      outputService.info(t(`commands.machine.health.${field.key}`, { [field.param]: field.value }));
+    }
+  }
+}
+
+function displayContainersSection(cont: MachineHealthResult['details']['containers']): void {
+  if (cont.total === 0) return;
+
+  outputService.info(t('commands.machine.health.containersSection'));
+  outputService.info(
+    t('commands.machine.health.containersSummary', {
+      running: cont.running,
+      total: cont.total,
+      healthy: cont.healthy,
+      unhealthy: cont.unhealthy,
+    })
+  );
+}
+
+function displayServicesSection(svc: MachineHealthResult['details']['services']): void {
+  if (svc.total === 0) return;
+
+  outputService.info(t('commands.machine.health.servicesSection'));
+  outputService.info(
+    t('commands.machine.health.servicesSummary', {
+      active: svc.active,
+      total: svc.total,
+      failed: svc.failed,
+    })
+  );
+}
+
+function displayStorageSection(stor: MachineHealthResult['details']['storage']): void {
+  if (stor.smartHealthy === 0 && stor.smartFailing === 0) return;
+
+  outputService.info(t('commands.machine.health.storageSection'));
+  outputService.info(
+    t('commands.machine.health.storageSmart', {
+      healthy: stor.smartHealthy,
+      failing: stor.smartFailing,
+    })
+  );
+  if (stor.maxTemperature !== null) {
+    outputService.info(t('commands.machine.health.storageTemp', { temp: stor.maxTemperature }));
+  }
+}
+
+function displayRepositoriesSection(
+  repositoryStats: MachineHealthResult['details']['repositories']
+): void {
+  if (repositoryStats.total === 0) return;
+
+  outputService.info(t('commands.machine.health.repositoriesSection'));
+  outputService.info(
+    t('commands.machine.health.repositoriesSummary', {
+      mounted: repositoryStats.mounted,
+      total: repositoryStats.total,
+      docker: repositoryStats.dockerRunning,
+    })
+  );
+}
+
+function displayIssuesSection(issues: string[]): void {
+  if (issues.length === 0) return;
+
+  outputService.info(t('commands.machine.health.issuesSection'));
+  for (const issue of issues) {
+    outputService.warn(`  - ${issue}`);
+  }
+}
+
+function displayHealthReport(health: MachineHealthResult, name: string): void {
+  outputService.info(t('commands.machine.health.header', { name }));
+  displayStatusByExitCode(health.exitCode);
+  displaySystemSection(health.details.system);
+  displayContainersSection(health.details.containers);
+  displayServicesSection(health.details.services);
+  displayStorageSection(health.details.storage);
+  displayRepositoriesSection(health.details.repositories);
+  displayIssuesSection(health.issues);
+  outputService.info(t('commands.machine.health.exitCode', { code: health.exitCode }));
+}
 
 export function registerHealthCommand(machine: Command, program: Command): void {
   machine
@@ -42,112 +159,9 @@ export function registerHealthCommand(machine: Command, program: Command): void 
         if (format === 'json') {
           outputService.print(health, format);
         } else {
-          outputService.info(t('commands.machine.health.header', { name }));
-
-          // Status line with color
-          if (health.exitCode === 0) {
-            outputService.success(t('commands.machine.health.statusHealthy'));
-          } else if (health.exitCode === 1) {
-            outputService.warn(t('commands.machine.health.statusWarning'));
-          } else if (health.exitCode === 2) {
-            outputService.error(t('commands.machine.health.statusError'));
-          } else {
-            outputService.error(t('commands.machine.health.statusCritical'));
-          }
-
-          // System section
-          const sys = health.details.system;
-          if (sys.uptime || sys.memoryPercent || sys.diskPercent || sys.datastorePercent) {
-            outputService.info(t('commands.machine.health.systemSection'));
-            if (sys.uptime) {
-              outputService.info(t('commands.machine.health.systemUptime', { uptime: sys.uptime }));
-            }
-            if (sys.memoryPercent) {
-              outputService.info(
-                t('commands.machine.health.systemMemory', { percent: sys.memoryPercent })
-              );
-            }
-            if (sys.diskPercent) {
-              outputService.info(
-                t('commands.machine.health.systemDisk', { percent: sys.diskPercent })
-              );
-            }
-            if (sys.datastorePercent) {
-              outputService.info(
-                t('commands.machine.health.systemDatastore', { percent: sys.datastorePercent })
-              );
-            }
-          }
-
-          // Containers section
-          const cont = health.details.containers;
-          if (cont.total > 0) {
-            outputService.info(t('commands.machine.health.containersSection'));
-            outputService.info(
-              t('commands.machine.health.containersSummary', {
-                running: cont.running,
-                total: cont.total,
-                healthy: cont.healthy,
-                unhealthy: cont.unhealthy,
-              })
-            );
-          }
-
-          // Services section
-          const svc = health.details.services;
-          if (svc.total > 0) {
-            outputService.info(t('commands.machine.health.servicesSection'));
-            outputService.info(
-              t('commands.machine.health.servicesSummary', {
-                active: svc.active,
-                total: svc.total,
-                failed: svc.failed,
-              })
-            );
-          }
-
-          // Storage section
-          const stor = health.details.storage;
-          if (stor.smartHealthy > 0 || stor.smartFailing > 0) {
-            outputService.info(t('commands.machine.health.storageSection'));
-            outputService.info(
-              t('commands.machine.health.storageSmart', {
-                healthy: stor.smartHealthy,
-                failing: stor.smartFailing,
-              })
-            );
-            if (stor.maxTemperature !== null) {
-              outputService.info(
-                t('commands.machine.health.storageTemp', { temp: stor.maxTemperature })
-              );
-            }
-          }
-
-          // Repositories section
-          const repositoryStats = health.details.repositories;
-          if (repositoryStats.total > 0) {
-            outputService.info(t('commands.machine.health.repositoriesSection'));
-            outputService.info(
-              t('commands.machine.health.repositoriesSummary', {
-                mounted: repositoryStats.mounted,
-                total: repositoryStats.total,
-                docker: repositoryStats.dockerRunning,
-              })
-            );
-          }
-
-          // Issues section
-          if (health.issues.length > 0) {
-            outputService.info(t('commands.machine.health.issuesSection'));
-            for (const issue of health.issues) {
-              outputService.warn(`  - ${issue}`);
-            }
-          }
-
-          outputService.info(t('commands.machine.health.exitCode', { code: health.exitCode }));
+          displayHealthReport(health, name);
         }
 
-        // Exit with health-based code for CI
         if (health.exitCode !== 0) {
           process.exitCode = health.exitCode;
         }

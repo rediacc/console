@@ -25,6 +25,106 @@ import { typedApi, apiClient } from './api.js';
 /** Generic vault data type for parsed vault content */
 type ParsedVaultData = Record<string, unknown>;
 
+interface FetchedVaults {
+  organizationVault?: ParsedVaultData;
+  teamVault?: ParsedVaultData;
+  machineVault?: ParsedVaultData;
+  vaultContent?: ParsedVaultData;
+  storageVault?: ParsedVaultData;
+  bridgeVault?: ParsedVaultData;
+}
+
+async function fetchOrganizationVault(): Promise<ParsedVaultData | undefined> {
+  try {
+    const response = await typedApi.GetOrganizationVault({});
+    const vault = parseGetOrganizationVault(response as never);
+    return parseVaultContent<ParsedVaultData>(vault?.vaultContent) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchTeamVault(teamName: string): Promise<ParsedVaultData | undefined> {
+  try {
+    const response = await typedApi.GetOrganizationTeams({});
+    const teams = parseGetOrganizationTeams(response as never);
+    const team = teams.find((t: GetOrganizationTeams_ResultSet1) => t.teamName === teamName);
+    return parseVaultContent<ParsedVaultData>(team?.vaultContent) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchMachineVault(
+  teamName: string,
+  machineName: string
+): Promise<ParsedVaultData | undefined> {
+  try {
+    const response = await typedApi.GetTeamMachines({ teamName });
+    const machines = parseGetTeamMachines(response as never);
+    const machine = machines.find((m: GetTeamMachines_ResultSet1) => m.machineName === machineName);
+    return parseVaultContent<ParsedVaultData>(machine?.vaultContent) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchRepositoryVault(
+  teamName: string,
+  repositoryGuid: string
+): Promise<ParsedVaultData | undefined> {
+  try {
+    const response = await typedApi.GetTeamRepositories({ teamName });
+    const repositories = parseGetTeamRepositories(response as never);
+    const repository = repositories.find(
+      (r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid
+    );
+    const vaultContent = parseVaultContent<ParsedVaultData>(repository?.vaultContent);
+    if (!vaultContent) return undefined;
+
+    if (repository?.repositoryNetworkId !== undefined) {
+      (vaultContent as Record<string, unknown>).repositoryNetworkId =
+        repository.repositoryNetworkId;
+    }
+    if (repository?.repositoryNetworkMode) {
+      (vaultContent as Record<string, unknown>).networkMode = repository.repositoryNetworkMode;
+    }
+    return vaultContent;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchStorageVault(
+  teamName: string,
+  storageName: string
+): Promise<ParsedVaultData | undefined> {
+  try {
+    const response = await typedApi.GetTeamStorages({ teamName });
+    const storageList = parseGetTeamStorages(response as never);
+    const storage = storageList.find(
+      (s: GetTeamStorages_ResultSet1) => s.storageName === storageName
+    );
+    return parseVaultContent<ParsedVaultData>(storage?.vaultContent) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchBridgeVault(
+  regionName: string,
+  bridgeName: string
+): Promise<ParsedVaultData | undefined> {
+  try {
+    const response = await typedApi.GetRegionBridges({ regionName });
+    const bridges = parseGetRegionBridges(response as never);
+    const bridge = bridges.find((b: GetRegionBridges_ResultSet1) => b.bridgeName === bridgeName);
+    return parseVaultContent<ParsedVaultData>(bridge?.vaultContent) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 interface MachineContext {
   ip: string;
   user: string;
@@ -115,131 +215,43 @@ class CliQueueService {
   private async fetchRequiredVaults(
     context: QueueContext,
     requirements: FunctionRequirements
-  ): Promise<{
-    organizationVault?: ParsedVaultData;
-    teamVault?: ParsedVaultData;
-    machineVault?: ParsedVaultData;
-    vaultContent?: ParsedVaultData;
-    storageVault?: ParsedVaultData;
-    bridgeVault?: ParsedVaultData;
-  }> {
-    const vaults: {
-      organizationVault?: ParsedVaultData;
-      teamVault?: ParsedVaultData;
-      machineVault?: ParsedVaultData;
-      vaultContent?: ParsedVaultData;
-      storageVault?: ParsedVaultData;
-      bridgeVault?: ParsedVaultData;
-    } = {};
+  ): Promise<FetchedVaults> {
+    const vaults: FetchedVaults = {};
 
-    try {
-      const response = await typedApi.GetOrganizationVault({});
-      const organizationVault = parseGetOrganizationVault(response as never);
-      const parsed = parseVaultContent<ParsedVaultData>(organizationVault?.vaultContent);
-      if (parsed) {
-        vaults.organizationVault = parsed;
-      }
-    } catch {
-      // Ignore organization vault failures - optional context
-    }
+    // Organization vault is always fetched (optional)
+    vaults.organizationVault = await fetchOrganizationVault();
 
     if (requirements.team) {
-      try {
-        const response = await typedApi.GetOrganizationTeams({});
-        const teams = parseGetOrganizationTeams(response as never);
-        const team = teams.find(
-          (t: GetOrganizationTeams_ResultSet1) => t.teamName === context.teamName
-        );
-        const parsed = parseVaultContent<ParsedVaultData>(team?.vaultContent);
-        if (parsed) {
-          vaults.teamVault = parsed;
-        }
-      } catch {
-        // Team vault fetch failed
-      }
+      vaults.teamVault = await fetchTeamVault(context.teamName);
     }
 
     if (requirements.machine && context.machineName) {
-      try {
-        const response = await typedApi.GetTeamMachines({ teamName: context.teamName });
-        const machines = parseGetTeamMachines(response as never);
-        const machine = machines.find(
-          (m: GetTeamMachines_ResultSet1) => m.machineName === context.machineName
-        );
-        const parsed = parseVaultContent<ParsedVaultData>(machine?.vaultContent);
-        if (parsed) {
-          vaults.machineVault = parsed;
-        }
-      } catch {
-        // Machine vault fetch failed
-      }
+      vaults.machineVault = await fetchMachineVault(context.teamName, context.machineName);
     }
 
     if (requirements.repository && context.params.repository) {
-      try {
-        const repositoryGuid = context.params.repository as string;
-        const response = await typedApi.GetTeamRepositories({ teamName: context.teamName });
-        const repositories = parseGetTeamRepositories(response as never);
-        const repository = repositories.find(
-          (r: GetTeamRepositories_ResultSet1) => r.repositoryGuid === repositoryGuid
-        );
-        const vaultContent = parseVaultContent<ParsedVaultData>(repository?.vaultContent);
-        if (vaultContent) {
-          if (repository?.repositoryNetworkId !== undefined) {
-            (vaultContent as Record<string, unknown>).repositoryNetworkId =
-              repository.repositoryNetworkId;
-          }
-          if (repository?.repositoryNetworkMode) {
-            (vaultContent as Record<string, unknown>).networkMode =
-              repository.repositoryNetworkMode;
-          }
-          vaults.vaultContent = vaultContent;
-        }
-      } catch {
-        // Repository vault fetch failed
-      }
+      const repositoryGuid = context.params.repository as string;
+      vaults.vaultContent = await fetchRepositoryVault(context.teamName, repositoryGuid);
     }
 
     if (requirements.storage) {
-      const storages = context.params.storages;
-      const firstStorage = Array.isArray(storages) ? storages[0] : undefined;
-      const storageName = (context.params.to ?? context.params.from ?? firstStorage) as
-        | string
-        | undefined;
+      const storageName = this.resolveStorageName(context.params);
       if (storageName) {
-        try {
-          const response = await typedApi.GetTeamStorages({ teamName: context.teamName });
-          const storageList = parseGetTeamStorages(response as never);
-          const storage = storageList.find(
-            (s: GetTeamStorages_ResultSet1) => s.storageName === storageName
-          );
-          const parsed = parseVaultContent<ParsedVaultData>(storage?.vaultContent);
-          if (parsed) {
-            vaults.storageVault = parsed;
-          }
-        } catch {
-          // Storage vault fetch failed
-        }
+        vaults.storageVault = await fetchStorageVault(context.teamName, storageName);
       }
     }
 
     if (requirements.bridge && context.bridgeName && context.regionName) {
-      try {
-        const response = await typedApi.GetRegionBridges({ regionName: context.regionName });
-        const bridges = parseGetRegionBridges(response as never);
-        const bridge = bridges.find(
-          (b: GetRegionBridges_ResultSet1) => b.bridgeName === context.bridgeName
-        );
-        const parsed = parseVaultContent<ParsedVaultData>(bridge?.vaultContent);
-        if (parsed) {
-          vaults.bridgeVault = parsed;
-        }
-      } catch {
-        // Bridge vault fetch failed
-      }
+      vaults.bridgeVault = await fetchBridgeVault(context.regionName, context.bridgeName);
     }
 
     return vaults;
+  }
+
+  private resolveStorageName(params: Record<string, unknown>): string | undefined {
+    const storages = params.storages;
+    const firstStorage = Array.isArray(storages) ? storages[0] : undefined;
+    return (params.to ?? params.from ?? firstStorage) as string | undefined;
   }
 }
 

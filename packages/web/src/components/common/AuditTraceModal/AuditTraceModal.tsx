@@ -107,7 +107,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       ...data.records.map((record) => {
         const row = [
           record.actionType,
-          `"${(record.details ?? '').replace(/"/g, '""')}"`, // Escape quotes in details
+          `"${(record.details ?? '').replaceAll('"', '""')}"`, // Escape quotes in details
           record.performedBy ?? 'System',
           formatTimestampAsIs(record.timestamp, 'datetime'),
           record.timeAgo,
@@ -227,140 +227,151 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       data-testid="audit-trace-modal"
       centered
     >
-      {isLoading ? (
-        <LoadingWrapper
-          loading
-          centered
-          minHeight={160}
-          tip={t('common:general.loading')}
-          showTextBelow
-          data-testid="audit-trace-loading"
-        >
-          <Flex />
-        </LoadingWrapper>
-      ) : error ? (
-        <Alert
-          message={t('audit.error')}
-          description={error instanceof Error ? error.message : t('audit.errorLoading')}
-          type="error"
-          data-testid="audit-trace-error-alert"
-        />
-      ) : data ? (
-        <>
-          {/* Summary Section */}
-          <Flex vertical className="w-full" data-testid="audit-trace-summary">
-            <Flex align="center" justify="space-between" wrap>
-              <Flex className="gap-md" wrap>
-                <Flex vertical data-testid="audit-trace-total-records">
-                  <AntText type="secondary">{t('audit.totalRecords')}</AntText>
-                  <Typography.Text strong>{data.summary.totalAuditRecords}</Typography.Text>
-                </Flex>
-                <Flex vertical data-testid="audit-trace-visible-records">
-                  <AntText type="secondary">{t('audit.visibleRecords')}</AntText>
-                  <Typography.Text strong>{data.summary.visibleAuditRecords}</Typography.Text>
-                </Flex>
-                {data.summary.lastActivity && (
-                  <Flex vertical data-testid="audit-trace-last-activity">
-                    <AntText type="secondary">{t('audit.lastActivity')}</AntText>
-                    <AntText strong>{new Date(data.summary.lastActivity).toLocaleString()}</AntText>
+      {(() => {
+        if (isLoading) {
+          return (
+            <LoadingWrapper
+              loading
+              centered
+              minHeight={160}
+              tip={t('common:general.loading')}
+              showTextBelow
+              data-testid="audit-trace-loading"
+            >
+              <Flex />
+            </LoadingWrapper>
+          );
+        } else if (error) {
+          return (
+            <Alert
+              message={t('audit.error')}
+              description={error instanceof Error ? error.message : t('audit.errorLoading')}
+              type="error"
+              data-testid="audit-trace-error-alert"
+            />
+          );
+        } else if (data) {
+          return (
+            <>
+              {/* Summary Section */}
+              <Flex vertical className="w-full" data-testid="audit-trace-summary">
+                <Flex align="center" justify="space-between" wrap>
+                  <Flex className="gap-md" wrap>
+                    <Flex vertical data-testid="audit-trace-total-records">
+                      <AntText type="secondary">{t('audit.totalRecords')}</AntText>
+                      <Typography.Text strong>{data.summary.totalAuditRecords}</Typography.Text>
+                    </Flex>
+                    <Flex vertical data-testid="audit-trace-visible-records">
+                      <AntText type="secondary">{t('audit.visibleRecords')}</AntText>
+                      <Typography.Text strong>{data.summary.visibleAuditRecords}</Typography.Text>
+                    </Flex>
+                    {data.summary.lastActivity && (
+                      <Flex vertical data-testid="audit-trace-last-activity">
+                        <AntText type="secondary">{t('audit.lastActivity')}</AntText>
+                        <AntText strong>
+                          {new Date(data.summary.lastActivity).toLocaleString()}
+                        </AntText>
+                      </Flex>
+                    )}
                   </Flex>
-                )}
+
+                  {/* Export Button */}
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: 'csv',
+                          label: t('audit.exportCSV'),
+                          icon: <FileExcelOutlined />,
+                          onClick: exportToCSV,
+                          'data-testid': 'audit-trace-export-csv',
+                        },
+                        {
+                          key: 'json',
+                          label: t('audit.exportJSON'),
+                          icon: <FileTextOutlined />,
+                          onClick: exportToJSON,
+                          'data-testid': 'audit-trace-export-json',
+                        },
+                      ],
+                    }}
+                    placement="bottomRight"
+                    data-testid="audit-trace-export-dropdown"
+                  >
+                    <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
+                      {t('audit.export')}
+                    </Button>
+                  </Dropdown>
+                </Flex>
               </Flex>
 
-              {/* Export Button */}
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: 'csv',
-                      label: t('audit.exportCSV'),
-                      icon: <FileExcelOutlined />,
-                      onClick: exportToCSV,
-                      'data-testid': 'audit-trace-export-csv',
-                    },
-                    {
-                      key: 'json',
-                      label: t('audit.exportJSON'),
-                      icon: <FileTextOutlined />,
-                      onClick: exportToJSON,
-                      'data-testid': 'audit-trace-export-json',
-                    },
-                  ],
-                }}
-                placement="bottomRight"
-                data-testid="audit-trace-export-dropdown"
-              >
-                <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
-                  {t('audit.export')}
-                </Button>
-              </Dropdown>
-            </Flex>
-          </Flex>
-
-          {/* Records Table / List */}
-          {isMobile ? (
-            <List
-              dataSource={data.records}
-              data-testid="audit-trace-table"
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: false,
-                showTotal: (total, range) =>
-                  t('common:general.showingRecords', {
-                    start: range[0],
-                    end: range[1],
-                    total,
-                  }),
-              }}
-              renderItem={(record, index) => (
-                <List.Item key={`${record.timestamp}-${index}`}>
-                  <MobileCard>
-                    <Flex align="center" justify="space-between">
-                      <Space data-testid={`audit-trace-action-${index}`}>
-                        {getIcon(record.iconHint ?? 'info')}
-                        <Tag data-testid={`audit-trace-action-tag-${index}`}>
-                          {record.actionType}
-                        </Tag>
-                      </Space>
-                      <Typography.Text type="secondary">{record.timeAgo}</Typography.Text>
-                    </Flex>
-                    {record.details && (
-                      <Typography.Text type="secondary">{record.details}</Typography.Text>
-                    )}
-                    <Typography.Text
-                      type="secondary"
-                      data-testid={`audit-trace-performed-by-${index}`}
-                    >
-                      {t('audit.performedBy')}: {record.performedBy ?? t('audit.system')}
-                    </Typography.Text>
-                  </MobileCard>
-                </List.Item>
+              {/* Records Table / List */}
+              {isMobile ? (
+                <List
+                  dataSource={data.records}
+                  data-testid="audit-trace-table"
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: false,
+                    showTotal: (total, range) =>
+                      t('common:general.showingRecords', {
+                        start: range[0],
+                        end: range[1],
+                        total,
+                      }),
+                  }}
+                  renderItem={(record, index) => (
+                    <List.Item key={`${record.timestamp}-${index}`}>
+                      <MobileCard>
+                        <Flex align="center" justify="space-between">
+                          <Space data-testid={`audit-trace-action-${index}`}>
+                            {getIcon(record.iconHint ?? 'info')}
+                            <Tag data-testid={`audit-trace-action-tag-${index}`}>
+                              {record.actionType}
+                            </Tag>
+                          </Space>
+                          <Typography.Text type="secondary">{record.timeAgo}</Typography.Text>
+                        </Flex>
+                        {record.details && (
+                          <Typography.Text type="secondary">{record.details}</Typography.Text>
+                        )}
+                        <Typography.Text
+                          type="secondary"
+                          data-testid={`audit-trace-performed-by-${index}`}
+                        >
+                          {t('audit.performedBy')}: {record.performedBy ?? t('audit.system')}
+                        </Typography.Text>
+                      </MobileCard>
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <Table<AuditTraceRecord>
+                  columns={columns}
+                  dataSource={data.records}
+                  rowKey={(record, index) => `${record.timestamp}-${index}`}
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: false,
+                    showTotal: (total, range) =>
+                      t('common:general.showingRecords', {
+                        start: range[0],
+                        end: range[1],
+                        total,
+                      }),
+                  }}
+                  scroll={{ x: 800 }}
+                  data-testid="audit-trace-table"
+                />
               )}
-            />
-          ) : (
-            <Table<AuditTraceRecord>
-              columns={columns}
-              dataSource={data.records}
-              rowKey={(record, index) => `${record.timestamp}-${index}`}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: false,
-                showTotal: (total, range) =>
-                  t('common:general.showingRecords', {
-                    start: range[0],
-                    end: range[1],
-                    total,
-                  }),
-              }}
-              scroll={{ x: 800 }}
-              data-testid="audit-trace-table"
-            />
-          )}
 
-          {/* Alternative Timeline View (could be toggled) */}
-          {/* {renderTimelineView()} */}
-        </>
-      ) : null}
+              {/* Alternative Timeline View (could be toggled) */}
+              {/* {renderTimelineView()} */}
+            </>
+          );
+        }
+        return null;
+      })()}
     </Modal>
   );
 };

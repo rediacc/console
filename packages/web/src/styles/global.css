@@ -19,6 +19,13 @@ body {
   width: 100%;
 }
 
+/* Center page content with max-width for better readability on wide screens */
+.ant-pro-layout-content {
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* ==========================================================================
    Flex Spacing Defaults - Sensible gaps automatically applied
    Most components need zero spacing props. Override only when different.
@@ -142,31 +149,15 @@ body {
   flex-direction: column;
 }
 
-/* Gap Overrides - Use ONLY when different from Flex defaults
-   Vertical Flex default: 16px, Horizontal Flex default: 8px */
-.gap-0 {
-  gap: 0 !important;
+/* Gap Overrides - Higher specificity to override Flex defaults without !important */
+.ant-flex.gap-0 {
+  gap: 0;
 }
-.gap-xs {
-  gap: 4px !important;
+.ant-flex.gap-sm {
+  gap: 8px;
 }
-.gap-sm {
-  gap: 8px !important;
-}
-.gap-md {
-  gap: 16px !important;
-}
-.gap-lg {
-  gap: 24px !important;
-}
-
-/* Padding */
-.py-2 {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-.p-1 {
-  padding: 4px;
+.ant-flex.gap-md {
+  gap: 16px;
 }
 
 /* Width */
@@ -176,37 +167,11 @@ body {
 .min-w-0 {
   min-width: 0;
 }
-.w-80 {
-  width: 80px;
-}
-.w-200 {
-  width: 200px;
-}
-.w-240 {
-  width: 240px;
-}
 .w-280 {
   width: 280px;
 }
 .w-320 {
   width: 320px;
-}
-
-/* Max Width */
-.max-w-240 {
-  max-width: 240px;
-}
-.max-w-300 {
-  max-width: 300px;
-}
-.max-w-320 {
-  max-width: 320px;
-}
-.max-w-400 {
-  max-width: 400px;
-}
-.max-w-500 {
-  max-width: 500px;
 }
 
 /* Height */
@@ -221,17 +186,8 @@ body {
 .mt-2 {
   margin-top: 8px;
 }
-.mt-3 {
-  margin-top: 12px;
-}
 .mt-4 {
   margin-top: 16px;
-}
-.mt-6 {
-  margin-top: 24px;
-}
-.mb-2 {
-  margin-bottom: 8px;
 }
 .mb-4 {
   margin-bottom: 16px;
@@ -278,9 +234,6 @@ body {
 }
 
 /* Font Sizes */
-.text-2xs {
-  font-size: 10px;
-}
 .text-xs {
   font-size: 12px;
 }
@@ -290,28 +243,16 @@ body {
 .text-base {
   font-size: 16px;
 }
-.text-lg {
-  font-size: 20px;
-}
-.text-xl {
-  font-size: 24px;
-}
 .text-2xl {
   font-size: 32px;
 }
 
 /* Font Weights */
-.font-normal {
-  font-weight: 400;
-}
 .font-medium {
   font-weight: 500;
 }
 .font-semibold {
   font-weight: 600;
-}
-.font-bold {
-  font-weight: 700;
 }
 
 /* Font Family */
@@ -343,9 +284,6 @@ body {
 }
 .cursor-default {
   cursor: default;
-}
-.cursor-not-allowed {
-  cursor: not-allowed;
 }
 
 /* Position */
@@ -387,11 +325,6 @@ body {
 /* ==========================================================================
    Responsive Utilities
    ========================================================================== */
-
-/* Overflow utilities */
-.overflow-x-auto {
-  overflow-x: auto;
-}
 
 /* Scrollable container heights */
 .max-h-200 {
@@ -536,22 +469,4 @@ body {
   .modal-fullscreen .ant-modal-footer .ant-btn {
     min-width: auto;
   }
-}
-
-/* ==========================================================================
-   COMPOSITE UTILITIES
-   Common multi-property patterns used throughout the codebase.
-   ========================================================================== */
-
-/* Flex item that can truncate text - required for text-overflow in flex containers */
-.flex-1-truncate {
-  flex: 1 1 0%;
-  min-width: 0;
-}
-
-/* Icon + text inline pattern with proper alignment */
-.inline-icon-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }

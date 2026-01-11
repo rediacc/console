@@ -215,7 +215,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         fixed: 'right',
         renderActions: (container) => {
           const createActionLabel = (actionKey: string, label: React.ReactNode) => (
-            <Typography.Text data-testid={`container-action-${actionKey.replace(/_/g, '-')}`}>
+            <Typography.Text data-testid={`container-action-${actionKey.replaceAll('_', '-')}`}>
               {label}
             </Typography.Text>
           );

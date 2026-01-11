@@ -14,7 +14,7 @@ import type { MenuProps } from 'antd';
 const createClusterActionLabel = (actionKey: string, label: React.ReactNode) =>
   React.createElement(
     Typography.Text,
-    { 'data-testid': `cluster-action-${actionKey.replace(/_/g, '-')}` } as React.ComponentProps<
+    { 'data-testid': `cluster-action-${actionKey.replaceAll('_', '-')}` } as React.ComponentProps<
       typeof Typography.Text
     >,
     label
@@ -23,7 +23,7 @@ const createClusterActionLabel = (actionKey: string, label: React.ReactNode) =>
 const createPoolActionLabel = (actionKey: string, label: React.ReactNode) =>
   React.createElement(
     Typography.Text,
-    { 'data-testid': `pool-action-${actionKey.replace(/_/g, '-')}` } as React.ComponentProps<
+    { 'data-testid': `pool-action-${actionKey.replaceAll('_', '-')}` } as React.ComponentProps<
       typeof Typography.Text
     >,
     label

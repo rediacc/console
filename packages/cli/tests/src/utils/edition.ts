@@ -5,7 +5,7 @@
  * resource limits, and subscription-specific behavior.
  */
 
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { expect } from '@playwright/test';
 import { CI_ACTIVATION_CODE, getApiUrl, TEST_EMAIL_DOMAIN } from '../constants';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
@@ -351,7 +351,7 @@ export function getEditionsWithoutFeature(feature: FeatureName): SubscriptionPla
  * Extract task ID from CLI output
  */
 export function extractTaskId(stdout: string): string {
-  const match = stdout.match(/Task ID:\s*([a-f0-9-]+)/i);
+  const match = /Task ID:\s*([a-f0-9-]+)/i.exec(stdout);
   return match?.[1] ?? '';
 }
 

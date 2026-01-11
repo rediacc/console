@@ -21,7 +21,7 @@ interface StorageSectionProps {
 export const StorageSection: React.FC<StorageSectionProps> = ({ repository, panelData, t }) => {
   const { repositoryData } = panelData;
   const diskPercent = repositoryData.disk_space?.use_percent
-    ? parseInt(repositoryData.disk_space.use_percent, 10)
+    ? Number.parseInt(repositoryData.disk_space.use_percent, 10)
     : 0;
 
   return (

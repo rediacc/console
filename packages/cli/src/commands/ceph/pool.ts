@@ -169,7 +169,7 @@ export function registerPoolCommands(ceph: Command, program: Command): void {
           poolName: name,
           teamName: options.team,
           vaultContent: options.vault,
-          vaultVersion: parseInt(options.version, 10),
+          vaultVersion: Number.parseInt(options.version, 10),
         };
 
         await withSpinner(

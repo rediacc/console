@@ -45,6 +45,35 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   const createStorageMutation = useCreateStorage();
   const { data: existingStorages = [] } = useGetTeamStorages(teamName);
 
+  const isSkippableLine = (line: string): boolean => {
+    const trimmed = line.trim();
+    return !trimmed || trimmed.startsWith('#') || trimmed.startsWith(';');
+  };
+
+  const parseKeyValuePair = (line: string): [string, string | Record<string, unknown>] | null => {
+    const kvMatch = /^([^=]+)=(.*)$/.exec(line);
+    if (!kvMatch) return null;
+
+    const key = kvMatch[1].trim();
+    const value = kvMatch[2].trim();
+
+    try {
+      return [key, JSON.parse(value) as Record<string, unknown>];
+    } catch {
+      return [key, value];
+    }
+  };
+
+  const saveCurrentSection = (
+    configs: RcloneConfig[],
+    section: string | null,
+    config: RcloneConfigFields
+  ): void => {
+    if (section && config.type) {
+      configs.push({ name: section, type: config.type, config: { ...config } });
+    }
+  };
+
   // Parse INI-style rclone config
   const parseRcloneConfig = (content: string): RcloneConfig[] => {
     const configs: RcloneConfig[] = [];
@@ -53,56 +82,58 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     let currentConfig: RcloneConfigFields = {};
 
     for (const line of lines) {
-      const trimmedLine = line.trim();
+      if (isSkippableLine(line)) continue;
 
-      // Skip empty lines and comments
-      if (!trimmedLine || trimmedLine.startsWith('#') || trimmedLine.startsWith(';')) {
+      const trimmedLine = line.trim();
+      const sectionMatch = /^\[(.+)\]$/.exec(trimmedLine);
+
+      if (sectionMatch) {
+        saveCurrentSection(configs, currentSection, currentConfig);
+        currentSection = sectionMatch[1];
+        currentConfig = {};
         continue;
       }
 
-      // Check if it's a section header
-      const sectionMatch = trimmedLine.match(/^\[(.+)\]$/);
-      if (sectionMatch) {
-        // Save previous section if exists
-        if (currentSection && currentConfig.type) {
-          configs.push({
-            name: currentSection,
-            type: currentConfig.type,
-            config: { ...currentConfig },
-          });
-        }
-
-        // Start new section
-        currentSection = sectionMatch[1];
-        currentConfig = {};
-      } else if (currentSection) {
-        // Parse key-value pair
-        const kvMatch = trimmedLine.match(/^([^=]+)=(.*)$/);
-        if (kvMatch) {
-          const key = kvMatch[1].trim();
-          const value = kvMatch[2].trim();
-
-          // Try to parse JSON values (for complex objects like tokens)
-          try {
-            currentConfig[key] = JSON.parse(value) as Record<string, unknown>;
-          } catch {
-            // If not JSON, store as string
-            currentConfig[key] = value;
-          }
+      if (currentSection) {
+        const parsed = parseKeyValuePair(trimmedLine);
+        if (parsed) {
+          currentConfig[parsed[0]] = parsed[1];
         }
       }
     }
 
-    // Don't forget the last section
-    if (currentSection && currentConfig.type) {
-      configs.push({
-        name: currentSection,
-        type: currentConfig.type,
-        config: { ...currentConfig },
-      });
-    }
-
+    saveCurrentSection(configs, currentSection, currentConfig);
     return configs;
+  };
+
+  const PROVIDER_MAPPING: Record<string, string> = {
+    drive: 'drive',
+    onedrive: 'onedrive',
+    s3: 's3',
+    b2: 'b2',
+    mega: 'mega',
+    dropbox: 'dropbox',
+    box: 'box',
+    azureblob: 'azureblob',
+    swift: 'swift',
+    webdav: 'webdav',
+    ftp: 'ftp',
+    sftp: 'sftp',
+  };
+
+  const processConfigValue = (
+    key: string,
+    value: string | number | boolean | Record<string, unknown> | undefined
+  ): string | number | boolean | Record<string, unknown> | undefined => {
+    if (typeof value !== 'string') return value;
+    if (!(key === 'token' || key.endsWith('_token'))) return value;
+    if (!value.startsWith('{')) return value;
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
   };
 
   // Map rclone config to our storage provider format
@@ -110,58 +141,15 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     rcloneConfig: RcloneConfig
   ): Record<string, unknown> | null => {
     const { type, config } = rcloneConfig;
+    const provider = PROVIDER_MAPPING[type];
+    if (!provider) return null;
 
-    // Map rclone type to our provider type
-    const providerMapping: Record<string, string> = {
-      drive: 'drive',
-      onedrive: 'onedrive',
-      s3: 's3',
-      b2: 'b2',
-      mega: 'mega',
-      dropbox: 'dropbox',
-      box: 'box',
-      azureblob: 'azureblob',
-      swift: 'swift',
-      webdav: 'webdav',
-      ftp: 'ftp',
-      sftp: 'sftp',
-    };
+    const storageVault: Record<string, unknown> = { provider };
 
-    const provider = providerMapping[type];
-    if (!provider) {
-      return null;
-    }
-
-    // Storage vault should contain all fields directly at top level
-    // matching the format used in data.json
-    const storageVault: Record<string, unknown> = {};
-
-    // Process all config fields
     Object.entries(config).forEach(([key, value]) => {
-      if (key === 'type') {
-        // Replace 'type' with 'provider' for our system
-        storageVault.provider = provider;
-      } else {
-        // Parse JSON strings if needed
-        let processedValue: string | number | boolean | Record<string, unknown> | undefined = value;
-        if (typeof value === 'string') {
-          // Check if it's a JSON string that needs to be parsed
-          if ((key === 'token' || key.endsWith('_token')) && value.startsWith('{')) {
-            try {
-              processedValue = JSON.parse(value);
-            } catch {
-              processedValue = value;
-            }
-          }
-        }
-
-        // Add field directly to vault
-        storageVault[key] = processedValue;
-      }
+      if (key === 'type') return; // Skip 'type', we use 'provider' instead
+      storageVault[key] = processConfigValue(key, value);
     });
-
-    // Ensure provider is set if not already
-    storageVault.provider ??= provider;
 
     return storageVault;
   };
@@ -433,35 +421,40 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       open={open}
       onCancel={handleClose}
       data-testid="rclone-import-wizard-modal"
-      footer={
-        currentStep === 0 ? (
-          <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
-            {t('common:actions.cancel')}
-          </Button>
-        ) : currentStep === 1 ? (
-          <>
-            <Button onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
-              {t('common:actions.back')}
-            </Button>
+      footer={(() => {
+        if (currentStep === 0) {
+          return (
             <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
               {t('common:actions.cancel')}
             </Button>
-            <Button
-              type="primary"
-              onClick={handleImport}
-              disabled={!importStatuses.some((s) => s.selected)}
-              loading={isImporting}
-              data-testid="rclone-wizard-import-button"
-            >
-              {t('resources:storage.import.importSelected')}
-            </Button>
-          </>
-        ) : (
+          );
+        } else if (currentStep === 1) {
+          return (
+            <>
+              <Button onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
+                {t('common:actions.back')}
+              </Button>
+              <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+                {t('common:actions.cancel')}
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleImport}
+                disabled={!importStatuses.some((s) => s.selected)}
+                loading={isImporting}
+                data-testid="rclone-wizard-import-button"
+              >
+                {t('resources:storage.import.importSelected')}
+              </Button>
+            </>
+          );
+        }
+        return (
           <Button type="primary" onClick={handleClose} data-testid="rclone-wizard-close-button">
             {t('common:actions.close')}
           </Button>
-        )
-      }
+        );
+      })()}
       centered
     >
       <Flex vertical>

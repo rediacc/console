@@ -128,7 +128,7 @@ export function registerOrganizationCommands(program: Command): void {
     .command('update')
     .description(t('commands.organization.vault.update.description'))
     .option('--vault <json>', t('options.vaultJson'))
-    .option('--vault-version <n>', t('options.vaultVersion'), parseInt)
+    .option('--vault-version <n>', t('options.vaultVersion'), Number.parseInt)
     .action(async (options: { vault?: string; vaultVersion?: number }) => {
       try {
         await authService.requireAuth();

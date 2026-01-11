@@ -163,22 +163,47 @@ export const useStorageHandlers = ({
     [closeUnifiedModal, currentResource, execute, refetchStorage, updateStorageVaultMutation]
   );
 
-  const handleStorageFunctionSelected = useCallback(
-    async (functionData: StorageFunctionData) => {
-      if (!currentResource) return;
-
-      if (!functionData.selectedMachine) {
-        showMessage('error', t('resources:errors.machineNotFound'));
-        return;
-      }
+  const findMachineEntry = useCallback(
+    (selectedMachine: string | undefined) => {
+      if (!selectedMachine || !currentResource) return null;
 
       const teamEntry = dropdownData?.machinesByTeam.find(
         (team) => team.teamName === currentResource.teamName
       );
-      const machineEntry = teamEntry?.machines.find(
-        (machine) => machine.value === functionData.selectedMachine
-      );
+      return teamEntry?.machines.find((machine) => machine.value === selectedMachine) ?? null;
+    },
+    [currentResource, dropdownData]
+  );
 
+  const addBackupPullVaults = useCallback(
+    (
+      queuePayload: Omit<DynamicQueueActionParams, 'functionName'>,
+      functionData: StorageFunctionData
+    ) => {
+      if (functionData.function.name !== 'backup_pull') return;
+
+      const { sourceType, from: sourceIdentifier } = functionData.params;
+
+      if (sourceType === 'machine' && typeof sourceIdentifier === 'string') {
+        const sourceMachine = machines.find((m) => m.machineName === sourceIdentifier);
+        if (sourceMachine?.vaultContent) {
+          queuePayload.sourceMachineVault = sourceMachine.vaultContent;
+        }
+      } else if (sourceType === 'storage' && typeof sourceIdentifier === 'string') {
+        const sourceStorage = storages.find((s) => s.storageName === sourceIdentifier);
+        if (sourceStorage?.vaultContent) {
+          queuePayload.sourceStorageVault = sourceStorage.vaultContent;
+        }
+      }
+    },
+    [machines, storages]
+  );
+
+  const handleStorageFunctionSelected = useCallback(
+    async (functionData: StorageFunctionData) => {
+      if (!currentResource) return;
+
+      const machineEntry = findMachineEntry(functionData.selectedMachine);
       if (!machineEntry) {
         showMessage('error', t('resources:errors.machineNotFound'));
         return;
@@ -205,29 +230,7 @@ export const useStorageHandlers = ({
         machineVault: selectedMachine?.vaultContent ?? '{}',
       };
 
-      // Handle pull function source vaults
-      if (functionData.function.name === 'backup_pull') {
-        const sourceType = functionData.params.sourceType;
-        const sourceIdentifier = functionData.params.from;
-
-        if (sourceType === 'machine' && typeof sourceIdentifier === 'string') {
-          const sourceMachine = machines.find(
-            (machine) => machine.machineName === sourceIdentifier
-          );
-          if (sourceMachine?.vaultContent) {
-            queuePayload.sourceMachineVault = sourceMachine.vaultContent;
-          }
-        }
-
-        if (sourceType === 'storage' && typeof sourceIdentifier === 'string') {
-          const sourceStorage = storages.find(
-            (storage) => storage.storageName === sourceIdentifier
-          );
-          if (sourceStorage?.vaultContent) {
-            queuePayload.sourceStorageVault = sourceStorage.vaultContent;
-          }
-        }
-      }
+      addBackupPullVaults(queuePayload, functionData);
 
       const result = await executeDynamic(
         functionData.function.name as BridgeFunctionName,
@@ -235,28 +238,29 @@ export const useStorageHandlers = ({
       );
       closeUnifiedModal();
 
-      if (result.success) {
-        if (result.taskId) {
-          showMessage('success', t('storage.queueItemCreated'));
-          openQueueTrace(result.taskId, machineEntry.value);
-        } else if (result.isQueued) {
-          showMessage(
-            'info',
-            t('resources:messages.highestPriorityQueued', { resourceType: 'storage' })
-          );
-        }
-      } else {
+      if (!result.success) {
         showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
+        return;
+      }
+
+      if (result.taskId) {
+        showMessage('success', t('storage.queueItemCreated'));
+        openQueueTrace(result.taskId, machineEntry.value);
+      } else if (result.isQueued) {
+        showMessage(
+          'info',
+          t('resources:messages.highestPriorityQueued', { resourceType: 'storage' })
+        );
       }
     },
     [
+      addBackupPullVaults,
       closeUnifiedModal,
       currentResource,
-      dropdownData,
       executeDynamic,
+      findMachineEntry,
       machines,
       openQueueTrace,
-      storages,
       t,
       teams,
     ]

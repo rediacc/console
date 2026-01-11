@@ -379,6 +379,16 @@
     "moreTeams": "+{{count}} mehr",
     "selectTeams": "Wählen Sie Teams..."
   },
+  "terminal": {
+    "terminal": "Terminal",
+    "connecting": "Verbinden",
+    "connectionFailed": "Verbindung fehlgeschlagen",
+    "connectedTo": "Verbunden mit {{host}}",
+    "establishingConnection": "SSH-Verbindung zu {{host}} wird hergestellt...",
+    "waitingForConnection": "Warten auf Verbindung...",
+    "reconnect": "Erneut verbinden",
+    "popout": "In neuem Fenster öffnen"
+  },
   "theme": {
     "dark": "Dunkel",
     "label": "Thema",
@@ -783,6 +793,14 @@
   "warnings": {
     "sandboxEnvironment": "Sandbox-Umgebung",
     "sandboxMessage": "Bei Aktualisierungen können Daten zurückgesetzt werden. Nur zum Testen."
+  },
+  "vscodeSelection": {
+    "title": "VS Code-Installation auswählen",
+    "open": "Öffnen",
+    "description": "Mehrere VS Code-Installationen erkannt. Wählen Sie aus, welche verwendet werden soll:",
+    "windowsVSCode": "Windows-VS Code",
+    "wslVSCode": "WSL-VS Code (Linux)",
+    "rememberChoice": "Meine Wahl merken"
   },
   "yes": "Ja",
   "yesterday": "Gestern"

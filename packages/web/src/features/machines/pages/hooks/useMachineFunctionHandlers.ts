@@ -23,6 +23,53 @@ interface UseMachineFunctionHandlersProps {
   t: TypedTFunction;
 }
 
+function addBackupPullSourceVaults(
+  queuePayload: Omit<DynamicQueueActionParams, 'functionName'>,
+  functionData: MachineFunctionData,
+  machines: Machine[],
+  storages: { storageName: string; vaultContent?: string | null }[]
+): void {
+  if (functionData.function.name !== 'backup_pull') return;
+
+  const sourceType =
+    typeof functionData.params.sourceType === 'string' ? functionData.params.sourceType : undefined;
+  const sourceIdentifier =
+    typeof functionData.params.from === 'string' ? functionData.params.from : undefined;
+
+  if (!sourceIdentifier) return;
+
+  if (sourceType === 'machine') {
+    const sourceMachine = machines.find((machine) => machine.machineName === sourceIdentifier);
+    if (sourceMachine?.vaultContent) {
+      queuePayload.sourceMachineVault = sourceMachine.vaultContent;
+    }
+  } else if (sourceType === 'storage') {
+    const sourceStorage = storages.find((storage) => storage.storageName === sourceIdentifier);
+    if (sourceStorage?.vaultContent) {
+      queuePayload.sourceStorageVault = sourceStorage.vaultContent;
+    }
+  }
+}
+
+function handleQueueResult(
+  result: QueueActionResult,
+  machineName: string,
+  openQueueTrace: (taskId: string, machineName: string) => void,
+  t: TypedTFunction
+): void {
+  if (!result.success) {
+    showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
+    return;
+  }
+
+  if (result.taskId) {
+    showMessage('success', t('machines:queueItemCreated'));
+    openQueueTrace(result.taskId, machineName);
+  } else if (result.isQueued) {
+    showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'machine' }));
+  }
+}
+
 export function useMachineFunctionHandlers({
   currentResource,
   teams,
@@ -66,32 +113,7 @@ export function useMachineFunctionHandlers({
           queuePayload.vaultContent = repository?.vaultContent ?? '{}';
         }
 
-        if (functionData.function.name === 'backup_pull') {
-          const sourceType =
-            typeof functionData.params.sourceType === 'string'
-              ? functionData.params.sourceType
-              : undefined;
-          const sourceIdentifier =
-            typeof functionData.params.from === 'string' ? functionData.params.from : undefined;
-
-          if (sourceType === 'machine' && sourceIdentifier) {
-            const sourceMachine = machines.find(
-              (machine) => machine.machineName === sourceIdentifier
-            );
-            if (sourceMachine?.vaultContent) {
-              queuePayload.sourceMachineVault = sourceMachine.vaultContent;
-            }
-          }
-
-          if (sourceType === 'storage' && sourceIdentifier) {
-            const sourceStorage = storages.find(
-              (storage) => storage.storageName === sourceIdentifier
-            );
-            if (sourceStorage?.vaultContent) {
-              queuePayload.sourceStorageVault = sourceStorage.vaultContent;
-            }
-          }
-        }
+        addBackupPullSourceVaults(queuePayload, functionData, machines, storages);
 
         const result = await executeDynamic(
           functionData.function.name as BridgeFunctionName,
@@ -99,19 +121,7 @@ export function useMachineFunctionHandlers({
         );
         closeUnifiedModal();
 
-        if (result.success) {
-          if (result.taskId) {
-            showMessage('success', t('machines:queueItemCreated'));
-            openQueueTrace(result.taskId, machineName ?? '');
-          } else if (result.isQueued) {
-            showMessage(
-              'info',
-              t('resources:messages.highestPriorityQueued', { resourceType: 'machine' })
-            );
-          }
-        } else {
-          showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
-        }
+        handleQueueResult(result, machineName ?? '', openQueueTrace, t);
       } catch {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'));
       }
@@ -161,20 +171,7 @@ export function useMachineFunctionHandlers({
 
       try {
         const result = await executeDynamic(functionName, queuePayload);
-
-        if (result.success) {
-          if (result.taskId) {
-            showMessage('success', t('machines:queueItemCreated'));
-            openQueueTrace(result.taskId, machine.machineName ?? '');
-          } else if (result.isQueued) {
-            showMessage(
-              'info',
-              t('resources:messages.highestPriorityQueued', { resourceType: 'machine' })
-            );
-          }
-        } else {
-          showMessage('error', result.error ?? t('resources:errors.failedToCreateQueueItem'));
-        }
+        handleQueueResult(result, machine.machineName ?? '', openQueueTrace, t);
 
         setRefreshKeys((prev) => ({
           ...prev,

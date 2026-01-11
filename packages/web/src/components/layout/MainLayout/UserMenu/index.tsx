@@ -37,7 +37,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const { t } = useTranslation('common');
 
   return (
-    <Card styles={{ body: { padding: 0 } }}>
+    <Card>
       <Flex vertical className="w-280">
         <Flex align="center" wrap data-testid="user-info">
           <Avatar icon={<UserOutlined />} size={48} />

@@ -433,23 +433,22 @@ export interface MachineHealthResult {
   issues: string[];
 }
 
-/**
- * Perform comprehensive health check on a machine.
- * Returns structured health data with CI-friendly exit codes.
- *
- * Exit codes:
- * - 0: All healthy
- * - 1: Warnings (high utilization, minor issues)
- * - 2: Errors (unhealthy containers, failed services)
- * - 3: Critical (SMART failing, crash loops)
- */
-export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealthResult {
-  const listResult = parseListResult(machine.vaultStatus);
-  const issues: string[] = [];
-  let exitCode = 0;
+/** Health check context passed between helper functions */
+interface HealthCheckContext {
+  issues: string[];
+  exitCode: number;
+}
 
-  // Default empty result
-  const defaultDetails = {
+/** Parse a percentage string like "85%" to a number */
+function parsePercent(val: string | null): number | null {
+  if (!val) return null;
+  const match = /(\d+)/.exec(val);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+/** Get default empty health details */
+function getDefaultHealthDetails(): MachineHealthResult['details'] {
+  return {
     system: {
       memoryPercent: null,
       diskPercent: null,
@@ -480,24 +479,13 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
       dockerRunning: 0,
     },
   };
+}
 
-  if (!listResult) {
-    return {
-      healthy: false,
-      exitCode: 2,
-      message: 'No status data available',
-      details: defaultDetails,
-      issues: ['No vault status data'],
-    };
-  }
-
-  const systemInfo = getSystemInfo(listResult);
-  const containers = getContainers(listResult);
-  const services = getServices(listResult);
-  const blockDevices = getBlockDevices(listResult);
-  const healthSummary = getListHealthSummary(listResult);
-
-  // System checks
+/** Check system resource usage (memory, disk, datastore) */
+function checkSystemUsage(
+  systemInfo: SystemInfo | null,
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['system'] {
   const systemDetails = {
     memoryPercent: systemInfo?.memory.use_percent ?? null,
     diskPercent: systemInfo?.disk.use_percent ?? null,
@@ -505,97 +493,122 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
     uptime: systemInfo?.uptime ?? null,
   };
 
-  // Parse percentages and check thresholds
-  const parsePercent = (val: string | null): number | null => {
-    if (!val) return null;
-    const match = val.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : null;
-  };
-
   const memPct = parsePercent(systemDetails.memoryPercent);
   const diskPct = parsePercent(systemDetails.diskPercent);
   const dsPct = parsePercent(systemDetails.datastorePercent);
 
-  if (memPct !== null && memPct > 90) {
-    issues.push(`Memory usage critical: ${memPct}%`);
-    exitCode = Math.max(exitCode, 2);
-  } else if (memPct !== null && memPct > 80) {
-    issues.push(`Memory usage high: ${memPct}%`);
-    exitCode = Math.max(exitCode, 1);
-  }
+  checkUsageThreshold(memPct, 'Memory', 90, 80, ctx);
+  checkUsageThreshold(diskPct, 'Disk', 95, 85, ctx);
+  checkUsageThreshold(dsPct, 'Datastore', 95, 85, ctx);
 
-  if (diskPct !== null && diskPct > 95) {
-    issues.push(`Disk usage critical: ${diskPct}%`);
-    exitCode = Math.max(exitCode, 2);
-  } else if (diskPct !== null && diskPct > 85) {
-    issues.push(`Disk usage high: ${diskPct}%`);
-    exitCode = Math.max(exitCode, 1);
-  }
+  return systemDetails;
+}
 
-  if (dsPct !== null && dsPct > 95) {
-    issues.push(`Datastore usage critical: ${dsPct}%`);
-    exitCode = Math.max(exitCode, 2);
-  } else if (dsPct !== null && dsPct > 85) {
-    issues.push(`Datastore usage high: ${dsPct}%`);
-    exitCode = Math.max(exitCode, 1);
-  }
+/** Check a single usage threshold */
+function checkUsageThreshold(
+  value: number | null,
+  name: string,
+  criticalThreshold: number,
+  warningThreshold: number,
+  ctx: HealthCheckContext
+): void {
+  if (value === null) return;
 
-  // Container checks
+  if (value > criticalThreshold) {
+    ctx.issues.push(`${name} usage critical: ${value}%`);
+    ctx.exitCode = Math.max(ctx.exitCode, 2);
+  } else if (value > warningThreshold) {
+    ctx.issues.push(`${name} usage high: ${value}%`);
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
+  }
+}
+
+/** Check container health */
+function checkContainers(
+  containers: ContainerInfo[],
+  healthSummary: ReturnType<typeof getListHealthSummary>,
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['containers'] {
   const runningContainers = containers.filter((c) => c.state === 'running').length;
   const maxFailingStreak = Math.max(0, ...containers.map((c) => c.health?.failing_streak ?? 0));
 
-  const containerDetails = {
+  if (healthSummary.containersUnhealthy > 0) {
+    ctx.issues.push(`${healthSummary.containersUnhealthy} unhealthy container(s)`);
+    ctx.exitCode = Math.max(ctx.exitCode, 2);
+  }
+
+  if (maxFailingStreak > 5) {
+    ctx.issues.push(`Container health check failing streak: ${maxFailingStreak}`);
+    ctx.exitCode = Math.max(ctx.exitCode, 3);
+  } else if (maxFailingStreak > 2) {
+    ctx.issues.push(`Container health check failing streak: ${maxFailingStreak}`);
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
+  }
+
+  return {
     total: containers.length,
     running: runningContainers,
     healthy: healthSummary.containersHealthy,
     unhealthy: healthSummary.containersUnhealthy,
     failingStreak: maxFailingStreak,
   };
+}
 
-  if (healthSummary.containersUnhealthy > 0) {
-    issues.push(`${healthSummary.containersUnhealthy} unhealthy container(s)`);
-    exitCode = Math.max(exitCode, 2);
-  }
-
-  if (maxFailingStreak > 5) {
-    issues.push(`Container health check failing streak: ${maxFailingStreak}`);
-    exitCode = Math.max(exitCode, 3);
-  } else if (maxFailingStreak > 2) {
-    issues.push(`Container health check failing streak: ${maxFailingStreak}`);
-    exitCode = Math.max(exitCode, 1);
-  }
-
-  // Service checks
+/** Check service health */
+function checkServices(
+  services: ServiceInfo[],
+  healthSummary: ReturnType<typeof getListHealthSummary>,
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['services'] {
   const restartingServices = services.filter(
     (s) => s.restart_count > 3 || s.sub_state === 'auto-restart'
   ).length;
 
-  const serviceDetails = {
+  if (healthSummary.servicesFailed > 0) {
+    ctx.issues.push(`${healthSummary.servicesFailed} failed service(s)`);
+    ctx.exitCode = Math.max(ctx.exitCode, 2);
+  }
+
+  if (restartingServices > 0) {
+    ctx.issues.push(`${restartingServices} service(s) in restart loop`);
+    ctx.exitCode = Math.max(ctx.exitCode, 3);
+  }
+
+  return {
     total: services.length,
     active: healthSummary.servicesActive,
     failed: healthSummary.servicesFailed,
     restarting: restartingServices,
   };
+}
 
-  if (healthSummary.servicesFailed > 0) {
-    issues.push(`${healthSummary.servicesFailed} failed service(s)`);
-    exitCode = Math.max(exitCode, 2);
-  }
+/** Storage metrics collected from block devices */
+interface StorageMetrics {
+  smartHealthy: number;
+  smartFailing: number;
+  maxTemperature: number | null;
+}
 
-  if (restartingServices > 0) {
-    issues.push(`${restartingServices} service(s) in restart loop`);
-    exitCode = Math.max(exitCode, 3);
-  }
+/** Check if SMART health indicates a healthy device */
+function isSmartHealthy(smartHealth: string | undefined): boolean {
+  return smartHealth === 'PASSED' || smartHealth === 'OK';
+}
 
-  // Storage checks
+/** Check if SMART health indicates a failing device */
+function isSmartFailing(smartHealth: string | undefined): boolean {
+  return Boolean(smartHealth) && smartHealth !== 'N/A' && !isSmartHealthy(smartHealth);
+}
+
+/** Collect storage metrics from block devices */
+function collectStorageMetrics(blockDevices: BlockDevice[]): StorageMetrics {
   let smartHealthy = 0;
   let smartFailing = 0;
   let maxTemp: number | null = null;
 
   for (const device of blockDevices) {
-    if (device.smart_health === 'PASSED' || device.smart_health === 'OK') {
+    if (isSmartHealthy(device.smart_health)) {
       smartHealthy++;
-    } else if (device.smart_health && device.smart_health !== 'N/A') {
+    } else if (isSmartFailing(device.smart_health)) {
       smartFailing++;
     }
     if (device.temperature !== undefined) {
@@ -603,23 +616,35 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
     }
   }
 
-  const storageDetails = {
-    smartHealthy,
-    smartFailing,
-    maxTemperature: maxTemp,
-  };
+  return { smartHealthy, smartFailing, maxTemperature: maxTemp };
+}
 
-  if (smartFailing > 0) {
-    issues.push(`${smartFailing} storage device(s) with SMART failure`);
-    exitCode = Math.max(exitCode, 3);
+/** Check storage health */
+function checkStorage(
+  blockDevices: BlockDevice[],
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['storage'] {
+  const metrics = collectStorageMetrics(blockDevices);
+
+  if (metrics.smartFailing > 0) {
+    ctx.issues.push(`${metrics.smartFailing} storage device(s) with SMART failure`);
+    ctx.exitCode = Math.max(ctx.exitCode, 3);
   }
 
-  if (maxTemp !== null && maxTemp > 60) {
-    issues.push(`Storage temperature high: ${maxTemp}°C`);
-    exitCode = Math.max(exitCode, 1);
+  if (metrics.maxTemperature !== null && metrics.maxTemperature > 60) {
+    ctx.issues.push(`Storage temperature high: ${metrics.maxTemperature}°C`);
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
 
-  // Repository checks
+  return metrics;
+}
+
+/** Check repository health */
+function checkRepositories(
+  listResult: ListResult,
+  healthSummary: ReturnType<typeof getListHealthSummary>,
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['repositories'] {
   const repositoryDetails = {
     total: healthSummary.repositoriesTotal,
     mounted: healthSummary.repositoriesMounted,
@@ -628,26 +653,64 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
 
   const unmountedCount = repositoryDetails.total - repositoryDetails.mounted;
   if (unmountedCount > 0) {
-    issues.push(`${unmountedCount} repository(ies) not mounted`);
-    exitCode = Math.max(exitCode, 1);
+    ctx.issues.push(`${unmountedCount} repository(ies) not mounted`);
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
 
-  // Generate message
-  let message: string;
-  if (exitCode === 0) {
-    message = 'All systems healthy';
-  } else if (exitCode === 1) {
-    message = 'System has warnings';
-  } else if (exitCode === 2) {
-    message = 'System has errors';
-  } else {
-    message = 'System has critical issues';
+  return repositoryDetails;
+}
+
+/** Get health message based on exit code */
+function getHealthMessage(exitCode: number): string {
+  const messages: Record<number, string> = {
+    0: 'All systems healthy',
+    1: 'System has warnings',
+    2: 'System has errors',
+  };
+  return messages[exitCode] ?? 'System has critical issues';
+}
+
+/**
+ * Perform comprehensive health check on a machine.
+ * Returns structured health data with CI-friendly exit codes.
+ *
+ * Exit codes:
+ * - 0: All healthy
+ * - 1: Warnings (high utilization, minor issues)
+ * - 2: Errors (unhealthy containers, failed services)
+ * - 3: Critical (SMART failing, crash loops)
+ */
+export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealthResult {
+  const listResult = parseListResult(machine.vaultStatus);
+
+  if (!listResult) {
+    return {
+      healthy: false,
+      exitCode: 2,
+      message: 'No status data available',
+      details: getDefaultHealthDetails(),
+      issues: ['No vault status data'],
+    };
   }
+
+  const ctx: HealthCheckContext = { issues: [], exitCode: 0 };
+
+  const systemInfo = getSystemInfo(listResult);
+  const containers = getContainers(listResult);
+  const services = getServices(listResult);
+  const blockDevices = getBlockDevices(listResult);
+  const healthSummary = getListHealthSummary(listResult);
+
+  const systemDetails = checkSystemUsage(systemInfo, ctx);
+  const containerDetails = checkContainers(containers, healthSummary, ctx);
+  const serviceDetails = checkServices(services, healthSummary, ctx);
+  const storageDetails = checkStorage(blockDevices, ctx);
+  const repositoryDetails = checkRepositories(listResult, healthSummary, ctx);
 
   return {
-    healthy: exitCode === 0,
-    exitCode,
-    message,
+    healthy: ctx.exitCode === 0,
+    exitCode: ctx.exitCode,
+    message: getHealthMessage(ctx.exitCode),
     details: {
       system: systemDetails,
       containers: containerDetails,
@@ -655,6 +718,6 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
       storage: storageDetails,
       repositories: repositoryDetails,
     },
-    issues,
+    issues: ctx.issues,
   };
 }
