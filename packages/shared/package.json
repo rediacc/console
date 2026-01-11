@@ -169,10 +169,11 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
-    "@vitest/runner": "^3.2.4",
-    "@vitest/utils": "^3.2.4",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/runner": "^4.0.16",
+    "@vitest/utils": "^4.0.16",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.16"
   }
 }

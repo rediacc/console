@@ -241,7 +241,9 @@ jobs:
       - name: Run unit tests
         run: |
           npm run test -w @rediacc/shared
+          npm run test -w @rediacc/shared-desktop
           npm run test:run -w @rediacc/web
+          npm run test:unit -w @rediacc/cli
 
       - name: Generate coverage report
         if: always()
