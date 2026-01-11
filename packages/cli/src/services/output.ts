@@ -2,6 +2,7 @@
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { formatPropertyName, formatValue, formatTimestampAsIs } from '@rediacc/shared/formatters';
 import { escapeCSVValue } from '@rediacc/shared/utils';
 import type { OutputFormat } from '../types/index.js';
@@ -65,7 +66,7 @@ class OutputService {
         head: [],
         border: [],
       },
-      colAligns: cols.map((c) => c.align ?? 'left'),
+      colAligns: cols.map((c) => c.align ?? DEFAULTS.UI.TABLE_ALIGN),
     });
 
     for (const item of items) {

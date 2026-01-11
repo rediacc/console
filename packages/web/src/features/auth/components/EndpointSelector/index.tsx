@@ -10,6 +10,7 @@ import { Endpoint, endpointService } from '@/services/api';
 import { versionService } from '@/services/versionService';
 import { showMessage } from '@/utils/messages';
 import { ApiOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 interface EndpointHealth {
   isHealthy: boolean;
@@ -46,7 +47,8 @@ const EndpointSelector: React.FC = () => {
         if (formattedVersion === 'Development') {
           setVersionDisplay('Development');
         } else {
-          const buildType = (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? 'DEBUG';
+          const buildType =
+            (import.meta.env.VITE_BUILD_TYPE as string | undefined) ?? DEFAULTS.EDITION.BUILD_TYPE;
           const buildLabel = buildType === 'RELEASE' ? 'Release' : 'Development';
           setVersionDisplay(`${buildLabel} - ${formattedVersion}`);
         }

@@ -5,6 +5,7 @@
 
 import { apiConnectionService } from '@/services/api';
 import { createFreshForkToken } from '@/services/auth';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 export type ProtocolAction = 'terminal' | 'file-manager' | 'vscode';
 
@@ -343,7 +344,7 @@ class ProtocolUrlService {
       queryParams: {
         terminalType: 'container',
         action: 'logs',
-        lines: containerParams.lines ?? 100,
+        lines: containerParams.lines ?? DEFAULTS.UI.ADVANCED_COLUMN_WIDTH,
         follow: true,
         ...containerParams,
         ...windowParams,

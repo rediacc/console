@@ -1,5 +1,6 @@
 import { Space, Tag, Tooltip, Typography } from 'antd';
 import i18n from '@/i18n/config';
+import { DEFAULTS, UI_SIZING } from '@rediacc/shared/config';
 import { createStatusRenderer, renderTimestampElement } from '../renderers';
 import type {
   CountColumnOptions,
@@ -44,8 +45,8 @@ export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): Columns
     title: options.title ?? i18n.t('common:statusColumn'),
     dataIndex,
     key: options.key ?? dataKey,
-    width: options.width ?? 100,
-    align: options.align ?? 'center',
+    width: options.width ?? DEFAULTS.UI.ADVANCED_COLUMN_WIDTH,
+    align: options.align ?? UI_SIZING.CENTER,
     sorter,
     render: (value: unknown, record: T) => {
       const statusValue = options.renderValue ? options.renderValue(value, record) : value;
@@ -79,7 +80,7 @@ export const createDateColumn = <T,>(options: DateColumnOptions<T>): ColumnsType
     title: options.title ?? fallbackTitle,
     dataIndex,
     key: options.key ?? dataKey,
-    width: options.width ?? 180,
+    width: options.width ?? UI_SIZING.MODAL_WIDTH,
     sorter,
     defaultSortOrder: options.defaultSortOrder,
     render: (value: string | Date | null | undefined, record: T) =>
@@ -97,8 +98,8 @@ export const createTruncatedColumn = <T,>(
 ): ColumnsType<T>[number] => {
   const dataIndex = options.dataIndex;
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex);
-  const maxLength = options.maxLength ?? 12;
-  const placement = options.tooltipPlacement ?? 'topLeft';
+  const maxLength = options.maxLength ?? UI_SIZING.PAGE_SIZE;
+  const placement = options.tooltipPlacement ?? UI_SIZING.TOP_LEFT;
 
   return {
     title: options.title,
@@ -152,8 +153,8 @@ export const createCountColumn = <T,>(options: CountColumnOptions<T>): ColumnsTy
     title: options.title,
     dataIndex,
     key: options.key ?? dataKey,
-    width: options.width ?? 100,
-    align: options.align ?? 'center',
+    width: options.width ?? DEFAULTS.UI.ADVANCED_COLUMN_WIDTH,
+    align: options.align ?? UI_SIZING.CENTER,
     sorter,
     render: (value: number, record: T) => {
       if (options.renderValue) {
@@ -210,8 +211,8 @@ export const createVersionColumn = <T,>(
     title: options.title ?? fallbackTitle,
     dataIndex,
     key: options.key ?? dataKey,
-    width: options.width ?? 120,
-    align: options.align ?? 'center',
+    width: options.width ?? DEFAULTS.UI.ACTION_COLUMN_WIDTH,
+    align: options.align ?? UI_SIZING.CENTER,
     sorter,
     render: (value: number, record: T) => {
       if (options.renderValue) {

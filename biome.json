@@ -59,6 +59,8 @@
       "!**/out/**",
       "!**/test-results/**",
       "!**/reports/**",
+      "!**/screenshots/**",
+      "!**/playwright-report/**",
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts"
@@ -68,6 +70,18 @@
   "overrides": [
     {
       "includes": ["packages/cli/tests/**/*.ts"],
+      "assist": {
+        "actions": {
+          "source": {
+            "organizeImports": {
+              "level": "off"
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/e2e/**/*.ts"],
       "assist": {
         "actions": {
           "source": {

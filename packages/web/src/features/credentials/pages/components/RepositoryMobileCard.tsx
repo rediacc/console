@@ -9,11 +9,13 @@ import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import { InboxOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
-import type { TFunction } from 'i18next';
+
+// Generic translation function type that accepts any namespace configuration
+type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
 interface RepositoryMobileCardProps {
   record: GetTeamRepositories_ResultSet1;
-  t: TFunction;
+  t: TranslateFn;
   onEdit: (record: GetTeamRepositories_ResultSet1 & Record<string, unknown>) => void;
   onTrace: (params: { entityType: string; entityIdentifier: string; entityName: string }) => void;
   onDelete: (record: GetTeamRepositories_ResultSet1) => void;

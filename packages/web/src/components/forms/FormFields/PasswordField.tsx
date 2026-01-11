@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form, Input } from 'antd';
 import { KeyOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { Rule } from 'antd/es/form';
 
 export interface PasswordFieldProps {
@@ -80,8 +81,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 
   rules.push({
     pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
-    message:
-      patternMessage ?? 'Password must contain uppercase, lowercase, number and special character',
+    message: patternMessage ?? DEFAULTS.ERROR.PASSWORD_VALIDATION_MESSAGE,
   });
 
   if (additionalRules.length > 0) {

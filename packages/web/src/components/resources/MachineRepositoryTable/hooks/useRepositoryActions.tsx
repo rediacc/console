@@ -1,6 +1,7 @@
 import { Alert, Flex, Input, Typography } from 'antd';
 import { preparePromotion } from '@/platform';
 import { showMessage } from '@/utils/messages';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { getAxiosErrorMessage } from '../utils';
 import type { Repository } from '../types';
@@ -206,7 +207,7 @@ export function useRepositoryActions({
   };
 
   const handleRenameTag = (repository: Repository) => {
-    let newTag = repository.repositoryTag ?? 'latest';
+    let newTag = repository.repositoryTag ?? DEFAULTS.REPOSITORY.TAG;
 
     modal.confirm({
       title: t('resources:repositories.renameTagTitle'),
@@ -259,7 +260,7 @@ export function useRepositoryActions({
           await updateRepoTagMutation.mutateAsync({
             teamName,
             repositoryName: repository.name,
-            currentTag: repository.repositoryTag ?? 'latest',
+            currentTag: repository.repositoryTag ?? DEFAULTS.REPOSITORY.TAG,
             newTag: trimmedTag,
           });
           showMessage(

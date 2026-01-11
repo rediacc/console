@@ -1,10 +1,29 @@
 {
   "name": "@rediacc/shared-desktop",
-  "version": "0.3.6",
+  "version": "0.4.15",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "@rediacc/shared": "*",
+    "@types/node": "^22.10.2",
+    "@types/ssh2": "^1.15.5",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -102,28 +121,9 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "clean": "rimraf dist",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "node-pty": "^1.0.0",
-    "ssh2": "^1.17.0"
-  },
-  "devDependencies": {
-    "@rediacc/shared": "*",
-    "@types/node": "^22.10.2",
-    "@types/ssh2": "^1.15.5",
-    "rimraf": "^6.1.2",
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
-  },
+  "main": "./dist/index.js",
   "peerDependencies": {
     "@rediacc/shared": "*"
   },
-  "engines": {
-    "node": ">=22.0.0"
-  }
+  "types": "./dist/index.d.ts"
 }

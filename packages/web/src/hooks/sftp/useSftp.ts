@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { isElectron, type SFTPFileInfo } from '@/types';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 /**
  * File information from SFTP
@@ -218,7 +219,7 @@ export function useSftp(
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = path.split('/').pop() ?? 'file';
+        a.download = path.split('/').pop() ?? DEFAULTS.RESOURCE.FILE_TYPE;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

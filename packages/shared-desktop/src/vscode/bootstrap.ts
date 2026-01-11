@@ -7,6 +7,7 @@
  */
 
 import { spawn } from 'node:child_process';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { formatBashExports, needsUserSwitch } from './envCompose.js';
 
 /**
@@ -200,7 +201,7 @@ async function executeRemoteCommand(
     });
 
     // Set timeout
-    const timeout = options?.timeout ?? 30000;
+    const timeout = options?.timeout ?? DEFAULTS.TIMEOUT.VSCODE_BOOTSTRAP;
     const timer = setTimeout(() => {
       ssh.kill();
       resolve({

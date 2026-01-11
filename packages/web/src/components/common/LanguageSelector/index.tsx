@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useUpdateUserLanguage } from '@/api/api-hooks.generated';
 import type { RootState } from '@/store/store';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 interface Language {
   code: string;
@@ -46,7 +47,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
       en: 'en',
       es: 'es',
     };
-    dayjs.locale(dayjsLocaleMap[value] ?? 'en');
+    dayjs.locale(dayjsLocaleMap[value] ?? DEFAULTS.LOCALE.LANGUAGE);
 
     // Save to backend if authenticated
     if (isAuthenticated) {

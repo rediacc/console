@@ -6,6 +6,8 @@
  * matching Python desktop CLI feature parity.
  */
 
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+
 /**
  * Full repository environment matching Python's 18+ variables
  */
@@ -111,13 +113,14 @@ export function buildRepositoryEnvironment(
 ): Partial<RepositoryEnvironment> {
   const { teamName, machineName, repositoryName, machineVault, repositoryVault, apiUrl } = options;
 
-  const datastore = machineVault.datastore ?? '/mnt/rediacc';
-  const universalUser = machineVault.universalUser ?? 'rediacc';
-  const universalUserId = machineVault.universalUserId ?? '1000';
+  const datastore = machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+  const universalUser = machineVault.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER;
+  const universalUserId = machineVault.universalUserId ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER_ID;
   const repositoryPath = repositoryVault.path ?? `/home/${repositoryName}`;
   const networkId = repositoryVault.networkId ?? '';
-  const networkMode = repositoryVault.networkMode ?? machineVault.networkMode ?? 'bridge';
-  const tag = repositoryVault.tag ?? 'latest';
+  const networkMode =
+    repositoryVault.networkMode ?? machineVault.networkMode ?? DEFAULTS.REPOSITORY.NETWORK_MODE;
+  const tag = repositoryVault.tag ?? DEFAULTS.REPOSITORY.TAG;
   const immovable = repositoryVault.immovable ? 'true' : 'false';
 
   // Docker socket handling - uses networkId directly for Python compatibility
@@ -185,8 +188,8 @@ export function buildMachineEnvironment(
   machineName: string,
   machineVault: MachineVaultData
 ): Record<string, string> {
-  const datastore = machineVault.datastore ?? '/mnt/rediacc';
-  const universalUser = machineVault.universalUser ?? 'rediacc';
+  const datastore = machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+  const universalUser = machineVault.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER;
 
   return {
     REDIACC_TEAM: teamName,

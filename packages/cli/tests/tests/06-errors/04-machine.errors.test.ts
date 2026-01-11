@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { ErrorPatterns, expectError, nonExistentName } from '../../src/utils/errors';
 
@@ -16,7 +17,8 @@ test.describe('Machine Error Scenarios @cli @errors', () => {
     // Get default team
     const teamsResult = await runner.teamList();
     const teams = runner.expectSuccessArray<{ teamName: string }>(teamsResult);
-    defaultTeamName = teams.find((t) => t.teamName !== 'Private Team')?.teamName ?? 'Private Team';
+    defaultTeamName =
+      teams.find((t) => t.teamName !== 'Private Team')?.teamName ?? SYSTEM_DEFAULTS.TEAM_NAME;
 
     // Get default region
     const regionsResult = await runner.run(['region', 'list']);

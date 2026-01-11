@@ -9,6 +9,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { contextService } from './context.js';
 import { outputService } from './output.js';
 import type { LocalMachineConfig } from '../types/index.js';
@@ -134,8 +135,8 @@ class LocalExecutorService {
       machine: {
         ip: opts.machine.ip,
         user: opts.machine.user,
-        port: opts.machine.port ?? 22,
-        datastore: opts.machine.datastore ?? '/mnt/rediacc',
+        port: opts.machine.port ?? DEFAULTS.SSH.PORT,
+        datastore: opts.machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
         known_hosts: '',
       },
       params: opts.params,

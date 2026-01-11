@@ -6,6 +6,7 @@
 import { join } from 'node:path';
 import { is } from '@electron-toolkit/utils';
 import { BrowserWindow, ipcMain } from 'electron';
+import { DEFAULTS_EXTENDED } from '@rediacc/shared/config';
 
 /**
  * Options for creating a pop-out window
@@ -51,8 +52,8 @@ export function registerWindowHandlers(): void {
         const title = options.title ?? buildWindowTitle(options);
 
         const popout = new BrowserWindow({
-          width: options.width ?? 900,
-          height: options.height ?? 600,
+          width: options.width ?? DEFAULTS_EXTENDED.WINDOW.POPOUT_WIDTH,
+          height: options.height ?? DEFAULTS_EXTENDED.WINDOW.POPOUT_HEIGHT,
           minWidth: 500,
           minHeight: 400,
           title,

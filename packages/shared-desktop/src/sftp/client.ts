@@ -6,6 +6,7 @@
  */
 
 import { Client as SSHClient, type ConnectConfig } from 'ssh2';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { FileInfo, SSHCredentials } from '../types/index.js';
 import type { SFTPWrapper, FileEntry, Stats } from 'ssh2';
 
@@ -77,12 +78,12 @@ export class SFTPClient {
     return new Promise((resolve, reject) => {
       const connectConfig: ConnectConfig = {
         host: this.config.host,
-        port: this.config.port ?? 22,
+        port: this.config.port ?? DEFAULTS.SSH.PORT,
         username: this.config.username,
         privateKey: this.config.privateKey,
         passphrase: this.config.passphrase,
-        readyTimeout: this.config.timeout ?? 10000,
-        keepaliveInterval: this.config.keepaliveInterval ?? 10000,
+        readyTimeout: this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT,
+        keepaliveInterval: this.config.keepaliveInterval ?? DEFAULTS.SSH.KEEPALIVE_INTERVAL,
       };
 
       this.ssh.on('ready', () => {

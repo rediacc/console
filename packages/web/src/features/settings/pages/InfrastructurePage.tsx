@@ -36,6 +36,7 @@ import { useCopyToClipboard } from '@/hooks';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ApiOutlined, EnvironmentOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type {
   GetRegionBridges_ResultSet1,
   GetOrganizationRegions_ResultSet1,
@@ -486,8 +487,8 @@ const InfrastructurePage: React.FC = () => {
       <UnifiedResourceModal
         open={unifiedModal.isOpen}
         onCancel={closeUnifiedModal}
-        resourceType={unifiedModal.state.data?.resourceType ?? 'region'}
-        mode={unifiedModal.state.data?.mode ?? 'create'}
+        resourceType={unifiedModal.state.data?.resourceType ?? DEFAULTS.RESOURCE.TAB}
+        mode={unifiedModal.state.data?.mode ?? DEFAULTS.RESOURCE.MODE}
         existingData={
           unifiedModal.state.data?.data as
             | (Partial<GetOrganizationRegions_ResultSet1> & { vaultVersion?: number })

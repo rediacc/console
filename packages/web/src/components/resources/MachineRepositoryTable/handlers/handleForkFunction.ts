@@ -1,4 +1,5 @@
 import { showMessage } from '@/utils/messages';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import { getGrandRepoVault, getRequiredTag } from '../hooks/useFunctionExecution';
 import type { ForkFunctionData } from './types';
@@ -25,7 +26,7 @@ const handleForkResult = (
   const { selectedRepository, machine, onQueueItemCreated, t } = context;
 
   if (!result.success) {
-    throw new Error(result.error ?? 'Failed to fork Repository');
+    throw new Error(result.error ?? DEFAULTS.ERROR.FAILED_TO_FORK);
   }
 
   if (result.taskId) {

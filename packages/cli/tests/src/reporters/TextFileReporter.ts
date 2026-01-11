@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type {
   FullConfig,
   FullResult,
@@ -27,7 +28,7 @@ export default class TextFileReporter implements Reporter {
   private startTime: Date = new Date();
 
   constructor(options: { outputDir?: string } = {}) {
-    this.outputDir = options.outputDir ?? 'test-outputs';
+    this.outputDir = options.outputDir ?? DEFAULTS.CLI_TEST.OUTPUT_DIR;
   }
 
   onBegin(_config: FullConfig, _suite: Suite): void {

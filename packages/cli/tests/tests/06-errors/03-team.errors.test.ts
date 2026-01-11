@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { ErrorPatterns, expectError, nonExistentName } from '../../src/utils/errors';
 
@@ -16,7 +17,9 @@ test.describe('Team Error Scenarios @cli @errors', () => {
 
     const teamsResult = await runner.teamList();
     const teams = runner.expectSuccessArray<{ teamName: string }>(teamsResult);
-    defaultTeamName = teams.find((t) => t.teamName !== 'Private Team')?.teamName ?? 'Private Team';
+    defaultTeamName =
+      teams.find((t) => t.teamName !== SYSTEM_DEFAULTS.TEAM_NAME)?.teamName ??
+      SYSTEM_DEFAULTS.TEAM_NAME;
   });
 
   test.describe('CreateTeam errors', () => {

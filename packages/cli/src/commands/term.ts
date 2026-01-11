@@ -2,6 +2,7 @@ import { generateSourceCommand, generateSetupCommand } from '@rediacc/shared-des
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
 import { launchTerminal, getDefaultTerminalType } from '@rediacc/shared-desktop/terminal';
 import { Command } from 'commander';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -52,11 +53,12 @@ function extractBaseConnectionInfo(
   teamName: string
 ) {
   const host = (machineVault.ip ?? machineVault.host) as string | undefined;
-  const port = (machineVault.port ?? 22) as number;
+  const port = (machineVault.port ?? DEFAULTS.SSH.PORT) as number;
   const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
   const knownHosts = (machineVault.known_hosts ?? '') as string;
-  const datastore = (machineVault.datastore ?? '/mnt/rediacc') as string;
-  const universalUser = (machineVault.universalUser ?? 'rediacc') as string;
+  const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
+  const universalUser = (machineVault.universalUser ??
+    DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
 
   if (!host) {
     throw new Error(t('errors.term.noIpAddress', { machine: machineName }));
@@ -82,8 +84,10 @@ function buildRepositoryEnvironment(
 ): { environment: Record<string, string>; workingDirectory: string; user: string } {
   const repositoryPath = (repoVault.path ?? `/home/${repositoryName}`) as string;
   const networkId = (repoVault.networkId ?? '') as string;
-  const networkMode = (repoVault.networkMode ?? machineVault.networkMode ?? 'bridge') as string;
-  const tag = (repoVault.tag ?? 'latest') as string;
+  const networkMode = (repoVault.networkMode ??
+    machineVault.networkMode ??
+    DEFAULTS.REPOSITORY.NETWORK_MODE) as string;
+  const tag = (repoVault.tag ?? DEFAULTS.REPOSITORY.TAG) as string;
   const immovable = repoVault.immovable ? 'true' : 'false';
   const workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;
 
@@ -94,8 +98,8 @@ function buildRepositoryEnvironment(
     DOCKER_DATA: `${datastore}${repositoryPath}`,
     DOCKER_EXEC: `${datastore}${repositoryPath}/.docker-exec`,
     DOCKER_FOLDER: `${datastore}${repositoryPath}`,
-    DOCKER_HOST: (machineVault.dockerHost ?? 'unix:///var/run/docker.sock') as string,
-    DOCKER_SOCKET: (machineVault.dockerSocket ?? '/var/run/docker.sock') as string,
+    DOCKER_HOST: (machineVault.dockerHost ?? DEFAULTS.DOCKER.HOST_URI) as string,
+    DOCKER_SOCKET: (machineVault.dockerSocket ?? DEFAULTS.DOCKER.SOCKET_PATH) as string,
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
     REDIACC_NETWORK_ID: networkId,
@@ -105,7 +109,8 @@ function buildRepositoryEnvironment(
     REPOSITORY_PATH: repositoryPath,
     REPOSITORY_TAG: tag,
     UNIVERSAL_USER_NAME: universalUser,
-    UNIVERSAL_USER_ID: (machineVault.universalUserId ?? '1000') as string,
+    UNIVERSAL_USER_ID: (machineVault.universalUserId ??
+      DEFAULTS.REPOSITORY.UNIVERSAL_USER_ID) as string,
     ...(typeof repoVault.environment === 'object' && repoVault.environment !== null
       ? (repoVault.environment as Record<string, string>)
       : {}),
@@ -206,21 +211,22 @@ const containerCommandBuilders: Record<
   (options: TermConnectOptions, containerId: string) => string
 > = {
   logs: (options, containerId) => {
-    const lines = options.logLines ?? '50';
+    const lines = options.logLines ?? DEFAULTS.REPOSITORY.LOG_LINES;
     const followFlag = options.follow ? '-f' : '';
     return `docker logs --tail ${lines} ${followFlag} ${containerId}`.trim();
   },
   stats: (_, containerId) => `docker stats ${containerId}`,
   exec: (options, containerId) =>
-    `docker exec -it ${containerId} ${options.command ?? '/bin/bash'}`,
+    `docker exec -it ${containerId} ${options.command ?? DEFAULTS.SHELL.BASH}`,
   terminal: (options, containerId) =>
-    `docker exec -it ${containerId} ${options.command ?? '/bin/bash'}`,
+    `docker exec -it ${containerId} ${options.command ?? DEFAULTS.SHELL.BASH}`,
 };
 
 function buildRemoteCommand(options: TermConnectOptions): string | undefined {
   if (options.container) {
     const containerId = options.container;
-    const containerAction = (options.containerAction ?? 'terminal') as ContainerAction;
+    const containerAction = (options.containerAction ??
+      DEFAULTS.REPOSITORY.CONTAINER_ACTION) as ContainerAction;
     const builder = containerCommandBuilders[containerAction];
     return builder(options, containerId);
   }

@@ -1,3 +1,4 @@
+import { DEFAULTS } from '../config';
 import type { QueueHealthStatus, QueueStatus } from '../types';
 
 /**
@@ -46,7 +47,7 @@ export const PRIORITY_CONFIG: Partial<Record<number, PriorityConfig>> = {
  * Get priority label for display
  */
 export function getPriorityLabel(priority: number): string {
-  return PRIORITY_CONFIG[priority]?.label ?? 'Unknown';
+  return PRIORITY_CONFIG[priority]?.label ?? DEFAULTS.STATUS.UNKNOWN;
 }
 
 /**

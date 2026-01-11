@@ -3,6 +3,7 @@
  */
 
 import { extractPrimaryOrSecondary, extractFirstByIndex } from './base';
+import { DEFAULTS } from '../../config';
 import type { GetTeamRepositories_ResultSet1 } from '../../types';
 import type { ApiResponse } from '../../types/api';
 
@@ -13,7 +14,7 @@ export interface NormalizedRepository extends GetTeamRepositories_ResultSet1 {
 function normalizeRepository(repository: GetTeamRepositories_ResultSet1): NormalizedRepository {
   return {
     ...repository,
-    repositoryTag: repository.repositoryTag ?? 'latest',
+    repositoryTag: repository.repositoryTag ?? DEFAULTS.REPOSITORY.TAG,
   };
 }
 

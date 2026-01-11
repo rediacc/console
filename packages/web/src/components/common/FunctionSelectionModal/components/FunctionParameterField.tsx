@@ -8,7 +8,9 @@ import type {
   QueueFunction,
   QueueFunctionParameter,
 } from '@rediacc/shared/types';
-import type { TFunction } from 'i18next';
+
+// Generic translation function type that accepts any namespace configuration
+type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -54,7 +56,7 @@ const filterOption = (input: string, option?: { label?: string }): boolean =>
 const getMachineOptions = (
   machinesData: Machine[],
   currentMachineName: string | undefined,
-  t: TFunction
+  t: TranslateFn
 ) =>
   machinesData.map((machine) => {
     const name = machine.machineName ?? '';
@@ -174,7 +176,7 @@ const RepoDropdownField: React.FC<{
   functionParams: FunctionParams;
   repositories: Repository[];
   onParamChange: (paramName: string, value: FunctionParamValue) => void;
-  t: TFunction;
+  t: TranslateFn;
 }> = ({ paramName, functionParams, repositories, onParamChange, t }) => (
   <Select
     value={getStringParam(functionParams, paramName)}
@@ -200,7 +202,7 @@ const TypeBasedDropdownField: React.FC<{
   storageData: GetTeamStorages_ResultSet1[];
   currentMachineName?: string;
   onParamChange: (paramName: string, value: FunctionParamValue) => void;
-  t: TFunction;
+  t: TranslateFn;
 }> = ({
   paramName,
   typeParamName,
@@ -244,7 +246,7 @@ const MachineMultiselectField: React.FC<{
   machinesData: Machine[];
   currentMachineName?: string;
   onParamChange: (paramName: string, value: FunctionParamValue) => void;
-  t: TFunction;
+  t: TranslateFn;
 }> = ({ paramName, functionParams, machinesData, currentMachineName, onParamChange, t }) => (
   <Select
     mode="multiple"
@@ -265,7 +267,7 @@ const StorageMultiselectField: React.FC<{
   functionParams: FunctionParams;
   storageData: GetTeamStorages_ResultSet1[];
   onParamChange: (paramName: string, value: FunctionParamValue) => void;
-  t: TFunction;
+  t: TranslateFn;
 }> = ({ paramName, functionParams, storageData, onParamChange, t }) => (
   <Select
     mode="multiple"
@@ -286,7 +288,7 @@ const CheckboxGroupField: React.FC<{
   paramInfo: QueueFunctionParameter;
   functionParams: FunctionParams;
   onParamChange: (paramName: string, value: FunctionParamValue) => void;
-  t: TFunction;
+  t: TranslateFn;
 }> = ({ paramName, paramInfo, functionParams, onParamChange, t }) => {
   const selectedValues = getStringParam(functionParams, paramName).split(' ').filter(Boolean);
   const checkboxOptions = paramInfo.checkboxOptions ?? [];
@@ -325,7 +327,7 @@ const CheckboxGroupField: React.FC<{
 const renderUITypeField = (
   paramInfo: QueueFunctionParameter,
   props: FunctionParameterFieldProps,
-  t: TFunction
+  t: TranslateFn
 ): React.ReactElement | null => {
   const {
     paramName,

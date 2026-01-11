@@ -5,6 +5,7 @@ import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { useCreateQueueItemWithValidation, useQueueItemTraceWithEnabled } from '@/api/hooks-queue';
 import { useMessage } from '@/hooks';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { parseSshTestResult } from '@rediacc/shared/utils';
 import type { SSHTestResult } from '@rediacc/shared/utils';
 import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
@@ -135,7 +136,7 @@ const handleSshTestFailure = (
   setTestConnectionSuccess: (value: boolean) => void,
   onTestConnectionStateChange: ((success: boolean) => void) | undefined
 ): void => {
-  message.error(errorMessage ?? 'common:vaultEditor.testConnection.failed');
+  message.error(errorMessage ?? DEFAULTS.ERROR.VAULT_TEST_FAILED);
   setTestConnectionSuccess(false);
   onTestConnectionStateChange?.(false);
 };

@@ -14,6 +14,17 @@ packages/*/tests/**/*.js.map
 packages/*/tests/**/*.d.ts
 packages/*/tests/**/*.d.ts.map
 
+# Compiled TypeScript in source directories (should go to dist/)
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+!packages/*/src/**/*.generated.ts
+
+# Desktop package compiled config
+packages/desktop/*.js
+packages/desktop/*.d.ts
+packages/desktop/out/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

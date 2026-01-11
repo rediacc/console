@@ -1,5 +1,6 @@
 import React from 'react';
 import { Empty, Flex, Spin } from 'antd';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 const CenteredContainer: React.FC<
   React.HTMLAttributes<HTMLDivElement> & { $minHeight?: number }
@@ -10,7 +11,7 @@ const CenteredContainer: React.FC<
     align="center"
     // eslint-disable-next-line no-restricted-syntax
     style={{
-      minHeight: $minHeight ?? 200,
+      minHeight: $minHeight ?? DEFAULTS.UI.LOADING_DELAY,
       ...style,
     }}
     {...props}

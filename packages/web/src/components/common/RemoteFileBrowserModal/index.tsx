@@ -19,6 +19,7 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { BrowserBreadcrumb } from './BrowserBreadcrumb';
 import { BrowserFileTable } from './BrowserFileTable';
 import { FileListParserFactory } from './parsers';
@@ -138,7 +139,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         isUnmapped: true,
       };
     }
-    const tag = repositoryInfo.repositoryTag ?? 'latest';
+    const tag = repositoryInfo.repositoryTag ?? DEFAULTS.REPOSITORY.TAG;
     return {
       displayName: `${repositoryInfo.repositoryName ?? ''}:${tag}`,
       repositoryName: repositoryInfo.repositoryName ?? undefined,

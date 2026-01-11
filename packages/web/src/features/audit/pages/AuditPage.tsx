@@ -38,6 +38,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 
 interface AuditPageFilters extends Record<string, unknown> {
@@ -179,7 +180,7 @@ const AuditPage = () => {
         to: filters.dateRange[1]?.format('YYYY-MM-DD HH:mm:ss'),
       },
       filters: {
-        entityType: filters.entityFilter ?? 'All',
+        entityType: filters.entityFilter ?? DEFAULTS.RESOURCE.AUDIT_FILTER,
         searchText: filters.searchText || 'None',
       },
       totalRecords: filteredLogs.length,

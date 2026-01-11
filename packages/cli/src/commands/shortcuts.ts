@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   isBridgeFunction,
   safeValidateFunctionParams,
@@ -91,7 +92,7 @@ async function runCloudMode(
   const createOptions: CreateActionOptions = {
     ...options,
     function: functionName,
-    priority: options.priority ?? '3',
+    priority: options.priority ?? String(DEFAULTS.PRIORITY.QUEUE_PRIORITY),
   };
 
   // Create the queue item

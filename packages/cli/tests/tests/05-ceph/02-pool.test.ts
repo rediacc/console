@@ -5,6 +5,7 @@
  */
 
 import { expect, test } from '@playwright/test';
+import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import {
   createEditionContext,
   EditionErrorPatterns,
@@ -27,7 +28,7 @@ test.describe('Ceph Pool Commands @cli @ceph', () => {
       // Get team
       const teamResult = await ctx.runner.teamList();
       const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-      teamName = teams[0]?.teamName ?? 'Private Team';
+      teamName = teams[0]?.teamName ?? SYSTEM_DEFAULTS.TEAM_NAME;
 
       // Create a cluster for pool tests
       clusterName = uniqueName('pool-test-cluster');
@@ -240,7 +241,7 @@ test.describe('Ceph Pool Commands @cli @ceph', () => {
 
       const teamResult = await ctx.runner.teamList();
       const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-      teamName = teams[0]?.teamName ?? 'Private Team';
+      teamName = teams[0]?.teamName ?? SYSTEM_DEFAULTS.TEAM_NAME;
 
       clusterName = uniqueName('business-pool-cluster');
       await ctx.runner.run(['ceph', 'cluster', 'create', clusterName]);

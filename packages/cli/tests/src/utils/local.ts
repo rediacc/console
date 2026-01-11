@@ -7,6 +7,7 @@
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { DEFAULTS, VM_NETWORK } from '@rediacc/shared/config';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 
 /**
@@ -34,14 +35,14 @@ export function getE2EConfig(): E2EConfig {
   const vm1Ip = process.env.E2E_VM1_IP;
   const vm2Ip = process.env.E2E_VM2_IP;
   const sshUser = process.env.E2E_SSH_USER;
-  const sshKeyPath = process.env.E2E_SSH_KEY ?? '~/.ssh/id_rsa';
+  const sshKeyPath = process.env.E2E_SSH_KEY ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
 
   const enabled = !!(vm1Ip && sshUser);
 
   return {
-    vm1Ip: vm1Ip ?? '192.168.111.11',
-    vm2Ip: vm2Ip ?? '192.168.111.12',
-    sshUser: sshUser ?? 'root',
+    vm1Ip: vm1Ip ?? VM_NETWORK.WORKER_IPS[0],
+    vm2Ip: vm2Ip ?? VM_NETWORK.WORKER_IPS[1],
+    sshUser: sshUser ?? DEFAULTS.CLI_TEST.VM_USER,
     sshKeyPath,
     enabled,
   };
@@ -58,7 +59,7 @@ export function createTestLocalContext(
   }
 ): Promise<CliResult> {
   const runner = new CliTestRunner();
-  const sshKey = options?.sshKeyPath ?? '~/.ssh/id_rsa';
+  const sshKey = options?.sshKeyPath ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
   const args = ['context', 'create-local', name, '--ssh-key', sshKey];
 
   if (options?.renetPath) {
@@ -225,7 +226,7 @@ export function getErrorFromResult(result: CliResult): string {
       return json.error.message;
     }
   }
-  return result.stderr ?? result.stdout ?? 'Unknown error';
+  return result.stderr ?? result.stdout ?? DEFAULTS.ERROR.UNKNOWN_ERROR;
 }
 
 /**
@@ -234,7 +235,7 @@ export function getErrorFromResult(result: CliResult): string {
  */
 export function assertSuccess(result: CliResult, message?: string): void {
   if (!isSuccessfulResult(result)) {
-    const errorMsg = message ?? 'CLI command failed';
+    const errorMsg = message ?? DEFAULTS.ERROR.CLI_COMMAND_FAILED;
     const details = getErrorFromResult(result);
     throw new Error(`${errorMsg}: ${details}`);
   }
