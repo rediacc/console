@@ -51,19 +51,29 @@ fi
 # Sanitize branch name (replace / with -)
 BRANCH_SAFE="${BRANCH//\//-}"
 
-# Check if we recently pushed (within last 5 minutes)
+# Check if we recently pushed
 LAST_PUSH_FILE="/tmp/.claude-last-push-${OWNER}-${REPO}-${BRANCH_SAFE}"
 if [ ! -f "$LAST_PUSH_FILE" ]; then
     exit 0
 fi
 
-LAST_PUSH_TIME=$(cat "$LAST_PUSH_FILE" 2>/dev/null || echo "0")
+# Parse push file: timestamp:commit_sha:status
+PUSH_DATA=$(cat "$LAST_PUSH_FILE" 2>/dev/null || echo "0::")
+LAST_PUSH_TIME=$(echo "$PUSH_DATA" | cut -d: -f1)
+PUSHED_SHA=$(echo "$PUSH_DATA" | cut -d: -f2)
+NOTIFY_STATUS=$(echo "$PUSH_DATA" | cut -d: -f3)
+
 CURRENT_TIME=$(date +%s)
 TIME_DIFF=$((CURRENT_TIME - LAST_PUSH_TIME))
 
 # Only check CI if pushed within last 10 minutes
 if [ "$TIME_DIFF" -gt 600 ]; then
     rm -f "$LAST_PUSH_FILE"
+    exit 0
+fi
+
+# If we already notified about this failure, don't block again
+if [ "$NOTIFY_STATUS" = "notified" ]; then
     exit 0
 fi
 
@@ -77,11 +87,19 @@ if [ -z "$TOKEN" ]; then
     exit 0
 fi
 
-# Get current commit SHA
-COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
+# Use the pushed commit SHA (not current HEAD, which may have changed)
+COMMIT_SHA="$PUSHED_SHA"
+if [ -z "$COMMIT_SHA" ]; then
+    COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
+fi
 if [ -z "$COMMIT_SHA" ]; then
     exit 0
 fi
+
+# Helper function to mark as notified (prevents repeated blocking)
+mark_notified() {
+    echo "${LAST_PUSH_TIME}:${PUSHED_SHA}:notified" > "$LAST_PUSH_FILE"
+}
 
 # Wait a moment for CI to start
 sleep 3
@@ -131,6 +149,7 @@ if [ "$TOTAL_COUNT" = "0" ]; then
             "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$RUN_ID/jobs" 2>/dev/null | \
             jq -r '[.jobs[] | select(.conclusion == "failure")] | map(.name) | join(", ")' 2>/dev/null || echo "unknown")
 
+        mark_notified
         INSTRUCTIONS=$(printf "$AI_INSTRUCTIONS" "$RUN_ID")
         echo "{\"decision\":\"block\",\"reason\":\"CI FAILED! Failed jobs: $FAILED_JOBS$INSTRUCTIONS\"}"
         exit 0
@@ -154,6 +173,7 @@ if [ "$FAILED" -gt 0 ]; then
     # Get run ID for the failed checks
     CHECK_RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null || echo "")
 
+    mark_notified
     INSTRUCTIONS=$(printf "$AI_INSTRUCTIONS" "$CHECK_RUN_ID")
     echo "{\"decision\":\"block\",\"reason\":\"CI checks failed: $FAILED_CHECKS$INSTRUCTIONS\"}"
     exit 0
