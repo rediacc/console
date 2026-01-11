@@ -12,7 +12,18 @@ cd "$PROJECT_ROOT"
 
 echo "🔍 Running pre-commit checks..."
 
-# 0. Version consistency check (fast, should run first)
+# 0. Sync dependencies if package files changed (ensures local matches CI)
+STAGED_FILES=$(git diff --cached --name-only 2>/dev/null || true)
+if echo "$STAGED_FILES" | grep -qE "^(package\.json|package-lock\.json|packages/.*/package\.json)$"; then
+    echo "→ Package files changed, syncing dependencies..."
+    if ! npm ci --silent 2>/dev/null; then
+        echo "❌ Failed to sync dependencies. Run 'npm ci' manually."
+        exit 2
+    fi
+    echo "✓ Dependencies synced"
+fi
+
+# 1. Version consistency check (fast, should run first)
 echo "→ Checking version consistency..."
 if ! npm run version:check > /dev/null 2>&1; then
     echo "❌ Version mismatch detected. Run 'npm run version:list' for details."
@@ -20,7 +31,7 @@ if ! npm run version:check > /dev/null 2>&1; then
 fi
 echo "✓ Version consistency check passed"
 
-# 1. ESLint (with zero warnings policy)
+# 2. ESLint (with zero warnings policy)
 echo "→ Running lint..."
 if ! npm run lint -- --max-warnings 0 > /dev/null 2>&1; then
     echo "❌ Lint failed. Run 'npm run lint' to see errors."
@@ -28,7 +39,7 @@ if ! npm run lint -- --max-warnings 0 > /dev/null 2>&1; then
 fi
 echo "✓ Lint passed"
 
-# 2. Unused code check (knip)
+# 3. Unused code check (knip)
 echo "→ Checking unused code..."
 if ! npm run lint:unused > /dev/null 2>&1; then
     echo "❌ Unused code check failed. Run 'npm run lint:unused' to see errors."
@@ -36,7 +47,7 @@ if ! npm run lint:unused > /dev/null 2>&1; then
 fi
 echo "✓ Unused code check passed"
 
-# 3. Format check (Biome)
+# 4. Format check (Biome)
 echo "→ Checking format..."
 if ! npm run format:check > /dev/null 2>&1; then
     echo "❌ Format check failed. Run 'npm run format' to fix."
@@ -44,7 +55,7 @@ if ! npm run format:check > /dev/null 2>&1; then
 fi
 echo "✓ Format passed"
 
-# 4. TypeScript type check
+# 5. TypeScript type check
 echo "→ Running typecheck..."
 if ! npm run typecheck > /dev/null 2>&1; then
     echo "❌ Typecheck failed. Run 'npm run typecheck' to see errors."
