@@ -355,12 +355,13 @@ jobs:
           if-no-files-found: ignore
 
   # ============================================================================
-  # SHARED BACKEND JOB
-  # Starts Elite services and creates Cloudflare tunnel for cross-platform testing
+  # CROSS-PLATFORM CLI TESTS
+  # Shared backend starts first, then each platform downloads tunnel URL
   # ============================================================================
   shared-backend:
     name: 🖥️ Shared Backend (Elite + Tunnel)
     runs-on: ubuntu-latest
+    needs: [lint, format-check, type-check]
     timeout-minutes: 120
 
     steps:
@@ -463,10 +464,6 @@ jobs:
         working-directory: elite
         run: ./go down || true
 
-  # ============================================================================
-  # CROSS-PLATFORM CLI TESTS
-  # Each platform downloads tunnel URL and runs tests against shared backend
-  # ============================================================================
   cli-tests-linux:
     name: 🧪 CLI Tests (Linux)
     runs-on: ubuntu-latest
