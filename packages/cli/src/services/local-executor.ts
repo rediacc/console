@@ -5,10 +5,10 @@
  * without going through middleware API. Used in "local mode" contexts.
  */
 
-import { spawn, type ChildProcess } from 'child_process';
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import * as path from 'path';
+import { spawn, type ChildProcess } from 'node:child_process';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { contextService } from './context.js';
 import { outputService } from './output.js';
 import type { LocalMachineConfig } from '../types/index.js';
@@ -89,7 +89,7 @@ class LocalExecutorService {
       return {
         success: result.exitCode === 0,
         exitCode: result.exitCode,
-        error: result.exitCode !== 0 ? `renet exited with code ${result.exitCode}` : undefined,
+        error: result.exitCode === 0 ? undefined : `renet exited with code ${result.exitCode}`,
         durationMs: Date.now() - startTime,
       };
     } catch (error) {

@@ -121,13 +121,14 @@ export const QueueItemHeader: React.FC<QueueItemHeaderProps> = ({
             data-testid="queue-trace-progress"
             className="queue-trace-progress"
             percent={consoleProgress}
-            status={
-              simplifiedStatus.status === 'Failed' || simplifiedStatus.status === 'Cancelled'
-                ? 'exception'
-                : simplifiedStatus.status === 'Completed'
-                  ? 'success'
-                  : 'active'
-            }
+            status={(() => {
+              if (simplifiedStatus.status === 'Failed' || simplifiedStatus.status === 'Cancelled') {
+                return 'exception';
+              } else if (simplifiedStatus.status === 'Completed') {
+                return 'success';
+              }
+              return 'active';
+            })()}
           />
         )}
       </Flex>

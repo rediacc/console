@@ -379,6 +379,16 @@
     "moreTeams": "+{{count}}個の追加チーム",
     "selectTeams": "チームを選択..."
   },
+  "terminal": {
+    "terminal": "ターミナル",
+    "connecting": "接続中",
+    "connectionFailed": "接続に失敗しました",
+    "connectedTo": "{{host}} に接続中",
+    "establishingConnection": "{{host}} への SSH 接続を確立中...",
+    "waitingForConnection": "接続を待機中...",
+    "reconnect": "再接続",
+    "popout": "新しいウィンドウで開く"
+  },
   "theme": {
     "dark": "ダーク",
     "label": "テーマ",
@@ -783,6 +793,14 @@
   "warnings": {
     "sandboxEnvironment": "サンドボックス環境",
     "sandboxMessage": "アップデート中にデータがリセットされる場合があります。 テスト専用。"
+  },
+  "vscodeSelection": {
+    "title": "VS Codeのインストールを選択",
+    "open": "開く",
+    "description": "複数のVS Codeインストールが検出されました。使用するものを選択してください：",
+    "windowsVSCode": "Windows版 VS Code",
+    "wslVSCode": "WSL版 VS Code (Linux)",
+    "rememberChoice": "選択を記憶する"
   },
   "yes": "はい",
   "yesterday": "昨日"

@@ -1,7 +1,7 @@
-import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { spawn } from 'node:child_process';
+import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { getPlatform, commandExists } from '../utils/platform.js';
 
 /**
@@ -86,8 +86,8 @@ export async function startSSHAgent(timeoutMs = SSH_AGENT_TIMEOUT_MS): Promise<S
 
       // Parse SSH_AUTH_SOCK and SSH_AGENT_PID from output
       // Output format: SSH_AUTH_SOCK=/tmp/ssh-xxx/agent.123; export SSH_AUTH_SOCK;
-      const sockMatch = stdout.match(/SSH_AUTH_SOCK=([^;]+)/);
-      const pidMatch = stdout.match(/SSH_AGENT_PID=(\d+)/);
+      const sockMatch = /SSH_AUTH_SOCK=([^;]+)/.exec(stdout);
+      const pidMatch = /SSH_AGENT_PID=(\d+)/.exec(stdout);
 
       if (!sockMatch || !pidMatch) {
         reject(new Error(`Failed to parse ssh-agent output: ${stdout}`));
@@ -169,10 +169,10 @@ export async function addKeyToAgent(
         clearTimeout(timeoutId);
         if (timedOut) return;
 
-        if (code !== 0) {
-          reject(new Error(`ssh-add failed with code ${code}: ${stderr}`));
-        } else {
+        if (code === 0) {
           resolve();
+        } else {
+          reject(new Error(`ssh-add failed with code ${code}: ${stderr}`));
         }
       });
 
@@ -199,8 +199,8 @@ export async function addKeyToAgent(
  * @param gracePeriodMs - Grace period in milliseconds before forceful kill (default: 1000)
  */
 export async function stopSSHAgent(agentPid: string, gracePeriodMs = 1000): Promise<void> {
-  const pid = parseInt(agentPid, 10);
-  if (isNaN(pid)) {
+  const pid = Number.parseInt(agentPid, 10);
+  if (Number.isNaN(pid)) {
     return;
   }
 

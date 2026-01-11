@@ -96,7 +96,7 @@ const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
       const Container = fullHeight ? FullHeightContainer : CenteredContainer;
       return (
         <Container $minHeight={minHeight} data-testid={dataTestId}>
-          <Spin size={size} tip={!showTextBelow ? tip : undefined} />
+          <Spin size={size} tip={showTextBelow ? undefined : tip} />
           {showTextBelow && tip && <LoadingText>{tip}</LoadingText>}
         </Container>
       );

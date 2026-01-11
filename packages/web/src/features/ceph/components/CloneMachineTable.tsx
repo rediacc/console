@@ -48,55 +48,51 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
 
   if (machines.length === 0) {
     return (
-      <Flex className="w-full">
-        <Flex vertical align="center" className="gap-sm w-full">
-          <Empty description={t('clones.noMachinesAssigned')} />
-          <Button
-            type="primary"
-            icon={<TeamOutlined />}
-            onClick={() => onManageMachines(clone)}
-            data-testid={`clone-list-assign-machines-empty-${clone.cloneName}`}
-          >
-            {t('clones.assignMachines')}
-          </Button>
-        </Flex>
+      <Flex vertical align="center" className="gap-sm">
+        <Empty description={t('clones.noMachinesAssigned')} />
+        <Button
+          type="primary"
+          icon={<TeamOutlined />}
+          onClick={() => onManageMachines(clone)}
+          data-testid={`clone-list-assign-machines-empty-${clone.cloneName}`}
+        >
+          {t('clones.assignMachines')}
+        </Button>
       </Flex>
     );
   }
 
   return (
-    <Flex className="w-full" data-testid={`clone-list-machines-container-${clone.cloneName}`}>
-      <Flex vertical className="w-full">
-        <Flex align="center" wrap>
-          <TeamOutlined />
-          <Typography.Text strong>{t('clones.assignedMachines')}:</Typography.Text>
-          <Tag data-testid={`clone-list-machine-count-${clone.cloneName}`} bordered={false}>
-            {machines.length} {t('machines:machines')}
-          </Tag>
-        </Flex>
-
-        <Flex wrap>
-          {machines.map((machine: GetCloneMachines_ResultSet1) => (
-            <Tag
-              key={machine.machineName}
-              icon={<CloudServerOutlined />}
-              bordered={false}
-              data-testid={`clone-list-machine-tag-${clone.cloneName}-${machine.machineName}`}
-            >
-              {machine.machineName}
-            </Tag>
-          ))}
-        </Flex>
-
-        <Button
-          icon={<TeamOutlined />}
-          onClick={() => onManageMachines(clone)}
-          data-testid={`clone-list-manage-machines-button-${clone.cloneName}`}
-          block
-        >
-          {t('clones.manageMachines')}
-        </Button>
+    <Flex vertical data-testid={`clone-list-machines-container-${clone.cloneName}`}>
+      <Flex align="center" wrap>
+        <TeamOutlined />
+        <Typography.Text strong>{t('clones.assignedMachines')}:</Typography.Text>
+        <Tag data-testid={`clone-list-machine-count-${clone.cloneName}`} bordered={false}>
+          {machines.length} {t('machines:machines')}
+        </Tag>
       </Flex>
+
+      <Flex wrap>
+        {machines.map((machine: GetCloneMachines_ResultSet1) => (
+          <Tag
+            key={machine.machineName}
+            icon={<CloudServerOutlined />}
+            bordered={false}
+            data-testid={`clone-list-machine-tag-${clone.cloneName}-${machine.machineName}`}
+          >
+            {machine.machineName}
+          </Tag>
+        ))}
+      </Flex>
+
+      <Button
+        icon={<TeamOutlined />}
+        onClick={() => onManageMachines(clone)}
+        data-testid={`clone-list-manage-machines-button-${clone.cloneName}`}
+        block
+      >
+        {t('clones.manageMachines')}
+      </Button>
     </Flex>
   );
 };

@@ -54,9 +54,9 @@ function printTrace(trace: QueueTraceSummary, program: Command): void {
     const formattedTrace = {
       taskId: trace.taskId,
       status: formatStatus(trace.status ?? 'UNKNOWN'),
-      age: trace.ageInMinutes != null ? formatAge(trace.ageInMinutes) : '-',
+      age: trace.ageInMinutes == null ? '-' : formatAge(trace.ageInMinutes),
       priority: trace.priority ? formatPriority(trace.priority) : '-',
-      retries: trace.retryCount != null ? formatRetryCount(trace.retryCount) : '-',
+      retries: trace.retryCount == null ? '-' : formatRetryCount(trace.retryCount),
       progress: trace.progress ?? '-',
     };
     outputService.print(formattedTrace, format);
@@ -121,6 +121,54 @@ export interface TraceActionOptions {
   interval: string;
 }
 
+function parseParamOptions(paramOptions: string[] | undefined): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const param of paramOptions ?? []) {
+    const [key, ...valueParts] = param.split('=');
+    params[key] = valueParts.join('=');
+  }
+  return params;
+}
+
+function validateFunctionParams(functionName: string, params: Record<string, string>): void {
+  if (!isBridgeFunction(functionName)) return;
+
+  const validationResult = safeValidateFunctionParams(functionName, params);
+  if (!validationResult.success) {
+    throw new ValidationError(
+      t('errors.invalidFunctionParams', {
+        function: functionName,
+        errors: getValidationErrors(validationResult),
+      })
+    );
+  }
+}
+
+async function buildQueueVaultFromParams(
+  opts: { team?: string; machine?: string; bridge?: string },
+  options: CreateActionOptions
+): Promise<string> {
+  const params = parseParamOptions(options.param);
+  validateFunctionParams(options.function, params);
+
+  const language = await contextService.getLanguage();
+
+  return withSpinner(
+    t('commands.queue.create.buildingVault'),
+    () =>
+      queueService.buildQueueVault({
+        teamName: opts.team as string,
+        machineName: opts.machine,
+        bridgeName: opts.bridge,
+        functionName: options.function,
+        params,
+        priority: Number.parseInt(options.priority, 10),
+        language,
+      }),
+    t('commands.queue.create.vaultBuilt')
+  );
+}
+
 export async function createAction(options: CreateActionOptions): Promise<{ taskId?: string }> {
   await authService.requireAuth();
   const opts = await contextService.applyDefaults(options);
@@ -129,51 +177,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
     throw new ValidationError(t('errors.teamRequired'));
   }
 
-  let queueVault: string;
-
-  if (options.vault) {
-    // Use provided vault directly (for scripts/CI that need raw vault control)
-    queueVault = options.vault;
-  } else {
-    // Parse parameters
-    const params: Record<string, string> = {};
-    for (const param of options.param ?? []) {
-      const [key, ...valueParts] = param.split('=');
-      params[key] = valueParts.join('=');
-    }
-
-    // Validate function parameters before building vault (early error detection)
-    if (isBridgeFunction(options.function)) {
-      const validationResult = safeValidateFunctionParams(options.function, params);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          t('errors.invalidFunctionParams', {
-            function: options.function,
-            errors: getValidationErrors(validationResult),
-          })
-        );
-      }
-    }
-
-    // Get language from context for task output localization
-    const language = await contextService.getLanguage();
-
-    // Build proper queue vault using the queue service
-    queueVault = await withSpinner(
-      t('commands.queue.create.buildingVault'),
-      () =>
-        queueService.buildQueueVault({
-          teamName: opts.team as string,
-          machineName: opts.machine,
-          bridgeName: opts.bridge,
-          functionName: options.function,
-          params,
-          priority: parseInt(options.priority, 10),
-          language,
-        }),
-      t('commands.queue.create.vaultBuilt')
-    );
-  }
+  const queueVault = options.vault ?? (await buildQueueVaultFromParams(opts, options));
 
   const apiResponse = await withSpinner(
     t('commands.queue.create.creating', { function: options.function }),
@@ -183,7 +187,7 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
         machineName: opts.machine as string,
         bridgeName: opts.bridge as string,
         vaultContent: queueVault,
-        priority: parseInt(options.priority, 10),
+        priority: Number.parseInt(options.priority, 10),
       }),
     t('commands.queue.create.success')
   );
@@ -197,6 +201,94 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
   return { taskId: response.taskId ?? undefined };
 }
 
+const TERMINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED'] as const;
+
+function buildSpinnerText(summary: QueueTraceSummary): string {
+  const statusText = formatStatus(summary.status ?? 'UNKNOWN');
+  const ageText =
+    summary.ageInMinutes == null ? t('common.unknown') : formatAge(summary.ageInMinutes);
+  const percentage = extractMostRecentProgress(summary.consoleOutput ?? '');
+  const progressText =
+    percentage === null ? (summary.progress ?? t('common.inProgress')) : `${percentage}%`;
+
+  return `${statusText} | ${t('commands.queue.trace.age')}: ${ageText} | ${progressText}`;
+}
+
+function isTerminalStatus(status: string | undefined): boolean {
+  return status ? (TERMINAL_STATUSES as readonly string[]).includes(status.toUpperCase()) : false;
+}
+
+function displayFailureReason(summary: QueueTraceSummary): void {
+  if (summary.lastFailureReason) {
+    outputService.error(t('commands.queue.trace.errorDetails'));
+    outputService.error(formatError(summary.lastFailureReason, true));
+  }
+}
+
+function handleTerminalStatus(summary: QueueTraceSummary, program: Command): void {
+  const status = summary.status?.toUpperCase() ?? 'UNKNOWN';
+  const success = status === 'COMPLETED';
+
+  stopSpinner(success, t('commands.queue.trace.finalStatus', { status: formatStatus(status) }));
+
+  if (!success) {
+    displayFailureReason(summary);
+  }
+
+  printTrace(summary, program);
+}
+
+async function watchTraceLoop(taskId: string, interval: number, program: Command): Promise<void> {
+  const spinner = startSpinner(t('commands.queue.trace.watching'));
+
+  for (;;) {
+    const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
+    const trace = parseGetQueueItemTrace(apiResponse as never);
+    const summary = mapTraceToSummary(trace);
+
+    if (!summary) {
+      await new Promise((resolve) => setTimeout(resolve, interval));
+      continue;
+    }
+
+    if (spinner) {
+      spinner.text = buildSpinnerText(summary);
+    }
+
+    if (isTerminalStatus(summary.status)) {
+      handleTerminalStatus(summary, program);
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+}
+
+async function singleFetchTrace(taskId: string, program: Command): Promise<void> {
+  const trace = await withSpinner(
+    t('commands.queue.trace.fetching'),
+    async () => {
+      const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
+      return parseGetQueueItemTrace(apiResponse as never);
+    },
+    t('commands.queue.trace.fetched')
+  );
+
+  const summary = mapTraceToSummary(trace);
+
+  if (!summary) {
+    outputService.info(t('commands.queue.trace.noTrace'));
+    return;
+  }
+
+  if (summary.status === 'FAILED' && summary.lastFailureReason) {
+    displayFailureReason(summary);
+    outputService.info('');
+  }
+
+  printTrace(summary, program);
+}
+
 export async function traceAction(
   taskId: string,
   options: TraceActionOptions,
@@ -204,82 +296,11 @@ export async function traceAction(
 ): Promise<void> {
   await authService.requireAuth();
 
-  const fetchTrace = async () => {
-    const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
-    return parseGetQueueItemTrace(apiResponse as never);
-  };
-
   if (options.watch) {
-    // Watch mode - poll until complete
-    const interval = parseInt(options.interval, 10);
-    let isComplete = false;
-
-    const spinner = startSpinner(t('commands.queue.trace.watching'));
-
-    while (!isComplete) {
-      const trace = await fetchTrace();
-      const summary = mapTraceToSummary(trace);
-
-      if (summary) {
-        const statusText = formatStatus(summary.status ?? 'UNKNOWN');
-        const ageText =
-          summary.ageInMinutes != null ? formatAge(summary.ageInMinutes) : t('common.unknown');
-
-        // Extract progress percentage from console output if available
-        const percentage = extractMostRecentProgress(summary.consoleOutput ?? '');
-        const progressText =
-          percentage !== null ? `${percentage}%` : (summary.progress ?? t('common.inProgress'));
-
-        if (spinner) {
-          spinner.text = `${statusText} | ${t('commands.queue.trace.age')}: ${ageText} | ${progressText}`;
-        }
-
-        const terminalStatuses = ['COMPLETED', 'FAILED', 'CANCELLED'];
-        const status = summary.status?.toUpperCase();
-        if (status && terminalStatuses.includes(status)) {
-          isComplete = true;
-          const success = status === 'COMPLETED';
-          stopSpinner(
-            success,
-            t('commands.queue.trace.finalStatus', { status: formatStatus(status) })
-          );
-
-          if (!success && summary.lastFailureReason) {
-            outputService.error(t('commands.queue.trace.errorDetails'));
-            outputService.error(formatError(summary.lastFailureReason, true));
-          }
-
-          printTrace(summary, program);
-        }
-      }
-
-      if (!isComplete) {
-        await new Promise((resolve) => setTimeout(resolve, interval));
-      }
-    }
+    const interval = Number.parseInt(options.interval, 10);
+    await watchTraceLoop(taskId, interval, program);
   } else {
-    // Single fetch
-    const trace = await withSpinner(
-      t('commands.queue.trace.fetching'),
-      fetchTrace,
-      t('commands.queue.trace.fetched')
-    );
-
-    const summary = mapTraceToSummary(trace);
-
-    if (summary) {
-      // Show formatted error if task failed
-      if (summary.status === 'FAILED' && summary.lastFailureReason) {
-        outputService.error(t('commands.queue.trace.errorDetails'));
-        outputService.error(formatError(summary.lastFailureReason, true));
-        outputService.info(''); // Empty line for spacing
-      }
-
-      // Output trace using helper function
-      printTrace(summary, program);
-    } else {
-      outputService.info(t('commands.queue.trace.noTrace'));
-    }
+    await singleFetchTrace(taskId, program);
   }
 }
 
@@ -303,6 +324,84 @@ export async function retryAction(taskId: string): Promise<void> {
   );
 }
 
+function validatePriorityRange(value: string | undefined, errorKey: string): void {
+  if (value === undefined) return;
+  const num = Number.parseInt(value, 10);
+  if (Number.isNaN(num) || num < 1 || num > 5) {
+    throw new ValidationError(t(errorKey));
+  }
+}
+
+interface QueueListOptions {
+  priorityMin?: string;
+  priorityMax?: string;
+  status?: string;
+  search?: string;
+  sort?: string;
+  desc?: boolean;
+  limit: string;
+  team?: string;
+}
+
+function applyQueueFilters(
+  items: GetTeamQueueItems_ResultSet1[],
+  options: QueueListOptions
+): GetTeamQueueItems_ResultSet1[] {
+  let filtered = items;
+
+  if (options.status) {
+    filtered = filtered.filter(
+      (item) => item.status?.toLowerCase() === options.status!.toLowerCase()
+    );
+  }
+
+  if (options.priorityMin !== undefined) {
+    const min = Number.parseInt(options.priorityMin, 10);
+    filtered = filtered.filter((item) => item.priority != null && item.priority >= min);
+  }
+
+  if (options.priorityMax !== undefined) {
+    const max = Number.parseInt(options.priorityMax, 10);
+    filtered = filtered.filter((item) => item.priority != null && item.priority <= max);
+  }
+
+  if (options.search) {
+    filtered = filtered.filter((item) =>
+      searchInFields(item, options.search!, ['taskId', 'teamName', 'machineName', 'bridgeName'])
+    );
+  }
+
+  return filtered;
+}
+
+function sortQueueItems(
+  items: GetTeamQueueItems_ResultSet1[],
+  options: QueueListOptions
+): GetTeamQueueItems_ResultSet1[] {
+  if (!options.sort) return items;
+
+  const sortField = options.sort as keyof GetTeamQueueItems_ResultSet1;
+  return items.sort((a, b) => {
+    const result = compareValues(a[sortField], b[sortField]);
+    return options.desc ? -result : result;
+  });
+}
+
+function formatQueueItemForTable(item: GetTeamQueueItems_ResultSet1) {
+  return {
+    taskId: item.taskId,
+    status: formatStatus(item.status ?? item.healthStatus),
+    priority: item.priority ? formatPriority(item.priority) : '-',
+    age: item.ageInMinutes == null ? '-' : formatAge(item.ageInMinutes),
+    team: item.teamName ?? '-',
+    machine: item.machineName ?? '-',
+    bridge: item.bridgeName ?? '-',
+    retries: item.retryCount == null ? '-' : formatRetryCount(item.retryCount),
+    hasResponse: formatBoolean(item.hasResponse === true),
+    error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-',
+  };
+}
+
 export function registerQueueCommands(program: Command): void {
   const queue = program.command('queue').description(t('commands.queue.description'));
 
@@ -318,25 +417,12 @@ export function registerQueueCommands(program: Command): void {
     .option('--sort <field>', t('options.sortField'))
     .option('--desc', t('options.sortDesc'))
     .option('--limit <n>', t('options.limit'), '50')
-    .action(async (options) => {
+    .action(async (options: QueueListOptions) => {
       try {
         await authService.requireAuth();
 
-        // Validate priority-min if provided (before checking team to give clearer error)
-        if (options.priorityMin !== undefined) {
-          const min = parseInt(options.priorityMin, 10);
-          if (isNaN(min) || min < 1 || min > 5) {
-            throw new ValidationError(t('errors.invalidPriorityMin'));
-          }
-        }
-
-        // Validate priority-max if provided (before checking team to give clearer error)
-        if (options.priorityMax !== undefined) {
-          const max = parseInt(options.priorityMax, 10);
-          if (isNaN(max) || max < 1 || max > 5) {
-            throw new ValidationError(t('errors.invalidPriorityMax'));
-          }
-        }
+        validatePriorityRange(options.priorityMin, 'errors.invalidPriorityMin');
+        validatePriorityRange(options.priorityMax, 'errors.invalidPriorityMax');
 
         const opts = await contextService.applyDefaults(options);
 
@@ -349,78 +435,22 @@ export function registerQueueCommands(program: Command): void {
           () =>
             typedApi.GetTeamQueueItems({
               teamName: opts.team as string,
-              maxRecords: parseInt(options.limit, 10),
+              maxRecords: Number.parseInt(options.limit, 10),
             }),
           t('commands.queue.list.success')
         );
 
         const response = parseGetTeamQueueItems(apiResponse as never);
-        let items = response.items;
-
-        // Filter by status if specified
-        if (options.status) {
-          items = items.filter(
-            (item: GetTeamQueueItems_ResultSet1) =>
-              item.status?.toLowerCase() === options.status.toLowerCase()
-          );
-        }
-
-        // Filter by priority-min if specified
-        if (options.priorityMin !== undefined) {
-          const min = parseInt(options.priorityMin, 10);
-          items = items.filter(
-            (item: GetTeamQueueItems_ResultSet1) => item.priority != null && item.priority >= min
-          );
-        }
-
-        // Filter by priority-max if specified
-        if (options.priorityMax !== undefined) {
-          const max = parseInt(options.priorityMax, 10);
-          items = items.filter(
-            (item: GetTeamQueueItems_ResultSet1) => item.priority != null && item.priority <= max
-          );
-        }
-
-        // Search filter
-        if (options.search) {
-          items = items.filter((item: GetTeamQueueItems_ResultSet1) =>
-            searchInFields(item, options.search, [
-              'taskId',
-              'teamName',
-              'machineName',
-              'bridgeName',
-            ])
-          );
-        }
-
-        // Sort results
-        if (options.sort) {
-          const sortField = options.sort as keyof GetTeamQueueItems_ResultSet1;
-          items.sort((a: GetTeamQueueItems_ResultSet1, b: GetTeamQueueItems_ResultSet1) => {
-            const result = compareValues(a[sortField], b[sortField]);
-            return options.desc ? -result : result;
-          });
-        }
+        const filteredItems = applyQueueFilters(response.items, options);
+        const sortedItems = sortQueueItems(filteredItems, options);
 
         const format = program.opts().output as OutputFormat;
 
-        // Format items for better CLI display (table format only)
-        if (format === 'table' && items.length > 0) {
-          const formattedItems = items.map((item: GetTeamQueueItems_ResultSet1) => ({
-            taskId: item.taskId,
-            status: formatStatus(item.status ?? item.healthStatus),
-            priority: item.priority ? formatPriority(item.priority) : '-',
-            age: item.ageInMinutes != null ? formatAge(item.ageInMinutes) : '-',
-            team: item.teamName ?? '-',
-            machine: item.machineName ?? '-',
-            bridge: item.bridgeName ?? '-',
-            retries: item.retryCount != null ? formatRetryCount(item.retryCount) : '-',
-            hasResponse: formatBoolean(item.hasResponse === true),
-            error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-',
-          }));
+        if (format === 'table' && sortedItems.length > 0) {
+          const formattedItems = sortedItems.map(formatQueueItemForTable);
           outputService.print(formattedItems, format);
         } else {
-          outputService.print(items, format);
+          outputService.print(sortedItems, format);
         }
       } catch (error) {
         handleError(error);

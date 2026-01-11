@@ -116,7 +116,7 @@ describe('ProtocolUrlService', () => {
         }
       );
 
-      expect(url).toContain('/desktop');
+      expect(url).toContain('/file-manager');
       expect(url).toContain('containerId=abc123');
     });
   });
@@ -144,8 +144,10 @@ describe('ProtocolUrlService', () => {
     let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
     let removeEventListenerSpy: ReturnType<typeof vi.spyOn>;
 
+    const mockWindowOpenNull = () => null;
+
     beforeEach(() => {
-      windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(mockWindowOpenNull);
       addEventListenerSpy = vi.spyOn(window, 'addEventListener');
       removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
       vi.useFakeTimers();
@@ -175,10 +177,9 @@ describe('ProtocolUrlService', () => {
     it('resolves with success when blur event fires', async () => {
       const promise = protocolUrlService.openUrl('rediacc://test');
 
-      // Simulate blur event
-      const blurHandler = addEventListenerSpy.mock.calls.find(
-        (call: [string, EventListener]) => call[0] === 'blur'
-      )?.[1] as EventListener;
+      // Simulate blur event - extract find predicate to avoid nested callback
+      const isBlurCall = (call: [string, EventListener]) => call[0] === 'blur';
+      const blurHandler = addEventListenerSpy.mock.calls.find(isBlurCall)?.[1] as EventListener;
 
       blurHandler(new Event('blur'));
 
@@ -196,9 +197,10 @@ describe('ProtocolUrlService', () => {
     });
 
     it('handles window.open exceptions', async () => {
-      windowOpenSpy.mockImplementation(() => {
+      const throwPopupBlocked = () => {
         throw new Error('Popup blocked');
-      });
+      };
+      windowOpenSpy.mockImplementation(throwPopupBlocked);
 
       const result = await protocolUrlService.openUrl('rediacc://test');
 
@@ -283,8 +285,13 @@ describe('ProtocolUrlService', () => {
       const instructions = protocolUrlService.getInstallInstructions();
 
       expect(instructions).toHaveLength(3);
-      expect(instructions.map((i) => i.platform)).toEqual(['Windows', 'macOS', 'Linux']);
-      expect(instructions.every((i) => i.instructions.length > 0)).toBe(true);
+
+      // Extract to variables to avoid nested callbacks
+      const platforms = instructions.map((i) => i.platform);
+      const allHaveInstructions = instructions.every((i) => i.instructions.length > 0);
+
+      expect(platforms).toEqual(['Windows', 'macOS', 'Linux']);
+      expect(allHaveInstructions).toBe(true);
     });
   });
 
@@ -298,10 +305,10 @@ describe('ProtocolUrlService', () => {
 
       expect(urls).toHaveProperty('navigate');
       expect(urls).toHaveProperty('terminal');
-      expect(urls).toHaveProperty('desktop');
+      expect(urls).toHaveProperty('file-manager');
       expect(urls).toHaveProperty('vscode');
       expect(urls.terminal).toContain('/terminal');
-      expect(urls.desktop).toContain('/desktop');
+      expect(urls['file-manager']).toContain('/file-manager');
       expect(urls.vscode).toContain('/vscode');
     });
   });

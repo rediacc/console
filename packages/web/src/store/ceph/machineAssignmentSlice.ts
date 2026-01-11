@@ -226,12 +226,17 @@ const machineAssignmentSlice = createSlice({
           targetType: state.currentOperation.targetType!,
           targetResource: state.currentOperation.targetResource!,
           machineCount: state.currentOperation.progress?.total ?? 0,
-          result: action.payload.result.success
-            ? 'success'
-            : action.payload.result.failedMachines.length > 0 &&
-                action.payload.result.successfulMachines.length > 0
-              ? 'partial'
-              : 'failed',
+          result: (() => {
+            if (action.payload.result.success) {
+              return 'success';
+            } else if (
+              action.payload.result.failedMachines.length > 0 &&
+              action.payload.result.successfulMachines.length > 0
+            ) {
+              return 'partial';
+            }
+            return 'failed';
+          })(),
           details: {
             successful: action.payload.result.successfulMachines.length,
             failed: action.payload.result.failedMachines.length,

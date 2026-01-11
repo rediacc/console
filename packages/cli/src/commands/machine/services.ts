@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import { parseGetTeamMachines } from '@rediacc/shared/api';
-import { getMachineServices, type MachineWithVaultStatus } from '@rediacc/shared/services/machine';
+import {
+  getMachineServices,
+  type MachineWithVaultStatus,
+  type ServiceInfo,
+} from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';
@@ -9,6 +13,46 @@ import { outputService } from '../../services/output.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
 import type { OutputFormat } from '../../types/index.js';
+
+function isServiceUnstable(service: ServiceInfo): boolean {
+  return (
+    service.active_state === 'failed' ||
+    service.restart_count > 3 ||
+    service.sub_state === 'auto-restart'
+  );
+}
+
+function displayUnstableServices(unstable: ServiceInfo[], format: OutputFormat): void {
+  outputService.error(t('commands.machine.services.unstableFound', { count: unstable.length }));
+  if (format === 'json') {
+    outputService.print(unstable, format);
+  } else {
+    for (const s of unstable) {
+      outputService.info(`  - ${s.service_name} (${s.active_state}, ${s.restart_count} restarts)`);
+    }
+  }
+  process.exitCode = 2;
+}
+
+function handleStabilityCheck(services: ServiceInfo[], format: OutputFormat): void {
+  const unstable = services.filter(isServiceUnstable);
+  if (unstable.length > 0) {
+    displayUnstableServices(unstable, format);
+  } else {
+    outputService.success(t('commands.machine.services.allStable'));
+  }
+}
+
+function formatServicesForTable(services: ServiceInfo[]) {
+  return services.map((s) => ({
+    name: s.service_name,
+    state: s.active_state,
+    subState: s.sub_state,
+    restarts: s.restart_count,
+    memory: s.memory_human,
+    repository: s.repository,
+  }));
+}
 
 export function registerServicesCommand(machine: Command, program: Command): void {
   machine
@@ -41,28 +85,7 @@ export function registerServicesCommand(machine: Command, program: Command): voi
         const format = program.opts().output as OutputFormat;
 
         if (options.stabilityCheck) {
-          // Stability check mode - check for failed/restarting services
-          const unstable = services.filter(
-            (s) =>
-              s.active_state === 'failed' || s.restart_count > 3 || s.sub_state === 'auto-restart'
-          );
-          if (unstable.length > 0) {
-            outputService.error(
-              t('commands.machine.services.unstableFound', { count: unstable.length })
-            );
-            if (format === 'json') {
-              outputService.print(unstable, format);
-            } else {
-              for (const s of unstable) {
-                outputService.info(
-                  `  - ${s.service_name} (${s.active_state}, ${s.restart_count} restarts)`
-                );
-              }
-            }
-            process.exitCode = 2;
-          } else {
-            outputService.success(t('commands.machine.services.allStable'));
-          }
+          handleStabilityCheck(services, format);
           return;
         }
 
@@ -71,16 +94,7 @@ export function registerServicesCommand(machine: Command, program: Command): voi
           return;
         }
 
-        // Format services for table output
-        const tableData = services.map((s) => ({
-          name: s.service_name,
-          state: s.active_state,
-          subState: s.sub_state,
-          restarts: s.restart_count,
-          memory: s.memory_human,
-          repository: s.repository,
-        }));
-
+        const tableData = formatServicesForTable(services);
         outputService.print(tableData, format);
       } catch (error) {
         handleError(error);

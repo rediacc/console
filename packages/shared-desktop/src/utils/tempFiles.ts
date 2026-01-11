@@ -1,7 +1,7 @@
-import { randomBytes } from 'crypto';
-import { existsSync } from 'fs';
-import { chmod, mkdtemp, rm, writeFile, mkdir, readFile } from 'fs/promises';
-import { join } from 'path';
+import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { chmod, mkdtemp, rm, writeFile, mkdir, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { getTempPath, getConfigPath, getPlatform } from './platform.js';
 
 /**
@@ -124,7 +124,7 @@ export async function createAutoCleanTempFile(
   const cleanup = () => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      (require('fs') as typeof import('fs')).unlinkSync(filePath);
+      (require('node:fs') as typeof import('fs')).unlinkSync(filePath);
     } catch {
       // Ignore
     }

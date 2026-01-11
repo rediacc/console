@@ -7,6 +7,17 @@ import {
 } from '../../utils';
 import type { Rule } from 'antd/es/form';
 
+// Helper predicates for rule validation (extracted to avoid nested callbacks)
+const hasPattern = (r: Rule): boolean => 'pattern' in r;
+const hasMinValue =
+  (value: number) =>
+  (r: Rule): boolean =>
+    'min' in r && (r as { min: number }).min === value;
+const hasMaxValue =
+  (value: number) =>
+  (r: Rule): boolean =>
+    'max' in r && (r as { max: number }).max === value;
+
 describe('VaultEditor utils', () => {
   describe('moveToExtraFields', () => {
     it('should move non-schema fields to extras', () => {
@@ -86,23 +97,23 @@ describe('VaultEditor utils', () => {
       const field = { type: 'string', pattern: '^[a-z]+$' };
       const rules = buildValidationRules(field, false, 'Test', mockT);
 
-      expect(rules.some((r: Rule) => 'pattern' in r)).toBe(true);
+      expect(rules.some(hasPattern)).toBe(true);
     });
 
     it('should add length rules', () => {
       const field = { type: 'string', minLength: 3, maxLength: 10 };
       const rules = buildValidationRules(field, false, 'Test', mockT);
 
-      expect(rules.some((r: Rule) => 'min' in r && (r as { min: number }).min === 3)).toBe(true);
-      expect(rules.some((r: Rule) => 'max' in r && (r as { max: number }).max === 10)).toBe(true);
+      expect(rules.some(hasMinValue(3))).toBe(true);
+      expect(rules.some(hasMaxValue(10))).toBe(true);
     });
 
     it('should add numeric range rules', () => {
       const field = { type: 'number', minimum: 0, maximum: 100 };
       const rules = buildValidationRules(field, false, 'Test', mockT);
 
-      expect(rules.some((r: Rule) => 'min' in r && (r as { min: number }).min === 0)).toBe(true);
-      expect(rules.some((r: Rule) => 'max' in r && (r as { max: number }).max === 100)).toBe(true);
+      expect(rules.some(hasMinValue(0))).toBe(true);
+      expect(rules.some(hasMaxValue(100))).toBe(true);
     });
   });
 });

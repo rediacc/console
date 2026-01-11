@@ -3,8 +3,8 @@
  * Ported from desktop/src/cli/core/vscode_shared.py
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { dirname, join } from 'path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import {
   buildRepositoryEnvironment,
   buildMachineEnvironment,
@@ -20,7 +20,7 @@ import type { SSHConfigEntry } from './types.js';
 function normalizePathForSSH(path: string): string {
   const platform = getPlatform();
   if (platform === 'windows') {
-    return path.replace(/\\/g, '/');
+    return path.replaceAll('\\', '/');
   }
   return path;
 }
@@ -45,7 +45,7 @@ export function getSSHConfigPath(): string {
  */
 export function generateConnectionName(team: string, machine: string, repository?: string): string {
   // Sanitize names for SSH config host
-  const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '-');
+  const sanitize = (s: string) => s.replaceAll(/[^a-zA-Z0-9_-]/g, '-');
 
   if (repository) {
     return `rediacc-${sanitize(team)}-${sanitize(machine)}-${sanitize(repository)}`;

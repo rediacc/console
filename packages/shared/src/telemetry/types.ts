@@ -9,7 +9,7 @@
 export interface TelemetryConfig {
   serviceName: string;
   serviceVersion: string;
-  environment: 'development' | 'production' | string;
+  environment: string;
   endpoint: string;
   enabledInDevelopment?: boolean;
   samplingRate?: number;

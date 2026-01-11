@@ -96,7 +96,7 @@ export const DEFAULT_BATCH_CONFIG: BatchConfig = {
  * Platform-agnostic batch processor
  */
 export class BatchProcessor<T> {
-  private config: BatchConfig;
+  private readonly config: BatchConfig;
 
   constructor(config: Partial<BatchConfig> = {}) {
     this.config = {

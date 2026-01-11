@@ -25,7 +25,7 @@ export function extractMostRecentProgress(output: string): number | null {
 
   if (msgProgressMatches.length > 0) {
     const lastMatch = msgProgressMatches[msgProgressMatches.length - 1];
-    lastPercentage = parseFloat(lastMatch[1]);
+    lastPercentage = Number.parseFloat(lastMatch[1]);
     lastIndex = lastMatch.index || -1;
   }
 
@@ -40,7 +40,7 @@ export function extractMostRecentProgress(output: string): number | null {
     const matchIndex = lastMatch.index || -1;
     // Use this percentage if it appears after the msg_progress percentage
     if (matchIndex > lastIndex) {
-      lastPercentage = parseFloat(lastMatch[1]);
+      lastPercentage = Number.parseFloat(lastMatch[1]);
       lastIndex = matchIndex;
     }
   }
@@ -54,7 +54,7 @@ export function extractMostRecentProgress(output: string): number | null {
     const lastMatch = renetMatches[renetMatches.length - 1];
     const matchIndex = lastMatch.index || -1;
     if (matchIndex > lastIndex) {
-      lastPercentage = parseFloat(lastMatch[1]);
+      lastPercentage = Number.parseFloat(lastMatch[1]);
       lastIndex = matchIndex;
     }
   }
@@ -63,6 +63,100 @@ export function extractMostRecentProgress(output: string): number | null {
 
   // Clamp to valid range (0-100)
   return Math.min(100, Math.max(0, lastPercentage));
+}
+
+/** Clean message by removing ANSI codes and emojis */
+function cleanProgressMessage(message: string): string {
+  return (
+    message
+      // eslint-disable-next-line no-control-regex
+      .replaceAll(/\x1b\[[0-9;]*m/g, '')
+      .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, '')
+      .trim()
+  );
+}
+
+/** Pattern for msg_progress format "message - N%" */
+const MSG_PROGRESS_LINE_PATTERN = /^(.+)\s+-\s+\d+(?:\.\d+)?%\s*$/;
+
+/** Pattern for renet bridge format "[operation] N% - message" */
+const RENET_PROGRESS_LINE_PATTERN = /^\[([^\]]+)\]\s+\d+(?:\.\d+)?%\s+-\s+(.+)$/;
+
+/** Pattern for rsync transfer line */
+const RSYNC_PATTERN = /([\d.]+[KMG]?)\s+(\d+)%\s+([\d.]+[KMG]?B\/s)\s+(\d+:\d+:\d+)/;
+
+/** Pattern for rclone transfer line */
+const RCLONE_PATTERN =
+  /Transferred:\s+([\d.]+[KMG]?)\s+\/\s+([\d.]+\s*[KMG]?Bytes?),\s+(\d+)%,\s+([\d.]+\s*[KMG]?Bytes?\/s)/i;
+
+/** Try to extract renet format message from line */
+function tryExtractRenetMessage(line: string): string | null {
+  const match = RENET_PROGRESS_LINE_PATTERN.exec(line);
+  if (!match?.[2]) {
+    return null;
+  }
+  const message = cleanProgressMessage(match[2]);
+  return message ? `[${match[1]}] ${message}` : null;
+}
+
+/** Try to extract msg_progress format message from line */
+function tryExtractMsgProgressMessage(line: string): string | null {
+  const match = MSG_PROGRESS_LINE_PATTERN.exec(line);
+  if (!match?.[1]) {
+    return null;
+  }
+  const message = cleanProgressMessage(match[1]);
+  return message || null;
+}
+
+/** Try to extract transfer tool (rsync/rclone) message from line */
+function tryExtractTransferMessage(line: string): string | null {
+  const rsyncMatch = RSYNC_PATTERN.exec(line);
+  if (rsyncMatch) {
+    return rsyncMatch[0];
+  }
+
+  const rcloneMatch = RCLONE_PATTERN.exec(line);
+  if (rcloneMatch) {
+    return rcloneMatch[0];
+  }
+
+  return null;
+}
+
+/** Search for progress message in lines */
+function findProgressMessageInLines(lines: string[]): { message: string; index: number } | null {
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const renetMessage = tryExtractRenetMessage(line);
+    if (renetMessage) {
+      return { message: renetMessage, index: i };
+    }
+
+    const msgProgressMessage = tryExtractMsgProgressMessage(line);
+    if (msgProgressMessage) {
+      return { message: msgProgressMessage, index: i };
+    }
+  }
+  return null;
+}
+
+/** Search for transfer tool message in lines after given index */
+function findTransferMessageInLines(lines: string[], afterIndex: number): string | null {
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    if (i > afterIndex) {
+      const transferMessage = tryExtractTransferMessage(line);
+      if (transferMessage) {
+        return transferMessage;
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -76,81 +170,14 @@ export function extractProgressMessage(output: string): string | null {
   if (!output) return null;
 
   const lines = output.split('\n');
-  let lastMessage: string | null = null;
-  let lastIndex = -1;
 
-  // Pattern 1: msg_progress format "message - N%"
-  const msgProgressLinePattern = /^(.+)\s+-\s+\d+(?:\.\d+)?%\s*$/;
+  const progressResult = findProgressMessageInLines(lines);
+  const lastIndex = progressResult?.index ?? -1;
 
-  // Pattern 1b: renet bridge format "[operation] N% - message"
-  const renetProgressLinePattern = /^\[([^\]]+)\]\s+\d+(?:\.\d+)?%\s+-\s+(.+)$/;
-
-  // Search from end to find the most recent progress message
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    // Try renet format first: "[operation] N% - message"
-    const renetMatch = line.match(renetProgressLinePattern);
-    if (renetMatch?.[2]) {
-      const message = renetMatch[2]
-        // eslint-disable-next-line no-control-regex
-        .replace(/\x1b\[[0-9;]*m/g, '')
-        .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
-        .trim();
-
-      if (message) {
-        lastMessage = `[${renetMatch[1]}] ${message}`;
-        lastIndex = i;
-        break;
-      }
-    }
-
-    // Try msg_progress format: "message - N%"
-    const match = line.match(msgProgressLinePattern);
-    if (match?.[1]) {
-      // Clean up the message - remove any ANSI color codes and trim
-      const message = match[1]
-        // eslint-disable-next-line no-control-regex
-        .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI color codes
-        .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Remove any emojis
-        .trim();
-
-      if (message) {
-        lastMessage = message;
-        lastIndex = i;
-        break;
-      }
-    }
+  const transferMessage = findTransferMessageInLines(lines, lastIndex);
+  if (transferMessage) {
+    return transferMessage;
   }
 
-  // Pattern 2: rsync transfer line with human-readable format
-  // Example: "      1.50G  18%  190.59MB/s    0:00:04"
-  const rsyncPattern = /([\d.]+[KMG]?)\s+(\d+)%\s+([\d.]+[KMG]?B\/s)\s+(\d+:\d+:\d+)/;
-
-  // Pattern 3: rclone transfer line
-  // Example: "Transferred: 486.181G / 926.373 GBytes, 52%, 13.589 MBytes/s, ETA 9h12m49s"
-  const rclonePattern =
-    /Transferred:\s+([\d.]+[KMG]?)\s+\/\s+([\d.]+\s*[KMG]?Bytes?),\s+(\d+)%,\s+([\d.]+\s*[KMG]?Bytes?\/s)/i;
-
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    // Try rsync format first - show the matched portion directly
-    const rsyncMatch = line.match(rsyncPattern);
-    if (rsyncMatch && i > lastIndex) {
-      // Return the actual matched rsync output line
-      return rsyncMatch[0];
-    }
-
-    // Try rclone format - show the matched portion directly
-    const rcloneMatch = line.match(rclonePattern);
-    if (rcloneMatch && i > lastIndex) {
-      // Return the actual matched rclone output line
-      return rcloneMatch[0];
-    }
-  }
-
-  return lastMessage;
+  return progressResult?.message ?? null;
 }

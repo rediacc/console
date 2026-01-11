@@ -4,9 +4,9 @@
  * Provides utilities for creating test contexts, managing SSH keys,
  * and cleaning up after tests.
  */
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 
 /**

@@ -395,23 +395,21 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
             isSubmitting={isSubmitting}
             isUpdatingVault={isUpdatingVault}
             functionCategories={modalState.data?.isFunction ? [modalState.type] : []}
-            hiddenParams={
-              modalState.data?.isFunction
-                ? modalState.type === 'cluster'
-                  ? ['cluster_name']
-                  : ['cluster_name', 'pool_name']
-                : []
-            }
-            defaultParams={
-              modalState.data?.isFunction
-                ? modalState.type === 'cluster'
-                  ? { cluster_name: modalState.data.clusterName as string }
-                  : {
-                      cluster_name: modalState.data.clusterName as string,
-                      pool_name: modalState.data.poolName as string,
-                    }
-                : undefined
-            }
+            hiddenParams={(() => {
+              if (!modalState.data?.isFunction) return [];
+              if (modalState.type === 'cluster') return ['cluster_name'];
+              return ['cluster_name', 'pool_name'];
+            })()}
+            defaultParams={(() => {
+              if (!modalState.data?.isFunction) return undefined;
+              if (modalState.type === 'cluster') {
+                return { cluster_name: modalState.data.clusterName as string };
+              }
+              return {
+                cluster_name: modalState.data.clusterName as string,
+                pool_name: modalState.data.poolName as string,
+              };
+            })()}
             preselectedFunction={modalState.data?.preselectedFunction as string | undefined}
           />
 

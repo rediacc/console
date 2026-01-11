@@ -6,7 +6,7 @@
 import { apiConnectionService } from '@/services/api';
 import { createFreshForkToken } from '@/services/auth';
 
-export type ProtocolAction = 'terminal' | 'desktop' | 'vscode';
+export type ProtocolAction = 'terminal' | 'file-manager' | 'vscode';
 
 interface ProtocolError {
   type: 'timeout' | 'exception' | 'not-installed' | 'permission-denied';
@@ -302,7 +302,7 @@ class ProtocolUrlService {
   ): Promise<string> {
     return await this.generateUrl({
       ...baseParams,
-      action: 'desktop',
+      action: 'file-manager',
       queryParams: {
         ...containerParams,
         ...windowParams,
@@ -541,7 +541,7 @@ class ProtocolUrlService {
   ): Promise<string> {
     return await this.generateUrl({
       ...baseParams,
-      action: 'desktop',
+      action: 'file-manager',
       queryParams: {
         action: 'sync',
         ...syncParams,
@@ -560,7 +560,7 @@ class ProtocolUrlService {
   ): Promise<string> {
     return await this.generateUrl({
       ...baseParams,
-      action: 'desktop',
+      action: 'file-manager',
       queryParams: {
         action: 'plugin',
         ...pluginParams,
@@ -579,7 +579,7 @@ class ProtocolUrlService {
   ): Promise<string> {
     return await this.generateUrl({
       ...baseParams,
-      action: 'desktop',
+      action: 'file-manager',
       queryParams: {
         action: 'browser',
         ...browserParams,
@@ -597,7 +597,7 @@ class ProtocolUrlService {
     return {
       navigate: await this.generateUrl(baseParams),
       terminal: await this.generateTerminalUrl(baseParams),
-      desktop: await this.generateDesktopUrl(baseParams),
+      'file-manager': await this.generateDesktopUrl(baseParams),
       vscode: await this.generateVSCodeUrl(baseParams),
     };
   }

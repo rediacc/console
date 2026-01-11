@@ -29,7 +29,7 @@ export const buildAuditColumns = ({
     if (existingConfig === undefined) {
       acc[action] = {
         icon: getActionIcon(action),
-        label: action.replace(/_/g, ' '),
+        label: action.replaceAll('_', ' '),
       };
     }
     return acc;
@@ -62,7 +62,7 @@ export const buildAuditColumns = ({
     sorter: (a, b) => (a.action ?? '').localeCompare(b.action ?? ''),
   });
   actionColumn.filters = [...new Set(auditLogs.map((log) => log.action ?? ''))].map((action) => ({
-    text: action.replace(/_/g, ' '),
+    text: action.replaceAll('_', ' '),
     value: action,
   }));
   actionColumn.onFilter = (value, record) => record.action === value;

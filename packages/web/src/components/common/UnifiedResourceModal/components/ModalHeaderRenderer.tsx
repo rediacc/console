@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, Space, Typography } from 'antd';
+import { Space, Typography } from 'antd';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { ResourceType } from '../index';
 
@@ -83,20 +83,65 @@ export const createFunctionSubtitle = (
       {['machine', 'repository', 'storage'].includes(resourceType) && resourceName && (
         <>
           <Typography.Text>
-            {t(
-              resourceType === 'machine'
-                ? 'machines:machine'
-                : resourceType === 'storage'
-                  ? 'resources:storage.storage'
-                  : 'repositories.repository'
-            )}
-            :
+            {(() => {
+              if (resourceType === 'machine') {
+                return t('machines:machine');
+              } else if (resourceType === 'storage') {
+                return t('resources:storage.storage');
+              }
+              return t('repositories.repository');
+            })()}:
           </Typography.Text>
           <Typography.Text strong>{resourceName}</Typography.Text>
         </>
       )}
     </Space>
   );
+};
+
+const resolveTeamFromFilter = (
+  uiMode: string,
+  teamFilter?: string | string[]
+): string | undefined => {
+  if (uiMode === 'simple') return 'Private Team';
+  if (Array.isArray(teamFilter)) return teamFilter[0];
+  return teamFilter;
+};
+
+const getRepositoryCreateTitle = (
+  createText: string,
+  creationContext: string | undefined,
+  uiMode: string,
+  existingData?: ExistingResourceData,
+  teamFilter?: string | string[]
+): string | null => {
+  if (creationContext === 'credentials-only') {
+    const teamNameValue = existingData?.teamName;
+    const fallbackTeam = resolveTeamFromFilter(uiMode, teamFilter);
+    const team = (typeof teamNameValue === 'string' ? teamNameValue : null) ?? fallbackTeam;
+    return `Create Repository (Credentials) in ${team}`;
+  }
+
+  if (existingData?.machineName) {
+    const machineNameValue = existingData.machineName;
+    return `${createText} for ${typeof machineNameValue === 'string' ? machineNameValue : ''}`;
+  }
+
+  return null;
+};
+
+const resolveTeamForTitle = (uiMode: string, teamFilter?: string | string[]): string => {
+  if (uiMode !== 'expert' || !teamFilter) return 'Private Team';
+  return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
+};
+
+const getPreselectedTeamTitle = (
+  createText: string,
+  uiMode: string,
+  teamFilter?: string | string[]
+): string => {
+  const team = resolveTeamForTitle(uiMode, teamFilter);
+  return `${createText} in ${team}`;
 };
 
 const getModalTitle = ({
@@ -109,102 +154,43 @@ const getModalTitle = ({
   creationContext,
   t,
 }: Omit<ModalHeaderRendererProps, 'getFormValue' | 'isExpertMode'>): string => {
-  if (mode === 'create') {
-    const createKey = RESOURCE_CONFIG[resourceType].createKey;
-    const createText = t(createKey);
-
-    // Special case for repository creation
-    if (resourceType === 'repository') {
-      if (creationContext === 'credentials-only') {
-        // For credential-only mode, show "Create Repository (Credentials) in [team]"
-        const teamNameValue = existingData?.teamName;
-        const team =
-          (typeof teamNameValue === 'string' ? teamNameValue : null) ??
-          (uiMode === 'simple'
-            ? 'Private Team'
-            : Array.isArray(teamFilter)
-              ? teamFilter[0]
-              : teamFilter);
-        return `Create Repository (Credentials) in ${team}`;
-      } else if (existingData?.machineName) {
-        // For repository creation from machine
-        const machineNameValue = existingData.machineName;
-        return `${createText} for ${typeof machineNameValue === 'string' ? machineNameValue : ''}`;
-      }
-    }
-
-    if (resourceType === 'machine') {
-      return createText;
-    }
-
-    if (isTeamPreselected) {
-      const team =
-        uiMode === 'expert' && teamFilter
-          ? Array.isArray(teamFilter)
-            ? teamFilter[0]
-            : teamFilter
-          : 'Private Team';
-      return `${createText} in ${team}`;
-    }
-    return createText;
-  }
-  return `${t('resources:general.edit')} ${t(`resources:${getResourceTranslationKey(resourceType)}.${resourceType}Name`)}`;
-};
-
-const getModalSubtitle = ({
-  resourceType,
-  mode,
-  isExpertMode,
-  existingData,
-  teamFilter,
-  getFormValue,
-}: Pick<
-  ModalHeaderRendererProps,
-  'resourceType' | 'mode' | 'isExpertMode' | 'existingData' | 'teamFilter' | 'getFormValue'
->): string => {
-  if (!(mode === 'create' && resourceType === 'machine')) return '';
-
-  const formTeam = getFormValue('teamName');
-  if (formTeam) return formTeam;
-
-  const teamNameValue = existingData?.teamName;
-  if (teamNameValue && typeof teamNameValue === 'string') return teamNameValue;
-
-  // Simple mode always shows "Private Team"
-  if (!isExpertMode) return 'Private Team';
-
-  // Expert mode: show team filter if available
-  if (teamFilter) {
-    return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter;
+  if (mode !== 'create') {
+    return `${t('resources:general.edit')} ${t(`resources:${getResourceTranslationKey(resourceType)}.${resourceType}Name`)}`;
   }
 
-  return '';
+  const createKey = RESOURCE_CONFIG[resourceType].createKey;
+  const createText = t(createKey);
+
+  if (resourceType === 'repository') {
+    const repoTitle = getRepositoryCreateTitle(
+      createText,
+      creationContext,
+      uiMode,
+      existingData,
+      teamFilter
+    );
+    if (repoTitle) return repoTitle;
+  }
+
+  if (resourceType === 'machine') return createText;
+
+  if (isTeamPreselected) {
+    return getPreselectedTeamTitle(createText, uiMode, teamFilter);
+  }
+
+  return createText;
 };
 
 export const getFunctionTitle = (resourceType: ResourceType, t: TypedTFunction): string => {
-  if (resourceType === 'machine') return t('machines:systemFunctions');
-  if (resourceType === 'storage') return t('resources:storage.storageFunctions');
+  if (resourceType === 'machine') {
+    return t('machines:systemFunctions');
+  } else if (resourceType === 'storage') {
+    return t('resources:storage.storageFunctions');
+  }
   return t(`${getResourceTranslationKey(resourceType)}.${resourceType}Functions`);
 };
 
 export const ModalTitleRenderer: React.FC<ModalHeaderRendererProps> = (props) => {
   const baseTitle = getModalTitle(props);
-
-  if (props.mode === 'create' && props.resourceType === 'machine') {
-    const subtitle = getModalSubtitle(props);
-    return (
-      <Flex vertical className="gap-sm">
-        <Typography.Text strong className="text-base">
-          {baseTitle}
-        </Typography.Text>
-        {subtitle && (
-          <Typography.Text className="text-xs">
-            {props.t('general.team')}: {subtitle}
-          </Typography.Text>
-        )}
-      </Flex>
-    );
-  }
-
   return <>{baseTitle}</>;
 };

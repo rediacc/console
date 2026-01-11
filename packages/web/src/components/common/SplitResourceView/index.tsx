@@ -135,7 +135,6 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             onCancel={handlePanelClose}
             footer={null}
             width="100%"
-            styles={{ body: { padding: 0 } }}
             data-testid="split-resource-view-modal"
             centered
           >

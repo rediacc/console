@@ -9,7 +9,26 @@ export interface VSCodeInfo {
   path: string;
   version?: string;
   isInsiders: boolean;
+  /** Whether this VS Code installation is inside WSL */
+  isWSL?: boolean;
+  /** WSL distribution name (only set if isWSL is true) */
+  wslDistro?: string;
 }
+
+/**
+ * Result of scanning for all VS Code installations
+ */
+export interface VSCodeInstallations {
+  /** VS Code installed on Windows (native) */
+  windows: VSCodeInfo | null;
+  /** VS Code installed inside WSL */
+  wsl: VSCodeInfo | null;
+}
+
+/**
+ * User preference for which VS Code to use when both are available
+ */
+export type VSCodePreference = 'windows' | 'wsl' | null;
 
 /**
  * SSH config entry for VS Code

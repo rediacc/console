@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Collapse, Empty, Flex, Segmented, Space, Tag, Tooltip, Typography } from 'antd';
+import { Collapse, Empty, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
@@ -13,35 +13,270 @@ import { SizedModal } from '@/components/common/SizedModal';
 import { normalizeToString } from '@/platform';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import {
-  DashboardOutlined,
-  FileTextOutlined,
-  HistoryOutlined,
-  RightOutlined,
-  TeamOutlined,
-  WarningOutlined,
-} from '@/utils/optimizedIcons';
+import { HistoryOutlined, RightOutlined } from '@/utils/optimizedIcons';
+import type { QueueTrace } from '@rediacc/shared/types';
 import {
   ActionButtons,
   ConsoleOutput,
   FailureReasonAlert,
-  MachineDetails,
   OldPendingWarning,
-  PerformanceMetrics,
-  QueueItemDetails,
   QueueItemHeader,
-  RelatedQueueItems,
-  ResponseVaultContent,
   StaleTaskWarning,
-  TimelineView,
 } from './components';
 import { useTraceState } from './hooks/useTraceState';
-import { getSimplifiedStatus, getTaskStaleness, isTaskStale } from './utils';
+import { getSimplifiedStatus, getTaskStaleness } from './utils';
+import { buildDetailedCollapseItems } from './utils/collapseItemsBuilder';
 import { isTaskInTerminalState } from './utils/taskStateUtils';
 import type { ConsoleViewMode, QueueItemTraceModalProps } from './types';
-import type { CollapseProps } from 'antd';
+import type { TFunction } from 'i18next';
 
 dayjs.extend(relativeTime);
+
+interface ModalContentProps {
+  isTraceLoading: boolean;
+  traceData: QueueTrace | undefined;
+  taskStaleness: 'none' | 'early' | 'stale' | 'critical';
+  isCancelling: boolean;
+  handleCancelQueueItem: () => void;
+  simpleMode: boolean;
+  progressMessage: string | null;
+  consoleProgress: number | null;
+  isSimpleConsoleExpanded: boolean;
+  setIsSimpleConsoleExpanded: (expanded: boolean) => void;
+  consoleViewMode: ConsoleViewMode;
+  setConsoleViewMode: (mode: ConsoleViewMode) => void;
+  accumulatedOutput: string;
+  consoleOutputRef: React.RefObject<HTMLDivElement | null>;
+  activeKeys: string[];
+  setActiveKeys: (keys: string[]) => void;
+  simplifiedStatus: {
+    status: string;
+    color: 'neutral' | 'success' | 'error' | 'warning' | 'primary' | 'default';
+    icon: React.ReactNode;
+  };
+  totalDurationSeconds: number;
+  processingDurationSeconds: number;
+  isDetailedConsoleExpanded: boolean;
+  setIsDetailedConsoleExpanded: (expanded: boolean) => void;
+  t: TFunction;
+}
+
+const LoadingState: React.FC = () => (
+  <Flex className="queue-trace-loading">
+    <LoadingWrapper loading centered minHeight={160}>
+      <Flex />
+    </LoadingWrapper>
+  </Flex>
+);
+
+const SimpleModeContent: React.FC<{
+  traceData: QueueTrace;
+  progressMessage: string | null;
+  consoleProgress: number | null;
+  isSimpleConsoleExpanded: boolean;
+  setIsSimpleConsoleExpanded: (expanded: boolean) => void;
+  consoleViewMode: ConsoleViewMode;
+  setConsoleViewMode: (mode: ConsoleViewMode) => void;
+  accumulatedOutput: string;
+  consoleOutputRef: React.RefObject<HTMLDivElement | null>;
+  t: TFunction;
+}> = ({
+  traceData,
+  progressMessage,
+  consoleProgress,
+  isSimpleConsoleExpanded,
+  setIsSimpleConsoleExpanded,
+  consoleViewMode,
+  setConsoleViewMode,
+  accumulatedOutput,
+  consoleOutputRef,
+  t,
+}) => {
+  if (!traceData.queueDetails) return null;
+
+  return (
+    <>
+      <QueueItemHeader
+        queueDetails={traceData.queueDetails}
+        traceLogs={traceData.traceLogs}
+        progressMessage={progressMessage}
+        consoleProgress={consoleProgress}
+      />
+      <Flex vertical className="mt-4">
+        <Collapse
+          data-testid="queue-trace-simple-console-collapse"
+          activeKey={isSimpleConsoleExpanded ? ['console'] : []}
+          onChange={(keys) => setIsSimpleConsoleExpanded(keys.includes('console'))}
+          expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
+          items={[
+            {
+              key: 'console',
+              label: (
+                <Space>
+                  <Typography.Text>{t('trace.responseConsole')}</Typography.Text>
+                  {traceData.queueDetails.status === 'PROCESSING' && (
+                    <Tag>{t('trace.liveOutput')}</Tag>
+                  )}
+                </Space>
+              ),
+              extra: (
+                <Segmented
+                  size="small"
+                  value={consoleViewMode}
+                  onChange={(value) => setConsoleViewMode(value as ConsoleViewMode)}
+                  options={[
+                    { label: t('trace.structuredLog.viewStructured'), value: 'structured' },
+                    { label: t('trace.structuredLog.viewRaw'), value: 'raw' },
+                  ]}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid="console-output-view-toggle"
+                />
+              ),
+              children: (
+                <ConsoleOutput
+                  content={accumulatedOutput}
+                  consoleOutputRef={consoleOutputRef}
+                  isEmpty={!traceData.responseVaultContent?.hasContent}
+                  viewMode={consoleViewMode}
+                />
+              ),
+            },
+          ]}
+        />
+      </Flex>
+    </>
+  );
+};
+
+const DetailedModeContent: React.FC<{
+  traceData: QueueTrace;
+  activeKeys: string[];
+  setActiveKeys: (keys: string[]) => void;
+  simplifiedStatus: { status: string; color: string; icon: React.ReactNode };
+  totalDurationSeconds: number;
+  processingDurationSeconds: number;
+  isDetailedConsoleExpanded: boolean;
+  setIsDetailedConsoleExpanded: (expanded: boolean) => void;
+  accumulatedOutput: string;
+  consoleOutputRef: React.RefObject<HTMLDivElement | null>;
+  consoleViewMode: ConsoleViewMode;
+  setConsoleViewMode: (mode: ConsoleViewMode) => void;
+  t: TFunction;
+}> = ({
+  traceData,
+  activeKeys,
+  setActiveKeys,
+  simplifiedStatus,
+  totalDurationSeconds,
+  processingDurationSeconds,
+  isDetailedConsoleExpanded,
+  setIsDetailedConsoleExpanded,
+  accumulatedOutput,
+  consoleOutputRef,
+  consoleViewMode,
+  setConsoleViewMode,
+  t,
+}) => (
+  <Flex vertical className="mt-4">
+    <Collapse
+      data-testid="queue-trace-collapse"
+      className="queue-trace-collapse"
+      activeKey={activeKeys}
+      onChange={setActiveKeys}
+      expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
+      items={buildDetailedCollapseItems({
+        traceData,
+        simplifiedStatus: simplifiedStatus as {
+          status: string;
+          color: 'neutral' | 'success' | 'error' | 'warning' | 'primary';
+          icon: React.ReactNode;
+        },
+        totalDurationSeconds,
+        processingDurationSeconds,
+        isDetailedConsoleExpanded,
+        setIsDetailedConsoleExpanded,
+        accumulatedOutput,
+        consoleOutputRef,
+        consoleViewMode,
+        setConsoleViewMode,
+        t,
+      })}
+    />
+  </Flex>
+);
+
+const ModalContent: React.FC<ModalContentProps> = ({
+  isTraceLoading,
+  traceData,
+  taskStaleness,
+  isCancelling,
+  handleCancelQueueItem,
+  simpleMode,
+  progressMessage,
+  consoleProgress,
+  isSimpleConsoleExpanded,
+  setIsSimpleConsoleExpanded,
+  consoleViewMode,
+  setConsoleViewMode,
+  accumulatedOutput,
+  consoleOutputRef,
+  activeKeys,
+  setActiveKeys,
+  simplifiedStatus,
+  totalDurationSeconds,
+  processingDurationSeconds,
+  isDetailedConsoleExpanded,
+  setIsDetailedConsoleExpanded,
+  t,
+}) => {
+  if (isTraceLoading) return <LoadingState />;
+
+  if (!traceData) return <Empty description={t('trace.noTraceData')} />;
+
+  return (
+    <Flex vertical>
+      <StaleTaskWarning
+        taskStaleness={taskStaleness}
+        queueDetails={traceData.queueDetails}
+        isCancelling={isCancelling}
+        onCancel={handleCancelQueueItem}
+      />
+      <OldPendingWarning queueDetails={traceData.queueDetails} />
+      <FailureReasonAlert queueDetails={traceData.queueDetails} />
+
+      {simpleMode ? (
+        <SimpleModeContent
+          traceData={traceData}
+          progressMessage={progressMessage}
+          consoleProgress={consoleProgress}
+          isSimpleConsoleExpanded={isSimpleConsoleExpanded}
+          setIsSimpleConsoleExpanded={setIsSimpleConsoleExpanded}
+          consoleViewMode={consoleViewMode}
+          setConsoleViewMode={setConsoleViewMode}
+          accumulatedOutput={accumulatedOutput}
+          consoleOutputRef={consoleOutputRef}
+          t={t}
+        />
+      ) : (
+        <DetailedModeContent
+          traceData={traceData}
+          activeKeys={activeKeys}
+          setActiveKeys={setActiveKeys}
+          simplifiedStatus={simplifiedStatus}
+          totalDurationSeconds={totalDurationSeconds}
+          processingDurationSeconds={processingDurationSeconds}
+          isDetailedConsoleExpanded={isDetailedConsoleExpanded}
+          setIsDetailedConsoleExpanded={setIsDetailedConsoleExpanded}
+          accumulatedOutput={accumulatedOutput}
+          consoleOutputRef={consoleOutputRef}
+          consoleViewMode={consoleViewMode}
+          setConsoleViewMode={setConsoleViewMode}
+          t={t}
+        />
+      )}
+    </Flex>
+  );
+};
 
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
   taskId,
@@ -167,224 +402,30 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({
         />
       }
     >
-      {isTraceLoading ? (
-        <Flex className="queue-trace-loading">
-          <LoadingWrapper loading centered minHeight={160}>
-            <Flex />
-          </LoadingWrapper>
-        </Flex>
-      ) : traceData ? (
-        <Flex vertical>
-          <StaleTaskWarning
-            taskStaleness={taskStaleness}
-            queueDetails={traceData.queueDetails}
-            isCancelling={isCancelling}
-            onCancel={handleCancelQueueItem}
-          />
-
-          <OldPendingWarning queueDetails={traceData.queueDetails} />
-
-          <FailureReasonAlert queueDetails={traceData.queueDetails} />
-
-          {simpleMode && traceData.queueDetails && (
-            <>
-              <QueueItemHeader
-                queueDetails={traceData.queueDetails}
-                traceLogs={traceData.traceLogs}
-                progressMessage={progressMessage}
-                consoleProgress={consoleProgress}
-              />
-
-              <Flex vertical className="mt-4">
-                <Collapse
-                  data-testid="queue-trace-simple-console-collapse"
-                  activeKey={isSimpleConsoleExpanded ? ['console'] : []}
-                  onChange={(keys) => setIsSimpleConsoleExpanded(keys.includes('console'))}
-                  expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
-                  items={[
-                    {
-                      key: 'console',
-                      label: (
-                        <Space>
-                          <Typography.Text>{t('trace.responseConsole')}</Typography.Text>
-                          {traceData.queueDetails.status === 'PROCESSING' && (
-                            <Tag>{t('trace.liveOutput')}</Tag>
-                          )}
-                        </Space>
-                      ),
-                      extra: (
-                        <Segmented
-                          size="small"
-                          value={consoleViewMode}
-                          onChange={(value) => setConsoleViewMode(value as ConsoleViewMode)}
-                          options={[
-                            { label: t('trace.structuredLog.viewStructured'), value: 'structured' },
-                            { label: t('trace.structuredLog.viewRaw'), value: 'raw' },
-                          ]}
-                          onClick={(e) => e.stopPropagation()}
-                          data-testid="console-output-view-toggle"
-                        />
-                      ),
-                      children: (
-                        <ConsoleOutput
-                          content={accumulatedOutput}
-                          consoleOutputRef={consoleOutputRef}
-                          isEmpty={!traceData.responseVaultContent?.hasContent}
-                          viewMode={consoleViewMode}
-                        />
-                      ),
-                    },
-                  ]}
-                />
-              </Flex>
-            </>
-          )}
-
-          {!simpleMode && (
-            <Flex vertical className="mt-4">
-              <Collapse
-                data-testid="queue-trace-collapse"
-                className="queue-trace-collapse"
-                activeKey={activeKeys}
-                onChange={setActiveKeys}
-                expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
-                items={
-                  [
-                    traceData.queueDetails
-                      ? {
-                          key: 'overview',
-                          label: (
-                            <Space>
-                              <DashboardOutlined />
-                              <Typography.Text>{t('trace.taskOverview')}</Typography.Text>
-                              <Tag>{simplifiedStatus.status}</Tag>
-                              {isTaskStale(traceData.queueDetails) && (
-                                <Tag icon={<WarningOutlined />}>{t('trace.stale')}</Tag>
-                              )}
-                            </Space>
-                          ),
-                          extra:
-                            traceData.queueDetails.canBeCancelled &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'COMPLETED' &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'CANCELLED' &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'CANCELLING' &&
-                            normalizeToString(traceData.queueDetails, 'status', 'Status') !==
-                              'FAILED' ? (
-                              <Tooltip title={t('common:tooltips.taskCancellable')}>
-                                <Badge status="processing" text={t('trace.cancellable')} />
-                              </Tooltip>
-                            ) : undefined,
-                          children: (
-                            <MachineDetails
-                              queueDetails={traceData.queueDetails}
-                              totalDurationSeconds={totalDurationSeconds}
-                              processingDurationSeconds={processingDurationSeconds}
-                              isDetailedConsoleExpanded={isDetailedConsoleExpanded}
-                              setIsDetailedConsoleExpanded={setIsDetailedConsoleExpanded}
-                              accumulatedOutput={accumulatedOutput}
-                              consoleOutputRef={consoleOutputRef}
-                              hasContent={!!traceData.responseVaultContent?.hasContent}
-                              consoleViewMode={consoleViewMode}
-                              setConsoleViewMode={setConsoleViewMode}
-                            />
-                          ),
-                        }
-                      : null,
-
-                    traceData.queueDetails
-                      ? {
-                          key: 'details',
-                          label: (
-                            <Space>
-                              <FileTextOutlined />
-                              <Typography.Text>{t('trace.queueItemDetails')}</Typography.Text>
-                              <Typography.Text>{t('trace.resultSet1')}</Typography.Text>
-                            </Space>
-                          ),
-                          children: (
-                            <QueueItemDetails
-                              queueDetails={traceData.queueDetails}
-                              totalDurationSeconds={totalDurationSeconds}
-                              processingDurationSeconds={processingDurationSeconds}
-                            />
-                          ),
-                        }
-                      : null,
-
-                    traceData.traceLogs.length > 0
-                      ? {
-                          key: 'timeline',
-                          label: (
-                            <Space>
-                              <HistoryOutlined />
-                              <Typography.Text>{t('trace.processingTimeline')}</Typography.Text>
-                              <Typography.Text>{t('trace.resultSet4')}</Typography.Text>
-                            </Space>
-                          ),
-                          children: <TimelineView traceLogs={traceData.traceLogs} />,
-                        }
-                      : null,
-
-                    traceData.vaultContent || traceData.responseVaultContent
-                      ? {
-                          key: 'vault',
-                          label: (
-                            <Space>
-                              <FileTextOutlined />
-                              <Typography.Text>{t('trace.vaultContent')}</Typography.Text>
-                              <Typography.Text>{t('trace.resultSets2And3')}</Typography.Text>
-                            </Space>
-                          ),
-                          children: (
-                            <ResponseVaultContent
-                              vaultContent={traceData.vaultContent}
-                              responseVaultContent={traceData.responseVaultContent}
-                            />
-                          ),
-                        }
-                      : null,
-
-                    traceData.queuePosition.length > 0
-                      ? {
-                          key: 'related',
-                          label: (
-                            <Space>
-                              <TeamOutlined />
-                              <Typography.Text>{t('trace.relatedQueueItems')}</Typography.Text>
-                              <Typography.Text>{t('trace.resultSet5')}</Typography.Text>
-                            </Space>
-                          ),
-                          children: <RelatedQueueItems queuePosition={traceData.queuePosition} />,
-                        }
-                      : null,
-
-                    traceData.machineStats
-                      ? {
-                          key: 'performance',
-                          label: (
-                            <Space>
-                              <DashboardOutlined />
-                              <Typography.Text>
-                                {t('trace.performanceMetricsTitle')}
-                              </Typography.Text>
-                              <Typography.Text>{t('trace.resultSet6')}</Typography.Text>
-                            </Space>
-                          ),
-                          children: <PerformanceMetrics machineStats={traceData.machineStats} />,
-                        }
-                      : null,
-                  ].filter(Boolean) as CollapseProps['items']
-                }
-              />
-            </Flex>
-          )}
-        </Flex>
-      ) : (
-        <Empty description={t('trace.noTraceData')} />
-      )}
+      <ModalContent
+        isTraceLoading={isTraceLoading}
+        traceData={traceData}
+        taskStaleness={taskStaleness}
+        isCancelling={isCancelling}
+        handleCancelQueueItem={handleCancelQueueItem}
+        simpleMode={simpleMode}
+        progressMessage={progressMessage}
+        consoleProgress={consoleProgress}
+        isSimpleConsoleExpanded={isSimpleConsoleExpanded}
+        setIsSimpleConsoleExpanded={setIsSimpleConsoleExpanded}
+        consoleViewMode={consoleViewMode}
+        setConsoleViewMode={setConsoleViewMode}
+        accumulatedOutput={accumulatedOutput}
+        consoleOutputRef={consoleOutputRef}
+        activeKeys={activeKeys}
+        setActiveKeys={setActiveKeys}
+        simplifiedStatus={simplifiedStatus}
+        totalDurationSeconds={totalDurationSeconds}
+        processingDurationSeconds={processingDurationSeconds}
+        isDetailedConsoleExpanded={isDetailedConsoleExpanded}
+        setIsDetailedConsoleExpanded={setIsDetailedConsoleExpanded}
+        t={t}
+      />
     </SizedModal>
   );
 };

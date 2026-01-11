@@ -7,6 +7,43 @@ export interface FieldMovements {
   movedFromExtra: string[];
 }
 
+// Helper: Check if a field is defined in entity schema
+const isSchemaField = (
+  key: string,
+  entityDef: { fields?: Record<string, FieldDefinition> }
+): boolean => Boolean(entityDef.fields && key in entityDef.fields);
+
+// Helper: Process a schema field
+const processSchemaField = (
+  key: string,
+  val: unknown,
+  entityDef: { fields?: Record<string, FieldDefinition> },
+  extraFields: VaultFormValues,
+  formData: VaultFormValues,
+  movements: FieldMovements
+): void => {
+  const field = entityDef.fields![key];
+  formData[key] = field.format === 'base64' && typeof val === 'string' ? decodeBase64(val) : val;
+
+  if (extraFields[key] !== undefined) {
+    movements.movedFromExtra.push(key);
+  }
+};
+
+// Helper: Process an extra field
+const processExtraField = (
+  key: string,
+  val: unknown,
+  extraFields: VaultFormValues,
+  extras: VaultFormValues,
+  movements: FieldMovements
+): void => {
+  extras[key] = val;
+  if (!extraFields[key] && val !== undefined) {
+    movements.movedToExtra.push(key);
+  }
+};
+
 export const processFieldMovements = (
   parsed: Record<string, unknown>,
   entityDef: { fields?: Record<string, FieldDefinition> },
@@ -25,19 +62,10 @@ export const processFieldMovements = (
       return;
     }
 
-    if (entityDef.fields && key in entityDef.fields) {
-      const field = entityDef.fields[key];
-      formData[key] =
-        field.format === 'base64' && typeof val === 'string' ? decodeBase64(val) : val;
-
-      if (extraFields[key] !== undefined) {
-        movements.movedFromExtra.push(key);
-      }
+    if (isSchemaField(key, entityDef)) {
+      processSchemaField(key, val, entityDef, extraFields, formData, movements);
     } else {
-      extras[key] = val;
-      if (!extraFields[key] && val !== undefined) {
-        movements.movedToExtra.push(key);
-      }
+      processExtraField(key, val, extraFields, extras, movements);
     }
   });
 

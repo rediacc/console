@@ -1,6 +1,6 @@
 export function isBase64(value: string): boolean {
   const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
-  const valueWithoutWhitespace = value.replace(/\s/g, '');
+  const valueWithoutWhitespace = value.replaceAll(/\s/g, '');
   return base64Pattern.test(valueWithoutWhitespace) && valueWithoutWhitespace.length % 4 === 0;
 }
 
@@ -88,8 +88,8 @@ export function isValidHost(host: string): boolean {
  */
 export function isValidPort(port: number | string | undefined | null): boolean {
   if (port === undefined || port === null) return true; // Port is optional
-  const portNum = typeof port === 'string' ? parseInt(port, 10) : port;
-  return !isNaN(portNum) && Number.isInteger(portNum) && portNum >= 1 && portNum <= 65535;
+  const portNum = typeof port === 'string' ? Number.parseInt(port, 10) : port;
+  return !Number.isNaN(portNum) && Number.isInteger(portNum) && portNum >= 1 && portNum <= 65535;
 }
 
 /**
@@ -189,8 +189,8 @@ export function parseSize(
     const numStr = trimmed.slice(0, -1);
     const suffix = lastChar.toUpperCase();
 
-    const num = parseFloat(numStr);
-    if (isNaN(num)) {
+    const num = Number.parseFloat(numStr);
+    if (Number.isNaN(num)) {
       return {
         success: false,
         error: `invalid size format "${size}": numeric part is not a valid number`,
@@ -206,8 +206,8 @@ export function parseSize(
   }
 
   // No suffix - parse as bytes
-  const bytes = parseInt(trimmed, 10);
-  if (isNaN(bytes)) {
+  const bytes = Number.parseInt(trimmed, 10);
+  if (Number.isNaN(bytes)) {
     return { success: false, error: `invalid size format "${size}": not a valid number` };
   }
 
@@ -307,7 +307,7 @@ export const NETWORK_ID_INCREMENT = 64;
  * validateNetworkId(2817)  // { valid: false, error: "must be 2816 + (n * 64)" }
  */
 export function validateNetworkId(networkId: number): { valid: boolean; error?: string } {
-  if (typeof networkId !== 'number' || isNaN(networkId)) {
+  if (typeof networkId !== 'number' || Number.isNaN(networkId)) {
     return { valid: false, error: 'network ID must be a number' };
   }
 

@@ -47,9 +47,9 @@ export function parseGetRequestAuthenticationStatus(
   const row =
     extractFirstByIndex<AuthStatusRow>(response, 1) ??
     extractFirstByIndex<AuthStatusRow>(response, 0) ??
-    (typeof (response as AuthStatusRow).isTFAEnabled !== 'undefined'
-      ? (response as AuthStatusRow)
-      : null);
+    (typeof (response as AuthStatusRow).isTFAEnabled === 'undefined'
+      ? null
+      : (response as AuthStatusRow));
 
   return normalizeAuthStatus(row);
 }
@@ -116,15 +116,18 @@ export function parseForkAuthenticationRequest(response: ApiResponse): ForkSessi
     | undefined;
 
   const parentRequestId = row?.parentRequestId;
+  let resolvedParentRequestId: number | null;
+  if (typeof parentRequestId === 'number') {
+    resolvedParentRequestId = parentRequestId;
+  } else if (typeof parentRequestId === 'string') {
+    resolvedParentRequestId = Number(parentRequestId) || null;
+  } else {
+    resolvedParentRequestId = null;
+  }
   return {
     requestToken: typeof row?.requestToken === 'string' ? row.requestToken : null,
     nextRequestToken: typeof row?.nextRequestToken === 'string' ? row.nextRequestToken : null,
-    parentRequestId:
-      typeof parentRequestId === 'number'
-        ? parentRequestId
-        : typeof parentRequestId === 'string'
-          ? Number(parentRequestId) || null
-          : null,
+    parentRequestId: resolvedParentRequestId,
   };
 }
 

@@ -3,6 +3,7 @@ import { parseGetTeamMachines } from '@rediacc/shared/api';
 import {
   getMachineContainers,
   type MachineWithVaultStatus,
+  type ContainerInfo,
 } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
@@ -12,6 +13,39 @@ import { outputService } from '../../services/output.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
 import type { OutputFormat } from '../../types/index.js';
+
+function displayUnhealthyContainers(unhealthy: ContainerInfo[], format: OutputFormat): void {
+  outputService.error(t('commands.machine.containers.unhealthyFound', { count: unhealthy.length }));
+  if (format === 'json') {
+    outputService.print(unhealthy, format);
+  } else {
+    for (const c of unhealthy) {
+      outputService.info(`  - ${c.name} (${c.repository})`);
+    }
+  }
+  process.exitCode = 2;
+}
+
+function handleHealthCheck(containers: ContainerInfo[], format: OutputFormat): void {
+  const unhealthy = containers.filter((c) => c.health?.status === 'unhealthy');
+  if (unhealthy.length > 0) {
+    displayUnhealthyContainers(unhealthy, format);
+  } else {
+    outputService.success(t('commands.machine.containers.allHealthy'));
+  }
+}
+
+function formatContainersForTable(containers: ContainerInfo[]) {
+  return containers.map((c) => ({
+    name: c.name,
+    status: c.status,
+    state: c.state,
+    health: c.health?.status ?? 'none',
+    cpu: c.cpu_percent ?? '-',
+    memory: c.memory_usage ?? '-',
+    repository: c.repository,
+  }));
+}
 
 export function registerContainersCommand(machine: Command, program: Command): void {
   machine
@@ -44,23 +78,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
         const format = program.opts().output as OutputFormat;
 
         if (options.healthCheck) {
-          // Health check mode - check for unhealthy containers
-          const unhealthy = containers.filter((c) => c.health?.status === 'unhealthy');
-          if (unhealthy.length > 0) {
-            outputService.error(
-              t('commands.machine.containers.unhealthyFound', { count: unhealthy.length })
-            );
-            if (format === 'json') {
-              outputService.print(unhealthy, format);
-            } else {
-              for (const c of unhealthy) {
-                outputService.info(`  - ${c.name} (${c.repository})`);
-              }
-            }
-            process.exitCode = 2;
-          } else {
-            outputService.success(t('commands.machine.containers.allHealthy'));
-          }
+          handleHealthCheck(containers, format);
           return;
         }
 
@@ -69,17 +87,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
           return;
         }
 
-        // Format containers for table output
-        const tableData = containers.map((c) => ({
-          name: c.name,
-          status: c.status,
-          state: c.state,
-          health: c.health?.status ?? 'none',
-          cpu: c.cpu_percent ?? '-',
-          memory: c.memory_usage ?? '-',
-          repository: c.repository,
-        }));
-
+        const tableData = formatContainersForTable(containers);
         outputService.print(tableData, format);
       } catch (error) {
         handleError(error);

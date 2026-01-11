@@ -70,11 +70,11 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
   const resourceUsage = useMemo(() => {
     if (!container) return null;
 
-    const cpuValue = parseFloat(container.cpu_percent.replace('%', '') || '0');
+    const cpuValue = Number.parseFloat(container.cpu_percent.replace('%', '') || '0');
     const memoryParts = container.memory_usage.split(' / ');
     const memoryUsed = memoryParts[0] || '0';
     const memoryTotal = memoryParts[1] || '0';
-    const memoryPercent = parseFloat(container.memory_percent.replace('%', '') || '0');
+    const memoryPercent = Number.parseFloat(container.memory_percent.replace('%', '') || '0');
     const netParts = container.net_io.split(' / ');
     const netIn = netParts[0] || '0';
     const netOut = netParts[1] || '0';
@@ -91,7 +91,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       netOut,
       blockRead,
       blockWrite,
-      pids: parseInt(container.pids || '0', 10),
+      pids: Number.parseInt(container.pids || '0', 10),
     };
   }, [container]);
 

@@ -11,7 +11,7 @@ export function getBasePath(): string {
   const pathname = window.location.pathname;
 
   // Check if we're in a versioned deployment (/versions/vX.Y.Z/)
-  const versionMatch = pathname.match(/^(\/versions\/v\d+\.\d+\.\d+)/);
+  const versionMatch = /^(\/versions\/v\d+\.\d+\.\d+)/.exec(pathname);
 
   if (versionMatch) {
     // Return the versioned base path with trailing slash

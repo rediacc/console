@@ -29,12 +29,7 @@ export const BridgeSection: React.FC<BridgeSectionProps> = ({
 }) => (
   <Row gutter={[24, 24]}>
     <Col span={24}>
-      {!effectiveRegion ? (
-        <Flex vertical>
-          <PageHeader title={t('bridges.title')} subtitle={t('regions.selectRegionToView')} />
-          <Empty description={t('regions.selectRegionPrompt')} />
-        </Flex>
-      ) : (
+      {effectiveRegion ? (
         <Flex vertical>
           <ResourceListView
             title={
@@ -60,6 +55,11 @@ export const BridgeSection: React.FC<BridgeSectionProps> = ({
               />
             }
           />
+        </Flex>
+      ) : (
+        <Flex vertical>
+          <PageHeader title={t('bridges.title')} subtitle={t('regions.selectRegionToView')} />
+          <Empty description={t('regions.selectRegionPrompt')} />
         </Flex>
       )}
     </Col>

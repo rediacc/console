@@ -1,9 +1,12 @@
 import { ipcMain, app } from 'electron';
+import { registerContainerHandlers, cleanupAllContainerSessions } from './container';
 import { registerRsyncHandlers, abortAllRsyncOperations } from './rsync';
 import { registerSafeStorageHandlers } from './safeStorage';
 import { registerSftpHandlers, cleanupAllSftpSessions } from './sftp';
 import { registerTerminalHandlers, cleanupAllTerminalSessions } from './terminal';
 import { registerUpdaterHandlers } from './updater';
+import { registerVSCodeHandlers } from './vscode';
+import { registerWindowHandlers, cleanupPopoutWindows } from './window';
 
 export function registerIpcHandlers(): void {
   // Register safe storage handlers
@@ -21,6 +24,15 @@ export function registerIpcHandlers(): void {
   // Register SFTP handlers (file browser)
   registerSftpHandlers();
 
+  // Register VS Code handlers (remote SSH)
+  registerVSCodeHandlers();
+
+  // Register window handlers (popout windows)
+  registerWindowHandlers();
+
+  // Register container handlers (docker exec/logs/stats)
+  registerContainerHandlers();
+
   // App info handlers
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:getPlatform', () => process.platform);
@@ -33,6 +45,8 @@ export function registerIpcHandlers(): void {
  */
 export async function cleanupIpcHandlers(): Promise<void> {
   await cleanupAllTerminalSessions();
+  await cleanupAllContainerSessions();
   cleanupAllSftpSessions();
   abortAllRsyncOperations();
+  cleanupPopoutWindows();
 }

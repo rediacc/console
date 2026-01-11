@@ -108,6 +108,110 @@ export interface UpdateProgress {
   total: number;
 }
 
+// VSCode types
+export interface VSCodeLaunchOptions {
+  teamName: string;
+  machineName: string;
+  repositoryName?: string;
+  host: string;
+  port?: number;
+  user: string;
+  privateKey: string;
+  known_hosts?: string;
+  remotePath: string;
+  datastore?: string;
+  newWindow?: boolean;
+  /** Preferred VS Code type when both Windows and WSL are available */
+  preferredType?: 'windows' | 'wsl';
+}
+
+export interface VSCodeLaunchResult {
+  success: boolean;
+  error?: string;
+  connectionName?: string;
+}
+
+export interface VSCodeInfo {
+  path: string;
+  version?: string;
+  isInsiders: boolean;
+  /** Whether this VS Code installation is inside WSL */
+  isWSL?: boolean;
+  /** WSL distribution name (only set if isWSL is true) */
+  wslDistro?: string;
+}
+
+export interface VSCodeInstallations {
+  /** VS Code installed on Windows (native) */
+  windows: VSCodeInfo | null;
+  /** VS Code installed inside WSL */
+  wsl: VSCodeInfo | null;
+}
+
+export type VSCodePreference = 'windows' | 'wsl' | null;
+
+// Container types
+export interface ContainerExecParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  known_hosts?: string;
+  containerId: string;
+  containerName?: string;
+  command?: string;
+  cols?: number;
+  rows?: number;
+}
+
+export interface ContainerLogsParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  known_hosts?: string;
+  containerId: string;
+  follow?: boolean;
+  tail?: number;
+  cols?: number;
+  rows?: number;
+}
+
+export interface ContainerStatsParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  known_hosts?: string;
+  containerId: string;
+  cols?: number;
+  rows?: number;
+}
+
+export interface ContainerSessionResult {
+  sessionId: string;
+}
+
+// Window types
+export interface PopoutWindowOptions {
+  type: 'terminal' | 'container';
+  sessionId: string;
+  title?: string;
+  width?: number;
+  height?: number;
+  machineName?: string;
+  repositoryName?: string;
+  containerId?: string;
+  containerName?: string;
+  containerSessionType?: 'exec' | 'logs' | 'stats';
+}
+
+export interface PopoutWindowResult {
+  success: boolean;
+  windowId?: number;
+  error?: string;
+}
+
 // Full Electron API interface
 export interface ElectronAPI {
   safeStorage: {
@@ -147,6 +251,7 @@ export interface ElectronAPI {
     onData: (sessionId: string, callback: (data: string) => void) => () => void;
     onExit: (sessionId: string, callback: (code: number) => void) => () => void;
     getSessionCount: () => Promise<number>;
+    transfer: (sessionId: string) => Promise<{ success: boolean; error?: string; buffer?: string }>;
   };
   rsync: {
     execute: (options: RsyncExecutorOptions) => Promise<RsyncResult>;
@@ -175,6 +280,31 @@ export interface ElectronAPI {
     close: (sessionId: string) => Promise<void>;
     getSessionCount: () => Promise<number>;
     getSessionInfo: (sessionId: string) => Promise<SFTPSessionInfo | null>;
+  };
+  vscode: {
+    launch: (options: VSCodeLaunchOptions) => Promise<VSCodeLaunchResult>;
+    isAvailable: () => Promise<boolean>;
+    hasRemoteSSH: () => Promise<boolean>;
+    getInstallations: () => Promise<VSCodeInstallations>;
+    getPreference: () => Promise<VSCodePreference>;
+    setPreference: (preference: VSCodePreference) => Promise<void>;
+  };
+  window: {
+    openPopout: (options: PopoutWindowOptions) => Promise<PopoutWindowResult>;
+    closePopout: (windowId: number) => Promise<boolean>;
+    getPopoutCount: () => Promise<number>;
+  };
+  container: {
+    exec: (params: ContainerExecParams) => Promise<ContainerSessionResult>;
+    logs: (params: ContainerLogsParams) => Promise<ContainerSessionResult>;
+    stats: (params: ContainerStatsParams) => Promise<ContainerSessionResult>;
+    write: (sessionId: string, data: string) => void;
+    resize: (sessionId: string, cols: number, rows: number) => void;
+    close: (sessionId: string) => Promise<void>;
+    onData: (sessionId: string, callback: (data: string) => void) => () => void;
+    onExit: (sessionId: string, callback: (code: number) => void) => () => void;
+    getSessionCount: () => Promise<number>;
+    transfer: (sessionId: string) => Promise<{ success: boolean; error?: string; buffer?: string }>;
   };
 }
 

@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
 
@@ -11,6 +14,46 @@ import { CliTestRunner } from '../../src/utils/CliTestRunner';
  * NOTE: These tests don't need the master context - they create their own local contexts.
  */
 
+// Dummy SSH key content for testing (not a real key, just needs to exist)
+const DUMMY_SSH_KEY = `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACBtest-key-for-cli-tests-only-not-realAAAAQtest-key-for-cli
+-----END OPENSSH PRIVATE KEY-----`;
+
+const DUMMY_SSH_PUB =
+  'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHRlc3Qta2V5LWZvci1jbGktdGVzdHMtb25seS1ub3QtcmVhbA== test@cli-tests';
+
+/**
+ * Ensures test SSH key files exist for local mode tests.
+ * Creates dummy keys in ~/.ssh/ if they don't exist.
+ */
+function ensureTestSshKeys(): void {
+  const sshDir = path.join(os.homedir(), '.ssh');
+
+  // Create .ssh directory if it doesn't exist
+  if (!fs.existsSync(sshDir)) {
+    fs.mkdirSync(sshDir, { mode: 0o700 });
+  }
+
+  // Create id_rsa if it doesn't exist
+  const rsaPath = path.join(sshDir, 'id_rsa');
+  if (!fs.existsSync(rsaPath)) {
+    fs.writeFileSync(rsaPath, DUMMY_SSH_KEY, { mode: 0o600 });
+  }
+
+  // Create id_ed25519 if it doesn't exist
+  const ed25519Path = path.join(sshDir, 'id_ed25519');
+  if (!fs.existsSync(ed25519Path)) {
+    fs.writeFileSync(ed25519Path, DUMMY_SSH_KEY, { mode: 0o600 });
+  }
+
+  // Create id_ed25519.pub if it doesn't exist
+  const ed25519PubPath = path.join(sshDir, 'id_ed25519.pub');
+  if (!fs.existsSync(ed25519PubPath)) {
+    fs.writeFileSync(ed25519PubPath, DUMMY_SSH_PUB, { mode: 0o644 });
+  }
+}
+
 test.describe('Local Context Commands @cli @core', () => {
   const timestamp = Date.now();
   const testLocalContext = `test-local-cli-${timestamp}`;
@@ -18,6 +61,8 @@ test.describe('Local Context Commands @cli @core', () => {
   let runner: CliTestRunner;
 
   test.beforeAll(() => {
+    // Ensure SSH keys exist for testing (creates dummy keys in CI)
+    ensureTestSshKeys();
     // Use a runner without context for creating local contexts
     runner = new CliTestRunner({});
   });
@@ -358,6 +403,8 @@ test.describe('Switching Between Local and Cloud Contexts @cli @core', () => {
   let runner: CliTestRunner;
 
   test.beforeAll(() => {
+    // Ensure SSH keys exist for testing (creates dummy keys in CI)
+    ensureTestSshKeys();
     runner = new CliTestRunner({});
   });
 

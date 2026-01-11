@@ -27,7 +27,7 @@ export interface QueueVaultBuilderConfig {
 }
 
 export class QueueVaultBuilder {
-  constructor(private config: QueueVaultBuilderConfig) {}
+  constructor(private readonly config: QueueVaultBuilderConfig) {}
 
   getFunctionRequirements(functionName: string): FunctionRequirements {
     if (!isBridgeFunction(functionName)) {
@@ -43,97 +43,103 @@ export class QueueVaultBuilder {
 
   private buildQueueVaultSync(context: QueueRequestContext): string {
     try {
-      // MANDATORY: Validate function is public before building vault.
-      // Unknown, internal, or experimental functions will be rejected.
-      assertPublicBridgeFunction(context.functionName);
-
-      // Optional: Validate function parameters against Zod schemas
-      if (this.config.validateParams && isBridgeFunction(context.functionName)) {
-        const validationResult = safeValidateFunctionParams(context.functionName, context.params);
-        if (!validationResult.success) {
-          const errors = getValidationErrors(validationResult);
-          throw new Error(`Parameter validation failed: ${errors}`);
-        }
-      }
-
+      this.validateFunction(context);
       const requirements = this.getFunctionRequirements(context.functionName);
+      const vault = this.buildCoreVault(context);
 
-      // Build task section
-      const task: TaskSection = {
-        function: context.functionName,
-        machine: context.machineName ?? '',
-        team: context.teamName,
-      };
-
-      // Add repository to task if specified in params or context
-      const repositoryName = context.repositoryName ?? getParamValue(context.params, 'repository');
-      if (repositoryName) {
-        task.repository = repositoryName;
-      }
-
-      // Build SSH section from team vault
-      const ssh = this.buildSSHSection(context.teamVault, context.machineVault);
-
-      // Build primary machine section
-      const machine = this.buildMachineSection(
-        context.machineVault,
-        context.machineName ?? undefined
-      );
-
-      // Build the vault
-      const vault: QueueVaultV2 = {
-        $schema: 'queue-vault-v2',
-        version: '2.0',
-        task,
-        ssh,
-        machine,
-      };
-
-      // Add params if present
-      if (Object.keys(context.params).length > 0) {
-        vault.params = context.params as Record<string, string | number | boolean>;
-      }
-
-      // Build extra_machines for multi-machine operations
-      const extraMachines = this.buildExtraMachines(context, requirements);
-      if (Object.keys(extraMachines).length > 0) {
-        vault.extra_machines = extraMachines;
-      }
-
-      // Build storage_systems
-      const storageSystems = this.buildStorageSystems(context, requirements);
-      if (Object.keys(storageSystems).length > 0) {
-        vault.storage_systems = storageSystems;
-      }
-
-      // Build repository_credentials
-      const repoCredentials = this.buildRepositoryCredentials(context, requirements);
-      if (Object.keys(repoCredentials).length > 0) {
-        vault.repository_credentials = repoCredentials;
-      }
-
-      // Build repositories map
-      const repositories = this.buildRepositories(context, requirements);
-      if (Object.keys(repositories).length > 0) {
-        vault.repositories = repositories;
-      }
-
-      // Build context section
-      const contextSection = this.buildContextSection(context);
-      if (Object.keys(contextSection).length > 0) {
-        vault.context = contextSection;
-      }
-
-      // Build preferences section
-      const preferencesSection = this.buildPreferencesSection(context);
-      if (preferencesSection) {
-        vault.preferences = preferencesSection;
-      }
+      this.addOptionalSections(vault, context, requirements);
 
       return minifyJSON(JSON.stringify(vault));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to build queue vault: ${message}`);
+    }
+  }
+
+  private validateFunction(context: QueueRequestContext): void {
+    // MANDATORY: Validate function is public before building vault.
+    // Unknown, internal, or experimental functions will be rejected.
+    assertPublicBridgeFunction(context.functionName);
+
+    // Optional: Validate function parameters against Zod schemas
+    if (this.config.validateParams && isBridgeFunction(context.functionName)) {
+      const validationResult = safeValidateFunctionParams(context.functionName, context.params);
+      if (!validationResult.success) {
+        const errors = getValidationErrors(validationResult);
+        throw new Error(`Parameter validation failed: ${errors}`);
+      }
+    }
+  }
+
+  private buildCoreVault(context: QueueRequestContext): QueueVaultV2 {
+    const task = this.buildTaskSection(context);
+    const ssh = this.buildSSHSection(context.teamVault, context.machineVault);
+    const machine = this.buildMachineSection(
+      context.machineVault,
+      context.machineName ?? undefined
+    );
+
+    return {
+      $schema: 'queue-vault-v2',
+      version: '2.0',
+      task,
+      ssh,
+      machine,
+    };
+  }
+
+  private buildTaskSection(context: QueueRequestContext): TaskSection {
+    const task: TaskSection = {
+      function: context.functionName,
+      machine: context.machineName ?? '',
+      team: context.teamName,
+    };
+
+    const repositoryName = context.repositoryName ?? getParamValue(context.params, 'repository');
+    if (repositoryName) {
+      task.repository = repositoryName;
+    }
+
+    return task;
+  }
+
+  private addOptionalSections(
+    vault: QueueVaultV2,
+    context: QueueRequestContext,
+    requirements: FunctionRequirements
+  ): void {
+    if (Object.keys(context.params).length > 0) {
+      vault.params = context.params as Record<string, string | number | boolean>;
+    }
+
+    const extraMachines = this.buildExtraMachines(context, requirements);
+    if (Object.keys(extraMachines).length > 0) {
+      vault.extra_machines = extraMachines;
+    }
+
+    const storageSystems = this.buildStorageSystems(context, requirements);
+    if (Object.keys(storageSystems).length > 0) {
+      vault.storage_systems = storageSystems;
+    }
+
+    const repoCredentials = this.buildRepositoryCredentials(context, requirements);
+    if (Object.keys(repoCredentials).length > 0) {
+      vault.repository_credentials = repoCredentials;
+    }
+
+    const repositories = this.buildRepositories(context, requirements);
+    if (Object.keys(repositories).length > 0) {
+      vault.repositories = repositories;
+    }
+
+    const contextSection = this.buildContextSection(context);
+    if (Object.keys(contextSection).length > 0) {
+      vault.context = contextSection;
+    }
+
+    const preferencesSection = this.buildPreferencesSection(context);
+    if (preferencesSection) {
+      vault.preferences = preferencesSection;
     }
   }
 
@@ -222,8 +228,8 @@ export class QueueVaultBuilder {
 
   private parsePort(value: unknown): number | undefined {
     if (value === undefined || value === null) return undefined;
-    const port = typeof value === 'string' ? parseInt(value, 10) : Number(value);
-    return isNaN(port) ? undefined : port;
+    const port = typeof value === 'string' ? Number.parseInt(value, 10) : Number(value);
+    return Number.isNaN(port) ? undefined : port;
   }
 
   private buildExtraMachines(
@@ -232,48 +238,62 @@ export class QueueVaultBuilder {
   ): Record<string, MachineSection> {
     const extraMachines: Record<string, MachineSection> = {};
 
-    // Handle deploy destination machine
-    if (context.functionName === 'backup_deploy') {
-      const destinationName = (context.params as Record<string, string>).to;
-      if (
-        destinationName &&
-        destinationName !== context.machineName &&
-        context.destinationMachineVault
-      ) {
-        extraMachines[destinationName] = this.buildMachineSection(
-          context.destinationMachineVault,
-          destinationName
-        );
-      }
-    }
-
-    // Handle pull with machine source
-    if (
-      context.functionName === 'backup_pull' &&
-      (context.params as Record<string, string>).sourceType === 'machine' &&
-      (context.params as Record<string, string>).from
-    ) {
-      const fromName = (context.params as Record<string, string>).from;
-      if (context.additionalMachineData?.[fromName]) {
-        extraMachines[fromName] = this.buildMachineSection(
-          context.additionalMachineData[fromName],
-          fromName
-        );
-      }
-    }
-
-    // Handle list with machine source
-    if (context.functionName === 'repository_list') {
-      const sourceName = getParamValue(context.params, 'from');
-      if (sourceName && context.additionalMachineData?.[sourceName]) {
-        extraMachines[sourceName] = this.buildMachineSection(
-          context.additionalMachineData[sourceName],
-          sourceName
-        );
-      }
-    }
+    this.addDeployDestinationMachine(context, extraMachines);
+    this.addPullSourceMachine(context, extraMachines);
+    this.addListSourceMachine(context, extraMachines);
 
     return extraMachines;
+  }
+
+  private addDeployDestinationMachine(
+    context: QueueRequestContext,
+    extraMachines: Record<string, MachineSection>
+  ): void {
+    if (context.functionName !== 'backup_deploy') return;
+
+    const destinationName = (context.params as Record<string, string>).to;
+    const hasValidDestination =
+      destinationName && destinationName !== context.machineName && context.destinationMachineVault;
+
+    if (hasValidDestination) {
+      extraMachines[destinationName] = this.buildMachineSection(
+        context.destinationMachineVault,
+        destinationName
+      );
+    }
+  }
+
+  private addPullSourceMachine(
+    context: QueueRequestContext,
+    extraMachines: Record<string, MachineSection>
+  ): void {
+    if (context.functionName !== 'backup_pull') return;
+
+    const params = context.params as Record<string, string>;
+    if (params.sourceType !== 'machine' || !params.from) return;
+
+    const fromName = params.from;
+    if (context.additionalMachineData?.[fromName]) {
+      extraMachines[fromName] = this.buildMachineSection(
+        context.additionalMachineData[fromName],
+        fromName
+      );
+    }
+  }
+
+  private addListSourceMachine(
+    context: QueueRequestContext,
+    extraMachines: Record<string, MachineSection>
+  ): void {
+    if (context.functionName !== 'repository_list') return;
+
+    const sourceName = getParamValue(context.params, 'from');
+    if (sourceName && context.additionalMachineData?.[sourceName]) {
+      extraMachines[sourceName] = this.buildMachineSection(
+        context.additionalMachineData[sourceName],
+        sourceName
+      );
+    }
   }
 
   private buildStorageSystems(
@@ -282,48 +302,64 @@ export class QueueVaultBuilder {
   ): Record<string, StorageSection> {
     const storageSystems: Record<string, StorageSection> = {};
 
-    // Handle backup function
-    if (context.functionName === 'backup_create') {
-      const targets = getParamArray(context.params, 'storages');
-      if (!targets.length) {
-        const fallbackTarget = getParamValue(context.params, 'to');
-        if (fallbackTarget) {
-          targets.push(fallbackTarget);
-        }
-      }
-      targets.forEach((storageName, index) => {
-        const storageVault =
-          context.additionalStorageData?.[storageName] ??
-          (index === 0 ? context.destinationStorageVault : undefined);
-        if (storageVault) {
-          storageSystems[storageName] = this.buildStorageConfig(storageVault);
-        }
-      });
-    }
-
-    // Handle list function
-    if (context.functionName === 'repository_list') {
-      const sourceName = getParamValue(context.params, 'from');
-      if (sourceName && context.additionalStorageData?.[sourceName]) {
-        storageSystems[sourceName] = this.buildStorageConfig(
-          context.additionalStorageData[sourceName]
-        );
-      }
-    }
-
-    // Handle pull with storage source
-    if (
-      context.functionName === 'backup_pull' &&
-      (context.params as Record<string, string>).sourceType === 'storage' &&
-      (context.params as Record<string, string>).from
-    ) {
-      const fromName = (context.params as Record<string, string>).from;
-      if (context.additionalStorageData?.[fromName]) {
-        storageSystems[fromName] = this.buildStorageConfig(context.additionalStorageData[fromName]);
-      }
-    }
+    this.addBackupStorageSystems(context, storageSystems);
+    this.addListStorageSystem(context, storageSystems);
+    this.addPullStorageSystem(context, storageSystems);
 
     return storageSystems;
+  }
+
+  private addBackupStorageSystems(
+    context: QueueRequestContext,
+    storageSystems: Record<string, StorageSection>
+  ): void {
+    if (context.functionName !== 'backup_create') return;
+
+    const targets = getParamArray(context.params, 'storages');
+    if (!targets.length) {
+      const fallbackTarget = getParamValue(context.params, 'to');
+      if (fallbackTarget) {
+        targets.push(fallbackTarget);
+      }
+    }
+
+    targets.forEach((storageName, index) => {
+      const storageVault =
+        context.additionalStorageData?.[storageName] ??
+        (index === 0 ? context.destinationStorageVault : undefined);
+      if (storageVault) {
+        storageSystems[storageName] = this.buildStorageConfig(storageVault);
+      }
+    });
+  }
+
+  private addListStorageSystem(
+    context: QueueRequestContext,
+    storageSystems: Record<string, StorageSection>
+  ): void {
+    if (context.functionName !== 'repository_list') return;
+
+    const sourceName = getParamValue(context.params, 'from');
+    if (sourceName && context.additionalStorageData?.[sourceName]) {
+      storageSystems[sourceName] = this.buildStorageConfig(
+        context.additionalStorageData[sourceName]
+      );
+    }
+  }
+
+  private addPullStorageSystem(
+    context: QueueRequestContext,
+    storageSystems: Record<string, StorageSection>
+  ): void {
+    if (context.functionName !== 'backup_pull') return;
+
+    const params = context.params as Record<string, string>;
+    if (params.sourceType !== 'storage' || !params.from) return;
+
+    const fromName = params.from;
+    if (context.additionalStorageData?.[fromName]) {
+      storageSystems[fromName] = this.buildStorageConfig(context.additionalStorageData[fromName]);
+    }
   }
 
   private buildStorageConfig(vault: VaultContent): StorageSection {

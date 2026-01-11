@@ -1,5 +1,5 @@
-import { spawn, type ChildProcess } from 'child_process';
-import { join } from 'path';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { join } from 'node:path';
 import { findMSYS2Installation } from './detector.js';
 import { getPlatform, isWSL } from '../utils/platform.js';
 import type { TerminalType, TerminalLaunchOptions } from '../types/index.js';
@@ -44,7 +44,7 @@ function filterSensitiveEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
  */
 function escapeCommand(cmd: string): string {
   // Simple escaping for shell
-  return cmd.replace(/'/g, "'\\''");
+  return cmd.replaceAll("'", "'\\''");
 }
 
 /**

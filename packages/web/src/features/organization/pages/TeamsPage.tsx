@@ -81,38 +81,50 @@ const TeamsPage: React.FC = () => {
   const addTeamMemberMutation = useCreateTeamMembership();
   const removeTeamMemberMutation = useDeleteUserFromTeam();
 
+  const handleCreateTeam = async (
+    data: Partial<GetOrganizationTeams_ResultSet1> & { vaultContent?: string }
+  ) => {
+    if (!data.teamName) {
+      throw new Error('Team name is required');
+    }
+    await createTeamMutation.mutateAsync({
+      teamName: data.teamName,
+      vaultContent: data.vaultContent ?? '{}',
+    });
+  };
+
+  const handleEditTeam = async (
+    data: Partial<GetOrganizationTeams_ResultSet1> & { vaultContent?: string },
+    existingData: GetOrganizationTeams_ResultSet1
+  ) => {
+    if (!existingData.teamName) {
+      throw new Error('Team name is required');
+    }
+
+    if (data.teamName && data.teamName !== existingData.teamName) {
+      await updateTeamNameMutation.mutateAsync({
+        currentTeamName: existingData.teamName,
+        newTeamName: data.teamName,
+      });
+    }
+
+    if (data.vaultContent && data.vaultContent !== existingData.vaultContent) {
+      await updateTeamVaultMutation.mutateAsync({
+        teamName: data.teamName ?? existingData.teamName,
+        vaultContent: data.vaultContent,
+        vaultVersion: (existingData.vaultVersion ?? 0) + 1,
+      });
+    }
+  };
+
   const handleUnifiedModalSubmit = async (
     data: Partial<GetOrganizationTeams_ResultSet1> & { vaultContent?: string }
   ) => {
     try {
       if (unifiedModal.mode === 'create') {
-        if (!data.teamName) {
-          throw new Error('Team name is required');
-        }
-        await createTeamMutation.mutateAsync({
-          teamName: data.teamName,
-          vaultContent: data.vaultContent ?? '{}',
-        });
+        await handleCreateTeam(data);
       } else if (unifiedModal.state.data) {
-        const existingData = unifiedModal.state.data;
-        if (!existingData.teamName) {
-          throw new Error('Team name is required');
-        }
-
-        if (data.teamName && data.teamName !== existingData.teamName) {
-          await updateTeamNameMutation.mutateAsync({
-            currentTeamName: existingData.teamName,
-            newTeamName: data.teamName,
-          });
-        }
-
-        if (data.vaultContent && data.vaultContent !== existingData.vaultContent) {
-          await updateTeamVaultMutation.mutateAsync({
-            teamName: data.teamName ?? existingData.teamName,
-            vaultContent: data.vaultContent,
-            vaultVersion: (existingData.vaultVersion ?? 0) + 1,
-          });
-        }
+        await handleEditTeam(data, unifiedModal.state.data as GetOrganizationTeams_ResultSet1);
       }
       unifiedModal.close();
     } catch {
@@ -175,7 +187,10 @@ const TeamsPage: React.FC = () => {
   const columnParams = {
     t,
     onEdit: (team: GetOrganizationTeams_ResultSet1) =>
-      unifiedModal.openEdit(team as ExistingResourceData),
+      unifiedModal.openEdit({
+        ...team,
+        teamName: team.teamName ?? undefined,
+      } as ExistingResourceData),
     onManageMembers: (team: GetOrganizationTeams_ResultSet1) => {
       manageTeamModal.open(team);
     },
@@ -195,7 +210,12 @@ const TeamsPage: React.FC = () => {
     // eslint-disable-next-line react/display-name
     () => (record: GetOrganizationTeams_ResultSet1) => {
       const menuItems: MenuProps['items'] = [
-        buildEditMenuItem(tCommon, () => unifiedModal.openEdit(record as ExistingResourceData)),
+        buildEditMenuItem(tCommon, () =>
+          unifiedModal.openEdit({
+            ...record,
+            teamName: record.teamName ?? undefined,
+          } as ExistingResourceData)
+        ),
         buildMembersMenuItem(tCommon, () => manageTeamModal.open(record)),
         buildTraceMenuItem(tCommon, () =>
           auditTrace.open({

@@ -1,5 +1,5 @@
-import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
 import {
   executeRsync,
@@ -117,7 +117,7 @@ function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
@@ -128,7 +128,7 @@ function formatBytes(bytes: number): string {
  * @returns Promise<boolean> - true if user confirms, false if cancelled
  */
 async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> {
-  const readline = await import('readline');
+  const readline = await import('node:readline');
 
   // Show summary first
   // eslint-disable-next-line no-console
@@ -190,6 +190,98 @@ async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> 
   return proceed;
 }
 
+function hasNoChanges(changes: RsyncChanges): boolean {
+  return (
+    changes.newFiles.length === 0 &&
+    changes.modifiedFiles.length === 0 &&
+    changes.deletedFiles.length === 0
+  );
+}
+
+async function handleConfirmMode(
+  rsyncOptions: RsyncExecutorOptions,
+  options: { confirm?: boolean; dryRun?: boolean }
+): Promise<boolean> {
+  if (!options.confirm || options.dryRun) return true;
+
+  // eslint-disable-next-line no-console
+  console.log(t('commands.sync.previewingChanges'));
+
+  const changes = await getRsyncPreview(rsyncOptions);
+
+  if (hasNoChanges(changes)) {
+    // eslint-disable-next-line no-console
+    console.log(t('commands.sync.noChanges'));
+    return false;
+  }
+
+  const proceed = await interactiveConfirmation(changes);
+  if (!proceed) {
+    // eslint-disable-next-line no-console
+    console.log(t('commands.sync.cancelled'));
+    return false;
+  }
+
+  return true;
+}
+
+async function handleDryRun(rsyncOptions: RsyncExecutorOptions): Promise<void> {
+  // eslint-disable-next-line no-console
+  console.log(t('commands.sync.dryRunHeader'));
+  const changes = await getRsyncPreview(rsyncOptions);
+  // eslint-disable-next-line no-console
+  console.log(formatChangesSummary(changes));
+}
+
+function displaySyncResult(
+  result: {
+    success: boolean;
+    filesTransferred: number;
+    bytesTransferred: number;
+    duration: number;
+    errors: string[];
+  },
+  spinner: ReturnType<typeof ora>,
+  mode: 'upload' | 'download'
+): void {
+  if (result.success) {
+    spinner.succeed(t(`commands.sync.${mode}.completed`, { count: result.filesTransferred }));
+    if (result.bytesTransferred > 0) {
+      // eslint-disable-next-line no-console
+      console.log(t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) }));
+    }
+    // eslint-disable-next-line no-console
+    console.log(t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) }));
+  } else {
+    spinner.fail(t(`commands.sync.${mode}.failed`));
+    if (result.errors.length > 0) {
+      console.error(t('commands.sync.errors'));
+      for (const err of result.errors) {
+        console.error(`  ${err}`);
+      }
+    }
+    process.exitCode = 1;
+  }
+}
+
+async function executeSyncWithProgress(
+  rsyncOptions: RsyncExecutorOptions,
+  mode: 'upload' | 'download'
+): Promise<void> {
+  const spinner = ora(t(`commands.sync.${mode}.starting`)).start();
+
+  rsyncOptions.onProgress = (progress: SyncProgress) => {
+    spinner.text = t(`commands.sync.${mode}.progress`, {
+      percentage: progress.percentage,
+      file: progress.currentFile,
+      speed: progress.speed,
+    });
+  };
+
+  const result = await executeRsync(rsyncOptions);
+  displaySyncResult(result, spinner, mode);
+}
+
 /**
  * Uploads files to a repository
  */
@@ -199,50 +291,36 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
   if (!opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
-
   if (!opts.machine) {
     throw new Error(t('errors.machineRequired'));
   }
-
   if (!opts.repository) {
     throw new Error(t('errors.repositoryRequired'));
   }
 
-  const teamName = opts.team;
-  const machineName = opts.machine;
-  const repositoryName = opts.repository;
-
-  // Determine local path
-  let localPath = options.local ?? process.cwd();
-  localPath = resolve(localPath);
+  let localPath = resolve(options.local ?? process.cwd());
 
   if (!existsSync(localPath)) {
     throw new Error(t('errors.sync.localPathNotFound', { path: localPath }));
   }
 
-  // Ensure trailing slash for directory sync
   if (!localPath.endsWith('/')) {
     localPath += '/';
   }
 
-  // Get connection details
   const connectionDetails = await withSpinner(t('commands.sync.fetchingDetails'), () =>
-    getRsyncConnectionDetails(teamName, machineName, repositoryName)
+    getRsyncConnectionDetails(opts.team!, opts.machine!, opts.repository!)
   );
 
-  // Determine remote path
   const remotePath = options.remote
     ? `${connectionDetails.remotePath}/${options.remote}`
     : connectionDetails.remotePath;
 
-  // Create temp SSH key file
   const keyFilePath = await createTempSSHKeyFile(connectionDetails.privateKey);
 
   try {
-    // Build SSH options string for rsync
     const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile=/dev/null -p ${connectionDetails.port} -i "${keyFilePath}"`;
 
-    // Build rsync options
     const rsyncOptions: RsyncExecutorOptions = {
       sshOptions,
       source: localPath,
@@ -253,73 +331,15 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
       universalUser: connectionDetails.universalUser,
     };
 
-    // If confirm mode, show preview first with interactive confirmation
-    if (options.confirm && !options.dryRun) {
-      // eslint-disable-next-line no-console
-      console.log(t('commands.sync.previewingChanges'));
+    const shouldContinue = await handleConfirmMode(rsyncOptions, options);
+    if (!shouldContinue) return;
 
-      const changes = await getRsyncPreview(rsyncOptions);
-
-      if (
-        changes.newFiles.length === 0 &&
-        changes.modifiedFiles.length === 0 &&
-        changes.deletedFiles.length === 0
-      ) {
-        // eslint-disable-next-line no-console
-        console.log(t('commands.sync.noChanges'));
-        return;
-      }
-
-      // Use interactive confirmation with details option
-      const proceed = await interactiveConfirmation(changes);
-      if (!proceed) {
-        // eslint-disable-next-line no-console
-        console.log(t('commands.sync.cancelled'));
-        return;
-      }
-    }
-
-    // If dry-run, just show preview
     if (options.dryRun) {
-      // eslint-disable-next-line no-console
-      console.log(t('commands.sync.dryRunHeader'));
-      const changes = await getRsyncPreview(rsyncOptions);
-      // eslint-disable-next-line no-console
-      console.log(formatChangesSummary(changes));
+      await handleDryRun(rsyncOptions);
       return;
     }
 
-    // Execute sync
-    const spinner = ora(t('commands.sync.upload.starting')).start();
-
-    rsyncOptions.onProgress = (progress: SyncProgress) => {
-      spinner.text = t('commands.sync.upload.progress', {
-        percentage: progress.percentage,
-        file: progress.currentFile,
-        speed: progress.speed,
-      });
-    };
-
-    const result = await executeRsync(rsyncOptions);
-
-    if (result.success) {
-      spinner.succeed(t('commands.sync.upload.completed', { count: result.filesTransferred }));
-      if (result.bytesTransferred > 0) {
-        // eslint-disable-next-line no-console
-        console.log(t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) }));
-      }
-      // eslint-disable-next-line no-console
-      console.log(t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) }));
-    } else {
-      spinner.fail(t('commands.sync.upload.failed'));
-      if (result.errors.length > 0) {
-        console.error(t('commands.sync.errors'));
-        for (const err of result.errors) {
-          console.error(`  ${err}`);
-        }
-      }
-      process.exitCode = 1;
-    }
+    await executeSyncWithProgress(rsyncOptions, 'upload');
   } finally {
     await removeTempSSHKeyFile(keyFilePath);
   }
@@ -334,41 +354,28 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   if (!opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
-
   if (!opts.machine) {
     throw new Error(t('errors.machineRequired'));
   }
-
   if (!opts.repository) {
     throw new Error(t('errors.repositoryRequired'));
   }
 
-  const teamName = opts.team;
-  const machineName = opts.machine;
-  const repositoryName = opts.repository;
+  const localPath = resolve(options.local ?? process.cwd());
 
-  // Determine local path
-  let localPath = options.local ?? process.cwd();
-  localPath = resolve(localPath);
-
-  // Get connection details
   const connectionDetails = await withSpinner(t('commands.sync.fetchingDetails'), () =>
-    getRsyncConnectionDetails(teamName, machineName, repositoryName)
+    getRsyncConnectionDetails(opts.team!, opts.machine!, opts.repository!)
   );
 
-  // Determine remote path (with trailing slash to sync contents)
   const remotePath = options.remote
     ? `${connectionDetails.remotePath}/${options.remote}/`
     : `${connectionDetails.remotePath}/`;
 
-  // Create temp SSH key file
   const keyFilePath = await createTempSSHKeyFile(connectionDetails.privateKey);
 
   try {
-    // Build SSH options string for rsync
     const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile=/dev/null -p ${connectionDetails.port} -i "${keyFilePath}"`;
 
-    // Build rsync options
     const rsyncOptions: RsyncExecutorOptions = {
       sshOptions,
       source: `${connectionDetails.user}@${connectionDetails.host}:${remotePath}`,
@@ -379,73 +386,15 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
       universalUser: connectionDetails.universalUser,
     };
 
-    // If confirm mode, show preview first with interactive confirmation
-    if (options.confirm && !options.dryRun) {
-      // eslint-disable-next-line no-console
-      console.log(t('commands.sync.previewingChanges'));
+    const shouldContinue = await handleConfirmMode(rsyncOptions, options);
+    if (!shouldContinue) return;
 
-      const changes = await getRsyncPreview(rsyncOptions);
-
-      if (
-        changes.newFiles.length === 0 &&
-        changes.modifiedFiles.length === 0 &&
-        changes.deletedFiles.length === 0
-      ) {
-        // eslint-disable-next-line no-console
-        console.log(t('commands.sync.noChanges'));
-        return;
-      }
-
-      // Use interactive confirmation with details option
-      const proceed = await interactiveConfirmation(changes);
-      if (!proceed) {
-        // eslint-disable-next-line no-console
-        console.log(t('commands.sync.cancelled'));
-        return;
-      }
-    }
-
-    // If dry-run, just show preview
     if (options.dryRun) {
-      // eslint-disable-next-line no-console
-      console.log(t('commands.sync.dryRunHeader'));
-      const changes = await getRsyncPreview(rsyncOptions);
-      // eslint-disable-next-line no-console
-      console.log(formatChangesSummary(changes));
+      await handleDryRun(rsyncOptions);
       return;
     }
 
-    // Execute sync
-    const spinner = ora(t('commands.sync.download.starting')).start();
-
-    rsyncOptions.onProgress = (progress: SyncProgress) => {
-      spinner.text = t('commands.sync.download.progress', {
-        percentage: progress.percentage,
-        file: progress.currentFile,
-        speed: progress.speed,
-      });
-    };
-
-    const result = await executeRsync(rsyncOptions);
-
-    if (result.success) {
-      spinner.succeed(t('commands.sync.download.completed', { count: result.filesTransferred }));
-      if (result.bytesTransferred > 0) {
-        // eslint-disable-next-line no-console
-        console.log(t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) }));
-      }
-      // eslint-disable-next-line no-console
-      console.log(t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) }));
-    } else {
-      spinner.fail(t('commands.sync.download.failed'));
-      if (result.errors.length > 0) {
-        console.error(t('commands.sync.errors'));
-        for (const err of result.errors) {
-          console.error(`  ${err}`);
-        }
-      }
-      process.exitCode = 1;
-    }
+    await executeSyncWithProgress(rsyncOptions, 'download');
   } finally {
     await removeTempSSHKeyFile(keyFilePath);
   }

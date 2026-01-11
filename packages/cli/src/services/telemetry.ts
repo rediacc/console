@@ -48,9 +48,9 @@ class CliTelemetryService implements TelemetryHandler {
   private tracer: Tracer | null = null;
   private isEnabled = true;
   private isInitialized = false;
-  private sessionId: string;
+  private readonly sessionId: string;
   private userContext: Partial<UserContext> = {};
-  private activeSpans: Map<string, Span> = new Map();
+  private readonly activeSpans: Map<string, Span> = new Map();
   private pendingShutdown: Promise<void> | null = null;
 
   constructor() {
@@ -61,7 +61,12 @@ class CliTelemetryService implements TelemetryHandler {
    * Check if telemetry is disabled via environment variable or config.
    */
   private shouldDisable(config?: CliTelemetryConfig): boolean {
-    // Check environment variable first
+    // Disable in CI environments to avoid delays in automated pipelines
+    if (process.env.CI) {
+      return true;
+    }
+
+    // Check environment variable
     const envValue = process.env.REDIACC_TELEMETRY?.toLowerCase();
     if (envValue === 'off' || envValue === 'false' || envValue === '0') {
       return true;
@@ -287,7 +292,7 @@ class CliTelemetryService implements TelemetryHandler {
   /**
    * Track an error.
    */
-  trackError(error: Error | unknown, context?: Record<string, unknown>): void {
+  trackError(error: unknown, context?: Record<string, unknown>): void {
     if (!this.isEnabled || !this.tracer) {
       return;
     }
@@ -362,10 +367,10 @@ class CliTelemetryService implements TelemetryHandler {
           this.activeSpans.delete(name);
         }
 
-        // Shutdown SDK with timeout
+        // Shutdown SDK with short timeout to avoid delaying CLI exit
         await Promise.race([
           this.sdk?.shutdown(),
-          new Promise((resolve) => setTimeout(resolve, 3000)),
+          new Promise((resolve) => setTimeout(resolve, 500)),
         ]);
       } catch {
         // Fail silently

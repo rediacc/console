@@ -72,39 +72,35 @@ describe('vaultProtocol', () => {
       'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTA=';
     const plainVault = '{"SSH_KEY": "secret"}';
 
-    describe('when organization has no encryption', () => {
-      it('should return NOT_ENABLED when no password provided', () => {
-        expect(analyzeVaultProtocolState(plainVault, false)).toBe(VaultProtocolState.NOT_ENABLED);
-        expect(analyzeVaultProtocolState(null, false)).toBe(VaultProtocolState.NOT_ENABLED);
-        expect(analyzeVaultProtocolState(undefined, false)).toBe(VaultProtocolState.NOT_ENABLED);
-      });
-
-      it('should return PASSWORD_NOT_NEEDED when password provided but not needed', () => {
-        expect(analyzeVaultProtocolState(plainVault, true)).toBe(
-          VaultProtocolState.PASSWORD_NOT_NEEDED
-        );
-        expect(analyzeVaultProtocolState(null, true)).toBe(VaultProtocolState.PASSWORD_NOT_NEEDED);
-      });
+    // Tests for when organization has no encryption
+    it('should return NOT_ENABLED when no password provided and vault is plain', () => {
+      expect(analyzeVaultProtocolState(plainVault, false)).toBe(VaultProtocolState.NOT_ENABLED);
+      expect(analyzeVaultProtocolState(null, false)).toBe(VaultProtocolState.NOT_ENABLED);
+      expect(analyzeVaultProtocolState(undefined, false)).toBe(VaultProtocolState.NOT_ENABLED);
     });
 
-    describe('when organization has encryption', () => {
-      it('should return PASSWORD_REQUIRED when no password provided', () => {
-        expect(analyzeVaultProtocolState(encryptedVault, false)).toBe(
-          VaultProtocolState.PASSWORD_REQUIRED
-        );
-      });
+    it('should return PASSWORD_NOT_NEEDED when password provided but not needed', () => {
+      expect(analyzeVaultProtocolState(plainVault, true)).toBe(
+        VaultProtocolState.PASSWORD_NOT_NEEDED
+      );
+      expect(analyzeVaultProtocolState(null, true)).toBe(VaultProtocolState.PASSWORD_NOT_NEEDED);
+    });
 
-      it('should return INVALID_PASSWORD when password is invalid', () => {
-        expect(analyzeVaultProtocolState(encryptedVault, true, false)).toBe(
-          VaultProtocolState.INVALID_PASSWORD
-        );
-      });
+    // Tests for when organization has encryption
+    it('should return PASSWORD_REQUIRED when encrypted vault and no password provided', () => {
+      expect(analyzeVaultProtocolState(encryptedVault, false)).toBe(
+        VaultProtocolState.PASSWORD_REQUIRED
+      );
+    });
 
-      it('should return VALID when password is valid', () => {
-        expect(analyzeVaultProtocolState(encryptedVault, true, true)).toBe(
-          VaultProtocolState.VALID
-        );
-      });
+    it('should return INVALID_PASSWORD when encrypted vault and password is invalid', () => {
+      expect(analyzeVaultProtocolState(encryptedVault, true, false)).toBe(
+        VaultProtocolState.INVALID_PASSWORD
+      );
+    });
+
+    it('should return VALID when encrypted vault and password is valid', () => {
+      expect(analyzeVaultProtocolState(encryptedVault, true, true)).toBe(VaultProtocolState.VALID);
     });
   });
 });

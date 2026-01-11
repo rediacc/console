@@ -61,7 +61,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
       return null;
     }
 
-    const teamKey = (team.teamName ?? '').toLowerCase().replace(/\s+/g, '-');
+    const teamKey = (team.teamName ?? '').toLowerCase().replaceAll(/\s+/g, '-');
 
     return (
       <List.Item key={teamKey} data-testid={`ds-widget-team-item-${teamKey}`}>

@@ -164,18 +164,20 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   );
 
   const renderFileContent = (file: TemplateFile) => {
-    const language =
-      file.name.endsWith('.yaml') || file.name.endsWith('.yml')
-        ? 'yaml'
-        : file.name.endsWith('.json')
-          ? 'json'
-          : file.name.endsWith('.sh')
-            ? 'bash'
-            : file.name.endsWith('.env')
-              ? 'bash'
-              : file.name.endsWith('.md')
-                ? 'markdown'
-                : 'text';
+    let language: string;
+    if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
+      language = 'yaml';
+    } else if (file.name.endsWith('.json')) {
+      language = 'json';
+    } else if (file.name.endsWith('.sh')) {
+      language = 'bash';
+    } else if (file.name.endsWith('.env')) {
+      language = 'bash';
+    } else if (file.name.endsWith('.md')) {
+      language = 'markdown';
+    } else {
+      language = 'text';
+    }
 
     if (language === 'markdown') {
       return <ReactMarkdown components={markdownComponents}>{file.content}</ReactMarkdown>;
@@ -213,74 +215,86 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     </Flex>
   );
 
-  const filesContent = loading ? (
-    <Flex vertical align="center" className="gap-sm w-full" data-testid="template-details-loading">
-      <LoadingWrapper loading centered minHeight={160}>
-        <Flex />
-      </LoadingWrapper>
-      <Typography.Text>{t('resources:templates.loadingDetails')}</Typography.Text>
-    </Flex>
-  ) : templateDetails && templateDetails.files.length > 0 ? (
-    <Flex className="gap-md w-full" wrap>
-      <Flex className="w-[32%]">
-        <Card
-          title={
-            <Flex align="center" className="inline-flex">
-              <FileOutlined />
-              {t('resources:templates.files')}
-            </Flex>
-          }
-          data-testid="template-details-files-content"
+  const filesContent = (() => {
+    if (loading) {
+      return (
+        <Flex
+          vertical
+          align="center"
+          className="gap-sm w-full"
+          data-testid="template-details-loading"
         >
-          <Flex className="h-full">
-            <List
-              dataSource={templateDetails.files}
-              renderItem={(file, index) => (
-                <List.Item
-                  onClick={() => setSelectedFileIndex(index)}
-                  data-testid={`template-details-file-header-${index}`}
-                >
-                  <Flex vertical className="gap-sm">
-                    <Flex align="center" className="inline-flex">
-                      <CodeOutlined />
-                      <Typography.Text code>{file.path || file.name}</Typography.Text>
-                    </Flex>
-                  </Flex>
-                </List.Item>
-              )}
-            />
-          </Flex>
-        </Card>
-      </Flex>
-      <Flex className="flex-1">
-        <Card
-          title={
-            <Flex align="center" justify="space-between">
-              <Flex align="center" className="inline-flex">
-                <CodeOutlined />
-                <Typography.Text className="font-mono">
-                  {templateDetails.files[selectedFileIndex]?.path ||
-                    templateDetails.files[selectedFileIndex]?.name}
-                </Typography.Text>
+          <LoadingWrapper loading centered minHeight={160}>
+            <Flex />
+          </LoadingWrapper>
+          <Typography.Text>{t('resources:templates.loadingDetails')}</Typography.Text>
+        </Flex>
+      );
+    } else if (templateDetails && templateDetails.files.length > 0) {
+      return (
+        <Flex className="gap-md w-full" wrap>
+          <Flex className="w-[32%]">
+            <Card
+              title={
+                <Flex align="center" className="inline-flex">
+                  <FileOutlined />
+                  {t('resources:templates.files')}
+                </Flex>
+              }
+              data-testid="template-details-files-content"
+            >
+              <Flex className="h-full">
+                <List
+                  dataSource={templateDetails.files}
+                  renderItem={(file, index) => (
+                    <List.Item
+                      onClick={() => setSelectedFileIndex(index)}
+                      data-testid={`template-details-file-header-${index}`}
+                    >
+                      <Flex vertical className="gap-sm">
+                        <Flex align="center" className="inline-flex">
+                          <CodeOutlined />
+                          <Typography.Text code>{file.path || file.name}</Typography.Text>
+                        </Flex>
+                      </Flex>
+                    </List.Item>
+                  )}
+                />
               </Flex>
-            </Flex>
-          }
-          data-testid={`template-details-file-content-${selectedFileIndex}`}
-        >
-          <Flex className="flex-1 overflow-auto">
-            {templateDetails.files[selectedFileIndex] &&
-              renderFileContent(templateDetails.files[selectedFileIndex])}
+            </Card>
           </Flex>
-        </Card>
-      </Flex>
-    </Flex>
-  ) : (
-    <Alert
-      message={t('resources:templates.noReadme')}
-      type="info"
-      data-testid="template-details-readme-empty"
-    />
-  );
+          <Flex className="flex-1">
+            <Card
+              title={
+                <Flex align="center" justify="space-between">
+                  <Flex align="center" className="inline-flex">
+                    <CodeOutlined />
+                    <Typography.Text className="font-mono">
+                      {templateDetails.files[selectedFileIndex]?.path ||
+                        templateDetails.files[selectedFileIndex]?.name}
+                    </Typography.Text>
+                  </Flex>
+                </Flex>
+              }
+              data-testid={`template-details-file-content-${selectedFileIndex}`}
+            >
+              <Flex className="flex-1 overflow-auto">
+                {templateDetails.files[selectedFileIndex] &&
+                  renderFileContent(templateDetails.files[selectedFileIndex])}
+              </Flex>
+            </Card>
+          </Flex>
+        </Flex>
+      );
+    }
+    return (
+      <Alert
+        message={t('resources:templates.noReadme')}
+        type="info"
+        data-testid="template-details-readme-empty"
+      />
+    );
+  })();
 
   const securityContent = (
     <Flex className="overflow-auto">

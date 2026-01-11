@@ -1,6 +1,6 @@
-import { existsSync } from 'fs';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { getConfigPath, getPlatform } from '../utils/platform.js';
 
 /**

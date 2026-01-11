@@ -14,7 +14,7 @@ export function formatBashExports(envVars: Record<string, string>): string {
 
   for (const [key, value] of Object.entries(envVars)) {
     // Escape single quotes in the value for bash
-    const escapedValue = value.replace(/'/g, "'\\''");
+    const escapedValue = value.replaceAll("'", "'\\''");
     lines.push(`export ${key}='${escapedValue}'`);
   }
 

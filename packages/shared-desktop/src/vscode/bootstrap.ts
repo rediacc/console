@@ -6,7 +6,7 @@
  * to ensure VS Code terminals have access to repository environment variables.
  */
 
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
 import { formatBashExports, needsUserSwitch } from './envCompose.js';
 
 /**
@@ -62,9 +62,9 @@ function generateSetupScript(
 ): string {
   // Escape the env block for embedding in Python string
   const escapedEnvBlock = envBlock
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/\n/g, '\\n');
+    .replaceAll('\\', '\\\\')
+    .replaceAll("'", "\\'")
+    .replaceAll('\n', '\\n');
 
   return `
 import os
@@ -267,11 +267,11 @@ export async function ensureVSCodeEnvSetup(
     let command: string;
     if (needsUserSwitch(sshUser, universalUser)) {
       // Execute as universal user
-      const escapedScript = script.replace(/'/g, "'\\''");
+      const escapedScript = script.replaceAll("'", "'\\''");
       command = `sudo -u ${universalUser} python3 -c '${escapedScript}'`;
     } else {
       // Execute directly
-      const escapedScript = script.replace(/'/g, "'\\''");
+      const escapedScript = script.replaceAll("'", "'\\''");
       command = `python3 -c '${escapedScript}'`;
     }
 
@@ -294,7 +294,7 @@ export async function ensureVSCodeEnvSetup(
     log('VS Code environment setup complete');
 
     // Extract env file path from output if available
-    const pathMatch = result.stdout.match(/Environment setup complete: (.+)/);
+    const pathMatch = /Environment setup complete: (.+)/.exec(result.stdout);
     const envFilePath = pathMatch ? pathMatch[1].trim() : undefined;
 
     return {

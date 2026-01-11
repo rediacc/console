@@ -87,11 +87,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
     <>
       <DetailPanelSurface $splitView={splitView} $visible={visible}>
         <DetailPanelBody data-testid="vault-status-content">
-          {!vaultData ? (
-            <Flex>
-              <Empty description={t('machines:noVaultData')} data-testid="vault-status-empty" />
-            </Flex>
-          ) : (
+          {vaultData ? (
             <>
               {vaultData.system && (
                 <>
@@ -110,6 +106,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 <SystemContainersSection containers={vaultData.system_containers} t={t} />
               )}
             </>
+          ) : (
+            <Flex>
+              <Empty description={t('machines:noVaultData')} data-testid="vault-status-empty" />
+            </Flex>
           )}
         </DetailPanelBody>
       </DetailPanelSurface>
@@ -191,8 +191,8 @@ interface ResourceUsageSectionProps {
 
 const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }) => {
   const memoryPercent = calculateResourcePercent(system.memory.used, system.memory.total) || 0;
-  const diskPercent = parseInt(system.disk.use_percent, 10) || 0;
-  const datastorePercent = parseInt(system.datastore.use_percent, 10) || 0;
+  const diskPercent = Number.parseInt(system.disk.use_percent, 10) || 0;
+  const datastorePercent = Number.parseInt(system.datastore.use_percent, 10) || 0;
 
   return (
     <Flex vertical>

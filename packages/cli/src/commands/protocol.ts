@@ -80,6 +80,55 @@ async function handleUnregister(options: { system?: boolean }): Promise<void> {
   console.log(t('commands.protocol.unregister.success', { scheme: PROTOCOL_SCHEME }));
 }
 
+function formatYesNo(value: boolean): string {
+  return value ? t('common.yes') : t('common.no');
+}
+
+function displayBasicStatus(status: ReturnType<typeof getProtocolStatus>): void {
+  // eslint-disable-next-line no-console
+  console.log(`${t('commands.protocol.status.platform')}           ${status.platform}`);
+  // eslint-disable-next-line no-console
+  console.log(
+    `${t('commands.protocol.status.supported')}          ${formatYesNo(status.supported)}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `${t('commands.protocol.status.registered')}         ${formatYesNo(status.registered)}`
+  );
+}
+
+function displaySupportedStatus(status: ReturnType<typeof getProtocolStatus>): void {
+  if (!status.supported) return;
+
+  // eslint-disable-next-line no-console
+  console.log(
+    `${t('commands.protocol.status.userRegistration')}  ${formatYesNo(status.userRegistered)}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `${t('commands.protocol.status.systemRegistration')} ${formatYesNo(status.systemRegistered)}`
+  );
+
+  if (status.command) {
+    // eslint-disable-next-line no-console
+    console.log(`${t('commands.protocol.status.handlerCommand')}    ${status.command}`);
+  }
+}
+
+function displayStatusFooter(status: ReturnType<typeof getProtocolStatus>): void {
+  if (status.error) {
+    // eslint-disable-next-line no-console
+    console.log(t('commands.protocol.status.error', { error: status.error }));
+  }
+
+  if (!status.registered && status.supported) {
+    // eslint-disable-next-line no-console
+    console.log(t('commands.protocol.status.registerHint'));
+    // eslint-disable-next-line no-console
+    console.log('  rdc protocol register');
+  }
+}
+
 /**
  * Shows protocol handler status
  */
@@ -97,44 +146,9 @@ function handleStatus(options: { output?: string }): void {
   // eslint-disable-next-line no-console
   console.log('=======================\n');
 
-  // eslint-disable-next-line no-console
-  console.log(`${t('commands.protocol.status.platform')}           ${status.platform}`);
-  // eslint-disable-next-line no-console
-  console.log(
-    `${t('commands.protocol.status.supported')}          ${status.supported ? t('common.yes') : t('common.no')}`
-  );
-  // eslint-disable-next-line no-console
-  console.log(
-    `${t('commands.protocol.status.registered')}         ${status.registered ? t('common.yes') : t('common.no')}`
-  );
-
-  if (status.supported) {
-    // eslint-disable-next-line no-console
-    console.log(
-      `${t('commands.protocol.status.userRegistration')}  ${status.userRegistered ? t('common.yes') : t('common.no')}`
-    );
-    // eslint-disable-next-line no-console
-    console.log(
-      `${t('commands.protocol.status.systemRegistration')} ${status.systemRegistered ? t('common.yes') : t('common.no')}`
-    );
-
-    if (status.command) {
-      // eslint-disable-next-line no-console
-      console.log(`${t('commands.protocol.status.handlerCommand')}    ${status.command}`);
-    }
-  }
-
-  if (status.error) {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.protocol.status.error', { error: status.error }));
-  }
-
-  if (!status.registered && status.supported) {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.protocol.status.registerHint'));
-    // eslint-disable-next-line no-console
-    console.log('  rdc protocol register');
-  }
+  displayBasicStatus(status);
+  displaySupportedStatus(status);
+  displayStatusFooter(status);
 }
 
 /**
@@ -184,7 +198,7 @@ async function handleOpen(url: string, _options: ProtocolOpenOptions): Promise<v
   console.log(t('commands.protocol.open.executing'));
 
   // Import and execute the appropriate command
-  const { spawn } = await import('child_process');
+  const { spawn } = await import('node:child_process');
 
   // Build the full command
   const rdcPath = process.argv[1];
@@ -210,17 +224,18 @@ async function handleOpen(url: string, _options: ProtocolOpenOptions): Promise<v
   });
 }
 
-/**
- * Builds a protocol URL from components
- */
-function handleBuild(options: {
+interface BuildOptions {
   token?: string;
   team?: string;
   machine?: string;
   repository?: string;
   action?: string;
   params?: string[];
-}): void {
+}
+
+function validateBuildOptions(
+  options: BuildOptions
+): asserts options is BuildOptions & { token: string; team: string; machine: string } {
   if (!options.token) {
     throw new Error(t('errors.protocol.tokenRequired'));
   }
@@ -230,32 +245,49 @@ function handleBuild(options: {
   if (!options.machine) {
     throw new Error(t('errors.protocol.machineRequired'));
   }
+}
 
-  // Parse params
+function parseParamsArray(paramsArray: string[] | undefined): Record<string, string> {
+  if (!paramsArray) return {};
+
   const params: Record<string, string> = {};
-  if (options.params) {
-    for (const param of options.params) {
-      const [key, value] = param.split('=');
-      if (key && value) {
-        params[key] = value;
-      }
+  for (const param of paramsArray) {
+    const [key, value] = param.split('=');
+    if (key && value) {
+      params[key] = value;
     }
   }
+  return params;
+}
 
-  // Validate action
-  const action = options.action ?? 'desktop';
-  if (!VALID_ACTIONS.includes(action as (typeof VALID_ACTIONS)[number])) {
+function validateAndGetAction(action: string | undefined): (typeof VALID_ACTIONS)[number] {
+  const effectiveAction = action ?? 'desktop';
+  if (!VALID_ACTIONS.includes(effectiveAction as (typeof VALID_ACTIONS)[number])) {
     throw new Error(
-      t('errors.protocol.invalidAction', { action, validActions: VALID_ACTIONS.join(', ') })
+      t('errors.protocol.invalidAction', {
+        action: effectiveAction,
+        validActions: VALID_ACTIONS.join(', '),
+      })
     );
   }
+  return effectiveAction as (typeof VALID_ACTIONS)[number];
+}
+
+/**
+ * Builds a protocol URL from components
+ */
+function handleBuild(options: BuildOptions): void {
+  validateBuildOptions(options);
+
+  const params = parseParamsArray(options.params);
+  const action = validateAndGetAction(options.action);
 
   const url = buildProtocolUrl({
     token: options.token,
     teamName: options.team,
     machineName: options.machine,
     repositoryName: options.repository,
-    action: action as (typeof VALID_ACTIONS)[number],
+    action,
     params: Object.keys(params).length > 0 ? params : undefined,
   });
 

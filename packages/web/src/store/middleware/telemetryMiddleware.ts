@@ -50,6 +50,30 @@ interface TelemetryWindow extends Window {
   sessionStartTime?: number;
 }
 
+const trackAllActionTypes = (
+  typedAction: UnknownAction & { payload?: unknown },
+  stateBefore: RootState,
+  stateAfter: RootState
+): void => {
+  // Track feature usage
+  if ((FEATURE_USAGE_ACTIONS as readonly string[]).includes(typedAction.type)) {
+    trackFeatureUsage(typedAction);
+  }
+
+  // Track user preferences
+  if ((PREFERENCE_ACTIONS as readonly string[]).includes(typedAction.type)) {
+    trackUserPreferences(typedAction, stateBefore, stateAfter);
+  }
+
+  // Track workflow progression
+  if ((WORKFLOW_ACTIONS as readonly string[]).includes(typedAction.type)) {
+    trackWorkflowProgression(typedAction, stateAfter);
+  }
+
+  // Track specific business actions
+  trackBusinessActions(typedAction, stateBefore, stateAfter);
+};
+
 const createTelemetryMiddleware = (
   options: TelemetryMiddlewareOptions = {}
 ): Middleware<object, RootState> => {
@@ -57,59 +81,35 @@ const createTelemetryMiddleware = (
 
   return (store) => (next) => (action) => {
     const typedAction = action as UnknownAction & { payload?: unknown };
-    if (!enabled) {
-      return next(action);
-    }
+    if (!enabled) return next(action);
 
     const startTime = performance.now();
     const stateBefore = store.getState();
-
-    // Execute the action
     const result = next(action);
-
     const stateAfter = store.getState();
     const duration = performance.now() - startTime;
 
-    // Skip actions that are too frequent or not business-relevant
-    if (shouldTrackAction(typedAction.type)) {
-      try {
-        // Track basic action execution
-        telemetryService.trackEvent('redux.action_dispatched', {
-          'typedAction.type': typedAction.type,
-          'action.duration_ms': duration,
-          'action.has_payload': !!typedAction.payload,
-          'redux.state_size': JSON.stringify(stateAfter).length,
-          'page.url': window.location.pathname,
+    if (!shouldTrackAction(typedAction.type)) return result;
+
+    try {
+      telemetryService.trackEvent('redux.action_dispatched', {
+        'typedAction.type': typedAction.type,
+        'action.duration_ms': duration,
+        'action.has_payload': !!typedAction.payload,
+        'redux.state_size': JSON.stringify(stateAfter).length,
+        'page.url': window.location.pathname,
+      });
+
+      trackAllActionTypes(typedAction, stateBefore, stateAfter);
+
+      if (debugMode) {
+        console.warn('Telemetry tracked action:', typedAction.type, {
+          duration,
+          hasPayload: !!typedAction.payload,
         });
-
-        // Track feature usage
-        if ((FEATURE_USAGE_ACTIONS as readonly string[]).includes(typedAction.type)) {
-          trackFeatureUsage(action as UnknownAction);
-        }
-
-        // Track user preferences
-        if ((PREFERENCE_ACTIONS as readonly string[]).includes(typedAction.type)) {
-          trackUserPreferences(action as UnknownAction, stateBefore, stateAfter);
-        }
-
-        // Track workflow progression
-        if ((WORKFLOW_ACTIONS as readonly string[]).includes(typedAction.type)) {
-          trackWorkflowProgression(action as UnknownAction, stateAfter);
-        }
-
-        // Track specific business actions
-        trackBusinessActions(action as UnknownAction, stateBefore, stateAfter);
-
-        if (debugMode) {
-          console.warn('Telemetry tracked action:', typedAction.type, {
-            duration,
-            hasPayload: !!typedAction.payload,
-          });
-        }
-      } catch (error) {
-        // Don't let telemetry errors break the app
-        console.warn('Telemetry middleware error:', error);
       }
+    } catch (error) {
+      console.warn('Telemetry middleware error:', error);
     }
 
     return result;
@@ -206,46 +206,59 @@ function trackWorkflowProgression(action: UnknownAction, stateAfter: RootState):
   telemetryService.trackEvent('workflow.progression', workflowData);
 }
 
+function trackLoginSuccess(payload: Record<string, unknown> | undefined): void {
+  telemetryService.trackEvent('business.user_session_start', {
+    'session.organization': String(payload?.organization ?? 'unknown'),
+    'session.has_encryption': !!payload?.organizationEncryptionEnabled,
+    'auth.method': 'standard',
+  });
+}
+
+function trackLogout(stateBefore: RootState): void {
+  const sessionStartTime = (window as TelemetryWindow).sessionStartTime ?? Date.now();
+  telemetryService.trackEvent('business.user_session_end', {
+    'session.duration_ms': Date.now() - sessionStartTime,
+    'session.organization': stateBefore.auth.organization ?? 'unknown',
+  });
+}
+
+function trackNotification(
+  payload: Record<string, unknown> | undefined,
+  stateAfter: RootState
+): void {
+  telemetryService.trackEvent('business.notification_created', {
+    'notification.type': String(payload?.type ?? 'unknown'),
+    'notification.has_title': !!payload?.title,
+    'ux.notification_frequency': getNotificationCount(stateAfter),
+  });
+}
+
+function trackMachineAssignment(
+  payload: Record<string, unknown> | undefined,
+  stateAfter: RootState
+): void {
+  telemetryService.trackEvent('business.machine_assignment', {
+    'machine.id': String(payload?.id ?? 'unknown'),
+    'assignment.pool_type': String(payload?.poolType ?? 'unknown'),
+    'assignment.total_assigned': stateAfter.machineAssignment.selectedMachines.length,
+  });
+}
+
 function trackBusinessActions(
   action: UnknownAction,
   stateBefore: RootState,
   stateAfter: RootState
 ): void {
   const typedAction = action as UnknownAction & { payload?: Record<string, unknown> };
-  switch (action.type) {
-    case 'auth/loginSuccess':
-      telemetryService.trackEvent('business.user_session_start', {
-        'session.organization': String(typedAction.payload?.organization ?? 'unknown'),
-        'session.has_encryption': !!typedAction.payload?.organizationEncryptionEnabled,
-        'auth.method': 'standard',
-      });
-      break;
 
-    case 'auth/logout': {
-      const sessionStartTime = (window as TelemetryWindow).sessionStartTime ?? Date.now();
-      const sessionDuration = Date.now() - sessionStartTime;
-      telemetryService.trackEvent('business.user_session_end', {
-        'session.duration_ms': sessionDuration,
-        'session.organization': stateBefore.auth.organization ?? 'unknown',
-      });
-      break;
-    }
-
-    case 'notifications/addNotification':
-      telemetryService.trackEvent('business.notification_created', {
-        'notification.type': String(typedAction.payload?.type ?? 'unknown'),
-        'notification.has_title': !!typedAction.payload?.title,
-        'ux.notification_frequency': getNotificationCount(stateAfter),
-      });
-      break;
-
-    case 'machineAssignment/assignMachine':
-      telemetryService.trackEvent('business.machine_assignment', {
-        'machine.id': String(typedAction.payload?.id ?? 'unknown'),
-        'assignment.pool_type': String(typedAction.payload?.poolType ?? 'unknown'),
-        'assignment.total_assigned': stateAfter.machineAssignment.selectedMachines.length,
-      });
-      break;
+  if (action.type === 'auth/loginSuccess') {
+    trackLoginSuccess(typedAction.payload);
+  } else if (action.type === 'auth/logout') {
+    trackLogout(stateBefore);
+  } else if (action.type === 'notifications/addNotification') {
+    trackNotification(typedAction.payload, stateAfter);
+  } else if (action.type === 'machineAssignment/assignMachine') {
+    trackMachineAssignment(typedAction.payload, stateAfter);
   }
 }
 

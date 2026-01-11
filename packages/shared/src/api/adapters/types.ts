@@ -71,7 +71,7 @@ export interface TelemetryHandler {
   trackEvent?(eventName: string, attributes?: Record<string, unknown>): void;
 
   /** Track an error with context (optional) */
-  trackError?(error: Error | unknown, context?: Record<string, unknown>): void;
+  trackError?(error: unknown, context?: Record<string, unknown>): void;
 
   /** Track a performance metric (optional) */
   trackMetric?(name: string, value: number, unit?: string): void;

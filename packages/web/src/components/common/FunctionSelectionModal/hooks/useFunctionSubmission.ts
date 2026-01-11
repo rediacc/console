@@ -8,10 +8,126 @@ import {
   safeValidateFunctionParams,
   getValidationErrors,
 } from '@rediacc/shared/queue-vault';
-import type { QueueFunction } from '@rediacc/shared/types';
+import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
+
+// Helper: Check if template-selector is missing required value
+const isTemplateSelectorMissing = (
+  paramInfo: QueueFunctionParameter,
+  selectedTemplates: string[]
+): boolean => {
+  return paramInfo.ui === 'template-selector' && selectedTemplates.length === 0;
+};
+
+// Helper: Check if regular parameter is missing value
+const isRegularParamMissing = (
+  paramName: string,
+  paramInfo: QueueFunctionParameter,
+  functionParams: FunctionParams
+): boolean => {
+  const paramValue = functionParams[paramName];
+  if (paramValue === undefined || paramValue === '') return true;
+
+  // For size parameters, also check if the value part is filled
+  if (paramInfo.format === 'size' && paramInfo.units) {
+    const valueParam = functionParams[`${paramName}_value`];
+    return typeof valueParam !== 'number' || valueParam <= 0;
+  }
+
+  return false;
+};
+
+// Helper: Check if a single parameter is missing
+const isParamMissing = (
+  paramName: string,
+  paramInfo: QueueFunctionParameter,
+  functionParams: FunctionParams,
+  selectedTemplates: string[]
+): boolean => {
+  if (isTemplateSelectorMissing(paramInfo, selectedTemplates)) return true;
+  if (paramInfo.ui === 'template-selector') return false;
+  return isRegularParamMissing(paramName, paramInfo, functionParams);
+};
+
+// Helper: Find all missing required parameters
+const findMissingParams = (
+  func: QueueFunction,
+  functionParams: FunctionParams,
+  hiddenParams: string[],
+  selectedTemplates: string[]
+): string[] => {
+  const missingLabels = new Set<string>();
+
+  for (const [paramName, paramInfo] of Object.entries(func.params)) {
+    const isHidden = hiddenParams.includes(paramName);
+    const isRequired = paramInfo.required;
+
+    if (isHidden || !isRequired) continue;
+
+    if (isParamMissing(paramName, paramInfo, functionParams, selectedTemplates)) {
+      missingLabels.add(paramInfo.label ?? paramName);
+    }
+  }
+
+  return [...missingLabels];
+};
+
+// Helper: Remove helper fields (_value, _unit) from params
+const cleanParams = (functionParams: FunctionParams): FunctionParams => {
+  return Object.entries(functionParams).reduce((acc, [key, value]) => {
+    if (!key.endsWith('_value') && !key.endsWith('_unit')) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as FunctionParams);
+};
+
+// Helper: Encode single template
+const encodeSingleTemplate = async (templateId: string): Promise<string> => {
+  return templateService.getEncodedTemplateDataById(templateId);
+};
+
+// Helper: Encode multiple templates into merged format
+const encodeMultipleTemplates = async (templateIds: string[]): Promise<string> => {
+  const templateDataList = await Promise.all(
+    templateIds.map((templateId) => templateService.fetchTemplateData({ name: templateId }))
+  );
+
+  const mergedTemplate = {
+    name: templateIds.join('+'),
+    files: templateDataList.flatMap((template) => template.files as unknown[]),
+  };
+
+  const encoder = new TextEncoder();
+  const uint8Array = encoder.encode(JSON.stringify(mergedTemplate));
+  let binaryString = '';
+  for (const byte of uint8Array) {
+    binaryString += String.fromCharCode(byte);
+  }
+  return btoa(binaryString);
+};
+
+// Helper: Process templates and add to params
+const processTemplates = async (
+  func: QueueFunction,
+  selectedTemplates: string[],
+  allParams: FunctionParams
+): Promise<void> => {
+  if (selectedTemplates.length === 0) return;
+
+  for (const [paramName, paramInfo] of Object.entries(func.params)) {
+    if (paramInfo.ui !== 'template-selector') continue;
+
+    const encodedTemplate =
+      selectedTemplates.length === 1
+        ? await encodeSingleTemplate(selectedTemplates[0])
+        : await encodeMultipleTemplates(selectedTemplates);
+
+    allParams[paramName] = encodedTemplate;
+  }
+};
 
 interface UseFunctionSubmissionProps {
   selectedFunction: QueueFunction | null;
@@ -52,38 +168,13 @@ export const useFunctionSubmission = ({
     if (showMachineSelection && !selectedMachine) return;
 
     // Validate required parameters
-    const missingParams: string[] = [];
-    Object.entries(selectedFunction.params)
-      .filter(([paramName]) => !hiddenParams.includes(paramName))
-      .forEach(([paramName, paramInfo]) => {
-        if (paramInfo.required) {
-          // Special handling for template-selector - check selectedTemplates state
-          if (paramInfo.ui === 'template-selector') {
-            if (selectedTemplates.length === 0) {
-              missingParams.push(paramInfo.label ?? paramName);
-            }
-          } else {
-            const paramValue = functionParams[paramName];
+    const missingParams = findMissingParams(
+      selectedFunction,
+      functionParams,
+      hiddenParams,
+      selectedTemplates
+    );
 
-            // Check if parameter has a value
-            if (paramValue === undefined || paramValue === '') {
-              missingParams.push(paramInfo.label ?? paramName);
-            }
-
-            // For size parameters, also check if the value part is filled
-            if (paramInfo.format === 'size' && paramInfo.units) {
-              const valueParam = functionParams[`${paramName}_value`];
-              if (typeof valueParam !== 'number' || valueParam <= 0) {
-                if (!missingParams.includes(paramInfo.label ?? paramName)) {
-                  missingParams.push(paramInfo.label ?? paramName);
-                }
-              }
-            }
-          }
-        }
-      });
-
-    // If there are missing parameters, show error and return
     if (missingParams.length > 0) {
       Modal.error({
         title: t('functions:validationError'),
@@ -104,60 +195,17 @@ export const useFunctionSubmission = ({
       }
     }
 
-    // Clean up the params - remove the helper _value and _unit fields
-    const cleanedParams = Object.entries(functionParams).reduce((acc, [key, value]) => {
-      if (!key.endsWith('_value') && !key.endsWith('_unit')) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as FunctionParams);
-
-    // Merge visible params with default params
+    // Clean up and merge params
+    const cleanedParams = cleanParams(functionParams);
     const allParams: FunctionParams = { ...defaultParams, ...cleanedParams };
 
-    // Handle template encoding for template-selector parameters
-    if (selectedTemplates.length > 0) {
-      for (const [paramName, paramInfo] of Object.entries(selectedFunction.params)) {
-        if (paramInfo.ui === 'template-selector') {
-          try {
-            if (selectedTemplates.length === 1) {
-              // Single template: use the existing service method
-              const encodedTemplate = await templateService.getEncodedTemplateDataById(
-                selectedTemplates[0]
-              );
-              allParams[paramName] = encodedTemplate;
-            } else {
-              // Multiple templates: fetch and merge them
-              const templateDataList = await Promise.all(
-                selectedTemplates.map((templateId) =>
-                  templateService.fetchTemplateData({ name: templateId })
-                )
-              );
-
-              // Merge all templates into one structure
-              const mergedTemplate = {
-                name: selectedTemplates.join('+'),
-                files: templateDataList.flatMap((template) => template.files as unknown[]),
-              };
-
-              // Encode the merged template using the same method as templateService
-              const encoder = new TextEncoder();
-              const uint8Array = encoder.encode(JSON.stringify(mergedTemplate));
-              let binaryString = '';
-              for (const byte of uint8Array) {
-                binaryString += String.fromCharCode(byte);
-              }
-              const encodedTemplate = btoa(binaryString);
-
-              allParams[paramName] = encodedTemplate;
-            }
-          } catch (error) {
-            console.error('Failed to encode templates:', error);
-            message.error('resources:templates.failedToLoadTemplate');
-            return;
-          }
-        }
-      }
+    // Handle template encoding
+    try {
+      await processTemplates(selectedFunction, selectedTemplates, allParams);
+    } catch (error) {
+      console.error('Failed to encode templates:', error);
+      message.error('resources:templates.failedToLoadTemplate');
+      return;
     }
 
     onSubmit({

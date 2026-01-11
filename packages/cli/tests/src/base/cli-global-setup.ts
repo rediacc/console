@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { saveGlobalState } from './globalState.js';
 import { getApiUrl } from '../constants.js';
 import { AccountManager } from '../utils/AccountManager.js';
@@ -39,8 +39,20 @@ function ensureEnvFile(): void {
  * - process.env.CLI_MASTER_CONTEXT
  * - process.env.CLI_MASTER_EMAIL
  * - process.env.CLI_MASTER_PASSWORD
+ *
+ * Set PLAYWRIGHT_SKIP_GLOBAL_SETUP=true to skip setup (for standalone tests).
  */
 async function cliGlobalSetup(_config: FullConfig): Promise<void> {
+  // Skip setup if explicitly requested (for standalone detection tests)
+  if (process.env.PLAYWRIGHT_SKIP_GLOBAL_SETUP === 'true') {
+    console.warn('');
+    console.warn('='.repeat(60));
+    console.warn('CLI Test Setup - SKIPPED (PLAYWRIGHT_SKIP_GLOBAL_SETUP=true)');
+    console.warn('='.repeat(60));
+    console.warn('');
+    return;
+  }
+
   // Ensure .env file exists
   ensureEnvFile();
 

@@ -6,9 +6,172 @@ import { useCreateQueueItemWithValidation, useQueueItemTraceWithEnabled } from '
 import { useMessage } from '@/hooks';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { parseSshTestResult } from '@rediacc/shared/utils';
+import type { SSHTestResult } from '@rediacc/shared/utils';
 import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
 import { decodeBase64, encodeBase64, formatValidationErrors, processExtraFields } from '../utils';
-import type { ValidateErrorEntity, VaultEditorProps, VaultFormValues } from '../types';
+import type {
+  FieldDefinition,
+  ValidateErrorEntity,
+  VaultEditorProps,
+  VaultFormValues,
+} from '../types';
+import type { FormInstance } from 'antd/es/form';
+
+// Helper: Get storage provider fields if applicable
+const getStorageProviderFields = (
+  entityType: string,
+  providerKey: unknown
+): Record<string, FieldDefinition> | null => {
+  if (entityType !== 'STORAGE' || !providerKey || typeof providerKey !== 'string') {
+    return null;
+  }
+  // Check if provider key exists in config
+  if (!(providerKey in storageProviderConfig.providers)) {
+    return null;
+  }
+  const provider = storageProviderConfig.providers[providerKey];
+  return provider.fields ?? null;
+};
+
+// Helper: Build schema fields array including storage provider fields
+const buildSchemaFieldsList = (
+  entityDef: { fields?: Record<string, FieldDefinition> },
+  entityType: string,
+  providerKey: unknown
+): string[] => {
+  const baseFields = Object.keys(entityDef.fields ?? {});
+  const providerFields = getStorageProviderFields(entityType, providerKey);
+  return providerFields ? [...baseFields, ...Object.keys(providerFields)] : baseFields;
+};
+
+// Helper: Process field value for form (handle base64 decoding)
+const processFieldValue = (value: unknown, field: FieldDefinition): unknown => {
+  if (field.format === 'base64' && typeof value === 'string') {
+    return decodeBase64(value);
+  }
+  return value;
+};
+
+// Helper: Build form data from initial data and entity definition
+const buildFormDataFromFields = (
+  fields: Record<string, FieldDefinition>,
+  sourceData: VaultFormValues
+): VaultFormValues => {
+  const formData: VaultFormValues = {};
+  Object.entries(fields).forEach(([key, field]) => {
+    if (sourceData[key] !== undefined) {
+      formData[key] = processFieldValue(sourceData[key], field);
+    } else if (field.default !== undefined) {
+      formData[key] = field.default;
+    }
+  });
+  return formData;
+};
+
+// Helper: Extract extras from initial data
+const extractExtrasFromData = (
+  initialData: VaultFormValues,
+  schemaFields: string[]
+): VaultFormValues => {
+  const extras: VaultFormValues = {};
+
+  if (initialData.extraFields && typeof initialData.extraFields === 'object') {
+    Object.assign(extras, initialData.extraFields);
+  }
+
+  Object.entries(initialData).forEach(([key, value]) => {
+    if (key !== 'extraFields' && !schemaFields.includes(key)) {
+      extras[key] = value;
+    }
+  });
+
+  return extras;
+};
+
+// Helper: Handle successful SSH test result
+const handleSshTestSuccess = (
+  result: SSHTestResult,
+  form: FormInstance<VaultFormValues>,
+  setSshKeyConfigured: (value: boolean) => void,
+  setOsSetupCompleted: (value: boolean | null) => void,
+  onOsSetupStatusChange: ((status: boolean) => void) | undefined,
+  setTestConnectionSuccess: (value: boolean) => void,
+  onTestConnectionStateChange: ((success: boolean) => void) | undefined,
+  handleFormChange: (values: Partial<VaultFormValues>) => void
+): void => {
+  if (result.ssh_key_configured !== undefined) {
+    form.setFieldValue('ssh_key_configured', result.ssh_key_configured);
+    setSshKeyConfigured(result.ssh_key_configured);
+  }
+
+  if (result.known_hosts) {
+    form.setFieldValue('known_hosts', result.known_hosts);
+  }
+
+  if (result.kernel_compatibility) {
+    form.setFieldValue('kernel_compatibility', result.kernel_compatibility);
+  }
+
+  if (result.kernel_compatibility?.os_setup_completed !== undefined) {
+    setOsSetupCompleted(result.kernel_compatibility.os_setup_completed);
+    onOsSetupStatusChange?.(result.kernel_compatibility.os_setup_completed);
+  }
+
+  form.setFieldValue('ssh_password', '');
+  setTestConnectionSuccess(true);
+  onTestConnectionStateChange?.(true);
+
+  handleFormChange({
+    ssh_key_configured: result.ssh_key_configured,
+    known_hosts: result.known_hosts,
+    ssh_password: '',
+  });
+};
+
+// Helper: Handle failed SSH test result
+const handleSshTestFailure = (
+  errorMessage: string | undefined,
+  message: ReturnType<typeof useMessage>,
+  setTestConnectionSuccess: (value: boolean) => void,
+  onTestConnectionStateChange: ((success: boolean) => void) | undefined
+): void => {
+  message.error(errorMessage ?? 'common:vaultEditor.testConnection.failed');
+  setTestConnectionSuccess(false);
+  onTestConnectionStateChange?.(false);
+};
+
+// Helper: Check if initialization should proceed
+const shouldInitializeForm = (currentDataString: string, lastInitializedData: string): boolean => {
+  const wasNonEmpty = lastInitializedData && lastInitializedData !== '{}';
+  const isNowEmpty = currentDataString === '{}';
+
+  // Skip if data hasn't changed (unless transitioning from non-empty to empty)
+  if (currentDataString === lastInitializedData && !(wasNonEmpty && isNowEmpty)) {
+    return false;
+  }
+  return true;
+};
+
+// Helper: Initialize entity-specific state
+const initializeEntityState = (
+  entityType: string,
+  formData: VaultFormValues,
+  setSshKeyConfigured: (value: boolean) => void,
+  setSelectedProvider: (value: string | null) => void
+): void => {
+  // Set SSH key configuration state for MACHINE/BRIDGE entities
+  if (entityType === 'MACHINE' || entityType === 'BRIDGE') {
+    const sshKeyValue = formData.ssh_key_configured;
+    if (typeof sshKeyValue === 'boolean') {
+      setSshKeyConfigured(sshKeyValue);
+    }
+  }
+
+  // Set provider state for STORAGE entity
+  if (entityType === 'STORAGE' && typeof formData.provider === 'string') {
+    setSelectedProvider(formData.provider);
+  }
+};
 
 export const useVaultEditorState = (props: VaultEditorProps) => {
   const {
@@ -137,81 +300,72 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
   // Monitor SSH test results
   useEffect(() => {
-    if (testTraceData?.queueDetails) {
-      const status =
-        testTraceData.queueDetails.status ??
-        (testTraceData.queueDetails as { Status?: string }).Status;
+    if (!testTraceData?.queueDetails) {
+      return;
+    }
 
-      if (status === 'COMPLETED') {
-        try {
-          const result = parseSshTestResult({
-            responseVaultContent: testTraceData.responseVaultContent?.vaultContent ?? null,
-            consoleOutput: testTraceData.summary?.consoleOutput ?? null,
-          });
+    const status =
+      testTraceData.queueDetails.status ??
+      (testTraceData.queueDetails as { Status?: string }).Status;
 
-          if (result) {
-            if (result.status === 'success') {
-              message.success('common:vaultEditor.testConnection.success');
+    // Handle failure states
+    if (status === 'FAILED' || status === 'CANCELLED') {
+      handleSshTestFailure(
+        undefined,
+        message,
+        setTestConnectionSuccess,
+        onTestConnectionStateChange
+      );
+      setIsTestingConnection(false);
+      setTestTaskId(null);
+      return;
+    }
 
-              if (result.ssh_key_configured !== undefined) {
-                form.setFieldValue('ssh_key_configured', result.ssh_key_configured);
-                setSshKeyConfigured(result.ssh_key_configured);
-              }
+    // Handle completed state
+    if (status !== 'COMPLETED') {
+      return;
+    }
 
-              if (result.known_hosts) {
-                form.setFieldValue('known_hosts', result.known_hosts);
-              }
+    try {
+      const result = parseSshTestResult({
+        responseVaultContent: testTraceData.responseVaultContent?.vaultContent ?? null,
+        consoleOutput: testTraceData.summary?.consoleOutput ?? null,
+      });
 
-              if (result.kernel_compatibility) {
-                form.setFieldValue('kernel_compatibility', result.kernel_compatibility);
-              }
-
-              if (result.kernel_compatibility?.os_setup_completed !== undefined) {
-                setOsSetupCompleted(result.kernel_compatibility.os_setup_completed);
-                if (onOsSetupStatusChange) {
-                  onOsSetupStatusChange(result.kernel_compatibility.os_setup_completed);
-                }
-              }
-
-              form.setFieldValue('ssh_password', '');
-              setTestConnectionSuccess(true);
-
-              if (onTestConnectionStateChange) {
-                onTestConnectionStateChange(true);
-              }
-
-              handleFormChange({
-                ssh_key_configured: result.ssh_key_configured,
-                known_hosts: result.known_hosts,
-                ssh_password: '',
-              });
-            } else {
-              message.error(result.message ?? 'common:vaultEditor.testConnection.failed');
-              setTestConnectionSuccess(false);
-              if (onTestConnectionStateChange) {
-                onTestConnectionStateChange(false);
-              }
-            }
-          }
-        } catch {
-          message.error('common:vaultEditor.testConnection.failed');
-          setTestConnectionSuccess(false);
-          if (onTestConnectionStateChange) {
-            onTestConnectionStateChange(false);
-          }
-        } finally {
-          setIsTestingConnection(false);
-          setTestTaskId(null);
-        }
-      } else if (status === 'FAILED' || status === 'CANCELLED') {
-        message.error('common:vaultEditor.testConnection.failed');
-        setIsTestingConnection(false);
-        setTestTaskId(null);
-        setTestConnectionSuccess(false);
-        if (onTestConnectionStateChange) {
-          onTestConnectionStateChange(false);
-        }
+      if (!result) {
+        return;
       }
+
+      if (result.status === 'success') {
+        message.success('common:vaultEditor.testConnection.success');
+        handleSshTestSuccess(
+          result,
+          form,
+          setSshKeyConfigured,
+          setOsSetupCompleted,
+          onOsSetupStatusChange,
+          setTestConnectionSuccess,
+          onTestConnectionStateChange,
+          handleFormChange
+        );
+      } else {
+        handleSshTestFailure(
+          result.message,
+          message,
+          setTestConnectionSuccess,
+          onTestConnectionStateChange
+        );
+      }
+    } catch {
+      handleSshTestFailure(
+        undefined,
+        message,
+        setTestConnectionSuccess,
+        onTestConnectionStateChange
+      );
+    } finally {
+      setIsTestingConnection(false);
+      setTestTaskId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testTraceData, form, message, onOsSetupStatusChange, onTestConnectionStateChange]);
@@ -223,18 +377,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive guard
     if (!entityDef) return;
 
-    let schemaFields = Object.keys(entityDef.fields ?? {});
-
-    if (entityType === 'STORAGE' && importedData.provider) {
-      const provider =
-        storageProviderConfig.providers[
-          importedData.provider as keyof typeof storageProviderConfig.providers
-        ];
-      if (provider.fields) {
-        schemaFields = [...schemaFields, ...Object.keys(provider.fields)];
-      }
-    }
-
+    const schemaFields = buildSchemaFieldsList(entityDef, entityType, importedData.provider);
     const { extras, movedToExtra, movedFromExtra } = processExtraFields(
       importedData,
       schemaFields,
@@ -244,15 +387,18 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     const extrasString = JSON.stringify(extras);
     const currentExtrasString = JSON.stringify(extraFields);
 
-    if (extrasString !== currentExtrasString) {
-      setExtraFields(extras);
-
-      if ((movedToExtra.length > 0 || movedFromExtra.length > 0) && onFieldMovement) {
-        onFieldMovement(movedToExtra, movedFromExtra);
-      }
-
-      showFieldMovementToasts(movedToExtra, movedFromExtra);
+    if (extrasString === currentExtrasString) {
+      return;
     }
+
+    setExtraFields(extras);
+
+    const hasMovements = movedToExtra.length > 0 || movedFromExtra.length > 0;
+    if (hasMovements) {
+      onFieldMovement?.(movedToExtra, movedFromExtra);
+    }
+
+    showFieldMovementToasts(movedToExtra, movedFromExtra);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importedDataString, entityDef, entityType, onFieldMovement, showFieldMovementToasts]);
 
@@ -261,90 +407,32 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive guard
     if (!entityDef) return;
 
-    const currentDataString = initialDataJson;
-    const wasNonEmpty = lastInitializedData && lastInitializedData !== '{}';
-    const isNowEmpty = currentDataString === '{}';
-
-    if (currentDataString === lastInitializedData && !(wasNonEmpty && isNowEmpty)) {
+    if (!shouldInitializeForm(initialDataJson, lastInitializedData)) {
       return;
     }
 
-    const formData: VaultFormValues = {};
-    Object.entries(entityDef.fields ?? {}).forEach(([key, field]) => {
-      if (stableInitialData[key] !== undefined) {
-        if (field.format === 'base64' && typeof stableInitialData[key] === 'string') {
-          formData[key] = decodeBase64(stableInitialData[key]);
-        } else {
-          formData[key] = stableInitialData[key];
-        }
-      } else if (field.default !== undefined) {
-        formData[key] = field.default;
-      }
-    });
+    // Build form data from entity definition fields
+    const formData = buildFormDataFromFields(entityDef.fields ?? {}, stableInitialData);
 
-    if (entityType === 'STORAGE' && stableInitialData.provider) {
-      const provider =
-        storageProviderConfig.providers[
-          stableInitialData.provider as keyof typeof storageProviderConfig.providers
-        ];
-      if (provider.fields) {
-        Object.entries(provider.fields).forEach(([key, field]) => {
-          if (stableInitialData[key] !== undefined) {
-            if (field.format === 'base64' && typeof stableInitialData[key] === 'string') {
-              formData[key] = decodeBase64(stableInitialData[key]);
-            } else {
-              formData[key] = stableInitialData[key];
-            }
-          } else if (field.default !== undefined) {
-            formData[key] = field.default;
-          }
-        });
-      }
+    // Add storage provider fields if applicable
+    const providerFields = getStorageProviderFields(entityType, stableInitialData.provider);
+    if (providerFields) {
+      Object.assign(formData, buildFormDataFromFields(providerFields, stableInitialData));
     }
 
+    // Reset and populate form
     form.resetFields();
     form.setFieldsValue(formData);
-
     setSshKeyConfigured(false);
     setSelectedProvider(null);
     setRawJsonError(null);
 
-    if (
-      (entityType === 'MACHINE' || entityType === 'BRIDGE') &&
-      formData.ssh_key_configured !== undefined
-    ) {
-      setSshKeyConfigured(
-        typeof formData.ssh_key_configured === 'boolean' ? formData.ssh_key_configured : false
-      );
-    }
+    // Initialize entity-specific state
+    initializeEntityState(entityType, formData, setSshKeyConfigured, setSelectedProvider);
 
-    if (entityType === 'STORAGE' && formData.provider) {
-      setSelectedProvider(typeof formData.provider === 'string' ? formData.provider : null);
-    }
-
-    let schemaFields = Object.keys(entityDef.fields ?? {});
-
-    if (entityType === 'STORAGE' && stableInitialData.provider) {
-      const provider =
-        storageProviderConfig.providers[
-          stableInitialData.provider as keyof typeof storageProviderConfig.providers
-        ];
-      if (provider.fields) {
-        schemaFields = [...schemaFields, ...Object.keys(provider.fields)];
-      }
-    }
-
-    const extras: VaultFormValues = {};
-
-    if (stableInitialData.extraFields && typeof stableInitialData.extraFields === 'object') {
-      Object.assign(extras, stableInitialData.extraFields);
-    }
-
-    Object.entries(stableInitialData).forEach(([key, value]) => {
-      if (key !== 'extraFields' && !schemaFields.includes(key)) {
-        extras[key] = value;
-      }
-    });
+    // Extract extras and build complete data
+    const schemaFields = buildSchemaFieldsList(entityDef, entityType, stableInitialData.provider);
+    const extras = extractExtrasFromData(stableInitialData, schemaFields);
 
     const completeData = { ...formData };
     if (Object.keys(extras).length > 0) {
@@ -352,7 +440,7 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     }
 
     updateRawJson(completeData);
-    setLastInitializedData(currentDataString);
+    setLastInitializedData(initialDataJson);
   }, [
     form,
     entityDef,

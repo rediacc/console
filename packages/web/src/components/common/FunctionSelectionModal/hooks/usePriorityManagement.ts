@@ -36,15 +36,16 @@ export const usePriorityManagement = () => {
   );
 
   const getPriorityLabel = (priority: number): string => {
-    return priority === 1
-      ? t('functions:priorityHighest')
-      : priority === 2
-        ? t('functions:priorityHigh')
-        : priority === 3
-          ? t('functions:priorityNormal')
-          : priority === 4
-            ? t('functions:priorityBelowNormal')
-            : t('functions:priorityLow');
+    if (priority === 1) {
+      return t('functions:priorityHighest');
+    } else if (priority === 2) {
+      return t('functions:priorityHigh');
+    } else if (priority === 3) {
+      return t('functions:priorityNormal');
+    } else if (priority === 4) {
+      return t('functions:priorityBelowNormal');
+    }
+    return t('functions:priorityLow');
   };
 
   return {

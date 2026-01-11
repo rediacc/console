@@ -4,6 +4,46 @@ import { getGrandRepoVault, getRequiredTag } from '../hooks/useFunctionExecution
 import type { ForkFunctionData } from './types';
 import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 
+// Helper to find repository data
+const findRepoData = (context: FunctionExecutionContext) => {
+  const { selectedRepository, teamRepositories } = context;
+  if (!selectedRepository) return null;
+
+  return teamRepositories.find(
+    (r) =>
+      r.repositoryName === selectedRepository.name &&
+      r.repositoryTag === selectedRepository.repositoryTag
+  );
+};
+
+// Helper to handle fork result
+const handleForkResult = (
+  result: { success: boolean; taskId?: string; isQueued?: boolean; error?: string },
+  context: FunctionExecutionContext,
+  forkTag: string
+): void => {
+  const { selectedRepository, machine, onQueueItemCreated, t } = context;
+
+  if (!result.success) {
+    throw new Error(result.error ?? 'Failed to fork Repository');
+  }
+
+  if (result.taskId) {
+    showMessage(
+      'success',
+      t('resources:repositories.forkStarted', {
+        dest: `${selectedRepository?.name}:${forkTag}`,
+      })
+    );
+    if (onQueueItemCreated) onQueueItemCreated(result.taskId, machine.machineName);
+    return;
+  }
+
+  if (result.isQueued) {
+    showMessage('info', t('resources:repositories.highestPriorityQueued'));
+  }
+};
+
 export const handleForkFunction = async (
   functionData: ForkFunctionData,
   context: FunctionExecutionContext
@@ -14,19 +54,13 @@ export const handleForkFunction = async (
     machine,
     executeDynamic,
     createRepositoryCredential,
-    onQueueItemCreated,
     closeModal,
     t,
   } = context;
 
   if (!selectedRepository) return;
 
-  const RepoData = teamRepositories.find(
-    (r) =>
-      r.repositoryName === selectedRepository.name &&
-      r.repositoryTag === selectedRepository.repositoryTag
-  );
-
+  const RepoData = findRepoData(context);
   if (!RepoData?.vaultContent) {
     showMessage(
       'error',
@@ -76,22 +110,7 @@ export const handleForkFunction = async (
     });
 
     closeModal();
-
-    if (result.success) {
-      if (result.taskId) {
-        showMessage(
-          'success',
-          t('resources:repositories.forkStarted', {
-            dest: `${selectedRepository.name}:${forkTag}`,
-          })
-        );
-        if (onQueueItemCreated) onQueueItemCreated(result.taskId, machine.machineName);
-      } else if (result.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'));
-      }
-    } else {
-      throw new Error(result.error ?? 'Failed to fork Repository');
-    }
+    handleForkResult(result, context, forkTag);
   } catch {
     showMessage('error', t('resources:repositories.failedToForkRepository'));
   }

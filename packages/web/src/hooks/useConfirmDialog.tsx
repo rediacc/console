@@ -56,7 +56,7 @@ export const useConfirmDialog = () => {
   const confirm = (options: ConfirmOptions) => {
     return modal.confirm({
       title: options.title,
-      icon: options.icon !== undefined ? options.icon : <ExclamationCircleOutlined />,
+      icon: options.icon === undefined ? <ExclamationCircleOutlined /> : options.icon,
       content: options.content,
       okText: options.okText ?? t('common:actions.confirm'),
       cancelText: options.cancelText ?? t('common:actions.cancel'),

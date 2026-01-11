@@ -287,7 +287,7 @@ export function registerUserCommands(program: Command): void {
     .command('update')
     .description(t('commands.user.vault.update.description'))
     .option('--vault <json>', t('options.vaultJson'))
-    .option('--vault-version <n>', t('options.vaultVersion'), parseInt)
+    .option('--vault-version <n>', t('options.vaultVersion'), Number.parseInt)
     .action(async (options) => {
       try {
         await authService.requireAuth();

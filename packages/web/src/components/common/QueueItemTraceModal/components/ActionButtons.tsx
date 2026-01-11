@@ -46,19 +46,16 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         icon={<CloseCircleOutlined />}
         onClick={onCancel}
         loading={isCancelling}
-        className={
-          taskStaleness === 'critical'
-            ? 'font-semibold text-sm'
-            : taskStaleness === 'stale'
-              ? 'font-medium text-xs'
-              : 'font-medium text-xs'
-        }
+        className={(() => {
+          if (taskStaleness === 'critical') return 'font-semibold text-sm';
+          return 'font-medium text-xs';
+        })()}
       >
-        {taskStaleness === 'critical'
-          ? t('trace.cancelStuckTaskBtn')
-          : taskStaleness === 'stale'
-            ? t('trace.cancelTaskBtn')
-            : t('trace.cancelBtn')}
+        {(() => {
+          if (taskStaleness === 'critical') return t('trace.cancelStuckTaskBtn');
+          if (taskStaleness === 'stale') return t('trace.cancelTaskBtn');
+          return t('trace.cancelBtn');
+        })()}
       </Button>
     ) : null,
     // Show Retry button only for failed tasks that haven't reached max retries

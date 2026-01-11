@@ -16,6 +16,21 @@ interface ForkTokenInfo {
   name: string;
 }
 
+// Helper to check if token is expired
+const isTokenExpired = (expiresAt: number): boolean => Date.now() >= expiresAt;
+
+// Helper to parse fork token info from storage
+const parseForkTokenInfo = (data: string): ForkTokenInfo | null => {
+  try {
+    return JSON.parse(data) as ForkTokenInfo;
+  } catch {
+    return null;
+  }
+};
+
+// Helper to get storage key for action
+const getStorageKey = (prefix: string, action: string): string => `${prefix}${action}`;
+
 class ForkTokenService {
   private readonly FORK_TOKEN_PREFIX = 'fork_token_';
   private readonly DEFAULT_EXPIRATION_HOURS = 2;
@@ -31,13 +46,10 @@ class ForkTokenService {
     action: string,
     expirationHours: number = this.DEFAULT_EXPIRATION_HOURS
   ): Promise<string> {
-    // Generate unique name for this fork token
     const childName = `desktop-${action}-${Date.now()}`;
 
     try {
-      // Call the API to create fork token (uses current session as parent)
       const credentials = await this.callForkAuthenticationRequest(childName, expirationHours);
-
       const forkToken = credentials.nextRequestToken;
       const parentRequestId = credentials.parentRequestId;
 
@@ -45,7 +57,6 @@ class ForkTokenService {
         throw new Error('Failed to create fork token: No token returned');
       }
 
-      // Store fork token info locally for tracking
       const forkTokenInfo: ForkTokenInfo = {
         token: forkToken,
         expiresAt: Date.now() + expirationHours * 60 * 60 * 1000,
@@ -53,7 +64,7 @@ class ForkTokenService {
         name: childName,
       };
 
-      const storageKey = `${this.FORK_TOKEN_PREFIX}${action}`;
+      const storageKey = getStorageKey(this.FORK_TOKEN_PREFIX, action);
       await secureStorage.setItem(storageKey, JSON.stringify(forkTokenInfo));
 
       return forkToken;
@@ -69,29 +80,23 @@ class ForkTokenService {
    * Get existing fork token for an action (if valid)
    */
   async getForkToken(action: string): Promise<string | null> {
-    const storageKey = `${this.FORK_TOKEN_PREFIX}${action}`;
+    const storageKey = getStorageKey(this.FORK_TOKEN_PREFIX, action);
     const forkTokenInfoStr = await secureStorage.getItem(storageKey);
 
-    if (!forkTokenInfoStr) {
-      return null;
-    }
+    if (!forkTokenInfoStr) return null;
 
-    try {
-      const forkTokenInfo: ForkTokenInfo = JSON.parse(forkTokenInfoStr);
-
-      // Check if token has expired
-      if (Date.now() >= forkTokenInfo.expiresAt) {
-        // Clean up expired token
-        secureStorage.removeItem(storageKey);
-        return null;
-      }
-
-      return forkTokenInfo.token;
-    } catch {
-      // Clean up corrupted token data
+    const forkTokenInfo = parseForkTokenInfo(forkTokenInfoStr);
+    if (!forkTokenInfo) {
       secureStorage.removeItem(storageKey);
       return null;
     }
+
+    if (isTokenExpired(forkTokenInfo.expiresAt)) {
+      secureStorage.removeItem(storageKey);
+      return null;
+    }
+
+    return forkTokenInfo.token;
   }
 
   /**
@@ -101,13 +106,9 @@ class ForkTokenService {
     action: string,
     expirationHours: number = this.DEFAULT_EXPIRATION_HOURS
   ): Promise<string> {
-    // Try to get existing valid token first
     const existingToken = await this.getForkToken(action);
-    if (existingToken) {
-      return existingToken;
-    }
+    if (existingToken) return existingToken;
 
-    // Create new fork token
     return await this.createForkToken(action, expirationHours);
   }
 
@@ -119,25 +120,16 @@ class ForkTokenService {
     action: string,
     expirationHours: number = this.DEFAULT_EXPIRATION_HOURS
   ): Promise<string> {
-    // Clear any existing token for this action first
-    const storageKey = `${this.FORK_TOKEN_PREFIX}${action}`;
+    const storageKey = getStorageKey(this.FORK_TOKEN_PREFIX, action);
     const existingTokenInfoStr = await secureStorage.getItem(storageKey);
 
     if (existingTokenInfoStr) {
-      try {
-        JSON.parse(existingTokenInfoStr);
-      } catch {
-        // Ignore corrupted data; removal handled below
-      }
-
-      // Remove the old token
+      // Attempt to parse (ignoring errors for corrupted data)
+      parseForkTokenInfo(existingTokenInfoStr);
       secureStorage.removeItem(storageKey);
     }
 
-    // Create new fork token
-    const newToken = await this.createForkToken(action, expirationHours);
-
-    return newToken;
+    return await this.createForkToken(action, expirationHours);
   }
 
   /**
@@ -145,11 +137,9 @@ class ForkTokenService {
    */
   clearAllForkTokens(): void {
     const keys = secureStorage.keys();
-    keys.forEach((key) => {
-      if (key.startsWith(this.FORK_TOKEN_PREFIX)) {
-        secureStorage.removeItem(key);
-      }
-    });
+    keys
+      .filter((key) => key.startsWith(this.FORK_TOKEN_PREFIX))
+      .forEach((key) => secureStorage.removeItem(key));
   }
 
   /**
@@ -157,23 +147,23 @@ class ForkTokenService {
    */
   async clearExpiredForkTokens(): Promise<void> {
     const keys = secureStorage.keys();
-    const now = Date.now();
+    const forkTokenKeys = keys.filter((key) => key.startsWith(this.FORK_TOKEN_PREFIX));
 
-    for (const key of keys) {
-      if (key.startsWith(this.FORK_TOKEN_PREFIX)) {
-        try {
-          const forkTokenInfoStr = await secureStorage.getItem(key);
-          if (forkTokenInfoStr) {
-            const forkTokenInfo: ForkTokenInfo = JSON.parse(forkTokenInfoStr);
-            if (now >= forkTokenInfo.expiresAt) {
-              secureStorage.removeItem(key);
-            }
-          }
-        } catch {
-          // Remove corrupted entries
-          secureStorage.removeItem(key);
-        }
-      }
+    for (const key of forkTokenKeys) {
+      await this.clearTokenIfExpired(key);
+    }
+  }
+
+  /**
+   * Check and clear a single token if expired
+   */
+  private async clearTokenIfExpired(key: string): Promise<void> {
+    const forkTokenInfoStr = await secureStorage.getItem(key);
+    if (!forkTokenInfoStr) return;
+
+    const forkTokenInfo = parseForkTokenInfo(forkTokenInfoStr);
+    if (!forkTokenInfo || isTokenExpired(forkTokenInfo.expiresAt)) {
+      secureStorage.removeItem(key);
     }
   }
 

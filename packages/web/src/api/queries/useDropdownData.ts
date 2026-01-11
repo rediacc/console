@@ -17,24 +17,34 @@ const EMPTY_DROPDOWN_DATA: OrganizationDropdownData = {
   subscriptionPlans: [],
 };
 
+const DROPDOWN_KEYS = [
+  'teams',
+  'allTeams',
+  'regions',
+  'machines',
+  'bridges',
+  'bridgesByRegion',
+  'machinesByTeam',
+  'users',
+  'permissionGroups',
+  'permissions',
+  'subscriptionPlans',
+] as const satisfies readonly (keyof OrganizationDropdownData)[];
+
+function ensureArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
 /**
  * Safely merges parsed dropdown data with defaults, ensuring arrays are never null.
  * This prevents runtime errors like "users.filter is not a function" when API returns null.
  */
 function mergeDropdownData(parsed: Partial<OrganizationDropdownData>): OrganizationDropdownData {
-  return {
-    teams: Array.isArray(parsed.teams) ? parsed.teams : [],
-    allTeams: Array.isArray(parsed.allTeams) ? parsed.allTeams : [],
-    regions: Array.isArray(parsed.regions) ? parsed.regions : [],
-    machines: Array.isArray(parsed.machines) ? parsed.machines : [],
-    bridges: Array.isArray(parsed.bridges) ? parsed.bridges : [],
-    bridgesByRegion: Array.isArray(parsed.bridgesByRegion) ? parsed.bridgesByRegion : [],
-    machinesByTeam: Array.isArray(parsed.machinesByTeam) ? parsed.machinesByTeam : [],
-    users: Array.isArray(parsed.users) ? parsed.users : [],
-    permissionGroups: Array.isArray(parsed.permissionGroups) ? parsed.permissionGroups : [],
-    permissions: Array.isArray(parsed.permissions) ? parsed.permissions : [],
-    subscriptionPlans: Array.isArray(parsed.subscriptionPlans) ? parsed.subscriptionPlans : [],
-  };
+  const result = { ...EMPTY_DROPDOWN_DATA };
+  for (const key of DROPDOWN_KEYS) {
+    (result as Record<string, unknown[]>)[key] = ensureArray(parsed[key]);
+  }
+  return result as OrganizationDropdownData;
 }
 
 export const useDropdownData = (context?: string) => {

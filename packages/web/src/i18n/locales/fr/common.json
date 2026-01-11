@@ -379,6 +379,16 @@
     "moreTeams": "+{{count}} de plus",
     "selectTeams": "Sélectionner les équipes..."
   },
+  "terminal": {
+    "terminal": "Terminal",
+    "connecting": "Connexion",
+    "connectionFailed": "Échec de la connexion",
+    "connectedTo": "Connecté à {{host}}",
+    "establishingConnection": "Établissement de la connexion SSH à {{host}}...",
+    "waitingForConnection": "En attente de connexion...",
+    "reconnect": "Reconnecter",
+    "popout": "Ouvrir dans une nouvelle fenêtre"
+  },
   "theme": {
     "dark": "Sombre",
     "label": "Thème",
@@ -783,6 +793,14 @@
   "warnings": {
     "sandboxEnvironment": "Environnement bac à sable",
     "sandboxMessage": "Les données peuvent être réinitialisées lors des mises à jour. Pour tests uniquement."
+  },
+  "vscodeSelection": {
+    "title": "Choisir l'installation de VS Code",
+    "open": "Ouvrir",
+    "description": "Plusieurs installations de VS Code détectées. Choisissez celle à utiliser :",
+    "windowsVSCode": "VS Code Windows",
+    "wslVSCode": "VS Code WSL (Linux)",
+    "rememberChoice": "Se souvenir de mon choix"
   },
   "yes": "Oui",
   "yesterday": "Hier"

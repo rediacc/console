@@ -177,7 +177,7 @@ export function registerClusterCommands(ceph: Command, program: Command): void {
         const params: UpdateCephClusterVaultParams = {
           clusterName: name,
           vaultContent: options.vault,
-          vaultVersion: parseInt(options.version, 10),
+          vaultVersion: Number.parseInt(options.version, 10),
         };
 
         await withSpinner(

@@ -242,8 +242,8 @@ export function registerAuthCommands(program: Command): void {
         await authService.requireAuth();
 
         // Validate expiration hours (must be between 1 and 720)
-        const expiresHours = parseInt(options.expires, 10);
-        if (isNaN(expiresHours) || expiresHours < 1 || expiresHours > 720) {
+        const expiresHours = Number.parseInt(options.expires, 10);
+        if (Number.isNaN(expiresHours) || expiresHours < 1 || expiresHours > 720) {
           throw new ValidationError(t('errors.invalidExpiration'));
         }
 
@@ -280,7 +280,7 @@ export function registerAuthCommands(program: Command): void {
 
         await withSpinner(
           t('commands.auth.token.revoke.revoking'),
-          () => typedApi.DeleteUserRequest({ targetRequestId: parseInt(requestId, 10) }),
+          () => typedApi.DeleteUserRequest({ targetRequestId: Number.parseInt(requestId, 10) }),
           t('commands.auth.token.revoke.success')
         );
       } catch (error) {

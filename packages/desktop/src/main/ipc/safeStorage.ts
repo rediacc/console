@@ -1,6 +1,6 @@
-import { existsSync } from 'fs';
-import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { app, ipcMain, safeStorage } from 'electron';
 
 const STORAGE_DIR = join(app.getPath('userData'), 'secure-storage');
