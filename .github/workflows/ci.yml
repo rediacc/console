@@ -388,13 +388,14 @@ jobs:
           if-no-files-found: ignore
 
   # ============================================================================
-  # TIER 4: INTEGRATION TESTS (Depends on Tier 1, long-running)
+  # TIER 4: INTEGRATION TESTS (Depends on Tier 3, long-running)
+  # Only runs after all builds and unit tests pass to avoid wasting resources
   # Shared backend starts first, then each platform downloads tunnel URL
   # ============================================================================
   infra-backend:
     name: 🖥️ Infra - Backend
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     steps:
@@ -500,7 +501,7 @@ jobs:
   test-cli-linux:
     name: 🧪 Test - CLI (Linux)
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     env:
@@ -625,7 +626,7 @@ jobs:
   test-cli-windows:
     name: 🧪 Test - CLI (Windows)
     runs-on: windows-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     env:
@@ -757,7 +758,7 @@ jobs:
   test-cli-macos:
     name: 🧪 Test - CLI (macOS)
     runs-on: macos-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     env:
@@ -875,7 +876,7 @@ jobs:
   test-e2e:
     name: 🌐 Test - E2E
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 45
 
     env:

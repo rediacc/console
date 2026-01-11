@@ -17,13 +17,24 @@
       "pinVersion": "^22.10.2"
     },
     {
-      "label": "Pin OpenTelemetry exporter to web version",
+      "label": "Pin OpenTelemetry packages to compatible versions",
       "packages": ["**"],
-      "dependencies": ["@opentelemetry/exporter-trace-otlp-http"],
+      "dependencies": [
+        "@opentelemetry/exporter-trace-otlp-http",
+        "@opentelemetry/instrumentation",
+        "@opentelemetry/instrumentation-fetch",
+        "@opentelemetry/instrumentation-xml-http-request"
+      ],
       "pinVersion": "^0.208.0"
     },
     {
-      "label": "Pin OpenTelemetry resources to web version",
+      "label": "Pin OpenTelemetry sdk-node for CLI",
+      "packages": ["**"],
+      "dependencies": ["@opentelemetry/sdk-node"],
+      "pinVersion": "^0.208.0"
+    },
+    {
+      "label": "Pin OpenTelemetry resources to compatible version",
       "packages": ["**"],
       "dependencies": ["@opentelemetry/resources"],
       "pinVersion": "^2.1.0"
