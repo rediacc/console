@@ -1,5 +1,6 @@
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { ipcMain } from 'electron';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { FileInfo } from '@rediacc/shared-desktop';
 
 /**
@@ -45,7 +46,7 @@ export function registerSftpHandlers(): void {
     async (_event, params: SFTPConnectParams): Promise<{ sessionId: string }> => {
       const client = new SFTPClient({
         host: params.host,
-        port: params.port ?? 22,
+        port: params.port ?? DEFAULTS.SSH.PORT,
         username: params.user,
         privateKey: params.privateKey,
         passphrase: params.passphrase,

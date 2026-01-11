@@ -1,4 +1,5 @@
 import { CONFIG_URLS } from '@/utils/apiConstants';
+import { DEFAULTS, LIMITS_DEFAULTS } from '@rediacc/shared/config';
 import { apiConnectionService } from './apiConnectionService';
 
 interface AppConfig {
@@ -83,8 +84,10 @@ class ConfigService {
     // Then fall back to Vite environment variables
     const viteConfig = {
       apiUrl: selectedEndpoint.url,
-      domain: (import.meta.env.VITE_SYSTEM_DOMAIN as string | undefined) ?? 'localhost',
-      httpPort: Number.parseInt((import.meta.env.VITE_HTTP_PORT as string | undefined) ?? '7322'),
+      domain: (import.meta.env.VITE_SYSTEM_DOMAIN as string | undefined) ?? DEFAULTS.HOST.LOCALHOST,
+      httpPort: Number.parseInt(
+        (import.meta.env.VITE_HTTP_PORT as string | undefined) ?? DEFAULTS.HOST.WEB_PORT_STRING
+      ),
       environment: import.meta.env.MODE as 'development' | 'production',
       buildType: apiConnectionService.getBuildType(),
     };
@@ -164,17 +167,17 @@ class ConfigService {
 
   async getMaxUploadSize(): Promise<number> {
     const config = await this.getConfig();
-    return config.maxUploadSize ?? 10485760; // Default 10MB
+    return config.maxUploadSize ?? LIMITS_DEFAULTS.MAX_FILE_SIZE;
   }
 
   async getSessionTimeout(): Promise<number> {
     const config = await this.getConfig();
-    return config.sessionTimeout ?? 3600; // Default 1 hour
+    return config.sessionTimeout ?? LIMITS_DEFAULTS.SESSION_TIMEOUT;
   }
 
   async getDefaultLanguage(): Promise<string> {
     const config = await this.getConfig();
-    return config.defaultLanguage ?? 'en';
+    return config.defaultLanguage ?? DEFAULTS.LOCALE.LANGUAGE;
   }
 
   async getTemplatesUrl(): Promise<string> {

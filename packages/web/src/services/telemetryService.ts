@@ -20,6 +20,7 @@ import {
   ATTR_SERVICE_VERSION,
   ATTR_USER_AGENT_ORIGINAL,
 } from '@opentelemetry/semantic-conventions';
+import { DEFAULTS, VERSION_DEFAULTS } from '@rediacc/shared/config';
 import {
   extractApiEndpoint,
   generateSessionId,
@@ -103,7 +104,9 @@ class TelemetryService {
 
       this.provider = new WebTracerProvider({
         resource,
-        sampler: new TraceIdRatioBasedSampler(config.samplingRate ?? 0.1),
+        sampler: new TraceIdRatioBasedSampler(
+          config.samplingRate ?? DEFAULTS.ANALYTICS.SAMPLE_RATE
+        ),
         spanProcessors: [spanProcessor],
       });
 
@@ -187,7 +190,7 @@ class TelemetryService {
   trackEvent(eventName: string, attributes: Record<string, string | number | boolean> = {}): void {
     if (!this.isInitialized) return;
 
-    const tracer = trace.getTracer('rediacc-console-events', '2.0.0');
+    const tracer = trace.getTracer('rediacc-console-events', VERSION_DEFAULTS.DEFAULT);
     const span = tracer.startSpan(eventName);
 
     try {
@@ -230,7 +233,7 @@ class TelemetryService {
   trackUserAction(action: string, target?: string, details: TelemetryContext = {}): void {
     this.trackEvent('user.action', {
       'user.action.type': action,
-      'user.action.target': target ?? 'unknown',
+      'user.action.target': target ?? DEFAULTS.TELEMETRY.UNKNOWN,
       'user.action.timestamp': Date.now(),
       ...Object.fromEntries(
         Object.entries(details).map(([key, value]) => [`user.action.${key}`, String(value)])
@@ -284,14 +287,14 @@ class TelemetryService {
     this.trackEvent('web_vitals.metric', {
       'web_vitals.name': metric.name,
       'web_vitals.value': metric.value,
-      'web_vitals.rating': metric.rating ?? 'unknown',
+      'web_vitals.rating': metric.rating ?? DEFAULTS.TELEMETRY.UNKNOWN,
       'web_vitals.delta': metric.delta ?? 0,
       'web_vitals.id': metric.id,
     });
   }
 
   measureAndTrack<T>(name: string, fn: () => T | Promise<T>): T | Promise<T> {
-    const tracer = trace.getTracer('rediacc-console-performance', '2.0.0');
+    const tracer = trace.getTracer('rediacc-console-performance', VERSION_DEFAULTS.DEFAULT);
 
     return tracer.startActiveSpan(name, (span) => {
       const startTime = performance.now();
@@ -398,7 +401,8 @@ export const createTelemetryConfig = (): TelemetryConfig => {
 
   return {
     serviceName: 'rediacc-console',
-    serviceVersion: (import.meta.env.VITE_APP_VERSION as string | undefined) ?? '2.0.0',
+    serviceVersion:
+      (import.meta.env.VITE_APP_VERSION as string | undefined) ?? VERSION_DEFAULTS.DEFAULT,
     environment: isDev ? 'development' : 'production',
     endpoint: getObsEndpoint(),
     enabledInDevelopment: true,

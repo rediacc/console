@@ -3,6 +3,7 @@
  */
 
 import { extractPrimaryOrSecondary, extractRowsByIndex, extractFirstByIndex } from './base';
+import { DEFAULTS } from '../../config';
 import type {
   GetTeamQueueItems_ResultSet1,
   GetTeamQueueItems_ResultSet2,
@@ -74,7 +75,7 @@ function normalizeQueuePosition(
     taskId: entry.taskId,
     status: entry.status,
     createdTime: entry.createdTime,
-    relativePosition: entry.relativePosition ?? 'Current',
+    relativePosition: entry.relativePosition ?? DEFAULTS.STATUS.CURRENT,
   };
 }
 

@@ -5,6 +5,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   buildRepositoryEnvironment,
   buildMachineEnvironment,
@@ -70,8 +71,8 @@ function formatConfigEntry(entry: SSHConfigEntry): string {
   ];
 
   // SSH keepalive settings to prevent disconnection during long sessions
-  const serverAliveInterval = entry.serverAliveInterval ?? 60;
-  const serverAliveCountMax = entry.serverAliveCountMax ?? 3;
+  const serverAliveInterval = entry.serverAliveInterval ?? DEFAULTS.SSH.SERVER_ALIVE_INTERVAL;
+  const serverAliveCountMax = entry.serverAliveCountMax ?? DEFAULTS.SSH.SERVER_ALIVE_COUNT_MAX;
   lines.push(`  ServerAliveInterval ${serverAliveInterval}`);
   lines.push(`  ServerAliveCountMax ${serverAliveCountMax}`);
 

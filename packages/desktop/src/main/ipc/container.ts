@@ -7,6 +7,7 @@ import {
   removeTempKnownHostsFile,
 } from '@rediacc/shared-desktop/ssh';
 import { ipcMain } from 'electron';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { PTYSession } from '@rediacc/shared-desktop';
 
 /**
@@ -125,8 +126,8 @@ async function createContainerPTYSession(
 
   // Create PTY session
   const ptySession = await createSSHPTYSession(destination, sshOptions, {
-    cols: params.cols ?? 80,
-    rows: params.rows ?? 24,
+    cols: params.cols ?? DEFAULTS.SSH.TERMINAL_COLS,
+    rows: params.rows ?? DEFAULTS.SSH.TERMINAL_ROWS,
   });
 
   return { ptySession, keyFilePath, knownHostsPath };
@@ -141,7 +142,7 @@ export function registerContainerHandlers(): void {
     'container:exec',
     async (event, params: ContainerExecParams): Promise<{ sessionId: string }> => {
       // Build docker exec command
-      const shell = params.command ?? '/bin/sh';
+      const shell = params.command ?? DEFAULTS.SHELL.SH;
       const remoteCommand = `docker exec -it ${params.containerId} ${shell}`;
 
       const { ptySession, keyFilePath, knownHostsPath } = await createContainerPTYSession(

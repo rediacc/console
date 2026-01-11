@@ -5,6 +5,7 @@
 
 import { useCallback, useState } from 'react';
 import { typedApi } from '@/api/client';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { parseVaultContentOrEmpty } from '@rediacc/shared/queue-vault';
 import { extractGetTeamMachines, extractGetOrganizationTeams } from '@rediacc/shared/types';
 
@@ -133,7 +134,7 @@ export function useMachineCredentials(): UseMachineCredentialsReturn {
           port:
             typeof machineVault.port === 'string'
               ? Number.parseInt(machineVault.port, 10) || 22
-              : (machineVault.port ?? 22),
+              : (machineVault.port ?? DEFAULTS.SSH.PORT),
           privateKey: teamVault.SSH_PRIVATE_KEY,
           known_hosts: machineVault.known_hosts ?? teamVault.SSH_KNOWN_HOSTS,
           datastore: machineVault.datastore ?? `/home/${machineVault.user}`,

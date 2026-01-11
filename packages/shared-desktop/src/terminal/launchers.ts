@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { join } from 'node:path';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { findMSYS2Installation } from './detector.js';
 import { getPlatform, isWSL } from '../utils/platform.js';
 import type { TerminalType, TerminalLaunchOptions } from '../types/index.js';
@@ -334,7 +335,7 @@ const launchers: Record<TerminalType, LauncherFn> = {
         const proc = spawn('cmd.exe', ['/c', wtArgs.join(' ')], {
           stdio: 'ignore',
           detached: true,
-          cwd: process.env.WINDIR ?? 'C:\\Windows',
+          cwd: process.env.WINDIR ?? DEFAULTS.PLATFORM.WINDOWS_SYSTEM,
           env: { ...filterSensitiveEnv(process.env), ...options.environmentVariables },
         });
         proc.unref();

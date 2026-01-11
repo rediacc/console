@@ -37,6 +37,7 @@ import {
   PlusCircleOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS, SEVERITY_DEFAULTS } from '@rediacc/shared/config';
 import type { AuditTraceRecord } from '@rediacc/shared/types';
 
 const { Text: AntText } = Typography;
@@ -108,7 +109,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         const row = [
           record.actionType,
           `"${(record.details ?? '').replaceAll('"', '""')}"`, // Escape quotes in details
-          record.performedBy ?? 'System',
+          record.performedBy ?? DEFAULTS.RESOURCE.ACTOR,
           formatTimestampAsIs(record.timestamp, 'datetime'),
           record.timeAgo,
         ];
@@ -142,7 +143,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       records: data.records.map((record) => ({
         actionType: record.actionType,
         details: record.details,
-        performedBy: record.performedBy ?? 'System',
+        performedBy: record.performedBy ?? DEFAULTS.RESOURCE.ACTOR,
         timestamp: record.timestamp,
         timeAgo: record.timeAgo,
         iconHint: record.iconHint,
@@ -172,7 +173,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       sorter: createSorter<AuditTraceRecord>('actionType'),
       render: (_: unknown, record: AuditTraceRecord, index: number) => (
         <Space data-testid={`audit-trace-action-${index}`}>
-          {getIcon(record.iconHint ?? 'info')}
+          {getIcon(record.iconHint ?? SEVERITY_DEFAULTS.INFO)}
           <Tag data-testid={`audit-trace-action-tag-${index}`}>{record.actionType}</Tag>
         </Space>
       ),
@@ -325,7 +326,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                       <MobileCard>
                         <Flex align="center" justify="space-between">
                           <Space data-testid={`audit-trace-action-${index}`}>
-                            {getIcon(record.iconHint ?? 'info')}
+                            {getIcon(record.iconHint ?? SEVERITY_DEFAULTS.INFO)}
                             <Tag data-testid={`audit-trace-action-tag-${index}`}>
                               {record.actionType}
                             </Tag>

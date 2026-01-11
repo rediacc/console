@@ -66,7 +66,9 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api': {
-          target: `http://localhost:${process.env.VITE_HTTP_PORT || '7322'}`,
+          // VITE_API_URL: Set explicitly for CI/remote (e.g., https://xxx.trycloudflare.com)
+          // Default: http://localhost:7322 for local development
+          target: process.env.VITE_API_URL ?? 'http://localhost:7322',
           changeOrigin: true,
         },
       },

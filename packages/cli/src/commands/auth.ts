@@ -5,6 +5,7 @@ import {
   parseUpdateUserTFA,
   parseGetRequestAuthenticationStatus,
 } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { isValidEmail } from '@rediacc/shared/validation';
 import { t } from '../i18n/index.js';
 import { typedApi, apiClient } from '../services/api.js';
@@ -119,7 +120,7 @@ export function registerAuthCommands(program: Command): void {
 
         if (isAuth) {
           outputService.success(
-            t('commands.auth.status.authenticated', { email: email ?? 'unknown' })
+            t('commands.auth.status.authenticated', { email: email ?? DEFAULTS.TELEMETRY.UNKNOWN })
           );
         } else {
           outputService.warn(t('commands.auth.status.notAuthenticated'));

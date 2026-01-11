@@ -5,6 +5,7 @@
  */
 
 import axios from 'axios';
+import { API_DEFAULTS, DEFAULTS } from '@rediacc/shared/config';
 import { endpointService } from './endpointService';
 
 type BuildType = 'DEBUG' | 'RELEASE';
@@ -37,7 +38,8 @@ class ApiConnectionService {
    * Get localhost API URL
    */
   private getLocalhostUrl(): string {
-    const port = (import.meta.env.VITE_HTTP_PORT as string | undefined) ?? '7322';
+    const port =
+      (import.meta.env.VITE_HTTP_PORT as string | undefined) ?? DEFAULTS.HOST.WEB_PORT_STRING;
     return `http://localhost:${port}/api`;
   }
 
@@ -45,10 +47,7 @@ class ApiConnectionService {
    * Get sandbox API URL
    */
   private getSandboxUrl(): string {
-    return (
-      (import.meta.env.VITE_SANDBOX_API_URL as string | undefined) ??
-      'https://sandbox.rediacc.com/api'
-    );
+    return (import.meta.env.VITE_SANDBOX_API_URL as string | undefined) ?? API_DEFAULTS.SANDBOX_URL;
   }
 
   /**

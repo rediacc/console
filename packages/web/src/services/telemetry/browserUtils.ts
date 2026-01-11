@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { ExtendedPerformance, NavigatorConnection, WindowNavigation } from './types';
 
 // Re-export shared utilities
@@ -91,7 +92,7 @@ export function getPerformanceAttributes(): Record<string, number | string> {
     const navigatorWithConnection = navigator as Navigator & { connection?: NavigatorConnection };
     const connection = navigatorWithConnection.connection;
     if (connection) {
-      attributes['network.effective_type'] = connection.effectiveType ?? 'unknown';
+      attributes['network.effective_type'] = connection.effectiveType ?? DEFAULTS.TELEMETRY.UNKNOWN;
       attributes['network.downlink'] = connection.downlink ?? 0;
       attributes['network.rtt'] = connection.rtt ?? 0;
     }

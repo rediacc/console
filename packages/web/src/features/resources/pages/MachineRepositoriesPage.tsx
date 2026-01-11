@@ -38,6 +38,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 type MachineReposLocationState = {
   machine?: Machine;
@@ -419,7 +420,7 @@ const MachineReposPage: React.FC = () => {
         open={unifiedModal.isOpen}
         onCancel={() => unifiedModal.close()}
         resourceType="repository"
-        mode={unifiedModal.state.data?.mode ?? 'create'}
+        mode={unifiedModal.state.data?.mode ?? DEFAULTS.RESOURCE.MODE}
         existingData={unifiedModal.state.data?.data}
         teamFilter={machine.teamName ? [machine.teamName] : undefined}
         creationContext={unifiedModal.state.data?.creationContext}

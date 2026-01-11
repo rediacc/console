@@ -4,6 +4,7 @@ import { Tag, Tooltip, Typography, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useApiHealth } from '@/api/hooks-system';
 import { versionService } from '@/services/versionService';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];
@@ -40,7 +41,7 @@ const SystemVersionFooter: React.FC = () => {
     apiVersion = 'Unknown';
   }
 
-  const environment = apiHealth?.environment ?? 'Unknown';
+  const environment = apiHealth?.environment ?? DEFAULTS.STATUS.UNKNOWN;
   const uptime = apiHealth?.uptime;
 
   return (

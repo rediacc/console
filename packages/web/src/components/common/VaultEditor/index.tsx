@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Alert, Flex, Form, Row } from 'antd';
 import { FORM_LAYOUTS } from '@/config/formLayouts';
 import { useMessage } from '@/hooks';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
   VaultEditorRequiredFields,
@@ -166,7 +167,7 @@ const VaultEditor: React.FC<VaultEditorProps> = (props) => {
         ip,
         user,
         ssh_password: ssh_password ?? '',
-        port: port ?? 22,
+        port: port ?? DEFAULTS.SSH.PORT,
         datastore: datastore ?? '',
       });
 

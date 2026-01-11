@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { startSSHAgent, addKeyToAgent, stopSSHAgent, isSSHAgentAvailable } from './agent.js';
 import { createTempSSHKeyFile, removeTempSSHKeyFile, decodeSSHKey } from './keyManager.js';
 import { createTempKnownHostsFile, removeTempKnownHostsFile } from './knownHosts.js';
@@ -305,7 +306,7 @@ export class SSHConnection {
       this.preferAgent = true;
       this.forceTTY = false;
     } else {
-      this.port = options?.port ?? 22;
+      this.port = options?.port ?? DEFAULTS.SSH.PORT;
       this.preferAgent = options?.preferAgent ?? true;
       this.forceTTY = options?.forceTTY ?? false;
     }
@@ -455,7 +456,7 @@ export function spawnSSH(
   return spawn('ssh', args, {
     cwd: options?.cwd,
     env,
-    stdio: options?.stdio ?? 'inherit',
+    stdio: options?.stdio ?? DEFAULTS.PROCESS.STDIO,
   });
 }
 

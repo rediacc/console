@@ -3,6 +3,7 @@
  * Helper functions for VS Code Remote SSH CLI commands
  */
 
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { getConnectionVaults } from '../utils/connectionDetails.js';
 
@@ -47,7 +48,7 @@ function extractVaultBaseInfo(
   universalUser: string;
 } {
   const host = (machineVault.ip ?? machineVault.host) as string | undefined;
-  const port = (machineVault.port ?? 22) as number;
+  const port = (machineVault.port ?? DEFAULTS.SSH.PORT) as number;
   const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
   const knownHosts = (machineVault.known_hosts ?? '') as string;
 
@@ -61,8 +62,9 @@ function extractVaultBaseInfo(
     throw new Error(t('errors.vscode.noHostKey', { machine: machineName }));
   }
 
-  const datastore = (machineVault.datastore ?? '/mnt/rediacc') as string;
-  const universalUser = (machineVault.universalUser ?? 'rediacc') as string;
+  const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
+  const universalUser = (machineVault.universalUser ??
+    DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
 
   return { host, port, privateKey, knownHosts, datastore, universalUser };
 }
@@ -87,8 +89,10 @@ function buildVSCodeRepoEnvironment(
 } {
   const repositoryPath = (repoVault.path ?? `/home/${repositoryName}`) as string;
   const networkId = (repoVault.networkId ?? '') as string;
-  const networkMode = (repoVault.networkMode ?? machineVault.networkMode ?? 'bridge') as string;
-  const tag = (repoVault.tag ?? 'latest') as string;
+  const networkMode = (repoVault.networkMode ??
+    machineVault.networkMode ??
+    DEFAULTS.REPOSITORY.NETWORK_MODE) as string;
+  const tag = (repoVault.tag ?? DEFAULTS.REPOSITORY.TAG) as string;
   const immovable = repoVault.immovable ? 'true' : 'false';
   const workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;
 
@@ -99,8 +103,8 @@ function buildVSCodeRepoEnvironment(
     DOCKER_DATA: `${datastore}${repositoryPath}`,
     DOCKER_EXEC: `${datastore}${repositoryPath}/.docker-exec`,
     DOCKER_FOLDER: `${datastore}${repositoryPath}`,
-    DOCKER_HOST: (machineVault.dockerHost ?? 'unix:///var/run/docker.sock') as string,
-    DOCKER_SOCKET: (machineVault.dockerSocket ?? '/var/run/docker.sock') as string,
+    DOCKER_HOST: (machineVault.dockerHost ?? DEFAULTS.DOCKER.HOST_URI) as string,
+    DOCKER_SOCKET: (machineVault.dockerSocket ?? DEFAULTS.DOCKER.SOCKET_PATH) as string,
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
     REDIACC_NETWORK_ID: networkId,
@@ -110,7 +114,8 @@ function buildVSCodeRepoEnvironment(
     REPOSITORY_PATH: repositoryPath,
     REPOSITORY_TAG: tag,
     UNIVERSAL_USER_NAME: universalUser,
-    UNIVERSAL_USER_ID: (machineVault.universalUserId ?? '1000') as string,
+    UNIVERSAL_USER_ID: (machineVault.universalUserId ??
+      DEFAULTS.REPOSITORY.UNIVERSAL_USER_ID) as string,
     ...(typeof repoVault.environment === 'object' && repoVault.environment !== null
       ? (repoVault.environment as Record<string, string>)
       : {}),

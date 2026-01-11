@@ -8,6 +8,7 @@ import {
   extractRowsByIndex,
   toBoolean,
 } from './base';
+import { DEFAULTS } from '../../config';
 import type {
   AuthLoginResult,
   AuthRequestStatus,
@@ -37,7 +38,7 @@ function normalizeAuthStatus(row?: AuthStatusRow | null): AuthRequestStatus {
   return {
     isTFAEnabled: toBoolean(row?.isTFAEnabled),
     isAuthorized: toBoolean(row?.isAuthorized),
-    authenticationStatus: row?.authenticationStatus ?? 'Unknown',
+    authenticationStatus: row?.authenticationStatus ?? DEFAULTS.STATUS.UNKNOWN,
   };
 }
 
@@ -73,7 +74,7 @@ export function parseCreateAuthenticationRequest(response: ApiResponse): AuthLog
 
   return {
     isAuthorized: toBoolean(row.isAuthorized),
-    authenticationStatus: row.authenticationStatus ?? 'unknown',
+    authenticationStatus: row.authenticationStatus ?? DEFAULTS.TELEMETRY.UNKNOWN,
     vaultOrganization: typeof row.vaultOrganization === 'string' ? row.vaultOrganization : null,
     organizationName: row.organizationName ?? row.organization ?? null,
     organization: row.organization ?? null,

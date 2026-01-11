@@ -1,4 +1,5 @@
 import { featureFlags } from '@/config/featureFlags';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { OrganizationDashboardData } from '@rediacc/shared/types';
 import type { RouteItem } from './routes';
 import type { MenuConfig } from './types';
@@ -52,7 +53,7 @@ const buildMenuItems = (
   uiMode: 'simple' | 'expert',
   organizationData?: OrganizationData
 ): MenuItem[] => {
-  const currentPlan = organizationData?.organizationInfo?.planCode ?? 'FREE';
+  const currentPlan = organizationData?.organizationInfo?.planCode ?? DEFAULTS.EDITION.EDITION;
   const isLocalhost =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -122,7 +123,7 @@ export const filterRouteItems = (
   uiMode: 'simple' | 'expert',
   organizationData?: OrganizationData
 ): RouteItem[] => {
-  const currentPlan = organizationData?.organizationInfo?.planCode ?? 'FREE';
+  const currentPlan = organizationData?.organizationInfo?.planCode ?? DEFAULTS.EDITION.EDITION;
   const isLocalhost =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');

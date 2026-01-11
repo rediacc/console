@@ -5,6 +5,8 @@
  * This file is created during deployment and contains the actual version tag.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
+
 interface VersionInfo {
   version: string;
   buildDate?: string;
@@ -68,7 +70,7 @@ class VersionService {
 
       // Fallback to build-time version from Vite
       return {
-        version: import.meta.env.VITE_APP_VERSION || 'unknown',
+        version: import.meta.env.VITE_APP_VERSION ?? DEFAULTS.TELEMETRY.UNKNOWN,
       };
     }
   }

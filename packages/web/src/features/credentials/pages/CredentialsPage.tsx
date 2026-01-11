@@ -29,6 +29,7 @@ import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { getAffectedResources as coreGetAffectedResources } from '@/platform';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import type { GetTeamRepositories_ResultSet1, QueueFunction } from '@rediacc/shared/types';
 import { useDeleteConfirmationModal } from '../components/DeleteConfirmationModal';
@@ -151,7 +152,7 @@ const CredentialsPage: React.FC = () => {
         await updateRepoVaultMutation.mutateAsync({
           teamName: currentResource.teamName,
           repositoryName: newName ?? currentName,
-          repositoryTag: currentResource.repositoryTag ?? 'latest',
+          repositoryTag: currentResource.repositoryTag ?? DEFAULTS.REPOSITORY.TAG,
           vaultContent: vaultData,
           vaultVersion: (currentResource.vaultVersion ?? 0) + 1,
         });
@@ -193,7 +194,7 @@ const CredentialsPage: React.FC = () => {
           await updateRepoVaultMutation.mutateAsync({
             teamName: currentResource.teamName,
             repositoryName: currentResource.repositoryName,
-            repositoryTag: currentResource.repositoryTag ?? 'latest',
+            repositoryTag: currentResource.repositoryTag ?? DEFAULTS.REPOSITORY.TAG,
             vaultContent: vault,
             vaultVersion: version,
           });

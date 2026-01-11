@@ -15,6 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS, UI_IDS } from '@rediacc/shared/config';
 
 export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 
@@ -134,7 +135,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                   prefix={<SearchOutlined />}
                   allowClear
                   autoComplete="off"
-                  data-testid={searchTestId ?? 'resource-list-search'}
+                  data-testid={searchTestId ?? DEFAULTS.UI.SEARCH_INPUT_ID}
                 />
               )}
               <Flex align="center" data-testid="resource-list-filters">
@@ -181,7 +182,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                               shape="circle"
                               icon={<ReloadOutlined />}
                               onClick={onRefresh}
-                              data-testid={refreshTestId ?? 'resource-list-refresh'}
+                              data-testid={refreshTestId ?? UI_IDS.RESOURCE_LIST_REFRESH}
                               aria-label={t('actions.refresh')}
                             />
                           </Tooltip>
@@ -236,7 +237,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
               expandable={expandable}
               rowClassName={rowClassName}
               scroll={{ x: true }}
-              data-testid={dataTestId ?? 'resource-list-table'}
+              data-testid={dataTestId ?? UI_IDS.RESOURCE_LIST_TABLE}
             />
           );
         })()}

@@ -9,6 +9,7 @@ import { isFork, type RepositoryWithRelations } from './core';
 import { canDeleteFork, findForkParent } from './fork-operations';
 import { type ChildClone, canDeleteGrandRepo } from './grand-deletion';
 import { canPromoteToGrand, findSiblingClones, type SiblingClone } from './promotion';
+import { DEFAULTS } from '../../config';
 
 /**
  * Base operation context
@@ -91,7 +92,9 @@ export function prepareForkDeletion(
 ): ForkDeletionContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
+    (r) =>
+      r.repositoryName === repositoryName &&
+      r.repositoryTag === (repositoryTag ?? DEFAULTS.REPOSITORY.TAG)
   );
 
   if (!repositoryData) {
@@ -140,7 +143,9 @@ export function prepareGrandDeletion(
 ): GrandDeletionContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
+    (r) =>
+      r.repositoryName === repositoryName &&
+      r.repositoryTag === (repositoryTag ?? DEFAULTS.REPOSITORY.TAG)
   );
 
   if (!repositoryData) {
@@ -198,7 +203,9 @@ export function preparePromotion(
 ): PromotionContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
+    (r) =>
+      r.repositoryName === repositoryName &&
+      r.repositoryTag === (repositoryTag ?? DEFAULTS.REPOSITORY.TAG)
   );
 
   if (!repositoryData) {
@@ -247,7 +254,9 @@ export function prepareBackup(
 ): BackupContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
+    (r) =>
+      r.repositoryName === repositoryName &&
+      r.repositoryTag === (repositoryTag ?? DEFAULTS.REPOSITORY.TAG)
   );
 
   if (!repositoryData) {
@@ -290,7 +299,9 @@ export function prepareForkCreation(
 ): ForkCreationContext {
   // Find the repository
   const repositoryData = allRepositories.find(
-    (r) => r.repositoryName === repositoryName && r.repositoryTag === (repositoryTag ?? 'latest')
+    (r) =>
+      r.repositoryName === repositoryName &&
+      r.repositoryTag === (repositoryTag ?? DEFAULTS.REPOSITORY.TAG)
   );
 
   if (!repositoryData) {

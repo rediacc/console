@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import { configStorage } from '../adapters/storage.js';
 import type { NamedContext, LocalMachineConfig, LocalSSHConfig } from '../types/index.js';
 
@@ -449,7 +450,7 @@ class ContextService {
     return {
       machines: context.machines,
       ssh: context.ssh,
-      renetPath: context.renetPath ?? 'renet',
+      renetPath: context.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
     };
   }
 

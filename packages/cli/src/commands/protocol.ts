@@ -11,6 +11,7 @@ import {
 } from '@rediacc/shared-desktop/protocol';
 import { getPlatform } from '@rediacc/shared-desktop/utils';
 import { Command } from 'commander';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { handleError } from '../utils/errors.js';
@@ -261,7 +262,7 @@ function parseParamsArray(paramsArray: string[] | undefined): Record<string, str
 }
 
 function validateAndGetAction(action: string | undefined): (typeof VALID_ACTIONS)[number] {
-  const effectiveAction = action ?? 'desktop';
+  const effectiveAction = action ?? DEFAULTS.PROTOCOL.ACTION_DESKTOP;
   if (!VALID_ACTIONS.includes(effectiveAction as (typeof VALID_ACTIONS)[number])) {
     throw new Error(
       t('errors.protocol.invalidAction', {

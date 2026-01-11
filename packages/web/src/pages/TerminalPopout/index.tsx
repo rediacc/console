@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Terminal, type TerminalRef } from '@/components/app/Terminal/Terminal';
 import { isElectron, getElectronAPI } from '@/types';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 const { Text } = Typography;
 
@@ -69,7 +70,7 @@ export const TerminalPopout: React.FC = () => {
         const result = await api.terminal.transfer(sessionId);
         if (!result.success) {
           setError(
-            `${t('resources:localActions.popoutTransferFailed')}: ${result.error ?? 'Unknown error'}`
+            `${t('resources:localActions.popoutTransferFailed')}: ${result.error ?? DEFAULTS.ERROR.UNKNOWN_ERROR}`
           );
           return;
         }

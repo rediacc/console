@@ -23,6 +23,7 @@ import {
   HddOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 interface ContainerData {
   id: string;
@@ -189,7 +190,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         >
           <Card size="small" data-testid="container-detail-cpu-card">
             <Typography.Text type="secondary">{t('resources:containers.cpuUsage')}</Typography.Text>
-            <Typography.Text strong>{resourceUsage?.cpu.toFixed(2) ?? '0'}%</Typography.Text>
+            <Typography.Text strong>
+              {resourceUsage?.cpu.toFixed(2) ?? DEFAULTS.PRIORITY.CPU_COUNT}%
+            </Typography.Text>
             <Progress
               percent={resourceUsage?.cpu ?? 0}
               showInfo={false}

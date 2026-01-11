@@ -32,6 +32,7 @@ import {
 } from '@/utils/vaultProtocol';
 import { parseLoginResult as parseAuthenticationResult } from '@rediacc/shared/api';
 import { parseResponse } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
 import { TFAModal } from './components/TFAModal';
@@ -197,8 +198,8 @@ const LoginPage: React.FC = () => {
     );
 
     trackUserAction('login_success', 'login_form', {
-      email_domain: values.email.split('@')[1] ?? 'unknown',
-      organization: organizationName ?? 'unknown',
+      email_domain: values.email.split('@')[1] ?? DEFAULTS.TELEMETRY.UNKNOWN,
+      organization: organizationName ?? DEFAULTS.TELEMETRY.UNKNOWN,
       has_encryption: organizationHasEncryption,
       vault_protocol_state: vaultProtocolState?.toString() ?? 'none',
     });
@@ -247,7 +248,7 @@ const LoginPage: React.FC = () => {
       const errorMessage =
         error instanceof Error ? error.message : t('login.errors.invalidCredentials');
       trackUserAction('login_failure', 'login_form', {
-        email_domain: values.email.split('@')[1] ?? 'unknown',
+        email_domain: values.email.split('@')[1] ?? DEFAULTS.TELEMETRY.UNKNOWN,
         error_message: errorMessage,
         has_master_password: !!values.masterPassword,
       });

@@ -24,6 +24,7 @@ import {
   type VSCodeInfo,
 } from '@rediacc/shared-desktop/vscode';
 import { ipcMain, app } from 'electron';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 /**
  * Path to store VS Code preference
@@ -190,7 +191,7 @@ export function registerVSCodeHandlers(): void {
           host: connectionName,
           hostname: options.host,
           user: options.user,
-          port: options.port ?? 22,
+          port: options.port ?? DEFAULTS.SSH.PORT,
           identityFile: keyPath,
           userKnownHostsFile: knownHostsPath,
           serverAliveInterval: 60,

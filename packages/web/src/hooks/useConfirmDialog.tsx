@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 interface ConfirmOptions {
   title: string | ReactNode;
@@ -60,7 +61,7 @@ export const useConfirmDialog = () => {
       content: options.content,
       okText: options.okText ?? t('common:actions.confirm'),
       cancelText: options.cancelText ?? t('common:actions.cancel'),
-      okType: options.okType ?? 'primary',
+      okType: options.okType ?? DEFAULTS.UI.BUTTON_TYPE,
       okButtonProps: options.testIdPrefix
         ? { 'data-testid': `${options.testIdPrefix}-confirm-btn` }
         : undefined,

@@ -3,6 +3,7 @@
  * Handles grand/fork detection, affected resources, and repository grouping
  */
 
+import { DEFAULTS } from '../../config';
 import { type MachineWithVaultStatus, parseVaultStatus } from '../machine';
 
 /**
@@ -227,7 +228,7 @@ export function groupRepositoriesByName(
   const grouped = new Map<string, GroupedRepository>();
 
   for (const repository of repositories) {
-    const name = repository.repositoryName ?? 'Unknown';
+    const name = repository.repositoryName ?? DEFAULTS.STATUS.UNKNOWN;
 
     if (!grouped.has(name)) {
       grouped.set(name, {
@@ -424,6 +425,6 @@ export function validateRepoDeletion(
  * @returns Display name with optional tag
  */
 export function getRepositoryDisplayName(repository: RepositoryWithRelations): string {
-  const name = repository.repositoryName ?? 'Unknown';
+  const name = repository.repositoryName ?? DEFAULTS.STATUS.UNKNOWN;
   return repository.repositoryTag ? `${name}:${repository.repositoryTag}` : name;
 }

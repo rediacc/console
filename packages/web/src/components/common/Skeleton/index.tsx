@@ -1,5 +1,6 @@
 import React from 'react';
 import { Flex } from 'antd';
+import { DEFAULTS, UI_SIZING } from '@rediacc/shared/config';
 
 const baseStyle: React.CSSProperties = {
   borderRadius: 4,
@@ -30,8 +31,8 @@ const SkeletonText: React.FC<SkeletonTextProps> = ({ width, height }) => {
       // eslint-disable-next-line no-restricted-syntax
       style={{
         ...baseStyle,
-        width: width ?? '100%',
-        height: height ?? '16px',
+        width: width ?? DEFAULTS.UI.SKELETON_WIDTH,
+        height: height ?? UI_SIZING.SKELETON_HEIGHT,
       }}
     />
   );

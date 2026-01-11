@@ -4,7 +4,7 @@ import {
   PROTOCOL_SCHEME,
 } from '@rediacc/shared-desktop/protocol';
 import { app, BrowserWindow } from 'electron';
-import type { ParsedProtocolUrl } from '@rediacc/shared-desktop';
+import type { ProtocolUrl } from '@rediacc/shared-desktop';
 
 /**
  * Main window getter type
@@ -14,7 +14,7 @@ type GetMainWindow = () => BrowserWindow | null;
 /**
  * Protocol URL handler callback type
  */
-type ProtocolUrlHandler = (parsed: ParsedProtocolUrl) => void;
+type ProtocolUrlHandler = (parsed: ProtocolUrl) => void;
 
 /**
  * Registered protocol URL handlers
@@ -47,7 +47,7 @@ export function setupProtocolHandler(getMainWindow: GetMainWindow): boolean {
   }
 
   // Second instance handling (Windows/Linux)
-  app.on('second-instance', (event, argv) => {
+  app.on('second-instance', (_event, argv) => {
     // Find the protocol URL in argv
     const url = argv.find((arg) => arg.startsWith(`${PROTOCOL_SCHEME}://`));
     if (url) {
@@ -55,7 +55,7 @@ export function setupProtocolHandler(getMainWindow: GetMainWindow): boolean {
     }
 
     // Focus the main window
-    focusMainWindow(getMainWindow());
+    focusMainWindow(getMainWindow);
   });
 
   // Handle open-url (macOS)

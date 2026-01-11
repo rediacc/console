@@ -17,7 +17,7 @@ const applySimpleModeDefaults = (
   resourceType: ResourceType,
   existingData?: ExistingResourceData
 ): void => {
-  data.teamName ??= existingData?.teamName ?? 'Private Team';
+  data.teamName ??= existingData?.teamName;
 
   if (resourceType === 'machine') {
     data.regionName = 'Default Region';

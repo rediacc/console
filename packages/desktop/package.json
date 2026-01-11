@@ -1,54 +1,55 @@
 {
   "name": "@rediacc/desktop",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "private": true,
-  "description": "Rediacc Console Desktop Application",
-  "author": "Rediacc <support@rediacc.com>",
-  "homepage": "https://www.rediacc.com",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rediacc/console.git",
-    "directory": "packages/desktop"
-  },
-  "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "preview": "electron-vite preview",
-    "postinstall": "electron-builder install-app-deps",
-    "rebuild": "electron-rebuild",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
-    "dist:win": "npm run bundle:msys2 && npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:linux": "npm run build && electron-builder --linux",
     "bundle:msys2": "bash ../../scripts/extract-msys2-bundle.sh --ci --output ./msys2-bundle",
+    "dev": "electron-vite dev",
+    "dist": "npm run build && electron-builder",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run bundle:msys2 && npm run build && electron-builder --win",
+    "lint": "eslint src --ext .ts",
+    "pack": "npm run build && electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps",
+    "preview": "electron-vite preview",
+    "rebuild": "electron-rebuild",
+    "typecheck": "npm run typecheck:main && npm run typecheck:preload",
     "typecheck:main": "tsc --noEmit -p tsconfig.node.json",
-    "typecheck:preload": "tsc --noEmit -p tsconfig.node.json",
-    "typecheck": "npm run typecheck:main && npm run typecheck:preload"
+    "typecheck:preload": "tsc --noEmit -p tsconfig.node.json"
   },
+  "author": "Rediacc <support@rediacc.com>",
   "dependencies": {
     "@rediacc/shared-desktop": "*",
     "electron-updater": "^6.6.2",
     "node-pty": "^1.1.0",
     "ssh2": "^1.17.0"
   },
+  "description": "Rediacc Console Desktop Application",
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@electron/rebuild": "^4.0.2",
     "@types/node": "^22.10.2",
     "@types/ssh2": "^1.15.5",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^5.1.2",
     "electron": "39.2.7",
     "electron-builder": "^26.0.12",
     "electron-log": "^5.4.3",
     "electron-vite": "^5.0.0",
     "typescript": "^5.9.3",
-    "vite": "^6.0.6",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite": "^7.3.0",
+    "vite-tsconfig-paths": "^6.0.3"
   },
+  "homepage": "https://www.rediacc.com",
+  "main": "./out/main/index.js",
   "optionalDependencies": {
     "dmg-license": "^1.0.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rediacc/console.git",
+    "directory": "packages/desktop"
   }
 }

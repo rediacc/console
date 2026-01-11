@@ -19,7 +19,9 @@ import {
 import { isTaskStale } from '../utils';
 import type { ConsoleViewMode, QueueItemTraceData, SimplifiedStatus } from '../types';
 import type { CollapseProps } from 'antd';
-import type { TFunction } from 'i18next';
+
+// Generic translation function type that accepts any namespace configuration
+type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
 /** Type for a single collapse panel item - extracted to avoid any-union issues */
 interface CollapseItem {
@@ -40,7 +42,7 @@ interface BuildCollapseItemsParams {
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
   consoleViewMode: ConsoleViewMode;
   setConsoleViewMode: (mode: ConsoleViewMode) => void;
-  t: TFunction;
+  t: TranslateFn;
 }
 
 const NON_ACTIVE_STATUSES = ['COMPLETED', 'CANCELLED', 'CANCELLING', 'FAILED'] as const;
@@ -107,7 +109,7 @@ function buildDetailsItem(
   traceData: QueueItemTraceData,
   totalDurationSeconds: number,
   processingDurationSeconds: number,
-  t: TFunction
+  t: TranslateFn
 ): CollapseItem | null {
   if (!traceData.queueDetails) return null;
 
@@ -130,7 +132,7 @@ function buildDetailsItem(
   };
 }
 
-function buildTimelineItem(traceData: QueueItemTraceData, t: TFunction): CollapseItem | null {
+function buildTimelineItem(traceData: QueueItemTraceData, t: TranslateFn): CollapseItem | null {
   if (traceData.traceLogs.length === 0) return null;
 
   return {
@@ -146,7 +148,7 @@ function buildTimelineItem(traceData: QueueItemTraceData, t: TFunction): Collaps
   };
 }
 
-function buildVaultItem(traceData: QueueItemTraceData, t: TFunction): CollapseItem | null {
+function buildVaultItem(traceData: QueueItemTraceData, t: TranslateFn): CollapseItem | null {
   if (!traceData.vaultContent && !traceData.responseVaultContent) return null;
 
   return {
@@ -167,7 +169,7 @@ function buildVaultItem(traceData: QueueItemTraceData, t: TFunction): CollapseIt
   };
 }
 
-function buildRelatedItem(traceData: QueueItemTraceData, t: TFunction): CollapseItem | null {
+function buildRelatedItem(traceData: QueueItemTraceData, t: TranslateFn): CollapseItem | null {
   if (traceData.queuePosition.length === 0) return null;
 
   return {
@@ -183,7 +185,7 @@ function buildRelatedItem(traceData: QueueItemTraceData, t: TFunction): Collapse
   };
 }
 
-function buildPerformanceItem(traceData: QueueItemTraceData, t: TFunction): CollapseItem | null {
+function buildPerformanceItem(traceData: QueueItemTraceData, t: TranslateFn): CollapseItem | null {
   if (!traceData.machineStats) return null;
 
   return {

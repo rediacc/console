@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import {
   createEditionContext,
   EditionErrorPatterns,
@@ -159,7 +160,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? 'Private Team';
+        teamName = teams[0]?.teamName ?? SYSTEM_DEFAULTS.TEAM_NAME;
       });
 
       test.afterAll(async () => {
@@ -207,7 +208,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
 
         const teamResult = await ctx.runner.teamList();
         const teams = ctx.runner.expectSuccessArray<{ teamName: string }>(teamResult);
-        teamName = teams[0]?.teamName ?? 'Private Team';
+        teamName = teams[0]?.teamName ?? SYSTEM_DEFAULTS.TEAM_NAME;
       });
 
       test.afterAll(async () => {
@@ -246,7 +247,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
 
         const regionResult = await ctx.runner.run(['region', 'list']);
         const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-        regionName = regions[0]?.regionName ?? 'Default Region';
+        regionName = regions[0]?.regionName ?? SYSTEM_DEFAULTS.REGION_NAME;
       });
 
       test.afterAll(async () => {
@@ -280,7 +281,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
 
         const regionResult = await ctx.runner.run(['region', 'list']);
         const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-        regionName = regions[0]?.regionName ?? 'Default Region';
+        regionName = regions[0]?.regionName ?? SYSTEM_DEFAULTS.REGION_NAME;
       });
 
       test.afterAll(async () => {
@@ -330,7 +331,7 @@ test.describe('Feature Restrictions by Edition @cli @edition', () => {
 
         const regionResult = await ctx.runner.run(['region', 'list']);
         const regions = ctx.runner.expectSuccessArray<{ regionName: string }>(regionResult);
-        regionName = regions[0]?.regionName ?? 'Default Region';
+        regionName = regions[0]?.regionName ?? SYSTEM_DEFAULTS.REGION_NAME;
       });
 
       test.afterAll(async () => {

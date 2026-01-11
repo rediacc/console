@@ -6,6 +6,7 @@ import {
   QuestionCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 
@@ -38,7 +39,7 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
     return null;
   }
 
-  const status = kernelCompatibility.compatibility_status ?? 'unknown';
+  const status = kernelCompatibility.compatibility_status ?? DEFAULTS.TELEMETRY.UNKNOWN;
   const osInfo = kernelCompatibility.os_info ?? {};
 
   const statusConfig: Record<
@@ -68,7 +69,7 @@ export const VaultEditorSystemCompatibility: React.FC<VaultEditorSystemCompatibi
 
   const config = statusConfig[status] ?? statusConfig.unknown;
 
-  const sudoStatus = kernelCompatibility.sudo_available ?? 'unknown';
+  const sudoStatus = kernelCompatibility.sudo_available ?? DEFAULTS.TELEMETRY.UNKNOWN;
   const sudoConfig: Record<string, { color: string; text: string }> = {
     available: {
       color: 'success',

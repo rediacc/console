@@ -5,6 +5,7 @@ import { HTTP_STATUS, isServerError } from '../statusCodes';
 import { extractNextToken } from '../tokenUtils';
 import { ApiClientError, API_ERROR_CODES, type ApiErrorCode } from './error';
 import { RequestQueue } from './requestQueue';
+import { DEFAULTS } from '../../config';
 import type { ApiClientConfig, FullApiClient } from './types';
 import type { ApiResponse } from '../../types/api';
 import type { ProcedureEndpoint } from '../services/types';
@@ -393,8 +394,8 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
         {
           organizationName,
           userEmailAddress: email,
-          languagePreference: options.languagePreference ?? 'en',
-          subscriptionPlan: options.subscriptionPlan ?? 'COMMUNITY',
+          languagePreference: options.languagePreference ?? DEFAULTS.LOCALE.LANGUAGE,
+          subscriptionPlan: options.subscriptionPlan ?? DEFAULTS.SUBSCRIPTION.PLAN,
           turnstileToken: options.turnstileToken,
         },
         { headers: buildAuthHeaders(email, passwordHash) }

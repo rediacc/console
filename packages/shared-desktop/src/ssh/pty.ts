@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { PTYOptions, PTYSession } from '../types/index.js';
 
 // node-pty types (will be imported dynamically)
@@ -40,9 +41,9 @@ export async function createSSHPTYSession(
   const args = [...sshOptions, destination];
 
   // Default terminal settings
-  const cols = options?.cols ?? 80;
-  const rows = options?.rows ?? 24;
-  const name = options?.name ?? 'xterm-256color';
+  const cols = options?.cols ?? DEFAULTS.SSH.TERMINAL_COLS;
+  const rows = options?.rows ?? DEFAULTS.SSH.TERMINAL_ROWS;
+  const name = options?.name ?? DEFAULTS.SSH.TERMINAL_TYPE;
 
   // Merge environment
   const env = {
@@ -185,12 +186,12 @@ export async function createLocalPTYSession(
 
   // Determine shell
   const defaultShell =
-    os.platform() === 'win32' ? 'powershell.exe' : (process.env.SHELL ?? '/bin/bash');
+    os.platform() === 'win32' ? 'powershell.exe' : (process.env.SHELL ?? DEFAULTS.PROCESS.SHELL);
   const shellToUse = shell ?? defaultShell;
 
-  const cols = options?.cols ?? 80;
-  const rows = options?.rows ?? 24;
-  const name = options?.name ?? 'xterm-256color';
+  const cols = options?.cols ?? DEFAULTS.SSH.TERMINAL_COLS;
+  const rows = options?.rows ?? DEFAULTS.SSH.TERMINAL_ROWS;
+  const name = options?.name ?? DEFAULTS.SSH.TERMINAL_TYPE;
 
   const env = {
     ...process.env,
