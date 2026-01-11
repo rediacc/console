@@ -63,5 +63,13 @@ if ! npm run typecheck > /dev/null 2>&1; then
 fi
 echo "✓ Typecheck passed"
 
+# 6. Unit tests (fast, catches runtime errors)
+echo "→ Running unit tests..."
+if ! npm run test:run > /dev/null 2>&1; then
+    echo "❌ Unit tests failed. Run 'npm run test:run' to see errors."
+    exit 2
+fi
+echo "✓ Unit tests passed"
+
 echo "✅ All pre-commit checks passed!"
 exit 0
