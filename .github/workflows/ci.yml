@@ -238,7 +238,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage to artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         if: always()
         with:
           name: coverage-report-${{ github.sha }}
@@ -347,7 +347,7 @@ jobs:
 
       - name: Upload test results on failure
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: vscode-detection-results-${{ matrix.os }}-${{ github.sha }}
           path: packages/cli/tests/test-results/
@@ -415,7 +415,7 @@ jobs:
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
 
       - name: Upload Tunnel URL
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
@@ -570,7 +570,7 @@ jobs:
 
       - name: Upload Completion Signal
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: test-complete-linux
           path: ${{ runner.temp }}/complete.txt
@@ -578,7 +578,7 @@ jobs:
 
       - name: Upload CLI Test Report
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: cli-test-report-linux-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
@@ -586,7 +586,7 @@ jobs:
 
       - name: Upload CLI Test Logs
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: cli-test-logs-linux-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
@@ -702,7 +702,7 @@ jobs:
 
       - name: Upload Completion Signal
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: test-complete-windows
           path: ${{ runner.temp }}/complete.txt
@@ -710,7 +710,7 @@ jobs:
 
       - name: Upload CLI Test Report
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: cli-test-report-windows-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
@@ -718,7 +718,7 @@ jobs:
 
       - name: Upload CLI Test Logs
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: cli-test-logs-windows-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
@@ -820,7 +820,7 @@ jobs:
 
       - name: Upload Completion Signal
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: test-complete-macos
           path: ${{ runner.temp }}/complete.txt
@@ -828,7 +828,7 @@ jobs:
 
       - name: Upload CLI Test Report
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: cli-test-report-macos-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
@@ -836,7 +836,7 @@ jobs:
 
       - name: Upload CLI Test Logs
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: cli-test-logs-macos-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
@@ -888,7 +888,7 @@ jobs:
           ls -lah packages/web/dist/
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: build-${{ matrix.build-type }}-${{ github.sha }}
           path: packages/web/dist/
@@ -946,7 +946,7 @@ jobs:
           cat audit-report.json
 
       - name: Upload audit report
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         if: always()
         with:
           name: security-audit-${{ github.sha }}
@@ -985,7 +985,7 @@ jobs:
 
       - name: Upload npm logs on failure (Windows)
         if: (failure() || cancelled()) && runner.os == 'Windows'
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: npm-debug-logs-windows-${{ github.sha }}
           path: C:\npm\cache\_logs\
@@ -1085,7 +1085,7 @@ jobs:
         run: npm run dist:win
 
       - name: Upload desktop artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v4
         with:
           name: desktop-${{ matrix.os }}-${{ github.sha }}
           path: dist/desktop/

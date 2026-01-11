@@ -98,7 +98,7 @@ jobs:
 
       - name: Upload artifacts (Windows)
         if: matrix.platform == 'win'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: |
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload artifacts (macOS)
         if: matrix.platform == 'mac'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: |
@@ -120,7 +120,7 @@ jobs:
 
       - name: Upload artifacts (Linux)
         if: matrix.platform == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: |
