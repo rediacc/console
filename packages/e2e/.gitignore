@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Test outputs
+test-results/
+playwright-report/
+reports/
+screenshots/
+
+# Build outputs
+dist/
+
+# Environment
+.env
+
+# Playwright state
+auth.json
+storageState.json
+
+# Test data
+src/utils/data/test-data.json

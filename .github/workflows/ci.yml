@@ -17,9 +17,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # PR Validation Jobs (only run on pull_request)
-  pr-validation:
-    name: 📋 PR - Validate Format
+  # ============================================================================
+  # TIER 2: PR VALIDATION (PR-only, no dependencies)
+  # ============================================================================
+  pr-title:
+    name: 📋 PR - Title Format
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -67,8 +69,8 @@ jobs:
               core.info('✅ PR references issues');
             }
 
-  pr-size-check:
-    name: 📊 PR - Size Check
+  pr-size:
+    name: 📊 PR - Size
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -122,8 +124,8 @@ jobs:
 
             core.summary.addRaw(comment).write();
 
-  pr-conflict-check:
-    name: 🔀 PR - Conflict Check
+  pr-conflicts:
+    name: 🔀 PR - Conflicts
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -146,9 +148,56 @@ jobs:
               core.info('✅ No merge conflicts detected');
             }
 
-  # Code Quality Jobs (run on all events)
-  lint:
-    name: ✨ Code Quality - Lint
+  # ============================================================================
+  # TIER 1: CODE QUALITY & SECURITY (Fast checks, no dependencies)
+  # ============================================================================
+  quality-versions:
+    name: 📦 Quality - Versions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Block legacy-peer-deps workarounds
+        run: |
+          # Fail if .npmrc contains legacy-peer-deps or force
+          if [ -f .npmrc ]; then
+            if grep -qiE "legacy-peer-deps|force" .npmrc; then
+              echo "❌ .npmrc contains legacy-peer-deps or force=true"
+              echo "Fix peer dependency conflicts properly instead of bypassing checks."
+              exit 1
+            fi
+          fi
+          echo "✅ No legacy-peer-deps workarounds detected"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify no peer dependency conflicts
+        run: |
+          # npm ls returns non-zero if there are invalid peer deps
+          if ! npm ls 2>&1 | grep -q "invalid"; then
+            echo "✅ No peer dependency conflicts"
+          else
+            echo "❌ Peer dependency conflicts detected:"
+            npm ls 2>&1 | grep "invalid" || true
+            echo ""
+            echo "Fix by aligning versions in package.json, not with --legacy-peer-deps"
+            exit 1
+          fi
+
+      - name: Check version consistency
+        run: npm run version:check
+
+  quality-lint:
+    name: ✨ Quality - Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -170,8 +219,8 @@ jobs:
       - name: Check unused code (knip)
         run: npm run lint:unused
 
-  format-check:
-    name: 🎨 Code Quality - Format
+  quality-format:
+    name: 🎨 Quality - Format
     runs-on: ubuntu-latest
 
     steps:
@@ -190,8 +239,8 @@ jobs:
       - name: Check code formatting (Biome)
         run: npm run format:check
 
-  type-check:
-    name: 🔍 Code Quality - TypeScript
+  quality-types:
+    name: 🔍 Quality - TypeScript
     runs-on: ubuntu-latest
 
     steps:
@@ -210,9 +259,13 @@ jobs:
       - name: Run TypeScript project references
         run: npm run typecheck
 
-  unit-tests:
-    name: 🧪 Unit Tests
+  # ============================================================================
+  # TIER 3: BUILD & UNIT TESTS (Depends on Tier 1)
+  # ============================================================================
+  test-unit:
+    name: 🧪 Test - Unit
     runs-on: ubuntu-latest
+    needs: [quality-versions, quality-lint, quality-format, quality-types]
 
     steps:
       - name: Checkout code
@@ -231,7 +284,11 @@ jobs:
         run: npm run build:packages
 
       - name: Run unit tests
-        run: npm run test:run
+        run: |
+          npm run test -w @rediacc/shared
+          npm run test -w @rediacc/shared-desktop
+          npm run test:run -w @rediacc/web
+          npm run test:unit -w @rediacc/cli
 
       - name: Generate coverage report
         if: always()
@@ -245,9 +302,10 @@ jobs:
           path: packages/web/coverage/
           retention-days: 30
 
-  cli-check:
-    name: 🔧 Code Quality - CLI
+  build-cli:
+    name: 🔧 Build - CLI
     runs-on: ubuntu-latest
+    needs: [quality-versions, quality-lint, quality-format, quality-types]
 
     steps:
       - name: Checkout code
@@ -281,10 +339,10 @@ jobs:
           echo "CLI build successful!"
           ls -lah packages/cli/dist/
 
-  vscode-detection-tests:
-    name: 🔍 VS Code Detection (${{ matrix.os }})
+  test-vscode:
+    name: 🔍 Test - VS Code (${{ matrix.os }})
     timeout-minutes: 15
-    needs: [lint, format-check, type-check]
+    needs: [quality-versions, quality-lint, quality-format, quality-types]
     strategy:
       fail-fast: false
       matrix:
@@ -355,12 +413,14 @@ jobs:
           if-no-files-found: ignore
 
   # ============================================================================
-  # SHARED BACKEND JOB
-  # Starts Elite services and creates Cloudflare tunnel for cross-platform testing
+  # TIER 4: INTEGRATION TESTS (Depends on Tier 3, long-running)
+  # Only runs after all builds and unit tests pass to avoid wasting resources
+  # Shared backend starts first, then each platform downloads tunnel URL
   # ============================================================================
-  shared-backend:
-    name: 🖥️ Shared Backend (Elite + Tunnel)
+  infra-backend:
+    name: 🖥️ Infra - Backend
     runs-on: ubuntu-latest
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     steps:
@@ -428,7 +488,7 @@ jobs:
           echo "Waiting for test jobs to complete..."
           MAX_WAIT=7200  # 2 hours
           ELAPSED=0
-          PLATFORMS=("linux" "windows" "macos")
+          PLATFORMS=("linux" "windows" "macos" "e2e")
           COMPLETED=()
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
@@ -463,14 +523,10 @@ jobs:
         working-directory: elite
         run: ./go down || true
 
-  # ============================================================================
-  # CROSS-PLATFORM CLI TESTS
-  # Each platform downloads tunnel URL and runs tests against shared backend
-  # ============================================================================
-  cli-tests-linux:
-    name: 🧪 CLI Tests (Linux)
+  test-cli-linux:
+    name: 🧪 Test - CLI (Linux)
     runs-on: ubuntu-latest
-    needs: [lint, format-check, type-check]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     env:
@@ -592,10 +648,10 @@ jobs:
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 7
 
-  cli-tests-windows:
-    name: 🧪 CLI Tests (Windows)
+  test-cli-windows:
+    name: 🧪 Test - CLI (Windows)
     runs-on: windows-latest
-    needs: [lint, format-check, type-check]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     env:
@@ -724,10 +780,10 @@ jobs:
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 7
 
-  cli-tests-macos:
-    name: 🧪 CLI Tests (macOS)
+  test-cli-macos:
+    name: 🧪 Test - CLI (macOS)
     runs-on: macos-latest
-    needs: [lint, format-check, type-check]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 120
 
     env:
@@ -842,9 +898,115 @@ jobs:
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 7
 
-  build:
-    name: 🏗️ Build - DEBUG & RELEASE
+  test-e2e:
+    name: 🌐 Test - E2E
     runs-on: ubuntu-latest
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    timeout-minutes: 45
+
+    env:
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Install Playwright Browsers
+        working-directory: packages/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAX_WAIT=1500
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
+              TUNNEL_URL=$(cat tunnel-url.txt)
+              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
+              exit 0
+            fi
+            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "✗ Failed to download tunnel URL"
+          exit 1
+
+      - name: Verify Tunnel Connectivity
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
+
+      - name: Create E2E Test Environment
+        working-directory: packages/e2e
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "E2E_BASE_URL=${TUNNEL_URL}" > .env
+          echo "TEST_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "TEST_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "ADMIN_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "ADMIN_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "CI=true" >> .env
+          echo "✓ Created .env for E2E tests"
+        env:
+          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
+          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
+
+      - name: Run E2E Tests
+        working-directory: packages/e2e
+        run: npm run test:e2e
+
+      - name: Create Completion Signal
+        if: always()
+        run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Upload Completion Signal
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 1
+
+      - name: Upload E2E Test Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-test-report-${{ github.sha }}
+          path: packages/e2e/reports/e2e/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  build-web:
+    name: 🏗️ Build - Web
+    runs-on: ubuntu-latest
+    needs: [quality-versions, quality-lint, quality-format, quality-types]
 
     strategy:
       matrix:
@@ -922,8 +1084,8 @@ jobs:
             echo "Bundle size OK: $TOTAL_SIZE bytes"
           fi
 
-  security-scan:
-    name: 🔒 Security - Vulnerability Scan
+  quality-security:
+    name: 🔒 Quality - Security
     runs-on: ubuntu-latest
 
     steps:
@@ -953,8 +1115,9 @@ jobs:
           path: audit-report.json
           retention-days: 30
 
-  desktop-build:
-    name: 🖥️ Desktop - Electron Build (${{ matrix.os }})
+  build-desktop:
+    name: 🖥️ Build - Desktop (${{ matrix.os }})
+    needs: [quality-versions, quality-lint, quality-format, quality-types]
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1092,10 +1255,13 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-  ci-summary:
-    name: ✅ CI Summary
+  # ============================================================================
+  # TIER 5: CI SUMMARY (Depends on all)
+  # ============================================================================
+  summary:
+    name: ✅ Summary
     runs-on: ubuntu-latest
-    needs: [lint, format-check, type-check, unit-tests, cli-check, vscode-detection-tests, shared-backend, cli-tests-linux, cli-tests-windows, cli-tests-macos, build, security-scan, desktop-build]
+    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, build-web, build-desktop]
     if: always()
 
     steps:
@@ -1103,36 +1269,38 @@ jobs:
         run: |
           echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Code Quality" >> $GITHUB_STEP_SUMMARY
-          echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Format: ${{ needs.format-check.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Type Check: ${{ needs.type-check.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI Check: ${{ needs.cli-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Tier 1: Quality & Security" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint: ${{ needs.quality-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Format: ${{ needs.quality-format.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- TypeScript: ${{ needs.quality-types.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security: ${{ needs.quality-security.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### CLI Integration Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- VS Code Detection: ${{ needs.vscode-detection-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Shared Backend: ${{ needs.shared-backend.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI Tests (Linux): ${{ needs.cli-tests-linux.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI Tests (Windows): ${{ needs.cli-tests-windows.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI Tests (macOS): ${{ needs.cli-tests-macos.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Tier 3: Build & Unit Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit Tests: ${{ needs.test-unit.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI Build: ${{ needs.build-cli.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Web Build: ${{ needs.build-web.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop Build: ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Build & Security" >> $GITHUB_STEP_SUMMARY
-          echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Desktop Build: ${{ needs.desktop-build.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Tier 4: Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI (Linux): ${{ needs.test-cli-linux.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI (Windows): ${{ needs.test-cli-windows.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI (macOS): ${{ needs.test-cli-macos.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.lint.result }}" != "success" ] || \
-             [ "${{ needs.format-check.result }}" != "success" ] || \
-             [ "${{ needs.type-check.result }}" != "success" ] || \
-             [ "${{ needs.unit-tests.result }}" != "success" ] || \
-             [ "${{ needs.cli-check.result }}" != "success" ] || \
-             [ "${{ needs.vscode-detection-tests.result }}" != "success" ] || \
-             [ "${{ needs.cli-tests-linux.result }}" != "success" ] || \
-             [ "${{ needs.cli-tests-windows.result }}" != "success" ] || \
-             [ "${{ needs.cli-tests-macos.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ] || \
-             [ "${{ needs.desktop-build.result }}" != "success" ]; then
+          if [ "${{ needs.quality-lint.result }}" != "success" ] || \
+             [ "${{ needs.quality-format.result }}" != "success" ] || \
+             [ "${{ needs.quality-types.result }}" != "success" ] || \
+             [ "${{ needs.test-unit.result }}" != "success" ] || \
+             [ "${{ needs.build-cli.result }}" != "success" ] || \
+             [ "${{ needs.test-vscode.result }}" != "success" ] || \
+             [ "${{ needs.test-cli-linux.result }}" != "success" ] || \
+             [ "${{ needs.test-cli-windows.result }}" != "success" ] || \
+             [ "${{ needs.test-cli-macos.result }}" != "success" ] || \
+             [ "${{ needs.test-e2e.result }}" != "success" ] || \
+             [ "${{ needs.build-web.result }}" != "success" ] || \
+             [ "${{ needs.build-desktop.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "❌ **CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
             exit 1

@@ -103,6 +103,7 @@ export default tseslint.config(
             'packages/shared/tsconfig.json',
             'packages/cli/tsconfig.json',
             'packages/cli/tests/tsconfig.json',
+            'packages/e2e/tsconfig.json',
           ],
           // Suppress warning about multiple tsconfig files (expected in monorepo)
           noWarnOnMultipleProjects: true,
@@ -659,5 +660,6 @@ export default tseslint.config(
       // Limit of 3 is too restrictive for test patterns like find(), some(), map()
       'max-nested-callbacks': ['error', 5],
     },
-  }
+  },
+
 );

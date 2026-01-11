@@ -68,7 +68,7 @@ class VersionService {
 
       // Fallback to build-time version from Vite
       return {
-        version: import.meta.env.VITE_APP_VERSION || 'unknown',
+        version: import.meta.env.VITE_APP_VERSION ?? 'unknown',
       };
     }
   }

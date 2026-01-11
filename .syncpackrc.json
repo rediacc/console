@@ -1,0 +1,63 @@
+{
+  "$schema": "https://unpkg.com/syncpack@13/dist/schema.json",
+  "indent": "  ",
+  "sortFirst": ["name", "version", "private", "type", "workspaces", "scripts"],
+  "versionGroups": [
+    {
+      "label": "Workspace dependencies should use wildcard",
+      "packages": ["**"],
+      "dependencies": ["@rediacc/**"],
+      "dependencyTypes": ["!local"],
+      "pinVersion": "*"
+    },
+    {
+      "label": "Pin @types/node to latest",
+      "packages": ["**"],
+      "dependencies": ["@types/node"],
+      "pinVersion": "^22.10.2"
+    },
+    {
+      "label": "Pin OpenTelemetry packages to compatible versions",
+      "packages": ["**"],
+      "dependencies": [
+        "@opentelemetry/exporter-trace-otlp-http",
+        "@opentelemetry/instrumentation",
+        "@opentelemetry/instrumentation-fetch",
+        "@opentelemetry/instrumentation-xml-http-request"
+      ],
+      "pinVersion": "^0.208.0"
+    },
+    {
+      "label": "Pin OpenTelemetry sdk-node for CLI",
+      "packages": ["**"],
+      "dependencies": ["@opentelemetry/sdk-node"],
+      "pinVersion": "^0.208.0"
+    },
+    {
+      "label": "Pin OpenTelemetry resources to compatible version",
+      "packages": ["**"],
+      "dependencies": ["@opentelemetry/resources"],
+      "pinVersion": "^2.1.0"
+    },
+    {
+      "label": "Pin i18next to web version",
+      "packages": ["**"],
+      "dependencies": ["i18next"],
+      "pinVersion": "^25.7.2"
+    },
+    {
+      "label": "Pin vite-tsconfig-paths to latest",
+      "packages": ["**"],
+      "dependencies": ["vite-tsconfig-paths"],
+      "pinVersion": "^6.0.3"
+    },
+    {
+      "label": "Ensure consistent dependency versions across packages",
+      "packages": ["**"],
+      "dependencies": ["**"],
+      "dependencyTypes": ["prod", "dev"],
+      "policy": "sameRange",
+      "preferVersion": "highestSemver"
+    }
+  ]
+}

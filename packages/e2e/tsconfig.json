@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "lib": ["ESNext", "DOM"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/base/*": ["src/base/*"],
+      "@/utils/*": ["src/utils/*"]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*", "pages/**/*", "types/**/*"],
+  "exclude": ["node_modules", "test-results", "playwright-report", "screenshots", "reports", "dist"]
+}

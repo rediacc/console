@@ -1,0 +1,44 @@
+{
+  "name": "@rediacc/e2e",
+  "version": "0.4.15",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "ci": "npm run lint && npm run type-check && npm run test",
+    "clean:reports": "rimraf reports screenshots test-results",
+    "clean:screenshots": "rimraf screenshots",
+    "lint": "eslint src tests --ext .ts,.tsx",
+    "lint:fix": "eslint src tests --ext .ts,.tsx --fix",
+    "setup": "npm run test:install && npm run test:install-deps",
+    "test": "playwright test",
+    "test:auth": "playwright test --grep @auth",
+    "test:codegen": "playwright codegen",
+    "test:dashboard": "playwright test --grep @dashboard",
+    "test:debug": "playwright test --debug",
+    "test:e2e": "npm run test:suite full-e2e",
+    "test:headed": "playwright test --headed",
+    "test:install": "playwright install",
+    "test:install-deps": "playwright install-deps",
+    "test:parallel": "playwright test --workers=4",
+    "test:regression": "playwright test --grep @regression",
+    "test:report": "playwright show-report reports/e2e",
+    "test:resources": "playwright test --grep @resources",
+    "test:serial": "playwright test --workers=1",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:suite": "node scripts/run-suite.js",
+    "test:system": "playwright test --grep @system",
+    "test:ui": "playwright test --ui",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.56.1",
+    "@rediacc/shared": "*",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.3"
+  }
+}
