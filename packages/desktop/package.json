@@ -25,7 +25,8 @@
     "bundle:msys2": "bash ../../scripts/extract-msys2-bundle.sh --ci --output ./msys2-bundle",
     "typecheck:main": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:preload": "tsc --noEmit -p tsconfig.node.json",
-    "typecheck": "npm run typecheck:main && npm run typecheck:preload"
+    "typecheck": "npm run typecheck:main && npm run typecheck:preload",
+    "lint": "eslint src --ext .ts"
   },
   "dependencies": {
     "@rediacc/shared-desktop": "*",

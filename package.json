@@ -19,7 +19,7 @@
     "dev": "npm run dev -w @rediacc/web",
     "dev:parity": "npm run build:packages && npm run dev -w @rediacc/web",
     "lint": "eslint .",
-    "typecheck": "tsc -b packages/shared packages/shared-desktop packages/cli && npm run typecheck -w @rediacc/web",
+    "typecheck": "tsc -b packages/shared packages/shared-desktop packages/cli packages/desktop packages/e2e && npm run typecheck -w @rediacc/web",
     "clean": "npm run clean -w @rediacc/shared && npm run clean -w @rediacc/cli && npm run clean -w @rediacc/web",
     "fix": "biome format --write packages/ && eslint . --fix",
     "format": "biome format --write packages/",
