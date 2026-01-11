@@ -24,9 +24,11 @@ else
 fi
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+# Sanitize branch name (replace / with -)
+BRANCH_SAFE="${BRANCH//\//-}"
 
 # Record push timestamp
-LAST_PUSH_FILE="/tmp/.claude-last-push-${OWNER}-${REPO}-${BRANCH}"
+LAST_PUSH_FILE="/tmp/.claude-last-push-${OWNER}-${REPO}-${BRANCH_SAFE}"
 date +%s > "$LAST_PUSH_FILE"
 
 echo "📤 Push tracked. CI will be monitored."

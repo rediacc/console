@@ -29,9 +29,11 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 if [ -z "$BRANCH" ]; then
     exit 0
 fi
+# Sanitize branch name (replace / with -)
+BRANCH_SAFE="${BRANCH//\//-}"
 
 # Check if we recently pushed (within last 5 minutes)
-LAST_PUSH_FILE="/tmp/.claude-last-push-${OWNER}-${REPO}-${BRANCH}"
+LAST_PUSH_FILE="/tmp/.claude-last-push-${OWNER}-${REPO}-${BRANCH_SAFE}"
 if [ ! -f "$LAST_PUSH_FILE" ]; then
     exit 0
 fi
