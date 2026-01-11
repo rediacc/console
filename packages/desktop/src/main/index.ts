@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join } from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { app, BrowserWindow, session, shell } from 'electron';
 import { registerIpcHandlers, cleanupIpcHandlers } from './ipc';

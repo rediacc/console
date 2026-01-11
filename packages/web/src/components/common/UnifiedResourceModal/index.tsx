@@ -113,6 +113,30 @@ const CREATE_EXTRAS: Partial<
   clone: () => ({ poolName: '', imageName: '', snapshotName: '' }),
 };
 
+type MachineValidationResult =
+  | { valid: true; warn?: boolean }
+  | { valid: false; errorKey?: string };
+
+const validateMachineCreation = (
+  data: ResourceFormValues,
+  testConnectionSuccess: boolean
+): MachineValidationResult => {
+  const vaultString = typeof data.machineVault === 'string' ? data.machineVault : '';
+  const vaultData: Record<string, unknown> = vaultString ? JSON.parse(vaultString) : {};
+  const sshPassword = vaultData.ssh_password;
+  const sshKeyConfigured = vaultData.ssh_key_configured;
+
+  if (typeof sshPassword === 'string' && sshPassword && !sshKeyConfigured) {
+    return { valid: false, errorKey: 'machines:validation.sshPasswordNotAllowed' };
+  }
+
+  if (!testConnectionSuccess) {
+    return { valid: true, warn: true };
+  }
+
+  return { valid: true };
+};
+
 const applyExistingData = (
   defaults: ResourceFormValues,
   existingData?: ExistingResourceData
@@ -377,19 +401,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Handle form submission
   const handleSubmit = useCallback(
     async (data: ResourceFormValues) => {
-      // Validate machine creation - check if SSH password is present without SSH key configured
+      // Validate machine creation
       if (mode === 'create' && resourceType === 'machine') {
-        const vaultString = typeof data.machineVault === 'string' ? data.machineVault : '';
-        const vaultData: Record<string, unknown> = vaultString ? JSON.parse(vaultString) : {};
-        const sshPassword = vaultData.ssh_password;
-        const sshKeyConfigured = vaultData.ssh_key_configured;
-
-        if (typeof sshPassword === 'string' && sshPassword && !sshKeyConfigured) {
-          message.error('machines:validation.sshPasswordNotAllowed');
+        const validation = validateMachineCreation(data, testConnectionSuccess);
+        if (!validation.valid) {
+          message.error(validation.errorKey ?? 'machines:validation.error');
           return;
         }
-
-        if (!testConnectionSuccess) {
+        if ('warn' in validation && validation.warn) {
           message.warning('machines:validation.sshConnectionNotTested');
         }
       }
@@ -442,21 +461,24 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // If we're in vault mode, show the vault editor directly
   if (mode === 'vault' && stableExistingData && onUpdateVault) {
     return (
-      <VaultEditorModal
-        open={open}
-        onCancel={onCancel}
-        onSave={async (vault, version) => {
-          await onUpdateVault(vault, version);
-          onCancel();
-        }}
-        entityType={entityType}
-        title={t('general.configureVault', {
-          name: (stableExistingData[`${resourceType}Name`] as string | null) ?? '',
-        })}
-        initialVault={stableExistingData.vaultContent ?? '{}'}
-        initialVersion={stableExistingData.vaultVersion ?? 1}
-        loading={isUpdatingVault}
-      />
+      // Connect form instance to prevent "useForm not connected" warning
+      <Form form={form} component={false}>
+        <VaultEditorModal
+          open={open}
+          onCancel={onCancel}
+          onSave={async (vault, version) => {
+            await onUpdateVault(vault, version);
+            onCancel();
+          }}
+          entityType={entityType}
+          title={t('general.configureVault', {
+            name: (stableExistingData[`${resourceType}Name`] as string | null) ?? '',
+          })}
+          initialVault={stableExistingData.vaultContent ?? '{}'}
+          initialVersion={stableExistingData.vaultVersion ?? 1}
+          loading={isUpdatingVault}
+        />
+      </Form>
     );
   }
 
@@ -469,7 +491,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     !stableExistingData.prefilledMachine
   ) {
     return (
-      <>
+      // Connect form instance to prevent "useForm not connected" warning
+      <Form form={form} component={false}>
         {/* Function Selection Modal */}
         <FunctionSelectionModal
           open={functionModal.isOpen}
@@ -498,7 +521,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           defaultParams={defaultParams}
           preselectedFunction={preselectedFunction}
         />
-      </>
+      </Form>
     );
   }
 

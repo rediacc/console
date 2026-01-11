@@ -3,9 +3,9 @@
  * Manages settings.json configuration for Remote SSH support
  */
 
-import { execSync } from 'child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { dirname, join } from 'path';
+import { execSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { getPlatform } from '../utils/platform.js';
 import type { VSCodeRemoteSettings } from './types.js';
 
@@ -137,7 +137,7 @@ export function readVSCodeSettings(settingsPath?: string): Record<string, unknow
   try {
     const content = readFileSync(path, 'utf8');
     // Handle JSON with comments (JSONC) by stripping single-line comments
-    const cleanContent = content.replace(/^\s*\/\/.*$/gm, '');
+    const cleanContent = content.replaceAll(/^\s*\/\/.*$/gm, '');
     return JSON.parse(cleanContent);
   } catch {
     // If parsing fails, return empty object
@@ -246,6 +246,49 @@ export function setHostServerInstallPath(
 }
 
 /**
+ * Checks if two values are objects that should be merged
+ */
+function areMergeableObjects(
+  value: unknown,
+  existingValue: unknown
+): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof existingValue === 'object' &&
+    existingValue !== null
+  );
+}
+
+/**
+ * Merges a single setting into existing settings
+ * Returns true if a change was made
+ */
+function mergeSetting(
+  existingSettings: Record<string, unknown>,
+  key: string,
+  value: unknown
+): boolean {
+  const existingValue = existingSettings[key];
+
+  if (areMergeableObjects(value, existingValue)) {
+    const existingObj = existingValue as Record<string, unknown>;
+    const merged = { ...existingObj, ...value };
+    if (JSON.stringify(merged) !== JSON.stringify(existingValue)) {
+      existingSettings[key] = merged;
+      return true;
+    }
+    return false;
+  }
+
+  if (existingValue !== value) {
+    existingSettings[key] = value;
+    return true;
+  }
+  return false;
+}
+
+/**
  * Configures VS Code settings for Remote SSH
  *
  * @param isInsiders - Whether to configure VS Code Insiders
@@ -267,25 +310,7 @@ export function configureVSCodeSettings(isInsiders = false): {
 
     // Merge required settings
     for (const [key, value] of Object.entries(requiredSettings)) {
-      const existingValue = existingSettings[key];
-
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        typeof existingValue === 'object' &&
-        existingValue !== null
-      ) {
-        // Merge objects (like serverInstallPath)
-        const merged = {
-          ...(existingValue as Record<string, unknown>),
-          ...(value as Record<string, unknown>),
-        };
-        if (JSON.stringify(merged) !== JSON.stringify(existingValue)) {
-          existingSettings[key] = merged;
-          changed = true;
-        }
-      } else if (existingValue !== value) {
-        existingSettings[key] = value;
+      if (mergeSetting(existingSettings, key, value)) {
         changed = true;
       }
     }

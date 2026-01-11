@@ -102,12 +102,14 @@ export const useRepositoryColumns = (teamRepositories: GetTeamRepositories_Resul
       return 2;
     }),
     render: (_: unknown, record: RepositoryTableRow, index: number) => {
-      const statusKey =
-        record.mounted && record.docker_running
-          ? 'mounted-running'
-          : record.mounted
-            ? 'mounted'
-            : 'unmounted';
+      let statusKey: string;
+      if (record.mounted && record.docker_running) {
+        statusKey = 'mounted-running';
+      } else if (record.mounted) {
+        statusKey = 'mounted';
+      } else {
+        statusKey = 'unmounted';
+      }
       return RepoStatusColumn.render?.(statusKey, record, index) as React.ReactNode;
     },
   };

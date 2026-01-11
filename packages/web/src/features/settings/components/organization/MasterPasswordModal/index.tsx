@@ -154,13 +154,14 @@ export const MasterPasswordModal: React.FC<MasterPasswordModalProps> = ({
         <Alert
           message={t('common:general.important')}
           description={t(
-            `system:dangerZone.updateMasterPassword.modal.importantNote${
-              masterPasswordOperation === 'create'
-                ? 'Create'
-                : masterPasswordOperation === 'remove'
-                  ? 'Remove'
-                  : ''
-            }`
+            `system:dangerZone.updateMasterPassword.modal.importantNote${(() => {
+              if (masterPasswordOperation === 'create') {
+                return 'Create';
+              } else if (masterPasswordOperation === 'remove') {
+                return 'Remove';
+              }
+              return '';
+            })()}`
           )}
           type="info"
         />

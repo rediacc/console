@@ -116,7 +116,7 @@ const AuditPage = () => {
         <MobileCard actions={timestampDisplay}>
           <Space>
             <IconComponent />
-            <Typography.Text strong>{(record.action ?? '').replace(/_/g, ' ')}</Typography.Text>
+            <Typography.Text strong>{(record.action ?? '').replaceAll('_', ' ')}</Typography.Text>
           </Space>
           <Flex wrap align="center">
             <Tag>{record.entity}</Tag>
@@ -155,7 +155,7 @@ const AuditPage = () => {
     ];
     const rows = filteredLogs.map((log) => [
       dayjs(log.timestamp).format('YYYY-MM-DD HH:mm:ss'),
-      (log.action ?? '').replace(/_/g, ' '),
+      (log.action ?? '').replaceAll('_', ' '),
       log.entity,
       log.entityName ?? '',
       log.actionByUser,
@@ -380,13 +380,14 @@ const AuditPage = () => {
             loading={isLoading}
             rowKey={(record) => `${record.timestamp}-${record.action}-${record.entityName}`}
             mobileRender={mobileRender}
-            emptyDescription={
-              isError
-                ? t('system:audit.errors.unableToLoad')
-                : filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0
-                  ? t('system:audit.empty.noMatchingFilters')
-                  : t('system:audit.empty.noLogsInRange')
-            }
+            emptyDescription={(() => {
+              if (isError) {
+                return t('system:audit.errors.unableToLoad');
+              } else if (filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0) {
+                return t('system:audit.empty.noMatchingFilters');
+              }
+              return t('system:audit.empty.noLogsInRange');
+            })()}
             pagination={{
               current: currentPage,
               pageSize,

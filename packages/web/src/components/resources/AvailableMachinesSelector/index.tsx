@@ -94,36 +94,41 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
           </Flex>
           {showAssignmentStatus && (
             <Flex align="center">
-              {isAssigned ? (
-                machine.cephClusterName ? (
-                  <Tag data-testid={`available-machines-cluster-tag-${machine.machineName}`}>
+              {(() => {
+                if (isAssigned && machine.cephClusterName) {
+                  return (
+                    <Tag data-testid={`available-machines-cluster-tag-${machine.machineName}`}>
+                      <Typography.Text className="inline-flex text-xs">
+                        <WarningOutlined />
+                      </Typography.Text>
+                      <Typography.Text className="text-xs">
+                        {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
+                      </Typography.Text>
+                    </Tag>
+                  );
+                } else if (isAssigned) {
+                  return (
+                    <Tag data-testid={`available-machines-assigned-tag-${machine.machineName}`}>
+                      <Typography.Text className="inline-flex text-xs">
+                        <WarningOutlined />
+                      </Typography.Text>
+                      <Typography.Text className="text-xs">
+                        {t('machines:assignmentStatus.assigned', 'Assigned')}
+                      </Typography.Text>
+                    </Tag>
+                  );
+                }
+                return (
+                  <Tag data-testid={`available-machines-available-tag-${machine.machineName}`}>
                     <Typography.Text className="inline-flex text-xs">
-                      <WarningOutlined />
+                      <CheckCircleOutlined />
                     </Typography.Text>
                     <Typography.Text className="text-xs">
-                      {t('machines:assignmentStatus.cluster')}: {machine.cephClusterName}
+                      {t('machines:assignmentStatus.available')}
                     </Typography.Text>
                   </Tag>
-                ) : (
-                  <Tag data-testid={`available-machines-assigned-tag-${machine.machineName}`}>
-                    <Typography.Text className="inline-flex text-xs">
-                      <WarningOutlined />
-                    </Typography.Text>
-                    <Typography.Text className="text-xs">
-                      {t('machines:assignmentStatus.assigned', 'Assigned')}
-                    </Typography.Text>
-                  </Tag>
-                )
-              ) : (
-                <Tag data-testid={`available-machines-available-tag-${machine.machineName}`}>
-                  <Typography.Text className="inline-flex text-xs">
-                    <CheckCircleOutlined />
-                  </Typography.Text>
-                  <Typography.Text className="text-xs">
-                    {t('machines:assignmentStatus.available')}
-                  </Typography.Text>
-                </Tag>
-              )}
+                );
+              })()}
             </Flex>
           )}
         </Flex>

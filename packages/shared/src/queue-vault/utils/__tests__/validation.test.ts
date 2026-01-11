@@ -268,7 +268,7 @@ describe('validateNetworkId', () => {
     });
 
     it('should reject NaN', () => {
-      const result = validateNetworkId(NaN);
+      const result = validateNetworkId(Number.NaN);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('must be a number');
     });

@@ -332,89 +332,81 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         </Flex>
       }
     >
-      <Flex className="w-full">
-        <Flex vertical className="w-full">
-          {isRunning && (
-            <Flex vertical data-testid="connectivity-progress-container">
-              <Progress
-                percent={progress}
-                status="active"
-                data-testid="connectivity-progress-bar"
-              />
-              {currentMachineIndex >= 0 && currentMachineIndex < machines.length && (
-                <Typography.Text data-testid="connectivity-progress-text" type="secondary">
-                  {t('machines:testingMachine', {
-                    machineName: machines[currentMachineIndex].machineName,
-                  })}
+      <Flex vertical>
+        {isRunning && (
+          <Flex vertical data-testid="connectivity-progress-container">
+            <Progress percent={progress} status="active" data-testid="connectivity-progress-bar" />
+            {currentMachineIndex >= 0 && currentMachineIndex < machines.length && (
+              <Typography.Text data-testid="connectivity-progress-text" type="secondary">
+                {t('machines:testingMachine', {
+                  machineName: machines[currentMachineIndex].machineName,
+                })}
+              </Typography.Text>
+            )}
+          </Flex>
+        )}
+
+        <Flex>
+          <Alert
+            message={t('machines:connectivityTestDescription')}
+            type="info"
+            icon={<WifiOutlined />}
+            data-testid="connectivity-info-alert"
+          />
+        </Flex>
+
+        <Flex>
+          <Table<TestResult>
+            columns={columns}
+            dataSource={testResults}
+            rowKey="machineName"
+            pagination={false}
+            scroll={{ x: 'max-content', y: 400 }}
+            loading={machines.length === 0}
+            rowClassName={(record) => `status-${record.status}`}
+            data-testid="connectivity-results-table"
+          />
+        </Flex>
+
+        {!isRunning && testResults.some((r) => r.status !== 'pending') && (
+          <Flex data-testid="connectivity-summary-statistics">
+            <Flex align="center" wrap>
+              <Flex align="center" data-testid="connectivity-total-machines">
+                <Typography.Text type="secondary">{t('machines:totalMachines')}:</Typography.Text>
+                <Typography.Text strong>{machines.length}</Typography.Text>
+              </Flex>
+              <Flex align="center" data-testid="connectivity-connected-count">
+                <Typography.Text type="secondary">{t('machines:connected')}:</Typography.Text>
+                <Typography.Text strong type="success">
+                  {testResults.filter((r) => r.status === 'success').length}
                 </Typography.Text>
-              )}
-            </Flex>
-          )}
-
-          <Flex>
-            <Alert
-              message={t('machines:connectivityTestDescription')}
-              type="info"
-              icon={<WifiOutlined />}
-              data-testid="connectivity-info-alert"
-            />
-          </Flex>
-
-          <Flex>
-            <Table<TestResult>
-              columns={columns}
-              dataSource={testResults}
-              rowKey="machineName"
-              pagination={false}
-              scroll={{ x: 'max-content', y: 400 }}
-              loading={machines.length === 0}
-              rowClassName={(record) => `status-${record.status}`}
-              data-testid="connectivity-results-table"
-            />
-          </Flex>
-
-          {!isRunning && testResults.some((r) => r.status !== 'pending') && (
-            <Flex data-testid="connectivity-summary-statistics">
-              <Flex align="center" wrap>
-                <Flex align="center" data-testid="connectivity-total-machines">
-                  <Typography.Text type="secondary">{t('machines:totalMachines')}:</Typography.Text>
-                  <Typography.Text strong>{machines.length}</Typography.Text>
-                </Flex>
-                <Flex align="center" data-testid="connectivity-connected-count">
-                  <Typography.Text type="secondary">{t('machines:connected')}:</Typography.Text>
-                  <Typography.Text strong type="success">
-                    {testResults.filter((r) => r.status === 'success').length}
-                  </Typography.Text>
-                </Flex>
-                <Flex align="center" data-testid="connectivity-failed-count">
-                  <Typography.Text type="secondary">{t('machines:failed')}:</Typography.Text>
-                  <Typography.Text strong type="danger">
-                    {testResults.filter((r) => r.status === 'failed').length}
-                  </Typography.Text>
-                </Flex>
-                <Flex align="center" data-testid="connectivity-average-response">
-                  <Typography.Text type="secondary">
-                    {t('machines:averageResponse')}:
-                  </Typography.Text>
-                  <Typography.Text strong>
-                    {(() => {
-                      const successfulTests = testResults.filter(
-                        (r) => r.status === 'success' && r.duration
-                      );
-                      if (successfulTests.length === 0) return '-';
-                      const avgDuration =
-                        successfulTests.reduce((sum, r) => sum + (r.duration ?? 0), 0) /
-                        successfulTests.length;
-                      return avgDuration < 1000
-                        ? `${Math.round(avgDuration)}ms`
-                        : `${(avgDuration / 1000).toFixed(1)}s`;
-                    })()}
-                  </Typography.Text>
-                </Flex>
+              </Flex>
+              <Flex align="center" data-testid="connectivity-failed-count">
+                <Typography.Text type="secondary">{t('machines:failed')}:</Typography.Text>
+                <Typography.Text strong type="danger">
+                  {testResults.filter((r) => r.status === 'failed').length}
+                </Typography.Text>
+              </Flex>
+              <Flex align="center" data-testid="connectivity-average-response">
+                <Typography.Text type="secondary">{t('machines:averageResponse')}:</Typography.Text>
+                <Typography.Text strong>
+                  {(() => {
+                    const successfulTests = testResults.filter(
+                      (r) => r.status === 'success' && r.duration
+                    );
+                    if (successfulTests.length === 0) return '-';
+                    const avgDuration =
+                      successfulTests.reduce((sum, r) => sum + (r.duration ?? 0), 0) /
+                      successfulTests.length;
+                    return avgDuration < 1000
+                      ? `${Math.round(avgDuration)}ms`
+                      : `${(avgDuration / 1000).toFixed(1)}s`;
+                  })()}
+                </Typography.Text>
               </Flex>
             </Flex>
-          )}
-        </Flex>
+          </Flex>
+        )}
       </Flex>
     </SizedModal>
   );

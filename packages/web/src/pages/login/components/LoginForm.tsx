@@ -121,9 +121,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       <Form.Item>
         <Tooltip
-          title={
-            !isConnectionSecure ? t('auth:login.insecureConnection.buttonDisabled') : undefined
-          }
+          title={isConnectionSecure ? undefined : t('auth:login.insecureConnection.buttonDisabled')}
         >
           <Button
             type="primary"

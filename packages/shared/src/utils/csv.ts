@@ -14,7 +14,7 @@ export function escapeCSVValue(value: unknown): string {
   const str = String(value);
   // Escape double quotes and wrap in quotes if contains special chars
   if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-    return `"${str.replace(/"/g, '""')}"`;
+    return `"${str.replaceAll('"', '""')}"`;
   }
   return `"${str}"`;
 }

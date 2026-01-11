@@ -58,11 +58,11 @@ export type TransferProgressCallback = (
  * ```
  */
 export class SFTPClient {
-  private ssh: SSHClient;
+  private readonly ssh: SSHClient;
   private sftp: SFTPWrapper | null = null;
   private connected = false;
 
-  constructor(private config: SFTPClientConfig) {
+  constructor(private readonly config: SFTPClientConfig) {
     this.ssh = new SSHClient();
   }
 

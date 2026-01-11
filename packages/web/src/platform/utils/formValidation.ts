@@ -41,8 +41,8 @@ export const validationRules = {
   networkId: (): Rule => ({
     validator: (_, value: number | string | undefined) => {
       if (value === undefined || value === '') return Promise.resolve();
-      const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
-      if (isNaN(numValue)) {
+      const numValue = typeof value === 'string' ? Number.parseInt(value, 10) : value;
+      if (Number.isNaN(numValue)) {
         return Promise.reject(new Error('Network ID must be a number'));
       }
       const result = validateNetworkId(numValue);

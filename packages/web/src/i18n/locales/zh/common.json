@@ -379,6 +379,16 @@
     "moreTeams": "+{{count}} 更多",
     "selectTeams": "选择团队..."
   },
+  "terminal": {
+    "terminal": "终端",
+    "connecting": "连接中",
+    "connectionFailed": "连接失败",
+    "connectedTo": "已连接到 {{host}}",
+    "establishingConnection": "正在建立到 {{host}} 的 SSH 连接...",
+    "waitingForConnection": "等待连接...",
+    "reconnect": "重新连接",
+    "popout": "弹出到新窗口"
+  },
   "theme": {
     "dark": "深色",
     "label": "主题",
@@ -783,6 +793,14 @@
   "warnings": {
     "sandboxEnvironment": "沙盒环境",
     "sandboxMessage": "更新期间数据可能会重置。 仅用于测试。"
+  },
+  "vscodeSelection": {
+    "title": "选择 VS Code 安装",
+    "open": "打开",
+    "description": "检测到多个 VS Code 安装。请选择要使用的版本：",
+    "windowsVSCode": "Windows 版 VS Code",
+    "wslVSCode": "WSL 版 VS Code (Linux)",
+    "rememberChoice": "记住我的选择"
   },
   "yes": "是",
   "yesterday": "昨天"

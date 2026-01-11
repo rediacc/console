@@ -179,7 +179,7 @@ export async function createLocalPTYSession(
   options?: PTYOptions
 ): Promise<PTYSession> {
   const nodePty = await import('node-pty');
-  const os = await import('os');
+  const os = await import('node:os');
 
   const sessionId = generateSessionId();
 

@@ -1,5 +1,5 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as test from '@playwright/test';
 import dotenv from 'dotenv';
 
@@ -58,5 +58,6 @@ export default test.defineConfig({
     { name: 'errors', testMatch: '06-errors/**/*.test.ts' },
     { name: 'edition', testMatch: '07-edition/**/*.test.ts' },
     { name: 'e2e', testMatch: '08-e2e/**/*.test.ts' },
+    { name: 'vscode', testMatch: '09-vscode/**/*.test.ts' },
   ],
 });

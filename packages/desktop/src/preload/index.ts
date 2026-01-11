@@ -105,6 +105,105 @@ export interface SFTPSessionInfo {
   createdAt: number;
 }
 
+// VSCode types
+export interface VSCodeLaunchOptions {
+  teamName: string;
+  machineName: string;
+  repositoryName?: string;
+  host: string;
+  port?: number;
+  user: string;
+  privateKey: string;
+  known_hosts?: string;
+  remotePath: string;
+  datastore?: string;
+  newWindow?: boolean;
+  preferredType?: 'windows' | 'wsl';
+}
+
+export interface VSCodeLaunchResult {
+  success: boolean;
+  error?: string;
+  connectionName?: string;
+}
+
+export interface VSCodeInfo {
+  path: string;
+  version?: string;
+  isInsiders: boolean;
+  isWSL?: boolean;
+  wslDistro?: string;
+}
+
+export interface VSCodeInstallations {
+  windows: VSCodeInfo | null;
+  wsl: VSCodeInfo | null;
+}
+
+export type VSCodePreference = 'windows' | 'wsl' | null;
+
+// Container types
+export interface ContainerExecParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  known_hosts?: string;
+  containerId: string;
+  containerName?: string;
+  command?: string;
+  cols?: number;
+  rows?: number;
+}
+
+export interface ContainerLogsParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  known_hosts?: string;
+  containerId: string;
+  follow?: boolean;
+  tail?: number;
+  cols?: number;
+  rows?: number;
+}
+
+export interface ContainerStatsParams {
+  host: string;
+  user: string;
+  port?: number;
+  privateKey: string;
+  known_hosts?: string;
+  containerId: string;
+  cols?: number;
+  rows?: number;
+}
+
+export interface ContainerSessionResult {
+  sessionId: string;
+}
+
+// Window types
+export interface PopoutWindowOptions {
+  type: 'terminal' | 'container';
+  sessionId: string;
+  title?: string;
+  width?: number;
+  height?: number;
+  machineName?: string;
+  repositoryName?: string;
+  containerId?: string;
+  containerName?: string;
+  containerSessionType?: 'exec' | 'logs' | 'stats';
+}
+
+export interface PopoutWindowResult {
+  success: boolean;
+  windowId?: number;
+  error?: string;
+}
+
 // Type definitions for the exposed API
 export interface ElectronAPI {
   safeStorage: {
@@ -144,6 +243,7 @@ export interface ElectronAPI {
     onData: (sessionId: string, callback: (data: string) => void) => () => void;
     onExit: (sessionId: string, callback: (code: number) => void) => () => void;
     getSessionCount: () => Promise<number>;
+    transfer: (sessionId: string) => Promise<{ success: boolean; error?: string; buffer?: string }>;
   };
   rsync: {
     execute: (options: RsyncExecutorOptions) => Promise<RsyncResult>;
@@ -172,6 +272,31 @@ export interface ElectronAPI {
     close: (sessionId: string) => Promise<void>;
     getSessionCount: () => Promise<number>;
     getSessionInfo: (sessionId: string) => Promise<SFTPSessionInfo | null>;
+  };
+  vscode: {
+    launch: (options: VSCodeLaunchOptions) => Promise<VSCodeLaunchResult>;
+    isAvailable: () => Promise<boolean>;
+    hasRemoteSSH: () => Promise<boolean>;
+    getInstallations: () => Promise<VSCodeInstallations>;
+    getPreference: () => Promise<VSCodePreference>;
+    setPreference: (preference: VSCodePreference) => Promise<void>;
+  };
+  window: {
+    openPopout: (options: PopoutWindowOptions) => Promise<PopoutWindowResult>;
+    closePopout: (windowId: number) => Promise<boolean>;
+    getPopoutCount: () => Promise<number>;
+  };
+  container: {
+    exec: (params: ContainerExecParams) => Promise<ContainerSessionResult>;
+    logs: (params: ContainerLogsParams) => Promise<ContainerSessionResult>;
+    stats: (params: ContainerStatsParams) => Promise<ContainerSessionResult>;
+    write: (sessionId: string, data: string) => void;
+    resize: (sessionId: string, cols: number, rows: number) => void;
+    close: (sessionId: string) => Promise<void>;
+    onData: (sessionId: string, callback: (data: string) => void) => () => void;
+    onExit: (sessionId: string, callback: (code: number) => void) => () => void;
+    getSessionCount: () => Promise<number>;
+    transfer: (sessionId: string) => Promise<{ success: boolean; error?: string; buffer?: string }>;
   };
 }
 
@@ -261,6 +386,8 @@ const electronAPI: ElectronAPI = {
       return () => ipcRenderer.removeListener(`terminal:exit:${sessionId}`, handler);
     },
     getSessionCount: (): Promise<number> => ipcRenderer.invoke('terminal:getSessionCount'),
+    transfer: (sessionId: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('terminal:transfer', sessionId),
   },
 
   // Rsync (File Sync)
@@ -322,6 +449,56 @@ const electronAPI: ElectronAPI = {
     getSessionCount: (): Promise<number> => ipcRenderer.invoke('sftp:getSessionCount'),
     getSessionInfo: (sessionId: string): Promise<SFTPSessionInfo | null> =>
       ipcRenderer.invoke('sftp:getSessionInfo', sessionId),
+  },
+
+  // VS Code (Remote SSH)
+  vscode: {
+    launch: (options: VSCodeLaunchOptions): Promise<VSCodeLaunchResult> =>
+      ipcRenderer.invoke('vscode:launch', options),
+    isAvailable: (): Promise<boolean> => ipcRenderer.invoke('vscode:isAvailable'),
+    hasRemoteSSH: (): Promise<boolean> => ipcRenderer.invoke('vscode:hasRemoteSSH'),
+    getInstallations: (): Promise<VSCodeInstallations> =>
+      ipcRenderer.invoke('vscode:getInstallations'),
+    getPreference: (): Promise<VSCodePreference> => ipcRenderer.invoke('vscode:getPreference'),
+    setPreference: (preference: VSCodePreference): Promise<void> =>
+      ipcRenderer.invoke('vscode:setPreference', preference),
+  },
+
+  // Window Management (Popout)
+  window: {
+    openPopout: (options: PopoutWindowOptions): Promise<PopoutWindowResult> =>
+      ipcRenderer.invoke('window:openPopout', options),
+    closePopout: (windowId: number): Promise<boolean> =>
+      ipcRenderer.invoke('window:closePopout', windowId),
+    getPopoutCount: (): Promise<number> => ipcRenderer.invoke('window:getPopoutCount'),
+  },
+
+  // Container (Docker exec/logs/stats via SSH)
+  container: {
+    exec: (params: ContainerExecParams): Promise<ContainerSessionResult> =>
+      ipcRenderer.invoke('container:exec', params),
+    logs: (params: ContainerLogsParams): Promise<ContainerSessionResult> =>
+      ipcRenderer.invoke('container:logs', params),
+    stats: (params: ContainerStatsParams): Promise<ContainerSessionResult> =>
+      ipcRenderer.invoke('container:stats', params),
+    write: (sessionId: string, data: string): void =>
+      ipcRenderer.send('container:write', sessionId, data),
+    resize: (sessionId: string, cols: number, rows: number): void =>
+      ipcRenderer.send('container:resize', sessionId, cols, rows),
+    close: (sessionId: string): Promise<void> => ipcRenderer.invoke('container:close', sessionId),
+    onData: (sessionId: string, callback: (data: string) => void): (() => void) => {
+      const handler = (_event: IpcRendererEvent, data: string): void => callback(data);
+      ipcRenderer.on(`container:data:${sessionId}`, handler);
+      return () => ipcRenderer.removeListener(`container:data:${sessionId}`, handler);
+    },
+    onExit: (sessionId: string, callback: (code: number) => void): (() => void) => {
+      const handler = (_event: IpcRendererEvent, code: number): void => callback(code);
+      ipcRenderer.on(`container:exit:${sessionId}`, handler);
+      return () => ipcRenderer.removeListener(`container:exit:${sessionId}`, handler);
+    },
+    getSessionCount: (): Promise<number> => ipcRenderer.invoke('container:getSessionCount'),
+    transfer: (sessionId: string): Promise<{ success: boolean; error?: string; buffer?: string }> =>
+      ipcRenderer.invoke('container:transfer', sessionId),
   },
 };
 

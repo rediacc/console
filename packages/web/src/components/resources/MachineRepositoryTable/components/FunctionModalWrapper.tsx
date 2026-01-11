@@ -59,7 +59,7 @@ export const FunctionModalWrapper: React.FC<FunctionModalWrapperProps> = ({
       (selectedFunction === 'fork' || selectedFunction === 'backup_deploy') &&
       selectedRepository
     ) {
-      return { tag: new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-') };
+      return { tag: new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '-') };
     }
     return {};
   };

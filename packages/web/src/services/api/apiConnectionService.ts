@@ -17,7 +17,7 @@ interface EndpointConfig {
 
 class ApiConnectionService {
   private selectedEndpoint: EndpointConfig | null = null;
-  private buildType: BuildType = 'DEBUG';
+  private readonly buildType: BuildType = 'DEBUG';
   private healthCheckPerformed = false;
 
   constructor() {

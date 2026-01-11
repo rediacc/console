@@ -281,13 +281,199 @@ jobs:
           echo "CLI build successful!"
           ls -lah packages/cli/dist/
 
-  cli-tests:
-    name: 🧪 CLI Integration Tests
+  vscode-detection-tests:
+    name: 🔍 VS Code Detection (${{ matrix.os }})
+    timeout-minutes: 15
+    needs: [lint, format-check, type-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: runner.os != 'Windows'
+        run: npm ci
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: npm ci --ignore-scripts
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Build CLI
+        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Create minimal test env (Unix)
+        if: runner.os != 'Windows'
+        working-directory: packages/cli/tests
+        run: |
+          echo "CLI_API_URL=http://localhost/api" > .env
+          echo "CLI_MASTER_EMAIL=test@example.com" >> .env
+          echo "CLI_MASTER_PASSWORD=testpass" >> .env
+          echo "CLI_TIMEOUT=30000" >> .env
+          echo "CI=true" >> .env
+
+      - name: Create minimal test env (Windows)
+        if: runner.os == 'Windows'
+        working-directory: packages/cli/tests
+        shell: pwsh
+        run: |
+          @"
+          CLI_API_URL=http://localhost/api
+          CLI_MASTER_EMAIL=test@example.com
+          CLI_MASTER_PASSWORD=testpass
+          CLI_TIMEOUT=30000
+          CI=true
+          "@ | Out-File -FilePath .env -Encoding utf8
+
+      - name: Run VS Code detection tests
+        working-directory: packages/cli
+        run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts
+        env:
+          # Skip global setup since we're only testing detection (no API needed)
+          PLAYWRIGHT_SKIP_GLOBAL_SETUP: 'true'
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: vscode-detection-results-${{ matrix.os }}-${{ github.sha }}
+          path: packages/cli/tests/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ============================================================================
+  # SHARED BACKEND JOB
+  # Starts Elite services and creates Cloudflare tunnel for cross-platform testing
+  # ============================================================================
+  shared-backend:
+    name: 🖥️ Shared Backend (Elite + Tunnel)
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout Elite Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          repository: rediacc/elite
+          path: elite
+
+      - name: Pull Elite Docker Images
+        working-directory: elite
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          TAG: latest
+        run: ./action/ci-pull-images.sh
+
+      - name: Start Elite Services
+        uses: ./elite/action
+        with:
+          keep-alive: 'true'
+          ci-mode: 'true'
+
+      - name: Wait for Services
+        run: |
+          echo "Waiting for Elite services to be ready..."
+          timeout 120 bash -c 'until curl -sf http://localhost/health; do sleep 2; done'
+          echo "✓ Elite services are ready"
+
+      - name: Create Cloudflare Tunnel
+        id: tunnel
+        uses: rediacc/action-cloudflare-tunnel@v1
+        with:
+          url: http://localhost
+          timeout: 60
+
+      - name: Verify Tunnel
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "Tunnel URL: $TUNNEL_URL"
+          for i in {1..20}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel verified"
+              exit 0
+            fi
+            echo "Attempt $i/20 - waiting..."
+            sleep 3
+          done
+          echo "✗ Tunnel verification failed"
+          exit 1
+
+      - name: Create Tunnel URL File
+        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
+
+      - name: Upload Tunnel URL
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: tunnel-url
+          path: ${{ runner.temp }}/tunnel-url.txt
+          retention-days: 1
+
+      - name: Wait for Completion Signals
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Waiting for test jobs to complete..."
+          MAX_WAIT=7200  # 2 hours
+          ELAPSED=0
+          PLATFORMS=("linux" "windows" "macos")
+          COMPLETED=()
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # Get all artifacts for this run
+            ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[].name' 2>/dev/null || echo "")
+
+            for platform in "${PLATFORMS[@]}"; do
+              if [[ ! " ${COMPLETED[*]} " =~ " ${platform} " ]]; then
+                if echo "$ARTIFACTS" | grep -q "^test-complete-${platform}$"; then
+                  echo "✓ ${platform} tests completed"
+                  COMPLETED+=("$platform")
+                fi
+              fi
+            done
+
+            if [ ${#COMPLETED[@]} -eq ${#PLATFORMS[@]} ]; then
+              echo "✓ All platform tests completed"
+              break
+            fi
+
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "Waiting... (${ELAPSED}s / ${MAX_WAIT}s) - Completed: ${COMPLETED[*]:-none}"
+          done
+
+          if [ ${#COMPLETED[@]} -ne ${#PLATFORMS[@]} ]; then
+            echo "⚠ Timeout waiting for some platforms. Completed: ${COMPLETED[*]:-none}"
+          fi
+
+      - name: Cleanup Elite Services
+        if: always()
+        working-directory: elite
+        run: ./go down || true
+
+  # ============================================================================
+  # CROSS-PLATFORM CLI TESTS
+  # Each platform downloads tunnel URL and runs tests against shared backend
+  # ============================================================================
+  cli-tests-linux:
+    name: 🧪 CLI Tests (Linux)
+    runs-on: ubuntu-latest
+    needs: [lint, format-check, type-check]
+    timeout-minutes: 120
 
     env:
-      REDIACC_TEST_API_URL: http://localhost/api
       REDIACC_TEST_EMAIL: admin@rediacc.io
       REDIACC_TEST_PASSWORD: admin
       REDIACC_TEST_TIMEOUT: 30000
@@ -295,12 +481,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Checkout Elite Repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-        with:
-          repository: rediacc/elite
-          path: elite
 
       - name: Setup Node.js
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -317,49 +497,46 @@ jobs:
       - name: Build CLI
         run: npm run build:cli && npm run build:bundle -w @rediacc/cli
 
-      - name: Pull Elite Docker Images
-        working-directory: elite
+      - name: Download Tunnel URL
+        id: tunnel
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          TAG: latest
-        run: ./action/ci-pull-images.sh
-
-      - name: Start Elite Services
-        uses: ./elite/action
-        with:
-          keep-alive: true
-          ci-mode: true
-
-      - name: Wait for Services
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Waiting for Elite services to be ready..."
-          timeout 120 bash -c 'until curl -sf http://localhost/health; do sleep 2; done'
+          MAX_WAIT=1500  # 25 minutes
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
+              TUNNEL_URL=$(cat tunnel-url.txt)
+              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
+              exit 0
+            fi
+            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "✗ Failed to download tunnel URL"
+          exit 1
 
-      - name: Setup Test Account and Extract SSH Keys
-        working-directory: packages/cli
+      - name: Verify Tunnel Connectivity
         run: |
-          # Login with test credentials
-          npx tsx src/index.ts login \
-            --endpoint "$REDIACC_TEST_API_URL" \
-            -e "$REDIACC_TEST_EMAIL" \
-            -p "$REDIACC_TEST_PASSWORD"
-
-          # Get team vault with SSH keys
-          TEAM_VAULT=$(npx tsx src/index.ts team list -o json | jq -r '.[0].vaultContent')
-
-          # Extract and decode keys
-          mkdir -p ~/.ssh
-          echo "$TEAM_VAULT" | jq -r '.SSH_PRIVATE_KEY' | base64 -d > ~/.ssh/id_rsa
-          echo "$TEAM_VAULT" | jq -r '.SSH_PUBLIC_KEY' | base64 -d > ~/.ssh/id_rsa.pub
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
-
-          echo "✓ SSH keys extracted from team vault"
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
 
       - name: Create CLI Test Environment
         working-directory: packages/cli/tests
         run: |
-          echo "CLI_API_URL=http://localhost/api" > .env
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "CLI_API_URL=${TUNNEL_URL}/api" > .env
           echo "CLI_MASTER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
           echo "CLI_MASTER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
           echo "CLI_TIMEOUT=30000" >> .env
@@ -370,15 +547,40 @@ jobs:
           REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
           REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
 
+      - name: Install VS Code (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gpg apt-transport-https
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+          sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+          echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list
+          sudo apt-get update
+          sudo apt-get install -y code
+          rm -f packages.microsoft.gpg
+          echo "✓ VS Code installed"
+          code --version
+
       - name: Run CLI Tests
         working-directory: packages/cli
         run: npm test
+
+      - name: Create Completion Signal
+        if: always()
+        run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Upload Completion Signal
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-linux
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 1
 
       - name: Upload CLI Test Report
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: cli-test-report-${{ github.sha }}
+          name: cli-test-report-linux-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
           retention-days: 7
 
@@ -386,23 +588,259 @@ jobs:
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: cli-test-logs-${{ github.sha }}
+          name: cli-test-logs-linux-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 7
 
-      - name: Upload CLI Test Screenshots (on failure)
-        if: failure()
+  cli-tests-windows:
+    name: 🧪 CLI Tests (Windows)
+    runs-on: windows-latest
+    needs: [lint, format-check, type-check]
+    timeout-minutes: 120
+
+    env:
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+      REDIACC_TEST_TIMEOUT: 30000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Build CLI
+        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Download Tunnel URL
+        id: tunnel
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $maxWait = 1500  # 25 minutes
+          $elapsed = 0
+          while ($elapsed -lt $maxWait) {
+            try {
+              gh run download ${{ github.run_id }} -n tunnel-url 2>$null
+              if (Test-Path "tunnel-url.txt") {
+                $tunnelUrl = Get-Content "tunnel-url.txt" -Raw
+                $tunnelUrl = $tunnelUrl.Trim()
+                "tunnel-url=$tunnelUrl" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+                Write-Host "Downloaded tunnel URL: $tunnelUrl"
+                exit 0
+              }
+            } catch {}
+            Write-Host "Waiting for tunnel URL... ($elapsed s / $maxWait s)"
+            Start-Sleep -Seconds 10
+            $elapsed += 10
+          }
+          Write-Error "Failed to download tunnel URL"
+          exit 1
+
+      - name: Verify Tunnel Connectivity
+        shell: pwsh
+        run: |
+          $tunnelUrl = "${{ steps.tunnel.outputs.tunnel-url }}"
+          for ($i = 1; $i -le 10; $i++) {
+            try {
+              $response = Invoke-WebRequest -Uri "$tunnelUrl/health" -UseBasicParsing -TimeoutSec 10
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Tunnel connectivity verified"
+                exit 0
+              }
+            } catch {}
+            Write-Host "Attempt $i/10 - waiting..."
+            Start-Sleep -Seconds 5
+          }
+          Write-Error "Could not connect to tunnel"
+          exit 1
+
+      - name: Create CLI Test Environment
+        shell: pwsh
+        working-directory: packages/cli/tests
+        run: |
+          $tunnelUrl = "${{ steps.tunnel.outputs.tunnel-url }}"
+          @"
+          CLI_API_URL=$tunnelUrl/api
+          CLI_MASTER_EMAIL=${{ env.REDIACC_TEST_EMAIL }}
+          CLI_MASTER_PASSWORD=${{ env.REDIACC_TEST_PASSWORD }}
+          CLI_TIMEOUT=30000
+          CI=true
+          DEBUG=false
+          "@ | Out-File -FilePath .env -Encoding utf8
+          Write-Host "Created .env for CLI tests"
+
+      - name: Install VS Code (Windows)
+        shell: pwsh
+        run: |
+          choco install vscode -y
+          Write-Host "VS Code installed"
+          # Refresh PATH to include VS Code
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          code --version
+
+      - name: Run CLI Tests
+        working-directory: packages/cli
+        run: npm test
+
+      - name: Create Completion Signal
+        if: always()
+        shell: pwsh
+        run: |
+          "complete" | Out-File -FilePath "${{ runner.temp }}/complete.txt" -Encoding utf8
+
+      - name: Upload Completion Signal
+        if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: cli-test-screenshots-${{ github.sha }}
-          path: packages/cli/tests/test-results/
-          retention-days: 7
-          if-no-files-found: ignore
+          name: test-complete-windows
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 1
 
-      - name: Cleanup Elite Services
+      - name: Upload CLI Test Report
         if: always()
-        working-directory: elite
-        run: ./go down || true
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: cli-test-report-windows-${{ github.sha }}
+          path: packages/cli/tests/reports/cli/
+          retention-days: 7
+
+      - name: Upload CLI Test Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: cli-test-logs-windows-${{ github.sha }}
+          path: packages/cli/tests/reports/cli-logs/
+          retention-days: 7
+
+  cli-tests-macos:
+    name: 🧪 CLI Tests (macOS)
+    runs-on: macos-latest
+    needs: [lint, format-check, type-check]
+    timeout-minutes: 120
+
+    env:
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+      REDIACC_TEST_TIMEOUT: 30000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Build CLI
+        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAX_WAIT=1500  # 25 minutes
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
+              TUNNEL_URL=$(cat tunnel-url.txt)
+              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
+              exit 0
+            fi
+            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "✗ Failed to download tunnel URL"
+          exit 1
+
+      - name: Verify Tunnel Connectivity
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
+
+      - name: Create CLI Test Environment
+        working-directory: packages/cli/tests
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "CLI_API_URL=${TUNNEL_URL}/api" > .env
+          echo "CLI_MASTER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "CLI_MASTER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "CLI_TIMEOUT=30000" >> .env
+          echo "CI=true" >> .env
+          echo "DEBUG=false" >> .env
+          echo "✓ Created .env for CLI tests"
+        env:
+          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
+          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
+
+      - name: Install VS Code (macOS)
+        run: |
+          brew install --cask visual-studio-code
+          echo "✓ VS Code installed"
+          code --version
+
+      - name: Run CLI Tests
+        working-directory: packages/cli
+        run: npm test
+
+      - name: Create Completion Signal
+        if: always()
+        run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Upload Completion Signal
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-macos
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 1
+
+      - name: Upload CLI Test Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: cli-test-report-macos-${{ github.sha }}
+          path: packages/cli/tests/reports/cli/
+          retention-days: 7
+
+      - name: Upload CLI Test Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: cli-test-logs-macos-${{ github.sha }}
+          path: packages/cli/tests/reports/cli-logs/
+          retention-days: 7
 
   build:
     name: 🏗️ Build - DEBUG & RELEASE
@@ -657,7 +1095,7 @@ jobs:
   ci-summary:
     name: ✅ CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, format-check, type-check, unit-tests, cli-check, cli-tests, build, security-scan, desktop-build]
+    needs: [lint, format-check, type-check, unit-tests, cli-check, vscode-detection-tests, shared-backend, cli-tests-linux, cli-tests-windows, cli-tests-macos, build, security-scan, desktop-build]
     if: always()
 
     steps:
@@ -665,12 +1103,21 @@ jobs:
         run: |
           echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Code Quality" >> $GITHUB_STEP_SUMMARY
           echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Format: ${{ needs.format-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Type Check: ${{ needs.type-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI Check: ${{ needs.cli-check.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI Tests: ${{ needs.cli-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### CLI Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- VS Code Detection: ${{ needs.vscode-detection-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Shared Backend: ${{ needs.shared-backend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI Tests (Linux): ${{ needs.cli-tests-linux.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI Tests (Windows): ${{ needs.cli-tests-windows.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI Tests (macOS): ${{ needs.cli-tests-macos.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build & Security" >> $GITHUB_STEP_SUMMARY
           echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Desktop Build: ${{ needs.desktop-build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
@@ -680,7 +1127,10 @@ jobs:
              [ "${{ needs.type-check.result }}" != "success" ] || \
              [ "${{ needs.unit-tests.result }}" != "success" ] || \
              [ "${{ needs.cli-check.result }}" != "success" ] || \
-             [ "${{ needs.cli-tests.result }}" != "success" ] || \
+             [ "${{ needs.vscode-detection-tests.result }}" != "success" ] || \
+             [ "${{ needs.cli-tests-linux.result }}" != "success" ] || \
+             [ "${{ needs.cli-tests-windows.result }}" != "success" ] || \
+             [ "${{ needs.cli-tests-macos.result }}" != "success" ] || \
              [ "${{ needs.build.result }}" != "success" ] || \
              [ "${{ needs.desktop-build.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY

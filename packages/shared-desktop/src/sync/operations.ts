@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { ensureTrailingSlash, joinRemotePath } from './pathConverter.js';
 import {
   executeRsync,

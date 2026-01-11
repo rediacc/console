@@ -27,20 +27,87 @@ function getNestedValue<T>(obj: T, path: string): unknown {
 function isDateString(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   const date = new Date(value);
-  return !isNaN(date.getTime()) && value.length >= 10;
+  return !Number.isNaN(date.getTime()) && value.length >= 10;
 }
 
 function toTimestamp(value: unknown): number {
   if (value instanceof Date) return value.getTime();
   if (typeof value === 'string' || typeof value === 'number') {
     const ts = new Date(value).getTime();
-    return isNaN(ts) ? Number.MAX_SAFE_INTEGER : ts;
+    return Number.isNaN(ts) ? Number.MAX_SAFE_INTEGER : ts;
   }
   return Number.MAX_SAFE_INTEGER;
 }
 
 function isNumericString(value: string): boolean {
-  return !isNaN(Number(value)) && value.trim() !== '';
+  return !Number.isNaN(Number(value)) && value.trim() !== '';
+}
+
+/** Compare two strings, handling numeric strings */
+function compareStrings(a: string, b: string): SortOrder {
+  const bothNumeric = isNumericString(a) && isNumericString(b);
+  return bothNumeric ? Number(a) - Number(b) : a.localeCompare(b);
+}
+
+/** Compare two numbers */
+function compareNumbers(a: number, b: number): SortOrder {
+  return a - b;
+}
+
+/** Compare two booleans */
+function compareBooleans(a: boolean, b: boolean): SortOrder {
+  return (a ? 1 : 0) - (b ? 1 : 0);
+}
+
+/** Compare two arrays by length */
+function compareArrays(a: unknown[], b: unknown[]): SortOrder {
+  return a.length - b.length;
+}
+
+/** Compare date-like values */
+function compareDates(a: unknown, b: unknown): SortOrder {
+  return toTimestamp(a) - toTimestamp(b);
+}
+
+/** Check if value is date-like */
+function isDateLike(value: unknown): boolean {
+  return value instanceof Date || isDateString(value);
+}
+
+/** Handle null comparison, returns comparison result or undefined if both non-null */
+function compareNulls(a: unknown, b: unknown): SortOrder | undefined {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return undefined;
+}
+
+/** Compare typed values after null check */
+function compareTypedValues(a: unknown, b: unknown): SortOrder {
+  const typeA = typeof a;
+  const typeB = typeof b;
+
+  if (typeA === 'string' && typeB === 'string') {
+    return compareStrings(a as string, b as string);
+  }
+
+  if (typeA === 'number' && typeB === 'number') {
+    return compareNumbers(a as number, b as number);
+  }
+
+  if (typeA === 'boolean' && typeB === 'boolean') {
+    return compareBooleans(a as boolean, b as boolean);
+  }
+
+  if (isDateLike(a) && isDateLike(b)) {
+    return compareDates(a, b);
+  }
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return compareArrays(a, b);
+  }
+
+  return String(a).localeCompare(String(b));
 }
 
 /**
@@ -49,35 +116,11 @@ function isNumericString(value: string): boolean {
  */
 export function compareValues(a: unknown, b: unknown): SortOrder {
   if (a === b) return 0;
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
 
-  // Handle numeric strings - sort "10" after "2"
-  if (typeof a === 'string' && typeof b === 'string') {
-    if (isNumericString(a) && isNumericString(b)) {
-      return Number(a) - Number(b);
-    }
-    return a.localeCompare(b);
-  }
+  const nullResult = compareNulls(a, b);
+  if (nullResult !== undefined) return nullResult;
 
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-
-  if (typeof a === 'boolean' && typeof b === 'boolean') {
-    return (a ? 1 : 0) - (b ? 1 : 0);
-  }
-
-  if ((a instanceof Date || isDateString(a)) && (b instanceof Date || isDateString(b))) {
-    return toTimestamp(a) - toTimestamp(b);
-  }
-
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.length - b.length;
-  }
-
-  return String(a).localeCompare(String(b));
+  return compareTypedValues(a, b);
 }
 
 /**

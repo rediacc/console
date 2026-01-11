@@ -41,7 +41,7 @@ export interface StatusColumnOptions<T> {
   width?: number;
   statusMap: Record<string, StatusConfig>;
   defaultConfig?: StatusConfig;
-  sorter?: boolean | ColumnsType<T>[number]['sorter'];
+  sorter?: ColumnsType<T>[number]['sorter'];
   align?: 'left' | 'center' | 'right';
   renderValue?: (value: unknown, record: T) => string;
 }
@@ -52,7 +52,7 @@ export interface DateColumnOptions<T> {
   key?: string;
   width?: number;
   format?: string;
-  sorter?: boolean | ColumnsType<T>[number]['sorter'];
+  sorter?: ColumnsType<T>[number]['sorter'];
   defaultSortOrder?: ColumnsType<T>[number]['defaultSortOrder'];
   render?: (value: string | Date | null | undefined, record: T) => React.ReactNode;
 }
@@ -76,7 +76,7 @@ export interface CountColumnOptions<T> {
   key?: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
-  sorter?: boolean | ColumnsType<T>[number]['sorter'];
+  sorter?: ColumnsType<T>[number]['sorter'];
   icon?: React.ReactNode;
   useBadge?: boolean;
   showZero?: boolean;
@@ -89,7 +89,7 @@ export interface VersionColumnOptions<T> {
   key?: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
-  sorter?: boolean | ColumnsType<T>[number]['sorter'];
+  sorter?: ColumnsType<T>[number]['sorter'];
   formatVersion?: (version: number) => string;
   renderValue?: (value: number, record: T) => React.ReactNode;
 }

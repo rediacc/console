@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { typedApi } from '@/api/client';
 import { type QueueRequestContext, queueService } from '@/services/queue';
 import { parseGetOrganizationVault } from '@rediacc/shared/api';
-import { parseVaultContentOrEmpty } from '@rediacc/shared/queue-vault';
+import { parseVaultContentOrEmpty, type VaultContent } from '@rediacc/shared/queue-vault';
 
 /**
  * Hook to build queue vault data with all required context
@@ -18,9 +18,11 @@ type QueueVaultBuilderParams = Omit<
   allRepositoryCredentials?: Record<string, string>;
 };
 
+const parseOptionalVault = (vault: VaultContent | undefined) =>
+  vault ? parseVaultContentOrEmpty(vault) : undefined;
+
 export function useQueueVaultBuilder() {
   const buildQueueVault = useCallback(async (context: QueueVaultBuilderParams): Promise<string> => {
-    // Fetch organization vault directly from API to ensure we have the latest data
     const response = await typedApi.GetOrganizationVault({});
     const organizationVaultData = parseGetOrganizationVault(response as never);
 
@@ -36,58 +38,21 @@ export function useQueueVaultBuilder() {
       ...baseContext
     } = context;
 
-    const parsedVaults: Partial<
-      Pick<
-        QueueRequestContext,
-        | 'teamVault'
-        | 'machineVault'
-        | 'repositoryVault'
-        | 'bridgeVault'
-        | 'storageVault'
-        | 'organizationVault'
-        | 'destinationMachineVault'
-        | 'destinationStorageVault'
-        | 'destinationRepositoryVault'
-        | 'sourceMachineVault'
-        | 'sourceStorageVault'
-        | 'sourceRepositoryVault'
-      >
-    > = {
-      teamVault: baseContext.teamVault
-        ? parseVaultContentOrEmpty(baseContext.teamVault)
-        : undefined,
-      machineVault: baseContext.machineVault
-        ? parseVaultContentOrEmpty(baseContext.machineVault)
-        : undefined,
-      repositoryVault: repositoryVault ? parseVaultContentOrEmpty(repositoryVault) : undefined,
-      bridgeVault: baseContext.bridgeVault
-        ? parseVaultContentOrEmpty(baseContext.bridgeVault)
-        : undefined,
-      storageVault: baseContext.storageVault
-        ? parseVaultContentOrEmpty(baseContext.storageVault)
-        : undefined,
+    const parsedVaults = {
+      teamVault: parseOptionalVault(baseContext.teamVault),
+      machineVault: parseOptionalVault(baseContext.machineVault),
+      repositoryVault: parseOptionalVault(repositoryVault),
+      bridgeVault: parseOptionalVault(baseContext.bridgeVault),
+      storageVault: parseOptionalVault(baseContext.storageVault),
       organizationVault: parseVaultContentOrEmpty(organizationVaultData.vaultContent),
-      destinationMachineVault: baseContext.destinationMachineVault
-        ? parseVaultContentOrEmpty(baseContext.destinationMachineVault)
-        : undefined,
-      destinationStorageVault: baseContext.destinationStorageVault
-        ? parseVaultContentOrEmpty(baseContext.destinationStorageVault)
-        : undefined,
-      destinationRepositoryVault: destinationRepositoryVault
-        ? parseVaultContentOrEmpty(destinationRepositoryVault)
-        : undefined,
-      sourceMachineVault: baseContext.sourceMachineVault
-        ? parseVaultContentOrEmpty(baseContext.sourceMachineVault)
-        : undefined,
-      sourceStorageVault: baseContext.sourceStorageVault
-        ? parseVaultContentOrEmpty(baseContext.sourceStorageVault)
-        : undefined,
-      sourceRepositoryVault: sourceRepositoryVault
-        ? parseVaultContentOrEmpty(sourceRepositoryVault)
-        : undefined,
+      destinationMachineVault: parseOptionalVault(baseContext.destinationMachineVault),
+      destinationStorageVault: parseOptionalVault(baseContext.destinationStorageVault),
+      destinationRepositoryVault: parseOptionalVault(destinationRepositoryVault),
+      sourceMachineVault: parseOptionalVault(baseContext.sourceMachineVault),
+      sourceStorageVault: parseOptionalVault(baseContext.sourceStorageVault),
+      sourceRepositoryVault: parseOptionalVault(sourceRepositoryVault),
     };
 
-    // Build complete context with vault data
     const fullContext: QueueRequestContext = {
       ...baseContext,
       ...parsedVaults,
@@ -95,7 +60,6 @@ export function useQueueVaultBuilder() {
       allRepositoryCredentials,
     };
 
-    // Use the service to build the vault
     return queueService.buildQueueVault(fullContext);
   }, []);
 

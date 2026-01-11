@@ -14,7 +14,11 @@ export const DetailPanelSurface: React.FC<
       height: '100%',
       position: $splitView ? 'relative' : 'fixed',
       top: $splitView ? undefined : 0,
-      right: $splitView ? undefined : $visible ? 0 : -PANEL_WIDTH,
+      right: (() => {
+        if ($splitView) return undefined;
+        if ($visible) return 0;
+        return -PANEL_WIDTH;
+      })(),
       bottom: $splitView ? undefined : 0,
       width: $splitView ? '100%' : PANEL_WIDTH,
       maxWidth: '100vw',

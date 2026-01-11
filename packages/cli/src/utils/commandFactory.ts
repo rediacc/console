@@ -1,6 +1,24 @@
 import { Command } from 'commander';
-import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
-import { searchInFields, compareValues } from '@rediacc/shared/utils';
+import {
+  type ParentContextOptions,
+  type ParentOptionType,
+  type VaultItem,
+  getParentFlag,
+  getParentDesc,
+  getParentKey,
+  getParentValue,
+  capitalizeFirst,
+  extractItemsFromResponse,
+  applySearchFilter,
+  applySorting,
+  readVaultFromStdin,
+  validateJsonVault,
+  buildListParams,
+  buildCreatePayload,
+  addParentToPayload,
+  extractVaultsArray,
+  checkRequiredCreateOptions,
+} from './commandFactory-helpers.js';
 import { handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
 import { t } from '../i18n/index.js';
@@ -8,14 +26,6 @@ import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat } from '../types/index.js';
-
-/**
- * Configuration for a standard resource CRUD command set
- */
-interface ParentContextOptions extends Record<string, unknown> {
-  team?: string;
-  region?: string;
-}
 
 export interface ResourceCommandConfig {
   /** Resource name in singular form (e.g., 'machine', 'team', 'bridge') */
@@ -46,12 +56,7 @@ export interface ResourceCommandConfig {
   ) => Record<string, unknown>;
   /** Optional: Vault command configuration */
   vaultConfig?: {
-    fetch: (
-      params: Record<string, unknown>
-    ) => Promise<
-      | (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[]
-      | { vaults: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[] }
-    >;
+    fetch: (params: Record<string, unknown>) => Promise<VaultItem[] | { vaults: VaultItem[] }>;
     vaultType: string;
   };
   /** Optional: Vault update command configuration */
@@ -61,14 +66,9 @@ export interface ResourceCommandConfig {
   };
 }
 
-/**
- * Create a parent context validation check
- */
 function createParentCheck(parentOption: 'team' | 'region' | 'none') {
   return (opts: ParentContextOptions): boolean => {
-    if (parentOption === 'none') {
-      return true;
-    }
+    if (parentOption === 'none') return true;
     if (parentOption === 'team' && !opts.team) {
       outputService.error(t('errors.teamRequired'));
       return false;
@@ -81,33 +81,295 @@ function createParentCheck(parentOption: 'team' | 'region' | 'none') {
   };
 }
 
-/**
- * Factory function to create standard CRUD commands for a resource
- *
- * @example
- * ```typescript
- * createResourceCommands(program, {
- *   resourceName: 'machine',
- *   resourceNamePlural: 'machines',
- *   nameField: 'machineName',
- *   parentOption: 'team',
- *   endpoints: {
- *     list: endpoints.machines.getTeamMachines,
- *     create: endpoints.machines.createMachine,
- *     rename: endpoints.machines.updateMachineName,
- *     delete: endpoints.machines.deleteMachine
- *   },
- *   createOptions: [
- *     { flags: '-b, --bridge <name>', description: 'Bridge name', required: true }
- *   ],
- *   transformCreatePayload: (name, opts) => ({
- *     machineName: name,
- *     teamName: opts.team,
- *     bridgeName: opts.bridge
- *   })
- * })
- * ```
- */
+interface CommandContext {
+  hasParent: boolean;
+  parentOption: ParentOptionType;
+  parentFlag: string;
+  parentDesc: string;
+  checkParent: (opts: ParentContextOptions) => boolean;
+  nameField: string;
+  resourceName: string;
+  resourceNamePlural: string;
+}
+
+function setupListCommand(
+  resource: Command,
+  program: Command,
+  ctx: CommandContext,
+  operations: ResourceCommandConfig['operations']
+): void {
+  const listCmd = resource.command('list').description(`List ${ctx.resourceNamePlural}`);
+  if (ctx.hasParent) listCmd.option(ctx.parentFlag, ctx.parentDesc);
+  listCmd
+    .option('--search <text>', t('options.searchInField', { field: ctx.nameField }))
+    .option('--sort <field>', t('options.sortByField'))
+    .option('--desc', t('options.sortDescending'));
+  listCmd.action(async (options) => {
+    try {
+      await authService.requireAuth();
+      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      if (!ctx.checkParent(opts)) process.exit(1);
+      const params = buildListParams(ctx.hasParent, ctx.parentOption, opts);
+      const response = await withSpinner(
+        `Fetching ${ctx.resourceNamePlural}...`,
+        () => operations.list(params),
+        `${capitalizeFirst(ctx.resourceNamePlural)} fetched`
+      );
+
+      let items = extractItemsFromResponse(response);
+      items = applySearchFilter(items, options.search, ctx.nameField);
+      items = applySorting(items, options.sort, options.desc);
+
+      const format = program.opts().output as OutputFormat;
+      outputService.print(items, format);
+    } catch (error) {
+      handleError(error);
+    }
+  });
+}
+
+function setupCreateCommand(
+  resource: Command,
+  ctx: CommandContext,
+  operations: ResourceCommandConfig['operations'],
+  createOptions: ResourceCommandConfig['createOptions'],
+  transformCreatePayload?: ResourceCommandConfig['transformCreatePayload']
+): void {
+  const createCmd = resource
+    .command('create <name>')
+    .description(`Create a new ${ctx.resourceName}`);
+  if (ctx.hasParent) createCmd.option(ctx.parentFlag, ctx.parentDesc);
+  createOptions?.forEach((opt) => createCmd.option(opt.flags, opt.description));
+  createCmd.action(async (name, options) => {
+    try {
+      await authService.requireAuth();
+      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+
+      if (!ctx.checkParent(opts)) process.exit(1);
+
+      const createCheck = checkRequiredCreateOptions(createOptions, opts);
+      if (!createCheck.valid) {
+        outputService.error(createCheck.errorMessage!);
+        process.exit(1);
+      }
+
+      const payload = buildCreatePayload(
+        name,
+        ctx.nameField,
+        ctx.parentOption,
+        opts,
+        ctx.hasParent,
+        transformCreatePayload
+      );
+
+      await withSpinner(
+        `Creating ${ctx.resourceName} "${name}"...`,
+        () => operations.create(payload),
+        `${capitalizeFirst(ctx.resourceName)} "${name}" created`
+      );
+    } catch (error) {
+      handleError(error);
+    }
+  });
+}
+
+function setupRenameCommand(
+  resource: Command,
+  ctx: CommandContext,
+  operations: ResourceCommandConfig['operations']
+): void {
+  const renameCmd = resource
+    .command('rename <oldName> <newName>')
+    .description(`Rename a ${ctx.resourceName}`);
+  if (ctx.hasParent) renameCmd.option(ctx.parentFlag, ctx.parentDesc);
+  renameCmd.action(async (oldName, newName, options) => {
+    try {
+      await authService.requireAuth();
+      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      if (!ctx.checkParent(opts)) process.exit(1);
+
+      const currentField = `current${capitalizeFirst(ctx.nameField)}`;
+      const newField = `new${capitalizeFirst(ctx.nameField)}`;
+
+      const payload: Record<string, unknown> = {
+        [currentField]: oldName,
+        [newField]: newName,
+      };
+      addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
+
+      await withSpinner(
+        `Renaming ${ctx.resourceName} "${oldName}" to "${newName}"...`,
+        () => operations.rename(payload),
+        `${capitalizeFirst(ctx.resourceName)} renamed to "${newName}"`
+      );
+    } catch (error) {
+      handleError(error);
+    }
+  });
+}
+
+function setupDeleteCommand(
+  resource: Command,
+  ctx: CommandContext,
+  operations: ResourceCommandConfig['operations']
+): void {
+  const deleteCmd = resource.command('delete <name>').description(`Delete a ${ctx.resourceName}`);
+  if (ctx.hasParent) deleteCmd.option(ctx.parentFlag, ctx.parentDesc);
+  deleteCmd.option('-f, --force', t('options.force')).action(async (name, options) => {
+    try {
+      await authService.requireAuth();
+      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      if (!ctx.checkParent(opts)) process.exit(1);
+      if (!options.force) {
+        const { askConfirm } = await import('./prompt.js');
+        const confirm = await askConfirm(
+          `Delete ${ctx.resourceName} "${name}"? This cannot be undone.`
+        );
+        if (!confirm) {
+          outputService.info(t('status.cancelled'));
+          return;
+        }
+      }
+
+      const payload: Record<string, unknown> = { [ctx.nameField]: name };
+      addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
+
+      await withSpinner(
+        `Deleting ${ctx.resourceName} "${name}"...`,
+        () => operations.delete(payload),
+        `${capitalizeFirst(ctx.resourceName)} "${name}" deleted`
+      );
+    } catch (error) {
+      handleError(error);
+    }
+  });
+}
+
+function setupVaultGetCommand(
+  vault: Command,
+  program: Command,
+  ctx: CommandContext,
+  vaultConfig: NonNullable<ResourceCommandConfig['vaultConfig']>
+): void {
+  const getCmd = vault
+    .command(`get <${ctx.resourceName}Name>`)
+    .description(`Get ${ctx.resourceName} vault data`);
+  if (ctx.hasParent) getCmd.option(ctx.parentFlag, ctx.parentDesc);
+  getCmd.action(async (resourceItemName, options) => {
+    try {
+      await authService.requireAuth();
+      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      if (!ctx.checkParent(opts)) process.exit(1);
+      const params: Record<string, unknown> = { [ctx.nameField]: resourceItemName };
+      addParentToPayload(params, ctx.hasParent, ctx.parentOption, opts);
+
+      const response = await withSpinner(
+        `Fetching ${ctx.resourceName} vault...`,
+        () => vaultConfig.fetch(params),
+        'Vault fetched'
+      );
+
+      const vaultsArray = extractVaultsArray(response);
+      const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType);
+      const format = program.opts().output as OutputFormat;
+
+      if (targetVault) {
+        outputService.print(targetVault, format);
+      } else {
+        outputService.info(`No ${ctx.resourceName} vault found`);
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  });
+}
+
+function setupVaultUpdateCommand(
+  vault: Command,
+  ctx: CommandContext,
+  vaultUpdateConfig: NonNullable<ResourceCommandConfig['vaultUpdateConfig']>
+): void {
+  const updateCmd = vault
+    .command(`update <${ctx.resourceName}Name>`)
+    .description(`Update ${ctx.resourceName} vault data`)
+    .option('--vault <json>', t('options.vaultJson'))
+    .option('--vault-version <n>', t('options.vaultVersion'), Number.parseInt);
+
+  if (ctx.hasParent) {
+    updateCmd.option(ctx.parentFlag, ctx.parentDesc);
+  }
+
+  updateCmd.action(async (resourceItemName, options) => {
+    try {
+      await authService.requireAuth();
+      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+
+      if (!ctx.checkParent(opts)) {
+        process.exit(1);
+      }
+
+      let vaultData: string = options.vault;
+      if (!vaultData && !process.stdin.isTTY) {
+        vaultData = await readVaultFromStdin();
+      }
+
+      if (!vaultData) {
+        outputService.error(t('errors.vaultDataRequired'));
+        process.exit(1);
+      }
+
+      if (options.vaultVersion === undefined || options.vaultVersion === null) {
+        outputService.error(t('errors.vaultVersionRequired'));
+        process.exit(1);
+      }
+
+      if (!validateJsonVault(vaultData)) {
+        outputService.error(t('errors.invalidJsonVault'));
+        process.exit(1);
+      }
+
+      const payload: Record<string, unknown> = {
+        [ctx.nameField]: resourceItemName,
+        [vaultUpdateConfig.vaultFieldName]: vaultData,
+        vaultVersion: options.vaultVersion,
+      };
+      addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
+
+      await withSpinner(
+        `Updating ${ctx.resourceName} vault...`,
+        () => vaultUpdateConfig.update(payload),
+        `${capitalizeFirst(ctx.resourceName)} vault updated`
+      );
+    } catch (error) {
+      handleError(error);
+    }
+  });
+}
+
+function setupVaultCommands(
+  resource: Command,
+  program: Command,
+  ctx: CommandContext,
+  config: ResourceCommandConfig
+): void {
+  const { vaultConfig, vaultUpdateConfig } = config;
+  if (!vaultConfig && !vaultUpdateConfig) {
+    return;
+  }
+
+  const vault = resource
+    .command('vault')
+    .description(`${capitalizeFirst(ctx.resourceName)} vault management`);
+
+  if (vaultConfig) {
+    setupVaultGetCommand(vault, program, ctx, vaultConfig);
+  }
+
+  if (vaultUpdateConfig) {
+    setupVaultUpdateCommand(vault, ctx, vaultUpdateConfig);
+  }
+}
+
 export function createResourceCommands(program: Command, config: ResourceCommandConfig): Command {
   const {
     resourceName,
@@ -117,374 +379,28 @@ export function createResourceCommands(program: Command, config: ResourceCommand
     operations,
     createOptions = [],
     transformCreatePayload,
-    vaultConfig,
   } = config;
 
-  const hasParent = parentOption !== 'none';
-  const parentFlag =
-    parentOption === 'team'
-      ? '-t, --team <name>'
-      : parentOption === 'region'
-        ? '-r, --region <name>'
-        : '';
-  const parentDesc =
-    parentOption === 'team' ? 'Team name' : parentOption === 'region' ? 'Region name' : '';
-  const checkParent = createParentCheck(parentOption);
+  const ctx: CommandContext = {
+    hasParent: parentOption !== 'none',
+    parentOption,
+    parentFlag: getParentFlag(parentOption),
+    parentDesc: getParentDesc(parentOption),
+    checkParent: createParentCheck(parentOption),
+    nameField,
+    resourceName,
+    resourceNamePlural,
+  };
 
   const resource = program
     .command(resourceName)
-    .description(
-      `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} management commands`
-    );
+    .description(`${capitalizeFirst(resourceName)} management commands`);
 
-  // LIST command
-  const listCmd = resource.command('list').description(`List ${resourceNamePlural}`);
-
-  if (hasParent) {
-    listCmd.option(parentFlag, parentDesc);
-  }
-
-  // Add search and sort options
-  listCmd
-    .option('--search <text>', t('options.searchInField', { field: nameField }))
-    .option('--sort <field>', t('options.sortByField'))
-    .option('--desc', t('options.sortDescending'));
-
-  listCmd.action(async (options) => {
-    try {
-      await authService.requireAuth();
-      const opts = hasParent ? await contextService.applyDefaults(options) : options;
-
-      if (!checkParent(opts)) {
-        process.exit(1);
-      }
-
-      const params = hasParent
-        ? parentOption === 'team'
-          ? { teamName: opts.team }
-          : { regionName: opts.region }
-        : {};
-
-      const response = await withSpinner(
-        `Fetching ${resourceNamePlural}...`,
-        () => operations.list(params),
-        `${resourceNamePlural.charAt(0).toUpperCase() + resourceNamePlural.slice(1)} fetched`
-      );
-
-      let items = Array.isArray(response)
-        ? (response as Record<string, unknown>[])
-        : Array.isArray((response as { items?: unknown[] }).items)
-          ? ((response as { items: unknown[] }).items as Record<string, unknown>[])
-          : [];
-
-      // Apply search filter
-      if (options.search) {
-        items = items.filter((item) => searchInFields(item, options.search, [nameField]));
-      }
-
-      // Apply sorting
-      if (options.sort) {
-        const sortField = options.sort;
-        items.sort((a, b) => {
-          const result = compareValues(a[sortField], b[sortField]);
-          return options.desc ? -result : result;
-        });
-      }
-
-      const format = program.opts().output as OutputFormat;
-
-      outputService.print(items, format);
-    } catch (error) {
-      handleError(error);
-    }
-  });
-
-  // CREATE command
-  const createCmd = resource.command(`create <name>`).description(`Create a new ${resourceName}`);
-
-  if (hasParent) {
-    createCmd.option(parentFlag, parentDesc);
-  }
-
-  // Add additional options
-  createOptions.forEach((opt) => {
-    createCmd.option(opt.flags, opt.description);
-  });
-
-  createCmd.action(async (name, options) => {
-    try {
-      await authService.requireAuth();
-      const opts = hasParent ? await contextService.applyDefaults(options) : options;
-
-      if (!checkParent(opts)) {
-        process.exit(1);
-      }
-
-      // Check required options
-      for (const opt of createOptions) {
-        if (opt.required) {
-          const optName = opt.flags.match(/--(\w+)/)?.[1];
-          if (optName && !opts[optName]) {
-            outputService.error(
-              `${optName.charAt(0).toUpperCase() + optName.slice(1)} name required. Use --${optName}.`
-            );
-            process.exit(1);
-          }
-        }
-      }
-
-      let payload: Record<string, unknown>;
-      if (transformCreatePayload) {
-        payload = transformCreatePayload(name, opts);
-      } else if (hasParent) {
-        payload = {
-          [nameField]: name,
-          [parentOption === 'team' ? 'teamName' : 'regionName']:
-            parentOption === 'team' ? opts.team : opts.region,
-        };
-      } else {
-        payload = { [nameField]: name };
-      }
-
-      await withSpinner(
-        `Creating ${resourceName} "${name}"...`,
-        () => operations.create(payload),
-        `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} "${name}" created`
-      );
-    } catch (error) {
-      handleError(error);
-    }
-  });
-
-  // RENAME command
-  const renameCmd = resource
-    .command('rename <oldName> <newName>')
-    .description(`Rename a ${resourceName}`);
-
-  if (hasParent) {
-    renameCmd.option(parentFlag, parentDesc);
-  }
-
-  renameCmd.action(async (oldName, newName, options) => {
-    try {
-      await authService.requireAuth();
-      const opts = hasParent ? await contextService.applyDefaults(options) : options;
-
-      if (!checkParent(opts)) {
-        process.exit(1);
-      }
-
-      const currentField = `current${nameField.charAt(0).toUpperCase() + nameField.slice(1)}`;
-      const newField = `new${nameField.charAt(0).toUpperCase() + nameField.slice(1)}`;
-
-      const payload: Record<string, unknown> = {
-        [currentField]: oldName,
-        [newField]: newName,
-      };
-
-      if (hasParent) {
-        payload[parentOption === 'team' ? 'teamName' : 'regionName'] =
-          parentOption === 'team' ? opts.team : opts.region;
-      }
-
-      await withSpinner(
-        `Renaming ${resourceName} "${oldName}" to "${newName}"...`,
-        () => operations.rename(payload),
-        `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} renamed to "${newName}"`
-      );
-    } catch (error) {
-      handleError(error);
-    }
-  });
-
-  // DELETE command
-  const deleteCmd = resource.command('delete <name>').description(`Delete a ${resourceName}`);
-
-  if (hasParent) {
-    deleteCmd.option(parentFlag, parentDesc);
-  }
-
-  deleteCmd.option('-f, --force', t('options.force')).action(async (name, options) => {
-    try {
-      await authService.requireAuth();
-      const opts = hasParent ? await contextService.applyDefaults(options) : options;
-
-      if (!checkParent(opts)) {
-        process.exit(1);
-      }
-
-      if (!options.force) {
-        const { askConfirm } = await import('./prompt.js');
-        const confirm = await askConfirm(
-          `Delete ${resourceName} "${name}"? This cannot be undone.`
-        );
-        if (!confirm) {
-          outputService.info(t('status.cancelled'));
-          return;
-        }
-      }
-
-      const payload: Record<string, unknown> = { [nameField]: name };
-
-      if (hasParent) {
-        payload[parentOption === 'team' ? 'teamName' : 'regionName'] =
-          parentOption === 'team' ? opts.team : opts.region;
-      }
-
-      await withSpinner(
-        `Deleting ${resourceName} "${name}"...`,
-        () => operations.delete(payload),
-        `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} "${name}" deleted`
-      );
-    } catch (error) {
-      handleError(error);
-    }
-  });
-
-  // VAULT command (if configured)
-  if (vaultConfig || config.vaultUpdateConfig) {
-    const vault = resource
-      .command('vault')
-      .description(
-        `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} vault management`
-      );
-
-    // Vault GET command
-    if (vaultConfig) {
-      const getCmd = vault
-        .command(`get <${resourceName}Name>`)
-        .description(`Get ${resourceName} vault data`);
-
-      if (hasParent) {
-        getCmd.option(parentFlag, parentDesc);
-      }
-
-      getCmd.action(async (resourceItemName, options) => {
-        try {
-          await authService.requireAuth();
-          const opts = hasParent ? await contextService.applyDefaults(options) : options;
-
-          if (!checkParent(opts)) {
-            process.exit(1);
-          }
-
-          const params: Record<string, unknown> = {
-            [nameField]: resourceItemName,
-          };
-
-          if (hasParent) {
-            params[parentOption === 'team' ? 'teamName' : 'regionName'] =
-              parentOption === 'team' ? opts.team : opts.region;
-          }
-
-          const response = await withSpinner(
-            `Fetching ${resourceName} vault...`,
-            () => vaultConfig.fetch(params),
-            'Vault fetched'
-          );
-
-          const vaultsArray: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[] =
-            Array.isArray(response)
-              ? (response as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[])
-              : Array.isArray(
-                    (
-                      response as {
-                        vaults?: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
-                      }
-                    ).vaults
-                  )
-                ? (
-                    response as {
-                      vaults: (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
-                    }
-                  ).vaults
-                : [];
-          const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType);
-          const format = program.opts().output as OutputFormat;
-
-          if (targetVault) {
-            outputService.print(targetVault, format);
-          } else {
-            outputService.info(`No ${resourceName} vault found`);
-          }
-        } catch (error) {
-          handleError(error);
-        }
-      });
-    }
-
-    // Vault UPDATE command
-    if (config.vaultUpdateConfig) {
-      const updateCmd = vault
-        .command(`update <${resourceName}Name>`)
-        .description(`Update ${resourceName} vault data`)
-        .option('--vault <json>', t('options.vaultJson'))
-        .option('--vault-version <n>', t('options.vaultVersion'), parseInt);
-
-      if (hasParent) {
-        updateCmd.option(parentFlag, parentDesc);
-      }
-
-      updateCmd.action(async (resourceItemName, options) => {
-        try {
-          await authService.requireAuth();
-          const opts = hasParent ? await contextService.applyDefaults(options) : options;
-
-          if (!checkParent(opts)) {
-            process.exit(1);
-          }
-
-          // Get vault data from --vault flag or stdin
-          let vaultData: string = options.vault;
-          if (!vaultData && !process.stdin.isTTY) {
-            // Read from stdin if not a TTY (piped input)
-            const chunks: Buffer[] = [];
-            for await (const chunk of process.stdin) {
-              chunks.push(chunk);
-            }
-            vaultData = Buffer.concat(chunks).toString('utf-8').trim();
-          }
-
-          if (!vaultData) {
-            outputService.error(t('errors.vaultDataRequired'));
-            process.exit(1);
-          }
-
-          if (options.vaultVersion === undefined || options.vaultVersion === null) {
-            outputService.error(t('errors.vaultVersionRequired'));
-            process.exit(1);
-          }
-
-          // Validate JSON
-          try {
-            JSON.parse(vaultData);
-          } catch {
-            outputService.error(t('errors.invalidJsonVault'));
-            process.exit(1);
-          }
-
-          const payload: Record<string, unknown> = {
-            [nameField]: resourceItemName,
-            [config.vaultUpdateConfig!.vaultFieldName]: vaultData,
-            vaultVersion: options.vaultVersion,
-          };
-
-          if (hasParent) {
-            payload[parentOption === 'team' ? 'teamName' : 'regionName'] =
-              parentOption === 'team' ? opts.team : opts.region;
-          }
-
-          await withSpinner(
-            `Updating ${resourceName} vault...`,
-            () => config.vaultUpdateConfig!.update(payload),
-            `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} vault updated`
-          );
-        } catch (error) {
-          handleError(error);
-        }
-      });
-    }
-  }
+  setupListCommand(resource, program, ctx, operations);
+  setupCreateCommand(resource, ctx, operations, createOptions, transformCreatePayload);
+  setupRenameCommand(resource, ctx, operations);
+  setupDeleteCommand(resource, ctx, operations);
+  setupVaultCommands(resource, program, ctx, config);
 
   return resource;
 }
@@ -502,8 +418,8 @@ export function addStatusCommand(
   }
 ): void {
   const { resourceName, nameField, parentOption, fetch } = config;
-  const parentFlag = parentOption === 'team' ? '-t, --team <name>' : '-r, --region <name>';
-  const parentDesc = parentOption === 'team' ? 'Team name' : 'Region name';
+  const parentFlag = getParentFlag(parentOption);
+  const parentDesc = getParentDesc(parentOption);
   const checkParent = createParentCheck(parentOption);
 
   resourceCommand
@@ -519,8 +435,7 @@ export function addStatusCommand(
           process.exit(1);
         }
 
-        const params =
-          parentOption === 'team' ? { teamName: opts.team } : { regionName: opts.region };
+        const params = { [getParentKey(parentOption)]: getParentValue(opts, parentOption) };
 
         const response = await withSpinner(
           `Fetching ${resourceName} status...`,
@@ -528,20 +443,14 @@ export function addStatusCommand(
           'Status fetched'
         );
 
-        const items: Record<string, unknown>[] = Array.isArray(response)
-          ? (response as Record<string, unknown>[])
-          : Array.isArray((response as { items?: Record<string, unknown>[] }).items)
-            ? (response as { items: Record<string, unknown>[] }).items
-            : [];
+        const items = extractItemsFromResponse(response);
         const item = items.find((i) => i[nameField] === name);
         const format = resourceCommand.parent?.opts().output as OutputFormat;
 
         if (item) {
           outputService.print(item, format);
         } else {
-          outputService.error(
-            `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} "${name}" not found`
-          );
+          outputService.error(`${capitalizeFirst(resourceName)} "${name}" not found`);
         }
       } catch (error) {
         handleError(error);
@@ -564,8 +473,8 @@ export function addAssignCommand(
   }
 ): void {
   const { resourceName, nameField, targetName, targetField, parentOption, perform } = config;
-  const parentFlag = parentOption === 'team' ? '-t, --team <name>' : '-r, --region <name>';
-  const parentDesc = parentOption === 'team' ? 'Team name' : 'Region name';
+  const parentFlag = getParentFlag(parentOption);
+  const parentDesc = getParentDesc(parentOption);
   const checkParent = createParentCheck(parentOption);
 
   resourceCommand
@@ -581,16 +490,16 @@ export function addAssignCommand(
           process.exit(1);
         }
 
+        const payload: Record<string, unknown> = {
+          [nameField]: resourceItemName,
+          [targetField]: targetItemName,
+          [getParentKey(parentOption)]: getParentValue(opts, parentOption),
+        };
+
         await withSpinner(
           `Assigning ${resourceName} "${resourceItemName}" to ${targetName} "${targetItemName}"...`,
-          () =>
-            perform({
-              [nameField]: resourceItemName,
-              [targetField]: targetItemName,
-              [parentOption === 'team' ? 'teamName' : 'regionName']:
-                parentOption === 'team' ? opts.team : opts.region,
-            }),
-          `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} assigned to ${targetName} "${targetItemName}"`
+          () => perform(payload),
+          `${capitalizeFirst(resourceName)} assigned to ${targetName} "${targetItemName}"`
         );
       } catch (error) {
         handleError(error);

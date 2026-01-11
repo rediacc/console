@@ -92,7 +92,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
         className="block"
         value={value}
         onChange={(e: RadioChangeEvent) => onChange(e.target.value as T)}
-        data-testid={`vault-editor-radio-${label.toLowerCase().replace(/\s+/g, '-')}`}
+        data-testid={`vault-editor-radio-${label.toLowerCase().replaceAll(/\s+/g, '-')}`}
       >
         {options.map((opt) => (
           <Radio.Button

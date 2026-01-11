@@ -74,7 +74,7 @@ export function extractFirstError(output: string | null | undefined): ParsedErro
 
   for (const line of lines) {
     const trimmedLine = line.trim();
-    const match = trimmedLine.match(severityPattern);
+    const match = severityPattern.exec(trimmedLine);
 
     if (match) {
       const [, severity, message] = match;
@@ -127,7 +127,7 @@ export function extractAllErrors(output: string | null | undefined): ParsedError
 
   for (const line of lines) {
     const trimmedLine = line.trim();
-    const match = trimmedLine.match(severityPattern);
+    const match = severityPattern.exec(trimmedLine);
 
     if (match) {
       const [, severity, message] = match;
@@ -173,7 +173,7 @@ export function parseFailureReason(failureReason: string | null | undefined): Pa
   // Extract all severity-prefixed lines
   for (const line of lines) {
     const trimmedLine = line.trim();
-    const match = trimmedLine.match(severityPattern);
+    const match = severityPattern.exec(trimmedLine);
 
     if (match) {
       const [, severity, message] = match;

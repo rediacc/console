@@ -229,7 +229,7 @@ const validateJsonField = (value: unknown, isArray: boolean, t: (key: string) =>
   }
 };
 
-const formatJsonValue = (value: unknown, isArray: boolean): string | unknown => {
+const formatJsonValue = (value: unknown, isArray: boolean): unknown => {
   const shouldFormat = isArray ? Array.isArray(value) : typeof value === 'object' && value !== null;
   return shouldFormat ? JSON.stringify(value, null, 2) : value;
 };

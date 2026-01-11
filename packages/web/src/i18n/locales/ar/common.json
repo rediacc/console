@@ -379,6 +379,16 @@
     "moreTeams": "+{{count}} فريق آخر",
     "selectTeams": "اختر الفرق..."
   },
+  "terminal": {
+    "terminal": "الطرفية",
+    "connecting": "جاري الاتصال",
+    "connectionFailed": "فشل الاتصال",
+    "connectedTo": "متصل بـ {{host}}",
+    "establishingConnection": "جاري إنشاء اتصال SSH إلى {{host}}...",
+    "waitingForConnection": "في انتظار الاتصال...",
+    "reconnect": "إعادة الاتصال",
+    "popout": "فتح في نافذة جديدة"
+  },
   "theme": {
     "dark": "مظلم",
     "label": "المظهر",
@@ -783,6 +793,14 @@
   "warnings": {
     "sandboxEnvironment": "بيئة رمل",
     "sandboxMessage": "قد تتم إعادة ضبط البيانات أثناء التحديثات. للاختبار فقط."
+  },
+  "vscodeSelection": {
+    "title": "اختر إصدار VS Code",
+    "open": "فتح",
+    "description": "تم اكتشاف عدة إصدارات من VS Code. اختر الإصدار الذي تريد استخدامه:",
+    "windowsVSCode": "VS Code لنظام Windows",
+    "wslVSCode": "VS Code في WSL (لينكس)",
+    "rememberChoice": "تذكر اختياري"
   },
   "yes": "نعم",
   "yesterday": "أمس"

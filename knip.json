@@ -3,32 +3,16 @@
   "exclude": ["types", "duplicates"],
   "workspaces": {
     ".": {
-      "entry": ["eslint.config.js"],
       "project": ["*.{js,ts}"]
     },
     "packages/shared": {
-      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/shared-desktop": {
-      "entry": [
-        "src/index.ts",
-        "src/ssh/index.ts",
-        "src/sync/index.ts",
-        "src/terminal/index.ts",
-        "src/protocol/index.ts",
-        "src/msys2/index.ts",
-        "src/repository/index.ts",
-        "src/sftp/index.ts",
-        "src/utils/index.ts",
-        "src/config/index.ts",
-        "src/types/index.ts",
-        "src/vscode/index.ts"
-      ],
       "project": ["src/**/*.ts"]
     },
     "packages/cli": {
-      "entry": ["src/index.ts", "src/types/index.ts", "tests/**/*.ts"],
+      "entry": ["src/types/index.ts", "tests/**/*.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/web": {

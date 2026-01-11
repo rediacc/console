@@ -14,10 +14,10 @@ async function main() {
     await cli.parseAsync(process.argv);
 
     // Shutdown telemetry after successful command completion
-    // Use a short timeout to not delay CLI exit
+    // Use a short timeout (500ms) to avoid delaying CLI exit
     await Promise.race([
       telemetryService.shutdown(),
-      new Promise((resolve) => setTimeout(resolve, 2000)),
+      new Promise((resolve) => setTimeout(resolve, 500)),
     ]);
   } catch (error) {
     handleError(error);

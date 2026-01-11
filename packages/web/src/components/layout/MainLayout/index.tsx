@@ -59,27 +59,30 @@ const MainLayout: React.FC = () => {
     void updateOrganizationData();
   }, [organizationData, organization, dispatch]);
 
+  // Helper to get power mode message
+  const getPowerModeMessage = useCallback(
+    (newState: boolean, onLocalhost: boolean): string => {
+      if (onLocalhost) {
+        return newState ? t('powerMode.localhostAllEnabled') : t('powerMode.localhostAllDisabled');
+      }
+      return newState ? t('powerMode.advancedEnabled') : t('powerMode.advancedDisabled');
+    },
+    [t]
+  );
+
   // Keyboard shortcut for power mode
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'E') {
-        e.preventDefault();
-        const onLocalhost =
-          window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const newState = featureFlags.togglePowerMode();
-        const msg = onLocalhost
-          ? newState
-            ? t('powerMode.localhostAllEnabled')
-            : t('powerMode.localhostAllDisabled')
-          : newState
-            ? t('powerMode.advancedEnabled')
-            : t('powerMode.advancedDisabled');
-        message.info(msg);
-      }
+      if (!e.ctrlKey || !e.shiftKey || e.key !== 'E') return;
+      e.preventDefault();
+      const onLocalhost =
+        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const newState = featureFlags.togglePowerMode();
+      message.info(getPowerModeMessage(newState, onLocalhost));
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [message, t]);
+  }, [message, getPowerModeMessage]);
 
   // Get routes configuration
   const routes = useMemo(() => getRoutes(t), [t]);
@@ -178,7 +181,7 @@ const MainLayout: React.FC = () => {
         menuDataRender={menuDataRender}
         menuItemRender={(item, dom) => {
           if (!item.path) return dom;
-          const navKey = item.path.replace(/^\//, '').replace(/\//g, '-') || 'home';
+          const navKey = item.path.replace(/^\//, '').replaceAll('/', '-') || 'home';
           return (
             <Link
               to={item.path}
@@ -198,7 +201,7 @@ const MainLayout: React.FC = () => {
         }}
         subMenuItemRender={(item, dom) => {
           if (!item.path) return dom;
-          const navKey = item.path.replace(/^\//, '').replace(/\//g, '-') || 'home';
+          const navKey = item.path.replace(/^\//, '').replaceAll('/', '-') || 'home';
           return (
             <Link
               to={item.path}

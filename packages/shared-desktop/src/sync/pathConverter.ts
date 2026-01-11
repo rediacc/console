@@ -1,4 +1,4 @@
-import { isAbsolute } from 'path';
+import { isAbsolute } from 'node:path';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
 
 /**
@@ -39,7 +39,7 @@ export function convertLocalPathForRsync(localPath: string): string {
 
   // Handle relative paths - just replace backslashes
   if (!isAbsolute(localPath)) {
-    return localPath.replace(/\\/g, '/');
+    return localPath.replaceAll('\\', '/');
   }
 
   // Convert Windows absolute path to MSYS2/Cygwin format

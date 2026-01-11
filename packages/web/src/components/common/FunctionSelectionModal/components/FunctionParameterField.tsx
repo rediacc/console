@@ -3,8 +3,12 @@ import { Checkbox, Flex, Input, InputNumber, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import TemplateSelector from '@/components/common/TemplateSelector';
 import type { Machine, Repository } from '@/types';
-import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
-import type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
+import type {
+  GetTeamStorages_ResultSet1,
+  QueueFunction,
+  QueueFunctionParameter,
+} from '@rediacc/shared/types';
+import type { TFunction } from 'i18next';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;
@@ -24,329 +28,440 @@ interface FunctionParameterFieldProps {
   currentMachineName?: string;
 }
 
-const FunctionParameterField: React.FC<FunctionParameterFieldProps> = ({
+// Helper functions extracted to reduce cognitive complexity
+const getStringParam = (functionParams: FunctionParams, key: string): string =>
+  (functionParams[key] as string | undefined) ?? '';
+
+const getArrayParam = (functionParams: FunctionParams, key: string): string[] =>
+  Array.isArray(functionParams[key]) ? functionParams[key] : [];
+
+const getUnitLabel = (unit: string): string => {
+  const unitLabelMap: Record<string, string> = {
+    percentage: '%',
+    G: 'GB',
+    T: 'TB',
+  };
+  return unitLabelMap[unit] ?? unit;
+};
+
+const getUnitValue = (unit: string): string => (unit === 'percentage' ? '%' : unit);
+
+const getDefaultUnit = (units: string[]): string => (units[0] === 'percentage' ? '%' : units[0]);
+
+const filterOption = (input: string, option?: { label?: string }): boolean =>
+  (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+
+const getMachineOptions = (
+  machinesData: Machine[],
+  currentMachineName: string | undefined,
+  t: TFunction
+) =>
+  machinesData.map((machine) => {
+    const name = machine.machineName ?? '';
+    return {
+      value: name,
+      label: name === currentMachineName ? `${name} (${t('machines:currentMachine')})` : name,
+    };
+  });
+
+const getStorageOptions = (storageData: GetTeamStorages_ResultSet1[]) =>
+  storageData.map((storage) => ({
+    value: storage.storageName ?? '',
+    label: storage.storageName ?? '',
+  }));
+
+// Size parameter field component
+const SizeParameterField: React.FC<{
+  paramName: string;
+  paramInfo: QueueFunctionParameter;
+  functionParams: FunctionParams;
+  onParamChange: (paramName: string, value: FunctionParamValue) => void;
+}> = ({ paramName, paramInfo, functionParams, onParamChange }) => {
+  const units = paramInfo.units ?? [];
+  const defaultUnit = getDefaultUnit(units);
+  const currentUnit = (functionParams[`${paramName}_unit`] as string | undefined) ?? defaultUnit;
+
+  const handleValueChange = (value: number | string | null) => {
+    if (value === null) {
+      onParamChange(`${paramName}_value`, undefined);
+      onParamChange(paramName, '');
+      return;
+    }
+    const numValue = typeof value === 'string' ? Number.parseInt(value, 10) : value;
+    if (Number.isNaN(numValue) || numValue <= 0) return;
+
+    onParamChange(`${paramName}_value`, numValue);
+    onParamChange(paramName, `${numValue}${currentUnit}`);
+  };
+
+  const handleUnitChange = (unitValue: string) => {
+    const unit = String(unitValue);
+    const currentValue = functionParams[`${paramName}_value`];
+    onParamChange(`${paramName}_unit`, unit);
+    onParamChange(paramName, typeof currentValue === 'number' ? `${currentValue}${unit}` : '');
+  };
+
+  return (
+    <Flex align="center" wrap>
+      <InputNumber
+        value={
+          typeof functionParams[`${paramName}_value`] === 'number'
+            ? (functionParams[`${paramName}_value`] as number)
+            : undefined
+        }
+        onChange={handleValueChange}
+        parser={(value) => {
+          const parsed = value?.replaceAll(/[^\d]/g, '');
+          return parsed ? Number.parseInt(parsed, 10) : 0;
+        }}
+        formatter={(v) => (v ? `${v}` : '')}
+        placeholder={units.includes('percentage') ? '95' : '100'}
+        min={1}
+        max={units.includes('percentage') ? 100 : undefined}
+        keyboard
+        step={1}
+        precision={0}
+        data-testid={`function-modal-param-${paramName}-value`}
+      />
+      <Select
+        value={currentUnit}
+        onChange={handleUnitChange}
+        options={units.map((unit: string) => ({
+          value: getUnitValue(unit),
+          label: getUnitLabel(unit),
+        }))}
+        data-testid={`function-modal-param-${paramName}-unit`}
+      />
+    </Flex>
+  );
+};
+
+// Options select field component
+const OptionsSelectField: React.FC<{
+  paramName: string;
+  paramInfo: QueueFunctionParameter;
+  functionParams: FunctionParams;
+  onParamChange: (paramName: string, value: FunctionParamValue) => void;
+}> = ({ paramName, paramInfo, functionParams, onParamChange }) => {
+  const handleChange = (value: string) => {
+    const previousValue = functionParams[paramName];
+    onParamChange(paramName, value);
+    if (paramName === 'destinationType' && value !== previousValue) {
+      onParamChange('to', '');
+    }
+  };
+
+  return (
+    <Select
+      value={
+        getStringParam(functionParams, paramName) ||
+        (typeof paramInfo.default === 'string' ? paramInfo.default : '')
+      }
+      onChange={handleChange}
+      placeholder={typeof paramInfo.help === 'string' ? paramInfo.help : ''}
+      options={(paramInfo.options ?? []).map((option: string) => ({
+        value: option,
+        label: option,
+      }))}
+      data-testid={`function-modal-param-${paramName}`}
+    />
+  );
+};
+
+// Repository dropdown field component
+const RepoDropdownField: React.FC<{
+  paramName: string;
+  functionParams: FunctionParams;
+  repositories: Repository[];
+  onParamChange: (paramName: string, value: FunctionParamValue) => void;
+  t: TFunction;
+}> = ({ paramName, functionParams, repositories, onParamChange, t }) => (
+  <Select
+    value={getStringParam(functionParams, paramName)}
+    onChange={(value) => onParamChange(paramName, value)}
+    placeholder={t('resources:repositories.selectRepository')}
+    options={repositories.map((repository) => ({
+      value: repository.repositoryGuid ?? '',
+      label: repository.repositoryName ?? '',
+    }))}
+    notFoundContent={t('resources:repositories.noRepositoriesFound')}
+    showSearch
+    filterOption={filterOption}
+    data-testid={`function-modal-param-${paramName}`}
+  />
+);
+
+// Type-based dropdown field component (destination/source)
+const TypeBasedDropdownField: React.FC<{
+  paramName: string;
+  typeParamName: string;
+  functionParams: FunctionParams;
+  machinesData: Machine[];
+  storageData: GetTeamStorages_ResultSet1[];
+  currentMachineName?: string;
+  onParamChange: (paramName: string, value: FunctionParamValue) => void;
+  t: TFunction;
+}> = ({
   paramName,
-  paramInfo,
+  typeParamName,
   functionParams,
-  selectedFunction: _selectedFunction,
-  onParamChange,
-  onTemplatesChange,
-  onTemplateView,
-  selectedTemplates,
-  repositories = [],
-  machinesData = [],
-  storageData = [],
+  machinesData,
+  storageData,
   currentMachineName,
+  onParamChange,
+  t,
 }) => {
+  const selectedType = getStringParam(functionParams, typeParamName);
+  const isMachineType = selectedType === 'machine';
+
+  return (
+    <Select
+      value={getStringParam(functionParams, paramName)}
+      onChange={(value) => onParamChange(paramName, value)}
+      placeholder={
+        isMachineType ? t('machines:selectMachine') : t('resources:storage.selectStorage')
+      }
+      options={
+        isMachineType
+          ? getMachineOptions(machinesData, currentMachineName, t)
+          : getStorageOptions(storageData)
+      }
+      notFoundContent={
+        isMachineType ? t('machines:noMachinesFound') : t('resources:storage.noStorageFound')
+      }
+      showSearch
+      filterOption={filterOption}
+      disabled={!selectedType}
+      data-testid={`function-modal-param-${paramName}`}
+    />
+  );
+};
+
+// Machine multiselect field component
+const MachineMultiselectField: React.FC<{
+  paramName: string;
+  functionParams: FunctionParams;
+  machinesData: Machine[];
+  currentMachineName?: string;
+  onParamChange: (paramName: string, value: FunctionParamValue) => void;
+  t: TFunction;
+}> = ({ paramName, functionParams, machinesData, currentMachineName, onParamChange, t }) => (
+  <Select
+    mode="multiple"
+    value={getArrayParam(functionParams, paramName)}
+    onChange={(value) => onParamChange(paramName, value)}
+    placeholder={t('machines:selectMachines')}
+    options={getMachineOptions(machinesData, currentMachineName, t)}
+    notFoundContent={t('machines:noMachinesFound')}
+    showSearch
+    filterOption={filterOption}
+    data-testid={`function-modal-param-${paramName}`}
+  />
+);
+
+// Storage multiselect field component
+const StorageMultiselectField: React.FC<{
+  paramName: string;
+  functionParams: FunctionParams;
+  storageData: GetTeamStorages_ResultSet1[];
+  onParamChange: (paramName: string, value: FunctionParamValue) => void;
+  t: TFunction;
+}> = ({ paramName, functionParams, storageData, onParamChange, t }) => (
+  <Select
+    mode="multiple"
+    value={getArrayParam(functionParams, paramName)}
+    onChange={(value) => onParamChange(paramName, value)}
+    placeholder={t('resources:storage.selectStorageSystems')}
+    options={getStorageOptions(storageData)}
+    notFoundContent={t('resources:storage.noStorageFound')}
+    showSearch
+    filterOption={filterOption}
+    data-testid={`function-modal-param-${paramName}`}
+  />
+);
+
+// Checkbox group field component
+const CheckboxGroupField: React.FC<{
+  paramName: string;
+  paramInfo: QueueFunctionParameter;
+  functionParams: FunctionParams;
+  onParamChange: (paramName: string, value: FunctionParamValue) => void;
+  t: TFunction;
+}> = ({ paramName, paramInfo, functionParams, onParamChange, t }) => {
+  const selectedValues = getStringParam(functionParams, paramName).split(' ').filter(Boolean);
+  const checkboxOptions = paramInfo.checkboxOptions ?? [];
+
+  const handleCheckboxChange = (optionValue: string, checked: boolean) => {
+    const updatedValues = checked
+      ? Array.from(new Set([...selectedValues, optionValue]))
+      : selectedValues.filter((value) => value !== optionValue);
+    onParamChange(paramName, updatedValues.join(' '));
+  };
+
+  return (
+    <Flex vertical className="gap-sm">
+      {checkboxOptions.map((option: { value: string; label: string }) => (
+        <Checkbox
+          key={option.value}
+          checked={selectedValues.includes(option.value)}
+          onChange={(e) => handleCheckboxChange(option.value, e.target.checked)}
+          data-testid={`function-modal-param-${paramName}-${option.value}`}
+        >
+          {t(`functions:checkboxOptions.${option.label}`)}
+        </Checkbox>
+      ))}
+      <Input
+        value={getStringParam(functionParams, paramName)}
+        onChange={(e) => onParamChange(paramName, e.target.value)}
+        placeholder={t('functions:additionalOptions')}
+        autoComplete="off"
+        data-testid={`function-modal-param-${paramName}-additional`}
+      />
+    </Flex>
+  );
+};
+
+// Helper: Render field based on UI type using switch
+const renderUITypeField = (
+  paramInfo: QueueFunctionParameter,
+  props: FunctionParameterFieldProps,
+  t: TFunction
+): React.ReactElement | null => {
+  const {
+    paramName,
+    functionParams,
+    onParamChange,
+    onTemplatesChange,
+    onTemplateView,
+    selectedTemplates,
+    repositories = [],
+    machinesData = [],
+    storageData = [],
+    currentMachineName,
+  } = props;
+
+  switch (paramInfo.ui) {
+    case 'repo-dropdown':
+      return (
+        <RepoDropdownField
+          paramName={paramName}
+          functionParams={functionParams}
+          repositories={repositories}
+          onParamChange={onParamChange}
+          t={t}
+        />
+      );
+    case 'destination-dropdown':
+      return (
+        <TypeBasedDropdownField
+          paramName={paramName}
+          typeParamName="destinationType"
+          functionParams={functionParams}
+          machinesData={machinesData}
+          storageData={storageData}
+          currentMachineName={currentMachineName}
+          onParamChange={onParamChange}
+          t={t}
+        />
+      );
+    case 'source-dropdown':
+      return (
+        <TypeBasedDropdownField
+          paramName={paramName}
+          typeParamName="sourceType"
+          functionParams={functionParams}
+          machinesData={machinesData}
+          storageData={storageData}
+          currentMachineName={currentMachineName}
+          onParamChange={onParamChange}
+          t={t}
+        />
+      );
+    case 'machine-multiselect':
+      return (
+        <MachineMultiselectField
+          paramName={paramName}
+          functionParams={functionParams}
+          machinesData={machinesData}
+          currentMachineName={currentMachineName}
+          onParamChange={onParamChange}
+          t={t}
+        />
+      );
+    case 'storage-multiselect':
+      return (
+        <StorageMultiselectField
+          paramName={paramName}
+          functionParams={functionParams}
+          storageData={storageData}
+          onParamChange={onParamChange}
+          t={t}
+        />
+      );
+    case 'template-selector':
+      return (
+        <TemplateSelector
+          value={selectedTemplates}
+          onChange={(templateIds) =>
+            onTemplatesChange(Array.isArray(templateIds) ? templateIds : [])
+          }
+          onViewDetails={(templateName) => onTemplateView(templateName)}
+          multiple
+        />
+      );
+    case 'checkbox':
+      if (!paramInfo.checkboxOptions) return null;
+      return (
+        <CheckboxGroupField
+          paramName={paramName}
+          paramInfo={paramInfo}
+          functionParams={functionParams}
+          onParamChange={onParamChange}
+          t={t}
+        />
+      );
+    default:
+      return null;
+  }
+};
+
+// Main component with reduced complexity using switch
+const FunctionParameterField: React.FC<FunctionParameterFieldProps> = (props) => {
+  const { paramName, paramInfo, functionParams, onParamChange } = props;
   const { t } = useTranslation(['functions', 'common', 'machines', 'resources']);
 
-  const getStringParam = (key: string): string => (functionParams[key] as string | undefined) ?? '';
-  const getArrayParam = (key: string): string[] =>
-    Array.isArray(functionParams[key]) ? functionParams[key] : [];
-
-  const isSizeParam = paramInfo.format === 'size' && paramInfo.units;
-
-  // Size parameter renderer
-  if (isSizeParam && paramInfo.units) {
+  // Size parameter (format-based, checked first)
+  if (paramInfo.format === 'size' && paramInfo.units) {
     return (
-      <Flex align="center" wrap>
-        <InputNumber
-          value={
-            typeof functionParams[`${paramName}_value`] === 'number'
-              ? (functionParams[`${paramName}_value`] as number)
-              : undefined
-          }
-          onChange={(value) => {
-            if (value === null) {
-              onParamChange(`${paramName}_value`, undefined);
-              onParamChange(paramName, '');
-            } else {
-              const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
-              if (!Number.isNaN(numValue) && numValue > 0 && paramInfo.units) {
-                const unit =
-                  (functionParams[`${paramName}_unit`] as string | undefined) ??
-                  (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]);
-                onParamChange(`${paramName}_value`, numValue);
-                onParamChange(paramName, `${numValue}${unit}`);
-              }
-            }
-          }}
-          parser={(value) => {
-            const parsed = value?.replace(/[^\d]/g, '');
-            return parsed ? parseInt(parsed, 10) : 0;
-          }}
-          formatter={(v) => (v ? `${v}` : '')}
-          placeholder={paramInfo.units.includes('percentage') ? '95' : '100'}
-          min={1}
-          max={paramInfo.units.includes('percentage') ? 100 : undefined}
-          keyboard
-          step={1}
-          precision={0}
-          data-testid={`function-modal-param-${paramName}-value`}
-        />
-        <Select
-          value={
-            (functionParams[`${paramName}_unit`] as string | undefined) ??
-            (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
-          }
-          onChange={(unitValue) => {
-            const unit = String(unitValue);
-            const currentValue = functionParams[`${paramName}_value`];
-            onParamChange(`${paramName}_unit`, unit);
-            onParamChange(
-              paramName,
-              typeof currentValue === 'number' ? `${currentValue}${unit}` : ''
-            );
-          }}
-          options={paramInfo.units.map((unit: string) => {
-            const value = unit === 'percentage' ? '%' : unit;
-            let label: string;
-            if (unit === 'percentage') {
-              label = '%';
-            } else if (unit === 'G') {
-              label = 'GB';
-            } else {
-              label = 'TB';
-            }
-            return { value, label };
-          })}
-          data-testid={`function-modal-param-${paramName}-unit`}
-        />
-      </Flex>
+      <SizeParameterField
+        paramName={paramName}
+        paramInfo={paramInfo}
+        functionParams={functionParams}
+        onParamChange={onParamChange}
+      />
     );
   }
 
-  // Select dropdown (with options)
+  // Options select (options-based)
   if (paramInfo.options && paramInfo.options.length > 0) {
     return (
-      <Select
-        value={
-          getStringParam(paramName) ||
-          (typeof paramInfo.default === 'string' ? paramInfo.default : '')
-        }
-        onChange={(value: string) => {
-          const previousValue = functionParams[paramName];
-          onParamChange(paramName, value);
-          // Clear dependent field when destinationType changes
-          if (paramName === 'destinationType' && value !== previousValue) {
-            onParamChange('to', '');
-          }
-        }}
-        placeholder={typeof paramInfo.help === 'string' ? paramInfo.help : ''}
-        options={paramInfo.options.map((option: string) => ({
-          value: option,
-          label: option,
-        }))}
-        data-testid={`function-modal-param-${paramName}`}
+      <OptionsSelectField
+        paramName={paramName}
+        paramInfo={paramInfo}
+        functionParams={functionParams}
+        onParamChange={onParamChange}
       />
     );
   }
 
-  // Repository dropdown
-  if (paramInfo.ui === 'repo-dropdown') {
-    return (
-      <Select
-        value={getStringParam(paramName)}
-        onChange={(value) => onParamChange(paramName, value)}
-        placeholder={t('resources:repositories.selectRepository')}
-        options={repositories.map((repository) => ({
-          value: repository.repositoryGuid,
-          label: repository.repositoryName,
-        }))}
-        notFoundContent={t('resources:repositories.noRepositoriesFound')}
-        showSearch
-        filterOption={(input, option) =>
-          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-        }
-        data-testid={`function-modal-param-${paramName}`}
-      />
-    );
-  }
-
-  // Destination dropdown
-  if (paramInfo.ui === 'destination-dropdown') {
-    const destinationType = getStringParam('destinationType');
-    return (
-      <Select
-        value={getStringParam(paramName)}
-        onChange={(value) => onParamChange(paramName, value)}
-        placeholder={
-          destinationType === 'machine'
-            ? t('machines:selectMachine')
-            : t('resources:storage.selectStorage')
-        }
-        options={
-          destinationType === 'machine'
-            ? machinesData.map((machine) => ({
-                value: machine.machineName,
-                label:
-                  machine.machineName === currentMachineName
-                    ? `${machine.machineName} (${t('machines:currentMachine')})`
-                    : machine.machineName,
-              }))
-            : storageData.map((storage) => ({
-                value: storage.storageName,
-                label: storage.storageName,
-              }))
-        }
-        notFoundContent={
-          destinationType === 'machine'
-            ? t('machines:noMachinesFound')
-            : t('resources:storage.noStorageFound')
-        }
-        showSearch
-        filterOption={(input, option) =>
-          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-        }
-        disabled={!destinationType}
-        data-testid={`function-modal-param-${paramName}`}
-      />
-    );
-  }
-
-  // Source dropdown
-  if (paramInfo.ui === 'source-dropdown') {
-    const sourceType = getStringParam('sourceType');
-    return (
-      <Select
-        value={getStringParam(paramName)}
-        onChange={(value) => onParamChange(paramName, value)}
-        placeholder={
-          sourceType === 'machine'
-            ? t('machines:selectMachine')
-            : t('resources:storage.selectStorage')
-        }
-        options={
-          sourceType === 'machine'
-            ? machinesData.map((machine) => ({
-                value: machine.machineName,
-                label:
-                  machine.machineName === currentMachineName
-                    ? `${machine.machineName} (${t('machines:currentMachine')})`
-                    : machine.machineName,
-              }))
-            : storageData.map((storage) => ({
-                value: storage.storageName,
-                label: storage.storageName,
-              }))
-        }
-        notFoundContent={
-          sourceType === 'machine'
-            ? t('machines:noMachinesFound')
-            : t('resources:storage.noStorageFound')
-        }
-        showSearch
-        filterOption={(input, option) =>
-          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-        }
-        disabled={!sourceType}
-        data-testid={`function-modal-param-${paramName}`}
-      />
-    );
-  }
-
-  // Machine multiselect
-  if (paramInfo.ui === 'machine-multiselect') {
-    return (
-      <Select
-        mode="multiple"
-        value={getArrayParam(paramName)}
-        onChange={(value) => onParamChange(paramName, value)}
-        placeholder={t('machines:selectMachines')}
-        options={machinesData.map((machine) => ({
-          value: machine.machineName,
-          label:
-            machine.machineName === currentMachineName
-              ? `${machine.machineName} (${t('machines:currentMachine')})`
-              : machine.machineName,
-        }))}
-        notFoundContent={t('machines:noMachinesFound')}
-        showSearch
-        filterOption={(input, option) =>
-          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-        }
-        data-testid={`function-modal-param-${paramName}`}
-      />
-    );
-  }
-
-  // Storage multiselect
-  if (paramInfo.ui === 'storage-multiselect') {
-    return (
-      <Select
-        mode="multiple"
-        value={getArrayParam(paramName)}
-        onChange={(value) => onParamChange(paramName, value)}
-        placeholder={t('resources:storage.selectStorageSystems')}
-        options={storageData.map((storage) => ({
-          value: storage.storageName,
-          label: storage.storageName,
-        }))}
-        notFoundContent={t('resources:storage.noStorageFound')}
-        showSearch
-        filterOption={(input, option) =>
-          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-        }
-        data-testid={`function-modal-param-${paramName}`}
-      />
-    );
-  }
-
-  // Template selector
-  if (paramInfo.ui === 'template-selector') {
-    return (
-      <TemplateSelector
-        value={selectedTemplates}
-        onChange={(templateIds) => {
-          onTemplatesChange(Array.isArray(templateIds) ? templateIds : []);
-        }}
-        onViewDetails={(templateName) => onTemplateView(templateName)}
-        multiple
-      />
-    );
-  }
-
-  // Checkbox group
-  if (paramInfo.ui === 'checkbox' && paramInfo.checkboxOptions) {
-    const selectedValues = getStringParam(paramName).split(' ').filter(Boolean);
-
-    return (
-      <Flex vertical className="gap-sm">
-        {paramInfo.checkboxOptions.map((option: { value: string; label: string }) => {
-          const isChecked = selectedValues.includes(option.value);
-
-          return (
-            <Checkbox
-              key={option.value}
-              checked={isChecked}
-              onChange={(e) => {
-                const updatedValues = e.target.checked
-                  ? Array.from(new Set([...selectedValues, option.value]))
-                  : selectedValues.filter((value) => value !== option.value);
-
-                onParamChange(paramName, updatedValues.join(' '));
-              }}
-              data-testid={`function-modal-param-${paramName}-${option.value}`}
-            >
-              {t(`functions:checkboxOptions.${option.label}`)}
-            </Checkbox>
-          );
-        })}
-        <Input
-          value={getStringParam(paramName)}
-          onChange={(e) => onParamChange(paramName, e.target.value)}
-          placeholder={t('functions:additionalOptions')}
-          autoComplete="off"
-          data-testid={`function-modal-param-${paramName}-additional`}
-        />
-      </Flex>
-    );
-  }
+  // UI type-based fields
+  const uiTypeField = renderUITypeField(paramInfo, props, t);
+  if (uiTypeField) return uiTypeField;
 
   // Default: text input
   return (
     <Input
-      value={getStringParam(paramName)}
+      value={getStringParam(functionParams, paramName)}
       onChange={(e) => onParamChange(paramName, e.target.value)}
       placeholder={typeof paramInfo.help === 'string' ? paramInfo.help : ''}
       autoComplete="off"

@@ -27,10 +27,17 @@ import {
   ensureVSCodeEnvSetup,
 } from '@rediacc/shared-desktop/vscode';
 import { Command } from 'commander';
+import {
+  debugLog,
+  displayVSCodeInstallation,
+  displayConfigurationStatus,
+  displayActiveConnections,
+  getSSHConnectionDetails,
+  type ConnectionDetails,
+} from './vscode-utils.js';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
-import { getConnectionVaults } from '../utils/connectionDetails.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
@@ -50,187 +57,17 @@ interface VSCodeCleanupOptions {
   connection?: string;
 }
 
-interface ConnectionDetails {
-  host: string;
-  user: string;
-  port: number;
-  privateKey: string;
-  known_hosts: string;
-  datastore: string;
-  universalUser: string;
-  repositoryPath?: string;
-  networkId?: string;
-  environment?: Record<string, string>;
-  workingDirectory?: string;
-}
-
-/**
- * Debug logging helper
- */
-function debugLog(message: string): void {
-  if (process.env.REDIACC_DEBUG || process.env.DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log(`[DEBUG] ${message}`);
-  }
-}
-
-/**
- * Gets SSH connection details from the API using type-safe endpoints
- */
-async function getSSHConnectionDetails(
-  teamName: string,
-  machineName: string,
-  repositoryName?: string
-): Promise<ConnectionDetails> {
-  debugLog(
-    `Getting SSH connection details for team=${teamName}, machine=${machineName}, repository=${repositoryName ?? '(none)'}`
-  );
-
-  // Fetch vault data using type-safe API
-  const vaults = await getConnectionVaults(teamName, machineName, repositoryName);
-  const machineVault = vaults.machineVault;
-  const teamVault = vaults.teamVault;
-
-  // Select host field with fallback
-  const host = (machineVault.ip ?? machineVault.host) as string | undefined;
-  const port = (machineVault.port ?? 22) as number;
-
-  // Select private key field with fallback
-  const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
-
-  // Select host entry field with fallback
-  const knownHosts = (machineVault.known_hosts ?? '') as string;
-
-  if (!host) {
-    throw new Error(t('errors.vscode.noIpAddress', { machine: machineName }));
-  }
-
-  if (!privateKey) {
-    throw new Error(t('errors.vscode.noPrivateKey', { team: teamName }));
-  }
-
-  if (!knownHosts) {
-    throw new Error(t('errors.vscode.noHostKey', { machine: machineName }));
-  }
-
-  const datastore = (machineVault.datastore ?? '/mnt/rediacc') as string;
-  const universalUser = (machineVault.universalUser ?? 'rediacc') as string;
-
-  let user = (machineVault.user ?? 'root') as string;
-  let environment: Record<string, string> = {};
-  let workingDirectory: string | undefined;
-  let repositoryPath: string | undefined;
-  let networkId: string | undefined;
-
-  // If repository is specified, use repository vault from already-fetched data
-  if (repositoryName) {
-    debugLog(`Using repository vault for: ${repositoryName}`);
-
-    const repoVault = vaults.repositoryVault ?? {};
-
-    repositoryPath = (repoVault.path ?? `/home/${repositoryName}`) as string;
-    networkId = (repoVault.networkId ?? '') as string;
-    const networkMode = (repoVault.networkMode ?? machineVault.networkMode ?? 'bridge') as string;
-    const tag = (repoVault.tag ?? 'latest') as string;
-    const immovable = repoVault.immovable ? 'true' : 'false';
-
-    // Repository user
-    user = repositoryName;
-    workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;
-
-    // Build comprehensive environment variables
-    environment = {
-      REDIACC_TEAM: teamName,
-      REDIACC_MACHINE: machineName,
-      REDIACC_REPOSITORY: repositoryName,
-      DOCKER_DATA: `${datastore}${repositoryPath}`,
-      DOCKER_EXEC: `${datastore}${repositoryPath}/.docker-exec`,
-      DOCKER_FOLDER: `${datastore}${repositoryPath}`,
-      DOCKER_HOST: (machineVault.dockerHost ?? 'unix:///var/run/docker.sock') as string,
-      DOCKER_SOCKET: (machineVault.dockerSocket ?? '/var/run/docker.sock') as string,
-      REDIACC_DATASTORE: datastore,
-      REDIACC_DATASTORE_USER: universalUser,
-      REDIACC_NETWORK_ID: networkId,
-      REDIACC_IMMOVABLE: immovable,
-      REPOSITORY_NETWORK_ID: networkId,
-      REPOSITORY_NETWORK_MODE: networkMode,
-      REPOSITORY_PATH: repositoryPath,
-      REPOSITORY_TAG: tag,
-      UNIVERSAL_USER_NAME: universalUser,
-      UNIVERSAL_USER_ID: (machineVault.universalUserId ?? '1000') as string,
-      ...(typeof repoVault.environment === 'object' && repoVault.environment !== null
-        ? (repoVault.environment as Record<string, string>)
-        : {}),
-    };
-  } else {
-    // Machine-only mode
-    user = universalUser;
-    workingDirectory = datastore;
-    environment = {
-      REDIACC_TEAM: teamName,
-      REDIACC_MACHINE: machineName,
-      REDIACC_DATASTORE: datastore,
-      REDIACC_DATASTORE_USER: universalUser,
-      UNIVERSAL_USER_NAME: universalUser,
-    };
-  }
-
-  return {
-    host,
-    user,
-    port,
-    privateKey,
-    known_hosts: knownHosts,
-    datastore,
-    universalUser,
-    repositoryPath,
-    networkId,
-    environment,
-    workingDirectory,
-  };
-}
-
-/**
- * Connects to a machine or repository via VS Code Remote SSH
- */
-async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
-  const opts = await contextService.applyDefaults(options);
-
-  if (!opts.team) {
-    throw new Error(t('errors.teamRequired'));
-  }
-
-  if (!opts.machine) {
-    throw new Error(t('errors.machineRequired'));
-  }
-
-  const teamName = opts.team;
-  const machineName = opts.machine;
-  const repositoryName = opts.repository;
-
-  // Find VS Code executable
-  const vscodeInfo = await withSpinner(t('commands.vscode.connect.detecting'), async () => {
+async function detectVSCode() {
+  return withSpinner(t('commands.vscode.connect.detecting'), async () => {
     const info = await findVSCode();
     if (!info) {
       throw new Error(t('errors.vscode.notFound'));
     }
     return info;
   });
+}
 
-  debugLog(`Found VS Code: ${vscodeInfo.path}${vscodeInfo.isInsiders ? ' (Insiders)' : ''}`);
-
-  // Check Remote SSH extension (warning only)
-  const hasRemoteSSH = await isRemoteSSHExtensionInstalled();
-  if (!hasRemoteSSH) {
-    console.warn(t('commands.vscode.connect.extensionWarning'));
-  }
-
-  // Get connection details
-  const connectionDetails = await withSpinner(t('commands.vscode.connect.fetchingDetails'), () =>
-    getSSHConnectionDetails(teamName, machineName, repositoryName)
-  );
-
-  // Test SSH connectivity
+async function verifySSHConnectivity(connectionDetails: ConnectionDetails): Promise<void> {
   const connectivityResult = await withSpinner(
     t('commands.vscode.connect.testingConnectivity', {
       host: connectionDetails.host,
@@ -248,21 +85,21 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
       })
     );
   }
+}
 
-  // Persist SSH key for long-running VS Code sessions
+async function setupSSHConfig(
+  teamName: string,
+  machineName: string,
+  repositoryName: string | undefined,
+  connectionDetails: ConnectionDetails
+): Promise<{ connectionName: string; identityFile: string; knownHostsFile: string }> {
   const identityFile = await withSpinner(t('commands.vscode.connect.persistingKey'), () => {
     return Promise.resolve(
       persistSSHKey(teamName, machineName, repositoryName, connectionDetails.privateKey)
     );
   });
 
-  // Persist known hosts
   const knownHostsFile = persistKnownHosts(teamName, machineName, connectionDetails.known_hosts);
-
-  debugLog(`Identity file: ${identityFile}`);
-  debugLog(`Known hosts file: ${knownHostsFile}`);
-
-  // Build and add SSH config entry
   const connectionName = generateConnectionName(teamName, machineName, repositoryName);
 
   await withSpinner(t('commands.vscode.connect.configuringSSH'), () => {
@@ -286,16 +123,28 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
     return Promise.resolve();
   });
 
-  // Configure VS Code settings
+  return { connectionName, identityFile, knownHostsFile };
+}
+
+interface VSCodeInfo {
+  path: string;
+  isInsiders?: boolean;
+}
+
+async function configureVSCodeAndSettings(
+  connectionName: string,
+  connectionDetails: ConnectionDetails,
+  vscodeInfo: VSCodeInfo,
+  insidersOption?: boolean
+): Promise<void> {
   await withSpinner(t('commands.vscode.connect.configuringVSCode'), () => {
-    const isInsiders = options.insiders ?? vscodeInfo.isInsiders;
+    const isInsiders = insidersOption ?? vscodeInfo.isInsiders;
     const result = configureVSCodeSettings(isInsiders);
 
     if (!result.success) {
       console.warn(t('commands.vscode.connect.settingsWarning', { error: result.error }));
     }
 
-    // Set per-host server install path
     if (connectionDetails.datastore) {
       setHostServerInstallPath(
         connectionName,
@@ -304,52 +153,94 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
       );
     }
 
-    // Remove from remotePlatform to enable RemoteCommand
     removeHostFromRemotePlatform(connectionName, isInsiders);
     return Promise.resolve();
   });
+}
 
-  // Setup remote environment (optional)
-  if (!options.skipEnvSetup && connectionDetails.environment) {
-    const sshConnection = new SSHConnection(
-      connectionDetails.privateKey,
-      connectionDetails.known_hosts,
-      { port: connectionDetails.port }
-    );
+async function setupRemoteEnvironment(connectionDetails: ConnectionDetails): Promise<void> {
+  const sshConnection = new SSHConnection(
+    connectionDetails.privateKey,
+    connectionDetails.known_hosts,
+    { port: connectionDetails.port }
+  );
 
-    try {
-      await sshConnection.setup();
+  try {
+    await sshConnection.setup();
 
-      await withSpinner(t('commands.vscode.connect.settingUpEnv'), async () => {
-        const setupResult = await ensureVSCodeEnvSetup({
-          sshDestination: `${connectionDetails.user}@${connectionDetails.host}`,
-          sshOptions: sshConnection.sshOptions,
-          envVars: connectionDetails.environment ?? {},
-          universalUser: connectionDetails.universalUser,
-          sshUser: connectionDetails.user,
-          serverInstallPath: connectionDetails.datastore,
-          agentSocketPath: sshConnection.agentSocketPath,
-        });
-
-        if (!setupResult.success) {
-          debugLog(`Remote env setup warning: ${setupResult.error}`);
-        }
+    await withSpinner(t('commands.vscode.connect.settingUpEnv'), async () => {
+      const setupResult = await ensureVSCodeEnvSetup({
+        sshDestination: `${connectionDetails.user}@${connectionDetails.host}`,
+        sshOptions: sshConnection.sshOptions,
+        envVars: connectionDetails.environment ?? {},
+        universalUser: connectionDetails.universalUser,
+        sshUser: connectionDetails.user,
+        serverInstallPath: connectionDetails.datastore,
+        agentSocketPath: sshConnection.agentSocketPath,
       });
-    } catch (error) {
-      debugLog(`Remote env setup error: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      await sshConnection.cleanup();
-    }
+
+      if (!setupResult.success) {
+        debugLog(`Remote env setup warning: ${setupResult.error}`);
+      }
+    });
+  } catch (error) {
+    debugLog(`Remote env setup error: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    await sshConnection.cleanup();
+  }
+}
+
+/**
+ * Connects to a machine or repository via VS Code Remote SSH
+ */
+async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
+  const opts = await contextService.applyDefaults(options);
+
+  if (!opts.team) {
+    throw new Error(t('errors.teamRequired'));
+  }
+  if (!opts.machine) {
+    throw new Error(t('errors.machineRequired'));
   }
 
-  // Build remote folder path
+  const teamName = opts.team;
+  const machineName = opts.machine;
+  const repositoryName = opts.repository;
+
+  const vscodeInfo = await detectVSCode();
+  debugLog(`Found VS Code: ${vscodeInfo.path}${vscodeInfo.isInsiders ? ' (Insiders)' : ''}`);
+
+  const hasRemoteSSH = await isRemoteSSHExtensionInstalled();
+  if (!hasRemoteSSH) {
+    console.warn(t('commands.vscode.connect.extensionWarning'));
+  }
+
+  const connectionDetails = await withSpinner(t('commands.vscode.connect.fetchingDetails'), () =>
+    getSSHConnectionDetails(teamName, machineName, repositoryName)
+  );
+
+  await verifySSHConnectivity(connectionDetails);
+
+  const { connectionName, identityFile, knownHostsFile } = await setupSSHConfig(
+    teamName,
+    machineName,
+    repositoryName,
+    connectionDetails
+  );
+
+  debugLog(`Identity file: ${identityFile}`);
+  debugLog(`Known hosts file: ${knownHostsFile}`);
+
+  await configureVSCodeAndSettings(connectionName, connectionDetails, vscodeInfo, options.insiders);
+
+  if (!options.skipEnvSetup && connectionDetails.environment) {
+    await setupRemoteEnvironment(connectionDetails);
+  }
+
   const remotePath =
     options.folder ?? connectionDetails.workingDirectory ?? connectionDetails.datastore;
-
-  // Generate URI
   const vscodeUri = generateRemoteUri(connectionName, remotePath);
 
-  // Output URL or launch
   if (options.urlOnly) {
     // eslint-disable-next-line no-console
     console.log(vscodeUri);
@@ -387,7 +278,7 @@ function listVSCodeConnections(): void {
 
   for (const entry of entries) {
     // Check if key exists for this entry
-    const hasKey = keys.some((k: string) => entry.includes(k.replace(/_/g, '-')));
+    const hasKey = keys.some((k: string) => entry.includes(k.replaceAll('_', '-')));
     const keyIndicator = hasKey ? t('commands.vscode.list.keyPersisted') : '';
     // eslint-disable-next-line no-console
     console.log(`  ${entry}${keyIndicator}`);
@@ -445,76 +336,27 @@ async function checkVSCodeSetup(isInsiders = false): Promise<void> {
   // eslint-disable-next-line no-console
   console.log(t('commands.vscode.check.title'));
 
-  // Check VS Code installation
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.check.installation'));
   const vscode = await findVSCode();
-  if (vscode) {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.check.vscodeFound', { path: vscode.path }));
-    if (vscode.version) {
-      // eslint-disable-next-line no-console
-      console.log(t('commands.vscode.check.version', { version: vscode.version }));
-    }
-    if (vscode.isInsiders) {
-      // eslint-disable-next-line no-console
-      console.log(t('commands.vscode.check.variant'));
-    }
-  } else {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.check.vscodeNotFound'));
-  }
+  displayVSCodeInstallation(vscode);
 
-  // Check Remote SSH extension
   const hasExtension = await isRemoteSSHExtensionInstalled();
+  const extensionStatus = hasExtension
+    ? t('commands.vscode.check.installed')
+    : t('commands.vscode.check.notDetected');
   // eslint-disable-next-line no-console
-  console.log(
-    t('commands.vscode.check.remoteSSH', {
-      status: hasExtension
-        ? t('commands.vscode.check.installed')
-        : t('commands.vscode.check.notDetected'),
-    })
-  );
+  console.log(t('commands.vscode.check.remoteSSH', { status: extensionStatus }));
 
-  // Check VS Code settings
   // eslint-disable-next-line no-console
   console.log(t('commands.vscode.check.configuration'));
   const configCheck = checkVSCodeConfiguration(isInsiders);
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.check.settingsPath', { path: configCheck.settingsPath }));
-  // eslint-disable-next-line no-console
-  console.log(
-    t('commands.vscode.check.configured', {
-      status: configCheck.configured
-        ? t('commands.vscode.check.yes')
-        : t('commands.vscode.check.no'),
-    })
-  );
-  if (configCheck.missing.length > 0) {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.check.missingSettings'));
-    for (const setting of configCheck.missing) {
-      // eslint-disable-next-line no-console
-      console.log(`    - ${setting}`);
-    }
-  }
+  displayConfigurationStatus(configCheck);
 
-  // Check SSH config file
   const configPath = getSSHConfigPath();
   // eslint-disable-next-line no-console
   console.log(t('commands.vscode.check.sshConfig', { path: configPath }));
 
-  // List active connections
   const connections = listSSHConfigEntries();
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.check.activeConnections', { count: connections.length }));
-
-  if (connections.length > 0) {
-    for (const conn of connections) {
-      // eslint-disable-next-line no-console
-      console.log(`  - ${conn}`);
-    }
-  }
+  displayActiveConnections(connections);
 }
 
 /**

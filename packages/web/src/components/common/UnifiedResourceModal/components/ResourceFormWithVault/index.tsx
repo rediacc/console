@@ -137,9 +137,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               );
             })}
           </Row>
+          {beforeVaultContent}
         </Form>
-
-        {beforeVaultContent}
 
         <Divider className="my-4">{t('vaultEditor.vaultConfiguration')}</Divider>
 

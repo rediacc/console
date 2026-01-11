@@ -3,8 +3,8 @@
  * Persists SSH keys for long-running VS Code sessions
  */
 
-import { existsSync, writeFileSync, unlinkSync, mkdirSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { existsSync, writeFileSync, unlinkSync, mkdirSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { getPlatform } from '../utils/platform.js';
 import type { KeyPersistencePaths } from './types.js';
 
@@ -14,7 +14,7 @@ import type { KeyPersistencePaths } from './types.js';
  */
 function normalizePathForSSH(path: string): string {
   if (getPlatform() === 'windows') {
-    return path.replace(/\\/g, '/');
+    return path.replaceAll('\\', '/');
   }
   return path;
 }
@@ -31,7 +31,7 @@ function getKeysDirectory(): string {
  * Generates a key name from connection info
  */
 function generateKeyName(team: string, machine: string, repository?: string): string {
-  const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sanitize = (s: string) => s.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
 
   if (repository) {
     return `${sanitize(team)}_${sanitize(machine)}_${sanitize(repository)}`;
@@ -84,7 +84,7 @@ export function persistKnownHosts(
   known_hosts: string
 ): string {
   const keysDir = getKeysDirectory();
-  const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sanitize = (s: string) => s.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
   const hostsName = `${sanitize(teamName)}_${sanitize(machineName)}_known_hosts`;
   const hostsPath = join(keysDir, hostsName);
 
@@ -117,7 +117,7 @@ export function getPersistedKeyPaths(
   const keyName = generateKeyName(teamName, machineName, repositoryName);
   const keyPath = join(keysDir, keyName);
 
-  const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sanitize = (s: string) => s.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
   const hostsName = `${sanitize(teamName)}_${sanitize(machineName)}_known_hosts`;
   const hostsPath = join(keysDir, hostsName);
 
@@ -148,7 +148,7 @@ export function removePersistedKeys(
   const keyName = generateKeyName(teamName, machineName, repositoryName);
   const keyPath = join(keysDir, keyName);
 
-  const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sanitize = (s: string) => s.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
   const hostsName = `${sanitize(teamName)}_${sanitize(machineName)}_known_hosts`;
   const hostsPath = join(keysDir, hostsName);
 

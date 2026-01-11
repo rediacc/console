@@ -24,7 +24,7 @@ export function registerAuditCommands(program: Command): void {
           t('commands.audit.log.fetching'),
           () =>
             typedApi.GetAuditLogs({
-              maxRecords: parseInt(options.limit, 10),
+              maxRecords: Number.parseInt(options.limit, 10),
             }),
           t('commands.audit.log.success')
         );

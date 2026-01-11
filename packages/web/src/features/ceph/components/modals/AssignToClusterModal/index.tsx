@@ -173,11 +173,14 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       title={
         <Flex align="center" wrap>
           <CloudServerOutlined />
-          {isBulkMode
-            ? t('machines:bulkActions.assignToCluster')
-            : machine?.cephClusterName
-              ? t('machines:changeClusterAssignment')
-              : t('machines:assignToCluster')}
+          {(() => {
+            if (isBulkMode) {
+              return t('machines:bulkActions.assignToCluster');
+            } else if (machine?.cephClusterName) {
+              return t('machines:changeClusterAssignment');
+            }
+            return t('machines:assignToCluster');
+          })()}
         </Flex>
       }
       open={open}

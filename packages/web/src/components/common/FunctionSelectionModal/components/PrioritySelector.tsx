@@ -90,51 +90,40 @@ const PrioritySelector: React.FC<PrioritySelectorProps> = ({
       </Flex>
       {priority && (
         <Alert
-          message={
-            priority === 1
-              ? t('functions:priorityHighestTimeout')
-              : priority === 2
-                ? t('functions:priorityHighWarning')
-                : priority === 3
-                  ? t('functions:priorityNormalWarning')
-                  : priority === 4
-                    ? t('functions:priorityLowWarning')
-                    : t('functions:priorityLowestWarning')
-          }
-          description={
-            priority === 1 ? (
-              <Flex vertical>
-                <Typography.Text>{t('functions:priorityHighestTimeoutWarning')}</Typography.Text>
-                <Typography.Text className="italic">
-                  {t('functions:priorityHighestDescription')}
-                </Typography.Text>
-              </Flex>
-            ) : priority === 2 ? (
-              t('functions:priorityHighDescription')
-            ) : priority === 3 ? (
-              t('functions:priorityNormalDescription')
-            ) : priority === 4 ? (
-              t('functions:priorityLowDescription')
-            ) : (
-              t('functions:priorityLowestDescription')
-            )
-          }
-          type={
-            priority === 1
-              ? 'error'
-              : priority === 2
-                ? 'warning'
-                : priority === 3
-                  ? 'info'
-                  : 'success'
-          }
-          icon={
-            priority === 1 ? (
-              <ExclamationCircleOutlined />
-            ) : priority === 2 ? (
-              <WarningOutlined />
-            ) : undefined
-          }
+          message={(() => {
+            if (priority === 1) return t('functions:priorityHighestTimeout');
+            if (priority === 2) return t('functions:priorityHighWarning');
+            if (priority === 3) return t('functions:priorityNormalWarning');
+            if (priority === 4) return t('functions:priorityLowWarning');
+            return t('functions:priorityLowestWarning');
+          })()}
+          description={(() => {
+            if (priority === 1) {
+              return (
+                <Flex vertical>
+                  <Typography.Text>{t('functions:priorityHighestTimeoutWarning')}</Typography.Text>
+                  <Typography.Text className="italic">
+                    {t('functions:priorityHighestDescription')}
+                  </Typography.Text>
+                </Flex>
+              );
+            }
+            if (priority === 2) return t('functions:priorityHighDescription');
+            if (priority === 3) return t('functions:priorityNormalDescription');
+            if (priority === 4) return t('functions:priorityLowDescription');
+            return t('functions:priorityLowestDescription');
+          })()}
+          type={(() => {
+            if (priority === 1) return 'error';
+            if (priority === 2) return 'warning';
+            if (priority === 3) return 'info';
+            return 'success';
+          })()}
+          icon={(() => {
+            if (priority === 1) return <ExclamationCircleOutlined />;
+            if (priority === 2) return <WarningOutlined />;
+            return undefined;
+          })()}
         />
       )}
     </Form.Item>

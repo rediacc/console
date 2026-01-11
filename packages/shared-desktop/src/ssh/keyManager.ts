@@ -33,7 +33,7 @@ export function decodeSSHKey(sshKey: string): string {
   }
 
   // Normalize line endings to Unix format (required for SSH compatibility)
-  key = key.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  key = key.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
   // Ensure key ends with single newline
   key = `${key.replace(/\n+$/, '')}\n`;
@@ -93,7 +93,7 @@ export function extractKeyInfo(sshKey: string): ExtractedKeyInfo {
   const decodedKey = decodeSSHKey(sshKey);
 
   // Extract key type from PEM header
-  const keyTypeMatch = decodedKey.match(/-----BEGIN\s+(.+?)\s*-----/);
+  const keyTypeMatch = /-----BEGIN\s+(.+?)\s*-----/.exec(decodedKey);
   const keyType = keyTypeMatch ? keyTypeMatch[1] : 'UNKNOWN';
 
   return {

@@ -34,8 +34,8 @@ export function formatAge(minutes: number): string {
  */
 export function formatPropertyName(key: string): string {
   return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/_/g, ' ')
+    .replaceAll(/([A-Z])/g, ' $1')
+    .replaceAll('_', ' ')
     .replace(/^\s+/, '')
     .split(' ')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -59,7 +59,7 @@ export function formatTimestampAsIs(
   // Expected formats: "2024-01-15T14:30:45.123Z" or "2024-01-15T14:30:45" or "2024-01-15 14:30:45"
 
   // For timestamps in "YYYY-MM-DD HH:mm:ss.fff" or "YYYY-MM-DD HH:mm:ss" format
-  const match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+  const match = /(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/.exec(timestamp);
 
   if (!match) {
     // If the format doesn't match, return the original timestamp
@@ -75,7 +75,7 @@ export function formatTimestampAsIs(
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     case 'full': {
       // Include milliseconds if present
-      const msMatch = timestamp.match(/\.\d{3}/);
+      const msMatch = /\.\d{3}/.exec(timestamp);
       const ms = msMatch ? msMatch[0] : '';
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}${ms}`;
     }
@@ -92,10 +92,10 @@ export function formatTimestampAsIs(
  */
 export function formatDurationFull(seconds: number): string {
   if (seconds < 60) {
-    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+    return `${seconds} second${seconds === 1 ? '' : 's'}`;
   }
   const minutes = Math.floor(seconds / 60);
-  return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
 }
 
 /**

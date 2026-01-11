@@ -56,6 +56,9 @@
       "!**/node_modules/**",
       "!**/dist/**",
       "!**/bin/**",
+      "!**/out/**",
+      "!**/test-results/**",
+      "!**/reports/**",
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts"

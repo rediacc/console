@@ -372,19 +372,19 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           <Flex justify="space-between" className="w-full">
             <Space>
               <Flex className="min-w-0 flex-1 max-w-select">
-                <Flex className="w-full">
-                  <Select
-                    placeholder={t('resources:remoteFiles.selectSource')}
-                    value={selectedSource}
-                    onChange={(value) => {
-                      setSelectedSource(value);
-                      setCurrentPath('');
-                      setSelectedFile('');
-                      setFiles([]);
-                    }}
-                    loading={isLoadingStorage || isLoadingMachines}
-                    notFoundContent={
-                      isLoadingStorage || isLoadingMachines ? (
+                <Select
+                  placeholder={t('resources:remoteFiles.selectSource')}
+                  value={selectedSource}
+                  onChange={(value) => {
+                    setSelectedSource(value);
+                    setCurrentPath('');
+                    setSelectedFile('');
+                    setFiles([]);
+                  }}
+                  loading={isLoadingStorage || isLoadingMachines}
+                  notFoundContent={(() => {
+                    if (isLoadingStorage || isLoadingMachines) {
+                      return (
                         <Flex>
                           <InlineLoadingIndicator
                             width="100%"
@@ -392,17 +392,20 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                             data-testid="file-browser-source-loading"
                           />
                         </Flex>
-                      ) : storageSources.length === 0 ? (
+                      );
+                    } else if (storageSources.length === 0) {
+                      return (
                         <Empty
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                           description={t('resources:remoteFiles.noSources')}
                         />
-                      ) : null
+                      );
                     }
-                    options={storageSources}
-                    data-testid="file-browser-source-select"
-                  />
-                </Flex>
+                    return null;
+                  })()}
+                  options={storageSources}
+                  data-testid="file-browser-source-select"
+                />
               </Flex>
               <Tooltip title={t('resources:remoteFiles.loadFiles')}>
                 <Button

@@ -18,7 +18,7 @@ import {
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import type { RadioChangeEvent } from 'antd/es/radio';
 
-type CommandTab = 'vscode' | 'terminal' | 'desktop';
+type CommandTab = 'vscode' | 'terminal' | 'file-manager';
 type OperatingSystem = 'unix' | 'windows';
 
 interface LocalCommandModalProps {
@@ -121,8 +121,8 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     return `${buildCommandPrefix()} protocol run "${protocolUrl}"`;
   };
 
-  const buildDesktopCommand = (token = '<SECURE_TOKEN>') => {
-    const protocolUrl = buildProtocolUrl(token, 'desktop');
+  const buildFileManagerCommand = (token = '<SECURE_TOKEN>') => {
+    const protocolUrl = buildProtocolUrl(token, 'file-manager');
     return `${buildCommandPrefix()} protocol run "${protocolUrl}"`;
   };
 
@@ -132,7 +132,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   };
 
   const buildTermCommandWithoutToken = () => buildTermCommand('MISSING_TOKEN');
-  const buildDesktopCommandWithoutToken = () => buildDesktopCommand('MISSING_TOKEN');
+  const buildFileManagerCommandWithoutToken = () => buildFileManagerCommand('MISSING_TOKEN');
   const buildVSCodeCommandWithoutToken = () => buildVSCodeCommand('MISSING_TOKEN');
 
   const copyToClipboard = async () => {
@@ -140,24 +140,28 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       setIsGeneratingToken(true);
       const token = await generateForkTokenForCopy(activeTab);
 
-      const commandWithToken =
-        activeTab === 'desktop'
-          ? buildDesktopCommand(token)
-          : activeTab === 'vscode'
-            ? buildVSCodeCommand(token)
-            : buildTermCommand(token);
+      let commandWithToken: string;
+      if (activeTab === 'file-manager') {
+        commandWithToken = buildFileManagerCommand(token);
+      } else if (activeTab === 'vscode') {
+        commandWithToken = buildVSCodeCommand(token);
+      } else {
+        commandWithToken = buildTermCommand(token);
+      }
 
       await navigator.clipboard.writeText(commandWithToken);
       message.success('common:copiedToClipboard');
       onClose();
     } catch {
       try {
-        const fallbackCommand =
-          activeTab === 'desktop'
-            ? buildDesktopCommandWithoutToken()
-            : activeTab === 'vscode'
-              ? buildVSCodeCommandWithoutToken()
-              : buildTermCommandWithoutToken();
+        let fallbackCommand: string;
+        if (activeTab === 'file-manager') {
+          fallbackCommand = buildFileManagerCommandWithoutToken();
+        } else if (activeTab === 'vscode') {
+          fallbackCommand = buildVSCodeCommandWithoutToken();
+        } else {
+          fallbackCommand = buildTermCommandWithoutToken();
+        }
 
         await navigator.clipboard.writeText(fallbackCommand);
         message.warning('common:copiedWithoutToken');
@@ -174,8 +178,8 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     switch (activeTab) {
       case 'terminal':
         return buildTermCommand();
-      case 'desktop':
-        return buildDesktopCommand();
+      case 'file-manager':
+        return buildFileManagerCommand();
       case 'vscode':
       default:
         return buildVSCodeCommand();
@@ -290,14 +294,14 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             ),
           },
           {
-            key: 'desktop',
-            label: t('resources:localCommandBuilder.desktopTab'),
+            key: 'file-manager',
+            label: t('resources:localCommandBuilder.fileManagerTab'),
             icon: <DesktopOutlined />,
             children: (
               <Form layout="vertical">
-                <Form.Item help={t('resources:localCommandBuilder.desktopHelp')}>
+                <Form.Item help={t('resources:localCommandBuilder.fileManagerHelp')}>
                   <Typography.Text>
-                    {t('resources:localCommandBuilder.desktopDescription')}
+                    {t('resources:localCommandBuilder.fileManagerDescription')}
                   </Typography.Text>
                 </Form.Item>
               </Form>
