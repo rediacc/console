@@ -1,9 +1,28 @@
 #!/bin/bash
 # Check GitHub Actions CI status after push
 # Returns JSON for Stop hook: {"decision": "block", "reason": "..."} or allows stop
-# Version: 1.1.1 - Testing Stop hook
+# Version: 1.2.0 - Added AI instructions for CI failures
 
 set -e
+
+# Shared instructions for AI when CI fails
+# Usage: printf "$AI_INSTRUCTIONS" "$RUN_ID"
+AI_INSTRUCTIONS='
+=== INSTRUCTIONS FOR AI ===
+You MUST fix CI failures before proceeding. Follow these steps:
+
+1. INVESTIGATE: Run '\''gh run view %s --log-failed'\'' to see the actual error output
+2. DIAGNOSE: Identify the root cause - do not guess or assume
+3. FIX PROPERLY: Implement a proper long-term solution
+   - Do NOT use workarounds, quick fixes, or '\''skip'\'' options
+   - Do NOT add try/catch blocks just to silence errors
+   - Do NOT disable tests or checks that are failing
+   - Backward compatibility is NOT required - refactor freely if needed
+4. VERIFY: Ensure your fix addresses the actual error message
+5. COMMIT & PUSH: Push the fix and wait for CI to pass
+
+If the failure is in infrastructure/external services, explain clearly why it cannot be fixed in code.
+==========================='
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -112,7 +131,8 @@ if [ "$TOTAL_COUNT" = "0" ]; then
             "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$RUN_ID/jobs" 2>/dev/null | \
             jq -r '[.jobs[] | select(.conclusion == "failure")] | map(.name) | join(", ")' 2>/dev/null || echo "unknown")
 
-        echo '{"decision":"block","reason":"CI FAILED! Run: gh run view '"$RUN_ID"' --log-failed to see errors. Failed jobs: '"$FAILED_JOBS"'"}'
+        INSTRUCTIONS=$(printf "$AI_INSTRUCTIONS" "$RUN_ID")
+        echo "{\"decision\":\"block\",\"reason\":\"CI FAILED! Failed jobs: $FAILED_JOBS$INSTRUCTIONS\"}"
         exit 0
     fi
 
@@ -131,7 +151,11 @@ fi
 
 if [ "$FAILED" -gt 0 ]; then
     FAILED_CHECKS=$(echo "$RESPONSE" | jq -r '[.check_runs[] | select(.conclusion == "failure")] | map(.name) | join(", ")' 2>/dev/null || echo "unknown")
-    echo '{"decision":"block","reason":"CI checks failed: '"$FAILED_CHECKS"'. Run: gh run list --limit 3 to investigate."}'
+    # Get run ID for the failed checks
+    CHECK_RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null || echo "")
+
+    INSTRUCTIONS=$(printf "$AI_INSTRUCTIONS" "$CHECK_RUN_ID")
+    echo "{\"decision\":\"block\",\"reason\":\"CI checks failed: $FAILED_CHECKS$INSTRUCTIONS\"}"
     exit 0
 fi
 
