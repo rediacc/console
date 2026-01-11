@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatBoolean, formatPriority, formatRetryCount, formatStatus } from '../queueFormatters.js';
+import {
+  formatBoolean,
+  formatPriority,
+  formatRetryCount,
+  formatStatus,
+} from '../queueFormatters.js';
 
 // Note: These tests verify the logic of the formatters.
 // The actual output includes ANSI color codes from chalk.

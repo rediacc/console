@@ -116,7 +116,6 @@
     "@rediacc/shared": "*",
     "@types/node": "^22.10.2",
     "@types/ssh2": "^1.15.5",
-    "@vitest/coverage-v8": "^4.0.16",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"
