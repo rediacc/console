@@ -3,8 +3,23 @@
   "version": "0.4.15",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "loupe": "^3.2.1",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@vitest/runner": "^4.0.16",
+    "@vitest/utils": "^4.0.16",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -158,21 +173,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "clean": "rimraf dist",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "loupe": "^3.2.1",
-    "zod": "^4.2.1"
-  },
-  "devDependencies": {
-    "@vitest/runner": "^4.0.16",
-    "@vitest/utils": "^4.0.16",
-    "rimraf": "^6.1.2",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
-  }
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

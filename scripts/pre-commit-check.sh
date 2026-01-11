@@ -12,6 +12,14 @@ cd "$PROJECT_ROOT"
 
 echo "🔍 Running pre-commit checks..."
 
+# 0. Version consistency check (fast, should run first)
+echo "→ Checking version consistency..."
+if ! npm run version:check > /dev/null 2>&1; then
+    echo "❌ Version mismatch detected. Run 'npm run version:list' for details."
+    exit 2
+fi
+echo "✓ Version consistency check passed"
+
 # 1. ESLint (with zero warnings policy)
 echo "→ Running lint..."
 if ! npm run lint -- --max-warnings 0 > /dev/null 2>&1; then
