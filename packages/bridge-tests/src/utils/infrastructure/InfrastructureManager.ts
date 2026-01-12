@@ -251,12 +251,12 @@ export class InfrastructureManager {
   /**
    * Build renet binary if source has changed.
    *
-   * CI Mode: Skips building if VM_RENET_INSTALL_PATH is set (binary pre-extracted from Docker).
+   * CI Mode: Skips building if RENET_BINARY_PATH is set (binary pre-extracted from Docker).
    */
   async buildRenet(): Promise<{ built: boolean; path: string }> {
     // CI mode: skip building if binary was pre-extracted from Docker image
     const renetPath = getRenetBinaryPath();
-    if (process.env.CI === 'true' && process.env.VM_RENET_INSTALL_PATH) {
+    if (process.env.CI === 'true' && process.env.RENET_BINARY_PATH) {
       // eslint-disable-next-line no-console
       console.log('CI Mode: Using pre-extracted renet binary');
       // eslint-disable-next-line no-console
