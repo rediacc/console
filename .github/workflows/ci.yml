@@ -1620,8 +1620,7 @@ jobs:
         working-directory: ops
         run: |
           echo "Provisioning test VMs using ops scripts..."
-          # Use basic mode with minimal VMs for CI
-          ./go up_systems --basic --ci || {
+          ./go up_systems --ci || {
             echo "VM provisioning failed, checking logs..."
             cat /var/log/libvirt/qemu/*.log 2>/dev/null || true
             exit 1
