@@ -78,10 +78,10 @@ jobs:
                 return;
               }
 
-              // Only exit on workflow completion AFTER minimum runtime
-              // This prevents early exit before all jobs have started
-              if (run.status !== 'in_progress' && elapsed >= minRuntime) {
-                console.log(`✅ Workflow status: ${run.status} - exiting watchdog (after ${elapsedSec}s)`);
+              // Only exit when workflow is explicitly completed (not queued or in_progress)
+              // This prevents early exit before all jobs have finished
+              if (run.status === 'completed' && elapsed >= minRuntime) {
+                console.log(`✅ Workflow completed - exiting watchdog (after ${elapsedSec}s)`);
                 return;
               }
 
