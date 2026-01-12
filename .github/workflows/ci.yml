@@ -622,6 +622,33 @@ jobs:
       # ========================================================================
       # BRIDGE TESTS - Run while waiting for other test jobs
       # ========================================================================
+      # Build and install CLI globally BEFORE setup-vms - the action's scripts need rdc
+      - name: Setup Node.js for CLI Build
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: console/package-lock.json
+
+      - name: Install Console Dependencies
+        working-directory: console
+        run: npm ci
+
+      - name: Build CLI
+        working-directory: console
+        run: |
+          npm run build:packages
+          npm run build:cli
+          npm run build:bundle -w @rediacc/cli
+
+      - name: Install CLI Globally
+        working-directory: console/packages/cli
+        run: |
+          npm pack
+          npm install -g rediacc-cli-*.tgz
+          rdc --version
+          echo "✓ CLI installed globally"
+
       # Login BEFORE setup-vms action - the action needs ghcr.io access to pull images
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -660,20 +687,7 @@ jobs:
           /tmp/renet version
           echo "RENET_BINARY_PATH=/tmp/renet" >> $GITHUB_ENV
 
-      - name: Setup Node.js for Bridge Tests
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: console/package-lock.json
-
-      - name: Install Console Dependencies
-        working-directory: console
-        run: npm ci
-
-      - name: Build Shared Libraries
-        working-directory: console
-        run: npm run build:packages
+      # Note: Node.js setup, npm ci, and build:packages already done before VM provisioning
 
       - name: Create Bridge Test Environment
         working-directory: console/packages/bridge-tests
