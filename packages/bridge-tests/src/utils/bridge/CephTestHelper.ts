@@ -1,4 +1,4 @@
-import { BridgeTestRunner, ExecResult } from "./BridgeTestRunner";
+import { BridgeTestRunner, ExecResult } from './BridgeTestRunner';
 
 /**
  * Ceph-specific test utilities for managing pools, images, snapshots, and clones.
@@ -9,14 +9,15 @@ import { BridgeTestRunner, ExecResult } from "./BridgeTestRunner";
  * - Critical teardown ordering for COW clones
  */
 export class CephTestHelper {
-  private runner: BridgeTestRunner;
-  private testId: string;
+  private readonly runner: BridgeTestRunner;
+  private readonly testId: string;
 
   // Track created resources for cleanup
   private createdPools: string[] = [];
-  private createdImages: Map<string, string[]> = new Map(); // pool -> images
-  private createdSnapshots: Map<string, { image: string; snapshots: string[] }[]> = new Map(); // pool -> [{image, snapshots}]
-  private createdClones: Map<string, string[]> = new Map(); // pool -> clones
+  private readonly createdImages: Map<string, string[]> = new Map(); // pool -> images
+  private readonly createdSnapshots: Map<string, { image: string; snapshots: string[] }[]> =
+    new Map(); // pool -> [{image, snapshots}]
+  private readonly createdClones: Map<string, string[]> = new Map(); // pool -> clones
   private mountedClones: string[] = [];
 
   constructor(runner: BridgeTestRunner) {
@@ -32,7 +33,7 @@ export class CephTestHelper {
    * Generate unique pool name for testing.
    */
   generatePoolName(suffix?: string): string {
-    const name = `test-pool-${this.testId}${suffix ? `-${suffix}` : ""}`;
+    const name = `test-pool-${this.testId}${suffix ? `-${suffix}` : ''}`;
     return name;
   }
 
@@ -40,7 +41,7 @@ export class CephTestHelper {
    * Generate unique image name for testing.
    */
   generateImageName(suffix?: string): string {
-    const name = `test-image-${this.testId}${suffix ? `-${suffix}` : ""}`;
+    const name = `test-image-${this.testId}${suffix ? `-${suffix}` : ''}`;
     return name;
   }
 
@@ -48,7 +49,7 @@ export class CephTestHelper {
    * Generate unique snapshot name for testing.
    */
   generateSnapshotName(suffix?: string): string {
-    const name = `test-snap-${this.testId}${suffix ? `-${suffix}` : ""}`;
+    const name = `test-snap-${this.testId}${suffix ? `-${suffix}` : ''}`;
     return name;
   }
 
@@ -56,7 +57,7 @@ export class CephTestHelper {
    * Generate unique clone name for testing.
    */
   generateCloneName(suffix?: string): string {
-    const name = `test-clone-${this.testId}${suffix ? `-${suffix}` : ""}`;
+    const name = `test-clone-${this.testId}${suffix ? `-${suffix}` : ''}`;
     return name;
   }
 
@@ -116,7 +117,7 @@ export class CephTestHelper {
     pool: string,
     image: string,
     snapshot: string,
-    clone: string,
+    clone: string
   ): Promise<ExecResult> {
     const result = await this.runner.cephCloneCreate(pool, image, snapshot, clone);
     if (result.code === 0) {
@@ -147,7 +148,7 @@ export class CephTestHelper {
    * Create a complete Ceph stack: pool -> image -> snapshot -> clone.
    * Returns all created resource names.
    */
-  async createFullStack(imageSize = "1G"): Promise<{
+  async createFullStack(imageSize = '1G'): Promise<{
     pool: string;
     image: string;
     snapshot: string;
@@ -190,7 +191,7 @@ export class CephTestHelper {
     pool: string,
     image: string,
     snapshot: string,
-    clone: string,
+    clone: string
   ): Promise<void> {
     const errors: string[] = [];
 
@@ -202,7 +203,7 @@ export class CephTestHelper {
 
     // 2. Unprotect snapshot (required before deletion)
     const unprotectResult = await this.runner.cephSnapshotUnprotect(pool, image, snapshot);
-    if (unprotectResult.code !== 0 && !unprotectResult.stderr.includes("not protected")) {
+    if (unprotectResult.code !== 0 && !unprotectResult.stderr.includes('not protected')) {
       errors.push(`Snapshot unprotect failed: ${unprotectResult.stderr}`);
     }
 
@@ -225,7 +226,7 @@ export class CephTestHelper {
     }
 
     if (errors.length > 0) {
-      throw new Error(`Teardown errors:\n${errors.join("\n")}`);
+      throw new Error(`Teardown errors:\n${errors.join('\n')}`);
     }
   }
 
@@ -241,6 +242,30 @@ export class CephTestHelper {
     const errors: string[] = [];
 
     // 1. Unmount all mounted clones first (CRITICAL ORDER)
+    await this.cleanupMountedClones(errors);
+
+    // 2. Delete clones
+    await this.cleanupClones(errors);
+
+    // 3. Unprotect and delete snapshots
+    await this.cleanupSnapshots(errors);
+
+    // 4. Delete images
+    await this.cleanupImages(errors);
+
+    // 5. Delete pools last
+    await this.cleanupPools(errors);
+
+    return {
+      success: errors.length === 0,
+      errors,
+    };
+  }
+
+  /**
+   * Unmount all mounted clones.
+   */
+  private async cleanupMountedClones(errors: string[]): Promise<void> {
     for (const clone of this.mountedClones) {
       try {
         const result = await this.runner.cephCloneUnmount(clone);
@@ -252,8 +277,12 @@ export class CephTestHelper {
       }
     }
     this.mountedClones = [];
+  }
 
-    // 2. Delete clones
+  /**
+   * Delete all created clones.
+   */
+  private async cleanupClones(errors: string[]): Promise<void> {
     for (const [pool, clones] of this.createdClones) {
       for (const clone of clones) {
         try {
@@ -267,28 +296,59 @@ export class CephTestHelper {
       }
     }
     this.createdClones.clear();
+  }
 
-    // 3. Unprotect and delete snapshots
+  /**
+   * Unprotect and delete all created snapshots.
+   */
+  private async cleanupSnapshots(errors: string[]): Promise<void> {
     for (const [pool, imageSnapshots] of this.createdSnapshots) {
-      for (const { image, snapshots } of imageSnapshots) {
-        for (const snapshot of snapshots) {
-          try {
-            // Unprotect first
-            await this.runner.cephSnapshotUnprotect(pool, image, snapshot);
-            // Then delete
-            const result = await this.runner.cephSnapshotDelete(pool, image, snapshot);
-            if (result.code !== 0) {
-              errors.push(`Failed to delete snapshot ${snapshot}: ${result.stderr}`);
-            }
-          } catch (e) {
-            errors.push(`Exception deleting snapshot ${snapshot}: ${e}`);
-          }
-        }
-      }
+      await this.cleanupImageSnapshots(pool, imageSnapshots, errors);
     }
     this.createdSnapshots.clear();
+  }
 
-    // 4. Delete images
+  /**
+   * Unprotect and delete snapshots for a specific pool and image set.
+   */
+  private async cleanupImageSnapshots(
+    pool: string,
+    imageSnapshots: { image: string; snapshots: string[] }[],
+    errors: string[]
+  ): Promise<void> {
+    for (const { image, snapshots } of imageSnapshots) {
+      await this.cleanupSnapshotsForImage(pool, image, snapshots, errors);
+    }
+  }
+
+  /**
+   * Unprotect and delete snapshots for a specific image.
+   */
+  private async cleanupSnapshotsForImage(
+    pool: string,
+    image: string,
+    snapshots: string[],
+    errors: string[]
+  ): Promise<void> {
+    for (const snapshot of snapshots) {
+      try {
+        // Unprotect first
+        await this.runner.cephSnapshotUnprotect(pool, image, snapshot);
+        // Then delete
+        const result = await this.runner.cephSnapshotDelete(pool, image, snapshot);
+        if (result.code !== 0) {
+          errors.push(`Failed to delete snapshot ${snapshot}: ${result.stderr}`);
+        }
+      } catch (e) {
+        errors.push(`Exception deleting snapshot ${snapshot}: ${e}`);
+      }
+    }
+  }
+
+  /**
+   * Delete all created images.
+   */
+  private async cleanupImages(errors: string[]): Promise<void> {
     for (const [pool, images] of this.createdImages) {
       for (const image of images) {
         try {
@@ -302,8 +362,12 @@ export class CephTestHelper {
       }
     }
     this.createdImages.clear();
+  }
 
-    // 5. Delete pools last
+  /**
+   * Delete all created pools.
+   */
+  private async cleanupPools(errors: string[]): Promise<void> {
     for (const pool of this.createdPools) {
       try {
         const result = await this.runner.cephPoolDelete(pool);
@@ -315,11 +379,6 @@ export class CephTestHelper {
       }
     }
     this.createdPools = [];
-
-    return {
-      success: errors.length === 0,
-      errors,
-    };
   }
 
   // ===========================================================================

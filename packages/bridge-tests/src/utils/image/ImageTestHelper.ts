@@ -1,7 +1,7 @@
-import { exec, execSync } from "child_process";
-import * as fs from "fs";
-import * as path from "path";
-import { promisify } from "util";
+import { exec, execSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
 
@@ -9,13 +9,13 @@ const execAsync = promisify(exec);
  * Default path to renet binary (relative to tests/bridge directory)
  * tests/bridge/src/utils/image -> renet/bin/renet
  */
-const DEFAULT_RENET_BIN = path.resolve(__dirname, "..", "..", "..", "..", "..", "bin", "renet");
+const DEFAULT_RENET_BIN = path.resolve(__dirname, '..', '..', '..', '..', '..', 'bin', 'renet');
 
 /**
  * Default path to disks directory (where renet saves images when run from tests/bridge)
  * This path is used by renet when executed from the tests/bridge directory
  */
-const DEFAULT_DISKS_PATH = path.resolve(__dirname, "..", "..", "..", "..", "ops", "disks");
+const DEFAULT_DISKS_PATH = path.resolve(__dirname, '..', '..', '..', '..', 'ops', 'disks');
 
 /**
  * OS Image configuration matching pkg/infra/config/images.go
@@ -25,7 +25,7 @@ export interface OSImage {
   url: string;
   distro: string;
   variant: string;
-  family: "debian" | "rhel" | "suse";
+  family: 'debian' | 'rhel' | 'suse';
 }
 
 /**
@@ -57,78 +57,78 @@ export interface ValidationResult {
 export const CONFIGURED_IMAGES: OSImage[] = [
   // Debian family
   {
-    name: "ubuntu-24.04",
-    url: "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img",
-    distro: "ubuntu",
-    variant: "ubuntu24.04",
-    family: "debian",
+    name: 'ubuntu-24.04',
+    url: 'https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img',
+    distro: 'ubuntu',
+    variant: 'ubuntu24.04',
+    family: 'debian',
   },
   {
-    name: "debian-12",
-    url: "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2",
-    distro: "debian",
-    variant: "debian12",
-    family: "debian",
+    name: 'debian-12',
+    url: 'https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2',
+    distro: 'debian',
+    variant: 'debian12',
+    family: 'debian',
   },
 
   // RHEL family
   {
-    name: "centos-10-stream",
-    url: "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-x86_64-10-latest.x86_64.qcow2",
-    distro: "centos",
-    variant: "centos-stream9",
-    family: "rhel",
+    name: 'centos-10-stream',
+    url: 'https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-x86_64-10-latest.x86_64.qcow2',
+    distro: 'centos',
+    variant: 'centos-stream9',
+    family: 'rhel',
   },
   {
-    name: "fedora-43",
-    url: "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2",
-    distro: "fedora",
-    variant: "fedora-unknown",
-    family: "rhel",
+    name: 'fedora-43',
+    url: 'https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2',
+    distro: 'fedora',
+    variant: 'fedora-unknown',
+    family: 'rhel',
   },
   {
-    name: "fedora-41",
-    url: "https://download.fedoraproject.org/pub/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2",
-    distro: "fedora",
-    variant: "fedora-unknown",
-    family: "rhel",
+    name: 'fedora-41',
+    url: 'https://download.fedoraproject.org/pub/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2',
+    distro: 'fedora',
+    variant: 'fedora-unknown',
+    family: 'rhel',
   },
   {
-    name: "oracle-9",
-    url: "https://yum.oracle.com/templates/OracleLinux/OL9/u6/x86_64/OL9U6_x86_64-kvm-b265.qcow2",
-    distro: "oracle",
-    variant: "ol9.0",
-    family: "rhel",
+    name: 'oracle-9',
+    url: 'https://yum.oracle.com/templates/OracleLinux/OL9/u6/x86_64/OL9U6_x86_64-kvm-b265.qcow2',
+    distro: 'oracle',
+    variant: 'ol9.0',
+    family: 'rhel',
   },
   {
-    name: "oracle-8",
-    url: "https://yum.oracle.com/templates/OracleLinux/OL8/u10/x86_64/OL8U10_x86_64-kvm-b258.qcow2",
-    distro: "oracle",
-    variant: "ol8.0",
-    family: "rhel",
+    name: 'oracle-8',
+    url: 'https://yum.oracle.com/templates/OracleLinux/OL8/u10/x86_64/OL8U10_x86_64-kvm-b258.qcow2',
+    distro: 'oracle',
+    variant: 'ol8.0',
+    family: 'rhel',
   },
   {
-    name: "rocky-9",
-    url: "https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2",
-    distro: "rocky",
-    variant: "rocky9-unknown",
-    family: "rhel",
+    name: 'rocky-9',
+    url: 'https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2',
+    distro: 'rocky',
+    variant: 'rocky9-unknown',
+    family: 'rhel',
   },
 
   // SUSE family
   {
-    name: "opensuse-15.6",
-    url: "https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.6/images/openSUSE-Leap-15.6.x86_64-NoCloud.qcow2",
-    distro: "suse",
-    variant: "opensuse15.5",
-    family: "suse",
+    name: 'opensuse-15.6',
+    url: 'https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.6/images/openSUSE-Leap-15.6.x86_64-NoCloud.qcow2',
+    distro: 'suse',
+    variant: 'opensuse15.5',
+    family: 'suse',
   },
   {
-    name: "opensuse-15.5",
-    url: "https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.5/images/openSUSE-Leap-15.5.x86_64-NoCloud.qcow2",
-    distro: "suse",
-    variant: "opensuse15.5",
-    family: "suse",
+    name: 'opensuse-15.5',
+    url: 'https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.5/images/openSUSE-Leap-15.5.x86_64-NoCloud.qcow2',
+    distro: 'suse',
+    variant: 'opensuse15.5',
+    family: 'suse',
   },
 ];
 
@@ -151,9 +151,9 @@ const DEFAULT_BUILD_TIMEOUT = 30 * 60 * 1000;
  * - Managing build artifacts and cleanup
  */
 export class ImageTestHelper {
-  private disksPath: string;
-  private renetBin: string;
-  private buildTimeout: number;
+  private readonly disksPath: string;
+  private readonly renetBin: string;
+  private readonly buildTimeout: number;
 
   constructor(options?: { disksPath?: string; renetBin?: string; buildTimeout?: number }) {
     this.disksPath = options?.disksPath ?? process.env.DISKS_PATH ?? DEFAULT_DISKS_PATH;
@@ -177,7 +177,7 @@ export class ImageTestHelper {
   /**
    * Returns images filtered by distro family
    */
-  getImagesByFamily(family: "debian" | "rhel" | "suse"): OSImage[] {
+  getImagesByFamily(family: 'debian' | 'rhel' | 'suse'): OSImage[] {
     return CONFIGURED_IMAGES.filter((img) => img.family === family);
   }
 
@@ -200,16 +200,16 @@ export class ImageTestHelper {
     if (!image) {
       return {
         success: false,
-        imagePath: "",
+        imagePath: '',
         duration: 0,
-        stdout: "",
-        stderr: "",
+        stdout: '',
+        stderr: '',
         error: `Unknown image: ${imageName}`,
       };
     }
 
     const startTime = Date.now();
-    const forceFlag = force ? "--force" : "";
+    const forceFlag = force ? '--force' : '';
     const cmd = `${this.renetBin} ops image build "${image.url}" ${forceFlag}`.trim();
 
     try {
@@ -234,10 +234,10 @@ export class ImageTestHelper {
 
       return {
         success: false,
-        imagePath: "",
+        imagePath: '',
         duration,
-        stdout: err.stdout ?? "",
-        stderr: err.stderr ?? "",
+        stdout: err.stdout ?? '',
+        stderr: err.stderr ?? '',
         error: err.message ?? String(error),
       };
     }
@@ -253,16 +253,19 @@ export class ImageTestHelper {
     const results = new Map<string, BuildResult>();
 
     for (const image of CONFIGURED_IMAGES) {
+      // eslint-disable-next-line no-console
       console.log(`Building image: ${image.name}...`);
       const result = await this.buildImage(image.name, force);
       results.set(image.name, result);
 
       if (result.success) {
+        // eslint-disable-next-line no-console
         console.log(
-          `  ✓ ${image.name} built successfully (${Math.round(result.duration / 1000)}s)`,
+          `  ✓ ${image.name} built successfully (${Math.round(result.duration / 1000)}s)`
         );
       } else {
-        console.log(`  ✗ ${image.name} failed: ${result.error ?? "unknown error"}`);
+        // eslint-disable-next-line no-console, custom/no-hardcoded-nullish-defaults
+        console.log(`  ✗ ${image.name} failed: ${result.error ?? 'unknown error'}`);
       }
     }
 
@@ -320,10 +323,10 @@ export class ImageTestHelper {
     if (!fs.existsSync(imagePath)) {
       return {
         valid: false,
-        format: "",
+        format: '',
         size: 0,
         compressed: false,
-        error: "Image file does not exist",
+        error: 'Image file does not exist',
       };
     }
 
@@ -331,7 +334,7 @@ export class ImageTestHelper {
     if (size < MIN_IMAGE_SIZE) {
       return {
         valid: false,
-        format: "",
+        format: '',
         size,
         compressed: false,
         error: `Image too small: ${size} bytes (minimum: ${MIN_IMAGE_SIZE})`,
@@ -339,15 +342,15 @@ export class ImageTestHelper {
     }
 
     try {
-      const info = execSync(`qemu-img info "${imagePath}"`, { encoding: "utf-8" });
+      const info = execSync(`qemu-img info "${imagePath}"`, { encoding: 'utf-8' });
 
-      const formatMatch = info.match(/file format: (\w+)/);
-      const format = formatMatch ? formatMatch[1] : "unknown";
+      const formatMatch = /file format: (\w+)/.exec(info);
+      const format = formatMatch ? formatMatch[1] : 'unknown';
 
       // Check for compression indicators in qemu-img output
-      const compressed = info.includes("compressed") || info.includes("compression");
+      const compressed = info.includes('compressed') || info.includes('compression');
 
-      if (format !== "qcow2") {
+      if (format !== 'qcow2') {
         return {
           valid: false,
           format,
@@ -366,7 +369,7 @@ export class ImageTestHelper {
     } catch (error: unknown) {
       return {
         valid: false,
-        format: "",
+        format: '',
         size,
         compressed: false,
         error: `qemu-img info failed: ${(error as Error).message}`,
@@ -395,7 +398,7 @@ export class ImageTestHelper {
     try {
       const files = fs.readdirSync(this.disksPath);
       return files.filter(
-        (f) => f.startsWith("rediacc-") && (f.endsWith(".qcow2") || f.endsWith(".img")),
+        (f) => f.startsWith('rediacc-') && (f.endsWith('.qcow2') || f.endsWith('.img'))
       );
     } catch {
       return [];
@@ -417,7 +420,7 @@ export class ImageTestHelper {
       // Run renet ops image cleanup
       try {
         execSync(`${this.renetBin} ops image cleanup --preserve-custom=false`, {
-          encoding: "utf-8",
+          encoding: 'utf-8',
         });
       } catch {
         // Ignore cleanup errors

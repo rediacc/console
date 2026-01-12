@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
-import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_REPOSITORY_NAME } from "../src/constants";
-import { BridgeTestRunner } from "../src/utils/bridge/BridgeTestRunner";
+import { expect, test } from '@playwright/test';
+import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_REPOSITORY_NAME } from '../src/constants';
+import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 
 /**
  * Container Operations Tests (11 functions)
@@ -26,9 +26,9 @@ import { BridgeTestRunner } from "../src/utils/bridge/BridgeTestRunner";
  * - Container to be created via docker-compose/Rediaccfile
  */
 
-const TEST_PASSWORD = "testpassword123";
+const TEST_PASSWORD = 'testpassword123';
 
-test.describe("Container Operations @bridge", () => {
+test.describe('Container Operations @bridge', () => {
   let runner: BridgeTestRunner;
   const testRepo = `container-ops-${Date.now()}`;
   const testContainer = `nginx-ops-${Date.now()}`;
@@ -40,7 +40,7 @@ test.describe("Container Operations @bridge", () => {
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
-    await runner.datastoreInit("5G", datastorePath, true);
+    await runner.datastoreInit('5G', datastorePath, true);
 
     // 2. Setup and start daemon (required for Docker socket)
     const setupResult = await runner.daemonSetup(networkId);
@@ -53,24 +53,24 @@ test.describe("Container Operations @bridge", () => {
     }
 
     // 3. Create repository
-    const repoResult = await runner.repositoryNew(testRepo, "1G", TEST_PASSWORD, datastorePath);
+    const repoResult = await runner.repositoryNew(testRepo, '1G', TEST_PASSWORD, datastorePath);
     if (!runner.isSuccess(repoResult)) {
       throw new Error(`repository_new failed: ${runner.getCombinedOutput(repoResult)}`);
     }
 
     // 4. Write Rediaccfile (nginx)
-    const rediaccfile = runner.readFixture("bridge/Rediaccfile.nginx");
-    await runner.writeFileToRepository(testRepo, "Rediaccfile", rediaccfile, datastorePath);
+    const rediaccfile = runner.readFixture('bridge/Rediaccfile.nginx');
+    await runner.writeFileToRepository(testRepo, 'Rediaccfile', rediaccfile, datastorePath);
 
     // 5. Write docker-compose with unique container name
     const dockerCompose = runner
-      .readFixture("bridge/docker-compose.nginx.yaml")
-      .replace(/\$\{CONTAINER_NAME\}/g, testContainer);
+      .readFixture('bridge/docker-compose.nginx.yaml')
+      .replaceAll('${CONTAINER_NAME}', testContainer);
     await runner.writeFileToRepository(
       testRepo,
-      "docker-compose.yaml",
+      'docker-compose.yaml',
       dockerCompose,
-      datastorePath,
+      datastorePath
     );
 
     // 6. Start services (creates container)
@@ -102,26 +102,26 @@ test.describe("Container Operations @bridge", () => {
   // Basic Container Operations
   // ===========================================================================
 
-  test("container_start should not have shell syntax errors", async () => {
+  test('container_start should not have shell syntax errors', async () => {
     // Container is already running from setup, so start might return success or "already started"
     const result = await runner.containerStart(testContainer, testRepo, datastorePath, networkId);
     // Accept both success and "already running" as valid outcomes
-    expect(result.code === 0 || result.stderr.includes("already")).toBe(true);
+    expect(result.code === 0 || result.stderr.includes('already')).toBe(true);
   });
 
-  test("container_stop should not have shell syntax errors", async () => {
+  test('container_stop should not have shell syntax errors', async () => {
     const result = await runner.containerStop(testContainer, testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_restart should not have shell syntax errors", async () => {
+  test('container_restart should not have shell syntax errors', async () => {
     // First start the container again
     await runner.containerStart(testContainer, testRepo, datastorePath, networkId);
     const result = await runner.containerRestart(testContainer, testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_kill should not have shell syntax errors", async () => {
+  test('container_kill should not have shell syntax errors', async () => {
     // Ensure container is running first
     await runner.containerStart(testContainer, testRepo, datastorePath, networkId);
     const result = await runner.containerKill(testContainer, testRepo, datastorePath, networkId);
@@ -132,14 +132,14 @@ test.describe("Container Operations @bridge", () => {
   // Container State Operations
   // ===========================================================================
 
-  test("container_pause should not have shell syntax errors", async () => {
+  test('container_pause should not have shell syntax errors', async () => {
     // Start container first
     await runner.containerStart(testContainer, testRepo, datastorePath, networkId);
     const result = await runner.containerPause(testContainer, testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_unpause should not have shell syntax errors", async () => {
+  test('container_unpause should not have shell syntax errors', async () => {
     // Container should be paused from previous test, unpause it
     const result = await runner.containerUnpause(testContainer, testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
@@ -149,24 +149,24 @@ test.describe("Container Operations @bridge", () => {
   // Container Information Operations
   // ===========================================================================
 
-  test("container_logs should not have shell syntax errors", async () => {
+  test('container_logs should not have shell syntax errors', async () => {
     const result = await runner.containerLogs(testContainer, testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_inspect should not have shell syntax errors", async () => {
+  test('container_inspect should not have shell syntax errors', async () => {
     const result = await runner.containerInspect(testContainer, testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_stats should not have shell syntax errors", async () => {
+  test('container_stats should not have shell syntax errors', async () => {
     // Ensure container is running for stats
     await runner.containerStart(testContainer, testRepo, datastorePath, networkId);
     const result = await runner.containerStats(testContainer, testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_list should not have shell syntax errors", async () => {
+  test('container_list should not have shell syntax errors', async () => {
     const result = await runner.containerList(testRepo, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
@@ -175,37 +175,37 @@ test.describe("Container Operations @bridge", () => {
   // Container Exec Operation
   // ===========================================================================
 
-  test("container_exec should not have shell syntax errors", async () => {
+  test('container_exec should not have shell syntax errors', async () => {
     // Ensure container is running for exec
     await runner.containerStart(testContainer, testRepo, datastorePath, networkId);
     const result = await runner.containerExec(
       testContainer,
-      "echo hello",
+      'echo hello',
       testRepo,
       datastorePath,
-      networkId,
+      networkId
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_exec with complex command should handle correctly", async () => {
+  test('container_exec with complex command should handle correctly', async () => {
     const result = await runner.containerExec(
       testContainer,
-      "ls -la / && cat /etc/os-release",
+      'ls -la / && cat /etc/os-release',
       testRepo,
       datastorePath,
-      networkId,
+      networkId
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("container_exec with quotes should handle correctly", async () => {
+  test('container_exec with quotes should handle correctly', async () => {
     const result = await runner.containerExec(
       testContainer,
       'echo "hello world"',
       testRepo,
       datastorePath,
-      networkId,
+      networkId
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
@@ -217,7 +217,7 @@ test.describe("Container Operations @bridge", () => {
  * Tests container lifecycle in proper order with a real container.
  */
 test.describe
-  .serial("Container Lifecycle @bridge @lifecycle", () => {
+  .serial('Container Lifecycle @bridge @lifecycle', () => {
     let runner: BridgeTestRunner;
     const repositoryName = `container-lifecycle-${Date.now()}`;
     const containerName = `nginx-lifecycle-${Date.now()}`;
@@ -229,7 +229,7 @@ test.describe
       await runner.resetWorkerState();
 
       // 1. Initialize datastore
-      await runner.datastoreInit("5G", datastorePath, true);
+      await runner.datastoreInit('5G', datastorePath, true);
 
       // 2. Setup and start daemon
       const setupResult = await runner.daemonSetup(networkId);
@@ -242,24 +242,29 @@ test.describe
       }
 
       // 3. Create repository
-      const repoResult = await runner.repositoryNew(repositoryName, "1G", TEST_PASSWORD, datastorePath);
+      const repoResult = await runner.repositoryNew(
+        repositoryName,
+        '1G',
+        TEST_PASSWORD,
+        datastorePath
+      );
       if (!runner.isSuccess(repoResult)) {
         throw new Error(`repository_new failed: ${runner.getCombinedOutput(repoResult)}`);
       }
 
       // 4. Write Rediaccfile (nginx)
-      const rediaccfile = runner.readFixture("bridge/Rediaccfile.nginx");
-      await runner.writeFileToRepository(repositoryName, "Rediaccfile", rediaccfile, datastorePath);
+      const rediaccfile = runner.readFixture('bridge/Rediaccfile.nginx');
+      await runner.writeFileToRepository(repositoryName, 'Rediaccfile', rediaccfile, datastorePath);
 
       // 5. Write docker-compose with unique container name
       const dockerCompose = runner
-        .readFixture("bridge/docker-compose.nginx.yaml")
-        .replace(/\$\{CONTAINER_NAME\}/g, containerName);
+        .readFixture('bridge/docker-compose.nginx.yaml')
+        .replaceAll('${CONTAINER_NAME}', containerName);
       await runner.writeFileToRepository(
         repositoryName,
-        "docker-compose.yaml",
+        'docker-compose.yaml',
         dockerCompose,
-        datastorePath,
+        datastorePath
       );
 
       // 6. Start services (creates container)
@@ -284,83 +289,108 @@ test.describe
       await runner.daemonTeardown(networkId);
     });
 
-    test("1. container_list: list containers initially", async () => {
+    test('1. container_list: list containers initially', async () => {
       const result = await runner.containerList(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("2. container_start: start container", async () => {
-      const result = await runner.containerStart(containerName, repositoryName, datastorePath, networkId);
+    test('2. container_start: start container', async () => {
+      const result = await runner.containerStart(
+        containerName,
+        repositoryName,
+        datastorePath,
+        networkId
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("3. container_list: verify container started", async () => {
+    test('3. container_list: verify container started', async () => {
       const result = await runner.containerList(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("4. container_inspect: get container details", async () => {
+    test('4. container_inspect: get container details', async () => {
       const result = await runner.containerInspect(
         containerName,
         repositoryName,
         datastorePath,
-        networkId,
+        networkId
       );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("5. container_stats: get container stats", async () => {
-      const result = await runner.containerStats(containerName, repositoryName, datastorePath, networkId);
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
-    test("6. container_exec: run command in container", async () => {
-      const result = await runner.containerExec(
+    test('5. container_stats: get container stats', async () => {
+      const result = await runner.containerStats(
         containerName,
-        "hostname",
         repositoryName,
         datastorePath,
-        networkId,
+        networkId
       );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("7. container_logs: get container logs", async () => {
-      const result = await runner.containerLogs(containerName, repositoryName, datastorePath, networkId);
+    test('6. container_exec: run command in container', async () => {
+      const result = await runner.containerExec(
+        containerName,
+        'hostname',
+        repositoryName,
+        datastorePath,
+        networkId
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("8. container_pause: pause container", async () => {
-      const result = await runner.containerPause(containerName, repositoryName, datastorePath, networkId);
+    test('7. container_logs: get container logs', async () => {
+      const result = await runner.containerLogs(
+        containerName,
+        repositoryName,
+        datastorePath,
+        networkId
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("9. container_unpause: unpause container", async () => {
+    test('8. container_pause: pause container', async () => {
+      const result = await runner.containerPause(
+        containerName,
+        repositoryName,
+        datastorePath,
+        networkId
+      );
+      expect(runner.isSuccess(result)).toBe(true);
+    });
+
+    test('9. container_unpause: unpause container', async () => {
       const result = await runner.containerUnpause(
         containerName,
         repositoryName,
         datastorePath,
-        networkId,
+        networkId
       );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("10. container_restart: restart container", async () => {
+    test('10. container_restart: restart container', async () => {
       const result = await runner.containerRestart(
         containerName,
         repositoryName,
         datastorePath,
-        networkId,
+        networkId
       );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("11. container_stop: stop container", async () => {
-      const result = await runner.containerStop(containerName, repositoryName, datastorePath, networkId);
+    test('11. container_stop: stop container', async () => {
+      const result = await runner.containerStop(
+        containerName,
+        repositoryName,
+        datastorePath,
+        networkId
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("12. container_list: verify container stopped", async () => {
+    test('12. container_list: verify container stopped', async () => {
       const result = await runner.containerList(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
@@ -372,7 +402,7 @@ test.describe
  * Tests error handling for container operations on non-existent containers.
  * These tests verify that operations fail gracefully with clear errors.
  */
-test.describe("Container Error Handling @bridge", () => {
+test.describe('Container Error Handling @bridge', () => {
   let runner: BridgeTestRunner;
   const networkId = DEFAULT_NETWORK_ID;
   const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -396,15 +426,15 @@ test.describe("Container Error Handling @bridge", () => {
     await runner.daemonTeardown(networkId);
   });
 
-  test("operations on nonexistent container should handle gracefully", async () => {
-    const nonexistent = "nonexistent-container-xyz-12345";
+  test('operations on nonexistent container should handle gracefully', async () => {
+    const nonexistent = 'nonexistent-container-xyz-12345';
 
     // These operations should FAIL (not succeed) because container doesn't exist
     const stopResult = await runner.containerStop(
       nonexistent,
       TEST_REPOSITORY_NAME,
       datastorePath,
-      networkId,
+      networkId
     );
     expect(runner.isSuccess(stopResult)).toBe(false);
 
@@ -412,7 +442,7 @@ test.describe("Container Error Handling @bridge", () => {
       nonexistent,
       TEST_REPOSITORY_NAME,
       datastorePath,
-      networkId,
+      networkId
     );
     expect(runner.isSuccess(logsResult)).toBe(false);
 
@@ -420,41 +450,41 @@ test.describe("Container Error Handling @bridge", () => {
       nonexistent,
       TEST_REPOSITORY_NAME,
       datastorePath,
-      networkId,
+      networkId
     );
     expect(runner.isSuccess(inspectResult)).toBe(false);
   });
 
-  test("container_exec on stopped container should handle gracefully", async () => {
+  test('container_exec on stopped container should handle gracefully', async () => {
     const result = await runner.containerExec(
-      "nonexistent-stopped-container",
-      "echo test",
+      'nonexistent-stopped-container',
+      'echo test',
       TEST_REPOSITORY_NAME,
       datastorePath,
-      networkId,
+      networkId
     );
     // Should fail because container doesn't exist
     expect(runner.isSuccess(result)).toBe(false);
   });
 
-  test("container_pause on nonexistent container should handle gracefully", async () => {
+  test('container_pause on nonexistent container should handle gracefully', async () => {
     const result = await runner.containerPause(
-      "nonexistent-paused-container",
+      'nonexistent-paused-container',
       TEST_REPOSITORY_NAME,
       datastorePath,
-      networkId,
+      networkId
     );
     // Should fail because container doesn't exist
     expect(runner.isSuccess(result)).toBe(false);
   });
 
-  test("container with special characters in name should handle correctly", async () => {
+  test('container with special characters in name should handle correctly', async () => {
     // Valid container name with underscores and numbers - but container doesn't exist
     const result = await runner.containerStart(
-      "special-name_123",
+      'special-name_123',
       TEST_REPOSITORY_NAME,
       datastorePath,
-      networkId,
+      networkId
     );
     // Should fail because container doesn't exist
     expect(runner.isSuccess(result)).toBe(false);
@@ -466,7 +496,7 @@ test.describe("Container Error Handling @bridge", () => {
  *
  * Tests operations on multiple containers using a multi-service docker-compose.
  */
-test.describe("Multiple Container Operations @bridge", () => {
+test.describe('Multiple Container Operations @bridge', () => {
   let runner: BridgeTestRunner;
   const repositoryName = `multi-container-${Date.now()}`;
   const container1 = `nginx-multi1-${Date.now()}`;
@@ -479,7 +509,7 @@ test.describe("Multiple Container Operations @bridge", () => {
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
-    await runner.datastoreInit("5G", datastorePath, true);
+    await runner.datastoreInit('5G', datastorePath, true);
 
     // 2. Setup and start daemon
     const setupResult = await runner.daemonSetup(networkId);
@@ -492,14 +522,19 @@ test.describe("Multiple Container Operations @bridge", () => {
     }
 
     // 3. Create repository
-    const repoResult = await runner.repositoryNew(repositoryName, "1G", TEST_PASSWORD, datastorePath);
+    const repoResult = await runner.repositoryNew(
+      repositoryName,
+      '1G',
+      TEST_PASSWORD,
+      datastorePath
+    );
     if (!runner.isSuccess(repoResult)) {
       throw new Error(`repository_new failed: ${runner.getCombinedOutput(repoResult)}`);
     }
 
     // 4. Write Rediaccfile
-    const rediaccfile = runner.readFixture("bridge/Rediaccfile.nginx");
-    await runner.writeFileToRepository(repositoryName, "Rediaccfile", rediaccfile, datastorePath);
+    const rediaccfile = runner.readFixture('bridge/Rediaccfile.nginx');
+    await runner.writeFileToRepository(repositoryName, 'Rediaccfile', rediaccfile, datastorePath);
 
     // 5. Write docker-compose with TWO containers
     const dockerCompose = `services:
@@ -514,9 +549,9 @@ test.describe("Multiple Container Operations @bridge", () => {
 `;
     await runner.writeFileToRepository(
       repositoryName,
-      "docker-compose.yaml",
+      'docker-compose.yaml',
       dockerCompose,
-      datastorePath,
+      datastorePath
     );
 
     // 6. Start services (creates both containers)
@@ -538,17 +573,22 @@ test.describe("Multiple Container Operations @bridge", () => {
     await runner.daemonTeardown(networkId);
   });
 
-  test("starting multiple containers should work", async () => {
+  test('starting multiple containers should work', async () => {
     const containers = [container1, container2];
 
     for (const container of containers) {
       // Containers may already be running, so accept both success and "already running"
-      const result = await runner.containerStart(container, repositoryName, datastorePath, networkId);
-      expect(result.code === 0 || result.stderr.includes("already")).toBe(true);
+      const result = await runner.containerStart(
+        container,
+        repositoryName,
+        datastorePath,
+        networkId
+      );
+      expect(result.code === 0 || result.stderr.includes('already')).toBe(true);
     }
   });
 
-  test("listing all containers should work", async () => {
+  test('listing all containers should work', async () => {
     const result = await runner.containerList(repositoryName, datastorePath, networkId);
     expect(runner.isSuccess(result)).toBe(true);
     // Verify both containers are in the list
@@ -557,11 +597,16 @@ test.describe("Multiple Container Operations @bridge", () => {
     expect(output).toContain(container2);
   });
 
-  test("stopping multiple containers should work", async () => {
+  test('stopping multiple containers should work', async () => {
     const containers = [container1, container2];
 
     for (const container of containers) {
-      const result = await runner.containerStop(container, repositoryName, datastorePath, networkId);
+      const result = await runner.containerStop(
+        container,
+        repositoryName,
+        datastorePath,
+        networkId
+      );
       expect(runner.isSuccess(result)).toBe(true);
     }
   });

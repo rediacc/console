@@ -1,5 +1,5 @@
-import { BridgeTestRunner, ExecResult } from "./BridgeTestRunner";
-import { DEFAULT_DATASTORE_PATH } from "../../constants";
+import { BridgeTestRunner, ExecResult } from './BridgeTestRunner';
+import { DEFAULT_DATASTORE_PATH } from '../../constants';
 
 /**
  * Test resource manager for tracking and cleaning up resources created during tests.
@@ -13,14 +13,14 @@ import { DEFAULT_DATASTORE_PATH } from "../../constants";
  * Ensures proper cleanup in the correct order to avoid orphaned resources.
  */
 export class TestResourceManager {
-  private runner: BridgeTestRunner;
-  private testId: string;
-  private datastorePath: string;
+  private readonly runner: BridgeTestRunner;
+  private readonly testId: string;
+  private readonly datastorePath: string;
 
   // Track created resources
   private createdRepositories: string[] = [];
   private mountedRepositories: string[] = [];
-  private startedContainers: Map<string, string[]> = new Map(); // repository -> containers
+  private readonly startedContainers: Map<string, string[]> = new Map(); // repository -> containers
   private startedDaemons: string[] = []; // repository names with daemons running
 
   constructor(runner: BridgeTestRunner, datastorePath?: string) {
@@ -37,21 +37,21 @@ export class TestResourceManager {
    * Generate unique repository name for testing.
    */
   generateRepositoryName(suffix?: string): string {
-    return `test-repo-${this.testId}${suffix ? `-${suffix}` : ""}`;
+    return `test-repo-${this.testId}${suffix ? `-${suffix}` : ''}`;
   }
 
   /**
    * Generate unique container name for testing.
    */
   generateContainerName(suffix?: string): string {
-    return `test-container-${this.testId}${suffix ? `-${suffix}` : ""}`;
+    return `test-container-${this.testId}${suffix ? `-${suffix}` : ''}`;
   }
 
   /**
    * Generate unique checkpoint name for testing.
    */
   generateCheckpointName(suffix?: string): string {
-    return `test-ckpt-${this.testId}${suffix ? `-${suffix}` : ""}`;
+    return `test-ckpt-${this.testId}${suffix ? `-${suffix}` : ''}`;
   }
 
   // ===========================================================================
@@ -152,7 +152,7 @@ export class TestResourceManager {
       if (containers) {
         this.startedContainers.set(
           repository,
-          containers.filter((c) => c !== containerName),
+          containers.filter((c) => c !== containerName)
         );
       }
     }
@@ -169,7 +169,7 @@ export class TestResourceManager {
   async createAndMountRepository(
     size: string,
     password?: string,
-    suffix?: string,
+    suffix?: string
   ): Promise<{ name: string; mounted: boolean }> {
     const name = this.generateRepositoryName(suffix);
 
@@ -194,7 +194,7 @@ export class TestResourceManager {
   async createMountAndStart(
     size: string,
     password?: string,
-    suffix?: string,
+    suffix?: string
   ): Promise<{ name: string; started: boolean }> {
     const { name } = await this.createAndMountRepository(size, password, suffix);
 
@@ -225,6 +225,24 @@ export class TestResourceManager {
     const errors: string[] = [];
 
     // 1. Stop all started containers
+    await this.cleanupContainers(errors);
+
+    // 2. Stop all daemons (down)
+    await this.cleanupDaemons(errors);
+
+    // 3. Unmount all mounted repositories
+    await this.cleanupMountedRepositories(errors);
+
+    // 4. Delete all created repositories
+    await this.cleanupCreatedRepositories(errors);
+
+    return {
+      success: errors.length === 0,
+      errors,
+    };
+  }
+
+  private async cleanupContainers(errors: string[]): Promise<void> {
     for (const [repository, containers] of this.startedContainers) {
       for (const container of containers) {
         try {
@@ -238,8 +256,9 @@ export class TestResourceManager {
       }
     }
     this.startedContainers.clear();
+  }
 
-    // 2. Stop all daemons (down)
+  private async cleanupDaemons(errors: string[]): Promise<void> {
     for (const repository of this.startedDaemons) {
       try {
         const result = await this.runner.repositoryDown(repository, this.datastorePath);
@@ -251,8 +270,9 @@ export class TestResourceManager {
       }
     }
     this.startedDaemons = [];
+  }
 
-    // 3. Unmount all mounted repositories
+  private async cleanupMountedRepositories(errors: string[]): Promise<void> {
     for (const repository of this.mountedRepositories) {
       try {
         const result = await this.runner.repositoryUnmount(repository, this.datastorePath);
@@ -264,8 +284,9 @@ export class TestResourceManager {
       }
     }
     this.mountedRepositories = [];
+  }
 
-    // 4. Delete all created repositories
+  private async cleanupCreatedRepositories(errors: string[]): Promise<void> {
     for (const repository of this.createdRepositories) {
       try {
         const result = await this.runner.repositoryRm(repository, this.datastorePath);
@@ -277,11 +298,6 @@ export class TestResourceManager {
       }
     }
     this.createdRepositories = [];
-
-    return {
-      success: errors.length === 0,
-      errors,
-    };
   }
 
   // ===========================================================================

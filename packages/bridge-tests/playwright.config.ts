@@ -1,8 +1,8 @@
-import * as test from "@playwright/test";
-import dotenv from "dotenv";
-import path from "path";
+import path from 'node:path';
+import * as test from '@playwright/test';
+import dotenv from 'dotenv';
 
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * Playwright configuration for bridge/renet tests.
@@ -17,10 +17,10 @@ dotenv.config({ path: path.resolve(__dirname, ".env") });
  * - Longer timeouts and more retries for stability
  */
 export default test.defineConfig({
-  testDir: "./tests",
+  testDir: './tests',
   /* Global setup ensures infrastructure is running */
-  globalSetup: require.resolve("./src/base/bridge-global-setup"),
-  globalTeardown: require.resolve("./src/base/bridge-global-teardown"),
+  globalSetup: require.resolve('./src/base/bridge-global-setup'),
+  globalTeardown: require.resolve('./src/base/bridge-global-teardown'),
   /* Run tests in files sequentially to preserve ordering in reports */
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -33,8 +33,8 @@ export default test.defineConfig({
   timeout: process.env.CI ? 600000 : 300000,
   /* Reporters: HTML report + text file output for each test */
   reporter: [
-    ["html", { outputFolder: "reports/bridge" }],
-    ["./src/reporters/TextFileReporter.ts", { outputDir: "reports/bridge-logs" }],
+    ['html', { outputFolder: 'reports/bridge' }],
+    ['./src/reporters/TextFileReporter.ts', { outputDir: 'reports/bridge-logs' }],
   ],
   /* No browser needed for bridge tests */
   use: {
@@ -44,27 +44,27 @@ export default test.defineConfig({
    * Order maintained by: workers:1 + fullyParallel:false + alphanumeric file naming
    * No dependencies = tests continue even when some fail */
   projects: [
-    { name: "test-01", testMatch: "01-*.test.ts" },
-    { name: "test-02", testMatch: "02-*.test.ts" },
-    { name: "test-03", testMatch: "03-*.test.ts" },
-    { name: "test-04", testMatch: "04-*.test.ts" },
-    { name: "test-05", testMatch: "05-*.test.ts" },
-    { name: "test-06", testMatch: "06-*.test.ts" },
-    { name: "test-07", testMatch: "07-*.test.ts" },
-    { name: "test-08", testMatch: "08-*.test.ts" },
-    { name: "test-09", testMatch: "09-*.test.ts" },
-    { name: "test-10", testMatch: "10-*.test.ts" },
-    { name: "test-11", testMatch: "11-*.test.ts" },
-    { name: "test-12", testMatch: "12-*.test.ts" },
-    { name: "test-13", testMatch: "13-*.test.ts" },
-    { name: "test-14", testMatch: "14-*.test.ts" },
-    { name: "test-15", testMatch: "15-*.test.ts" },
-    { name: "test-16", testMatch: "16-*.test.ts" },
-    { name: "test-17", testMatch: "17-*.test.ts" },
-    { name: "test-18", testMatch: "18-*.test.ts" },
-    { name: "test-19", testMatch: "19-*.test.ts" },
-    { name: "test-20", testMatch: "20-*.test.ts" },
-    { name: "test-21", testMatch: "21-*.test.ts" },
-    { name: "test-22", testMatch: "22-*.test.ts" },
+    { name: 'test-01', testMatch: '01-*.test.ts' },
+    { name: 'test-02', testMatch: '02-*.test.ts' },
+    { name: 'test-03', testMatch: '03-*.test.ts' },
+    { name: 'test-04', testMatch: '04-*.test.ts' },
+    { name: 'test-05', testMatch: '05-*.test.ts' },
+    { name: 'test-06', testMatch: '06-*.test.ts' },
+    { name: 'test-07', testMatch: '07-*.test.ts' },
+    { name: 'test-08', testMatch: '08-*.test.ts' },
+    { name: 'test-09', testMatch: '09-*.test.ts' },
+    { name: 'test-10', testMatch: '10-*.test.ts' },
+    { name: 'test-11', testMatch: '11-*.test.ts' },
+    { name: 'test-12', testMatch: '12-*.test.ts' },
+    { name: 'test-13', testMatch: '13-*.test.ts' },
+    { name: 'test-14', testMatch: '14-*.test.ts' },
+    { name: 'test-15', testMatch: '15-*.test.ts' },
+    { name: 'test-16', testMatch: '16-*.test.ts' },
+    { name: 'test-17', testMatch: '17-*.test.ts' },
+    { name: 'test-18', testMatch: '18-*.test.ts' },
+    { name: 'test-19', testMatch: '19-*.test.ts' },
+    { name: 'test-20', testMatch: '20-*.test.ts' },
+    { name: 'test-21', testMatch: '21-*.test.ts' },
+    { name: 'test-22', testMatch: '22-*.test.ts' },
   ],
 });

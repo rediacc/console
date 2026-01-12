@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type {
   FullConfig,
   FullResult,
@@ -7,7 +7,9 @@ import type {
   Suite,
   TestCase,
   TestResult,
-} from "@playwright/test/reporter";
+} from '@playwright/test/reporter';
+
+const DEFAULT_OUTPUT_DIR = 'test-outputs';
 
 /**
  * Custom Playwright reporter that saves each test's output to a text file.
@@ -22,12 +24,12 @@ import type {
  *   └── summary.txt
  */
 export default class TextFileReporter implements Reporter {
-  private outputDir: string;
-  private testResults: Map<string, { test: TestCase; result: TestResult }> = new Map();
+  private readonly outputDir: string;
+  private readonly testResults: Map<string, { test: TestCase; result: TestResult }> = new Map();
   private startTime: Date = new Date();
 
   constructor(options: { outputDir?: string } = {}) {
-    this.outputDir = options.outputDir ?? "test-outputs";
+    this.outputDir = options.outputDir ?? DEFAULT_OUTPUT_DIR;
   }
 
   onBegin(_config: FullConfig, _suite: Suite): void {
@@ -35,6 +37,7 @@ export default class TextFileReporter implements Reporter {
     // Ensure output directory exists
     fs.mkdirSync(this.outputDir, { recursive: true });
 
+    // eslint-disable-next-line no-console
     console.log(`[TextFileReporter] Output directory: ${path.resolve(this.outputDir)}`);
   }
 
@@ -44,7 +47,7 @@ export default class TextFileReporter implements Reporter {
 
   onTestEnd(test: TestCase, result: TestResult): void {
     // Get the test file name (without extension) for folder name
-    const testFile = path.basename(test.location.file, ".test.ts");
+    const testFile = path.basename(test.location.file, '.test.ts');
     const folderPath = path.join(this.outputDir, testFile);
 
     // Create folder if it doesn't exist
@@ -60,11 +63,12 @@ export default class TextFileReporter implements Reporter {
     const content = this.buildTestOutput(test, result);
 
     // Write to file
-    fs.writeFileSync(filePath, content, "utf-8");
+    fs.writeFileSync(filePath, content, 'utf-8');
 
     const timestamp = result.startTime.toISOString();
     const durationSeconds = (result.duration / 1000).toFixed(1);
-    const titlePath = test.titlePath().join(" > ");
+    const titlePath = test.titlePath().join(' > ');
+    // eslint-disable-next-line no-console
     console.log(`[${timestamp}] ${titlePath} (${durationSeconds}s, ${result.status})`);
 
     // Store for summary
@@ -76,19 +80,21 @@ export default class TextFileReporter implements Reporter {
     const duration = (endTime.getTime() - this.startTime.getTime()) / 1000;
 
     // Write summary file
-    const summaryPath = path.join(this.outputDir, "summary.txt");
+    const summaryPath = path.join(this.outputDir, 'summary.txt');
     const summary = this.buildSummary(result, duration);
-    fs.writeFileSync(summaryPath, summary, "utf-8");
+    fs.writeFileSync(summaryPath, summary, 'utf-8');
 
+    // eslint-disable-next-line no-console
     console.log(`[TextFileReporter] Results saved to ${path.resolve(this.outputDir)}`);
+    // eslint-disable-next-line no-console
     console.log(`[TextFileReporter] Summary: ${summaryPath}`);
   }
 
   private sanitizeFilename(title: string): string {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+      .replaceAll(/[^a-z0-9]+/g, '-')
+      .replaceAll(/^-+|-+$/g, '')
       .substring(0, 100);
   }
 
@@ -97,27 +103,24 @@ export default class TextFileReporter implements Reporter {
    * Go loggers often escape newlines in msg= fields.
    */
   private unescapeLogOutput(text: string): string {
-    return text.replace(/\\n/g, "\n").replace(/\\t/g, "\t");
+    return text.replaceAll('\\n', '\n').replaceAll('\\t', '\t');
   }
 
-  private buildTestOutput(test: TestCase, result: TestResult): string {
-    const lines: string[] = [];
-
-    // Header
-    lines.push("=".repeat(80));
+  private addTestHeader(lines: string[], test: TestCase, result: TestResult): void {
+    lines.push('='.repeat(80));
     lines.push(`TEST: ${test.title}`);
-    lines.push("=".repeat(80));
-    lines.push("");
+    lines.push('='.repeat(80));
+    lines.push('');
 
-    // Test info
     lines.push(`File: ${test.location.file}:${test.location.line}`);
     lines.push(`Status: ${result.status.toUpperCase()}`);
     lines.push(`Duration: ${result.duration}ms`);
     lines.push(`Retry: ${result.retry}`);
     lines.push(`Start Time: ${result.startTime.toISOString()}`);
-    lines.push("");
+    lines.push('');
+  }
 
-    // Parent describe blocks
+  private addSuiteInfo(lines: string[], test: TestCase): void {
     const parents: string[] = [];
     let parent: Suite | undefined = test.parent;
     while (parent) {
@@ -127,93 +130,100 @@ export default class TextFileReporter implements Reporter {
       parent = parent.parent;
     }
     if (parents.length > 0) {
-      lines.push(`Suite: ${parents.join(" > ")}`);
-      lines.push("");
+      lines.push(`Suite: ${parents.join(' > ')}`);
+      lines.push('');
     }
+  }
 
-    // Stdout
-    if (result.stdout.length > 0) {
-      lines.push("-".repeat(40));
-      lines.push("STDOUT:");
-      lines.push("-".repeat(40));
-      for (const output of result.stdout) {
-        const text = typeof output === "string" ? output : output.toString("utf-8");
+  private addOutputSection(lines: string[], outputs: (string | Buffer)[], title: string): void {
+    if (outputs.length > 0) {
+      lines.push('-'.repeat(40));
+      lines.push(`${title}:`);
+      lines.push('-'.repeat(40));
+      for (const output of outputs) {
+        const text = typeof output === 'string' ? output : output.toString('utf-8');
         lines.push(this.unescapeLogOutput(text));
       }
-      lines.push("");
+      lines.push('');
     }
+  }
 
-    // Stderr
-    if (result.stderr.length > 0) {
-      lines.push("-".repeat(40));
-      lines.push("STDERR:");
-      lines.push("-".repeat(40));
-      for (const output of result.stderr) {
-        const text = typeof output === "string" ? output : output.toString("utf-8");
-        lines.push(this.unescapeLogOutput(text));
-      }
-      lines.push("");
-    }
-
-    // Errors
-    if (result.errors.length > 0) {
-      lines.push("-".repeat(40));
-      lines.push("ERRORS:");
-      lines.push("-".repeat(40));
-      for (const error of result.errors) {
+  private addErrors(lines: string[], errors: TestResult['errors']): void {
+    if (errors.length > 0) {
+      lines.push('-'.repeat(40));
+      lines.push('ERRORS:');
+      lines.push('-'.repeat(40));
+      for (const error of errors) {
         if (error.message) {
           lines.push(`Message: ${error.message}`);
         }
         if (error.stack) {
-          lines.push("Stack:");
+          lines.push('Stack:');
           lines.push(error.stack);
         }
-        lines.push("");
+        lines.push('');
       }
     }
-
-    // Attachments
-    if (result.attachments.length > 0) {
-      lines.push("-".repeat(40));
-      lines.push("ATTACHMENTS:");
-      lines.push("-".repeat(40));
-      for (const attachment of result.attachments) {
-        lines.push("");
-        lines.push(`- ${attachment.name}: ${attachment.contentType}`);
-        if (attachment.body) {
-          const bodyStr = attachment.body.toString("utf-8");
-          lines.push("");
-          if (bodyStr.length < 10000) {
-            lines.push(this.unescapeLogOutput(bodyStr));
-          } else {
-            lines.push(`[Content too large: ${bodyStr.length} bytes]`);
-          }
-        }
-      }
-      lines.push("");
-    }
-
-    lines.push("=".repeat(80));
-    lines.push(`Generated: ${new Date().toISOString()}`);
-    lines.push("=".repeat(80));
-
-    return lines.join("\n");
   }
 
-  private buildSummary(result: FullResult, durationSeconds: number): string {
+  private formatAttachmentBody(body: Buffer): string {
+    const bodyStr = body.toString('utf-8');
+    if (bodyStr.length < 10000) {
+      return this.unescapeLogOutput(bodyStr);
+    }
+    return `[Content too large: ${bodyStr.length} bytes]`;
+  }
+
+  private addAttachments(lines: string[], attachments: TestResult['attachments']): void {
+    if (attachments.length === 0) {
+      return;
+    }
+
+    lines.push('-'.repeat(40));
+    lines.push('ATTACHMENTS:');
+    lines.push('-'.repeat(40));
+
+    for (const attachment of attachments) {
+      lines.push('');
+      lines.push(`- ${attachment.name}: ${attachment.contentType}`);
+      if (attachment.body) {
+        lines.push('');
+        lines.push(this.formatAttachmentBody(attachment.body));
+      }
+    }
+    lines.push('');
+  }
+
+  private buildTestOutput(test: TestCase, result: TestResult): string {
     const lines: string[] = [];
 
-    lines.push("=".repeat(80));
-    lines.push("TEST RUN SUMMARY");
-    lines.push("=".repeat(80));
-    lines.push("");
+    this.addTestHeader(lines, test, result);
+    this.addSuiteInfo(lines, test);
+    this.addOutputSection(lines, result.stdout, 'STDOUT');
+    this.addOutputSection(lines, result.stderr, 'STDERR');
+    this.addErrors(lines, result.errors);
+    this.addAttachments(lines, result.attachments);
+
+    lines.push('='.repeat(80));
+    lines.push(`Generated: ${new Date().toISOString()}`);
+    lines.push('='.repeat(80));
+
+    return lines.join('\n');
+  }
+
+  private addSummaryHeader(lines: string[], result: FullResult, durationSeconds: number): void {
+    lines.push('='.repeat(80));
+    lines.push('TEST RUN SUMMARY');
+    lines.push('='.repeat(80));
+    lines.push('');
     lines.push(`Start Time: ${this.startTime.toISOString()}`);
     lines.push(`End Time: ${new Date().toISOString()}`);
     lines.push(`Duration: ${durationSeconds.toFixed(2)}s`);
     lines.push(`Status: ${result.status.toUpperCase()}`);
-    lines.push("");
+    lines.push('');
+  }
 
-    // Count by status
+  private countTestResults(): Record<TestResult['status'], number> {
     const counts = {
       passed: 0,
       failed: 0,
@@ -226,42 +236,57 @@ export default class TextFileReporter implements Reporter {
       counts[testResult.status]++;
     }
 
-    lines.push("-".repeat(40));
-    lines.push("RESULTS:");
-    lines.push("-".repeat(40));
+    return counts;
+  }
+
+  private addResultCounts(lines: string[], counts: Record<TestResult['status'], number>): void {
+    lines.push('-'.repeat(40));
+    lines.push('RESULTS:');
+    lines.push('-'.repeat(40));
     lines.push(`  Passed:      ${counts.passed}`);
     lines.push(`  Failed:      ${counts.failed}`);
     lines.push(`  Timed Out:   ${counts.timedOut}`);
     lines.push(`  Skipped:     ${counts.skipped}`);
     lines.push(`  Interrupted: ${counts.interrupted}`);
     lines.push(`  Total:       ${this.testResults.size}`);
-    lines.push("");
+    lines.push('');
+  }
 
-    // List failed tests
+  private addFailedTests(lines: string[]): void {
     const failedTests = Array.from(this.testResults.values()).filter(
-      ({ result }) => result.status === "failed" || result.status === "timedOut",
+      ({ result }) => result.status === 'failed' || result.status === 'timedOut'
     );
 
     if (failedTests.length > 0) {
-      lines.push("-".repeat(40));
-      lines.push("FAILED TESTS:");
-      lines.push("-".repeat(40));
+      lines.push('-'.repeat(40));
+      lines.push('FAILED TESTS:');
+      lines.push('-'.repeat(40));
       for (const { test, result: testResult } of failedTests) {
         lines.push(`  [${testResult.status.toUpperCase()}] ${test.title}`);
         lines.push(`    File: ${test.location.file}:${test.location.line}`);
         if (testResult.errors.length > 0 && testResult.errors[0].message) {
-          const msg = testResult.errors[0].message.split("\n")[0];
+          const msg = testResult.errors[0].message.split('\n')[0];
           lines.push(`    Error: ${msg.substring(0, 100)}`);
         }
       }
-      lines.push("");
+      lines.push('');
     }
+  }
 
-    // List all tests by file
-    lines.push("-".repeat(40));
-    lines.push("ALL TESTS BY FILE:");
-    lines.push("-".repeat(40));
+  private getStatusIcon(status: TestResult['status']): string {
+    if (status === 'passed') {
+      return '✓';
+    }
+    if (status === 'failed') {
+      return '✗';
+    }
+    if (status === 'skipped') {
+      return '○';
+    }
+    return '!';
+  }
 
+  private groupTestsByFile(): Map<string, { test: TestCase; result: TestResult }[]> {
     const byFile = new Map<string, { test: TestCase; result: TestResult }[]>();
     for (const entry of this.testResults.values()) {
       const file = path.basename(entry.test.location.file);
@@ -270,30 +295,42 @@ export default class TextFileReporter implements Reporter {
       }
       byFile.get(file)!.push(entry);
     }
+    return byFile;
+  }
 
+  private addAllTestsByFile(lines: string[]): void {
+    lines.push('-'.repeat(40));
+    lines.push('ALL TESTS BY FILE:');
+    lines.push('-'.repeat(40));
+
+    const byFile = this.groupTestsByFile();
     const sortedFiles = Array.from(byFile.keys()).sort();
+
     for (const file of sortedFiles) {
-      lines.push("");
+      lines.push('');
       lines.push(`  ${file}:`);
       const tests = byFile.get(file)!;
       for (const { test, result: testResult } of tests) {
-        const statusIcon =
-          testResult.status === "passed"
-            ? "✓"
-            : testResult.status === "failed"
-              ? "✗"
-              : testResult.status === "skipped"
-                ? "○"
-                : "!";
+        const statusIcon = this.getStatusIcon(testResult.status);
         lines.push(`    ${statusIcon} ${test.title} (${testResult.duration}ms)`);
       }
     }
+  }
 
-    lines.push("");
-    lines.push("=".repeat(80));
+  private buildSummary(result: FullResult, durationSeconds: number): string {
+    const lines: string[] = [];
+
+    this.addSummaryHeader(lines, result, durationSeconds);
+    const counts = this.countTestResults();
+    this.addResultCounts(lines, counts);
+    this.addFailedTests(lines);
+    this.addAllTestsByFile(lines);
+
+    lines.push('');
+    lines.push('='.repeat(80));
     lines.push(`Generated: ${new Date().toISOString()}`);
-    lines.push("=".repeat(80));
+    lines.push('='.repeat(80));
 
-    return lines.join("\n");
+    return lines.join('\n');
   }
 }

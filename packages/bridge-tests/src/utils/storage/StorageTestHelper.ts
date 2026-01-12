@@ -1,11 +1,11 @@
-import { exec } from "child_process";
-import { promisify } from "util";
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import {
   DEFAULT_RUSTFS_ACCESS_KEY,
   DEFAULT_RUSTFS_BUCKET,
   DEFAULT_RUSTFS_ENDPOINT,
   DEFAULT_RUSTFS_SECRET_KEY,
-} from "../../constants";
+} from '../../constants';
 
 const execAsync = promisify(exec);
 
@@ -48,9 +48,9 @@ export interface StorageResult {
  * Operations are executed via SSH to the bridge VM.
  */
 export class StorageTestHelper {
-  private bridgeHost: string;
-  private s3Config: S3Config;
-  private sshOptions = "-o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10";
+  private readonly bridgeHost: string;
+  private readonly s3Config: S3Config;
+  private readonly sshOptions = '-o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10';
 
   constructor(bridgeHost: string, s3Config: S3Config = DEFAULT_RUSTFS_CONFIG) {
     this.bridgeHost = bridgeHost;
@@ -61,8 +61,9 @@ export class StorageTestHelper {
    * Execute a command on the bridge VM via SSH.
    */
   private async executeOnBridge(command: string, timeout = 30000): Promise<StorageResult> {
-    const sshCmd = `ssh ${this.sshOptions} ${this.bridgeHost} "${command.replace(/"/g, '\\"')}"`;
+    const sshCmd = `ssh ${this.sshOptions} ${this.bridgeHost} "${command.replaceAll('"', '\\"')}"`;
 
+    // eslint-disable-next-line no-console
     console.log(`[Storage SSH ${this.bridgeHost}] ${command}`);
 
     try {
@@ -72,8 +73,8 @@ export class StorageTestHelper {
       const err = error as Error & { stdout?: string; stderr?: string; code?: number };
       return {
         success: false,
-        stdout: err.stdout ?? "",
-        stderr: err.stderr ?? "",
+        stdout: err.stdout ?? '',
+        stderr: err.stderr ?? '',
         code: err.code ?? 1,
       };
     }
@@ -84,12 +85,12 @@ export class StorageTestHelper {
    */
   private getRcloneFlags(): string {
     return [
-      "--s3-provider Other",
+      '--s3-provider Other',
       `--s3-endpoint ${this.s3Config.endpoint}`,
       `--s3-access-key-id ${this.s3Config.accessKey}`,
       `--s3-secret-access-key ${this.s3Config.secretKey}`,
-      "--s3-force-path-style",
-    ].join(" ");
+      '--s3-force-path-style',
+    ].join(' ');
   }
 
   /**
@@ -98,23 +99,23 @@ export class StorageTestHelper {
    */
   async isAvailable(): Promise<boolean> {
     const result = await this.executeOnBridge(
-      `curl -s -o /dev/null -w '%{http_code}' ${this.s3Config.endpoint}/`,
+      `curl -s -o /dev/null -w '%{http_code}' ${this.s3Config.endpoint}/`
     );
     const httpCode = result.stdout.trim();
     // 403 = Access Denied (server running, auth required)
     // 200 = OK
-    return result.success && (httpCode === "403" || httpCode === "200");
+    return result.success && (httpCode === '403' || httpCode === '200');
   }
 
   /**
    * List all buckets.
    */
   async listBuckets(): Promise<string[]> {
-    const result = await this.executeRclone("lsd :s3:");
+    const result = await this.executeRclone('lsd :s3:');
     if (!result.success) return [];
 
     return result.stdout
-      .split("\n")
+      .split('\n')
       .filter((line) => line.trim())
       .map((line) => {
         // Parse rclone lsd output: "-1 2024-01-01 00:00:00 -1 bucketname"
@@ -146,12 +147,12 @@ export class StorageTestHelper {
     if (!result.success) return [];
 
     return result.stdout
-      .split("\n")
+      .split('\n')
       .filter((line) => line.trim())
       .map((line) => {
         // Parse rclone ls output: "size filename"
         const parts = line.trim().split(/\s+/);
-        return parts.slice(1).join(" ");
+        return parts.slice(1).join(' ');
       })
       .filter(Boolean);
   }
@@ -174,7 +175,7 @@ export class StorageTestHelper {
 
     // Write content to temp file on bridge
     const writeResult = await this.executeOnBridge(
-      `echo '${content.replace(/'/g, "'\\''")}' > ${tmpFile}`,
+      `echo '${content.replaceAll("'", "'\\''")}' > ${tmpFile}`
     );
     if (!writeResult.success) return writeResult;
 
@@ -234,7 +235,7 @@ export class StorageTestHelper {
    * Upload a file from the bridge VM to storage.
    */
   async uploadFile(bucket: string, localPath: string, remotePath?: string): Promise<StorageResult> {
-    const destination = remotePath ?? localPath.split("/").pop();
+    const destination = remotePath ?? localPath.split('/').pop();
     return this.executeRclone(`copy ${localPath} :s3:${bucket}/${destination}`);
   }
 
@@ -244,7 +245,7 @@ export class StorageTestHelper {
   async downloadFile(
     bucket: string,
     remotePath: string,
-    localPath: string,
+    localPath: string
   ): Promise<StorageResult> {
     return this.executeRclone(`copy :s3:${bucket}/${remotePath} ${localPath}`);
   }
@@ -255,7 +256,7 @@ export class StorageTestHelper {
   async syncToStorage(
     localDir: string,
     bucket: string,
-    remotePrefix?: string,
+    remotePrefix?: string
   ): Promise<StorageResult> {
     const destination = remotePrefix ? `:s3:${bucket}/${remotePrefix}` : `:s3:${bucket}`;
     return this.executeRclone(`sync ${localDir} ${destination}`);
@@ -267,7 +268,7 @@ export class StorageTestHelper {
   async syncFromStorage(
     bucket: string,
     localDir: string,
-    remotePrefix?: string,
+    remotePrefix?: string
   ): Promise<StorageResult> {
     const source = remotePrefix ? `:s3:${bucket}/${remotePrefix}` : `:s3:${bucket}`;
     return this.executeRclone(`sync ${source} ${localDir}`);
@@ -284,7 +285,7 @@ export class StorageTestHelper {
   /**
    * Create a unique test bucket for isolation.
    */
-  async createTestBucket(prefix = "e2e-test"): Promise<string> {
+  async createTestBucket(prefix = 'e2e-test'): Promise<string> {
     const bucketName = `${prefix}-${Date.now()}`;
     await this.createBucket(bucketName);
     return bucketName;
@@ -302,7 +303,7 @@ export class StorageTestHelper {
    */
   getVaultStorageConfig(): {
     name: string;
-    type: "s3";
+    type: 's3';
     endpoint: string;
     bucket: string;
     accessKey: string;
@@ -310,8 +311,8 @@ export class StorageTestHelper {
     region?: string;
   } {
     return {
-      name: "rustfs",
-      type: "s3",
+      name: 'rustfs',
+      type: 's3',
       endpoint: this.s3Config.endpoint,
       bucket: this.s3Config.bucket,
       accessKey: this.s3Config.accessKey,

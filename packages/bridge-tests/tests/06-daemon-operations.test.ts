@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
-import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_REPOSITORY_NAME } from "../src/constants";
-import { BridgeTestRunner } from "../src/utils/bridge/BridgeTestRunner";
+import { expect, test } from '@playwright/test';
+import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_REPOSITORY_NAME } from '../src/constants';
+import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 
 /**
  * Daemon Operations Tests (5 functions)
@@ -16,7 +16,7 @@ import { BridgeTestRunner } from "../src/utils/bridge/BridgeTestRunner";
  *
  * Daemons are background services that run within a repository context.
  */
-test.describe("Daemon Operations @bridge", () => {
+test.describe('Daemon Operations @bridge', () => {
   let runner: BridgeTestRunner;
 
   test.beforeAll(async () => {
@@ -38,47 +38,47 @@ test.describe("Daemon Operations @bridge", () => {
   // Repository Daemon Functions
   // ===========================================================================
 
-  test("daemon_start should not have shell syntax errors", async () => {
+  test('daemon_start should not have shell syntax errors', async () => {
     const result = await runner.daemonStart(
       TEST_REPOSITORY_NAME,
       DEFAULT_DATASTORE_PATH,
-      DEFAULT_NETWORK_ID,
+      DEFAULT_NETWORK_ID
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_stop should not have shell syntax errors", async () => {
+  test('daemon_stop should not have shell syntax errors', async () => {
     const result = await runner.daemonStop(
       TEST_REPOSITORY_NAME,
       DEFAULT_DATASTORE_PATH,
-      DEFAULT_NETWORK_ID,
+      DEFAULT_NETWORK_ID
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_status should not have shell syntax errors", async () => {
+  test('daemon_status should not have shell syntax errors', async () => {
     const result = await runner.daemonStatus(
       TEST_REPOSITORY_NAME,
       DEFAULT_DATASTORE_PATH,
-      DEFAULT_NETWORK_ID,
+      DEFAULT_NETWORK_ID
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_restart should not have shell syntax errors", async () => {
+  test('daemon_restart should not have shell syntax errors', async () => {
     const result = await runner.daemonRestart(
       TEST_REPOSITORY_NAME,
       DEFAULT_DATASTORE_PATH,
-      DEFAULT_NETWORK_ID,
+      DEFAULT_NETWORK_ID
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_logs should not have shell syntax errors", async () => {
+  test('daemon_logs should not have shell syntax errors', async () => {
     const result = await runner.daemonLogs(
       TEST_REPOSITORY_NAME,
       DEFAULT_DATASTORE_PATH,
-      DEFAULT_NETWORK_ID,
+      DEFAULT_NETWORK_ID
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
@@ -87,17 +87,17 @@ test.describe("Daemon Operations @bridge", () => {
   // System-level Daemon Functions (no repository context)
   // ===========================================================================
 
-  test("daemon_start (system) should not have shell syntax errors", async () => {
+  test('daemon_start (system) should not have shell syntax errors', async () => {
     const result = await runner.renetStart(DEFAULT_NETWORK_ID);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_stop (system) should not have shell syntax errors", async () => {
+  test('daemon_stop (system) should not have shell syntax errors', async () => {
     const result = await runner.renetStop(DEFAULT_NETWORK_ID);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_status (system) should not have shell syntax errors", async () => {
+  test('daemon_status (system) should not have shell syntax errors', async () => {
     const result = await runner.renetStatus(DEFAULT_NETWORK_ID);
     expect(runner.isSuccess(result)).toBe(true);
   });
@@ -109,7 +109,7 @@ test.describe("Daemon Operations @bridge", () => {
  * Tests daemon start/stop lifecycle in order.
  */
 test.describe
-  .serial("Daemon Lifecycle @bridge @lifecycle", () => {
+  .serial('Daemon Lifecycle @bridge @lifecycle', () => {
     let runner: BridgeTestRunner;
     const repositoryName = `daemon-lifecycle-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -120,47 +120,47 @@ test.describe
       await runner.resetWorkerState();
     });
 
-    test("1. daemon_status: check initial status", async () => {
+    test('1. daemon_status: check initial status', async () => {
       const result = await runner.daemonStatus(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("2. daemon_setup: set up daemon service", async () => {
+    test('2. daemon_setup: set up daemon service', async () => {
       const result = await runner.daemonSetup(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("3. daemon_start: start daemon", async () => {
+    test('3. daemon_start: start daemon', async () => {
       const result = await runner.daemonStart(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("4. daemon_status: verify daemon started", async () => {
+    test('4. daemon_status: verify daemon started', async () => {
       const result = await runner.daemonStatus(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("5. daemon_logs: check daemon logs", async () => {
+    test('5. daemon_logs: check daemon logs', async () => {
       const result = await runner.daemonLogs(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("6. daemon_restart: restart daemon", async () => {
+    test('6. daemon_restart: restart daemon', async () => {
       const result = await runner.daemonRestart(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("7. daemon_stop: stop daemon", async () => {
+    test('7. daemon_stop: stop daemon', async () => {
       const result = await runner.daemonStop(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("8. daemon_status: verify daemon stopped", async () => {
+    test('8. daemon_status: verify daemon stopped', async () => {
       const result = await runner.daemonStatus(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("9. daemon_teardown: tear down daemon service", async () => {
+    test('9. daemon_teardown: tear down daemon service', async () => {
       const result = await runner.daemonTeardown(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
@@ -172,7 +172,7 @@ test.describe
  * Tests system-level daemon service lifecycle.
  */
 test.describe
-  .serial("System Daemon Lifecycle @bridge @lifecycle", () => {
+  .serial('System Daemon Lifecycle @bridge @lifecycle', () => {
     let runner: BridgeTestRunner;
     const networkId = DEFAULT_NETWORK_ID;
 
@@ -181,37 +181,37 @@ test.describe
       await runner.resetWorkerState();
     });
 
-    test("1. daemon_status: check initial status", async () => {
+    test('1. daemon_status: check initial status', async () => {
       const result = await runner.renetStatus(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("2. daemon_setup: set up daemon service", async () => {
+    test('2. daemon_setup: set up daemon service', async () => {
       const result = await runner.daemonSetup(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("3. daemon_start: start daemon service", async () => {
+    test('3. daemon_start: start daemon service', async () => {
       const result = await runner.renetStart(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("4. daemon_status: verify daemon started", async () => {
+    test('4. daemon_status: verify daemon started', async () => {
       const result = await runner.renetStatus(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("5. daemon_stop: stop daemon service", async () => {
+    test('5. daemon_stop: stop daemon service', async () => {
       const result = await runner.renetStop(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("6. daemon_status: verify daemon stopped", async () => {
+    test('6. daemon_status: verify daemon stopped', async () => {
       const result = await runner.renetStatus(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test("7. daemon_teardown: tear down daemon service", async () => {
+    test('7. daemon_teardown: tear down daemon service', async () => {
       const result = await runner.daemonTeardown(networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
@@ -222,7 +222,7 @@ test.describe
  *
  * Tests error handling for daemon operations.
  */
-test.describe("Daemon Error Handling @bridge", () => {
+test.describe('Daemon Error Handling @bridge', () => {
   let runner: BridgeTestRunner;
   const networkId = DEFAULT_NETWORK_ID;
 
@@ -241,8 +241,8 @@ test.describe("Daemon Error Handling @bridge", () => {
     await runner.daemonTeardown(networkId);
   });
 
-  test("daemon operations on nonexistent repository should handle gracefully", async () => {
-    const nonexistent = "nonexistent-daemon-xyz";
+  test('daemon operations on nonexistent repository should handle gracefully', async () => {
+    const nonexistent = 'nonexistent-daemon-xyz';
 
     const startResult = await runner.daemonStart(nonexistent, DEFAULT_DATASTORE_PATH, networkId);
     expect(runner.isSuccess(startResult)).toBe(true);
@@ -254,18 +254,18 @@ test.describe("Daemon Error Handling @bridge", () => {
     expect(runner.isSuccess(stopResult)).toBe(true);
   });
 
-  test("daemon_stop when not running should handle gracefully", async () => {
-    const result = await runner.daemonStop("not-running", DEFAULT_DATASTORE_PATH, networkId);
+  test('daemon_stop when not running should handle gracefully', async () => {
+    const result = await runner.daemonStop('not-running', DEFAULT_DATASTORE_PATH, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_restart when not running should handle gracefully", async () => {
-    const result = await runner.daemonRestart("not-running", DEFAULT_DATASTORE_PATH, networkId);
+  test('daemon_restart when not running should handle gracefully', async () => {
+    const result = await runner.daemonRestart('not-running', DEFAULT_DATASTORE_PATH, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  test("daemon_logs when no logs exist should handle gracefully", async () => {
-    const result = await runner.daemonLogs("no-logs", DEFAULT_DATASTORE_PATH, networkId);
+  test('daemon_logs when no logs exist should handle gracefully', async () => {
+    const result = await runner.daemonLogs('no-logs', DEFAULT_DATASTORE_PATH, networkId);
     expect(runner.isSuccess(result)).toBe(true);
   });
 });
@@ -275,7 +275,7 @@ test.describe("Daemon Error Handling @bridge", () => {
  *
  * Tests multiple start/stop cycles.
  */
-test.describe("Daemon Multiple Cycles @bridge", () => {
+test.describe('Daemon Multiple Cycles @bridge', () => {
   let runner: BridgeTestRunner;
   const repositoryName = `multi-daemon-${Date.now()}`;
   const networkId = DEFAULT_NETWORK_ID;
@@ -295,7 +295,7 @@ test.describe("Daemon Multiple Cycles @bridge", () => {
     await runner.daemonTeardown(networkId);
   });
 
-  test("multiple daemon start/stop cycles should work", async () => {
+  test('multiple daemon start/stop cycles should work', async () => {
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     for (let i = 0; i < 3; i++) {
@@ -307,7 +307,7 @@ test.describe("Daemon Multiple Cycles @bridge", () => {
     }
   });
 
-  test("multiple restart cycles should work", async () => {
+  test('multiple restart cycles should work', async () => {
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     for (let i = 0; i < 3; i++) {

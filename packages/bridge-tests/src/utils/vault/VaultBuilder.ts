@@ -1,12 +1,12 @@
 // Import queue-vault types from shared package
-import * as fs from "fs/promises";
-import * as path from "path";
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import type {
   MachineSection,
   QueueVaultV2,
   RepositoryInfo,
   StorageSection,
-} from "@rediacc/shared/queue-vault";
+} from '@rediacc/shared/queue-vault';
 
 // Re-export for convenience
 export type { QueueVaultV2, MachineSection, StorageSection, RepositoryInfo };
@@ -17,7 +17,7 @@ export type { QueueVaultV2, MachineSection, StorageSection, RepositoryInfo };
  */
 export interface StorageConfig {
   name: string;
-  type: "s3" | "b2" | "azure" | "gcs" | "sftp";
+  type: 's3' | 'b2' | 'azure' | 'gcs' | 'sftp';
   endpoint?: string;
   bucket: string;
   accessKey?: string;
@@ -42,13 +42,13 @@ export type RepositoryConfig = RepositoryInfo;
  * Push function parameters.
  */
 export interface PushParams {
-  destinationType?: "machine" | "storage";
+  destinationType?: 'machine' | 'storage';
   to?: string;
   machines?: string[];
   storages?: string[];
   dest?: string;
   tag?: string;
-  state?: "online" | "offline";
+  state?: 'online' | 'offline';
   checkpoint?: boolean;
   override?: boolean;
   grand?: string;
@@ -58,7 +58,7 @@ export interface PushParams {
  * Pull function parameters.
  */
 export interface PullParams {
-  sourceType?: "machine" | "storage";
+  sourceType?: 'machine' | 'storage';
   from?: string;
   grand?: string;
 }
@@ -79,24 +79,24 @@ export interface PullParams {
  * ```
  */
 export class VaultBuilder {
-  private vault: QueueVaultV2;
+  private readonly vault: QueueVaultV2;
 
   constructor() {
     this.vault = {
-      $schema: "queue-vault-v2",
-      version: "2.0",
+      $schema: 'queue-vault-v2',
+      version: '2.0',
       task: {
-        function: "",
-        machine: "",
-        team: "",
+        function: '',
+        machine: '',
+        team: '',
       },
       ssh: {
-        private_key: "",
-        public_key: "",
+        private_key: '',
+        public_key: '',
       },
       machine: {
-        ip: "",
-        user: "",
+        ip: '',
+        user: '',
       },
     };
   }
@@ -143,6 +143,7 @@ export class VaultBuilder {
     this.vault.machine = {
       ip,
       user,
+      // eslint-disable-next-line custom/no-hardcoded-nullish-defaults
       port: port ?? 22,
       datastore,
     };
@@ -186,8 +187,8 @@ export class VaultBuilder {
    * Set SSH credentials.
    */
   withSSHKey(privateKey: string, publicKey?: string): this {
-    this.vault.ssh.private_key = Buffer.from(privateKey).toString("base64");
-    this.vault.ssh.public_key = publicKey ? Buffer.from(publicKey).toString("base64") : "";
+    this.vault.ssh.private_key = Buffer.from(privateKey).toString('base64');
+    this.vault.ssh.public_key = publicKey ? Buffer.from(publicKey).toString('base64') : '';
     return this;
   }
 
@@ -233,37 +234,51 @@ export class VaultBuilder {
    */
   withPushParams(params: PushParams): this {
     this.vault.params ??= {};
+
+    this.setPushStringParams(params);
+    this.setPushBooleanParams(params);
+    this.setPushArrayParams(params);
+
+    return this;
+  }
+
+  private setPushStringParams(params: PushParams): void {
     if (params.destinationType) {
-      this.vault.params.destinationType = params.destinationType;
+      this.vault.params!.destinationType = params.destinationType;
     }
     if (params.to) {
-      this.vault.params.to = params.to;
+      this.vault.params!.to = params.to;
     }
     if (params.dest) {
-      this.vault.params.dest = params.dest;
+      this.vault.params!.dest = params.dest;
     }
     if (params.tag) {
-      this.vault.params.tag = params.tag;
+      this.vault.params!.tag = params.tag;
     }
     if (params.state) {
-      this.vault.params.state = params.state;
-    }
-    if (params.checkpoint !== undefined) {
-      this.vault.params.checkpoint = params.checkpoint;
-    }
-    if (params.override !== undefined) {
-      this.vault.params.override = params.override;
+      this.vault.params!.state = params.state;
     }
     if (params.grand) {
-      this.vault.params.grand = params.grand;
+      this.vault.params!.grand = params.grand;
     }
+  }
+
+  private setPushBooleanParams(params: PushParams): void {
+    if (params.checkpoint !== undefined) {
+      this.vault.params!.checkpoint = params.checkpoint;
+    }
+    if (params.override !== undefined) {
+      this.vault.params!.override = params.override;
+    }
+  }
+
+  private setPushArrayParams(params: PushParams): void {
     if (params.machines && params.machines.length > 0) {
-      this.vault.params.machines = params.machines.join(",");
+      this.vault.params!.machines = params.machines.join(',');
     }
     if (params.storages && params.storages.length > 0) {
-      this.vault.params.storages = params.storages.join(",");
+      this.vault.params!.storages = params.storages.join(',');
     }
-    return this;
   }
 
   /**
@@ -323,7 +338,7 @@ export class VaultBuilder {
   async toFile(filePath?: string): Promise<string> {
     const targetPath = filePath ?? `/tmp/vault-${Date.now()}.json`;
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.writeFile(targetPath, this.toJSON(), "utf-8");
+    await fs.writeFile(targetPath, this.toJSON(), 'utf-8');
     return targetPath;
   }
 
@@ -331,27 +346,27 @@ export class VaultBuilder {
    * Create a VaultBuilder pre-configured for backup_push.
    */
   static forPush(): VaultBuilder {
-    return new VaultBuilder().withFunction("backup_push");
+    return new VaultBuilder().withFunction('backup_push');
   }
 
   /**
    * Create a VaultBuilder pre-configured for backup_pull.
    */
   static forPull(): VaultBuilder {
-    return new VaultBuilder().withFunction("backup_pull");
+    return new VaultBuilder().withFunction('backup_pull');
   }
 
   /**
    * Create a VaultBuilder pre-configured for checkpoint_create.
    */
   static forCheckpointCreate(): VaultBuilder {
-    return new VaultBuilder().withFunction("checkpoint_create");
+    return new VaultBuilder().withFunction('checkpoint_create');
   }
 
   /**
    * Create a VaultBuilder pre-configured for checkpoint_restore.
    */
   static forCheckpointRestore(): VaultBuilder {
-    return new VaultBuilder().withFunction("checkpoint_restore");
+    return new VaultBuilder().withFunction('checkpoint_restore');
   }
 }

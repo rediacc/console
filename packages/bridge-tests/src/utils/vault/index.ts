@@ -5,5 +5,5 @@ export type {
   QueueVaultV2,
   RepositoryConfig,
   StorageConfig,
-} from "./VaultBuilder";
-export { VaultBuilder } from "./VaultBuilder";
+} from './VaultBuilder';
+export { VaultBuilder } from './VaultBuilder';

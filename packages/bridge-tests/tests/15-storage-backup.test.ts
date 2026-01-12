@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from '@playwright/test';
 import {
   DEFAULT_BRIDGE_IP,
   DEFAULT_DATASTORE_PATH,
@@ -9,10 +9,10 @@ import {
   TEST_REPOSITORY_NAME,
   TEST_TEAM,
   TEST_USER,
-} from "../src/constants";
-import { BridgeTestRunner } from "../src/utils/bridge/BridgeTestRunner";
-import { DEFAULT_RUSTFS_CONFIG, StorageTestHelper } from "../src/utils/storage/StorageTestHelper";
-import { VaultBuilder } from "../src/utils/vault/VaultBuilder";
+} from '../src/constants';
+import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { DEFAULT_RUSTFS_CONFIG, StorageTestHelper } from '../src/utils/storage/StorageTestHelper';
+import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
  * Storage Backup Operations Tests
@@ -29,46 +29,46 @@ import { VaultBuilder } from "../src/utils/vault/VaultBuilder";
  *
  * VMs are automatically started via global-setup.ts.
  */
-test.describe("Storage Infrastructure @bridge @storage @infra", () => {
+test.describe('Storage Infrastructure @bridge @storage @infra', () => {
   let storage: StorageTestHelper;
 
   test.beforeAll(() => {
     storage = new StorageTestHelper(DEFAULT_BRIDGE_IP, DEFAULT_RUSTFS_CONFIG);
   });
 
-  test("RustFS S3 endpoint should be accessible", async () => {
+  test('RustFS S3 endpoint should be accessible', async () => {
     const isAvailable = await storage.isAvailable();
     // Skip test if RustFS is not running (allows tests to run without storage)
-    test.skip(!isAvailable, "RustFS S3 endpoint is not available");
+    test.skip(!isAvailable, 'RustFS S3 endpoint is not available');
     expect(isAvailable).toBe(true);
   });
 
-  test("should be able to list buckets", async () => {
+  test('should be able to list buckets', async () => {
     const isAvailable = await storage.isAvailable();
-    test.skip(!isAvailable, "RustFS S3 endpoint is not available");
+    test.skip(!isAvailable, 'RustFS S3 endpoint is not available');
 
     const buckets = await storage.listBuckets();
     expect(Array.isArray(buckets)).toBe(true);
   });
 
-  test("should be able to create and delete test bucket", async () => {
+  test('should be able to create and delete test bucket', async () => {
     const isAvailable = await storage.isAvailable();
-    test.skip(!isAvailable, "RustFS S3 endpoint is not available");
+    test.skip(!isAvailable, 'RustFS S3 endpoint is not available');
 
-    const testBucket = await storage.createTestBucket("storage-test");
+    const testBucket = await storage.createTestBucket('storage-test');
     expect(testBucket).toMatch(/^storage-test-\d+$/);
 
     // Cleanup
     await storage.cleanupTestBucket(testBucket);
   });
 
-  test("should be able to upload and verify test file", async () => {
+  test('should be able to upload and verify test file', async () => {
     const isAvailable = await storage.isAvailable();
-    test.skip(!isAvailable, "RustFS S3 endpoint is not available");
+    test.skip(!isAvailable, 'RustFS S3 endpoint is not available');
 
-    const testBucket = await storage.createTestBucket("upload-test");
+    const testBucket = await storage.createTestBucket('upload-test');
     const testKey = `test-file-${Date.now()}.txt`;
-    const testContent = "Hello from E2E storage test";
+    const testContent = 'Hello from E2E storage test';
 
     try {
       const uploadResult = await storage.uploadContent(testBucket, testKey, testContent);
@@ -85,7 +85,7 @@ test.describe("Storage Infrastructure @bridge @storage @infra", () => {
   });
 });
 
-test.describe("Storage Backup Push @bridge @storage", () => {
+test.describe('Storage Backup Push @bridge @storage', () => {
   let runner: BridgeTestRunner;
   let storage: StorageTestHelper;
 
@@ -94,16 +94,16 @@ test.describe("Storage Backup Push @bridge @storage", () => {
     storage = new StorageTestHelper(DEFAULT_BRIDGE_IP, DEFAULT_RUSTFS_CONFIG);
   });
 
-  test("push to S3 storage should generate valid command with rclone flags", async () => {
+  test('push to S3 storage should generate valid command with rclone flags', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "storage-backup-repo")
+      .withRepository('test-repo-guid', 'storage-backup-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage(storage.getVaultStorageConfig())
       .withPushParams({
-        destinationType: "storage",
-        dest: "backup.tar",
-        storages: ["rustfs"],
+        destinationType: 'storage',
+        dest: 'backup.tar',
+        storages: ['rustfs'],
       });
 
     const result = await runner.pushWithVault(vault);
@@ -112,84 +112,84 @@ test.describe("Storage Backup Push @bridge @storage", () => {
     const output = result.stdout + result.stderr;
 
     // Verify rclone flags are present in the command
-    expect(output).toContain("--rclone-backend");
-    expect(output).toContain("--rclone-bucket");
-    expect(output).toContain("s3");
+    expect(output).toContain('--rclone-backend');
+    expect(output).toContain('--rclone-bucket');
+    expect(output).toContain('s3');
     expect(output).toContain(DEFAULT_RUSTFS_BUCKET); // bucket name
   });
 
-  test("push to storage with multiple targets should work", async () => {
+  test('push to storage with multiple targets should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "multi-storage-repo")
+      .withRepository('test-repo-guid', 'multi-storage-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorages([
         {
-          name: "storage1",
-          type: "s3",
-          bucket: "bucket1",
-          accessKey: "key1",
-          secretKey: "secret1",
+          name: 'storage1',
+          type: 's3',
+          bucket: 'bucket1',
+          accessKey: 'key1',
+          secretKey: 'secret1',
         },
         {
-          name: "storage2",
-          type: "s3",
-          bucket: "bucket2",
-          accessKey: "key2",
-          secretKey: "secret2",
+          name: 'storage2',
+          type: 's3',
+          bucket: 'bucket2',
+          accessKey: 'key2',
+          secretKey: 'secret2',
         },
       ])
       .withPushParams({
-        destinationType: "storage",
-        storages: ["storage1", "storage2"],
+        destinationType: 'storage',
+        storages: ['storage1', 'storage2'],
       });
 
     const result = await runner.pushWithVault(vault);
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
 
-  test("push to storage with state=online should work", async () => {
+  test('push to storage with state=online should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "online-storage-repo")
+      .withRepository('test-repo-guid', 'online-storage-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage(storage.getVaultStorageConfig())
       .withPushParams({
-        destinationType: "storage",
-        state: "online",
-        dest: "backup-online.tar",
+        destinationType: 'storage',
+        state: 'online',
+        dest: 'backup-online.tar',
       });
 
     const result = await runner.pushWithVault(vault);
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
 
-  test("push to storage with checkpoint should work", async () => {
+  test('push to storage with checkpoint should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "checkpoint-storage-repo")
+      .withRepository('test-repo-guid', 'checkpoint-storage-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage(storage.getVaultStorageConfig())
       .withPushParams({
-        destinationType: "storage",
+        destinationType: 'storage',
         checkpoint: true,
-        dest: "backup-checkpoint.tar",
+        dest: 'backup-checkpoint.tar',
       });
 
     const result = await runner.pushWithVault(vault);
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
 
-  test("push to storage with override should work", async () => {
+  test('push to storage with override should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "override-storage-repo")
+      .withRepository('test-repo-guid', 'override-storage-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage(storage.getVaultStorageConfig())
       .withPushParams({
-        destinationType: "storage",
+        destinationType: 'storage',
         override: true,
-        dest: "backup-override.tar",
+        dest: 'backup-override.tar',
       });
 
     const result = await runner.pushWithVault(vault);
@@ -197,7 +197,7 @@ test.describe("Storage Backup Push @bridge @storage", () => {
   });
 });
 
-test.describe("Storage Backup Pull @bridge @storage", () => {
+test.describe('Storage Backup Pull @bridge @storage', () => {
   let runner: BridgeTestRunner;
   let storage: StorageTestHelper;
 
@@ -206,15 +206,15 @@ test.describe("Storage Backup Pull @bridge @storage", () => {
     storage = new StorageTestHelper(DEFAULT_BRIDGE_IP, DEFAULT_RUSTFS_CONFIG);
   });
 
-  test("pull from S3 storage should generate valid command with rclone flags", async () => {
+  test('pull from S3 storage should generate valid command with rclone flags', async () => {
     const vault = VaultBuilder.forPull()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "storage-pull-repo")
+      .withRepository('test-repo-guid', 'storage-pull-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage(storage.getVaultStorageConfig())
       .withPullParams({
-        sourceType: "storage",
-        from: "rustfs",
+        sourceType: 'storage',
+        from: 'rustfs',
       });
 
     const result = await runner.pullWithVault(vault);
@@ -223,22 +223,22 @@ test.describe("Storage Backup Pull @bridge @storage", () => {
     const output = result.stdout + result.stderr;
 
     // Verify rclone flags are present in the command
-    expect(output).toContain("--rclone-backend");
-    expect(output).toContain("--rclone-bucket");
-    expect(output).toContain("s3");
+    expect(output).toContain('--rclone-backend');
+    expect(output).toContain('--rclone-bucket');
+    expect(output).toContain('s3');
     expect(output).toContain(DEFAULT_RUSTFS_BUCKET); // bucket name
   });
 
-  test("pull from storage with grand should work", async () => {
+  test('pull from storage with grand should work', async () => {
     const vault = VaultBuilder.forPull()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "grand-pull-repo")
+      .withRepository('test-repo-guid', 'grand-pull-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage(storage.getVaultStorageConfig())
       .withPullParams({
-        sourceType: "storage",
-        from: "rustfs",
-        grand: "grand-repo-guid",
+        sourceType: 'storage',
+        from: 'rustfs',
+        grand: 'grand-repo-guid',
       });
 
     const result = await runner.pullWithVault(vault);
@@ -246,7 +246,7 @@ test.describe("Storage Backup Pull @bridge @storage", () => {
   });
 });
 
-test.describe("Mixed Backup Operations @bridge @storage", () => {
+test.describe('Mixed Backup Operations @bridge @storage', () => {
   let runner: BridgeTestRunner;
   let storage: StorageTestHelper;
 
@@ -255,30 +255,30 @@ test.describe("Mixed Backup Operations @bridge @storage", () => {
     storage = new StorageTestHelper(DEFAULT_BRIDGE_IP, DEFAULT_RUSTFS_CONFIG);
   });
 
-  test("push to machine should still work alongside storage", async () => {
+  test('push to machine should still work alongside storage', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "machine-push-repo")
+      .withRepository('test-repo-guid', 'machine-push-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withDestinationMachine(DEFAULT_WORKER_2_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withPushParams({
-        destinationType: "machine",
+        destinationType: 'machine',
         machines: [DEFAULT_WORKER_2_IP],
-        tag: "v1.0.0",
+        tag: 'v1.0.0',
       });
 
     const result = await runner.pushWithVault(vault);
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
 
-  test("pull from machine should still work", async () => {
+  test('pull from machine should still work', async () => {
     const vault = VaultBuilder.forPull()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "machine-pull-repo")
+      .withRepository('test-repo-guid', 'machine-pull-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withSourceMachine(DEFAULT_WORKER_2_IP, TEST_USER)
       .withPullParams({
-        sourceType: "machine",
+        sourceType: 'machine',
         from: DEFAULT_WORKER_2_IP,
       });
 
@@ -286,19 +286,19 @@ test.describe("Mixed Backup Operations @bridge @storage", () => {
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
 
-  test("push with combined options should work", async () => {
+  test('push with combined options should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository("test-repo-guid", "combined-repo")
+      .withRepository('test-repo-guid', 'combined-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage(storage.getVaultStorageConfig())
       .withPushParams({
-        destinationType: "storage",
-        dest: "combined-backup.tar",
-        state: "offline",
+        destinationType: 'storage',
+        dest: 'combined-backup.tar',
+        state: 'offline',
         checkpoint: true,
         override: true,
-        grand: "grand-repo-guid",
+        grand: 'grand-repo-guid',
       });
 
     const result = await runner.pushWithVault(vault);
@@ -306,92 +306,92 @@ test.describe("Mixed Backup Operations @bridge @storage", () => {
   });
 });
 
-test.describe("Storage Types Support @bridge @storage", () => {
+test.describe('Storage Types Support @bridge @storage', () => {
   let runner: BridgeTestRunner;
 
   test.beforeAll(() => {
     runner = BridgeTestRunner.forWorker();
   });
 
-  test("S3 storage type should generate correct rclone backend", async () => {
+  test('S3 storage type should generate correct rclone backend', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
       .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage({
-        name: "s3-storage",
-        type: "s3",
-        endpoint: "http://localhost:9000",
-        bucket: "test-bucket",
-        accessKey: "key",
-        secretKey: "secret",
+        name: 's3-storage',
+        type: 's3',
+        endpoint: 'http://localhost:9000',
+        bucket: 'test-bucket',
+        accessKey: 'key',
+        secretKey: 'secret',
       })
-      .withPushParams({ destinationType: "storage", storages: ["s3-storage"] });
+      .withPushParams({ destinationType: 'storage', storages: ['s3-storage'] });
 
     const result = await runner.pushWithVault(vault);
     const output = result.stdout + result.stderr;
-    expect(output).toContain("--rclone-backend s3");
-    expect(output).toContain("--rclone-bucket test-bucket");
-    expect(output).toContain("s3-endpoint=http://localhost:9000");
+    expect(output).toContain('--rclone-backend s3');
+    expect(output).toContain('--rclone-bucket test-bucket');
+    expect(output).toContain('s3-endpoint=http://localhost:9000');
   });
 
-  test("B2 storage type should generate correct rclone backend", async () => {
+  test('B2 storage type should generate correct rclone backend', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
       .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage({
-        name: "b2-storage",
-        type: "b2",
-        bucket: "test-bucket",
-        accessKey: "key",
-        secretKey: "secret",
+        name: 'b2-storage',
+        type: 'b2',
+        bucket: 'test-bucket',
+        accessKey: 'key',
+        secretKey: 'secret',
       })
-      .withPushParams({ destinationType: "storage", storages: ["b2-storage"] });
+      .withPushParams({ destinationType: 'storage', storages: ['b2-storage'] });
 
     const result = await runner.pushWithVault(vault);
     const output = result.stdout + result.stderr;
-    expect(output).toContain("--rclone-backend b2");
-    expect(output).toContain("--rclone-bucket test-bucket");
+    expect(output).toContain('--rclone-backend b2');
+    expect(output).toContain('--rclone-bucket test-bucket');
   });
 
-  test("Azure storage type should generate correct rclone backend", async () => {
+  test('Azure storage type should generate correct rclone backend', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
       .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage({
-        name: "azure-storage",
-        type: "azure",
+        name: 'azure-storage',
+        type: 'azure',
         bucket: TEST_CONTAINER_PREFIX,
-        accessKey: "account",
-        secretKey: "key",
+        accessKey: 'account',
+        secretKey: 'key',
       })
-      .withPushParams({ destinationType: "storage", storages: ["azure-storage"] });
+      .withPushParams({ destinationType: 'storage', storages: ['azure-storage'] });
 
     const result = await runner.pushWithVault(vault);
     const output = result.stdout + result.stderr;
-    expect(output).toContain("--rclone-backend azure");
+    expect(output).toContain('--rclone-backend azure');
     expect(output).toContain(`--rclone-bucket ${TEST_CONTAINER_PREFIX}`);
   });
 
-  test("GCS storage type should generate correct rclone backend", async () => {
+  test('GCS storage type should generate correct rclone backend', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
       .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withStorage({
-        name: "gcs-storage",
-        type: "gcs",
-        bucket: "test-bucket",
-        accessKey: "service-account",
-        secretKey: "key-json",
+        name: 'gcs-storage',
+        type: 'gcs',
+        bucket: 'test-bucket',
+        accessKey: 'service-account',
+        secretKey: 'key-json',
       })
-      .withPushParams({ destinationType: "storage", storages: ["gcs-storage"] });
+      .withPushParams({ destinationType: 'storage', storages: ['gcs-storage'] });
 
     const result = await runner.pushWithVault(vault);
     const output = result.stdout + result.stderr;
-    expect(output).toContain("--rclone-backend gcs");
-    expect(output).toContain("--rclone-bucket test-bucket");
+    expect(output).toContain('--rclone-backend gcs');
+    expect(output).toContain('--rclone-bucket test-bucket');
   });
 });
