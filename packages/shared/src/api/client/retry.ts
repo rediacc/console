@@ -52,7 +52,13 @@ export function isRetryableError(error: unknown, config: HttpRetryConfig): boole
 
   // Axios network error codes
   if (config.retryOnNetworkError && error.code) {
-    const retryableCodes = ['ECONNABORTED', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ERR_NETWORK'];
+    const retryableCodes = [
+      'ECONNABORTED',
+      'ECONNREFUSED',
+      'ECONNRESET',
+      'ETIMEDOUT',
+      'ERR_NETWORK',
+    ];
     if (retryableCodes.includes(error.code)) {
       return true;
     }
