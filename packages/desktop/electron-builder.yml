@@ -22,12 +22,9 @@ asarUnpack:
   - resources/**
 
 # Windows Configuration
+# Note: arch is controlled by CI via --arch flag, not hardcoded here
 win:
-  target:
-    - target: nsis
-      arch:
-        - x64
-        - arm64
+  target: nsis
   artifactName: rediacc-console-${version}-win-${arch}.${ext}
   icon: resources/icon.ico
   # Bundle MSYS2 binaries for rsync/SSH functionality
@@ -49,12 +46,9 @@ nsis:
   uninstallerIcon: resources/icon.ico
 
 # macOS Configuration
+# Note: arch is controlled by CI via --arch flag, not hardcoded here
 mac:
-  target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
+  target: dmg
   artifactName: rediacc-console-${version}-mac-${arch}.${ext}
   icon: resources/icon.png
   category: public.app-category.developer-tools
@@ -77,16 +71,11 @@ dmg:
     height: 380
 
 # Linux Configuration
+# Note: arch is controlled by CI via --arch flag, not hardcoded here
 linux:
   target:
-    - target: AppImage
-      arch:
-        - x64
-        - arm64
-    - target: deb
-      arch:
-        - x64
-        - arm64
+    - AppImage
+    - deb
   artifactName: rediacc-console-${version}-linux-${arch}.${ext}
   icon: resources/icon.png
   category: Development
