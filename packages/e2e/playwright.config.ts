@@ -57,8 +57,7 @@ function getVideoMode(): 'off' | 'on' | 'retain-on-failure' {
 export default test.defineConfig({
   testDir: './tests',
 
-  /* Global setup/teardown for dynamic user registration */
-  globalSetup: path.resolve(__dirname, './src/setup/global-setup.ts'),
+  /* Global teardown to clean up state file */
   globalTeardown: path.resolve(__dirname, './src/setup/global-teardown.ts'),
 
   /* Run tests in files in parallel */
@@ -110,24 +109,37 @@ export default test.defineConfig({
   /* Configure projects for browsers and devices */
   projects: [
     // =========================================================================
+    // SETUP PROJECT - Registers user before all tests
+    // =========================================================================
+    {
+      name: 'setup',
+      testMatch: /global\.setup\.ts/,
+      use: { ...test.devices['Desktop Chrome'] },
+    },
+
+    // =========================================================================
     // DESKTOP BROWSERS
     // Each test authenticates via login page (no shared auth state needed)
     // =========================================================================
     {
       name: 'chromium',
       use: { ...test.devices['Desktop Chrome'] },
+      dependencies: ['setup'],
     },
     {
       name: 'firefox',
       use: { ...test.devices['Desktop Firefox'] },
+      dependencies: ['setup'],
     },
     {
       name: 'webkit',
       use: { ...test.devices['Desktop Safari'] },
+      dependencies: ['setup'],
     },
     {
       name: 'msedge',
       use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
+      dependencies: ['setup'],
     },
 
     // =========================================================================
@@ -136,6 +148,7 @@ export default test.defineConfig({
     {
       name: 'galaxy-s24',
       use: { ...test.devices['Galaxy S24'] },
+      dependencies: ['setup'],
     },
     {
       name: 'galaxy-tab-s9',
@@ -148,6 +161,7 @@ export default test.defineConfig({
         isMobile: true,
         hasTouch: true,
       },
+      dependencies: ['setup'],
     },
 
     // =========================================================================
@@ -156,10 +170,12 @@ export default test.defineConfig({
     {
       name: 'iphone-15-pro-max',
       use: { ...test.devices['iPhone 15 Pro Max'] },
+      dependencies: ['setup'],
     },
     {
       name: 'ipad-pro-11',
       use: { ...test.devices['iPad Pro 11'] },
+      dependencies: ['setup'],
     },
   ],
 

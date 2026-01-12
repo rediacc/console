@@ -64,6 +64,7 @@
     "packages/e2e": {
       "entry": [
         "tests/**/*.test.ts",
+        "tests/**/*.setup.ts",
         "pages/**/*.ts"
       ],
       "project": ["**/*.ts"]
