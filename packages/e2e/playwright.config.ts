@@ -12,6 +12,9 @@ const E2E_DEFAULTS = {
   CONNECTION_TIMEOUT: 30000,
 } as const;
 
+// Auth state directory for per-browser authentication
+const AUTH_DIR = 'playwright/.auth';
+
 /**
  * E2E Test Configuration for Console Web Application
  *
@@ -32,8 +35,9 @@ const E2E_DEFAULTS = {
  */
 
 function getScreenshotMode(): 'off' | 'on' | 'only-on-failure' {
+  // Always capture screenshots in CI for debugging and reports
   if (process.env.CI) {
-    return 'only-on-failure';
+    return 'on';
   }
   if (process.env.SCREENSHOT_ON_FAILURE === 'true') {
     return 'only-on-failure';
@@ -42,6 +46,10 @@ function getScreenshotMode(): 'off' | 'on' | 'only-on-failure' {
 }
 
 function getVideoMode(): 'off' | 'on' | 'retain-on-failure' {
+  // Always record video in CI for debugging
+  if (process.env.CI) {
+    return 'on';
+  }
   const value = process.env.RECORD_VIDEO;
   if (value === 'on' || value === 'retain-on-failure') {
     return value;
@@ -68,20 +76,23 @@ export default test.defineConfig({
   maxFailures: process.env.STOP_ON_FAILURE === 'true' ? 1 : undefined,
 
   /* Reporter to use */
-  reporter: [['html', { outputFolder: 'reports/e2e' }]],
+  reporter: [
+    ['html', { outputFolder: 'reports/e2e' }],
+    ['json', { outputFile: 'reports/e2e/results.json' }],
+  ],
 
   /* Shared settings for all the projects below */
   use: {
     /* Base URL - Vite dev server with /console/ base path */
     baseURL: process.env.E2E_BASE_URL ?? E2E_DEFAULTS.CONSOLE_URL,
 
-    /* Collect trace when retrying the failed test */
-    trace: 'on-first-retry',
+    /* Collect trace for debugging - always in CI, on retry locally */
+    trace: process.env.CI ? 'on' : 'on-first-retry',
 
-    /* Screenshot settings - enabled on failure in CI */
+    /* Screenshot settings - always capture in CI */
     screenshot: getScreenshotMode(),
 
-    /* Video settings */
+    /* Video settings - always record in CI */
     video: getVideoMode(),
 
     /* Timeout settings with sensible defaults */
@@ -95,23 +106,114 @@ export default test.defineConfig({
     ),
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for browsers and devices */
   projects: [
+    // =========================================================================
+    // SETUP PROJECTS - Register unique user per browser to avoid session conflicts
+    // =========================================================================
     {
-      name: 'chromium',
+      name: 'chromium-setup',
+      testMatch: /global\.setup\.ts/,
       use: { ...test.devices['Desktop Chrome'] },
     },
+    {
+      name: 'firefox-setup',
+      testMatch: /global\.setup\.ts/,
+      use: { ...test.devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit-setup',
+      testMatch: /global\.setup\.ts/,
+      use: { ...test.devices['Desktop Safari'] },
+    },
+    {
+      name: 'msedge-setup',
+      testMatch: /global\.setup\.ts/,
+      use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
+    },
 
-    // Firefox and WebKit disabled - not installed in CI environment
-    // Uncomment to enable multi-browser testing locally
-    // {
-    //   name: 'firefox',
-    //   use: { ...test.devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...test.devices['Desktop Safari'] },
-    // },
+    // =========================================================================
+    // DESKTOP BROWSERS - Main browser test projects
+    // =========================================================================
+    {
+      name: 'chromium',
+      dependencies: ['chromium-setup'],
+      use: {
+        ...test.devices['Desktop Chrome'],
+        storageState: `${AUTH_DIR}/chromium-state.json`,
+      },
+    },
+    {
+      name: 'firefox',
+      dependencies: ['firefox-setup'],
+      use: {
+        ...test.devices['Desktop Firefox'],
+        storageState: `${AUTH_DIR}/firefox-state.json`,
+      },
+    },
+    {
+      name: 'webkit',
+      dependencies: ['webkit-setup'],
+      use: {
+        ...test.devices['Desktop Safari'],
+        storageState: `${AUTH_DIR}/webkit-state.json`,
+      },
+    },
+    {
+      name: 'msedge',
+      dependencies: ['msedge-setup'],
+      use: {
+        ...test.devices['Desktop Edge'],
+        channel: 'msedge',
+        storageState: `${AUTH_DIR}/msedge-state.json`,
+      },
+    },
+
+    // =========================================================================
+    // MOBILE DEVICES - Android (Chromium-based)
+    // =========================================================================
+    {
+      name: 'galaxy-s24',
+      dependencies: ['chromium-setup'],
+      use: {
+        ...test.devices['Galaxy S24'],
+        storageState: `${AUTH_DIR}/chromium-state.json`,
+      },
+    },
+    {
+      name: 'galaxy-tab-s9',
+      dependencies: ['chromium-setup'],
+      use: {
+        // Galaxy Tab S9 - 12.4" display, 2560x1600 resolution
+        viewport: { width: 1280, height: 800 },
+        deviceScaleFactor: 2,
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 14; SM-X910) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        isMobile: true,
+        hasTouch: true,
+        storageState: `${AUTH_DIR}/chromium-state.json`,
+      },
+    },
+
+    // =========================================================================
+    // MOBILE DEVICES - iOS (WebKit-based)
+    // =========================================================================
+    {
+      name: 'iphone-15-pro-max',
+      dependencies: ['webkit-setup'],
+      use: {
+        ...test.devices['iPhone 15 Pro Max'],
+        storageState: `${AUTH_DIR}/webkit-state.json`,
+      },
+    },
+    {
+      name: 'ipad-pro-11',
+      dependencies: ['webkit-setup'],
+      use: {
+        ...test.devices['iPad Pro 11'],
+        storageState: `${AUTH_DIR}/webkit-state.json`,
+      },
+    },
   ],
 
   /* Web server configuration - starts Vite dev server automatically */

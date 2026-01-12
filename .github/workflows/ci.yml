@@ -584,34 +584,63 @@ jobs:
           echo "Waiting for test jobs to complete..."
           MAX_WAIT=7200  # 2 hours
           ELAPSED=0
-          PLATFORMS=("linux" "windows" "macos" "e2e")
+
+          # CLI platforms
+          CLI_PLATFORMS=("linux" "windows" "macos")
+          # E2E browsers
+          E2E_BROWSERS=("chromium" "firefox" "webkit" "msedge")
+          # E2E devices
+          E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
+
           COMPLETED=()
+          EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS[@]} + ${#E2E_DEVICES[@]}))
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
             # Get all artifacts for this run
             ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[].name' 2>/dev/null || echo "")
 
-            for platform in "${PLATFORMS[@]}"; do
-              if [[ ! " ${COMPLETED[*]} " =~ " ${platform} " ]]; then
+            # Check CLI platforms
+            for platform in "${CLI_PLATFORMS[@]}"; do
+              if [[ ! " ${COMPLETED[*]} " =~ " cli-${platform} " ]]; then
                 if echo "$ARTIFACTS" | grep -q "^test-complete-${platform}$"; then
-                  echo "✓ ${platform} tests completed"
-                  COMPLETED+=("$platform")
+                  echo "✓ CLI ${platform} tests completed"
+                  COMPLETED+=("cli-$platform")
                 fi
               fi
             done
 
-            if [ ${#COMPLETED[@]} -eq ${#PLATFORMS[@]} ]; then
-              echo "✓ All platform tests completed"
+            # Check E2E browsers
+            for browser in "${E2E_BROWSERS[@]}"; do
+              if [[ ! " ${COMPLETED[*]} " =~ " e2e-${browser} " ]]; then
+                if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${browser}$"; then
+                  echo "✓ E2E ${browser} tests completed"
+                  COMPLETED+=("e2e-$browser")
+                fi
+              fi
+            done
+
+            # Check E2E devices
+            for device in "${E2E_DEVICES[@]}"; do
+              if [[ ! " ${COMPLETED[*]} " =~ " e2e-${device} " ]]; then
+                if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${device}$"; then
+                  echo "✓ E2E ${device} tests completed"
+                  COMPLETED+=("e2e-$device")
+                fi
+              fi
+            done
+
+            if [ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ]; then
+              echo "✓ All platform tests completed (${#COMPLETED[@]}/${EXPECTED_COUNT})"
               break
             fi
 
             sleep 30
             ELAPSED=$((ELAPSED + 30))
-            echo "Waiting... (${ELAPSED}s / ${MAX_WAIT}s) - Completed: ${COMPLETED[*]:-none}"
+            echo "Waiting... (${ELAPSED}s / ${MAX_WAIT}s) - Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
           done
 
-          if [ ${#COMPLETED[@]} -ne ${#PLATFORMS[@]} ]; then
-            echo "⚠ Timeout waiting for some platforms. Completed: ${COMPLETED[*]:-none}"
+          if [ ${#COMPLETED[@]} -lt $EXPECTED_COUNT ]; then
+            echo "⚠ Timeout waiting for some platforms. Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
           fi
 
       - name: Cleanup Elite Services
@@ -1019,10 +1048,24 @@ jobs:
         uses: ./.github/actions/cancel-on-failure
 
   test-e2e:
-    name: 🌐 Test - E2E
+    name: 🌐 Test - E2E (${{ matrix.browser }})
     runs-on: ubuntu-latest
     needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
-    timeout-minutes: 45
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit, msedge]
+        include:
+          - browser: chromium
+            install: npx playwright install --with-deps chromium
+          - browser: firefox
+            install: npx playwright install --with-deps firefox
+          - browser: webkit
+            install: npx playwright install --with-deps webkit
+          - browser: msedge
+            install: npx playwright install --with-deps chromium && npx playwright install msedge
 
     env:
       REDIACC_TEST_EMAIL: admin@rediacc.io
@@ -1044,9 +1087,9 @@ jobs:
       - name: Build shared libraries
         run: npm run build:packages
 
-      - name: Install Playwright Browsers
+      - name: Install Playwright Browser (${{ matrix.browser }})
         working-directory: packages/e2e
-        run: npx playwright install --with-deps chromium
+        run: ${{ matrix.install }}
 
       - name: Download Tunnel URL
         id: tunnel
@@ -1087,7 +1130,7 @@ jobs:
         working-directory: packages/e2e
         run: |
           TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          # E2E tests now run against Vite dev server (source code), not Docker container
+          # E2E tests run against Vite dev server (source code)
           # Vite proxies /api/* to the tunnel URL (backend)
           echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
           echo "VITE_API_URL=${TUNNEL_URL}" >> .env
@@ -1095,16 +1138,19 @@ jobs:
           echo "TEST_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
           echo "ADMIN_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
           echo "ADMIN_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "TEST_VERIFICATION_CODE=111111" >> .env
           echo "CI=true" >> .env
-          echo "✓ Created .env for E2E tests (testing source code via Vite)"
+          echo "✓ Created .env for E2E tests (${{ matrix.browser }})"
         env:
           REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
           REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
 
-      - name: Run E2E Tests
+      - name: Create auth directory
+        run: mkdir -p packages/e2e/playwright/.auth
+
+      - name: Run E2E Tests (${{ matrix.browser }})
         working-directory: packages/e2e
-        # Use 'ci' suite which only includes auth tests (no VM infrastructure needed)
-        run: npm run test:suite ci
+        run: npx playwright test --project=${{ matrix.browser }}-setup --project=${{ matrix.browser }}
 
       - name: Create Completion Signal
         if: always()
@@ -1114,17 +1160,184 @@ jobs:
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: test-complete-e2e
+          name: test-complete-e2e-${{ matrix.browser }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 1
 
-      - name: Upload E2E Test Report
+      - name: Upload E2E Test Report (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-test-report-${{ github.sha }}
+          name: e2e-report-${{ matrix.browser }}-${{ github.sha }}
           path: packages/e2e/reports/e2e/
-          retention-days: 7
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Screenshots (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-screenshots-${{ matrix.browser }}-${{ github.sha }}
+          path: packages/e2e/screenshots/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Test Results (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ github.sha }}
+          path: packages/e2e/test-results/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Cancel workflow on failure
+        if: failure()
+        uses: ./.github/actions/cancel-on-failure
+
+  test-e2e-devices:
+    name: 🌐 Test - E2E Devices (${{ matrix.device }})
+    runs-on: ubuntu-latest
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: galaxy-s24
+            browser: chromium
+            install: npx playwright install --with-deps chromium
+          - device: galaxy-tab-s9
+            browser: chromium
+            install: npx playwright install --with-deps chromium
+          - device: iphone-15-pro-max
+            browser: webkit
+            install: npx playwright install --with-deps webkit
+          - device: ipad-pro-11
+            browser: webkit
+            install: npx playwright install --with-deps webkit
+
+    env:
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Install Playwright Browser (${{ matrix.browser }})
+        working-directory: packages/e2e
+        run: ${{ matrix.install }}
+
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAX_WAIT=1500
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
+              TUNNEL_URL=$(cat tunnel-url.txt)
+              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
+              exit 0
+            fi
+            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "✗ Failed to download tunnel URL"
+          exit 1
+
+      - name: Verify Tunnel Connectivity
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
+
+      - name: Create E2E Test Environment
+        working-directory: packages/e2e
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
+          echo "VITE_API_URL=${TUNNEL_URL}" >> .env
+          echo "TEST_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "TEST_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "ADMIN_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
+          echo "ADMIN_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
+          echo "TEST_VERIFICATION_CODE=111111" >> .env
+          echo "CI=true" >> .env
+          echo "✓ Created .env for E2E device tests (${{ matrix.device }})"
+        env:
+          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
+          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
+
+      - name: Create auth directory
+        run: mkdir -p packages/e2e/playwright/.auth
+
+      - name: Run E2E Device Tests (${{ matrix.device }})
+        working-directory: packages/e2e
+        run: npx playwright test --project=${{ matrix.browser }}-setup --project=${{ matrix.device }}
+
+      - name: Create Completion Signal
+        if: always()
+        run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Upload Completion Signal
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-${{ matrix.device }}
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 1
+
+      - name: Upload E2E Device Report (${{ matrix.device }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-report-${{ matrix.device }}-${{ github.sha }}
+          path: packages/e2e/reports/e2e/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Device Screenshots (${{ matrix.device }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-screenshots-${{ matrix.device }}-${{ github.sha }}
+          path: packages/e2e/screenshots/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Device Results (${{ matrix.device }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-results-${{ matrix.device }}-${{ github.sha }}
+          path: packages/e2e/test-results/
+          retention-days: 3
           if-no-files-found: ignore
 
       - name: Cancel workflow on failure
@@ -1366,7 +1579,7 @@ jobs:
   summary:
     name: ✅ Summary
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, build-web, build-desktop]
+    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, build-web, build-desktop]
     if: always()
 
     steps:
@@ -1392,7 +1605,8 @@ jobs:
           echo "- CLI (Linux): ${{ needs.test-cli-linux.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI (Windows): ${{ needs.test-cli-windows.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI (macOS): ${{ needs.test-cli-macos.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Browsers: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Devices: ${{ needs.test-e2e-devices.result }}" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.quality-lint.result }}" != "success" ] || \
              [ "${{ needs.quality-format.result }}" != "success" ] || \
@@ -1404,6 +1618,7 @@ jobs:
              [ "${{ needs.test-cli-windows.result }}" != "success" ] || \
              [ "${{ needs.test-cli-macos.result }}" != "success" ] || \
              [ "${{ needs.test-e2e.result }}" != "success" ] || \
+             [ "${{ needs.test-e2e-devices.result }}" != "success" ] || \
              [ "${{ needs.build-web.result }}" != "success" ] || \
              [ "${{ needs.build-desktop.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY

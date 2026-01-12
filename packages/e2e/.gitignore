@@ -16,6 +16,7 @@ dist/
 # Playwright state
 auth.json
 storageState.json
+playwright/.auth/
 
 # Test data
 src/utils/data/test-data.json
