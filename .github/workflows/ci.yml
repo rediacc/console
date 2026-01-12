@@ -649,13 +649,26 @@ jobs:
           rdc --version
           echo "✓ CLI installed globally"
 
-      # Login BEFORE setup-vms action - the action needs ghcr.io access to pull images
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
+      # ========================================================================
+      # DOCKER AUTH & PRE-PULL (Security-conscious pattern from elite)
+      # ========================================================================
+      # Login, pull all needed images, then cleanup credentials BEFORE setup-vms
+      - name: Pre-pull Docker Images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          # Login to ghcr.io
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # Pre-pull renet/bridge image (needed for binary extraction later)
+          echo "Pre-pulling $RENET_DOCKER_IMAGE..."
+          docker pull --quiet "$RENET_DOCKER_IMAGE"
+
+          # Explicit cleanup (same pattern as elite)
+          echo "Cleaning up Docker credentials..."
+          docker logout ghcr.io
+          rm -f ~/.docker/config.json 2>/dev/null || true
+          echo "✓ Images pre-pulled, credentials cleaned"
 
       - name: Provision Test VMs
         id: vms
@@ -676,18 +689,10 @@ jobs:
           echo "Worker IPs: ${{ steps.vms.outputs.worker-ips }}"
           echo "Registry: ${{ steps.vms.outputs.registry-url }}"
 
-      # Re-login after setup-vms (ops scripts logout for security)
-      - name: Re-login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
-
       - name: Extract renet binary from Docker image
         run: |
-          echo "Extracting renet from $RENET_DOCKER_IMAGE..."
-          docker pull $RENET_DOCKER_IMAGE
+          echo "Extracting renet from $RENET_DOCKER_IMAGE (pre-pulled)..."
+          # Image already pulled in Pre-pull step - no auth needed
           CONTAINER_ID=$(docker create $RENET_DOCKER_IMAGE)
           docker cp $CONTAINER_ID:/opt/renet/renet-linux-amd64 /tmp/renet
           docker rm $CONTAINER_ID
