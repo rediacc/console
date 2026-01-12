@@ -20,10 +20,14 @@ setup('register user for e2e tests', async ({ page }) => {
   console.warn(`[Setup] Registering: ${credentials.email}`);
 
   const baseURL = process.env.E2E_BASE_URL ?? API_DEFAULTS.CONSOLE_URL;
+  const loginUrl = `${baseURL}login`;
 
-  // Navigate to login page
-  await page.goto(`${baseURL}login`);
-  await page.waitForLoadState('networkidle');
+  console.warn(`[Setup] Navigating to: ${loginUrl}`);
+
+  // Navigate to login page with extended timeout for CI (Vite compilation)
+  await page.goto(loginUrl, { timeout: 60000, waitUntil: 'domcontentloaded' });
+  console.warn('[Setup] Page loaded, waiting for network idle...');
+  await page.waitForLoadState('networkidle', { timeout: 30000 });
 
   // Click register link
   await page.locator('[data-testid="login-register-link"]').click();

@@ -115,6 +115,8 @@ export default test.defineConfig({
       name: 'setup',
       testMatch: /global\.setup\.ts/,
       use: { ...test.devices['Desktop Chrome'] },
+      // Setup needs more time: wait for Vite + registration flow
+      timeout: 60000,
     },
 
     // =========================================================================
@@ -177,6 +179,9 @@ export default test.defineConfig({
     url: 'http://localhost:3000/console/',
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes for Vite to start
+    // Capture output for debugging in CI
+    stdout: 'pipe',
+    stderr: 'pipe',
     // Pass VITE_API_URL to Vite only if explicitly set (for CI tunnel)
     // Otherwise Vite uses default: http://localhost:7322
     env: {
