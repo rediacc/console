@@ -610,6 +610,14 @@ jobs:
       # ========================================================================
       # BRIDGE TESTS - Run while waiting for other test jobs
       # ========================================================================
+      # Login BEFORE setup-vms action - the action needs ghcr.io access to pull images
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
       - name: Provision Test VMs
         id: vms
         uses: rediacc/ops/.github/actions/setup-vms@main
@@ -628,13 +636,6 @@ jobs:
           echo "Bridge IP: ${{ steps.vms.outputs.bridge-ip }}"
           echo "Worker IPs: ${{ steps.vms.outputs.worker-ips }}"
           echo "Registry: ${{ steps.vms.outputs.registry-url }}"
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
 
       - name: Extract renet binary from Docker image
         run: |
