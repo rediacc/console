@@ -34,7 +34,7 @@ setup('authenticate', async ({ page }, testInfo) => {
   const email = `e2e-${browser}-${timestamp}@${TEST_CREDENTIALS.TEST_EMAIL_DOMAIN}`;
   const organizationName = `E2E ${browser} ${timestamp}`;
 
-  console.log(`[Setup] Registering user for ${browser}: ${email}`);
+  console.warn(`[Setup] Registering user for ${browser}: ${email}`);
 
   // Navigate to login page
   await loginPage.navigate();
@@ -66,11 +66,11 @@ setup('authenticate', async ({ page }, testInfo) => {
   // Wait for successful login (redirect to machines page)
   await page.waitForURL('**/machines', { timeout: 30000 });
 
-  console.log(`[Setup] User registered and logged in for ${browser}`);
+  console.warn(`[Setup] User registered and logged in for ${browser}`);
 
   // Save authentication state to browser-specific file
   const authFile = `${AUTH_DIR}/${browser}-state.json`;
   await page.context().storageState({ path: authFile });
 
-  console.log(`[Setup] Auth state saved to ${authFile}`);
+  console.warn(`[Setup] Auth state saved to ${authFile}`);
 });
