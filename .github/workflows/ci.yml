@@ -337,7 +337,7 @@ jobs:
         with:
           name: security-audit-${{ github.sha }}
           path: audit-report.json
-          retention-days: 30
+          retention-days: 3
 
       - name: Cancel workflow on failure
         if: failure()
@@ -384,7 +384,7 @@ jobs:
         with:
           name: coverage-report-${{ github.sha }}
           path: packages/web/coverage/
-          retention-days: 30
+          retention-days: 3
 
       - name: Cancel workflow on failure
         if: failure()
@@ -501,7 +501,7 @@ jobs:
         with:
           name: vscode-detection-results-${{ matrix.os }}-${{ github.sha }}
           path: packages/cli/tests/test-results/
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: ignore
 
       - name: Cancel workflow on failure
@@ -575,7 +575,7 @@ jobs:
         with:
           name: tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
-          retention-days: 1
+          retention-days: 3
 
       - name: Wait for Completion Signals
         env:
@@ -767,7 +767,7 @@ jobs:
         with:
           name: test-complete-linux
           path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
+          retention-days: 3
 
       - name: Upload CLI Test Report
         if: always()
@@ -775,7 +775,7 @@ jobs:
         with:
           name: cli-test-report-linux-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
-          retention-days: 7
+          retention-days: 3
 
       - name: Upload CLI Test Logs
         if: always()
@@ -783,7 +783,7 @@ jobs:
         with:
           name: cli-test-logs-linux-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
-          retention-days: 7
+          retention-days: 3
 
       - name: Cancel workflow on failure
         if: failure()
@@ -903,7 +903,7 @@ jobs:
         with:
           name: test-complete-windows
           path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
+          retention-days: 3
 
       - name: Upload CLI Test Report
         if: always()
@@ -911,7 +911,7 @@ jobs:
         with:
           name: cli-test-report-windows-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
-          retention-days: 7
+          retention-days: 3
 
       - name: Upload CLI Test Logs
         if: always()
@@ -919,7 +919,7 @@ jobs:
         with:
           name: cli-test-logs-windows-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
-          retention-days: 7
+          retention-days: 3
 
       - name: Cancel workflow on failure
         if: failure()
@@ -1025,7 +1025,7 @@ jobs:
         with:
           name: test-complete-macos
           path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
+          retention-days: 3
 
       - name: Upload CLI Test Report
         if: always()
@@ -1033,7 +1033,7 @@ jobs:
         with:
           name: cli-test-report-macos-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
-          retention-days: 7
+          retention-days: 3
 
       - name: Upload CLI Test Logs
         if: always()
@@ -1041,7 +1041,7 @@ jobs:
         with:
           name: cli-test-logs-macos-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
-          retention-days: 7
+          retention-days: 3
 
       - name: Cancel workflow on failure
         if: failure()
@@ -1148,7 +1148,7 @@ jobs:
         with:
           name: test-complete-e2e-${{ matrix.browser }}
           path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
+          retention-days: 3
 
       - name: Upload E2E Test Report (${{ matrix.browser }})
         if: always()
@@ -1283,7 +1283,7 @@ jobs:
         with:
           name: test-complete-e2e-${{ matrix.device }}
           path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
+          retention-days: 3
 
       - name: Upload E2E Device Report (${{ matrix.device }})
         if: always()
@@ -1367,7 +1367,7 @@ jobs:
         with:
           name: build-${{ matrix.build-type }}-${{ github.sha }}
           path: packages/web/dist/
-          retention-days: 90
+          retention-days: 3
 
       # Bundle Size Analysis (RELEASE only)
       - name: Analyze bundle size
@@ -1438,7 +1438,7 @@ jobs:
         with:
           name: npm-debug-logs-windows-${{ github.sha }}
           path: C:\npm\cache\_logs\
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: ignore
 
       - name: Build shared libraries
@@ -1538,7 +1538,7 @@ jobs:
         with:
           name: desktop-${{ matrix.os }}-${{ github.sha }}
           path: dist/desktop/
-          retention-days: 30
+          retention-days: 3
           if-no-files-found: error
 
       - name: Cancel workflow on failure
@@ -1546,12 +1546,125 @@ jobs:
         uses: ./.github/actions/cancel-on-failure
 
   # ============================================================================
-  # TIER 5: CI SUMMARY (Depends on all)
+  # TIER 5: BRIDGE TESTS (Self-hosted runner with VM access)
+  # ============================================================================
+  test-bridge:
+    name: 🔧 Test - Bridge
+    runs-on: [self-hosted, linux, vm-enabled]
+    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    timeout-minutes: 120
+
+    env:
+      CI: 'true'
+      VM_NET_BASE: 192.168.111
+      VM_NET_OFFSET: 0
+      VM_BRIDGE: 1
+      VM_WORKERS: 11 12
+      VM_CEPH_NODES: 21 22 23
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract renet binary from Docker image
+        run: |
+          echo "Extracting renet from $RENET_DOCKER_IMAGE..."
+          docker pull $RENET_DOCKER_IMAGE
+          CONTAINER_ID=$(docker create $RENET_DOCKER_IMAGE)
+          docker cp $CONTAINER_ID:/opt/renet/renet-linux-amd64 /tmp/renet
+          docker rm $CONTAINER_ID
+          chmod +x /tmp/renet
+          /tmp/renet version
+          echo "RENET_BINARY_PATH=/tmp/renet" >> $GITHUB_ENV
+
+      - name: Verify VM Network Access
+        run: |
+          for ip in 192.168.111.1 192.168.111.11 192.168.111.12; do
+            if ping -c 1 -W 5 $ip > /dev/null 2>&1; then
+              echo "✓ $ip reachable"
+            else
+              echo "✗ $ip unreachable" && exit 1
+            fi
+          done
+
+      - name: Create Bridge Test Environment
+        working-directory: packages/bridge-tests
+        run: |
+          cat > .env << EOF
+          VM_NET_BASE=$VM_NET_BASE
+          VM_NET_OFFSET=$VM_NET_OFFSET
+          VM_BRIDGE=$VM_BRIDGE
+          VM_WORKERS=$VM_WORKERS
+          VM_CEPH_NODES=$VM_CEPH_NODES
+          BRIDGE_TIMEOUT=$BRIDGE_TIMEOUT
+          CI=true
+          RENET_BINARY_PATH=$RENET_BINARY_PATH
+          EOF
+
+      - name: Run Bridge Tests
+        working-directory: packages/bridge-tests
+        run: npm test -- --workers=1
+
+      - name: Create Completion Signal
+        if: always()
+        run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Upload Completion Signal
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-bridge
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+
+      - name: Upload Bridge Test Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: bridge-test-report-${{ github.sha }}
+          path: packages/bridge-tests/reports/bridge/
+          retention-days: 3
+
+      - name: Upload Bridge Test Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: bridge-test-logs-${{ github.sha }}
+          path: packages/bridge-tests/reports/bridge-logs/
+          retention-days: 3
+
+      - name: Cancel workflow on failure
+        if: failure()
+        uses: ./.github/actions/cancel-on-failure
+
+  # ============================================================================
+  # TIER 6: CI SUMMARY (Depends on all)
   # ============================================================================
   summary:
     name: ✅ Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, build-web, build-desktop]
+    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, build-web, build-desktop, test-bridge]
     if: always()
 
     steps:
@@ -1579,6 +1692,9 @@ jobs:
           echo "- CLI (macOS): ${{ needs.test-cli-macos.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Browsers: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Devices: ${{ needs.test-e2e-devices.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tier 5: Bridge Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Bridge: ${{ needs.test-bridge.result }}" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.quality-lint.result }}" != "success" ] || \
              [ "${{ needs.quality-format.result }}" != "success" ] || \
@@ -1592,7 +1708,8 @@ jobs:
              [ "${{ needs.test-e2e.result }}" != "success" ] || \
              [ "${{ needs.test-e2e-devices.result }}" != "success" ] || \
              [ "${{ needs.build-web.result }}" != "success" ] || \
-             [ "${{ needs.build-desktop.result }}" != "success" ]; then
+             [ "${{ needs.build-desktop.result }}" != "success" ] || \
+             [ "${{ needs.test-bridge.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "❌ **CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
             exit 1

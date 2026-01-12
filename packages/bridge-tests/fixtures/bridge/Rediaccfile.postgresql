@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# === Renet Compose ===
+# Uses the network-isolated docker socket automatically set by renet
+# via DOCKER_HOST=unix:///var/run/rediacc/docker-{networkID}.sock
+
+_compose() {
+  docker compose "$@"
+}
+
+prep() {
+  echo "Pulling PostgreSQL image..."
+  docker pull postgres:16-alpine
+  return $?
+}
+
+up() {
+  echo "Starting PostgreSQL..."
+  _compose up -d
+
+  # Wait for PostgreSQL to be ready
+  echo "Waiting for PostgreSQL to be ready..."
+  for i in {1..30}; do
+    if _compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
+      echo "PostgreSQL is ready"
+      return 0
+    fi
+    echo "Waiting for PostgreSQL... ($i/30)"
+    sleep 1
+  done
+
+  echo "PostgreSQL failed to start within timeout"
+  return 1
+}
+
+down() {
+  echo "Stopping PostgreSQL..."
+  _compose down -v
+  return $?
+}

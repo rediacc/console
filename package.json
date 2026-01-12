@@ -9,7 +9,8 @@
     "packages/cli",
     "packages/web",
     "packages/desktop",
-    "packages/e2e"
+    "packages/e2e",
+    "packages/bridge-tests"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli && npm run build:web",
@@ -32,6 +33,7 @@
     "lint:unused": "knip --treat-config-hints-as-errors",
     "lint:unused:fix": "knip --fix",
     "test": "npm run test -w @rediacc/web",
+    "test:bridge": "npm test -w @rediacc/bridge-tests",
     "test:coverage": "npm run test:coverage -w @rediacc/web",
     "test:run": "npm run test:run -w @rediacc/web",
     "test:ui": "npm run test:ui -w @rediacc/web",
