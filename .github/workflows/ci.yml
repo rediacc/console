@@ -36,20 +36,20 @@ jobs:
           script: |
             const pollInterval = 10000; // 10 seconds
             const maxRuntime = 1800000; // 30 minutes max
+            const minRuntime = 120000;  // 2 minutes minimum before allowing workflow-complete exit
             const startTime = Date.now();
 
+            console.log('🛑 Watchdog started - monitoring for job failures...');
+
             while (Date.now() - startTime < maxRuntime) {
+              const elapsed = Date.now() - startTime;
+              const elapsedSec = Math.round(elapsed / 1000);
+
               const { data: run } = await github.rest.actions.getWorkflowRun({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 run_id: context.runId
               });
-
-              // If workflow is no longer in progress, exit
-              if (run.status !== 'in_progress') {
-                console.log(`Workflow status: ${run.status} - exiting watchdog`);
-                return;
-              }
 
               const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
                 owner: context.repo.owner,
@@ -57,14 +57,19 @@ jobs:
                 run_id: context.runId
               });
 
-              // Check for any failed jobs (excluding this watchdog)
-              const failedJob = jobs.jobs.find(job =>
-                job.conclusion === 'failure' &&
-                !job.name.includes('Watchdog')
-              );
+              // Count job states (excluding watchdog)
+              const otherJobs = jobs.jobs.filter(j => !j.name.includes('Watchdog'));
+              const completed = otherJobs.filter(j => j.status === 'completed').length;
+              const inProgress = otherJobs.filter(j => j.status === 'in_progress').length;
+              const queued = otherJobs.filter(j => j.status === 'queued').length;
+
+              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued (workflow: ${run.status})`);
+
+              // Check for any failed jobs (can happen anytime)
+              const failedJob = otherJobs.find(job => job.conclusion === 'failure');
 
               if (failedJob) {
-                console.log(`Job "${failedJob.name}" failed - cancelling workflow...`);
+                console.log(`❌ Job "${failedJob.name}" failed - cancelling workflow...`);
                 await github.rest.actions.cancelWorkflowRun({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -73,10 +78,17 @@ jobs:
                 return;
               }
 
+              // Only exit on workflow completion AFTER minimum runtime
+              // This prevents early exit before all jobs have started
+              if (run.status !== 'in_progress' && elapsed >= minRuntime) {
+                console.log(`✅ Workflow status: ${run.status} - exiting watchdog (after ${elapsedSec}s)`);
+                return;
+              }
+
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
 
-            console.log('Watchdog timeout reached - exiting');
+            console.log('⏰ Watchdog timeout reached (30 min) - exiting');
 
   # ============================================================================
   # TIER 2: PR VALIDATION (PR-only, no dependencies)
