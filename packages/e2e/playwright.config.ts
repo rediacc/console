@@ -57,6 +57,10 @@ function getVideoMode(): 'off' | 'on' | 'retain-on-failure' {
 export default test.defineConfig({
   testDir: './tests',
 
+  /* Global setup/teardown for dynamic user registration */
+  globalSetup: path.resolve(__dirname, './src/setup/global-setup.ts'),
+  globalTeardown: path.resolve(__dirname, './src/setup/global-teardown.ts'),
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 

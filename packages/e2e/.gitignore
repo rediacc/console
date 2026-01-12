@@ -16,6 +16,7 @@ dist/
 # Playwright state
 auth.json
 storageState.json
+.e2e-state.json
 
 # Test data
 src/utils/data/test-data.json

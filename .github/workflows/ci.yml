@@ -1048,7 +1048,7 @@ jobs:
         uses: ./.github/actions/cancel-on-failure
 
   test-e2e:
-    name: 🌐 Test - E2E (${{ matrix.browser }})
+    name: 🌐 Test - E2E Browsers (${{ matrix.browser }})
     runs-on: ubuntu-latest
     needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
     timeout-minutes: 60
@@ -1067,10 +1067,6 @@ jobs:
             install: npx playwright install --with-deps webkit
           - browser: msedge
             install: npx playwright install --with-deps chromium && npx playwright install msedge
-
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
 
     steps:
       - name: Checkout code
@@ -1133,18 +1129,11 @@ jobs:
           TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
           # E2E tests run against Vite dev server (source code)
           # Vite proxies /api/* to the tunnel URL (backend)
+          # User registration happens dynamically in globalSetup
           echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
           echo "VITE_API_URL=${TUNNEL_URL}" >> .env
-          echo "TEST_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "TEST_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "ADMIN_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "ADMIN_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "TEST_VERIFICATION_CODE=111111" >> .env
           echo "CI=true" >> .env
           echo "✓ Created .env for E2E tests (${{ matrix.browser }})"
-        env:
-          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
-          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
 
       - name: Run E2E Tests (${{ matrix.browser }})
         working-directory: packages/e2e
@@ -1217,10 +1206,6 @@ jobs:
             browser: webkit
             install: npx playwright install --with-deps webkit
 
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -1280,18 +1265,11 @@ jobs:
         working-directory: packages/e2e
         run: |
           TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          # User registration happens dynamically in globalSetup
           echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
           echo "VITE_API_URL=${TUNNEL_URL}" >> .env
-          echo "TEST_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "TEST_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "ADMIN_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "ADMIN_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "TEST_VERIFICATION_CODE=111111" >> .env
           echo "CI=true" >> .env
           echo "✓ Created .env for E2E device tests (${{ matrix.device }})"
-        env:
-          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
-          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
 
       - name: Run E2E Device Tests (${{ matrix.device }})
         working-directory: packages/e2e

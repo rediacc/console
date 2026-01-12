@@ -1,7 +1,7 @@
 import { Page, Locator } from '@playwright/test';
 import { TEST_CREDENTIALS } from '@rediacc/shared';
 import { BasePage } from '../../src/base/BasePage';
-import { requireEnvVar } from '../../src/utils/env';
+import { loadGlobalState } from '../../src/setup/global-state';
 
 export class LoginPage extends BasePage {
   private readonly emailInput: Locator;
@@ -139,11 +139,9 @@ export class LoginPage extends BasePage {
   }
 
   async performQuickLogin(): Promise<void> {
-    const email = requireEnvVar('TEST_USER_EMAIL');
-    const password = requireEnvVar('TEST_USER_PASSWORD');
-
-    console.warn('Performing authentication...');
-    await this.login(email, password);
+    const state = loadGlobalState();
+    console.warn(`Logging in with registered user: ${state.email}`);
+    await this.login(state.email, state.password);
     await this.waitForLoginCompletion();
     console.warn('Authentication successful');
   }
