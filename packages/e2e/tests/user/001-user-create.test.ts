@@ -33,7 +33,7 @@ test.describe('User Creation Tests', () => {
 
     // Navigate to Organization > Users
     await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.mainNavOrganizationUsers).click();
+    await page.getByTestId(UserPageIDs.subNavOrganizationUsers).click();
 
     // Wait for user table to be visible
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);

@@ -7,7 +7,6 @@ export class LoginPage extends BasePage {
   private readonly emailInput: Locator;
   private readonly passwordInput: Locator;
   private readonly loginButton: Locator;
-  private readonly forgotPasswordLink: Locator;
   private readonly registerLink: Locator;
   private readonly errorMessage: Locator;
   private readonly loadingSpinner: Locator;
@@ -26,7 +25,6 @@ export class LoginPage extends BasePage {
     this.emailInput = page.locator('[data-testid="login-email-input"]');
     this.passwordInput = page.locator('[data-testid="login-password-input"]');
     this.loginButton = page.locator('[data-testid="login-submit-button"]');
-    this.forgotPasswordLink = page.locator('[data-testid="forgot-password"]');
     this.registerLink = page.locator('[data-testid="login-register-link"]');
     this.errorMessage = page.locator('[data-testid="login-error-alert"]');
     this.loadingSpinner = page.locator('.ant-spin');
@@ -51,7 +49,6 @@ export class LoginPage extends BasePage {
       emailInput: this.emailInput,
       passwordInput: this.passwordInput,
       loginButton: this.loginButton,
-      forgotPasswordLink: this.forgotPasswordLink,
       registerLink: this.registerLink,
       errorMessage: this.errorMessage,
       loadingSpinner: this.loadingSpinner,
@@ -109,10 +106,6 @@ export class LoginPage extends BasePage {
 
   async isLoginButtonEnabled(): Promise<boolean> {
     return await this.loginButton.isEnabled();
-  }
-
-  async clickForgotPassword(): Promise<void> {
-    await this.forgotPasswordLink.click();
   }
 
   async clickRegister(): Promise<void> {

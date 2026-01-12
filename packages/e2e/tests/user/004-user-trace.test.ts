@@ -34,7 +34,7 @@ test.describe('Team Trace Tests', () => {
     await page.getByTestId(UserPageIDs.mainNavOrganization).click();
 
     // user table
-    await page.getByTestId(UserPageIDs.mainNavOrganizationUsers).click();
+    await page.getByTestId(UserPageIDs.subNavOrganizationUsers).click();
     await expect(page.getByRole('cell', { name: `user ${createdUser.email}` })).toBeVisible();
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');

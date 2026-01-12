@@ -24,7 +24,8 @@ test.describe('Team Trace Tests', () => {
   }) => {
     testReporter.startStep('Trace team audit records');
 
-    await page.getByTestId(TeamPageIDS.mainNavOrganizationTeams).click();
+    await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
+    await page.getByTestId(TeamPageIDS.subNavOrganizationTeams).click();
     await page.getByText('test-TEAM').click();
     await page.getByTestId(TeamPageIDS.systemTeamDeleteButton('test-TEAM')).click();
     await page.getByRole('button', { name: 'general.yes' }).click();

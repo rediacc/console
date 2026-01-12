@@ -22,7 +22,8 @@ test.describe('Permission Edit Tests', () => {
   }) => {
     testReporter.startStep('Navigate to Organization Access section');
 
-    await page.getByTestId('main-nav-organization-access').click();
+    await page.getByTestId('main-nav-organization').click();
+    await page.getByTestId('sub-nav-organization-access').click();
     await expect(page.getByText('test-PERMISSION')).toBeVisible();
 
     testReporter.completeStep('Navigate to Organization Access section', 'passed');

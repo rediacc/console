@@ -41,7 +41,7 @@ test.describe('User Team Assignment Tests', () => {
 
     // Navigate to Organization > Teams
     await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.mainNavOrganizationTeams).click();
+    await page.getByTestId(UserPageIDs.subNavOrganizationTeams).click();
 
     testReporter.completeStep('Navigate to Teams section', 'passed');
 
@@ -134,7 +134,7 @@ test.describe('User Team Assignment Tests', () => {
     testReporter.startStep('Navigate to Teams section');
 
     await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.mainNavOrganizationTeams).click();
+    await page.getByTestId(UserPageIDs.subNavOrganizationTeams).click();
 
     testReporter.completeStep('Navigate to Teams section', 'passed');
 

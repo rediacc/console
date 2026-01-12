@@ -28,7 +28,7 @@ test.describe('User Permission Tests', () => {
 
     testReporter.startStep('Navigate to Users section');
     await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.mainNavOrganizationUsers).click();
+    await page.getByTestId(UserPageIDs.subNavOrganizationUsers).click();
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
     await expect(userTable).toBeVisible({ timeout: 10000 });
     testReporter.completeStep('Navigate to Users section', 'passed');
@@ -59,7 +59,7 @@ test.describe('User Permission Tests', () => {
 
     testReporter.startStep('Navigate to Users section');
     await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.mainNavOrganizationUsers).click();
+    await page.getByTestId(UserPageIDs.subNavOrganizationUsers).click();
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
     await expect(userTable).toBeVisible({ timeout: 10000 });
     testReporter.completeStep('Navigate to Users section', 'passed');

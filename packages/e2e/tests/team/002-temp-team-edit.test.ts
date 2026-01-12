@@ -29,7 +29,8 @@ test.describe('Team Edit Tests', () => {
     const createdUser = testDataManager.getCreatedUser();
 
     // Navigate to users
-    await page.getByTestId(TeamPageIDS.mainNavOrganizationUsers).click();
+    await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
+    await page.getByTestId(TeamPageIDS.subNavOrganizationUsers).click();
     await expect(page.getByRole('cell', { name: `user ${createdUser.email}` })).toBeVisible();
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');

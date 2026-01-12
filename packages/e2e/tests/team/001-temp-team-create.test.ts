@@ -26,7 +26,7 @@ test.describe('Team Creation Tests', () => {
     testReporter.startStep('Navigate to Organization Users section');
 
     await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
-    await page.getByTestId(TeamPageIDS.mainNavOrganizationTeams).click();
+    await page.getByTestId(TeamPageIDS.subNavOrganizationTeams).click();
     await page.getByTestId(TeamPageIDS.systemCreateTeamButton).click();
     await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).click();
     await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).fill('test-TEAM');
