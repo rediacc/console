@@ -73,15 +73,6 @@ jobs:
                 return;
               }
 
-              // Check if all other jobs are complete
-              const otherJobs = jobs.jobs.filter(job => !job.name.includes('Watchdog'));
-              const allComplete = otherJobs.every(job => job.status === 'completed');
-
-              if (allComplete) {
-                console.log('All jobs completed successfully - exiting watchdog');
-                return;
-              }
-
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
 
