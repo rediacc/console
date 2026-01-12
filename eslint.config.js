@@ -7,6 +7,7 @@ import importPlugin from 'eslint-plugin-import';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import regexpPlugin from 'eslint-plugin-regexp';
+import playwrightPlugin from 'eslint-plugin-playwright';
 import globals from 'globals';
 import { requireTestId } from './eslint-rules/require-testid.js';
 import { requireTranslation } from './eslint-rules/require-translation.js';
@@ -684,6 +685,49 @@ export default tseslint.config(
       // Test files use nested callbacks: describe -> test -> async -> array methods
       // Limit of 3 is too restrictive for test patterns like find(), some(), map()
       'max-nested-callbacks': ['error', 5],
+    },
+  },
+
+  // Playwright test files - best practices for all Playwright packages
+  {
+    files: [
+      'packages/e2e/**/*.ts',
+      'packages/bridge-tests/**/*.ts',
+      'packages/cli/tests/**/*.ts',
+    ],
+    ignores: [
+      // Has legitimate waitForTimeout for exponential backoff retry logic
+      'packages/e2e/src/base/BasePage.ts',
+    ],
+    plugins: {
+      playwright: playwrightPlugin,
+    },
+    rules: {
+      // Prevent arbitrary time-based waits - use condition-based waits instead
+      'playwright/no-wait-for-timeout': 'error',
+
+      // Other recommended Playwright rules
+      'playwright/no-focused-test': 'error',
+      'playwright/no-skipped-test': 'warn',
+      'playwright/valid-expect': 'error',
+      // expect-expect is disabled below for all test packages due to varied testing patterns
+      // The key rule (no-wait-for-timeout) remains active
+      'playwright/expect-expect': 'off',
+
+      // Test files are longer than production code
+      'max-lines': 'off',
+
+      // Test files use nested callbacks: describe -> test -> async -> helpers
+      'max-nested-callbacks': ['error', 5],
+
+      // Test files don't need translations
+      'custom/require-translation': 'off',
+      'custom/no-hardcoded-text': 'off',
+      'custom/no-hardcoded-cli-text': 'off',
+
+      // Test files use Playwright locators, not React components
+      'react/forbid-elements': 'off',
+      'custom/require-testid': 'off',
     },
   },
 
