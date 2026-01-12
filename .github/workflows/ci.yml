@@ -521,13 +521,6 @@ jobs:
 
     env:
       CI: 'true'
-      VM_NET_BASE: 192.168.122
-      VM_NET_OFFSET: 0
-      VM_BRIDGE: 1
-      VM_WORKERS: 11 12
-      VM_CEPH_NODES: 21 22 23
-      PROVISION_CEPH_CLUSTER: 'true'
-      SKIP_MACHINE_REGISTRATION: 'true'
       BRIDGE_TIMEOUT: 120000
       RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
 
@@ -544,11 +537,7 @@ jobs:
           path: console
           submodules: true
 
-      - name: Checkout OPS Repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-        with:
-          repository: rediacc/ops
-          path: ops
+      # Note: OPS checkout is NOT needed - the setup-vms action clones ops internally
 
       - name: Pull Elite Docker Images
         working-directory: elite
@@ -604,36 +593,24 @@ jobs:
       # ========================================================================
       # BRIDGE TESTS - Run while waiting for other test jobs
       # ========================================================================
-      - name: Generate SSH Keys
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keygen -t rsa -b 2048 -f ~/.ssh/id_rsa -N "" -q
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
-          echo "✓ SSH keys generated"
+      - name: Provision Test VMs
+        id: vms
+        uses: rediacc/ops/.github/actions/setup-vms@main
+        with:
+          provider: kvm
+          configuration: Standard  # Bridge + 2 workers, no Ceph
+          duration: '120'
+        env:
+          VM_OS_IMAGE: rediacc-ubuntu-24.04
+          TAG: latest
+          SKIP_MACHINE_REGISTRATION: 'true'
 
-          # Prepare ops staging directory
-          mkdir -p ops/staging/.ssh
-          cp ~/.ssh/id_rsa ops/staging/.ssh/
-          cp ~/.ssh/id_rsa.pub ops/staging/.ssh/
-          chmod 600 ops/staging/.ssh/id_rsa
-          chmod 644 ops/staging/.ssh/id_rsa.pub
-          echo "✓ SSH keys copied to ops staging"
-
-      - name: Setup KVM
+      - name: Display VM Information
         run: |
-          echo "Setting up KVM for nested virtualization..."
-          sudo apt-get update
-          sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virtinst
-          sudo usermod -aG kvm,libvirt $USER
-          sudo systemctl enable --now libvirtd
-          if [ -e /dev/kvm ]; then
-            echo "✓ KVM is available"
-            sudo chmod 666 /dev/kvm
-          else
-            echo "✗ KVM not available - nested virtualization may not be supported"
-            exit 1
-          fi
+          echo "VM Provisioning Status: ${{ steps.vms.outputs.status }}"
+          echo "Bridge IP: ${{ steps.vms.outputs.bridge-ip }}"
+          echo "Worker IPs: ${{ steps.vms.outputs.worker-ips }}"
+          echo "Registry: ${{ steps.vms.outputs.registry-url }}"
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -652,47 +629,6 @@ jobs:
           chmod +x /tmp/renet
           /tmp/renet version
           echo "RENET_BINARY_PATH=/tmp/renet" >> $GITHUB_ENV
-
-      - name: Provision Test VMs
-        working-directory: ops
-        run: |
-          echo "Provisioning test VMs..."
-          echo "  Bridge VM: ${VM_NET_BASE}.${VM_BRIDGE}"
-          echo "  Worker VMs: ${VM_WORKERS}"
-          echo "  Ceph nodes: ${VM_CEPH_NODES}"
-          echo "  Ceph provisioning: ${PROVISION_CEPH_CLUSTER}"
-          ./go up_systems --parallel || {
-            echo "VM provisioning failed, checking logs..."
-            cat /var/log/libvirt/qemu/*.log 2>/dev/null || true
-            exit 1
-          }
-
-      - name: Verify VM Network Access
-        run: |
-          echo "Waiting for VMs to be ready..."
-          sleep 30
-          # Build list of all VMs: bridge + workers + ceph nodes
-          ALL_VMS="${VM_NET_BASE}.${VM_BRIDGE}"
-          for w in ${VM_WORKERS}; do
-            ALL_VMS="$ALL_VMS ${VM_NET_BASE}.$w"
-          done
-          for c in ${VM_CEPH_NODES}; do
-            ALL_VMS="$ALL_VMS ${VM_NET_BASE}.$c"
-          done
-          echo "Verifying VMs: $ALL_VMS"
-          for ip in $ALL_VMS; do
-            for i in {1..10}; do
-              if ping -c 1 -W 5 $ip > /dev/null 2>&1; then
-                echo "✓ $ip reachable"
-                break
-              fi
-              if [ $i -eq 10 ]; then
-                echo "✗ $ip unreachable after 10 attempts" && exit 1
-              fi
-              echo "  Waiting for $ip... (attempt $i/10)"
-              sleep 10
-            done
-          done
 
       - name: Setup Node.js for Bridge Tests
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -713,12 +649,10 @@ jobs:
         working-directory: console/packages/bridge-tests
         run: |
           cat > .env << EOF
-          VM_NET_BASE=$VM_NET_BASE
-          VM_NET_OFFSET=$VM_NET_OFFSET
-          VM_BRIDGE=$VM_BRIDGE
-          VM_WORKERS=$VM_WORKERS
-          VM_CEPH_NODES=$VM_CEPH_NODES
-          PROVISION_CEPH_CLUSTER=$PROVISION_CEPH_CLUSTER
+          VM_NET_BASE=192.168.111
+          BRIDGE_IP=${{ steps.vms.outputs.bridge-ip }}
+          WORKER_IPS=${{ steps.vms.outputs.worker-ips }}
+          REGISTRY_URL=${{ steps.vms.outputs.registry-url }}
           BRIDGE_TIMEOUT=$BRIDGE_TIMEOUT
           CI=true
           RENET_BINARY_PATH=$RENET_BINARY_PATH
