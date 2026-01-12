@@ -12,9 +12,6 @@ const E2E_DEFAULTS = {
   CONNECTION_TIMEOUT: 30000,
 } as const;
 
-// Auth state directory for per-browser authentication
-const AUTH_DIR = 'playwright/.auth';
-
 /**
  * E2E Test Configuration for Console Web Application
  *
@@ -109,64 +106,24 @@ export default test.defineConfig({
   /* Configure projects for browsers and devices */
   projects: [
     // =========================================================================
-    // SETUP PROJECTS - Register unique user per browser to avoid session conflicts
-    // =========================================================================
-    {
-      name: 'chromium-setup',
-      testMatch: /global\.setup\.ts/,
-      use: { ...test.devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox-setup',
-      testMatch: /global\.setup\.ts/,
-      use: { ...test.devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit-setup',
-      testMatch: /global\.setup\.ts/,
-      use: { ...test.devices['Desktop Safari'] },
-    },
-    {
-      name: 'msedge-setup',
-      testMatch: /global\.setup\.ts/,
-      use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
-    },
-
-    // =========================================================================
-    // DESKTOP BROWSERS - Main browser test projects
+    // DESKTOP BROWSERS
+    // Each test authenticates via login page (no shared auth state needed)
     // =========================================================================
     {
       name: 'chromium',
-      dependencies: ['chromium-setup'],
-      use: {
-        ...test.devices['Desktop Chrome'],
-        storageState: `${AUTH_DIR}/chromium-state.json`,
-      },
+      use: { ...test.devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
-      dependencies: ['firefox-setup'],
-      use: {
-        ...test.devices['Desktop Firefox'],
-        storageState: `${AUTH_DIR}/firefox-state.json`,
-      },
+      use: { ...test.devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
-      dependencies: ['webkit-setup'],
-      use: {
-        ...test.devices['Desktop Safari'],
-        storageState: `${AUTH_DIR}/webkit-state.json`,
-      },
+      use: { ...test.devices['Desktop Safari'] },
     },
     {
       name: 'msedge',
-      dependencies: ['msedge-setup'],
-      use: {
-        ...test.devices['Desktop Edge'],
-        channel: 'msedge',
-        storageState: `${AUTH_DIR}/msedge-state.json`,
-      },
+      use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
     },
 
     // =========================================================================
@@ -174,15 +131,10 @@ export default test.defineConfig({
     // =========================================================================
     {
       name: 'galaxy-s24',
-      dependencies: ['chromium-setup'],
-      use: {
-        ...test.devices['Galaxy S24'],
-        storageState: `${AUTH_DIR}/chromium-state.json`,
-      },
+      use: { ...test.devices['Galaxy S24'] },
     },
     {
       name: 'galaxy-tab-s9',
-      dependencies: ['chromium-setup'],
       use: {
         // Galaxy Tab S9 - 12.4" display, 2560x1600 resolution
         viewport: { width: 1280, height: 800 },
@@ -191,7 +143,6 @@ export default test.defineConfig({
           'Mozilla/5.0 (Linux; Android 14; SM-X910) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         isMobile: true,
         hasTouch: true,
-        storageState: `${AUTH_DIR}/chromium-state.json`,
       },
     },
 
@@ -200,19 +151,11 @@ export default test.defineConfig({
     // =========================================================================
     {
       name: 'iphone-15-pro-max',
-      dependencies: ['webkit-setup'],
-      use: {
-        ...test.devices['iPhone 15 Pro Max'],
-        storageState: `${AUTH_DIR}/webkit-state.json`,
-      },
+      use: { ...test.devices['iPhone 15 Pro Max'] },
     },
     {
       name: 'ipad-pro-11',
-      dependencies: ['webkit-setup'],
-      use: {
-        ...test.devices['iPad Pro 11'],
-        storageState: `${AUTH_DIR}/webkit-state.json`,
-      },
+      use: { ...test.devices['iPad Pro 11'] },
     },
   ],
 

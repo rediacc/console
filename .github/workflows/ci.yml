@@ -1054,7 +1054,8 @@ jobs:
     timeout-minutes: 60
 
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix:
         browser: [chromium, firefox, webkit, msedge]
         include:
@@ -1145,12 +1146,9 @@ jobs:
           REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
           REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
 
-      - name: Create auth directory
-        run: mkdir -p packages/e2e/playwright/.auth
-
       - name: Run E2E Tests (${{ matrix.browser }})
         working-directory: packages/e2e
-        run: npx playwright test --project=${{ matrix.browser }}-setup --project=${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }}
 
       - name: Create Completion Signal
         if: always()
@@ -1202,7 +1200,8 @@ jobs:
     timeout-minutes: 60
 
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix:
         include:
           - device: galaxy-s24
@@ -1294,12 +1293,9 @@ jobs:
           REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
           REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
 
-      - name: Create auth directory
-        run: mkdir -p packages/e2e/playwright/.auth
-
       - name: Run E2E Device Tests (${{ matrix.device }})
         working-directory: packages/e2e
-        run: npx playwright test --project=${{ matrix.browser }}-setup --project=${{ matrix.device }}
+        run: npx playwright test --project=${{ matrix.device }}
 
       - name: Create Completion Signal
         if: always()
