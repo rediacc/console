@@ -516,7 +516,7 @@ jobs:
   infra-backend:
     name: 🖥️ Infra - Backend
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 120
 
     env:
@@ -768,7 +768,7 @@ jobs:
   test-cli-linux:
     name: 🧪 Test - CLI (Linux)
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 120
 
     env:
@@ -897,7 +897,7 @@ jobs:
   test-cli-windows:
     name: 🧪 Test - CLI (Windows)
     runs-on: windows-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 120
 
     env:
@@ -1033,7 +1033,7 @@ jobs:
   test-cli-macos:
     name: 🧪 Test - CLI (macOS)
     runs-on: macos-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 120
 
     env:
@@ -1155,7 +1155,7 @@ jobs:
   test-e2e:
     name: 🌐 Test - E2E Browsers (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 60
 
     strategy:
@@ -1291,7 +1291,7 @@ jobs:
   test-e2e-devices:
     name: 🌐 Test - E2E Devices (${{ matrix.device }})
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 60
 
     strategy:
@@ -1521,6 +1521,9 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
           - os: macos-latest
             platform: mac
             arch: arm64

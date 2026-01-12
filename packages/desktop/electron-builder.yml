@@ -82,9 +82,11 @@ linux:
     - target: AppImage
       arch:
         - x64
+        - arm64
     - target: deb
       arch:
         - x64
+        - arm64
   artifactName: rediacc-console-${version}-linux-${arch}.${ext}
   icon: resources/icon.png
   category: Development
