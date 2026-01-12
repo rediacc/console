@@ -93,7 +93,7 @@ export interface ActionButtonGroupProps<T> {
 // =============================================================================
 
 const Container: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (
-  <Flex align="center" className="inline-flex" {...props} />
+  <Flex align="center" className="inline-flex" gap={8} {...props} />
 );
 
 const ButtonPlaceholder: React.FC<React.HTMLAttributes<HTMLDivElement>> = (props) => (

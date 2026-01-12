@@ -1,5 +1,10 @@
 import React, { type ReactNode } from 'react';
 import { Breadcrumb, Card, Flex } from 'antd';
+import {
+  ResourceBody,
+  ResourceBodyContent,
+  ResourceHeaderText,
+} from './ResourcePageLayout.styled';
 import type { BreadcrumbProps } from 'antd';
 
 interface ResourcePageLayoutProps {
@@ -28,10 +33,10 @@ export const ResourcePageLayout: React.FC<ResourcePageLayoutProps> = ({
           <Breadcrumb items={breadcrumbItems} data-testid={breadcrumbTestId} />
 
           <Flex align="center" justify="space-between" wrap>
-            <Flex vertical className="flex-1 min-w-0">
+            <ResourceHeaderText vertical>
               {header}
               {tags}
-            </Flex>
+            </ResourceHeaderText>
 
             {actions ? (
               <Flex align="center" wrap>
@@ -41,12 +46,12 @@ export const ResourcePageLayout: React.FC<ResourcePageLayoutProps> = ({
           </Flex>
         </Flex>
 
-        <Flex className="flex-1 overflow-hidden relative">
-          <Flex vertical className="w-full h-full overflow-auto">
+        <ResourceBody>
+          <ResourceBodyContent vertical>
             {content}
-          </Flex>
+          </ResourceBodyContent>
           {drawer}
-        </Flex>
+        </ResourceBody>
       </Flex>
     </Card>
   </Flex>

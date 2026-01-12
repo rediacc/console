@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ProLayout } from '@ant-design/pro-components';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Flex, Grid } from 'antd';
+import { Button, Flex, Grid, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -23,6 +22,7 @@ import { MenuOutlined, SafetyCertificateOutlined, SmileOutlined } from '@/utils/
 import { HeaderActions } from './HeaderActions';
 import { filterRouteItems, flattenRoutePaths } from './helpers';
 import { getRoutes, RouteItem } from './routes';
+import { MainContent, MainLogoButton, MainProLayout, TransitionState } from './styled';
 import { SIDEBAR_EXPANDED_WIDTH } from './types';
 import type { MenuDataItem } from '@ant-design/pro-components';
 
@@ -155,7 +155,7 @@ const MainLayout: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <ProLayout
+      <MainProLayout
         layout="side"
         fixSiderbar
         fixedHeader
@@ -232,9 +232,8 @@ const MainLayout: React.FC = () => {
               }
               aria-pressed={collapsed}
             />
-            <Flex
+            <MainLogoButton
               align="center"
-              className="inline-flex cursor-pointer"
               onClick={() => {
                 trackUserAction('navigation', '/dashboard', {
                   trigger: 'logo_click',
@@ -250,7 +249,7 @@ const MainLayout: React.FC = () => {
                 // eslint-disable-next-line no-restricted-syntax
                 style={{ height: isMobile ? 24 : 32, width: 'auto', objectFit: 'contain' }}
               />
-            </Flex>
+            </MainLogoButton>
           </Flex>
         )}
         actionsRender={() => (
@@ -260,35 +259,29 @@ const MainLayout: React.FC = () => {
             onLogout={handleLogout}
           />
         )}
-        // Content
-        contentStyle={{ padding: 24 }}
         token={{
           header: {
             heightLayoutHeader: 64,
           },
         }}
       >
-        <Flex vertical data-testid="main-content">
+        <MainContent vertical data-testid="main-content">
           {isTransitioning ? (
-            <Flex
-              vertical
-              align="center"
-              justify="center"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ minHeight: 240 }}
-            >
-              <Flex>{uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}</Flex>
+            <TransitionState vertical align="center" justify="center">
               <Flex>
+                {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
+              </Flex>
+              <Typography.Text>
                 {t('uiMode.switching', {
                   mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple'),
                 })}
-              </Flex>
-            </Flex>
+              </Typography.Text>
+            </TransitionState>
           ) : (
             <Outlet />
           )}
-        </Flex>
-      </ProLayout>
+        </MainContent>
+      </MainProLayout>
     </>
   );
 };

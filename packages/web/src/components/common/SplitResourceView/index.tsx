@@ -6,6 +6,7 @@ import { MachineVaultStatusPanel } from '@/components/resources/internal/Machine
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
 import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { Machine, Repository } from '@/types';
+import { SplitResourceViewLeftPanel } from './styled';
 
 export interface ContainerData {
   id: string;
@@ -117,17 +118,14 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
 
   if (type === 'machine') {
     return (
-      <Flex
-        data-testid="split-resource-view-container"
-        className="h-full w-full relative overflow-hidden"
-      >
-        <Flex data-testid="split-resource-view-left-panel" className="w-full h-full overflow-auto">
+      <Flex data-testid="split-resource-view-container">
+        <SplitResourceViewLeftPanel data-testid="split-resource-view-left-panel">
           <MachineTable
             {...props}
             onRowClick={handleMachineSelect}
             selectedMachine={selectedResource as Machine}
           />
-        </Flex>
+        </SplitResourceViewLeftPanel>
 
         {isMobile ? (
           <Modal

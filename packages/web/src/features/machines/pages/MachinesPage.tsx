@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
+import { Button, Empty, Modal, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachineMutations, useGetTeamMachines } from '@/api/api-hooks.generated';
@@ -19,6 +19,13 @@ import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useMachineFunctionHandlers } from './hooks/useMachineFunctionHandlers';
+import {
+  FullWidthCard,
+  MachinesPageRoot,
+  MachinesPageStack,
+  MachinesToolbarRow,
+  TeamSelectorContainer,
+} from './styled';
 import type { MachineFunctionData, MachineFormValues } from './types';
 
 const MachinesPage: React.FC = () => {
@@ -300,46 +307,45 @@ const MachinesPage: React.FC = () => {
 
   return (
     <>
-      <Flex vertical>
-        <Card>
-          <Flex justify="space-between" align="center" wrap>
-            {/* eslint-disable-next-line no-restricted-syntax */}
-            <Flex style={{ flex: 1, minWidth: 260 }}>
-              <TeamSelector
-                data-testid="machines-team-selector"
-                teams={teams}
-                selectedTeams={selectedTeams}
-                onChange={setSelectedTeams}
-                loading={teamsLoading}
-                placeholder={t('teams.selectTeamToView')}
-              />
-            </Flex>
-            {selectedTeams.length > 0 && (
-              <Space size="small">
-                <Tooltip title={t('machines:createMachine')}>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    data-testid="machines-create-machine-button"
-                    onClick={() => openUnifiedModal('create')}
-                    aria-label={t('machines:createMachine')}
-                  />
-                </Tooltip>
-                <Tooltip title={t('machines:checkAndRefresh')}>
-                  <Button
-                    type="text"
-                    icon={<ReloadOutlined />}
-                    data-testid="machines-test-and-refresh-button"
-                    onClick={() => connectivityTest.open()}
-                    disabled={machines.length === 0}
-                    aria-label={t('machines:checkAndRefresh')}
-                  />
-                </Tooltip>
-              </Space>
-            )}
-          </Flex>
+      <MachinesPageRoot vertical>
+        <FullWidthCard>
+          <MachinesPageStack vertical gap={16}>
+            <MachinesToolbarRow align="center" justify="space-between" wrap gap={16}>
+              <TeamSelectorContainer flex={1}>
+                <TeamSelector
+                  data-testid="machines-team-selector"
+                  teams={teams}
+                  selectedTeams={selectedTeams}
+                  onChange={setSelectedTeams}
+                  loading={teamsLoading}
+                  placeholder={t('teams.selectTeamToView')}
+                />
+              </TeamSelectorContainer>
+              {selectedTeams.length > 0 && (
+                <Space>
+                  <Tooltip title={t('machines:createMachine')}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      data-testid="machines-create-machine-button"
+                      onClick={() => openUnifiedModal('create')}
+                      aria-label={t('machines:createMachine')}
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('machines:checkAndRefresh')}>
+                    <Button
+                      type="text"
+                      icon={<ReloadOutlined />}
+                      data-testid="machines-test-and-refresh-button"
+                      onClick={() => connectivityTest.open()}
+                      disabled={machines.length === 0}
+                      aria-label={t('machines:checkAndRefresh')}
+                    />
+                  </Tooltip>
+                </Space>
+              )}
+            </MachinesToolbarRow>
 
-          <Flex vertical>
             {selectedTeams.length === 0 ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -384,9 +390,9 @@ const MachinesPage: React.FC = () => {
                 onTogglePanelCollapse={handleTogglePanelCollapse}
               />
             )}
-          </Flex>
-        </Card>
-      </Flex>
+          </MachinesPageStack>
+        </FullWidthCard>
+      </MachinesPageRoot>
 
       <UnifiedResourceModal
         data-testid="machines-machine-modal"

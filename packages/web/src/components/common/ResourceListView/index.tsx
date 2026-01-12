@@ -1,7 +1,6 @@
 import type { Key, ReactNode } from 'react';
 import {
   Button,
-  Card,
   Empty,
   Flex,
   Grid,
@@ -15,6 +14,11 @@ import {
 import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@/utils/optimizedIcons';
+import {
+  ResourceListContainer,
+  ResourceListControlsLeft,
+  ResourceListControlsRow,
+} from './styled';
 
 export { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from './columnConstants';
 
@@ -120,11 +124,11 @@ function ResourceListView<T extends object = Record<string, unknown>>({
   };
 
   return (
-    <Card data-testid="resource-list-container">
+    <ResourceListContainer vertical>
       {shouldRenderControls && (
         <Flex>
-          <Flex wrap justify="space-between" align="center" className="w-full">
-            <Flex align="center" className="flex-1 min-w-0">
+          <ResourceListControlsRow wrap justify="space-between" align="center">
+            <ResourceListControlsLeft align="center">
               {title}
               {onSearch && (
                 <Input.Search
@@ -140,13 +144,13 @@ function ResourceListView<T extends object = Record<string, unknown>>({
               <Flex align="center" data-testid="resource-list-filters">
                 {filters}
               </Flex>
-            </Flex>
+            </ResourceListControlsLeft>
             {actions && (
               <Flex align="center" wrap data-testid="resource-list-actions">
                 {actions}
               </Flex>
             )}
-          </Flex>
+          </ResourceListControlsRow>
         </Flex>
       )}
 
@@ -241,7 +245,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
           );
         })()}
       </LoadingWrapper>
-    </Card>
+    </ResourceListContainer>
   );
 }
 

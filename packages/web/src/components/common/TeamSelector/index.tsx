@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Flex, Input, Select, Tag, Typography } from 'antd';
+import { Flex, Input, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
+import { FullWidthSelect } from './styled';
 
 interface TeamSelectorProps {
   teams: GetOrganizationTeams_ResultSet1[];
@@ -44,14 +45,13 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   }, [teams, searchValue]);
 
   return (
-    <Select
+    <FullWidthSelect
       mode="multiple"
-      className="w-full"
       // eslint-disable-next-line no-restricted-syntax
       style={style}
       placeholder={placeholder ?? t('common:teamSelector.selectTeams')}
       value={selectedTeams}
-      onChange={(values) => onChange(values)}
+      onChange={(values) => onChange(values as string[])}
       loading={loading}
       options={filteredOptions}
       filterOption={false}

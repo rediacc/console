@@ -36,6 +36,7 @@ import { BulkActionsToolbar } from './components/BulkActionsToolbar';
 import { GroupedMachineCard } from './components/GroupedMachineCard';
 import { ViewToggleButtons } from './components/ViewToggleButtons';
 import { useGroupedMachines } from './hooks/useGroupedMachines';
+import { MachineTableContent, MachineTableRoot } from './styled';
 import type { GroupByMode, MachineTableProps } from './types';
 
 export type { GroupByMode, MachineTableProps } from './types';
@@ -43,7 +44,6 @@ export type { GroupByMode, MachineTableProps } from './types';
 export const MachineTable: React.FC<MachineTableProps> = ({
   teamFilter,
   showActions = true,
-  className = '',
   onEditMachine,
   onFunctionsMachine,
   onDeleteMachine,
@@ -379,7 +379,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   };
 
   return (
-    <Flex vertical className={`h-full ${className}`}>
+    <MachineTableRoot direction='vertical'>
       <ViewToggleButtons
         groupBy={groupBy}
         setGroupBy={setGroupBy}
@@ -398,7 +398,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       />
 
       {groupBy === 'machine' ? (
-        <Flex vertical ref={tableContainerRef} className="flex-1 overflow-hidden">
+        <MachineTableContent vertical ref={tableContainerRef}>
           <ResourceListView<Machine>
             loading={isLoading}
             data={filteredMachines}
@@ -422,7 +422,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               return props;
             }}
           />
-        </Flex>
+        </MachineTableContent>
       ) : (
         renderGroupedTableView()
       )}
@@ -494,6 +494,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           onClose={handlePanelClose}
         />
       )}
-    </Flex>
+    </MachineTableRoot>
   );
 };
