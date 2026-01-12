@@ -706,14 +706,23 @@ jobs:
         working-directory: console/packages/bridge-tests
         run: |
           cat > .env << EOF
+          # VM Configuration (Standard: Bridge + 2 workers)
           VM_NET_BASE=192.168.111
-          BRIDGE_IP=${{ steps.vms.outputs.bridge-ip }}
-          WORKER_IPS=${{ steps.vms.outputs.worker-ips }}
-          REGISTRY_URL=${{ steps.vms.outputs.registry-url }}
-          BRIDGE_TIMEOUT=$BRIDGE_TIMEOUT
+          VM_NET_OFFSET=0
+          VM_BRIDGE=1
+          VM_WORKERS=11 12
+
+          # Timeouts and paths
+          BRIDGE_TIMEOUT=${BRIDGE_TIMEOUT:-120000}
+          RENET_BINARY_PATH=${RENET_BINARY_PATH}
+
+          # Test environment
           CI=true
-          RENET_BINARY_PATH=$RENET_BINARY_PATH
+          NODE_ENV=test
           EOF
+
+          echo "Bridge test environment created:"
+          cat .env
 
       - name: Run Bridge Tests
         working-directory: console/packages/bridge-tests
