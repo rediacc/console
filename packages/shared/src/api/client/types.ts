@@ -8,6 +8,7 @@ import type {
   TelemetryHandler,
 } from '../adapters/types';
 import type { ApiClient } from '../services/types';
+import type { HttpRetryConfig } from './retry';
 
 /**
  * HTTP client interface compatible with axios.
@@ -43,6 +44,8 @@ export interface ApiClientConfig {
   errorHandler?: ErrorHandler;
   /** Optional handler for telemetry */
   telemetry?: TelemetryHandler;
+  /** Optional retry configuration for transient errors (502, 503, 504, network errors) */
+  retryConfig?: Partial<HttpRetryConfig>;
 }
 
 /**

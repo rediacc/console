@@ -5,6 +5,7 @@ import { HTTP_STATUS, isServerError } from '../statusCodes';
 import { extractNextToken } from '../tokenUtils';
 import { ApiClientError, API_ERROR_CODES, type ApiErrorCode } from './error';
 import { RequestQueue } from './requestQueue';
+import { withRetry, DEFAULT_HTTP_RETRY_CONFIG, type HttpRetryConfig } from './retry';
 import { DEFAULTS } from '../../config';
 import type { ApiClientConfig, FullApiClient } from './types';
 import type { ApiResponse } from '../../types/api';
@@ -89,7 +90,11 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
     masterPasswordProvider,
     errorHandler,
     telemetry,
+    retryConfig: userRetryConfig,
   } = config;
+
+  // Merge user retry config with defaults
+  const retryConfig: HttpRetryConfig = { ...DEFAULT_HTTP_RETRY_CONFIG, ...userRetryConfig };
 
   const requestQueue = new RequestQueue();
 
@@ -276,10 +281,11 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
         // Encrypt vault fields if needed
         const requestData = await encryptRequestData(data ?? {});
 
-        // Make request
-        const response = await httpClient.post<ApiResponse<T>>(url, requestData, {
-          headers,
-        });
+        // Make request with automatic retry on transient errors
+        const response = await withRetry(
+          () => httpClient.post<ApiResponse<T>>(url, requestData, { headers }),
+          retryConfig
+        );
 
         // Track telemetry
         const duration = performance.now() - startTime;
@@ -329,10 +335,14 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
     await initialize();
 
     return requestQueue.enqueue(async () => {
-      const response = await httpClient.post<ApiResponse>(
-        '/CreateAuthenticationRequest',
-        { name: sessionName },
-        { headers: buildAuthHeaders(email, passwordHash) }
+      const response = await withRetry(
+        () =>
+          httpClient.post<ApiResponse>(
+            '/CreateAuthenticationRequest',
+            { name: sessionName },
+            { headers: buildAuthHeaders(email, passwordHash) }
+          ),
+        retryConfig
       );
 
       let responseData = response.data;
@@ -359,10 +369,14 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
     await initialize();
 
     return requestQueue.enqueue(async () => {
-      const response = await httpClient.post<ApiResponse>(
-        '/ActivateUserAccount',
-        { activationCode },
-        { headers: buildAuthHeaders(email, passwordHash) }
+      const response = await withRetry(
+        () =>
+          httpClient.post<ApiResponse>(
+            '/ActivateUserAccount',
+            { activationCode },
+            { headers: buildAuthHeaders(email, passwordHash) }
+          ),
+        retryConfig
       );
 
       let responseData = response.data;
@@ -389,16 +403,20 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
     await initialize();
 
     return requestQueue.enqueue(async () => {
-      const response = await httpClient.post<ApiResponse>(
-        '/CreateNewOrganization',
-        {
-          organizationName,
-          userEmailAddress: email,
-          languagePreference: options.languagePreference ?? DEFAULTS.LOCALE.LANGUAGE,
-          subscriptionPlan: options.subscriptionPlan ?? DEFAULTS.SUBSCRIPTION.PLAN,
-          turnstileToken: options.turnstileToken,
-        },
-        { headers: buildAuthHeaders(email, passwordHash) }
+      const response = await withRetry(
+        () =>
+          httpClient.post<ApiResponse>(
+            '/CreateNewOrganization',
+            {
+              organizationName,
+              userEmailAddress: email,
+              languagePreference: options.languagePreference ?? DEFAULTS.LOCALE.LANGUAGE,
+              subscriptionPlan: options.subscriptionPlan ?? DEFAULTS.SUBSCRIPTION.PLAN,
+              turnstileToken: options.turnstileToken,
+            },
+            { headers: buildAuthHeaders(email, passwordHash) }
+          ),
+        retryConfig
       );
 
       let responseData = response.data;
