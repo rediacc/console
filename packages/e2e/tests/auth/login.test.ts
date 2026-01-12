@@ -1,7 +1,7 @@
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { test, expect } from '../../src/base/BaseTest';
-import { requireEnvVar } from '../../src/utils/env';
+import { loadGlobalState } from '../../src/setup/global-state';
 
 test.describe('Login Tests', () => {
   let loginPage: LoginPage;
@@ -22,10 +22,8 @@ test.describe('Login Tests', () => {
 
     testReporter.startStep('Enter valid credentials');
 
-    const email = requireEnvVar('TEST_USER_EMAIL');
-    const password = requireEnvVar('TEST_USER_PASSWORD');
-
-    await loginPage.login(email, password);
+    const state = loadGlobalState();
+    await loginPage.login(state.email, state.password);
     testReporter.completeStep('Enter valid credentials', 'passed');
 
     testReporter.startStep('Verify successful login');
