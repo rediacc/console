@@ -54,7 +54,8 @@ export abstract class BasePage {
         break;
       } catch (error) {
         if (i === maxRetries - 1) throw error;
-        await this.page.waitForTimeout(1000);
+        // Exponential backoff: 500ms, 1000ms, 2000ms
+        await this.page.waitForTimeout(500 * Math.pow(2, i));
       }
     }
   }

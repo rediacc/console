@@ -37,9 +37,8 @@ test.describe
       const settingsNav = page.locator('[role="navigation"]').getByText('Settings');
       await settingsNav.waitFor({ state: 'visible', timeout: 10000 });
       await settingsNav.click();
-      await page.waitForTimeout(500);
 
-      // Click on Organization submenu (requires power mode)
+      // Click on Organization submenu (requires power mode) - waitFor handles menu expansion
       const organizationSubNav = page.locator('[role="navigation"]').getByText('Organization');
       await organizationSubNav.waitFor({ state: 'visible', timeout: 10000 });
       await organizationSubNav.click();
@@ -235,8 +234,7 @@ async function configureSshOptions(
   screenshotManager: import('../../src/utils/screenshot/ScreenshotManager').ScreenshotManager,
   testReporter: import('../../src/utils/report/TestReporter').TestReporter
 ): Promise<void> {
-  await page.waitForTimeout(500);
-
+  // Playwright auto-waits for elements to be actionable
   await clickIfVisible(page.locator('label:has-text("RSA")').first());
   await clickIfVisible(page.locator('label:has-text("4096")').first());
 
@@ -253,9 +251,12 @@ async function configureSshOptions(
   }
 
   await generateButton.click();
-  await page.waitForTimeout(5000);
 
-  await clickIfVisible(page.locator('[data-testid="vault-editor-apply-generated"]'));
+  // Wait for SSH key generation to complete - apply button appears when ready
+  const applyButton = page.locator('[data-testid="vault-editor-apply-generated"]');
+  await applyButton.waitFor({ state: 'visible', timeout: 30000 });
+
+  await clickIfVisible(applyButton);
 
   await screenshotManager.captureStep('ssh_key_generated_and_applied');
   testReporter.completeStep('Generate ssh key for vault', 'passed');

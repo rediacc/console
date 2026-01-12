@@ -29,9 +29,9 @@ setup('register user for e2e tests', async ({ page }) => {
   console.warn('[Setup] Page loaded, waiting for network idle...');
   await page.waitForLoadState('networkidle', { timeout: 30000 });
 
-  // Click register link
+  // Click register link and wait for registration form to appear
   await page.locator('[data-testid="login-register-link"]').click();
-  await page.waitForTimeout(1000);
+  await page.locator('[data-testid="registration-organization-input"]').waitFor({ state: 'visible' });
 
   // Fill registration form
   await page
@@ -49,10 +49,9 @@ setup('register user for e2e tests', async ({ page }) => {
     await termsCheckbox.check();
   }
 
-  // Submit registration
+  // Submit registration and wait for verification step
   await page.locator('[data-testid="registration-submit-button"]').click();
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(3000);
+  await page.locator('[data-testid="registration-activation-code-input"]').waitFor({ state: 'visible', timeout: 30000 });
 
   // Enter verification code (111111 in CI mode)
   await page
@@ -60,7 +59,6 @@ setup('register user for e2e tests', async ({ page }) => {
     .fill(TEST_CREDENTIALS.CI_ACTIVATION_CODE);
   await page.locator('[data-testid="registration-verify-button"]').click();
   await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(2000);
 
   // Save credentials for tests to use
   saveGlobalState({

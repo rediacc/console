@@ -40,7 +40,9 @@ test.describe('Registration Tests', () => {
     testReporter.startStep('Submit registration form');
 
     await loginPage.submitRegistrationForm();
-    await page.waitForTimeout(3000);
+
+    // Wait for verification step to appear
+    await page.locator('[data-testid="registration-activation-code-input"]').waitFor({ state: 'visible', timeout: 30000 });
 
     await loginPage.completeRegistrationVerification(verificationCode);
 

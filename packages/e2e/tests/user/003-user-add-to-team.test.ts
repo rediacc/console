@@ -81,8 +81,8 @@ test.describe('User Team Assignment Tests', () => {
     await expect(addButton).toBeVisible();
     await addButton.click();
 
-    // Wait a moment for the member to be added
-    await page.waitForTimeout(1000);
+    // Wait for API response to complete
+    await page.waitForLoadState('networkidle');
 
     testReporter.completeStep('Add user to team', 'passed');
 
@@ -164,7 +164,8 @@ test.describe('User Team Assignment Tests', () => {
     await expect(addButton).toBeVisible();
     await addButton.click();
 
-    await page.waitForTimeout(1000);
+    // Wait for API response to complete
+    await page.waitForLoadState('networkidle');
 
     testReporter.completeStep(`Add user ${userToAdd.email} to team`, 'passed');
 

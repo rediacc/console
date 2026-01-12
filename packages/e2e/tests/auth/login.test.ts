@@ -81,8 +81,8 @@ test.describe('Login Tests', () => {
 
     await loginPage.clickRegister();
 
-    // Wait for navigation to register page
-    await page.waitForTimeout(2000);
+    // Wait for registration form to appear
+    await page.locator('[data-testid="registration-organization-input"]').waitFor({ state: 'visible' });
 
     testReporter.completeStep('Click register link', 'passed');
 
