@@ -2,14 +2,9 @@ import { exec, execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
+import { getRenetBinaryPath } from '../renetPath';
 
 const execAsync = promisify(exec);
-
-/**
- * Default path to renet binary (relative to tests/bridge directory)
- * tests/bridge/src/utils/image -> renet/bin/renet
- */
-const DEFAULT_RENET_BIN = path.resolve(__dirname, '..', '..', '..', '..', '..', 'bin', 'renet');
 
 /**
  * Default path to disks directory (where renet saves images when run from tests/bridge)
@@ -157,7 +152,7 @@ export class ImageTestHelper {
 
   constructor(options?: { disksPath?: string; renetBin?: string; buildTimeout?: number }) {
     this.disksPath = options?.disksPath ?? process.env.DISKS_PATH ?? DEFAULT_DISKS_PATH;
-    this.renetBin = options?.renetBin ?? process.env.RENET_BIN ?? DEFAULT_RENET_BIN;
+    this.renetBin = options?.renetBin ?? getRenetBinaryPath();
     this.buildTimeout = options?.buildTimeout ?? DEFAULT_BUILD_TIMEOUT;
 
     // Verify renet binary exists

@@ -63,13 +63,12 @@ export const TEST_USER = TEST_ENV.testUser;
 export const TEST_TEAM = TEST_ENV.testTeam;
 
 /**
- * Renet binary installation path.
+ * Installation path for renet on VMs (NOT the local build path).
  * NOTE: Mirrored from renet/pkg/common/constants.go (RenetBinaryPath)
  *
  * Uses /usr/bin because sudo's restricted PATH doesn't include /usr/local/bin.
  */
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const RENET_BINARY_PATH = TEST_ENV.renetBinaryPath;
+export const VM_RENET_INSTALL_PATH = '/usr/bin/renet';
 
 /**
  * Ceph health wait settings for bridge tests.

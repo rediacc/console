@@ -1,10 +1,10 @@
-import * as path from 'node:path';
 import { OpsCephManager } from './OpsCephManager';
 import { OpsCommandRunner } from './OpsCommandRunner';
 import { OpsRustFSManager } from './OpsRustFSManager';
 import { OpsVMExecutor } from './OpsVMExecutor';
 import { OpsVMLifecycle } from './OpsVMLifecycle';
 import { DEFAULT_DATASTORE_PATH } from '../../constants';
+import { getRenetBinaryPath, getRenetRoot } from '../renetPath';
 
 /**
  * VM Network Configuration
@@ -42,9 +42,9 @@ export class OpsManager {
   private readonly vmLifecycle: OpsVMLifecycle;
 
   constructor() {
-    // Auto-detect renet root: use RENET_ROOT env var or resolve from current location
-    const renetRoot = process.env.RENET_ROOT ?? path.resolve(__dirname, '../../../../../..');
-    const renetBin = `${renetRoot}/bin/renet`;
+    // Use centralized renet path resolution
+    const renetRoot = getRenetRoot();
+    const renetBin = getRenetBinaryPath(renetRoot);
 
     // Load configuration from environment
     this.config = this.loadConfig();

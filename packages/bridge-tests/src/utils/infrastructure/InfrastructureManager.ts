@@ -3,8 +3,10 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
-import { RENET_BINARY_PATH } from '../../constants';
+import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
+import { getRenetBinaryPath, getRenetRoot } from '../renetPath';
 
 const execAsync = promisify(exec);
 
@@ -17,8 +19,6 @@ function getFileMD5(filePath: string): string {
 }
 
 export interface InfrastructureConfig {
-  renetRoot: string;
-  renetPath: string;
   bridgeVM: string;
   workerVM: string;
   defaultTimeout: number;
@@ -40,17 +40,13 @@ export class InfrastructureManager {
   constructor() {
     this.opsManager = getOpsManager();
 
-    // Auto-detect renet root: use RENET_ROOT env var or resolve from current location
-    // Path from this file: renet/tests/bridge/src/utils/infrastructure/ -> renet/
-    const renetRoot = process.env.RENET_ROOT ?? path.resolve(__dirname, '../../../../../..');
-
     this.config = {
-      renetRoot,
-      renetPath: process.env.RENET_PATH ?? '',
       bridgeVM: this.opsManager.getBridgeVMIp(),
       workerVM: this.opsManager.getWorkerVMIps()[0],
-      // eslint-disable-next-line custom/no-hardcoded-nullish-defaults
-      defaultTimeout: Number.parseInt(process.env.BRIDGE_TIMEOUT ?? '30000', 10),
+      defaultTimeout: Number.parseInt(
+        process.env.BRIDGE_TIMEOUT ?? LIMITS_DEFAULTS.CONNECTION_TIMEOUT,
+        10
+      ),
     };
   }
 
@@ -61,53 +57,35 @@ export class InfrastructureManager {
     if (this.detectedRenetPath) {
       return this.detectedRenetPath;
     }
-    return this.config.renetPath.length > 0 ? this.config.renetPath : 'renet';
+    return getRenetBinaryPath();
   }
 
   /**
    * Check if renet binary is available locally.
    *
-   * CI Mode: Checks RENET_BINARY_PATH first (set after Docker extraction).
+   * Uses centralized getRenetBinaryPath() which handles:
+   * - VM_RENET_INSTALL_PATH env var (CI mode)
+   * - RENET_BIN env var (deprecated)
+   * - RENET_ROOT/bin/renet
+   * - Auto-detected path
    */
   async isRenetAvailable(): Promise<{ available: boolean; path: string }> {
-    // 0. CI mode: check pre-extracted binary path first
-    const ciRenetPath = process.env.RENET_BINARY_PATH;
-    if (ciRenetPath && process.env.CI === 'true') {
-      try {
-        await execAsync(`${ciRenetPath} version`, { timeout: 5000 });
-        this.detectedRenetPath = ciRenetPath;
-        return { available: true, path: ciRenetPath };
-      } catch {
-        // Continue to other options
-      }
+    const renetPath = getRenetBinaryPath();
+
+    // Try the resolved path first
+    try {
+      await execAsync(`${renetPath} version`, { timeout: 5000 });
+      this.detectedRenetPath = renetPath;
+      return { available: true, path: renetPath };
+    } catch {
+      // Continue to PATH check
     }
 
-    // 1. Check explicit path from env
-    if (this.config.renetPath) {
-      try {
-        await execAsync(`${this.config.renetPath} version`, { timeout: 5000 });
-        this.detectedRenetPath = this.config.renetPath;
-        return { available: true, path: this.config.renetPath };
-      } catch {
-        // Continue to other options
-      }
-    }
-
-    // 2. Check if in PATH
+    // Fallback: Check if in PATH
     try {
       await execAsync('renet version', { timeout: 5000 });
       this.detectedRenetPath = 'renet';
       return { available: true, path: 'renet' };
-    } catch {
-      // Continue to other options
-    }
-
-    // 3. Check renet build path
-    const buildPath = path.join(this.config.renetRoot, 'bin/renet');
-    try {
-      await execAsync(`${buildPath} version`, { timeout: 5000 });
-      this.detectedRenetPath = buildPath;
-      return { available: true, path: buildPath };
     } catch {
       // Not found
     }
@@ -273,20 +251,20 @@ export class InfrastructureManager {
   /**
    * Build renet binary if source has changed.
    *
-   * CI Mode: Skips building if RENET_BINARY_PATH is set (binary pre-extracted from Docker).
+   * CI Mode: Skips building if VM_RENET_INSTALL_PATH is set (binary pre-extracted from Docker).
    */
   async buildRenet(): Promise<{ built: boolean; path: string }> {
     // CI mode: skip building if binary was pre-extracted from Docker image
-    const ciRenetPath = process.env.RENET_BINARY_PATH;
-    if (process.env.CI === 'true' && ciRenetPath) {
+    const renetPath = getRenetBinaryPath();
+    if (process.env.CI === 'true' && process.env.VM_RENET_INSTALL_PATH) {
       // eslint-disable-next-line no-console
       console.log('CI Mode: Using pre-extracted renet binary');
       // eslint-disable-next-line no-console
-      console.log(`  Binary path: ${ciRenetPath}`);
-      return { built: false, path: ciRenetPath };
+      console.log(`  Binary path: ${renetPath}`);
+      return { built: false, path: renetPath };
     }
 
-    const renetDir = this.config.renetRoot;
+    const renetDir = getRenetRoot();
     const binaryPath = path.join(renetDir, 'bin', 'renet');
 
     // eslint-disable-next-line no-console
@@ -319,7 +297,7 @@ export class InfrastructureManager {
   private async getRemoteRenetMD5(ip: string): Promise<string | null> {
     const result = await this.opsManager.executeOnVM(
       ip,
-      `md5sum ${RENET_BINARY_PATH} 2>/dev/null | cut -d" " -f1`
+      `md5sum ${VM_RENET_INSTALL_PATH} 2>/dev/null | cut -d" " -f1`
     );
     if (result.code === 0 && result.stdout.trim().length === 32) {
       return result.stdout.trim();
@@ -352,7 +330,7 @@ export class InfrastructureManager {
 
       // Move to final location and set permissions
       await execAsync(
-        `ssh -q -o StrictHostKeyChecking=no ${user}@${ip} "sudo mv /tmp/renet ${RENET_BINARY_PATH} && sudo chmod +x ${RENET_BINARY_PATH}"`,
+        `ssh -q -o StrictHostKeyChecking=no ${user}@${ip} "sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}"`,
         { timeout: 10000 }
       );
 
@@ -574,12 +552,9 @@ export class InfrastructureManager {
 
     const vmId = ip.split('.').pop();
 
-    await execAsync(
-      `${path.join(this.config.renetRoot, 'bin/renet')} ops worker install-criu ${vmId}`,
-      {
-        timeout: 600000,
-      }
-    ).catch((error: unknown) => ({
+    await execAsync(`${getRenetBinaryPath()} ops worker install-criu ${vmId}`, {
+      timeout: 600000,
+    }).catch((error: unknown) => ({
       stdout: '',
       stderr: error instanceof Error ? error.message : String(error),
     }));

@@ -24,7 +24,8 @@ export const TEST_ENV = {
   testPassword: 'test-password-123',
   testUser: 'muhammed',
   testTeam: 'Test Team',
-  renetBinaryPath: '/usr/bin/renet',
+  /** Installation path for renet on VMs (NOT the local build path) */
+  vmRenetInstallPath: '/usr/bin/renet',
 } as const;
 
 export type TestEnv = typeof TEST_ENV;
