@@ -152,15 +152,7 @@ export default test.defineConfig({
     },
     {
       name: 'galaxy-tab-s9',
-      use: {
-        // Galaxy Tab S9 - 12.4" display, 2560x1600 resolution
-        viewport: { width: 1280, height: 800 },
-        deviceScaleFactor: 2,
-        userAgent:
-          'Mozilla/5.0 (Linux; Android 14; SM-X910) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        isMobile: true,
-        hasTouch: true,
-      },
+      use: { ...test.devices['Galaxy Tab S9 landscape'] },
       dependencies: ['setup'],
     },
 
