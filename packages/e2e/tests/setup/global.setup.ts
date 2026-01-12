@@ -31,7 +31,9 @@ setup('register user for e2e tests', async ({ page }) => {
 
   // Click register link and wait for registration form to appear
   await page.locator('[data-testid="login-register-link"]').click();
-  await page.locator('[data-testid="registration-organization-input"]').waitFor({ state: 'visible' });
+  await page
+    .locator('[data-testid="registration-organization-input"]')
+    .waitFor({ state: 'visible' });
 
   // Fill registration form
   await page
@@ -51,7 +53,9 @@ setup('register user for e2e tests', async ({ page }) => {
 
   // Submit registration and wait for verification step
   await page.locator('[data-testid="registration-submit-button"]').click();
-  await page.locator('[data-testid="registration-activation-code-input"]').waitFor({ state: 'visible', timeout: 30000 });
+  await page
+    .locator('[data-testid="registration-activation-code-input"]')
+    .waitFor({ state: 'visible', timeout: 30000 });
 
   // Enter verification code (111111 in CI mode)
   await page

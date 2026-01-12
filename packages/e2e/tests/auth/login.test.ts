@@ -82,7 +82,9 @@ test.describe('Login Tests', () => {
     await loginPage.clickRegister();
 
     // Wait for registration form to appear
-    await page.locator('[data-testid="registration-organization-input"]').waitFor({ state: 'visible' });
+    await page
+      .locator('[data-testid="registration-organization-input"]')
+      .waitFor({ state: 'visible' });
 
     testReporter.completeStep('Click register link', 'passed');
 
