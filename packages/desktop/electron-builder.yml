@@ -27,6 +27,7 @@ win:
     - target: nsis
       arch:
         - x64
+        - arm64
   artifactName: rediacc-console-${version}-win-${arch}.${ext}
   icon: resources/icon.ico
   # Bundle MSYS2 binaries for rsync/SSH functionality
