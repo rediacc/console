@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 /**
@@ -36,14 +35,6 @@ export function getRenetBinaryPath(renetRoot?: string): string {
   // Path: packages/bridge-tests/src/utils -> monorepo root
   const autoRoot = path.resolve(__dirname, '../../../..');
   return path.join(autoRoot, 'bin', 'renet');
-}
-
-/**
- * Check if the renet binary exists at the resolved path.
- */
-export function renetBinaryExists(renetRoot?: string): boolean {
-  const binaryPath = getRenetBinaryPath(renetRoot);
-  return fs.existsSync(binaryPath);
 }
 
 /**
