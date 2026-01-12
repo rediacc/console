@@ -1,12 +1,11 @@
 import { exec } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { promisify } from 'node:util';
 import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
-import { getRenetBinaryPath, getRenetRoot } from '../renetPath';
+import { getRenetBinaryPath } from '../renetPath';
 
 const execAsync = promisify(exec);
 
@@ -142,7 +141,7 @@ export class InfrastructureManager {
 
   /**
    * Ensure infrastructure is ready for tests.
-   * - Builds renet if not available or if RENET_AUTO_BUILD=true
+   * - Verifies renet binary is available
    * - Starts VMs if not running
    * - Deploys renet to VMs if outdated
    */
@@ -150,7 +149,7 @@ export class InfrastructureManager {
     // eslint-disable-next-line no-console
     console.log('Checking infrastructure status...');
 
-    let status = await this.getStatus();
+    const status = await this.getStatus();
     // eslint-disable-next-line no-console
     console.log('');
     // eslint-disable-next-line no-console
@@ -162,32 +161,12 @@ export class InfrastructureManager {
     // eslint-disable-next-line no-console
     console.log('  Worker VM:', status.workerVM ? 'OK' : 'DOWN');
 
-    // Build renet if not available or if auto-build is enabled
-    const autoBuild = process.env.RENET_AUTO_BUILD !== 'false';
-    if (!status.renet.available || autoBuild) {
-      // eslint-disable-next-line no-console
-      console.log('');
-      try {
-        const buildResult = await this.buildRenet();
-        this.detectedRenetPath = buildResult.path;
-        status = await this.getStatus();
-      } catch (error: unknown) {
-        const err = error as { message?: string };
-        if (!status.renet.available) {
-          throw new Error(
-            // eslint-disable-next-line custom/no-hardcoded-nullish-defaults
-            `Renet binary not found and build failed: ${err.message ?? 'Unknown error'}\n` +
-              'Build manually with: cd renet && go build -o bin/renet ./cmd/renet\n' +
-              'Or set RENET_PATH environment variable.'
-          );
-        }
-        // Build failed but we have an existing binary
-        // eslint-disable-next-line no-console
-        console.log(
-          // eslint-disable-next-line custom/no-hardcoded-nullish-defaults
-          `  Warning: Build failed (${err.message ?? 'Unknown error'}), using existing binary`
-        );
-      }
+    if (!status.renet.available) {
+      throw new Error(
+        'Renet binary not found.\n' +
+          'Build manually with: cd renet && ./go dev\n' +
+          'Or set RENET_BINARY_PATH environment variable.'
+      );
     }
 
     // Always ensure VMs are running
@@ -245,49 +224,6 @@ export class InfrastructureManager {
         `VMs started but still not reachable: ${missing.join(', ')}\n` +
           'Check network connectivity and SSH configuration.'
       );
-    }
-  }
-
-  /**
-   * Build renet binary if source has changed.
-   *
-   * CI Mode: Skips building if RENET_BINARY_PATH is set (binary pre-extracted from Docker).
-   */
-  async buildRenet(): Promise<{ built: boolean; path: string }> {
-    // CI mode: skip building if binary was pre-extracted from Docker image
-    const renetPath = getRenetBinaryPath();
-    if (process.env.CI === 'true' && process.env.RENET_BINARY_PATH) {
-      // eslint-disable-next-line no-console
-      console.log('CI Mode: Using pre-extracted renet binary');
-      // eslint-disable-next-line no-console
-      console.log(`  Binary path: ${renetPath}`);
-      return { built: false, path: renetPath };
-    }
-
-    const renetDir = getRenetRoot();
-    const binaryPath = path.join(renetDir, 'bin', 'renet');
-
-    // eslint-disable-next-line no-console
-    console.log('Building renet binary...');
-
-    try {
-      const { stderr } = await execAsync('go build -o bin/renet ./cmd/renet', {
-        cwd: renetDir,
-        timeout: 120000,
-      });
-
-      if (stderr && !stderr.includes('warning')) {
-        // eslint-disable-next-line no-console
-        console.log('  Build warnings:', stderr.trim());
-      }
-
-      // eslint-disable-next-line no-console
-      console.log('  ✓ Build complete');
-      return { built: true, path: binaryPath };
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      // eslint-disable-next-line custom/no-hardcoded-nullish-defaults
-      throw new Error(`Failed to build renet: ${err.message ?? 'Unknown error'}`);
     }
   }
 

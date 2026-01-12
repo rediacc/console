@@ -162,18 +162,12 @@ function writeSetupErrorLog(error: unknown) {
  *
  * Setup sequence:
  * 1. Soft reset VMs (ops up --force --parallel) - includes Ceph provisioning if enabled
- * 2. Build renet and deploy to all VMs
+ * 2. Deploy renet to all VMs
  * 3. Verify all VMs are ready (bridge + workers + ceph)
  *
- * CI MODE:
- * When CI=true and RENET_BINARY_PATH is set, the renet binary is expected to be
- * pre-extracted from the Docker image by the CI workflow. The setup will use this
- * pre-extracted binary instead of building from source.
- *
- * Expected CI workflow steps (before running tests):
- * 1. docker pull ghcr.io/rediacc/elite/bridge:latest
- * 2. Extract binary: docker cp container:/opt/renet/renet-linux-amd64 /tmp/renet
- * 3. Set RENET_BINARY_PATH=/tmp/renet
+ * RENET BINARY:
+ * The renet binary must be available before running tests. In CI, it's pre-extracted
+ * from the Docker image. Locally, build with: cd renet && ./go dev
  *
  * NOTE: Ceph provisioning is handled by `ops up` when PROVISION_CEPH_CLUSTER=true.
  * Do NOT call provisionCeph() separately as this causes duplicate provisioning conflicts.
@@ -192,13 +186,6 @@ async function bridgeGlobalSetup(_config: FullConfig) {
   const infra = new InfrastructureManager();
 
   try {
-    // Pre-build renet so ops up uses the latest binary (includes provisioning fixes)
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Pre-building renet for ops up...');
-    await infra.buildRenet();
-
     // Step 1: Soft reset VMs (mandatory - no skip option)
     // eslint-disable-next-line no-console
     console.log('');
