@@ -1061,11 +1061,11 @@ jobs:
           - browser: chromium
             install: npx playwright install --with-deps chromium
           - browser: firefox
-            # Install chromium for globalSetup, then firefox for tests
-            install: npx playwright install --with-deps chromium && npx playwright install firefox
+            # Install chromium (for setup) + firefox (for tests) with deps
+            install: npx playwright install --with-deps chromium firefox
           - browser: webkit
-            # Install chromium for globalSetup, then webkit for tests
-            install: npx playwright install --with-deps chromium && npx playwright install webkit
+            # Install chromium (for setup) + webkit (for tests) with deps
+            install: npx playwright install --with-deps chromium webkit
           - browser: msedge
             install: npx playwright install --with-deps chromium && npx playwright install msedge
 
@@ -1201,12 +1201,12 @@ jobs:
             install: npx playwright install --with-deps chromium
           - device: iphone-15-pro-max
             browser: webkit
-            # Install chromium for globalSetup, then webkit for tests
-            install: npx playwright install --with-deps chromium && npx playwright install webkit
+            # Install chromium (for setup) + webkit (for tests) with deps
+            install: npx playwright install --with-deps chromium webkit
           - device: ipad-pro-11
             browser: webkit
-            # Install chromium for globalSetup, then webkit for tests
-            install: npx playwright install --with-deps chromium && npx playwright install webkit
+            # Install chromium (for setup) + webkit (for tests) with deps
+            install: npx playwright install --with-deps chromium webkit
 
     steps:
       - name: Checkout code
