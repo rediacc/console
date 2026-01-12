@@ -11,7 +11,7 @@ on:
       - main
       - develop
 
-# Required for cancel-on-failure to work
+# Required for cancel-watchdog to cancel workflow on job failures
 permissions:
   actions: write
   contents: read
@@ -22,6 +22,71 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ============================================================================
+  # CANCEL WATCHDOG - Monitors all jobs and cancels workflow on any failure
+  # ============================================================================
+  cancel-watchdog:
+    name: 🛑 Cancel Watchdog
+    runs-on: ubuntu-slim
+    if: always()
+    steps:
+      - name: Monitor jobs and cancel on failure
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        with:
+          script: |
+            const pollInterval = 10000; // 10 seconds
+            const maxRuntime = 1800000; // 30 minutes max
+            const startTime = Date.now();
+
+            while (Date.now() - startTime < maxRuntime) {
+              const { data: run } = await github.rest.actions.getWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId
+              });
+
+              // If workflow is no longer in progress, exit
+              if (run.status !== 'in_progress') {
+                console.log(`Workflow status: ${run.status} - exiting watchdog`);
+                return;
+              }
+
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId
+              });
+
+              // Check for any failed jobs (excluding this watchdog)
+              const failedJob = jobs.jobs.find(job =>
+                job.conclusion === 'failure' &&
+                !job.name.includes('Watchdog')
+              );
+
+              if (failedJob) {
+                console.log(`Job "${failedJob.name}" failed - cancelling workflow...`);
+                await github.rest.actions.cancelWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: context.runId
+                });
+                return;
+              }
+
+              // Check if all other jobs are complete
+              const otherJobs = jobs.jobs.filter(job => !job.name.includes('Watchdog'));
+              const allComplete = otherJobs.every(job => job.status === 'completed');
+
+              if (allComplete) {
+                console.log('All jobs completed successfully - exiting watchdog');
+                return;
+              }
+
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+
+            console.log('Watchdog timeout reached - exiting');
+
   # ============================================================================
   # TIER 2: PR VALIDATION (PR-only, no dependencies)
   # ============================================================================
@@ -73,18 +138,6 @@ jobs:
             } else {
               core.info('✅ PR references issues');
             }
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            console.log('Job failed - cancelling workflow run...');
-            await github.rest.actions.cancelWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId
-            });
 
   pr-size:
     name: 📊 PR - Size
@@ -141,9 +194,6 @@ jobs:
 
             core.summary.addRaw(comment).write();
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   pr-conflicts:
     name: 🔀 PR - Conflicts
@@ -229,9 +279,6 @@ jobs:
       - name: Check version consistency
         run: npm run version:check
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   quality-lint:
     name: ✨ Quality - Lint
@@ -256,9 +303,6 @@ jobs:
       - name: Check unused code (knip)
         run: npm run lint:unused
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   quality-format:
     name: 🎨 Quality - Format
@@ -280,9 +324,6 @@ jobs:
       - name: Check code formatting (Biome)
         run: npm run format:check
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   quality-types:
     name: 🔍 Quality - TypeScript
@@ -304,9 +345,6 @@ jobs:
       - name: Run TypeScript project references
         run: npm run typecheck
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   quality-security:
     name: 🔒 Quality - Security
@@ -339,9 +377,6 @@ jobs:
           path: audit-report.json
           retention-days: 3
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   # ============================================================================
   # TIER 3: BUILD & UNIT TESTS (Depends on Tier 1)
@@ -386,9 +421,6 @@ jobs:
           path: packages/web/coverage/
           retention-days: 3
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   build-cli:
     name: 🔧 Build - CLI
@@ -427,9 +459,6 @@ jobs:
           echo "CLI build successful!"
           ls -lah packages/cli/dist/
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   test-vscode:
     name: 🔍 Test - VS Code (${{ matrix.os }})
@@ -504,9 +533,6 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   # ============================================================================
   # TIER 4: INTEGRATION TESTS (Depends on Tier 3, long-running)
@@ -890,9 +916,6 @@ jobs:
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 3
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   test-cli-windows:
     name: 🧪 Test - CLI (Windows)
@@ -1026,9 +1049,6 @@ jobs:
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 3
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   test-cli-macos:
     name: 🧪 Test - CLI (macOS)
@@ -1148,9 +1168,6 @@ jobs:
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 3
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   test-e2e:
     name: 🌐 Test - E2E Browsers (${{ matrix.browser }})
@@ -1284,9 +1301,6 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   test-e2e-devices:
     name: 🌐 Test - E2E Devices (${{ matrix.device }})
@@ -1421,9 +1435,6 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   build-web:
     name: 🏗️ Build - Web
@@ -1506,9 +1517,6 @@ jobs:
             echo "Bundle size OK: $TOTAL_SIZE bytes"
           fi
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   build-desktop:
     name: 🖥️ Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
@@ -1636,7 +1644,7 @@ jobs:
         working-directory: packages/desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist:linux
+        run: npm run dist:linux -- --arch ${{ matrix.arch }}
 
       - name: Create distribution packages (macOS)
         if: runner.os == 'macOS'
@@ -1644,7 +1652,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run dist:mac
+        run: npm run dist:mac -- --arch ${{ matrix.arch }}
 
       - name: Bundle MSYS2 for Windows
         if: runner.os == 'Windows'
@@ -1657,7 +1665,7 @@ jobs:
         working-directory: packages/desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist:win
+        run: npm run dist:win -- --arch ${{ matrix.arch }}
 
       - name: Upload desktop artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
@@ -1667,9 +1675,6 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
 
   # ============================================================================
   # TIER 5: CI SUMMARY (Depends on all)
