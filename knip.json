@@ -67,6 +67,16 @@
         "pages/**/*.ts"
       ],
       "project": ["**/*.ts"]
+    },
+    "packages/bridge-tests": {
+      "entry": [
+        "playwright.image.config.ts",
+        "tests/**/*.test.ts",
+        "src/base/*.ts",
+        "src/reporters/*.ts",
+        "src/utils/image/index.ts"
+      ],
+      "project": ["**/*.ts"]
     }
   },
   "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts"],

@@ -41,12 +41,6 @@ export const DEFAULT_UID = TEST_ENV.uid;
 export const DEFAULT_NETWORK_ID = TEST_ENV.network.defaultId;
 
 /**
- * Default Ceph PG count for test pools.
- * Keeps small clusters within pg-per-osd limits.
- */
-export const DEFAULT_CEPH_POOL_PG_NUM = TEST_ENV.network.defaultCephPgNum;
-
-/**
  * Fork network IDs for repository isolation tests.
  * Each fork needs its own network ID to have isolated Docker daemon.
  * Docker socket path: /var/run/rediacc/docker-{networkId}.sock
@@ -57,8 +51,6 @@ export const FORK_NETWORK_ID_B = TEST_ENV.network.forkB;
 /**
  * Test-specific constants
  */
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const TEST_REPOSITORY_PREFIX = TEST_ENV.testRepositoryPrefix;
 // eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
 export const TEST_REPOSITORY_NAME = TEST_ENV.testRepositoryName;
 // eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity

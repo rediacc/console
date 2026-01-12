@@ -447,5 +447,3 @@ export class ImageTestHelper {
     };
   }
 }
-
-export default ImageTestHelper;
