@@ -27,7 +27,7 @@ jobs:
   # ============================================================================
   pr-title:
     name: 📋 PR - Title Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: github.event_name == 'pull_request'
 
     steps:
@@ -88,7 +88,7 @@ jobs:
 
   pr-size:
     name: 📊 PR - Size
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: github.event_name == 'pull_request'
 
     steps:
@@ -147,7 +147,7 @@ jobs:
 
   pr-conflicts:
     name: 🔀 PR - Conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: github.event_name == 'pull_request'
 
     steps:
@@ -186,7 +186,7 @@ jobs:
   # ============================================================================
   quality-versions:
     name: 📦 Quality - Versions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     steps:
       - name: Checkout code
@@ -235,7 +235,7 @@ jobs:
 
   quality-lint:
     name: ✨ Quality - Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     steps:
       - name: Checkout code
@@ -262,7 +262,7 @@ jobs:
 
   quality-format:
     name: 🎨 Quality - Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     steps:
       - name: Checkout code
@@ -286,7 +286,7 @@ jobs:
 
   quality-types:
     name: 🔍 Quality - TypeScript
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     steps:
       - name: Checkout code
@@ -310,7 +310,7 @@ jobs:
 
   quality-security:
     name: 🔒 Quality - Security
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     steps:
       - name: Checkout code
@@ -348,7 +348,7 @@ jobs:
   # ============================================================================
   test-unit:
     name: 🧪 Test - Unit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
 
     steps:
@@ -392,7 +392,7 @@ jobs:
 
   build-cli:
     name: 🔧 Build - CLI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
 
     steps:
@@ -1346,7 +1346,7 @@ jobs:
 
   build-web:
     name: 🏗️ Build - Web
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
 
     strategy:
@@ -1578,7 +1578,7 @@ jobs:
   # ============================================================================
   summary:
     name: ✅ Summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, build-web, build-desktop]
     if: always()
 
