@@ -708,7 +708,8 @@ export default tseslint.config(
 
       // Other recommended Playwright rules
       'playwright/no-focused-test': 'error',
-      'playwright/no-skipped-test': 'warn',
+      // Skipped tests are intentional (WIP features, incomplete infrastructure)
+      'playwright/no-skipped-test': 'off',
       'playwright/valid-expect': 'error',
       // expect-expect is disabled below for all test packages due to varied testing patterns
       // The key rule (no-wait-for-timeout) remains active

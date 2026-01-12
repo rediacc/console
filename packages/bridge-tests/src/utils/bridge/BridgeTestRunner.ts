@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 // BridgeTestRunner contains extensive delegation methods for backward compatibility.
 // The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
 import { exec } from 'node:child_process';
