@@ -1,31 +1,6 @@
-import { chromium, firefox, webkit, type FullConfig, type Browser } from '@playwright/test';
+import { chromium, type FullConfig } from '@playwright/test';
 import { API_DEFAULTS, TEST_CREDENTIALS } from '@rediacc/shared';
 import { saveGlobalState } from './global-state';
-
-/**
- * Launch a browser based on what's installed.
- * In CI, only the specific browser for that job is installed.
- */
-async function launchAvailableBrowser(): Promise<Browser> {
-  // Try browsers in order of preference
-  const browsers = [
-    { name: 'chromium', launcher: chromium },
-    { name: 'firefox', launcher: firefox },
-    { name: 'webkit', launcher: webkit },
-  ];
-
-  for (const { name, launcher } of browsers) {
-    try {
-      const browser = await launcher.launch({ headless: true });
-      console.warn(`[Setup] Using ${name} browser`);
-      return browser;
-    } catch {
-      // Browser not installed, try next
-    }
-  }
-
-  throw new Error('No browser available. Run: npx playwright install');
-}
 
 async function globalSetup(config: FullConfig): Promise<void> {
   const runId = Date.now();
@@ -41,7 +16,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
   console.warn(`[Setup] Registering: ${credentials.email}`);
 
   const baseURL = config.projects[0]?.use?.baseURL ?? API_DEFAULTS.CONSOLE_URL;
-  const browser = await launchAvailableBrowser();
+  const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
   try {

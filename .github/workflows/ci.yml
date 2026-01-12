@@ -1061,9 +1061,11 @@ jobs:
           - browser: chromium
             install: npx playwright install --with-deps chromium
           - browser: firefox
-            install: npx playwright install --with-deps firefox
+            # Install chromium for globalSetup, then firefox for tests
+            install: npx playwright install --with-deps chromium && npx playwright install firefox
           - browser: webkit
-            install: npx playwright install --with-deps webkit
+            # Install chromium for globalSetup, then webkit for tests
+            install: npx playwright install --with-deps chromium && npx playwright install webkit
           - browser: msedge
             install: npx playwright install --with-deps chromium && npx playwright install msedge
 
@@ -1199,10 +1201,12 @@ jobs:
             install: npx playwright install --with-deps chromium
           - device: iphone-15-pro-max
             browser: webkit
-            install: npx playwright install --with-deps webkit
+            # Install chromium for globalSetup, then webkit for tests
+            install: npx playwright install --with-deps chromium && npx playwright install webkit
           - device: ipad-pro-11
             browser: webkit
-            install: npx playwright install --with-deps webkit
+            # Install chromium for globalSetup, then webkit for tests
+            install: npx playwright install --with-deps chromium && npx playwright install webkit
 
     steps:
       - name: Checkout code
@@ -1560,7 +1564,9 @@ jobs:
       VM_NET_OFFSET: 0
       VM_BRIDGE: 1
       VM_WORKERS: 11 12
-      VM_CEPH_NODES: 21 22 23
+      VM_CEPH_NODES: NONE
+      PROVISION_CEPH_CLUSTER: 'false'
+      SKIP_MACHINE_REGISTRATION: 'true'
       BRIDGE_TIMEOUT: 120000
       RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
 
@@ -1620,7 +1626,12 @@ jobs:
         working-directory: ops
         run: |
           echo "Provisioning test VMs using ops scripts..."
-          ./go up_systems --ci || {
+          # Skip machine registration (no middleware in CI)
+          # Skip Ceph nodes for faster CI
+          export SKIP_MACHINE_REGISTRATION=true
+          export VM_CEPH_NODES=NONE
+          export PROVISION_CEPH_CLUSTER=false
+          ./go up_systems --parallel || {
             echo "VM provisioning failed, checking logs..."
             cat /var/log/libvirt/qemu/*.log 2>/dev/null || true
             exit 1
