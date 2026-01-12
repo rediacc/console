@@ -69,12 +69,22 @@ jobs:
               const failedJob = otherJobs.find(job => job.conclusion === 'failure');
 
               if (failedJob) {
-                console.log(`❌ Job "${failedJob.name}" failed - cancelling workflow...`);
+                const failureMsg = `❌ PIPELINE CANCELLED due to job failure: "${failedJob.name}"`;
+                console.log('');
+                console.log('='.repeat(70));
+                console.log(failureMsg);
+                console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/job/${failedJob.id}`);
+                console.log('='.repeat(70));
+                console.log('');
+
                 await github.rest.actions.cancelWorkflowRun({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   run_id: context.runId
                 });
+
+                // Fail the watchdog job to make it red in the UI
+                core.setFailed(failureMsg);
                 return;
               }
 
