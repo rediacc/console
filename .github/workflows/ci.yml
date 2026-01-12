@@ -1622,6 +1622,12 @@ jobs:
           /tmp/renet version
           echo "RENET_BINARY_PATH=/tmp/renet" >> $GITHUB_ENV
 
+      - name: Checkout ops repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          repository: rediacc/ops
+          path: ops
+
       - name: Provision Test VMs
         working-directory: ops
         run: |
