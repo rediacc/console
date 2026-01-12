@@ -101,6 +101,29 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Check if retry should be attempted based on attempt number and error type.
+ */
+function shouldRetry(error: unknown, attempt: number, config: HttpRetryConfig): boolean {
+  if (attempt >= config.maxRetries) {
+    return false;
+  }
+  return isRetryableError(error, config);
+}
+
+/**
+ * Log retry attempt in non-production environments.
+ */
+function logRetryAttempt(attempt: number, maxRetries: number, error: unknown, delay: number): void {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  console.warn(
+    `[API Retry] Attempt ${attempt + 1}/${maxRetries} failed: ${errorMessage}. Retrying in ${delay}ms...`
+  );
+}
+
+/**
  * Execute an async function with automatic retry on transient errors.
  *
  * @param fn - The async function to execute
@@ -119,7 +142,6 @@ export async function withRetry<T>(
   config?: Partial<HttpRetryConfig>
 ): Promise<T> {
   const fullConfig: HttpRetryConfig = { ...DEFAULT_HTTP_RETRY_CONFIG, ...config };
-
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= fullConfig.maxRetries; attempt++) {
@@ -128,28 +150,12 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error;
 
-      // Don't retry if this is the last attempt
-      if (attempt === fullConfig.maxRetries) {
+      if (!shouldRetry(error, attempt, fullConfig)) {
         break;
       }
 
-      // Don't retry if the error is not retryable
-      if (!isRetryableError(error, fullConfig)) {
-        break;
-      }
-
-      // Calculate and wait for backoff delay
       const delay = calculateDelay(attempt, fullConfig);
-
-      // Log retry attempt (useful for debugging)
-      if (process.env.NODE_ENV !== 'production') {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.warn(
-          `[API Retry] Attempt ${attempt + 1}/${fullConfig.maxRetries} failed: ${errorMessage}. ` +
-            `Retrying in ${delay}ms...`
-        );
-      }
-
+      logRetryAttempt(attempt, fullConfig.maxRetries, error, delay);
       await sleep(delay);
     }
   }
