@@ -60,6 +60,14 @@
         "src/main/protocol.ts"
       ],
       "project": ["src/**/*.ts", "*.ts"]
+    },
+    "packages/e2e": {
+      "entry": [
+        "tests/global.setup.ts",
+        "tests/**/*.test.ts",
+        "pages/**/*.ts"
+      ],
+      "project": ["**/*.ts"]
     }
   },
   "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts"],
