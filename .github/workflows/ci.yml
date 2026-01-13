@@ -576,7 +576,7 @@ jobs:
   infra-backend:
     name: 🖥️ Infra - Backend
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
     timeout-minutes: 120
 
     env:
@@ -889,7 +889,7 @@ jobs:
   test-cli-linux:
     name: 🧪 Test - CLI (Linux)
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [test-e2e-electron]
     timeout-minutes: 120
 
     env:
@@ -1015,7 +1015,7 @@ jobs:
   test-cli-windows:
     name: 🧪 Test - CLI (Windows)
     runs-on: windows-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [test-e2e-electron]
     timeout-minutes: 120
 
     env:
@@ -1148,7 +1148,7 @@ jobs:
   test-cli-macos:
     name: 🧪 Test - CLI (macOS)
     runs-on: macos-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [test-e2e-electron]
     timeout-minutes: 120
 
     env:
@@ -1722,7 +1722,7 @@ jobs:
   test-e2e-electron:
     name: 🖥️ Test - E2E Electron (${{ matrix.project }})
     runs-on: ${{ matrix.os }}
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [test-e2e-devices]
     timeout-minutes: 60
 
     strategy:
