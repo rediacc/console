@@ -39,8 +39,15 @@ async function launchElectronApp(): Promise<ElectronApplication> {
   // __dirname is packages/e2e/src/electron/, go up 3 levels to packages/
   const mainPath = path.resolve(__dirname, '../../../desktop/out/main/index.js');
 
+  // Build args - add --no-sandbox in CI to avoid SUID sandbox permission issues on Linux
+  // The Chromium SUID sandbox requires specific permissions that are often not available in CI containers
+  const args = [mainPath];
+  if (process.env.CI) {
+    args.push('--no-sandbox');
+  }
+
   return electron.launch({
-    args: [mainPath],
+    args,
     // Set cwd to desktop package for proper native module resolution
     cwd: path.resolve(__dirname, '../../../desktop'),
     env: {

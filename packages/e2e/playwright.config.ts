@@ -122,53 +122,64 @@ export default test.defineConfig({
     // =========================================================================
     // DESKTOP BROWSERS
     // Each test authenticates via login page (no shared auth state needed)
+    // Electron tests are excluded - they only run in Electron projects
     // =========================================================================
     {
       name: 'chromium',
       use: { ...test.devices['Desktop Chrome'] },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
     {
       name: 'firefox',
       use: { ...test.devices['Desktop Firefox'] },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
     {
       name: 'webkit',
       use: { ...test.devices['Desktop Safari'] },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
     {
       name: 'msedge',
       use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
 
     // =========================================================================
     // MOBILE DEVICES - Android (Chromium-based)
+    // Electron tests are excluded - they only run in Electron projects
     // =========================================================================
     {
       name: 'galaxy-s24',
       use: { ...test.devices['Galaxy S24'] },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
     {
       name: 'galaxy-tab-s9',
       use: { ...test.devices['Galaxy Tab S9 landscape'] },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
 
     // =========================================================================
     // MOBILE DEVICES - iOS (WebKit-based)
+    // Electron tests are excluded - they only run in Electron projects
     // =========================================================================
     {
       name: 'iphone-15-pro-max',
       use: { ...test.devices['iPhone 15 Pro Max'] },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
     {
       name: 'ipad-pro-11',
       use: { ...test.devices['iPad Pro 11'] },
+      testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
 
