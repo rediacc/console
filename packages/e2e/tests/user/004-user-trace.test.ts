@@ -48,7 +48,8 @@ test.describe('Team Trace Tests', () => {
       .textContent();
     const recordCount = Number.parseInt(auditRecordsText ?? E2E_DEFAULTS.CPU_COUNT_STRING);
     expect(recordCount).toBeGreaterThan(0);
-    await page.getByRole('button', { name: 'Close' }).click();
+    const auditModal = page.getByTestId('audit-trace-modal');
+    await auditModal.getByRole('button', { name: 'Close' }).click();
     testReporter.completeStep('Trace user audit records', 'passed');
     await testReporter.finalizeTest();
   });

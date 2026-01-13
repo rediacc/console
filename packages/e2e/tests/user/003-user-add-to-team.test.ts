@@ -99,8 +99,12 @@ test.describe('User Team Assignment Tests', () => {
     await userOption.click();
 
     // Click the plus button to add the member
-    const addButton = page.getByRole('button', { name: 'Add Member' });
+    const selectedUser = addMemberPanel.locator('.ant-select-selection-item');
+    await expect(selectedUser).toHaveText(userEmail, { timeout: 5000 });
+
+    const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
     await expect(addButton).toBeVisible();
+    await expect(addButton).toBeEnabled({ timeout: 10000 });
     await addButton.click();
 
     // Wait for API response to complete
@@ -110,10 +114,6 @@ test.describe('User Team Assignment Tests', () => {
 
     testReporter.startStep('Verify user in team members');
 
-    // Refresh modal to ensure latest members are loaded
-    await page.getByRole('button', { name: 'Close' }).click();
-    await expect(teamMembersButton).toBeVisible({ timeout: 5000 });
-    await teamMembersButton.click();
     await expect(teamModal).toBeVisible({ timeout: 5000 });
 
     // Switch to Current Members tab
@@ -180,8 +180,12 @@ test.describe('User Team Assignment Tests', () => {
     await expect(userOption).toBeVisible({ timeout: 5000 });
     await userOption.click();
 
-    const addButton = page.getByRole('button', { name: 'Add Member' });
+    const selectedUser = addMemberPanel.locator('.ant-select-selection-item');
+    await expect(selectedUser).toHaveText(userToAdd.email, { timeout: 5000 });
+
+    const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
     await expect(addButton).toBeVisible();
+    await expect(addButton).toBeEnabled({ timeout: 10000 });
     await addButton.click();
 
     // Wait for API response to complete
@@ -191,9 +195,6 @@ test.describe('User Team Assignment Tests', () => {
 
     testReporter.startStep('Verify user in team members');
 
-    await page.getByRole('button', { name: 'Close' }).click();
-    await expect(teamMembersButton).toBeVisible({ timeout: 5000 });
-    await teamMembersButton.click();
     await expect(teamModal).toBeVisible({ timeout: 5000 });
 
     const currentMembersTab = page.getByRole('tab', { name: 'Current Members' });

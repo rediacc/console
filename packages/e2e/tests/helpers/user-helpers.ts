@@ -13,6 +13,12 @@ async function getExistingSecondaryUser(
   const nav = new NavigationHelper(page);
   await nav.goToOrganizationUsers();
 
+  const searchInput = page.getByTestId('resource-list-search');
+  if (await searchInput.isVisible().catch(() => false)) {
+    await searchInput.fill('');
+    await searchInput.press('Enter');
+  }
+
   const rows = page
     .getByTestId(UserPageIDs.systemUserTable)
     .locator('tbody tr:not(.ant-table-measure-row)');
@@ -68,33 +74,41 @@ export async function createUserViaUI(
 
   const submitButton = page.getByTestId(UserPageIDs.resourceFormSubmitButton);
   await expect(submitButton).toBeVisible();
+  const createResponsePromise = page.waitForResponse((response) => {
+    return response.url().includes('/CreateNewUser') && response.request().method() === 'POST';
+  });
   await submitButton.click();
+  const createResponse = await createResponsePromise;
+  if (!createResponse.ok()) {
+    const body = await createResponse.text().catch(() => '<unreadable>');
+    throw new Error(`CreateNewUser failed: ${createResponse.status()} ${body}`);
+  }
   const createModal = page.getByTestId('users-create-modal');
   await expect(createModal).toBeHidden({ timeout: 10000 });
 
-  await page.reload();
-  await page.waitForLoadState('networkidle');
-  const loginEmail = page.getByTestId('login-email-input');
-  if (await loginEmail.isVisible().catch(() => false)) {
-    const loginPage = new LoginPage(page);
-    const state = loadGlobalState();
-    await loginPage.login(state.email, state.password);
-    await loginPage.waitForLoginCompletion();
-  }
-  await nav.goToOrganizationUsers();
-
-  try {
+  const verifyCreatedUserVisible = async (timeout: number): Promise<void> => {
+    await nav.goToOrganizationUsers();
     const searchInput = page.getByTestId('resource-list-search');
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.fill(email);
       await searchInput.press('Enter');
     }
-    await expect(page.getByTestId(UserPageIDs.resourceListItem(email))).toBeVisible({
-      timeout: 20000,
-    });
+    await expect(page.getByTestId(UserPageIDs.resourceListItem(email))).toBeVisible({ timeout });
+  };
+
+  try {
+    await verifyCreatedUserVisible(10000);
   } catch {
-    console.warn(`[E2E] Created user not visible, falling back to existing user`);
-    return getExistingSecondaryUser(page, testDataManager);
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    const loginEmail = page.getByTestId('login-email-input');
+    if (await loginEmail.isVisible().catch(() => false)) {
+      const loginPage = new LoginPage(page);
+      const state = loadGlobalState();
+      await loginPage.login(state.email, state.password);
+      await loginPage.waitForLoginCompletion();
+    }
+    await verifyCreatedUserVisible(10000);
   }
 
   testDataManager.addCreatedUser(email, password, false);
