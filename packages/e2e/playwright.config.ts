@@ -66,8 +66,8 @@ export default test.defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* No retries - tests should pass consistently */
+  retries: 0,
 
   /* Opt out of parallel tests on CI for stability */
   workers: process.env.CI ? 1 : undefined,

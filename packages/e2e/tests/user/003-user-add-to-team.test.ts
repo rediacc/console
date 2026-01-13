@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
 
 test.describe('User Team Assignment Tests', () => {
@@ -40,8 +41,8 @@ test.describe('User Team Assignment Tests', () => {
     testReporter.startStep('Navigate to Teams section');
 
     // Navigate to Organization > Teams
-    await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.subNavOrganizationTeams).click();
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationTeams();
 
     testReporter.completeStep('Navigate to Teams section', 'passed');
 
@@ -133,8 +134,8 @@ test.describe('User Team Assignment Tests', () => {
 
     testReporter.startStep('Navigate to Teams section');
 
-    await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.subNavOrganizationTeams).click();
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationTeams();
 
     testReporter.completeStep('Navigate to Teams section', 'passed');
 

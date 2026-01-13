@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
 
 test.describe('User Permission Tests', () => {
@@ -27,8 +28,10 @@ test.describe('User Permission Tests', () => {
     const newUserEmail = tempUser.email;
 
     testReporter.startStep('Navigate to Users section');
-    await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.subNavOrganizationUsers).click();
+
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationUsers();
+
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
     await expect(userTable).toBeVisible({ timeout: 10000 });
     testReporter.completeStep('Navigate to Users section', 'passed');
@@ -58,8 +61,10 @@ test.describe('User Permission Tests', () => {
     const newUserEmail = tempUser.email;
 
     testReporter.startStep('Navigate to Users section');
-    await page.getByTestId(UserPageIDs.mainNavOrganization).click();
-    await page.getByTestId(UserPageIDs.subNavOrganizationUsers).click();
+
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationUsers();
+
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
     await expect(userTable).toBeVisible({ timeout: 10000 });
     testReporter.completeStep('Navigate to Users section', 'passed');

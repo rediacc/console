@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test, expect } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
 
 test.describe('Team Edit Tests', () => {
@@ -28,9 +29,10 @@ test.describe('Team Edit Tests', () => {
     // Get created user
     const createdUser = testDataManager.getCreatedUser();
 
-    // Navigate to users
-    await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
-    await page.getByTestId(TeamPageIDS.subNavOrganizationUsers).click();
+    // Navigate to Organization > Users
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationUsers();
+
     await expect(page.getByRole('cell', { name: `user ${createdUser.email}` })).toBeVisible();
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');

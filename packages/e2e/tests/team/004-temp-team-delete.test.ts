@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test, expect } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
 
 test.describe('Team Trace Tests', () => {
@@ -24,8 +25,10 @@ test.describe('Team Trace Tests', () => {
   }) => {
     testReporter.startStep('Trace team audit records');
 
-    await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
-    await page.getByTestId(TeamPageIDS.subNavOrganizationTeams).click();
+    // Navigate to Organization > Teams
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationTeams();
+
     await page.getByText('test-TEAM').click();
     await page.getByTestId(TeamPageIDS.systemTeamDeleteButton('test-TEAM')).click();
     await page.getByRole('button', { name: 'general.yes' }).click();

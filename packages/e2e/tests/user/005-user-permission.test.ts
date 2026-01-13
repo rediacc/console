@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
 
 test.describe('User Permission Tests', () => {
@@ -28,11 +29,10 @@ test.describe('User Permission Tests', () => {
     // Get created user
     const createdUser = testDataManager.getCreatedUser();
 
-    // organization
-    await page.getByTestId(UserPageIDs.mainNavOrganization).click();
+    // Navigate to Organization > Users
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationUsers();
 
-    // user table
-    await page.getByTestId(UserPageIDs.subNavOrganizationUsers).click();
     await expect(page.getByRole('cell', { name: `user ${createdUser.email}` })).toBeVisible();
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');

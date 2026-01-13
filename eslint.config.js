@@ -46,9 +46,19 @@ export default tseslint.config(
       // Ignore scripts directories (plain JS utilities)
       'scripts/**',
       'packages/*/scripts/**',
+      // Ignore Playwright report artifacts (generated trace viewer files)
+      'packages/e2e/reports/**',
+      'packages/bridge-tests/reports/**',
     ]
   },
   
+  // Linter options - treat unused directive comments as errors to avoid pollution
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'error',
+    },
+  },
+
   // Base JavaScript rules
   js.configs.recommended,
   
@@ -356,6 +366,7 @@ export default tseslint.config(
   // Web UI i18n enforcement
   {
     files: ['packages/web/src/**/*.{js,jsx,ts,tsx}'],
+    ignores: ['packages/web/src/**/__tests__/**'],
     plugins: {
       'i18n-source': i18nSourcePlugin,
     },
@@ -667,33 +678,27 @@ export default tseslint.config(
     }
   },
 
-  // CLI test files - relaxed rules for test patterns
-  {
-    files: ['packages/cli/tests/**/*.ts'],
-    rules: {
-      // Test files legitimately use boolean || for condition checks
-      // e.g., output.includes("foo") || output.includes("bar")
-      '@typescript-eslint/prefer-nullish-coalescing': ['error', {
-        ignorePrimitives: {
-          boolean: true,
-          number: true,
-          string: true,
-        },
-      }],
-      // Tests can be longer than production code
-      'max-lines': 'off',
-      // Test files use nested callbacks: describe -> test -> async -> array methods
-      // Limit of 3 is too restrictive for test patterns like find(), some(), map()
-      'max-nested-callbacks': ['error', 5],
-    },
-  },
-
-  // Playwright test files - best practices for all Playwright packages
+  // =============================================================
+  // TEST FILE OVERRIDES
+  // =============================================================
+  // These patterns cover ALL test file locations:
+  // - E2E tests: packages/e2e/**
+  // - Bridge tests: packages/bridge-tests/**
+  // - CLI Playwright: packages/cli/tests/**
+  // - CLI Unit tests: packages/cli/src/__tests__/**
+  // - Web Vitest: packages/web/src/**/__tests__/**
+  // - Shared: packages/shared/src/**/__tests__/**
+  // =============================================================
   {
     files: [
+      // Playwright/E2E test files
       'packages/e2e/**/*.ts',
       'packages/bridge-tests/**/*.ts',
       'packages/cli/tests/**/*.ts',
+      // Unit test files (__tests__ convention)
+      'packages/web/src/**/__tests__/**/*.{ts,tsx}',
+      'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
+      'packages/cli/src/__tests__/**/*.ts',
     ],
     ignores: [
       // Has legitimate waitForTimeout for exponential backoff retry logic
@@ -703,32 +708,32 @@ export default tseslint.config(
       playwright: playwrightPlugin,
     },
     rules: {
-      // Prevent arbitrary time-based waits - use condition-based waits instead
+      // --- Playwright-specific rules ---
       'playwright/no-wait-for-timeout': 'error',
-
-      // Other recommended Playwright rules
       'playwright/no-focused-test': 'error',
-      // Skipped tests are intentional (WIP features, incomplete infrastructure)
       'playwright/no-skipped-test': 'off',
       'playwright/valid-expect': 'error',
-      // expect-expect is disabled below for all test packages due to varied testing patterns
-      // The key rule (no-wait-for-timeout) remains active
       'playwright/expect-expect': 'off',
 
-      // Test files are longer than production code
+      // --- General test file rules ---
       'max-lines': 'off',
-
-      // Test files use nested callbacks: describe -> test -> async -> helpers
       'max-nested-callbacks': ['error', 5],
 
-      // Test files don't need translations
+      // --- Disable production-only rules ---
       'custom/require-translation': 'off',
       'custom/no-hardcoded-text': 'off',
       'custom/no-hardcoded-cli-text': 'off',
-
-      // Test files use Playwright locators, not React components
       'react/forbid-elements': 'off',
       'custom/require-testid': 'off',
+
+      // --- TypeScript relaxations for tests ---
+      '@typescript-eslint/prefer-nullish-coalescing': ['error', {
+        ignorePrimitives: {
+          boolean: true,
+          number: true,
+          string: true,
+        },
+      }],
     },
   },
 

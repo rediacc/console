@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
 
 test.describe('Team Creation Tests', () => {
@@ -23,10 +24,12 @@ test.describe('Team Creation Tests', () => {
     page,
     testReporter,
   }) => {
-    testReporter.startStep('Navigate to Organization Users section');
+    testReporter.startStep('Navigate to Organization Teams section');
 
-    await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
-    await page.getByTestId(TeamPageIDS.subNavOrganizationTeams).click();
+    // Navigate to Organization > Teams
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationTeams();
+
     await page.getByTestId(TeamPageIDS.systemCreateTeamButton).click();
     await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).click();
     await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).fill('test-TEAM');

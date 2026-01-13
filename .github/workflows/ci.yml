@@ -1565,6 +1565,7 @@ jobs:
           echo "DISPLAY=:99" >> $GITHUB_ENV
 
       - name: Download Tunnel URL
+        if: runner.os != 'Windows'
         id: tunnel
         env:
           GH_TOKEN: ${{ github.token }}

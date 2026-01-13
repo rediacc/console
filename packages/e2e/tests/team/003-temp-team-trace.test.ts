@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test, expect } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
 
@@ -30,11 +31,10 @@ test.describe('Team Trace Tests', () => {
     // Get created user
     const createdUser = testDataManager.getCreatedUser();
 
-    //organization
-    await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
+    // Navigate to Organization > Users
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationUsers();
 
-    // user table
-    await page.getByTestId(TeamPageIDS.subNavOrganizationUsers).click();
     await expect(page.getByRole('cell', { name: `user ${createdUser.email}` })).toBeVisible();
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');

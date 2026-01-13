@@ -1,0 +1,41 @@
+{
+  "users": [
+    {
+      "email": "e2e-1768291072027@rediacc.local",
+      "password": "TestPass123!",
+      "firstName": "Admin",
+      "lastName": "User",
+      "role": "admin",
+      "team": "Private Team"
+    },
+    {
+      "email": "e2e-1768291072027@rediacc.local",
+      "password": "TestPass123!",
+      "firstName": "Standard",
+      "lastName": "User",
+      "role": "user",
+      "team": "Private Team"
+    },
+    {
+      "email": "e2e-1768291072027@rediacc.local",
+      "password": "TestPass123!",
+      "firstName": "TempUser",
+      "lastName": "User999",
+      "role": "tempuser",
+      "team": "Private Team"
+    }
+  ],
+  "machines": [],
+  "repositories": [
+    {
+      "name": "test-repo",
+      "machine": "machine-1",
+      "team": "Private Team",
+      "version": "1.0.0"
+    }
+  ],
+  "teams": [
+    "Private Team"
+  ],
+  "createdUsers": []
+}
