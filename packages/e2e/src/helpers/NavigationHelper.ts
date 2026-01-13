@@ -4,7 +4,7 @@ import { Page } from '@playwright/test';
  * Navigation test IDs used across the application.
  * These must match the data-testid attributes in the web app's routes.tsx
  */
-export const NavTestIds = {
+const NavTestIds = {
   // Main navigation items
   mainNavOrganization: 'main-nav-organization',
   mainNavMachines: 'main-nav-machines',
@@ -55,7 +55,7 @@ const SUBMENU_VISIBLE_TIMEOUT = 5000;
  * ```
  */
 export class NavigationHelper {
-  constructor(private page: Page) {}
+  constructor(private readonly page: Page) {}
 
   // ==========================================================================
   // Organization Navigation
@@ -196,10 +196,7 @@ export class NavigationHelper {
    * Waits for Users sub-nav item to become visible as indicator of expansion.
    */
   private async expandOrganizationMenu(): Promise<void> {
-    await this.expandSubmenu(
-      NavTestIds.mainNavOrganization,
-      NavTestIds.subNavOrganizationUsers
-    );
+    await this.expandSubmenu(NavTestIds.mainNavOrganization, NavTestIds.subNavOrganizationUsers);
   }
 
   /**
@@ -207,10 +204,7 @@ export class NavigationHelper {
    * Waits for Profile sub-nav item to become visible as indicator of expansion.
    */
   private async expandSettingsMenu(): Promise<void> {
-    await this.expandSubmenu(
-      NavTestIds.mainNavSettings,
-      NavTestIds.subNavSettingsProfile
-    );
+    await this.expandSubmenu(NavTestIds.mainNavSettings, NavTestIds.subNavSettingsProfile);
   }
 
   /**
@@ -218,10 +212,7 @@ export class NavigationHelper {
    * Waits for Clusters sub-nav item to become visible as indicator of expansion.
    */
   private async expandCephMenu(): Promise<void> {
-    await this.expandSubmenu(
-      NavTestIds.mainNavCeph,
-      NavTestIds.subNavCephClusters
-    );
+    await this.expandSubmenu(NavTestIds.mainNavCeph, NavTestIds.subNavCephClusters);
   }
 
   /**
