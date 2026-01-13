@@ -1,14 +1,21 @@
 #!/bin/bash
 # Run E2E tests with Playwright
-# Usage: run-e2e.sh --projects <project1> [project2] ... [--workers <n>]
+# Usage: run-e2e.sh --projects <project1> [project2] ... [options]
 #
 # Options:
 #   --projects  Space-separated list of Playwright projects to run
 #   --workers   Number of parallel workers (default: auto)
+#   --headed    Run tests with visible browser
+#   --debug     Open Playwright Inspector for debugging
+#   --ui        Open Playwright UI mode (interactive)
+#   --slowmo    Slow down actions by N milliseconds
 #
 # Example:
 #   .ci/scripts/test/run-e2e.sh --projects chromium firefox webkit
-#   .ci/scripts/test/run-e2e.sh --projects resolution-1920x1080 resolution-1366x768
+#   .ci/scripts/test/run-e2e.sh --projects chromium --headed
+#   .ci/scripts/test/run-e2e.sh --projects chromium --debug
+#   .ci/scripts/test/run-e2e.sh --projects chromium --ui
+#   .ci/scripts/test/run-e2e.sh --projects chromium --headed --slowmo 500
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,6 +24,10 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Parse arguments
 PROJECTS=()
 WORKERS=""
+HEADED=false
+DEBUG=false
+UI=false
+SLOWMO=""
 CURRENT_ARG=""
 
 for arg in "$@"; do
@@ -27,6 +38,18 @@ for arg in "$@"; do
         --workers)
             CURRENT_ARG="workers"
             ;;
+        --headed)
+            HEADED=true
+            ;;
+        --debug)
+            DEBUG=true
+            ;;
+        --ui)
+            UI=true
+            ;;
+        --slowmo)
+            CURRENT_ARG="slowmo"
+            ;;
         *)
             case "$CURRENT_ARG" in
                 projects)
@@ -36,6 +59,10 @@ for arg in "$@"; do
                     WORKERS="$arg"
                     CURRENT_ARG=""
                     ;;
+                slowmo)
+                    SLOWMO="$arg"
+                    CURRENT_ARG=""
+                    ;;
             esac
             ;;
     esac
@@ -43,7 +70,8 @@ done
 
 # Validate required arguments
 if [[ ${#PROJECTS[@]} -eq 0 ]]; then
-    log_error "Usage: run-e2e.sh --projects <project1> [project2] ... [--workers <n>]"
+    log_error "Usage: run-e2e.sh --projects <project1> [project2] ... [options]"
+    log_error "Options: --workers <n> --headed --debug --ui --slowmo <ms>"
     exit 1
 fi
 
@@ -51,7 +79,6 @@ fi
 cd "$(get_repo_root)"
 
 E2E_DIR="packages/e2e"
-FAILED=false
 
 log_step "Running E2E tests for projects: ${PROJECTS[*]}"
 
@@ -62,18 +89,28 @@ for project in "${PROJECTS[@]}"; do
     if [[ -n "$WORKERS" ]]; then
         CMD="$CMD --workers=$WORKERS"
     fi
+    if [[ "$HEADED" == "true" ]]; then
+        CMD="$CMD --headed"
+    fi
+    if [[ "$DEBUG" == "true" ]]; then
+        CMD="$CMD --debug"
+    fi
+    if [[ "$UI" == "true" ]]; then
+        CMD="$CMD --ui"
+    fi
 
-    if (cd "$E2E_DIR" && $CMD); then
+    # Build environment variables (slowmo is passed via env, not CLI)
+    ENV_VARS=""
+    if [[ -n "$SLOWMO" ]]; then
+        ENV_VARS="PWSLOWMO=$SLOWMO"
+    fi
+
+    if (cd "$E2E_DIR" && env $ENV_VARS $CMD); then
         log_info "E2E tests passed: $project"
     else
         log_error "E2E tests failed: $project"
-        FAILED=true
+        exit 1
     fi
 done
-
-if [[ "$FAILED" == "true" ]]; then
-    log_error "Some E2E tests failed"
-    exit 1
-fi
 
 log_info "All E2E tests passed"

@@ -27,6 +27,7 @@ const E2E_DEFAULTS = {
  * - RECORD_VIDEO: Video recording mode (off, on, retain-on-failure)
  * - STOP_ON_FAILURE: Stop on first failure (default: false)
  * - VM_DEPLOYMENT: Enable VM-dependent tests (default: false)
+ * - PWSLOWMO: Slow down browser actions by N milliseconds (for debugging)
  *
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -104,6 +105,11 @@ export default test.defineConfig({
       process.env.PAGE_TIMEOUT ?? String(E2E_DEFAULTS.CONNECTION_TIMEOUT),
       10
     ),
+
+    /* Slow down actions for debugging (set via PWSLOWMO env var) */
+    launchOptions: {
+      slowMo: process.env.PWSLOWMO ? Number.parseInt(process.env.PWSLOWMO, 10) : undefined,
+    },
   },
 
   /* Configure projects for browsers and devices */
