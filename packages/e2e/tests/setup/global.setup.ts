@@ -1,6 +1,7 @@
 import { test as setup } from '@playwright/test';
 import { API_DEFAULTS, TEST_CREDENTIALS } from '@rediacc/shared';
 import { saveGlobalState } from '../../src/setup/global-state';
+import { waitForNetworkIdleWithRetry } from '../../src/utils/retry';
 
 /**
  * Global setup test that registers a unique user before all other tests.
@@ -27,7 +28,11 @@ setup('register user for e2e tests', async ({ page }) => {
   // Navigate to login page with extended timeout for CI (Vite compilation)
   await page.goto(loginUrl, { timeout: 60000, waitUntil: 'domcontentloaded' });
   console.warn('[Setup] Page loaded, waiting for network idle...');
-  await page.waitForLoadState('networkidle', { timeout: 30000 });
+  await waitForNetworkIdleWithRetry(page, '[data-testid="login-register-link"]', {
+    maxRetries: 3,
+    retryDelay: 2000,
+    timeout: 15000,
+  });
 
   // Click register link and wait for registration form to appear
   await page.locator('[data-testid="login-register-link"]').click();
@@ -62,7 +67,11 @@ setup('register user for e2e tests', async ({ page }) => {
     .locator('[data-testid="registration-activation-code-input"]')
     .fill(TEST_CREDENTIALS.CI_ACTIVATION_CODE);
   await page.locator('[data-testid="registration-verify-button"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForNetworkIdleWithRetry(page, undefined, {
+    maxRetries: 3,
+    retryDelay: 2000,
+    timeout: 15000,
+  });
 
   // Save credentials for tests to use
   saveGlobalState({

@@ -32,6 +32,7 @@
     "lint": "eslint .",
     "lint:unused": "knip --treat-config-hints-as-errors",
     "lint:unused:fix": "knip --fix",
+    "quality": "npm run version:check && npm run lint -- --max-warnings 0 && npm run lint:unused && npm run format:check && npm run typecheck && npm run test:run",
     "test": "npm run test -w @rediacc/web",
     "test:bridge": "npm test -w @rediacc/bridge-tests",
     "test:coverage": "npm run test:coverage -w @rediacc/web",
