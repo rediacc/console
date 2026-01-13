@@ -45,6 +45,7 @@ import UnifiedResourceModal, {
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { ModalSize } from '@/types/modal';
+import { minifyJSON } from '@/platform/utils/json';
 import {
   CloudServerOutlined,
   DatabaseOutlined,
@@ -108,10 +109,14 @@ const TeamsPage: React.FC = () => {
       });
     }
 
-    if (data.vaultContent && data.vaultContent !== existingData.vaultContent) {
+    const nextVault = data.vaultContent ?? '{}';
+    const currentVault = existingData.vaultContent ?? '{}';
+    const vaultHasChanges = minifyJSON(nextVault) !== minifyJSON(currentVault);
+
+    if (data.vaultContent && vaultHasChanges) {
       await updateTeamVaultMutation.mutateAsync({
         teamName: data.teamName ?? existingData.teamName,
-        vaultContent: data.vaultContent,
+        vaultContent: nextVault,
         vaultVersion: (existingData.vaultVersion ?? 0) + 1,
       });
     }

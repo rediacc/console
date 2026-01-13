@@ -1,9 +1,11 @@
+import type { Page } from '@playwright/test';
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { ensureCreatedUser } from '../helpers/user-helpers';
 
 test.describe('User Team Assignment Tests', () => {
   let dashboardPage: DashboardPage;
@@ -20,23 +22,36 @@ test.describe('User Team Assignment Tests', () => {
     await dashboardPage.waitForNetworkIdle();
   });
 
+  const ensureUserActive = async (page: Page, email: string): Promise<void> => {
+    const nav = new NavigationHelper(page);
+    await nav.goToOrganizationUsers();
+
+    const searchInput = page.getByTestId('resource-list-search');
+    if (await searchInput.isVisible().catch(() => false)) {
+      await searchInput.fill(email);
+      await searchInput.press('Enter');
+    }
+
+    const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(email));
+    if (await activateButton.isVisible().catch(() => false)) {
+      await activateButton.click();
+      const confirm = page.getByRole('button', { name: /yes/i });
+      await expect(confirm).toBeVisible();
+      await confirm.click();
+    }
+  };
+
   test('should add created user to team @system @users @teams @regression', async ({
     page,
     screenshotManager: _screenshotManager,
     testReporter,
   }) => {
-    // Get the most recently created user from test data
-    let createdUser;
-    try {
-      createdUser = testDataManager.getCreatedUser();
-    } catch {
-      throw new Error(
-        'No created user found. Please run user-create.test.ts first to create a user.'
-      );
-    }
+    const createdUser = await ensureCreatedUser(page, testDataManager);
 
     const userEmail = createdUser.email;
     const teamName = 'Private Team';
+
+    await ensureUserActive(page, userEmail);
 
     testReporter.startStep('Navigate to Teams section');
 
@@ -71,9 +86,15 @@ test.describe('User Team Assignment Tests', () => {
     const userCombobox = addMemberPanel.getByRole('combobox');
     await expect(userCombobox).toBeVisible();
     await userCombobox.click();
+    await userCombobox.fill(userEmail);
 
     // Select the user from dropdown
-    const userOption = page.getByText(userEmail).nth(1);
+    const dropdown = page.locator('.ant-select-dropdown').filter({ hasText: userEmail });
+    await expect(dropdown).toBeVisible({ timeout: 5000 });
+    const userOption = dropdown
+      .locator('.ant-select-item-option')
+      .filter({ hasText: userEmail })
+      .first();
     await expect(userOption).toBeVisible({ timeout: 5000 });
     await userOption.click();
 
@@ -88,6 +109,12 @@ test.describe('User Team Assignment Tests', () => {
     testReporter.completeStep('Add user to team', 'passed');
 
     testReporter.startStep('Verify user in team members');
+
+    // Refresh modal to ensure latest members are loaded
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(teamMembersButton).toBeVisible({ timeout: 5000 });
+    await teamMembersButton.click();
+    await expect(teamModal).toBeVisible({ timeout: 5000 });
 
     // Switch to Current Members tab
     const currentMembersTab = page.getByRole('tab', { name: 'Current Members' });
@@ -113,24 +140,10 @@ test.describe('User Team Assignment Tests', () => {
     screenshotManager: _screenshotManager,
     testReporter,
   }) => {
-    // List all created users for reference
-    const allCreatedUsers = testDataManager.getAllCreatedUsers();
-
-    if (allCreatedUsers.length === 0) {
-      throw new Error('No created users found. Please run user-create.test.ts first.');
-    }
-
-    console.warn(`Available created users (${allCreatedUsers.length}):`);
-    for (const [index, user] of allCreatedUsers.entries()) {
-      console.warn(
-        `  ${index + 1}. ${user.email} (activated: ${user.activated}, created: ${user.createdAt})`
-      );
-    }
-
-    // You can specify which user to add by getting a specific one
-    // For example: const userToAdd = testDataManager.getCreatedUser('specific@email.com');
-    const userToAdd = allCreatedUsers[0]; // Use the first created user
+    const userToAdd = await ensureCreatedUser(page, testDataManager);
     const teamName = 'Private Team';
+
+    await ensureUserActive(page, userToAdd.email);
 
     testReporter.startStep('Navigate to Teams section');
 
@@ -157,7 +170,13 @@ test.describe('User Team Assignment Tests', () => {
     await expect(userCombobox).toBeVisible();
     await userCombobox.click();
 
-    const userOption = page.getByText(userToAdd.email).nth(1);
+    await userCombobox.fill(userToAdd.email);
+    const dropdown = page.locator('.ant-select-dropdown').filter({ hasText: userToAdd.email });
+    await expect(dropdown).toBeVisible({ timeout: 5000 });
+    const userOption = dropdown
+      .locator('.ant-select-item-option')
+      .filter({ hasText: userToAdd.email })
+      .first();
     await expect(userOption).toBeVisible({ timeout: 5000 });
     await userOption.click();
 
@@ -171,6 +190,11 @@ test.describe('User Team Assignment Tests', () => {
     testReporter.completeStep(`Add user ${userToAdd.email} to team`, 'passed');
 
     testReporter.startStep('Verify user in team members');
+
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(teamMembersButton).toBeVisible({ timeout: 5000 });
+    await teamMembersButton.click();
+    await expect(teamModal).toBeVisible({ timeout: 5000 });
 
     const currentMembersTab = page.getByRole('tab', { name: 'Current Members' });
     await expect(currentMembersTab).toBeVisible();

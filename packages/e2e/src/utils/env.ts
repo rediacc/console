@@ -1,4 +1,4 @@
-import { CREDENTIAL_ENV_VARS, TEST_CREDENTIALS } from '@rediacc/shared';
+import { TEST_CREDENTIALS } from '@rediacc/shared';
 
 // Static VM network configuration (matches bridge-tests/OpsManager pattern)
 export const VM_DEFAULTS = {
@@ -12,13 +12,13 @@ function getDefaultWorkerIPs(): string[] {
 }
 
 /**
- * Get VM env var with fallback to defaults in CI
+ * Get VM env var with fallback to defaults in test mode
  */
 export function getVMEnvVar(name: string): string | undefined {
   const value = process.env[name];
   if (value) return value;
 
-  if (process.env.CI === 'true') {
+  if (isTestEnv()) {
     switch (name) {
       case 'VM_WORKER_IPS':
         return getDefaultWorkerIPs().join(',');
@@ -31,6 +31,15 @@ export function getVMEnvVar(name: string): string | undefined {
   return undefined;
 }
 
+export function isTestEnv(): boolean {
+  return (
+    process.env.E2E_TEST_MODE === 'true' ||
+    process.env.E2E_TEST_MODE === '1' ||
+    process.env.DEV_ENV === 'true' ||
+    process.env.DEV_ENV === '1'
+  );
+}
+
 export function requireEnvVar(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -40,26 +49,14 @@ export function requireEnvVar(name: string): string {
 }
 
 /**
- * Get env var with fallback to shared defaults (for CI mode)
+ * Get env var with fallback to shared defaults (for test mode)
  */
 export function getEnvVarWithDefault(name: string): string {
   const value = process.env[name];
   if (value) return value;
 
-  // CI mode fallbacks
-  if (process.env.CI === 'true') {
-    switch (name) {
-      case CREDENTIAL_ENV_VARS.TEST_USER_EMAIL:
-      case CREDENTIAL_ENV_VARS.ADMIN_USER_EMAIL:
-      case CREDENTIAL_ENV_VARS.SYSTEM_ADMIN_EMAIL:
-        return TEST_CREDENTIALS.ADMIN_EMAIL;
-      case CREDENTIAL_ENV_VARS.TEST_USER_PASSWORD:
-      case CREDENTIAL_ENV_VARS.ADMIN_USER_PASSWORD:
-      case CREDENTIAL_ENV_VARS.SYSTEM_ADMIN_PASSWORD:
-        return TEST_CREDENTIALS.ADMIN_PASSWORD;
-      case CREDENTIAL_ENV_VARS.TEST_VERIFICATION_CODE:
-        return TEST_CREDENTIALS.CI_ACTIVATION_CODE;
-    }
+  if (name === 'TEST_VERIFICATION_CODE') {
+    return TEST_CREDENTIALS.CI_ACTIVATION_CODE;
   }
 
   throw new Error(`${name} environment variable is required`);

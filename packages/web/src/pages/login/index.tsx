@@ -79,8 +79,8 @@ const LoginPage: React.FC = () => {
 
       if (registerParam === 'quick') {
         try {
-          const ciMode = await apiConnectionService.isCiMode();
-          if (ciMode) {
+          const testMode = await apiConnectionService.isTestMode();
+          if (testMode) {
             const randomData = {
               email: generateRandomEmail(),
               password: generateRandomPassword(),
@@ -91,12 +91,12 @@ const LoginPage: React.FC = () => {
             setIsQuickRegistration(true);
             setShowRegistration(true);
           } else {
-            console.warn('Quick registration is only available in CI/TEST mode');
-            showMessage('warning', 'Quick registration is only available in CI/TEST mode');
+            console.warn('Quick registration is only available in test mode');
+            showMessage('warning', 'Quick registration is only available in test mode');
             setShowRegistration(true);
           }
         } catch (error) {
-          console.error('Could not check CI mode, falling back to normal registration', error);
+          console.error('Could not check test mode, falling back to normal registration', error);
           setShowRegistration(true);
         }
       } else if (registerParam === 'manual') {

@@ -1,9 +1,12 @@
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
+import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { createTeamViaUI } from '../helpers/team-helpers';
+import { ensureCreatedUser } from '../helpers/user-helpers';
 
 test.describe('Team Edit Tests', () => {
   let dashboardPage: DashboardPage;
@@ -24,26 +27,30 @@ test.describe('Team Edit Tests', () => {
     page,
     testReporter,
   }) => {
+    const baseTeamName = `e2e-team-${Date.now()}`;
+    const updatedTeamName = `${baseTeamName}-updated`;
+
     testReporter.startStep('Navigate to Organization Users section');
 
-    // Get created user
-    const createdUser = testDataManager.getCreatedUser();
+    const createdUser = await ensureCreatedUser(page, testDataManager);
 
     // Navigate to Organization > Users
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationUsers();
 
-    await expect(page.getByRole('cell', { name: `user ${createdUser.email}` })).toBeVisible();
+    await expect(page.getByTestId(UserPageIDs.resourceListItem(createdUser.email))).toBeVisible();
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');
 
     testReporter.startStep('Edit team name and view members');
 
-    await page.getByTestId(TeamPageIDS.systemTeamEditButton('test-TEAM')).click();
+    await createTeamViaUI(page, baseTeamName);
+
+    await page.getByTestId(TeamPageIDS.systemTeamEditButton(baseTeamName)).click();
     await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).click();
-    await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).fill('test-TEAM-2');
+    await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).fill(updatedTeamName);
     await page.getByTestId(TeamPageIDS.resourceModalOkButton).click();
-    await page.getByTestId(TeamPageIDS.systemTeamMembersButton('test-TEAM-2')).click();
+    await page.getByTestId(TeamPageIDS.systemTeamMembersButton(updatedTeamName)).click();
 
     testReporter.completeStep('Edit team name and view members', 'passed');
 

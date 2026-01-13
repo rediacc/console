@@ -69,16 +69,26 @@ class ApiConnectionService {
   }
 
   /**
-   * Check if CI/Test mode is enabled
+   * Check if test mode is enabled
    * Used to bypass CAPTCHA and email verification during testing
    */
-  async isCiMode(): Promise<boolean> {
+  async isTestMode(): Promise<boolean> {
+    const localOverride =
+      import.meta.env.VITE_DEV_ENV === 'true' ||
+      import.meta.env.VITE_DEV_ENV === '1' ||
+      import.meta.env.VITE_E2E_TEST_MODE === 'true' ||
+      import.meta.env.VITE_E2E_TEST_MODE === '1';
+
+    if (localOverride) {
+      return true;
+    }
+
     try {
       const apiUrl = await this.getApiUrl();
       const response = await axios.get(`${apiUrl}/health`, { timeout: 3000 });
-      return response.data?.ciMode === true;
+      return response.data?.ciMode === true || response.data?.testMode === true;
     } catch (error) {
-      console.warn('Could not fetch CI mode status:', error);
+      console.warn('Could not fetch test mode status:', error);
       return false;
     }
   }

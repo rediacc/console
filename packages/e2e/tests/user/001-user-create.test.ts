@@ -4,6 +4,7 @@ import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { createUserViaUI } from '../helpers/user-helpers';
 
 test.describe('User Creation Tests', () => {
   let dashboardPage: DashboardPage;
@@ -25,11 +26,6 @@ test.describe('User Creation Tests', () => {
     screenshotManager: _screenshotManager,
     testReporter,
   }) => {
-    // Generate unique user email
-    const tempUser = testDataManager.getUser('tempuser');
-    const newUserEmail = tempUser.email;
-    const newUserPassword = tempUser.password;
-
     testReporter.startStep('Navigate to Users section');
 
     // Navigate to Organization > Users
@@ -44,31 +40,7 @@ test.describe('User Creation Tests', () => {
 
     testReporter.startStep('Create new user');
 
-    // Click create user button
-    const createUserButton = page.getByTestId(UserPageIDs.systemCreateUserButton);
-    await expect(createUserButton).toBeVisible({ timeout: 5000 });
-    await createUserButton.click();
-
-    // Fill user form
-    const emailField = page.getByTestId(UserPageIDs.resourceFormFieldEmail);
-    const passwordField = page.getByTestId(UserPageIDs.resourceFormFieldPassword);
-
-    await expect(emailField).toBeVisible();
-    await expect(passwordField).toBeVisible();
-
-    await emailField.fill(newUserEmail);
-    await passwordField.fill(newUserPassword);
-
-    // Submit form
-    const submitButton = page.getByTestId(UserPageIDs.resourceFormSubmitButton);
-    await expect(submitButton).toBeVisible();
-    await submitButton.click();
-
-    // Verify user created message
-    await expect(page.getByText(`User "${newUserEmail}"`)).toBeVisible({ timeout: 5000 });
-
-    // Save user to test data
-    testDataManager.addCreatedUser(newUserEmail, newUserPassword, false);
+    await createUserViaUI(page, testDataManager);
 
     testReporter.completeStep('Create new user', 'passed');
 

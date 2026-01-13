@@ -23,6 +23,14 @@ export async function hashPassword(password: string): Promise<string> {
  * Used for: CreateNewUser
  */
 export function generateActivationCode(): string {
+  if (
+    import.meta.env.VITE_DEV_ENV === 'true' ||
+    import.meta.env.VITE_DEV_ENV === '1' ||
+    import.meta.env.VITE_E2E_TEST_MODE === 'true' ||
+    import.meta.env.VITE_E2E_TEST_MODE === '1'
+  ) {
+    return '111111';
+  }
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 

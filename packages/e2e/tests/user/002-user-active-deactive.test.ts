@@ -4,6 +4,7 @@ import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { createUserViaUI } from '../helpers/user-helpers';
 
 test.describe('User Permission Tests', () => {
   let dashboardPage: DashboardPage;
@@ -24,8 +25,8 @@ test.describe('User Permission Tests', () => {
     page,
     testReporter,
   }) => {
-    const tempUser = testDataManager.getUser('tempuser');
-    const newUserEmail = tempUser.email;
+    const createdUser = await createUserViaUI(page, testDataManager);
+    const newUserEmail = createdUser.email;
 
     testReporter.startStep('Navigate to Users section');
 
@@ -38,10 +39,21 @@ test.describe('User Permission Tests', () => {
 
     testReporter.startStep('Activate user');
     const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(newUserEmail));
+    if (!(await activateButton.isVisible().catch(() => false))) {
+      const deactivateButton = page.getByTestId(
+        UserPageIDs.systemUserDeactivateButton(newUserEmail)
+      );
+      if (await deactivateButton.isVisible().catch(() => false)) {
+        await deactivateButton.click();
+        const confirmDeactivate = page.getByRole('button', { name: /yes/i });
+        await expect(confirmDeactivate).toBeVisible();
+        await confirmDeactivate.click();
+      }
+    }
     await expect(activateButton).toBeVisible({ timeout: 5000 });
     await activateButton.click();
 
-    const confirmButton = page.getByRole('button', { name: 'general.yes' });
+    const confirmButton = page.getByRole('button', { name: /yes/i });
     await expect(confirmButton).toBeVisible();
     await confirmButton.click();
 
@@ -57,8 +69,8 @@ test.describe('User Permission Tests', () => {
     page,
     testReporter,
   }) => {
-    const tempUser = testDataManager.getUser('tempuser');
-    const newUserEmail = tempUser.email;
+    const createdUser = await createUserViaUI(page, testDataManager);
+    const newUserEmail = createdUser.email;
 
     testReporter.startStep('Navigate to Users section');
 
@@ -71,10 +83,18 @@ test.describe('User Permission Tests', () => {
 
     testReporter.startStep('Deactivate user');
     const deactivateButton = page.getByTestId(UserPageIDs.systemUserDeactivateButton(newUserEmail));
+    if (!(await deactivateButton.isVisible().catch(() => false))) {
+      const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(newUserEmail));
+      await expect(activateButton).toBeVisible({ timeout: 5000 });
+      await activateButton.click();
+      const confirmActivate = page.getByRole('button', { name: /yes/i });
+      await expect(confirmActivate).toBeVisible();
+      await confirmActivate.click();
+    }
     await expect(deactivateButton).toBeVisible({ timeout: 5000 });
     await deactivateButton.click();
 
-    const confirmDeactivateButton = page.getByRole('button', { name: 'general.yes' });
+    const confirmDeactivateButton = page.getByRole('button', { name: /yes/i });
     await expect(confirmDeactivateButton).toBeVisible();
     await confirmDeactivateButton.click();
 

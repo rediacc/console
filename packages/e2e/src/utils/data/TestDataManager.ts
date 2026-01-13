@@ -165,7 +165,7 @@ export class TestDataManager {
 
   /**
    * Lazily populate machines array when first accessed
-   * Uses getVMEnvVar which falls back to static defaults in CI
+   * Uses getVMEnvVar which falls back to static defaults in test mode
    */
   private ensureMachinesPopulated(data: TestData): void {
     if (data.machines.length > 0) return;
@@ -174,7 +174,7 @@ export class TestDataManager {
     if (!vmIps) {
       throw new Error(
         'VM tests require VM_WORKER_IPS environment variable or VM_DEPLOYMENT=true. ' +
-          'Set VM_WORKER_IPS or run with CI=true to use default IPs.'
+          'Set VM_WORKER_IPS or enable E2E_TEST_MODE/DEV_ENV to use default IPs.'
       );
     }
 

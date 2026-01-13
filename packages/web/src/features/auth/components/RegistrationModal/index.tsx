@@ -65,10 +65,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
     resetError: resetVerificationError,
   } = useAsyncAction();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  // Default to true (CI mode) - this is safer as it allows form submission
-  // If CI mode is actually disabled, the check will set it to false
+  // Default to true (test mode) - this is safer as it allows form submission
+  // If test mode is actually disabled, the check will set it to false
   // Server-side validation will enforce captcha requirements regardless
-  const [ciMode, setCiMode] = useState<boolean>(true);
+  const [testMode, setTestMode] = useState<boolean>(true);
 
   const [registrationData, setRegistrationData] = useState<{
     email: string;
@@ -85,18 +85,18 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   // Combined error state
   const error = registrationError ?? verificationError;
 
-  // Check if CI mode is enabled (for testing/e2e)
+  // Check if test mode is enabled (for testing/e2e)
   React.useEffect(() => {
-    const checkCiMode = async () => {
+    const checkTestMode = async () => {
       try {
-        const isCI = await apiConnectionService.isCiMode();
-        setCiMode(isCI);
+        const isTest = await apiConnectionService.isTestMode();
+        setTestMode(isTest);
       } catch (error) {
-        console.error('Failed to check CI mode:', error);
-        setCiMode(false); // Default to false on error
+        console.error('Failed to check test mode:', error);
+        setTestMode(false); // Default to false on error
       }
     };
-    void checkCiMode();
+    void checkTestMode();
   }, []);
 
   // Auto-fill and auto-submit logic
@@ -132,8 +132,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   }, [currentStep, autoFillData, autoSubmit, verificationForm]);
 
   const handleRegistration = async (values: RegistrationForm) => {
-    // Check Turnstile token only if captcha is enabled and not in CI mode
-    if (isCaptchaEnabled && !ciMode && !turnstileToken) {
+    // Check Turnstile token only if captcha is enabled and not in test mode
+    if (isCaptchaEnabled && !testMode && !turnstileToken) {
       showMessage('error', t('auth:registration.captchaRequired', 'Please complete the captcha'));
       return;
     }
@@ -379,8 +379,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           </Checkbox>
         </Form.Item>
 
-        {/* Cloudflare Turnstile - only render if enabled and not in CI mode */}
-        {isCaptchaEnabled && !ciMode && (
+        {/* Cloudflare Turnstile - only render if enabled and not in test mode */}
+        {isCaptchaEnabled && !testMode && (
           <Flex className="flex-shrink-0">
             <Turnstile
               sitekey={turnstileSiteKey}
@@ -398,7 +398,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           htmlType="submit"
           block
           loading={loading}
-          disabled={isCaptchaEnabled && !ciMode && !turnstileToken}
+          disabled={isCaptchaEnabled && !testMode && !turnstileToken}
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}

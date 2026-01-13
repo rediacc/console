@@ -110,17 +110,8 @@ export abstract class BasePage {
     await locator.waitFor({ state: 'hidden', timeout });
   }
 
-  async clickWithRetry(locator: Locator, maxRetries = 3): Promise<void> {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await locator.click();
-        break;
-      } catch (error) {
-        if (i === maxRetries - 1) throw error;
-        // Exponential backoff: 500ms, 1000ms, 2000ms
-        await this.page.waitForTimeout(500 * Math.pow(2, i));
-      }
-    }
+  async clickWithRetry(locator: Locator, _maxRetries = 1): Promise<void> {
+    await locator.click();
   }
 
   async fillWithClear(locator: Locator, value: string): Promise<void> {

@@ -1,7 +1,7 @@
 import { Page, Locator } from '@playwright/test';
-import { TEST_CREDENTIALS } from '@rediacc/shared';
 import { BasePage } from '../../src/base/BasePage';
 import { loadGlobalState } from '../../src/setup/global-state';
+import { getEnvVarWithDefault } from '../../src/utils/env';
 
 export class LoginPage extends BasePage {
   private readonly emailInput: Locator;
@@ -180,10 +180,9 @@ export class LoginPage extends BasePage {
     await this.submitRegistrationForm();
   }
 
-  async completeRegistrationVerification(
-    code: string = TEST_CREDENTIALS.CI_ACTIVATION_CODE
-  ): Promise<void> {
-    await this.registrationActivationCodeInput.fill(code);
+  async completeRegistrationVerification(code?: string): Promise<void> {
+    const activationCode = code ?? getEnvVarWithDefault('TEST_VERIFICATION_CODE');
+    await this.registrationActivationCodeInput.fill(activationCode);
     await this.registrationVerifyButton.click();
     await this.waitForNetworkIdle();
   }

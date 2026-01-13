@@ -1,6 +1,7 @@
 import { test as setup } from '@playwright/test';
 import { API_DEFAULTS, TEST_CREDENTIALS } from '@rediacc/shared';
 import { saveGlobalState } from '../../src/setup/global-state';
+import { getEnvVarWithDefault } from '../../src/utils/env';
 import { waitForNetworkIdleWithRetry } from '../../src/utils/retry';
 
 /**
@@ -25,7 +26,7 @@ setup('register user for e2e tests', async ({ page }) => {
 
   console.warn(`[Setup] Navigating to: ${loginUrl}`);
 
-  // Navigate to login page with extended timeout for CI (Vite compilation)
+  // Navigate to login page with extended timeout for test mode (Vite compilation)
   await page.goto(loginUrl, { timeout: 60000, waitUntil: 'domcontentloaded' });
   console.warn('[Setup] Page loaded, waiting for network idle...');
   await waitForNetworkIdleWithRetry(page, '[data-testid="login-register-link"]', {
@@ -62,10 +63,10 @@ setup('register user for e2e tests', async ({ page }) => {
     .locator('[data-testid="registration-activation-code-input"]')
     .waitFor({ state: 'visible', timeout: 30000 });
 
-  // Enter verification code (111111 in CI mode)
+  // Enter verification code (111111 in test mode)
   await page
     .locator('[data-testid="registration-activation-code-input"]')
-    .fill(TEST_CREDENTIALS.CI_ACTIVATION_CODE);
+    .fill(getEnvVarWithDefault('TEST_VERIFICATION_CODE'));
   await page.locator('[data-testid="registration-verify-button"]').click();
   await waitForNetworkIdleWithRetry(page, undefined, {
     maxRetries: 3,

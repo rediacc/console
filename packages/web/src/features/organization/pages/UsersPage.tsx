@@ -51,6 +51,7 @@ const UsersPage: React.FC = () => {
   const [userForm] = Form.useForm<CreateUserInput>();
 
   const { data: users = [], isLoading: usersLoading } = useGetOrganizationUsers();
+  const [searchQuery, setSearchQuery] = useState('');
   const createUserMutation = useCreateNewUser();
   const deactivateUserMutation = useUpdateUserToDeactivated();
   const reactivateUserMutation = useUpdateUserToActivated();
@@ -136,6 +137,16 @@ const UsersPage: React.FC = () => {
     },
     [assignPermissionModal]
   );
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users;
+    const query = searchQuery.toLowerCase();
+    return users.filter((user) => {
+      const email = (user.userEmail ?? '').toLowerCase();
+      const group = (user.permissionsName ?? '').toLowerCase();
+      return email.includes(query) || group.includes(query);
+    });
+  }, [searchQuery, users]);
 
   const userColumns = useMemo(
     () =>
@@ -235,11 +246,12 @@ const UsersPage: React.FC = () => {
         <ResourceListView
           title={<PageHeader title={t('users.title')} subtitle={t('users.subtitle')} />}
           loading={usersLoading}
-          data={users}
+          data={filteredUsers}
           columns={userColumns}
           mobileRender={mobileRender}
           rowKey="userEmail"
           searchPlaceholder={t('users.searchPlaceholder')}
+          onSearch={(value) => setSearchQuery(value)}
           data-testid="system-user-table"
           actions={
             <TooltipButton

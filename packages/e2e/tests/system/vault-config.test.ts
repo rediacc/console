@@ -1,7 +1,7 @@
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { test, expect } from '../../src/base/BaseTest';
-import { requireEnvVar } from '../../src/utils/env';
+import { loadGlobalState } from '../../src/setup/global-state';
 
 // Vault configuration tests migrated from Python VaultConfigurationTest
 // Focus: open System page, open organization vault modal, fill required fields, generate SSH key and save
@@ -20,10 +20,9 @@ test.describe
 
       await loginPage.navigate();
 
-      // Login with admin credentials
-      const adminEmail = requireEnvVar('SYSTEM_ADMIN_EMAIL');
-      const adminPassword = requireEnvVar('SYSTEM_ADMIN_PASSWORD');
-      await loginPage.login(adminEmail, adminPassword);
+      // Login with dynamically registered user
+      const { email, password } = loadGlobalState();
+      await loginPage.login(email, password);
       await loginPage.waitForLoginCompletion();
 
       // Enable expert mode before authentication

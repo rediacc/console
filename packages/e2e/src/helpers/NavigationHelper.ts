@@ -35,7 +35,7 @@ const NavTestIds = {
 /**
  * Default timeout for waiting for submenu items to become visible.
  * ProLayout animations typically complete within 300-500ms, but we use
- * a generous timeout to account for CI slowness.
+ * a generous timeout to account for test environment slowness.
  */
 const SUBMENU_VISIBLE_TIMEOUT = 5000;
 

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { test as base, _electron as electron, type ElectronApplication } from '@playwright/test';
 import { NETWORK_DEFAULTS } from '../utils/constants';
+import { isTestEnv } from '../utils/env';
 
 /**
  * Electron-specific fixtures for E2E testing.
@@ -39,10 +40,10 @@ async function launchElectronApp(): Promise<ElectronApplication> {
   // __dirname is packages/e2e/src/electron/, go up 3 levels to packages/
   const mainPath = path.resolve(__dirname, '../../../desktop/out/main/index.js');
 
-  // Build args - add --no-sandbox in CI to avoid SUID sandbox permission issues on Linux
-  // The Chromium SUID sandbox requires specific permissions that are often not available in CI containers
+  // Build args - add --no-sandbox in test mode to avoid SUID sandbox permission issues on Linux
+  // The Chromium SUID sandbox requires specific permissions that are often not available in containers
   const args = [mainPath];
-  if (process.env.CI) {
+  if (isTestEnv()) {
     args.push('--no-sandbox');
   }
 
@@ -59,7 +60,7 @@ async function launchElectronApp(): Promise<ElectronApplication> {
       // Set NODE_ENV to test for conditional test behavior
       NODE_ENV: 'test',
     },
-    // Increase timeout for slower CI environments
+    // Increase timeout for slower test environments
     timeout: 60000,
   });
 }

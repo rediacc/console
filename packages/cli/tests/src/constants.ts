@@ -33,12 +33,6 @@ export function getApiUrl(): string {
 // Test Credentials
 // =============================================================================
 
-/** Default admin email */
-export const DEFAULT_ADMIN_EMAIL = 'admin@rediacc.io';
-
-/** Default admin password */
-export const DEFAULT_ADMIN_PASSWORD = 'admin';
-
 /** Email domain for generated test accounts */
 export const TEST_EMAIL_DOMAIN = 'rediacc.local';
 

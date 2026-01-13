@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Page, TestInfo } from '@playwright/test';
 import { format } from 'date-fns';
-import { requireEnvVar } from '../env';
+import { isTestEnv, requireEnvVar } from '../env';
 
 export interface TestStep {
   name: string;
@@ -264,7 +264,7 @@ export class TestReporter {
         baseURL: requireEnvVar('E2E_BASE_URL'),
         nodeVersion: process.version,
         platform: process.platform,
-        ci: !!process.env.CI,
+        testEnv: isTestEnv(),
       },
       errors: this.testInfo.errors,
     };
