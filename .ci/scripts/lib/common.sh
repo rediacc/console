@@ -239,6 +239,11 @@ wait_for() {
 # ARGUMENT PARSING HELPERS
 # =============================================================================
 
+# Convert string to uppercase (portable for bash 3.x on macOS)
+to_upper() {
+    echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
 # Parse --key=value or --key value style arguments
 # Usage: parse_args "$@"
 # Sets variables like: ARG_KEY=value
@@ -250,19 +255,19 @@ parse_args() {
                 local value="${1#*=}"
                 key="${key#--}"
                 key="${key//-/_}"
-                key="ARG_${key^^}"
-                declare -g "$key=$value"
+                key="ARG_$(to_upper "$key")"
+                eval "$key=\"$value\""
                 shift
                 ;;
             --*)
                 local key="${1#--}"
                 key="${key//-/_}"
-                key="ARG_${key^^}"
+                key="ARG_$(to_upper "$key")"
                 if [[ $# -gt 1 ]] && [[ ! "$2" =~ ^-- ]]; then
-                    declare -g "$key=$2"
+                    eval "$key=\"$2\""
                     shift 2
                 else
-                    declare -g "$key=true"
+                    eval "$key=true"
                     shift
                 fi
                 ;;
