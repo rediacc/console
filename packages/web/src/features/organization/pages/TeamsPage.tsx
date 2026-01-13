@@ -44,8 +44,8 @@ import UnifiedResourceModal, {
 } from '@/components/common/UnifiedResourceModal';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
-import { ModalSize } from '@/types/modal';
 import { minifyJSON } from '@/platform/utils/json';
+import { ModalSize } from '@/types/modal';
 import {
   CloudServerOutlined,
   DatabaseOutlined,

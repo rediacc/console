@@ -121,6 +121,7 @@ export async function ensureCreatedUser(
 
     testDataManager.removeCreatedUser(existing.email);
   } catch {
+    // Ignore and fall back to creating or selecting another user below.
   }
 
   try {

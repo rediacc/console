@@ -34,9 +34,7 @@
       "version": "1.0.0"
     }
   ],
-  "teams": [
-    "Private Team"
-  ],
+  "teams": ["Private Team"],
   "createdUsers": [
     {
       "email": "e2e-user-1768316331419@rediacc.local",

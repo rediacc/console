@@ -56,6 +56,7 @@ import type {
 import { getInvalidationKeys, getMessages, getQueryOptions } from './hooks.config';
 import {
   ensureVaultContent,
+  generateActivationCode,
   hashPassword,
   type CreateBridgeInput,
   type CreateCephClusterInput,
@@ -757,6 +758,7 @@ export const useCreateNewUser = () => {
       const params = {
         newUserEmail: input.email,
         newUserHash: await hashPassword(input.password),
+        activationCode: generateActivationCode(),
       };
       return typedApi.CreateNewUser(params);
     },

@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test';
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
@@ -6,6 +5,7 @@ import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
 import { ensureCreatedUser } from '../helpers/user-helpers';
+import type { Page } from '@playwright/test';
 
 test.describe('User Team Assignment Tests', () => {
   let dashboardPage: DashboardPage;
