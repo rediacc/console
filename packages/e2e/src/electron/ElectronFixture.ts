@@ -83,17 +83,24 @@ export const electronTest = base.extend<ElectronFixtures>({
 
   // Override the default page fixture to use Electron's window
   page: async ({ electronApp }, callback) => {
-    // Wait for a window that is NOT DevTools
-    // The app window loads file:// or has the actual app content
-    const page = await electronApp.waitForEvent('window', {
-      predicate: (p) => {
-        const url = p.url();
-        // DevTools URLs contain 'devtools://'
-        // App window loads from file:// protocol
-        return !url.includes('devtools://');
-      },
-      timeout: 30000,
-    });
+    // Get the first window - more reliable than waitForEvent which expects NEW windows
+    // firstWindow() returns existing window or waits for one to open
+    const page = await electronApp.firstWindow();
+
+    // Verify we got the main app window, not DevTools
+    const url = page.url();
+    if (url.includes('devtools://')) {
+      // If we got DevTools first, wait for the actual app window
+      const appWindow = await electronApp.waitForEvent('window', {
+        predicate: (p) => !p.url().includes('devtools://'),
+        timeout: 30000,
+      });
+      await appWindow.waitForLoadState('domcontentloaded');
+      await appWindow.waitForSelector('#root', { timeout: 10000 });
+      await appWindow.waitForLoadState('networkidle');
+      await callback(appWindow);
+      return;
+    }
 
     // Wait for the app to be ready
     await page.waitForLoadState('domcontentloaded');

@@ -335,7 +335,28 @@ jobs:
         run: npm ci
 
       - name: Check code formatting (Biome)
-        run: npm run format:check
+        run: npm run check:format
+
+
+  quality-i18n:
+    name: 🌐 Quality - i18n
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check translation hashes
+        run: npm run check:i18n
 
 
   quality-types:
@@ -397,7 +418,7 @@ jobs:
   test-unit:
     name: 🧪 Test - Unit
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
 
     steps:
       - name: Checkout code
@@ -438,7 +459,7 @@ jobs:
   build-cli:
     name: 🔧 Build - CLI
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
 
     steps:
       - name: Checkout code
@@ -476,7 +497,7 @@ jobs:
   test-vscode:
     name: 🔍 Test - VS Code (${{ matrix.os }})
     timeout-minutes: 15
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
     strategy:
       fail-fast: true
       matrix:
@@ -1719,7 +1740,7 @@ jobs:
   build-web:
     name: 🏗️ Build - Web
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
 
     strategy:
       matrix:
@@ -1800,7 +1821,7 @@ jobs:
 
   build-desktop:
     name: 🖥️ Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
     timeout-minutes: 30
     strategy:
       fail-fast: true
@@ -1962,7 +1983,7 @@ jobs:
   summary:
     name: ✅ Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
     if: always()
 
     steps:
@@ -1973,6 +1994,7 @@ jobs:
           echo "### Tier 1: Quality & Security" >> $GITHUB_STEP_SUMMARY
           echo "- Lint: ${{ needs.quality-lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Format: ${{ needs.quality-format.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- i18n: ${{ needs.quality-i18n.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- TypeScript: ${{ needs.quality-types.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security: ${{ needs.quality-security.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1996,6 +2018,7 @@ jobs:
 
           if [ "${{ needs.quality-lint.result }}" != "success" ] || \
              [ "${{ needs.quality-format.result }}" != "success" ] || \
+             [ "${{ needs.quality-i18n.result }}" != "success" ] || \
              [ "${{ needs.quality-types.result }}" != "success" ] || \
              [ "${{ needs.test-unit.result }}" != "success" ] || \
              [ "${{ needs.build-cli.result }}" != "success" ] || \
