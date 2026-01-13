@@ -1,9 +1,6 @@
 import path from 'node:path';
-import {
-  test as base,
-  _electron as electron,
-  type ElectronApplication,
-} from '@playwright/test';
+import { test as base, _electron as electron, type ElectronApplication } from '@playwright/test';
+import { NETWORK_DEFAULTS } from '../utils/constants';
 
 /**
  * Electron-specific fixtures for E2E testing.
@@ -49,7 +46,7 @@ async function launchElectronApp(): Promise<ElectronApplication> {
     env: {
       ...process.env,
       // Pass API URL to the app (used by Vite/React for API calls)
-      VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:7322',
+      VITE_API_URL: process.env.VITE_API_URL ?? NETWORK_DEFAULTS.API_URL,
       // Disable auto-updater during tests to avoid update prompts
       ELECTRON_DISABLE_AUTO_UPDATER: 'true',
       // Set NODE_ENV to test for conditional test behavior
@@ -70,7 +67,8 @@ async function launchElectronApp(): Promise<ElectronApplication> {
  * 4. Automatically closes the app after each test
  */
 export const electronTest = base.extend<ElectronFixtures>({
-  electronApp: async ({}, callback) => {
+  // Use browserName dependency to satisfy ESLint no-empty-pattern rule
+  electronApp: async ({ browserName: _browserName }, callback) => {
     const app = await launchElectronApp();
     await callback(app);
     await app.close();
@@ -92,9 +90,10 @@ export const electronTest = base.extend<ElectronFixtures>({
 
     // Wait for the app to be ready
     await page.waitForLoadState('domcontentloaded');
-    // Wait for React to hydrate
+    // Wait for React to hydrate - #root should have children after hydration
     await page.waitForSelector('#root', { timeout: 10000 });
-    await page.waitForTimeout(500);
+    // Wait for network to settle after initial render
+    await page.waitForLoadState('networkidle');
     await callback(page);
   },
 });

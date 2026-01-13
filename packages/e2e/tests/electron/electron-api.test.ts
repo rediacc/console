@@ -16,7 +16,7 @@ import '../../src/electron/types';
  * - vscode: VS Code Remote SSH launcher API availability
  */
 electronTest.describe('Electron IPC Tests @electron', () => {
-  electronTest.beforeEach(async ({}, testInfo) => {
+  electronTest.beforeEach(({ page: _page }, testInfo) => {
     // Skip these tests when not running in an Electron project
     if (!isElectronProject(testInfo.project.name)) {
       electronTest.skip();
@@ -66,7 +66,7 @@ electronTest.describe('Electron IPC Tests @electron', () => {
       }
 
       try {
-        const testData = 'e2e-test-secret-data-' + Date.now();
+        const testData = `e2e-test-secret-data-${Date.now()}`;
         const encrypted = await api.encrypt(testData);
 
         // Encrypted data should be different from original
@@ -80,7 +80,7 @@ electronTest.describe('Electron IPC Tests @electron', () => {
           success: decrypted === testData,
           skipped: false,
           original: testData,
-          decrypted: decrypted,
+          decrypted,
         };
       } catch (error) {
         return { success: false, skipped: false, error: String(error) };
@@ -98,14 +98,12 @@ electronTest.describe('Electron IPC Tests @electron', () => {
   });
 
   electronTest('should get app info via main process', async ({ electronApp }) => {
-    const appInfo = await electronApp.evaluate(async ({ app }) => {
-      return {
-        name: app.getName(),
-        version: app.getVersion(),
-        locale: app.getLocale(),
-        isPackaged: app.isPackaged,
-      };
-    });
+    const appInfo = await electronApp.evaluate(({ app }) => ({
+      name: app.getName(),
+      version: app.getVersion(),
+      locale: app.getLocale(),
+      isPackaged: app.isPackaged,
+    }));
 
     // In development mode, app.getName() returns "Electron"
     // In production/packaged mode, it returns "Rediacc Console"

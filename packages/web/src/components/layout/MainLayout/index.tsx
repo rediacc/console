@@ -182,10 +182,11 @@ const MainLayout: React.FC = () => {
         menuItemRender={(item, dom) => {
           if (!item.path) return dom;
           const navKey = item.path.replace(/^\//, '').replaceAll('/', '-') || 'home';
+          const testId = item['data-testid'] ?? `main-nav-${navKey}`;
           return (
             <Link
               to={item.path}
-              data-testid={`main-nav-${navKey}`}
+              data-testid={testId}
               onClick={() => {
                 trackUserAction('navigation', item.path, {
                   menu_item: item.name as string,
@@ -202,10 +203,11 @@ const MainLayout: React.FC = () => {
         subMenuItemRender={(item, dom) => {
           if (!item.path) return dom;
           const navKey = item.path.replace(/^\//, '').replaceAll('/', '-') || 'home';
+          const testId = item['data-testid'] ?? `main-nav-${navKey}`;
           return (
             <Link
               to={item.path}
-              data-testid={`main-nav-${navKey}`}
+              data-testid={testId}
               onClick={() => {
                 trackUserAction('navigation', item.path, {
                   menu_item: item.name as string,

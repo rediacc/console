@@ -23,13 +23,7 @@ export default defineConfig({
     },
     // SSR externalization - only externalize native/electron modules
     ssr: {
-      external: [
-        'electron',
-        'electron-updater',
-        'ssh2',
-        'node-pty',
-        'cpu-features',
-      ],
+      external: ['electron', 'electron-updater', 'ssh2', 'node-pty', 'cpu-features'],
       // Bundle all other packages including workspace packages
       noExternal: true,
     },

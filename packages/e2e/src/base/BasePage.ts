@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { TIMEOUT_DEFAULTS } from '../utils/constants';
 
 export abstract class BasePage {
   protected page: Page;
@@ -31,7 +32,7 @@ export abstract class BasePage {
       normalized = normalized.slice('/console'.length);
     }
     if (!normalized.startsWith('/')) {
-      normalized = '/' + normalized;
+      normalized = `/${normalized}`;
     }
     return normalized;
   }
@@ -44,7 +45,7 @@ export abstract class BasePage {
    * @param options - Optional timeout configuration
    */
   protected async waitForRoute(route: string, options?: { timeout?: number }): Promise<void> {
-    const timeout = options?.timeout ?? 30000;
+    const timeout = options?.timeout ?? TIMEOUT_DEFAULTS.ROUTE;
     const normalizedRoute = this.normalizeRoute(route);
 
     if (this.isElectronContext()) {
