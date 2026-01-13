@@ -996,8 +996,8 @@
     "validationError": "خطأ التحقق: {{message}}",
     "vaultDataRequired": "بيانات الخزينة مطلوبة. استخدم --vault <json> أو أنبوب JSON عبر stdin.",
     "vaultVersionRequired": "إصدار الخزينة مطلوب. استخدم --vault-version <n>.",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "أمر غير معروف \"{{command}}\". الأوامر المتاحة: {{available}}.",
+    "unknownSubcommand": "أمر فرعي غير معروف \"{{command}}\". الأوامر الفرعية المتاحة لـ {{parent}}: {{available}}."
   },
   "options": {
     "activationCode": "رمز التفعيل من البريد الإلكتروني",

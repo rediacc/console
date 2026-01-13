@@ -242,7 +242,7 @@
   "general": {
     "cancel": "Annuler",
     "defaultsApplied": "Valeurs par défaut appliquées",
-    "important": "Importante",
+    "important": "Important",
     "loading": "Chargement...",
     "no": "Non",
     "path": "Chemin",
@@ -737,7 +737,7 @@
     "optionalFields": "Champs facultatifs",
     "pleaseFixErrors": "Veuillez corriger les erreurs de validation avant d'enregistrer",
     "portPlaceholder": "Numéro de port (1-65535)",
-    "providerFields": "{{provider}} Configuration",
+    "providerFields": "Configuration {{provider}}",
     "providerRequiredFields": "Champs obligatoires pour {{provider}}",
     "rawJsonEditor": "Éditeur JSON brut (mode expert)",
     "rawJsonTooltip": "Édition JSON directe – À utiliser avec prudence !",

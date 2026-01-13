@@ -996,8 +996,8 @@
     "validationError": "Ошибка валидации: {{message}}",
     "vaultDataRequired": "Требуются данные хранилища. Используйте --vault <json> или подайте JSON через stdin.",
     "vaultVersionRequired": "Требуется версия хранилища. Используйте --vault-version <n>.",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "Неизвестная команда \"{{command}}\". Доступные команды: {{available}}.",
+    "unknownSubcommand": "Неизвестная подкоманда \"{{command}}\". Доступные подкоманды {{parent}}: {{available}}."
   },
   "options": {
     "activationCode": "Код активации из электронного письма",

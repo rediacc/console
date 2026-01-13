@@ -996,8 +996,8 @@
     "validationError": "Erreur de validation : {{message}}",
     "vaultDataRequired": "Données de coffre requises. Utilisez --vault <json> ou insérez JSON via stdin.",
     "vaultVersionRequired": "Version du coffre requise. Utilisez --vault-version <n>.",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "Commande inconnue \"{{command}}\". Commandes disponibles : {{available}}.",
+    "unknownSubcommand": "Sous-commande inconnue \"{{command}}\". Sous-commandes {{parent}} disponibles : {{available}}."
   },
   "options": {
     "activationCode": "Code d'activation reçu par email",

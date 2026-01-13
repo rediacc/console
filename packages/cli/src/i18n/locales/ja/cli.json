@@ -996,8 +996,8 @@
     "validationError": "検証エラー: {{message}}",
     "vaultDataRequired": "ボルトデータが必要です。--vault <json> を使用するか、stdin 経由で JSON をパイプしてください。",
     "vaultVersionRequired": "ボルトバージョンが必要です。--vault-version <n> を使用してください。",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
+    "unknownSubcommand": "不明なサブコマンド \"{{command}}\" です。利用可能な {{parent}} サブコマンド: {{available}}"
   },
   "options": {
     "activationCode": "メールからの認証コード",
@@ -1103,7 +1103,7 @@
     "protocolParams": "追加パラメータ"
   },
   "prompts": {
-    "apiUrl": "API URL:",
+    "apiUrl": "API URL (エンドポイント):",
     "cancelled": "キャンセルされました",
     "confirm": "よろしいですか？",
     "confirmDelete": "削除してもよろしいですか？",
