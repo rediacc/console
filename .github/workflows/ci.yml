@@ -10,6 +10,16 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
+    inputs:
+      browsers:
+        description: 'E2E browsers to test'
+        required: false
+        type: choice
+        default: 'chromium-only'
+        options:
+          - 'chromium-only'
+          - 'all-browsers'
 
 # Required for cancel-watchdog to cancel workflow on job failures
 permissions:
@@ -20,6 +30,12 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+# E2E Browser Configuration
+# Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.
+# To permanently enable all browsers, change the fallback value below.
+env:
+  E2E_BROWSERS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
 
 jobs:
   # ============================================================================
@@ -544,7 +560,8 @@ jobs:
           MAX_WAIT=7200
           ELAPSED=0
           CLI_PLATFORMS=("Linux" "Windows" "macOS")
-          E2E_BROWSERS=("chromium" "firefox" "webkit" "msedge")
+          # Parse browsers from workflow env variable
+          IFS=' ' read -ra E2E_BROWSERS <<< "${{ env.E2E_BROWSERS }}"
           E2E_RESOLUTIONS=("resolution-1920x1080" "resolution-1366x768" "resolution-1536x864")
           E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
           E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
@@ -596,7 +613,11 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
       - name: Install Playwright Browsers
         working-directory: packages/e2e
-        run: npx playwright install --with-deps chromium firefox webkit && npx playwright install msedge
+        run: |
+          BROWSERS="${{ env.E2E_BROWSERS }}"
+          MAIN_BROWSERS=$(echo "$BROWSERS" | tr ' ' '\n' | grep -v msedge | tr '\n' ' ')
+          [[ -n "$MAIN_BROWSERS" ]] && npx playwright install --with-deps $MAIN_BROWSERS
+          echo "$BROWSERS" | grep -q msedge && npx playwright install msedge || true
       - name: Download Tunnel URL
         id: tunnel
         env:
@@ -606,36 +627,18 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects chromium firefox webkit msedge --debug
+      - run: .ci/scripts/test/run-e2e.sh --projects ${{ env.E2E_BROWSERS }} --debug
       - name: Create Completion Signals
         if: always()
         run: |
-          for browser in chromium firefox webkit msedge; do
+          for browser in ${{ env.E2E_BROWSERS }}; do
             .ci/scripts/signal/create-complete.sh --name "e2e-$browser"
           done
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: test-complete-e2e-chromium
-          path: ${{ runner.temp }}/complete-e2e-chromium.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-firefox
-          path: ${{ runner.temp }}/complete-e2e-firefox.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-webkit
-          path: ${{ runner.temp }}/complete-e2e-webkit.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-msedge
-          path: ${{ runner.temp }}/complete-e2e-msedge.txt
+          name: test-complete-e2e-browsers-${{ github.sha }}
+          path: ${{ runner.temp }}/complete-e2e-*.txt
           retention-days: 3
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
