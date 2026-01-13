@@ -627,7 +627,7 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects ${{ env.E2E_BROWSERS }} --debug
+      - run: .ci/scripts/test/run-e2e.sh --projects ${{ env.E2E_BROWSERS }}
       - name: Create Completion Signals
         if: always()
         run: |
