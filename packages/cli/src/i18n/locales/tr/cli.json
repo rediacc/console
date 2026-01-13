@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "Etkinleştirme başarısız",
+    "tfaVerificationFailed": "TFA doğrulaması başarısız",
     "authFailed": "Kimlik doğrulama başarısız",
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc login",
     "bridgeRequired": "Köprü adı gerekli. --bridge kullanın veya bağlamı ayarlayın.",

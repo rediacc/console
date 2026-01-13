@@ -181,8 +181,22 @@
     "tryAgain": "Versuchen Sie es erneut"
   },
   "errors": {
+    "anErrorOccurred": "Ein Fehler ist aufgetreten",
+    "cliCommandFailed": "CLI-Befehl fehlgeschlagen",
+    "failedToCreateTask": "Test-Task konnte nicht erstellt werden",
+    "failedToFork": "Repository konnte nicht geforkt werden",
+    "helloFunctionError": "Hello-Funktion hat einen Fehler gemeldet",
+    "noErrorMessage": "(keine Fehlermeldung)",
+    "operationFailed": "Betrieb fehlgeschlagen",
+    "passwordValidation": "Das Passwort muss Großbuchstaben, Kleinbuchstaben, Zahlen und Sonderzeichen enthalten",
+    "schemaValidationFailed": "Datensynchronisierungsproblem erkannt. Bitte aktualisieren Sie die Seite oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht.",
     "somethingWentWrong": "Etwas ist schief gelaufen",
-    "schemaValidationFailed": "Datensynchronisierungsproblem erkannt. Bitte aktualisieren Sie die Seite oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht."
+    "systemCriticalError": "Das System weist kritische Probleme auf",
+    "tfaVerificationFailed": "TFA-Überprüfung fehlgeschlagen",
+    "unknownError": "Unbekannter Fehler"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello-Funktion erfolgreich abgeschlossen"
   },
   "export": {
     "label": "Exportieren",

@@ -181,8 +181,19 @@
     "tryAgain": "Повторить попытку"
   },
   "errors": {
+    "anErrorOccurred": "Произошла ошибка",
+    "cliCommandFailed": "Команда CLI не выполнена",
+    "failedToCreateTask": "Не удалось создать тестовую задачу",
+    "failedToFork": "Не удалось разветвить репозиторий",
+    "helloFunctionError": "Функция hello сообщила об ошибке",
+    "noErrorMessage": "(нет сообщения об ошибке)",
+    "operationFailed": "Операция не выполнена",
+    "passwordValidation": "Пароль должен содержать прописные буквы, строчные буквы, цифры и специальные символы",
+    "schemaValidationFailed": "Обнаружена проблема синхронизации данных. Пожалуйста, обновите страницу или свяжитесь с поддержкой, если проблема сохраняется.",
     "somethingWentWrong": "Что-то пошло не так",
-    "schemaValidationFailed": "Обнаружена проблема синхронизации данных. Пожалуйста, обновите страницу или свяжитесь с поддержкой, если проблема сохраняется."
+    "systemCriticalError": "В системе возникли критические проблемы",
+    "tfaVerificationFailed": "Ошибка проверки TFA",
+    "unknownError": "Неизвестная ошибка"
   },
   "export": {
     "label": "Экспорт",
@@ -370,6 +381,9 @@
     "waitingForExecution": "Ожидание исполнения"
   },
   "statusColumn": "Статус",
+  "success": {
+    "helloFunctionSuccess": "Функция hello успешно завершена"
+  },
   "table": {
     "actions": "Действия",
     "moreItems": "+{{count}} ещё",

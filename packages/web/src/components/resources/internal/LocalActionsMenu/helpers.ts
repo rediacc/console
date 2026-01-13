@@ -5,7 +5,6 @@ import {
   protocolUrlService,
 } from '@/services/protocolUrlService';
 import { getElectronAPI, type VSCodeInstallations } from '@/types';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 export type ContainerMenuAction = 'terminal' | 'logs' | 'stats';
 
@@ -162,7 +161,7 @@ const handleElectronVSCode = async (params: VSCodeLaunchParams): Promise<void> =
   });
 
   if (!result.success) {
-    message.error(result.error ?? DEFAULTS.ERROR.VSCODE_CONNECTION_FAILED);
+    message.error(result.error ?? 'common:errors.vsCodeConnectionFailed');
   }
 };
 
@@ -272,7 +271,7 @@ export const handleWebProtocolFlow = async (params: WebProtocolFlowParams): Prom
       const containerParams: ContainerParams = {
         containerId,
         containerName,
-        action: containerAction ?? (DEFAULTS.REPOSITORY.CONTAINER_ACTION as ContainerMenuAction),
+        action: containerAction ?? 'terminal',
       };
       url = await generateContainerProtocolUrl(baseParams, containerParams, containerAction);
     } else {

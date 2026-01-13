@@ -199,6 +199,9 @@ export default tseslint.config(
           '[]',           // Empty JSON array
           'default',      // CLI context default name
           '(none)',       // Display placeholder
+          'terminal',     // Default container action
+          // Health status messages (non-i18n context in shared package)
+          'System has critical issues',
         ],
       }],
 
@@ -723,6 +726,7 @@ export default tseslint.config(
       'custom/require-translation': 'off',
       'custom/no-hardcoded-text': 'off',
       'custom/no-hardcoded-cli-text': 'off',
+      'custom/no-hardcoded-nullish-defaults': 'off',
       'react/forbid-elements': 'off',
       'custom/require-testid': 'off',
 

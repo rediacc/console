@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3370
+    "keyCount": 3382
   },
   "hashes": {
     "auth.endpointSelector.addCustom": "c27ca9dd",
@@ -489,8 +489,19 @@
     "common.errorBoundary.stack": "8069546e",
     "common.errorBoundary.title": "7d3ec418",
     "common.errorBoundary.tryAgain": "cddc8112",
+    "common.errors.anErrorOccurred": "e31e800e",
+    "common.errors.cliCommandFailed": "6edd1a61",
+    "common.errors.failedToCreateTask": "5c1bc227",
+    "common.errors.failedToFork": "dd6fe669",
+    "common.errors.helloFunctionError": "ea3a8614",
+    "common.errors.noErrorMessage": "bcfb59c7",
+    "common.errors.operationFailed": "ee14c1aa",
+    "common.errors.passwordValidation": "2ad4e42e",
     "common.errors.schemaValidationFailed": "9b4a36d7",
     "common.errors.somethingWentWrong": "7d3ec418",
+    "common.errors.systemCriticalError": "0d5f7bd7",
+    "common.errors.tfaVerificationFailed": "8a6a9d07",
+    "common.errors.unknownError": "04fcf757",
     "common.export.label": "452013a2",
     "common.export.success": "edb81c84",
     "common.exportCSV": "d606f38a",
@@ -647,6 +658,7 @@
     "common.status.running": "e09cb0f3",
     "common.status.waitingForExecution": "4c2bd468",
     "common.statusColumn": "7cac602a",
+    "common.success.helloFunctionSuccess": "da1581ca",
     "common.table.actions": "caf5c873",
     "common.table.moreItems": "18672a1e",
     "common.table.showingRecords": "b5c79c87",

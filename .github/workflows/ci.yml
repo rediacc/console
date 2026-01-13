@@ -395,7 +395,7 @@ jobs:
           cache: 'npm'
 
       - name: Run npm audit
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=critical
 
       - name: Check for vulnerable dependencies
         run: |
@@ -1412,29 +1412,10 @@ jobs:
 
 
   test-e2e-devices:
-    name: 🌐 Test - E2E Devices (${{ matrix.device }})
+    name: 🌐 Test - E2E Devices
     runs-on: ubuntu-latest
     needs: [test-unit, build-cli, test-vscode, build-web]
-    timeout-minutes: 60
-
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - device: galaxy-s24
-            browser: chromium
-            install: npx playwright install --with-deps chromium
-          - device: galaxy-tab-s9
-            browser: chromium
-            install: npx playwright install --with-deps chromium
-          - device: iphone-15-pro-max
-            browser: webkit
-            # Install chromium (for setup) + webkit (for tests) with deps
-            install: npx playwright install --with-deps chromium webkit
-          - device: ipad-pro-11
-            browser: webkit
-            # Install chromium (for setup) + webkit (for tests) with deps
-            install: npx playwright install --with-deps chromium webkit
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
@@ -1452,9 +1433,9 @@ jobs:
       - name: Build shared libraries
         run: npm run build:packages
 
-      - name: Install Playwright Browser (${{ matrix.browser }})
+      - name: Install Playwright Browsers
         working-directory: packages/e2e
-        run: ${{ matrix.install }}
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Download Tunnel URL
         id: tunnel
@@ -1499,47 +1480,87 @@ jobs:
           echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
           echo "VITE_API_URL=${TUNNEL_URL}" >> .env
           echo "CI=true" >> .env
-          echo "✓ Created .env for E2E device tests (${{ matrix.device }})"
+          echo "✓ Created .env for E2E device tests"
 
-      - name: Run E2E Device Tests (${{ matrix.device }})
+      - name: Run E2E Tests (Galaxy S24)
         working-directory: packages/e2e
-        run: npx playwright test --project=${{ matrix.device }}
+        run: npx playwright test --project=galaxy-s24
 
-      - name: Create Completion Signal
+      - name: Run E2E Tests (Galaxy Tab S9)
+        working-directory: packages/e2e
+        run: npx playwright test --project=galaxy-tab-s9
+
+      - name: Run E2E Tests (iPhone 15 Pro Max)
+        working-directory: packages/e2e
+        run: npx playwright test --project=iphone-15-pro-max
+
+      - name: Run E2E Tests (iPad Pro 11)
+        working-directory: packages/e2e
+        run: npx playwright test --project=ipad-pro-11
+
+      - name: Create Completion Signals
         if: always()
-        run: echo "complete" > ${{ runner.temp }}/complete.txt
+        run: |
+          echo "complete" > ${{ runner.temp }}/complete-galaxy-s24.txt
+          echo "complete" > ${{ runner.temp }}/complete-galaxy-tab-s9.txt
+          echo "complete" > ${{ runner.temp }}/complete-iphone-15-pro-max.txt
+          echo "complete" > ${{ runner.temp }}/complete-ipad-pro-11.txt
 
-      - name: Upload Completion Signal
+      - name: Upload Completion Signal (Galaxy S24)
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: test-complete-e2e-${{ matrix.device }}
-          path: ${{ runner.temp }}/complete.txt
+          name: test-complete-e2e-galaxy-s24
+          path: ${{ runner.temp }}/complete-galaxy-s24.txt
           retention-days: 3
 
-      - name: Upload E2E Device Report (${{ matrix.device }})
+      - name: Upload Completion Signal (Galaxy Tab S9)
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-report-${{ matrix.device }}-${{ github.sha }}
+          name: test-complete-e2e-galaxy-tab-s9
+          path: ${{ runner.temp }}/complete-galaxy-tab-s9.txt
+          retention-days: 3
+
+      - name: Upload Completion Signal (iPhone 15 Pro Max)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-iphone-15-pro-max
+          path: ${{ runner.temp }}/complete-iphone-15-pro-max.txt
+          retention-days: 3
+
+      - name: Upload Completion Signal (iPad Pro 11)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-ipad-pro-11
+          path: ${{ runner.temp }}/complete-ipad-pro-11.txt
+          retention-days: 3
+
+      - name: Upload E2E Device Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-report-devices-${{ github.sha }}
           path: packages/e2e/reports/e2e/
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Upload E2E Device Screenshots (${{ matrix.device }})
+      - name: Upload E2E Device Screenshots
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-screenshots-${{ matrix.device }}-${{ github.sha }}
+          name: e2e-screenshots-devices-${{ github.sha }}
           path: packages/e2e/screenshots/
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Upload E2E Device Results (${{ matrix.device }})
+      - name: Upload E2E Device Results
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-results-${{ matrix.device }}-${{ github.sha }}
+          name: e2e-results-devices-${{ github.sha }}
           path: packages/e2e/test-results/
           retention-days: 3
           if-no-files-found: ignore

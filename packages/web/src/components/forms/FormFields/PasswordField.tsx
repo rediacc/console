@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, Input } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { KeyOutlined } from '@/utils/optimizedIcons';
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { Rule } from 'antd/es/form';
 
 export interface PasswordFieldProps {
@@ -65,6 +65,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   'data-testid': dataTestId,
   additionalRules = [],
 }) => {
+  const { t } = useTranslation();
   const rules: Rule[] = [];
 
   if (required) {
@@ -81,7 +82,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 
   rules.push({
     pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
-    message: patternMessage ?? DEFAULTS.ERROR.PASSWORD_VALIDATION_MESSAGE,
+    message: patternMessage ?? t('common:errors.passwordValidation'),
   });
 
   if (additionalRules.length > 0) {

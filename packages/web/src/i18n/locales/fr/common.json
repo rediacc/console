@@ -181,8 +181,19 @@
     "tryAgain": "Réessayer"
   },
   "errors": {
+    "anErrorOccurred": "Une erreur s'est produite",
+    "cliCommandFailed": "La commande CLI a échoué",
+    "failedToCreateTask": "Impossible de créer une tâche de test",
+    "failedToFork": "Impossible de forker le référentiel",
+    "helloFunctionError": "La fonction hello a signalé une erreur",
+    "noErrorMessage": "(aucun message d'erreur)",
+    "operationFailed": "L'opération a échoué",
+    "passwordValidation": "Le mot de passe doit contenir une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial",
+    "schemaValidationFailed": "Problème de synchronisation des données détecté. Veuillez actualiser la page ou contacter le support si le problème persiste.",
     "somethingWentWrong": "Quelque chose s'est mal passé",
-    "schemaValidationFailed": "Problème de synchronisation des données détecté. Veuillez actualiser la page ou contacter le support si le problème persiste."
+    "systemCriticalError": "Le système présente des problèmes critiques",
+    "tfaVerificationFailed": "La vérification TFA a échoué",
+    "unknownError": "Erreur inconnue"
   },
   "export": {
     "label": "Exportation",
@@ -370,6 +381,9 @@
     "waitingForExecution": "En attente d'exécution"
   },
   "statusColumn": "Statut",
+  "success": {
+    "helloFunctionSuccess": "La fonction hello s'est terminée avec succès"
+  },
   "table": {
     "actions": "Actes",
     "moreItems": "+{{count}} de plus",

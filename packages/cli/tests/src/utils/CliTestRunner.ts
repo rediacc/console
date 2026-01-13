@@ -1,7 +1,6 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execa, type Options } from 'execa';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { loadGlobalState } from '../base/globalState.js';
 import { CLI_BUNDLE_PATH, DEFAULT_CLI_TIMEOUT, getApiUrl, getCliTimeout } from '../constants.js';
 
@@ -590,7 +589,7 @@ export class CliTestRunner {
    */
   private formatJsonError(error: { code?: string; message?: string; details?: string[] }): string {
     const { code, message, details } = error;
-    let errorMsg = message ?? DEFAULTS.ERROR.UNKNOWN_ERROR;
+    let errorMsg = message ?? 'Unknown error';
     if (code) {
       errorMsg = `[${code}] ${errorMsg}`;
     }

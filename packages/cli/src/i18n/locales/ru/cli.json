@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "Активация не удалась",
+    "tfaVerificationFailed": "Проверка TFA не удалась",
     "authFailed": "Аутентификация не удалась",
     "authRequired": "Требуется аутентификация. Выполните: rdc login",
     "bridgeRequired": "Требуется имя моста. Используйте --bridge или установите контекст.",

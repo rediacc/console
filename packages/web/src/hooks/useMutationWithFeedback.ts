@@ -3,7 +3,6 @@ import i18n from '@/i18n/config';
 import { showMessage } from '@/utils/messages';
 import { extractErrorMessage } from '@/utils/mutationUtils';
 import { applyProcedureDefaults } from '@rediacc/shared/api/typedApi/defaults';
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { StoredProcedureName } from '@rediacc/shared/types';
 
 function buildInterpolationValues(
@@ -127,7 +126,7 @@ export function useMutationWithFeedback<
           typeof errorMessage === 'function'
             ? errorMessage(error, variables)
             : translateMessage(
-                extractErrorMessage(error, errorMessage ?? DEFAULTS.ERROR.OPERATION_FAILED),
+                extractErrorMessage(error, errorMessage ?? i18n.t('common:errors.operationFailed')),
                 error,
                 variables,
                 procedureName

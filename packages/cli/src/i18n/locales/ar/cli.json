@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "فشل التفعيل",
+    "tfaVerificationFailed": "فشل التحقق من TFA",
     "authFailed": "فشلت المصادقة",
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc login",
     "bridgeRequired": "اسم الجسر مطلوب. استخدم --bridge أو اضبط السياق.",

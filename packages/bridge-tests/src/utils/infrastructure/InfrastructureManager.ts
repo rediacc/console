@@ -279,7 +279,6 @@ export class InfrastructureManager {
       return true;
     } catch (error: unknown) {
       const err = error as { message?: string };
-      // eslint-disable-next-line custom/no-hardcoded-nullish-defaults
       throw new Error(`Failed to deploy renet to ${ip}: ${err.message ?? 'Unknown error'}`);
     }
   }
@@ -315,10 +314,10 @@ export class InfrastructureManager {
         const version = await this.opsManager.getRenetVersionOnVM(ip);
 
         if (wasUpdated) {
-          // eslint-disable-next-line no-console, custom/no-hardcoded-nullish-defaults
+          // eslint-disable-next-line no-console
           console.log(`  ✓ ${ip}: renet updated (${version ?? 'unknown version'})`);
         } else {
-          // eslint-disable-next-line no-console, custom/no-hardcoded-nullish-defaults
+          // eslint-disable-next-line no-console
           console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
         }
       } else {
@@ -327,7 +326,7 @@ export class InfrastructureManager {
         console.log(`  ${ip}: Installing renet...`);
         await this.deployRenetToVM(ip, localPath, localMD5);
         const version = await this.opsManager.getRenetVersionOnVM(ip);
-        // eslint-disable-next-line no-console, custom/no-hardcoded-nullish-defaults
+        // eslint-disable-next-line no-console
         console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
       }
     }

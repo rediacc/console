@@ -3,7 +3,6 @@
  * This service consolidates duplicated parsing logic from 6+ components
  */
 
-import { DEFAULTS } from '../../config';
 import {
   isListResult,
   getContainers,
@@ -668,7 +667,7 @@ function getHealthMessage(exitCode: number): string {
     1: 'System has warnings',
     2: 'System has errors',
   };
-  return messages[exitCode] ?? DEFAULTS.ERROR.CRITICAL_SYSTEM_ERROR;
+  return messages[exitCode] ?? 'System has critical issues';
 }
 
 /**

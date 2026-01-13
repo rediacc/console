@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "認証に失敗しました",
+    "tfaVerificationFailed": "TFA認証に失敗しました",
     "authFailed": "認証に失敗しました",
     "authRequired": "認証が必要です。実行してください: rdc login",
     "bridgeRequired": "ブリッジ名が必要です。--bridge を使用するか、コンテキストを設定してください。",

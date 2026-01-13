@@ -259,7 +259,7 @@ export class ImageTestHelper {
           `  ✓ ${image.name} built successfully (${Math.round(result.duration / 1000)}s)`
         );
       } else {
-        // eslint-disable-next-line no-console, custom/no-hardcoded-nullish-defaults
+        // eslint-disable-next-line no-console
         console.log(`  ✗ ${image.name} failed: ${result.error ?? 'unknown error'}`);
       }
     }

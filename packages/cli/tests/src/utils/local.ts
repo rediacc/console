@@ -7,7 +7,7 @@
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { DEFAULTS, VM_NETWORK } from '@rediacc/shared/config';
+import { VM_NETWORK } from '@rediacc/shared/config';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 
 /**
@@ -226,7 +226,7 @@ export function getErrorFromResult(result: CliResult): string {
       return json.error.message;
     }
   }
-  return result.stderr ?? result.stdout ?? DEFAULTS.ERROR.UNKNOWN_ERROR;
+  return result.stderr ?? result.stdout ?? 'Unknown error';
 }
 
 /**
@@ -235,7 +235,7 @@ export function getErrorFromResult(result: CliResult): string {
  */
 export function assertSuccess(result: CliResult, message?: string): void {
   if (!isSuccessfulResult(result)) {
-    const errorMsg = message ?? DEFAULTS.ERROR.CLI_COMMAND_FAILED;
+    const errorMsg = message ?? 'CLI command failed';
     const details = getErrorFromResult(result);
     throw new Error(`${errorMsg}: ${details}`);
   }

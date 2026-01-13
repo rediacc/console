@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { showMessage } from '@/utils/messages';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 /**
  * Result of an async action
@@ -74,6 +74,7 @@ export interface UseAsyncActionReturn {
  * }
  */
 export function useAsyncAction(): UseAsyncActionReturn {
+  const { t } = useTranslation();
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,7 +100,7 @@ export function useAsyncAction(): UseAsyncActionReturn {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : (config?.errorMessage ?? DEFAULTS.ERROR.AN_ERROR_OCCURRED);
+            : (config?.errorMessage ?? t('common:errors.anErrorOccurred'));
 
         setError(errorMessage);
 
@@ -114,7 +115,7 @@ export function useAsyncAction(): UseAsyncActionReturn {
         setIsExecuting(false);
       }
     },
-    []
+    [t]
   );
 
   const resetError = useCallback(() => {

@@ -6,8 +6,22 @@
   "unknown": "Unknown",
   "remote": "Remote",
   "errors": {
+    "anErrorOccurred": "An error occurred",
+    "cliCommandFailed": "CLI command failed",
+    "failedToCreateTask": "Failed to create test task",
+    "failedToFork": "Failed to fork Repository",
+    "helloFunctionError": "Hello function reported an error",
+    "noErrorMessage": "(no error message)",
+    "operationFailed": "Operation failed",
+    "passwordValidation": "Password must contain uppercase, lowercase, number and special character",
+    "schemaValidationFailed": "Data sync issue detected. Please refresh the page or contact support if the issue persists.",
     "somethingWentWrong": "Something went wrong",
-    "schemaValidationFailed": "Data sync issue detected. Please refresh the page or contact support if the issue persists."
+    "systemCriticalError": "System has critical issues",
+    "tfaVerificationFailed": "TFA verification failed",
+    "unknownError": "Unknown error"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello function completed successfully"
   },
   "desktopPrompt": {
     "title": "{{feature}} Requires Desktop App",

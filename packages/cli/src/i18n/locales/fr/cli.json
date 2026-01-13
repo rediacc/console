@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "L'activation a échoué",
+    "tfaVerificationFailed": "La vérification TFA a échoué",
     "authFailed": "L'authentification a échoué",
     "authRequired": "L'authentification est requise. Exécutez : rdc login",
     "bridgeRequired": "Le nom du pont est requis. Utilisez --bridge ou définissez un contexte.",

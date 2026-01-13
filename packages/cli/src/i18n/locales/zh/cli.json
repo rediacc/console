@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "激活失败",
+    "tfaVerificationFailed": "TFA验证失败",
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc login",
     "bridgeRequired": "需要网桥名称。使用 --bridge 或设置上下文。",

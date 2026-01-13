@@ -143,7 +143,6 @@ export class VaultBuilder {
     this.vault.machine = {
       ip,
       user,
-      // eslint-disable-next-line custom/no-hardcoded-nullish-defaults
       port: port ?? 22,
       datastore,
     };
