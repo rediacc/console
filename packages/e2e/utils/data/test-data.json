@@ -34,7 +34,5 @@
       "version": "1.0.0"
     }
   ],
-  "teams": [
-    "Private Team"
-  ]
+  "teams": ["Private Team"]
 }
