@@ -788,7 +788,7 @@ jobs:
           ELAPSED=0
 
           # CLI platforms
-          CLI_PLATFORMS=("linux" "windows" "macos")
+          CLI_PLATFORMS=("Linux" "Windows" "macOS")
           # E2E browsers
           E2E_BROWSERS=("chromium" "firefox" "webkit" "msedge")
           # E2E resolutions
@@ -808,7 +808,7 @@ jobs:
             # Check CLI platforms
             for platform in "${CLI_PLATFORMS[@]}"; do
               if [[ ! " ${COMPLETED[*]} " =~ " cli-${platform} " ]]; then
-                if echo "$ARTIFACTS" | grep -q "^test-complete-${platform}$"; then
+                if echo "$ARTIFACTS" | grep -q "^test-complete-cli-${platform}$"; then
                   echo "✓ CLI ${platform} tests completed"
                   COMPLETED+=("cli-$platform")
                 fi
@@ -886,11 +886,22 @@ jobs:
               run_id: context.runId
             });
 
-  test-cli-linux:
-    name: 🧪 Test - CLI (Linux)
-    runs-on: ubuntu-latest
+  test-cli:
+    name: 🧪 Test - CLI (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
     needs: [test-e2e-electron]
     timeout-minutes: 120
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
 
     env:
       REDIACC_TEST_EMAIL: admin@rediacc.io
@@ -907,8 +918,13 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install dependencies (Unix)
+        if: runner.os != 'Windows'
         run: npm ci
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: npm ci --ignore-scripts
 
       - name: Build shared libraries
         run: npm run build:packages
@@ -916,7 +932,8 @@ jobs:
       - name: Build CLI
         run: npm run build:cli && npm run build:bundle -w @rediacc/cli
 
-      - name: Download Tunnel URL
+      - name: Download Tunnel URL (Unix)
+        if: runner.os != 'Windows'
         id: tunnel
         env:
           GH_TOKEN: ${{ github.token }}
@@ -937,113 +954,9 @@ jobs:
           echo "✗ Failed to download tunnel URL"
           exit 1
 
-      - name: Verify Tunnel Connectivity
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          for i in {1..10}; do
-            if curl -sf "$TUNNEL_URL/health"; then
-              echo "✓ Tunnel connectivity verified"
-              exit 0
-            fi
-            echo "Attempt $i/10 - waiting..."
-            sleep 5
-          done
-          echo "✗ Could not connect to tunnel"
-          exit 1
-
-      - name: Create CLI Test Environment
-        working-directory: packages/cli/tests
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          echo "CLI_API_URL=${TUNNEL_URL}/api" > .env
-          echo "CLI_MASTER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "CLI_MASTER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "CLI_TIMEOUT=30000" >> .env
-          echo "CI=true" >> .env
-          echo "DEBUG=false" >> .env
-          echo "✓ Created .env for CLI tests"
-        env:
-          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
-          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
-
-      - name: Install VS Code (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gpg apt-transport-https
-          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-          sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-          echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list
-          sudo apt-get update
-          sudo apt-get install -y code
-          rm -f packages.microsoft.gpg
-          echo "✓ VS Code installed"
-          code --version
-
-      - name: Run CLI Tests
-        working-directory: packages/cli
-        run: npm test
-
-      - name: Create Completion Signal
-        if: always()
-        run: echo "complete" > ${{ runner.temp }}/complete.txt
-
-      - name: Upload Completion Signal
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: test-complete-linux
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 3
-
-      - name: Upload CLI Test Report
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-report-linux-${{ github.sha }}
-          path: packages/cli/tests/reports/cli/
-          retention-days: 3
-
-      - name: Upload CLI Test Logs
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-logs-linux-${{ github.sha }}
-          path: packages/cli/tests/reports/cli-logs/
-          retention-days: 3
-
-
-  test-cli-windows:
-    name: 🧪 Test - CLI (Windows)
-    runs-on: windows-latest
-    needs: [test-e2e-electron]
-    timeout-minutes: 120
-
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-      REDIACC_TEST_TIMEOUT: 30000
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build CLI
-        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
-
-      - name: Download Tunnel URL
-        id: tunnel
+      - name: Download Tunnel URL (Windows)
+        if: runner.os == 'Windows'
+        id: tunnel-win
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -1068,10 +981,26 @@ jobs:
           Write-Error "Failed to download tunnel URL"
           exit 1
 
-      - name: Verify Tunnel Connectivity
+      - name: Verify Tunnel Connectivity (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
+
+      - name: Verify Tunnel Connectivity (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $tunnelUrl = "${{ steps.tunnel.outputs.tunnel-url }}"
+          $tunnelUrl = "${{ steps.tunnel-win.outputs.tunnel-url }}"
           for ($i = 1; $i -le 10; $i++) {
             try {
               $response = Invoke-WebRequest -Uri "$tunnelUrl/health" -UseBasicParsing -TimeoutSec 10
@@ -1086,131 +1015,8 @@ jobs:
           Write-Error "Could not connect to tunnel"
           exit 1
 
-      - name: Create CLI Test Environment
-        shell: pwsh
-        working-directory: packages/cli/tests
-        run: |
-          $tunnelUrl = "${{ steps.tunnel.outputs.tunnel-url }}"
-          @"
-          CLI_API_URL=$tunnelUrl/api
-          CLI_MASTER_EMAIL=${{ env.REDIACC_TEST_EMAIL }}
-          CLI_MASTER_PASSWORD=${{ env.REDIACC_TEST_PASSWORD }}
-          CLI_TIMEOUT=30000
-          CI=true
-          DEBUG=false
-          "@ | Out-File -FilePath .env -Encoding utf8
-          Write-Host "Created .env for CLI tests"
-
-      - name: Install VS Code (Windows)
-        shell: pwsh
-        run: |
-          choco install vscode -y
-          Write-Host "VS Code installed"
-          # Refresh PATH to include VS Code
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          code --version
-
-      - name: Run CLI Tests
-        working-directory: packages/cli
-        run: npm test
-
-      - name: Create Completion Signal
-        if: always()
-        shell: pwsh
-        run: |
-          "complete" | Out-File -FilePath "${{ runner.temp }}/complete.txt" -Encoding utf8
-
-      - name: Upload Completion Signal
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: test-complete-windows
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 3
-
-      - name: Upload CLI Test Report
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-report-windows-${{ github.sha }}
-          path: packages/cli/tests/reports/cli/
-          retention-days: 3
-
-      - name: Upload CLI Test Logs
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-logs-windows-${{ github.sha }}
-          path: packages/cli/tests/reports/cli-logs/
-          retention-days: 3
-
-
-  test-cli-macos:
-    name: 🧪 Test - CLI (macOS)
-    runs-on: macos-latest
-    needs: [test-e2e-electron]
-    timeout-minutes: 120
-
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-      REDIACC_TEST_TIMEOUT: 30000
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build CLI
-        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
-
-      - name: Download Tunnel URL
-        id: tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          MAX_WAIT=1500  # 25 minutes
-          ELAPSED=0
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
-              TUNNEL_URL=$(cat tunnel-url.txt)
-              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
-              exit 0
-            fi
-            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
-            sleep 10
-            ELAPSED=$((ELAPSED + 10))
-          done
-          echo "✗ Failed to download tunnel URL"
-          exit 1
-
-      - name: Verify Tunnel Connectivity
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          for i in {1..10}; do
-            if curl -sf "$TUNNEL_URL/health"; then
-              echo "✓ Tunnel connectivity verified"
-              exit 0
-            fi
-            echo "Attempt $i/10 - waiting..."
-            sleep 5
-          done
-          echo "✗ Could not connect to tunnel"
-          exit 1
-
-      - name: Create CLI Test Environment
+      - name: Create CLI Test Environment (Unix)
+        if: runner.os != 'Windows'
         working-directory: packages/cli/tests
         run: |
           TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
@@ -1225,25 +1031,71 @@ jobs:
           REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
           REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
 
+      - name: Create CLI Test Environment (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: packages/cli/tests
+        run: |
+          $tunnelUrl = "${{ steps.tunnel-win.outputs.tunnel-url }}"
+          @"
+          CLI_API_URL=$tunnelUrl/api
+          CLI_MASTER_EMAIL=${{ env.REDIACC_TEST_EMAIL }}
+          CLI_MASTER_PASSWORD=${{ env.REDIACC_TEST_PASSWORD }}
+          CLI_TIMEOUT=30000
+          CI=true
+          DEBUG=false
+          "@ | Out-File -FilePath .env -Encoding utf8
+          Write-Host "Created .env for CLI tests"
+
+      - name: Install VS Code (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gpg apt-transport-https
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+          sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+          echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list
+          sudo apt-get update
+          sudo apt-get install -y code
+          rm -f packages.microsoft.gpg
+          echo "✓ VS Code installed"
+          code --version
+
       - name: Install VS Code (macOS)
+        if: runner.os == 'macOS'
         run: |
           brew install --cask visual-studio-code
           echo "✓ VS Code installed"
+          code --version
+
+      - name: Install VS Code (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install vscode -y
+          Write-Host "VS Code installed"
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           code --version
 
       - name: Run CLI Tests
         working-directory: packages/cli
         run: npm test
 
-      - name: Create Completion Signal
-        if: always()
+      - name: Create Completion Signal (Unix)
+        if: always() && runner.os != 'Windows'
         run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Create Completion Signal (Windows)
+        if: always() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          "complete" | Out-File -FilePath "${{ runner.temp }}/complete.txt" -Encoding utf8
 
       - name: Upload Completion Signal
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: test-complete-macos
+          name: test-complete-cli-${{ matrix.platform }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
 
@@ -1251,7 +1103,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: cli-test-report-macos-${{ github.sha }}
+          name: cli-test-report-${{ matrix.platform }}-${{ github.sha }}
           path: packages/cli/tests/reports/cli/
           retention-days: 3
 
@@ -1259,7 +1111,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: cli-test-logs-macos-${{ github.sha }}
+          name: cli-test-logs-${{ matrix.platform }}-${{ github.sha }}
           path: packages/cli/tests/reports/cli-logs/
           retention-days: 3
 
@@ -2021,7 +1873,7 @@ jobs:
 
   build-desktop:
     name: 🖥️ Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [test-cli]
     timeout-minutes: 30
     strategy:
       fail-fast: true
@@ -2183,7 +2035,7 @@ jobs:
   summary:
     name: ✅ Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-resolutions, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-resolutions, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
     if: always()
 
     steps:
@@ -2207,16 +2059,14 @@ jobs:
           echo "### Tier 4: Integration Tests" >> $GITHUB_STEP_SUMMARY
           echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI (Linux): ${{ needs.test-cli-linux.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI (Windows): ${{ needs.test-cli-windows.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI (macOS): ${{ needs.test-cli-macos.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Browsers: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Resolutions: ${{ needs.test-e2e-resolutions.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Devices: ${{ needs.test-e2e-devices.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "_Note: Bridge tests run as part of Infra - Backend job_" >> $GITHUB_STEP_SUMMARY
-          echo "_Note: E2E tests run in dependency chain: Browsers → Resolutions → Devices → Electron_" >> $GITHUB_STEP_SUMMARY
+          echo "_Note: E2E chain: Browsers → Resolutions → Devices → Electron → CLI_" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.quality-lint.result }}" != "success" ] || \
              [ "${{ needs.quality-format.result }}" != "success" ] || \
@@ -2225,9 +2075,7 @@ jobs:
              [ "${{ needs.test-unit.result }}" != "success" ] || \
              [ "${{ needs.build-cli.result }}" != "success" ] || \
              [ "${{ needs.test-vscode.result }}" != "success" ] || \
-             [ "${{ needs.test-cli-linux.result }}" != "success" ] || \
-             [ "${{ needs.test-cli-windows.result }}" != "success" ] || \
-             [ "${{ needs.test-cli-macos.result }}" != "success" ] || \
+             [ "${{ needs.test-cli.result }}" != "success" ] || \
              [ "${{ needs.test-e2e.result }}" != "success" ] || \
              [ "${{ needs.test-e2e-resolutions.result }}" != "success" ] || \
              [ "${{ needs.test-e2e-devices.result }}" != "success" ] || \
