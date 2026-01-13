@@ -4,7 +4,7 @@ import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { TestDataManager } from '../../src/utils/data/TestDataManager';
-import { ensureCreatedUser } from '../helpers/user-helpers';
+import { createUserViaUI, ensureCreatedUser } from '../helpers/user-helpers';
 import type { Page } from '@playwright/test';
 
 test.describe('User Team Assignment Tests', () => {
@@ -129,7 +129,7 @@ test.describe('User Team Assignment Tests', () => {
     screenshotManager: _screenshotManager,
     testReporter,
   }) => {
-    const userToAdd = await ensureCreatedUser(page, testDataManager);
+    const userToAdd = await createUserViaUI(page, testDataManager);
     const teamName = 'Private Team';
 
     await ensureUserActive(page, userToAdd.email);

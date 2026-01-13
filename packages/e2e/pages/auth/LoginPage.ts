@@ -68,7 +68,6 @@ export class LoginPage extends BasePage {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.loginButton.click();
-    await this.waitForNetworkIdle();
   }
 
   async loginWithValidation(email: string, password: string): Promise<void> {
@@ -160,7 +159,6 @@ export class LoginPage extends BasePage {
 
   async submitRegistrationForm(): Promise<void> {
     await this.registrationSubmitButton.click();
-    await this.waitForNetworkIdle();
   }
 
   async completeRegistration(
