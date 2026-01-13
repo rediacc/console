@@ -10,6 +10,8 @@
 export const E2E_DEFAULTS = {
   MACHINE_NAME: 'machine-1',
   CPU_COUNT_STRING: '0',
+  TEAM_NAME: 'Private Team',
+  REPO_NAME: 'test-repo',
 } as const;
 
 export const FILE_DEFAULTS = {
