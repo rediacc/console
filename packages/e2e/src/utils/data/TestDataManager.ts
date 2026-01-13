@@ -50,17 +50,19 @@ export interface TestData {
   machines: TestMachine[];
   repositories: TestRepository[];
   teams: string[];
-  createdUsers: CreatedUser[];
+  createdUsers?: CreatedUser[];
 }
 
 export class TestDataManager {
   private readonly dataDir: string;
   private readonly testDataFile: string;
+  private readonly createdUsersFile: string;
   private _initialized = false;
 
   constructor(dataDir = 'utils/data') {
     this.dataDir = dataDir;
     this.testDataFile = path.join(this.dataDir, 'test-data.json');
+    this.createdUsersFile = path.join(this.dataDir, '.created-users.json');
     // Lazy initialization - don't call ensureDataDirectory() here
   }
 
@@ -73,6 +75,9 @@ export class TestDataManager {
 
     if (!fs.existsSync(this.testDataFile)) {
       this.initializeTestData();
+    }
+    if (!fs.existsSync(this.createdUsersFile)) {
+      fs.writeFileSync(this.createdUsersFile, JSON.stringify([], null, 2));
     }
 
     this._initialized = true;
@@ -118,7 +123,6 @@ export class TestDataManager {
         },
       ],
       teams: [E2E_DEFAULTS.TEAM_NAME],
-      createdUsers: [],
     };
 
     this.saveTestData(defaultData);
@@ -160,7 +164,25 @@ export class TestDataManager {
   }
 
   private saveTestData(data: TestData): void {
-    fs.writeFileSync(this.testDataFile, JSON.stringify(data, null, 2));
+    const { createdUsers: _createdUsers, ...dataToSave } = data;
+    fs.writeFileSync(this.testDataFile, JSON.stringify(dataToSave, null, 2));
+  }
+
+  private loadCreatedUsers(): CreatedUser[] {
+    this.ensureInitialized();
+    try {
+      const fileCurrent = fs.readFileSync(this.createdUsersFile, 'utf8');
+      const data = JSON.parse(fileCurrent) as CreatedUser[];
+      return Array.isArray(data) ? data : [];
+    } catch {
+      fs.writeFileSync(this.createdUsersFile, JSON.stringify([], null, 2));
+      return [];
+    }
+  }
+
+  private saveCreatedUsers(createdUsers: CreatedUser[]): void {
+    this.ensureInitialized();
+    fs.writeFileSync(this.createdUsersFile, JSON.stringify(createdUsers, null, 2));
   }
 
   /**
@@ -385,18 +407,15 @@ export class TestDataManager {
   }
 
   addCreatedUser(email: string, password: string, activated = false): void {
-    const data = this.loadTestData();
+    const createdUsers = this.loadCreatedUsers();
 
-    // Check if user already exists
-    const existingUser = data.createdUsers.find((u) => u.email === email);
+    const existingUser = createdUsers.find((u) => u.email === email);
     if (existingUser) {
-      // Update existing user
       existingUser.password = password;
       existingUser.activated = activated;
       existingUser.createdAt = new Date().toISOString();
     } else {
-      // Add new user
-      data.createdUsers.push({
+      createdUsers.push({
         email,
         password,
         activated,
@@ -404,15 +423,15 @@ export class TestDataManager {
       });
     }
 
-    this.saveTestData(data);
+    this.saveCreatedUsers(createdUsers);
     console.warn(`Created user saved: ${email}`);
   }
 
   getCreatedUser(email?: string): CreatedUser {
-    const data = this.loadTestData();
+    const createdUsers = this.loadCreatedUsers();
 
     if (email) {
-      const user = data.createdUsers.find((u) => u.email === email);
+      const user = createdUsers.find((u) => u.email === email);
       if (!user) {
         throw new Error(`No created user found with email: ${email}`);
       }
@@ -420,35 +439,33 @@ export class TestDataManager {
     }
 
     // Return the most recently created user
-    if (data.createdUsers.length === 0) {
+    if (createdUsers.length === 0) {
       throw new Error('No created users found');
     }
 
-    return data.createdUsers[data.createdUsers.length - 1];
+    return createdUsers[createdUsers.length - 1];
   }
 
   getAllCreatedUsers(): CreatedUser[] {
-    const data = this.loadTestData();
-    return data.createdUsers;
+    return this.loadCreatedUsers();
   }
 
   updateCreatedUserActivation(email: string, activated: boolean): void {
-    const data = this.loadTestData();
-    const user = data.createdUsers.find((u) => u.email === email);
+    const createdUsers = this.loadCreatedUsers();
+    const user = createdUsers.find((u) => u.email === email);
 
     if (!user) {
       throw new Error(`No created user found with email: ${email}`);
     }
 
     user.activated = activated;
-    this.saveTestData(data);
+    this.saveCreatedUsers(createdUsers);
     console.warn(`User activation updated: ${email} -> ${activated}`);
   }
 
   removeCreatedUser(email: string): void {
-    const data = this.loadTestData();
-    data.createdUsers = data.createdUsers.filter((u) => u.email !== email);
-    this.saveTestData(data);
+    const createdUsers = this.loadCreatedUsers().filter((u) => u.email !== email);
+    this.saveCreatedUsers(createdUsers);
     console.warn(`Removed created user: ${email}`);
   }
 
@@ -460,9 +477,9 @@ export class TestDataManager {
     data.users = data.users.filter((user) => !user.email.includes('temp_user_'));
     data.machines = data.machines.filter((machine) => !machine.name.includes('temp-machine-'));
     data.repositories = data.repositories.filter((repo) => !repo.name.includes('temp-repo-'));
-    data.createdUsers = [];
 
     this.saveTestData(data);
+    this.saveCreatedUsers([]);
   }
 
   getAllTestData(): TestData {

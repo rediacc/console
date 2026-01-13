@@ -67,6 +67,7 @@ logs/
 packages/cli/tests/reports/
 packages/cli/test-results/
 **/test-results/
+packages/e2e/utils/data/.created-users.json
 
 # Screenshots (removed from tracking)
 error_screenshot.png

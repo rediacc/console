@@ -5,46 +5,6 @@ import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { loadGlobalState } from '../../src/setup/global-state';
 import { TestDataManager, type CreatedUser } from '../../src/utils/data/TestDataManager';
 
-async function getExistingSecondaryUser(
-  page: Page,
-  testDataManager: TestDataManager
-): Promise<CreatedUser> {
-  const state = loadGlobalState();
-  const nav = new NavigationHelper(page);
-  await nav.goToOrganizationUsers();
-
-  const searchInput = page.getByTestId('resource-list-search');
-  if (await searchInput.isVisible().catch(() => false)) {
-    await searchInput.fill('');
-    await searchInput.press('Enter');
-  }
-
-  const rows = page
-    .getByTestId(UserPageIDs.systemUserTable)
-    .locator('tbody tr:not(.ant-table-measure-row)');
-  await expect(rows.first()).toBeVisible({ timeout: 10000 });
-  const rowCount = await rows.count();
-
-  for (let i = 0; i < rowCount; i++) {
-    const row = rows.nth(i);
-    const email = (await row.locator('strong').first().innerText()).trim();
-    const rowText = (await row.innerText()).toLowerCase();
-    const isBridgeUser = rowText.includes('bridges') || email.startsWith('bridge.');
-    if (email && email !== state.email && !isBridgeUser) {
-      const existing: CreatedUser = {
-        email,
-        password: '',
-        createdAt: new Date().toISOString(),
-        activated: true,
-      };
-      testDataManager.addCreatedUser(email, '');
-      return existing;
-    }
-  }
-
-  throw new Error('No secondary user found in user list');
-}
-
 export async function createUserViaUI(
   page: Page,
   testDataManager: TestDataManager,
@@ -119,6 +79,16 @@ export async function ensureCreatedUser(
   page: Page,
   testDataManager: TestDataManager
 ): Promise<CreatedUser> {
+  const attemptCreate = async (): Promise<CreatedUser> => {
+    try {
+      return await createUserViaUI(page, testDataManager);
+    } catch {
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+      return await createUserViaUI(page, testDataManager);
+    }
+  };
+
   try {
     const existing = testDataManager.getCreatedUser();
     const nav = new NavigationHelper(page);
@@ -138,10 +108,5 @@ export async function ensureCreatedUser(
     // Ignore and fall back to creating or selecting another user below.
   }
 
-  try {
-    return await createUserViaUI(page, testDataManager);
-  } catch (error) {
-    console.warn(`[E2E] Failed to create user via UI, falling back to existing user`, error);
-    return getExistingSecondaryUser(page, testDataManager);
-  }
+  return await attemptCreate();
 }
