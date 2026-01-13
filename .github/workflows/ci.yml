@@ -1253,26 +1253,10 @@ jobs:
 
 
   test-e2e:
-    name: 🌐 Test - E2E Browsers (${{ matrix.browser }})
+    name: 🌐 Test - E2E Browsers
     runs-on: ubuntu-latest
     needs: [test-unit, build-cli, test-vscode, build-web]
-    timeout-minutes: 60
-
-    strategy:
-      fail-fast: true
-      matrix:
-        browser: [chromium, firefox, webkit, msedge]
-        include:
-          - browser: chromium
-            install: npx playwright install --with-deps chromium
-          - browser: firefox
-            # Install chromium (for setup) + firefox (for tests) with deps
-            install: npx playwright install --with-deps chromium firefox
-          - browser: webkit
-            # Install chromium (for setup) + webkit (for tests) with deps
-            install: npx playwright install --with-deps chromium webkit
-          - browser: msedge
-            install: npx playwright install --with-deps chromium && npx playwright install msedge
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
@@ -1290,9 +1274,11 @@ jobs:
       - name: Build shared libraries
         run: npm run build:packages
 
-      - name: Install Playwright Browser (${{ matrix.browser }})
+      - name: Install Playwright Browsers
         working-directory: packages/e2e
-        run: ${{ matrix.install }}
+        run: |
+          npx playwright install --with-deps chromium firefox webkit
+          npx playwright install msedge
 
       - name: Download Tunnel URL
         id: tunnel
@@ -1339,47 +1325,87 @@ jobs:
           echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
           echo "VITE_API_URL=${TUNNEL_URL}" >> .env
           echo "CI=true" >> .env
-          echo "✓ Created .env for E2E tests (${{ matrix.browser }})"
+          echo "✓ Created .env for E2E tests"
 
-      - name: Run E2E Tests (${{ matrix.browser }})
+      - name: Run E2E Tests (Chromium)
         working-directory: packages/e2e
-        run: npx playwright test --project=${{ matrix.browser }}
+        run: npx playwright test --project=chromium
 
-      - name: Create Completion Signal
+      - name: Run E2E Tests (Firefox)
+        working-directory: packages/e2e
+        run: npx playwright test --project=firefox
+
+      - name: Run E2E Tests (WebKit)
+        working-directory: packages/e2e
+        run: npx playwright test --project=webkit
+
+      - name: Run E2E Tests (MS Edge)
+        working-directory: packages/e2e
+        run: npx playwright test --project=msedge
+
+      - name: Create Completion Signals
         if: always()
-        run: echo "complete" > ${{ runner.temp }}/complete.txt
+        run: |
+          echo "complete" > ${{ runner.temp }}/complete-chromium.txt
+          echo "complete" > ${{ runner.temp }}/complete-firefox.txt
+          echo "complete" > ${{ runner.temp }}/complete-webkit.txt
+          echo "complete" > ${{ runner.temp }}/complete-msedge.txt
 
-      - name: Upload Completion Signal
+      - name: Upload Completion Signal (Chromium)
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: test-complete-e2e-${{ matrix.browser }}
-          path: ${{ runner.temp }}/complete.txt
+          name: test-complete-e2e-chromium
+          path: ${{ runner.temp }}/complete-chromium.txt
           retention-days: 3
 
-      - name: Upload E2E Test Report (${{ matrix.browser }})
+      - name: Upload Completion Signal (Firefox)
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-report-${{ matrix.browser }}-${{ github.sha }}
+          name: test-complete-e2e-firefox
+          path: ${{ runner.temp }}/complete-firefox.txt
+          retention-days: 3
+
+      - name: Upload Completion Signal (WebKit)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-webkit
+          path: ${{ runner.temp }}/complete-webkit.txt
+          retention-days: 3
+
+      - name: Upload Completion Signal (MS Edge)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-msedge
+          path: ${{ runner.temp }}/complete-msedge.txt
+          retention-days: 3
+
+      - name: Upload E2E Test Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-report-browsers-${{ github.sha }}
           path: packages/e2e/reports/e2e/
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Upload E2E Screenshots (${{ matrix.browser }})
+      - name: Upload E2E Screenshots
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-screenshots-${{ matrix.browser }}-${{ github.sha }}
+          name: e2e-screenshots-browsers-${{ github.sha }}
           path: packages/e2e/screenshots/
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Upload E2E Test Results (${{ matrix.browser }})
+      - name: Upload E2E Test Results
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-results-${{ matrix.browser }}-${{ github.sha }}
+          name: e2e-results-browsers-${{ github.sha }}
           path: packages/e2e/test-results/
           retention-days: 3
           if-no-files-found: ignore
