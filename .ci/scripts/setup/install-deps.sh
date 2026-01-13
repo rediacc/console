@@ -22,6 +22,12 @@ cd "$(get_repo_root)"
 
 log_step "Installing npm dependencies..."
 
+# Clean npm cache to avoid corruption issues on CI runners
+if [[ "${CI:-false}" == "true" ]]; then
+    log_info "Cleaning npm cache (CI environment)"
+    npm cache clean --force 2>/dev/null || true
+fi
+
 # Build npm ci command
 NPM_ARGS="ci"
 
