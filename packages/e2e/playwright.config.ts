@@ -171,6 +171,49 @@ export default test.defineConfig({
       use: { ...test.devices['iPad Pro 11'] },
       dependencies: ['setup'],
     },
+
+    // =========================================================================
+    // ELECTRON DESKTOP APP - 6 Platform Matrix
+    // Tests run against built Electron app (packages/desktop/out/main/index.js)
+    // Electron uses HashRouter, so baseURL is empty (paths are hash fragments)
+    // Setup project registers user via Chromium, credentials shared via .e2e-state.json
+    // =========================================================================
+    {
+      name: 'electron-linux-x64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-linux-arm64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-macos-x64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-macos-arm64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-windows-x64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-windows-arm64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
   ],
 
   /* Web server configuration - starts Vite dev server automatically */

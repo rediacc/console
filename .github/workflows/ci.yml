@@ -772,9 +772,11 @@ jobs:
           E2E_BROWSERS=("chromium" "firefox" "webkit" "msedge")
           # E2E devices
           E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
+          # E2E Electron platforms
+          E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
 
           COMPLETED=()
-          EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS[@]} + ${#E2E_DEVICES[@]}))
+          EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
             # Get all artifacts for this run
@@ -806,6 +808,16 @@ jobs:
                 if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${device}$"; then
                   echo "✓ E2E ${device} tests completed"
                   COMPLETED+=("e2e-$device")
+                fi
+              fi
+            done
+
+            # Check E2E Electron platforms
+            for platform in "${E2E_ELECTRON[@]}"; do
+              if [[ ! " ${COMPLETED[*]} " =~ " e2e-${platform} " ]]; then
+                if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${platform}$"; then
+                  echo "✓ E2E Electron ${platform} tests completed"
+                  COMPLETED+=("e2e-$platform")
                 fi
               fi
             done
@@ -1486,6 +1498,223 @@ jobs:
           if-no-files-found: ignore
 
 
+  test-e2e-electron:
+    name: 🖥️ Test - E2E Electron (${{ matrix.project }})
+    runs-on: ${{ matrix.os }}
+    needs: [test-unit, build-cli, test-vscode, build-web]
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            project: electron-linux-x64
+            install: npx playwright install --with-deps chromium
+          - os: ubuntu-24.04-arm
+            project: electron-linux-arm64
+            install: npx playwright install --with-deps chromium
+          - os: macos-15-intel
+            project: electron-macos-x64
+            install: npx playwright install chromium
+          - os: macos-latest
+            project: electron-macos-arm64
+            install: npx playwright install chromium
+          - os: windows-latest
+            project: electron-windows-x64
+            install: npx playwright install chromium
+          - os: windows-11-arm
+            project: electron-windows-arm64
+            install: npx playwright install chromium
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: runner.os != 'Windows'
+        run: npm ci
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: npm ci --ignore-scripts
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Build desktop app
+        working-directory: packages/desktop
+        run: npm run build
+
+      - name: Install Playwright
+        working-directory: packages/e2e
+        run: ${{ matrix.install }}
+
+      - name: Setup display (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 libsecret-1-0
+          Xvfb :99 -screen 0 1920x1080x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAX_WAIT=1500
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
+              TUNNEL_URL=$(cat tunnel-url.txt)
+              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
+              exit 0
+            fi
+            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "✗ Failed to download tunnel URL"
+          exit 1
+
+      - name: Download Tunnel URL (Windows)
+        if: runner.os == 'Windows'
+        id: tunnel-win
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $maxWait = 1500
+          $elapsed = 0
+          while ($elapsed -lt $maxWait) {
+            try {
+              gh run download ${{ github.run_id }} -n tunnel-url 2>$null
+              if (Test-Path "tunnel-url.txt") {
+                $tunnelUrl = Get-Content "tunnel-url.txt" -Raw
+                $tunnelUrl = $tunnelUrl.Trim()
+                "tunnel-url=$tunnelUrl" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
+                Write-Host "Downloaded tunnel URL: $tunnelUrl"
+                exit 0
+              }
+            } catch {}
+            Write-Host "Waiting for tunnel URL... ($elapsed s / $maxWait s)"
+            Start-Sleep -Seconds 10
+            $elapsed += 10
+          }
+          Write-Error "Failed to download tunnel URL"
+          exit 1
+
+      - name: Verify Tunnel Connectivity
+        if: runner.os != 'Windows'
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
+
+      - name: Verify Tunnel Connectivity (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tunnelUrl = "${{ steps.tunnel-win.outputs.tunnel-url }}"
+          for ($i = 1; $i -le 10; $i++) {
+            try {
+              $response = Invoke-WebRequest -Uri "$tunnelUrl/health" -UseBasicParsing -TimeoutSec 10
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Tunnel connectivity verified"
+                exit 0
+              }
+            } catch {}
+            Write-Host "Attempt $i/10 - waiting..."
+            Start-Sleep -Seconds 5
+          }
+          Write-Error "Could not connect to tunnel"
+          exit 1
+
+      - name: Create E2E Test Environment (Unix)
+        if: runner.os != 'Windows'
+        working-directory: packages/e2e
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
+          echo "VITE_API_URL=${TUNNEL_URL}" >> .env
+          echo "CI=true" >> .env
+          echo "✓ Created .env for Electron E2E tests (${{ matrix.project }})"
+
+      - name: Create E2E Test Environment (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: packages/e2e
+        run: |
+          $tunnelUrl = "${{ steps.tunnel-win.outputs.tunnel-url }}"
+          @"
+          E2E_BASE_URL=http://localhost:3000/console/
+          VITE_API_URL=$tunnelUrl
+          CI=true
+          "@ | Out-File -FilePath .env -Encoding utf8
+          Write-Host "Created .env for Electron E2E tests (${{ matrix.project }})"
+
+      - name: Run Electron E2E Tests
+        working-directory: packages/e2e
+        run: npx playwright test --project=${{ matrix.project }}
+        env:
+          DISPLAY: ${{ env.DISPLAY }}
+
+      - name: Create Completion Signal
+        if: always()
+        run: echo "complete" > ${{ runner.temp }}/complete.txt
+
+      - name: Upload Completion Signal
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-${{ matrix.project }}
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+
+      - name: Upload E2E Electron Report (${{ matrix.project }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-electron-report-${{ matrix.project }}-${{ github.sha }}
+          path: packages/e2e/reports/e2e/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Electron Screenshots (${{ matrix.project }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-electron-screenshots-${{ matrix.project }}-${{ github.sha }}
+          path: packages/e2e/screenshots/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Electron Results (${{ matrix.project }})
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-electron-results-${{ matrix.project }}-${{ github.sha }}
+          path: packages/e2e/test-results/
+          retention-days: 3
+          if-no-files-found: ignore
+
+
   build-web:
     name: 🏗️ Build - Web
     runs-on: ubuntu-slim
@@ -1732,7 +1961,7 @@ jobs:
   summary:
     name: ✅ Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, build-web, build-desktop]
+    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
     if: always()
 
     steps:
@@ -1760,6 +1989,7 @@ jobs:
           echo "- CLI (macOS): ${{ needs.test-cli-macos.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Browsers: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Devices: ${{ needs.test-e2e-devices.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "_Note: Bridge tests run as part of Infra - Backend job_" >> $GITHUB_STEP_SUMMARY
 
@@ -1774,6 +2004,7 @@ jobs:
              [ "${{ needs.test-cli-macos.result }}" != "success" ] || \
              [ "${{ needs.test-e2e.result }}" != "success" ] || \
              [ "${{ needs.test-e2e-devices.result }}" != "success" ] || \
+             [ "${{ needs.test-e2e-electron.result }}" != "success" ] || \
              [ "${{ needs.build-web.result }}" != "success" ] || \
              [ "${{ needs.build-desktop.result }}" != "success" ] || \
              [ "${{ needs.infra-backend.result }}" != "success" ]; then

@@ -3,6 +3,9 @@ import { TestDataManager } from '../utils/data/TestDataManager';
 import { TestReporter } from '../utils/report/TestReporter';
 import { ScreenshotManager } from '../utils/screenshot/ScreenshotManager';
 
+// Re-export Electron test fixtures for Electron-specific tests
+export { electronTest, isElectronProject } from '../electron/ElectronFixture';
+
 export interface TestFixtures {
   screenshotManager: ScreenshotManager;
   testReporter: TestReporter;

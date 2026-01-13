@@ -9,8 +9,70 @@ export abstract class BasePage {
     this.url = url;
   }
 
+  /**
+   * Detect if running in Electron context.
+   * Electron loads from file:// protocol, web loads from http(s)://
+   * Note: We only check for file:// to avoid false positives from about:blank
+   * which is the initial state for all browsers.
+   */
+  protected isElectronContext(): boolean {
+    const currentUrl = this.page.url();
+    return currentUrl.startsWith('file://');
+  }
+
+  /**
+   * Normalize route by stripping /console prefix and ensuring leading slash.
+   * /console/login -> /login
+   * machines -> /machines
+   */
+  private normalizeRoute(route: string): string {
+    let normalized = route;
+    if (normalized.startsWith('/console')) {
+      normalized = normalized.slice('/console'.length);
+    }
+    if (!normalized.startsWith('/')) {
+      normalized = '/' + normalized;
+    }
+    return normalized;
+  }
+
+  /**
+   * Wait for a route to become active. Works for both Electron (HashRouter)
+   * and Web (BrowserRouter) contexts.
+   *
+   * @param route - The route to wait for (e.g., '/machines', '/login')
+   * @param options - Optional timeout configuration
+   */
+  protected async waitForRoute(route: string, options?: { timeout?: number }): Promise<void> {
+    const timeout = options?.timeout ?? 30000;
+    const normalizedRoute = this.normalizeRoute(route);
+
+    if (this.isElectronContext()) {
+      await this.page.waitForFunction(
+        (expectedRoute) => {
+          const hash = window.location.hash;
+          const currentRoute = hash ? hash.slice(1) : '/';
+          return currentRoute.includes(expectedRoute) || currentRoute === expectedRoute;
+        },
+        normalizedRoute,
+        { timeout }
+      );
+    } else {
+      await this.page.waitForURL(`**${normalizedRoute}*`, { timeout });
+    }
+  }
+
   async navigate(): Promise<void> {
-    await this.page.goto(this.url);
+    const normalizedRoute = this.normalizeRoute(this.url);
+
+    if (this.isElectronContext()) {
+      await this.page.evaluate((route) => {
+        window.location.hash = route;
+      }, normalizedRoute);
+      await this.page.waitForTimeout(100);
+    } else {
+      await this.page.goto(this.url);
+    }
     await this.waitForPageLoad();
   }
 

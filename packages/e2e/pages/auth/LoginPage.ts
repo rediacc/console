@@ -81,7 +81,7 @@ export class LoginPage extends BasePage {
 
   async waitForLoginCompletion(): Promise<void> {
     await this.waitForElementToDisappear(this.loadingSpinner, 10000);
-    await this.page.waitForURL('**/machines', { timeout: 30000 });
+    await this.waitForRoute('/machines', { timeout: 30000 });
   }
 
   async getErrorMessage(): Promise<string> {
