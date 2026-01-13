@@ -127,7 +127,8 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         throw new Error(result.error ?? t('shared:errors.failedToCreateTask'));
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : t('shared:errors.failedToCreateTask');
+      const errorMessage =
+        error instanceof Error ? error.message : t('shared:errors.failedToCreateTask');
       const duration = Date.now() - startTime;
       setTestResults((prev) =>
         prev.map((result, i) =>

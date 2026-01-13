@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 795
+    "keyCount": 796
   },
   "hashes": {
     "cli.description": "9e74cf76",
@@ -653,6 +653,7 @@
     "errors.term.sshCode130": "b67ee9cd",
     "errors.term.sshCode255": "d4e55f99",
     "errors.term.sshExitCode": "6e05061d",
+    "errors.tfaVerificationFailed": "8a6a9d07",
     "errors.tokenExpired": "d90d3655",
     "errors.unexpectedError": "a88dac5f",
     "errors.unknownCommand": "4f654da5",

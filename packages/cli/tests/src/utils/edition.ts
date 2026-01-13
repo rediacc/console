@@ -317,8 +317,7 @@ export function expectEditionError(
  */
 export function expectEditionSuccess(result: CliResult): void {
   const errorResponse = result.json as { success: false; error?: { message?: string } } | null;
-  const errorMsg =
-    errorResponse?.error?.message ?? result.stderr ?? '(no error message)';
+  const errorMsg = errorResponse?.error?.message ?? result.stderr ?? '(no error message)';
 
   // Build comprehensive debug info for assertion message
   const debugInfo = `
