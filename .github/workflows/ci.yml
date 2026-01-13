@@ -356,7 +356,7 @@ jobs:
         shell: bash
       - name: Run VS Code detection tests
         working-directory: packages/cli
-        run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts
+        run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts --debug
         env:
           PLAYWRIGHT_SKIP_GLOBAL_SETUP: 'true'
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
@@ -606,7 +606,7 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects chromium firefox webkit msedge
+      - run: .ci/scripts/test/run-e2e.sh --projects chromium firefox webkit msedge --debug
       - name: Create Completion Signals
         if: always()
         run: |
@@ -670,7 +670,7 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects resolution-1920x1080 resolution-1366x768 resolution-1536x864
+      - run: .ci/scripts/test/run-e2e.sh --projects resolution-1920x1080 resolution-1366x768 resolution-1536x864 --debug
       - name: Create Completion Signals
         if: always()
         run: |
@@ -721,7 +721,7 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects galaxy-s24 galaxy-tab-s9 iphone-15-pro-max ipad-pro-11
+      - run: .ci/scripts/test/run-e2e.sh --projects galaxy-s24 galaxy-tab-s9 iphone-15-pro-max ipad-pro-11 --debug
       - name: Create Completion Signals
         if: always()
         run: |
@@ -812,7 +812,7 @@ jobs:
         shell: bash
       - name: Run Electron E2E Tests
         working-directory: packages/e2e
-        run: npx playwright test --project=${{ matrix.project }}
+        run: npx playwright test --project=${{ matrix.project }} --debug
         env:
           DISPLAY: ${{ env.DISPLAY }}
       - if: always()
