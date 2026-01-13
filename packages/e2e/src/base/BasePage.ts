@@ -107,7 +107,7 @@ export abstract class BasePage {
   }
 
   async waitForElementToDisappear(locator: Locator, timeout = 10000): Promise<void> {
-    await locator.waitFor({ state: 'hidden', timeout });
+    await expect(locator).toBeHidden({ timeout });
   }
 
   async clickWithRetry(locator: Locator, _maxRetries = 1): Promise<void> {
