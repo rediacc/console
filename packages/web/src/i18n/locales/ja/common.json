@@ -181,19 +181,8 @@
     "tryAgain": "もう一度試す"
   },
   "errors": {
-    "anErrorOccurred": "エラーが発生しました",
-    "cliCommandFailed": "CLIコマンドが失敗しました",
-    "failedToCreateTask": "テストタスクの作成に失敗しました",
-    "failedToFork": "リポジトリのフォークに失敗しました",
-    "helloFunctionError": "Hello関数がエラーを報告しました",
-    "noErrorMessage": "（エラーメッセージなし）",
-    "operationFailed": "操作に失敗しました",
-    "passwordValidation": "パスワードは大文字、小文字、数字、特殊文字を含む必要があります",
     "schemaValidationFailed": "データ同期の問題が検出されました。ページを更新するか、問題が解決しない場合はサポートにお問い合わせください。",
-    "somethingWentWrong": "問題が発生しました",
-    "systemCriticalError": "システムに重大な問題があります",
-    "tfaVerificationFailed": "TFA検証に失敗しました",
-    "unknownError": "不明なエラーです"
+    "somethingWentWrong": "問題が発生しました"
   },
   "export": {
     "label": "エクスポート",
@@ -381,9 +370,6 @@
     "waitingForExecution": "実行を待っています"
   },
   "statusColumn": "状態",
-  "success": {
-    "helloFunctionSuccess": "Hello関数は正常に完了しました"
-  },
   "table": {
     "actions": "アクション",
     "moreItems": "+{{count}}個の追加",

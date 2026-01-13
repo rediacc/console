@@ -100,7 +100,7 @@ export function useAsyncAction(): UseAsyncActionReturn {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : (config?.errorMessage ?? t('common:errors.anErrorOccurred'));
+            : (config?.errorMessage ?? t('shared:errors.anErrorOccurred'));
 
         setError(errorMessage);
 

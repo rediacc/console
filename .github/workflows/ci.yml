@@ -791,13 +791,15 @@ jobs:
           CLI_PLATFORMS=("linux" "windows" "macos")
           # E2E browsers
           E2E_BROWSERS=("chromium" "firefox" "webkit" "msedge")
+          # E2E resolutions
+          E2E_RESOLUTIONS=("resolution-1920x1080" "resolution-1366x768" "resolution-1536x864")
           # E2E devices
           E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
           # E2E Electron platforms
           E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
 
           COMPLETED=()
-          EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
+          EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS[@]} + ${#E2E_RESOLUTIONS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
             # Get all artifacts for this run
@@ -819,6 +821,16 @@ jobs:
                 if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${browser}$"; then
                   echo "✓ E2E ${browser} tests completed"
                   COMPLETED+=("e2e-$browser")
+                fi
+              fi
+            done
+
+            # Check E2E resolutions
+            for resolution in "${E2E_RESOLUTIONS[@]}"; do
+              if [[ ! " ${COMPLETED[*]} " =~ " e2e-${resolution} " ]]; then
+                if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${resolution}$"; then
+                  echo "✓ E2E ${resolution} tests completed"
+                  COMPLETED+=("e2e-$resolution")
                 fi
               fi
             done
@@ -1411,10 +1423,151 @@ jobs:
           if-no-files-found: ignore
 
 
+  test-e2e-resolutions:
+    name: 🖥️ Test - E2E Resolutions
+    runs-on: ubuntu-latest
+    needs: [test-e2e]
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared libraries
+        run: npm run build:packages
+
+      - name: Install Playwright Browsers
+        working-directory: packages/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAX_WAIT=1500
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
+              TUNNEL_URL=$(cat tunnel-url.txt)
+              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
+              exit 0
+            fi
+            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          echo "✗ Failed to download tunnel URL"
+          exit 1
+
+      - name: Verify Tunnel Connectivity
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..10}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "✓ Tunnel connectivity verified"
+              exit 0
+            fi
+            echo "Attempt $i/10 - waiting..."
+            sleep 5
+          done
+          echo "✗ Could not connect to tunnel"
+          exit 1
+
+      - name: Create E2E Test Environment
+        working-directory: packages/e2e
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
+          echo "VITE_API_URL=${TUNNEL_URL}" >> .env
+          echo "CI=true" >> .env
+          echo "✓ Created .env for E2E resolution tests"
+
+      - name: Run E2E Tests (1920x1080)
+        working-directory: packages/e2e
+        run: npx playwright test --project=resolution-1920x1080
+
+      - name: Run E2E Tests (1366x768)
+        working-directory: packages/e2e
+        run: npx playwright test --project=resolution-1366x768
+
+      - name: Run E2E Tests (1536x864)
+        working-directory: packages/e2e
+        run: npx playwright test --project=resolution-1536x864
+
+      - name: Create Completion Signals
+        if: always()
+        run: |
+          echo "complete" > ${{ runner.temp }}/complete-1920x1080.txt
+          echo "complete" > ${{ runner.temp }}/complete-1366x768.txt
+          echo "complete" > ${{ runner.temp }}/complete-1536x864.txt
+
+      - name: Upload Completion Signal (1920x1080)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-resolution-1920x1080
+          path: ${{ runner.temp }}/complete-1920x1080.txt
+          retention-days: 3
+
+      - name: Upload Completion Signal (1366x768)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-resolution-1366x768
+          path: ${{ runner.temp }}/complete-1366x768.txt
+          retention-days: 3
+
+      - name: Upload Completion Signal (1536x864)
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: test-complete-e2e-resolution-1536x864
+          path: ${{ runner.temp }}/complete-1536x864.txt
+          retention-days: 3
+
+      - name: Upload E2E Resolution Report
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-report-resolutions-${{ github.sha }}
+          path: packages/e2e/reports/e2e/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Resolution Screenshots
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-screenshots-resolutions-${{ github.sha }}
+          path: packages/e2e/screenshots/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Upload E2E Resolution Results
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: e2e-results-resolutions-${{ github.sha }}
+          path: packages/e2e/test-results/
+          retention-days: 3
+          if-no-files-found: ignore
+
+
   test-e2e-devices:
     name: 🌐 Test - E2E Devices
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [test-e2e-resolutions]
     timeout-minutes: 90
 
     steps:
@@ -2030,7 +2183,7 @@ jobs:
   summary:
     name: ✅ Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, test-e2e-resolutions, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
     if: always()
 
     steps:
@@ -2058,10 +2211,12 @@ jobs:
           echo "- CLI (Windows): ${{ needs.test-cli-windows.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI (macOS): ${{ needs.test-cli-macos.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Browsers: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Resolutions: ${{ needs.test-e2e-resolutions.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Devices: ${{ needs.test-e2e-devices.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "_Note: Bridge tests run as part of Infra - Backend job_" >> $GITHUB_STEP_SUMMARY
+          echo "_Note: E2E tests run in dependency chain: Browsers → Resolutions → Devices → Electron_" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.quality-lint.result }}" != "success" ] || \
              [ "${{ needs.quality-format.result }}" != "success" ] || \
@@ -2074,6 +2229,7 @@ jobs:
              [ "${{ needs.test-cli-windows.result }}" != "success" ] || \
              [ "${{ needs.test-cli-macos.result }}" != "success" ] || \
              [ "${{ needs.test-e2e.result }}" != "success" ] || \
+             [ "${{ needs.test-e2e-resolutions.result }}" != "success" ] || \
              [ "${{ needs.test-e2e-devices.result }}" != "success" ] || \
              [ "${{ needs.test-e2e-electron.result }}" != "success" ] || \
              [ "${{ needs.build-web.result }}" != "success" ] || \

@@ -25,7 +25,7 @@ const handleForkResult = (
   const { selectedRepository, machine, onQueueItemCreated, t } = context;
 
   if (!result.success) {
-    throw new Error(result.error ?? t('common:errors.failedToFork'));
+    throw new Error(result.error ?? t('shared:errors.failedToFork'));
   }
 
   if (result.taskId) {

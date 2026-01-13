@@ -68,6 +68,25 @@ export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
  * Structure of the shared common translations.
  */
 export interface SharedCommonTranslations {
+  errors: {
+    anErrorOccurred: string;
+    cliCommandFailed: string;
+    criticalSystemError: string;
+    failedToCreateTask: string;
+    failedToFork: string;
+    helloFunctionError: string;
+    machinesValidationError: string;
+    noErrorMessage: string;
+    operationFailed: string;
+    passwordValidation: string;
+    tfaVerificationFailed: string;
+    unknownError: string;
+    vaultTestFailed: string;
+    vsCodeConnectionFailed: string;
+  };
+  success: {
+    helloFunctionSuccess: string;
+  };
   status: {
     cancelled: string;
     completed: string;

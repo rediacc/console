@@ -161,7 +161,7 @@ const handleElectronVSCode = async (params: VSCodeLaunchParams): Promise<void> =
   });
 
   if (!result.success) {
-    message.error(result.error ?? 'common:errors.vsCodeConnectionFailed');
+    message.error(result.error ?? 'shared:errors.vsCodeConnectionFailed');
   }
 };
 

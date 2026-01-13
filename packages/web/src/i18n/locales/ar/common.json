@@ -181,19 +181,8 @@
     "tryAgain": "حاول مجددًا"
   },
   "errors": {
-    "anErrorOccurred": "حدث خطأ",
-    "cliCommandFailed": "فشل أمر سطر الأوامر",
-    "failedToCreateTask": "فشل إنشاء مهمة الاختبار",
-    "failedToFork": "فشل استنساخ المستودع",
-    "helloFunctionError": "أبلغت وظيفة Hello عن خطأ",
-    "noErrorMessage": "(لا توجد رسالة خطأ)",
-    "operationFailed": "فشلت العملية",
-    "passwordValidation": "يجب أن تحتوي كلمة المرور على أحرف كبيرة وصغيرة وأرقام وأحرف خاصة",
     "schemaValidationFailed": "تم اكتشاف مشكلة في مزامنة البيانات. يرجى تحديث الصفحة أو الاتصال بالدعم إذا استمرت المشكلة.",
-    "somethingWentWrong": "حدث شيء ما خطأ",
-    "systemCriticalError": "يحتوي النظام على مشاكل حرجة",
-    "tfaVerificationFailed": "فشل التحقق من TFA",
-    "unknownError": "خطأ غير معروف"
+    "somethingWentWrong": "حدث شيء ما خطأ"
   },
   "export": {
     "label": "تصدير",
@@ -381,9 +370,6 @@
     "waitingForExecution": "في انتظار التنفيذ"
   },
   "statusColumn": "الحالة",
-  "success": {
-    "helloFunctionSuccess": "اكتملت وظيفة Hello بنجاح"
-  },
   "table": {
     "actions": "الإجراءات",
     "moreItems": "+{{count}} عنصر آخر",

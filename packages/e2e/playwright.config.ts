@@ -150,6 +150,38 @@ export default test.defineConfig({
     },
 
     // =========================================================================
+    // DESKTOP RESOLUTIONS - Common screen sizes for responsive testing
+    // Uses Chromium with custom viewports to test layout at different sizes
+    // =========================================================================
+    {
+      name: 'resolution-1920x1080',
+      use: {
+        ...test.devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'resolution-1366x768',
+      use: {
+        ...test.devices['Desktop Chrome'],
+        viewport: { width: 1366, height: 768 },
+      },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'resolution-1536x864',
+      use: {
+        ...test.devices['Desktop Chrome'],
+        viewport: { width: 1536, height: 864 },
+      },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+
+    // =========================================================================
     // MOBILE DEVICES - Android (Chromium-based)
     // Electron tests are excluded - they only run in Electron projects
     // =========================================================================

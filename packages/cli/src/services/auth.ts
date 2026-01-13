@@ -204,7 +204,7 @@ class AuthService {
     if (!result.isAuthorized) {
       return {
         success: false,
-        message: result.result ?? t('errors.tfaVerificationFailed'),
+        message: result.result ?? t('shared:errors.tfaVerificationFailed'),
       };
     }
 

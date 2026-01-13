@@ -126,7 +126,7 @@ export function useMutationWithFeedback<
           typeof errorMessage === 'function'
             ? errorMessage(error, variables)
             : translateMessage(
-                extractErrorMessage(error, errorMessage ?? i18n.t('common:errors.operationFailed')),
+                extractErrorMessage(error, errorMessage ?? i18n.t('shared:errors.operationFailed')),
                 error,
                 variables,
                 procedureName

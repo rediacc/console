@@ -181,19 +181,8 @@
     "tryAgain": "Yeniden Deneyin"
   },
   "errors": {
-    "anErrorOccurred": "Bir hata oluştu",
-    "cliCommandFailed": "CLI komutu başarısız oldu",
-    "failedToCreateTask": "Test görevi oluşturulamadı",
-    "failedToFork": "Depoyu çatallama başarısız oldu",
-    "helloFunctionError": "Hello işlevi bir hata bildirdi",
-    "noErrorMessage": "(hata mesajı yok)",
-    "operationFailed": "İşlem başarısız oldu",
-    "passwordValidation": "Parola büyük harf, küçük harf, sayı ve özel karakter içermelidir",
     "schemaValidationFailed": "Veri senkronizasyon sorunu tespit edildi. Lütfen sayfayı yenileyin veya sorun devam ederse destek ile iletişime geçin.",
-    "somethingWentWrong": "Bir şey yanlış gitti",
-    "systemCriticalError": "Sistem kritik sorunlara sahip",
-    "tfaVerificationFailed": "TFA doğrulaması başarısız oldu",
-    "unknownError": "Bilinmeyen hata"
+    "somethingWentWrong": "Bir şey yanlış gitti"
   },
   "export": {
     "label": "Dışa Aktar",
@@ -381,9 +370,6 @@
     "waitingForExecution": "Yürütme için bekleniyor"
   },
   "statusColumn": "Durum",
-  "success": {
-    "helloFunctionSuccess": "Hello işlevi başarıyla tamamlandı"
-  },
   "table": {
     "actions": "Eylemler",
     "moreItems": "+{{count}} daha fazla",

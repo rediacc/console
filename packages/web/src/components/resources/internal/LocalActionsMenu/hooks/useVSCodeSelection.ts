@@ -52,7 +52,7 @@ export function useVSCodeSelection({
       });
 
       if (!result.success) {
-        onError(result.error ?? 'common:errors.vsCodeConnectionFailed');
+        onError(result.error ?? 'shared:errors.vsCodeConnectionFailed');
       }
     },
     [teamName, machine, repository, modal.state.data, onError]

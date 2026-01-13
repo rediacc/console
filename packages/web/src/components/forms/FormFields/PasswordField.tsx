@@ -82,7 +82,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 
   rules.push({
     pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
-    message: patternMessage ?? t('common:errors.passwordValidation'),
+    message: patternMessage ?? t('shared:errors.passwordValidation'),
   });
 
   if (additionalRules.length > 0) {

@@ -93,7 +93,7 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
   const responseVault = trace.responseVaultContent;
 
   if (!responseVault?.vaultContent) {
-    return createSuccessResult(i18n.t('common:success.helloFunctionSuccess'), 'COMPLETED');
+    return createSuccessResult(i18n.t('shared:success.helloFunctionSuccess'), 'COMPLETED');
   }
 
   const vaultData = parseResponseVaultContent(responseVault.vaultContent);
@@ -102,12 +102,12 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
 
   return isError
     ? createErrorResult(
-        resultMessage ?? i18n.t('common:errors.helloFunctionError'),
+        resultMessage ?? i18n.t('shared:errors.helloFunctionError'),
         'COMPLETED',
         vaultData
       )
     : createSuccessResult(
-        resultMessage ?? i18n.t('common:success.helloFunctionSuccess'),
+        resultMessage ?? i18n.t('shared:success.helloFunctionSuccess'),
         'COMPLETED',
         vaultData
       );
@@ -117,7 +117,7 @@ function handleFailedStatus(
   queueDetails: GetTeamQueueItems_ResultSet1,
   status: string
 ): QueueItemCompletionResult {
-  const failureReason = queueDetails.lastFailureReason ?? i18n.t('common:errors.operationFailed');
+  const failureReason = queueDetails.lastFailureReason ?? i18n.t('shared:errors.operationFailed');
 
   return createErrorResult(failureReason, status);
 }

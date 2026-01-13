@@ -181,28 +181,14 @@
     "tryAgain": "Intentar de nuevo"
   },
   "errors": {
-    "anErrorOccurred": "Ocurrió un error",
-    "cliCommandFailed": "El comando CLI falló",
-    "failedToCreateTask": "No se pudo crear la tarea de prueba",
-    "failedToFork": "No se pudo bifurcar el repositorio",
-    "helloFunctionError": "La función hello reportó un error",
-    "noErrorMessage": "(sin mensaje de error)",
-    "operationFailed": "Falló la operación",
-    "passwordValidation": "La contraseña debe contener mayúscula, minúscula, número y carácter especial",
     "schemaValidationFailed": "Se detectó un problema de sincronización de datos. Por favor, actualice la página o contacte al soporte si el problema persiste.",
-    "somethingWentWrong": "Algo salió mal",
-    "systemCriticalError": "El sistema tiene problemas críticos",
-    "tfaVerificationFailed": "Falló la verificación de TFA",
-    "unknownError": "Error desconocido"
+    "somethingWentWrong": "Algo salió mal"
   },
   "export": {
     "label": "Exportar",
     "success": "Exportación exitosa"
   },
   "exportCSV": "Exportar como CSV",
-  "success": {
-    "helloFunctionSuccess": "La función hello se completó exitosamente"
-  },
   "exportJSON": "Exportar como JSON",
   "fieldGenerator": {
     "applied": "Valores aplicados con éxito",

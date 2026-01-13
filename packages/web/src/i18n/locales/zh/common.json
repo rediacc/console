@@ -181,19 +181,8 @@
     "tryAgain": "重试"
   },
   "errors": {
-    "anErrorOccurred": "发生了错误",
-    "cliCommandFailed": "CLI命令失败",
-    "failedToCreateTask": "无法创建测试任务",
-    "failedToFork": "无法分支仓库",
-    "helloFunctionError": "Hello函数报告了一个错误",
-    "noErrorMessage": "（无错误信息）",
-    "operationFailed": "操作失败",
-    "passwordValidation": "密码必须包含大写字母、小写字母、数字和特殊字符",
     "schemaValidationFailed": "检测到数据同步问题。请刷新页面，如果问题仍然存在，请联系支持。",
-    "somethingWentWrong": "出现了问题",
-    "systemCriticalError": "系统存在严重问题",
-    "tfaVerificationFailed": "TFA验证失败",
-    "unknownError": "未知错误"
+    "somethingWentWrong": "出现了问题"
   },
   "export": {
     "label": "导出",
@@ -379,9 +368,6 @@
     "processing": "处理中",
     "running": "运行中",
     "waitingForExecution": "等待执行"
-  },
-  "success": {
-    "helloFunctionSuccess": "Hello函数成功完成"
   },
   "statusColumn": "地位",
   "table": {

@@ -69,7 +69,7 @@ export const TerminalPopout: React.FC = () => {
         const result = await api.terminal.transfer(sessionId);
         if (!result.success) {
           setError(
-            `${t('resources:localActions.popoutTransferFailed')}: ${result.error ?? t('common:errors.unknownError')}`
+            `${t('resources:localActions.popoutTransferFailed')}: ${result.error ?? t('shared:errors.unknownError')}`
           );
           return;
         }

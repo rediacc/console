@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "发生错误",
+    "cliCommandFailed": "CLI命令失败",
+    "criticalSystemError": "系统存在严重问题",
+    "failedToCreateTask": "创建测试任务失败",
+    "failedToFork": "无法分叉仓库",
+    "helloFunctionError": "Hello函数报告错误",
+    "machinesValidationError": "机器验证错误",
+    "noErrorMessage": "(无错误信息)",
+    "operationFailed": "操作失败",
+    "passwordValidation": "密码必须包含大写字母、小写字母、数字和特殊字符",
+    "tfaVerificationFailed": "TFA验证失败",
+    "unknownError": "未知错误",
+    "vaultTestFailed": "Vault连接测试失败",
+    "vsCodeConnectionFailed": "VS Code连接失败"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello函数成功完成"
+  },
   "status": {
     "cancelled": "已取消",
     "completed": "已完成",
