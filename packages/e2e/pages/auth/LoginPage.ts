@@ -80,8 +80,10 @@ export class LoginPage extends BasePage {
 
   async waitForLoginCompletion(): Promise<void> {
     await this.waitForElementToDisappear(this.loadingSpinner, 10000);
-    // Wait for dashboard element instead of URL - more reliable than URL-based wait
-    // This uses Playwright's auto-waiting which retries until element is visible
+    // Event-driven approach: wait for network to settle after login
+    // This handles API response + any subsequent data fetching
+    await this.page.waitForLoadState('networkidle');
+    // Then verify dashboard element is visible
     await this.page.locator('[data-testid="user-menu-button"]').waitFor({ state: 'visible' });
   }
 
