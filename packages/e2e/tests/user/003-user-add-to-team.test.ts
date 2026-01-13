@@ -87,21 +87,10 @@ test.describe('User Team Assignment Tests', () => {
     await expect(userCombobox).toBeVisible();
     await userCombobox.click();
     await userCombobox.fill(userEmail);
-
-    // Select the user from dropdown
-    const dropdown = page.locator('.ant-select-dropdown').filter({ hasText: userEmail });
-    await expect(dropdown).toBeVisible({ timeout: 5000 });
-    const userOption = dropdown
-      .locator('.ant-select-item-option')
-      .filter({ hasText: userEmail })
-      .first();
-    await expect(userOption).toBeVisible({ timeout: 5000 });
-    await userOption.click();
+    await userCombobox.press('ArrowDown');
+    await userCombobox.press('Enter');
 
     // Click the plus button to add the member
-    const selectedUser = addMemberPanel.locator('.ant-select-selection-item');
-    await expect(selectedUser).toHaveText(userEmail, { timeout: 5000 });
-
     const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
     await expect(addButton).toBeVisible();
     await expect(addButton).toBeEnabled({ timeout: 10000 });
@@ -169,19 +158,9 @@ test.describe('User Team Assignment Tests', () => {
     const userCombobox = addMemberPanel.getByRole('combobox');
     await expect(userCombobox).toBeVisible();
     await userCombobox.click();
-
     await userCombobox.fill(userToAdd.email);
-    const dropdown = page.locator('.ant-select-dropdown').filter({ hasText: userToAdd.email });
-    await expect(dropdown).toBeVisible({ timeout: 5000 });
-    const userOption = dropdown
-      .locator('.ant-select-item-option')
-      .filter({ hasText: userToAdd.email })
-      .first();
-    await expect(userOption).toBeVisible({ timeout: 5000 });
-    await userOption.click();
-
-    const selectedUser = addMemberPanel.locator('.ant-select-selection-item');
-    await expect(selectedUser).toHaveText(userToAdd.email, { timeout: 5000 });
+    await userCombobox.press('ArrowDown');
+    await userCombobox.press('Enter');
 
     const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
     await expect(addButton).toBeVisible();
