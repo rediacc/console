@@ -328,6 +328,21 @@ export class NavigationHelper {
   }
 
   private async navigateToSubNav(parentTestId: string, childTestId: string): Promise<void> {
+    await this.ensureNavVisible(parentTestId);
+    const parentLocator = this.page.locator(`[data-testid="${parentTestId}"]:visible`);
+    if (await parentLocator.isVisible().catch(() => false)) {
+      try {
+        await parentLocator.click({ trial: true, timeout: 1000 });
+        await parentLocator.click();
+        const childLocator = this.page.locator(`[data-testid="${childTestId}"]:visible`);
+        await childLocator.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+        await childLocator.click();
+        return;
+      } catch {
+        // Fall back to drawer navigation below.
+      }
+    }
+
     const toggle = await this.getSidebarToggle();
     if ((await toggle.count()) > 0) {
       await toggle.click();
@@ -357,16 +372,6 @@ export class NavigationHelper {
         });
       }
       await drawer.waitFor({ state: 'hidden', timeout: SUBMENU_VISIBLE_TIMEOUT }).catch(() => {});
-      return;
-    }
-
-    await this.ensureNavVisible(parentTestId);
-    const parentLocator = this.page.locator(`[data-testid="${parentTestId}"]:visible`);
-    if (await parentLocator.isVisible().catch(() => false)) {
-      await parentLocator.click();
-      const childLocator = this.page.locator(`[data-testid="${childTestId}"]:visible`);
-      await childLocator.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
-      await childLocator.click();
     }
   }
 
