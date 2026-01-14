@@ -20,13 +20,12 @@ export async function hashPassword(password: string): Promise<string> {
 
 /**
  * Fixed activation code for ORGANIZATION registration only.
- * Used for: RegistrationModal (organization signup)
+ * Used for: RegistrationModal (organization signup via CreateNewOrganization)
  *
- * NOTE: Do NOT use this for CreateNewUser hook (creating users within an existing organization).
- * For in-org user creation, the middleware expects an empty string for activationCode.
- * Using ACTIVATION_CODE for CreateNewUser will cause the middleware to reject the request.
+ * NOTE: This is NOT used for CreateNewUser - in-org users are auto-activated.
+ * Format: 6 alphanumeric characters (A-Z, 0-9) - matches CI_MODE test code.
  */
-export const ACTIVATION_CODE = '111111';
+export const ACTIVATION_CODE = 'AAA111';
 
 /**
  * Ensure vault content is valid JSON, defaulting to empty object.

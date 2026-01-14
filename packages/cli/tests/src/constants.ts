@@ -36,8 +36,8 @@ export function getApiUrl(): string {
 /** Email domain for generated test accounts */
 export const TEST_EMAIL_DOMAIN = 'rediacc.local';
 
-/** Activation code for CI mode */
-export const CI_ACTIVATION_CODE = '111111';
+/** Activation code for CI mode (alphanumeric format) */
+export const CI_ACTIVATION_CODE = 'AAA111';
 
 // =============================================================================
 // Timeouts

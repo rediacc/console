@@ -8,8 +8,8 @@ export const TEST_CREDENTIALS = {
    */
   TEST_PASSWORD: 'TestPass123!',
 
-  /** Activation code for test mode (e2e/automation) */
-  CI_ACTIVATION_CODE: '111111',
+  /** Activation code for test mode (e2e/automation) - alphanumeric format */
+  CI_ACTIVATION_CODE: 'AAA111',
 
   /** Test email domain for generated accounts */
   TEST_EMAIL_DOMAIN: 'rediacc.local',

@@ -63,7 +63,7 @@ setup('register user for e2e tests', async ({ page }) => {
     .locator('[data-testid="registration-activation-code-input"]')
     .waitFor({ state: 'visible', timeout: 30000 });
 
-  // Enter verification code (111111 in test mode)
+  // Enter verification code (AAA111 in test mode)
   await page
     .locator('[data-testid="registration-activation-code-input"]')
     .fill(getEnvVarWithDefault('TEST_VERIFICATION_CODE'));

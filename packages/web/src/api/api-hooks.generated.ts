@@ -3,7 +3,7 @@
  *
  * Generated from: middleware/AppData/stored-procedures.json
  * Configuration: packages/web/src/api/hooks.config.json
- * Generated at: 2026-01-14T09:22:04Z
+ * Generated at: 2026-01-14T10:37:48Z
  * Schema version: 3.0.0
  *
  * To regenerate, run: ./go deploy prep
@@ -753,15 +753,12 @@ export const useCreateNewUser = () => {
 
   return useMutationWithFeedback<unknown, Error, CreateUserInput>({
     procedureName: 'CreateNewUser',
-    // NOTE: activationCode is only used for organization registration (RegistrationModal).
-    // For creating users within an existing organization, DO NOT send activationCode.
-    // The middleware handles in-org user creation differently when activationCode is absent.
     mutationFn: async (input) => {
       const params = {
         newUserEmail: input.email,
         newUserHash: await hashPassword(input.password),
       };
-      return typedApi.CreateNewUser(params as never);
+      return typedApi.CreateNewUser(params);
     },
     successMessage: messages?.success ?? 'Operation completed successfully',
     errorMessage: messages?.error ?? 'Operation failed',

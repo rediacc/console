@@ -85,7 +85,7 @@ const LoginPage: React.FC = () => {
               email: generateRandomEmail(),
               password: generateRandomPassword(),
               organizationName: generateRandomOrganizationName(),
-              activationCode: '111111',
+              activationCode: 'AAA111',
             };
             setQuickRegistrationData(randomData);
             setIsQuickRegistration(true);

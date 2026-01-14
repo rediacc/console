@@ -212,7 +212,7 @@ export class CliTestRunner {
     return this.run(args);
   }
 
-  async activate(email: string, password: string, code = '111111'): Promise<CliResult> {
+  async activate(email: string, password: string, code = 'AAA111'): Promise<CliResult> {
     return this.run([
       'auth',
       'activate',
