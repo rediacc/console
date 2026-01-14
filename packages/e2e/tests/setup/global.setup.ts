@@ -7,6 +7,8 @@ import { waitForNetworkIdleWithRetry } from '../../src/utils/retry';
 /**
  * Global setup test that registers a unique user before all other tests.
  * Uses project dependencies so the web server is available.
+ * NOTE: E2E navigation should go through the UI menu, not direct URL jumps,
+ * to avoid losing session state on some mobile/device flows.
  */
 setup('register user for e2e tests', async ({ page }) => {
   const runId = Date.now();

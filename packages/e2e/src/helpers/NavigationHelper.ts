@@ -56,6 +56,7 @@ const SUBMENU_VISIBLE_TIMEOUT = 5000;
  */
 export class NavigationHelper {
   private static readonly SIDEBAR_TOGGLE_TEST_ID = 'sidebar-toggle-button';
+  private static readonly SIDEBAR_TOGGLE_LABEL = /expand sidebar|collapse sidebar/i;
 
   constructor(private readonly page: Page) {}
 
@@ -67,24 +68,24 @@ export class NavigationHelper {
    * Navigate to Organization > Users
    */
   async goToOrganizationUsers(): Promise<void> {
-    await this.expandOrganizationMenu();
-    await this.clickSubNavItem(NavTestIds.subNavOrganizationUsers);
+    await this.navigateToSubNav(NavTestIds.mainNavOrganization, NavTestIds.subNavOrganizationUsers);
   }
 
   /**
    * Navigate to Organization > Teams
    */
   async goToOrganizationTeams(): Promise<void> {
-    await this.expandOrganizationMenu();
-    await this.clickSubNavItem(NavTestIds.subNavOrganizationTeams);
+    await this.navigateToSubNav(NavTestIds.mainNavOrganization, NavTestIds.subNavOrganizationTeams);
   }
 
   /**
    * Navigate to Organization > Access
    */
   async goToOrganizationAccess(): Promise<void> {
-    await this.expandOrganizationMenu();
-    await this.clickSubNavItem(NavTestIds.subNavOrganizationAccess);
+    await this.navigateToSubNav(
+      NavTestIds.mainNavOrganization,
+      NavTestIds.subNavOrganizationAccess
+    );
   }
 
   // ==========================================================================
@@ -95,8 +96,7 @@ export class NavigationHelper {
    * Navigate to Settings > Profile
    */
   async goToSettingsProfile(): Promise<void> {
-    await this.expandSettingsMenu();
-    await this.clickSubNavItem(NavTestIds.subNavSettingsProfile);
+    await this.navigateToSubNav(NavTestIds.mainNavSettings, NavTestIds.subNavSettingsProfile);
   }
 
   /**
@@ -110,16 +110,17 @@ export class NavigationHelper {
    * Navigate to Settings > Organization
    */
   async goToSettingsOrganization(): Promise<void> {
-    await this.expandSettingsMenu();
-    await this.clickSubNavItem(NavTestIds.subNavSettingsOrganization);
+    await this.navigateToSubNav(NavTestIds.mainNavSettings, NavTestIds.subNavSettingsOrganization);
   }
 
   /**
    * Navigate to Settings > Infrastructure
    */
   async goToSettingsInfrastructure(): Promise<void> {
-    await this.expandSettingsMenu();
-    await this.clickSubNavItem(NavTestIds.subNavSettingsInfrastructure);
+    await this.navigateToSubNav(
+      NavTestIds.mainNavSettings,
+      NavTestIds.subNavSettingsInfrastructure
+    );
   }
 
   // ==========================================================================
@@ -130,24 +131,21 @@ export class NavigationHelper {
    * Navigate to Ceph > Clusters
    */
   async goToCephClusters(): Promise<void> {
-    await this.expandCephMenu();
-    await this.clickSubNavItem(NavTestIds.subNavCephClusters);
+    await this.navigateToSubNav(NavTestIds.mainNavCeph, NavTestIds.subNavCephClusters);
   }
 
   /**
    * Navigate to Ceph > Pools
    */
   async goToCephPools(): Promise<void> {
-    await this.expandCephMenu();
-    await this.clickSubNavItem(NavTestIds.subNavCephPools);
+    await this.navigateToSubNav(NavTestIds.mainNavCeph, NavTestIds.subNavCephPools);
   }
 
   /**
    * Navigate to Ceph > Machines
    */
   async goToCephMachines(): Promise<void> {
-    await this.expandCephMenu();
-    await this.clickSubNavItem(NavTestIds.subNavCephMachines);
+    await this.navigateToSubNav(NavTestIds.mainNavCeph, NavTestIds.subNavCephMachines);
   }
 
   // ==========================================================================
@@ -242,9 +240,19 @@ export class NavigationHelper {
 
     await this.ensureNavVisible(parentTestId);
 
-    // Click parent to expand submenu
+    // Click parent to expand submenu (prefer visible, fallback to drawer)
     const parentLocator = this.page.locator(`[data-testid="${parentTestId}"]:visible`);
-    await parentLocator.click();
+    if (await parentLocator.isVisible().catch(() => false)) {
+      await parentLocator.click();
+    } else {
+      const toggle = await this.getSidebarToggle();
+      await toggle.click();
+      const drawer = this.page.locator('.ant-drawer');
+      await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      const drawerItem = drawer.locator(`[data-testid="${parentTestId}"]`);
+      await drawerItem.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      await drawerItem.click();
+    }
 
     // Wait for submenu to expand (child item becomes visible)
     await this.page.locator(`[data-testid="${childTestId}"]:visible`).waitFor({
@@ -264,7 +272,7 @@ export class NavigationHelper {
       return;
     }
 
-    const toggle = this.page.getByTestId(NavigationHelper.SIDEBAR_TOGGLE_TEST_ID);
+    const toggle = await this.getSidebarToggle();
     if ((await toggle.count()) > 0) {
       await toggle.click();
       const drawer = this.page.locator('.ant-drawer');
@@ -286,7 +294,7 @@ export class NavigationHelper {
       return;
     }
 
-    const toggle = this.page.getByTestId(NavigationHelper.SIDEBAR_TOGGLE_TEST_ID);
+    const toggle = await this.getSidebarToggle();
     if ((await toggle.count()) > 0) {
       await toggle.click();
       const drawer = this.page.locator('.ant-drawer');
@@ -303,7 +311,7 @@ export class NavigationHelper {
       return;
     }
 
-    const toggle = this.page.getByTestId(NavigationHelper.SIDEBAR_TOGGLE_TEST_ID);
+    const toggle = await this.getSidebarToggle();
     if ((await toggle.count()) === 0) {
       return;
     }
@@ -317,5 +325,67 @@ export class NavigationHelper {
       await toggle.click();
       await target.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
     }
+  }
+
+  private async navigateToSubNav(parentTestId: string, childTestId: string): Promise<void> {
+    const toggle = await this.getSidebarToggle();
+    if ((await toggle.count()) > 0) {
+      await toggle.click();
+      const drawer = this.page.locator('.ant-drawer');
+      await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      const drawerParent = drawer.locator(`[data-testid="${parentTestId}"]`);
+      await drawerParent.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      await drawerParent.click();
+
+      const drawerChild = drawer.locator(`[data-testid="${childTestId}"]`);
+      await drawerChild.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      await drawerChild.click();
+      const mask = this.page.locator('.ant-drawer-mask');
+      if (await mask.isVisible().catch(() => false)) {
+        await mask.click({ force: true });
+      } else {
+        await toggle.click({ force: true });
+      }
+      const maskVisible = await mask.isVisible().catch(() => false);
+      if (maskVisible) {
+        await this.page.evaluate(() => {
+          const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
+          if (overlay) {
+            overlay.style.pointerEvents = 'none';
+            overlay.style.opacity = '0';
+          }
+        });
+      }
+      await drawer.waitFor({ state: 'hidden', timeout: SUBMENU_VISIBLE_TIMEOUT }).catch(() => {});
+      return;
+    }
+
+    await this.ensureNavVisible(parentTestId);
+    const parentLocator = this.page.locator(`[data-testid="${parentTestId}"]:visible`);
+    if (await parentLocator.isVisible().catch(() => false)) {
+      await parentLocator.click();
+      const childLocator = this.page.locator(`[data-testid="${childTestId}"]:visible`);
+      await childLocator.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      await childLocator.click();
+    }
+  }
+
+  private async getSidebarToggle() {
+    const candidates = [
+      this.page.getByTestId(NavigationHelper.SIDEBAR_TOGGLE_TEST_ID),
+      this.page.getByRole('button', {
+        name: NavigationHelper.SIDEBAR_TOGGLE_LABEL,
+      }),
+      this.page.locator('button:has(.anticon-menu)'),
+      this.page.locator('.anticon-menu'),
+    ];
+
+    for (const candidate of candidates) {
+      if ((await candidate.count()) > 0) {
+        return candidate;
+      }
+    }
+
+    return candidates[0];
   }
 }

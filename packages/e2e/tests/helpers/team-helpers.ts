@@ -1,11 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
-import { NavigationHelper } from '../../src/helpers/NavigationHelper';
-
 export async function createTeamViaUI(page: Page, teamName: string): Promise<void> {
-  const nav = new NavigationHelper(page);
-  await nav.goToOrganizationTeams();
-
   const createButton = page.getByTestId(TeamPageIDS.systemCreateTeamButton);
   await expect(createButton).toBeVisible({ timeout: 5000 });
   await createButton.click();
