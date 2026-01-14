@@ -55,6 +55,8 @@ const SUBMENU_VISIBLE_TIMEOUT = 5000;
  * ```
  */
 export class NavigationHelper {
+  private static readonly SIDEBAR_TOGGLE_TEST_ID = 'sidebar-toggle-button';
+
   constructor(private readonly page: Page) {}
 
   // ==========================================================================
@@ -95,6 +97,13 @@ export class NavigationHelper {
   async goToSettingsProfile(): Promise<void> {
     await this.expandSettingsMenu();
     await this.clickSubNavItem(NavTestIds.subNavSettingsProfile);
+  }
+
+  /**
+   * Navigate to Settings (top-level)
+   */
+  async goToSettings(): Promise<void> {
+    await this.clickMainNavItem(NavTestIds.mainNavSettings);
   }
 
   /**
@@ -222,19 +231,23 @@ export class NavigationHelper {
    * @param childTestId - Test ID of a child item to wait for (indicates menu expanded)
    */
   private async expandSubmenu(parentTestId: string, childTestId: string): Promise<void> {
-    const childLocator = this.page.getByTestId(childTestId);
-
     // Check if submenu is already expanded
-    const isAlreadyVisible = await childLocator.isVisible().catch(() => false);
+    const isAlreadyVisible = await this.page
+      .locator(`[data-testid="${childTestId}"]:visible`)
+      .isVisible()
+      .catch(() => false);
     if (isAlreadyVisible) {
       return; // Menu already expanded, no need to click parent
     }
 
+    await this.ensureNavVisible(parentTestId);
+
     // Click parent to expand submenu
-    await this.page.getByTestId(parentTestId).click();
+    const parentLocator = this.page.locator(`[data-testid="${parentTestId}"]:visible`);
+    await parentLocator.click();
 
     // Wait for submenu to expand (child item becomes visible)
-    await childLocator.waitFor({
+    await this.page.locator(`[data-testid="${childTestId}"]:visible`).waitFor({
       state: 'visible',
       timeout: SUBMENU_VISIBLE_TIMEOUT,
     });
@@ -244,15 +257,65 @@ export class NavigationHelper {
    * Click a main navigation item (no submenu).
    */
   private async clickMainNavItem(testId: string): Promise<void> {
-    await this.page.getByTestId(testId).click();
+    await this.ensureNavVisible(testId);
+    const locator = this.page.locator(`[data-testid="${testId}"]:visible`);
+    if (await locator.isVisible().catch(() => false)) {
+      await locator.click();
+      return;
+    }
+
+    const toggle = this.page.getByTestId(NavigationHelper.SIDEBAR_TOGGLE_TEST_ID);
+    if ((await toggle.count()) > 0) {
+      await toggle.click();
+      const drawer = this.page.locator('.ant-drawer');
+      await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      const drawerItem = drawer.locator(`[data-testid="${testId}"]`);
+      await drawerItem.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      await drawerItem.click();
+    }
   }
 
   /**
    * Click a sub-navigation item after ensuring it's visible.
    */
   private async clickSubNavItem(testId: string): Promise<void> {
-    const locator = this.page.getByTestId(testId);
-    await locator.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
-    await locator.click();
+    const locator = this.page.locator(`[data-testid="${testId}"]:visible`);
+    if (await locator.isVisible().catch(() => false)) {
+      await locator.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      await locator.click();
+      return;
+    }
+
+    const toggle = this.page.getByTestId(NavigationHelper.SIDEBAR_TOGGLE_TEST_ID);
+    if ((await toggle.count()) > 0) {
+      await toggle.click();
+      const drawer = this.page.locator('.ant-drawer');
+      await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      const drawerItem = drawer.locator(`[data-testid="${testId}"]`);
+      await drawerItem.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      await drawerItem.click();
+    }
+  }
+
+  private async ensureNavVisible(testId: string): Promise<void> {
+    const target = this.page.locator(`[data-testid="${testId}"]:visible`);
+    if (await target.isVisible().catch(() => false)) {
+      return;
+    }
+
+    const toggle = this.page.getByTestId(NavigationHelper.SIDEBAR_TOGGLE_TEST_ID);
+    if ((await toggle.count()) === 0) {
+      return;
+    }
+
+    await toggle.click();
+    try {
+      await target.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+      return;
+    } catch {
+      // If the sidebar was already open, the first click may have collapsed it.
+      await toggle.click();
+      await target.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+    }
   }
 }

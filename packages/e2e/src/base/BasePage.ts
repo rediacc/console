@@ -4,6 +4,7 @@ import { TIMEOUT_DEFAULTS } from '../utils/constants';
 export abstract class BasePage {
   protected page: Page;
   protected url: string;
+  private static readonly SIDEBAR_TOGGLE_TEST_ID = 'sidebar-toggle-button';
 
   constructor(page: Page, url: string) {
     this.page = page;
@@ -181,6 +182,27 @@ export abstract class BasePage {
   async goForward(): Promise<void> {
     await this.page.goForward();
     await this.waitForPageLoad();
+  }
+
+  protected async ensureTestIdVisible(testId: string, timeout = 5000): Promise<void> {
+    const target = this.page.getByTestId(testId);
+    if (await target.isVisible().catch(() => false)) {
+      return;
+    }
+
+    const toggle = this.page.getByTestId(BasePage.SIDEBAR_TOGGLE_TEST_ID);
+    if ((await toggle.count()) === 0) {
+      return;
+    }
+
+    await toggle.click();
+    try {
+      await target.waitFor({ state: 'visible', timeout });
+      return;
+    } catch {
+      await toggle.click();
+      await target.waitFor({ state: 'visible', timeout });
+    }
   }
 
   async getDOMAttribute(locator: Locator, attributeName: string): Promise<string | null> {

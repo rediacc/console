@@ -1,6 +1,7 @@
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { test, expect } from '../../src/base/BaseTest';
+import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 
 test.describe('Dashboard Tests', () => {
   let dashboardPage: DashboardPage;
@@ -48,14 +49,14 @@ test.describe('Dashboard Tests', () => {
     const locators = dashboardPage.getPageLocators();
     await expect(locators.splitResourceViewContainer).toBeVisible();
 
-    // Go to Settings (assuming it navigates or shows something)
-    // For now just verify the button is clickable
-    await dashboardPage.openDeviceSettings();
+    // Go to Settings (ensure nav is open on mobile)
+    const nav = new NavigationHelper(page);
+    await nav.goToSettings();
     await page.waitForLoadState('networkidle');
     await screenshotManager.captureStep('settings_navigated');
 
-    // Go back to machines
-    await dashboardPage.navigateToMachines();
+    // Go back to machines (ensure nav is open on mobile)
+    await nav.goToMachines();
     await page.waitForLoadState('networkidle');
     await expect(locators.splitResourceViewContainer).toBeVisible();
     await screenshotManager.captureStep('machines_navigated');

@@ -79,7 +79,8 @@ export class DashboardPage extends BasePage {
 
   async verifyDashboardLoaded(): Promise<void> {
     await this.verifyElementVisible(this.mainContent);
-    await this.verifyElementVisible(this.navMachines);
+    await this.ensureTestIdVisible('main-nav-machines');
+    await this.verifyElementVisible(this.page.locator('[data-testid="main-nav-machines"]:visible'));
   }
 
   async clickUserMenu(): Promise<void> {
@@ -91,15 +92,23 @@ export class DashboardPage extends BasePage {
   }
 
   async openDeviceSettings(): Promise<void> {
-    await this.clickWithRetry(this.navSettings);
+    await this.ensureTestIdVisible('main-nav-settings');
+    const visibleNavSettings = this.page.locator('[data-testid="main-nav-settings"]:visible');
+    await this.clickWithRetry(visibleNavSettings);
   }
 
   async openOrganization(): Promise<void> {
-    await this.clickWithRetry(this.navOrganization);
+    await this.ensureTestIdVisible('main-nav-organization');
+    const visibleNavOrganization = this.page.locator(
+      '[data-testid="main-nav-organization"]:visible'
+    );
+    await this.clickWithRetry(visibleNavOrganization);
   }
 
   async navigateToMachines(): Promise<void> {
-    await this.clickWithRetry(this.navMachines);
+    await this.ensureTestIdVisible('main-nav-machines');
+    const visibleNavMachines = this.page.locator('[data-testid="main-nav-machines"]:visible');
+    await this.clickWithRetry(visibleNavMachines);
   }
 
   // Helper for dynamic team tags
