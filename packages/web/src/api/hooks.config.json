@@ -387,12 +387,12 @@
     "CreateNewUser": {
       "inputType": "CreateUserInput",
       "async": true,
-      "comment": "activationCode is only for organization registration. For users within an org, send empty string.",
+      "comment": "activationCode is only for organization registration. For in-org user creation, DO NOT send it.",
       "transform": {
         "newUserEmail": "input.email",
-        "newUserHash": "await hashPassword(input.password)",
-        "activationCode": "\"\""
-      }
+        "newUserHash": "await hashPassword(input.password)"
+      },
+      "castAsNever": true
     },
     "CreateTeam": {
       "inputType": "CreateTeamInput",

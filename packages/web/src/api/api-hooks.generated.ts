@@ -754,14 +754,14 @@ export const useCreateNewUser = () => {
   return useMutationWithFeedback<unknown, Error, CreateUserInput>({
     procedureName: 'CreateNewUser',
     // NOTE: activationCode is only used for organization registration (RegistrationModal).
-    // For creating users within an existing organization, send empty string.
+    // For creating users within an existing organization, DO NOT send activationCode.
+    // The middleware handles in-org user creation differently when activationCode is absent.
     mutationFn: async (input) => {
       const params = {
         newUserEmail: input.email,
         newUserHash: await hashPassword(input.password),
-        activationCode: '',
       };
-      return typedApi.CreateNewUser(params);
+      return typedApi.CreateNewUser(params as never);
     },
     successMessage: messages?.success ?? 'Operation completed successfully',
     errorMessage: messages?.error ?? 'Operation failed',
