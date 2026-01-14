@@ -83,8 +83,22 @@ export class LoginPage extends BasePage {
     // Event-driven approach: wait for network to settle after login
     // This handles API response + any subsequent data fetching
     await this.page.waitForLoadState('networkidle');
-    // Then verify dashboard element is visible
-    await this.page.locator('[data-testid="user-menu-button"]').waitFor({ state: 'visible' });
+    // Then verify dashboard element is visible (mobile may hide header actions)
+    const primary = this.page.locator('[data-testid="user-menu-button"]');
+    const fallbackToggle = this.page.locator('[data-testid="sidebar-toggle-button"]');
+    const fallbackContent = this.page.locator('[data-testid="main-content"]');
+
+    await this.waitForAnyVisible([primary, fallbackToggle, fallbackContent], 15000);
+  }
+
+  private async waitForAnyVisible(locators: Locator[], timeout: number): Promise<void> {
+    // Wait for any post-login element to become visible.
+    const waits = locators.map((locator) => locator.waitFor({ state: 'visible', timeout }));
+    try {
+      await Promise.any(waits);
+    } catch {
+      throw new Error('Login completion timeout: no post-login element became visible.');
+    }
   }
 
   async getErrorMessage(): Promise<string> {
