@@ -19,8 +19,12 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Fixed activation code for user registration.
- * Used for: CreateNewUser
+ * Fixed activation code for ORGANIZATION registration only.
+ * Used for: RegistrationModal (organization signup)
+ *
+ * NOTE: Do NOT use this for CreateNewUser hook (creating users within an existing organization).
+ * For in-org user creation, the middleware expects an empty string for activationCode.
+ * Using ACTIVATION_CODE for CreateNewUser will cause the middleware to reject the request.
  */
 export const ACTIVATION_CODE = '111111';
 
