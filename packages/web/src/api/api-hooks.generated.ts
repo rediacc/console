@@ -3,7 +3,7 @@
  *
  * Generated from: middleware/AppData/stored-procedures.json
  * Configuration: packages/web/src/api/hooks.config.json
- * Generated at: 2026-01-06T18:32:56Z
+ * Generated at: 2026-01-14T09:22:04Z
  * Schema version: 3.0.0
  *
  * To regenerate, run: ./go deploy prep
@@ -758,7 +758,7 @@ export const useCreateNewUser = () => {
         newUserEmail: input.email,
         newUserHash: await hashPassword(input.password),
       };
-      return typedApi.CreateNewUser(params as never);
+      return typedApi.CreateNewUser(params);
     },
     successMessage: messages?.success ?? 'Operation completed successfully',
     errorMessage: messages?.error ?? 'Operation failed',
@@ -2005,3 +2005,4 @@ export { useGetEntityAuditTrace as useEntityAuditTrace };
 export { useGetOrganizationDashboard as useOrganizationDashboard };
 export { useGetQueueItemTrace as useQueueItemTrace };
 export { useGetTeamQueueItems as useQueueItems };
+

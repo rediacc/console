@@ -113,12 +113,12 @@ for project in "${PROJECTS[@]}"; do
     fi
 
     # Build environment variables (slowmo is passed via env, not CLI)
-    ENV_VARS=(E2E_TEST_MODE=1 DEV_ENV=1)
+    ENV_VARS=()
     if [[ -n "$SLOWMO" ]]; then
         ENV_VARS+=("PWSLOWMO=$SLOWMO")
     fi
 
-    if (cd "$E2E_DIR" && env "${ENV_VARS[@]}" "${CMD[@]}"); then
+    if (cd "$E2E_DIR" && env ${ENV_VARS[@]+"${ENV_VARS[@]}"} "${CMD[@]}"); then
         log_info "E2E tests passed: $project"
     else
         log_error "E2E tests failed: $project"

@@ -535,5 +535,4 @@ export interface ApiHealthResponse {
   };
   shuttingDown?: boolean;
   ciMode?: boolean;
-  testMode?: boolean;
 }

@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { test as base, _electron as electron, type ElectronApplication } from '@playwright/test';
 import { NETWORK_DEFAULTS } from '../utils/constants';
-import { isTestEnv } from '../utils/env';
 
 /**
  * Electron-specific fixtures for E2E testing.
@@ -40,12 +39,9 @@ async function launchElectronApp(): Promise<ElectronApplication> {
   // __dirname is packages/e2e/src/electron/, go up 3 levels to packages/
   const mainPath = path.resolve(__dirname, '../../../desktop/out/main/index.js');
 
-  // Build args - add --no-sandbox in test mode to avoid SUID sandbox permission issues on Linux
+  // Build args - add --no-sandbox to avoid SUID sandbox permission issues on Linux
   // The Chromium SUID sandbox requires specific permissions that are often not available in containers
-  const args = [mainPath];
-  if (isTestEnv()) {
-    args.push('--no-sandbox');
-  }
+  const args = [mainPath, '--no-sandbox'];
 
   return electron.launch({
     args,

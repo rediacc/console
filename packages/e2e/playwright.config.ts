@@ -12,12 +12,6 @@ const E2E_DEFAULTS = {
   CONNECTION_TIMEOUT: 30000,
 } as const;
 
-function isTruthyEnv(value: string | undefined): boolean {
-  return value === 'true' || value === '1';
-}
-
-const isTestEnv = isTruthyEnv(process.env.E2E_TEST_MODE) || isTruthyEnv(process.env.DEV_ENV);
-
 /**
  * E2E Test Configuration for Console Web Application
  *
@@ -29,39 +23,12 @@ const isTestEnv = isTruthyEnv(process.env.E2E_TEST_MODE) || isTruthyEnv(process.
  * - VITE_API_URL: API backend URL for Vite proxy (e.g., tunnel URL in CI)
  * - API_TIMEOUT: Action timeout in ms (default: 10000)
  * - PAGE_TIMEOUT: Navigation timeout in ms (default: 30000)
- * - SCREENSHOT_ON_FAILURE: Enable screenshots on failure (default: true in test mode)
- * - RECORD_VIDEO: Video recording mode (off, on, retain-on-failure)
  * - STOP_ON_FAILURE: Stop on first failure (default: false)
  * - VM_DEPLOYMENT: Enable VM-dependent tests (default: false)
  * - PWSLOWMO: Slow down browser actions by N milliseconds (for debugging)
- * - E2E_TEST_MODE: Enable test-mode defaults (parity between local/CI)
- * - DEV_ENV: Alias for E2E_TEST_MODE (useful for local dev)
  *
  * @see https://playwright.dev/docs/test-configuration
  */
-
-function getScreenshotMode(): 'off' | 'on' | 'only-on-failure' {
-  // Always capture screenshots in test mode for debugging and reports
-  if (isTestEnv) {
-    return 'on';
-  }
-  if (process.env.SCREENSHOT_ON_FAILURE === 'true') {
-    return 'only-on-failure';
-  }
-  return 'off';
-}
-
-function getVideoMode(): 'off' | 'on' | 'retain-on-failure' {
-  // Always record video in test mode for debugging
-  if (isTestEnv) {
-    return 'on';
-  }
-  const value = process.env.RECORD_VIDEO;
-  if (value === 'on' || value === 'retain-on-failure') {
-    return value;
-  }
-  return 'off';
-}
 
 export default test.defineConfig({
   testDir: './tests',
@@ -72,14 +39,14 @@ export default test.defineConfig({
   /* Run tests in files in parallel */
   fullyParallel: true,
 
-  /* Fail the build on test mode if you accidentally left test.only in the source code. */
-  forbidOnly: isTestEnv,
+  /* Fail the build if you accidentally left test.only in the source code. */
+  forbidOnly: true,
 
   /* No retries - tests should pass consistently */
   retries: 0,
 
-  /* Opt out of parallel tests in test mode for stability */
-  workers: isTestEnv ? 1 : undefined,
+  /* Single worker for stability */
+  workers: 1,
 
   /* Stop test run after first test failure (including all retries) */
   maxFailures: process.env.STOP_ON_FAILURE === 'true' ? 1 : undefined,
@@ -95,14 +62,14 @@ export default test.defineConfig({
     /* Base URL - Vite dev server with /console/ base path */
     baseURL: process.env.E2E_BASE_URL ?? E2E_DEFAULTS.CONSOLE_URL,
 
-    /* Collect trace for debugging - always in test mode */
-    trace: isTestEnv ? 'on' : 'on-first-retry',
+    /* Collect trace for debugging */
+    trace: 'on',
 
-    /* Screenshot settings - always capture in test mode */
-    screenshot: getScreenshotMode(),
+    /* Always capture screenshots */
+    screenshot: 'on',
 
-    /* Video settings - always record in test mode */
-    video: getVideoMode(),
+    /* Always record video */
+    video: 'on',
 
     /* Timeout settings with sensible defaults */
     actionTimeout: Number.parseInt(
@@ -277,16 +244,14 @@ export default test.defineConfig({
   webServer: {
     command: 'npm run --prefix ../.. dev -w @rediacc/web',
     url: 'http://localhost:3000/console/',
-    reuseExistingServer: !isTestEnv,
+    reuseExistingServer: false,
     timeout: 120000, // 2 minutes for Vite to start
-    // Capture output for debugging in test mode
     stdout: 'pipe',
     stderr: 'pipe',
     // Pass VITE_API_URL to Vite only if explicitly set (for CI tunnel)
     // Otherwise Vite uses default: http://localhost:7322
     env: {
       ...(process.env.VITE_API_URL && { VITE_API_URL: process.env.VITE_API_URL }),
-      ...(isTestEnv && { VITE_DEV_ENV: 'true', VITE_E2E_TEST_MODE: 'true' }),
     },
   },
 });

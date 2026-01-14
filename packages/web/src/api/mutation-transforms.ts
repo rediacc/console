@@ -19,20 +19,10 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Generate a 6-digit activation code.
+ * Fixed activation code for user registration.
  * Used for: CreateNewUser
  */
-export function generateActivationCode(): string {
-  if (
-    import.meta.env.VITE_DEV_ENV === 'true' ||
-    import.meta.env.VITE_DEV_ENV === '1' ||
-    import.meta.env.VITE_E2E_TEST_MODE === 'true' ||
-    import.meta.env.VITE_E2E_TEST_MODE === '1'
-  ) {
-    return '111111';
-  }
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
+export const ACTIVATION_CODE = '111111';
 
 /**
  * Ensure vault content is valid JSON, defaulting to empty object.

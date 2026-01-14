@@ -12,32 +12,21 @@ function getDefaultWorkerIPs(): string[] {
 }
 
 /**
- * Get VM env var with fallback to defaults in test mode
+ * Get VM env var with fallback to defaults
  */
 export function getVMEnvVar(name: string): string | undefined {
   const value = process.env[name];
   if (value) return value;
 
-  if (isTestEnv()) {
-    switch (name) {
-      case 'VM_WORKER_IPS':
-        return getDefaultWorkerIPs().join(',');
-      case 'VM_MACHINE_USER':
-        return VM_DEFAULTS.MACHINE_USER;
-      case 'VM_MACHINE_PASSWORD':
-        return ''; // SSH key auth
-    }
+  switch (name) {
+    case 'VM_WORKER_IPS':
+      return getDefaultWorkerIPs().join(',');
+    case 'VM_MACHINE_USER':
+      return VM_DEFAULTS.MACHINE_USER;
+    case 'VM_MACHINE_PASSWORD':
+      return '';
   }
   return undefined;
-}
-
-export function isTestEnv(): boolean {
-  return (
-    process.env.E2E_TEST_MODE === 'true' ||
-    process.env.E2E_TEST_MODE === '1' ||
-    process.env.DEV_ENV === 'true' ||
-    process.env.DEV_ENV === '1'
-  );
 }
 
 export function requireEnvVar(name: string): string {
@@ -49,7 +38,7 @@ export function requireEnvVar(name: string): string {
 }
 
 /**
- * Get env var with fallback to shared defaults (for test mode)
+ * Get env var with fallback to shared defaults
  */
 export function getEnvVarWithDefault(name: string): string {
   const value = process.env[name];

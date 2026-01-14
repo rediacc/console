@@ -593,6 +593,19 @@ jobs:
             echo "Waiting... (${ELAPSED}s / ${MAX_WAIT}s) - Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
           done
 
+      - name: Collect Backend Logs
+        if: always()
+        working-directory: console
+        run: .ci/scripts/infra/collect-backend-logs.sh ${{ runner.temp }}/backend-logs
+
+      - name: Upload Backend Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: backend-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/backend-logs/
+          retention-days: 3
+
       - name: Cleanup
         if: always()
         working-directory: elite

@@ -44,4 +44,14 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
 done
 
 log_error "Could not connect to tunnel after $MAX_ATTEMPTS attempts"
+
+# Add detailed error output for debugging
+echo ""
+echo "=== Verbose Connection Attempt ==="
+echo "URL: $HEALTH_URL"
+echo ""
+curl -v --max-time 10 "$HEALTH_URL" 2>&1 | head -50 || true
+echo ""
+echo "==================================="
+
 exit 1
