@@ -664,7 +664,7 @@ jobs:
   test-e2e-resolutions:
     name: Test - E2E Resolutions
     runs-on: ubuntu-latest
-    needs: [test-e2e]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -715,7 +715,7 @@ jobs:
   test-e2e-devices:
     name: Test - E2E Devices
     runs-on: ubuntu-latest
-    needs: [test-e2e-resolutions]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -772,7 +772,7 @@ jobs:
   test-e2e-electron:
     name: Test - E2E Electron (${{ matrix.project }})
     runs-on: ${{ matrix.os }}
-    needs: [test-e2e-devices]
+    needs: [test-e2e, test-e2e-resolutions, test-e2e-devices]
     timeout-minutes: 60
     strategy:
       fail-fast: true
