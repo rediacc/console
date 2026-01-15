@@ -376,8 +376,9 @@
     "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} ещё",
-    "selectTeams": "Выберите команды..."
+    "selectTeam": "Выберите команду...",
+    "selectTeams": "Выберите команды...",
+    "moreTeams": "+{{count}} ещё"
   },
   "terminal": {
     "terminal": "Терминал",

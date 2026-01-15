@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3370
+    "keyCount": 3371
   },
   "hashes": {
     "auth.endpointSelector.addCustom": "c27ca9dd",
@@ -651,6 +651,7 @@
     "common.table.moreItems": "18672a1e",
     "common.table.showingRecords": "b5c79c87",
     "common.teamSelector.moreTeams": "18672a1e",
+    "common.teamSelector.selectTeam": "333dde38",
     "common.teamSelector.selectTeams": "1f82b07d",
     "common.terminal.connectedTo": "cbb136cd",
     "common.terminal.connecting": "066df953",

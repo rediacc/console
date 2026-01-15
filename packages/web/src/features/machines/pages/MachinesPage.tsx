@@ -308,10 +308,7 @@ const MachinesPage: React.FC = () => {
   const renderContent = () => {
     if (!selectedTeam) {
       return (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t('teams.selectTeamPrompt')}
-        />
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('teams.selectTeamPrompt')} />
       );
     }
 

@@ -376,8 +376,9 @@
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} 更多",
-    "selectTeams": "选择团队..."
+    "selectTeam": "选择团队...",
+    "selectTeams": "选择团队...",
+    "moreTeams": "+{{count}} 更多"
   },
   "terminal": {
     "terminal": "终端",

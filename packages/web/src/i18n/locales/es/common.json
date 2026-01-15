@@ -376,8 +376,9 @@
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} más",
-    "selectTeams": "Seleccionar equipos..."
+    "selectTeam": "Seleccionar equipo...",
+    "selectTeams": "Seleccionar equipos...",
+    "moreTeams": "+{{count}} más"
   },
   "terminal": {
     "terminal": "Terminal",

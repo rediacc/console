@@ -376,8 +376,9 @@
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} فريق آخر",
-    "selectTeams": "اختر الفرق..."
+    "selectTeam": "اختر الفريق...",
+    "selectTeams": "اختر الفرق...",
+    "moreTeams": "+{{count}} فريق آخر"
   },
   "terminal": {
     "terminal": "الطرفية",

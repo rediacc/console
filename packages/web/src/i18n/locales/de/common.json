@@ -376,8 +376,9 @@
     "showingRecords": "Es werden Datensätze {{start}}–{{end}} von {{total}} angezeigt"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} mehr",
-    "selectTeams": "Wählen Sie Teams..."
+    "selectTeam": "Wählen Sie Team...",
+    "selectTeams": "Wählen Sie Teams...",
+    "moreTeams": "+{{count}} mehr"
   },
   "terminal": {
     "terminal": "Terminal",

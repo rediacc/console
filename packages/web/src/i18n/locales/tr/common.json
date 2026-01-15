@@ -376,8 +376,9 @@
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} daha fazla",
-    "selectTeams": "Takımları seçin..."
+    "selectTeam": "Takım seçin...",
+    "selectTeams": "Takımları seçin...",
+    "moreTeams": "+{{count}} daha fazla"
   },
   "terminal": {
     "terminal": "Terminal",

@@ -36,11 +36,11 @@ export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelec
   // Use useEffect to avoid accessing refs during render
   useEffect(() => {
     const shouldInitialize =
-      !isLoading && 
-      autoSelect && 
-      teams.length > 0 && 
+      !isLoading &&
+      autoSelect &&
+      teams.length > 0 &&
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/prefer-optional-chain -- pageState may be undefined during initialization
-      !(pageState && pageState.hasInitialized) && 
+      !(pageState && pageState.hasInitialized) &&
       !hasInitializedRef.current;
 
     if (shouldInitialize) {

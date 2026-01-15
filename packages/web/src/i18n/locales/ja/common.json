@@ -376,8 +376,9 @@
     "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}}個の追加チーム",
-    "selectTeams": "チームを選択..."
+    "selectTeam": "チームを選択...",
+    "selectTeams": "チームを選択...",
+    "moreTeams": "+{{count}}個の追加チーム"
   },
   "terminal": {
     "terminal": "ターミナル",
