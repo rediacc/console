@@ -1,14 +1,14 @@
-import { Space, Tag, Typography, type MenuProps } from 'antd';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
+import { type MenuProps, Space, Tag, Typography } from 'antd';
+import { MobileCard } from '@/components/common/MobileCard';
 import {
   buildDeleteMenuItem,
   buildDivider,
   buildEditMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
-import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import { InboxOutlined } from '@/utils/optimizedIcons';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 
 // Generic translation function type that accepts any namespace configuration
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;

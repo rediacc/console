@@ -1,5 +1,5 @@
-import type { ICryptoProvider } from '@/platform/types';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
+import type { ICryptoProvider } from '@/platform/types';
 
 export class CryptoService {
   private readonly vaultEncryptor;

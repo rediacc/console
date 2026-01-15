@@ -1,7 +1,7 @@
-import React from 'react';
-import { Alert, Flex } from 'antd';
-import { ClockCircleOutlined, ExclamationCircleOutlined } from '@/utils/optimizedIcons';
 import type { OrganizationDashboardData } from '@rediacc/shared/types';
+import { Alert, Flex } from 'antd';
+import React from 'react';
+import { ClockCircleOutlined, ExclamationCircleOutlined } from '@/utils/optimizedIcons';
 
 interface DashboardAlertsWidgetProps {
   dashboard: OrganizationDashboardData;

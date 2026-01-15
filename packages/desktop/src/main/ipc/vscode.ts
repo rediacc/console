@@ -6,25 +6,25 @@
  * which write to ~/.ssh/config_rediacc (matching legacy Python desktop behavior)
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { windowsPathToWSL } from '@rediacc/shared-desktop/utils/platform';
 import {
-  findVSCode,
+  addSSHConfigEntry,
   findAllVSCodeInstallations,
+  findVSCode,
   generateConnectionName,
   generateRemoteUri,
   launchVSCode,
-  addSSHConfigEntry,
-  persistSSHKey,
   persistKnownHosts,
+  persistSSHKey,
   type SSHConfigEntry,
+  type VSCodeInfo,
   type VSCodeInstallations,
   type VSCodePreference,
-  type VSCodeInfo,
 } from '@rediacc/shared-desktop/vscode';
-import { ipcMain, app } from 'electron';
-import { DEFAULTS } from '@rediacc/shared/config';
+import { app, ipcMain } from 'electron';
 
 /**
  * Path to store VS Code preference

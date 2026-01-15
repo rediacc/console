@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { QueueTrace } from '@rediacc/shared/types';
 import dayjs from 'dayjs';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { extractMostRecentProgress, extractProgressMessage } from '@/platform';
 import { queueMonitoringService } from '@/services/queue';
-import type { QueueTrace } from '@rediacc/shared/types';
 import type { TraceState, TraceStateActions } from '../types';
 
 interface UseTraceStateProps {

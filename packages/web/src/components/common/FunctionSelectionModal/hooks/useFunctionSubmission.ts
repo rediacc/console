@@ -1,14 +1,14 @@
-import { useCallback } from 'react';
+import {
+  getValidationErrors,
+  isBridgeFunction,
+  safeValidateFunctionParams,
+} from '@rediacc/shared/queue-vault';
+import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
 import { Modal } from 'antd';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMessage } from '@/hooks';
 import { templateService } from '@/services/templateService';
-import {
-  isBridgeFunction,
-  safeValidateFunctionParams,
-  getValidationErrors,
-} from '@rediacc/shared/queue-vault';
-import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;

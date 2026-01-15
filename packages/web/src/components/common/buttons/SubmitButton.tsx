@@ -1,5 +1,5 @@
-import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
+import { Button } from 'antd';
 
 interface SubmitButtonProps extends Omit<ButtonProps, 'type' | 'htmlType'> {
   /** Children are optional - defaults to "Submit" */

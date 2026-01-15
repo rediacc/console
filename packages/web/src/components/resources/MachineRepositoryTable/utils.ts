@@ -1,6 +1,6 @@
-import { isAxiosError } from 'axios';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
+import { isAxiosError } from 'axios';
 import type { GroupedRepository, Repository } from './types';
 
 export const getRepositoryDisplayName = (repository: Repository): string => {

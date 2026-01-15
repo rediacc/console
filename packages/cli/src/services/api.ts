@@ -1,8 +1,7 @@
-import axios from 'axios';
 import {
+  ApiClientError,
   createApiClient,
   createTypedApi,
-  ApiClientError,
   type FullApiClient,
   type HttpClient,
   type MasterPasswordProvider,
@@ -10,16 +9,17 @@ import {
 } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
-import { contextService } from './context.js';
+import axios from 'axios';
 import {
+  errorHandler,
   nodeCryptoProvider,
+  telemetryAdapter,
   tokenAdapter,
   urlAdapter,
-  errorHandler,
-  telemetryAdapter,
 } from '../adapters/index.js';
-import { EXIT_CODES } from '../types/index.js';
 import type { ErrorCode } from '../types/errors.js';
+import { EXIT_CODES } from '../types/index.js';
+import { contextService } from './context.js';
 
 // Create axios instance
 const axiosInstance = axios.create({

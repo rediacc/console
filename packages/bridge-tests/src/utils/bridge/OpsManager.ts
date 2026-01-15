@@ -1,10 +1,10 @@
+import { DEFAULT_DATASTORE_PATH } from '../../constants';
+import { getRenetBinaryPath, getRenetRoot } from '../renetPath';
 import { OpsCephManager } from './OpsCephManager';
 import { OpsCommandRunner } from './OpsCommandRunner';
 import { OpsRustFSManager } from './OpsRustFSManager';
 import { OpsVMExecutor } from './OpsVMExecutor';
 import { OpsVMLifecycle } from './OpsVMLifecycle';
-import { DEFAULT_DATASTORE_PATH } from '../../constants';
-import { getRenetBinaryPath, getRenetRoot } from '../renetPath';
 
 /**
  * VM Network Configuration

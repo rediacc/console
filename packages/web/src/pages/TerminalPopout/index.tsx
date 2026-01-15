@@ -3,12 +3,12 @@
  * Fullscreen terminal for popped-out Electron windows
  */
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Alert, Flex, Spin, Typography } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Terminal, type TerminalRef } from '@/components/app/Terminal/Terminal';
-import { isElectron, getElectronAPI } from '@/types';
+import { getElectronAPI, isElectron } from '@/types';
 
 const { Text } = Typography;
 

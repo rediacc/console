@@ -6,10 +6,7 @@
  * - Vault management
  * - Data import/export
  */
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { typedApi } from '@/api/client';
-import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
-import i18n from '@/i18n/config';
+
 import { parseGetEntityAuditTrace } from '@rediacc/shared/api/parsers/audit';
 import { parseOrganizationInfo } from '@rediacc/shared/api/parsers/organization';
 import type {
@@ -17,6 +14,10 @@ import type {
   OrganizationDashboardData,
   OrganizationVaultsData,
 } from '@rediacc/shared/types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { typedApi } from '@/api/client';
+import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';
+import i18n from '@/i18n/config';
 
 const ORGANIZATION_KEYS = {
   info: () => ['organization', 'info'] as const,

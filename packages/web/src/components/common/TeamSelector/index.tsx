@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 import { Flex, Input, Select, Tag, Typography } from 'antd';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
-import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 interface TeamSelectorProps {
   teams: GetOrganizationTeams_ResultSet1[];

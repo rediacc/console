@@ -18,13 +18,13 @@ import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
 import { registerUserCommands } from './commands/user.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
-import { initI18n, changeLanguage, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
+import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { contextService } from './services/context.js';
 import { outputService } from './services/output.js';
 import { telemetryService } from './services/telemetry.js';
+import type { OutputFormat } from './types/index.js';
 import { setOutputFormat } from './utils/errors.js';
 import { VERSION } from './version.js';
-import type { OutputFormat } from './types/index.js';
 
 // Track if i18n has been initialized
 let i18nInitialized = false;

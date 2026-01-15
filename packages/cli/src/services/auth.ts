@@ -1,15 +1,15 @@
 import {
   extractNextToken,
-  parsePrivilegeAuthenticationRequest,
   parseLoginResult,
+  parsePrivilegeAuthenticationRequest,
 } from '@rediacc/shared/api';
 import { isEncrypted } from '@rediacc/shared/encryption';
-import { typedApi, apiClient } from './api.js';
-import { contextService } from './context.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { t } from '../i18n/index.js';
 import { EXIT_CODES } from '../types/index.js';
 import { askPassword } from '../utils/prompt.js';
+import { apiClient, typedApi } from './api.js';
+import { contextService } from './context.js';
 
 interface MasterPasswordResult {
   success: boolean;

@@ -1,31 +1,31 @@
 import { Command } from 'commander';
-import {
-  type ParentContextOptions,
-  type ParentOptionType,
-  type VaultItem,
-  getParentFlag,
-  getParentDesc,
-  getParentKey,
-  getParentValue,
-  capitalizeFirst,
-  extractItemsFromResponse,
-  applySearchFilter,
-  applySorting,
-  readVaultFromStdin,
-  validateJsonVault,
-  buildListParams,
-  buildCreatePayload,
-  addParentToPayload,
-  extractVaultsArray,
-  checkRequiredCreateOptions,
-} from './commandFactory-helpers.js';
-import { handleError } from './errors.js';
-import { withSpinner } from './spinner.js';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat } from '../types/index.js';
+import {
+  addParentToPayload,
+  applySearchFilter,
+  applySorting,
+  buildCreatePayload,
+  buildListParams,
+  capitalizeFirst,
+  checkRequiredCreateOptions,
+  extractItemsFromResponse,
+  extractVaultsArray,
+  getParentDesc,
+  getParentFlag,
+  getParentKey,
+  getParentValue,
+  type ParentContextOptions,
+  type ParentOptionType,
+  readVaultFromStdin,
+  type VaultItem,
+  validateJsonVault,
+} from './commandFactory-helpers.js';
+import { handleError } from './errors.js';
+import { withSpinner } from './spinner.js';
 
 export interface ResourceCommandConfig {
   /** Resource name in singular form (e.g., 'machine', 'team', 'bridge') */

@@ -1,5 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { MenuProps } from 'antd';
 import { Button, Dropdown, Tooltip, Typography } from 'antd';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { ContainerLogsModal } from '@/components/app/ContainerLogsModal';
@@ -12,7 +14,7 @@ import { LocalCommandModal } from '@/components/resources/internal/LocalCommandM
 import { PipInstallationModal } from '@/components/resources/internal/PipInstallationModal';
 import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
-import { useMachineCredentials, type MachineSSHCredentials } from '@/hooks/useMachineCredentials';
+import { type MachineSSHCredentials, useMachineCredentials } from '@/hooks/useMachineCredentials';
 import type { ProtocolAction } from '@/services/protocolUrlService';
 import type { RootState } from '@/store/store';
 import type { PluginContainer } from '@/types';
@@ -23,15 +25,13 @@ import {
   DesktopOutlined,
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
-import { DEFAULTS } from '@rediacc/shared/config';
 import {
-  handleElectronFlow,
-  handleWebProtocolFlow,
   type ContainerMenuAction,
   type ContainerModalData,
+  handleElectronFlow,
+  handleWebProtocolFlow,
 } from './helpers';
 import { useVSCodeSelection } from './hooks/useVSCodeSelection';
-import type { MenuProps } from 'antd';
 
 type ItemType = NonNullable<MenuProps['items']>[number];
 type MenuItemWithTestId = ItemType & { ['data-testid']?: string };

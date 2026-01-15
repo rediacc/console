@@ -1,8 +1,8 @@
-import React from 'react';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { Alert } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { WarningOutlined } from '@/utils/optimizedIcons';
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { isStalePending } from '../utils';
 
 interface OldPendingWarningProps {

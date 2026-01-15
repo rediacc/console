@@ -1,7 +1,7 @@
 import { showMessage } from '@/utils/messages';
+import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 import { getGrandRepoVault } from '../hooks/useFunctionExecution';
 import type { PullFunctionData } from './types';
-import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 
 export const handlePullFunction = async (
   functionData: PullFunctionData,

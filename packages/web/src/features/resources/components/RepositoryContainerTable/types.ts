@@ -1,5 +1,5 @@
-import type { Machine, PluginContainer } from '@/types';
 import type { RepositoryInfo } from '@rediacc/shared/queue-vault/data/list-types.generated';
+import type { Machine, PluginContainer } from '@/types';
 
 export interface PortMapping {
   host: string;

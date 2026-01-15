@@ -1,12 +1,12 @@
-import { Command } from 'commander';
 import { parseGetOrganizationUsers, parseIsRegistered } from '@rediacc/shared/api';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { apiClient, typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 export function registerUserCommands(program: Command): void {
   const user = program.command('user').description(t('commands.user.description'));
 

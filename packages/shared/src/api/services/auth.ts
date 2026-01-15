@@ -6,8 +6,8 @@
  * instead of the normal request token authentication.
  */
 
-import { withRetry } from '../client';
 import type { ApiResponse } from '../../types/api';
+import { withRetry } from '../client';
 
 /**
  * Low-level HTTP client interface for auth operations.

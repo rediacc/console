@@ -1,5 +1,5 @@
-import React from 'react';
 import { ConfigProvider, Flex } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { Outlet } from 'react-router-dom';

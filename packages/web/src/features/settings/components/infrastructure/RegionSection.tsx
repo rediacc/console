@@ -1,12 +1,12 @@
-import React from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetOrganizationRegions_ResultSet1 } from '@rediacc/shared/types';
 import { Col, Flex, Row } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React from 'react';
 import { TooltipButton } from '@/components/common/buttons';
 import { PageHeader } from '@/components/common/PageHeader';
 import ResourceListView from '@/components/common/ResourceListView';
 import { PlusOutlined } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetOrganizationRegions_ResultSet1 } from '@rediacc/shared/types';
-import type { ColumnsType } from 'antd/es/table';
 
 interface RegionSectionProps {
   t: TypedTFunction;

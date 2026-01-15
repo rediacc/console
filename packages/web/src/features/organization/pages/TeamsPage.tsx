@@ -1,9 +1,13 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import type {
+  GetOrganizationTeams_ResultSet1,
+  GetTeamMembers_ResultSet1,
+} from '@rediacc/shared/types';
 import {
   Badge,
   Card,
   Flex,
   List,
+  type MenuProps,
   Modal,
   Popconfirm,
   Select,
@@ -11,16 +15,16 @@ import {
   Tabs,
   Tag,
   Typography,
-  type MenuProps,
 } from 'antd';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  useCreateTeamMembership,
   useCreateTeam,
+  useCreateTeamMembership,
   useDeleteTeam,
   useDeleteUserFromTeam,
-  useGetTeamMembers,
   useGetOrganizationTeams,
+  useGetTeamMembers,
   useUpdateTeamName,
   useUpdateTeamVault,
 } from '@/api/api-hooks.generated';
@@ -28,6 +32,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { TooltipButton } from '@/components/common/buttons';
 import { buildTeamColumns } from '@/components/common/columns/builders/teamColumns';
+import { MobileCard } from '@/components/common/MobileCard';
 import {
   buildDeleteMenuItem,
   buildDivider,
@@ -35,7 +40,6 @@ import {
   buildMembersMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
-import { MobileCard } from '@/components/common/MobileCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
@@ -55,10 +59,6 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type {
-  GetOrganizationTeams_ResultSet1,
-  GetTeamMembers_ResultSet1,
-} from '@rediacc/shared/types';
 
 const TeamsPage: React.FC = () => {
   const { t } = useTranslation('organization');

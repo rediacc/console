@@ -2,6 +2,8 @@
  * TFA (Two-Factor Authentication) hooks.
  * Split from hooks-extended.ts for file size management.
  */
+
+import type { AuthRequestStatus, EnableTfaResponse } from '@rediacc/shared/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { typedApi } from '@/api/client';
@@ -10,7 +12,6 @@ import i18n from '@/i18n/config';
 import type { RootState } from '@/store/store';
 import { hashPassword } from '@/utils/auth';
 import { extractErrorMessage } from '@/utils/mutationUtils';
-import type { AuthRequestStatus, EnableTfaResponse } from '@rediacc/shared/types';
 
 export type TwoFactorStatus = AuthRequestStatus;
 export type EnableTwoFactorResponse = EnableTfaResponse;

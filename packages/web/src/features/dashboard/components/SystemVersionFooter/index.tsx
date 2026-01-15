@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
 import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
-import { Tag, Tooltip, Typography, Flex } from 'antd';
+import { DEFAULTS } from '@rediacc/shared/config';
+import { Flex, Tag, Tooltip, Typography } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApiHealth } from '@/api/hooks-system';
 import { versionService } from '@/services/versionService';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 const formatUptime = (uptime: { days: number; hours: number; minutes: number }): string => {
   const parts: string[] = [];

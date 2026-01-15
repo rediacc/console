@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ContainerExecParams, ContainerLogsParams, ContainerStatsParams } from '@/types';
-import { isElectron, getElectronAPI } from '@/types';
+import { getElectronAPI, isElectron } from '@/types';
 
 /**
  * Container session type

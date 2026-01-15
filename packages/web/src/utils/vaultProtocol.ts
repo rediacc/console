@@ -1,9 +1,9 @@
-import { cryptoService } from '@/services/crypto';
 import {
+  analyzeVaultProtocolState,
   isEncrypted,
   VaultProtocolState,
-  analyzeVaultProtocolState,
 } from '@rediacc/shared/encryption';
+import { cryptoService } from '@/services/crypto';
 
 // Re-export shared utilities for backward compatibility
 export { isEncrypted, VaultProtocolState, analyzeVaultProtocolState };

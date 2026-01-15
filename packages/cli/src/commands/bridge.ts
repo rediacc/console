@@ -1,17 +1,17 @@
-import { Command } from 'commander';
 import {
-  parseGetRegionBridges,
-  parseGetOrganizationVaults,
-  parseCreateBridge,
   extractPrimaryOrSecondary,
+  parseCreateBridge,
+  parseGetOrganizationVaults,
+  parseGetRegionBridges,
 } from '@rediacc/shared/api';
 import type {
-  GetOrganizationVaults_ResultSet1,
   CreateBridgeParams,
   DeleteBridgeParams,
+  GetOrganizationVaults_ResultSet1,
   UpdateBridgeNameParams,
   UpdateBridgeVaultParams,
 } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';

@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
-import { Modal } from 'antd';
-import { useTranslation } from 'react-i18next';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { Modal } from 'antd';
+import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmOptions {
   title: string | ReactNode;

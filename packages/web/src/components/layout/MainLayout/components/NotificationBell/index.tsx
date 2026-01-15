@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
   Badge,
   Button,
@@ -13,6 +12,7 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
+import React, { useState } from 'react';
 import 'dayjs/locale/es';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';

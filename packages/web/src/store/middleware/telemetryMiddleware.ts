@@ -1,7 +1,7 @@
-import { telemetryService } from '@/services/telemetryService';
-import type { RootState } from '@/store/store';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
+import { telemetryService } from '@/services/telemetryService';
+import type { RootState } from '@/store/store';
 
 // Actions to track for business intelligence
 const TRACKED_ACTIONS = [

@@ -1,10 +1,11 @@
+import type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
+import { Flex, type MenuProps, Modal, Space, Tag, Typography } from 'antd';
 import React, { useMemo } from 'react';
-import { Flex, Modal, Space, Tag, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import {
   useCreateStorage,
   useDeleteStorage,
+  useGetTeamMachines,
   useGetTeamStorages,
   useUpdateStorageName,
   useUpdateStorageVault,
@@ -12,13 +13,13 @@ import {
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { TooltipButton } from '@/components/common/buttons';
+import { MobileCard } from '@/components/common/MobileCard';
 import {
   buildDeleteMenuItem,
   buildDivider,
   buildEditMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
-import { MobileCard } from '@/components/common/MobileCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
@@ -44,7 +45,6 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@/utils/optimizedIcons';
-import type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
 import { useBuildStorageColumns } from './hooks/buildStorageColumns';
 import { useStorageHandlers } from './hooks/useStorageHandlers';
 

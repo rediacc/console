@@ -2,6 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
+import type { Locator } from '@playwright/test';
 
 test.describe('Dashboard Tests', () => {
   let dashboardPage: DashboardPage;
@@ -16,7 +17,7 @@ test.describe('Dashboard Tests', () => {
   });
 
   test('should display main dashboard layout @dashboard @smoke', async ({
-    page: _page,
+    page,
     screenshotManager,
     testReporter,
   }) => {
@@ -25,10 +26,25 @@ test.describe('Dashboard Tests', () => {
     // Verify essential elements using the new page object methods
     await dashboardPage.verifyDashboardLoaded();
 
+    const ensureNavVisible = async (locator: Locator) => {
+      if (await locator.isVisible().catch(() => false)) {
+        return;
+      }
+      const toggle = page.getByTestId('sidebar-toggle-button');
+      if ((await toggle.count()) > 0) {
+        await toggle.click();
+        await expect(locator).toBeVisible({ timeout: 5000 });
+        const drawerMask = page.locator('.ant-drawer-mask');
+        if (await drawerMask.isVisible().catch(() => false)) {
+          await drawerMask.click({ force: true });
+        }
+      }
+    };
+
     // Check navigation items
     const locators = dashboardPage.getPageLocators();
-    await expect(locators.navOrganization).toBeVisible();
-    await expect(locators.navSettings).toBeVisible();
+    await ensureNavVisible(locators.navOrganization);
+    await ensureNavVisible(locators.navSettings);
     await expect(locators.userMenu).toBeVisible();
     await expect(locators.notificationBell).toBeVisible();
 

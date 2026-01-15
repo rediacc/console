@@ -3,84 +3,80 @@ export type { QueueVaultBuilderConfig } from './builders';
 
 // Builders
 export { QueueVaultBuilder } from './builders';
-
 // Data
-export { FUNCTION_REQUIREMENTS } from './data';
-
 // Zod validation
 export {
-  safeValidateFunctionParams,
+  FUNCTION_REQUIREMENTS,
   getValidationErrors,
   isValidParams,
+  safeValidateFunctionParams,
 } from './data';
-
+// Bridge Functions (generated)
+export {
+  BRIDGE_FUNCTIONS,
+  BRIDGE_FUNCTIONS_VERSION,
+  type BridgeFunctionName,
+  createFunctionPayload,
+  type FunctionParamsMap,
+  getTypedParams,
+  isBridgeFunction,
+  type QueueFunctionsType,
+  queueFunctions,
+  type TypedFunctionPayload,
+} from './data/functions.generated';
+export { parseVaultContent, parseVaultContentOrEmpty } from './parsing';
 // Type exports
 export type {
   // V2 Types
   ContextSection,
+  // Request context types
+  FunctionRequirements,
   MachineSection,
+  QueueRequestContext,
   QueueVaultV2,
   RepositoryInfo,
   SSHSection,
   StorageSection,
   TaskSection,
-  // Request context types
-  FunctionRequirements,
-  QueueRequestContext,
   VaultContent,
 } from './types';
-
 // Utils
-export { getParamArray, getParamValue, isBase64, minifyJSON } from './utils';
-
 // IP/Port validation
 export {
+  formatSizeBytes,
+  getParamArray,
+  getParamValue,
+  isBase64,
+  isValidHost,
+  isValidHostname,
+  isValidIP,
   isValidIPv4,
   isValidIPv6,
-  isValidIP,
-  isValidHostname,
-  isValidHost,
+  isValidNetworkId,
   isValidPort,
-  validateSSHConnection,
-  validateMachineVault,
-  // Size format validation
-  parseSize,
-  validateSize,
-  validateSizeWithMin,
-  formatSizeBytes,
+  isValidSSHPrivateKey,
   // Network ID validation
   MIN_NETWORK_ID,
+  minifyJSON,
   NETWORK_ID_INCREMENT,
+  // Size format validation
+  parseSize,
+  validateMachineVault,
   validateNetworkId,
-  isValidNetworkId,
+  validateSize,
+  validateSizeWithMin,
+  validateSSHConnection,
   // SSH key format validation
   validateSSHPrivateKey,
-  isValidSSHPrivateKey,
 } from './utils';
-export { parseVaultContent, parseVaultContentOrEmpty } from './parsing';
-
 // Validation
 export {
-  validateQueueVault,
-  type QueueVaultValidationResult,
-  type QueueVaultValidationError,
-  isQueueVaultV2,
-  assertQueueVaultV2,
-  validateBridgeFunction,
   assertBridgeFunction,
+  assertQueueVaultV2,
   type BridgeFunctionError,
+  isQueueVaultV2,
+  type QueueVaultValidationError,
+  type QueueVaultValidationResult,
+  validateBridgeFunction,
+  validateQueueVault,
 } from './validation';
-
-// Bridge Functions (generated)
-export {
-  isBridgeFunction,
-  BRIDGE_FUNCTIONS,
-  BRIDGE_FUNCTIONS_VERSION,
-  getTypedParams,
-  createFunctionPayload,
-  queueFunctions,
-  type BridgeFunctionName,
-  type FunctionParamsMap,
-  type TypedFunctionPayload,
-  type QueueFunctionsType,
-} from './data/functions.generated';

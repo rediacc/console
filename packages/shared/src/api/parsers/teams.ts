@@ -2,9 +2,9 @@
  * Team Parsers
  */
 
-import { extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 import type { GetOrganizationTeams_ResultSet1, GetTeamMembers_ResultSet1 } from '../../types';
 import type { ApiResponse } from '../../types/api';
+import { extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 
 export function parseGetOrganizationTeams(
   response: ApiResponse<GetOrganizationTeams_ResultSet1>

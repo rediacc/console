@@ -1,5 +1,6 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import { Flex, type MenuProps, Space, Tag, Typography } from 'antd';
 import React, { useMemo } from 'react';
-import { Flex, Space, Tag, Typography, type MenuProps } from 'antd';
 import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import { PluginContainer } from '@/types';
@@ -13,7 +14,6 @@ import {
   StopOutlined,
 } from '@/utils/optimizedIcons';
 import { getContainerStateColor } from '@/utils/statusColors';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { Container } from '../types';
 
 interface ContainerMobileCardProps {

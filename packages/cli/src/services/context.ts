@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configStorage } from '../adapters/storage.js';
-import type { NamedContext, LocalMachineConfig, LocalSSHConfig } from '../types/index.js';
+import type { LocalMachineConfig, LocalSSHConfig, NamedContext } from '../types/index.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 

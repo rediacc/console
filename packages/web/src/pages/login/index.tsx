@@ -1,5 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { parseLoginResult as parseAuthenticationResult, parseResponse } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { Alert, Button, Flex, Typography } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -18,8 +21,8 @@ import { masterPasswordService } from '@/services/auth';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { hashPassword, saveAuthData } from '@/utils/auth';
 import {
-  generateRandomOrganizationName,
   generateRandomEmail,
+  generateRandomOrganizationName,
   generateRandomPassword,
 } from '@/utils/generators';
 import { showMessage } from '@/utils/messages';
@@ -30,10 +33,6 @@ import {
   VaultProtocolState,
   validateMasterPassword,
 } from '@/utils/vaultProtocol';
-import { parseLoginResult as parseAuthenticationResult } from '@rediacc/shared/api';
-import { parseResponse } from '@rediacc/shared/api';
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
 import { TFAModal } from './components/TFAModal';
 import { handleProtocolState } from './hooks/useProtocolStateHandler';

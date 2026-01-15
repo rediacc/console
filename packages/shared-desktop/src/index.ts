@@ -5,14 +5,12 @@
  * Provides SSH, terminal, sync, and protocol handling functionality.
  */
 
-// Re-export all types
-export * from './types/index.js';
-
-// Re-export utilities
-export * from './utils/index.js';
-
 // Re-export config
 export * from './config/index.js';
+// Re-export all types
+export * from './types/index.js';
+// Re-export utilities
+export * from './utils/index.js';
 
 // Note: Submodules (ssh, sync, terminal, protocol, msys2, repository, sftp)
 // are imported directly via package.json exports:

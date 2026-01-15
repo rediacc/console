@@ -2,7 +2,6 @@
  * Organization Parsers
  */
 
-import { extractFirstByIndex, extractRowsByIndex } from './base';
 import type {
   GetOrganizationDashboard_ResultSet1,
   GetOrganizationDashboard_ResultSet2,
@@ -22,6 +21,7 @@ import type {
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
 import type { OrganizationDashboardData } from '../../types/derived';
+import { extractFirstByIndex, extractRowsByIndex } from './base';
 
 /**
  * Parse GetOrganizationDashboard response into OrganizationDashboardData

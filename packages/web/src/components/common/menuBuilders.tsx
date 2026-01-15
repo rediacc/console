@@ -1,3 +1,5 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { MenuProps } from 'antd';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -7,8 +9,6 @@ import {
   SyncOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { MenuProps } from 'antd';
 
 type MenuItem = NonNullable<MenuProps['items']>[number];
 

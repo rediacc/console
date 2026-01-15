@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import { contextBridge, type IpcRendererEvent, ipcRenderer } from 'electron';
 
 // Type definitions matching electron-updater events
 export interface UpdateInfo {

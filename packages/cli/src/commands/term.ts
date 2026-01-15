@@ -1,8 +1,8 @@
-import { generateSourceCommand, generateSetupCommand } from '@rediacc/shared-desktop/repository';
-import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
-import { launchTerminal, getDefaultTerminalType } from '@rediacc/shared-desktop/terminal';
-import { Command } from 'commander';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { generateSetupCommand, generateSourceCommand } from '@rediacc/shared-desktop/repository';
+import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
+import { getDefaultTerminalType, launchTerminal } from '@rediacc/shared-desktop/terminal';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';

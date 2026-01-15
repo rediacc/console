@@ -1,8 +1,8 @@
-import React from 'react';
 import { Alert, Flex, Typography, Upload } from 'antd';
+import type { UploadFile } from 'antd/es/upload';
+import React from 'react';
 import { InfoCircleOutlined, UploadOutlined } from '@/utils/optimizedIcons';
 import type { WizardTranslator } from './types';
-import type { UploadFile } from 'antd/es/upload';
 
 const { Text, Paragraph } = Typography;
 

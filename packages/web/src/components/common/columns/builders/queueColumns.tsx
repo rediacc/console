@@ -1,9 +1,13 @@
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { Space, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
-  PriorityWithTooltip,
   AgeRenderer,
   ErrorRetriesRenderer,
+  PriorityWithTooltip,
 } from '@/features/queue/components/QueueTableRenderers';
 import {
   ApiOutlined,
@@ -13,13 +17,9 @@ import {
   HistoryOutlined,
 } from '@/utils/optimizedIcons';
 import { renderQueueStatus } from '@/utils/queueRenderers';
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { RESPONSIVE_HIDE_XS } from '..';
 import { createActionColumn } from '../factories/action';
 import { renderBoolean, renderTimestamp } from '../renderers';
-import type { ColumnsType } from 'antd/es/table';
 
 interface QueueColumnsConfig {
   handleViewTrace: (taskId: string) => void;

@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo } from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import { Card, Col, Empty, Flex, Progress, Row, Typography } from 'antd';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import {
@@ -23,8 +25,6 @@ import {
   InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
 import { abbreviatePath } from '@/utils/pathUtils';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import { BlockDevicesSection } from './sections/BlockDevicesSection';
 import { NetworkSection } from './sections/NetworkSection';
 import { SystemContainersSection } from './sections/SystemContainersSection';

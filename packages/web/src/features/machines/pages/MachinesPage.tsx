@@ -1,12 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMachineMutations, useGetTeamMachines } from '@/api/api-hooks.generated';
-import { useGetTeamRepositories } from '@/api/api-hooks.generated';
-import { useGetTeamStorages } from '@/api/api-hooks.generated';
+import {
+  useGetTeamMachines,
+  useGetTeamRepositories,
+  useGetTeamStorages,
+  useMachineMutations,
+} from '@/api/api-hooks.generated';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { SplitResourceView, type ContainerData } from '@/components/common/SplitResourceView';
+import { type ContainerData, SplitResourceView } from '@/components/common/SplitResourceView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import ConnectivityTestModal from '@/features/machines/components/ConnectivityTestModal';
@@ -17,9 +21,8 @@ import { type Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useMachineFunctionHandlers } from './hooks/useMachineFunctionHandlers';
-import type { MachineFunctionData, MachineFormValues } from './types';
+import type { MachineFormValues, MachineFunctionData } from './types';
 
 const MachinesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common']);

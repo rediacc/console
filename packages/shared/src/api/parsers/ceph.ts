@@ -2,7 +2,6 @@
  * Ceph Parsers
  */
 
-import { extractRowsByIndex, extractFirstByIndex } from './base';
 import type {
   CephAvailableMachine,
   CephCloneMachine,
@@ -16,6 +15,7 @@ import type {
   GetCephRbdSnapshots_ResultSet1,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
+import { extractFirstByIndex, extractRowsByIndex } from './base';
 
 export function parseGetCephClusters(
   response: ApiResponse<GetCephClusters_ResultSet1>

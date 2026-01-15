@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
-import { isElectron, type SFTPFileInfo } from '@/types';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { isElectron, type SFTPFileInfo } from '@/types';
 
 /**
  * File information from SFTP

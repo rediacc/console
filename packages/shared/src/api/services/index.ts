@@ -6,6 +6,6 @@
  * by the TypeSafeApi proxy pattern (typedApi).
  */
 
-export type { ApiClient, ApiRequestConfig, ProcedureEndpoint } from './types';
+export type { AuthHttpClient, AuthService } from './auth';
 export { createAuthService } from './auth';
-export type { AuthService, AuthHttpClient } from './auth';
+export type { ApiClient, ApiRequestConfig, ProcedureEndpoint } from './types';

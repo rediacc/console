@@ -1,5 +1,8 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { Space, Tag } from 'antd';
-import { ActionButtonGroup, type ActionButtonConfig } from '@/components/common/ActionButtonGroup';
+import type { ColumnsType } from 'antd/es/table';
+import { type ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from '@/components/common/ResourceListView';
 import { featureFlags } from '@/config/featureFlags';
 import {
@@ -8,10 +11,7 @@ import {
   HistoryOutlined,
   InboxOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { createActionColumn } from '../factories/action';
-import type { ColumnsType } from 'antd/es/table';
 
 interface BuildRepositoryColumnsParams {
   t: TypedTFunction;

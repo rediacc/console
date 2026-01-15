@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useDialogState } from '@/hooks/useDialogState';
 import type { MachineSSHCredentials } from '@/hooks/useMachineCredentials';
-import { isElectron, getElectronAPI, type VSCodeInstallations } from '@/types';
+import { getElectronAPI, isElectron, type VSCodeInstallations } from '@/types';
 
 interface VSCodeSelectionData {
   installations: VSCodeInstallations;

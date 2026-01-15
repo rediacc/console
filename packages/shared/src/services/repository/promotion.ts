@@ -3,8 +3,8 @@
  * Handles validation for promoting forks to grand repositories
  */
 
-import { isFork, type RepositoryWithRelations } from './core';
 import { DEFAULTS } from '../../config';
+import { isFork, type RepositoryWithRelations } from './core';
 
 /**
  * Result of promotion validation

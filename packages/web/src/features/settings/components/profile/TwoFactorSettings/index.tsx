@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Alert, Button, Card, Flex, Form, Input, Result, Typography } from 'antd';
+import type { FormInstance } from 'antd/es/form';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
+  type EnableTwoFactorResponse,
   useDisableTFA,
   useEnableTFA,
   useGetTFAStatus,
-  type EnableTwoFactorResponse,
 } from '@/api/hooks-tfa';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -21,9 +23,7 @@ import {
   SafetyCertificateOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { VerificationContent } from './components/VerificationContent';
-import type { FormInstance } from 'antd/es/form';
 
 const { Title, Paragraph } = Typography;
 

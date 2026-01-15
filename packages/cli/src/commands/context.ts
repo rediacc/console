@@ -1,15 +1,15 @@
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { Command } from 'commander';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { apiClient } from '../services/api.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import type { LocalMachineConfig, NamedContext, OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askText } from '../utils/prompt.js';
-import type { NamedContext, OutputFormat, LocalMachineConfig } from '../types/index.js';
 
 export function registerContextCommands(program: Command): void {
   const context = program.command('context').description(t('commands.context.description'));

@@ -1,14 +1,14 @@
-import React, { type JSX } from 'react';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { FormInstance } from 'antd';
 import { Alert, Col, Descriptions, Flex, Form, Space, Tag, Typography } from 'antd';
+import React, { type JSX } from 'react';
 import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   QuestionCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { VaultFormValues } from '../types';
-import type { FormInstance } from 'antd';
 
 type KernelCompatibilityData = {
   compatibility_status?: string;

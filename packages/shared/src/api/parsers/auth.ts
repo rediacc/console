@@ -2,12 +2,6 @@
  * Auth Parsers
  */
 
-import {
-  extractPrimaryOrSecondary,
-  extractFirstByIndex,
-  extractRowsByIndex,
-  toBoolean,
-} from './base';
 import { DEFAULTS } from '../../config';
 import type {
   AuthLoginResult,
@@ -18,6 +12,12 @@ import type {
   VerifyTfaResult,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
+import {
+  extractFirstByIndex,
+  extractPrimaryOrSecondary,
+  extractRowsByIndex,
+  toBoolean,
+} from './base';
 
 interface AuthStatusRow {
   isTFAEnabled?: boolean | number | string;

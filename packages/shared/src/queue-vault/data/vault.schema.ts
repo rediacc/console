@@ -2,7 +2,7 @@
 // Run: ./go deploy prep
 // Source: renet/pkg/bridge/vault/
 
-import { z, type ZodSafeParseResult } from 'zod';
+import { type ZodSafeParseResult, z } from 'zod';
 import { VAULT_SCHEMA, VAULT_VERSION } from './vault.generated';
 
 // ============================================

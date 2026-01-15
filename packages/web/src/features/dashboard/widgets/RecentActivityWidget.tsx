@@ -1,10 +1,10 @@
-import React from 'react';
+import type { GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 import { Card, Empty, Flex, Tag, Timeline, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink } from 'react-router-dom';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { HistoryOutlined } from '@/utils/optimizedIcons';
-import type { GetAuditLogs_ResultSet1 } from '@rediacc/shared/types';
 import { getActionIcon } from '../utils/actionIconMapping';
 import { formatTimestamp } from '../utils/formatTimestamp';
 

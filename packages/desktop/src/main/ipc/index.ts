@@ -1,12 +1,12 @@
-import { ipcMain, app } from 'electron';
-import { registerContainerHandlers, cleanupAllContainerSessions } from './container';
-import { registerRsyncHandlers, abortAllRsyncOperations } from './rsync';
+import { app, ipcMain } from 'electron';
+import { cleanupAllContainerSessions, registerContainerHandlers } from './container';
+import { abortAllRsyncOperations, registerRsyncHandlers } from './rsync';
 import { registerSafeStorageHandlers } from './safeStorage';
-import { registerSftpHandlers, cleanupAllSftpSessions } from './sftp';
-import { registerTerminalHandlers, cleanupAllTerminalSessions } from './terminal';
+import { cleanupAllSftpSessions, registerSftpHandlers } from './sftp';
+import { cleanupAllTerminalSessions, registerTerminalHandlers } from './terminal';
 import { registerUpdaterHandlers } from './updater';
 import { registerVSCodeHandlers } from './vscode';
-import { registerWindowHandlers, cleanupPopoutWindows } from './window';
+import { cleanupPopoutWindows, registerWindowHandlers } from './window';
 
 export function registerIpcHandlers(): void {
   // Register safe storage handlers

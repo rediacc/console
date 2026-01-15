@@ -3,13 +3,13 @@
  * High-level queue service that combines vault building and state management
  */
 
-import { QueueStateManager } from './state-manager';
 import {
   type FunctionRequirements,
   type QueueRequestContext,
   QueueVaultBuilder,
   type QueueVaultBuilderConfig,
 } from '../../queue-vault';
+import { QueueStateManager } from './state-manager';
 import type {
   ActiveTask,
   LocalQueueItem,

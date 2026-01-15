@@ -3,15 +3,15 @@
  * Docker logs streaming in a modal dialog for Electron desktop app
  */
 
-import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Flex, Space, Tooltip, Typography } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Terminal, type TerminalRef } from '@/components/app/Terminal/Terminal';
 import { SizedModal } from '@/components/common/SizedModal';
 import { useContainer } from '@/hooks/container/useContainer';
-import { isElectron, getElectronAPI } from '@/types';
+import { getElectronAPI, isElectron } from '@/types';
 import { ModalSize } from '@/types/modal';
-import { FileTextOutlined, ReloadOutlined, ExpandOutlined } from '@/utils/optimizedIcons';
+import { ExpandOutlined, FileTextOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 
 const { Text } = Typography;
 

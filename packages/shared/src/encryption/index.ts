@@ -1,5 +1,5 @@
-import { hasVaultFields, transformVaultFields } from './vaultTransform';
 import type { ICryptoProvider } from './types';
+import { hasVaultFields, transformVaultFields } from './vaultTransform';
 
 export { ENCRYPTION_CONFIG, PASSWORD_SALT } from './constants';
 
@@ -38,6 +38,6 @@ export function createVaultEncryptor(provider: ICryptoProvider): VaultEncryptor 
   };
 }
 
-export { hasVaultFields, isVaultField, transformVaultFields } from './vaultTransform';
 export type { ICryptoProvider } from './types';
-export { isEncrypted, VaultProtocolState, analyzeVaultProtocolState } from './vaultProtocol';
+export { analyzeVaultProtocolState, isEncrypted, VaultProtocolState } from './vaultProtocol';
+export { hasVaultFields, isVaultField, transformVaultFields } from './vaultTransform';

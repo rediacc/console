@@ -1,40 +1,41 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import type { GetOrganizationPermissionGroups_ResultSet1 } from '@rediacc/shared/types';
 import {
+  Select as AntSelect,
   Badge,
   Card,
   Flex,
   Input,
   List,
+  type MenuProps,
   Modal,
   Result,
   Select,
-  Select as AntSelect,
   Space,
   Tabs,
   Typography,
-  type MenuProps,
 } from 'antd';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
-  useCreatePermissionInGroup,
   useUpdateUserAssignedPermissions as useAssignUserToGroup,
   useCreatePermissionGroup,
+  useCreatePermissionInGroup,
+  useDeletePermissionFromGroup,
   useDeletePermissionGroup,
   useGetPermissionGroupDetails,
   useGetOrganizationPermissionGroups as usePermissionGroupsQuery,
-  useDeletePermissionFromGroup,
 } from '@/api/api-hooks.generated';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { TooltipButton } from '@/components/common/buttons';
 import { buildPermissionColumns } from '@/components/common/columns/builders/accessColumns';
+import { MobileCard } from '@/components/common/MobileCard';
 import {
   buildDeleteMenuItem,
   buildDivider,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
-import { MobileCard } from '@/components/common/MobileCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
@@ -44,7 +45,6 @@ import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { KeyOutlined, PlusOutlined, SafetyOutlined, UserOutlined } from '@/utils/optimizedIcons';
-import type { GetOrganizationPermissionGroups_ResultSet1 } from '@rediacc/shared/types';
 
 const AccessPage: React.FC = () => {
   const { t } = useTranslation('organization');

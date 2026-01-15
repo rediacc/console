@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
-import {
-  moveToExtraFields,
-  moveFromExtraFields,
-  processExtraFields,
-  buildValidationRules,
-} from '../../utils';
 import type { Rule } from 'antd/es/form';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  buildValidationRules,
+  moveFromExtraFields,
+  moveToExtraFields,
+  processExtraFields,
+} from '../../utils';
 
 // Helper predicates for rule validation (extracted to avoid nested callbacks)
 const hasPattern = (r: Rule): boolean => 'pattern' in r;

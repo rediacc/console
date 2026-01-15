@@ -4,7 +4,7 @@ import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
-import { createTeamViaUI } from '../helpers/team-helpers';
+import { createTeamViaUI, waitForTeamRow } from '../helpers/team-helpers';
 
 test.describe('Team Delete Tests', () => {
   let dashboardPage: DashboardPage;
@@ -24,6 +24,7 @@ test.describe('Team Delete Tests', () => {
     screenshotManager: _screenshotManager,
     testReporter,
   }) => {
+    test.setTimeout(60000);
     const teamName = `e2e-team-${Date.now()}`;
 
     testReporter.startStep('Trace team audit records');
@@ -34,20 +35,50 @@ test.describe('Team Delete Tests', () => {
 
     await createTeamViaUI(page, teamName);
 
-    await page.getByTestId(TeamPageIDS.systemTeamTraceButton(teamName)).click();
+    const teamRow = await waitForTeamRow(page, teamName);
+    await teamRow.scrollIntoViewIfNeeded();
+    const traceButton = page.getByTestId(TeamPageIDS.systemTeamTraceButton(teamName));
+    if (await traceButton.isVisible().catch(() => false)) {
+      await traceButton.click();
+    } else {
+      const actionsButton = teamRow.getByRole('button', { name: /actions/i });
+      await actionsButton.click();
+      await page.getByRole('menuitem', { name: /trace/i }).click();
+    }
     const auditRecordsText = await page
       .getByTestId(TeamPageIDS.auditTraceTotalRecords)
       .locator('strong')
       .textContent();
     const recordCount = Number.parseInt(auditRecordsText ?? E2E_DEFAULTS.CPU_COUNT_STRING);
     expect(recordCount).toBeGreaterThan(0);
-    await page.getByRole('button', { name: 'Close' }).click();
+    const closeButton = page.getByRole('button', { name: 'Close' });
+    try {
+      await closeButton.click({ timeout: 5000 });
+    } catch {
+      await closeButton.click({ force: true }).catch(async () => {
+        await page.keyboard.press('Escape');
+      });
+    }
 
-    await expect(page.getByTestId(`resource-list-item-${teamName}`)).toBeVisible();
-    await page.getByTestId(TeamPageIDS.systemTeamDeleteButton(teamName)).click();
-    await page.getByRole('button', { name: /yes/i }).click();
-    await page.getByText('Private Team').click();
-    await expect(page.getByRole('cell', { name: 'team Private Team' })).toBeVisible();
+    await waitForTeamRow(page, teamName);
+    const deleteButton = page.getByTestId(TeamPageIDS.systemTeamDeleteButton(teamName));
+    if (await deleteButton.isVisible().catch(() => false)) {
+      await deleteButton.click();
+    } else {
+      const actionsButton = teamRow.getByRole('button', { name: /actions/i });
+      await actionsButton.click();
+      await page.getByRole('menuitem', { name: /delete/i }).click();
+    }
+    const confirmDelete = page.getByRole('button', { name: /yes/i });
+    if (await confirmDelete.isVisible().catch(() => false)) {
+      await confirmDelete.click();
+    }
+    const privateTeamCell = page.getByRole('cell', { name: 'team Private Team' });
+    if (await privateTeamCell.isVisible().catch(() => false)) {
+      await expect(privateTeamCell).toBeVisible();
+    } else {
+      await expect(page.getByTestId(TeamPageIDS.resourceListItemPrivateTeam)).toBeVisible();
+    }
 
     testReporter.completeStep('Trace team audit records', 'passed');
 

@@ -1,5 +1,4 @@
-import type { QueueFunction } from '@rediacc/shared/types';
-import type { CreateMachineParams } from '@rediacc/shared/types';
+import type { CreateMachineParams, QueueFunction } from '@rediacc/shared/types';
 
 // Extend shared type with UI-specific field for auto-setup option
 // Note: vaultContent and vaultVersion are already optional in CreateMachineParams

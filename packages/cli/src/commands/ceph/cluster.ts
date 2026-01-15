@@ -1,18 +1,18 @@
-import { Command } from 'commander';
-import { parseGetCephClusters, parseGetCephClusterMachines } from '@rediacc/shared/api';
+import { parseGetCephClusterMachines, parseGetCephClusters } from '@rediacc/shared/api';
 import type {
   CreateCephClusterParams,
   DeleteCephClusterParams,
   GetCephClusterMachinesParams,
   UpdateCephClusterVaultParams,
 } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';
 import { outputService } from '../../services/output.js';
+import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import type { OutputFormat } from '../../types/index.js';
 
 export function registerClusterCommands(ceph: Command, program: Command): void {
   const cluster = ceph.command('cluster').description(t('commands.ceph.cluster.description'));

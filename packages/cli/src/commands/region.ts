@@ -1,12 +1,12 @@
-import { Command } from 'commander';
 import { parseGetOrganizationRegions, parseGetOrganizationVaults } from '@rediacc/shared/api';
 import type {
   CreateRegionParams,
   DeleteRegionParams,
+  GetOrganizationVaults_ResultSet1,
   UpdateRegionNameParams,
   UpdateRegionVaultParams,
-  GetOrganizationVaults_ResultSet1,
 } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { typedApi } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 

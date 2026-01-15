@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Alert, Button, Flex, Form, Modal, Radio, Space, Typography, Upload } from 'antd';
+import React, { useEffect } from 'react';
 import { ModalSize } from '@/types/modal';
 import { UploadOutlined } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface ImportModalProps {
   t: TypedTFunction;

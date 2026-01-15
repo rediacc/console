@@ -2,7 +2,7 @@
 // Run: ./go deploy prep
 // Source: renet/pkg/bridge/commands/
 
-import { z, type ZodSafeParseResult } from 'zod';
+import { type ZodSafeParseResult, z } from 'zod';
 import type { BridgeFunctionName, FunctionParamsMap } from './functions.generated';
 
 // ============================================

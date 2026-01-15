@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleForkFunction } from '../handleForkFunction';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FunctionExecutionContext } from '../../hooks/useFunctionExecution';
+import { handleForkFunction } from '../handleForkFunction';
 import type { ForkFunctionData } from '../types';
 
 describe('handleForkFunction', () => {

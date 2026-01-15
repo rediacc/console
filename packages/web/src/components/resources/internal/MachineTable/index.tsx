@@ -1,10 +1,9 @@
+import { Empty, Flex, type MenuProps, Space, Tag, Typography } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Empty, Flex, Space, Tag, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useGetTeamMachines } from '@/api/api-hooks.generated';
-import { useGetTeamRepositories } from '@/api/api-hooks.generated';
+import { useGetTeamMachines, useGetTeamRepositories } from '@/api/api-hooks.generated';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { MobileCard } from '@/components/common/MobileCard';
 import { RemoteFileBrowserModal } from '@/components/common/RemoteFileBrowserModal';

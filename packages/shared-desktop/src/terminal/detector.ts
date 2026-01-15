@@ -1,8 +1,8 @@
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getPlatform, isWSL, getConfigPath } from '../utils/platform.js';
-import type { TerminalType, TerminalInfo } from '../types/index.js';
+import type { TerminalInfo, TerminalType } from '../types/index.js';
+import { getConfigPath, getPlatform, isWSL } from '../utils/platform.js';
 
 /**
  * Cache file location

@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { createElement } from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { HookAPI } from 'antd/es/modal/useModal';
+import { createElement, useState } from 'react';
 import { prepareGrandDeletion } from '@/platform';
 import { showMessage } from '@/utils/messages';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { BlockedDeletionContent, ConfirmDeletionContent } from './DeletionModalContent';
 import type { Repository } from '../types';
-import type { HookAPI } from 'antd/es/modal/useModal';
+import { BlockedDeletionContent, ConfirmDeletionContent } from './DeletionModalContent';
 
 interface UseConfirmRepositoryDeletionParams {
   teamRepositories: {

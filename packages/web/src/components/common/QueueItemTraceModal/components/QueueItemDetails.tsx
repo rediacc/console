@@ -1,13 +1,13 @@
-import React from 'react';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { Descriptions, Tag, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  formatDurationFull,
+  formatTimestampAsIs,
   normalizeToNumber,
   normalizeToString,
-  formatTimestampAsIs,
-  formatDurationFull,
 } from '@/platform';
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface QueueItemDetailsProps {
   queueDetails: GetTeamQueueItems_ResultSet1;

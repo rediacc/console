@@ -1,21 +1,22 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
-  parseProtocolUrl,
   buildCliCommand,
   buildProtocolUrl,
-  registerProtocol,
-  unregisterProtocol,
   getProtocolStatus,
   isProtocolSupported,
   PROTOCOL_SCHEME,
+  parseProtocolUrl,
+  registerProtocol,
+  unregisterProtocol,
   VALID_ACTIONS,
 } from '@rediacc/shared-desktop/protocol';
 import { getPlatform } from '@rediacc/shared-desktop/utils';
 import { Command } from 'commander';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+
 // ProtocolAction type used by VALID_ACTIONS
 
 interface ProtocolRegisterOptions {

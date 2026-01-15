@@ -2,7 +2,7 @@ import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test } from '../../src/base/BaseTest';
-import { createTeamViaUI } from '../helpers/team-helpers';
+import { createTeamViaUI, waitForTeamRow } from '../helpers/team-helpers';
 
 test.describe('Team Edit Tests', () => {
   let dashboardPage: DashboardPage;
@@ -28,11 +28,29 @@ test.describe('Team Edit Tests', () => {
 
     await createTeamViaUI(page, baseTeamName);
 
-    await page.getByTestId(TeamPageIDS.systemTeamEditButton(baseTeamName)).click();
+    const teamRow = await waitForTeamRow(page, baseTeamName);
+    await teamRow.scrollIntoViewIfNeeded();
+    const editButton = page.getByTestId(TeamPageIDS.systemTeamEditButton(baseTeamName));
+    if (await editButton.isVisible().catch(() => false)) {
+      await editButton.click();
+    } else {
+      const actionsButton = teamRow.getByRole('button', { name: /actions/i });
+      await actionsButton.click();
+      await page.getByRole('menuitem', { name: /edit/i }).click();
+    }
     await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).click();
     await page.getByTestId(TeamPageIDS.resourceModalFieldTeamNameInput).fill(updatedTeamName);
     await page.getByTestId(TeamPageIDS.resourceModalOkButton).click();
-    await page.getByTestId(TeamPageIDS.systemTeamMembersButton(updatedTeamName)).click();
+    const updatedRow = await waitForTeamRow(page, updatedTeamName);
+    await updatedRow.scrollIntoViewIfNeeded();
+    const membersButton = page.getByTestId(TeamPageIDS.systemTeamMembersButton(updatedTeamName));
+    if (await membersButton.isVisible().catch(() => false)) {
+      await membersButton.click();
+    } else {
+      const actionsButton = updatedRow.getByRole('button', { name: /actions/i });
+      await actionsButton.click();
+      await page.getByRole('menuitem', { name: /members/i }).click();
+    }
 
     testReporter.completeStep('Edit team name and view members', 'passed');
 

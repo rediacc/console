@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 
 /**
  * Navigation test IDs used across the application.
@@ -274,7 +274,7 @@ export class NavigationHelper {
 
     const toggle = await this.getSidebarToggle();
     if ((await toggle.count()) > 0) {
-      await toggle.click();
+      await this.clickSidebarToggle(toggle);
       const drawer = this.page.locator('.ant-drawer');
       await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
       const drawerItem = drawer.locator(`[data-testid="${testId}"]`);
@@ -316,7 +316,7 @@ export class NavigationHelper {
       return;
     }
 
-    await toggle.click();
+    await this.clickSidebarToggle(toggle);
     try {
       await target.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
       return;
@@ -345,7 +345,7 @@ export class NavigationHelper {
 
     const toggle = await this.getSidebarToggle();
     if ((await toggle.count()) > 0) {
-      await toggle.click();
+      await this.clickSidebarToggle(toggle);
       const drawer = this.page.locator('.ant-drawer');
       await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
       const drawerParent = drawer.locator(`[data-testid="${parentTestId}"]`);
@@ -392,5 +392,45 @@ export class NavigationHelper {
     }
 
     return candidates[0];
+  }
+
+  private async dismissToasterOverlay(): Promise<void> {
+    const toaster = this.page.getByTestId('themed-toaster-container');
+    if ((await toaster.count()) === 0) {
+      return;
+    }
+
+    await this.page.evaluate(() => {
+      document
+        .querySelectorAll<HTMLElement>('[data-testid="themed-toaster-container"]')
+        .forEach((overlay) => {
+          overlay.style.pointerEvents = 'none';
+        });
+    });
+
+    if (await toaster.isVisible().catch(() => false)) {
+      try {
+        await toaster.waitFor({ state: 'hidden', timeout: 3000 });
+      } catch {
+        await this.page.evaluate(() => {
+          document
+            .querySelectorAll<HTMLElement>('[data-testid="themed-toaster-container"]')
+            .forEach((overlay) => {
+              overlay.style.pointerEvents = 'none';
+              overlay.style.opacity = '0';
+            });
+        });
+      }
+    }
+  }
+
+  private async clickSidebarToggle(toggle: Locator): Promise<void> {
+    try {
+      await this.dismissToasterOverlay();
+      await toggle.click();
+    } catch {
+      await this.dismissToasterOverlay();
+      await toggle.click({ force: true });
+    }
   }
 }

@@ -1,8 +1,8 @@
+import { parseGetOrganizationVault } from '@rediacc/shared/api';
+import { parseVaultContentOrEmpty, type VaultContent } from '@rediacc/shared/queue-vault';
 import { useCallback } from 'react';
 import { typedApi } from '@/api/client';
 import { type QueueRequestContext, queueService } from '@/services/queue';
-import { parseGetOrganizationVault } from '@rediacc/shared/api';
-import { parseVaultContentOrEmpty, type VaultContent } from '@rediacc/shared/queue-vault';
 
 /**
  * Hook to build queue vault data with all required context

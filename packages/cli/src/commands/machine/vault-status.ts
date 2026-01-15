@@ -1,22 +1,22 @@
-import { Command } from 'commander';
 import { parseGetTeamMachines } from '@rediacc/shared/api';
 import {
   getDeploymentSummary,
   getMachineSystemInfo,
-  parseListResult,
   type MachineWithVaultStatus,
-  parseVaultStatus,
   type ParsedVaultStatus,
+  parseListResult,
+  parseVaultStatus,
   type SystemInfo,
 } from '@rediacc/shared/services/machine';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';
 import { contextService } from '../../services/context.js';
 import { outputService } from '../../services/output.js';
+import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import type { OutputFormat } from '../../types/index.js';
 
 function displaySystemInfo(systemInfo: SystemInfo): void {
   outputService.info(t('commands.machine.vaultStatus.systemSection'));

@@ -3,11 +3,11 @@
  * Used by LocalActionsMenu to get credentials for terminal/VSCode connections
  */
 
-import { useCallback, useState } from 'react';
-import { typedApi } from '@/api/client';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { parseVaultContentOrEmpty } from '@rediacc/shared/queue-vault';
-import { extractGetTeamMachines, extractGetOrganizationTeams } from '@rediacc/shared/types';
+import { extractGetOrganizationTeams, extractGetTeamMachines } from '@rediacc/shared/types';
+import { useCallback, useState } from 'react';
+import { typedApi } from '@/api/client';
 
 /**
  * SSH credentials extracted from machine and team vaults

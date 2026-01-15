@@ -1,17 +1,17 @@
-import { Command } from 'commander';
 import {
-  parseGetTeamMachines,
   parseCreateMachine,
   parseGetOrganizationVaults,
+  parseGetTeamMachines,
 } from '@rediacc/shared/api';
 import type {
-  GetOrganizationVaults_ResultSet1,
   CreateMachineParams,
   DeleteMachineParams,
+  GetOrganizationVaults_ResultSet1,
   UpdateMachineAssignedBridgeParams,
   UpdateMachineNameParams,
   UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import {

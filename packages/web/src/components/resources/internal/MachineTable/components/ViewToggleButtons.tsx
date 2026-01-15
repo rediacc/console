@@ -1,5 +1,6 @@
-import React from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Button, Flex, Space, Tooltip, Typography } from 'antd';
+import React from 'react';
 import {
   BranchesOutlined,
   CloudServerOutlined,
@@ -9,7 +10,6 @@ import {
   InboxOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { GroupByMode } from '../types';
 
 interface ViewToggleButtonsProps {

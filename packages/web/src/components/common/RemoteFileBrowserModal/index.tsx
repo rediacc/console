@@ -1,16 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import {
   CloseOutlined,
   CloudDownloadOutlined,
   FolderOpenOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { Alert, Button, Empty, Flex, Input, Select, Space, Tooltip, Typography } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGetTeamMachines } from '@/api/api-hooks.generated';
-import { useGetTeamRepositories } from '@/api/api-hooks.generated';
-import { useGetTeamStorages } from '@/api/api-hooks.generated';
-import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
+import {
+  useGetOrganizationTeams,
+  useGetTeamMachines,
+  useGetTeamRepositories,
+  useGetTeamStorages,
+} from '@/api/api-hooks.generated';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -19,17 +22,16 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { BrowserBreadcrumb } from './BrowserBreadcrumb';
 import { BrowserFileTable } from './BrowserFileTable';
 import { FileListParserFactory } from './parsers';
-import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
 import type {
   AdditionalVaultData,
   RemoteFile,
   RemoteFileBrowserModalProps,
   SourceOption,
 } from './types';
+import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
 
 interface ExecuteListParams {
   selectedSource: string;

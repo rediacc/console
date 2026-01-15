@@ -1,14 +1,14 @@
-import type { HttpRetryConfig } from './retry';
 import type { VaultEncryptor } from '../../encryption';
 import type { ApiResponse } from '../../types/api';
 import type {
-  TokenAdapter,
   ApiUrlProvider,
-  MasterPasswordProvider,
   ErrorHandler,
+  MasterPasswordProvider,
   TelemetryHandler,
+  TokenAdapter,
 } from '../adapters/types';
 import type { ApiClient } from '../services/types';
+import type { HttpRetryConfig } from './retry';
 
 /**
  * HTTP client interface compatible with axios.

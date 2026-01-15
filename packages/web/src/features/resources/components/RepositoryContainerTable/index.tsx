@@ -1,5 +1,6 @@
+import { Alert, Flex, type MenuProps, Space, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Flex, Space, Typography, type MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useGetTeamRepositories } from '@/api/api-hooks.generated';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
@@ -36,7 +37,6 @@ import { ContainerMobileCard } from './components/ContainerMobileCard';
 import { useContainerActions } from './hooks/useContainerActions';
 import { useContainerParser } from './hooks/useContainerParser';
 import type { Container, RepositoryContainerTableProps } from './types';
-import type { ColumnsType } from 'antd/es/table';
 
 export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> = ({
   machine,

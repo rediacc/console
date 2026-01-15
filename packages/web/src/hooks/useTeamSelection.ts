@@ -1,8 +1,8 @@
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 import { useCallback, useMemo, useReducer } from 'react';
 import { useSelector } from 'react-redux';
 import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { RootState } from '@/store/store';
-import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 export interface UseTeamSelectionOptions {
   /** Custom logic to select initial team (e.g., for simple UI mode) */

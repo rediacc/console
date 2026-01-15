@@ -1,4 +1,6 @@
-import { Badge, Button, Popconfirm, Space, Tooltip, Typography, type TableProps } from 'antd';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
+import { Badge, Button, Popconfirm, Space, type TableProps, Tooltip, Typography } from 'antd';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { featureFlags } from '@/config/featureFlags';
 import {
@@ -11,8 +13,6 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 import { createActionColumn } from '../factories/action';
 import {
   createCountColumn,

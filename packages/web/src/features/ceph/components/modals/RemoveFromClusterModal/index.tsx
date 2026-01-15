@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import { Alert, Flex, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUpdateMachineClusterAssignment } from '@/api/api-hooks.generated';
 import { createTruncatedColumn } from '@/components/common/columns';
@@ -7,9 +8,7 @@ import { SizedModal } from '@/components/common/SizedModal';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import { WarningOutlined } from '@/utils/optimizedIcons';
-import type { ColumnsType } from 'antd/es/table';
+import { CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 
 interface RemoveFromClusterModalProps {
   open: boolean;

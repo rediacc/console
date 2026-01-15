@@ -1,5 +1,5 @@
-import { Alert, Flex, Input, Typography } from 'antd';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import { Alert, Flex, Input, Typography } from 'antd';
 
 interface Clone {
   repositoryGuid: string;

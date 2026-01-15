@@ -3,7 +3,7 @@ import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test, expect } from '../../src/base/BaseTest';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
-import { createTeamViaUI } from '../helpers/team-helpers';
+import { createTeamViaUI, waitForTeamRow } from '../helpers/team-helpers';
 
 test.describe('Team Trace Tests', () => {
   let dashboardPage: DashboardPage;
@@ -28,7 +28,16 @@ test.describe('Team Trace Tests', () => {
     testReporter.startStep('Trace team audit records');
 
     await createTeamViaUI(page, teamName);
-    await page.getByTestId(TeamPageIDS.systemTeamTraceButton(teamName)).click();
+    const teamRow = await waitForTeamRow(page, teamName);
+    await teamRow.scrollIntoViewIfNeeded();
+    const traceButton = page.getByTestId(TeamPageIDS.systemTeamTraceButton(teamName));
+    if (await traceButton.isVisible().catch(() => false)) {
+      await traceButton.click();
+    } else {
+      const actionsButton = teamRow.getByRole('button', { name: /actions/i });
+      await actionsButton.click();
+      await page.getByRole('menuitem', { name: /trace/i }).click();
+    }
     const auditRecordsText = await page
       .getByTestId(TeamPageIDS.auditTraceTotalRecords)
       .locator('strong')

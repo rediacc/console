@@ -49,34 +49,32 @@ export type {
   MachineAssignmentType,
   PluginContainer,
 } from '@rediacc/shared/types';
-
-// Modal types - only export what's actually used
-export type { BaseModalProps } from './modal';
-
 // Electron API types for desktop integration
 export type {
+  ContainerExecParams,
+  ContainerLogsParams,
+  ContainerSessionResult,
+  ContainerStatsParams,
   ElectronAPI,
-  TerminalConnectParams,
-  TerminalConnectResult,
+  ParsedProtocolUrl,
+  RsyncChanges,
   RsyncExecutorOptions,
   RsyncProgress,
   RsyncResult,
-  RsyncChanges,
-  ParsedProtocolUrl,
-  UpdateInfo,
-  UpdateProgress,
   SFTPConnectParams,
   SFTPConnectResult,
   SFTPFileInfo,
   SFTPSessionInfo,
-  ContainerExecParams,
-  ContainerLogsParams,
-  ContainerStatsParams,
-  ContainerSessionResult,
+  TerminalConnectParams,
+  TerminalConnectResult,
+  UpdateInfo,
+  UpdateProgress,
   VSCodeInfo,
   VSCodeInstallations,
-  VSCodePreference,
   VSCodeLaunchOptions,
   VSCodeLaunchResult,
+  VSCodePreference,
 } from './electron';
-export { isElectron, getElectronAPI } from './electron';
+export { getElectronAPI, isElectron } from './electron';
+// Modal types - only export what's actually used
+export type { BaseModalProps } from './modal';

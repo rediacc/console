@@ -1,6 +1,6 @@
 import {
-  validateSize,
   validateNetworkId,
+  validateSize,
   validateSSHPrivateKey,
 } from '@rediacc/shared/queue-vault';
 import type { Rule } from 'antd/es/form';

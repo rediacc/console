@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { typedApi } from '@/api/client';
 import { extractFirstByIndex } from '@rediacc/shared/api';
 import type { OrganizationDropdownData } from '@rediacc/shared/types';
+import { useQuery } from '@tanstack/react-query';
+import { typedApi } from '@/api/client';
 
 const EMPTY_DROPDOWN_DATA: OrganizationDropdownData = {
   teams: [],

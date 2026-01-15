@@ -1,5 +1,5 @@
-import React from 'react';
 import { Alert, Flex, Form, Popover, Slider, Space, Tag, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ExclamationCircleOutlined,

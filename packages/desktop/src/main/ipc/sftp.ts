@@ -1,7 +1,7 @@
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
-import { ipcMain } from 'electron';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { FileInfo } from '@rediacc/shared-desktop';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { ipcMain } from 'electron';
 
 /**
  * SFTP connection parameters from renderer

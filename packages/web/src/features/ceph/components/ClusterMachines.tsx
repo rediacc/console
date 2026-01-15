@@ -1,15 +1,15 @@
-import React, { useMemo } from 'react';
+import type {
+  GetCephClusterMachines_ResultSet1,
+  GetCephClusters_ResultSet1,
+} from '@rediacc/shared/types';
 import { Empty, Flex, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetCephClusterMachines } from '@/api/api-hooks.generated';
 import { RESPONSIVE_HIDE_XS } from '@/components/common/columns';
 import { createSorter, formatTimestampAsIs } from '@/platform';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
-import type {
-  GetCephClusters_ResultSet1,
-  GetCephClusterMachines_ResultSet1,
-} from '@rediacc/shared/types';
-import type { ColumnsType } from 'antd/es/table';
 
 interface ClusterMachinesProps {
   cluster: GetCephClusters_ResultSet1;

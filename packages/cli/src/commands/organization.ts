@@ -1,17 +1,17 @@
-import { Command } from 'commander';
 import {
+  extractFirstByIndex,
+  parseGetOrganizationDashboard,
   parseGetOrganizationVault,
   parseGetOrganizationVaults,
-  parseGetOrganizationDashboard,
-  extractFirstByIndex,
 } from '@rediacc/shared/api';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 export function registerOrganizationCommands(program: Command): void {
   const organization = program
     .command('organization')

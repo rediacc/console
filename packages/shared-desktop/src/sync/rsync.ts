@@ -1,15 +1,15 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { prepareRsyncPaths } from './pathConverter.js';
 import {
+  findSystemMsys2Path,
+  getMsys2Environment,
   getRsyncPath,
   getSshPath,
-  getMsys2Environment,
-  findSystemMsys2Path,
 } from '../msys2/paths.js';
-import { getPlatform, commandExists } from '../utils/platform.js';
 import type { SyncProgress, SyncResult } from '../types/index.js';
+import { commandExists, getPlatform } from '../utils/platform.js';
+import { prepareRsyncPaths } from './pathConverter.js';
 
 /**
  * MSYS2 subdirectories to check for binaries (kept for backward compatibility)

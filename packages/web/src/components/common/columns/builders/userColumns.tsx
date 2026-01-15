@@ -1,4 +1,7 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetOrganizationUsers_ResultSet1 } from '@rediacc/shared/types';
 import { Button, Popconfirm, Space, Tag, Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   CheckCircleOutlined,
@@ -8,11 +11,8 @@ import {
   StopOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetOrganizationUsers_ResultSet1 } from '@rediacc/shared/types';
 import { RESPONSIVE_HIDE_XS } from '..';
 import { createActionColumn } from '../factories/action';
-import type { ColumnsType } from 'antd/es/table';
 
 interface BuildUserColumnsParams {
   t: TypedTFunction;

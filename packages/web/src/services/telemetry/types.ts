@@ -1,13 +1,12 @@
 // Re-export shared types
+// Alias for backward compatibility
 export type {
   TelemetryConfig,
   TelemetryContext,
   TelemetryMetric,
+  TelemetryMetric as WebVitalsMetric,
   UserContext,
 } from '@rediacc/shared/telemetry';
-
-// Alias for backward compatibility
-export type { TelemetryMetric as WebVitalsMetric } from '@rediacc/shared/telemetry';
 
 export interface LayoutShiftEntry extends PerformanceEntry {
   value: number;

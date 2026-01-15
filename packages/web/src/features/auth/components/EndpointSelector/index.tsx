@@ -1,16 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { Button, Flex, Form, Input, Modal, Select, Typography } from 'antd';
 import axios from 'axios';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '@/api/client';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useDialogState } from '@/hooks/useDialogState';
-import { apiConnectionService } from '@/services/api';
-import { Endpoint, endpointService } from '@/services/api';
+import { apiConnectionService, Endpoint, endpointService } from '@/services/api';
 import { versionService } from '@/services/versionService';
 import { showMessage } from '@/utils/messages';
 import { ApiOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@/utils/optimizedIcons';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 interface EndpointHealth {
   isHealthy: boolean;
