@@ -87,9 +87,11 @@ export class LoginPage extends BasePage {
       await this.page.waitForResponse(
         (response) => {
           const url = response.url();
-          return response.status() === 200 &&
-                 (url.includes('/api/') &&
-                  (url.includes('Organization') || url.includes('Dashboard') || url.includes('Info')));
+          return (
+            response.status() === 200 &&
+            url.includes('/api/') &&
+            (url.includes('Organization') || url.includes('Dashboard') || url.includes('Info'))
+          );
         },
         { timeout: 10000 }
       );

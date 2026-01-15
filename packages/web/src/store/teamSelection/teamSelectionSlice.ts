@@ -34,5 +34,5 @@ const teamSelectionSlice = createSlice({
   },
 });
 
-export const { initializeTeam, setTeam, clearPage, resetAllTeams } = teamSelectionSlice.actions;
+export const { initializeTeam, setTeam } = teamSelectionSlice.actions;
 export default teamSelectionSlice.reducer;

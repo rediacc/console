@@ -34,7 +34,8 @@ export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelec
   const pageState = useSelector((state: RootState) => state.teamSelection.pages[pageId]);
 
   // Initialize team synchronously during render (matches old behavior)
-  const shouldInitialize = !isLoading && autoSelect && teams.length > 0 && !pageState?.hasInitialized && !initRef.current;
+  const shouldInitialize =
+    !isLoading && autoSelect && teams.length > 0 && !pageState?.hasInitialized && !initRef.current;
 
   if (shouldInitialize) {
     initRef.current = true;

@@ -62,7 +62,12 @@ const StoragePage: React.FC = () => {
   const [modal, contextHolder] = Modal.useModal();
 
   // Custom hooks for common patterns
-  const { teams, selectedTeam, setSelectedTeam, isLoading: teamsLoading } = useTeamSelection({
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
     pageId: 'storage',
   });
   const {
@@ -94,9 +99,7 @@ const StoragePage: React.FC = () => {
     refetch: refetchStorage,
   } = useGetTeamStorages(selectedTeam ?? undefined);
 
-  const { data: machines = [] } = useGetTeamMachines(
-    selectedTeam ?? undefined
-  );
+  const { data: machines = [] } = useGetTeamMachines(selectedTeam ?? undefined);
 
   const { data: dropdownData } = useDropdownData();
   const { executeDynamic, isExecuting } = useQueueAction();

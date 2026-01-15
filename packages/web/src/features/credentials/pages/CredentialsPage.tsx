@@ -58,7 +58,12 @@ const CredentialsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { teams, selectedTeam, setSelectedTeam, isLoading: teamsLoading } = useTeamSelection({
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
     pageId: 'credentials',
   });
   const {

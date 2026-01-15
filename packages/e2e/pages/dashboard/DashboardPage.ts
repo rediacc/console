@@ -85,141 +85,142 @@ export class DashboardPage extends BasePage {
 
   async waitForTeamSelection(timeout = 10000): Promise<void> {
     // Generate a unique team name for this test to avoid parallel conflicts
-    const uniqueTeamName = `e2e-team-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const uniqueTeamName = `e2e-team-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     console.warn(`[Team Selection] Using unique team context: ${uniqueTeamName}`);
+
     // Wait for teams API to complete first
-    // This is more reliable than networkidle which has browser-specific timing issues
+    await this.waitForTeamsAPI(timeout);
+
+    // Try auto-selection first
+    const autoSelected = await this.tryAutoTeamSelection();
+    if (autoSelected) {
+      return;
+    }
+
+    // Manual selection fallback
+    const manuallySelected = await this.tryManualTeamSelection();
+    if (manuallySelected) {
+      return;
+    }
+
+    // Final fallback: create a team
+    await this.createTeamAsFallback(uniqueTeamName);
+  }
+
+  private async waitForTeamsAPI(timeout: number): Promise<void> {
     try {
       await this.page.waitForResponse(
         (response) => {
           const url = response.url();
-          return response.status() === 200 &&
-                 url.includes('/api/') &&
-                 (url.includes('Team') || url.includes('Organization'));
+          return (
+            response.status() === 200 &&
+            url.includes('/api/') &&
+            (url.includes('Team') || url.includes('Organization'))
+          );
         },
         { timeout }
       );
     } catch {
-      // Fallback: if no matching API response, continue with UI check
       console.warn('No matching teams API response found, continuing with UI visibility check');
     }
+  }
 
-    // Add extra wait for slower browsers (Firefox, WebKit) to complete Redux initialization
-    await this.page.waitForTimeout(1000);
-
-    // Try to wait for split view to appear (indicates team was auto-selected)
+  private async tryAutoTeamSelection(): Promise<boolean> {
     try {
       await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 5000 });
       console.warn('Team auto-selection succeeded - split view is visible');
-      return; // Success - team was auto-selected
+      return true;
     } catch {
       console.warn('Split view not visible after 5s, attempting manual team selection fallback');
-      // Check if we're in a "no team selected" state
-      const noTeamMessage = this.page.locator('text=Select a team to view its resources');
-      if (await noTeamMessage.isVisible().catch(() => false)) {
-        console.warn('Found "no team selected" message - manual selection required');
-      } else {
-        console.warn('No clear "no team" message found - proceeding with manual selection attempt');
-      }
+      return false;
     }
+  }
 
-    // Fallback: If auto-selection didn't work, manually select the first team
+  private async tryManualTeamSelection(): Promise<boolean> {
     try {
-      // Wait for team selector to be visible
       await this.teamSelector.waitFor({ state: 'visible', timeout: 3000 });
-
-      // Click to open dropdown
       await this.clickWithRetry(this.teamSelector);
-      await this.page.waitForTimeout(500);
 
-      // Find and click first team option with better parallel execution handling
-      const firstTeamOption = this.page.locator('[data-testid^="team-selector-option-"]').first();
-      
-      // Wait for team options with retry logic for parallel test environments
-      let teamOptionVisible = false;
-      let waitAttempts = 0;
-      const maxWaitAttempts = 3;
-      
-      while (!teamOptionVisible && waitAttempts < maxWaitAttempts) {
-        try {
-          await firstTeamOption.waitFor({ state: 'visible', timeout: 2000 });
-          teamOptionVisible = true;
-          console.warn('Team option is visible, proceeding with selection');
-        } catch {
-          waitAttempts++;
-          console.warn(`Team option not visible (attempt ${waitAttempts}), checking dropdown state...`);
-          
-          // Check if dropdown is still open
-          const dropdownOpen = await this.teamSelector.getAttribute('aria-expanded');
-          if (dropdownOpen !== 'true') {
-            console.warn('Dropdown appears to be closed, reopening...');
-            await this.clickWithRetry(this.teamSelector);
-            await this.page.waitForTimeout(500);
-          } else {
-            console.warn('Dropdown is open but no options visible, waiting...');
-            await this.page.waitForTimeout(1000);
-          }
-        }
-      }
-      
-      if (!teamOptionVisible) {
-        throw new Error('Team options did not become visible after multiple attempts');
-      }
-      
-      // Click the team option
-      await this.clickWithRetry(firstTeamOption);
-      // Wait for the selection to take effect
-      await this.page.waitForTimeout(1000);
-
-      // Wait for selection to complete and split view to appear
-      try {
-        await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 10000 });
+      const teamSelected = await this.selectFirstAvailableTeam();
+      if (teamSelected) {
         console.warn('Manual team selection fallback succeeded');
-      } catch {
-        console.error('Split view did not appear after team selection');
-        throw new Error('Team selection failed: split view did not appear after selecting team');
+        return true;
       }
     } catch (error: unknown) {
-      console.error('Team selection failed with error:', error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      // Final fallback: try to create a team if none exist
-      console.warn('Attempting final fallback: creating a new team...');
+      console.error('Manual team selection failed:', error);
+    }
+    return false;
+  }
+
+  private async selectFirstAvailableTeam(): Promise<boolean> {
+    const firstTeamOption = this.page.locator('[data-testid^="team-selector-option-"]').first();
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        // Navigate to teams page and create a team
-        await this.page.goto('/console/organization/teams');
-        await this.page.waitForLoadState('networkidle');
-        
-        const createButton = this.page.getByTestId('system-create-team-button');
-        await createButton.waitFor({ state: 'visible', timeout: 5000 });
-        await createButton.click();
-        
-        const teamNameInput = this.page.getByTestId('resource-modal-field-team-name-input');
-        await teamNameInput.waitFor({ state: 'visible', timeout: 5000 });
-        await teamNameInput.fill(uniqueTeamName);
-        
-        // Generate SSH key
-        await this.page.getByTestId('vault-editor-generate-ssh-private-key').click();
-        await this.page.getByTestId('vault-editor-generate-button').click();
-        await this.page.getByTestId('vault-editor-apply-generated').click();
-        
-        // Submit
-        await this.page.getByTestId('resource-modal-ok-button').click();
-        
-        // Wait for creation to complete
-        await this.page.waitForTimeout(2000);
-        
-        // Navigate back to machines page
-        await this.page.goto('/console/machines');
-        await this.page.waitForLoadState('networkidle');
-        
-        console.warn('Team creation fallback succeeded');
-        return; // Success with fallback
-      } catch (createError) {
-        console.error('Team creation fallback also failed:', createError);
-        throw new Error(`Team selection failed: both auto-selection and manual fallback failed. Error: ${errorMessage}`);
+        await firstTeamOption.waitFor({ state: 'visible', timeout: 2000 });
+        await this.clickWithRetry(firstTeamOption);
+
+        // Wait for selection to complete
+        await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 10000 });
+        return true;
+      } catch {
+        console.warn(`Team option not visible (attempt ${attempt})`);
+
+        if (await this.isDropdownClosed()) {
+          await this.clickWithRetry(this.teamSelector);
+        }
       }
     }
+
+    return false;
+  }
+
+  private async isDropdownClosed(): Promise<boolean> {
+    const dropdownOpen = await this.teamSelector.getAttribute('aria-expanded');
+    return dropdownOpen === 'false' || dropdownOpen === null;
+  }
+
+  private async createTeamAsFallback(uniqueTeamName: string): Promise<void> {
+    console.warn('Attempting final fallback: creating a new team...');
+
+    try {
+      await this.navigateToTeamsPage();
+      await this.createNewTeam(uniqueTeamName);
+      await this.navigateBackToMachines();
+
+      console.warn('Team creation fallback succeeded');
+    } catch (createError) {
+      console.error('Team creation fallback also failed:', createError);
+      throw new Error('Team selection failed: both auto-selection and manual fallback failed');
+    }
+  }
+
+  private async navigateToTeamsPage(): Promise<void> {
+    await this.page.goto('/console/organization/teams');
+    await this.page.waitForLoadState('networkidle');
+  }
+
+  private async createNewTeam(teamName: string): Promise<void> {
+    const createButton = this.page.getByTestId('system-create-team-button');
+    await createButton.waitFor({ state: 'visible', timeout: 5000 });
+    await createButton.click();
+
+    const teamNameInput = this.page.getByTestId('resource-modal-field-team-name-input');
+    await teamNameInput.waitFor({ state: 'visible', timeout: 5000 });
+    await teamNameInput.fill(teamName);
+
+    // Generate SSH key
+    await this.page.getByTestId('vault-editor-generate-ssh-private-key').click();
+    await this.page.getByTestId('vault-editor-generate-button').click();
+    await this.page.getByTestId('vault-editor-apply-generated').click();
+
+    // Submit
+    await this.page.getByTestId('resource-modal-ok-button').click();
+  }
+
+  private async navigateBackToMachines(): Promise<void> {
+    await this.page.goto('/console/machines');
+    await this.page.waitForLoadState('networkidle');
   }
 
   async clickUserMenu(): Promise<void> {
@@ -263,21 +264,21 @@ export class DashboardPage extends BasePage {
     // Click to open the dropdown
     await this.clickWithRetry(this.teamSelector);
 
-    // Wait for dropdown to fully open (Ant Design animation)
-    await this.page.waitForTimeout(500);
+    // Wait for dropdown to fully open by checking for any dropdown element
+    await this.page.locator('.ant-select-dropdown').waitFor({ state: 'visible', timeout: 500 });
 
     // If a specific team is needed, click it in the dropdown
     if (teamName && teamName !== 'test') {
       const option = this.page.locator(`[data-testid="team-selector-option-${teamName}"]`);
       await option.waitFor({ state: 'visible', timeout: 5000 });
       await this.clickWithRetry(option);
-      // Wait for selection to complete
-      await this.page.waitForTimeout(300);
+      // Wait for dropdown to close after selection
+      await this.page.locator('.ant-select-dropdown').waitFor({ state: 'hidden', timeout: 300 });
     } else {
       // For test purposes, just close the dropdown by pressing Escape
       await this.page.keyboard.press('Escape');
       // Wait for dropdown to fully close
-      await this.page.waitForTimeout(500);
+      await this.page.locator('.ant-select-dropdown').waitFor({ state: 'hidden', timeout: 500 });
     }
 
     // Verify selector is still visible after interaction

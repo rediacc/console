@@ -66,7 +66,7 @@ export class TestDataManager {
     if (!projectName) {
       throw new Error('projectName is required for TestDataManager');
     }
-    this.workerId = workerId ?? process.env.TEST_WORKER_INDEX ?? '0';
+    this.workerId = workerId || process.env.TEST_WORKER_INDEX || '0';
     this.dataDir = dataDir;
     this.projectName = projectName;
 
@@ -425,7 +425,7 @@ export class TestDataManager {
     // Acquire file lock before read-modify-write
     const release = await lockfile.lock(this.createdUsersFile, {
       retries: { retries: 5, minTimeout: 50, maxTimeout: 200 },
-      stale: 10000
+      stale: 10000,
     });
 
     try {
@@ -448,7 +448,7 @@ export class TestDataManager {
       this.saveCreatedUsers(createdUsers);
       console.warn(`Created user saved: ${email}`);
     } finally {
-      await release();  // Always release lock
+      await release(); // Always release lock
     }
   }
 
@@ -481,7 +481,7 @@ export class TestDataManager {
     // Acquire file lock before read-modify-write
     const release = await lockfile.lock(this.createdUsersFile, {
       retries: { retries: 5, minTimeout: 50, maxTimeout: 200 },
-      stale: 10000
+      stale: 10000,
     });
 
     try {
@@ -496,7 +496,7 @@ export class TestDataManager {
       this.saveCreatedUsers(createdUsers);
       console.warn(`User activation updated: ${email} -> ${activated}`);
     } finally {
-      await release();  // Always release lock
+      await release(); // Always release lock
     }
   }
 
@@ -506,7 +506,7 @@ export class TestDataManager {
     // Acquire file lock before read-modify-write
     const release = await lockfile.lock(this.createdUsersFile, {
       retries: { retries: 5, minTimeout: 50, maxTimeout: 200 },
-      stale: 10000
+      stale: 10000,
     });
 
     try {
@@ -514,7 +514,7 @@ export class TestDataManager {
       this.saveCreatedUsers(createdUsers);
       console.warn(`Removed created user: ${email}`);
     } finally {
-      await release();  // Always release lock
+      await release(); // Always release lock
     }
   }
 

@@ -32,7 +32,12 @@ const MachinesPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Use custom hooks for common patterns
-  const { teams, selectedTeam, setSelectedTeam, isLoading: teamsLoading } = useTeamSelection({
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
     pageId: 'machines',
   });
   const {
@@ -61,12 +66,8 @@ const MachinesPage: React.FC = () => {
   const { data: machines = [], refetch: refetchMachines } = useGetTeamMachines(
     selectedTeam ?? undefined
   );
-  const { data: repositories = [] } = useGetTeamRepositories(
-    selectedTeam ?? undefined
-  );
-  const { data: storages = [] } = useGetTeamStorages(
-    selectedTeam ?? undefined
-  );
+  const { data: repositories = [] } = useGetTeamRepositories(selectedTeam ?? undefined);
+  const { data: storages = [] } = useGetTeamStorages(selectedTeam ?? undefined);
 
   const mutations = useMachineMutations();
   const { executeDynamic, isExecuting } = useQueueAction();

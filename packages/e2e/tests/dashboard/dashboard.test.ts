@@ -1,7 +1,6 @@
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { test, expect } from '../../src/base/BaseTest';
-import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import type { Locator } from '@playwright/test';
 
 test.describe('Dashboard Tests', () => {
@@ -53,8 +52,6 @@ test.describe('Dashboard Tests', () => {
 
     await testReporter.finalizeTest();
   });
-
-
 
   test('should toggle team selector @dashboard', async ({
     page: _page,

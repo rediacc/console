@@ -63,7 +63,12 @@ const isPoolEntity = (data: CephCluster | CephPool): data is CephPool => {
 const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   const { t } = useTranslation(['ceph', 'common']);
 
-  const { teams, selectedTeam, setSelectedTeam, isLoading: teamsLoading } = useTeamSelection({
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
     pageId: 'ceph',
   });
   const queueTrace = useQueueTraceModal();
