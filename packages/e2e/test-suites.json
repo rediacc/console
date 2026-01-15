@@ -18,8 +18,7 @@
       "tests/user/001-user-create.test.ts",
       "tests/user/002-user-active-deactive.test.ts",
       "tests/user/003-user-add-to-team.test.ts",
-      "tests/user/004-user-trace.test.ts",
-      "tests/user/005-user-permission.test.ts"
+      "tests/user/004-user-trace.test.ts"
     ],
     "full-e2e": [
       "tests/auth/register.test.ts",

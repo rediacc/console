@@ -25,7 +25,7 @@ test.describe('Team Delete Tests', () => {
     testReporter,
   }) => {
     test.setTimeout(60000);
-    const teamName = `e2e-team-${Date.now()}`;
+    const teamName = `e2e-team-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
     testReporter.startStep('Trace team audit records');
 
