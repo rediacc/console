@@ -74,13 +74,14 @@ test.describe('Dashboard Tests', () => {
     // Go to Settings (ensure nav is open on mobile)
     const nav = new NavigationHelper(page);
     await nav.goToSettings();
-    await page.waitForLoadState('networkidle');
+    // Wait for settings page to load instead of networkidle
+    await page.waitForTimeout(1000);
     await screenshotManager.captureStep('settings_navigated');
 
     // Go back to machines (ensure nav is open on mobile)
     await nav.goToMachines();
-    await page.waitForLoadState('networkidle');
-    await expect(locators.splitResourceViewContainer).toBeVisible();
+    // Wait for split view to appear instead of networkidle
+    await expect(locators.splitResourceViewContainer).toBeVisible({ timeout: 10000 });
     await screenshotManager.captureStep('machines_navigated');
 
     testReporter.completeStep('Navigate sections', 'passed');

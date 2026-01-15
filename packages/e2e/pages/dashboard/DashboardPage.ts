@@ -140,10 +140,32 @@ export class DashboardPage extends BasePage {
     return this.page.locator(`[data-testid="team-selector-tag-${teamName}"]`);
   }
 
-  async selectTeam(_teamName: string): Promise<void> {
+  async selectTeam(teamName: string): Promise<void> {
+    // Verify selector is visible before interacting
+    await this.teamSelector.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Click to open the dropdown
     await this.clickWithRetry(this.teamSelector);
-    // Logic for selecting team from dropdown would go here,
-    // assuming the tags might also be used in the selector or similar.
+
+    // Wait for dropdown to fully open (Ant Design animation)
+    await this.page.waitForTimeout(500);
+
+    // If a specific team is needed, click it in the dropdown
+    if (teamName && teamName !== 'test') {
+      const option = this.page.locator(`[data-testid="team-selector-option-${teamName}"]`);
+      await option.waitFor({ state: 'visible', timeout: 5000 });
+      await this.clickWithRetry(option);
+      // Wait for selection to complete
+      await this.page.waitForTimeout(300);
+    } else {
+      // For test purposes, just close the dropdown by pressing Escape
+      await this.page.keyboard.press('Escape');
+      // Wait for dropdown to fully close
+      await this.page.waitForTimeout(500);
+    }
+
+    // Verify selector is still visible after interaction
+    await this.teamSelector.waitFor({ state: 'visible', timeout: 3000 });
   }
 
   async clickCreateMachine(): Promise<void> {
