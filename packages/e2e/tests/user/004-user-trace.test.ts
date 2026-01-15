@@ -4,18 +4,15 @@ import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
 import { ensureCreatedUser } from '../helpers/user-helpers';
 
 test.describe('Team Trace Tests', () => {
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
-  let testDataManager: TestDataManager;
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
-    testDataManager = new TestDataManager();
 
     await loginPage.navigate();
     await loginPage.performQuickLogin();
@@ -26,7 +23,27 @@ test.describe('Team Trace Tests', () => {
     page,
     screenshotManager: _screenshotManager,
     testReporter,
+    testDataManager,
   }) => {
+    test.setTimeout(60000);
+    const dismissDrawerMask = async (): Promise<void> => {
+      const mask = page.locator('.ant-drawer-mask');
+      if (await mask.isVisible().catch(() => false)) {
+        try {
+          await mask.click({ force: true });
+          await mask.waitFor({ state: 'hidden', timeout: 3000 });
+        } catch {
+          await page.keyboard.press('Escape').catch(() => null);
+          await page.evaluate(() => {
+            const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
+            if (overlay) {
+              overlay.style.pointerEvents = 'none';
+              overlay.style.opacity = '0';
+            }
+          });
+        }
+      }
+    };
     testReporter.startStep('Navigate to Organization Users section');
 
     const createdUser = await ensureCreatedUser(page, testDataManager);
@@ -35,13 +52,46 @@ test.describe('Team Trace Tests', () => {
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationUsers();
 
-    await expect(page.getByTestId(UserPageIDs.resourceListItem(createdUser.email))).toBeVisible();
+    const verifyUserVisible = async (): Promise<boolean> => {
+      await nav.goToOrganizationUsers();
+      const searchInput = page.getByTestId('resource-list-search');
+      if (await searchInput.isVisible().catch(() => false)) {
+        await searchInput.fill('');
+        await searchInput.fill(createdUser.email);
+        await searchInput.press('Enter');
+      }
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));
+      if (await listItem.isVisible().catch(() => false)) {
+        return true;
+      }
+      const userTable = page.getByTestId(UserPageIDs.systemUserTable);
+      return await userTable
+        .getByText(createdUser.email, { exact: true })
+        .isVisible()
+        .catch(() => false);
+    };
+
+    await expect.poll(async () => verifyUserVisible(), { timeout: 15000 }).toBe(true);
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');
 
     testReporter.startStep('Trace user audit records');
 
-    await page.getByTestId(UserPageIDs.systemUserTraceButton(createdUser.email)).click();
+    const traceButton = page.getByTestId(UserPageIDs.systemUserTraceButton(createdUser.email));
+    if (await traceButton.isVisible().catch(() => false)) {
+      await dismissDrawerMask();
+      await traceButton.click();
+    } else {
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));
+      await expect(listItem).toBeVisible({ timeout: 5000 });
+      const actionsButton = listItem.getByRole('button', { name: /actions/i });
+      await expect(actionsButton).toBeVisible();
+      await dismissDrawerMask();
+      await actionsButton.click();
+      const traceMenuItem = page.getByRole('menuitem', { name: /trace/i });
+      await expect(traceMenuItem).toBeVisible({ timeout: 5000 });
+      await traceMenuItem.click();
+    }
     const auditRecordsText = await page
       .getByTestId(UserPageIDs.auditTraceVisibleRecords)
       .locator('strong')

@@ -46,8 +46,8 @@ export default test.defineConfig({
   /* No retries - tests should pass consistently */
   retries: 0,
 
-  /* Parallel workers: minimum 3, maximum CPU count */
-  workers: Math.max(3, os.cpus().length),
+  /* Parallel workers: reduced to avoid resource contention */
+  workers: process.env.CI ? 3 : Math.min(6, os.cpus().length),
 
   /* Stop test run after first test failure (including all retries) */
   maxFailures: process.env.STOP_ON_FAILURE === 'true' ? 1 : undefined,

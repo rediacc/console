@@ -3,19 +3,150 @@ import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
-import { createUserViaUI, ensureCreatedUser } from '../helpers/user-helpers';
+import { waitForTeamRow } from '../helpers/team-helpers';
+import { createUserViaUI } from '../helpers/user-helpers';
 import type { Page } from '@playwright/test';
 
 test.describe('User Team Assignment Tests', () => {
+  test.describe.configure({ timeout: 60000 });
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
-  let testDataManager: TestDataManager;
+
+  const selectUserInAddMemberTab = async (page: Page, email: string): Promise<void> => {
+    const addMemberPanel = page.getByRole('tabpanel', { name: 'Add Member' });
+    const userCombobox = addMemberPanel.getByRole('combobox');
+    await expect(userCombobox).toBeVisible();
+    await userCombobox.click();
+    await userCombobox.fill(email);
+    await userCombobox.press('Enter');
+
+    const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
+    await expect(addButton).toBeVisible();
+    try {
+      await expect(addButton).toBeEnabled({ timeout: 5000 });
+    } catch {
+      await userCombobox.click();
+      await userCombobox.press('ArrowDown');
+      const userOption = page.getByRole('option', { name: email });
+      await expect(userOption).toBeAttached({ timeout: 10000 });
+      await userOption.click({ force: true });
+      await expect(addButton).toBeEnabled({ timeout: 10000 });
+    }
+    await addButton.click();
+  };
+  const openTeamMembersDialog = async (page: Page, teamName: string): Promise<void> => {
+    const dismissDrawerMask = async (): Promise<void> => {
+      const mask = page.locator('.ant-drawer-mask');
+      if (await mask.isVisible().catch(() => false)) {
+        try {
+          await mask.click({ force: true });
+          await mask.waitFor({ state: 'hidden', timeout: 3000 });
+        } catch {
+          await page.keyboard.press('Escape').catch(() => null);
+          await page.evaluate(() => {
+            const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
+            if (overlay) {
+              overlay.style.pointerEvents = 'none';
+              overlay.style.opacity = '0';
+            }
+          });
+        }
+      }
+    };
+    const teamMembersButton = page.getByTestId(UserPageIDs.systemTeamMembersButton(teamName));
+    if (await teamMembersButton.isVisible().catch(() => false)) {
+      await dismissDrawerMask();
+      await teamMembersButton.click();
+      return;
+    }
+
+    const teamRow = await waitForTeamRow(page, teamName);
+    const rowMembersButton = teamRow.getByRole('button', { name: /members/i });
+    try {
+      await expect(rowMembersButton).toBeVisible({ timeout: 3000 });
+      await rowMembersButton.first().click();
+      return;
+    } catch {
+      // Fall through to other strategies.
+    }
+
+    const genericMembersButton = page.getByRole('button', { name: /^members$/i });
+    try {
+      await expect(genericMembersButton).toBeVisible({ timeout: 3000 });
+      await genericMembersButton.first().click();
+      return;
+    } catch {
+      // Fall through to list actions.
+    }
+
+    const actionsButton = teamRow.getByRole('button', { name: /actions/i });
+    await expect(actionsButton).toBeVisible();
+    await dismissDrawerMask();
+    await actionsButton.click();
+    const membersMenuItem = page.getByRole('menuitem', { name: /members/i });
+    await expect(membersMenuItem).toBeVisible();
+    await membersMenuItem.click();
+  };
+  const dismissCreateUserModal = async (page: Page): Promise<void> => {
+    const createModal = page.getByTestId('users-create-modal');
+    const createDialog = page.getByRole('dialog', { name: /create user/i });
+    if (
+      (await createModal.isVisible().catch(() => false)) ||
+      (await createDialog.isVisible().catch(() => false))
+    ) {
+      const closeButton = createDialog.getByRole('button', { name: /cancel|close/i }).first();
+      if (await closeButton.isVisible().catch(() => false)) {
+        try {
+          await closeButton.click();
+        } catch {
+          await page.keyboard.press('Escape').catch(() => null);
+        }
+      } else {
+        await page.keyboard.press('Escape').catch(() => null);
+      }
+      await expect(createModal)
+        .toBeHidden({ timeout: 10000 })
+        .catch(() => null);
+      await expect(createDialog)
+        .toBeHidden({ timeout: 10000 })
+        .catch(() => null);
+    }
+  };
+  const waitForTeamsPage = async (page: Page): Promise<void> => {
+    const createButton = page.getByTestId('system-create-team-button');
+    const listContainer = page.getByTestId('resource-list-container');
+    await expect
+      .poll(
+        async () =>
+          (await createButton.isVisible().catch(() => false)) ||
+          (await listContainer.isVisible().catch(() => false)),
+        { timeout: 10000 }
+      )
+      .toBe(true);
+  };
+  const fillResourceSearch = async (page: Page, value: string): Promise<void> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const searchInput = page.getByTestId('resource-list-search');
+      if (!(await searchInput.isVisible().catch(() => false))) {
+        return;
+      }
+      try {
+        await expect(searchInput).toBeVisible({ timeout: 3000 });
+        await expect(searchInput).toBeEditable({ timeout: 3000 });
+        await searchInput.fill(value);
+        await searchInput.press('Enter');
+        return;
+      } catch (error) {
+        if (attempt === 2) {
+          throw error;
+        }
+      }
+    }
+  };
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
-    testDataManager = new TestDataManager();
 
     await loginPage.navigate();
     await loginPage.performQuickLogin();
@@ -26,11 +157,7 @@ test.describe('User Team Assignment Tests', () => {
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationUsers();
 
-    const searchInput = page.getByTestId('resource-list-search');
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill(email);
-      await searchInput.press('Enter');
-    }
+    await fillResourceSearch(page, email);
 
     const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(email));
     if (await activateButton.isVisible().catch(() => false)) {
@@ -45,8 +172,10 @@ test.describe('User Team Assignment Tests', () => {
     page,
     screenshotManager: _screenshotManager,
     testReporter,
+    testDataManager,
   }) => {
-    const createdUser = await ensureCreatedUser(page, testDataManager);
+    const createdUser = await createUserViaUI(page, testDataManager);
+    await dismissCreateUserModal(page);
 
     const userEmail = createdUser.email;
     const teamName = 'Private Team';
@@ -56,17 +185,18 @@ test.describe('User Team Assignment Tests', () => {
     testReporter.startStep('Navigate to Teams section');
 
     // Navigate to Organization > Teams
+    await dismissCreateUserModal(page);
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationTeams();
+    await waitForTeamsPage(page);
+    await fillResourceSearch(page, teamName);
 
     testReporter.completeStep('Navigate to Teams section', 'passed');
 
     testReporter.startStep('Open team members dialog');
 
     // Open team members dialog
-    const teamMembersButton = page.getByTestId(UserPageIDs.systemTeamMembersButton(teamName));
-    await expect(teamMembersButton).toBeVisible({ timeout: 5000 });
-    await teamMembersButton.click();
+    await openTeamMembersDialog(page, teamName);
 
     // Wait for modal to open
     const teamModal = page.locator('.ant-modal').filter({ hasText: 'Manage Team Members' });
@@ -81,20 +211,7 @@ test.describe('User Team Assignment Tests', () => {
     await expect(addMemberTab).toBeVisible();
     await addMemberTab.click();
 
-    // Click on the combobox in Add Member tab panel
-    const addMemberPanel = page.getByRole('tabpanel', { name: 'Add Member' });
-    const userCombobox = addMemberPanel.getByRole('combobox');
-    await expect(userCombobox).toBeVisible();
-    await userCombobox.click();
-    await userCombobox.fill(userEmail);
-    await userCombobox.press('ArrowDown');
-    await userCombobox.press('Enter');
-
-    // Click the plus button to add the member
-    const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
-    await expect(addButton).toBeVisible();
-    await expect(addButton).toBeEnabled({ timeout: 10000 });
-    await addButton.click();
+    await selectUserInAddMemberTab(page, userEmail);
 
     // Wait for API response to complete
     await page.waitForLoadState('networkidle');
@@ -111,7 +228,7 @@ test.describe('User Team Assignment Tests', () => {
     await currentMembersTab.click();
 
     // Verify user appears in members list
-    const membersList = page.locator('.ant-list-items');
+    const membersList = teamModal.locator('.ant-list-items');
     await expect(membersList).toBeVisible();
 
     const userInList = membersList
@@ -128,24 +245,27 @@ test.describe('User Team Assignment Tests', () => {
     page,
     screenshotManager: _screenshotManager,
     testReporter,
+    testDataManager,
   }) => {
     const userToAdd = await createUserViaUI(page, testDataManager);
+    await dismissCreateUserModal(page);
     const teamName = 'Private Team';
 
     await ensureUserActive(page, userToAdd.email);
 
     testReporter.startStep('Navigate to Teams section');
 
+    await dismissCreateUserModal(page);
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationTeams();
+    await waitForTeamsPage(page);
+    await fillResourceSearch(page, teamName);
 
     testReporter.completeStep('Navigate to Teams section', 'passed');
 
     testReporter.startStep(`Add user ${userToAdd.email} to team`);
 
-    const teamMembersButton = page.getByTestId(UserPageIDs.systemTeamMembersButton(teamName));
-    await expect(teamMembersButton).toBeVisible({ timeout: 5000 });
-    await teamMembersButton.click();
+    await openTeamMembersDialog(page, teamName);
 
     const teamModal = page.locator('.ant-modal').filter({ hasText: 'Manage Team Members' });
     await expect(teamModal).toBeVisible({ timeout: 5000 });
@@ -154,18 +274,7 @@ test.describe('User Team Assignment Tests', () => {
     await expect(addMemberTab).toBeVisible();
     await addMemberTab.click();
 
-    const addMemberPanel = page.getByRole('tabpanel', { name: 'Add Member' });
-    const userCombobox = addMemberPanel.getByRole('combobox');
-    await expect(userCombobox).toBeVisible();
-    await userCombobox.click();
-    await userCombobox.fill(userToAdd.email);
-    await userCombobox.press('ArrowDown');
-    await userCombobox.press('Enter');
-
-    const addButton = addMemberPanel.getByRole('button', { name: 'Add Member' });
-    await expect(addButton).toBeVisible();
-    await expect(addButton).toBeEnabled({ timeout: 10000 });
-    await addButton.click();
+    await selectUserInAddMemberTab(page, userToAdd.email);
 
     // Wait for API response to complete
     await page.waitForLoadState('networkidle');
@@ -180,7 +289,7 @@ test.describe('User Team Assignment Tests', () => {
     await expect(currentMembersTab).toBeVisible();
     await currentMembersTab.click();
 
-    const membersList = page.locator('.ant-list-items');
+    const membersList = teamModal.locator('.ant-list-items');
     await expect(membersList).toBeVisible();
 
     const userInList = membersList

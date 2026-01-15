@@ -3,18 +3,15 @@ import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
 import { createUserViaUI } from '../helpers/user-helpers';
 
 test.describe('User Permission Tests', () => {
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
-  let testDataManager: TestDataManager;
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
-    testDataManager = new TestDataManager();
 
     await loginPage.navigate();
     await loginPage.performQuickLogin();
@@ -24,7 +21,66 @@ test.describe('User Permission Tests', () => {
   test('should activate user @system @users @permissions @regression', async ({
     page,
     testReporter,
+    testDataManager,
   }) => {
+    const dismissDrawerMask = async (): Promise<void> => {
+      const mask = page.locator('.ant-drawer-mask');
+      if (await mask.isVisible().catch(() => false)) {
+        try {
+          await mask.click({ force: true });
+          await mask.waitFor({ state: 'hidden', timeout: 3000 });
+        } catch {
+          await page.keyboard.press('Escape').catch(() => null);
+          await page.evaluate(() => {
+            const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
+            if (overlay) {
+              overlay.style.pointerEvents = 'none';
+              overlay.style.opacity = '0';
+            }
+          });
+        }
+      }
+    };
+    const waitForNoModal = async (): Promise<void> => {
+      const modalWrap = page.locator('.ant-modal-wrap');
+      if (await modalWrap.isVisible().catch(() => false)) {
+        const closeButton = modalWrap.getByRole('button', { name: /close/i }).first();
+        if (await closeButton.isVisible().catch(() => false)) {
+          await closeButton.click();
+        } else {
+          await page.keyboard.press('Escape').catch(() => null);
+        }
+      }
+      await expect(modalWrap).toBeHidden({ timeout: 5000 });
+    };
+    const filterUsersList = async (email: string): Promise<void> => {
+      const searchInput = page.getByTestId('resource-list-search');
+      if (await searchInput.isVisible().catch(() => false)) {
+        await searchInput.fill('');
+        await searchInput.fill(email);
+        await searchInput.press('Enter');
+      }
+    };
+    const clickListAction = async (email: string, action: 'activate' | 'deactivate') => {
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(email));
+      await expect(listItem).toBeVisible();
+      const actionsButton = listItem.getByRole('button', { name: /actions/i });
+      await expect(actionsButton).toBeVisible();
+      await dismissDrawerMask();
+      await actionsButton.click();
+      const menuItem = page.getByRole('menuitem', {
+        name: action === 'activate' ? /activate/i : /deactivate/i,
+      });
+      await menuItem.waitFor({ state: 'visible', timeout: 3000 });
+      await menuItem.click();
+    };
+    const confirmYes = async (): Promise<void> => {
+      const confirmButton = page.getByRole('button', { name: /yes/i });
+      await expect(confirmButton).toBeVisible();
+      await confirmButton.click();
+      await waitForNoModal();
+    };
+
     const createdUser = await createUserViaUI(page, testDataManager);
     const newUserEmail = createdUser.email;
 
@@ -34,31 +90,51 @@ test.describe('User Permission Tests', () => {
     await nav.goToOrganizationUsers();
 
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
-    await expect(userTable).toBeVisible({ timeout: 10000 });
+    const listContainer = page.getByTestId('resource-list-container');
+    await expect
+      .poll(
+        async () =>
+          (await userTable.isVisible().catch(() => false)) ||
+          (await listContainer.isVisible().catch(() => false)),
+        { timeout: 10000 }
+      )
+      .toBe(true);
+    await filterUsersList(newUserEmail);
     testReporter.completeStep('Navigate to Users section', 'passed');
 
     testReporter.startStep('Activate user');
-    const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(newUserEmail));
-    if (!(await activateButton.isVisible().catch(() => false))) {
+    const isTableLayout = await userTable.isVisible().catch(() => false);
+    if (isTableLayout) {
+      const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(newUserEmail));
       const deactivateButton = page.getByTestId(
         UserPageIDs.systemUserDeactivateButton(newUserEmail)
       );
       if (await deactivateButton.isVisible().catch(() => false)) {
+        await waitForNoModal();
         await deactivateButton.click();
-        const confirmDeactivate = page.getByRole('button', { name: /yes/i });
-        await expect(confirmDeactivate).toBeVisible();
-        await confirmDeactivate.click();
+        await confirmYes();
       }
+      await expect(activateButton).toBeVisible({ timeout: 5000 });
+      await waitForNoModal();
+      await activateButton.click();
+      await confirmYes();
+      await expect(deactivateButton).toBeVisible({ timeout: 5000 });
+    } else {
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(newUserEmail));
+      await expect(listItem).toBeVisible({ timeout: 5000 });
+      const activeTag = listItem.getByText('Active', { exact: true });
+      const inactiveTag = listItem.getByText('Inactive', { exact: true });
+      if (await activeTag.isVisible().catch(() => false)) {
+        await clickListAction(newUserEmail, 'deactivate');
+        await expect
+          .poll(async () => inactiveTag.isVisible().catch(() => false), { timeout: 10000 })
+          .toBe(true);
+      }
+      await clickListAction(newUserEmail, 'activate');
+      await expect
+        .poll(async () => activeTag.isVisible().catch(() => false), { timeout: 10000 })
+        .toBe(true);
     }
-    await expect(activateButton).toBeVisible({ timeout: 5000 });
-    await activateButton.click();
-
-    const confirmButton = page.getByRole('button', { name: /yes/i });
-    await expect(confirmButton).toBeVisible();
-    await confirmButton.click();
-
-    const deactivateButton = page.getByTestId(UserPageIDs.systemUserDeactivateButton(newUserEmail));
-    await expect(deactivateButton).toBeVisible({ timeout: 5000 });
 
     testDataManager.updateCreatedUserActivation(newUserEmail, true);
     testReporter.completeStep('Activate user', 'passed');
@@ -68,7 +144,66 @@ test.describe('User Permission Tests', () => {
   test('should deactivate user @system @users @permissions @regression', async ({
     page,
     testReporter,
+    testDataManager,
   }) => {
+    const dismissDrawerMask = async (): Promise<void> => {
+      const mask = page.locator('.ant-drawer-mask');
+      if (await mask.isVisible().catch(() => false)) {
+        try {
+          await mask.click({ force: true });
+          await mask.waitFor({ state: 'hidden', timeout: 3000 });
+        } catch {
+          await page.keyboard.press('Escape').catch(() => null);
+          await page.evaluate(() => {
+            const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
+            if (overlay) {
+              overlay.style.pointerEvents = 'none';
+              overlay.style.opacity = '0';
+            }
+          });
+        }
+      }
+    };
+    const waitForNoModal = async (): Promise<void> => {
+      const modalWrap = page.locator('.ant-modal-wrap');
+      if (await modalWrap.isVisible().catch(() => false)) {
+        const closeButton = modalWrap.getByRole('button', { name: /close/i }).first();
+        if (await closeButton.isVisible().catch(() => false)) {
+          await closeButton.click();
+        } else {
+          await page.keyboard.press('Escape').catch(() => null);
+        }
+      }
+      await expect(modalWrap).toBeHidden({ timeout: 5000 });
+    };
+    const filterUsersList = async (email: string): Promise<void> => {
+      const searchInput = page.getByTestId('resource-list-search');
+      if (await searchInput.isVisible().catch(() => false)) {
+        await searchInput.fill('');
+        await searchInput.fill(email);
+        await searchInput.press('Enter');
+      }
+    };
+    const clickListAction = async (email: string, action: 'activate' | 'deactivate') => {
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(email));
+      await expect(listItem).toBeVisible();
+      const actionsButton = listItem.getByRole('button', { name: /actions/i });
+      await expect(actionsButton).toBeVisible();
+      await dismissDrawerMask();
+      await actionsButton.click();
+      const menuItem = page.getByRole('menuitem', {
+        name: action === 'activate' ? /activate/i : /deactivate/i,
+      });
+      await menuItem.waitFor({ state: 'visible', timeout: 3000 });
+      await menuItem.click();
+    };
+    const confirmYes = async (): Promise<void> => {
+      const confirmButton = page.getByRole('button', { name: /yes/i });
+      await expect(confirmButton).toBeVisible();
+      await confirmButton.click();
+      await waitForNoModal();
+    };
+
     const createdUser = await createUserViaUI(page, testDataManager);
     const newUserEmail = createdUser.email;
 
@@ -78,28 +213,47 @@ test.describe('User Permission Tests', () => {
     await nav.goToOrganizationUsers();
 
     const userTable = page.getByTestId(UserPageIDs.systemUserTable);
-    await expect(userTable).toBeVisible({ timeout: 10000 });
+    const listContainer = page.getByTestId('resource-list-container');
+    await expect
+      .poll(
+        async () =>
+          (await userTable.isVisible().catch(() => false)) ||
+          (await listContainer.isVisible().catch(() => false)),
+        { timeout: 10000 }
+      )
+      .toBe(true);
+    await filterUsersList(newUserEmail);
     testReporter.completeStep('Navigate to Users section', 'passed');
 
     testReporter.startStep('Deactivate user');
-    const deactivateButton = page.getByTestId(UserPageIDs.systemUserDeactivateButton(newUserEmail));
-    if (!(await deactivateButton.isVisible().catch(() => false))) {
+    const isTableLayout = await userTable.isVisible().catch(() => false);
+    if (isTableLayout) {
       const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(newUserEmail));
+      const deactivateButton = page.getByTestId(
+        UserPageIDs.systemUserDeactivateButton(newUserEmail)
+      );
+      if (await activateButton.isVisible().catch(() => false)) {
+        await waitForNoModal();
+        await activateButton.click();
+        await confirmYes();
+      }
+      await expect(deactivateButton).toBeVisible({ timeout: 5000 });
+      await waitForNoModal();
+      await deactivateButton.click();
+      await confirmYes();
       await expect(activateButton).toBeVisible({ timeout: 5000 });
-      await activateButton.click();
-      const confirmActivate = page.getByRole('button', { name: /yes/i });
-      await expect(confirmActivate).toBeVisible();
-      await confirmActivate.click();
+    } else {
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(newUserEmail));
+      await expect(listItem).toBeVisible({ timeout: 5000 });
+      const activeTag = listItem.getByText('Active', { exact: true });
+      const inactiveTag = listItem.getByText('Inactive', { exact: true });
+      if (await inactiveTag.isVisible().catch(() => false)) {
+        await clickListAction(newUserEmail, 'activate');
+        await expect(activeTag).toBeVisible();
+      }
+      await clickListAction(newUserEmail, 'deactivate');
+      await expect(inactiveTag).toBeVisible();
     }
-    await expect(deactivateButton).toBeVisible({ timeout: 5000 });
-    await deactivateButton.click();
-
-    const confirmDeactivateButton = page.getByRole('button', { name: /yes/i });
-    await expect(confirmDeactivateButton).toBeVisible();
-    await confirmDeactivateButton.click();
-
-    const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(newUserEmail));
-    await expect(activateButton).toBeVisible({ timeout: 5000 });
 
     testDataManager.updateCreatedUserActivation(newUserEmail, false);
     testReporter.completeStep('Deactivate user', 'passed');

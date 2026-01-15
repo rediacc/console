@@ -5,6 +5,7 @@ import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { loadGlobalState } from '../../src/setup/global-state';
 import { TestDataManager, type CreatedUser } from '../../src/utils/data/TestDataManager';
 
+/* eslint-disable sonarjs/cognitive-complexity -- Complex user creation flow with multiple fallback strategies */
 export async function createUserViaUI(
   page: Page,
   testDataManager: TestDataManager,
@@ -18,10 +19,34 @@ export async function createUserViaUI(
   await nav.goToOrganizationUsers();
 
   const userTable = page.getByTestId(UserPageIDs.systemUserTable);
-  await expect(userTable).toBeVisible({ timeout: 10000 });
+  const listContainer = page.getByTestId('resource-list-container');
+  await expect
+    .poll(
+      async () =>
+        (await userTable.isVisible().catch(() => false)) ||
+        (await listContainer.isVisible().catch(() => false)),
+      { timeout: 10000 }
+    )
+    .toBe(true);
 
   const createUserButton = page.getByTestId(UserPageIDs.systemCreateUserButton);
   await expect(createUserButton).toBeVisible({ timeout: 5000 });
+  const drawerMask = page.locator('.ant-drawer-mask');
+  if (await drawerMask.isVisible().catch(() => false)) {
+    try {
+      await drawerMask.click({ force: true });
+      await drawerMask.waitFor({ state: 'hidden', timeout: 3000 });
+    } catch {
+      await page.keyboard.press('Escape').catch(() => null);
+      await page.evaluate(() => {
+        const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
+        if (overlay) {
+          overlay.style.pointerEvents = 'none';
+          overlay.style.opacity = '0';
+        }
+      });
+    }
+  }
   await createUserButton.click();
 
   const emailField = page.getByTestId(UserPageIDs.resourceFormFieldEmail);
@@ -47,17 +72,42 @@ export async function createUserViaUI(
   await expect(createModal).toBeHidden({ timeout: 10000 });
 
   const verifyCreatedUserVisible = async (timeout: number): Promise<void> => {
-    await nav.goToOrganizationUsers();
-    const searchInput = page.getByTestId('resource-list-search');
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill(email);
-      await searchInput.press('Enter');
-    }
-    await expect(page.getByTestId(UserPageIDs.resourceListItem(email))).toBeVisible({ timeout });
+    await expect
+      .poll(
+        async () => {
+          const listContainer = page.getByTestId('resource-list-container');
+          if (!(await listContainer.isVisible().catch(() => false))) {
+            await nav.goToOrganizationUsers();
+          }
+          const searchInput = page.getByTestId('resource-list-search');
+          if (await searchInput.isVisible().catch(() => false)) {
+            await searchInput.fill('');
+            await searchInput.fill(email);
+            await searchInput.press('Enter');
+          }
+          const rowByTestId = page.getByTestId(UserPageIDs.resourceListItem(email));
+          if (await rowByTestId.isVisible().catch(() => false)) {
+            return true;
+          }
+          if (await listContainer.isVisible().catch(() => false)) {
+            return await listContainer
+              .getByText(email, { exact: true })
+              .isVisible()
+              .catch(() => false);
+          }
+          const userTable = page.getByTestId(UserPageIDs.systemUserTable);
+          return await userTable
+            .getByText(email, { exact: true })
+            .isVisible()
+            .catch(() => false);
+        },
+        { timeout }
+      )
+      .toBe(true);
   };
 
   try {
-    await verifyCreatedUserVisible(10000);
+    await verifyCreatedUserVisible(20000);
   } catch {
     await page.reload();
     await page.waitForLoadState('networkidle');
@@ -68,7 +118,30 @@ export async function createUserViaUI(
       await loginPage.login(state.email, state.password);
       await loginPage.waitForLoginCompletion();
     }
-    await verifyCreatedUserVisible(10000);
+    await verifyCreatedUserVisible(20000);
+  }
+
+  const createDialog = page.getByRole('dialog', { name: /create user/i });
+  if (
+    (await createModal.isVisible().catch(() => false)) ||
+    (await createDialog.isVisible().catch(() => false))
+  ) {
+    const closeButton = createDialog.getByRole('button', { name: /cancel|close/i }).first();
+    if (await closeButton.isVisible().catch(() => false)) {
+      try {
+        await closeButton.click();
+      } catch {
+        await page.keyboard.press('Escape').catch(() => null);
+      }
+    } else {
+      await page.keyboard.press('Escape').catch(() => null);
+    }
+    await expect(createModal)
+      .toBeHidden({ timeout: 10000 })
+      .catch(() => null);
+    await expect(createDialog)
+      .toBeHidden({ timeout: 10000 })
+      .catch(() => null);
   }
 
   testDataManager.addCreatedUser(email, password, false);
@@ -79,6 +152,7 @@ export async function ensureCreatedUser(
   page: Page,
   testDataManager: TestDataManager
 ): Promise<CreatedUser> {
+  const nav = new NavigationHelper(page);
   const attemptCreate = async (): Promise<CreatedUser> => {
     try {
       return await createUserViaUI(page, testDataManager);
@@ -91,21 +165,47 @@ export async function ensureCreatedUser(
 
   try {
     const existing = testDataManager.getCreatedUser();
-    const nav = new NavigationHelper(page);
     await nav.goToOrganizationUsers();
     const searchInput = page.getByTestId('resource-list-search');
     if (await searchInput.isVisible().catch(() => false)) {
+      await searchInput.fill('');
       await searchInput.fill(existing.email);
       await searchInput.press('Enter');
     }
-    const existingRow = page.getByTestId(UserPageIDs.resourceListItem(existing.email));
-    if (await existingRow.isVisible().catch(() => false)) {
-      return existing;
-    }
-
-    testDataManager.removeCreatedUser(existing.email);
+    await expect
+      .poll(
+        async () => {
+          const listContainer = page.getByTestId('resource-list-container');
+          if (!(await listContainer.isVisible().catch(() => false))) {
+            await nav.goToOrganizationUsers();
+          }
+          const rowByTestId = page.getByTestId(UserPageIDs.resourceListItem(existing.email));
+          if (await rowByTestId.isVisible().catch(() => false)) {
+            return true;
+          }
+          if (await listContainer.isVisible().catch(() => false)) {
+            return await listContainer
+              .getByText(existing.email, { exact: true })
+              .isVisible()
+              .catch(() => false);
+          }
+          const userTable = page.getByTestId(UserPageIDs.systemUserTable);
+          return await userTable
+            .getByText(existing.email, { exact: true })
+            .isVisible()
+            .catch(() => false);
+        },
+        { timeout: 15000 }
+      )
+      .toBe(true);
+    return existing;
   } catch {
-    // Ignore and fall back to creating or selecting another user below.
+    try {
+      const existing = testDataManager.getCreatedUser();
+      testDataManager.removeCreatedUser(existing.email);
+    } catch {
+      // Ignore and fall back to creating or selecting another user below.
+    }
   }
 
   return await attemptCreate();

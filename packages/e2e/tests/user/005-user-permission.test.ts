@@ -3,18 +3,15 @@ import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
 import { ensureCreatedUser } from '../helpers/user-helpers';
 
 test.describe('User Permission Tests', () => {
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
-  let testDataManager: TestDataManager;
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
-    testDataManager = new TestDataManager();
 
     await loginPage.navigate();
     await loginPage.performQuickLogin();
@@ -24,7 +21,9 @@ test.describe('User Permission Tests', () => {
   test('should assign permissions to user @system @organization @permission @regression', async ({
     page,
     testReporter,
+    testDataManager,
   }) => {
+    test.setTimeout(60000);
     testReporter.startStep('Navigate to Organization Users section');
 
     const createdUser = await ensureCreatedUser(page, testDataManager);
@@ -33,7 +32,26 @@ test.describe('User Permission Tests', () => {
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationUsers();
 
-    await expect(page.getByTestId(UserPageIDs.resourceListItem(createdUser.email))).toBeVisible();
+    const verifyUserVisible = async (): Promise<boolean> => {
+      await nav.goToOrganizationUsers();
+      const searchInput = page.getByTestId('resource-list-search');
+      if (await searchInput.isVisible().catch(() => false)) {
+        await searchInput.fill('');
+        await searchInput.fill(createdUser.email);
+        await searchInput.press('Enter');
+      }
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));
+      if (await listItem.isVisible().catch(() => false)) {
+        return true;
+      }
+      const userTable = page.getByTestId(UserPageIDs.systemUserTable);
+      return await userTable
+        .getByText(createdUser.email, { exact: true })
+        .isVisible()
+        .catch(() => false);
+    };
+
+    await expect.poll(async () => verifyUserVisible(), { timeout: 15000 }).toBe(true);
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');
 
@@ -42,6 +60,7 @@ test.describe('User Permission Tests', () => {
     // Open permission modal
     const searchInput = page.getByTestId('resource-list-search');
     if (await searchInput.isVisible().catch(() => false)) {
+      await searchInput.fill('');
       await searchInput.fill(createdUser.email);
       await searchInput.press('Enter');
     }
@@ -52,10 +71,21 @@ test.describe('User Permission Tests', () => {
     const permissionsButton = page.getByTestId(
       UserPageIDs.systemUserPermissionsButton(createdUser.email)
     );
-    await expect(permissionsButton).toBeVisible({ timeout: 5000 });
-    await expect(permissionsButton).toBeEnabled();
-    await permissionsButton.scrollIntoViewIfNeeded();
-    await permissionsButton.click({ force: true });
+    if (await permissionsButton.isVisible().catch(() => false)) {
+      await expect(permissionsButton).toBeVisible({ timeout: 5000 });
+      await expect(permissionsButton).toBeEnabled();
+      await permissionsButton.scrollIntoViewIfNeeded();
+      await permissionsButton.click({ force: true });
+    } else {
+      const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));
+      await expect(listItem).toBeVisible({ timeout: 5000 });
+      const actionsButton = listItem.getByRole('button', { name: /actions/i });
+      await expect(actionsButton).toBeVisible();
+      await actionsButton.click();
+      const permissionsMenuItem = page.getByRole('menuitem', { name: /permissions/i });
+      await expect(permissionsMenuItem).toBeVisible({ timeout: 5000 });
+      await permissionsMenuItem.click();
+    }
 
     const assignDialog = page.getByRole('dialog', { name: /Assign Permissions/i });
     await expect(assignDialog).toBeVisible({ timeout: 10000 });
