@@ -9,6 +9,7 @@ import {
 import machineAssignmentSlice from './ceph/machineAssignmentSlice';
 import { telemetryMiddleware } from './middleware/telemetryMiddleware';
 import notificationSlice from './notifications/notificationSlice';
+import teamSelectionSlice from './teamSelection/teamSelectionSlice';
 import uiSlice from './ui/uiSlice';
 
 // Define RootState type from reducer shape before store creation
@@ -17,6 +18,7 @@ const rootReducer = {
   ui: uiSlice,
   notifications: notificationSlice,
   machineAssignment: machineAssignmentSlice,
+  teamSelection: teamSelectionSlice,
 };
 
 export type RootState = {
@@ -24,6 +26,7 @@ export type RootState = {
   ui: ReturnType<typeof uiSlice>;
   notifications: ReturnType<typeof notificationSlice>;
   machineAssignment: ReturnType<typeof machineAssignmentSlice>;
+  teamSelection: ReturnType<typeof teamSelectionSlice>;
 };
 
 export const store = configureStore({

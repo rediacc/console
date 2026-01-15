@@ -1,10 +1,13 @@
 import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
-import { useCallback, useMemo, useReducer } from 'react';
-import { useSelector } from 'react-redux';
+import { useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { RootState } from '@/store/store';
+import { initializeTeam, setTeam } from '@/store/teamSelection/teamSelectionSlice';
 
 export interface UseTeamSelectionOptions {
+  /** Required page identifier for per-page isolation */
+  pageId: string;
   /** Custom logic to select initial team (e.g., for simple UI mode) */
   getInitialTeam?: (teams: GetOrganizationTeams_ResultSet1[], uiMode: string) => string;
   /** Whether to auto-select first team when none selected */
@@ -13,73 +16,49 @@ export interface UseTeamSelectionOptions {
 
 export interface UseTeamSelectionReturn {
   teams: GetOrganizationTeams_ResultSet1[];
-  selectedTeams: string[];
-  setSelectedTeams: (teams: string[]) => void;
+  selectedTeam: string | null;
+  setSelectedTeam: (team: string | null) => void;
   isLoading: boolean;
   hasInitialized: boolean;
 }
 
-interface SelectionState {
-  selectedTeams: string[];
-  hasInitialized: boolean;
-}
-
-type SelectionAction =
-  | { type: 'INITIALIZE'; teams: string[] }
-  | { type: 'SET_TEAMS'; teams: string[] };
-
-function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
-  switch (action.type) {
-    case 'INITIALIZE':
-      if (state.hasInitialized) return state;
-      return { selectedTeams: action.teams, hasInitialized: true };
-    case 'SET_TEAMS':
-      return { ...state, selectedTeams: action.teams };
-    default:
-      return state;
-  }
-}
-
-export function useTeamSelection(options: UseTeamSelectionOptions = {}): UseTeamSelectionReturn {
-  const { autoSelect = true, getInitialTeam } = options;
+export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelectionReturn {
+  const { pageId, autoSelect = true, getInitialTeam } = options;
+  const dispatch = useDispatch();
 
   const { data: teamsData, isLoading } = useGetOrganizationTeams();
+  const teams = useMemo(() => teamsData ?? [], [teamsData]);
 
-  const teams = useMemo<GetOrganizationTeams_ResultSet1[]>(() => teamsData ?? [], [teamsData]);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+  const pageState = useSelector((state: RootState) => state.teamSelection.pages[pageId]);
 
-  const [state, dispatch] = useReducer(selectionReducer, {
-    selectedTeams: [],
-    hasInitialized: false,
-  });
+  // Initialize team when data is ready
+  useEffect(() => {
+    if (!isLoading && autoSelect && teams.length > 0 && !pageState?.hasInitialized) {
+      let initialTeam: string;
 
-  // Compute initial team selection when data is ready
-  const shouldInitialize = !isLoading && autoSelect && teams.length > 0 && !state.hasInitialized;
+      if (getInitialTeam) {
+        initialTeam = getInitialTeam(teams, uiMode);
+      } else if (uiMode === 'simple') {
+        const privateTeam = teams.find((team) => team.teamName === 'Private Team');
+        initialTeam = privateTeam?.teamName ?? teams[0]?.teamName ?? '';
+      } else {
+        initialTeam = teams[0]?.teamName ?? '';
+      }
 
-  if (shouldInitialize) {
-    let initialTeam: string;
-
-    if (getInitialTeam) {
-      initialTeam = getInitialTeam(teams, uiMode);
-    } else if (uiMode === 'simple') {
-      const privateTeam = teams.find((team) => team.teamName === 'Private Team');
-      initialTeam = privateTeam?.teamName ?? teams[0]?.teamName ?? '';
-    } else {
-      initialTeam = teams[0]?.teamName ?? '';
+      dispatch(initializeTeam({ pageId, teamName: initialTeam }));
     }
+  }, [isLoading, autoSelect, teams, pageState?.hasInitialized, getInitialTeam, uiMode, pageId, dispatch]);
 
-    dispatch({ type: 'INITIALIZE', teams: [initialTeam] });
-  }
-
-  const setSelectedTeams = useCallback((teams: string[]) => {
-    dispatch({ type: 'SET_TEAMS', teams });
-  }, []);
+  const setSelectedTeam = (team: string | null) => {
+    dispatch(setTeam({ pageId, teamName: team }));
+  };
 
   return {
     teams,
-    selectedTeams: state.selectedTeams,
-    setSelectedTeams,
+    selectedTeam: pageState?.selectedTeam ?? null,
+    setSelectedTeam,
     isLoading,
-    hasInitialized: state.hasInitialized,
+    hasInitialized: pageState?.hasInitialized ?? false,
   };
 }

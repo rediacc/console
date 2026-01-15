@@ -62,7 +62,9 @@ const StoragePage: React.FC = () => {
   const [modal, contextHolder] = Modal.useModal();
 
   // Custom hooks for common patterns
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const { teams, selectedTeam, setSelectedTeam, isLoading: teamsLoading } = useTeamSelection({
+    pageId: 'storage',
+  });
   const {
     modalState: unifiedModalState,
     currentResource,
@@ -90,10 +92,10 @@ const StoragePage: React.FC = () => {
     data: storages = [],
     isLoading: storagesLoading,
     refetch: refetchStorage,
-  } = useGetTeamStorages(selectedTeams.length > 0 ? selectedTeams[0] : undefined);
+  } = useGetTeamStorages(selectedTeam ?? undefined);
 
   const { data: machines = [] } = useGetTeamMachines(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
+    selectedTeam ?? undefined
   );
 
   const { data: dropdownData } = useDropdownData();
@@ -196,7 +198,7 @@ const StoragePage: React.FC = () => {
 
   const modalExistingData = unifiedModalState.data ?? currentResource ?? undefined;
 
-  const hasTeamSelection = selectedTeams.length > 0;
+  const hasTeamSelection = selectedTeam !== null;
   const displayedStorages = hasTeamSelection ? storages : [];
   const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
 
@@ -207,8 +209,8 @@ const StoragePage: React.FC = () => {
           <TeamSelector
             data-testid="resources-team-selector"
             teams={teams}
-            selectedTeams={selectedTeams}
-            onChange={setSelectedTeams}
+            selectedTeam={selectedTeam}
+            onChange={setSelectedTeam}
             loading={teamsLoading}
             placeholder={t('teams.selectTeamToView')}
           />
@@ -285,7 +287,7 @@ const StoragePage: React.FC = () => {
         resourceType="storage"
         mode={unifiedModalState.mode}
         existingData={modalExistingData}
-        teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+        teamFilter={selectedTeam ? [selectedTeam] : undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
@@ -321,7 +323,7 @@ const StoragePage: React.FC = () => {
         data-testid="resources-rclone-import-wizard"
         open={rcloneImportWizard.isOpen}
         onClose={rcloneImportWizard.close}
-        teamName={selectedTeams[0] || ''}
+        teamName={selectedTeam ?? ''}
         onImportComplete={() => {
           void refetchStorage();
           showMessage('success', t('resources:storage.import.successMessage'));

@@ -123,28 +123,6 @@ export class DashboardPage extends BasePage {
     // assuming the tags might also be used in the selector or similar.
   }
 
-  async ensureTeamSelected(): Promise<void> {
-    // Check if the "Select a team" message is visible
-    const emptyMessage = this.page.getByText('Select a team to view its resources');
-    const isEmptyMessageVisible = await emptyMessage.isVisible().catch(() => false);
-
-    if (isEmptyMessageVisible) {
-      // Click team selector to open dropdown
-      await this.clickWithRetry(this.teamSelector);
-
-      // Select first option that appears (usually "Private Team" or similar)
-      const dropdown = this.page.locator('.ant-select-dropdown:visible');
-      await dropdown.waitFor({ state: 'visible', timeout: 5000 });
-
-      const firstOption = dropdown.locator('.ant-select-item-option').first();
-      await firstOption.waitFor({ state: 'visible', timeout: 5000 });
-      await firstOption.click();
-
-      // Wait for the content to load
-      await this.page.waitForTimeout(1000);
-    }
-  }
-
   async clickCreateMachine(): Promise<void> {
     await this.clickWithRetry(this.machinesCreateButton);
   }

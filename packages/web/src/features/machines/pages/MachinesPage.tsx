@@ -31,7 +31,9 @@ const MachinesPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Use custom hooks for common patterns
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const { teams, selectedTeam, setSelectedTeam, isLoading: teamsLoading } = useTeamSelection({
+    pageId: 'machines',
+  });
   const {
     modalState: unifiedModalState,
     currentResource,
@@ -56,13 +58,13 @@ const MachinesPage: React.FC = () => {
   const connectivityTest = useDialogState();
 
   const { data: machines = [], refetch: refetchMachines } = useGetTeamMachines(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
+    selectedTeam ?? undefined
   );
   const { data: repositories = [] } = useGetTeamRepositories(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
+    selectedTeam ?? undefined
   );
   const { data: storages = [] } = useGetTeamStorages(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
+    selectedTeam ?? undefined
   );
 
   const mutations = useMachineMutations();
@@ -311,13 +313,13 @@ const MachinesPage: React.FC = () => {
               <TeamSelector
                 data-testid="machines-team-selector"
                 teams={teams}
-                selectedTeams={selectedTeams}
-                onChange={setSelectedTeams}
+                selectedTeam={selectedTeam}
+                onChange={setSelectedTeam}
                 loading={teamsLoading}
                 placeholder={t('teams.selectTeamToView')}
               />
             </Flex>
-            {selectedTeams.length > 0 && (
+            {selectedTeam && (
               <Space size="small">
                 <Tooltip title={t('machines:createMachine')}>
                   <Button
@@ -343,7 +345,7 @@ const MachinesPage: React.FC = () => {
           </Flex>
 
           <Flex vertical>
-            {selectedTeams.length === 0 ? (
+            {!selectedTeam ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={t('teams.selectTeamPrompt')}
@@ -351,7 +353,7 @@ const MachinesPage: React.FC = () => {
             ) : (
               <SplitResourceView
                 type="machine"
-                teamFilter={selectedTeams}
+                teamFilter={[selectedTeam]}
                 showFilters
                 showActions
                 onCreateMachine={() => openUnifiedModal('create')}
@@ -374,7 +376,7 @@ const MachinesPage: React.FC = () => {
                   }
                 }}
                 onDeleteMachine={handleDeleteMachine}
-                enabled={selectedTeams.length > 0}
+                enabled={selectedTeam !== null}
                 refreshKeys={refreshKeys}
                 onQueueItemCreated={(taskId, machineName) => {
                   openQueueTrace(taskId, machineName);
@@ -398,7 +400,7 @@ const MachinesPage: React.FC = () => {
         resourceType="machine"
         mode={unifiedModalState.mode}
         existingData={modalExistingData}
-        teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+        teamFilter={selectedTeam ? [selectedTeam] : undefined}
         preselectedFunction={unifiedModalState.preselectedFunction}
         onSubmit={async (data) => {
           await handleUnifiedModalSubmit(data as unknown as MachineFormValues);
@@ -440,7 +442,7 @@ const MachinesPage: React.FC = () => {
           handleRefreshMachines();
         }}
         machines={machines}
-        teamFilter={selectedTeams}
+        teamFilter={selectedTeam ? [selectedTeam] : []}
       />
 
       {contextHolder}

@@ -63,7 +63,9 @@ const isPoolEntity = (data: CephCluster | CephPool): data is CephPool => {
 const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   const { t } = useTranslation(['ceph', 'common']);
 
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const { teams, selectedTeam, setSelectedTeam, isLoading: teamsLoading } = useTeamSelection({
+    pageId: 'ceph',
+  });
   const queueTrace = useQueueTraceModal();
   const { data: organizationData } = useGetUserOrganization();
   const [modalState, setModalState] = useState<{
@@ -76,9 +78,9 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   // TODO: Replace hardcoded value with actual subscription from API when available
   const planCode = 'ENTERPRISE' as string;
   const hasCephAccess = ['ENTERPRISE', 'BUSINESS'].includes(planCode);
-  const hasSelectedTeam = selectedTeams.length > 0;
-  const teamFilter = hasSelectedTeam ? selectedTeams : undefined;
-  const primaryTeam = hasSelectedTeam ? selectedTeams[0] : undefined;
+  const hasSelectedTeam = selectedTeam !== null;
+  const teamFilter = hasSelectedTeam ? [selectedTeam] : undefined;
+  const primaryTeam = hasSelectedTeam ? selectedTeam : undefined;
 
   const isClustersView = view === 'clusters';
   const isPoolsView = view === 'pools';
@@ -94,7 +96,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     data: pools = [],
     isLoading: poolsLoading,
     refetch: refetchPools,
-  } = useGetCephPools(teamFilter?.[0]);
+  } = useGetCephPools(primaryTeam);
 
   const createClusterMutation = useCreateCephCluster();
   const createPoolMutation = useCreateCephPool();
@@ -337,8 +339,8 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
               >
                 <TeamSelector
                   teams={teams}
-                  selectedTeams={selectedTeams}
-                  onChange={setSelectedTeams}
+                  selectedTeam={selectedTeam}
+                  onChange={setSelectedTeam}
                   loading={teamsLoading}
                   placeholder={t('selectTeamToView')}
                   data-testid="ds-team-selector"
