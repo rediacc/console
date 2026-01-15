@@ -83,6 +83,22 @@ export class DashboardPage extends BasePage {
     await this.verifyElementVisible(this.page.locator('[data-testid="main-nav-machines"]:visible'));
   }
 
+  async waitForTeamSelection(timeout = 10000): Promise<void> {
+    // Wait for team auto-selection to complete by checking if the empty state is gone
+    // or if team-specific content is visible
+    const emptyState = this.page.getByText('Select a team to view its resources');
+
+    // Wait for either condition:
+    // 1. Empty state is not visible (team selected)
+    // 2. Split resource view is visible (team selected and content loaded)
+    await Promise.race([
+      emptyState.waitFor({ state: 'hidden', timeout }),
+      this.splitResourceViewContainer.waitFor({ state: 'visible', timeout }),
+    ]).catch(() => {
+      // If both fail, that's okay - may already be in correct state
+    });
+  }
+
   async clickUserMenu(): Promise<void> {
     await this.clickWithRetry(this.userMenu);
   }

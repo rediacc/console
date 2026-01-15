@@ -64,6 +64,9 @@ test.describe('Dashboard Tests', () => {
     // Wait for dashboard to load
     await dashboardPage.verifyDashboardLoaded();
 
+    // Wait for team to be auto-selected
+    await dashboardPage.waitForTeamSelection();
+
     // Machine is default, so it should be visible
     const locators = dashboardPage.getPageLocators();
     await expect(locators.splitResourceViewContainer).toBeVisible();
@@ -93,6 +96,9 @@ test.describe('Dashboard Tests', () => {
 
     // Wait for dashboard to load
     await dashboardPage.verifyDashboardLoaded();
+
+    // Wait for team to be auto-selected
+    await dashboardPage.waitForTeamSelection();
 
     const locators = dashboardPage.getPageLocators();
 
