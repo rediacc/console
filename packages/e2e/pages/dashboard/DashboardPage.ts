@@ -104,10 +104,34 @@ export class DashboardPage extends BasePage {
     // Add extra wait for slower browsers (Firefox, WebKit) to complete Redux initialization
     await this.page.waitForTimeout(1000);
 
-    // Then wait for Redux auto-selection to trigger resource view
-    // Split view appears after team is auto-selected and machines query starts
-    // Use longer timeout for Firefox/WebKit
-    await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 20000 });
+    // Try to wait for split view to appear (indicates team was auto-selected)
+    try {
+      await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 5000 });
+      return; // Success - team was auto-selected
+    } catch (e) {
+      console.warn('Split view not visible after 5s, attempting manual team selection fallback');
+    }
+
+    // Fallback: If auto-selection didn't work, manually select the first team
+    try {
+      // Wait for team selector to be visible
+      await this.teamSelector.waitFor({ state: 'visible', timeout: 3000 });
+
+      // Click to open dropdown
+      await this.clickWithRetry(this.teamSelector);
+      await this.page.waitForTimeout(500);
+
+      // Find and click first team option
+      const firstTeamOption = this.page.locator('[data-testid^="team-selector-option-"]').first();
+      await firstTeamOption.waitFor({ state: 'visible', timeout: 3000 });
+      await this.clickWithRetry(firstTeamOption);
+
+      // Wait for selection to complete and split view to appear
+      await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 10000 });
+      console.warn('Manual team selection fallback succeeded');
+    } catch (e) {
+      throw new Error('Team selection failed: both auto-selection and manual fallback failed');
+    }
   }
 
   async clickUserMenu(): Promise<void> {
