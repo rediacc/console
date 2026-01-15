@@ -48,12 +48,15 @@ export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelec
       let initialTeam: string;
 
       if (getInitialTeam) {
-        initialTeam = getInitialTeam(teams, uiMode);
+        const result = getInitialTeam(teams, uiMode);
+        initialTeam = result || '';
       } else if (uiMode === 'simple') {
         const privateTeam = teams.find((team) => team.teamName === 'Private Team');
-        initialTeam = privateTeam ? privateTeam.teamName : (teams[0]?.teamName ?? '');
+        const teamName = privateTeam ? privateTeam.teamName : teams[0]?.teamName;
+        initialTeam = teamName || '';
       } else {
-        initialTeam = teams[0]?.teamName ?? '';
+        const teamName = teams[0]?.teamName;
+        initialTeam = teamName || '';
       }
 
       dispatch(initializeTeam({ pageId, teamName: initialTeam }));
