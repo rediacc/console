@@ -61,6 +61,12 @@ test.describe('Dashboard Tests', () => {
   }) => {
     testReporter.startStep('Navigate sections');
 
+    // Wait for dashboard to load
+    await dashboardPage.verifyDashboardLoaded();
+
+    // Ensure a team is selected (fixes race condition where team auto-selection fails)
+    await dashboardPage.ensureTeamSelected();
+
     // Machine is default, so it should be visible
     const locators = dashboardPage.getPageLocators();
     await expect(locators.splitResourceViewContainer).toBeVisible();
@@ -88,6 +94,9 @@ test.describe('Dashboard Tests', () => {
   }) => {
     testReporter.startStep('Verify machines view');
 
+    // Wait for dashboard to load
+    await dashboardPage.verifyDashboardLoaded();
+
     const locators = dashboardPage.getPageLocators();
 
     // Verify machine-specific buttons
@@ -113,6 +122,9 @@ test.describe('Dashboard Tests', () => {
     testReporter,
   }) => {
     testReporter.startStep('Interact with team selector');
+
+    // Wait for dashboard to load
+    await dashboardPage.verifyDashboardLoaded();
 
     const locators = dashboardPage.getPageLocators();
     await expect(locators.teamSelector).toBeVisible();
