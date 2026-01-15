@@ -1,5 +1,5 @@
 import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
-import { useEffect, useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { RootState } from '@/store/store';
@@ -25,6 +25,7 @@ export interface UseTeamSelectionReturn {
 export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelectionReturn {
   const { pageId, autoSelect = true, getInitialTeam } = options;
   const dispatch = useDispatch();
+  const initRef = useRef(false);
 
   const { data: teamsData, isLoading } = useGetOrganizationTeams();
   const teams = useMemo(() => teamsData ?? [], [teamsData]);
@@ -32,23 +33,24 @@ export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelec
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const pageState = useSelector((state: RootState) => state.teamSelection.pages[pageId]);
 
-  // Initialize team when data is ready
-  useEffect(() => {
-    if (!isLoading && autoSelect && teams.length > 0 && !pageState?.hasInitialized) {
-      let initialTeam: string;
+  // Initialize team synchronously during render (matches old behavior)
+  const shouldInitialize = !isLoading && autoSelect && teams.length > 0 && !pageState?.hasInitialized && !initRef.current;
 
-      if (getInitialTeam) {
-        initialTeam = getInitialTeam(teams, uiMode);
-      } else if (uiMode === 'simple') {
-        const privateTeam = teams.find((team) => team.teamName === 'Private Team');
-        initialTeam = privateTeam?.teamName ?? teams[0]?.teamName ?? '';
-      } else {
-        initialTeam = teams[0]?.teamName ?? '';
-      }
+  if (shouldInitialize) {
+    initRef.current = true;
+    let initialTeam: string;
 
-      dispatch(initializeTeam({ pageId, teamName: initialTeam }));
+    if (getInitialTeam) {
+      initialTeam = getInitialTeam(teams, uiMode);
+    } else if (uiMode === 'simple') {
+      const privateTeam = teams.find((team) => team.teamName === 'Private Team');
+      initialTeam = privateTeam?.teamName ?? teams[0]?.teamName ?? '';
+    } else {
+      initialTeam = teams[0]?.teamName ?? '';
     }
-  }, [isLoading, autoSelect, teams, pageState?.hasInitialized, getInitialTeam, uiMode, pageId, dispatch]);
+
+    dispatch(initializeTeam({ pageId, teamName: initialTeam }));
+  }
 
   const setSelectedTeam = (team: string | null) => {
     dispatch(setTeam({ pageId, teamName: team }));
