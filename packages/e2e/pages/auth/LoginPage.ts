@@ -80,9 +80,14 @@ export class LoginPage extends BasePage {
 
   async waitForLoginCompletion(): Promise<void> {
     await this.waitForElementToDisappear(this.loadingSpinner, 10000);
-    // Event-driven approach: wait for network to settle after login
-    // This handles API response + any subsequent data fetching
-    await this.page.waitForLoadState('networkidle');
+
+    // Wait for critical API calls that indicate auth is complete
+    // This is more reliable than networkidle which has browser-specific timing issues
+    await this.page.waitForResponse(
+      (response) => response.url().includes('/GetOrganizationInfo') && response.status() === 200,
+      { timeout: 10000 }
+    );
+
     // Then verify dashboard element is visible (mobile may hide header actions)
     const primary = this.page.locator('[data-testid="user-menu-button"]');
     const fallbackToggle = this.page.locator('[data-testid="sidebar-toggle-button"]');

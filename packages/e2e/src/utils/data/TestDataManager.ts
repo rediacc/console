@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import lockfile from 'proper-lockfile';
 import { loadGlobalState } from '../../setup/global-state';
 import { E2E_DEFAULTS } from '../constants';
 import { getVMEnvVar, VM_DEFAULTS } from '../env';
@@ -56,20 +57,26 @@ export interface TestData {
 export class TestDataManager {
   private readonly dataDir: string;
   private readonly projectName: string;
+  private readonly workerId: string;
   private readonly testDataFile: string;
   private readonly createdUsersFile: string;
   private _initialized = false;
 
-  constructor(dataDir = 'utils/data', projectName: string) {
+  constructor(workerId = '0', projectName: string, dataDir = 'utils/data') {
     if (!projectName) {
       throw new Error('projectName is required for TestDataManager');
     }
+    this.workerId = workerId ?? process.env.TEST_WORKER_INDEX ?? '0';
     this.dataDir = dataDir;
     this.projectName = projectName;
 
     // Project-specific file paths (no fallback to shared files)
     this.testDataFile = path.join(this.dataDir, `test-data-${projectName}.json`);
-    this.createdUsersFile = path.join(this.dataDir, `.created-users-${projectName}.json`);
+    // Per-worker file to prevent race conditions in parallel execution
+    this.createdUsersFile = path.join(
+      this.dataDir,
+      `.created-users-${projectName}-worker-${this.workerId}.json`
+    );
   }
 
   private ensureInitialized(): void {
@@ -412,25 +419,37 @@ export class TestDataManager {
     this.saveTestData(data);
   }
 
-  addCreatedUser(email: string, password: string, activated = false): void {
-    const createdUsers = this.loadCreatedUsers();
+  async addCreatedUser(email: string, password: string, activated = false): Promise<void> {
+    this.ensureInitialized();
 
-    const existingUser = createdUsers.find((u) => u.email === email);
-    if (existingUser) {
-      existingUser.password = password;
-      existingUser.activated = activated;
-      existingUser.createdAt = new Date().toISOString();
-    } else {
-      createdUsers.push({
-        email,
-        password,
-        activated,
-        createdAt: new Date().toISOString(),
-      });
+    // Acquire file lock before read-modify-write
+    const release = await lockfile.lock(this.createdUsersFile, {
+      retries: { retries: 5, minTimeout: 50, maxTimeout: 200 },
+      stale: 10000
+    });
+
+    try {
+      const createdUsers = this.loadCreatedUsers();
+
+      const existingUser = createdUsers.find((u) => u.email === email);
+      if (existingUser) {
+        existingUser.password = password;
+        existingUser.activated = activated;
+        existingUser.createdAt = new Date().toISOString();
+      } else {
+        createdUsers.push({
+          email,
+          password,
+          activated,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      this.saveCreatedUsers(createdUsers);
+      console.warn(`Created user saved: ${email}`);
+    } finally {
+      await release();  // Always release lock
     }
-
-    this.saveCreatedUsers(createdUsers);
-    console.warn(`Created user saved: ${email}`);
   }
 
   getCreatedUser(email?: string): CreatedUser {
@@ -456,23 +475,47 @@ export class TestDataManager {
     return this.loadCreatedUsers();
   }
 
-  updateCreatedUserActivation(email: string, activated: boolean): void {
-    const createdUsers = this.loadCreatedUsers();
-    const user = createdUsers.find((u) => u.email === email);
+  async updateCreatedUserActivation(email: string, activated: boolean): Promise<void> {
+    this.ensureInitialized();
 
-    if (!user) {
-      throw new Error(`No created user found with email: ${email}`);
+    // Acquire file lock before read-modify-write
+    const release = await lockfile.lock(this.createdUsersFile, {
+      retries: { retries: 5, minTimeout: 50, maxTimeout: 200 },
+      stale: 10000
+    });
+
+    try {
+      const createdUsers = this.loadCreatedUsers();
+      const user = createdUsers.find((u) => u.email === email);
+
+      if (!user) {
+        throw new Error(`No created user found with email: ${email}`);
+      }
+
+      user.activated = activated;
+      this.saveCreatedUsers(createdUsers);
+      console.warn(`User activation updated: ${email} -> ${activated}`);
+    } finally {
+      await release();  // Always release lock
     }
-
-    user.activated = activated;
-    this.saveCreatedUsers(createdUsers);
-    console.warn(`User activation updated: ${email} -> ${activated}`);
   }
 
-  removeCreatedUser(email: string): void {
-    const createdUsers = this.loadCreatedUsers().filter((u) => u.email !== email);
-    this.saveCreatedUsers(createdUsers);
-    console.warn(`Removed created user: ${email}`);
+  async removeCreatedUser(email: string): Promise<void> {
+    this.ensureInitialized();
+
+    // Acquire file lock before read-modify-write
+    const release = await lockfile.lock(this.createdUsersFile, {
+      retries: { retries: 5, minTimeout: 50, maxTimeout: 200 },
+      stale: 10000
+    });
+
+    try {
+      const createdUsers = this.loadCreatedUsers().filter((u) => u.email !== email);
+      this.saveCreatedUsers(createdUsers);
+      console.warn(`Removed created user: ${email}`);
+    } finally {
+      await release();  // Always release lock
+    }
   }
 
   cleanup(): void {

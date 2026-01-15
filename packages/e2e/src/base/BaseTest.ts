@@ -22,7 +22,9 @@ export const test = baseTest.extend<TestFixtures>({
   },
 
   testDataManager: async ({ browser: _browser }, use, testInfo) => {
-    const dataManager = new TestDataManager(undefined, testInfo.project.name);
+    // Pass worker ID for per-worker state isolation in parallel execution
+    const workerId = testInfo.workerIndex.toString();
+    const dataManager = new TestDataManager(workerId, testInfo.project.name);
     await use(dataManager);
   },
 });

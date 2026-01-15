@@ -83,11 +83,17 @@ export class DashboardPage extends BasePage {
     await this.verifyElementVisible(this.page.locator('[data-testid="main-nav-machines"]:visible'));
   }
 
-  async waitForTeamSelection(timeout = 15000): Promise<void> {
-    // Wait for split resource view to become visible, which indicates team is selected
-    // This is more reliable than waiting for empty state to disappear
-    // Increased timeout to account for Redux state initialization + API call
-    await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout });
+  async waitForTeamSelection(timeout = 10000): Promise<void> {
+    // Wait for teams API to complete first
+    // This is more reliable than networkidle which has browser-specific timing issues
+    await this.page.waitForResponse(
+      (response) => response.url().includes('/GetOrganizationTeams') && response.status() === 200,
+      { timeout }
+    );
+
+    // Then wait for Redux auto-selection to trigger resource view
+    // Split view appears after team is auto-selected and machines query starts
+    await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickUserMenu(): Promise<void> {
