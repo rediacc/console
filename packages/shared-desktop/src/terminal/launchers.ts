@@ -1,9 +1,9 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { TerminalLaunchOptions, TerminalType } from '../types/index.js';
-import { getPlatform, isWSL } from '../utils/platform.js';
 import { findMSYS2Installation } from './detector.js';
+import { getPlatform, isWSL } from '../utils/platform.js';
+import type { TerminalLaunchOptions, TerminalType } from '../types/index.js';
 
 /**
  * Launch result

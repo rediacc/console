@@ -1,5 +1,5 @@
-import { Flex } from 'antd';
 import React from 'react';
+import { Flex } from 'antd';
 
 export interface InlineLoadingIndicatorProps {
   width?: number | string;

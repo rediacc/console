@@ -3,8 +3,8 @@
  * Platform-agnostic business logic for machine assignment operations
  */
 
+import { MachineValidationService } from './validation';
 import { DEFAULTS } from '../../config';
-import type { MachineAssignmentType } from '../../types';
 import type {
   AssignmentConflict,
   AssignmentResult,
@@ -17,7 +17,7 @@ import type {
   MachineWithAssignmentStatus,
   ValidationContext,
 } from './types';
-import { MachineValidationService } from './validation';
+import type { MachineAssignmentType } from '../../types';
 
 interface AssignmentOperationResult {
   success: boolean;

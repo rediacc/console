@@ -1,5 +1,5 @@
-import type { ApiUrlProvider } from '@rediacc/shared/api';
 import { apiConnectionService } from '@/services/api';
+import type { ApiUrlProvider } from '@rediacc/shared/api';
 
 /**
  * Web API URL provider wrapping the apiConnectionService.

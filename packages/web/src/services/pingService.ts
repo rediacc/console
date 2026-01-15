@@ -1,9 +1,9 @@
-import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 import { useCallback } from 'react';
 import { useCreateQueueItem, useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import type { Machine } from '@/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 import { type QueueItemCompletionResult, waitForQueueItemCompletion } from './helloService';
 
 interface PingFunctionParams {

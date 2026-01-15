@@ -1,10 +1,10 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Badge, Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table/interface';
 import { createTruncatedColumn, RESPONSIVE_HIDE_XS } from '@/components/common/columns';
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import { createSorter } from '@/platform';
 import type { Machine } from '@/types';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 export const buildMachineTableColumns = (t: TypedTFunction): ColumnsType<Machine> => [
   createTruncatedColumn<Machine>({

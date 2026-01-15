@@ -1,5 +1,3 @@
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { PTYSession } from '@rediacc/shared-desktop';
 import {
   createSSHPTYSession,
   createTempKnownHostsFile,
@@ -9,6 +7,8 @@ import {
   SSHConnection,
 } from '@rediacc/shared-desktop/ssh';
 import { ipcMain } from 'electron';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { PTYSession } from '@rediacc/shared-desktop';
 
 /**
  * Container exec parameters from renderer

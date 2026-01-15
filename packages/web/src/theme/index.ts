@@ -1,5 +1,5 @@
-import type { ThemeConfig } from 'antd';
 import { theme } from 'antd';
+import type { ThemeConfig } from 'antd';
 
 // Light: bg #FFFFFF, text #3B3B3B, accent #6B7280
 const lightThemeTokens = {

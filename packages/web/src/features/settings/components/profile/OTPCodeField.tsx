@@ -1,6 +1,6 @@
+import React from 'react';
 import { Form, Input } from 'antd';
 import type { Rule } from 'antd/es/form';
-import React from 'react';
 
 const CenteredInput = (props: React.ComponentProps<typeof Input>) => (
   <Input className="text-center" data-testid="otp-code-input" {...props} />

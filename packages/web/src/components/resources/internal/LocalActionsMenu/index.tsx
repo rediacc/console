@@ -1,7 +1,5 @@
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { MenuProps } from 'antd';
-import { Button, Dropdown, Tooltip, Typography } from 'antd';
 import React, { useCallback, useState } from 'react';
+import { Button, Dropdown, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { ContainerLogsModal } from '@/components/app/ContainerLogsModal';
@@ -25,6 +23,7 @@ import {
   DesktopOutlined,
   FileTextOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   type ContainerMenuAction,
   type ContainerModalData,
@@ -32,6 +31,7 @@ import {
   handleWebProtocolFlow,
 } from './helpers';
 import { useVSCodeSelection } from './hooks/useVSCodeSelection';
+import type { MenuProps } from 'antd';
 
 type ItemType = NonNullable<MenuProps['items']>[number];
 type MenuItemWithTestId = ItemType & { ['data-testid']?: string };

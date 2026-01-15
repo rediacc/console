@@ -1,5 +1,8 @@
 import { FUNCTION_REQUIREMENTS, isBridgeFunction } from '../data/functionRequirements';
 import { getValidationErrors, safeValidateFunctionParams } from '../data/functions.schema';
+import { minifyJSON } from '../utils/json';
+import { getParamArray, getParamValue, isBase64, validateMachineVault } from '../utils/validation';
+import { assertPublicBridgeFunction } from '../validation';
 import type {
   ContextSection,
   FunctionRequirements,
@@ -13,9 +16,6 @@ import type {
   TaskSection,
   VaultContent,
 } from '../types';
-import { minifyJSON } from '../utils/json';
-import { getParamArray, getParamValue, isBase64, validateMachineVault } from '../utils/validation';
-import { assertPublicBridgeFunction } from '../validation';
 
 export interface QueueVaultBuilderConfig {
   getApiUrl: () => string;

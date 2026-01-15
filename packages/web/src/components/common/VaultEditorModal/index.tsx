@@ -1,6 +1,5 @@
-﻿import { Button, Flex, Space, Tag, Tooltip, Typography, Upload } from 'antd';
-import type { RcFile } from 'antd/es/upload';
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
+import { Button, Flex, Space, Tag, Tooltip, Typography, Upload } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SizedModal } from '@/components/common/SizedModal';
 import VaultEditor from '@/components/common/VaultEditor';
@@ -14,6 +13,7 @@ import {
   SaveOutlined,
   UploadOutlined,
 } from '@/utils/optimizedIcons';
+import type { RcFile } from 'antd/es/upload';
 
 interface VaultEditorModalProps extends BaseModalProps {
   onSave: (vault: string, version: number) => Promise<void>;

@@ -1,10 +1,10 @@
 /* eslint-disable no-restricted-syntax, react/forbid-elements, react/display-name, react/hook-use-state, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, @typescript-eslint/no-unnecessary-condition */
 
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal as XTerm } from '@xterm/xterm';
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import '@xterm/xterm/css/xterm.css';
 
 /**

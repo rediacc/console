@@ -1,6 +1,5 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Card, Flex, List, type ListProps, Tag, Typography } from 'antd';
 import React from 'react';
+import { Card, Flex, List, type ListProps, Tag, Typography } from 'antd';
 import {
   DetailPanelDivider,
   DetailPanelFieldLabel,
@@ -9,6 +8,7 @@ import {
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { CodeOutlined, HddOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { BlockDevice, BlockDevicePartition } from '../types';
 
 interface BlockDevicesSectionProps {

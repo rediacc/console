@@ -1,8 +1,7 @@
-import type { QueueTrace } from '@rediacc/shared/types';
+import React, { useEffect, useState } from 'react';
 import { Collapse, Empty, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCancelQueueItemWithInvalidation,
@@ -15,6 +14,7 @@ import { normalizeToString } from '@/platform';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { HistoryOutlined, RightOutlined } from '@/utils/optimizedIcons';
+import type { QueueTrace } from '@rediacc/shared/types';
 import {
   ActionButtons,
   ConsoleOutput,
@@ -24,10 +24,10 @@ import {
   StaleTaskWarning,
 } from './components';
 import { useTraceState } from './hooks/useTraceState';
-import type { ConsoleViewMode, QueueItemTraceModalProps } from './types';
 import { getSimplifiedStatus, getTaskStaleness } from './utils';
 import { buildDetailedCollapseItems } from './utils/collapseItemsBuilder';
 import { isTaskInTerminalState } from './utils/taskStateUtils';
+import type { ConsoleViewMode, QueueItemTraceModalProps } from './types';
 
 // Generic translation function type that accepts any namespace configuration
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;

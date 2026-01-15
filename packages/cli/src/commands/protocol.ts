@@ -1,4 +1,3 @@
-import { DEFAULTS } from '@rediacc/shared/config';
 import {
   buildCliCommand,
   buildProtocolUrl,
@@ -12,6 +11,7 @@ import {
 } from '@rediacc/shared-desktop/protocol';
 import { getPlatform } from '@rediacc/shared-desktop/utils';
 import { Command } from 'commander';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { handleError } from '../utils/errors.js';

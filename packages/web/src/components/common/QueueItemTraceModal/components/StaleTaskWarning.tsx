@@ -1,6 +1,5 @@
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
-import { Alert, Button } from 'antd';
 import React from 'react';
+import { Alert, Button } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { normalizeToString } from '@/platform';
 import {
@@ -10,6 +9,7 @@ import {
   SyncOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import type { TaskStalenessLevel } from '../types';
 
 interface StaleTaskWarningProps {

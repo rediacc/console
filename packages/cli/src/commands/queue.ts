@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 import {
   parseCreateQueueItem,
   parseGetQueueItemTrace,
@@ -21,14 +22,12 @@ import {
   searchInFields,
   unescapeLogOutput,
 } from '@rediacc/shared/utils';
-import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
-import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatLogOutput, getLogHeader } from '../utils/logFormatters.js';
 import {
@@ -40,6 +39,7 @@ import {
   formatStatus,
 } from '../utils/queueFormatters.js';
 import { startSpinner, stopSpinner, withSpinner } from '../utils/spinner.js';
+import type { OutputFormat } from '../types/index.js';
 
 // Exported action handlers for reuse in shortcuts
 

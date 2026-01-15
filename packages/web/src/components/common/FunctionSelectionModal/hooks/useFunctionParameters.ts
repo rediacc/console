@@ -1,5 +1,5 @@
-import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
 import { useCallback } from 'react';
+import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
 
 type FunctionParamValue = string | number | string[] | undefined;
 type FunctionParams = Record<string, FunctionParamValue>;

@@ -1,4 +1,4 @@
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
+import React from 'react';
 import {
   Card,
   Col,
@@ -11,7 +11,6 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CodeOutlined,
@@ -20,10 +19,11 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type { ConsoleViewMode } from '../types';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { getPriorityInfo } from '../utils';
 import { ConsoleOutput } from './ConsoleOutput';
 import { StatsPanel } from './StatsPanel';
+import type { ConsoleViewMode } from '../types';
 
 interface MachineDetailsProps {
   queueDetails: GetTeamQueueItems_ResultSet1;

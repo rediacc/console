@@ -1,7 +1,6 @@
-import { DEFAULTS, UI_SIZING } from '@rediacc/shared/config';
 import { Space, Tag, Tooltip, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import i18n from '@/i18n/config';
+import { DEFAULTS, UI_SIZING } from '@rediacc/shared/config';
 import { createStatusRenderer, renderTimestampElement } from '../renderers';
 import type {
   CountColumnOptions,
@@ -10,6 +9,7 @@ import type {
   TruncatedColumnOptions,
   VersionColumnOptions,
 } from '../types';
+import type { ColumnsType } from 'antd/es/table';
 
 const toTimestamp = (value: unknown): number => {
   if (value instanceof Date) {

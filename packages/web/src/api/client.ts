@@ -1,3 +1,5 @@
+import axios from 'axios';
+import { webCryptoProvider } from '@/adapters/crypto';
 import {
   createApiClient,
   createTypedApi,
@@ -5,8 +7,6 @@ import {
   type HttpClient,
 } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
-import axios from 'axios';
-import { webCryptoProvider } from '@/adapters/crypto';
 import {
   errorHandler,
   masterPasswordAdapter,

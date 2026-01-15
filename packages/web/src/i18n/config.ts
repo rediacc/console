@@ -1,7 +1,7 @@
-import { getSharedTranslations, SHARED_NAMESPACE } from '@rediacc/shared/i18n';
 import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
+import { getSharedTranslations, SHARED_NAMESPACE } from '@rediacc/shared/i18n';
 import { cookieDetector } from './cookieDetector';
 // Only load default language initially (English)
 import enAuth from './locales/en/auth.json';

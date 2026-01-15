@@ -1,9 +1,4 @@
 import { Command } from 'commander';
-import { t } from '../i18n/index.js';
-import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
-import { outputService } from '../services/output.js';
-import type { OutputFormat } from '../types/index.js';
 import {
   addParentToPayload,
   applySearchFilter,
@@ -26,6 +21,11 @@ import {
 } from './commandFactory-helpers.js';
 import { handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
+import { t } from '../i18n/index.js';
+import { authService } from '../services/auth.js';
+import { contextService } from '../services/context.js';
+import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 
 export interface ResourceCommandConfig {
   /** Resource name in singular form (e.g., 'machine', 'team', 'bridge') */

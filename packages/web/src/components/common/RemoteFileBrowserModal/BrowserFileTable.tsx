@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { FileOutlined, FolderOutlined } from '@ant-design/icons';
 import {
   Empty,
@@ -11,14 +12,13 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table/interface';
-import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { MobileCard } from '@/components/common/MobileCard';
 import { createCustomSorter, createSorter } from '@/platform';
 import type { RemoteFile } from './types';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 interface BrowserFileTableProps {
   files: RemoteFile[];

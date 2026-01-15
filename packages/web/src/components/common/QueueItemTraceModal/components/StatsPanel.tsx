@@ -1,6 +1,6 @@
+import React from 'react';
 import { Col, Row, Statistic } from 'antd';
 import dayjs from 'dayjs';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClockCircleOutlined, HourglassOutlined, SyncOutlined } from '@/utils/optimizedIcons';
 import type { StatsPanelProps } from '../types';

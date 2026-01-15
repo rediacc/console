@@ -1,5 +1,5 @@
-import type { ICryptoProvider } from './types';
 import { hasVaultFields, transformVaultFields } from './vaultTransform';
+import type { ICryptoProvider } from './types';
 
 export { ENCRYPTION_CONFIG, PASSWORD_SALT } from './constants';
 

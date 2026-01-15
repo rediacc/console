@@ -115,8 +115,8 @@
  * ============================================================================
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
 import { apiConnectionService } from '@/services/api';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 export interface FeatureFlag {
   enabled?: boolean; // If not specified, defaults to true. Only use false for truly disabled/deprecated features

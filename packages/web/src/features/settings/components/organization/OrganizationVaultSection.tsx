@@ -1,7 +1,7 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Button, Card, Flex, Tooltip, Typography } from 'antd';
 import React from 'react';
+import { Button, Card, Flex, Tooltip, Typography } from 'antd';
 import { BankOutlined, SettingOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface OrganizationVaultSectionProps {
   t: TypedTFunction;

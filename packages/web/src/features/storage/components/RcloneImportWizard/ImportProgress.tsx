@@ -1,8 +1,8 @@
-import { Alert, Flex, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
+import { Alert, Flex, Table } from 'antd';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import type { ImportStatus, WizardTranslator } from './types';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ImportProgressProps {
   t: WizardTranslator;

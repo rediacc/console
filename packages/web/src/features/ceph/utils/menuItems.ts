@@ -1,7 +1,5 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { MenuProps } from 'antd';
-import { Typography } from 'antd';
 import React from 'react';
+import { Typography } from 'antd';
 import {
   DatabaseOutlined,
   ExpandOutlined,
@@ -9,6 +7,8 @@ import {
   KeyOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { MenuProps } from 'antd';
 
 // Helper to create menu labels with consistent data-testid
 const createClusterActionLabel = (actionKey: string, label: React.ReactNode) =>

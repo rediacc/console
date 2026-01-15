@@ -1,6 +1,6 @@
 import { Button, Flex, Space, Tooltip, Upload } from 'antd';
-import type { UploadFile } from 'antd/es/upload/interface';
 import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
+import type { UploadFile } from 'antd/es/upload/interface';
 
 interface ImportExportControlsProps {
   importLabel: string;

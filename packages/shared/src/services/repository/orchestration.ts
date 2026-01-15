@@ -4,12 +4,12 @@
  * These functions return everything the UI/CLI needs to execute operations
  */
 
-import { DEFAULTS } from '../../config';
 import { canBackupToStorage } from './backup-validation';
 import { isFork, type RepositoryWithRelations } from './core';
 import { canDeleteFork, findForkParent } from './fork-operations';
 import { type ChildClone, canDeleteGrandRepo } from './grand-deletion';
 import { canPromoteToGrand, findSiblingClones, type SiblingClone } from './promotion';
+import { DEFAULTS } from '../../config';
 
 /**
  * Base operation context

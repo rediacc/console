@@ -1,6 +1,5 @@
-import type { GetCephRbdImages_ResultSet1 as CephImage } from '@rediacc/shared/types';
-import { Alert, Flex, Select, Typography } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Flex, Select, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   useGetAvailableMachinesForClone,
@@ -10,6 +9,7 @@ import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { SizedModal } from '@/components/common/SizedModal';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons';
+import type { GetCephRbdImages_ResultSet1 as CephImage } from '@rediacc/shared/types';
 
 interface ImageMachineReassignmentModalProps {
   open: boolean;

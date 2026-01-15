@@ -1,10 +1,10 @@
-import { DEFAULTS, SSH_KEY_DEFAULTS, UI_IDS } from '@rediacc/shared/config';
-import { Button, Flex, Popover, Radio, type RadioChangeEvent, Tooltip, Typography } from 'antd';
 import React, { useState } from 'react';
+import { Button, Flex, Popover, Radio, type RadioChangeEvent, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMessage } from '@/hooks';
 import { GenerationOptions, generateRepoCredential, generateSSHKeyPair } from '@/utils/generators';
 import { CheckOutlined, CopyOutlined, KeyOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS, SSH_KEY_DEFAULTS, UI_IDS } from '@rediacc/shared/config';
 
 interface FieldGeneratorProps {
   fieldType: 'ssh_keys' | 'repo_credential';

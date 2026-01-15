@@ -1,8 +1,7 @@
 /* eslint-disable max-lines */
 
-import type { QueueFunction } from '@rediacc/shared/types';
-import { Collapse, Form, Space, Tag, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Collapse, Form, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -19,6 +18,7 @@ import { useDialogState } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
+import type { QueueFunction } from '@rediacc/shared/types';
 import { InfrastructurePills } from './components/InfrastructurePills';
 import { ModalFooter } from './components/ModalFooter';
 import {
@@ -32,10 +32,10 @@ import { ResourceModalDialogs } from './components/ResourceModalDialogs';
 import { useBridgeSelection } from './hooks/useBridgeSelection';
 import { useResourceDefaults } from './hooks/useResourceDefaults';
 import { useTemplateSelection } from './hooks/useTemplateSelection';
-import type { ExistingResourceData, ResourceFormValues, ResourceType } from './types';
 import { getFormFields } from './utils/formFieldGenerators';
 import { parseVaultData } from './utils/parseVaultData';
 import { transformFormData } from './utils/transformFormData';
+import type { ExistingResourceData, ResourceFormValues, ResourceType } from './types';
 
 type FunctionParamsMap = Record<string, string | number | string[] | undefined>;
 

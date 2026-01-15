@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
 
-import { DEFAULTS } from '@rediacc/shared/config';
-import { formatPropertyName, formatTimestampAsIs, formatValue } from '@rediacc/shared/formatters';
-import { escapeCSVValue } from '@rediacc/shared/utils';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
+import { DEFAULTS } from '@rediacc/shared/config';
+import { formatPropertyName, formatTimestampAsIs, formatValue } from '@rediacc/shared/formatters';
+import { escapeCSVValue } from '@rediacc/shared/utils';
 import type { OutputFormat } from '../types/index.js';
 
 interface TableColumn {

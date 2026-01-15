@@ -1,6 +1,5 @@
-import { Alert, Button, Flex, Progress, Table, Tag, Tooltip, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table/interface';
 import React, { useEffect, useState } from 'react';
+import { Alert, Button, Flex, Progress, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   createStatusColumn,
@@ -20,6 +19,7 @@ import {
   SyncOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
+import type { ColumnsType } from 'antd/es/table/interface';
 
 interface ConnectivityTestModalProps {
   open: boolean;

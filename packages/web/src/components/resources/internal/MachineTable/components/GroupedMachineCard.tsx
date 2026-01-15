@@ -1,6 +1,5 @@
-import { Card, Flex, Tag, Typography } from 'antd';
-import type { ColumnsType, TableRowSelection } from 'antd/es/table/interface';
 import React, { type ReactNode } from 'react';
+import { Card, Flex, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ResourceListView from '@/components/common/ResourceListView';
 import type { Machine } from '@/types';
@@ -12,6 +11,7 @@ import {
   InboxOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
+import type { ColumnsType, TableRowSelection } from 'antd/es/table/interface';
 
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand';
 

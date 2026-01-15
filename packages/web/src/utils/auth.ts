@@ -1,8 +1,8 @@
 // Authentication and password utilities for browser environment
 
-import { PASSWORD_SALT } from '@rediacc/shared/encryption';
 import { tokenService } from '@/services/auth';
 import { secureMemoryStorage as secureStorage } from '@/services/crypto';
+import { PASSWORD_SALT } from '@rediacc/shared/encryption';
 
 // Storage keys constants
 const STORAGE_KEYS = {

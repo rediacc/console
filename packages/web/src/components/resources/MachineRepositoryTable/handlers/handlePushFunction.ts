@@ -1,12 +1,12 @@
-import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import { canBackupToStorage } from '@/platform';
 import { showMessage } from '@/utils/messages';
-import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import {
   getGrandRepoVault,
   getRequiredTag,
   showMultiTargetSummary,
 } from '../hooks/useFunctionExecution';
+import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 import type { RepositoryTableRow } from '../types';
 import type { PushFunctionData } from './types';
 

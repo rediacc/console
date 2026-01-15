@@ -1,5 +1,5 @@
-import { ENCRYPTION_CONFIG } from '@rediacc/shared/encryption';
 import type { ICryptoProvider } from '@/platform/types';
+import { ENCRYPTION_CONFIG } from '@rediacc/shared/encryption';
 
 class WebCryptoProvider implements ICryptoProvider {
   async encrypt(data: string, password: string): Promise<string> {

@@ -1,4 +1,4 @@
-import type { OrganizationDashboardData } from '@rediacc/shared/types';
+import React from 'react';
 import {
   Badge,
   Card,
@@ -12,9 +12,9 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CrownOutlined } from '@/utils/optimizedIcons';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 const CRITICAL_DAYS_THRESHOLD = 30;
 

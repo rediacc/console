@@ -1,8 +1,5 @@
-import { parseLoginResult as parseAuthenticationResult, parseResponse } from '@rediacc/shared/api';
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
-import { Alert, Button, Flex, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { Alert, Button, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -33,6 +30,9 @@ import {
   VaultProtocolState,
   validateMasterPassword,
 } from '@/utils/vaultProtocol';
+import { parseLoginResult as parseAuthenticationResult, parseResponse } from '@rediacc/shared/api';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
 import { TFAModal } from './components/TFAModal';
 import { handleProtocolState } from './hooks/useProtocolStateHandler';

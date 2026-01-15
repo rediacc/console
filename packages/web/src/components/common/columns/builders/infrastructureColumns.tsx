@@ -1,10 +1,4 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type {
-  GetOrganizationRegions_ResultSet1,
-  GetRegionBridges_ResultSet1,
-} from '@rediacc/shared/types';
 import { Button, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { featureFlags } from '@/config/featureFlags';
 import { createSorter } from '@/platform';
@@ -20,9 +14,15 @@ import {
   KeyOutlined,
   SyncOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type {
+  GetOrganizationRegions_ResultSet1,
+  GetRegionBridges_ResultSet1,
+} from '@rediacc/shared/types';
 import { RESPONSIVE_HIDE_XS } from '..';
 import { createActionColumn } from '../factories/action';
 import { createVersionColumn } from '../factories/advanced';
+import type { ColumnsType } from 'antd/es/table';
 
 const ACTIONS_COLUMN_WIDTH = 640;
 

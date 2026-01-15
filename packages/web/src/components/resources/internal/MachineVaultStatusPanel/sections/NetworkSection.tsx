@@ -1,6 +1,5 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Card, Flex, List, type ListProps, Tag } from 'antd';
 import React from 'react';
+import { Card, Flex, List, type ListProps, Tag } from 'antd';
 import {
   DetailPanelDivider,
   DetailPanelFieldLabel,
@@ -10,6 +9,7 @@ import {
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { CompassOutlined, WifiOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { NetworkInterface, VaultNetwork } from '../types';
 
 interface NetworkSectionProps {

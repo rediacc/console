@@ -1,6 +1,5 @@
-import type { GetOrganizationDashboard_ResultSet15 } from '@rediacc/shared/types';
-import { Card, Col, Flex, List, Progress, Row, Statistic, Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
+import { Card, Col, Flex, List, Progress, Row, Statistic, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   CloudServerOutlined,
@@ -9,6 +8,7 @@ import {
   HddOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons';
+import type { GetOrganizationDashboard_ResultSet15 } from '@rediacc/shared/types';
 import { CephDashboardWidgetProps } from './types';
 
 const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBreakdown = [] }) => {

@@ -3,8 +3,8 @@
  * Docker exec terminal in a modal dialog for Electron desktop app
  */
 
-import { Alert, Button, Flex, Space, Tooltip, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Button, Flex, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { Terminal, type TerminalRef } from '@/components/app/Terminal/Terminal';
 import { SizedModal } from '@/components/common/SizedModal';

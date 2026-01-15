@@ -1,5 +1,5 @@
-import type { ButtonProps } from 'antd';
 import { Button } from 'antd';
+import type { ButtonProps } from 'antd';
 
 type DangerButtonProps = Omit<ButtonProps, 'type' | 'danger'>;
 

@@ -1,8 +1,8 @@
-import type { QueueTraceLog } from '@rediacc/shared/types';
-import { Space, Timeline, Typography } from 'antd';
 import React from 'react';
+import { Space, Timeline, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { formatTimestampAsIs, normalizeToString } from '@/platform';
+import type { QueueTraceLog } from '@rediacc/shared/types';
 import type { TimelineViewProps } from '../types';
 
 export const TimelineView: React.FC<TimelineViewProps> = ({ traceLogs }) => {

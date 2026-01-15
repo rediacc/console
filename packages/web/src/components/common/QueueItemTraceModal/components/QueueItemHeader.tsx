@@ -1,10 +1,10 @@
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
-import { Card, Flex, Progress, Space, Steps, Typography } from 'antd';
 import React from 'react';
+import { Card, Flex, Progress, Space, Steps, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { formatTimestampAsIs, normalizeToString } from '@/platform';
-import type { TraceLog } from '../types';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { getCurrentStep, getSimplifiedStatus, getTimelineTimestamp } from '../utils';
+import type { TraceLog } from '../types';
 
 interface QueueItemHeaderProps {
   queueDetails: GetTeamQueueItems_ResultSet1;

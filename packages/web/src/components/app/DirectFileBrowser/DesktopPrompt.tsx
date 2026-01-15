@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-syntax, react/forbid-elements */
 
+import React from 'react';
 import { DesktopOutlined, DownloadOutlined } from '@ant-design/icons';
 import { Button, Result, Typography, theme } from 'antd';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const { Paragraph, Text } = Typography;

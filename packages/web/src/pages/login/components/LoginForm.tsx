@@ -1,7 +1,5 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Button, Flex, Form, Input, Tooltip, Typography } from 'antd';
-import type { FormInstance } from 'antd/es/form';
 import React from 'react';
+import { Button, Flex, Form, Input, Tooltip, Typography } from 'antd';
 import type { LoginFormValues } from '@/features/auth/types';
 import {
   InfoCircleOutlined,
@@ -10,6 +8,8 @@ import {
   UserOutlined,
 } from '@/utils/optimizedIcons';
 import { VaultProtocolState } from '@/utils/vaultProtocol';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { FormInstance } from 'antd/es/form';
 
 interface LoginFormProps {
   form: FormInstance<LoginFormValues>;

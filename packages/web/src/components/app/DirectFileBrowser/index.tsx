@@ -1,5 +1,6 @@
 /* eslint-disable no-restricted-syntax, react/forbid-elements, @typescript-eslint/no-floating-promises, react-hooks/exhaustive-deps, @typescript-eslint/require-await, max-lines */
 
+import React, { useEffect, useState } from 'react';
 import {
   CloseOutlined,
   DeleteOutlined,
@@ -13,7 +14,6 @@ import {
   ReloadOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
 import {
   Alert,
   Breadcrumb,
@@ -32,8 +32,6 @@ import {
   theme,
   Upload,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileCard } from '@/components/common/MobileCard';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -43,6 +41,8 @@ import { ModalSize } from '@/types/modal';
 import { formatBytes } from '@/utils/formatters';
 import { showMessage } from '@/utils/messages';
 import { DesktopPrompt } from './DesktopPrompt';
+import type { MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 

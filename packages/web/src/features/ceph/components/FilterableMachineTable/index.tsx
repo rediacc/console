@@ -1,6 +1,5 @@
-import { Badge, Checkbox, Flex, Space, Tag, Typography } from 'antd';
-import type { TableRowSelection } from 'antd/es/table/interface';
 import React from 'react';
+import { Badge, Checkbox, Flex, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ExpandIcon } from '@/components/common/ExpandIcon';
 import { MobileCard } from '@/components/common/MobileCard';
@@ -10,6 +9,7 @@ import { MachineRepositoryTable } from '@/components/resources/MachineRepository
 import type { Machine } from '@/types';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { buildMachineTableColumns } from './columns';
+import type { TableRowSelection } from 'antd/es/table/interface';
 
 export interface FilterableMachineTableProps {
   machines: Machine[];

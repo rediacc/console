@@ -1,10 +1,5 @@
-import { DEFAULTS } from '@rediacc/shared/config';
-import type {
-  GetOrganizationRegions_ResultSet1,
-  GetRegionBridges_ResultSet1,
-} from '@rediacc/shared/types';
-import { Flex, type MenuProps, Result, Space, Typography } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
+import { Flex, type MenuProps, Result, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
@@ -25,7 +20,6 @@ import {
   buildBridgeColumns,
   buildRegionColumns,
 } from '@/components/common/columns/builders/infrastructureColumns';
-import { MobileCard } from '@/components/common/MobileCard';
 import {
   buildDeleteMenuItem,
   buildDivider,
@@ -34,6 +28,7 @@ import {
   buildTokenMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import { featureFlags } from '@/config/featureFlags';
@@ -41,6 +36,11 @@ import { useCopyToClipboard } from '@/hooks';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ApiOutlined, EnvironmentOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type {
+  GetOrganizationRegions_ResultSet1,
+  GetRegionBridges_ResultSet1,
+} from '@rediacc/shared/types';
 import { BridgeCredentialsModal } from '../components/infrastructure/BridgeCredentialsModal';
 import { BridgeSection } from '../components/infrastructure/BridgeSection';
 import { RegionSection } from '../components/infrastructure/RegionSection';

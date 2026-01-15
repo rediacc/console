@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 import {
   parseGetOrganizationTeams,
   parseGetOrganizationVaults,
@@ -10,15 +11,14 @@ import type {
   UpdateTeamNameParams,
   UpdateTeamVaultParams,
 } from '@rediacc/shared/types';
-import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { outputService } from '../services/output.js';
-import type { OutputFormat } from '../types/index.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import type { OutputFormat } from '../types/index.js';
 
 export function registerTeamCommands(program: Command): void {
   // Create standard CRUD commands using factory

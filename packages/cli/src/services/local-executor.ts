@@ -10,9 +10,9 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import type { LocalMachineConfig } from '../types/index.js';
 import { contextService } from './context.js';
 import { outputService } from './output.js';
+import type { LocalMachineConfig } from '../types/index.js';
 
 /** Options for local execution */
 export interface LocalExecuteOptions {

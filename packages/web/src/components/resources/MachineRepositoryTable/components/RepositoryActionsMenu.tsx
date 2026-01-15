@@ -1,8 +1,5 @@
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
-import type { MenuProps } from 'antd';
-import { Typography } from 'antd';
 import React from 'react';
+import { Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { LocalActionsMenu } from '@/components/resources/internal/LocalActionsMenu';
@@ -29,7 +26,10 @@ import {
   RiseOutlined,
   ShrinkOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { MenuClickEvent, RepositoryContainersState, RepositoryTableRow } from '../types';
+import type { MenuProps } from 'antd';
 
 interface RepositoryActionsMenuProps {
   record: RepositoryTableRow;

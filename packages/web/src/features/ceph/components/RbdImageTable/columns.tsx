@@ -1,9 +1,5 @@
 import { EllipsisOutlined } from '@ant-design/icons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetCephRbdImages_ResultSet1 as CephImage } from '@rediacc/shared/types';
-import type { MenuProps } from 'antd';
 import { Space, Tag, Tooltip, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createTruncatedColumn, RESPONSIVE_HIDE_XS } from '@/components/common/columns';
 import { createActionColumn } from '@/components/common/columns/factories/action';
@@ -13,6 +9,10 @@ import {
   CloudUploadOutlined,
   FileImageOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetCephRbdImages_ResultSet1 as CephImage } from '@rediacc/shared/types';
+import type { MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface BuildRbdImageColumnsParams {
   t: TypedTFunction;

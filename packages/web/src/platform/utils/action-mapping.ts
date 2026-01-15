@@ -2,6 +2,7 @@
  * Action mapping utilities for mapping actions to icons and colors
  */
 
+import type { ElementType } from 'react';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -10,7 +11,6 @@ import {
   LoginOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
-import type { ElementType } from 'react';
 
 /**
  * Configuration for action icon mapping

@@ -1,5 +1,5 @@
-import type { TelemetryHandler } from '@rediacc/shared/api';
 import { telemetryService } from '@/services/telemetryService';
+import type { TelemetryHandler } from '@rediacc/shared/api';
 
 /**
  * Web telemetry handler wrapping the telemetryService.

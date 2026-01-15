@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 import {
   extractPrimaryOrSecondary,
   parseCreateBridge,
@@ -11,7 +12,6 @@ import type {
   UpdateBridgeNameParams,
   UpdateBridgeVaultParams,
 } from '@rediacc/shared/types';
-import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';

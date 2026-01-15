@@ -6,12 +6,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { getPlatform } from '../utils/platform.js';
 import {
   buildMachineEnvironment,
   buildRemoteCommand,
   buildRepositoryEnvironment,
 } from './envCompose.js';
+import { getPlatform } from '../utils/platform.js';
 import type { SSHConfigEntry } from './types.js';
 
 /**

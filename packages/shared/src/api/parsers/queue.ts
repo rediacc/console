@@ -2,6 +2,7 @@
  * Queue Parsers
  */
 
+import { extractFirstByIndex, extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 import { DEFAULTS } from '../../config';
 import type {
   GetTeamQueueItems_ResultSet1,
@@ -16,7 +17,6 @@ import type {
   QueueVaultSnapshot,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { extractFirstByIndex, extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 
 export interface QueueCreateResult {
   taskId: string | null;

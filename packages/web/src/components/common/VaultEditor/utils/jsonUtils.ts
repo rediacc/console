@@ -1,6 +1,6 @@
-import type { FormInstance } from 'antd';
-import type { FieldDefinition, VaultFormValues } from '../types';
 import { decodeBase64, encodeBase64 } from '../utils';
+import type { FieldDefinition, VaultFormValues } from '../types';
+import type { FormInstance } from 'antd';
 
 export interface FieldMovements {
   movedToExtra: string[];

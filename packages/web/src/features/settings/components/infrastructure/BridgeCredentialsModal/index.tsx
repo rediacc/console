@@ -1,9 +1,9 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetRegionBridges_ResultSet1 } from '@rediacc/shared/types';
-import { Alert, Button, Flex, Input, Modal, Space, Typography } from 'antd';
 import React from 'react';
+import { Alert, Button, Flex, Input, Modal, Space, Typography } from 'antd';
 import { ModalSize } from '@/types/modal';
 import { CheckCircleOutlined, KeyOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetRegionBridges_ResultSet1 } from '@rediacc/shared/types';
 
 interface BridgeCredentialsModalProps {
   t: TypedTFunction;

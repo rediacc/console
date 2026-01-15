@@ -1,7 +1,5 @@
-import { Button, Checkbox, Flex, Modal, Space, Steps, Tag, Tooltip, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import type { UploadFile } from 'antd/es/upload';
 import React, { useState } from 'react';
+import { Button, Checkbox, Flex, Modal, Space, Steps, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useGetTeamStorages } from '@/api/api-hooks.generated';
 import {
@@ -27,6 +25,8 @@ import type {
   RcloneConfigFields,
   RcloneImportWizardProps,
 } from './types';
+import type { ColumnsType } from 'antd/es/table';
+import type { UploadFile } from 'antd/es/upload';
 
 const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   open,

@@ -1,10 +1,10 @@
-import { MachineValidationService } from '@rediacc/shared/services/machine';
-import type { Middleware, MiddlewareAPI, UnknownAction } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { BulkValidationResult, ValidationResult } from '@/features/ceph';
 import type { RootState } from '@/store/store';
 import type { Machine } from '@/types';
+import { MachineValidationService } from '@rediacc/shared/services/machine';
 import { clearStaleValidations, setMultipleValidationResults } from './machineAssignmentSlice';
+import type { Middleware, MiddlewareAPI, UnknownAction } from '@reduxjs/toolkit';
 
 // Configuration
 const VALIDATION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes

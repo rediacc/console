@@ -1,15 +1,10 @@
+import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
   getValidationErrors,
   isBridgeFunction,
   safeValidateFunctionParams,
 } from '@rediacc/shared/queue-vault';
-import { Command } from 'commander';
-import { t } from '../i18n/index.js';
-import { contextService } from '../services/context.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
 import {
   type CreateActionOptions,
   cancelAction,
@@ -17,6 +12,11 @@ import {
   retryAction,
   traceAction,
 } from './queue.js';
+import { t } from '../i18n/index.js';
+import { contextService } from '../services/context.js';
+import { localExecutorService } from '../services/local-executor.js';
+import { outputService } from '../services/output.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 
 /**
  * Run function in local mode (direct renet execution).

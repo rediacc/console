@@ -1,7 +1,4 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetCephPools_ResultSet1 } from '@rediacc/shared/types';
 import { Flex, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createVersionColumn, RESPONSIVE_HIDE_XS } from '@/components/common/columns';
 import { createActionColumn } from '@/components/common/columns/factories/action';
@@ -15,6 +12,9 @@ import {
   HistoryOutlined,
   RightOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetCephPools_ResultSet1 } from '@rediacc/shared/types';
+import type { ColumnsType } from 'antd/es/table';
 
 interface BuildPoolColumnsParams {
   t: TypedTFunction;

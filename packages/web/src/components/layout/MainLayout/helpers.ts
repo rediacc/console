@@ -1,6 +1,6 @@
+import { featureFlags } from '@/config/featureFlags';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { OrganizationDashboardData } from '@rediacc/shared/types';
-import { featureFlags } from '@/config/featureFlags';
 import type { RouteItem } from './routes';
 import type { MenuConfig } from './types';
 

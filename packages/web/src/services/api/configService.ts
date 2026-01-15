@@ -1,5 +1,5 @@
-import { DEFAULTS, LIMITS_DEFAULTS } from '@rediacc/shared/config';
 import { CONFIG_URLS } from '@/utils/apiConstants';
+import { DEFAULTS, LIMITS_DEFAULTS } from '@rediacc/shared/config';
 import { apiConnectionService } from './apiConnectionService';
 
 interface AppConfig {

@@ -1,11 +1,5 @@
-import type {
-  GetCephRbdClones_ResultSet1 as CephClone,
-  GetCloneMachines_ResultSet1 as CloneMachine,
-} from '@rediacc/shared/types';
-import { Alert, Button, Empty, Flex, Select, Table, Tabs, Tag, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import type { TableRowSelection } from 'antd/es/table/interface';
 import React, { useEffect, useState } from 'react';
+import { Alert, Button, Empty, Flex, Select, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   useGetAvailableMachinesForClone,
@@ -19,6 +13,12 @@ import { SizedModal } from '@/components/common/SizedModal';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons';
+import type {
+  GetCephRbdClones_ResultSet1 as CephClone,
+  GetCloneMachines_ResultSet1 as CloneMachine,
+} from '@rediacc/shared/types';
+import type { ColumnsType } from 'antd/es/table';
+import type { TableRowSelection } from 'antd/es/table/interface';
 
 interface AssignMachinesToCloneModalProps {
   open: boolean;

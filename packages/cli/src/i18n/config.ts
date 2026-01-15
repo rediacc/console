@@ -1,6 +1,6 @@
 // Import all locale files directly - they get bundled by esbuild
-import { getAllTranslations, SHARED_NAMESPACE } from '@rediacc/shared/i18n';
 import i18n from 'i18next';
+import { getAllTranslations, SHARED_NAMESPACE } from '@rediacc/shared/i18n';
 import arCli from './locales/ar/cli.json' with { type: 'json' };
 import deCli from './locales/de/cli.json' with { type: 'json' };
 import enCli from './locales/en/cli.json' with { type: 'json' };

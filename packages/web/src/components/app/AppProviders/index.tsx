@@ -1,3 +1,4 @@
+import React from 'react';
 import { App as AntApp, ConfigProvider, Flex } from 'antd';
 import arEG from 'antd/locale/ar_EG';
 import deDE from 'antd/locale/de_DE';
@@ -8,7 +9,6 @@ import jaJP from 'antd/locale/ja_JP';
 import ruRU from 'antd/locale/ru_RU';
 import trTR from 'antd/locale/tr_TR';
 import zhCN from 'antd/locale/zh_CN';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';

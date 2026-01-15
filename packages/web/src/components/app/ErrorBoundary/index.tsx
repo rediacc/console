@@ -1,9 +1,9 @@
-import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
-import { DEFAULTS } from '@rediacc/shared/config';
-import { Button, Flex, Result, Typography } from 'antd';
 import React, { Component, ReactNode } from 'react';
+import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Flex, Result, Typography } from 'antd';
 import i18n from '@/i18n/config';
 import { telemetryService } from '@/services/telemetryService';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 interface ErrorBoundaryState {
   hasError: boolean;

@@ -3,8 +3,8 @@
  * Fullscreen terminal for popped-out Electron windows
  */
 
-import { Alert, Flex, Spin, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Flex, Spin, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Terminal, type TerminalRef } from '@/components/app/Terminal/Terminal';

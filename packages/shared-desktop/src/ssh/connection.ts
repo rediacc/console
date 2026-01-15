@@ -1,9 +1,9 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
 import { addKeyToAgent, isSSHAgentAvailable, startSSHAgent, stopSSHAgent } from './agent.js';
 import { createTempSSHKeyFile, decodeSSHKey, removeTempSSHKeyFile } from './keyManager.js';
 import { createTempKnownHostsFile, removeTempKnownHostsFile } from './knownHosts.js';
+import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
 
 /**
  * Connection method used for SSH

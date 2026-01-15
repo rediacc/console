@@ -1,5 +1,5 @@
-import { Flex } from 'antd';
 import React, { lazy, Suspense, useEffect } from 'react';
+import { Flex } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { BrowserRouter, HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { initializeApiClient } from '@/api/init';

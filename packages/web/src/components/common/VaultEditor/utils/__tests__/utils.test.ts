@@ -1,4 +1,3 @@
-import type { Rule } from 'antd/es/form';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildValidationRules,
@@ -6,6 +5,7 @@ import {
   moveToExtraFields,
   processExtraFields,
 } from '../../utils';
+import type { Rule } from 'antd/es/form';
 
 // Helper predicates for rule validation (extracted to avoid nested callbacks)
 const hasPattern = (r: Rule): boolean => 'pattern' in r;

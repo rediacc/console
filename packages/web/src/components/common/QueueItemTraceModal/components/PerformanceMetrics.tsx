@@ -1,5 +1,5 @@
-import { Alert, Card, Col, Divider, Progress, Row, Space, Statistic, Typography } from 'antd';
 import React from 'react';
+import { Alert, Card, Col, Divider, Progress, Row, Space, Statistic, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { DashboardOutlined, HourglassOutlined, SyncOutlined } from '@/utils/optimizedIcons';
 

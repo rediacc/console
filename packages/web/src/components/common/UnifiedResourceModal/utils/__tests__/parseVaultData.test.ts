@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ExistingResourceData } from '../../types';
 import { parseVaultData } from '../parseVaultData';
+import type { ExistingResourceData } from '../../types';
 
 describe('parseVaultData', () => {
   it('returns empty object when vaultContent is undefined', () => {

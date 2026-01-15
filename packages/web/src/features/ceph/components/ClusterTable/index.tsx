@@ -1,18 +1,15 @@
-import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';
-import type { MenuProps } from 'antd';
-import { Button, Dropdown, Empty, Flex, Modal, Space, Tag, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { useCallback, useMemo } from 'react';
+import { Button, Dropdown, Empty, Flex, Modal, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { ExpandIcon } from '@/components/common/ExpandIcon';
-import { MobileCard } from '@/components/common/MobileCard';
 import {
   buildDeleteMenuItem,
   buildDivider,
   buildEditMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
 import { ManageClusterMachinesModal } from '@/features/ceph/components/modals/ManageClusterMachinesModal';
@@ -20,9 +17,12 @@ import { buildClusterMenuItems } from '@/features/ceph/utils/menuItems';
 import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
 import { confirmAction } from '@/utils/confirmations';
 import { CloudServerOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
+import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';
 import { ClusterMachineCountBadge } from '../ClusterMachineCountBadge';
 import { ClusterMachines } from '../ClusterMachines';
 import { buildClusterColumns } from './columns';
+import type { MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ClusterTableProps {
   clusters: GetCephClusters_ResultSet1[];

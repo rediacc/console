@@ -1,6 +1,5 @@
-import type { OrganizationDashboardData } from '@rediacc/shared/types';
-import { Alert, Card, Col, Empty, Flex, Row, Statistic, Typography } from 'antd';
 import React from 'react';
+import { Alert, Card, Col, Empty, Flex, Row, Statistic, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink } from 'react-router-dom';
 import {
@@ -12,6 +11,7 @@ import {
   SyncOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 interface QueueOverviewWidgetProps {
   queueStats?: OrganizationDashboardData['queueStats'];

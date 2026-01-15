@@ -1,5 +1,5 @@
-import { Button, Card, Col, Flex, Row, Statistic, Typography } from 'antd';
 import React from 'react';
+import { Button, Card, Col, Flex, Row, Statistic, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';

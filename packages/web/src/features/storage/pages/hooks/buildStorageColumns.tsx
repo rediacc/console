@@ -1,7 +1,5 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
-import { Space, Tag } from 'antd';
 import React, { useMemo } from 'react';
+import { Space, Tag } from 'antd';
 import { ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { createActionColumn } from '@/components/common/columns/factories/action';
 import { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from '@/components/common/ResourceListView';
@@ -13,6 +11,8 @@ import {
   FunctionOutlined,
   HistoryOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
 
 interface BuildStorageColumnsParams {
   t: TypedTFunction;

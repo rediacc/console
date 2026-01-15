@@ -5,9 +5,9 @@
  * Fork tokens are isolated from the main session and have limited lifespans.
  */
 
-import { parseForkAuthenticationRequest } from '@rediacc/shared/api';
 import { typedApi } from '@/api/client';
 import { secureMemoryStorage as secureStorage } from '@/services/crypto';
+import { parseForkAuthenticationRequest } from '@rediacc/shared/api';
 
 interface ForkTokenInfo {
   token: string;

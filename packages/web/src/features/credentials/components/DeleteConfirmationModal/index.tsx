@@ -1,8 +1,8 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { Alert, Flex, Modal, Typography } from 'antd';
 import { showMessage } from '@/utils/messages';
 import { WarningOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 
 interface AffectedResources {
   isCredential: boolean;

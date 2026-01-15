@@ -4,8 +4,8 @@
  * Performs health checks and caches the working endpoint for the session
  */
 
-import { API_DEFAULTS, DEFAULTS } from '@rediacc/shared/config';
 import axios from 'axios';
+import { API_DEFAULTS, DEFAULTS } from '@rediacc/shared/config';
 import { endpointService } from './endpointService';
 
 type BuildType = 'DEBUG' | 'RELEASE';

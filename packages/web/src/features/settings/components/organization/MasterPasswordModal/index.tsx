@@ -1,8 +1,8 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Alert, Button, Flex, Form, Modal, Radio, Space, Typography } from 'antd';
 import React, { useEffect } from 'react';
+import { Alert, Button, Flex, Form, Modal, Radio, Space, Typography } from 'antd';
 import { PasswordConfirmField, PasswordField } from '@/components/forms/FormFields';
 import { ModalSize } from '@/types/modal';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface MasterPasswordModalProps {
   t: TypedTFunction;

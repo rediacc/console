@@ -1,5 +1,4 @@
-import { DEFAULTS, SEVERITY_DEFAULTS } from '@rediacc/shared/config';
-import type { AuditTraceRecord } from '@rediacc/shared/types';
+import React from 'react';
 import {
   Alert,
   Button,
@@ -13,7 +12,6 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useEntityAuditTraceWithEnabled } from '@/api/hooks-organization';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -39,6 +37,8 @@ import {
   PlusCircleOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS, SEVERITY_DEFAULTS } from '@rediacc/shared/config';
+import type { AuditTraceRecord } from '@rediacc/shared/types';
 
 const { Text: AntText } = Typography;
 

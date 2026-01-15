@@ -3,8 +3,8 @@
  * Parses and formats structured logs (logrus format) for terminal output
  */
 
-import type { LogLevel, ParsedLogLine } from '@rediacc/shared/utils';
 import chalk from 'chalk';
+import type { LogLevel, ParsedLogLine } from '@rediacc/shared/utils';
 
 /**
  * Get chalk color function for log level

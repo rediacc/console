@@ -1,11 +1,5 @@
-import type {
-  GetCephClusters_ResultSet1 as CephCluster,
-  GetCephPools_ResultSet1 as CephPool,
-  CreateCephClusterParams,
-  CreateCephPoolParams,
-} from '@rediacc/shared/types';
-import { Alert, Button, Card, Empty, Flex, Tooltip } from 'antd';
 import React, { useState } from 'react';
+import { Alert, Button, Card, Empty, Flex, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   useCreateCephCluster,
@@ -27,6 +21,12 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
+import type {
+  GetCephClusters_ResultSet1 as CephCluster,
+  GetCephPools_ResultSet1 as CephPool,
+  CreateCephClusterParams,
+  CreateCephPoolParams,
+} from '@rediacc/shared/types';
 import { CephMachinesTab } from '../components/CephMachinesTab';
 import { ClusterTable } from '../components/ClusterTable';
 import { PoolTable } from '../components/PoolTable';

@@ -1,12 +1,11 @@
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   CloseOutlined,
   CloudDownloadOutlined,
   FolderOpenOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { Alert, Button, Empty, Flex, Input, Select, Space, Tooltip, Typography } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useGetOrganizationTeams,
@@ -22,16 +21,17 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { BrowserBreadcrumb } from './BrowserBreadcrumb';
 import { BrowserFileTable } from './BrowserFileTable';
 import { FileListParserFactory } from './parsers';
+import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
 import type {
   AdditionalVaultData,
   RemoteFile,
   RemoteFileBrowserModalProps,
   SourceOption,
 } from './types';
-import { buildListQueueVault, buildPullQueueVault } from './vaultBuilder';
 
 interface ExecuteListParams {
   selectedSource: string;

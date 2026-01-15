@@ -1,6 +1,6 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Alert } from 'antd';
 import React from 'react';
+import { Alert } from 'antd';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface Team {
   teamName: string;

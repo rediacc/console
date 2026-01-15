@@ -1,7 +1,5 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { MenuProps } from 'antd';
-import { Button, Dropdown, Flex, Tooltip } from 'antd';
 import React from 'react';
+import { Button, Dropdown, Flex, Tooltip } from 'antd';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -10,6 +8,8 @@ import {
   HistoryOutlined,
   LockOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { MenuProps } from 'antd';
 // =============================================================================
 // TYPES
 // =============================================================================

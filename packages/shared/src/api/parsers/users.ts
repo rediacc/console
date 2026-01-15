@@ -2,9 +2,9 @@
  * User Parsers
  */
 
+import { extractFirstByIndex, extractPrimaryOrSecondary } from './base';
 import type { CreateNewUser_ResultSet1, GetOrganizationUsers_ResultSet1 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { extractFirstByIndex, extractPrimaryOrSecondary } from './base';
 
 export function parseGetOrganizationUsers(
   response: ApiResponse<GetOrganizationUsers_ResultSet1>

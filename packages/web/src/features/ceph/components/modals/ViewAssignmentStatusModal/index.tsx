@@ -1,6 +1,5 @@
-import { Flex, Table, Tag, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
+import { Flex, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn, RESPONSIVE_HIDE_XS } from '@/components/common/columns';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -9,6 +8,7 @@ import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmen
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { CloudServerOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ViewAssignmentStatusModalProps {
   open: boolean;

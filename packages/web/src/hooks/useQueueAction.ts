@@ -1,4 +1,3 @@
-import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
@@ -10,6 +9,7 @@ import {
   QueueActionService,
   type TypedQueueActionParams,
 } from '@/services/queue';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 
 export type {
   DynamicQueueActionParams,

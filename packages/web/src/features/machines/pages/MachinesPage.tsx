@@ -1,6 +1,5 @@
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
-import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -22,6 +21,7 @@ import { type Machine } from '@/types';
 import { confirmDelete } from '@/utils/confirmations';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useMachineFunctionHandlers } from './hooks/useMachineFunctionHandlers';
 import type { MachineFormValues, MachineFunctionData } from './types';
 
@@ -351,12 +351,7 @@ const MachinesPage: React.FC = () => {
               <LoadingWrapper loading centered minHeight={200}>
                 <Flex />
               </LoadingWrapper>
-            ) : !selectedTeam ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('teams.selectTeamPrompt')}
-              />
-            ) : (
+            ) : selectedTeam ? (
               <SplitResourceView
                 type="machine"
                 teamFilter={[selectedTeam]}
@@ -393,6 +388,11 @@ const MachinesPage: React.FC = () => {
                 onResourceSelect={handleResourceSelection}
                 isPanelCollapsed={isPanelCollapsed}
                 onTogglePanelCollapse={handleTogglePanelCollapse}
+              />
+            ) : (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={t('teams.selectTeamPrompt')}
               />
             )}
           </Flex>

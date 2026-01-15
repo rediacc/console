@@ -2,13 +2,13 @@
  * Resource Parsers (Bridges, Regions, Storage)
  */
 
+import { extractFirstByIndex, extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 import type {
   GetOrganizationRegions_ResultSet1,
   GetRegionBridges_ResultSet1,
   GetTeamStorages_ResultSet1,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { extractFirstByIndex, extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 
 // Regions
 export function parseGetOrganizationRegions(

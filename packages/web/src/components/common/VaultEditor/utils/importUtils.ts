@@ -1,7 +1,7 @@
+import { decodeBase64 } from '../utils';
+import type { FieldDefinition, VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
-import type { FieldDefinition, VaultFormValues } from '../types';
-import { decodeBase64 } from '../utils';
 
 const readJsonFile = (
   file: UploadFile,

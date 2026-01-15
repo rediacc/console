@@ -1,6 +1,5 @@
-import type { CollapseProps } from 'antd';
-import { Badge, Space, Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
+import { Badge, Space, Tag, Tooltip, Typography } from 'antd';
 import { normalizeToString } from '@/platform';
 import {
   DashboardOutlined,
@@ -17,8 +16,9 @@ import {
   ResponseVaultContent,
   TimelineView,
 } from '../components';
-import type { ConsoleViewMode, QueueItemTraceData, SimplifiedStatus } from '../types';
 import { isTaskStale } from '../utils';
+import type { ConsoleViewMode, QueueItemTraceData, SimplifiedStatus } from '../types';
+import type { CollapseProps } from 'antd';
 
 // Generic translation function type that accepts any namespace configuration
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;

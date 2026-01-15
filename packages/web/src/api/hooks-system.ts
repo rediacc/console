@@ -5,10 +5,10 @@
  * - API health check (direct axios call)
  */
 
-import type { ApiHealthResponse } from '@rediacc/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { apiConnectionService } from '@/services/api';
+import type { ApiHealthResponse } from '@rediacc/shared/types';
 
 /**
  * Fetch API health status directly from /health endpoint.

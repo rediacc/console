@@ -1,8 +1,8 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Button, Checkbox, Flex, Space, Upload } from 'antd';
 import React from 'react';
+import { Button, Checkbox, Flex, Space, Upload } from 'antd';
 import type { ImportExportHandlers } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import { DownloadOutlined, UploadOutlined } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { ResourceType } from '../types';
 
 interface ModalFooterProps {

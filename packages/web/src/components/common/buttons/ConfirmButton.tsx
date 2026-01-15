@@ -1,5 +1,5 @@
-import type { ButtonProps, PopconfirmProps } from 'antd';
 import { Button, Popconfirm, Tooltip } from 'antd';
+import type { ButtonProps, PopconfirmProps } from 'antd';
 
 interface ConfirmButtonProps extends Omit<ButtonProps, 'onClick'> {
   /** Tooltip text - also used as aria-label for accessibility */

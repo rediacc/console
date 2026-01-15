@@ -3,13 +3,13 @@
  * These use the same logic as the web console but adapted for terminal output
  */
 
+import chalk from 'chalk';
 import {
   formatError as formatErrorShared,
   formatErrors,
   parseFailureReason,
 } from '@rediacc/shared/error-parser';
 import { getPriorityLabel, STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
-import chalk from 'chalk';
 
 // Re-export formatAge for backwards compatibility
 export { formatAge } from '@rediacc/shared/formatters';

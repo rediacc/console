@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 import {
   parseCreateMachine,
   parseGetOrganizationVaults,
@@ -11,7 +12,6 @@ import type {
   UpdateMachineNameParams,
   UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
-import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import {

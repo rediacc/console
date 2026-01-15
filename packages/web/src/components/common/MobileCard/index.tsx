@@ -1,5 +1,5 @@
-import { Card, Flex } from 'antd';
 import type { ReactNode } from 'react';
+import { Card, Flex } from 'antd';
 
 export interface MobileCardProps {
   /** Content to display on the left side of the card */

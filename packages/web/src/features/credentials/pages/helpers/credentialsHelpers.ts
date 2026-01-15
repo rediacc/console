@@ -1,5 +1,5 @@
-import type { GetTeamMachines_ResultSet1, GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
 import type { DynamicQueueActionParams } from '@/services/queue';
+import type { GetTeamMachines_ResultSet1, GetTeamStorages_ResultSet1 } from '@rediacc/shared/types';
 
 interface TeamInfo {
   teamName: string | null;

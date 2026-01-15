@@ -1,9 +1,9 @@
-import { Form, Select, Space, Tag, Typography } from 'antd';
-import type { FormInstance } from 'antd/es/form';
 import React, { useEffect } from 'react';
+import { Form, Select, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ApiOutlined, EnvironmentOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 import type { ResourceType } from '../types';
+import type { FormInstance } from 'antd/es/form';
 
 interface DropdownData {
   teams?: { value: string; label: string }[];

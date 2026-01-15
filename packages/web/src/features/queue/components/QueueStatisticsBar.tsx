@@ -1,5 +1,5 @@
-import { Divider, Flex, Typography } from 'antd';
 import React from 'react';
+import { Divider, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   ExclamationCircleOutlined,

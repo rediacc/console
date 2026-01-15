@@ -1,5 +1,5 @@
-import { Flex } from 'antd';
 import React from 'react';
+import { Flex } from 'antd';
 import { useGetMachineAssignmentStatus } from '@/api/api-hooks.generated';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge';

@@ -3,9 +3,9 @@
  * Generates and handles rediacc:// URLs for desktop app integration
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
 import { apiConnectionService } from '@/services/api';
 import { createFreshForkToken } from '@/services/auth';
+import { DEFAULTS } from '@rediacc/shared/config';
 
 export type ProtocolAction = 'terminal' | 'file-manager' | 'vscode';
 

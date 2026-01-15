@@ -1,9 +1,9 @@
-import { Empty, Flex, Select, Tag, Typography } from 'antd';
-import type { DefaultOptionType } from 'antd/es/select';
 import React from 'react';
+import { Empty, Flex, Select, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { Machine } from '@/types';
 import { CheckCircleOutlined, CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
+import type { DefaultOptionType } from 'antd/es/select';
 
 interface AvailableMachinesSelectorProps {
   machines: Machine[];

@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 import { parseGetOrganizationVaults, parseGetTeamRepositories } from '@rediacc/shared/api';
 import { DEFAULT_REPOSITORY_TAG } from '@rediacc/shared/api/typedApi/defaults';
 import {
@@ -8,15 +9,14 @@ import {
   type RepositoryWithRelations,
 } from '@rediacc/shared/services/repository';
 import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
-import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import type { OutputFormat } from '../types/index.js';
 
 function validateGrandRepoDeletion(
   repository: RepositoryWithRelations,

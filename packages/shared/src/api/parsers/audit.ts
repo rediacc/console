@@ -2,6 +2,7 @@
  * Audit Parsers
  */
 
+import { extractFirstByIndex, extractRowsByIndex } from './base';
 import type {
   AuditTraceRecord,
   AuditTraceResponse,
@@ -9,7 +10,6 @@ import type {
   GetAuditLogs_ResultSet1,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { extractFirstByIndex, extractRowsByIndex } from './base';
 
 export function parseGetAuditLogs(
   response: ApiResponse<GetAuditLogs_ResultSet1>

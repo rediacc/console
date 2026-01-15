@@ -1,8 +1,8 @@
-import { CloudServerOutlined } from '@ant-design/icons';
-import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';
-import { Badge } from 'antd';
 import React from 'react';
+import { CloudServerOutlined } from '@ant-design/icons';
+import { Badge } from 'antd';
 import { useGetCephClusterMachines } from '@/api/api-hooks.generated';
+import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';
 
 interface MachineCountBadgeProps {
   cluster: GetCephClusters_ResultSet1;

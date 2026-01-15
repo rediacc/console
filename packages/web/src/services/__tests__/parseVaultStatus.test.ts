@@ -1,5 +1,5 @@
-import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import { describe, expect, it } from 'vitest';
+import { parseVaultStatus } from '@rediacc/shared/services/machine';
 
 describe('parseVaultStatus', () => {
   describe('encrypted data detection', () => {

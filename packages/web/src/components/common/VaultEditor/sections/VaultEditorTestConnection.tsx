@@ -1,9 +1,9 @@
-import type { FormInstance } from 'antd';
-import { Alert, Button, Col, Flex, Form } from 'antd';
 import React from 'react';
+import { Alert, Button, Col, Flex, Form } from 'antd';
 import { InfoCircleOutlined, WifiOutlined } from '@/utils/optimizedIcons';
 import { FieldLabel } from '../components/FieldLabel';
 import type { VaultFormValues } from '../types';
+import type { FormInstance } from 'antd';
 
 interface VaultEditorTestConnectionProps {
   form: FormInstance<VaultFormValues>;

@@ -1,5 +1,5 @@
-import type { RepositoryInfo } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import type { Machine, PluginContainer } from '@/types';
+import type { RepositoryInfo } from '@rediacc/shared/queue-vault/data/list-types.generated';
 
 // Repository extends generated RepositoryInfo with frontend-computed fields
 export interface Repository extends RepositoryInfo {

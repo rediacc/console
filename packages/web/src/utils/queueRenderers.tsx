@@ -3,8 +3,8 @@
  * These use the shared core configurations but add React-specific rendering (icons, components)
  */
 
-import { Tag, Tooltip } from 'antd';
 import React from 'react';
+import { Tag, Tooltip } from 'antd';
 import { formatAge, type QueueHealthStatus } from '@/platform';
 import {
   CheckCircleOutlined,

@@ -1,7 +1,5 @@
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { OrganizationDashboardData } from '@rediacc/shared/types';
-import { Avatar, Button, Card, Divider, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import React from 'react';
+import { Avatar, Button, Card, Divider, Flex, Segmented, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import type { ThemeMode } from '@/store/ui/uiSlice';
@@ -13,6 +11,8 @@ import {
   SunOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 type UserMenuProps = {
   user: { email: string } | null;

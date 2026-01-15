@@ -1,5 +1,5 @@
-import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 import type { Machine, Repository } from '@/types';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 export type ResourceType =
   | 'machine'

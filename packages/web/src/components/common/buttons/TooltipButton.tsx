@@ -1,5 +1,5 @@
-import type { ButtonProps } from 'antd';
 import { Button, Tooltip } from 'antd';
+import type { ButtonProps } from 'antd';
 
 interface TooltipButtonProps extends ButtonProps {
   /** Tooltip text - also used as aria-label for accessibility */

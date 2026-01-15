@@ -1,9 +1,9 @@
+import type { Machine } from '@/types';
 import type {
   RepositoryInfo,
   ServiceInfo,
   SystemInfo,
 } from '@rediacc/shared/queue-vault/data/list-types.generated';
-import type { Machine } from '@/types';
 
 // RepositoryVaultData extends generated RepositoryInfo
 // (kept for backward compatibility with existing code)

@@ -1,7 +1,5 @@
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
-import { Space, Tag, Typography, theme } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
+import { Space, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   createStatusColumn,
@@ -26,8 +24,10 @@ import {
   StarOutlined,
   StopOutlined,
 } from '@/utils/optimizedIcons';
-import type { Container, PortMapping, RepositoryTableRow } from './types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { getRepositoryDisplayName } from './utils';
+import type { Container, PortMapping, RepositoryTableRow } from './types';
+import type { ColumnsType } from 'antd/es/table';
 
 export const useRepositoryColumns = (teamRepositories: GetTeamRepositories_ResultSet1[]) => {
   const { t } = useTranslation(['resources', 'common']);

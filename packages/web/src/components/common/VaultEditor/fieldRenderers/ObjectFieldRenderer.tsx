@@ -1,8 +1,8 @@
-import { Form } from 'antd';
 import React from 'react';
+import { Form } from 'antd';
+import { JsonFieldRenderer } from './JsonFieldRenderer';
 import { FieldLabel } from '../components/FieldLabel';
 import { NestedObjectEditor } from '../components/NestedObjectEditor';
-import { JsonFieldRenderer } from './JsonFieldRenderer';
 import type { FieldRendererProps } from './types';
 
 type NestedFieldDefinition = React.ComponentProps<typeof NestedObjectEditor>['fieldDefinition'];

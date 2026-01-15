@@ -1,8 +1,8 @@
-import type { OrganizationDashboardData } from '@rediacc/shared/types';
-import { Card, Col, Flex, Progress, Row, Typography } from 'antd';
 import React from 'react';
+import { Card, Col, Flex, Progress, Row, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { DesktopOutlined, InboxOutlined, ThunderboltOutlined } from '@/utils/optimizedIcons';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 const resourceIcons: Record<string, React.ReactNode> = {
   Machine: <DesktopOutlined />,

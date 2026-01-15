@@ -1,6 +1,6 @@
 import { Form } from 'antd';
-import type { FormInstance } from 'antd/es/form';
 import type { LoginFormValues } from '../types';
+import type { FormInstance } from 'antd/es/form';
 
 interface LoginFormState {
   form: FormInstance<LoginFormValues>;

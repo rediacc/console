@@ -1,8 +1,5 @@
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
-import type { GetTeamRepositories_ResultSet1, QueueFunction } from '@rediacc/shared/types';
-import { Flex } from 'antd';
 import React, { useCallback, useEffect, useMemo } from 'react';
+import { Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -32,6 +29,9 @@ import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { getAffectedResources as coreGetAffectedResources } from '@/platform';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
+import type { GetTeamRepositories_ResultSet1, QueueFunction } from '@rediacc/shared/types';
 import { useDeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { RepositoryMobileCard } from './components/RepositoryMobileCard';
 import { addBackupPullVaults, buildQueuePayload } from './helpers/credentialsHelpers';

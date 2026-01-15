@@ -1,5 +1,5 @@
-import { Alert, Flex } from 'antd';
 import React, { type ReactNode } from 'react';
+import { Alert, Flex } from 'antd';
 
 interface DefaultsBannerProps {
   title: string;

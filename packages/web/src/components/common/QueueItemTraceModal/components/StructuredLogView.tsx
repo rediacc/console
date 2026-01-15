@@ -1,7 +1,5 @@
-import type { LogLevel, ParsedLogLine } from '@rediacc/shared/utils';
-import { Flex, Grid, List, Space, Table, Tag, Tooltip, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
+import { Flex, Grid, List, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { MobileCard } from '@/components/common/MobileCard';
 import {
@@ -10,6 +8,8 @@ import {
   InfoCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import type { LogLevel, ParsedLogLine } from '@rediacc/shared/utils';
+import type { ColumnsType } from 'antd/es/table';
 
 interface StructuredLogViewProps {
   /** Parsed log entries */

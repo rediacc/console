@@ -1,6 +1,6 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { Alert, Button, Checkbox, Flex, Form, Modal } from 'antd';
 import React from 'react';
+import { Alert, Button, Checkbox, Flex, Form, Modal } from 'antd';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface ResetAuthModalData {
   bridgeName: string;

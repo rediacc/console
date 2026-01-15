@@ -5,8 +5,8 @@
 
 import { join } from 'node:path';
 import { is } from '@electron-toolkit/utils';
-import { DEFAULTS_EXTENDED } from '@rediacc/shared/config';
 import { BrowserWindow, ipcMain } from 'electron';
+import { DEFAULTS_EXTENDED } from '@rediacc/shared/config';
 
 /**
  * Options for creating a pop-out window

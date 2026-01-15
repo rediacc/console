@@ -2,12 +2,12 @@
  * Permission Parsers
  */
 
+import { extractRowsByIndex, safeJsonParse } from './base';
 import type {
   GetOrganizationPermissionGroups_ResultSet1,
   GetPermissionGroupDetails_ResultSet1,
 } from '../../types';
 import type { ApiResponse } from '../../types/api';
-import { extractRowsByIndex, safeJsonParse } from './base';
 
 export interface PermissionGroupWithPermissions extends GetOrganizationPermissionGroups_ResultSet1 {
   parsedPermissions: Record<string, unknown>;

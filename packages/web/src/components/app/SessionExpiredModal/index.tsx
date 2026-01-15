@@ -1,5 +1,5 @@
-import { Button, Card, Flex, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button, Card, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { SizedModal } from '@/components/common/SizedModal';

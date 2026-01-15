@@ -1,6 +1,6 @@
-import type { BreadcrumbProps } from 'antd';
-import { Breadcrumb, Card, Flex } from 'antd';
 import React, { type ReactNode } from 'react';
+import { Breadcrumb, Card, Flex } from 'antd';
+import type { BreadcrumbProps } from 'antd';
 
 interface ResourcePageLayoutProps {
   breadcrumbItems: BreadcrumbProps['items'];

@@ -1,4 +1,4 @@
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import React from 'react';
 import {
   Button,
   Card,
@@ -11,7 +11,6 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import React from 'react';
 import {
   DownloadOutlined,
   ExportOutlined,
@@ -21,6 +20,7 @@ import {
   UnlockOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 interface DangerZoneSectionProps {
   t: TypedTFunction;

@@ -1,9 +1,5 @@
-import type {
-  GetOrganizationPermissionGroups_ResultSet1,
-  GetOrganizationUsers_ResultSet1,
-} from '@rediacc/shared/types';
-import { Flex, Form, type MenuProps, Modal, Select, Space, Tag, Typography } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
+import { Flex, Form, type MenuProps, Modal, Select, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   useCreateNewUser,
@@ -17,12 +13,12 @@ import type { CreateUserInput } from '@/api/mutation-transforms';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { TooltipButton } from '@/components/common/buttons';
 import { buildUserColumns } from '@/components/common/columns/builders/userColumns';
-import { MobileCard } from '@/components/common/MobileCard';
 import {
   buildDivider,
   buildPermissionsMenuItem,
   buildTraceMenuItem,
 } from '@/components/common/menuBuilders';
+import { MobileCard } from '@/components/common/MobileCard';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import ResourceListView from '@/components/common/ResourceListView';
@@ -37,6 +33,10 @@ import {
   StopOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
+import type {
+  GetOrganizationPermissionGroups_ResultSet1,
+  GetOrganizationUsers_ResultSet1,
+} from '@rediacc/shared/types';
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation('organization');
