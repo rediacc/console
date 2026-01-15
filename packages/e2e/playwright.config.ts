@@ -1,3 +1,4 @@
+import os from 'node:os';
 import path from 'node:path';
 import * as test from '@playwright/test';
 import dotenv from 'dotenv';
@@ -45,8 +46,8 @@ export default test.defineConfig({
   /* No retries - tests should pass consistently */
   retries: 0,
 
-  /* Single worker for stability */
-  workers: 1,
+  /* Parallel workers: minimum 3, maximum CPU count */
+  workers: Math.max(3, os.cpus().length),
 
   /* Stop test run after first test failure (including all retries) */
   maxFailures: process.env.STOP_ON_FAILURE === 'true' ? 1 : undefined,

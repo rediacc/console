@@ -21,8 +21,8 @@ export const test = baseTest.extend<TestFixtures>({
     await use(reporter);
   },
 
-  testDataManager: async ({ browser: _browser }, use) => {
-    const dataManager = new TestDataManager();
+  testDataManager: async ({ browser: _browser }, use, testInfo) => {
+    const dataManager = new TestDataManager(undefined, testInfo.project.name);
     await use(dataManager);
   },
 });

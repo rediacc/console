@@ -55,15 +55,21 @@ export interface TestData {
 
 export class TestDataManager {
   private readonly dataDir: string;
+  private readonly projectName: string;
   private readonly testDataFile: string;
   private readonly createdUsersFile: string;
   private _initialized = false;
 
-  constructor(dataDir = 'utils/data') {
+  constructor(dataDir = 'utils/data', projectName: string) {
+    if (!projectName) {
+      throw new Error('projectName is required for TestDataManager');
+    }
     this.dataDir = dataDir;
-    this.testDataFile = path.join(this.dataDir, 'test-data.json');
-    this.createdUsersFile = path.join(this.dataDir, '.created-users.json');
-    // Lazy initialization - don't call ensureDataDirectory() here
+    this.projectName = projectName;
+
+    // Project-specific file paths (no fallback to shared files)
+    this.testDataFile = path.join(this.dataDir, `test-data-${projectName}.json`);
+    this.createdUsersFile = path.join(this.dataDir, `.created-users-${projectName}.json`);
   }
 
   private ensureInitialized(): void {

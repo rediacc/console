@@ -612,10 +612,10 @@ jobs:
         run: ./go down || true
 
   test-e2e:
-    name: Test - E2E Browsers
+    name: Test - E2E (All Projects)
     runs-on: ubuntu-latest
     needs: [test-unit, build-cli, test-vscode, build-web]
-    timeout-minutes: 90
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -627,10 +627,13 @@ jobs:
       - name: Install Playwright Browsers
         working-directory: packages/e2e
         run: |
+          # Install chromium for browsers and resolutions, webkit for iOS devices
+          npx playwright install --with-deps chromium webkit
+          # Install additional browsers if requested
           BROWSERS="${{ env.E2E_BROWSERS }}"
-          MAIN_BROWSERS=$(echo "$BROWSERS" | tr ' ' '\n' | grep -v msedge | tr '\n' ' ')
-          [[ -n "$MAIN_BROWSERS" ]] && npx playwright install --with-deps $MAIN_BROWSERS
-          echo "$BROWSERS" | grep -q msedge && npx playwright install msedge || true
+          for browser in $BROWSERS; do
+            [[ "$browser" != "chromium" && "$browser" != "webkit" ]] && npx playwright install $browser || true
+          done
       - name: Download Tunnel URL
         id: tunnel
         env:
@@ -640,139 +643,45 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects ${{ env.E2E_BROWSERS }}
+      - name: Run E2E Tests - All Projects (Parallel)
+        run: |
+          .ci/scripts/test/run-e2e.sh --projects \
+            ${{ env.E2E_BROWSERS }} \
+            resolution-1920x1080 resolution-1366x768 resolution-1536x864 \
+            galaxy-s24 galaxy-tab-s9 iphone-15-pro-max ipad-pro-11
       - name: Create Completion Signals
         if: always()
         run: |
+          # Browser signals
           for browser in ${{ env.E2E_BROWSERS }}; do
             .ci/scripts/signal/create-complete.sh --name "e2e-$browser"
           done
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-browsers-${{ github.sha }}
-          path: ${{ runner.temp }}/complete-e2e-*.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: e2e-report-browsers-${{ github.sha }}
-          path: packages/e2e/reports/e2e/
-          retention-days: 3
-          if-no-files-found: ignore
-
-  test-e2e-resolutions:
-    name: Test - E2E Resolutions
-    runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - name: Install Playwright
-        working-directory: packages/e2e
-        run: npx playwright install --with-deps chromium
-      - name: Download Tunnel URL
-        id: tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
-      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects resolution-1920x1080 resolution-1366x768 resolution-1536x864
-      - name: Create Completion Signals
-        if: always()
-        run: |
+          # Resolution signals
           for res in resolution-1920x1080 resolution-1366x768 resolution-1536x864; do
             .ci/scripts/signal/create-complete.sh --name "e2e-$res"
           done
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-resolution-1920x1080
-          path: ${{ runner.temp }}/complete-e2e-resolution-1920x1080.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-resolution-1366x768
-          path: ${{ runner.temp }}/complete-e2e-resolution-1366x768.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-resolution-1536x864
-          path: ${{ runner.temp }}/complete-e2e-resolution-1536x864.txt
-          retention-days: 3
-
-  test-e2e-devices:
-    name: Test - E2E Devices
-    runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - name: Install Playwright
-        working-directory: packages/e2e
-        run: npx playwright install --with-deps chromium webkit
-      - name: Download Tunnel URL
-        id: tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
-      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - run: .ci/scripts/test/run-e2e.sh --projects galaxy-s24 galaxy-tab-s9 iphone-15-pro-max ipad-pro-11
-      - name: Create Completion Signals
-        if: always()
-        run: |
+          # Device signals
           for device in galaxy-s24 galaxy-tab-s9 iphone-15-pro-max ipad-pro-11; do
             .ci/scripts/signal/create-complete.sh --name "e2e-$device"
           done
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: test-complete-e2e-galaxy-s24
-          path: ${{ runner.temp }}/complete-e2e-galaxy-s24.txt
+          name: test-complete-e2e-${{ github.sha }}
+          path: ${{ runner.temp }}/complete-e2e-*.txt
           retention-days: 3
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: test-complete-e2e-galaxy-tab-s9
-          path: ${{ runner.temp }}/complete-e2e-galaxy-tab-s9.txt
+          name: e2e-report-${{ github.sha }}
+          path: packages/e2e/reports/e2e/
           retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-iphone-15-pro-max
-          path: ${{ runner.temp }}/complete-e2e-iphone-15-pro-max.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-e2e-ipad-pro-11
-          path: ${{ runner.temp }}/complete-e2e-ipad-pro-11.txt
-          retention-days: 3
+          if-no-files-found: ignore
 
   test-e2e-electron:
     name: Test - E2E Electron (${{ matrix.project }})
     runs-on: ${{ matrix.os }}
-    needs: [test-e2e, test-e2e-resolutions, test-e2e-devices]
+    needs: [test-e2e]
     timeout-minutes: 60
     strategy:
       fail-fast: true
@@ -965,7 +874,7 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-resolutions, test-e2e-devices, test-e2e-electron, build-web, build-desktop]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop]
     if: always()
     steps:
       - name: Check job results
@@ -990,13 +899,11 @@ jobs:
           echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E Browsers: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E Resolutions: ${{ needs.test-e2e-resolutions.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E Devices: ${{ needs.test-e2e-devices.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E (All Projects): ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
-          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-resolutions.result }}" "${{ needs.test-e2e-devices.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}"; do
+          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}"; do
             [ "$result" != "success" ] && FAILED=true
           done
 
