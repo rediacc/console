@@ -775,6 +775,7 @@
     "noResourcesFound": "No {{resources}} found. Try adjusting your search criteria."
   },
   "teamSelector": {
+    "selectTeam": "Select team...",
     "selectTeams": "Select teams...",
     "moreTeams": "+{{count}} more"
   },

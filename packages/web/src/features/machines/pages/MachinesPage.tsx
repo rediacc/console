@@ -305,6 +305,57 @@ const MachinesPage: React.FC = () => {
   // Note: This page uses SplitResourceView instead of ResourceListView
   // to support the side panel detail view. This is intentional.
 
+  const renderContent = () => {
+    if (!selectedTeam) {
+      return (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={t('teams.selectTeamPrompt')}
+        />
+      );
+    }
+
+    return (
+      <SplitResourceView
+        type="machine"
+        teamFilter={[selectedTeam]}
+        showFilters
+        showActions
+        onCreateMachine={() => openUnifiedModal('create')}
+        onEditMachine={(machine) =>
+          openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
+        }
+        onVaultMachine={(machine) =>
+          openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
+        }
+        onFunctionsMachine={(machine, functionName) => {
+          // WARNING: Do not change this pattern!
+          // - Specific functions (functionName defined): Queue directly with defaults, NO modal
+          // - "Advanced" (functionName undefined): Open modal with function list
+          // This split behavior is intentional - users expect quick actions for specific
+          // functions and full configuration only when clicking "Advanced".
+          if (functionName) {
+            void handleDirectFunctionQueue(machine, functionName);
+          } else {
+            openUnifiedModal('create', machine as Machine & Record<string, unknown>);
+          }
+        }}
+        onDeleteMachine={handleDeleteMachine}
+        enabled
+        refreshKeys={refreshKeys}
+        onQueueItemCreated={(taskId, machineName) => {
+          openQueueTrace(taskId, machineName);
+        }}
+        selectedResource={
+          selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine
+        }
+        onResourceSelect={handleResourceSelection}
+        isPanelCollapsed={isPanelCollapsed}
+        onTogglePanelCollapse={handleTogglePanelCollapse}
+      />
+    );
+  };
+
   return (
     <>
       <Flex vertical>
@@ -351,49 +402,8 @@ const MachinesPage: React.FC = () => {
               <LoadingWrapper loading centered minHeight={200}>
                 <Flex />
               </LoadingWrapper>
-            ) : selectedTeam ? (
-              <SplitResourceView
-                type="machine"
-                teamFilter={[selectedTeam]}
-                showFilters
-                showActions
-                onCreateMachine={() => openUnifiedModal('create')}
-                onEditMachine={(machine) =>
-                  openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
-                }
-                onVaultMachine={(machine) =>
-                  openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
-                }
-                onFunctionsMachine={(machine, functionName) => {
-                  // WARNING: Do not change this pattern!
-                  // - Specific functions (functionName defined): Queue directly with defaults, NO modal
-                  // - "Advanced" (functionName undefined): Open modal with function list
-                  // This split behavior is intentional - users expect quick actions for specific
-                  // functions and full configuration only when clicking "Advanced".
-                  if (functionName) {
-                    void handleDirectFunctionQueue(machine, functionName);
-                  } else {
-                    openUnifiedModal('create', machine as Machine & Record<string, unknown>);
-                  }
-                }}
-                onDeleteMachine={handleDeleteMachine}
-                enabled={selectedTeam !== null}
-                refreshKeys={refreshKeys}
-                onQueueItemCreated={(taskId, machineName) => {
-                  openQueueTrace(taskId, machineName);
-                }}
-                selectedResource={
-                  selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine
-                }
-                onResourceSelect={handleResourceSelection}
-                isPanelCollapsed={isPanelCollapsed}
-                onTogglePanelCollapse={handleTogglePanelCollapse}
-              />
             ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('teams.selectTeamPrompt')}
-              />
+              renderContent()
             )}
           </Flex>
         </Card>

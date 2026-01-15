@@ -19,7 +19,7 @@ const teamSelectionSlice = createSlice({
   reducers: {
     initializeTeam: (state, action: PayloadAction<{ pageId: string; teamName: string }>) => {
       const { pageId, teamName } = action.payload;
-      if (!state.pages[pageId]?.hasInitialized) {
+      if (!(pageId in state.pages) || !state.pages[pageId].hasInitialized) {
         state.pages[pageId] = { selectedTeam: teamName, hasInitialized: true };
       }
     },
