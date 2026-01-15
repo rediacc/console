@@ -202,6 +202,9 @@ const StoragePage: React.FC = () => {
   const displayedStorages = hasTeamSelection ? storages : [];
   const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
 
+  // Show loading when teams are being fetched OR when storages are loading
+  const isLoading = teamsLoading || storagesLoading;
+
   return (
     <>
       <Flex vertical>
@@ -218,7 +221,7 @@ const StoragePage: React.FC = () => {
 
         <ResourceListView<GetTeamStorages_ResultSet1>
           title={<PageHeader title={t('storage.title')} subtitle={t('storage.subtitle')} />}
-          loading={storagesLoading}
+          loading={isLoading}
           data={displayedStorages}
           columns={storageColumns}
           mobileRender={mobileRender}

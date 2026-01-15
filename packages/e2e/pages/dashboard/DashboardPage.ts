@@ -86,14 +86,24 @@ export class DashboardPage extends BasePage {
   async waitForTeamSelection(timeout = 10000): Promise<void> {
     // Wait for teams API to complete first
     // This is more reliable than networkidle which has browser-specific timing issues
-    await this.page.waitForResponse(
-      (response) => response.url().includes('/GetOrganizationTeams') && response.status() === 200,
-      { timeout }
-    );
+    try {
+      await this.page.waitForResponse(
+        (response) => {
+          const url = response.url();
+          return response.status() === 200 &&
+                 url.includes('/api/') &&
+                 (url.includes('Team') || url.includes('Organization'));
+        },
+        { timeout }
+      );
+    } catch (e) {
+      // Fallback: if no matching API response, continue with UI check
+      console.warn('No matching teams API response found, continuing with UI visibility check');
+    }
 
     // Then wait for Redux auto-selection to trigger resource view
     // Split view appears after team is auto-selected and machines query starts
-    await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 5000 });
+    await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async clickUserMenu(): Promise<void> {

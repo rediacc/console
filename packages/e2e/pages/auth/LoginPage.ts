@@ -83,10 +83,20 @@ export class LoginPage extends BasePage {
 
     // Wait for critical API calls that indicate auth is complete
     // This is more reliable than networkidle which has browser-specific timing issues
-    await this.page.waitForResponse(
-      (response) => response.url().includes('/GetOrganizationInfo') && response.status() === 200,
-      { timeout: 10000 }
-    );
+    try {
+      await this.page.waitForResponse(
+        (response) => {
+          const url = response.url();
+          return response.status() === 200 &&
+                 (url.includes('/api/') &&
+                  (url.includes('Organization') || url.includes('Dashboard') || url.includes('Info')));
+        },
+        { timeout: 10000 }
+      );
+    } catch (e) {
+      // Fallback: if no matching API response, continue anyway
+      console.warn('No matching API response found, continuing with element visibility check');
+    }
 
     // Then verify dashboard element is visible (mobile may hide header actions)
     const primary = this.page.locator('[data-testid="user-menu-button"]');

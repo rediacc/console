@@ -9,6 +9,7 @@ import {
   useGetTeamStorages,
   useMachineMutations,
 } from '@/api/api-hooks.generated';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { type ContainerData, SplitResourceView } from '@/components/common/SplitResourceView';
 import TeamSelector from '@/components/common/TeamSelector';
@@ -345,7 +346,11 @@ const MachinesPage: React.FC = () => {
           </Flex>
 
           <Flex vertical>
-            {!selectedTeam ? (
+            {teamsLoading ? (
+              <LoadingWrapper loading centered minHeight={200}>
+                <Flex />
+              </LoadingWrapper>
+            ) : !selectedTeam ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={t('teams.selectTeamPrompt')}

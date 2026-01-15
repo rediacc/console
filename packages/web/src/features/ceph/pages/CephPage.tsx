@@ -240,6 +240,15 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   }
 
   const renderContent = () => {
+    // Show loading state while teams are being fetched
+    if (teamsLoading) {
+      return (
+        <Flex align="center" justify="center">
+          <Alert message={t('common:general.loading')} type="info" />
+        </Flex>
+      );
+    }
+
     if (!hasSelectedTeam) {
       return (
         <Flex align="center" justify="center">

@@ -346,6 +346,9 @@ const CredentialsPage: React.FC = () => {
     ? t('repositories.noRepositories')
     : t('teams.selectTeamPrompt');
 
+  // Show loading when teams are being fetched OR when repositories are loading
+  const isLoading = teamsLoading || repositoriesLoading;
+
   const mobileRender = useCallback(
     (record: GetTeamRepositories_ResultSet1) => (
       <RepositoryMobileCard
@@ -378,7 +381,7 @@ const CredentialsPage: React.FC = () => {
             title={
               <PageHeader title={t('credentials.title')} subtitle={t('credentials.subtitle')} />
             }
-            loading={repositoriesLoading}
+            loading={isLoading}
             data={displayedRepositories}
             columns={repositoryColumns}
             mobileRender={mobileRender}
