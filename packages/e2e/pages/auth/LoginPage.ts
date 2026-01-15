@@ -93,7 +93,7 @@ export class LoginPage extends BasePage {
         },
         { timeout: 10000 }
       );
-    } catch (e) {
+    } catch {
       // Fallback: if no matching API response, continue anyway
       console.warn('No matching API response found, continuing with element visibility check');
     }

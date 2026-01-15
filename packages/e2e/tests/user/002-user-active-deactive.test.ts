@@ -136,7 +136,7 @@ test.describe('User Permission Tests', () => {
         .toBe(true);
     }
 
-    testDataManager.updateCreatedUserActivation(newUserEmail, true);
+    await testDataManager.updateCreatedUserActivation(newUserEmail, true);
     testReporter.completeStep('Activate user', 'passed');
     await testReporter.finalizeTest();
   });
@@ -255,7 +255,7 @@ test.describe('User Permission Tests', () => {
       await expect(inactiveTag).toBeVisible();
     }
 
-    testDataManager.updateCreatedUserActivation(newUserEmail, false);
+    await testDataManager.updateCreatedUserActivation(newUserEmail, false);
     testReporter.completeStep('Deactivate user', 'passed');
     await testReporter.finalizeTest();
   });

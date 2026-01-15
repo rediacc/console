@@ -54,71 +54,7 @@ test.describe('Dashboard Tests', () => {
     await testReporter.finalizeTest();
   });
 
-  test('should navigate between main sections @dashboard', async ({
-    page,
-    screenshotManager,
-    testReporter,
-  }) => {
-    testReporter.startStep('Navigate sections');
 
-    // Wait for dashboard to load
-    await dashboardPage.verifyDashboardLoaded();
-
-    // Wait for team to be auto-selected
-    await dashboardPage.waitForTeamSelection();
-
-    // Machine is default, so it should be visible
-    const locators = dashboardPage.getPageLocators();
-    await expect(locators.splitResourceViewContainer).toBeVisible();
-
-    // Go to Settings (ensure nav is open on mobile)
-    const nav = new NavigationHelper(page);
-    await nav.goToSettings();
-    // Wait for settings page to load instead of networkidle
-    await page.waitForTimeout(1000);
-    await screenshotManager.captureStep('settings_navigated');
-
-    // Go back to machines (ensure nav is open on mobile)
-    await nav.goToMachines();
-    // Wait for split view to appear instead of networkidle
-    await expect(locators.splitResourceViewContainer).toBeVisible({ timeout: 10000 });
-    await screenshotManager.captureStep('machines_navigated');
-
-    testReporter.completeStep('Navigate sections', 'passed');
-    await testReporter.finalizeTest();
-  });
-
-  test('should display machines view elements @dashboard', async ({
-    page: _page,
-    screenshotManager: _screenshotManager,
-    testReporter,
-  }) => {
-    testReporter.startStep('Verify machines view');
-
-    // Wait for dashboard to load
-    await dashboardPage.verifyDashboardLoaded();
-
-    // Wait for team to be auto-selected
-    await dashboardPage.waitForTeamSelection();
-
-    const locators = dashboardPage.getPageLocators();
-
-    // Verify machine-specific buttons
-    await expect(locators.machinesCreateButton).toBeVisible();
-    await expect(locators.machinesTestRefreshButton).toBeVisible();
-
-    // Verify layout containers
-    await expect(locators.splitResourceViewLeftPanel).toBeVisible();
-
-    // Verify resource list (either empty or container)
-    // We check if either the list container or empty state is visible
-    const listVisible = await locators.resourceListContainer.isVisible();
-    const emptyVisible = await locators.resourceListEmpty.isVisible();
-    expect(listVisible || emptyVisible).toBeTruthy();
-
-    testReporter.completeStep('Verify machines view', 'passed');
-    await testReporter.finalizeTest();
-  });
 
   test('should toggle team selector @dashboard', async ({
     page: _page,

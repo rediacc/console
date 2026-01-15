@@ -144,7 +144,7 @@ export async function createUserViaUI(
       .catch(() => null);
   }
 
-  testDataManager.addCreatedUser(email, password, false);
+  await testDataManager.addCreatedUser(email, password, false);
   return testDataManager.getCreatedUser(email);
 }
 
@@ -202,7 +202,7 @@ export async function ensureCreatedUser(
   } catch {
     try {
       const existing = testDataManager.getCreatedUser();
-      testDataManager.removeCreatedUser(existing.email);
+      await testDataManager.removeCreatedUser(existing.email);
     } catch {
       // Ignore and fall back to creating or selecting another user below.
     }
