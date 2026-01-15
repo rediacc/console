@@ -49,14 +49,15 @@ export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelec
 
       if (getInitialTeam) {
         const result = getInitialTeam(teams, uiMode);
-        initialTeam = result || '';
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive programming for edge cases
+        initialTeam = result ?? '';
       } else if (uiMode === 'simple') {
         const privateTeam = teams.find((team) => team.teamName === 'Private Team');
         const teamName = privateTeam ? privateTeam.teamName : teams[0]?.teamName;
-        initialTeam = teamName || '';
+        initialTeam = teamName ?? '';
       } else {
         const teamName = teams[0]?.teamName;
-        initialTeam = teamName || '';
+        initialTeam = teamName ?? '';
       }
 
       dispatch(initializeTeam({ pageId, teamName: initialTeam }));
