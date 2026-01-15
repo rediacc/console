@@ -101,9 +101,13 @@ export class DashboardPage extends BasePage {
       console.warn('No matching teams API response found, continuing with UI visibility check');
     }
 
+    // Add extra wait for slower browsers (Firefox, WebKit) to complete Redux initialization
+    await this.page.waitForTimeout(1000);
+
     // Then wait for Redux auto-selection to trigger resource view
     // Split view appears after team is auto-selected and machines query starts
-    await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 10000 });
+    // Use longer timeout for Firefox/WebKit
+    await this.splitResourceViewContainer.waitFor({ state: 'visible', timeout: 20000 });
   }
 
   async clickUserMenu(): Promise<void> {
