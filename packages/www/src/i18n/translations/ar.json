@@ -156,6 +156,7 @@
     "blog": "مدونة",
     "contact": "اتصل بنا",
     "docs": "المستندات",
+    "downloads": "Downloads",
     "home": "الرئيسية",
     "login": "تسجيل الدخول",
     "search": "يبحث",
@@ -256,6 +257,11 @@
     "docs": {
       "allDocumentation": "جميع الوثائق",
       "backToDocs": "العودة إلى المستندات",
+      "fallbackNotice": {
+        "title": "الترجمة غير متوفرة",
+        "message": "هذه الصفحة غير متوفرة بعد باللغة المحددة. عرض النسخة الإنجليزية.",
+        "helpTranslate": "ساعد في ترجمة هذه الصفحة"
+      },
       "cliReference": "مرجع سطر الأوامر",
       "cliReferenceDesc": "مرجع كامل لجميع أوامر وخيارات واجهة سطر الأوامر.",
       "gettingStarted": "ابدء",
@@ -272,6 +278,59 @@
       "title": "التوثيق",
       "welcome": "مرحبا بكم في وثائق Rediacc",
       "welcomeDescription": "Rediacc هو نظام قوي لتنفيذ المهام الموزعة. سواء كنت بدأت للتو أو تتطلع إلى إتقان الميزات المتقدمة، ستجد كل ما تحتاجه هنا."
+    },
+    "downloads": {
+      "meta": {
+        "title": "Downloads | Rediacc Console Desktop Application",
+        "description": "Download the Rediacc Console desktop application for Windows, macOS, and Linux. Get the latest release with built-in auto-update functionality.",
+        "keywords": "Rediacc download, desktop application, Windows app, macOS app, Linux app, download console"
+      },
+      "hero": {
+        "title": "Downloads",
+        "subtitle": "Rediacc Console",
+        "released": "Released"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64-bit)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)",
+        "armv7l": "ARMv7"
+      },
+      "types": {
+        "appimage": "AppImage (portable)",
+        "deb": "Debian/Ubuntu (.deb)"
+      },
+      "actions": {
+        "download": "Download"
+      },
+      "noReleases": "No releases available at this time. Please check back later.",
+      "autoUpdate": {
+        "title": "Auto-Update Information",
+        "description": "The Rediacc Console desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
+      },
+      "installation": {
+        "title": "Installation Instructions",
+        "windows": "Windows: Run the .exe installer and follow the setup wizard. The application will be installed to your Program Files directory.",
+        "macos": "macOS: Open the .dmg file and drag Rediacc Console to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
+        "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
+        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager."
+      },
+      "requirements": {
+        "title": "System Requirements",
+        "windows": "Windows 10 or later (64-bit)",
+        "macos": "macOS 11 (Big Sur) or later",
+        "linux": "Modern Linux distribution with glibc 2.28+",
+        "diskTitle": "Disk Space",
+        "disk": "500 MB free disk space",
+        "ramTitle": "Memory",
+        "ram": "2 GB RAM minimum, 4 GB recommended"
+      }
     },
     "home": {
       "imageModal": {

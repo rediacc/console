@@ -165,4 +165,4 @@ const getStructuredData = (type: string, customData: any = {}) => {
 const structuredData = getStructuredData(type, data);
 ---
 
-<script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+<script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />

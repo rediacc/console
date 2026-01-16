@@ -8,19 +8,7 @@ import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import type { QueueFunction } from '@rediacc/shared/types';
 import type { Repository } from '../types';
-
 // Re-export typed function data interfaces from handlers/types.ts
-export type {
-  BaseFunctionData,
-  CustomFunctionData,
-  CustomFunctionParams,
-  ForkFunctionData,
-  ForkFunctionParams,
-  PullFunctionData,
-  PullFunctionParams,
-  PushFunctionData,
-  PushFunctionParams,
-} from '../handlers/types';
 
 export interface FunctionExecutionContext {
   selectedRepository: Repository | null;

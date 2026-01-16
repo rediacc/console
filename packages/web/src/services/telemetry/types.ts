@@ -3,7 +3,6 @@
 export type {
   TelemetryConfig,
   TelemetryContext,
-  TelemetryMetric,
   TelemetryMetric as WebVitalsMetric,
   UserContext,
 } from '@rediacc/shared/telemetry';

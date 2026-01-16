@@ -25,4 +25,4 @@ export const COLUMN_RESPONSIVE: Record<'MOBILE_ONLY' | 'DESKTOP_ONLY', Responsiv
   DESKTOP_ONLY: ['sm'],
 };
 
-export type ColumnWidthKey = keyof typeof COLUMN_WIDTHS;
+type ColumnWidthKey = keyof typeof COLUMN_WIDTHS;

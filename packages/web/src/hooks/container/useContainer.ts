@@ -5,7 +5,7 @@ import { getElectronAPI, isElectron } from '@/types';
 /**
  * Container session type
  */
-export type ContainerSessionType = 'exec' | 'logs' | 'stats';
+type ContainerSessionType = 'exec' | 'logs' | 'stats';
 
 /**
  * Base container connection options
@@ -36,7 +36,7 @@ interface BaseContainerOptions {
 /**
  * Container exec options
  */
-export interface UseContainerExecOptions extends BaseContainerOptions {
+interface UseContainerExecOptions extends BaseContainerOptions {
   type: 'exec';
   /** Command to run in container (default: /bin/sh) */
   command?: string;
@@ -45,7 +45,7 @@ export interface UseContainerExecOptions extends BaseContainerOptions {
 /**
  * Container logs options
  */
-export interface UseContainerLogsOptions extends BaseContainerOptions {
+interface UseContainerLogsOptions extends BaseContainerOptions {
   type: 'logs';
   /** Follow log output */
   follow?: boolean;
@@ -56,7 +56,7 @@ export interface UseContainerLogsOptions extends BaseContainerOptions {
 /**
  * Container stats options
  */
-export interface UseContainerStatsOptions extends BaseContainerOptions {
+interface UseContainerStatsOptions extends BaseContainerOptions {
   type: 'stats';
 }
 

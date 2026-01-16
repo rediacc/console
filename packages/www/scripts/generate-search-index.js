@@ -63,8 +63,9 @@ function generateSearchIndex() {
 
 /**
  * Index translations from en.json
+ * Currently unused but kept for future use
  */
-function indexTranslations(searchIndex, startingId) {
+function _indexTranslations(searchIndex, startingId) {
   try {
     const translationsPath = path.join(projectRoot, 'src/i18n/translations/en.json');
     const translations = JSON.parse(fs.readFileSync(translationsPath, 'utf-8'));

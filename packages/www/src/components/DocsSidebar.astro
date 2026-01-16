@@ -216,8 +216,8 @@ const categoryStates = categories.map(category => {
 
         const button = item.querySelector('.category-header');
         const category = item.dataset.category;
-        const itemCount = parseInt(item.dataset.itemCount, 10);
-        const isActive = item.dataset.isActive === 'true';
+        const _itemCount = parseInt(item.dataset.itemCount, 10);
+        const _isActive = item.dataset.isActive === 'true';
 
         if (!button) return;
 

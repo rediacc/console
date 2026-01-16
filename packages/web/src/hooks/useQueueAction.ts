@@ -11,12 +11,6 @@ import {
 } from '@/services/queue';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 
-export type {
-  DynamicQueueActionParams,
-  QueueActionResult,
-  TypedQueueActionParams,
-} from '@/services/queue';
-
 /**
  * Generic hook for executing queue actions
  * Handles vault assembly and queue item creation for any function

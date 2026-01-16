@@ -21,6 +21,5 @@ export {
   changeLanguage,
   initI18n,
   SUPPORTED_LANGUAGES,
-  type SupportedLanguage,
   t,
 } from './config.js';

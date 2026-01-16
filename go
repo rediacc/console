@@ -1,786 +1,673 @@
 #!/bin/bash
+# Console development script
+# Aligned with CI workflow from .github/workflows/ci.yml
+#
+# ⚠️  IMPORTANT: When updating this file:
+# ⚠️  1. Check if CI scripts need updates (.ci/config/constants.sh, .ci/lib/elite-backend.sh)
+# ⚠️  2. Update documentation (docs/BACKEND.md)
+# ⚠️  3. Test all affected commands
 
-# Exit on error
-set -e
-
-# Required environment variables (must be defined in parent .env file):
-# - SYSTEM_HTTP_PORT: Middleware API port
-# - SYSTEM_DOMAIN: Domain for API access
-# Optional environment variables:
-# - CONSOLE_PORT: Console dev server port (default: 3000)
+set -euo pipefail
 
 # Root directory
-ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Function to check required environment variables
-check_required_env() {
-    # For sandbox mode, we don't need these variables
-    if [ "$1" = "sandbox" ] || [ "$SANDBOX_MODE" = "true" ]; then
-        return 0
-    fi
-    
-    if [ -z "$SYSTEM_HTTP_PORT" ] || [ -z "$SYSTEM_DOMAIN" ]; then
-        echo "❌ Error: Required environment variables are not set!"
-        echo ""
-        if [ ! -f "$ROOT_DIR/../.env" ]; then
-            echo "The parent .env file does not exist at: $ROOT_DIR/../.env"
-        else
-            echo "The parent .env file exists but is missing required variables."
-        fi
-        echo ""
-        echo "Please ensure the following variables are defined:"
-        echo "  - SYSTEM_HTTP_PORT (e.g., 7322)"
-        echo "  - SYSTEM_DOMAIN (e.g., localhost)"
-        echo ""
-        echo "Or run in sandbox mode for open-source development:"
-        echo "  ./go sandbox    # Use sandbox backend (no local setup needed)"
-        exit 1
-    fi
-}
+# Source configuration and utilities
+source "$ROOT_DIR/.ci/config/constants.sh"
+source "$ROOT_DIR/.ci/lib/elite-backend.sh"
+source "$ROOT_DIR/.ci/scripts/lib/common.sh"
 
-# Load environment variables if .env exists in parent directory
-if [ -f "$ROOT_DIR/../.env" ]; then
+# Backward compatibility: Load parent .env if exists
+if [[ -f "$ROOT_DIR/../.env" ]]; then
+    set +u  # Disable unset variable errors temporarily
     source "$ROOT_DIR/../.env"
+    set -u
 fi
 
-# Check command to determine if we need env vars
-COMMAND="$1"
-if [ "$COMMAND" = "sandbox" ] || [ "$COMMAND" = "help" ] || [ "$COMMAND" = "--help" ] || [ "$COMMAND" = "-h" ] || [ -z "$COMMAND" ]; then
-    # These commands don't require environment variables
-    :
-else
-    # Check if required environment variables are set after loading
-    check_required_env "$COMMAND"
-fi
+# =============================================================================
+# NODE VERSION CHECK
+# =============================================================================
 
-# Console port can have a default
-CONSOLE_PORT=${CONSOLE_PORT:-3000}
-
-# Export for Vite (use offset port if available) - only if variables are set
-if [ -n "$SYSTEM_HTTP_PORT" ]; then
-    export VITE_HTTP_PORT=${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}
-    export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}/api"
-fi
-export VITE_APP_VERSION=${TAG:-dev}
-# Export Turnstile site key (Cloudflare Captcha)
-export VITE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:-"0x4AAAAAACBhdTQowG3P_iM8"}
-
-# Function to run development server
-function dev() {
-  echo "Starting Rediacc Console development server..."
-  
-  # Install dependencies if node_modules doesn't exist or if package-lock.json is newer than node_modules
-  if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install
-  fi
-  
-  # Set build type to DEBUG for development (will try localhost, fallback to sandbox)
-  export REDIACC_BUILD_TYPE=${REDIACC_BUILD_TYPE:-DEBUG}
-  
-  # Start development server
-  echo "Starting development server on port ${CONSOLE_PORT}..."
-  echo "Build type: $REDIACC_BUILD_TYPE"
-  PORT=$CONSOLE_PORT npm run dev
-}
-
-# Function to run in sandbox mode (for open-source contributors)
-function sandbox() {
-  local USE_DOCKER=false
-  local DOCKER_PORT=8080
-  local OPEN_BROWSER=true
-  
-  # Parse arguments
-  for arg in "$@"; do
-    case $arg in
-      --docker)
-        USE_DOCKER=true
-        ;;
-      --port=*)
-        DOCKER_PORT="${arg#*=}"
-        ;;
-      --no-browser)
-        OPEN_BROWSER=false
-        ;;
-      --help)
-        echo "Usage: ./go sandbox [OPTIONS]"
-        echo ""
-        echo "Options:"
-        echo "  --docker        Run in Docker container (recommended for quick start)"
-        echo "  --port=PORT     Docker port (default: 8080)"
-        echo "  --no-browser    Don't open browser automatically"
-        echo ""
-        echo "Examples:"
-        echo "  ./go sandbox              # Run locally with npm"
-        echo "  ./go sandbox --docker     # Run in Docker (recommended)"
-        echo ""
-        return 0
-        ;;
-    esac
-  done
-  
-  echo "Starting Rediacc Console in Sandbox Mode (Open-Source)..."
-  echo "========================================================"
-  echo ""
-  
-  if [ "$USE_DOCKER" = true ]; then
-    # Docker mode - build and run container
-    echo "🐳 Docker Mode - Building and running containerized console"
-    echo ""
-    
-    # Check if Docker is installed
-    if ! command -v docker &> /dev/null; then
-      echo "❌ Error: Docker is not installed!"
-      echo ""
-      echo "Please install Docker first:"
-      echo "  - Linux: https://docs.docker.com/engine/install/"
-      echo "  - macOS: https://docs.docker.com/desktop/mac/install/"
-      echo "  - Windows: https://docs.docker.com/desktop/windows/install/"
-      echo ""
-      echo "Or run without Docker: ./go sandbox"
-      return 1
-    fi
-    
-    # Check if Docker daemon is running
-    if ! docker info &> /dev/null; then
-      echo "❌ Error: Docker daemon is not running!"
-      echo "Please start Docker and try again."
-      return 1
-    fi
-    
-    # Build the Docker image
-    echo "📦 Building Docker image..."
-    echo "This may take a few minutes on first run..."
-    echo ""
-    
-    if ! docker build -f Dockerfile.standalone -t rediacc-console:sandbox \
-      --build-arg REDIACC_BUILD_TYPE=DEBUG .; then
-      echo ""
-      echo "❌ Error: Docker build failed!"
-      echo "Please check the error messages above."
-      return 1
-    fi
-    
-    echo ""
-    echo "✅ Docker image built successfully!"
-    echo ""
-    
-    # Stop any existing container
-    docker stop rediacc-console-sandbox 2>/dev/null || true
-    docker rm rediacc-console-sandbox 2>/dev/null || true
-    
-    # Run the container
-    echo "🚀 Starting container on port ${DOCKER_PORT}..."
-    docker run -d \
-      --name rediacc-console-sandbox \
-      -p ${DOCKER_PORT}:80 \
-      -e INSTANCE_NAME=sandbox \
-      -e BUILD_TYPE=DEBUG \
-      -e ENABLE_DEBUG=true \
-      rediacc-console:sandbox
-    
-    # Wait for container to be ready
-    echo -n "⏳ Waiting for console to be ready"
-    for i in {1..30}; do
-      if curl -s http://localhost:${DOCKER_PORT}/health > /dev/null 2>&1; then
-        echo " ✓"
-        break
-      elif [ $i -eq 30 ]; then
-        echo " ⚠️"
-        echo "Warning: Console may not be fully ready yet."
-        break
-      fi
-      echo -n "."
-      sleep 1
-    done
-    
-    echo ""
-    echo "✅ Rediacc Console is running in Docker!"
-    echo ""
-    echo "🌐 Access the console at: http://localhost:${DOCKER_PORT}"
-    echo ""
-    echo "📋 Container Management:"
-    echo "  View logs:    docker logs -f rediacc-console-sandbox"
-    echo "  Stop:         docker stop rediacc-console-sandbox"
-    echo "  Restart:      docker start rediacc-console-sandbox"
-    echo "  Remove:       docker rm -f rediacc-console-sandbox"
-    echo ""
-    
-    # Open browser if requested
-    if [ "$OPEN_BROWSER" = true ]; then
-      open_browser "http://localhost:${DOCKER_PORT}"
-    fi
-    
-    # Show logs
-    echo "📜 Showing container logs (Ctrl+C to exit):"
-    echo "----------------------------------------"
-    docker logs -f rediacc-console-sandbox
-    
-  else
-    # Local development mode
-    echo "This mode is designed for open-source contributors who want to"
-    echo "work on the frontend without setting up a local backend."
-    echo ""
-    echo "💡 Tip: Use './go sandbox --docker' for easier setup with Docker"
-    echo ""
-    echo "The console will connect to: sandbox.rediacc.com"
-    echo ""
-    
-    # Install dependencies if node_modules doesn't exist or if package-lock.json is newer than node_modules
-    if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
-      echo "Installing dependencies..."
-      npm install
-    fi
-    
-    # Set environment for sandbox mode
-    export REDIACC_BUILD_TYPE=DEBUG
-    export SANDBOX_MODE=true
-    export VITE_HTTP_PORT=7322  # Default port for consistency
-    export VITE_SANDBOX_API_URL=${SANDBOX_API_URL:-https://sandbox.rediacc.com/api}
-    export CONSOLE_PORT=${CONSOLE_PORT:-3000}
-    
-    # Start development server
-    echo ""
-    echo "Starting development server on port ${CONSOLE_PORT}..."
-    echo "Build type: DEBUG (with sandbox fallback)"
-    echo "Sandbox URL: $VITE_SANDBOX_API_URL"
-    echo ""
-    echo "Note: The console will attempt to connect to localhost:7322 first,"
-    echo "      then automatically fallback to sandbox if localhost is unavailable."
-    echo ""
-    
-    # Open browser if requested
-    if [ "$OPEN_BROWSER" = true ]; then
-      # Wait a bit for the server to start
-      (sleep 3 && open_browser "http://localhost:${CONSOLE_PORT}") &
-    fi
-    
-    PORT=$CONSOLE_PORT npm run dev
-  fi
-}
-
-# Helper function to open browser (cross-platform)
-function open_browser() {
-  local url="$1"
-  echo "🌐 Opening browser to: $url"
-  
-  # Detect platform and open browser
-  case "$OSTYPE" in
-    linux*)
-      if command -v xdg-open &> /dev/null; then
-        xdg-open "$url" 2>/dev/null || true
-      elif command -v gnome-open &> /dev/null; then
-        gnome-open "$url" 2>/dev/null || true
-      else
-        echo "Please open your browser and navigate to: $url"
-      fi
-      ;;
-    darwin*)
-      open "$url" 2>/dev/null || true
-      ;;
-    msys*|cygwin*|win32)
-      start "$url" 2>/dev/null || true
-      ;;
-    *)
-      echo "Please open your browser and navigate to: $url"
-      ;;
-  esac
-}
-
-# Function to build the application
-function build() {
-  echo "Building Rediacc Console..."
-  
-  # Install dependencies if node_modules doesn't exist or if package-lock.json is newer than node_modules
-  if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install
-  fi
-  
-  # Clean caches before build
-  rm -rf node_modules/.vite
-  
-  # Default to RELEASE for production builds
-  export REDIACC_BUILD_TYPE=${REDIACC_BUILD_TYPE:-RELEASE}
-  echo "Build type: $REDIACC_BUILD_TYPE"
-  
-  # Build with NODE_ENV explicitly set to production
-  NODE_ENV=production npm run build
-}
-
-# Function to preview the build
-function preview() {
-  echo "Previewing the Rediacc Console build..."
-  
-  # Install dependencies if node_modules doesn't exist or if package-lock.json is newer than node_modules
-  if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install
-  fi
-  
-  npm run preview
-}
-
-# Function to lint the code
-function lint() {
-  echo "Linting code..."
-  
-  # Install dependencies if node_modules doesn't exist
-  if [ ! -d "$ROOT_DIR/node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install
-  fi
-  
-  npm run lint
-}
-
-# Function to clean up
-function clean() {
-  local CLEAN_DOCKER=false
-  
-  # Parse arguments
-  for arg in "$@"; do
-    case $arg in
-      --docker)
-        CLEAN_DOCKER=true
-        ;;
-    esac
-  done
-  
-  echo "Cleaning build artifacts..."
-  rm -rf dist/
-  rm -rf node_modules/.vite
-  
-  # Clean Docker artifacts if requested
-  if [ "$CLEAN_DOCKER" = true ]; then
-    echo "Cleaning Docker containers and images..."
-    
-    # Stop and remove container
-    docker stop rediacc-console-sandbox 2>/dev/null || true
-    docker rm rediacc-console-sandbox 2>/dev/null || true
-    
-    # Remove image
-    docker rmi rediacc-console:sandbox 2>/dev/null || true
-    
-    echo "Docker artifacts cleaned."
-  fi
-  
-  echo "Build artifacts cleaned."
-}
-
-# Function to run tests
-function test() {
-  echo "Running tests..."
-
-  if [ -f "$ROOT_DIR/test-api.mjs" ]; then
-    echo "Testing API connectivity..."
-    node test-api.mjs
-  else
-    echo "No API tests found (test-api.mjs not present)."
-  fi
-}
-
-# Function to build desktop application
-function desktop() {
-  local COMMAND="${1:-dev}"
-
-  echo "Rediacc Console Desktop - $COMMAND"
-
-  # Install dependencies if needed
-  if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install
-  fi
-
-  # Install desktop package dependencies
-  if [ ! -d "$ROOT_DIR/packages/desktop/node_modules" ]; then
-    echo "Installing desktop dependencies..."
-    cd "$ROOT_DIR/packages/desktop"
-    npm install
-    cd "$ROOT_DIR"
-  fi
-
-  case "$COMMAND" in
-    dev)
-      echo "Starting Electron development server..."
-      # Build shared packages first for HMR to work
-      npm run build:packages
-      cd "$ROOT_DIR/packages/desktop"
-      npm run dev
-      ;;
-    build|pack|dist|dist:win|dist:mac|dist:linux)
-      # Common build steps for all packaging commands
-      npm run build:packages
-      npm run build:web
-      cd "$ROOT_DIR/packages/desktop"
-
-      case "$COMMAND" in
-        build)
-          echo "Building Electron application..."
-          npm run build
-          ;;
-        pack)
-          echo "Packaging Electron application (unpacked)..."
-          npm run pack
-          ;;
-        dist)
-          echo "Building distributable installers for all platforms..."
-          npm run dist
-          ;;
-        dist:win)
-          echo "Building Windows installer..."
-          npm run dist:win
-          ;;
-        dist:mac)
-          echo "Building macOS installer..."
-          npm run dist:mac
-          ;;
-        dist:linux)
-          echo "Building Linux installers..."
-          npm run dist:linux
-          ;;
-      esac
-      ;;
-    *)
-      echo "Unknown desktop command: $COMMAND"
-      echo ""
-      echo "Usage: ./go desktop [COMMAND]"
-      echo ""
-      echo "Commands:"
-      echo "  dev         Start Electron development server with HMR"
-      echo "  build       Build the Electron application"
-      echo "  pack        Package application (unpacked, for testing)"
-      echo "  dist        Build distributable installers for all platforms"
-      echo "  dist:win    Build Windows installer (NSIS)"
-      echo "  dist:mac    Build macOS installer (DMG)"
-      echo "  dist:linux  Build Linux installers (AppImage + deb)"
-      exit 1
-      ;;
-  esac
-}
-
-# Function to create release package
-function release() {
-  echo "Creating release build..."
-
-  # Create bin directory if it doesn't exist
-  BIN_DIR="$ROOT_DIR/bin"
-
-  # Clean up bin directory
-  echo "Cleaning up bin directory..."
-  rm -rf "$BIN_DIR"
-  mkdir -p "$BIN_DIR"
-
-  # Build the application first
-  build
-
-  # Get version from package.json
-  VERSION=$(node -p "require('./package.json').version")
-
-  # Copy built files from workspace package
-  echo "Copying build files to bin..."
-  cp -r "$ROOT_DIR/packages/web/dist/"* "$BIN_DIR/"
-
-  # Create version info file
-  echo "{
-  \"version\": \"${VERSION}\",
-  \"tag\": \"${TAG:-latest}\",
-  \"buildDate\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-  \"gitCommit\": \"$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')\",
-  \"environment\": \"production\"
-}" > "$BIN_DIR/version.json"
-
-  # Create deployment config template
-  echo "{
-  \"apiUrl\": \"http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api\",
-  \"environment\": \"production\"
-}" > "$BIN_DIR/config.template.json"
-
-  echo ""
-  echo "Release build created successfully!"
-  echo "Version: ${VERSION}"
-  echo "Files copied to: $BIN_DIR"
-
-  # Copy to root bin/html/console for nginx serving
-  echo "Copying to root bin/html/console directory for nginx..."
-  ROOT_BIN="$ROOT_DIR/../bin/html/console"
-  mkdir -p "$ROOT_BIN"
-  # Clean existing console files
-  rm -rf "$ROOT_BIN"/*
-  # Copy all files to root bin/html/console
-  cp -r "$BIN_DIR/"* "$ROOT_BIN/"
-  echo "Files also copied to: $ROOT_BIN"
-
-  # Build www (Astro marketing site) if it exists
-  if [ -d "$ROOT_DIR/packages/www" ]; then
-    echo ""
-    echo "Building www (Astro marketing site)..."
-    (cd "$ROOT_DIR/packages/www" && npm run build)
-    # Copy www build to root bin/html (serves at root path)
-    ROOT_HTML="$ROOT_DIR/../bin/html"
-    if [ -d "$ROOT_DIR/packages/www/dist" ]; then
-      echo "Copying www build to: $ROOT_HTML"
-      cp -r "$ROOT_DIR/packages/www/dist/"* "$ROOT_HTML/"
-    fi
-  fi
-
-  # Build json (template catalog) if it exists
-  if [ -d "$ROOT_DIR/packages/json" ]; then
-    echo ""
-    echo "Building json (template catalog)..."
-    (cd "$ROOT_DIR/packages/json" && ./generate.sh)
-    # Copy json build to root bin/html/json
-    ROOT_JSON="$ROOT_DIR/../bin/html/json"
-    mkdir -p "$ROOT_JSON"
-    if [ -d "$ROOT_DIR/packages/json/dist" ]; then
-      echo "Copying json build to: $ROOT_JSON"
-      cp -r "$ROOT_DIR/packages/json/dist/"* "$ROOT_JSON/"
-    fi
-  fi
-}
-
-# Function to setup development environment
-function setup() {
-  local SETUP_MODE="$1"
-  
-  if [ "$SETUP_MODE" = "sandbox" ]; then
-    echo "Setting up sandbox development environment..."
-    echo "============================================"
-    echo ""
-    echo "This setup is for open-source contributors who want to"
-    echo "work on the frontend without a local backend."
-    echo ""
-    
-    # Install dependencies
-    echo "Installing dependencies..."
-    npm install
-    
-    echo ""
-    echo "✅ Sandbox environment setup complete!"
-    echo ""
-    echo "You can now run:"
-    echo "  ./go sandbox    # Start with sandbox backend"
-    echo ""
-    return 0
-  fi
-  
-  echo "Setting up development environment..."
-  
-  # Check environment variables
-  if [ -z "$SYSTEM_HTTP_PORT" ] || [ -z "$SYSTEM_DOMAIN" ]; then
-    echo ""
-    echo "⚠️  Environment variables not configured."
-    echo ""
-    echo "You have two options:"
-    echo ""
-    echo "1. Setup for local development (requires backend):"
-    echo "   - Create a .env file in the parent directory with:"
-    echo "     SYSTEM_HTTP_PORT=7322"
-    echo "     SYSTEM_DOMAIN=localhost"
-    echo "   - Then run: ./go setup"
-    echo ""
-    echo "2. Setup for sandbox development (no backend needed):"
-    echo "   ./go setup sandbox"
-    echo ""
-    return 1
-  fi
-  
-  # Check if middleware is running
-  if ! curl -s http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api > /dev/null 2>&1; then
-    echo "⚠️  Middleware API is not running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}!"
-    echo "Start it with: cd ../middleware && ./go start"
-    echo ""
-    echo "Or use sandbox mode if you don't have a local backend:"
-    echo "  ./go sandbox"
-  else
-    echo "✅ Middleware API is running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}"
-  fi
-  
-  # Install dependencies
-  echo "Installing dependencies..."
-  npm install
-  
-  # Create .env file if it doesn't exist
-  if [ ! -f "$ROOT_DIR/.env" ]; then
-    echo "Creating .env file..."
-    echo "VITE_API_URL=http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api" > "$ROOT_DIR/.env"
-    echo "✅ .env file created with API URL: http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api"
-  fi
-  
-  echo ""
-  echo "✅ Development environment setup complete!"
-  echo ""
-  echo "🔍 Telemetry Information:"
-  echo "  - OpenTelemetry telemetry is enabled for user behavior analytics"
-  echo "  - Telemetry data is sent to obs.rediacc.com for monitoring and insights"
-  echo "  - No sensitive data (passwords, keys) is collected"
-  echo "  - Data helps improve the application and user experience"
-  echo ""
-  echo "You can now run: ./go dev"
-}
-
-
-# Function to check status
-function status() {
-  echo "Rediacc Console Status:"
-  echo "======================"
-  
-  # Check if dev server is running
-  if lsof -i :${CONSOLE_PORT} > /dev/null 2>&1; then
-    echo "✅ Development server is running on port ${CONSOLE_PORT}"
-  else
-    echo "❌ Development server is not running"
-  fi
-  
-  # Check if middleware is running
-  if curl -s http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api > /dev/null 2>&1; then
-    echo "✅ Middleware API is running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}"
-  else
-    echo "❌ Middleware API is not running"
-  fi
-  
-  # Check build status
-  if [ -d "$ROOT_DIR/dist" ]; then
-    echo "✅ Production build exists"
-  else
-    echo "❌ No production build found"
-  fi
-  
-  
-  # Check bin/console directory
-  if [ -d "$ROOT_DIR/../bin/console" ]; then
-    echo "✅ Console binaries in bin/console:"
-    if [ -f "$ROOT_DIR/../bin/console/rediacc-console" ]; then
-      echo "   • Linux executable"
-    fi
-    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.deb" ]; then
-      echo "   • Debian package (.deb)"
-    fi
-    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.rpm" ]; then
-      echo "   • RPM package (.rpm)"
-    fi
-    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.exe" ]; then
-      echo "   • Windows executable"
-    fi
-    if [ -d "$ROOT_DIR/../bin/console/rediacc-console.app" ]; then
-      echo "   • macOS app bundle"
-    fi
-    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.AppImage" ]; then
-      echo "   • AppImage"
-    fi
-  fi
-  
-  # Show version
-  if [ -f "$ROOT_DIR/package.json" ]; then
-    VERSION=$(node -p "require('./package.json').version")
-    echo "📦 Version: ${VERSION}"
-  fi
-}
-
-
-
-
-# Help message
-function show_help() {
-  echo "Usage: ./go [COMMAND] [OPTIONS]"
-  echo ""
-  echo "Commands:"
-  echo "  sandbox       Start in sandbox mode (for open-source contributors)"
-  echo "    --docker    Run in Docker container (recommended)"
-  echo "    --port=PORT Set Docker port (default: 8080)"
-  echo "    --no-browser Don't open browser automatically"
-  echo "  sandbox-docker Quick start with Docker (alias for 'sandbox --docker')"
-  echo "  dev           Start development server (requires local backend)"
-  echo "  build         Build the application for production"
-  echo "  preview       Preview the production build"
-  echo "  lint          Run ESLint on the codebase"
-  echo "  test          Run tests"
-  echo "  clean         Clean build artifacts"
-  echo "    --docker    Also clean Docker containers/images"
-  echo "  release       Build and create release package in bin/"
-  echo "  setup [sandbox]  Setup development environment"
-  echo "                   Use 'setup sandbox' for open-source setup"
-  echo "  status        Check application status"
-  echo "  desktop [cmd] Build and run desktop application (Electron)"
-  echo "    dev         Start Electron dev server with HMR"
-  echo "    build       Build the Electron application"
-  echo "    pack        Package application (unpacked, for testing)"
-  echo "    dist        Build installers for all platforms"
-  echo "    dist:win    Build Windows installer (NSIS)"
-  echo "    dist:mac    Build macOS installer (DMG)"
-  echo "    dist:linux  Build Linux installers (AppImage + deb)"
-  echo ""
-  echo "  help          Show this help message"
-  echo ""
-  echo "🚀 Quick Start (Open-Source Contributors):"
-  echo "  ./go sandbox-docker     # Fastest way - run with Docker"
-  echo "  ./go sandbox            # Run locally with npm"
-  echo ""
-  echo "📦 Docker Sandbox Examples:"
-  echo "  ./go sandbox --docker              # Build and run in Docker"
-  echo "  ./go sandbox --docker --port=3000  # Use custom port"
-  echo "  ./go sandbox --docker --no-browser # Don't open browser"
-  echo ""
-  echo "🔧 Quick Start (With Local Backend):"
-  echo "  ./go setup          # Setup local environment"
-  echo "  ./go dev            # Start local development"
-  echo ""
-}
-
-# Main function to handle commands
-main() {
-    case "$1" in
-      sandbox)
-        shift  # Remove 'sandbox' from arguments
-        sandbox "$@"
-        ;;
-      sandbox-docker)
-        # Convenience alias for sandbox --docker
-        shift  # Remove 'sandbox-docker' from arguments
-        sandbox --docker "$@"
-        ;;
-      dev)
-        dev
-        ;;
-      build)
-        build
-        ;;
-      preview)
-        preview
-        ;;
-      lint)
-        lint
-        ;;
-      test)
-        test
-        ;;
-      clean)
-        shift  # Remove 'clean' from arguments
-        clean "$@"
-        ;;
-      release)
-        release
-        ;;
-      setup)
-        shift  # Remove 'setup' from arguments
-        setup "$@"
-        ;;
-      status)
-        status
-        ;;
-      desktop)
-        shift  # Remove 'desktop' from arguments
-        desktop "$@"
-        ;;
-      help|--help|-h)
-        show_help
-        ;;
-      *)
-        show_help
+check_node_version() {
+    if ! command -v node &>/dev/null; then
+        log_error "Node.js is not installed"
+        log_info "Install Node.js ${NODE_VERSION_REQUIRED} from: https://nodejs.org/"
         exit 1
-        ;;
+    fi
+
+    local current_version
+    current_version=$(node -v | cut -d'v' -f2)
+    local current_major
+    current_major=$(echo "$current_version" | cut -d'.' -f1)
+
+    if [[ "$current_major" != "$NODE_VERSION_REQUIRED" ]]; then
+        log_error "Node.js version mismatch"
+        log_error "Required: v${NODE_VERSION_REQUIRED}.x"
+        log_error "Current:  v${current_version}"
+        log_info "Install Node.js ${NODE_VERSION_REQUIRED} from: https://nodejs.org/"
+        exit 1
+    fi
+
+    log_debug "Node.js version: v${current_version}"
+}
+
+# =============================================================================
+# BACKEND COMMANDS
+# =============================================================================
+
+backend_start() {
+    local mode="${BACKEND_MODE_DEFAULT}"
+
+    # Parse --source flag
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --source)
+                mode="$2"
+                shift 2
+                ;;
+            --source=*)
+                mode="${1#*=}"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    log_step "Starting backend (mode: $mode)"
+
+    # Ensure elite repo exists
+    elite_clone || exit 1
+
+    # Mode-specific preparation
+    case "$mode" in
+        "$BACKEND_MODE_GHCR")
+            elite_pull_images || exit 1
+            ;;
+        "$BACKEND_MODE_LOCAL")
+            elite_update || exit 1
+            elite_build_images || exit 1
+            ;;
+        *)
+            log_error "Unknown backend mode: $mode"
+            log_info "Valid modes: $BACKEND_MODE_GHCR, $BACKEND_MODE_LOCAL"
+            exit 1
+            ;;
+    esac
+
+    # Start services
+    elite_start "$mode" || exit 1
+
+    # Wait for health check
+    elite_health || exit 1
+
+    log_info "Backend is ready!"
+    log_info "API URL: $API_URL_LOCAL"
+}
+
+backend_stop() {
+    elite_stop
+}
+
+backend_status() {
+    elite_status
+}
+
+backend_logs() {
+    elite_logs "$@"
+}
+
+backend_health() {
+    elite_health
+}
+
+backend_pull() {
+    elite_pull_images
+}
+
+backend_reset() {
+    elite_reset
+}
+
+# =============================================================================
+# DEVELOPMENT COMMANDS
+# =============================================================================
+
+dev() {
+    check_node_version
+
+    # Check if backend is running
+    if ! elite_health &>/dev/null; then
+        log_warn "Backend is not running"
+        log_info ""
+        log_info "Start backend with:"
+        log_info "  ./go backend start        # Use ghcr images (CI mode)"
+        log_info "  ./go backend start --source local # Build from source"
+        log_info ""
+
+        if prompt_continue "Start backend now (ghcr mode)"; then
+            backend_start --source "$BACKEND_MODE_GHCR"
+        else
+            exit 1
+        fi
+    fi
+
+    log_step "Starting console development server"
+
+    # Install dependencies if needed
+    if [[ ! -d "$ROOT_DIR/node_modules" ]] || [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
+        log_info "Installing dependencies"
+        npm install
+    fi
+
+    # Set environment for Vite
+    export VITE_API_URL="$API_URL_LOCAL"
+    export REDIACC_BUILD_TYPE="$BUILD_TYPE_DEBUG"
+
+    # Start dev server
+    PORT="$PORT_CONSOLE_DEV" npm run dev
+}
+
+# Sandbox mode (no backend required) - preserved from original
+sandbox() {
+    check_node_version
+
+    local USE_DOCKER=false
+    local DOCKER_PORT=8080
+    local OPEN_BROWSER=true
+
+    # Parse arguments
+    for arg in "$@"; do
+        case $arg in
+            --docker)
+                USE_DOCKER=true
+                ;;
+            --port=*)
+                DOCKER_PORT="${arg#*=}"
+                ;;
+            --no-browser)
+                OPEN_BROWSER=false
+                ;;
+            --help)
+                echo "Usage: ./go sandbox [OPTIONS]"
+                echo ""
+                echo "Options:"
+                echo "  --docker        Run in Docker container (recommended for quick start)"
+                echo "  --port=PORT     Docker port (default: 8080)"
+                echo "  --no-browser    Don't open browser automatically"
+                echo ""
+                echo "Examples:"
+                echo "  ./go sandbox              # Run locally with npm"
+                echo "  ./go sandbox --docker     # Run in Docker (recommended)"
+                echo ""
+                return 0
+                ;;
+        esac
+    done
+
+    if [[ "$USE_DOCKER" == "true" ]]; then
+        # Docker mode
+        check_docker
+
+        log_step "Building and running containerized console"
+
+        # Build the Docker image
+        log_info "Building Docker image"
+        docker build -f Dockerfile.standalone -t rediacc-console:sandbox \
+          --build-arg REDIACC_BUILD_TYPE=DEBUG . || {
+            log_error "Docker build failed"
+            return 1
+        }
+
+        # Stop any existing container
+        docker stop rediacc-console-sandbox 2>/dev/null || true
+        docker rm rediacc-console-sandbox 2>/dev/null || true
+
+        # Run the container
+        log_info "Starting container on port ${DOCKER_PORT}"
+        docker run -d \
+          --name rediacc-console-sandbox \
+          -p ${DOCKER_PORT}:80 \
+          -e INSTANCE_NAME=sandbox \
+          -e BUILD_TYPE=DEBUG \
+          -e ENABLE_DEBUG=true \
+          rediacc-console:sandbox
+
+        # Wait for container to be ready
+        local ready=false
+        for i in {1..30}; do
+            if curl -s http://localhost:${DOCKER_PORT}/health &>/dev/null; then
+                ready=true
+                break
+            fi
+            sleep 1
+        done
+
+        if [[ "$ready" == "true" ]]; then
+            log_info "Console is running at: http://localhost:${DOCKER_PORT}"
+        else
+            log_warn "Console may not be fully ready yet"
+        fi
+
+        # Show logs
+        docker logs -f rediacc-console-sandbox
+    else
+        # Local development mode
+        log_step "Starting console in sandbox mode"
+        log_info "API URL: $API_URL_SANDBOX"
+
+        # Install dependencies if needed
+        if [[ ! -d "$ROOT_DIR/node_modules" ]] || [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
+            log_info "Installing dependencies"
+            npm install
+        fi
+
+        # Set environment for Vite
+        export VITE_API_URL="$API_URL_SANDBOX"
+        export REDIACC_BUILD_TYPE="$BUILD_TYPE_DEBUG"
+        export SANDBOX_MODE=true
+
+        # Start dev server
+        PORT="${PORT_CONSOLE_DEV}" npm run dev
+    fi
+}
+
+# =============================================================================
+# TEST COMMANDS
+# =============================================================================
+
+test_unit() {
+    check_node_version
+    log_step "Running unit tests"
+    "$ROOT_DIR/.ci/scripts/test/run-unit.sh" "$@"
+}
+
+test_cli() {
+    check_node_version
+    log_step "Running CLI tests"
+    "$ROOT_DIR/.ci/scripts/test/run-cli.sh" "$@"
+}
+
+test_e2e() {
+    check_node_version
+
+    # Require backend for E2E tests
+    if ! elite_health &>/dev/null; then
+        log_error "Backend is not running or unhealthy"
+        log_info "E2E tests require a running backend"
+        log_info "Start backend with: ./go backend start"
+        exit 1
+    fi
+
+    log_step "Running E2E tests"
+    "$ROOT_DIR/.ci/scripts/build/build-web.sh"
+    "$ROOT_DIR/.ci/scripts/test/run-e2e.sh" "$@"
+}
+
+test_all() {
+    test_unit
+    test_cli
+    test_e2e --projects chromium
+}
+
+# =============================================================================
+# BUILD COMMANDS
+# =============================================================================
+
+build_web() {
+    check_node_version
+    log_step "Building web application"
+    "$ROOT_DIR/.ci/scripts/build/build-web.sh"
+}
+
+build_cli() {
+    check_node_version
+    log_step "Building CLI application"
+    "$ROOT_DIR/.ci/scripts/build/build-cli.sh"
+}
+
+build_desktop() {
+    check_node_version
+    log_step "Building desktop application"
+    "$ROOT_DIR/.ci/scripts/build/build-desktop.sh"
+}
+
+build_packages() {
+    check_node_version
+    log_step "Building shared packages"
+    "$ROOT_DIR/.ci/scripts/setup/build-packages.sh"
+}
+
+build_all() {
+    check_node_version
+    log_step "Building all components"
+    build_packages
+    build_web
+    build_cli
+}
+
+# =============================================================================
+# QUALITY COMMANDS
+# =============================================================================
+
+quality_lint() {
+    check_node_version
+    log_step "Running lint checks"
+    npm run lint -- --max-warnings 0
+    npm run lint:unused
+}
+
+quality_format() {
+    check_node_version
+    log_step "Checking code formatting"
+    npm run check:format
+}
+
+quality_types() {
+    check_node_version
+    log_step "Checking TypeScript types"
+    npm run typecheck
+}
+
+quality_all() {
+    check_node_version
+    log_step "Running all quality checks"
+    npm run quality
+}
+
+# =============================================================================
+# FIX COMMANDS
+# =============================================================================
+
+fix_format() {
+    check_node_version
+    log_step "Auto-fixing code formatting"
+    npm run fix:format
+}
+
+fix_lint() {
+    check_node_version
+    log_step "Auto-fixing linting issues"
+    npm run fix:lint
+}
+
+fix_all() {
+    check_node_version
+    log_step "Auto-fixing all issues"
+    npm run fix:all
+}
+
+# =============================================================================
+# CHECK COMMANDS (PRE-PUSH VALIDATION)
+# =============================================================================
+
+check_quick() {
+    check_node_version
+    log_step "Running quick checks"
+    npm run check:lint || exit 1
+    npm run check:format || exit 1
+    npm run typecheck || exit 1
+    log_info "Quick checks passed!"
+}
+
+check_full() {
+    check_node_version
+    log_step "Running full validation"
+
+    log_step "Phase 1/2: Quality Checks"
+    quality_all || exit 1
+
+    log_step "Phase 2/2: Unit Tests"
+    test_unit || exit 1
+
+    log_info "Full validation passed!"
+}
+
+# =============================================================================
+# SETUP
+# =============================================================================
+
+setup() {
+    check_node_version
+
+    log_step "Console development setup"
+    echo ""
+
+    # Install dependencies
+    log_info "Installing npm dependencies"
+    npm install
+
+    # Choose backend mode
+    echo ""
+    echo "Select backend mode:"
+    echo "  1) ghcr - Pull from ghcr.io (CI mode, fastest)"
+    echo "  2) local - Build from elite source (for elite development)"
+    echo ""
+    read -p "Choice [1-2]: " choice
+
+    local mode="$BACKEND_MODE_GHCR"
+    case "$choice" in
+        2) mode="$BACKEND_MODE_LOCAL" ;;
+        *) mode="$BACKEND_MODE_GHCR" ;;
+    esac
+
+    # Start backend
+    backend_start --source "$mode"
+
+    log_info ""
+    log_info "Setup complete!"
+    log_info ""
+    log_info "Start development with: ./go dev"
+}
+
+# =============================================================================
+# CLEAN
+# =============================================================================
+
+clean() {
+    log_step "Cleaning build artifacts"
+    rm -rf dist/
+    rm -rf node_modules/.vite
+    rm -rf packages/*/dist/
+    log_info "Build artifacts cleaned"
+}
+
+# =============================================================================
+# HELP
+# =============================================================================
+
+show_help() {
+    cat <<EOF
+Usage: ./go [COMMAND] [OPTIONS]
+
+BACKEND COMMANDS:
+  backend start [--source ghcr|local]  Start backend services
+  backend stop                         Stop backend services
+  backend status                       Show backend status
+  backend logs [service]               Show service logs (api, sql, web, all)
+  backend health                       Check backend health
+  backend pull                         Pull latest ghcr images
+  backend reset                        Reset backend (deletes data)
+
+DEVELOPMENT COMMANDS:
+  dev                 Start development server (auto-starts backend if needed)
+  sandbox             Start in sandbox mode (no backend required)
+  setup               Interactive setup wizard
+
+TEST COMMANDS:
+  test unit           Run unit tests
+  test cli            Run CLI tests
+  test e2e [opts]     Run E2E tests (requires backend)
+  test all            Run all tests
+
+BUILD COMMANDS:
+  build web           Build web application
+  build cli           Build CLI application
+  build desktop       Build desktop application
+  build packages      Build shared packages
+  build all           Build everything
+
+QUALITY COMMANDS:
+  quality lint        Run linting (ESLint + Knip)
+  quality format      Check code formatting (Biome)
+  quality types       Check TypeScript types
+  quality all         Run all quality checks
+
+FIX COMMANDS:
+  fix format          Auto-fix code formatting
+  fix lint            Auto-fix linting issues
+  fix all             Auto-fix all issues
+
+CHECK COMMANDS (PRE-PUSH):
+  check quick         Fast checks (lint, format, types) - ~30s
+  check full          Full validation (quality + tests) - ~5min
+
+MAINTENANCE:
+  clean               Clean build artifacts
+  setup               Interactive setup wizard
+  help                Show this help message
+
+QUICK START:
+  ./go setup          # One-time setup (chooses backend mode)
+  ./go dev            # Start development
+
+REQUIREMENTS:
+  Node.js v${NODE_VERSION_REQUIRED}.x (https://nodejs.org/)
+  Docker (for backend)
+
+ENVIRONMENT:
+  GITHUB_TOKEN        GitHub personal access token (for ghcr.io auth)
+  ELITE_LOCAL_PATH    Elite repository location (default: ~/.rediacc/elite)
+EOF
+}
+
+# =============================================================================
+# MAIN DISPATCHER
+# =============================================================================
+
+main() {
+    case "${1:-}" in
+        # Backend commands
+        backend)
+            shift
+            case "${1:-}" in
+                start) shift; backend_start "$@" ;;
+                stop) backend_stop ;;
+                status) backend_status ;;
+                logs) shift; backend_logs "$@" ;;
+                health) backend_health ;;
+                pull) backend_pull ;;
+                reset) backend_reset ;;
+                *)
+                    log_error "Unknown backend command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./go backend [start|stop|status|logs|health|pull|reset]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Development
+        dev) dev ;;
+        sandbox) shift; sandbox "$@" ;;
+        setup) setup ;;
+
+        # Tests
+        test)
+            shift
+            case "${1:-}" in
+                unit) shift; test_unit "$@" ;;
+                cli) shift; test_cli "$@" ;;
+                e2e) shift; test_e2e "$@" ;;
+                all) test_all ;;
+                *)
+                    log_error "Unknown test command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./go test [unit|cli|e2e|all]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Build
+        build)
+            shift
+            case "${1:-}" in
+                web) build_web ;;
+                cli) build_cli ;;
+                desktop) build_desktop ;;
+                packages) build_packages ;;
+                all|"") build_all ;;
+                *)
+                    log_error "Unknown build command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./go build [web|cli|desktop|packages|all]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Quality
+        quality)
+            shift
+            case "${1:-}" in
+                lint) quality_lint ;;
+                format) quality_format ;;
+                types) quality_types ;;
+                all|"") quality_all ;;
+                *)
+                    log_error "Unknown quality command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./go quality [lint|format|types|all]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Fix
+        fix)
+            shift
+            case "${1:-}" in
+                format) fix_format ;;
+                lint) fix_lint ;;
+                all|"") fix_all ;;
+                *)
+                    log_error "Unknown fix command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./go fix [format|lint|all]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Check
+        check)
+            shift
+            case "${1:-}" in
+                quick) check_quick ;;
+                full) check_full ;;
+                *)
+                    log_error "Unknown check command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./go check [quick|full]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Maintenance
+        clean) clean ;;
+        help|--help|-h|"") show_help ;;
+
+        *)
+            log_error "Unknown command: $1"
+            echo ""
+            show_help
+            exit 1
+            ;;
     esac
 }
 
-# Execute main function if run directly
+# Execute main if run directly
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"

@@ -28,4 +28,4 @@ export const TEST_ENV = {
   vmRenetInstallPath: '/usr/bin/renet',
 } as const;
 
-export type TestEnv = typeof TEST_ENV;
+type TestEnv = typeof TEST_ENV;

@@ -15,7 +15,7 @@ import { ExpandOutlined, FileTextOutlined, ReloadOutlined } from '@/utils/optimi
 
 const { Text } = Typography;
 
-export interface ContainerLogsModalProps {
+interface ContainerLogsModalProps {
   /** Whether the modal is open */
   open: boolean;
   /** Callback when modal is closed */

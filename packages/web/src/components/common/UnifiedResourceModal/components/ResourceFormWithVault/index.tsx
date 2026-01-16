@@ -188,6 +188,5 @@ export default ResourceFormWithVault;
 export type {
   FormFieldConfig,
   ImportExportHandlers,
-  ResourceFormWithVaultProps,
   ResourceFormWithVaultRef,
 } from './types';

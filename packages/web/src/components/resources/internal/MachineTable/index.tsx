@@ -37,8 +37,6 @@ import { ViewToggleButtons } from './components/ViewToggleButtons';
 import { useGroupedMachines } from './hooks/useGroupedMachines';
 import type { GroupByMode, MachineTableProps } from './types';
 
-export type { GroupByMode, MachineTableProps } from './types';
-
 export const MachineTable: React.FC<MachineTableProps> = ({
   teamFilter,
   showActions = true,

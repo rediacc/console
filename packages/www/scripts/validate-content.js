@@ -108,10 +108,11 @@ function isLocalizedFilename(filename, englishFiles) {
 
 /**
  * Find the likely English equivalent for a localized filename
+ * Currently unused but kept for future use
  */
-function findEnglishEquivalent(localizedFilename, frontmatter, englishFiles) {
+function _findEnglishEquivalent(_localizedFilename, _frontmatter, _englishFiles) {
   // Try to match by title similarity or content
-  if (!frontmatter || !frontmatter.title) return null;
+  if (!_frontmatter || !_frontmatter.title) return null;
 
   // For now, we can't automatically detect - user needs to rename manually
   return null;
@@ -120,7 +121,7 @@ function findEnglishEquivalent(localizedFilename, frontmatter, englishFiles) {
 /**
  * Validate all content
  */
-function validateContent(strict = false) {
+function validateContent(_strict = false) {
   const errors = [];
   const warnings = [];
 

@@ -8,7 +8,7 @@ import type { Rule } from 'antd/es/form';
 export { isValidGuid } from '@rediacc/shared/validation';
 
 // Used by UsersPage
-export interface CreateUserFormValues {
+interface CreateUserFormValues {
   newUserEmail: string;
   newUserPassword: string;
 }

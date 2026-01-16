@@ -1,18 +1,12 @@
 // Types
 
 // Re-export types from shared packages
-export type { ErrorSeverity, ParsedError, ParsedErrorResult } from '@rediacc/shared/error-parser';
 export { parseFailureReason } from '@rediacc/shared/error-parser';
 
 // Re-export functions from shared packages
 export { formatAge, formatDurationFull, formatTimestampAsIs } from '@rediacc/shared/formatters';
 
-export type {
-  PriorityConfig,
-  QueueHealthStatus,
-  QueueStatus,
-  StatusConfig,
-} from '@rediacc/shared/queue';
+export type { QueueHealthStatus } from '@rediacc/shared/queue';
 export {
   filterActiveItems,
   filterCancelledItems,

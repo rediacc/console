@@ -15,7 +15,7 @@ import { outputService } from './output.js';
 import type { LocalMachineConfig } from '../types/index.js';
 
 /** Options for local execution */
-export interface LocalExecuteOptions {
+interface LocalExecuteOptions {
   /** Function name to execute */
   functionName: string;
   /** Target machine name (must exist in local context) */
@@ -31,7 +31,7 @@ export interface LocalExecuteOptions {
 }
 
 /** Result of local execution */
-export interface LocalExecuteResult {
+interface LocalExecuteResult {
   /** Whether execution succeeded */
   success: boolean;
   /** Exit code from renet */

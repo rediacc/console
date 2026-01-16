@@ -12,8 +12,36 @@ cd "$PROJECT_ROOT"
 
 echo "🔍 Running pre-commit checks..."
 
-# 0. Sync dependencies if package files changed (ensures local matches CI)
+# 0. Check Node.js version (require v22.x)
+echo "→ Checking Node.js version..."
+if ! command -v node &>/dev/null; then
+    echo "❌ Node.js is not installed"
+    echo "   Install Node.js v22.x from: https://nodejs.org/"
+    exit 2
+fi
+
+NODE_VERSION=$(node -v | cut -d'v' -f2)
+NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d'.' -f1)
+
+if [ "$NODE_MAJOR" != "22" ]; then
+    echo "❌ Node.js version mismatch"
+    echo "   Required: v22.x"
+    echo "   Current:  v$NODE_VERSION"
+    echo "   Install Node.js v22 from: https://nodejs.org/"
+    exit 2
+fi
+echo "✓ Node.js version: v$NODE_VERSION"
+
+# 1. Verify .backend-state is not being committed
 STAGED_FILES=$(git diff --cached --name-only 2>/dev/null || true)
+if echo "$STAGED_FILES" | grep -q "\.backend-state"; then
+    echo "❌ .backend-state file should not be committed"
+    echo "   This file is auto-generated and should be in .gitignore"
+    echo "   Run: git reset HEAD .backend-state"
+    exit 2
+fi
+
+# 2. Sync dependencies if package files changed (ensures local matches CI)
 if echo "$STAGED_FILES" | grep -qE "^(package\.json|package-lock\.json|packages/.*/package\.json)$"; then
     echo "→ Package files changed, syncing dependencies..."
     if ! npm ci --silent 2>/dev/null; then
@@ -23,9 +51,12 @@ if echo "$STAGED_FILES" | grep -qE "^(package\.json|package-lock\.json|packages/
     echo "✓ Dependencies synced"
 fi
 
-# 1. Auto-fix: Run fix:all to automatically fix formatting, lint, and i18n issues
+# 3. Auto-fix: Run fix:all to automatically fix formatting, lint, and i18n issues
 echo "→ Running auto-fixes (format, lint, i18n)..."
-npm run fix:all > /dev/null 2>&1 || true
+if ! npm run fix:all > /dev/null 2>&1; then
+    echo "⚠️  Some issues could not be auto-fixed"
+    echo "   Run: ./go fix all"
+fi
 
 # 2. Check if translation files were modified - MUST regenerate hashes
 if echo "$STAGED_FILES" | grep -qE "i18n/locales/.*\.json$"; then
@@ -58,10 +89,28 @@ fi
 # 4. Quality checks (version, lint, unused code, format, i18n, typecheck, unit tests)
 echo "→ Running quality checks..."
 if ! npm run quality > /dev/null 2>&1; then
-    echo "❌ Quality checks failed. Run 'npm run quality' to see errors."
+    echo ""
+    echo "❌ Quality checks failed!"
+    echo ""
+    echo "   To see detailed errors, run:"
+    echo "     ./go quality all      # Run all quality checks"
+    echo ""
+    echo "   To fix issues automatically:"
+    echo "     ./go fix all          # Auto-fix formatting, lint, etc."
+    echo ""
+    echo "   To run specific checks:"
+    echo "     ./go quality lint     # ESLint + Knip"
+    echo "     ./go quality format   # Code formatting"
+    echo "     ./go quality types    # TypeScript types"
+    echo ""
     exit 2
 fi
 echo "✓ Quality checks passed"
 
+echo ""
 echo "✅ All pre-commit checks passed!"
+echo "   - Node.js version: v$NODE_VERSION"
+echo "   - Dependencies synced"
+echo "   - Code auto-fixed"
+echo "   - Quality checks passed"
 exit 0

@@ -3,7 +3,7 @@ import { TestDataManager } from '../utils/data/TestDataManager';
 import { TestReporter } from '../utils/report/TestReporter';
 import { ScreenshotManager } from '../utils/screenshot/ScreenshotManager';
 
-export interface TestFixtures {
+interface TestFixtures {
   screenshotManager: ScreenshotManager;
   testReporter: TestReporter;
   testDataManager: TestDataManager;

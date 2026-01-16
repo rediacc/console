@@ -7,9 +7,7 @@ import type {
   RepositoryInfo,
   StorageSection,
 } from '@rediacc/shared/queue-vault';
-
 // Re-export for convenience
-export type { QueueVaultV2, MachineSection, StorageSection, RepositoryInfo };
 
 /**
  * Storage configuration for S3-compatible backends.
@@ -30,13 +28,13 @@ export interface StorageConfig {
  * Machine configuration for SSH connections.
  * Matches MachineSection from shared package.
  */
-export type MachineConfig = MachineSection;
+type MachineConfig = MachineSection;
 
 /**
  * Repository configuration.
  * Matches RepositoryInfo from shared package.
  */
-export type RepositoryConfig = RepositoryInfo;
+type RepositoryConfig = RepositoryInfo;
 
 /**
  * Push function parameters.

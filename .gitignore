@@ -49,6 +49,7 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+.backend-state
 
 # Build artifacts
 .build_cache/

@@ -20,7 +20,7 @@ const {
   buttonHref,
   imageSrc,
   imageAlt,
-  lang = 'en'
+  lang: _lang, // Passed by parents but not currently used in implementation
 } = Astro.props;
 
 const ctaLink = buttonHref || EXTERNAL_LINKS.SCHEDULE_CONSULTATION;

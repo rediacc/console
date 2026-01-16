@@ -15,7 +15,7 @@ import { DashboardOutlined, ExpandOutlined, ReloadOutlined } from '@/utils/optim
 
 const { Text } = Typography;
 
-export interface ContainerStatsModalProps {
+interface ContainerStatsModalProps {
   /** Whether the modal is open */
   open: boolean;
   /** Callback when modal is closed */

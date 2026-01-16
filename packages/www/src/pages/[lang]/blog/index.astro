@@ -2,11 +2,12 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { createTranslator } from '../../../i18n/utils';
-import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+// DEFAULT_LANGUAGE is not used in this file
 import type { Language } from '../../../i18n/types';
 
 export async function getStaticPaths() {
-  const allPosts = await getCollection('blog');
+  const _allPosts = await getCollection('blog');
 
   const paths = [];
 

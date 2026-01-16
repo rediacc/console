@@ -2,7 +2,8 @@
 import { getCollection } from 'astro:content';
 import ContentLayout from '../../../layouts/ContentLayout.astro';
 import StructuredData from '../../../components/StructuredData.astro';
-import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import { DEFAULT_LANGUAGE } from '../../../i18n/language-utils';
+// SUPPORTED_LANGUAGES is not used in this file
 import type { Language } from '../../../i18n/types';
 
 export async function getStaticPaths() {
@@ -40,7 +41,7 @@ export async function getStaticPaths() {
   return paths;
 }
 
-const { post, allPosts, translations } = Astro.props as {
+const { post, allPosts: _allPosts, translations } = Astro.props as {
   post: any;
   allPosts: any[];
   translations: Array<{ lang: Language; url: string }>;

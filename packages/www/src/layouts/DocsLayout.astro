@@ -19,7 +19,7 @@ interface Props {
   showFallbackNotice?: boolean;
 }
 
-const { frontmatter, url, currentLang, availableLanguages = [], showFallbackNotice = false } = Astro.props;
+const { frontmatter, url, currentLang, availableLanguages = [], showFallbackNotice } = Astro.props;
 
 // Generate breadcrumbs
 const { t } = createTranslator(currentLang);
@@ -53,6 +53,16 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
     <main class="docs-content">
       <article class="docs-article">
         <Breadcrumb items={breadcrumbItems} />
+
+        {showFallbackNotice && (
+          <div class="fallback-notice" role="alert">
+            <div class="fallback-notice-icon">ℹ️</div>
+            <div class="fallback-notice-content">
+              <strong class="fallback-notice-title">{t('pages.docs.fallbackNotice.title')}</strong>
+              <p class="fallback-notice-message">{t('pages.docs.fallbackNotice.message')}</p>
+            </div>
+          </div>
+        )}
 
         <header class="article-header">
           <h1 class="article-title">{frontmatter.title}</h1>
@@ -161,6 +171,42 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
 
     .docs-article {
       max-width: 800px;
+    }
+
+    /* Fallback Notice */
+    .fallback-notice {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      border-radius: 4px;
+      color: #1565c0;
+    }
+
+    .fallback-notice-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .fallback-notice-content {
+      flex: 1;
+    }
+
+    .fallback-notice-title {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+      color: #0d47a1;
+    }
+
+    .fallback-notice-message {
+      margin: 0;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      color: #1565c0;
     }
 
     .article-header {

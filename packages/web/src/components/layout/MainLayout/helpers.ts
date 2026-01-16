@@ -4,7 +4,7 @@ import type { OrganizationDashboardData } from '@rediacc/shared/types';
 import type { RouteItem } from './routes';
 import type { MenuConfig } from './types';
 
-export type MenuItem = {
+type MenuItem = {
   key: string;
   icon?: React.ReactNode;
   label: string;

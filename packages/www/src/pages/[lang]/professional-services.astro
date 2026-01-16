@@ -196,7 +196,7 @@ function getIconForService(id: string): string {
           <h2>{t('pages.pricing.professionalServices.serviceTypes.heading')}</h2>
           <p class="service-types-intro">{t('pages.pricing.professionalServices.serviceTypes.intro')}</p>
 
-          {serviceTypes.map((service, index) => (
+          {serviceTypes.map((service, _index) => (
             <details class="service-type-item">
               <summary>
                 <span class="service-type-icon" set:html={service.icon} />

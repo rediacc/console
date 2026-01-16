@@ -111,7 +111,7 @@ const handleElectronContainerAction = (
 };
 
 // Helper to handle VS Code launch in Electron
-export interface VSCodeLaunchParams {
+interface VSCodeLaunchParams {
   teamName: string;
   machine: string;
   repository?: string;
@@ -166,7 +166,7 @@ const handleElectronVSCode = async (params: VSCodeLaunchParams): Promise<void> =
 };
 
 // Helper to handle machine actions in Electron
-export interface ElectronMachineActionParams {
+interface ElectronMachineActionParams {
   action: ProtocolAction | undefined;
   creds: MachineSSHCredentials;
   machine: string;
@@ -238,7 +238,7 @@ const handleElectronMachineAction = async (params: ElectronMachineActionParams):
 };
 
 // Helper to handle web protocol URL flow
-export interface WebProtocolFlowParams {
+interface WebProtocolFlowParams {
   baseParams: { team: string; machine: string; repository: string };
   isContainerMenu: boolean;
   containerId?: string;
@@ -294,7 +294,7 @@ export const handleWebProtocolFlow = async (params: WebProtocolFlowParams): Prom
 };
 
 // Helper to handle Electron flow
-export interface ElectronFlowParams {
+interface ElectronFlowParams {
   teamName: string;
   machine: string;
   repository?: string;

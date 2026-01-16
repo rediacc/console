@@ -23,7 +23,7 @@ import { NETWORK_DEFAULTS } from '../utils/constants';
  * ```
  */
 
-export interface ElectronFixtures {
+interface ElectronFixtures {
   /** The Electron application instance for main process interaction */
   electronApp: ElectronApplication;
 }

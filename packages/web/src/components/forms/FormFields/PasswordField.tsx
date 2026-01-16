@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { KeyOutlined } from '@/utils/optimizedIcons';
 import type { Rule } from 'antd/es/form';
 
-export interface PasswordFieldProps {
+interface PasswordFieldProps {
   /** Field name in the form */
   name: string;
   /** Field label */

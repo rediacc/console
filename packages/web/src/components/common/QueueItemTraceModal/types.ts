@@ -66,7 +66,7 @@ export interface StatsPanelProps {
   processingDurationSeconds: number;
 }
 
-export interface ResponseViewerProps {
+interface ResponseViewerProps {
   responseVaultContent: QueueVaultSnapshot | null;
   theme: string;
   consoleOutputRef: React.RefObject<HTMLDivElement | null>;
@@ -86,7 +86,7 @@ export interface ActionButtonsProps {
 }
 
 export type TraceLog = QueueTraceLog;
-export type TaskStaleness = TaskStalenessLevel;
+type TaskStaleness = TaskStalenessLevel;
 
 /** QueueItemTraceData is an alias for the trace data structure */
 export type { QueueTrace as QueueItemTraceData } from '@rediacc/shared/types';

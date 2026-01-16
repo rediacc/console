@@ -7,57 +7,57 @@
  * for test assertions only.
  */
 
-export interface SafeStorageAPI {
+interface SafeStorageAPI {
   isAvailable: () => Promise<boolean>;
   encrypt: (data: string) => Promise<string>;
   decrypt: (encryptedData: string) => Promise<string>;
 }
 
-export interface TerminalAPI {
+interface TerminalAPI {
   connect: (params: unknown) => Promise<{ sessionId: string }>;
   write: (sessionId: string, data: string) => void;
   resize: (sessionId: string, cols: number, rows: number) => void;
   close: (sessionId: string) => Promise<void>;
 }
 
-export interface SftpAPI {
+interface SftpAPI {
   connect: (params: unknown) => Promise<{ sessionId: string }>;
   listDirectory: (sessionId: string, path: string) => Promise<unknown[]>;
   readFile: (sessionId: string, path: string) => Promise<ArrayBuffer>;
   close: (sessionId: string) => Promise<void>;
 }
 
-export interface VscodeAPI {
+interface VscodeAPI {
   launch: (options: unknown) => Promise<{ success: boolean; error?: string }>;
   isAvailable: () => Promise<boolean>;
   hasRemoteSSH: () => Promise<boolean>;
 }
 
-export interface ContainerAPI {
+interface ContainerAPI {
   exec: (params: unknown) => Promise<{ sessionId: string }>;
   logs: (params: unknown) => Promise<{ sessionId: string }>;
   stats: (params: unknown) => Promise<{ sessionId: string }>;
 }
 
-export interface RsyncAPI {
+interface RsyncAPI {
   execute: (options: unknown) => Promise<unknown>;
   preview: (options: unknown) => Promise<unknown>;
   abort: (operationId: string) => Promise<boolean>;
 }
 
-export interface WindowAPI {
+interface WindowAPI {
   openPopout: (options: unknown) => Promise<{ success: boolean }>;
   closePopout: (windowId: number) => Promise<boolean>;
   getPopoutCount: () => Promise<number>;
 }
 
-export interface AppAPI {
+interface AppAPI {
   getVersion: () => Promise<string>;
   getPlatform: () => Promise<string>;
   getArch: () => Promise<string>;
 }
 
-export interface ElectronAPI {
+interface ElectronAPI {
   safeStorage: SafeStorageAPI;
   terminal: TerminalAPI;
   sftp: SftpAPI;

@@ -142,7 +142,7 @@ function generateHeadingId(title: string): string {
 /**
  * Type definitions for storing sidebar configuration
  */
-export interface SidebarConfig {
+interface SidebarConfig {
   persistState?: boolean; // Persist sidebar state to localStorage (default: true)
   allowKeyboardNav?: boolean; // Allow keyboard navigation (default: true)
   highlightCurrentSection?: boolean; // Highlight current section in TOC (default: true)

@@ -15,7 +15,7 @@ import { ContainerOutlined, ExpandOutlined, ReloadOutlined } from '@/utils/optim
 
 const { Text } = Typography;
 
-export interface ContainerTerminalModalProps {
+interface ContainerTerminalModalProps {
   /** Whether the modal is open */
   open: boolean;
   /** Callback when modal is closed */

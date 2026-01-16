@@ -2,7 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import Breadcrumb from '../components/Breadcrumb.astro';
-import type { CollectionEntry } from 'astro:content';
+// import type { CollectionEntry } from 'astro:content';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { generateTOCFromMarkdown } from '../utils/sidebar-behavior';
@@ -25,7 +25,7 @@ interface Props {
   collection?: 'blog' | 'docs';
 }
 
-const { frontmatter, url, currentLang, availableLanguages = [], showFallbackNotice = false, collection } = Astro.props;
+const { frontmatter, url, currentLang, availableLanguages = [], showFallbackNotice = false, collection: _collection } = Astro.props;
 
 // Determine if this is a blog post or doc
 const isBlogPost = url.includes('/blog/');

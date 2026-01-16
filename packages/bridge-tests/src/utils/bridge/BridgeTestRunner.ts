@@ -22,7 +22,7 @@ const execAsync = promisify(exec);
 const DEFAULT_DATASTORE_PATH = '/mnt/rediacc';
 
 // Re-export types for backwards compatibility
-export type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget };
+export type { ExecResult };
 
 /**
  * Bridge test runner for executing renet commands on VMs via SSH.

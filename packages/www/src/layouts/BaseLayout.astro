@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
 import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import type { Language } from '../i18n/types';
-import { ViewTransitions } from 'astro:transitions';
+// ViewTransitions is now built-in in Astro 5+ via meta tag
 
 export interface Props {
   title: string;
@@ -146,7 +146,8 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
     {isHomePage && <StructuredData type="sitenavigation" />}
 
     <!-- View Transitions for smooth navigation -->
-    <ViewTransitions />
+    <meta name="astro-view-transitions-enabled" content="true" />
+    <meta name="astro-view-transitions-fallback" content="animate" />
 
     <!-- Language Cookie Redirect Script (runs early to prevent flash) -->
     <script is:inline define:vars={{ currentLang, pathWithoutLang, SUPPORTED_LANGUAGES }}>
@@ -179,8 +180,8 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
     <slot name="head" />
 
     <!-- Privacy-friendly analytics by Plausible -->
-    <script async src="https://plausible.rediacc.com/js/pa-QD2nMPajNQtoHBoHdMBpP.js"></script>
-    <script>
+    <script is:inline async src="https://plausible.rediacc.com/js/pa-QD2nMPajNQtoHBoHdMBpP.js"></script>
+    <script is:inline type="module">
       window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
       plausible.init()
     </script>

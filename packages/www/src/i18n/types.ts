@@ -16,11 +16,11 @@ export type PathValue<T, P extends string> = P extends `${infer K}.${infer R}`
 
 export type Language = 'en' | 'de' | 'es' | 'fr' | 'ja' | 'ar' | 'ru' | 'tr' | 'zh';
 
-export type TranslationKey = string;
+type TranslationKey = string;
 
 export type InterpolationParams = Record<string, string | number>;
 
-export type LanguageTranslations = {
+type LanguageTranslations = {
   en: typeof enTranslations;
   de: typeof enTranslations; // Same structure as en
   es: typeof esTranslations;

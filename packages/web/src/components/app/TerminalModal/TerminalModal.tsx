@@ -15,7 +15,7 @@ import { CodeOutlined, ExpandOutlined, ReloadOutlined } from '@/utils/optimizedI
 
 const { Text } = Typography;
 
-export interface TerminalModalProps {
+interface TerminalModalProps {
   /** Whether the modal is open */
   open: boolean;
   /** Callback when modal is closed */

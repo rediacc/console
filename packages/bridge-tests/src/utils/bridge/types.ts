@@ -2,14 +2,14 @@
  * Shared types for BridgeTestRunner and method classes.
  */
 
-export interface QueueTaskOptions {
+interface QueueTaskOptions {
   function: string;
   machine: string;
   team: string;
   priority?: number;
 }
 
-export interface QueueTaskResult {
+interface QueueTaskResult {
   taskId: string;
 }
 
