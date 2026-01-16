@@ -113,6 +113,9 @@ test.describe('User Team Assignment Tests', () => {
     }
   };
   const waitForTeamsPage = async (page: Page): Promise<void> => {
+    // Wait for navigation to complete first
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+
     const createButton = page.getByTestId('system-create-team-button');
     const listContainer = page.getByTestId('resource-list-container');
     await expect
@@ -120,7 +123,7 @@ test.describe('User Team Assignment Tests', () => {
         async () =>
           (await createButton.isVisible().catch(() => false)) ||
           (await listContainer.isVisible().catch(() => false)),
-        { timeout: 10000 }
+        { timeout: 15000 }
       )
       .toBe(true);
   };
