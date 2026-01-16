@@ -741,4 +741,43 @@ export default tseslint.config(
     },
   },
 
+  // =============================================================
+  // WWW PACKAGE OVERRIDES (Astro marketing site)
+  // =============================================================
+  // Disable web-specific rules for www package since it's an Astro site
+  // with different translation patterns and no Ant Design components
+  {
+    files: ['packages/www/src/**/*.{ts,tsx}'],
+    rules: {
+      // Disable web-specific i18n rules (www uses different translation system)
+      'custom/require-translation': 'off',
+      'custom/no-hardcoded-text': 'off',
+      'custom/require-testid': 'off',
+      'custom/no-raw-api-calls': 'off',
+      // Disable Ant Design restrictions (www uses native HTML)
+      'react/forbid-elements': 'off',
+      'no-restricted-imports': 'off',
+    },
+  },
+
+  // WWW translation JSON files - basic JSON linting
+  {
+    files: ['packages/www/src/i18n/translations/*.json'],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      'json/no-duplicate-keys': 'error',
+      'i18n/no-empty-translations': 'error',
+      'i18n/sorted-keys': 'error',
+    },
+  },
+
+  // JSON package is bash-based, exclude from ESLint
+  {
+    ignores: ['packages/json/**'],
+  },
+
 );

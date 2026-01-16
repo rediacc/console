@@ -1,0 +1,6 @@
+---
+// Redirect root to /en/ for clean language-aware architecture
+import { DEFAULT_LANGUAGE } from '../i18n/language-utils';
+
+return Astro.redirect(`/${DEFAULT_LANGUAGE}/`);
+---

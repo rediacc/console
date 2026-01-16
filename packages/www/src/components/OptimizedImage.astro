@@ -1,0 +1,77 @@
+---
+import { Image } from 'astro:assets';
+
+export interface Props {
+  src: ImageMetadata;
+  alt: string;
+  width?: number;
+  height?: number;
+  sizes?: string;
+  loading?: 'eager' | 'lazy';
+  class?: string;
+  clickable?: boolean;
+  priority?: boolean;
+  format?: 'webp' | 'avif' | 'png' | 'jpg';
+}
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
+  loading = 'lazy',
+  class: className = '',
+  clickable = false,
+  priority = false,
+  format = 'webp',
+} = Astro.props;
+
+const imageProps = {
+  src,
+  alt,
+  width,
+  height,
+  sizes,
+  loading: priority ? 'eager' : loading,
+  class: `optimized-image ${className} ${clickable ? 'clickable-image' : ''}`.trim(),
+  decoding: 'async' as const,
+  format,
+  quality: 85,
+};
+---
+
+{clickable ? (
+  <Image
+    {...imageProps}
+    onclick={`openImageModal('${src.src}', '${alt}')`}
+    role="button"
+    tabindex="0"
+    onkeydown="if(event.key==='Enter'||event.key===' '){this.click()}"
+  />
+) : (
+  <Image {...imageProps} />
+)}
+
+<style>
+.optimized-image {
+  max-width: 100%;
+  height: auto;
+}
+
+.clickable-image {
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.clickable-image:hover {
+  transform: scale(1.02);
+  opacity: 0.9;
+}
+
+.clickable-image:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+</style>

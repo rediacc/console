@@ -1,0 +1,76 @@
+---
+import type { Language } from '../i18n/types';
+import { EXTERNAL_LINKS } from '../config/constants';
+import { createTranslator } from '../i18n/utils';
+
+interface Props {
+  package: {
+    id: string;
+    name: string;
+    price: string;
+    turnaround: string;
+    description: string;
+    isPopular?: boolean;
+    icon: string;
+  };
+  lang: Language;
+}
+
+const { package: pkg, lang } = Astro.props;
+const { t, ta } = createTranslator(lang);
+---
+
+{(() => {
+  const benefits = ta(`pages.pricing.professionalServices.packages.${pkg.id}.benefits`);
+  return (
+    <div class={`service-package-card ${pkg.isPopular ? 'popular' : ''}`}>
+      {pkg.isPopular && <div class="popular-badge">{t('pages.pricing.ui.popular')}</div>}
+
+      <div class="package-icon">
+        <Fragment set:html={pkg.icon} />
+      </div>
+
+      <div class="package-header">
+        <h3>{pkg.name}</h3>
+        <p class="package-description">{pkg.description}</p>
+      </div>
+
+      <div class="package-pricing">
+        <div class="price-main">
+          <span class="price-from">{t('pages.pricing.ui.startingAt')}</span>
+          <span class="price-amount">{pkg.price}</span>
+        </div>
+        <div class="turnaround-time">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>{pkg.turnaround}</span>
+        </div>
+      </div>
+
+      <div class="package-benefits">
+        <h4>{t('pages.pricing.ui.keyBenefits')}</h4>
+        <ul>
+          {benefits.map((benefit) => (
+            <li>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span>{benefit}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="package-action">
+        <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+           target="_blank"
+           rel="noopener noreferrer"
+           class={`btn ${pkg.isPopular ? 'btn-primary' : 'btn-secondary'} btn-full-width`}>
+          {t('pages.pricing.ui.getStarted')}
+        </a>
+      </div>
+    </div>
+  );
+})()}

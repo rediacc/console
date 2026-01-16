@@ -1,0 +1,21 @@
+services:
+  couchdb:
+    image: couchdb:3
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: "${NETWORK_MODE:-bridge}"
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      COUCHDB_SECRET: ${COUCHDB_SECRET}
+    ports:
+      - "5984"
+    volumes:
+      - ./data:/opt/couchdb/data
+      - ./etc/local.d:/opt/couchdb/etc/local.d
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

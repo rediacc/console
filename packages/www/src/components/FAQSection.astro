@@ -1,0 +1,33 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
+  lang?: Language;
+}
+
+const { lang = 'en', faqs } = Astro.props;
+const { t, to } = createTranslator(lang);
+
+// Use provided FAQs or fall back to translations
+const faqData = faqs || to('pages.pricing.faq.items');
+---
+
+<section class="faq-section section-light">
+  <div class="container">
+    <h2>{t('pages.pricing.faq.heading')}</h2>
+
+    <div class="faq-grid">
+      {faqData.map((faq) => (
+        <details class="faq-item">
+          <summary>{faq.question}</summary>
+          <p>{faq.answer}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>

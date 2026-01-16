@@ -1,0 +1,125 @@
+/* Language Switcher Shared Styles */
+
+/* Generic Language Selector */
+.language-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.language-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  color: #666;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.language-trigger:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.2);
+  color: #333;
+}
+
+.language-trigger:active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.language-flag {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.language-chevron {
+  transition: transform 0.2s ease;
+}
+
+.language-chevron.open {
+  transform: rotate(180deg);
+}
+
+.language-menu {
+  position: absolute;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 150px;
+}
+
+/* Top positioned menu (for navigation) */
+.language-menu.top {
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+}
+
+/* Bottom positioned menu (for footer) */
+.language-menu.bottom {
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.5rem;
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #666;
+  text-align: left;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-family: inherit;
+}
+
+.language-option:hover {
+  background-color: #f8f8f8;
+}
+
+.language-option.active {
+  background-color: #f0f0f0;
+  color: #0066cc;
+  font-weight: 600;
+}
+
+.language-option .flag {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.language-option .checkmark {
+  margin-left: auto;
+  color: #0066cc;
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .language-trigger {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .language-option {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .language-menu {
+    min-width: 140px;
+  }
+}

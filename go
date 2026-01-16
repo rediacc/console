@@ -462,25 +462,25 @@ function desktop() {
 # Function to create release package
 function release() {
   echo "Creating release build..."
-  
+
   # Create bin directory if it doesn't exist
   BIN_DIR="$ROOT_DIR/bin"
-  
+
   # Clean up bin directory
   echo "Cleaning up bin directory..."
   rm -rf "$BIN_DIR"
   mkdir -p "$BIN_DIR"
-  
+
   # Build the application first
   build
-  
+
   # Get version from package.json
   VERSION=$(node -p "require('./package.json').version")
-  
+
   # Copy built files from workspace package
   echo "Copying build files to bin..."
   cp -r "$ROOT_DIR/packages/web/dist/"* "$BIN_DIR/"
-  
+
   # Create version info file
   echo "{
   \"version\": \"${VERSION}\",
@@ -489,18 +489,18 @@ function release() {
   \"gitCommit\": \"$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')\",
   \"environment\": \"production\"
 }" > "$BIN_DIR/version.json"
-  
+
   # Create deployment config template
   echo "{
   \"apiUrl\": \"http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api\",
   \"environment\": \"production\"
 }" > "$BIN_DIR/config.template.json"
-  
+
   echo ""
   echo "Release build created successfully!"
   echo "Version: ${VERSION}"
   echo "Files copied to: $BIN_DIR"
-  
+
   # Copy to root bin/html/console for nginx serving
   echo "Copying to root bin/html/console directory for nginx..."
   ROOT_BIN="$ROOT_DIR/../bin/html/console"
@@ -510,6 +510,33 @@ function release() {
   # Copy all files to root bin/html/console
   cp -r "$BIN_DIR/"* "$ROOT_BIN/"
   echo "Files also copied to: $ROOT_BIN"
+
+  # Build www (Astro marketing site) if it exists
+  if [ -d "$ROOT_DIR/packages/www" ]; then
+    echo ""
+    echo "Building www (Astro marketing site)..."
+    (cd "$ROOT_DIR/packages/www" && npm run build)
+    # Copy www build to root bin/html (serves at root path)
+    ROOT_HTML="$ROOT_DIR/../bin/html"
+    if [ -d "$ROOT_DIR/packages/www/dist" ]; then
+      echo "Copying www build to: $ROOT_HTML"
+      cp -r "$ROOT_DIR/packages/www/dist/"* "$ROOT_HTML/"
+    fi
+  fi
+
+  # Build json (template catalog) if it exists
+  if [ -d "$ROOT_DIR/packages/json" ]; then
+    echo ""
+    echo "Building json (template catalog)..."
+    (cd "$ROOT_DIR/packages/json" && ./generate.sh)
+    # Copy json build to root bin/html/json
+    ROOT_JSON="$ROOT_DIR/../bin/html/json"
+    mkdir -p "$ROOT_JSON"
+    if [ -d "$ROOT_DIR/packages/json/dist" ]; then
+      echo "Copying json build to: $ROOT_JSON"
+      cp -r "$ROOT_DIR/packages/json/dist/"* "$ROOT_JSON/"
+    fi
+  fi
 }
 
 # Function to setup development environment

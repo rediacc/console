@@ -1,0 +1,67 @@
+---
+import { getCollection } from 'astro:content';
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+
+export async function getStaticPaths() {
+  const docs = await getCollection('docs');
+  const allDocs = await getCollection('docs');
+
+  const paths = [];
+
+  // Generate paths for each doc in each language
+  for (const doc of docs) {
+    const lang = (doc.data.language || DEFAULT_LANGUAGE) as Language;
+
+    // Extract just the slug without language prefix (e.g., "es/cli-ref" -> "cli-ref")
+    const slugParts = doc.slug.split('/');
+    const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : doc.slug;
+
+    // Find all translations of this doc (match by base slug)
+    const translations = allDocs
+      .filter((d) => {
+        const dSlugParts = d.slug.split('/');
+        const dBaseSlug = dSlugParts.length > 1 ? dSlugParts[dSlugParts.length - 1] : d.slug;
+        return dBaseSlug === baseSlug;
+      })
+      .map((d) => ({
+        lang: (d.data.language || DEFAULT_LANGUAGE) as Language,
+        url: `/${d.data.language || DEFAULT_LANGUAGE}/docs/${baseSlug}`,
+      }));
+
+    paths.push({
+      params: { lang, slug: baseSlug },
+      props: { doc, allDocs, translations },
+    });
+  }
+
+  return paths;
+}
+
+const { doc, allDocs, translations } = Astro.props as {
+  doc: any;
+  allDocs: any[];
+  translations: Array<{ lang: Language; url: string }>;
+};
+
+const { Content } = await doc.render();
+const currentLang = (doc.data.language || DEFAULT_LANGUAGE) as Language;
+
+// Extract base slug without language prefix (e.g., "en/queue-system" -> "queue-system")
+const slugParts = doc.slug.split('/');
+const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : doc.slug;
+
+// Check if this is a fallback (English content shown for Spanish request)
+const isFallback = Astro.params.lang !== currentLang;
+---
+
+<DocsLayout
+  frontmatter={doc.data}
+  url={`/${Astro.params.lang}/docs/${baseSlug}`}
+  currentLang={Astro.params.lang as Language}
+  availableLanguages={translations}
+  showFallbackNotice={isFallback}
+>
+  <Content />
+</DocsLayout>

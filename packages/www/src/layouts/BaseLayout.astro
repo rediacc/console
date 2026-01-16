@@ -1,0 +1,344 @@
+---
+import Navigation from '../components/Navigation';
+import Footer from '../components/Footer';
+import StructuredData from '../components/StructuredData.astro';
+import { createTranslator } from '../i18n/utils';
+import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
+import type { Language } from '../i18n/types';
+import { ViewTransitions } from 'astro:transitions';
+
+export interface Props {
+  title: string;
+  description?: string;
+  keywords?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  ogType?: string;
+  structuredDataType?: 'organization' | 'website' | 'service' | 'breadcrumb';
+  structuredData?: any;
+  robots?: string;
+  canonical?: string;
+  lang?: Language;
+}
+
+const {
+  title,
+  description,
+  keywords,
+  ogTitle = title,
+  ogDescription,
+  ogImage = `${Astro.site}favicon.svg`,
+  ogType = "website",
+  structuredDataType = "organization",
+  structuredData = {},
+  robots = "index, follow",
+  canonical,
+  lang
+} = Astro.props;
+
+// Detect language from URL or use provided lang prop
+const currentLang = lang || getLanguageFromPath(Astro.url.pathname);
+const { t } = createTranslator(currentLang);
+
+// Locale mapping for Open Graph and hreflang
+const LOCALE_MAPPING: Record<Language, string> = {
+  en: 'en_US',
+  de: 'de_DE',
+  es: 'es_ES',
+  fr: 'fr_FR',
+  ja: 'ja_JP',
+  ar: 'ar_SA',
+  ru: 'ru_RU',
+  tr: 'tr_TR',
+  zh: 'zh_CN'
+};
+
+// Set descriptions with fallback to defaults
+const finalDescription = description || t('layout.meta.defaultDescription');
+const finalKeywords = keywords || t('layout.meta.defaultKeywords');
+const finalOgDescription = ogDescription || finalDescription;
+
+// Use current origin in development, production site in build
+const baseURL = import.meta.env.DEV ? Astro.url.origin : Astro.site;
+const canonicalURL = canonical ? canonical : new URL(Astro.url.pathname, baseURL);
+const isHomePage = Astro.url.pathname === '/' || Astro.url.pathname === `/${currentLang}/`;
+
+// Get path without language prefix for generating alternate language links
+const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
+---
+
+<!DOCTYPE html>
+<html lang={currentLang}>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content={finalDescription}>
+    <meta name="keywords" content={finalKeywords}>
+    <meta name="author" content={t('layout.meta.author')}>
+    <meta name="robots" content={robots}>
+    <meta name="theme-color" content="#667eea">
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={ogType}>
+    <meta property="og:title" content={ogTitle}>
+    <meta property="og:description" content={finalOgDescription}>
+    <meta property="og:image" content={ogImage}>
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content={canonicalURL}>
+    <meta property="og:site_name" content={t('layout.meta.siteName')}>
+    <meta property="og:locale" content={LOCALE_MAPPING[currentLang]}>
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content={ogTitle}>
+    <meta name="twitter:description" content={ogDescription}>
+    <meta name="twitter:image" content={ogImage}>
+    <meta name="twitter:site" content={t('layout.meta.twitter.site')}>
+    <meta name="twitter:creator" content={t('layout.meta.twitter.creator')}>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href={canonicalURL}>
+
+    <!-- RSS Feed Autodiscovery -->
+    <link rel="alternate" type="application/rss+xml" title={`Rediacc Blog - ${currentLang.toUpperCase()}`} href={`/${currentLang}/rss.xml`} />
+
+    <!-- Alternate Language Links (hreflang) -->
+    {SUPPORTED_LANGUAGES.map((lang) => {
+      // Generate proper language-specific URLs for all languages
+      const langPath = lang === 'en' ? pathWithoutLang : `/${lang}${pathWithoutLang}`;
+      const fullUrl = new URL(langPath, baseURL).toString();
+      return (
+        <link rel="alternate" hreflang={lang} href={fullUrl} />
+      );
+    })}
+    <!-- Default language fallback (always English) -->
+    <link rel="alternate" hreflang="x-default" href={new URL(pathWithoutLang, baseURL).toString()} />
+
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <!-- Fallback for browsers that don't support SVG favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="32x32">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="16x16">
+    <!-- Apple touch icon fallback to SVG until PNG is generated -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <title>{title}</title>
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/styles/main.css" as="style">
+    <link rel="preload" href="/styles/responsive.css" as="style">
+    <link rel="dns-prefetch" href="//plausible.rediacc.com">
+    <link rel="preconnect" href="https://plausible.rediacc.com" crossorigin>
+
+    <!-- Structured Data -->
+    <StructuredData type={structuredDataType} data={structuredData} />
+    {isHomePage && <StructuredData type="website" />}
+    {isHomePage && <StructuredData type="service" />}
+    {isHomePage && <StructuredData type="sitenavigation" />}
+
+    <!-- View Transitions for smooth navigation -->
+    <ViewTransitions />
+
+    <!-- Language Cookie Redirect Script (runs early to prevent flash) -->
+    <script is:inline define:vars={{ currentLang, pathWithoutLang, SUPPORTED_LANGUAGES }}>
+      (function() {
+        // Get language cookie
+        function getLanguageCookie() {
+          const cookies = document.cookie.split(';');
+          for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'rediacc_lang') {
+              return decodeURIComponent(value);
+            }
+          }
+          return null;
+        }
+
+        // Only redirect if cookie language differs from current URL language
+        const cookieLang = getLanguageCookie();
+        if (cookieLang && cookieLang !== currentLang && SUPPORTED_LANGUAGES.includes(cookieLang)) {
+          // Build new URL with cookie language
+          const newPath = cookieLang === 'en' ? pathWithoutLang : `/${cookieLang}${pathWithoutLang}`;
+
+          // Redirect to the preferred language
+          window.location.href = newPath;
+        }
+      })();
+    </script>
+
+    <!-- Custom head content from pages -->
+    <slot name="head" />
+
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script async src="https://plausible.rediacc.com/js/pa-QD2nMPajNQtoHBoHdMBpP.js"></script>
+    <script>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+      plausible.init()
+    </script>
+
+    <!-- Critical CSS loaded first -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/responsive.css">
+    <!-- Non-critical CSS loaded with lower priority -->
+    <link rel="stylesheet" href="/styles/search-modal.css" media="print" onload="this.media='all'; this.onload=null;">
+
+    <!-- Skip Navigation Styles -->
+    <style>
+      .skip-nav {
+        position: absolute;
+        top: -100px;
+        left: 0;
+        z-index: 9999;
+      }
+
+      .skip-nav-link {
+        position: absolute;
+        top: -100px;
+        left: 6px;
+        background: #000;
+        color: #fff;
+        padding: 8px 16px;
+        text-decoration: none;
+        font-size: 14px;
+        border-radius: 0 0 4px 4px;
+        transition: top 0.3s ease;
+        border: 2px solid #fff;
+      }
+
+      .skip-nav-link:focus {
+        top: 0;
+        outline: none;
+      }
+
+      .skip-nav-link:hover:focus {
+        background: #333;
+      }
+    </style>
+
+    <!-- Critical CSS for above-the-fold content -->
+    <style>
+      /* Critical CSS Variables */
+      :root {
+        --color-bg: #F7F7F8;
+        --color-bg-alt: #FFFFFF;
+        --color-text: #1A1A1A;
+        --color-text-secondary: #6E6E73;
+        --color-border: #D2D2D7;
+        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
+        --font-size-base: 1rem;
+        --font-size-4xl: 3rem;
+        --space-4: 1rem;
+        --space-6: 1.5rem;
+        --space-20: 5rem;
+        --space-24: 6rem;
+        --max-width: 1200px;
+        --nav-height: 3.5rem;
+      }
+
+      /* Critical Base Styles */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-family);
+        font-size: var(--font-size-base);
+        line-height: 1.6;
+        color: var(--color-text);
+        background-color: var(--color-bg-alt);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Container */
+      .container {
+        width: 100%;
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 var(--space-4);
+      }
+
+      /* Critical Navigation Styles */
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--color-bg-alt);
+        z-index: 100;
+      }
+
+      .nav-container {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 var(--space-4);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: var(--nav-height);
+      }
+
+      .nav-brand .logo {
+        height: 1.5rem;
+        width: auto;
+      }
+
+      /* Main Content */
+      main {
+        padding-top: 0;
+      }
+
+      /* Critical Hero Styles */
+      .hero {
+        padding: var(--space-24) 0 var(--space-20);
+        background-color: var(--color-bg-alt);
+      }
+
+      .hero-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 var(--space-4);
+        text-align: center;
+      }
+
+      .hero-title {
+        font-size: var(--font-size-4xl);
+        font-weight: 600;
+        line-height: 1.1;
+        color: var(--color-text);
+        margin-bottom: var(--space-6);
+      }
+
+      .hero-highlight {
+        color: var(--color-text);
+      }
+    </style>
+</head>
+<body>
+    <!-- Skip Navigation Links for Accessibility -->
+    <div class="skip-nav">
+      <a href="#main-content" class="skip-nav-link">{t('common.skipNavigation.skipToMainContent')}</a>
+      <a href="#navigation" class="skip-nav-link">{t('common.skipNavigation.skipToNavigation')}</a>
+      <a href="#footer" class="skip-nav-link">{t('common.skipNavigation.skipToFooter')}</a>
+    </div>
+
+    <Navigation origin={Astro.url.origin} client:idle />
+    <main id="main-content">
+        <slot />
+    </main>
+    <Footer client:visible />
+    <script src="/scripts/main.js" is:inline></script>
+    <script src="/scripts/search-hotkey.js" is:inline></script>
+</body>
+</html>

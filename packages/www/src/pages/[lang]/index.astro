@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Hero from '../../components/Hero';
+import Solutions from '../../components/Solutions';
+import { createTranslator } from '../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.home.meta.title')}
+  description={t('pages.home.meta.description')}
+  keywords={t('pages.home.meta.keywords')}
+  ogType="website"
+  structuredDataType="organization"
+>
+  <Hero client:idle lang={lang} origin={Astro.url.origin} />
+  <Solutions client:visible lang={lang} />
+
+  <!-- Success/Error Messages -->
+  <div class="message-overlay" id="message-overlay" role="dialog" aria-hidden="true">
+    <div class="message-content">
+      <div class="message-icon" id="message-icon"></div>
+      <h3 class="message-title" id="message-title" aria-label={t('common.aria.statusMessage')}></h3>
+      <p class="message-text" id="message-text"></p>
+      <button class="btn btn-secondary" id="message-close">{t('common.buttons.close')}</button>
+    </div>
+  </div>
+
+  <!-- Image Modal -->
+  <div class="image-modal" id="image-modal" role="dialog" aria-hidden="true" onclick="closeImageModal()">
+    <div class="image-modal-content" onclick="event.stopPropagation()">
+      <button class="image-modal-close" onclick="closeImageModal()" aria-label={t('common.aria.closeImageModal')}>&times;</button>
+      <button class="nav-btn nav-prev" onclick="previousImage()" aria-label={t('common.aria.previousImage')}>‹</button>
+      <button class="nav-btn nav-next" onclick="nextImage()" aria-label={t('common.aria.nextImage')}>›</button>
+      <div class="zoom-controls">
+        <button class="zoom-btn zoom-in" onclick="zoomIn()" aria-label={t('common.aria.zoomIn')}>+</button>
+        <button class="zoom-btn zoom-out" onclick="zoomOut()" aria-label={t('common.aria.zoomOut')}>−</button>
+        <button class="zoom-btn zoom-reset" onclick="resetZoom()" aria-label={t('common.aria.resetZoom')}>⌂</button>
+      </div>
+      <div class="image-container">
+        <img id="modal-image" src="" alt="" class="modal-image">
+      </div>
+      <div class="image-indicator">
+        <span class="indicator-text" id="image-indicator">1 / 2</span>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

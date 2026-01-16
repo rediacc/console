@@ -25,6 +25,9 @@ packages/desktop/*.js
 packages/desktop/*.d.ts
 packages/desktop/out/
 
+# Astro cache
+.astro/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

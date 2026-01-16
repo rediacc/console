@@ -1,0 +1,458 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import { EXTERNAL_LINKS } from '../../config/constants';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+
+const values = [
+  { key: 'simplicity', title: 'Simplicity First', description: 'Complex problems don\'t require complex solutions. We obsess over making powerful features simple to use.' },
+  { key: 'security', title: 'Security by Design', description: 'Security isn\'t an afterthought—it\'s built into every line of code, every feature, every decision we make.' },
+  { key: 'success', title: 'Customer Success', description: 'Your success is our success. We\'re not happy unless you\'re achieving extraordinary results with our platform.' },
+  { key: 'innovation', title: 'Continuous Innovation', description: 'The tech world never stops evolving, and neither do we. We\'re always pushing boundaries and exploring new possibilities.' },
+  { key: 'global', title: 'Global Thinking', description: 'Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations.' },
+  { key: 'transparency', title: 'Transparency', description: 'Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print.' }
+];
+
+const teamMembers = [
+  {
+    name: 'Muhammed Fatih Bayraktar',
+    role: 'Founder',
+    image: '/assets/images/profiles/mfb.jpeg',
+    linkedin: 'https://www.linkedin.com/in/muhammed-fatih-bayraktar/'
+  },
+  {
+    name: 'Hamza Özsaraç',
+    role: 'Full Stack Developer',
+    image: '/assets/images/profiles/hmz.jpeg',
+    linkedin: 'https://www.linkedin.com/in/hamza-ozsarac/'
+  },
+  {
+    name: 'Hasan Anıl Kartal',
+    role: 'Software Test & Quality Expert',
+    image: '/assets/images/profiles/hak.jpeg',
+    linkedin: 'https://www.linkedin.com/in/hasananilkartal/'
+  },
+  {
+    name: 'Ömer İ.',
+    role: 'Software Developer',
+    image: '/assets/images/profiles/oi.jpeg',
+    linkedin: null
+  },
+  {
+    name: 'Yüksel Demirel',
+    role: 'System And DevOps Engineer',
+    image: '/assets/images/profiles/yd.jpeg',
+    linkedin: 'https://www.linkedin.com/in/yüksel-demirel-92065749/'
+  }
+];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.team.meta.title')}
+  description={t('pages.team.meta.description')}
+  keywords={t('pages.team.meta.keywords')}
+  ogType="website"
+  structuredDataType="organization"
+  structuredData={{
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Rediacc',
+    description: t('pages.team.meta.description'),
+    foundingDate: '2024',
+    founders: [{
+      '@type': 'Person',
+      name: 'Muhammed Fatih Bayraktar'
+    }]
+  }}
+>
+  <article class="team-page">
+    <!-- Hero Section -->
+    <section id="about" class="team-hero">
+      <div class="container">
+        <h1>{t('pages.team.hero.title')}</h1>
+        <p class="hero-subtitle">{t('pages.team.hero.subtitle')}</p>
+      </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="team-section">
+      <div class="container">
+        <h2>{t('pages.team.team.title')}</h2>
+
+        <div class="team-grid">
+          {teamMembers.map((member) => (
+            <div class="team-member">
+              <div class="member-image">
+                <img
+                  src={member.image}
+                  alt={member.name}
+                  loading="lazy"
+                />
+              </div>
+              <h3>{member.name}</h3>
+              <p class="member-role">{member.role}</p>
+              {member.linkedin && (
+                <a
+                  href={member.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="member-linkedin"
+                  aria-label={`LinkedIn profile of ${member.name}`}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section id="mission" class="mission-section">
+      <div class="container">
+        <div class="mission-content">
+          <h2>{t('pages.team.mission.title')}</h2>
+          <p class="mission-text">{t('pages.team.mission.description')}</p>
+          <p class="mission-belief">{t('pages.team.mission.belief')}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Values Section -->
+    <section id="values" class="values-section">
+      <div class="container">
+        <h2>{t('pages.team.values.title')}</h2>
+
+        <div class="values-grid">
+          {values.map((value) => (
+            <div class="value-card">
+              <h3>{value.title}</h3>
+              <p>{value.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Story Section -->
+    <section id="story" class="story-section">
+      <div class="container">
+        <div class="story-content">
+          <h2>{t('pages.team.story.title')}</h2>
+
+          <div class="story-chapter">
+            <h3>{t('pages.team.story.beginning.title')}</h3>
+            <p>{t('pages.team.story.beginning.paragraph1')}</p>
+            <p>{t('pages.team.story.beginning.paragraph2')}</p>
+            <p>{t('pages.team.story.beginning.paragraph3')}</p>
+          </div>
+
+          <div class="story-chapter">
+            <h3>{t('pages.team.story.turningPoint.title')}</h3>
+            <p>{t('pages.team.story.turningPoint.paragraph1')}</p>
+            <p>{t('pages.team.story.turningPoint.paragraph2')}</p>
+            <p>{t('pages.team.story.turningPoint.paragraph3')}</p>
+          </div>
+
+          <div class="story-chapter">
+            <h3>{t('pages.team.story.birth.title')}</h3>
+            <p>{t('pages.team.story.birth.paragraph1')}</p>
+            <p>{t('pages.team.story.birth.paragraph2')}</p>
+
+            <blockquote class="story-quote">
+              {t('pages.team.story.birth.quote')}
+            </blockquote>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="contact-us" class="team-cta">
+      <div class="container">
+        <h2>{t('pages.team.cta.title')}</h2>
+        <p>{t('pages.team.cta.subtitle')}</p>
+        <div class="cta-actions">
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+            {t('pages.team.cta.buttons.contact')}
+          </a>
+          <a href={`/${lang}/`} class="btn btn-secondary">
+            {t('pages.team.cta.buttons.learnMore')}
+          </a>
+        </div>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+.team-page {
+  color: var(--text-primary);
+}
+
+/* Hero Section */
+.team-hero {
+  padding: var(--space-20) 0 var(--space-12);
+  background: var(--background-alt);
+  border-bottom: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.team-hero h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: bold;
+  margin-bottom: var(--space-6);
+  color: var(--text-primary);
+}
+
+.hero-subtitle {
+  font-size: var(--font-size-xl);
+  color: var(--text-secondary);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Team Section */
+.team-section {
+  padding: var(--space-16) 0;
+  background: var(--background-primary);
+}
+
+.team-section h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-12);
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-12);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.team-member {
+  text-align: center;
+}
+
+.member-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  margin: 0 auto var(--space-4);
+  overflow: hidden;
+  border: 4px solid var(--primary-light);
+  background: var(--background-alt);
+}
+
+.member-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.team-member h3 {
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.member-role {
+  color: var(--primary-color);
+  margin-bottom: var(--space-4);
+  font-weight: 600;
+}
+
+.member-linkedin {
+  display: inline-flex;
+  color: var(--primary-color);
+  transition: color 0.2s;
+}
+
+.member-linkedin:hover {
+  color: var(--primary-dark);
+}
+
+/* Mission Section */
+.mission-section {
+  padding: var(--space-16) 0;
+  background: var(--background-alt);
+}
+
+.mission-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.mission-section h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-8);
+  color: var(--text-primary);
+}
+
+.mission-text {
+  font-size: var(--font-size-xl);
+  line-height: 1.8;
+  margin-bottom: var(--space-8);
+  color: var(--text-primary);
+}
+
+.mission-belief {
+  font-size: var(--font-size-lg);
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+/* Values Section */
+.values-section {
+  padding: var(--space-16) 0;
+  background: var(--background-primary);
+}
+
+.values-section h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-12);
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-8);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.value-card {
+  padding: var(--space-6);
+  background: var(--background-alt);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.value-card h3 {
+  margin-bottom: var(--space-4);
+  color: var(--primary-color);
+}
+
+.value-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Story Section */
+.story-section {
+  padding: var(--space-16) 0;
+  background: var(--background-alt);
+}
+
+.story-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.story-section h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-8);
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.story-chapter {
+  margin-bottom: var(--space-8);
+}
+
+.story-chapter h3 {
+  margin-bottom: var(--space-4);
+  margin-top: var(--space-8);
+  color: var(--primary-color);
+  font-size: var(--font-size-xl);
+}
+
+.story-chapter p {
+  margin-bottom: var(--space-6);
+  line-height: 1.8;
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+}
+
+.story-quote {
+  border-left: 4px solid var(--primary-color);
+  padding-left: var(--space-6);
+  margin: var(--space-8) 0;
+  font-style: italic;
+  font-size: var(--font-size-xl);
+  color: var(--primary-color);
+}
+
+/* CTA Section */
+.team-cta {
+  padding: var(--space-16) 0;
+  background: var(--background-primary);
+  text-align: center;
+  border-top: 1px solid var(--border-color);
+}
+
+.team-cta h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-6);
+  color: var(--text-primary);
+}
+
+.team-cta p {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-8);
+  color: var(--text-secondary);
+}
+
+.cta-actions {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .team-hero h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .hero-subtitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .story-section h2,
+  .mission-section h2,
+  .values-section h2,
+  .team-cta h2 {
+    font-size: var(--font-size-2xl);
+  }
+}
+</style>

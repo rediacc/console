@@ -1,0 +1,49 @@
+---
+import { Image } from 'astro:assets';
+import type { Language } from '../i18n/types';
+import { EXTERNAL_LINKS } from '../config/constants';
+
+export interface Props {
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonHref?: string;
+  imageSrc: ImageMetadata;
+  imageAlt: string;
+  lang?: Language;
+}
+
+const {
+  title,
+  subtitle,
+  buttonText,
+  buttonHref,
+  imageSrc,
+  imageAlt,
+  lang = 'en'
+} = Astro.props;
+
+const ctaLink = buttonHref || EXTERNAL_LINKS.SCHEDULE_CONSULTATION;
+---
+
+<section id="get-started" class="solution-cta">
+  <div class="container">
+    <div class="cta-grid">
+      <div class="cta-image">
+        <Image
+          src={imageSrc}
+          alt={imageAlt}
+          loading="lazy"
+          quality={90}
+        />
+      </div>
+      <div class="cta-content">
+        <h2 class="cta-title">{title}</h2>
+        <p class="cta-subtitle">{subtitle}</p>
+        <a href={ctaLink} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large">
+          {buttonText}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

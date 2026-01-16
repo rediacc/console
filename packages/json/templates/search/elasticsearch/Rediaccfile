@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+    echo "Pulling Elasticsearch and Kibana images..."
+    docker pull elasticsearch:8.11.0
+    docker pull kibana:8.11.0
+
+    echo "Creating data directory..."
+    mkdir -p ./data
+    chmod 755 ./data
+
+    return $?
+}
+
+up() {
+    if [ -f .env ]; then
+        source .env
+    fi
+
+    echo "Starting Elasticsearch cluster..."
+    _compose up -d
+
+    echo "Waiting for Elasticsearch to be ready..."
+    sleep 30
+
+    echo "Elasticsearch is running on port ${ES_PORT:-9200}"
+    echo "Kibana is available at http://localhost:${KIBANA_PORT:-5601}"
+
+    return $?
+}
+
+down() {
+    echo "Stopping Elasticsearch cluster..."
+    _compose down -v
+    return $?
+}

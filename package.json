@@ -1,6 +1,6 @@
 {
   "name": "rediacc-console",
-  "version": "0.4.19",
+  "version": "0.4.20",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -10,13 +10,18 @@
     "packages/web",
     "packages/desktop",
     "packages/e2e",
-    "packages/bridge-tests"
+    "packages/bridge-tests",
+    "packages/www",
+    "packages/json"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli && npm run build:web",
     "build:cli": "npm run build -w @rediacc/cli",
     "build:packages": "npm run build -w @rediacc/shared && npm run build -w @rediacc/shared-desktop",
     "build:web": "npm run build -w @rediacc/web",
+    "build:www": "npm run build -w @rediacc/www",
+    "build:json": "npm run build -w @rediacc/json",
+    "build:all-sites": "npm run build:www && npm run build:json && npm run build:web",
     "check:format": "biome format packages/",
     "check:i18n": "node scripts/check-translation-hashes.js && node scripts/check-translation-completeness.js",
     "check:i18n:completeness": "node scripts/check-translation-completeness.js",

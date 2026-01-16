@@ -36,30 +36,60 @@ test.describe('Team Trace Tests', () => {
     await nav.goToOrganizationUsers();
 
     // Ensure drawer is closed after navigation (critical for mobile/tablet)
+    console.warn('[User Trace Test] Ensuring drawer is closed after navigation');
     await ensureDrawerIsClosed(page);
+    console.warn('[User Trace Test] Drawer closed, proceeding with user verification');
 
     const verifyUserVisible = async (): Promise<boolean> => {
       // Ensure drawer is closed before attempting to find user
       await ensureDrawerIsClosed(page);
+      
+      // Additional CI-specific wait for DOM stability
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
 
       const searchInput = page.getByTestId('resource-list-search');
       if (await searchInput.isVisible().catch(() => false)) {
         await searchInput.fill('');
         await searchInput.fill(createdUser.email);
         await searchInput.press('Enter');
+        // Wait for search results to update
+        await page.waitForLoadState('networkidle').catch(() => {});
       }
+      
+      // Check both list and table views with multiple strategies
       const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));
       if (await listItem.isVisible().catch(() => false)) {
         return true;
       }
+      
+      // Try table view with more flexible visibility check
       const userTable = page.getByTestId(UserPageIDs.systemUserTable);
-      return await userTable
-        .getByText(createdUser.email, { exact: true })
-        .isVisible()
-        .catch(() => false);
+      if (await userTable.isVisible().catch(() => false)) {
+        const emailCell = userTable.getByText(createdUser.email, { exact: true });
+        if (await emailCell.isVisible().catch(() => false)) {
+          return true;
+        }
+        // Also try scrolling the email into view
+        try {
+          await emailCell.scrollIntoViewIfNeeded().catch(() => {});
+          return await emailCell.isVisible().catch(() => false);
+        } catch {
+          return false;
+        }
+      }
+      
+      return false;
     };
 
-    await expect.poll(async () => verifyUserVisible(), { timeout: 15000 }).toBe(true);
+    // Add extra wait for CI environment stability
+    await page.waitForLoadState('networkidle').catch(() => {});
+    console.warn('[User Trace Test] Starting user visibility verification');
+    await expect.poll(async () => {
+      const result = await verifyUserVisible();
+      console.warn(`[User Trace Test] User visibility check result: ${result}`);
+      return result;
+    }, { timeout: 15000, intervals: [1000, 2000, 3000, 5000] }).toBe(true);
+    console.warn('[User Trace Test] User visibility verification passed');
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');
 
