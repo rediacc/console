@@ -60,10 +60,11 @@ setup('register user for e2e tests', async ({ page }) => {
   }
 
   // Submit registration and wait for verification step
+  // Note: Extended timeout (60s) for slower Windows runners and tunnel latency
   await page.locator('[data-testid="registration-submit-button"]').click();
   await page
     .locator('[data-testid="registration-activation-code-input"]')
-    .waitFor({ state: 'visible', timeout: 30000 });
+    .waitFor({ state: 'visible', timeout: 60000 });
 
   // Enter verification code (AAA111 in test mode)
   await page
