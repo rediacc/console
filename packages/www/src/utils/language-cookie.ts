@@ -22,7 +22,6 @@ const DEFAULT_OPTIONS: LanguageCookieOptions = {
   sameSite: 'Lax',
 };
 
-
 /**
  * Set language cookie
  */
@@ -62,4 +61,3 @@ export function setLanguageCookie(language: string, options: LanguageCookieOptio
 
   document.cookie = cookieString;
 }
-
