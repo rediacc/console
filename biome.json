@@ -63,7 +63,8 @@
       "!**/playwright-report/**",
       "!**/*.min.js",
       "!**/*.min.css",
-      "!**/*.generated.ts"
+      "!**/*.generated.ts",
+      "!**/*.astro"
     ],
     "ignoreUnknown": true
   },

@@ -1,8 +1,5 @@
 import type { BaseModalProps } from '@/types';
-import type {
-  GetTeamQueueItems_ResultSet1,
-  QueueTraceLog,
-} from '@rediacc/shared/types';
+import type { GetTeamQueueItems_ResultSet1, QueueTraceLog } from '@rediacc/shared/types';
 import type { Dayjs } from 'dayjs';
 
 export interface QueueItemTraceModalProps extends BaseModalProps {
