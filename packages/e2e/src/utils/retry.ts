@@ -13,6 +13,44 @@ const DEFAULT_OPTIONS: RetryOptions = {
 };
 
 /**
+ * Log retry attempt result.
+ */
+function logAttemptResult(
+  attempt: number,
+  maxRetries: number,
+  duration: number,
+  error?: unknown
+): void {
+  if (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[Retry] Attempt ${attempt}/${maxRetries} failed after ${duration}ms: ${message}`);
+  } else {
+    console.warn(`[Retry] Network idle achieved on attempt ${attempt} in ${duration}ms`);
+  }
+}
+
+/**
+ * Handle fallback selector on final attempt.
+ */
+async function handleFallback(
+  page: Page,
+  fallbackSelector: string | undefined,
+  timeout: number,
+  maxRetries: number
+): Promise<void> {
+  if (!fallbackSelector) {
+    console.warn(`[Retry] No fallback selector, throwing error`);
+    throw new Error(`Network idle failed after ${maxRetries} attempts`);
+  }
+
+  console.warn(
+    `[Retry] networkidle failed after ${maxRetries} attempts, falling back to selector: ${fallbackSelector}`
+  );
+  await page.locator(fallbackSelector).waitFor({ state: 'visible', timeout });
+  console.warn(`[Retry] Fallback selector found, continuing`);
+}
+
+/**
  * Wait for network idle with retry mechanism.
  * Falls back to a visible element check if networkidle keeps timing out.
  */
@@ -33,34 +71,17 @@ export async function waitForNetworkIdleWithRetry(
 
     try {
       await page.waitForLoadState('networkidle', { timeout });
-      const duration = Date.now() - attemptStart;
-      console.warn(`[Retry] Network idle achieved on attempt ${attempt} in ${duration}ms`);
+      logAttemptResult(attempt, maxRetries, Date.now() - attemptStart);
       return;
     } catch (error) {
-      const duration = Date.now() - attemptStart;
-      const isLastAttempt = attempt === maxRetries;
+      logAttemptResult(attempt, maxRetries, Date.now() - attemptStart, error);
 
-      console.warn(
-        `[Retry] Attempt ${attempt}/${maxRetries} failed after ${duration}ms: ${error instanceof Error ? error.message : String(error)}`
-      );
-
-      if (isLastAttempt) {
-        // On last attempt, try fallback selector if provided
-        if (fallbackSelector) {
-          console.warn(
-            `[Retry] networkidle failed after ${maxRetries} attempts, falling back to selector: ${fallbackSelector}`
-          );
-          await page.locator(fallbackSelector).waitFor({ state: 'visible', timeout });
-          console.warn(`[Retry] Fallback selector found, continuing`);
-          return;
-        }
-        console.warn(`[Retry] No fallback selector, throwing error`);
-        throw error;
+      if (attempt === maxRetries) {
+        await handleFallback(page, fallbackSelector, timeout, maxRetries);
+        return;
       }
 
-      console.warn(
-        `[Retry] networkidle attempt ${attempt}/${maxRetries} failed, retrying in ${retryDelay}ms...`
-      );
+      console.warn(`[Retry] Retrying in ${retryDelay}ms...`);
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
   }

@@ -114,6 +114,127 @@ jobs:
             console.log('Watchdog timeout reached (30 min) - exiting');
 
   # ============================================================================
+  # TEMPORARY FAST-TRACK JOBS (TODO: Remove after Windows debugging)
+  # ============================================================================
+  temp-backend:
+    name: TEMP - Backend Only
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
+    steps:
+      - name: Checkout Elite Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          repository: rediacc/elite
+          path: elite
+
+      - name: Checkout Console Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          path: console
+          submodules: true
+
+      - name: Pull Elite Docker Images
+        working-directory: elite
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          TAG: latest
+        run: ./action/ci-pull-images.sh
+
+      - name: Start Elite Services
+        uses: ./elite/action
+        with:
+          keep-alive: 'true'
+          ci-mode: 'true'
+
+      - name: Wait for Services
+        run: |
+          timeout 120 bash -c 'until curl -sf http://localhost/health; do sleep 2; done'
+          echo "Elite services are ready"
+
+      - name: Create Cloudflare Tunnel
+        id: tunnel
+        uses: rediacc/action-cloudflare-tunnel@v1
+        with:
+          url: http://localhost
+          timeout: 60
+
+      - name: Verify Tunnel
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..20}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "Tunnel verified"
+              exit 0
+            fi
+            sleep 3
+          done
+          exit 1
+
+      - name: Upload Tunnel URL
+        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: tunnel-url
+          path: ${{ runner.temp }}/tunnel-url.txt
+          retention-days: 3
+
+  temp-windows-e2e:
+    name: TEMP - Windows E2E Only
+    runs-on: windows-latest
+    needs: [temp-backend]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh --ignore-scripts
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - name: Build desktop
+        working-directory: packages/desktop
+        run: npm run build
+      - name: Install Playwright
+        working-directory: packages/e2e
+        run: npx playwright install chromium
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+        shell: bash
+      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
+        shell: bash
+      - name: Run Electron E2E Tests (Windows x64)
+        working-directory: packages/e2e
+        run: npx playwright test --project=electron-windows-x64
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "temp-windows-e2e"
+        shell: bash
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-complete-temp-windows-e2e
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: failure()
+        with:
+          name: playwright-results-temp-windows-x64
+          path: packages/e2e/playwright-report/
+          retention-days: 3
+
+  # ============================================================================
   # TIER 2: PR VALIDATION (PR-only, no dependencies)
   # ============================================================================
   pr-title:
