@@ -193,7 +193,6 @@ jobs:
   temp-windows-debug:
     name: TEMP - Windows E2E Debug
     runs-on: windows-latest
-    needs: [temp-backend]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -211,6 +210,21 @@ jobs:
       - name: Install Playwright
         working-directory: packages/e2e
         run: npx playwright install chromium
+      - name: Wait for Tunnel URL artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          echo "Waiting for tunnel-url artifact to be uploaded by temp-backend..."
+          for i in {1..60}; do
+            if gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[] | select(.name == "tunnel-url")' | grep -q tunnel-url; then
+              echo "Tunnel URL artifact found!"
+              sleep 5  # Wait a bit more for artifact to be fully uploaded
+              break
+            fi
+            echo "Attempt $i/60: Artifact not ready yet, waiting 5s..."
+            sleep 5
+          done
       - name: Download Tunnel URL
         id: tunnel
         env:
