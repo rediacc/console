@@ -86,23 +86,6 @@ function getTranslationArray(lang: Language, key: string): string[] {
 }
 
 /**
- * Get an object of translations
- * @param lang - Language code
- * @param key - Translation key pointing to an object
- * @returns Object with translations or empty object if not found
- */
-function getTranslationObject(lang: Language, key: string): Record<string, unknown> {
-  const translation = getNestedValue(translations[lang], key);
-
-  if (typeof translation !== 'object' || translation === null) {
-    console.warn(`Translation key "${key}" does not point to an object`);
-    return {};
-  }
-
-  return translation as Record<string, unknown>;
-}
-
-/**
  * Create a translation function bound to a specific language
  * Useful for Astro pages and server-side code
  */

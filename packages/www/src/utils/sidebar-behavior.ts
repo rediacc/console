@@ -7,17 +7,6 @@
  * - Active state tracking
  */
 
-interface WindowWithSidebarInit extends Window {
-  rediaccDocsSidebarInitialized?: boolean;
-}
-
-interface CategoryDataset extends DOMStringMap {
-  initialized?: string;
-  category?: string;
-  itemCount?: string;
-  isActive?: string;
-}
-
 /**
  * Represents a heading for table of contents
  */

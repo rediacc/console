@@ -1,13 +1,5 @@
 import type { Language } from './types';
 
-interface CollectionEntry {
-  slug: string;
-  collection: string;
-  data: {
-    language?: Language;
-  };
-}
-
 export const SUPPORTED_LANGUAGES: Language[] = [
   'en',
   'de',
