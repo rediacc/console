@@ -60,11 +60,12 @@ setup('register user for e2e tests', async ({ page }) => {
   }
 
   // Submit registration and wait for verification step
-  // Note: Extended timeout (60s) for slower Windows runners and tunnel latency
+  // Note: Extended timeout (90s) for Windows Cloudflare tunnel latency
+  // Registration API can take 60s+ with retries on Windows (health check + registration + retries)
   await page.locator('[data-testid="registration-submit-button"]').click();
   await page
     .locator('[data-testid="registration-activation-code-input"]')
-    .waitFor({ state: 'visible', timeout: 60000 });
+    .waitFor({ state: 'visible', timeout: 90000 });
 
   // Enter verification code (AAA111 in test mode)
   await page

@@ -58,7 +58,7 @@ class ApiConnectionService {
       // Try a simple GET request to the API endpoint
       // Using a lightweight endpoint that doesn't require authentication
       await axios.get(`${url}/health`, {
-        timeout: 3000, // 3 second timeout for health check
+        timeout: 10000, // 10 seconds - for Cloudflare tunnel + Windows SSL/TLS latency
         validateStatus: (status) => status < 500, // Accept any non-5xx status
       });
       return true;
@@ -75,7 +75,7 @@ class ApiConnectionService {
   async isCiMode(): Promise<boolean> {
     try {
       const apiUrl = await this.getApiUrl();
-      const response = await axios.get(`${apiUrl}/health`, { timeout: 3000 });
+      const response = await axios.get(`${apiUrl}/health`, { timeout: 10000 }); // 10s for tunnel latency
       return response.data?.ciMode === true;
     } catch (error) {
       console.warn('Could not fetch CI mode status:', error);

@@ -97,8 +97,8 @@ export default test.defineConfig({
       testMatch: /global\.setup\.ts/,
       use: { ...test.devices['Desktop Chrome'] },
       // Setup needs more time: wait for Vite + registration flow + slower Windows runners
-      // Increased to 120s to accommodate 60s locator timeout + navigation + form filling
-      timeout: 120000,
+      // Increased to 180s to accommodate Windows tunnel latency (60s health + 60s registration + 30s buffer)
+      timeout: 180000,
     },
 
     // =========================================================================

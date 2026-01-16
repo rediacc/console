@@ -414,7 +414,10 @@ export function createApiClient(config: ApiClientConfig): FullApiClient {
               subscriptionPlan: options.subscriptionPlan ?? DEFAULTS.SUBSCRIPTION.PLAN,
               turnstileToken: options.turnstileToken,
             },
-            { headers: buildAuthHeaders(email, passwordHash) }
+            {
+              headers: buildAuthHeaders(email, passwordHash),
+              timeout: 30000, // 30s per attempt - registration involves DB writes and validation
+            }
           ),
         retryConfig
       );
