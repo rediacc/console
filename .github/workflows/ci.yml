@@ -179,7 +179,7 @@ jobs:
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: tunnel-url
+          name: temp-tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
           retention-days: 3
 
@@ -215,9 +215,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          echo "Waiting for tunnel-url artifact to be uploaded by temp-backend..."
+          echo "Waiting for temp-tunnel-url artifact to be uploaded by temp-backend..."
           for i in {1..60}; do
-            if gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[] | select(.name == "tunnel-url")' | grep -q tunnel-url; then
+            if gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[] | select(.name == "temp-tunnel-url")' | grep -q temp-tunnel-url; then
               echo "Tunnel URL artifact found!"
               sleep 5  # Wait a bit more for artifact to be fully uploaded
               break
@@ -231,7 +231,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name temp-tunnel-url)
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
         shell: bash
