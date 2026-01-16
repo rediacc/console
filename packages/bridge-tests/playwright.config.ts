@@ -42,7 +42,12 @@ export default test.defineConfig({
   },
   /* Projects for numeric execution order (01 → 02 → ... → 22)
    * Order maintained by: workers:1 + fullyParallel:false + alphanumeric file naming
-   * No dependencies = tests continue even when some fail */
+   * No dependencies = tests continue even when some fail
+   *
+   * Note: test-20 (image-build) is disabled on CI - long-running image builds
+   * are not suitable for the current CI infrastructure. Run locally with:
+   *   npx playwright test --config=playwright.image.config.ts
+   */
   projects: [
     { name: 'test-01', testMatch: '01-*.test.ts' },
     { name: 'test-02', testMatch: '02-*.test.ts' },
@@ -63,7 +68,8 @@ export default test.defineConfig({
     { name: 'test-17', testMatch: '17-*.test.ts' },
     { name: 'test-18', testMatch: '18-*.test.ts' },
     { name: 'test-19', testMatch: '19-*.test.ts' },
-    { name: 'test-20', testMatch: '20-*.test.ts' },
+    // test-20 (image-build) disabled on CI - use playwright.image.config.ts locally
+    ...(process.env.CI ? [] : [{ name: 'test-20', testMatch: '20-*.test.ts' }]),
     { name: 'test-21', testMatch: '21-*.test.ts' },
     { name: 'test-22', testMatch: '22-*.test.ts' },
   ],

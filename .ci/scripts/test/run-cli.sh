@@ -4,6 +4,11 @@
 #
 # Options:
 #   --filter  Filter tests by pattern
+#
+# ⚠️  IMPORTANT: When modifying this script:
+# ⚠️  1. Test the script locally
+# ⚠️  2. Update the main 'go' script if needed (console/go)
+# ⚠️  3. Verify CI workflow compatibility
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,6 +23,15 @@ FILTER="${ARG_FILTER:-}"
 cd "$(get_repo_root)"
 
 CLI_DIR="packages/cli"
+
+# Build CLI before running tests (required for cli-bundle.cjs)
+log_step "Building CLI..."
+if "$SCRIPT_DIR/../build/build-cli.sh"; then
+    log_info "CLI build completed"
+else
+    log_error "CLI build failed"
+    exit 1
+fi
 
 log_step "Running CLI integration tests..."
 

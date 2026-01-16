@@ -11,6 +11,13 @@ cd "$(get_repo_root)"
 
 log_step "Building shared packages..."
 
+# Clean stale TypeScript build cache to prevent module resolution issues
+# This is necessary because tsbuildinfo files can cause incremental builds to skip
+# emitting files when paths change or when switching between branches
+log_debug "Cleaning TypeScript build cache..."
+rm -rf packages/shared/dist packages/shared/*.tsbuildinfo
+rm -rf packages/shared-desktop/dist packages/shared-desktop/*.tsbuildinfo
+
 if npm run build:packages; then
     log_info "Shared packages built successfully"
 else
