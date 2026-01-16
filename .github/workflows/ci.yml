@@ -115,9 +115,10 @@ jobs:
 
   # ============================================================================
   # TEMPORARY FAST-TRACK JOBS (TODO: Remove after Windows debugging)
+  # Minimal backend with keep-alive + Windows test
   # ============================================================================
   temp-backend:
-    name: TEMP - Backend Only
+    name: TEMP - Backend (No Dependencies)
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -182,8 +183,15 @@ jobs:
           path: ${{ runner.temp }}/tunnel-url.txt
           retention-days: 3
 
-  temp-windows-e2e:
-    name: TEMP - Windows E2E Only
+      - name: Keep tunnel alive while Windows test runs
+        run: |
+          echo "Waiting for Windows test to start and complete..."
+          echo "The Elite action has keep-alive enabled, so services will stay up"
+          # Wait 30 minutes for Windows test (starts ~2min after this, runs ~10min)
+          sleep 1800
+
+  temp-windows-debug:
+    name: TEMP - Windows E2E Debug
     runs-on: windows-latest
     needs: [temp-backend]
     timeout-minutes: 60
@@ -219,12 +227,12 @@ jobs:
         working-directory: packages/e2e
         run: npx playwright test --project=electron-windows-x64
       - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "temp-windows-e2e"
+        run: .ci/scripts/signal/create-complete.sh --name "temp-windows-debug"
         shell: bash
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: test-complete-temp-windows-e2e
+          name: test-complete-temp-windows-debug
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
