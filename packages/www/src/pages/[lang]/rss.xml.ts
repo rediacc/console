@@ -1,9 +1,9 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
-import type { APIContext } from 'astro';
 import { SITE_URL } from '../../config/constants';
 import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
+import type { APIContext } from 'astro';
 
 export function getStaticPaths() {
   return SUPPORTED_LANGUAGES.map((lang) => ({

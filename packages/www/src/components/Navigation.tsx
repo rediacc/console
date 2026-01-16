@@ -14,13 +14,16 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const currentLang = useState<Language>(() =>
-    getLanguageFromPath(window.location.pathname)
-  )[0];
+  // eslint-disable-next-line react/hook-use-state
+  const currentLang = useState<Language>(() => {
+    if (typeof window === 'undefined') return 'en';
+    return getLanguageFromPath(window.location.pathname);
+  })[0];
   const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window === 'undefined') return true;
     const isOnSolutionsPage = window.location.pathname.includes('/solutions');
     if (isOnSolutionsPage) {
-      const scrollTop = typeof window !== 'undefined' ? window.scrollY : 0;
+      const scrollTop = window.scrollY;
       return scrollTop > 0;
     }
     return true;

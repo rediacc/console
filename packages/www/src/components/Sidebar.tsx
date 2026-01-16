@@ -9,9 +9,11 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const currentLang = useState<Language>(() =>
-    getLanguageFromPath(window.location.pathname)
-  )[0];
+  // eslint-disable-next-line react/hook-use-state
+  const currentLang = useState<Language>(() => {
+    if (typeof window === 'undefined') return 'en';
+    return getLanguageFromPath(window.location.pathname);
+  })[0];
   const { t } = useTranslation(currentLang);
 
   const navItems = [
