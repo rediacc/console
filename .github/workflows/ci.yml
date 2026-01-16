@@ -595,9 +595,10 @@ jobs:
           npm pack
           npm install -g rediacc-cli-*.tgz
 
+      # Login to Docker Hub to avoid rate limiting (fails gracefully if credentials not set)
       - name: Login to Docker Hub
         uses: docker/login-action@v3
-        if: ${{ secrets.DOCKERHUB_TOKEN != '' }}
+        continue-on-error: true
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
