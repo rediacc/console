@@ -451,60 +451,6 @@ jobs:
           retention-days: 3
 
   # ============================================================================
-  # DEPLOY: GITHUB PAGES (on version tags only)
-  # ============================================================================
-  deploy-pages:
-    name: Deploy - Pages
-    runs-on: ubuntu-slim
-    needs: [build-www, build-json]
-    if: startsWith(github.ref, 'refs/tags/')
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: .ci/scripts/setup/install-deps.sh
-
-      - name: Build packages
-        run: .ci/scripts/setup/build-packages.sh
-
-      - name: Build web for Pages (with /console/ base path)
-        run: .ci/scripts/build/build-web.sh --type RELEASE
-        env:
-          VITE_APP_VERSION: ${{ github.sha }}
-          VITE_BASE_PATH: /console/
-
-      - name: Download www build
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
-        with:
-          name: build-www-${{ github.sha }}
-          path: packages/www/dist/
-
-      - name: Download json build
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
-        with:
-          name: build-json-${{ github.sha }}
-          path: packages/json/dist/
-
-      - name: Assemble pages package
-        run: .ci/scripts/build/build-pages.sh --output dist
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3
-        with:
-          path: dist/
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
-
-  # ============================================================================
   # TIER 4: INTEGRATION TESTS (Depends on Tier 3, long-running)
   # ============================================================================
   infra-backend:
@@ -775,7 +721,7 @@ jobs:
   test-e2e-electron:
     name: Test - E2E Electron (${{ matrix.project }})
     runs-on: ${{ matrix.os }}
-    needs: [test-e2e]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 60
     strategy:
       fail-fast: true
@@ -854,7 +800,7 @@ jobs:
   test-cli:
     name: Test - CLI (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
-    needs: [test-e2e-electron]
+    needs: [test-unit, build-cli, test-vscode, build-web]
     timeout-minutes: 120
     strategy:
       fail-fast: true
@@ -913,9 +859,12 @@ jobs:
           path: packages/cli/tests/reports/cli/
           retention-days: 3
 
+  # ============================================================================
+  # TIER 5: PACKAGING (Depends on Tier 4, creates distributable artifacts)
+  # ============================================================================
   build-desktop:
     name: Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
-    needs: [test-cli]
+    needs: [test-e2e, test-e2e-electron, test-cli]
     timeout-minutes: 30
     strategy:
       fail-fast: true
@@ -970,12 +919,91 @@ jobs:
           if-no-files-found: error
 
   # ============================================================================
-  # TIER 5: CI SUMMARY (Depends on all)
+  # TIER 6: DEPLOYMENT (on version tags only, after all tests pass)
+  # ============================================================================
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-slim
+    needs: [build-desktop]
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
+        with:
+          pattern: desktop-*
+          path: dist/desktop/
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/desktop/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  deploy-pages:
+    name: Deploy - Pages
+    runs-on: ubuntu-slim
+    needs: [build-www, build-json, test-unit, test-vscode, test-e2e, test-e2e-electron, test-cli, build-desktop]
+    if: startsWith(github.ref, 'refs/tags/')
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: .ci/scripts/setup/install-deps.sh
+
+      - name: Build packages
+        run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build web for Pages (with /console/ base path)
+        run: .ci/scripts/build/build-web.sh --type RELEASE
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /console/
+
+      - name: Download www build
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
+        with:
+          name: build-www-${{ github.sha }}
+          path: packages/www/dist/
+
+      - name: Download json build
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
+        with:
+          name: build-json-${{ github.sha }}
+          path: packages/json/dist/
+
+      - name: Assemble pages package
+        run: .ci/scripts/build/build-pages.sh --output dist
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
+
+  # ============================================================================
+  # TIER 7: CI SUMMARY (Depends on all)
   # ============================================================================
   summary:
     name: Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, deploy-pages]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, release, deploy-pages]
     if: always()
     steps:
       - name: Check job results
@@ -990,22 +1018,27 @@ jobs:
           echo "- TypeScript: ${{ needs.quality-types.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security: ${{ needs.quality-security.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Build & Unit Tests" >> $GITHUB_STEP_SUMMARY
+          echo "### Unit Tests" >> $GITHUB_STEP_SUMMARY
           echo "- Unit Tests: ${{ needs.test-unit.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI Build: ${{ needs.build-cli.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Web Build: ${{ needs.build-web.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- WWW Build: ${{ needs.build-www.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- JSON Build: ${{ needs.build-json.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Desktop Build: ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Builds" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI: ${{ needs.build-cli.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Web: ${{ needs.build-web.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- WWW: ${{ needs.build-www.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- JSON: ${{ needs.build-json.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Integration Tests" >> $GITHUB_STEP_SUMMARY
           echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E (All Projects): ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Packaging" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop: ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub Release: ${{ needs.release.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- GitHub Pages: ${{ needs.deploy-pages.result }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
@@ -1013,7 +1046,12 @@ jobs:
             [ "$result" != "success" ] && FAILED=true
           done
 
-          # Check deploy-pages separately (it's conditional, so "skipped" is acceptable)
+          # Check deployment jobs separately (they're conditional, so "skipped" is acceptable)
+          RELEASE_RESULT="${{ needs.release.result }}"
+          if [ "$RELEASE_RESULT" = "failure" ]; then
+            FAILED=true
+          fi
+
           DEPLOY_RESULT="${{ needs.deploy-pages.result }}"
           if [ "$DEPLOY_RESULT" = "failure" ]; then
             FAILED=true
