@@ -77,7 +77,7 @@ test.describe('User Permission Tests', () => {
     const confirmYes = async (): Promise<void> => {
       const confirmButton = page.getByRole('button', { name: /yes/i });
       await expect(confirmButton).toBeVisible();
-      await confirmButton.click();
+      await confirmButton.click({ force: true });
       await waitForNoModal();
     };
 

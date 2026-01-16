@@ -242,6 +242,8 @@ const AccessPage: React.FC = () => {
           data-testid="system-create-permission-group-button"
         />
       }
+      onCreateNew={() => createModal.open()}
+      createButtonText={tSystem('actions.createGroup')}
     />
   );
 

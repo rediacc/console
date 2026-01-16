@@ -1,4 +1,3 @@
-import os from 'node:os';
 import path from 'node:path';
 import * as test from '@playwright/test';
 import dotenv from 'dotenv';

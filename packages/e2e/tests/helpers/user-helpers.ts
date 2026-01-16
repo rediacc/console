@@ -29,7 +29,8 @@ export async function createUserViaUI(
     )
     .toBe(true);
 
-  const createUserButton = page.getByTestId(UserPageIDs.systemCreateUserButton);
+  // Find the first visible create button (handles both desktop and mobile layouts)
+  const createUserButton = page.getByTestId(UserPageIDs.systemCreateUserButton).first();
   await expect(createUserButton).toBeVisible({ timeout: 5000 });
   const drawerMask = page.locator('.ant-drawer-mask');
   if (await drawerMask.isVisible().catch(() => false)) {

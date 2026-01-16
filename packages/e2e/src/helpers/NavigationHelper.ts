@@ -329,50 +329,79 @@ export class NavigationHelper {
 
   private async navigateToSubNav(parentTestId: string, childTestId: string): Promise<void> {
     await this.ensureNavVisible(parentTestId);
-    const parentLocator = this.page.locator(`[data-testid="${parentTestId}"]:visible`);
-    if (await parentLocator.isVisible().catch(() => false)) {
-      try {
-        await parentLocator.click({ trial: true, timeout: 1000 });
-        await parentLocator.click();
-        const childLocator = this.page.locator(`[data-testid="${childTestId}"]:visible`);
-        await childLocator.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
-        await childLocator.click();
-        return;
-      } catch {
-        // Fall back to drawer navigation below.
-      }
+
+    // Try visible navigation first
+    if (await this.tryVisibleNavigation(parentTestId, childTestId)) {
+      return;
     }
 
+    // Fall back to drawer navigation
+    await this.tryDrawerNavigation(parentTestId, childTestId);
+  }
+
+  private async tryVisibleNavigation(parentTestId: string, childTestId: string): Promise<boolean> {
+    const parentElement = this.page.locator(`[data-testid="${parentTestId}"]:visible`);
+    if (!(await parentElement.isVisible().catch(() => false))) {
+      return false;
+    }
+
+    try {
+      await this.clickParentElement(parentElement);
+      await this.clickChildElement(childTestId);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async clickParentElement(parentElement: Locator): Promise<void> {
+    const arrow = parentElement.locator('.ant-menu-submenu-arrow');
+    if (await arrow.isVisible().catch(() => false)) {
+      await arrow.click({ force: true });
+    } else {
+      await parentElement.click({ force: true });
+    }
+  }
+
+  private async clickChildElement(childTestId: string): Promise<void> {
+    const childLocator = this.page.locator(`[data-testid="${childTestId}"]:visible`);
+    await childLocator.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+    await childLocator.click();
+  }
+
+  private async tryDrawerNavigation(parentTestId: string, childTestId: string): Promise<void> {
     const toggle = await this.getSidebarToggle();
-    if ((await toggle.count()) > 0) {
-      await this.clickSidebarToggle(toggle);
-      const drawer = this.page.locator('.ant-drawer');
-      await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
-      const drawerParent = drawer.locator(`[data-testid="${parentTestId}"]`);
-      await drawerParent.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
-      await drawerParent.click();
-
-      const drawerChild = drawer.locator(`[data-testid="${childTestId}"]`);
-      await drawerChild.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
-      await drawerChild.click();
-      const mask = this.page.locator('.ant-drawer-mask');
-      if (await mask.isVisible().catch(() => false)) {
-        await mask.click({ force: true });
-      } else {
-        await toggle.click({ force: true });
-      }
-      const maskVisible = await mask.isVisible().catch(() => false);
-      if (maskVisible) {
-        await this.page.evaluate(() => {
-          const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
-          if (overlay) {
-            overlay.style.pointerEvents = 'none';
-            overlay.style.opacity = '0';
-          }
-        });
-      }
-      await drawer.waitFor({ state: 'hidden', timeout: SUBMENU_VISIBLE_TIMEOUT }).catch(() => {});
+    if ((await toggle.count()) === 0) {
+      return;
     }
+
+    await this.clickSidebarToggle(toggle);
+    await this.navigateInDrawer(parentTestId, childTestId);
+  }
+
+  private async navigateInDrawer(parentTestId: string, childTestId: string): Promise<void> {
+    const drawer = this.page.locator('.ant-drawer');
+    await drawer.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+
+    const drawerParent = drawer.locator(`[data-testid="${parentTestId}"]`);
+    await drawerParent.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+    await drawerParent.click();
+
+    const drawerChild = drawer.locator(`[data-testid="${childTestId}"]`);
+    await drawerChild.waitFor({ state: 'visible', timeout: SUBMENU_VISIBLE_TIMEOUT });
+    await drawerChild.click();
+
+    await this.closeDrawerIfNeeded();
+  }
+
+  private async closeDrawerIfNeeded(): Promise<void> {
+    const mask = this.page.locator('.ant-drawer-mask');
+    if (await mask.isVisible().catch(() => false)) {
+      await mask.click({ force: true });
+    }
+
+    const drawer = this.page.locator('.ant-drawer');
+    await drawer.waitFor({ state: 'hidden', timeout: SUBMENU_VISIBLE_TIMEOUT }).catch(() => {});
   }
 
   private async getSidebarToggle() {

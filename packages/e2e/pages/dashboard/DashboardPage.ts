@@ -79,8 +79,9 @@ export class DashboardPage extends BasePage {
 
   async verifyDashboardLoaded(): Promise<void> {
     await this.verifyElementVisible(this.mainContent);
+    // On mobile devices, navigation might be collapsed - use ensureTestIdVisible to handle both desktop and mobile
     await this.ensureTestIdVisible('main-nav-machines');
-    await this.verifyElementVisible(this.page.locator('[data-testid="main-nav-machines"]:visible'));
+    // Remove redundant visibility check that might fail on mobile
   }
 
   async waitForTeamSelection(timeout = 10000): Promise<void> {

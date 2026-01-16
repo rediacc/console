@@ -262,6 +262,8 @@ const UsersPage: React.FC = () => {
               data-testid="system-create-user-button"
             />
           }
+          onCreateNew={() => createUserModal.open()}
+          createButtonText={tSystem('actions.createUser')}
         />
       </Flex>
 

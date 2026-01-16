@@ -286,6 +286,8 @@ const TeamsPage: React.FC = () => {
             data-testid="system-create-team-button"
           />
         }
+        onCreateNew={() => unifiedModal.openCreate()}
+        createButtonText={tSystem('actions.createTeam')}
       />
 
       <Modal
