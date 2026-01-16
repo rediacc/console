@@ -207,6 +207,12 @@ jobs:
       - name: Build desktop
         working-directory: packages/desktop
         run: npm run build
+      - name: Install Electron binary
+        working-directory: packages/desktop
+        shell: bash
+        run: |
+          echo "Installing Electron binary (skipped during --ignore-scripts)..."
+          node node_modules/electron/install.js
       - name: Install Playwright
         working-directory: packages/e2e
         run: npx playwright install chromium

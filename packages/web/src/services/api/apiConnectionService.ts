@@ -139,9 +139,7 @@ class ApiConnectionService {
     // Log whether we're using explicit VITE_API_URL or constructed localhost URL
     const explicitApiUrl = import.meta.env.VITE_API_URL as string | undefined;
     if (explicitApiUrl) {
-      console.warn(
-        `[API Connection] DEBUG mode: Using explicit VITE_API_URL: ${explicitApiUrl}`
-      );
+      console.warn(`[API Connection] DEBUG mode: Using explicit VITE_API_URL: ${explicitApiUrl}`);
     } else {
       console.warn('[API Connection] DEBUG mode: Checking localhost availability...');
     }
