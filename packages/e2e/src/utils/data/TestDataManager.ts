@@ -177,7 +177,8 @@ export class TestDataManager {
   }
 
   private saveTestData(data: TestData): void {
-    const { createdUsers: _createdUsers, ...dataToSave } = data;
+    const dataToSave = { ...data };
+    delete dataToSave.createdUsers;
     fs.writeFileSync(this.testDataFile, JSON.stringify(dataToSave, null, 2));
   }
 

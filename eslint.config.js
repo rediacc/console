@@ -138,9 +138,11 @@ export default tseslint.config(
         ignoreParameters: false,
         ignoreProperties: false,
       }],
+      // STRICT: No underscore prefix allowed - if unused, delete it
+      // Only exception: function parameters required by interfaces (use _ prefix for those)
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_'
+        varsIgnorePattern: '^$' // Empty pattern = no variables allowed with underscore
       }],
       '@typescript-eslint/no-empty-interface': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',

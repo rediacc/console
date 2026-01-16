@@ -1,12 +1,7 @@
 // Import queue-vault types from shared package
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type {
-  MachineSection,
-  QueueVaultV2,
-  RepositoryInfo,
-  StorageSection,
-} from '@rediacc/shared/queue-vault';
+import type { QueueVaultV2 } from '@rediacc/shared/queue-vault';
 // Re-export for convenience
 
 /**
@@ -23,18 +18,6 @@ export interface StorageConfig {
   region?: string;
   folder?: string;
 }
-
-/**
- * Machine configuration for SSH connections.
- * Matches MachineSection from shared package.
- */
-type MachineConfig = MachineSection;
-
-/**
- * Repository configuration.
- * Matches RepositoryInfo from shared package.
- */
-type RepositoryConfig = RepositoryInfo;
 
 /**
  * Push function parameters.

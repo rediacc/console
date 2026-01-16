@@ -2,7 +2,6 @@ import type { BaseModalProps } from '@/types';
 import type {
   GetTeamQueueItems_ResultSet1,
   QueueTraceLog,
-  QueueVaultSnapshot,
 } from '@rediacc/shared/types';
 import type { Dayjs } from 'dayjs';
 
@@ -66,12 +65,6 @@ export interface StatsPanelProps {
   processingDurationSeconds: number;
 }
 
-interface ResponseViewerProps {
-  responseVaultContent: QueueVaultSnapshot | null;
-  theme: string;
-  consoleOutputRef: React.RefObject<HTMLDivElement | null>;
-}
-
 export interface ActionButtonsProps {
   queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;
   taskId: string | null;
@@ -86,7 +79,6 @@ export interface ActionButtonsProps {
 }
 
 export type TraceLog = QueueTraceLog;
-type TaskStaleness = TaskStalenessLevel;
 
 /** QueueItemTraceData is an alias for the trace data structure */
 export type { QueueTrace as QueueItemTraceData } from '@rediacc/shared/types';

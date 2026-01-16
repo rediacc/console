@@ -138,12 +138,3 @@ function generateHeadingId(title: string): string {
     .replaceAll(/[^\w\s-]/g, '') // Remove special characters
     .replaceAll(/\s+/g, '-'); // Replace spaces with hyphens
 }
-
-/**
- * Type definitions for storing sidebar configuration
- */
-interface SidebarConfig {
-  persistState?: boolean; // Persist sidebar state to localStorage (default: true)
-  allowKeyboardNav?: boolean; // Allow keyboard navigation (default: true)
-  highlightCurrentSection?: boolean; // Highlight current section in TOC (default: true)
-}

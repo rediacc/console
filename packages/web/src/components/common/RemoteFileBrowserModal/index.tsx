@@ -90,7 +90,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   onQueueItemCreated,
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines']);
-  const { data: _dropdownData } = useDropdownData();
+  useDropdownData();
   const { data: storageData, isLoading: isLoadingStorage } = useGetTeamStorages(teamName);
   const { data: machinesData, isLoading: isLoadingMachines } = useGetTeamMachines(teamName);
   const { data: teamsData } = useGetOrganizationTeams();

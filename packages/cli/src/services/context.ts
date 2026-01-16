@@ -109,7 +109,8 @@ class ContextService {
       if (!config.contexts[name]) {
         throw new Error(`Context "${name}" not found`);
       }
-      const { [name]: _, ...remaining } = config.contexts;
+      const remaining = { ...config.contexts };
+      delete remaining[name];
       return { contexts: remaining };
     });
   }
@@ -126,7 +127,8 @@ class ContextService {
       if (config.contexts[newName]) {
         throw new Error(`Context "${newName}" already exists`);
       }
-      const { [oldName]: _, ...remaining } = config.contexts;
+      const remaining = { ...config.contexts };
+      delete remaining[oldName];
       return {
         contexts: {
           ...remaining,
@@ -522,7 +524,8 @@ class ContextService {
       throw new Error(`Machine "${machineName}" not found`);
     }
 
-    const { [machineName]: _, ...remaining } = context.machines;
+    const remaining = { ...context.machines };
+    delete remaining[machineName];
     await this.update(name, { machines: remaining });
   }
 

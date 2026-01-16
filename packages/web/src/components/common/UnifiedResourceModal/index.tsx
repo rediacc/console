@@ -73,8 +73,7 @@ const normalizeExistingData = (
 ): ExistingResourceData | undefined => {
   if (!existingData) return undefined;
   if (existingData.vaultVersion == null) {
-    const { vaultVersion: _vaultVersion, ...rest } = existingData;
-    return { ...rest, vaultVersion: undefined };
+    return { ...existingData, vaultVersion: undefined };
   }
   return existingData;
 };

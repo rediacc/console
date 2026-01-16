@@ -7,12 +7,6 @@ import type { Rule } from 'antd/es/form';
 
 export { isValidGuid } from '@rediacc/shared/validation';
 
-// Used by UsersPage
-interface CreateUserFormValues {
-  newUserEmail: string;
-  newUserPassword: string;
-}
-
 // Validation rules
 export const validationRules = {
   required: (fieldLabel: string): Rule => ({

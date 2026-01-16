@@ -27,5 +27,3 @@ export const TEST_ENV = {
   /** Installation path for renet on VMs (NOT the local build path) */
   vmRenetInstallPath: '/usr/bin/renet',
 } as const;
-
-type TestEnv = typeof TEST_ENV;

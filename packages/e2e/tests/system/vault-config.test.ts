@@ -1,5 +1,4 @@
 import { LoginPage } from '../../pages/auth/LoginPage';
-import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { test, expect } from '../../src/base/BaseTest';
 import { loadGlobalState } from '../../src/setup/global-state';
 
@@ -11,12 +10,10 @@ import { loadGlobalState } from '../../src/setup/global-state';
 // that cannot be reliably triggered in automated tests
 test.describe
   .skip('System Vault Configuration Tests', () => {
-    let _dashboardPage: DashboardPage;
     let loginPage: LoginPage;
 
     test.beforeEach(async ({ page }) => {
       loginPage = new LoginPage(page);
-      _dashboardPage = new DashboardPage(page);
 
       await loginPage.navigate();
 

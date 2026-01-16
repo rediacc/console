@@ -78,10 +78,12 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
   const createWithMachineProvisioning = async (
     data: RepoCreationData
   ): Promise<RepoCreationResult> => {
-    const { machineName, size: _size, ...repositoryData } = data;
+    const { machineName, ...repositoryData } = data;
+    const repoParams = { ...repositoryData };
+    delete repoParams.size;
     await createRepositoryMutation.mutateAsync({
-      ...repositoryData,
-      vaultContent: repositoryData.vaultContent ?? '{}',
+      ...repoParams,
+      vaultContent: repoParams.vaultContent ?? '{}',
     });
 
     try {
