@@ -9,6 +9,12 @@
 export const CONTACT_EMAIL = 'contact@rediacc.com';
 
 /**
+ * Primary site URL
+ * Used as fallback for RSS feeds and other canonical URL references
+ */
+export const SITE_URL = 'https://www.rediacc.com';
+
+/**
  * External Links
  * Centralized configuration for important external URLs
  */

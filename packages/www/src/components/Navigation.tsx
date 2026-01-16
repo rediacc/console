@@ -14,15 +14,18 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState<Language>('en');
-  const [isVisible, setIsVisible] = useState(false);
+  const currentLang = useState<Language>(() =>
+    getLanguageFromPath(window.location.pathname)
+  )[0];
+  const [isVisible, setIsVisible] = useState(() => {
+    const isOnSolutionsPage = window.location.pathname.includes('/solutions');
+    if (isOnSolutionsPage) {
+      const scrollTop = typeof window !== 'undefined' ? window.scrollY : 0;
+      return scrollTop > 0;
+    }
+    return true;
+  });
   const { t } = useTranslation(currentLang);
-
-  // Get current language from URL
-  useEffect(() => {
-    const lang = getLanguageFromPath(window.location.pathname);
-    setCurrentLang(lang);
-  }, []);
 
   // Get console URL (use origin from server-side if provided)
   const consoleUrl = getConsoleUrl(origin);
@@ -30,23 +33,14 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   // Handle scroll to show/hide navigation (only on solutions page)
   useEffect(() => {
     const isOnSolutionsPage = window.location.pathname.includes('/solutions');
-
     if (isOnSolutionsPage) {
-      // On solutions page: hide nav at top, show when scrolled
       const handleScroll = () => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         setIsVisible(scrollTop > 0);
       };
-
-      // Set initial state
-      handleScroll();
-
-      // Listen to scroll events
       window.addEventListener('scroll', handleScroll, { passive: true });
       return () => window.removeEventListener('scroll', handleScroll);
     }
-    // On all other pages: always show nav
-    setIsVisible(true);
   }, []);
 
   const toggleSidebar = () => {

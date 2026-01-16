@@ -10,7 +10,13 @@
   // Listen for keyboard events
   document.addEventListener('keydown', (event) => {
     // Check for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
-    const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+    const isMac = (() => {
+      if (navigator.userAgentData?.platform) {
+        return navigator.userAgentData.platform === 'macOS';
+      }
+      // Fallback for browsers without userAgentData
+      return /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+    })();
     const isSearchShortcut = isMac
       ? event.metaKey && event.key === 'k'
       : event.ctrlKey && event.key === 'k';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import LanguageMenu from './LanguageMenu';
 import { SUPPORTED_LANGUAGES, getLanguageFromPath } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
@@ -7,14 +7,10 @@ import '../styles/language-switcher.css';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
-  const [currentLang, setCurrentLang] = useState<Language>('en');
+  const currentLang = useState<Language>(() =>
+    getLanguageFromPath(window.location.pathname)
+  )[0];
   const { t } = useTranslation(currentLang);
-
-  // Get current language from URL on mount
-  useEffect(() => {
-    const lang = getLanguageFromPath(window.location.pathname);
-    setCurrentLang(lang);
-  }, []);
 
   return (
     <footer id="footer" className="footer" role="contentinfo">

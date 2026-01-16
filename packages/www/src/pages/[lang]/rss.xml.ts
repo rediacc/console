@@ -1,8 +1,9 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
+import type { APIContext } from 'astro';
+import { SITE_URL } from '../../config/constants';
 import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
-import type { APIContext } from 'astro';
 
 export function getStaticPaths() {
   return SUPPORTED_LANGUAGES.map((lang) => ({
@@ -34,7 +35,7 @@ export async function GET(context: APIContext) {
   return rss({
     title: `Rediacc Blog - ${languageNames[lang as Language]}`,
     description: 'Infrastructure automation, disaster recovery, and system portability insights',
-    site: context.site ?? 'https://www.rediacc.com',
+    site: context.site ?? SITE_URL,
     items: languagePosts.map((post) => {
       const slug = post.slug.split('/').pop() ?? post.slug;
       return {

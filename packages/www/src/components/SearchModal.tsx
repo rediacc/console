@@ -1,5 +1,5 @@
-import Fuse from 'fuse.js';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Fuse from 'fuse.js';
 import { getLanguageFromPath } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
@@ -25,16 +25,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [fuse, setFuse] = useState<Fuse<SearchItem> | null>(null);
-  const [currentLang, setCurrentLang] = useState<Language>('en');
+  const currentLang = useState<Language>(() =>
+    getLanguageFromPath(window.location.pathname)
+  )[0];
   const { t } = useTranslation(currentLang);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
-
-  // Get current language from URL
-  useEffect(() => {
-    const lang = getLanguageFromPath(window.location.pathname);
-    setCurrentLang(lang);
-  }, []);
 
   // Load search index once
   useEffect(() => {
@@ -148,7 +144,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
     try {
       // Escape special regex characters
-      const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = query.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`(${escaped})`, 'gi');
       const parts = text.split(regex);
 

@@ -9,14 +9,10 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const [currentLang, setCurrentLang] = useState<Language>('en');
+  const currentLang = useState<Language>(() =>
+    getLanguageFromPath(window.location.pathname)
+  )[0];
   const { t } = useTranslation(currentLang);
-
-  // Get current language from URL
-  useEffect(() => {
-    const lang = getLanguageFromPath(window.location.pathname);
-    setCurrentLang(lang);
-  }, []);
 
   const navItems = [
     { href: `/${currentLang}/`, label: t('navigation.home') },

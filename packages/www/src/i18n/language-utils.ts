@@ -18,7 +18,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   'ru',
   'tr',
   'zh',
-];
+] as const;
 export const DEFAULT_LANGUAGE: Language = 'en';
 
 /**
@@ -27,7 +27,8 @@ export const DEFAULT_LANGUAGE: Language = 'en';
  * e.g., "/es/docs/ref" => "es"
  */
 export function getLanguageFromPath(pathname: string): Language {
-  const match = pathname.match(/^\/([a-z]{2})(?:\/|$)/);
+  const regex = /^\/([a-z]{2})(?:\/|$)/;
+  const match = regex.exec(pathname);
   const lang = match?.[1] as Language | undefined;
   return isSupportedLanguage(lang) ? lang : DEFAULT_LANGUAGE;
 }
@@ -80,7 +81,8 @@ export function generateLocalizedPath(path: string, lang: Language): string {
  * e.g., "/es/blog/post" => "/blog/post"
  */
 export function getPathWithoutLanguage(pathname: string): string {
-  const match = pathname.match(/^\/([a-z]{2})(.*)$/);
+  const regex = /^\/([a-z]{2})(.*)$/;
+  const match = regex.exec(pathname);
   if (match) {
     return match[2] || '/';
   }

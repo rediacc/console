@@ -41,7 +41,7 @@ function interpolate(text: string, params?: InterpolationParams): string {
   if (!params) return text;
 
   return Object.entries(params).reduce((result, [key, value]) => {
-    return result.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+    return result.replaceAll(new RegExp(`{{${key}}}`, 'g'), String(value));
   }, text);
 }
 

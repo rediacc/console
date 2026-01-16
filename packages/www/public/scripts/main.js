@@ -3,7 +3,7 @@
 // NOTE: Keep this in sync with src/config/constants.ts
 const CONTACT_EMAIL = 'contact@rediacc.com';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     // Initialize components
     initSmoothScrolling();
     initFormValidation();
@@ -61,6 +61,40 @@ function initFormValidation() {
     });
 }
 
+// Validation helper functions
+function validateRequired(field, fieldValue, fieldName) {
+    if (field.hasAttribute('required') && !fieldValue) {
+        return {
+            isValid: false,
+            errorMessage: `${getFieldLabel(fieldName)} is required.`
+        };
+    }
+    return { isValid: true, errorMessage: '' };
+}
+
+function validateEmail(fieldValue) {
+    if (fieldValue) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(fieldValue)) {
+            return {
+                isValid: false,
+                errorMessage: 'Please enter a valid email address.'
+            };
+        }
+    }
+    return { isValid: true, errorMessage: '' };
+}
+
+function validateMinLength(fieldValue, minLength, fieldLabel) {
+    if (fieldValue && fieldValue.length < minLength) {
+        return {
+            isValid: false,
+            errorMessage: `${fieldLabel} must be at least ${minLength} characters long.`
+        };
+    }
+    return { isValid: true, errorMessage: '' };
+}
+
 // Validate individual field
 function validateField(field) {
     const fieldGroup = field.closest('.form-group');
@@ -68,52 +102,45 @@ function validateField(field) {
     const fieldName = field.getAttribute('name');
     const fieldValue = field.value.trim();
 
-    let isValid = true;
-    let errorMessage = '';
+    let validationResult = { isValid: true, errorMessage: '' };
 
     // Required field validation
-    if (field.hasAttribute('required') && !fieldValue) {
-        isValid = false;
-        errorMessage = `${getFieldLabel(fieldName)} is required.`;
+    validationResult = validateRequired(field, fieldValue, fieldName);
+    if (!validationResult.isValid) {
+        displayFieldError(fieldGroup, errorElement, field, validationResult.errorMessage);
+        return false;
     }
 
-    // Email validation
-    if (fieldName === 'email' && fieldValue) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(fieldValue)) {
-            isValid = false;
-            errorMessage = 'Please enter a valid email address.';
-        }
-    }
-
-    // Name validation
-    if (fieldName === 'name' && fieldValue) {
-        if (fieldValue.length < 2) {
-            isValid = false;
-            errorMessage = 'Name must be at least 2 characters long.';
-        }
-    }
-
-    // Organization validation
-    if (fieldName === 'organization' && fieldValue) {
-        if (fieldValue.length < 2) {
-            isValid = false;
-            errorMessage = 'Organization name must be at least 2 characters long.';
-        }
+    // Field-specific validation
+    switch (fieldName) {
+        case 'email':
+            validationResult = validateEmail(fieldValue);
+            break;
+        case 'name':
+            validationResult = validateMinLength(fieldValue, 2, 'Name');
+            break;
+        case 'organization':
+            validationResult = validateMinLength(fieldValue, 2, 'Organization name');
+            break;
     }
 
     // Display error state
-    if (!isValid) {
-        fieldGroup.classList.add('error');
-        errorElement.textContent = errorMessage;
-        field.setAttribute('aria-invalid', 'true');
-    } else {
+    if (validationResult.isValid) {
         fieldGroup.classList.remove('error');
         errorElement.textContent = '';
         field.setAttribute('aria-invalid', 'false');
+    } else {
+        displayFieldError(fieldGroup, errorElement, field, validationResult.errorMessage);
     }
 
-    return isValid;
+    return validationResult.isValid;
+}
+
+// Helper to display field error
+function displayFieldError(fieldGroup, errorElement, field, errorMessage) {
+    fieldGroup.classList.add('error');
+    errorElement.textContent = errorMessage;
+    field.setAttribute('aria-invalid', 'true');
 }
 
 // Clear field error on input
@@ -141,11 +168,10 @@ function validateForm() {
     });
 
     // Focus first invalid field
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!isFormValid) {
         const firstInvalidField = form.querySelector('.form-group.error .form-input, .form-group.error .form-select');
-        if (firstInvalidField) {
-            firstInvalidField.focus();
-        }
+        firstInvalidField?.focus();
     }
 
     return isFormValid;
@@ -162,7 +188,7 @@ function getFieldLabel(fieldName) {
         'message': 'Message'
     };
 
-    return labels[fieldName] || fieldName;
+    return labels[fieldName] ?? fieldName;
 }
 
 // Form submission
@@ -204,14 +230,14 @@ function initMessageOverlay() {
     closeButton.addEventListener('click', hideMessage);
 
     // Close on escape key
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') {
             hideMessage();
         }
     });
 
     // Close on overlay click (but not content click)
-    overlay.addEventListener('click', function(e) {
+    overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
             hideMessage();
         }
@@ -298,7 +324,7 @@ function initScrollHighlighting() {
 }
 
 // Initialize scroll highlighting
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     initScrollHighlighting();
 });
 
@@ -310,9 +336,9 @@ function initFormEnhancements() {
     // Auto-format phone numbers (if added later)
     const phoneInputs = form.querySelectorAll('input[type="tel"]');
     phoneInputs.forEach(input => {
-        input.addEventListener('input', function(e) {
+        input.addEventListener('input', (e) => {
             // Remove all non-digits
-            let value = e.target.value.replace(/\D/g, '');
+            let value = e.target.value.replaceAll(/\D/g, '');
 
             // Format as (XXX) XXX-XXXX
             if (value.length >= 6) {
@@ -330,7 +356,7 @@ function initFormEnhancements() {
 }
 
 // Initialize form enhancements
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     initFormEnhancements();
 });
 
@@ -364,7 +390,7 @@ function initAccessibilityFeatures() {
 }
 
 // Initialize accessibility features
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     initAccessibilityFeatures();
 });
 
@@ -387,7 +413,7 @@ if ('IntersectionObserver' in window) {
 
     // Observe sections for animation
     // Note: Removed .early-access-text to prevent React hydration mismatch
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', () => {
         const animatedElements = document.querySelectorAll('.solution-card, .timeline-item');
         animatedElements.forEach(el => observer.observe(el));
     });
@@ -396,8 +422,8 @@ if ('IntersectionObserver' in window) {
 // Image Modal functionality
 let currentZoom = 1;
 let isDragging = false;
-let dragStart = { x: 0, y: 0 };
-let dragOffset = { x: 0, y: 0 };
+const dragStart = { x: 0, y: 0 };
+const dragOffset = { x: 0, y: 0 };
 
 // Image gallery data
 const imageGallery = [
@@ -423,7 +449,7 @@ function initImageModal() {
     if (!modal || !imageContainer || !modalImage) return; // Skip if no image modal exists on the page
 
     // Keyboard controls
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', (e) => {
         if (modal.getAttribute('aria-hidden') === 'false') {
             switch(e.key) {
                 case 'Escape':
@@ -455,32 +481,31 @@ function initImageModal() {
     });
 
     // Mouse wheel zoom
-    if (imageContainer) {
-        imageContainer.addEventListener('wheel', function(e) {
-            if (modal.getAttribute('aria-hidden') === 'false') {
-                e.preventDefault();
-                if (e.deltaY < 0) {
-                    zoomIn();
-                } else {
-                    zoomOut();
-                }
+    imageContainer.addEventListener('wheel', (e) => {
+        if (modal.getAttribute('aria-hidden') === 'false') {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
             }
-        }, { passive: false }); // Explicitly non-passive because we call preventDefault()
+        }
+    }, { passive: false }); // Explicitly non-passive because we call preventDefault()
 
-        // Drag functionality for zoomed images
-        imageContainer.addEventListener('mousedown', startDrag);
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', endDrag);
+    // Drag functionality for zoomed images
+    imageContainer.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', endDrag);
 
-        // Touch support for mobile
-        imageContainer.addEventListener('touchstart', startTouchDrag, { passive: false });
-        imageContainer.addEventListener('touchmove', touchDrag, { passive: false });
-        imageContainer.addEventListener('touchend', endDrag);
-    }
+    // Touch support for mobile
+    imageContainer.addEventListener('touchstart', startTouchDrag, { passive: false });
+    imageContainer.addEventListener('touchmove', touchDrag, { passive: false });
+    imageContainer.addEventListener('touchend', endDrag);
 }
 
 // Open image modal
-function openImageModal(imageSrc, imageAlt) {
+// Note: This function is called from React components and Astro templates via window.openImageModal
+function openImageModal(imageSrc, _imageAlt) {
     // Find the index of the clicked image
     currentImageIndex = imageGallery.findIndex(img => img.src === imageSrc);
     if (currentImageIndex === -1) currentImageIndex = 0; // Fallback to first image
@@ -492,7 +517,6 @@ function openImageModal(imageSrc, imageAlt) {
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
 
-
     // Focus the close button for accessibility
     setTimeout(() => {
         const closeButton = modal.querySelector('.image-modal-close');
@@ -501,6 +525,10 @@ function openImageModal(imageSrc, imageAlt) {
         }
     }, 300);
 }
+
+// Expose to global scope for use in HTML onclick and React components
+// @ts-expect-error - Augmenting window object with custom property
+window.openImageModal = openImageModal;
 
 // Show current image and update UI
 function showCurrentImage() {
@@ -557,7 +585,6 @@ function closeImageModal() {
 
 // Zoom functions
 function zoomIn() {
-    const modalImage = document.getElementById('modal-image');
     if (currentZoom < 3) {
         currentZoom += 0.25;
         updateImageTransform();
@@ -565,7 +592,6 @@ function zoomIn() {
 }
 
 function zoomOut() {
-    const modalImage = document.getElementById('modal-image');
     if (currentZoom > 0.5) {
         currentZoom -= 0.25;
         updateImageTransform();

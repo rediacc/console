@@ -55,13 +55,14 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
 
   const headingRegex = /<h([2-6])[^>]*>(.*?)<\/h\1>/gi;
   const headings: TOCHeading[] = [];
-  let match;
 
-  while ((match = headingRegex.exec(htmlContent)) !== null) {
-    const level = parseInt(match[1]);
+  let match = headingRegex.exec(htmlContent);
+  while (match !== null) {
+    const level = Number.parseInt(match[1]);
 
     // Skip headings outside the requested range
     if (level < minLevel || level > maxLevel) {
+      match = headingRegex.exec(htmlContent);
       continue;
     }
 
@@ -69,13 +70,14 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
 
     // Strip inner HTML tags if requested
     if (stripTags) {
-      title = title.replace(/<[^>]+>/g, '');
+      title = title.replaceAll(/<[^>]+>/g, '');
     }
 
     // Generate ID from title
     const id = generateHeadingId(title);
 
     headings.push({ level, title, id });
+    match = headingRegex.exec(htmlContent);
   }
 
   return headings;
@@ -103,13 +105,14 @@ export function generateTOCFromMarkdown(
 
   const headingRegex = /^(#{1,6})\s+(.+)$/gm;
   const headings: TOCHeading[] = [];
-  let match;
 
-  while ((match = headingRegex.exec(markdownContent)) !== null) {
+  let match = headingRegex.exec(markdownContent);
+  while (match !== null) {
     const level = match[1].length;
 
     // Skip headings outside the requested range
     if (level < minLevel || level > maxLevel) {
+      match = headingRegex.exec(markdownContent);
       continue;
     }
 
@@ -119,6 +122,7 @@ export function generateTOCFromMarkdown(
     const id = generateHeadingId(title);
 
     headings.push({ level, title, id });
+    match = headingRegex.exec(markdownContent);
   }
 
   return headings;
@@ -142,8 +146,8 @@ export function generateTOCFromMarkdown(
 export function generateHeadingId(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-'); // Replace spaces with hyphens
+    .replaceAll(/[^\w\s-]/g, '') // Remove special characters
+    .replaceAll(/\s+/g, '-'); // Replace spaces with hyphens
 }
 
 /**

@@ -45,6 +45,7 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   icon,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -99,6 +100,13 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
     }
   }, [isOpen]);
 
+  // Handle pending navigation
+  useEffect(() => {
+    if (pendingNavigation) {
+      window.location.href = pendingNavigation;
+    }
+  }, [pendingNavigation]);
+
   // Handle language selection
   const handleLanguageSelect = (lang: Language) => {
     setLanguageCookie(lang);
@@ -110,7 +118,7 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
       const currentPath = window.location.pathname;
       const pathWithoutLang = currentPath.replace(/^\/[a-z]{2}/, '');
       const newPath = `/${lang}${pathWithoutLang || '/'}`;
-      window.location.href = newPath;
+      setPendingNavigation(newPath);
     }
 
     setIsOpen(false);

@@ -1,3 +1,4 @@
+/* global console */
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
@@ -12,7 +13,7 @@ const searchIndexIntegration = {
     'astro:build:start': async () => {
       try {
         execSync('node scripts/generate-search-index.js', { stdio: 'inherit' });
-      } catch (error) {
+      } catch (_error) {
         console.error('⚠ Failed to generate search index. Continuing with build...');
       }
     }
