@@ -46,6 +46,9 @@ export const CI_ACTIVATION_CODE = 'AAA111';
 /** Default CLI command timeout in milliseconds */
 export const DEFAULT_CLI_TIMEOUT = 30000;
 
+/** Default CLI output format for tests */
+export const DEFAULT_OUTPUT_FORMAT = 'json';
+
 /** Get configured CLI timeout */
 export function getCliTimeout(): number {
   const timeout = process.env.CLI_TIMEOUT;

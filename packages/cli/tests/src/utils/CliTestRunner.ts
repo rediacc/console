@@ -2,7 +2,13 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execa, type Options } from 'execa';
 import { loadGlobalState } from '../base/globalState.js';
-import { CLI_BUNDLE_PATH, DEFAULT_CLI_TIMEOUT, getApiUrl, getCliTimeout } from '../constants.js';
+import {
+  CLI_BUNDLE_PATH,
+  DEFAULT_CLI_TIMEOUT,
+  DEFAULT_OUTPUT_FORMAT,
+  getApiUrl,
+  getCliTimeout,
+} from '../constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -124,7 +130,7 @@ export class CliTestRunner {
    * Logs command and output to console for Playwright to capture.
    */
   async run(args: string[], options: RunOptions = {}): Promise<CliResult> {
-    const outputFormat = options.outputFormat ?? DEFAULTS.CLI_TEST.OUTPUT_FORMAT;
+    const outputFormat = options.outputFormat ?? DEFAULT_OUTPUT_FORMAT;
     const timeout = options.timeout ?? this.config.timeout ?? DEFAULT_CLI_TIMEOUT;
     const context = options.context ?? this.config.context;
 
