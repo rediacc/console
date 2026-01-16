@@ -5,6 +5,7 @@ import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
 import { ensureCreatedUser } from '../helpers/user-helpers';
+import { ensureDrawerIsClosed } from '../helpers/team-helpers';
 
 test.describe('Team Trace Tests', () => {
   let dashboardPage: DashboardPage;
@@ -26,24 +27,6 @@ test.describe('Team Trace Tests', () => {
     testDataManager,
   }) => {
     test.setTimeout(60000);
-    const dismissDrawerMask = async (): Promise<void> => {
-      const mask = page.locator('.ant-drawer-mask');
-      if (await mask.isVisible().catch(() => false)) {
-        try {
-          await mask.click({ force: true });
-          await mask.waitFor({ state: 'hidden', timeout: 3000 });
-        } catch {
-          await page.keyboard.press('Escape').catch(() => null);
-          await page.evaluate(() => {
-            const overlay = document.querySelector<HTMLElement>('.ant-drawer-mask');
-            if (overlay) {
-              overlay.style.pointerEvents = 'none';
-              overlay.style.opacity = '0';
-            }
-          });
-        }
-      }
-    };
     testReporter.startStep('Navigate to Organization Users section');
 
     const createdUser = await ensureCreatedUser(page, testDataManager);
@@ -52,8 +35,13 @@ test.describe('Team Trace Tests', () => {
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationUsers();
 
+    // Ensure drawer is closed after navigation (critical for mobile/tablet)
+    await ensureDrawerIsClosed(page);
+
     const verifyUserVisible = async (): Promise<boolean> => {
-      await nav.goToOrganizationUsers();
+      // Ensure drawer is closed before attempting to find user
+      await ensureDrawerIsClosed(page);
+      
       const searchInput = page.getByTestId('resource-list-search');
       if (await searchInput.isVisible().catch(() => false)) {
         await searchInput.fill('');
@@ -79,7 +67,7 @@ test.describe('Team Trace Tests', () => {
 
     const traceButton = page.getByTestId(UserPageIDs.systemUserTraceButton(createdUser.email));
     if (await traceButton.isVisible().catch(() => false)) {
-      await dismissDrawerMask();
+      await ensureDrawerIsClosed(page);
       await traceButton.click();
     } else {
       const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));

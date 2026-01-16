@@ -116,6 +116,41 @@ async function waitForAnimation(page: Page, ms: number): Promise<void> {
 }
 
 /**
+ * Ensures the mobile drawer is closed to prevent pointer event interception
+ */
+export async function ensureDrawerIsClosed(page: Page): Promise<void> {
+  const drawer = page.locator('.ant-drawer');
+  const mask = page.locator('.ant-drawer-mask');
+  
+  // Check if drawer is open
+  if (await drawer.isVisible().catch(() => false)) {
+    console.warn('[Mobile Navigation] Drawer still open, attempting to close');
+    
+    // Try clicking the mask first
+    if (await mask.isVisible().catch(() => false)) {
+      await mask.click({ force: true });
+    } else {
+      // Fallback: try pressing Escape or clicking outside
+      await page.keyboard.press('Escape').catch(() => {});
+      
+      // Try clicking on the main content area to close drawer
+      const mainContent = page.locator('main, [role="main"], .ant-layout-content').first();
+      if (await mainContent.isVisible().catch(() => false)) {
+        await mainContent.click({ force: true, position: { x: 100, y: 100 } }).catch(() => {});
+      }
+    }
+    
+    // Wait for drawer to close
+    await drawer.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    
+    // Additional wait for any animations
+    await waitForAnimation(page, 500);
+    
+    console.warn('[Mobile Navigation] Drawer closing attempted');
+  }
+}
+
+/**
  * Ensures the create team button is visible, handling mobile/tablet navigation
  * where the button might be hidden in a collapsed sidebar/menu.
  */
@@ -232,6 +267,10 @@ export async function createTeamViaUI(page: Page, teamName: string): Promise<voi
   // Smart navigation: ensure we can see the create button
   // On mobile/tablet, the button might be hidden in a collapsed sidebar
   await ensureCreateButtonVisible(page);
+
+  // Ensure drawer is closed before attempting to click the button
+  // The drawer mask can intercept pointer events on mobile devices
+  await ensureDrawerIsClosed(page);
 
   // Find the first visible create button (handles both desktop and mobile layouts)
   const createButton = page.getByTestId(TeamPageIDS.systemCreateTeamButton).first();
