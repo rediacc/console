@@ -133,15 +133,20 @@ async function tryCloseDrawerByMask(page: Page, mask: Locator): Promise<void> {
 async function tryCloseDrawerByFallback(page: Page): Promise<void> {
   // Try pressing Escape
   await page.keyboard.press('Escape').catch(() => {});
-  
+
   // Try clicking on the main content area to close drawer
   const mainContent = page.locator('main, [role="main"], .ant-layout-content').first();
   if (await mainContent.isVisible().catch(() => false)) {
-    await mainContent.click({ force: true, position: { x: 100, y: 100 }, timeout: 2000 }).catch(() => {});
+    await mainContent
+      .click({ force: true, position: { x: 100, y: 100 }, timeout: 2000 })
+      .catch(() => {});
   }
-  
+
   // Try clicking body element as last resort
-  await page.locator('body').click({ force: true, position: { x: 50, y: 50 }, timeout: 2000 }).catch(() => {});
+  await page
+    .locator('body')
+    .click({ force: true, position: { x: 50, y: 50 }, timeout: 2000 })
+    .catch(() => {});
 }
 
 /**
@@ -167,19 +172,19 @@ export async function ensureDrawerIsClosed(page: Page): Promise<void> {
     // Multiple attempts for CI environment stability
     let attempts = 0;
     const maxAttempts = 3;
-    
-    while (attempts < maxAttempts && await drawer.isVisible().catch(() => false)) {
+
+    while (attempts < maxAttempts && (await drawer.isVisible().catch(() => false))) {
       attempts++;
       console.warn(`[Mobile Navigation] Drawer closing attempt ${attempts}`);
-      
+
       // Try clicking the mask first
       await tryCloseDrawerByMask(page, mask);
-      
+
       // If mask didn't work, try fallback methods
       if (await drawer.isVisible().catch(() => false)) {
         await tryCloseDrawerByFallback(page);
       }
-      
+
       // Wait a bit between attempts - use network idle for better CI compatibility
       await page.waitForLoadState('networkidle').catch(() => {});
     }

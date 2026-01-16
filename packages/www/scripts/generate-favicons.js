@@ -65,10 +65,7 @@ async function generateFavicons() {
 
     // Generate ICO file (multi-size)
     const icoPath = path.join(publicDir, 'favicon.ico');
-    await sharp(svgPath)
-      .resize(32, 32)
-      .png()
-      .toFile(icoPath.replace('.ico', '-temp.png'));
+    await sharp(svgPath).resize(32, 32).png().toFile(icoPath.replace('.ico', '-temp.png'));
 
     // Note: Sharp doesn't support ICO directly, so we create a 32x32 PNG
     // For true ICO support, you'd need a different tool like ico-convert
@@ -80,7 +77,6 @@ async function generateFavicons() {
     console.log('1. Update BaseLayout.astro to use the new PNG files');
     console.log('2. Update site.webmanifest to reference PNG icons');
     console.log('3. Test the favicon display in different browsers');
-
   } catch (error) {
     console.error('❌ Error generating favicons:', error.message);
     process.exit(1);

@@ -1,1 +1,270 @@
-{"featureGroups":[{"id":"essentials","name":"Essentials","order":1},{"id":"capacity","name":"Capacity & Scale","order":2},{"id":"operations","name":"Operations & Automation","order":3},{"id":"backup","name":"Backup & Recovery","order":4},{"id":"pro_features","name":"Pro Features","order":5}],"features":[{"id":"support_type","name":"tier.feature.support_type","category":"essentials","tooltip":"Level of support provided with your plan","displayType":"value","order":1,"values":{"community":"community","pro":"priority","business":"priority","enterprise":"dedicated_account"}},{"id":"interface","name":"tier.feature.interface","category":"essentials","tooltip":"Available access methods","displayType":"value","order":2,"values":{"community":"web","pro":"cli","business":"cli","enterprise":"cli"}},{"id":"api_access","name":"tier.feature.api_access","category":"essentials","tooltip":"Programmatic access to services","displayType":"value","order":3,"values":{"community":false,"pro":"basic","business":"full","enterprise":"full"}},{"id":"users","name":"tier.feature.users","category":"capacity","tooltip":"Number of users in your organization","displayType":"number","order":4,"values":{"community":"5","pro":"10","business":"25","enterprise":"100"}},{"id":"repos","name":"tier.feature.repos","category":"capacity","tooltip":"Number of repositories you can create","displayType":"number","order":5,"values":{"community":"10","pro":"25","business":"75","enterprise":"300"}},{"id":"unlimited_repo_size","name":"tier.feature.unlimited_repo_size","category":"capacity","tooltip":"No limits on repository storage size","displayType":"boolean","order":6,"values":{"community":true,"pro":true,"business":true,"enterprise":true}},{"id":"machines","name":"tier.feature.machines","category":"capacity","tooltip":"Number of machines you can manage","displayType":"number","order":7,"values":{"community":"10","pro":"25","business":"100","enterprise":"500"}},{"id":"active_jobs","name":"tier.feature.active_jobs","category":"capacity","tooltip":"Number of jobs that can run simultaneously","displayType":"number","order":8,"values":{"community":"1","pro":"4","business":"8","enterprise":"100"}},{"id":"queue_pending_items","name":"tier.feature.queue_pending_items","category":"capacity","tooltip":"Maximum number of pending items in queue per user","displayType":"number","order":9,"values":{"community":"5","pro":"10","business":"20","enterprise":"50"}},{"id":"job_timeout","name":"tier.feature.job_timeout","category":"capacity","tooltip":"Maximum time a job can run before timeout","displayType":"number_with_unit","unit":"hours","order":9,"values":{"community":"2","pro":"24","business":"72","enterprise":"unlimited"}},{"id":"regions","name":"tier.feature.regions","category":"capacity","tooltip":"Number of geographic regions you can deploy to","displayType":"number","order":10,"values":{"community":"5","pro":"10","business":"20","enterprise":"50"}},{"id":"bridges","name":"tier.feature.bridges","category":"capacity","tooltip":"Number of bridge connections for your infrastructure","displayType":"number","order":11,"values":{"community":"5","pro":"15","business":"40","enterprise":"150"}},{"id":"bridge_type","name":"tier.feature.bridge_type","category":"capacity","tooltip":"Type of network bridge for connecting environments","displayType":"value","order":12,"values":{"community":"cloud","pro":"cloud","business":"external","enterprise":"external"}},{"id":"storages","name":"tier.feature.storages","category":"capacity","tooltip":"Number of storage locations you can configure","displayType":"number","order":13,"values":{"community":"10","pro":"25","business":"75","enterprise":"300"}},{"id":"teams","name":"tier.feature.teams","category":"operations","tooltip":"Number of teams you can create in your organization","displayType":"number","order":14,"values":{"community":"5","pro":"10","business":"25","enterprise":"100"}},{"id":"schedules","name":"tier.feature.schedules","category":"operations","tooltip":"Number of scheduled tasks you can create","displayType":"number","order":15,"values":{"community":"5","pro":"10","business":"20","enterprise":"50"}},{"id":"custom_permission_groups","name":"tier.feature.custom_permission_groups","category":"operations","tooltip":"Create custom permission groups for fine-grained access control","displayType":"boolean","order":16,"values":{"community":false,"pro":true,"business":true,"enterprise":true}},{"id":"job_priority_change","name":"tier.feature.job_priority_change","category":"operations","tooltip":"Change job execution priority","displayType":"boolean","order":17,"values":{"community":false,"pro":false,"business":true,"enterprise":true}},{"id":"audit_days","name":"tier.feature.audit_days","category":"operations","tooltip":"How long audit logs are retained","displayType":"number_with_unit","order":18,"values":{"community":"7","pro":"90","business":"180","enterprise":"365"},"unit":"days"},{"id":"advanced_analytics","name":"tier.feature.advanced_analytics","category":"operations","tooltip":"Access to advanced analytics and reporting features","displayType":"boolean","order":19,"values":{"community":false,"pro":false,"business":true,"enterprise":true}},{"id":"time_travel_recovery","name":"tier.feature.time_travel_recovery","category":"backup","tooltip":"Restore to any point in time within the specified days","displayType":"number_with_unit","order":20,"values":{"community":"7","pro":"30","business":"90","enterprise":"365"},"unit":"days"},{"id":"custom_backup_schedules","name":"tier.feature.custom_backup_schedules","category":"backup","tooltip":"Create your own backup schedules","displayType":"boolean","order":21,"values":{"community":false,"pro":false,"business":true,"enterprise":true}},{"id":"cross_region_replication","name":"tier.feature.cross_region_replication","category":"backup","tooltip":"Replicate data across geographic regions","displayType":"boolean","order":22,"values":{"community":false,"pro":false,"business":true,"enterprise":true}},{"id":"on_premise_installation","name":"tier.feature.on_premise_installation","category":"pro_features","tooltip":"Install and run entirely within your own infrastructure","displayType":"boolean","order":24,"values":{"community":false,"pro":false,"business":false,"enterprise":true}},{"id":"custom_branding","name":"tier.feature.custom_branding","category":"pro_features","tooltip":"Customize branding with your organization's identity","displayType":"boolean","order":25,"values":{"community":false,"pro":true,"business":true,"enterprise":true}},{"id":"dedicated_account_manager","name":"tier.feature.dedicated_account_manager","category":"essentials","tooltip":"Dedicated account manager for personalized support","displayType":"boolean","order":26,"values":{"community":false,"pro":false,"business":false,"enterprise":true}}],"formatting":{"boolean":{"true":{"display":"name"},"false":{"display":"skip"}},"number":{"display":"{value} {name}"},"number_with_unit":{"display":"{value} {unit} {name}","unlimited":"{unlimited} {name}"},"value":{"display":"{translated_value}","displayNameFor":[]}},"tiers":{"community":{"name":"tier.community.name","order":1},"pro":{"name":"Pro","order":2},"business":{"name":"Business","order":3},"enterprise":{"name":"Enterprise","order":4}}}
+{
+  "featureGroups": [
+    { "id": "essentials", "name": "Essentials", "order": 1 },
+    { "id": "capacity", "name": "Capacity & Scale", "order": 2 },
+    { "id": "operations", "name": "Operations & Automation", "order": 3 },
+    { "id": "backup", "name": "Backup & Recovery", "order": 4 },
+    { "id": "pro_features", "name": "Pro Features", "order": 5 }
+  ],
+  "features": [
+    {
+      "id": "support_type",
+      "name": "tier.feature.support_type",
+      "category": "essentials",
+      "tooltip": "Level of support provided with your plan",
+      "displayType": "value",
+      "order": 1,
+      "values": {
+        "community": "community",
+        "pro": "priority",
+        "business": "priority",
+        "enterprise": "dedicated_account"
+      }
+    },
+    {
+      "id": "interface",
+      "name": "tier.feature.interface",
+      "category": "essentials",
+      "tooltip": "Available access methods",
+      "displayType": "value",
+      "order": 2,
+      "values": { "community": "web", "pro": "cli", "business": "cli", "enterprise": "cli" }
+    },
+    {
+      "id": "api_access",
+      "name": "tier.feature.api_access",
+      "category": "essentials",
+      "tooltip": "Programmatic access to services",
+      "displayType": "value",
+      "order": 3,
+      "values": { "community": false, "pro": "basic", "business": "full", "enterprise": "full" }
+    },
+    {
+      "id": "users",
+      "name": "tier.feature.users",
+      "category": "capacity",
+      "tooltip": "Number of users in your organization",
+      "displayType": "number",
+      "order": 4,
+      "values": { "community": "5", "pro": "10", "business": "25", "enterprise": "100" }
+    },
+    {
+      "id": "repos",
+      "name": "tier.feature.repos",
+      "category": "capacity",
+      "tooltip": "Number of repositories you can create",
+      "displayType": "number",
+      "order": 5,
+      "values": { "community": "10", "pro": "25", "business": "75", "enterprise": "300" }
+    },
+    {
+      "id": "unlimited_repo_size",
+      "name": "tier.feature.unlimited_repo_size",
+      "category": "capacity",
+      "tooltip": "No limits on repository storage size",
+      "displayType": "boolean",
+      "order": 6,
+      "values": { "community": true, "pro": true, "business": true, "enterprise": true }
+    },
+    {
+      "id": "machines",
+      "name": "tier.feature.machines",
+      "category": "capacity",
+      "tooltip": "Number of machines you can manage",
+      "displayType": "number",
+      "order": 7,
+      "values": { "community": "10", "pro": "25", "business": "100", "enterprise": "500" }
+    },
+    {
+      "id": "active_jobs",
+      "name": "tier.feature.active_jobs",
+      "category": "capacity",
+      "tooltip": "Number of jobs that can run simultaneously",
+      "displayType": "number",
+      "order": 8,
+      "values": { "community": "1", "pro": "4", "business": "8", "enterprise": "100" }
+    },
+    {
+      "id": "queue_pending_items",
+      "name": "tier.feature.queue_pending_items",
+      "category": "capacity",
+      "tooltip": "Maximum number of pending items in queue per user",
+      "displayType": "number",
+      "order": 9,
+      "values": { "community": "5", "pro": "10", "business": "20", "enterprise": "50" }
+    },
+    {
+      "id": "job_timeout",
+      "name": "tier.feature.job_timeout",
+      "category": "capacity",
+      "tooltip": "Maximum time a job can run before timeout",
+      "displayType": "number_with_unit",
+      "unit": "hours",
+      "order": 9,
+      "values": { "community": "2", "pro": "24", "business": "72", "enterprise": "unlimited" }
+    },
+    {
+      "id": "regions",
+      "name": "tier.feature.regions",
+      "category": "capacity",
+      "tooltip": "Number of geographic regions you can deploy to",
+      "displayType": "number",
+      "order": 10,
+      "values": { "community": "5", "pro": "10", "business": "20", "enterprise": "50" }
+    },
+    {
+      "id": "bridges",
+      "name": "tier.feature.bridges",
+      "category": "capacity",
+      "tooltip": "Number of bridge connections for your infrastructure",
+      "displayType": "number",
+      "order": 11,
+      "values": { "community": "5", "pro": "15", "business": "40", "enterprise": "150" }
+    },
+    {
+      "id": "bridge_type",
+      "name": "tier.feature.bridge_type",
+      "category": "capacity",
+      "tooltip": "Type of network bridge for connecting environments",
+      "displayType": "value",
+      "order": 12,
+      "values": {
+        "community": "cloud",
+        "pro": "cloud",
+        "business": "external",
+        "enterprise": "external"
+      }
+    },
+    {
+      "id": "storages",
+      "name": "tier.feature.storages",
+      "category": "capacity",
+      "tooltip": "Number of storage locations you can configure",
+      "displayType": "number",
+      "order": 13,
+      "values": { "community": "10", "pro": "25", "business": "75", "enterprise": "300" }
+    },
+    {
+      "id": "teams",
+      "name": "tier.feature.teams",
+      "category": "operations",
+      "tooltip": "Number of teams you can create in your organization",
+      "displayType": "number",
+      "order": 14,
+      "values": { "community": "5", "pro": "10", "business": "25", "enterprise": "100" }
+    },
+    {
+      "id": "schedules",
+      "name": "tier.feature.schedules",
+      "category": "operations",
+      "tooltip": "Number of scheduled tasks you can create",
+      "displayType": "number",
+      "order": 15,
+      "values": { "community": "5", "pro": "10", "business": "20", "enterprise": "50" }
+    },
+    {
+      "id": "custom_permission_groups",
+      "name": "tier.feature.custom_permission_groups",
+      "category": "operations",
+      "tooltip": "Create custom permission groups for fine-grained access control",
+      "displayType": "boolean",
+      "order": 16,
+      "values": { "community": false, "pro": true, "business": true, "enterprise": true }
+    },
+    {
+      "id": "job_priority_change",
+      "name": "tier.feature.job_priority_change",
+      "category": "operations",
+      "tooltip": "Change job execution priority",
+      "displayType": "boolean",
+      "order": 17,
+      "values": { "community": false, "pro": false, "business": true, "enterprise": true }
+    },
+    {
+      "id": "audit_days",
+      "name": "tier.feature.audit_days",
+      "category": "operations",
+      "tooltip": "How long audit logs are retained",
+      "displayType": "number_with_unit",
+      "order": 18,
+      "values": { "community": "7", "pro": "90", "business": "180", "enterprise": "365" },
+      "unit": "days"
+    },
+    {
+      "id": "advanced_analytics",
+      "name": "tier.feature.advanced_analytics",
+      "category": "operations",
+      "tooltip": "Access to advanced analytics and reporting features",
+      "displayType": "boolean",
+      "order": 19,
+      "values": { "community": false, "pro": false, "business": true, "enterprise": true }
+    },
+    {
+      "id": "time_travel_recovery",
+      "name": "tier.feature.time_travel_recovery",
+      "category": "backup",
+      "tooltip": "Restore to any point in time within the specified days",
+      "displayType": "number_with_unit",
+      "order": 20,
+      "values": { "community": "7", "pro": "30", "business": "90", "enterprise": "365" },
+      "unit": "days"
+    },
+    {
+      "id": "custom_backup_schedules",
+      "name": "tier.feature.custom_backup_schedules",
+      "category": "backup",
+      "tooltip": "Create your own backup schedules",
+      "displayType": "boolean",
+      "order": 21,
+      "values": { "community": false, "pro": false, "business": true, "enterprise": true }
+    },
+    {
+      "id": "cross_region_replication",
+      "name": "tier.feature.cross_region_replication",
+      "category": "backup",
+      "tooltip": "Replicate data across geographic regions",
+      "displayType": "boolean",
+      "order": 22,
+      "values": { "community": false, "pro": false, "business": true, "enterprise": true }
+    },
+    {
+      "id": "on_premise_installation",
+      "name": "tier.feature.on_premise_installation",
+      "category": "pro_features",
+      "tooltip": "Install and run entirely within your own infrastructure",
+      "displayType": "boolean",
+      "order": 24,
+      "values": { "community": false, "pro": false, "business": false, "enterprise": true }
+    },
+    {
+      "id": "custom_branding",
+      "name": "tier.feature.custom_branding",
+      "category": "pro_features",
+      "tooltip": "Customize branding with your organization's identity",
+      "displayType": "boolean",
+      "order": 25,
+      "values": { "community": false, "pro": true, "business": true, "enterprise": true }
+    },
+    {
+      "id": "dedicated_account_manager",
+      "name": "tier.feature.dedicated_account_manager",
+      "category": "essentials",
+      "tooltip": "Dedicated account manager for personalized support",
+      "displayType": "boolean",
+      "order": 26,
+      "values": { "community": false, "pro": false, "business": false, "enterprise": true }
+    }
+  ],
+  "formatting": {
+    "boolean": { "true": { "display": "name" }, "false": { "display": "skip" } },
+    "number": { "display": "{value} {name}" },
+    "number_with_unit": { "display": "{value} {unit} {name}", "unlimited": "{unlimited} {name}" },
+    "value": { "display": "{translated_value}", "displayNameFor": [] }
+  },
+  "tiers": {
+    "community": { "name": "tier.community.name", "order": 1 },
+    "pro": { "name": "Pro", "order": 2 },
+    "business": { "name": "Business", "order": 3 },
+    "enterprise": { "name": "Enterprise", "order": 4 }
+  }
+}

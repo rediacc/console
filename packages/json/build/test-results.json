@@ -1,1 +1,11 @@
-{"summary":{"total":0,"passed":0,"failed":0,"skipped":0,"duration":"0s","timestamp":""},"results":[]}
+{
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "duration": "0s",
+    "timestamp": ""
+  },
+  "results": []
+}

@@ -43,7 +43,7 @@ test.describe('Team Trace Tests', () => {
     const verifyUserVisible = async (): Promise<boolean> => {
       // Ensure drawer is closed before attempting to find user
       await ensureDrawerIsClosed(page);
-      
+
       // Additional CI-specific wait for DOM stability
       await page.waitForLoadState('domcontentloaded').catch(() => {});
 
@@ -55,13 +55,13 @@ test.describe('Team Trace Tests', () => {
         // Wait for search results to update
         await page.waitForLoadState('networkidle').catch(() => {});
       }
-      
+
       // Check both list and table views with multiple strategies
       const listItem = page.getByTestId(UserPageIDs.resourceListItem(createdUser.email));
       if (await listItem.isVisible().catch(() => false)) {
         return true;
       }
-      
+
       // Try table view with more flexible visibility check
       const userTable = page.getByTestId(UserPageIDs.systemUserTable);
       if (await userTable.isVisible().catch(() => false)) {
@@ -77,18 +77,23 @@ test.describe('Team Trace Tests', () => {
           return false;
         }
       }
-      
+
       return false;
     };
 
     // Add extra wait for CI environment stability
     await page.waitForLoadState('networkidle').catch(() => {});
     console.warn('[User Trace Test] Starting user visibility verification');
-    await expect.poll(async () => {
-      const result = await verifyUserVisible();
-      console.warn(`[User Trace Test] User visibility check result: ${result}`);
-      return result;
-    }, { timeout: 15000, intervals: [1000, 2000, 3000, 5000] }).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          const result = await verifyUserVisible();
+          console.warn(`[User Trace Test] User visibility check result: ${result}`);
+          return result;
+        },
+        { timeout: 15000, intervals: [1000, 2000, 3000, 5000] }
+      )
+      .toBe(true);
     console.warn('[User Trace Test] User visibility verification passed');
 
     testReporter.completeStep('Navigate to Organization Users section', 'passed');

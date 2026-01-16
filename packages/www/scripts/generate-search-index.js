@@ -66,20 +66,13 @@ function generateSearchIndex() {
  */
 function indexTranslations(searchIndex, startingId) {
   try {
-    const translationsPath = path.join(
-      projectRoot,
-      'src/i18n/translations/en.json'
-    );
+    const translationsPath = path.join(projectRoot, 'src/i18n/translations/en.json');
     const translations = JSON.parse(fs.readFileSync(translationsPath, 'utf-8'));
 
     let idCounter = startingId;
 
     function traverse(obj, keyPath = '', parentKey = 'root') {
-      if (
-        typeof obj === 'string' &&
-        obj.trim().length > 0 &&
-        !keyPath.includes('meta')
-      ) {
+      if (typeof obj === 'string' && obj.trim().length > 0 && !keyPath.includes('meta')) {
         const id = `search-${idCounter++}`;
         const category = categorizeByPath(keyPath);
         const page = detectPage(keyPath);
@@ -113,10 +106,7 @@ function indexTranslations(searchIndex, startingId) {
 
     traverse(translations);
   } catch (error) {
-    console.warn(
-      '⚠ Warning: Could not index translations:',
-      error.message
-    );
+    console.warn('⚠ Warning: Could not index translations:', error.message);
   }
 }
 
@@ -225,15 +215,10 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           }
 
           // Index markdown content (first 300 chars of first paragraph)
-          const paragraphs = content
-            .split('\n\n')
-            .filter((p) => p.trim() && !p.startsWith('#'));
+          const paragraphs = content.split('\n\n').filter((p) => p.trim() && !p.startsWith('#'));
 
           if (paragraphs.length > 0) {
-            const contentSnippet = paragraphs[0]
-              .replace(/#+/g, '')
-              .replace(/[*_]/g, '')
-              .trim();
+            const contentSnippet = paragraphs[0].replace(/#+/g, '').replace(/[*_]/g, '').trim();
 
             if (contentSnippet.length > 0) {
               searchIndex.push({
@@ -282,10 +267,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
 
     console.log(`  ✓ Indexed ${totalFiles} ${category.toLowerCase()} files`);
   } catch (error) {
-    console.warn(
-      `⚠ Warning: Could not index ${category}:`,
-      error.message
-    );
+    console.warn(`⚠ Warning: Could not index ${category}:`, error.message);
   }
 }
 
