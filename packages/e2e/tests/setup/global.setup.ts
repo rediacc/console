@@ -23,23 +23,11 @@ setup('register user for e2e tests', async ({ page }) => {
   console.warn('='.repeat(60));
   console.warn(`[Setup] Registering: ${credentials.email}`);
 
-  // Track all network requests for debugging Windows timeout issue
+  // Track pending network requests (for diagnostic logging during waits)
   const pendingRequests = new Set<string>();
-  page.on('request', (request) => {
-    const url = request.url();
-    pendingRequests.add(url);
-    console.warn(`[Network] → Request: ${request.method()} ${url}`);
-  });
-  page.on('response', (response) => {
-    const url = response.url();
-    pendingRequests.delete(url);
-    console.warn(`[Network] ← Response: ${response.status()} ${url} (${response.statusText()})`);
-  });
-  page.on('requestfailed', (request) => {
-    const url = request.url();
-    pendingRequests.delete(url);
-    console.warn(`[Network] ✗ Failed: ${request.failure()?.errorText} ${url}`);
-  });
+  page.on('request', (request) => pendingRequests.add(request.url()));
+  page.on('response', (response) => pendingRequests.delete(response.url()));
+  page.on('requestfailed', (request) => pendingRequests.delete(request.url()));
 
   const baseURL = process.env.E2E_BASE_URL ?? API_DEFAULTS.CONSOLE_URL;
   const loginUrl = `${baseURL}login`;
@@ -132,11 +120,9 @@ setup('register user for e2e tests', async ({ page }) => {
     .locator('[data-testid="registration-activation-code-input"]')
     .fill(getEnvVarWithDefault('TEST_VERIFICATION_CODE'));
   await page.locator('[data-testid="registration-verify-button"]').click();
-  await waitForNetworkIdleWithRetry(page, undefined, {
-    maxRetries: 3,
-    retryDelay: 2000,
-    timeout: 15000,
-  });
+
+  // Wait briefly for verification to complete (tests will handle their own navigation)
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
 
   // Save credentials for tests to use
   saveGlobalState({
