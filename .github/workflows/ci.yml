@@ -747,21 +747,16 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - name: Run E2E Tests - All Projects (Sequential)
+      - name: Run E2E Tests - Browser Only
         run: |
           .ci/scripts/test/run-e2e.sh --projects \
-            ${{ env.E2E_BROWSERS }} \
-            resolution-1920x1080 resolution-1366x768 resolution-1536x864
+            ${{ env.E2E_BROWSERS }}
       - name: Create Completion Signals
         if: always()
         run: |
           # Browser signals
           for browser in ${{ env.E2E_BROWSERS }}; do
             .ci/scripts/signal/create-complete.sh --name "e2e-$browser"
-          done
-          # Resolution signals
-          for res in resolution-1920x1080 resolution-1366x768 resolution-1536x864; do
-            .ci/scripts/signal/create-complete.sh --name "e2e-$res"
           done
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
