@@ -447,6 +447,49 @@ quality_all() {
     npm run quality
 }
 
+quality_audit() {
+    check_node_version
+    log_step "Running security audit"
+
+    npm audit --json > audit-report.json || true
+
+    # Known unfixable vulnerabilities (document why each is allowed)
+    # 1112255: tar <=7.5.2 path traversal - in electron-builder, can't upgrade (tar@7.5.3 has breaking ESM changes)
+    local ALLOWED_ADVISORIES=(1112255)
+
+    # Get all unique advisory IDs from vulnerabilities
+    local advisories=$(jq -r '[.vulnerabilities[].via[] | select(type == "object") | .source] | unique | .[]' audit-report.json 2>/dev/null)
+
+    # Check for any advisory not in allowlist
+    local unallowed=""
+    for advisory in $advisories; do
+        local found=false
+        for allowed in "${ALLOWED_ADVISORIES[@]}"; do
+            [[ "$advisory" == "$allowed" ]] && found=true && break
+        done
+        [[ "$found" == "false" ]] && unallowed="$unallowed $advisory"
+    done
+
+    local total=$(jq '.metadata.vulnerabilities.total // 0' audit-report.json 2>/dev/null || echo "0")
+    local critical=$(jq '.metadata.vulnerabilities.critical // 0' audit-report.json 2>/dev/null || echo "0")
+    local high=$(jq '.metadata.vulnerabilities.high // 0' audit-report.json 2>/dev/null || echo "0")
+
+    if [[ -n "$unallowed" ]]; then
+        log_error "New vulnerabilities found: $critical critical, $high high"
+        log_info "Unallowed advisories:$unallowed"
+        log_info "See audit-report.json for details"
+        log_info "If unfixable, add advisory ID to ALLOWED_ADVISORIES in ./go"
+        return 1
+    fi
+
+    if [[ "$total" -gt 0 ]]; then
+        log_warn "Allowed vulnerabilities: $total (electron-builder/tar - unfixable)"
+    fi
+
+    log_info "Security audit passed"
+    rm -f audit-report.json
+}
+
 # =============================================================================
 # FIX COMMANDS
 # =============================================================================
@@ -486,10 +529,13 @@ check_full() {
     check_node_version
     log_step "Running full validation"
 
-    log_step "Phase 1/2: Quality Checks"
+    log_step "Phase 1/3: Quality Checks"
     quality_all || exit 1
 
-    log_step "Phase 2/2: Unit Tests"
+    log_step "Phase 2/3: Security Audit"
+    quality_audit || exit 1
+
+    log_step "Phase 3/3: Unit Tests"
     test_unit || exit 1
 
     log_info "Full validation passed!"
@@ -583,6 +629,7 @@ QUALITY COMMANDS:
   quality lint        Run linting (ESLint + Knip)
   quality format      Check code formatting (Biome)
   quality types       Check TypeScript types
+  quality audit       Run security audit (npm audit)
   quality all         Run all quality checks
 
 FIX COMMANDS:
@@ -591,8 +638,8 @@ FIX COMMANDS:
   fix all             Auto-fix all issues
 
 CHECK COMMANDS (PRE-PUSH):
-  check quick         Fast checks (lint, format, types) - ~30s
-  check full          Full validation (quality + tests) - ~5min
+  check quick         Fast checks (lint, format, types)
+  check full          Full validation (quality + audit + tests)
 
 MAINTENANCE:
   clean               Clean build artifacts
@@ -686,11 +733,12 @@ main() {
                 lint) quality_lint ;;
                 format) quality_format ;;
                 types) quality_types ;;
+                audit) quality_audit ;;
                 all|"") quality_all ;;
                 *)
                     log_error "Unknown quality command: ${1:-}"
                     echo ""
-                    echo "Usage: ./go quality [lint|format|types|all]"
+                    echo "Usage: ./go quality [lint|format|types|audit|all]"
                     exit 1
                     ;;
             esac

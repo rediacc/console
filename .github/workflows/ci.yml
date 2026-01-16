@@ -304,8 +304,29 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      - run: npm audit --audit-level=critical
-      - run: npm audit --json > audit-report.json
+      - run: .ci/scripts/setup/install-deps.sh
+      - name: Security audit with allowlist
+        run: |
+          npm audit --json > audit-report.json || true
+
+          # Known unfixable vulnerabilities (sync with ./go quality_audit)
+          # 1112255: tar <=7.5.2 path traversal - in electron-builder, can't upgrade (tar@7.5.3 has breaking ESM changes)
+          ALLOWED="1112255"
+
+          # Get advisories not in allowlist
+          UNALLOWED=$(jq -r --arg allowed "$ALLOWED" '
+            [.vulnerabilities[].via[] | select(type == "object") | .source] | unique | map(select(. as $id | ($allowed | split(" ") | map(tonumber) | index($id) == null))) | .[]
+          ' audit-report.json 2>/dev/null || echo "")
+
+          if [ -n "$UNALLOWED" ]; then
+            echo "::error::New security vulnerabilities found: $UNALLOWED"
+            echo "See audit-report.json artifact for details"
+            exit 1
+          fi
+
+          TOTAL=$(jq '.metadata.vulnerabilities.total // 0' audit-report.json)
+          [ "$TOTAL" -gt 0 ] && echo "::warning::Allowed vulnerabilities: $TOTAL (electron-builder/tar - unfixable)"
+          echo "Security audit passed"
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
