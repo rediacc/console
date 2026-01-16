@@ -396,7 +396,7 @@ export class NavigationHelper {
 
   private async closeDrawerIfNeeded(): Promise<void> {
     const drawer = this.page.locator('.ant-drawer');
-    
+
     // Check if drawer is open and close it
     if (await drawer.isVisible().catch(() => false)) {
       const mask = this.page.locator('.ant-drawer-mask');
@@ -406,10 +406,10 @@ export class NavigationHelper {
         // If no mask, try clicking outside or using escape key
         await this.page.keyboard.press('Escape').catch(() => {});
       }
-      
+
       // Wait for drawer to close completely
       await drawer.waitFor({ state: 'hidden', timeout: SUBMENU_VISIBLE_TIMEOUT }).catch(() => {});
-      
+
       // Additional safety wait for any animations to complete
       await this.page.waitForLoadState('networkidle').catch(() => {});
     }

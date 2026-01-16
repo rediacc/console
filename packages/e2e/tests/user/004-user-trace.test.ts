@@ -4,8 +4,8 @@ import { UserPageIDs } from '../../pages/user/UserPageIDs';
 import { test, expect } from '../../src/base/BaseTest';
 import { NavigationHelper } from '../../src/helpers/NavigationHelper';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
-import { ensureCreatedUser } from '../helpers/user-helpers';
 import { ensureDrawerIsClosed } from '../helpers/team-helpers';
+import { ensureCreatedUser } from '../helpers/user-helpers';
 
 test.describe('Team Trace Tests', () => {
   let dashboardPage: DashboardPage;
@@ -41,7 +41,7 @@ test.describe('Team Trace Tests', () => {
     const verifyUserVisible = async (): Promise<boolean> => {
       // Ensure drawer is closed before attempting to find user
       await ensureDrawerIsClosed(page);
-      
+
       const searchInput = page.getByTestId('resource-list-search');
       if (await searchInput.isVisible().catch(() => false)) {
         await searchInput.fill('');
@@ -74,7 +74,7 @@ test.describe('Team Trace Tests', () => {
       await expect(listItem).toBeVisible({ timeout: 5000 });
       const actionsButton = listItem.getByRole('button', { name: /actions/i });
       await expect(actionsButton).toBeVisible();
-      await dismissDrawerMask();
+      await ensureDrawerIsClosed(page);
       await actionsButton.click();
       const traceMenuItem = page.getByRole('menuitem', { name: /trace/i });
       await expect(traceMenuItem).toBeVisible({ timeout: 5000 });
