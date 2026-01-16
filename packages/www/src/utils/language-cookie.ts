@@ -4,7 +4,7 @@
  * Shared cookie management for language selection across www.rediacc.com and console.rediacc.com
  */
 
-export const LANGUAGE_COOKIE_NAME = 'rediacc_lang';
+const LANGUAGE_COOKIE_NAME = 'rediacc_lang';
 
 export interface LanguageCookieOptions {
   domain?: string;
@@ -22,23 +22,6 @@ const DEFAULT_OPTIONS: LanguageCookieOptions = {
   sameSite: 'Lax',
 };
 
-/**
- * Get language from cookie
- */
-export function getLanguageCookie(): string | null {
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === LANGUAGE_COOKIE_NAME) {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-}
 
 /**
  * Set language cookie
@@ -80,22 +63,3 @@ export function setLanguageCookie(language: string, options: LanguageCookieOptio
   document.cookie = cookieString;
 }
 
-/**
- * Delete language cookie
- */
-export function deleteLanguageCookie(): void {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  // Set expiry to past date to delete
-  setLanguageCookie('', { maxAge: -1 });
-}
-
-/**
- * Check if a language code is valid
- */
-export function isValidLanguage(lang: string): boolean {
-  const validLanguages = ['en', 'es', 'fr', 'de', 'zh', 'ja', 'ar', 'tr', 'ru'];
-  return validLanguages.includes(lang);
-}

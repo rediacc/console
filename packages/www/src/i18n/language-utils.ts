@@ -36,43 +36,8 @@ export function getLanguageFromPath(pathname: string): Language {
 /**
  * Check if a language is supported
  */
-export function isSupportedLanguage(lang: string | undefined): lang is Language {
+function isSupportedLanguage(lang: string | undefined): lang is Language {
   return lang !== undefined && SUPPORTED_LANGUAGES.includes(lang as Language);
-}
-
-/**
- * Get all available translations for a given slug
- * Useful for building language switchers
- */
-export function getAvailableTranslations(
-  slug: string,
-  allPosts: CollectionEntry[],
-  collection: 'blog' | 'docs'
-): { lang: Language; url: string }[] {
-  const baseSlug = slug.split('/').pop() ?? slug;
-  const translations = allPosts
-    .filter((post) => post.slug === baseSlug && post.collection === collection)
-    .map((post) => ({
-      lang: post.data.language ?? DEFAULT_LANGUAGE,
-      url: `/${post.data.language ?? DEFAULT_LANGUAGE}/${collection}/${post.slug}`,
-    }));
-
-  // If no translations found, return empty array
-  return translations.length > 0 ? translations : [];
-}
-
-/**
- * Generate localized URL for a path
- * e.g., generateLocalizedPath("/blog/post", "es") => "/es/blog/post"
- */
-export function generateLocalizedPath(path: string, lang: Language): string {
-  if (lang === DEFAULT_LANGUAGE && !path.startsWith('/')) {
-    return `/${lang}${path}`;
-  }
-  if (lang !== DEFAULT_LANGUAGE) {
-    return `/${lang}${path}`;
-  }
-  return path;
 }
 
 /**

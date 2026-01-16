@@ -3,7 +3,7 @@
  * @param str - The string to convert
  * @returns A lowercase, hyphenated slug
  */
-export function stringToSlug(str: string): string {
+function stringToSlug(str: string): string {
   return str
     .toLowerCase()
     .trim()

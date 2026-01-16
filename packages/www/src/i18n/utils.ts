@@ -52,7 +52,7 @@ function interpolate(text: string, params?: InterpolationParams): string {
  * @param params - Optional parameters for interpolation
  * @returns Translated string or the key if translation not found
  */
-export function getTranslation(lang: Language, key: string, params?: InterpolationParams): string {
+function getTranslation(lang: Language, key: string, params?: InterpolationParams): string {
   const translation = getNestedValue(translations[lang], key);
 
   if (translation === undefined) {
@@ -74,7 +74,7 @@ export function getTranslation(lang: Language, key: string, params?: Interpolati
  * @param key - Translation key pointing to an array
  * @returns Array of strings or empty array if not found
  */
-export function getTranslationArray(lang: Language, key: string): string[] {
+function getTranslationArray(lang: Language, key: string): string[] {
   const translation = getNestedValue(translations[lang], key);
 
   if (!Array.isArray(translation)) {
@@ -91,7 +91,7 @@ export function getTranslationArray(lang: Language, key: string): string[] {
  * @param key - Translation key pointing to an object
  * @returns Object with translations or empty object if not found
  */
-export function getTranslationObject(lang: Language, key: string): Record<string, unknown> {
+function getTranslationObject(lang: Language, key: string): Record<string, unknown> {
   const translation = getNestedValue(translations[lang], key);
 
   if (typeof translation !== 'object' || translation === null) {
