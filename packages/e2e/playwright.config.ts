@@ -36,8 +36,8 @@ export default test.defineConfig({
   /* Global teardown to clean up state file */
   globalTeardown: path.resolve(__dirname, './src/setup/global-teardown.ts'),
 
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  /* Run tests sequentially to prevent race conditions and timing issues */
+  fullyParallel: false,
 
   /* Fail the build if you accidentally left test.only in the source code. */
   forbidOnly: true,
@@ -45,7 +45,7 @@ export default test.defineConfig({
   /* No retries - tests should pass consistently */
   retries: 0,
 
-  /* Parallel workers: reduced to 1 for maximum stability and resource isolation */
+  /* Single worker for maximum stability and resource isolation */
   workers: 1,
 
   /* Stop test run after first test failure (including all retries) */
