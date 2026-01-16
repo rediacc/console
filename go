@@ -52,6 +52,75 @@ check_node_version() {
 }
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+# Check if Docker is running
+check_docker() {
+    if ! command -v docker &>/dev/null; then
+        log_error "Docker is not installed"
+        log_info "Install Docker from: https://docs.docker.com/get-docker/"
+        exit 1
+    fi
+
+    if ! docker info &>/dev/null; then
+        log_error "Docker is not running"
+        log_info "Start Docker Desktop or Docker daemon"
+        exit 1
+    fi
+}
+
+# Load environment file
+load_env() {
+    local env_file="$1"
+
+    if [[ ! -f "$env_file" ]]; then
+        log_warn "Environment file not found: $env_file"
+        return 1
+    fi
+
+    # Export variables from .env file
+    set -a
+    source "$env_file"
+    set +a
+
+    log_debug "Loaded environment from: $env_file"
+}
+
+# Prompt user to continue (y/N)
+prompt_continue() {
+    local message="${1:-Continue}"
+    local response
+
+    read -p "$message? (y/N): " response
+    [[ "$response" =~ ^[yY]$ ]]
+}
+
+# Ensure npm dependencies are installed
+ensure_deps() {
+    if [[ ! -d "$ROOT_DIR/node_modules" ]] || \
+       [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
+        log_step "Installing dependencies..."
+        npm install
+    fi
+}
+
+# Ensure shared packages are built (required before tests)
+ensure_packages_built() {
+    local shared_dist="$ROOT_DIR/packages/shared/dist"
+    local shared_src="$ROOT_DIR/packages/shared/src"
+
+    # Check if shared package needs rebuilding
+    if [[ ! -d "$shared_dist" ]] || \
+       [[ -n "$(find "$shared_src" -newer "$shared_dist" -type f 2>/dev/null | head -1)" ]]; then
+        log_step "Building shared packages..."
+        "$ROOT_DIR/.ci/scripts/setup/build-packages.sh"
+    else
+        log_debug "Shared packages are up-to-date"
+    fi
+}
+
+# =============================================================================
 # BACKEND COMMANDS
 # =============================================================================
 
@@ -279,12 +348,14 @@ sandbox() {
 
 test_unit() {
     check_node_version
+    ensure_packages_built
     log_step "Running unit tests"
     "$ROOT_DIR/.ci/scripts/test/run-unit.sh" "$@"
 }
 
 test_cli() {
     check_node_version
+    ensure_packages_built
     log_step "Running CLI tests"
     "$ROOT_DIR/.ci/scripts/test/run-cli.sh" "$@"
 }
