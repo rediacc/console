@@ -655,18 +655,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Provision Test VMs
-        id: vms
-        uses: rediacc/ops/.github/actions/setup-vms@main
-        with:
-          provider: kvm
-          configuration: Standard
-          duration: '60'
-        env:
-          VM_OS_IMAGE: rediacc-ubuntu-24.04
-          TAG: latest
-          SKIP_MACHINE_REGISTRATION: 'true'
-
       - name: Extract renet binary
         run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
 
