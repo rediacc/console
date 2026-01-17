@@ -44,7 +44,7 @@ export class OpsManager {
   constructor() {
     // Use centralized renet path resolution
     const renetRoot = getRenetRoot();
-    const renetBin = getRenetBinaryPath(renetRoot);
+    const renetBin = getRenetBinaryPath();
 
     // Load configuration from environment
     this.config = this.loadConfig();

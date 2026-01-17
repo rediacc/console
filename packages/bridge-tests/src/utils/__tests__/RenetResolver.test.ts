@@ -21,7 +21,6 @@ describe('RenetResolver', () => {
 
     // Clear env vars that affect resolution
     delete process.env.RENET_BINARY_PATH;
-    delete process.env.RENET_BIN;
     delete process.env.RENET_ROOT;
 
     // Reset mocks
@@ -49,18 +48,6 @@ describe('RenetResolver', () => {
       expect(execAsyncMock).toHaveBeenCalledWith('/custom/path/renet version', { timeout: 5000 });
     });
 
-    it('should use RENET_BIN env var as fallback', async () => {
-      process.env.RENET_BIN = '/legacy/path/renet';
-
-      execAsyncMock.mockResolvedValue({ stdout: 'renet v1.0.0', stderr: '' });
-
-      const resolver = new RenetResolver();
-      const result = await resolver.ensureBinary();
-
-      expect(result.source).toBe('env');
-      expect(result.path).toBe('/legacy/path/renet');
-    });
-
     it('should throw error when env path binary is invalid', async () => {
       process.env.RENET_BINARY_PATH = '/invalid/path/renet';
 
@@ -68,18 +55,6 @@ describe('RenetResolver', () => {
 
       const resolver = new RenetResolver();
       await expect(resolver.ensureBinary()).rejects.toThrow('not working');
-    });
-
-    it('should prefer RENET_BINARY_PATH over RENET_BIN', async () => {
-      process.env.RENET_BINARY_PATH = '/primary/renet';
-      process.env.RENET_BIN = '/secondary/renet';
-
-      execAsyncMock.mockResolvedValue({ stdout: 'renet v1.0.0', stderr: '' });
-
-      const resolver = new RenetResolver();
-      const result = await resolver.ensureBinary();
-
-      expect(result.path).toBe('/primary/renet');
     });
   });
 
@@ -150,5 +125,34 @@ describe('RenetResolver', () => {
       expect(['env', 'source-build', 'path']).toContain(result.source);
       expect(typeof result.builtNow).toBe('boolean');
     });
+  });
+});
+
+// Test getRenetBinaryPath fallback behavior (imported from renetPath.ts)
+describe('getRenetBinaryPath fallback', () => {
+  let originalEnv: NodeJS.ProcessEnv;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    delete process.env.RENET_BINARY_PATH;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('should use RENET_BINARY_PATH env var when resolver not initialized', async () => {
+    process.env.RENET_BINARY_PATH = '/ci/path/renet';
+
+    // Import fresh to avoid cached resolver
+    const { getRenetBinaryPath } = await import('../renetPath');
+
+    // Create new resolver instance that hasn't been initialized
+    // The getRenetBinaryPath should fall back to env var
+    const result = getRenetBinaryPath();
+
+    // Should either return the env var path or the cached resolver path
+    // In CI mode with no resolver init, it should return the env var path
+    expect(result).toBe('/ci/path/renet');
   });
 });

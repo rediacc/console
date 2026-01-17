@@ -73,7 +73,7 @@ export class RenetResolver {
   // === Private helpers ===
 
   private getEnvPath(): string | null {
-    return process.env.RENET_BINARY_PATH || process.env.RENET_BIN || null;
+    return process.env.RENET_BINARY_PATH || null;
   }
 
   private getSourceDir(): string | null {

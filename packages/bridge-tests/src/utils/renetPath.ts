@@ -18,13 +18,22 @@ function getRenetSourceBinaryPath(): string {
  * For async code with auto-build support, use RenetResolver.ensureBinary() instead.
  * This function is useful for synchronous initialization (e.g., in constructors).
  *
- * @returns Resolved path to renet binary from resolver cache, or source binary path as fallback
+ * Resolution order when resolver not initialized:
+ * 1. RENET_BINARY_PATH env var (CI mode)
+ * 2. Source binary path (local development)
+ *
+ * @returns Resolved path to renet binary
  */
 export function getRenetBinaryPath(): string {
   try {
     return getRenetResolver().getPath();
   } catch {
-    // Resolver not initialized yet, return source binary path
+    // Resolver not initialized yet, check env var first (for CI mode)
+    const envPath = process.env.RENET_BINARY_PATH;
+    if (envPath) {
+      return envPath;
+    }
+    // Fall back to source binary path for local development
     return getRenetSourceBinaryPath();
   }
 }
