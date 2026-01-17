@@ -33,15 +33,14 @@ TIMEOUT="${ARG_TIMEOUT:-${BRIDGE_TIMEOUT:-120000}}"
 RENET_PATH="${ARG_RENET_PATH:-${RENET_BINARY_PATH:-}}"
 
 # Determine OPS_HOME for SSH keys
-# Priority: OPS_HOME env > derive from monorepo structure
+# Priority: OPS_HOME env > derive from renet's default logic (cwd/../ops)
 OPS_HOME_VALUE="${OPS_HOME:-}"
 if [[ -z "$OPS_HOME_VALUE" ]]; then
-    # Derive from script location: .ci/scripts/env -> console -> monorepo
-    CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-    MONOREPO_ROOT="$(dirname "$CONSOLE_ROOT")"
-    if [[ -d "$MONOREPO_ROOT/ops" ]]; then
-        OPS_HOME_VALUE="$MONOREPO_ROOT/ops"
-    fi
+    # Match renet's default: cwd/../ops (from checkout directory)
+    # In CI: /home/runner/work/console/console -> /home/runner/work/ops
+    # Locally: /home/user/monorepo/console -> /home/user/monorepo/ops
+    CHECKOUT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+    OPS_HOME_VALUE="$(dirname "$CHECKOUT_DIR")/ops"
 fi
 
 # Validate required arguments

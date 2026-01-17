@@ -170,6 +170,7 @@ for project in "${PROJECTS[@]}"; do
     fi
     if [[ -n "${E2E_PORT:-}" ]]; then
         ENV_VARS+=("E2E_PORT=$E2E_PORT")
+        ENV_VARS+=("E2E_BASE_URL=http://localhost:${E2E_PORT}/console/")
     fi
 
     if (cd "$E2E_DIR" && env ${ENV_VARS[@]+"${ENV_VARS[@]}"} "${CMD[@]}"); then
