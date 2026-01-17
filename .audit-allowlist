@@ -1,0 +1,9 @@
+# Security audit allowlist - advisories that cannot be fixed
+# Format: ADVISORY_ID # Comment explaining why it's allowed
+#
+# Both ./go quality audit and CI use this file.
+# Only add advisories here after confirming they cannot be fixed.
+
+# tar <=7.5.2 path traversal (GHSA-8qq5-rm4j-mr97)
+# In electron-builder dependency chain, can't upgrade - tar@7.5.3 has breaking ESM changes
+1112255

@@ -305,28 +305,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
-      - name: Security audit with allowlist
-        run: |
-          npm audit --json > audit-report.json || true
-
-          # Known unfixable vulnerabilities (sync with ./go quality_audit)
-          # 1112255: tar <=7.5.2 path traversal - in electron-builder, can't upgrade (tar@7.5.3 has breaking ESM changes)
-          ALLOWED="1112255"
-
-          # Get advisories not in allowlist
-          UNALLOWED=$(jq -r --arg allowed "$ALLOWED" '
-            [.vulnerabilities[].via[] | select(type == "object") | .source] | unique | map(select(. as $id | ($allowed | split(" ") | map(tonumber) | index($id) == null))) | .[]
-          ' audit-report.json 2>/dev/null || echo "")
-
-          if [ -n "$UNALLOWED" ]; then
-            echo "::error::New security vulnerabilities found: $UNALLOWED"
-            echo "See audit-report.json artifact for details"
-            exit 1
-          fi
-
-          TOTAL=$(jq '.metadata.vulnerabilities.total // 0' audit-report.json)
-          [ "$TOTAL" -gt 0 ] && echo "::warning::Allowed vulnerabilities: $TOTAL (electron-builder/tar - unfixable)"
-          echo "Security audit passed"
+      - run: .ci/scripts/security/audit.sh
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
@@ -334,13 +313,20 @@ jobs:
           path: audit-report.json
           retention-days: 3
 
+  quality-shell:
+    name: Quality - Shell
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - run: .ci/scripts/security/shellcheck.sh
+
   # ============================================================================
   # TIER 3: BUILD & UNIT TESTS (Depends on Tier 1)
   # ============================================================================
   test-unit:
     name: Test - Unit
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -360,7 +346,7 @@ jobs:
   build-cli:
     name: Build - CLI
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -374,7 +360,7 @@ jobs:
   test-vscode:
     name: Test - VS Code (${{ matrix.os }})
     timeout-minutes: 15
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     strategy:
       fail-fast: true
       matrix:
@@ -410,7 +396,7 @@ jobs:
   build-web:
     name: Build - Web (${{ matrix.build-type }})
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     strategy:
       matrix:
         build-type: [DEBUG, RELEASE]
@@ -438,7 +424,7 @@ jobs:
   build-www:
     name: Build - WWW
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -456,7 +442,7 @@ jobs:
   build-json:
     name: Build - JSON
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -477,7 +463,7 @@ jobs:
   infra-backend:
     name: Infra - Backend
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     timeout-minutes: 120
     env:
       CI: 'true'
@@ -1024,7 +1010,7 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, release, deploy-pages]
+    needs: [quality-versions, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, release, deploy-pages]
     if: always()
     steps:
       - name: Check job results
@@ -1038,6 +1024,7 @@ jobs:
           echo "- i18n: ${{ needs.quality-i18n.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- TypeScript: ${{ needs.quality-types.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security: ${{ needs.quality-security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Shell: ${{ needs.quality-shell.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Unit Tests" >> $GITHUB_STEP_SUMMARY
           echo "- Unit Tests: ${{ needs.test-unit.result }}" >> $GITHUB_STEP_SUMMARY
@@ -1063,7 +1050,7 @@ jobs:
           echo "- GitHub Pages: ${{ needs.deploy-pages.result }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
-          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
+          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
             [ "$result" != "success" ] && FAILED=true
           done
 

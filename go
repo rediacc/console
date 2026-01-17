@@ -449,45 +449,11 @@ quality_all() {
 
 quality_audit() {
     check_node_version
-    log_step "Running security audit"
+    "$ROOT_DIR/.ci/scripts/security/audit.sh"
+}
 
-    npm audit --json > audit-report.json || true
-
-    # Known unfixable vulnerabilities (document why each is allowed)
-    # 1112255: tar <=7.5.2 path traversal - in electron-builder, can't upgrade (tar@7.5.3 has breaking ESM changes)
-    local ALLOWED_ADVISORIES=(1112255)
-
-    # Get all unique advisory IDs from vulnerabilities
-    local advisories=$(jq -r '[.vulnerabilities[].via[] | select(type == "object") | .source] | unique | .[]' audit-report.json 2>/dev/null)
-
-    # Check for any advisory not in allowlist
-    local unallowed=""
-    for advisory in $advisories; do
-        local found=false
-        for allowed in "${ALLOWED_ADVISORIES[@]}"; do
-            [[ "$advisory" == "$allowed" ]] && found=true && break
-        done
-        [[ "$found" == "false" ]] && unallowed="$unallowed $advisory"
-    done
-
-    local total=$(jq '.metadata.vulnerabilities.total // 0' audit-report.json 2>/dev/null || echo "0")
-    local critical=$(jq '.metadata.vulnerabilities.critical // 0' audit-report.json 2>/dev/null || echo "0")
-    local high=$(jq '.metadata.vulnerabilities.high // 0' audit-report.json 2>/dev/null || echo "0")
-
-    if [[ -n "$unallowed" ]]; then
-        log_error "New vulnerabilities found: $critical critical, $high high"
-        log_info "Unallowed advisories:$unallowed"
-        log_info "See audit-report.json for details"
-        log_info "If unfixable, add advisory ID to ALLOWED_ADVISORIES in ./go"
-        return 1
-    fi
-
-    if [[ "$total" -gt 0 ]]; then
-        log_warn "Allowed vulnerabilities: $total (electron-builder/tar - unfixable)"
-    fi
-
-    log_info "Security audit passed"
-    rm -f audit-report.json
+quality_shell() {
+    "$ROOT_DIR/.ci/scripts/security/shellcheck.sh"
 }
 
 # =============================================================================
@@ -630,6 +596,7 @@ QUALITY COMMANDS:
   quality format      Check code formatting (Biome)
   quality types       Check TypeScript types
   quality audit       Run security audit (npm audit)
+  quality shell       Run shellcheck on shell scripts
   quality all         Run all quality checks
 
 FIX COMMANDS:
@@ -734,11 +701,12 @@ main() {
                 format) quality_format ;;
                 types) quality_types ;;
                 audit) quality_audit ;;
+                shell) quality_shell ;;
                 all|"") quality_all ;;
                 *)
                     log_error "Unknown quality command: ${1:-}"
                     echo ""
-                    echo "Usage: ./go quality [lint|format|types|audit|all]"
+                    echo "Usage: ./go quality [lint|format|types|audit|shell|all]"
                     exit 1
                     ;;
             esac

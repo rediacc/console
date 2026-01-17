@@ -56,7 +56,7 @@ INTERVAL=10
 
 # Create temp directory for download
 DOWNLOAD_DIR="$(mktemp -d)"
-trap "rm -rf $DOWNLOAD_DIR" EXIT
+trap 'rm -rf "$DOWNLOAD_DIR"' EXIT
 
 while [[ $ELAPSED -lt $MAX_WAIT ]]; do
     # Try to download the artifact

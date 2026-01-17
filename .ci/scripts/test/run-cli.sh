@@ -35,12 +35,12 @@ fi
 
 log_step "Running CLI integration tests..."
 
-CMD="npm test"
+CMD=("npm" "test")
 if [[ -n "$FILTER" ]]; then
-    CMD="$CMD -- --grep \"$FILTER\""
+    CMD+=("--" "--grep" "$FILTER")
 fi
 
-if (cd "$CLI_DIR" && $CMD); then
+if (cd "$CLI_DIR" && "${CMD[@]}"); then
     log_info "CLI tests passed"
 else
     log_error "CLI tests failed"

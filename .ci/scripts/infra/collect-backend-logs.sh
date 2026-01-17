@@ -38,7 +38,7 @@ echo "Collecting health check response..."
 if curl -sf http://localhost/api/health > "$OUTPUT_DIR/health-response.json" 2>&1; then
     echo "Health check: OK"
 else
-    echo '{"error": "health check failed", "timestamp": "'$(date -Iseconds)'"}' > "$OUTPUT_DIR/health-response.json"
+    echo '{"error": "health check failed", "timestamp": "'"$(date -Iseconds)"'"}' > "$OUTPUT_DIR/health-response.json"
     echo "Health check: FAILED"
 fi
 
