@@ -521,6 +521,7 @@ jobs:
           ci-mode: 'true'
 
       - name: Wait for Services
+        working-directory: console
         run: .ci/scripts/infra/wait-for-health.sh --url http://localhost/health --timeout 120 --message "Elite services are ready"
 
       - name: Create Cloudflare Tunnel
