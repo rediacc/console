@@ -658,6 +658,9 @@ jobs:
       - name: Extract renet binary
         run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
 
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
       - name: Create Bridge Test Environment
         run: .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
 
