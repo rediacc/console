@@ -116,9 +116,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <Flex vertical>
                 <Typography.Text>{i18n.t('common:errorBoundary.description')}</Typography.Text>
                 {import.meta.env.DEV && this.state.error && (
-                  <details
-                    className="p-3 text-xs font-mono"
-                  >
+                  <details className="p-3 text-xs font-mono">
                     <summary className="cursor-pointer">
                       {i18n.t('common:errorBoundary.errorDetails')}
                     </summary>

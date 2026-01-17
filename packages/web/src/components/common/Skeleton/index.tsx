@@ -41,15 +41,9 @@ export interface SkeletonRowProps {
 
 const SkeletonRow: React.FC<SkeletonRowProps> = ({ columns = 4 }) => {
   return (
-    <Flex
-      align="center"
-      className="w-full py-3"
-    >
+    <Flex align="center" className="w-full py-3">
       {Array.from({ length: columns }).map((_, index) => (
-        <Flex
-          key={index}
-          className="flex-1 rounded h-5"
-        />
+        <Flex key={index} className="flex-1 rounded h-5" />
       ))}
     </Flex>
   );
@@ -62,10 +56,7 @@ export interface SkeletonCardProps {
 
 const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
   return (
-    <Flex
-      vertical
-      className="rounded-md p-6"
-    >
+    <Flex vertical className="rounded-md p-6">
       {Array.from({ length: lines }).map((_, index) => (
         <SkeletonText key={index} width={index === lines - 1 ? '60%' : '100%'} height="16px" />
       ))}
@@ -74,15 +65,11 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
 };
 
 const SkeletonButton: React.FC = () => {
-  return (
-    <Flex className="h-10 w-[120px] rounded-md" />
-  );
+  return <Flex className="h-10 w-[120px] rounded-md" />;
 };
 
 const SkeletonInput: React.FC = () => {
-  return (
-    <Flex className="w-full h-10 rounded" />
-  );
+  return <Flex className="w-full h-10 rounded" />;
 };
 
 const SkeletonBase = (props: React.HTMLAttributes<HTMLDivElement>) => (

@@ -201,10 +201,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
       }
       destroyOnHidden
     >
-      <Flex
-        vertical
-        className="h-[60vh] min-h-[400px]"
-      >
+      <Flex vertical className="h-[60vh] min-h-[400px]">
         {/* Error Alert */}
         {container.error && !container.isConnected && (
           <Alert
@@ -243,11 +240,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
         ) : (
           !container.isConnecting &&
           !container.error && (
-            <Flex
-              justify="center"
-              align="center"
-              className="flex-1 bg-[#1e1e2e] rounded-lg"
-            >
+            <Flex justify="center" align="center" className="flex-1 bg-[#1e1e2e] rounded-lg">
               <Text type="secondary">
                 {t('resources:localActions.containerWaitingForConnection')}
               </Text>

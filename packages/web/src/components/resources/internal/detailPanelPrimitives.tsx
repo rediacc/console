@@ -104,6 +104,9 @@ export const DetailPanelFieldMonospaceValue = (props: React.ComponentProps<typeo
   <Text code className="break-words" {...props} />
 );
 
-export const DetailPanelDivider = ({ className, ...props }: React.ComponentProps<typeof Divider>) => (
+export const DetailPanelDivider = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof Divider>) => (
   <Divider className={['my-6', className].filter(Boolean).join(' ')} {...props} />
 );
