@@ -40,7 +40,19 @@ test.describe('Registration Tests', () => {
     testReporter.startStep('Submit registration form');
 
     await loginPage.submitRegistrationForm();
-    await page.waitForTimeout(3000);
+
+    // Check for API error before waiting for verification step
+    // This provides a clear error message instead of a generic timeout
+    const errorAlert = page.locator('.ant-alert-error');
+    if (await errorAlert.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const errorText = await errorAlert.textContent();
+      throw new Error(`Registration API failed: ${errorText}`);
+    }
+
+    // Wait for verification step to appear
+    await page
+      .locator('[data-testid="registration-activation-code-input"]')
+      .waitFor({ state: 'visible', timeout: 30000 });
 
     await loginPage.completeRegistrationVerification(verificationCode);
 

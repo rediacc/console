@@ -7,23 +7,46 @@ export default defineConfig({
   main: {
     build: {
       outDir: 'out/main',
-      externalizeDeps: true,
+      // Don't auto-externalize deps - we handle it via ssr.external
+      externalizeDeps: false,
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
         },
       },
     },
+    resolve: {
+      alias: {
+        '@rediacc/shared': resolve(__dirname, '../shared/src'),
+        '@rediacc/shared-desktop': resolve(__dirname, '../shared-desktop/src'),
+      },
+    },
+    // SSR externalization - only externalize native/electron modules
+    ssr: {
+      external: ['electron', 'electron-updater', 'ssh2', 'node-pty', 'cpu-features'],
+      // Bundle all other packages including workspace packages
+      noExternal: true,
+    },
   },
   preload: {
     build: {
       outDir: 'out/preload',
-      externalizeDeps: true,
+      externalizeDeps: false,
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/preload/index.ts'),
         },
       },
+    },
+    resolve: {
+      alias: {
+        '@rediacc/shared': resolve(__dirname, '../shared/src'),
+        '@rediacc/shared-desktop': resolve(__dirname, '../shared-desktop/src'),
+      },
+    },
+    ssr: {
+      external: ['electron'],
+      noExternal: true,
     },
   },
   renderer: {

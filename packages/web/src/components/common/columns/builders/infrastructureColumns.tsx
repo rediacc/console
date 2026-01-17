@@ -16,8 +16,8 @@ import {
 } from '@/utils/optimizedIcons';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type {
-  GetRegionBridges_ResultSet1,
   GetOrganizationRegions_ResultSet1,
+  GetRegionBridges_ResultSet1,
 } from '@rediacc/shared/types';
 import { RESPONSIVE_HIDE_XS } from '..';
 import { createActionColumn } from '../factories/action';

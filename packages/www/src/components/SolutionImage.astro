@@ -1,0 +1,96 @@
+---
+export interface Props {
+  imageSrc: string;
+  imageAlt: string;
+  title?: string;
+  description?: string;
+  variant?: 'light' | 'dark';
+}
+
+const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.props;
+---
+
+<section class={`solution-image-section ${variant}`}>
+  <div class="container">
+    {(title || description) && (
+      <div class="solution-image-header">
+        {title && <h2 class="solution-image-title">{title}</h2>}
+        {description && <p class="solution-image-description">{description}</p>}
+      </div>
+    )}
+
+    <div class="solution-image-container">
+      <img
+        src={imageSrc}
+        alt={imageAlt}
+        class="solution-image"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .solution-image-section {
+    padding: 4rem 0;
+  }
+
+  .solution-image-section.light {
+    background-color: #f7f7f8;
+  }
+
+  .solution-image-section.dark {
+    background-color: #1a1a1a;
+    color: #ffffff;
+  }
+
+  .solution-image-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .solution-image-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: inherit;
+  }
+
+  .solution-image-description {
+    font-size: 1.125rem;
+    color: inherit;
+    opacity: 0.9;
+  }
+
+  .solution-image-container {
+    margin: 0 auto;
+    max-width: 1100px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .solution-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    .solution-image-section {
+      padding: 3rem 0;
+    }
+
+    .solution-image-title {
+      font-size: 1.5rem;
+    }
+
+    .solution-image-description {
+      font-size: 1rem;
+    }
+  }
+</style>

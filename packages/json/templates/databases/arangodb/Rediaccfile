@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+    echo "Pulling ArangoDB image..."
+    docker pull arangodb:3.11
+
+    echo "Creating data directories..."
+    mkdir -p ./data
+    mkdir -p ./apps
+    chmod 755 ./data ./apps 2>/dev/null || true
+
+    return 0
+}
+
+up() {
+    if [ -f .env ]; then
+        source .env
+    fi
+
+    echo "Starting ArangoDB server..."
+    _compose up -d
+    return $?
+}
+
+down() {
+    echo "Stopping ArangoDB server..."
+    _compose down -v
+    return $?
+}

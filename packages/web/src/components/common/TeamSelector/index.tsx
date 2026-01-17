@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Flex, Input, Select, Tag, Typography } from 'antd';
+import { Flex, Input, Select, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SearchOutlined, TeamOutlined } from '@/utils/optimizedIcons';
 import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 interface TeamSelectorProps {
   teams: GetOrganizationTeams_ResultSet1[];
-  selectedTeams: string[];
-  onChange: (selectedTeams: string[]) => void;
+  selectedTeam: string | null;
+  onChange: (team: string | null) => void;
   loading?: boolean;
   placeholder?: string;
   style?: React.CSSProperties;
@@ -15,7 +15,7 @@ interface TeamSelectorProps {
 
 const TeamSelector: React.FC<TeamSelectorProps> = ({
   teams,
-  selectedTeams,
+  selectedTeam,
   onChange,
   loading = false,
   placeholder,
@@ -45,13 +45,12 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
 
   return (
     <Select
-      mode="multiple"
       className="w-full"
       // eslint-disable-next-line no-restricted-syntax
       style={style}
-      placeholder={placeholder ?? t('common:teamSelector.selectTeams')}
-      value={selectedTeams}
-      onChange={(values) => onChange(values)}
+      placeholder={placeholder ?? t('common:teamSelector.selectTeam')}
+      value={selectedTeam}
+      onChange={(value) => onChange(value)}
       loading={loading}
       options={filteredOptions}
       filterOption={false}
@@ -59,19 +58,6 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       searchValue={searchValue}
       onSearch={setSearchValue}
       data-testid="team-selector"
-      tagRender={(props: { value: string; closable: boolean; onClose: () => void }) => {
-        const { value, closable, onClose } = props;
-        return (
-          <Tag
-            className="inline-flex items-center"
-            closable={closable}
-            onClose={onClose}
-            data-testid={`team-selector-tag-${value}`}
-          >
-            {value}
-          </Tag>
-        );
-      }}
       popupRender={(menu: React.ReactElement) => (
         <>
           <Flex>
@@ -87,12 +73,6 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
           </Flex>
           <Flex>{menu}</Flex>
         </>
-      )}
-      maxTagCount="responsive"
-      maxTagPlaceholder={(omittedValues: unknown[]) => (
-        <Tag className="inline-flex items-center" data-testid="team-selector-more-tag">
-          {t('common:teamSelector.moreTeams', { count: omittedValues.length })}
-        </Tag>
       )}
     />
   );

@@ -1,13 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Flex, Form, Modal, Select, Space, Tag, Typography, type MenuProps } from 'antd';
+import { Flex, Form, type MenuProps, Modal, Select, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useGetOrganizationPermissionGroups as usePermissionGroupsQuery } from '@/api/api-hooks.generated';
 import {
-  useUpdateUserAssignedPermissions,
   useCreateNewUser,
-  useUpdateUserToDeactivated,
-  useUpdateUserToActivated,
   useGetOrganizationUsers,
+  useGetOrganizationPermissionGroups as usePermissionGroupsQuery,
+  useUpdateUserAssignedPermissions,
+  useUpdateUserToActivated,
+  useUpdateUserToDeactivated,
 } from '@/api/api-hooks.generated';
 import type { CreateUserInput } from '@/api/mutation-transforms';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
@@ -51,6 +51,7 @@ const UsersPage: React.FC = () => {
   const [userForm] = Form.useForm<CreateUserInput>();
 
   const { data: users = [], isLoading: usersLoading } = useGetOrganizationUsers();
+  const [searchQuery, setSearchQuery] = useState('');
   const createUserMutation = useCreateNewUser();
   const deactivateUserMutation = useUpdateUserToDeactivated();
   const reactivateUserMutation = useUpdateUserToActivated();
@@ -136,6 +137,16 @@ const UsersPage: React.FC = () => {
     },
     [assignPermissionModal]
   );
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users;
+    const query = searchQuery.toLowerCase();
+    return users.filter((user) => {
+      const email = (user.userEmail ?? '').toLowerCase();
+      const group = (user.permissionsName ?? '').toLowerCase();
+      return email.includes(query) || group.includes(query);
+    });
+  }, [searchQuery, users]);
 
   const userColumns = useMemo(
     () =>
@@ -235,11 +246,12 @@ const UsersPage: React.FC = () => {
         <ResourceListView
           title={<PageHeader title={t('users.title')} subtitle={t('users.subtitle')} />}
           loading={usersLoading}
-          data={users}
+          data={filteredUsers}
           columns={userColumns}
           mobileRender={mobileRender}
           rowKey="userEmail"
           searchPlaceholder={t('users.searchPlaceholder')}
+          onSearch={(value) => setSearchQuery(value)}
           data-testid="system-user-table"
           actions={
             <TooltipButton
@@ -250,6 +262,8 @@ const UsersPage: React.FC = () => {
               data-testid="system-create-user-button"
             />
           }
+          onCreateNew={() => createUserModal.open()}
+          createButtonText={tSystem('actions.createUser')}
         />
       </Flex>
 

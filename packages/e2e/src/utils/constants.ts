@@ -10,6 +10,8 @@
 export const E2E_DEFAULTS = {
   MACHINE_NAME: 'machine-1',
   CPU_COUNT_STRING: '0',
+  TEAM_NAME: 'Private Team',
+  REPO_NAME: 'test-repo',
 } as const;
 
 export const FILE_DEFAULTS = {
@@ -18,4 +20,11 @@ export const FILE_DEFAULTS = {
 
 export const TIMEOUT_DEFAULTS = {
   SCREENSHOT: 30000,
+  /** Default timeout for route navigation/waiting */
+  ROUTE: 30000,
+} as const;
+
+export const NETWORK_DEFAULTS = {
+  /** Default API URL for local development */
+  API_URL: 'http://localhost:7322',
 } as const;

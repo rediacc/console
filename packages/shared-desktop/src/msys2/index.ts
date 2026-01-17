@@ -14,21 +14,21 @@
  */
 
 export {
-  // Path resolution functions
-  getBundledMsys2Path,
-  findSystemMsys2Path,
-  getRsyncPath,
-  getSshPath,
-  getSshKeygenPath,
-  // Environment setup
-  getMsys2Environment,
-  // Status and verification
-  isMsys2Available,
-  getMsys2Status,
-  verifyBundleIntegrity,
   // Cache management
   clearPathCache,
+  findSystemMsys2Path,
+  // Path resolution functions
+  getBundledMsys2Path,
+  // Environment setup
+  getMsys2Environment,
+  getMsys2Status,
+  getRsyncPath,
+  getSshKeygenPath,
+  getSshPath,
+  // Status and verification
+  isMsys2Available,
   // Constants
   REQUIRED_BINARIES,
   REQUIRED_DLLS,
+  verifyBundleIntegrity,
 } from './paths.js';

@@ -1,0 +1,325 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+// DEFAULT_LANGUAGE is not used in this file
+import type { Language } from '../../../i18n/types';
+
+export async function getStaticPaths() {
+  const _allPosts = await getCollection('blog');
+
+  const paths = [];
+
+  // Generate paths for each supported language
+  for (const lang of SUPPORTED_LANGUAGES) {
+    paths.push({
+      params: { lang },
+      props: { lang },
+    });
+  }
+
+  return paths;
+}
+
+const { lang } = Astro.props as { lang: Language };
+const { t } = createTranslator(lang);
+
+// Get blog posts for current language, sorted by date
+const allPosts = await getCollection('blog');
+const posts = allPosts
+  .filter((post) => post.data.language === lang)
+  .sort(
+    (a, b) =>
+      new Date(b.data.publishedDate).getTime() -
+      new Date(a.data.publishedDate).getTime()
+  );
+
+// Get featured posts
+const featuredPosts = posts.filter((post) => post.data.featured);
+
+// Extract base slug helper function (removes language prefix)
+const getBaseSlug = (slug: string) => {
+  const parts = slug.split('/');
+  return parts.length > 1 ? parts[parts.length - 1] : slug;
+};
+
+// Group posts by category
+const postsByCategory = posts.reduce((acc, post) => {
+  const category = post.data.category || 'other';
+  if (!acc[category]) acc[category] = [];
+  acc[category].push(post);
+  return acc;
+}, {} as Record<string, typeof posts>);
+
+const categories = Object.keys(postsByCategory).sort();
+---
+
+<BaseLayout lang={lang} title={t('pages.blog.title')}>
+  <div class="blog-page">
+    <header class="blog-header">
+      <h1>{t('pages.blog.title')}</h1>
+      <p>{t('pages.blog.subtitle')}</p>
+    </header>
+
+    {featuredPosts.length > 0 && (
+      <section class="featured-posts">
+        <h2>{t('pages.blog.featured')}</h2>
+        <div class="featured-grid">
+          {featuredPosts.slice(0, 3).map(post => (
+            <article class="featured-card">
+              <div class="card-content">
+                <h3><a href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>{post.data.title}</a></h3>
+                <p class="description">{post.data.description}</p>
+                <div class="card-meta">
+                  <span class="date">
+                    {new Date(post.data.publishedDate).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                  <span class="category">{post.data.category}</span>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="posts-section">
+      <h2>{t('pages.blog.allArticles')}</h2>
+
+      {categories.map(category => (
+        <div class="category-group">
+          <h3 class="category-title">{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
+          <div class="posts-list">
+            {postsByCategory[category].map(post => (
+              <article class="post-item">
+                <div class="post-header">
+                  <h4><a href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>{post.data.title}</a></h4>
+                  <span class="post-date">
+                    {new Date(post.data.publishedDate).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <p class="post-description">{post.data.description}</p>
+                {post.data.tags && post.data.tags.length > 0 && (
+                  <div class="post-tags">
+                    {post.data.tags.map(tag => (
+                      <a href={`/${lang}/blog/tags/${tag}`} class="tag">#{tag}</a>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  </div>
+
+  <style>
+    .blog-page {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .blog-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .blog-header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .blog-header p {
+      font-size: 1.125rem;
+      color: #666;
+    }
+
+    .featured-posts {
+      margin-bottom: 3rem;
+    }
+
+    .featured-posts h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .featured-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .featured-card {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 1.5rem;
+      border-radius: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .featured-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-content h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+    }
+
+    .card-content h3 a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    .card-content h3 a:hover {
+      text-decoration: underline;
+    }
+
+    .description {
+      margin-bottom: 1rem;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.875rem;
+    }
+
+    .date,
+    .category {
+      color: #666;
+    }
+
+    .posts-section h2 {
+      font-size: 1.5rem;
+      margin: 2rem 0 1.5rem 0;
+      border-top: 2px solid #e0e0e0;
+      padding-top: 1rem;
+    }
+
+    .category-group {
+      margin-bottom: 2rem;
+    }
+
+    .category-title {
+      font-size: 1.25rem;
+      color: #333;
+      margin-bottom: 1rem;
+      text-transform: capitalize;
+    }
+
+    .posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .post-item {
+      padding: 1.5rem;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      border-left: 4px solid #0066cc;
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+    .post-item:hover {
+      background-color: #f0f5ff;
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.1);
+    }
+
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .post-header h4 {
+      margin: 0;
+      font-size: 1.125rem;
+      flex: 1;
+    }
+
+    .post-header h4 a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    .post-header h4 a:hover {
+      text-decoration: underline;
+    }
+
+    .post-date {
+      white-space: nowrap;
+      color: #999;
+      font-size: 0.875rem;
+    }
+
+    .post-description {
+      margin: 0.75rem 0;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .post-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background-color: white;
+      color: #0066cc;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.75rem;
+      border: 1px solid #0066cc;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .tag:hover {
+      background-color: #0066cc;
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      .blog-page {
+        padding: 1rem;
+      }
+
+      .blog-header h1 {
+        font-size: 1.75rem;
+      }
+
+      .featured-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .post-header {
+        flex-direction: column;
+      }
+
+      .post-date {
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</BaseLayout>

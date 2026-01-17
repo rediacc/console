@@ -181,8 +181,8 @@
     "tryAgain": "حاول مجددًا"
   },
   "errors": {
-    "somethingWentWrong": "حدث شيء ما خطأ",
-    "schemaValidationFailed": "تم اكتشاف مشكلة في مزامنة البيانات. يرجى تحديث الصفحة أو الاتصال بالدعم إذا استمرت المشكلة."
+    "schemaValidationFailed": "تم اكتشاف مشكلة في مزامنة البيانات. يرجى تحديث الصفحة أو الاتصال بالدعم إذا استمرت المشكلة.",
+    "somethingWentWrong": "حدث شيء ما خطأ"
   },
   "export": {
     "label": "تصدير",
@@ -376,8 +376,9 @@
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} فريق آخر",
-    "selectTeams": "اختر الفرق..."
+    "selectTeam": "اختر الفريق...",
+    "selectTeams": "اختر الفرق...",
+    "moreTeams": "+{{count}} فريق آخر"
   },
   "terminal": {
     "terminal": "الطرفية",

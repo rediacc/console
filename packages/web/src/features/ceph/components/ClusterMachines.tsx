@@ -6,8 +6,8 @@ import { RESPONSIVE_HIDE_XS } from '@/components/common/columns';
 import { createSorter, formatTimestampAsIs } from '@/platform';
 import { DesktopOutlined } from '@/utils/optimizedIcons';
 import type {
-  GetCephClusters_ResultSet1,
   GetCephClusterMachines_ResultSet1,
+  GetCephClusters_ResultSet1,
 } from '@rediacc/shared/types';
 import type { ColumnsType } from 'antd/es/table';
 

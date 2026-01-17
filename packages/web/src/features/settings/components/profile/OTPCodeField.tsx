@@ -6,7 +6,7 @@ const CenteredInput = (props: React.ComponentProps<typeof Input>) => (
   <Input className="text-center" data-testid="otp-code-input" {...props} />
 );
 
-export interface OTPCodeFieldProps {
+interface OTPCodeFieldProps {
   /** Field name in the form */
   name: string;
   /** Field label */

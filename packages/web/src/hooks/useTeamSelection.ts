@@ -1,10 +1,13 @@
-import { useCallback, useMemo, useReducer } from 'react';
-import { useSelector } from 'react-redux';
+import { useMemo, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { RootState } from '@/store/store';
+import { initializeTeam, setTeam } from '@/store/teamSelection/teamSelectionSlice';
 import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 export interface UseTeamSelectionOptions {
+  /** Required page identifier for per-page isolation */
+  pageId: string;
   /** Custom logic to select initial team (e.g., for simple UI mode) */
   getInitialTeam?: (teams: GetOrganizationTeams_ResultSet1[], uiMode: string) => string;
   /** Whether to auto-select first team when none selected */
@@ -13,73 +16,65 @@ export interface UseTeamSelectionOptions {
 
 export interface UseTeamSelectionReturn {
   teams: GetOrganizationTeams_ResultSet1[];
-  selectedTeams: string[];
-  setSelectedTeams: (teams: string[]) => void;
+  selectedTeam: string | null;
+  setSelectedTeam: (team: string | null) => void;
   isLoading: boolean;
   hasInitialized: boolean;
 }
 
-interface SelectionState {
-  selectedTeams: string[];
-  hasInitialized: boolean;
-}
-
-type SelectionAction =
-  | { type: 'INITIALIZE'; teams: string[] }
-  | { type: 'SET_TEAMS'; teams: string[] };
-
-function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
-  switch (action.type) {
-    case 'INITIALIZE':
-      if (state.hasInitialized) return state;
-      return { selectedTeams: action.teams, hasInitialized: true };
-    case 'SET_TEAMS':
-      return { ...state, selectedTeams: action.teams };
-    default:
-      return state;
-  }
-}
-
-export function useTeamSelection(options: UseTeamSelectionOptions = {}): UseTeamSelectionReturn {
-  const { autoSelect = true, getInitialTeam } = options;
+export function useTeamSelection(options: UseTeamSelectionOptions): UseTeamSelectionReturn {
+  const { pageId, autoSelect = true, getInitialTeam } = options;
+  const dispatch = useDispatch();
+  const hasInitializedRef = useRef(false);
 
   const { data: teamsData, isLoading } = useGetOrganizationTeams();
+  const teams = useMemo(() => teamsData ?? [], [teamsData]);
 
-  const teams = useMemo<GetOrganizationTeams_ResultSet1[]>(() => teamsData ?? [], [teamsData]);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
+  const pageState = useSelector((state: RootState) => state.teamSelection.pages[pageId]);
 
-  const [state, dispatch] = useReducer(selectionReducer, {
-    selectedTeams: [],
-    hasInitialized: false,
-  });
+  // Use useEffect to avoid accessing refs during render
+  useEffect(() => {
+    const shouldInitialize =
+      !isLoading &&
+      autoSelect &&
+      teams.length > 0 &&
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/prefer-optional-chain -- pageState may be undefined during initialization
+      !(pageState && pageState.hasInitialized) &&
+      !hasInitializedRef.current;
 
-  // Compute initial team selection when data is ready
-  const shouldInitialize = !isLoading && autoSelect && teams.length > 0 && !state.hasInitialized;
+    if (shouldInitialize) {
+      hasInitializedRef.current = true;
+      let initialTeam: string;
 
-  if (shouldInitialize) {
-    let initialTeam: string;
+      if (getInitialTeam) {
+        const result = getInitialTeam(teams, uiMode);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Defensive programming for edge cases
+        initialTeam = result ?? '';
+      } else if (uiMode === 'simple') {
+        const privateTeam = teams.find((team) => team.teamName === 'Private Team');
+        const teamName = privateTeam ? privateTeam.teamName : teams[0]?.teamName;
+        initialTeam = teamName ?? '';
+      } else {
+        const teamName = teams[0]?.teamName;
+        initialTeam = teamName ?? '';
+      }
 
-    if (getInitialTeam) {
-      initialTeam = getInitialTeam(teams, uiMode);
-    } else if (uiMode === 'simple') {
-      const privateTeam = teams.find((team) => team.teamName === 'Private Team');
-      initialTeam = privateTeam?.teamName ?? teams[0]?.teamName ?? '';
-    } else {
-      initialTeam = teams[0]?.teamName ?? '';
+      dispatch(initializeTeam({ pageId, teamName: initialTeam }));
     }
+  }, [isLoading, autoSelect, teams, pageState, uiMode, getInitialTeam, dispatch, pageId]);
 
-    dispatch({ type: 'INITIALIZE', teams: [initialTeam] });
-  }
-
-  const setSelectedTeams = useCallback((teams: string[]) => {
-    dispatch({ type: 'SET_TEAMS', teams });
-  }, []);
+  const setSelectedTeam = (team: string | null) => {
+    dispatch(setTeam({ pageId, teamName: team }));
+  };
 
   return {
     teams,
-    selectedTeams: state.selectedTeams,
-    setSelectedTeams,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- pageState may be undefined during initialization
+    selectedTeam: pageState?.selectedTeam ?? null,
+    setSelectedTeam,
     isLoading,
-    hasInitialized: state.hasInitialized,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- pageState may be undefined during initialization
+    hasInitialized: pageState?.hasInitialized ?? false,
   };
 }

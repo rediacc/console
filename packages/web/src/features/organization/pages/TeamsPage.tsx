@@ -4,6 +4,7 @@ import {
   Card,
   Flex,
   List,
+  type MenuProps,
   Modal,
   Popconfirm,
   Select,
@@ -11,16 +12,15 @@ import {
   Tabs,
   Tag,
   Typography,
-  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  useCreateTeamMembership,
   useCreateTeam,
+  useCreateTeamMembership,
   useDeleteTeam,
   useDeleteUserFromTeam,
-  useGetTeamMembers,
   useGetOrganizationTeams,
+  useGetTeamMembers,
   useUpdateTeamName,
   useUpdateTeamVault,
 } from '@/api/api-hooks.generated';
@@ -44,6 +44,7 @@ import UnifiedResourceModal, {
 } from '@/components/common/UnifiedResourceModal';
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
+import { minifyJSON } from '@/platform/utils/json';
 import { ModalSize } from '@/types/modal';
 import {
   CloudServerOutlined,
@@ -108,10 +109,14 @@ const TeamsPage: React.FC = () => {
       });
     }
 
-    if (data.vaultContent && data.vaultContent !== existingData.vaultContent) {
+    const nextVault = data.vaultContent ?? '{}';
+    const currentVault = existingData.vaultContent ?? '{}';
+    const vaultHasChanges = minifyJSON(nextVault) !== minifyJSON(currentVault);
+
+    if (data.vaultContent && vaultHasChanges) {
       await updateTeamVaultMutation.mutateAsync({
         teamName: data.teamName ?? existingData.teamName,
-        vaultContent: data.vaultContent,
+        vaultContent: nextVault,
         vaultVersion: (existingData.vaultVersion ?? 0) + 1,
       });
     }
@@ -281,6 +286,8 @@ const TeamsPage: React.FC = () => {
             data-testid="system-create-team-button"
           />
         }
+        onCreateNew={() => unifiedModal.openCreate()}
+        createButtonText={tSystem('actions.createTeam')}
       />
 
       <Modal

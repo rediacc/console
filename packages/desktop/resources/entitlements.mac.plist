@@ -11,9 +11,11 @@
     <!-- File access for user-selected files -->
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
-    <!-- Note: Removed dangerous entitlements:
-         - com.apple.security.cs.allow-unsigned-executable-memory
-         - com.apple.security.cs.allow-dyld-environment-variables
-         These weaken hardened runtime and should only be added if strictly required -->
+    <!-- Required for native modules like node-pty (terminal functionality) -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    <!-- Required for JIT-compiled native code in node-pty and other native modules -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
 </dict>
 </plist>

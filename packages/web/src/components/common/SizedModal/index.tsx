@@ -1,5 +1,5 @@
 import { Modal, type ModalProps } from 'antd';
-import { ModalSize, MODAL_WIDTHS } from '@/types/modal';
+import { MODAL_WIDTHS, ModalSize } from '@/types/modal';
 
 interface SizedModalProps extends Omit<ModalProps, 'width'> {
   size: ModalSize;

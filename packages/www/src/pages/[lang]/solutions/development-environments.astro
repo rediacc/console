@@ -1,0 +1,155 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProblemSolutionSection from '../../../components/ProblemSolutionSection';
+import SolutionHero from '../../../components/SolutionHero.astro';
+import SolutionImage from '../../../components/SolutionImage.astro';
+import SolutionCTA from '../../../components/SolutionCTA.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+import { EXTERNAL_LINKS } from '../../../config/constants';
+import ctaImage from '../../../assets/images/rediacc_resources_repos.png';
+import '../../../styles/solution-page.css';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, to } = createTranslator(lang);
+
+// Get development environments content
+const devEnvContent = to('pages.solutions.developmentEnvironments');
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.solutions.developmentEnvironments.meta.title')}
+  description={t('pages.solutions.developmentEnvironments.meta.description')}
+  keywords={t('pages.solutions.developmentEnvironments.meta.keywords')}
+  ogType="website"
+>
+  <SolutionHero
+    title={devEnvContent.hero.title}
+    subtitle={devEnvContent.hero.subtitle}
+    heroImage="/assets/images/development-environments-hero.svg"
+    heroImageAlt="Development environment provisioning workflow showing instant production clones"
+  />
+
+  <!-- Problem-Solution Section 1: Environment Provisioning Delays -->
+  <ProblemSolutionSection
+    client:visible
+    number={1}
+    title={devEnvContent.problems.provisioningDelays.title}
+    subtitle={devEnvContent.problems.provisioningDelays.subtitle}
+    problem={{
+      description: devEnvContent.problems.provisioningDelays.problem.description,
+      story: devEnvContent.problems.provisioningDelays.problem.story,
+      additionalPoints: devEnvContent.problems.provisioningDelays.problem.additionalPoints
+    }}
+    solution={{
+      title: devEnvContent.problems.provisioningDelays.solution.title,
+      description: devEnvContent.problems.provisioningDelays.solution.description,
+      benefits: devEnvContent.problems.provisioningDelays.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: devEnvContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="development-environments"
+  />
+
+  <!-- Problem-Solution Section 2: Environment Drift -->
+  <ProblemSolutionSection
+    client:visible
+    number={2}
+    title={devEnvContent.problems.environmentDrift.title}
+    subtitle={devEnvContent.problems.environmentDrift.subtitle}
+    problem={{
+      description: devEnvContent.problems.environmentDrift.problem.description,
+      story: devEnvContent.problems.environmentDrift.problem.story,
+      additionalPoints: devEnvContent.problems.environmentDrift.problem.additionalPoints
+    }}
+    solution={{
+      title: devEnvContent.problems.environmentDrift.solution.title,
+      description: devEnvContent.problems.environmentDrift.solution.description,
+      benefits: devEnvContent.problems.environmentDrift.solution.benefits
+    }}
+    variant="dark"
+    cta={{
+      text: devEnvContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="development-environments"
+  />
+
+  <!-- Problem-Solution Section 3: Infrastructure Costs -->
+  <ProblemSolutionSection
+    client:visible
+    number={3}
+    title={devEnvContent.problems.infrastructureCosts.title}
+    subtitle={devEnvContent.problems.infrastructureCosts.subtitle}
+    problem={{
+      description: devEnvContent.problems.infrastructureCosts.problem.description,
+      story: devEnvContent.problems.infrastructureCosts.problem.story,
+      additionalPoints: devEnvContent.problems.infrastructureCosts.problem.additionalPoints
+    }}
+    solution={{
+      title: devEnvContent.problems.infrastructureCosts.solution.title,
+      description: devEnvContent.problems.infrastructureCosts.solution.description,
+      benefits: devEnvContent.problems.infrastructureCosts.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: devEnvContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="development-environments"
+  />
+
+  <!-- Problem-Solution Section 4: CI/CD Complexity -->
+  <ProblemSolutionSection
+    client:visible
+    number={4}
+    title={devEnvContent.problems.cicdComplexity.title}
+    subtitle={devEnvContent.problems.cicdComplexity.subtitle}
+    problem={{
+      description: devEnvContent.problems.cicdComplexity.problem.description,
+      story: devEnvContent.problems.cicdComplexity.problem.story,
+      additionalPoints: devEnvContent.problems.cicdComplexity.problem.additionalPoints
+    }}
+    solution={{
+      title: devEnvContent.problems.cicdComplexity.solution.title,
+      description: devEnvContent.problems.cicdComplexity.solution.description,
+      benefits: devEnvContent.problems.cicdComplexity.solution.benefits
+    }}
+    variant="dark"
+    cta={{
+      text: devEnvContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="development-environments"
+  />
+
+  <!-- Bottom Image Section -->
+  <SolutionImage
+    imageSrc="/assets/images/development-environments-bottom.svg"
+    imageAlt="Development environment automation dashboard showing ephemeral environments and cost savings"
+    variant="dark"
+  />
+
+  <SolutionCTA
+    title={devEnvContent.cta.title}
+    subtitle={devEnvContent.cta.subtitle}
+    buttonText={devEnvContent.cta.button}
+    buttonHref={`/${lang}/contact?interest=development-environments`}
+    imageSrc={ctaImage}
+    imageAlt="Rediacc development environment resources"
+    lang={lang}
+  />
+
+</BaseLayout>

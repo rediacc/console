@@ -18,9 +18,8 @@
  */
 
 export {
-  initI18n,
-  t,
   changeLanguage,
+  initI18n,
   SUPPORTED_LANGUAGES,
-  type SupportedLanguage,
+  t,
 } from './config.js';

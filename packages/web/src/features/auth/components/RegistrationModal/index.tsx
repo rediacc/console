@@ -429,13 +429,18 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           rules={[
             { required: true, message: t('common:messages.required') },
             { len: 6, message: t('auth:registration.activationCodeLength') },
-            { pattern: /^\d{6}$/, message: t('auth:registration.activationCodeFormat') },
+            { pattern: /^[A-Z0-9]{6}$/, message: t('auth:registration.activationCodeFormat') },
           ]}
         >
           <Input
             placeholder={t('auth:registration.activationCodePlaceholder')}
             autoComplete="off"
             maxLength={6}
+            onChange={(e) => {
+              // Convert to uppercase for alphanumeric activation codes
+              const uppercased = e.target.value.toUpperCase();
+              verificationForm.setFieldValue('activationCode', uppercased);
+            }}
             data-testid="registration-activation-code-input"
           />
         </Form.Item>

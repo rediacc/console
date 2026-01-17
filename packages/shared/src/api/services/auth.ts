@@ -6,6 +6,7 @@
  * instead of the normal request token authentication.
  */
 
+import { withRetry } from '../client';
 import type { ApiResponse } from '../../types/api';
 
 /**
@@ -86,33 +87,39 @@ export function createAuthService(client: AuthHttpClient, apiPrefix = ''): AuthS
 
   return {
     async login(email, passwordHash, sessionName = 'Session') {
-      const response = await client.post<ApiResponse>(
-        buildUrl('/CreateAuthenticationRequest'),
-        { name: sessionName },
-        { headers: buildAuthHeaders(email, passwordHash) }
+      const response = await withRetry(() =>
+        client.post<ApiResponse>(
+          buildUrl('/CreateAuthenticationRequest'),
+          { name: sessionName },
+          { headers: buildAuthHeaders(email, passwordHash) }
+        )
       );
       return response.data;
     },
 
     async activateUser(email, activationCode, passwordHash) {
-      const response = await client.post<ApiResponse>(
-        buildUrl('/ActivateUserAccount'),
-        { activationCode },
-        { headers: buildAuthHeaders(email, passwordHash) }
+      const response = await withRetry(() =>
+        client.post<ApiResponse>(
+          buildUrl('/ActivateUserAccount'),
+          { activationCode },
+          { headers: buildAuthHeaders(email, passwordHash) }
+        )
       );
       return response.data;
     },
 
     async register(organizationName, email, passwordHash, plan = 'COMMUNITY', language = 'en') {
-      const response = await client.post<ApiResponse>(
-        buildUrl('/CreateNewOrganization'),
-        {
-          organizationName,
-          userEmailAddress: email,
-          subscriptionPlan: plan,
-          languagePreference: language,
-        },
-        { headers: buildAuthHeaders(email, passwordHash) }
+      const response = await withRetry(() =>
+        client.post<ApiResponse>(
+          buildUrl('/CreateNewOrganization'),
+          {
+            organizationName,
+            userEmailAddress: email,
+            subscriptionPlan: plan,
+            languagePreference: language,
+          },
+          { headers: buildAuthHeaders(email, passwordHash) }
+        )
       );
       return response.data;
     },

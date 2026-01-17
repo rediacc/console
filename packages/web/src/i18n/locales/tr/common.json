@@ -181,8 +181,8 @@
     "tryAgain": "Yeniden Deneyin"
   },
   "errors": {
-    "somethingWentWrong": "Bir şey yanlış gitti",
-    "schemaValidationFailed": "Veri senkronizasyon sorunu tespit edildi. Lütfen sayfayı yenileyin veya sorun devam ederse destek ile iletişime geçin."
+    "schemaValidationFailed": "Veri senkronizasyon sorunu tespit edildi. Lütfen sayfayı yenileyin veya sorun devam ederse destek ile iletişime geçin.",
+    "somethingWentWrong": "Bir şey yanlış gitti"
   },
   "export": {
     "label": "Dışa Aktar",
@@ -376,8 +376,9 @@
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} daha fazla",
-    "selectTeams": "Takımları seçin..."
+    "selectTeam": "Takım seçin...",
+    "selectTeams": "Takımları seçin...",
+    "moreTeams": "+{{count}} daha fazla"
   },
   "terminal": {
     "terminal": "Terminal",

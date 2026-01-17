@@ -5,7 +5,6 @@ import {
   protocolUrlService,
 } from '@/services/protocolUrlService';
 import { getElectronAPI, type VSCodeInstallations } from '@/types';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 export type ContainerMenuAction = 'terminal' | 'logs' | 'stats';
 
@@ -112,7 +111,7 @@ const handleElectronContainerAction = (
 };
 
 // Helper to handle VS Code launch in Electron
-export interface VSCodeLaunchParams {
+interface VSCodeLaunchParams {
   teamName: string;
   machine: string;
   repository?: string;
@@ -162,12 +161,12 @@ const handleElectronVSCode = async (params: VSCodeLaunchParams): Promise<void> =
   });
 
   if (!result.success) {
-    message.error(result.error ?? DEFAULTS.ERROR.VSCODE_CONNECTION_FAILED);
+    message.error(result.error ?? 'shared:errors.vsCodeConnectionFailed');
   }
 };
 
 // Helper to handle machine actions in Electron
-export interface ElectronMachineActionParams {
+interface ElectronMachineActionParams {
   action: ProtocolAction | undefined;
   creds: MachineSSHCredentials;
   machine: string;
@@ -239,7 +238,7 @@ const handleElectronMachineAction = async (params: ElectronMachineActionParams):
 };
 
 // Helper to handle web protocol URL flow
-export interface WebProtocolFlowParams {
+interface WebProtocolFlowParams {
   baseParams: { team: string; machine: string; repository: string };
   isContainerMenu: boolean;
   containerId?: string;
@@ -272,7 +271,7 @@ export const handleWebProtocolFlow = async (params: WebProtocolFlowParams): Prom
       const containerParams: ContainerParams = {
         containerId,
         containerName,
-        action: containerAction ?? (DEFAULTS.REPOSITORY.CONTAINER_ACTION as ContainerMenuAction),
+        action: containerAction ?? 'terminal',
       };
       url = await generateContainerProtocolUrl(baseParams, containerParams, containerAction);
     } else {
@@ -295,7 +294,7 @@ export const handleWebProtocolFlow = async (params: WebProtocolFlowParams): Prom
 };
 
 // Helper to handle Electron flow
-export interface ElectronFlowParams {
+interface ElectronFlowParams {
   teamName: string;
   machine: string;
   repository?: string;

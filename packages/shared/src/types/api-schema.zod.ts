@@ -4,7 +4,7 @@
  * Zod schemas for runtime validation of API responses.
  * Generated alongside api-schema.generated.ts for fail-fast validation.
  *
- * Generated at: 2026-01-11T13:09:42Z
+ * Generated at: 2026-01-14T10:37:46Z
  * Schema version: 3.0.0
  *
  * To regenerate, run: ./go deploy prep
@@ -112,7 +112,7 @@ export const CreateNewUser_ResultSet1Schema = z.object({
   userEmail: z.string().nullish(),
   result: z.string().nullish(),
   languagePreference: z.string().nullish(),
-  activationCode: z.string().nullish(),
+  activationCode: z.number().nullish(),
   createdBy: z.string().nullish(),
 });
 

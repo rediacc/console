@@ -20,7 +20,7 @@ export interface SSHTestResult {
   };
 }
 
-export interface ParsedSSHTestResult {
+interface ParsedSSHTestResult {
   isSSHTest: boolean;
   result?: SSHTestResult;
 }

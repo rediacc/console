@@ -4,6 +4,7 @@
  * System-level hooks that don't use stored procedures:
  * - API health check (direct axios call)
  */
+
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { apiConnectionService } from '@/services/api';

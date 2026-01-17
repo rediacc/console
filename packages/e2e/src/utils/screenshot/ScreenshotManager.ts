@@ -178,7 +178,8 @@ export class ScreenshotManager {
 
     for (const viewport of viewports) {
       await this.page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await this.page.waitForTimeout(1000);
+      // Wait for layout to stabilize after viewport change
+      await this.page.waitForLoadState('domcontentloaded');
 
       const screenshotPath = await this.captureStep(`viewport_${viewport.name}`);
       screenshots.push(screenshotPath);

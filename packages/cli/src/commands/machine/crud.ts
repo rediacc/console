@@ -1,13 +1,13 @@
 import { Command } from 'commander';
 import {
-  parseGetTeamMachines,
   parseCreateMachine,
   parseGetOrganizationVaults,
+  parseGetTeamMachines,
 } from '@rediacc/shared/api';
 import type {
-  GetOrganizationVaults_ResultSet1,
   CreateMachineParams,
   DeleteMachineParams,
+  GetOrganizationVaults_ResultSet1,
   UpdateMachineAssignedBridgeParams,
   UpdateMachineNameParams,
   UpdateMachineVaultParams,

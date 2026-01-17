@@ -1,0 +1,36 @@
+{
+  "endpoints": [
+    {
+      "id": "production",
+      "name": "Production",
+      "url": "https://www.rediacc.com/api",
+      "type": "production",
+      "description": "Main production environment",
+      "icon": "🌐"
+    },
+    {
+      "id": "sandbox",
+      "name": "Sandbox",
+      "url": "https://sandbox.rediacc.com/api",
+      "type": "sandbox",
+      "description": "Testing and development sandbox",
+      "icon": "🏖️"
+    },
+    {
+      "id": "localhost",
+      "name": "Local Development",
+      "url": "http://localhost:7322/api",
+      "type": "localhost",
+      "description": "Local development environment",
+      "icon": "💻"
+    },
+    {
+      "id": "localhost-80",
+      "name": "Local (Port 80)",
+      "url": "http://localhost:80/api",
+      "type": "localhost",
+      "description": "Local development on port 80",
+      "icon": "🖥️"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProblemSolutionSection from '../../../components/ProblemSolutionSection';
+import SolutionHero from '../../../components/SolutionHero.astro';
+import SolutionImage from '../../../components/SolutionImage.astro';
+import SolutionCTA from '../../../components/SolutionCTA.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+import { EXTERNAL_LINKS } from '../../../config/constants';
+import ctaImage from '../../../assets/images/rediacc_resources_repos.png';
+import '../../../styles/solution-page.css';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, to } = createTranslator(lang);
+
+// Get threat response content
+const trContent = to('pages.solutions.threatResponse');
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.solutions.threatResponse.meta.title')}
+  description={t('pages.solutions.threatResponse.meta.description')}
+  keywords={t('pages.solutions.threatResponse.meta.keywords')}
+  ogType="website"
+>
+  <SolutionHero
+    title={trContent.hero.title}
+    subtitle={trContent.hero.subtitle}
+    heroImage="/assets/images/threat-response-hero.png"
+    heroImageAlt="Impenetrable vault with glowing locked chains representing immutable ransomware protection"
+  />
+
+  <!-- Problem-Solution Section 1: Ransomware Backups -->
+  <ProblemSolutionSection
+    client:visible
+    number={1}
+    title={trContent.problems.ransomwareBackups.title}
+    subtitle={trContent.problems.ransomwareBackups.subtitle}
+    problem={{
+      description: trContent.problems.ransomwareBackups.problem.description,
+      story: trContent.problems.ransomwareBackups.problem.story,
+      additionalPoints: trContent.problems.ransomwareBackups.problem.additionalPoints
+    }}
+    solution={{
+      title: trContent.problems.ransomwareBackups.solution.title,
+      description: trContent.problems.ransomwareBackups.solution.description,
+      benefits: trContent.problems.ransomwareBackups.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: trContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="threat-response"
+  />
+
+  <!-- Problem-Solution Section 2: OS Vulnerability -->
+  <ProblemSolutionSection
+    client:visible
+    number={2}
+    title={trContent.problems.osVulnerability.title}
+    subtitle={trContent.problems.osVulnerability.subtitle}
+    problem={{
+      description: trContent.problems.osVulnerability.problem.description,
+      story: trContent.problems.osVulnerability.problem.story,
+      additionalPoints: trContent.problems.osVulnerability.problem.additionalPoints
+    }}
+    solution={{
+      title: trContent.problems.osVulnerability.solution.title,
+      description: trContent.problems.osVulnerability.solution.description,
+      benefits: trContent.problems.osVulnerability.solution.benefits
+    }}
+    variant="dark"
+    cta={{
+      text: trContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="threat-response"
+  />
+
+  <!-- Problem-Solution Section 3: Infrastructure Black Box -->
+  <ProblemSolutionSection
+    client:visible
+    number={3}
+    title={trContent.problems.infrastructureBlackBox.title}
+    subtitle={trContent.problems.infrastructureBlackBox.subtitle}
+    problem={{
+      description: trContent.problems.infrastructureBlackBox.problem.description,
+      story: trContent.problems.infrastructureBlackBox.problem.story,
+      additionalPoints: trContent.problems.infrastructureBlackBox.problem.additionalPoints
+    }}
+    solution={{
+      title: trContent.problems.infrastructureBlackBox.solution.title,
+      description: trContent.problems.infrastructureBlackBox.solution.description,
+      benefits: trContent.problems.infrastructureBlackBox.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: trContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="threat-response"
+  />
+
+  <!-- Bottom Image Section -->
+  <SolutionImage
+    imageSrc="/assets/images/threat-response-bottom.png"
+    imageAlt="Side-by-side comparison showing manual vs automated ransomware recovery timelines"
+    variant="dark"
+  />
+
+  <SolutionCTA
+    title={trContent.cta.title}
+    subtitle={trContent.cta.subtitle}
+    buttonText={trContent.cta.button}
+    imageSrc={ctaImage}
+    imageAlt="Rediacc threat response infrastructure"
+    lang={lang}
+  />
+
+</BaseLayout>
+

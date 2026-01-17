@@ -1,0 +1,20 @@
+services:
+  solr:
+    image: solr:9-slim
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: "${NETWORK_MODE:-bridge}"
+    environment:
+      SOLR_HEAP: ${SOLR_HEAP}
+      SOLR_JAVA_MEM: ${SOLR_JAVA_MEM}
+    ports:
+      - "8983"
+    volumes:
+      - ./data:/var/solr
+    command: solr-precreate ${SOLR_CORE_NAME}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/${SOLR_CORE_NAME}/admin/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

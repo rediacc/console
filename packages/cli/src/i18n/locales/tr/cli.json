@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "Etkinleştirme başarısız",
+    "tfaVerificationFailed": "TFA doğrulaması başarısız",
     "authFailed": "Kimlik doğrulama başarısız",
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc login",
     "bridgeRequired": "Köprü adı gerekli. --bridge kullanın veya bağlamı ayarlayın.",
@@ -996,8 +997,8 @@
     "validationError": "Doğrulama hatası: {{message}}",
     "vaultDataRequired": "Kasa verileri gerekli. --vault <json> kullanın veya JSON'u stdin aracılığıyla yönlendirin.",
     "vaultVersionRequired": "Kasa sürümü gerekli. --vault-version <n> kullanın.",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "Bilinmeyen komut \"{{command}}\". Kullanılabilir komutlar: {{available}}.",
+    "unknownSubcommand": "Bilinmeyen alt komut \"{{command}}\". Kullanılabilir {{parent}} alt komutları: {{available}}."
   },
   "options": {
     "activationCode": "E-postadan gelen etkinleştirme kodu",

@@ -7,7 +7,7 @@
  * Opt-out: Set REDIACC_TELEMETRY=off to disable telemetry.
  */
 
-import { trace, SpanStatusCode, type Span, type Tracer } from '@opentelemetry/api';
+import { type Span, SpanStatusCode, type Tracer, trace } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
@@ -15,11 +15,11 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic
 import type { TelemetryConfig, TelemetryHandler, UserContext } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
-  generateSessionId,
-  anonymizeObject,
   anonymizeArgs,
+  anonymizeObject,
   errorToAttributes,
   extractApiEndpoint,
+  generateSessionId,
 } from '@rediacc/shared/telemetry';
 
 // Package version (will be replaced by bundler or read from package.json)

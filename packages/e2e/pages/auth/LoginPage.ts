@@ -1,13 +1,12 @@
 import { Page, Locator } from '@playwright/test';
-import { TEST_CREDENTIALS } from '@rediacc/shared';
 import { BasePage } from '../../src/base/BasePage';
-import { requireEnvVar } from '../../src/utils/env';
+import { loadGlobalState } from '../../src/setup/global-state';
+import { getEnvVarWithDefault } from '../../src/utils/env';
 
 export class LoginPage extends BasePage {
   private readonly emailInput: Locator;
   private readonly passwordInput: Locator;
   private readonly loginButton: Locator;
-  private readonly forgotPasswordLink: Locator;
   private readonly registerLink: Locator;
   private readonly errorMessage: Locator;
   private readonly loadingSpinner: Locator;
@@ -26,7 +25,6 @@ export class LoginPage extends BasePage {
     this.emailInput = page.locator('[data-testid="login-email-input"]');
     this.passwordInput = page.locator('[data-testid="login-password-input"]');
     this.loginButton = page.locator('[data-testid="login-submit-button"]');
-    this.forgotPasswordLink = page.locator('[data-testid="forgot-password"]');
     this.registerLink = page.locator('[data-testid="login-register-link"]');
     this.errorMessage = page.locator('[data-testid="login-error-alert"]');
     this.loadingSpinner = page.locator('.ant-spin');
@@ -51,7 +49,6 @@ export class LoginPage extends BasePage {
       emailInput: this.emailInput,
       passwordInput: this.passwordInput,
       loginButton: this.loginButton,
-      forgotPasswordLink: this.forgotPasswordLink,
       registerLink: this.registerLink,
       errorMessage: this.errorMessage,
       loadingSpinner: this.loadingSpinner,
@@ -71,7 +68,6 @@ export class LoginPage extends BasePage {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.loginButton.click();
-    await this.waitForNetworkIdle();
   }
 
   async loginWithValidation(email: string, password: string): Promise<void> {
@@ -84,7 +80,42 @@ export class LoginPage extends BasePage {
 
   async waitForLoginCompletion(): Promise<void> {
     await this.waitForElementToDisappear(this.loadingSpinner, 10000);
-    await this.page.waitForURL('**/machines', { timeout: 30000 });
+
+    // Wait for critical API calls that indicate auth is complete
+    // This is more reliable than networkidle which has browser-specific timing issues
+    try {
+      await this.page.waitForResponse(
+        (response) => {
+          const url = response.url();
+          return (
+            response.status() === 200 &&
+            url.includes('/api/') &&
+            (url.includes('Organization') || url.includes('Dashboard') || url.includes('Info'))
+          );
+        },
+        { timeout: 10000 }
+      );
+    } catch {
+      // Fallback: if no matching API response, continue anyway
+      console.warn('No matching API response found, continuing with element visibility check');
+    }
+
+    // Then verify dashboard element is visible (mobile may hide header actions)
+    const primary = this.page.locator('[data-testid="user-menu-button"]');
+    const fallbackToggle = this.page.locator('[data-testid="sidebar-toggle-button"]');
+    const fallbackContent = this.page.locator('[data-testid="main-content"]');
+
+    await this.waitForAnyVisible([primary, fallbackToggle, fallbackContent], 15000);
+  }
+
+  private async waitForAnyVisible(locators: Locator[], timeout: number): Promise<void> {
+    // Wait for any post-login element to become visible.
+    const waits = locators.map((locator) => locator.waitFor({ state: 'visible', timeout }));
+    try {
+      await Promise.any(waits);
+    } catch {
+      throw new Error('Login completion timeout: no post-login element became visible.');
+    }
   }
 
   async getErrorMessage(): Promise<string> {
@@ -111,10 +142,6 @@ export class LoginPage extends BasePage {
     return await this.loginButton.isEnabled();
   }
 
-  async clickForgotPassword(): Promise<void> {
-    await this.forgotPasswordLink.click();
-  }
-
   async clickRegister(): Promise<void> {
     await this.registerLink.click();
   }
@@ -139,11 +166,9 @@ export class LoginPage extends BasePage {
   }
 
   async performQuickLogin(): Promise<void> {
-    const email = requireEnvVar('TEST_USER_EMAIL');
-    const password = requireEnvVar('TEST_USER_PASSWORD');
-
-    console.warn('Performing authentication...');
-    await this.login(email, password);
+    const state = loadGlobalState();
+    console.warn(`Logging in with registered user: ${state.email}`);
+    await this.login(state.email, state.password);
     await this.waitForLoginCompletion();
     console.warn('Authentication successful');
   }
@@ -169,7 +194,6 @@ export class LoginPage extends BasePage {
 
   async submitRegistrationForm(): Promise<void> {
     await this.registrationSubmitButton.click();
-    await this.waitForNetworkIdle();
   }
 
   async completeRegistration(
@@ -189,10 +213,9 @@ export class LoginPage extends BasePage {
     await this.submitRegistrationForm();
   }
 
-  async completeRegistrationVerification(
-    code: string = TEST_CREDENTIALS.CI_ACTIVATION_CODE
-  ): Promise<void> {
-    await this.registrationActivationCodeInput.fill(code);
+  async completeRegistrationVerification(code?: string): Promise<void> {
+    const activationCode = code ?? getEnvVarWithDefault('TEST_VERIFICATION_CODE');
+    await this.registrationActivationCodeInput.fill(activationCode);
     await this.registrationVerifyButton.click();
     await this.waitForNetworkIdle();
   }

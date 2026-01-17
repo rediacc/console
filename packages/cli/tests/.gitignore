@@ -1,0 +1,11 @@
+# Test runtime files
+.test-state.json
+
+# Playwright artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Coverage
+coverage/
+.nyc_output/

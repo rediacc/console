@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "حدث خطأ",
+    "cliCommandFailed": "فشل أمر CLI",
+    "criticalSystemError": "النظام يعاني من مشاكل حرجة",
+    "failedToCreateTask": "فشل إنشاء مهمة الاختبار",
+    "failedToFork": "فشل في نسخ المستودع",
+    "helloFunctionError": "أبلغت دالة Hello عن خطأ",
+    "machinesValidationError": "خطأ في التحقق من الجهاز",
+    "noErrorMessage": "(لا توجد رسالة خطأ)",
+    "operationFailed": "فشلت العملية",
+    "passwordValidation": "يجب أن تحتوي كلمة المرور على حرف كبير وحرف صغير ورقم وحرف خاص",
+    "tfaVerificationFailed": "فشل التحقق من TFA",
+    "unknownError": "خطأ غير معروف",
+    "vaultTestFailed": "فشل اختبار اتصال Vault",
+    "vsCodeConnectionFailed": "فشل اتصال VS Code"
+  },
+  "success": {
+    "helloFunctionSuccess": "اكتملت دالة Hello بنجاح"
+  },
   "status": {
     "cancelled": "ملغى",
     "completed": "مكتمل",

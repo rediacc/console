@@ -1,4 +1,4 @@
-import { Space, Tag, Typography, type MenuProps } from 'antd';
+import { type MenuProps, Space, Tag, Typography } from 'antd';
 import {
   buildDeleteMenuItem,
   buildDivider,

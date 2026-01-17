@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { parseGetTeamMachines } from '@rediacc/shared/api';
 import {
+  type ContainerInfo,
   getMachineContainers,
   type MachineWithVaultStatus,
-  type ContainerInfo,
 } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';

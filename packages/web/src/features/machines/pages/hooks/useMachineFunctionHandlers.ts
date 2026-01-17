@@ -4,7 +4,7 @@ import type { DynamicQueueActionParams, QueueActionResult } from '@/services/que
 import type { Machine } from '@/types';
 import { showMessage } from '@/utils/messages';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { isBridgeFunction, type BridgeFunctionName } from '@rediacc/shared/queue-vault';
+import { type BridgeFunctionName, isBridgeFunction } from '@rediacc/shared/queue-vault';
 import type { MachineFunctionData } from '../types';
 
 interface UseMachineFunctionHandlersProps {

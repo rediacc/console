@@ -99,6 +99,8 @@ const splitKey = (key) => {
 
 // Patterns that are clearly not translation keys
 const isNotTranslationKey = (key) => {
+  // Shared namespace keys - validated in packages/shared/src/i18n/locales/
+  if (key.startsWith('shared:')) return true;
   // Commander event names (e.g., command:*)
   if (key === 'command:*') return true;
   // URLs (http, https, or any protocol like rediacc://)

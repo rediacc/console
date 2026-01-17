@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useMessage } from '@/hooks';
 import { templateService } from '@/services/templateService';
 import {
+  getValidationErrors,
   isBridgeFunction,
   safeValidateFunctionParams,
-  getValidationErrors,
 } from '@rediacc/shared/queue-vault';
 import type { QueueFunction, QueueFunctionParameter } from '@rediacc/shared/types';
 

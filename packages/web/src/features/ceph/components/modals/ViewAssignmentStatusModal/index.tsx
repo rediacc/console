@@ -7,8 +7,7 @@ import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignme
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import { InfoCircleOutlined } from '@/utils/optimizedIcons';
+import { CloudServerOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ViewAssignmentStatusModalProps {

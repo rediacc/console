@@ -1,6 +1,6 @@
 export type {
+  TerminalStatus,
   UseTerminalOptions,
   UseTerminalReturn,
-  TerminalStatus,
 } from './useTerminal';
 export { useTerminal } from './useTerminal';

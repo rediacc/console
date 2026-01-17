@@ -1,8 +1,8 @@
 import { execSync } from 'node:child_process';
-import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PROTOCOL_SCHEME } from './parser.js';
-import { getPlatform, getHomePath } from '../utils/platform.js';
+import { getHomePath, getPlatform } from '../utils/platform.js';
 
 /**
  * Protocol handler error

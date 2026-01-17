@@ -1,0 +1,286 @@
+/* ============================================================================
+   Shared Sidebar CSS Variables and Base Styles
+   This file contains unified styling for all sidebars across the documentation.
+   ============================================================================ */
+
+:root {
+  /* Sidebar Dimensions */
+  --sidebar-width: 250px;
+  --nav-height: 3.5rem;
+  --spacing: 2rem;
+
+  /* Sidebar Colors */
+  --sidebar-bg: #f9f9f9;
+  --sidebar-border: #e0e0e0;
+  --sidebar-accent: #1a1a1a;
+
+  /* Text Colors */
+  --text-primary: #1a1a1a;
+  --text-secondary: #666;
+  --text-hover: #000000;
+
+  /* Link States */
+  --link-color: #1a1a1a;
+  --link-hover-color: #000000;
+  --link-hover-bg: #f5f5f7;
+  --link-active-bg: #1a1a1a;
+  --link-active-color: #ffffff;
+
+  /* Border */
+  --border-radius: 8px;
+  --border-width-thin: 1px;
+  --border-width-accent: 3px;
+
+  /* Spacing */
+  --sidebar-padding: 1rem;
+  --link-padding: 0.5rem 0.75rem;
+  --item-margin: 0.5rem 0;
+
+  /* Transitions */
+  --transition-speed: 0.2s;
+}
+
+/* ============================================================================
+   Base Sidebar Container Styles
+   Applied to both left navigation sidebar and right table of contents sidebar
+   ============================================================================ */
+
+.sidebar-base {
+  position: sticky;
+  top: calc(var(--nav-height) + var(--spacing));
+  height: fit-content;
+  max-height: calc(100vh - var(--nav-height) - (var(--spacing) * 2));
+  overflow-y: auto;
+
+  /* Scrollbar styling for consistency */
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-border) transparent;
+}
+
+.sidebar-base::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-base::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-base::-webkit-scrollbar-thumb {
+  background-color: var(--sidebar-border);
+  border-radius: 3px;
+}
+
+.sidebar-base::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}
+
+/* ============================================================================
+   Sidebar Navigation Container
+   Common styles for the nav element inside sidebars
+   ============================================================================ */
+
+.sidebar-nav {
+  padding: var(--sidebar-padding);
+  background-color: var(--sidebar-bg);
+  border-radius: var(--border-radius);
+  border: var(--border-width-thin) solid var(--sidebar-border);
+}
+
+.sidebar-nav-with-accent {
+  border-left: var(--border-width-accent) solid var(--sidebar-accent);
+  border: none;
+  border-left: var(--border-width-accent) solid var(--sidebar-accent);
+}
+
+/* ============================================================================
+   Sidebar Title / Heading
+   Used for "Documentation" heading in left sidebar and "Table of Contents" in right
+   ============================================================================ */
+
+.sidebar-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 1rem 0;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   List Styles
+   Base styles for all sidebar lists
+   ============================================================================ */
+
+.sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-item {
+  margin: var(--item-margin);
+}
+
+/* ============================================================================
+   Link Styles
+   Applied to both navigation links and TOC links
+   ============================================================================ */
+
+.sidebar-link {
+  display: block;
+  padding: var(--link-padding);
+  color: var(--link-color);
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition:
+    background-color var(--transition-speed),
+    color var(--transition-speed);
+}
+
+.sidebar-link:hover {
+  color: var(--link-hover-color);
+  background-color: var(--link-hover-bg);
+  text-decoration: underline;
+}
+
+.sidebar-link.active {
+  background-color: var(--link-active-bg);
+  color: var(--link-active-color);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sidebar-link.active:hover {
+  background-color: #000000;
+  text-decoration: none;
+}
+
+.sidebar-link:focus-visible {
+  outline: 2px solid var(--sidebar-accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Collapsible Category Styles
+   Used in left navigation sidebar for collapsible sections
+   ============================================================================ */
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: color var(--transition-speed);
+}
+
+.category-header:hover {
+  color: var(--text-hover);
+}
+
+.category-header:focus-visible {
+  outline: 2px solid var(--sidebar-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.category-chevron {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75em;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+  transition: transform var(--transition-speed);
+}
+
+.category-header[aria-expanded='false'] .category-chevron {
+  transform: rotate(-90deg);
+}
+
+/* ============================================================================
+   Collapsed State Handling
+   Controls display of nested lists when categories are collapsed
+   ============================================================================ */
+
+.collapsible-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 9999px;
+  transition:
+    max-height var(--transition-speed),
+    overflow var(--transition-speed);
+}
+
+/* When parent category item is collapsed, hide the list */
+.category-item[aria-expanded='false'] .collapsible-list {
+  max-height: 0;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   Table of Contents Specific Styles
+   Applied to TOC sidebars with special indentation for heading levels
+   ============================================================================ */
+
+.toc-item {
+  margin: var(--item-margin);
+}
+
+.toc-level-2 {
+  margin-left: 0;
+}
+
+.toc-level-3 {
+  margin-left: 1rem;
+  font-size: 0.9rem;
+}
+
+.toc-level-4 {
+  margin-left: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.toc-level-5,
+.toc-level-6 {
+  margin-left: 2rem;
+  font-size: 0.8rem;
+}
+
+/* ============================================================================
+   Accessibility and Responsive Design
+   ============================================================================ */
+
+/* Ensure keyboard focus is visible */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-link,
+  .category-header,
+  .collapsible-list {
+    transition: none;
+  }
+}
+
+/* Mobile responsive - stack layout */
+@media (max-width: 768px) {
+  .sidebar-base {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* Tablet responsive - hide right sidebar */
+@media (max-width: 1200px) {
+  .sidebar-toc {
+    display: none;
+  }
+}

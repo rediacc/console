@@ -1,0 +1,297 @@
+/* Downloads Page Styles */
+
+/* Hero Section - Dark Gradient */
+.downloads-hero {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  color: white;
+  padding: var(--section-padding);
+  text-align: center;
+}
+
+.downloads-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.downloads-hero h1 {
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: bold;
+  margin-bottom: var(--space-4);
+  color: white;
+  line-height: 1.15;
+}
+
+.downloads-hero .hero-subtitle {
+  font-size: clamp(18px, 1.5vw, 22px);
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: var(--space-2);
+  line-height: 1.5;
+}
+
+.downloads-hero .hero-release-date {
+  font-size: var(--font-size-base);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Section Backgrounds */
+.section-light {
+  background: #f8f9fa;
+  color: var(--color-text);
+}
+
+.section-dark {
+  background: #1a1a1a;
+  color: white;
+}
+
+/* Downloads Content Section */
+.downloads-content {
+  padding: var(--section-padding);
+}
+
+/* Platform Section */
+.platform-section {
+  background: white;
+  border: 2px solid var(--color-border);
+  border-radius: 16px;
+  padding: var(--space-8);
+  margin-bottom: var(--space-6);
+  transition: all 0.3s ease;
+}
+
+.platform-section.recommended {
+  border-color: var(--color-primary, #667eea);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.platform-header {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.platform-header h2 {
+  font-size: var(--font-size-2xl);
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* Download List */
+.download-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.download-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.download-item:hover {
+  background: #e9ecef;
+}
+
+.download-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.download-arch {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+}
+
+.download-size {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.download-button {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+}
+
+/* Linux Subsections */
+.linux-subsection {
+  margin-bottom: var(--space-6);
+}
+
+.linux-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.linux-subsection h3 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+/* No Releases Message */
+.no-releases {
+  text-align: center;
+  padding: var(--space-12);
+  background: white;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+}
+
+.no-releases p {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+}
+
+/* Auto-Update Section */
+.auto-update-section {
+  padding: var(--section-padding);
+  text-align: center;
+}
+
+.auto-update-section h2 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-4);
+  color: white;
+}
+
+.auto-update-description {
+  max-width: 800px;
+  margin: 0 auto;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Installation Instructions */
+.installation-section {
+  padding: var(--section-padding);
+}
+
+.installation-section h2 {
+  text-align: center;
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-8);
+  color: var(--color-text);
+}
+
+.installation-details {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.installation-details:hover {
+  border-color: var(--color-primary, #667eea);
+}
+
+.installation-details summary {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.installation-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.installation-details summary::after {
+  content: '▼';
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.installation-details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.installation-details p {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* System Requirements */
+.requirements-section {
+  padding: var(--section-padding);
+}
+
+.requirements-section h2 {
+  text-align: center;
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-8);
+  color: var(--color-text);
+}
+
+.requirements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.requirement-card {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.requirement-card h3 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-3);
+  color: var(--color-text);
+}
+
+.requirement-card p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .download-item {
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: stretch;
+  }
+
+  .download-button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .platform-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .requirements-grid {
+    grid-template-columns: 1fr;
+  }
+}

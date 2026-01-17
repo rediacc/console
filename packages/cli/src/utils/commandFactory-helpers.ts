@@ -4,7 +4,7 @@
  */
 
 import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
-import { searchInFields, compareValues } from '@rediacc/shared/utils';
+import { compareValues, searchInFields } from '@rediacc/shared/utils';
 
 /**
  * Parent context options for commands

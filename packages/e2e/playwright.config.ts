@@ -23,66 +23,53 @@ const E2E_DEFAULTS = {
  * - VITE_API_URL: API backend URL for Vite proxy (e.g., tunnel URL in CI)
  * - API_TIMEOUT: Action timeout in ms (default: 10000)
  * - PAGE_TIMEOUT: Navigation timeout in ms (default: 30000)
- * - SCREENSHOT_ON_FAILURE: Enable screenshots on failure (default: true in CI)
- * - RECORD_VIDEO: Video recording mode (off, on, retain-on-failure)
  * - STOP_ON_FAILURE: Stop on first failure (default: false)
  * - VM_DEPLOYMENT: Enable VM-dependent tests (default: false)
+ * - PWSLOWMO: Slow down browser actions by N milliseconds (for debugging)
  *
  * @see https://playwright.dev/docs/test-configuration
  */
 
-function getScreenshotMode(): 'off' | 'on' | 'only-on-failure' {
-  if (process.env.CI) {
-    return 'only-on-failure';
-  }
-  if (process.env.SCREENSHOT_ON_FAILURE === 'true') {
-    return 'only-on-failure';
-  }
-  return 'off';
-}
-
-function getVideoMode(): 'off' | 'on' | 'retain-on-failure' {
-  const value = process.env.RECORD_VIDEO;
-  if (value === 'on' || value === 'retain-on-failure') {
-    return value;
-  }
-  return 'off';
-}
-
 export default test.defineConfig({
   testDir: './tests',
 
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  /* Global teardown to clean up state file */
+  globalTeardown: path.resolve(__dirname, './src/setup/global-teardown.ts'),
 
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
+  /* Run tests sequentially to prevent race conditions and timing issues */
+  fullyParallel: false,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Fail the build if you accidentally left test.only in the source code. */
+  forbidOnly: true,
 
-  /* Opt out of parallel tests on CI for stability */
-  workers: process.env.CI ? 1 : undefined,
+  /* No retries - tests should pass consistently */
+  retries: 0,
+
+  /* Single worker for maximum stability and resource isolation */
+  workers: 1,
 
   /* Stop test run after first test failure (including all retries) */
   maxFailures: process.env.STOP_ON_FAILURE === 'true' ? 1 : undefined,
 
   /* Reporter to use */
-  reporter: [['html', { outputFolder: 'reports/e2e' }]],
+  reporter: [
+    ['html', { outputFolder: 'reports/e2e' }],
+    ['json', { outputFile: 'reports/e2e/results.json' }],
+  ],
 
   /* Shared settings for all the projects below */
   use: {
     /* Base URL - Vite dev server with /console/ base path */
     baseURL: process.env.E2E_BASE_URL ?? E2E_DEFAULTS.CONSOLE_URL,
 
-    /* Collect trace when retrying the failed test */
-    trace: 'on-first-retry',
+    /* Collect trace for debugging */
+    trace: 'on',
 
-    /* Screenshot settings - enabled on failure in CI */
-    screenshot: getScreenshotMode(),
+    /* Always capture screenshots */
+    screenshot: 'on',
 
-    /* Video settings */
-    video: getVideoMode(),
+    /* Always record video */
+    video: 'on',
 
     /* Timeout settings with sensible defaults */
     actionTimeout: Number.parseInt(
@@ -93,33 +80,175 @@ export default test.defineConfig({
       process.env.PAGE_TIMEOUT ?? String(E2E_DEFAULTS.CONNECTION_TIMEOUT),
       10
     ),
+
+    /* Slow down actions for debugging (set via PWSLOWMO env var) */
+    launchOptions: {
+      slowMo: process.env.PWSLOWMO ? Number.parseInt(process.env.PWSLOWMO, 10) : undefined,
+    },
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for browsers and devices */
   projects: [
+    // =========================================================================
+    // SETUP PROJECT - Registers user before all tests
+    // =========================================================================
+    {
+      name: 'setup',
+      testMatch: /global\.setup\.ts/,
+      use: { ...test.devices['Desktop Chrome'] },
+      // Setup needs more time: wait for Vite + registration flow + slower Windows runners
+      // Increased to 180s to accommodate Windows tunnel latency (60s health + 60s registration + 30s buffer)
+      timeout: 180000,
+    },
+
+    // =========================================================================
+    // DESKTOP BROWSERS
+    // Each test authenticates via login page (no shared auth state needed)
+    // Electron tests are excluded - they only run in Electron projects
+    // =========================================================================
     {
       name: 'chromium',
       use: { ...test.devices['Desktop Chrome'] },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'firefox',
+      use: { ...test.devices['Desktop Firefox'] },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'webkit',
+      use: { ...test.devices['Desktop Safari'] },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'msedge',
+      use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
     },
 
-    // Firefox and WebKit disabled - not installed in CI environment
-    // Uncomment to enable multi-browser testing locally
-    // {
-    //   name: 'firefox',
-    //   use: { ...test.devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...test.devices['Desktop Safari'] },
-    // },
+    // =========================================================================
+    // DESKTOP RESOLUTIONS - Common screen sizes for responsive testing
+    // Uses Chromium with custom viewports to test layout at different sizes
+    // =========================================================================
+    {
+      name: 'resolution-1920x1080',
+      use: {
+        ...test.devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'resolution-1366x768',
+      use: {
+        ...test.devices['Desktop Chrome'],
+        viewport: { width: 1366, height: 768 },
+      },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'resolution-1536x864',
+      use: {
+        ...test.devices['Desktop Chrome'],
+        viewport: { width: 1536, height: 864 },
+      },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+
+    // =========================================================================
+    // MOBILE DEVICES - Android (Chromium-based)
+    // Electron tests are excluded - they only run in Electron projects
+    // =========================================================================
+    {
+      name: 'galaxy-s24',
+      use: { ...test.devices['Galaxy S24'] },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'galaxy-tab-s9',
+      use: { ...test.devices['Galaxy Tab S9 landscape'] },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+
+    // =========================================================================
+    // MOBILE DEVICES - iOS (WebKit-based)
+    // Electron tests are excluded - they only run in Electron projects
+    // =========================================================================
+    {
+      name: 'iphone-15-pro-max',
+      use: { ...test.devices['iPhone 15 Pro Max'] },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+    {
+      name: 'ipad-pro-11',
+      use: { ...test.devices['iPad Pro 11'] },
+      testIgnore: /tests\/electron\//,
+      dependencies: ['setup'],
+    },
+
+    // =========================================================================
+    // ELECTRON DESKTOP APP - 6 Platform Matrix
+    // Tests run against built Electron app (packages/desktop/out/main/index.js)
+    // Electron uses HashRouter, so baseURL is empty (paths are hash fragments)
+    // Setup project registers user via Chromium, credentials shared via .e2e-state.json
+    // =========================================================================
+    {
+      name: 'electron-linux-x64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-linux-arm64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-macos-x64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-macos-arm64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-windows-x64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'electron-windows-arm64',
+      testMatch: /tests\/electron\/.*\.test\.ts/,
+      use: { baseURL: '' },
+      dependencies: ['setup'],
+    },
   ],
 
   /* Web server configuration - starts Vite dev server automatically */
   webServer: {
     command: 'npm run --prefix ../.. dev -w @rediacc/web',
     url: 'http://localhost:3000/console/',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120000, // 2 minutes for Vite to start
+    stdout: 'pipe',
+    stderr: 'pipe',
     // Pass VITE_API_URL to Vite only if explicitly set (for CI tunnel)
     // Otherwise Vite uses default: http://localhost:7322
     env: {

@@ -2,9 +2,9 @@ import React from 'react';
 import { Divider, Flex, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  ThunderboltOutlined,
-  PlayCircleOutlined,
   ExclamationCircleOutlined,
+  PlayCircleOutlined,
+  ThunderboltOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
 

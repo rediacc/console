@@ -1,4 +1,4 @@
-export type MenuBaseConfig = {
+type MenuBaseConfig = {
   key: string;
   label?: string;
   showInSimple: boolean;

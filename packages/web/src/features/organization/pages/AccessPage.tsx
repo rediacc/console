@@ -1,29 +1,29 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Select as AntSelect,
   Badge,
   Card,
   Flex,
   Input,
   List,
+  type MenuProps,
   Modal,
   Result,
   Select,
-  Select as AntSelect,
   Space,
   Tabs,
   Typography,
-  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
-  useCreatePermissionInGroup,
   useUpdateUserAssignedPermissions as useAssignUserToGroup,
   useCreatePermissionGroup,
+  useCreatePermissionInGroup,
+  useDeletePermissionFromGroup,
   useDeletePermissionGroup,
   useGetPermissionGroupDetails,
   useGetOrganizationPermissionGroups as usePermissionGroupsQuery,
-  useDeletePermissionFromGroup,
 } from '@/api/api-hooks.generated';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
@@ -242,6 +242,8 @@ const AccessPage: React.FC = () => {
           data-testid="system-create-permission-group-button"
         />
       }
+      onCreateNew={() => createModal.open()}
+      createButtonText={tSystem('actions.createGroup')}
     />
   );
 

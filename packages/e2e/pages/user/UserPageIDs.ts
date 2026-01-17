@@ -2,8 +2,8 @@
 export const UserPageIDs = {
   // Navigation
   mainNavOrganization: 'main-nav-organization',
-  mainNavOrganizationUsers: 'main-nav-organization-users',
-  mainNavOrganizationTeams: 'main-nav-organization-teams',
+  subNavOrganizationUsers: 'sub-nav-organization-users',
+  subNavOrganizationTeams: 'sub-nav-organization-teams',
 
   // User List & Table
   resourceListContainer: 'resource-list-container',
