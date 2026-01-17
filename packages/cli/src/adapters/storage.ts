@@ -12,7 +12,7 @@ const CONFIG_PATH = join(CONFIG_DIR, CONFIG_FILE);
  * Storage adapter for CLI configuration with file locking for multi-process safety.
  *
  * Uses proper-lockfile for cross-platform file locking:
- * - 10 second timeout
+ * - 45 second timeout (to accommodate long-running API operations)
  * - 50ms polling interval
  * - Atomic temp file + rename pattern for crash safety
  */
@@ -46,9 +46,9 @@ class ConfigStorage {
     await this.ensureConfigFile();
 
     const release = await lockfile.lock(CONFIG_PATH, {
-      stale: 10000,
+      stale: 45000,
       retries: {
-        retries: 200,
+        retries: 900,
         minTimeout: 50,
         maxTimeout: 50,
       },
