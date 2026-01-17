@@ -32,6 +32,18 @@ VM_WORKERS="${ARG_VM_WORKERS:-11 12}"
 TIMEOUT="${ARG_TIMEOUT:-${BRIDGE_TIMEOUT:-120000}}"
 RENET_PATH="${ARG_RENET_PATH:-${RENET_BINARY_PATH:-}}"
 
+# Determine OPS_HOME for SSH keys
+# Priority: OPS_HOME env > derive from monorepo structure
+OPS_HOME_VALUE="${OPS_HOME:-}"
+if [[ -z "$OPS_HOME_VALUE" ]]; then
+    # Derive from script location: .ci/scripts/env -> console -> monorepo
+    CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+    MONOREPO_ROOT="$(dirname "$CONSOLE_ROOT")"
+    if [[ -d "$MONOREPO_ROOT/ops" ]]; then
+        OPS_HOME_VALUE="$MONOREPO_ROOT/ops"
+    fi
+fi
+
 # Validate required arguments
 if [[ -z "$OUTPUT" ]]; then
     log_error "Usage: create-bridge-env.sh --output <path> [options]"
@@ -54,6 +66,7 @@ VM_BRIDGE=$VM_BRIDGE
 VM_WORKERS=$VM_WORKERS
 BRIDGE_TIMEOUT=$TIMEOUT
 RENET_BINARY_PATH=$RENET_PATH
+OPS_HOME=$OPS_HOME_VALUE
 CI=${CI:-true}
 NODE_ENV=test
 EOF

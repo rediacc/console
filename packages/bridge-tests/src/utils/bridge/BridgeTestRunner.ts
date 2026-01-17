@@ -15,6 +15,7 @@ import { RepositoryMethods } from './methods/RepositoryMethods';
 import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
+import { getSSHOptions } from '../sshConfig';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
 import type { VaultBuilder } from '../vault/VaultBuilder';
 
@@ -45,6 +46,7 @@ export class BridgeTestRunner {
   private readonly opsManager: OpsManager;
   private readonly bridgeVM: string;
   private readonly targetVM: string;
+  private readonly sshOpts: string;
 
   // Method groups
   private readonly systemCheckMethods: SystemCheckMethods;
@@ -69,6 +71,9 @@ export class BridgeTestRunner {
     this.opsManager = getOpsManager();
     this.bridgeVM = this.opsManager.getBridgeVMIp();
     this.targetVM = this.resolveTargetVM(config.targetVM);
+
+    // Get SSH options with identity file if available
+    this.sshOpts = `${getSSHOptions()} -o BatchMode=yes -o ConnectTimeout=10`;
 
     const timeoutStr = process.env.BRIDGE_TIMEOUT;
     if (!timeoutStr) {
@@ -248,7 +253,8 @@ export class BridgeTestRunner {
     const escapedForBridge = this.escapeForNestedSSH(command);
 
     // Two-hop SSH command: Host → Bridge → Target
-    const sshCmd = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${this.bridgeVM} "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${this.targetVM} \\"${escapedForBridge}\\""`;
+    // Uses identity file from OPS_HOME/staging/.ssh/id_rsa if available
+    const sshCmd = `ssh ${this.sshOpts} ${this.bridgeVM} "ssh ${this.sshOpts} ${this.targetVM} \\"${escapedForBridge}\\""`;
 
     // Log the command being executed
     // eslint-disable-next-line no-console
@@ -292,7 +298,7 @@ export class BridgeTestRunner {
    */
   async executeOnVM(host: string, command: string, timeout?: number): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
-    const sshCmd = `ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no ${host} "${command.replaceAll('"', '\\"')}"`;
+    const sshCmd = `ssh ${this.sshOpts} ${host} "${command.replaceAll('"', '\\"')}"`;
 
     // Log the command being executed
     // eslint-disable-next-line no-console

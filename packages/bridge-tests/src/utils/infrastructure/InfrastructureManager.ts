@@ -6,6 +6,7 @@ import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
 import { getRenetResolver, RenetResolver } from '../RenetResolver';
+import { getSCPOptions, getSSHOptions } from '../sshConfig';
 
 const execAsync = promisify(exec);
 
@@ -35,10 +36,16 @@ export class InfrastructureManager {
   private readonly config: InfrastructureConfig;
   private readonly opsManager: OpsManager;
   private readonly resolver: RenetResolver;
+  private readonly sshOpts: string;
+  private readonly scpOpts: string;
 
   constructor() {
     this.opsManager = getOpsManager();
     this.resolver = getRenetResolver();
+
+    // Get SSH options with identity file if available
+    this.sshOpts = `${getSSHOptions()} -o ConnectTimeout=5 -o BatchMode=yes`;
+    this.scpOpts = `${getSCPOptions()} -q`;
 
     this.config = {
       bridgeVM: this.opsManager.getBridgeVMIp(),
@@ -75,10 +82,7 @@ export class InfrastructureManager {
    */
   async isBridgeVMReachable(): Promise<boolean> {
     try {
-      await execAsync(
-        `ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${this.config.bridgeVM} "echo ok"`,
-        { timeout: 10000 }
-      );
+      await execAsync(`ssh ${this.sshOpts} ${this.config.bridgeVM} "echo ok"`, { timeout: 10000 });
       return true;
     } catch {
       return false;
@@ -90,10 +94,7 @@ export class InfrastructureManager {
    */
   async isWorkerVMReachable(): Promise<boolean> {
     try {
-      await execAsync(
-        `ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${this.config.workerVM} "echo ok"`,
-        { timeout: 10000 }
-      );
+      await execAsync(`ssh ${this.sshOpts} ${this.config.workerVM} "echo ok"`, { timeout: 10000 });
       return true;
     } catch {
       return false;
@@ -233,15 +234,14 @@ export class InfrastructureManager {
       throw new Error('USER environment variable is not set');
     }
     try {
-      // Copy to temp location
-      await execAsync(
-        `scp -q -o StrictHostKeyChecking=no "${localPath}" ${user}@${ip}:/tmp/renet`,
-        { timeout: 60000 } // Increased timeout for larger binaries
-      );
+      // Copy to temp location using centralized SCP options
+      await execAsync(`scp ${this.scpOpts} "${localPath}" ${user}@${ip}:/tmp/renet`, {
+        timeout: 60000, // Increased timeout for larger binaries
+      });
 
-      // Move to final location and set permissions
+      // Move to final location and set permissions using centralized SSH options
       await execAsync(
-        `ssh -q -o StrictHostKeyChecking=no ${user}@${ip} "sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}"`,
+        `ssh ${this.sshOpts} ${user}@${ip} "sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}"`,
         { timeout: 10000 }
       );
 

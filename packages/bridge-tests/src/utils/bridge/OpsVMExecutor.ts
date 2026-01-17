@@ -1,5 +1,6 @@
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import { getSSHOptions, getSSHPrivateKeyPath, isSSHKeyAvailable } from '../sshConfig';
 
 const execAsync = promisify(exec);
 
@@ -14,13 +15,25 @@ const UNKNOWN_ERROR = 'Unknown error';
  * - Command execution on individual VMs
  * - Batch command execution on multiple VMs
  * - Renet version detection
+ *
+ * SSH KEYS:
+ * Uses SSH keys from OPS_HOME/staging/.ssh/id_rsa (same location as renet).
+ * Falls back to default SSH if key is not available.
  */
 export class OpsVMExecutor {
   private readonly sshOptions: string;
 
   constructor() {
-    this.sshOptions =
-      '-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5';
+    // Get SSH options with identity file if available
+    this.sshOptions = `${getSSHOptions()} -q -o ConnectTimeout=5`;
+
+    // Log SSH key status on initialization
+    const keyPath = getSSHPrivateKeyPath();
+    if (isSSHKeyAvailable()) {
+      console.warn(`[OpsVMExecutor] Using SSH key: ${keyPath}`);
+    } else {
+      console.warn(`[OpsVMExecutor] SSH key not found at ${keyPath}, using default SSH`);
+    }
   }
 
   /**
