@@ -30,9 +30,10 @@ permissions:
   id-token: write
 
 # Cancel in-progress runs when a new run is triggered for the same branch/PR
+# Use 'no-cancel-push' PR label to disable (see .github/labels.yml)
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'no-cancel-push') }}
 
 # E2E Browser Configuration
 # Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.
@@ -57,6 +58,16 @@ jobs:
             const maxRuntime = 1800000; // 30 minutes max
             const minRuntime = 120000;  // 2 minutes minimum before allowing workflow-complete exit
             const startTime = Date.now();
+
+            // Check for skip-cancellation label
+            let skipCancellationOnFailure = false;
+            if (context.payload.pull_request) {
+              const labels = context.payload.pull_request.labels.map(l => l.name);
+              skipCancellationOnFailure = labels.includes('no-cancel-failure');
+              if (skipCancellationOnFailure) {
+                console.log('Label "no-cancel-failure" detected - will not cancel on job failures');
+              }
+            }
 
             console.log('Watchdog started - monitoring for job failures...');
 
@@ -86,12 +97,20 @@ jobs:
               const failedJob = otherJobs.find(job => job.conclusion === 'failure');
 
               if (failedJob) {
-                const failureMsg = `PIPELINE CANCELLED due to job failure: "${failedJob.name}"`;
+                const failureMsg = `Job failed: "${failedJob.name}"`;
                 console.log('');
                 console.log('='.repeat(70));
                 console.log(failureMsg);
                 console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/job/${failedJob.id}`);
                 console.log('='.repeat(70));
+
+                if (skipCancellationOnFailure) {
+                  console.log('');
+                  console.log('NOTICE: Skipping workflow cancellation due to "no-cancel-failure" label');
+                  console.log('Workflow will continue running despite this failure.');
+                  core.setFailed(failureMsg + ' (cancellation skipped due to label)');
+                  return;
+                }
 
                 await github.rest.actions.cancelWorkflowRun({
                   owner: context.repo.owner,
@@ -99,7 +118,7 @@ jobs:
                   run_id: context.runId
                 });
 
-                core.setFailed(failureMsg);
+                core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
                 return;
               }
 
