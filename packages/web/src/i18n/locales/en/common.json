@@ -6,8 +6,8 @@
   "unknown": "Unknown",
   "remote": "Remote",
   "errors": {
-    "somethingWentWrong": "Something went wrong",
-    "schemaValidationFailed": "Data sync issue detected. Please refresh the page or contact support if the issue persists."
+    "schemaValidationFailed": "Data sync issue detected. Please refresh the page or contact support if the issue persists.",
+    "somethingWentWrong": "Something went wrong"
   },
   "desktopPrompt": {
     "title": "{{feature}} Requires Desktop App",
@@ -775,6 +775,7 @@
     "noResourcesFound": "No {{resources}} found. Try adjusting your search criteria."
   },
   "teamSelector": {
+    "selectTeam": "Select team...",
     "selectTeams": "Select teams...",
     "moreTeams": "+{{count}} more"
   },

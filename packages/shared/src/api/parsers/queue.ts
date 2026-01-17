@@ -2,7 +2,7 @@
  * Queue Parsers
  */
 
-import { extractPrimaryOrSecondary, extractRowsByIndex, extractFirstByIndex } from './base';
+import { extractFirstByIndex, extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 import { DEFAULTS } from '../../config';
 import type {
   GetTeamQueueItems_ResultSet1,

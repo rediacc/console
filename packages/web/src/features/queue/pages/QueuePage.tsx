@@ -4,13 +4,13 @@ import {
   Button,
   Dropdown,
   Flex,
+  type MenuProps,
   Modal,
   Space,
   Tabs,
   Tag,
   Tooltip,
   Typography,
-  type MenuProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useQueueItemsWithFilters } from '@/api/hooks-queue';
@@ -38,9 +38,11 @@ import {
   RocketOutlined,
 } from '@/utils/optimizedIcons';
 import { getQueueStatusColor } from '@/utils/statusColors';
-import type { QueueFilters } from '@rediacc/shared/types';
-import type { QueueStatistics } from '@rediacc/shared/types';
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
+import type {
+  GetTeamQueueItems_ResultSet1,
+  QueueFilters,
+  QueueStatistics,
+} from '@rediacc/shared/types';
 import { QueueFilterPanel } from '../components/QueueFilterPanel';
 import { QueueStatisticsBar } from '../components/QueueStatisticsBar';
 import { useQueueActions } from '../hooks/useQueueActions';

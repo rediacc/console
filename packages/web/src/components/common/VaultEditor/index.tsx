@@ -5,19 +5,19 @@ import { useMessage } from '@/hooks';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
-  VaultEditorRequiredFields,
+  VaultEditorExtraFields,
   VaultEditorOptionalFields,
   VaultEditorProviderFields,
-  VaultEditorExtraFields,
   VaultEditorRawJson,
-  VaultEditorTestConnection,
+  VaultEditorRequiredFields,
   VaultEditorSystemCompatibility,
+  VaultEditorTestConnection,
 } from './sections';
 import {
-  handleImport,
-  handleExport,
-  handleRawJsonChange,
   type FieldMovements,
+  handleExport,
+  handleImport,
+  handleRawJsonChange,
 } from './utils/index';
 import type { VaultEditorProps, VaultFormValues } from './types';
 import type { UploadFile } from 'antd/es/upload/interface';

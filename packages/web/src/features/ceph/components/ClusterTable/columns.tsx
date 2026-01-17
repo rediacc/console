@@ -9,12 +9,12 @@ import { createActionColumn } from '@/components/common/columns/factories/action
 import { buildClusterMenuItems } from '@/features/ceph/utils/menuItems';
 import { createSorter } from '@/platform';
 import {
+  CloudServerOutlined,
   DeleteOutlined,
   EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
   RightOutlined,
-  CloudServerOutlined,
 } from '@/utils/optimizedIcons';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';

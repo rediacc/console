@@ -1,15 +1,15 @@
 import { Command } from 'commander';
 import {
   parseGetOrganizationTeams,
-  parseGetTeamMembers,
   parseGetOrganizationVaults,
+  parseGetTeamMembers,
 } from '@rediacc/shared/api';
 import type {
   CreateTeamParams,
   DeleteTeamParams,
+  GetOrganizationVaults_ResultSet1,
   UpdateTeamNameParams,
   UpdateTeamVaultParams,
-  GetOrganizationVaults_ResultSet1,
 } from '@rediacc/shared/types';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';

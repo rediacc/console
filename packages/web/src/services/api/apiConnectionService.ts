@@ -36,8 +36,16 @@ class ApiConnectionService {
 
   /**
    * Get localhost API URL
+   * When VITE_API_URL is set (e.g., CI testing with Cloudflare tunnel), use it directly
    */
   private getLocalhostUrl(): string {
+    // Prioritize VITE_API_URL if explicitly set (for E2E testing with tunnel URLs)
+    const explicitApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+    if (explicitApiUrl) {
+      return explicitApiUrl;
+    }
+
+    // Default: construct localhost URL from port
     const port =
       (import.meta.env.VITE_HTTP_PORT as string | undefined) ?? DEFAULTS.HOST.WEB_PORT_STRING;
     return `http://localhost:${port}/api`;
@@ -58,7 +66,7 @@ class ApiConnectionService {
       // Try a simple GET request to the API endpoint
       // Using a lightweight endpoint that doesn't require authentication
       await axios.get(`${url}/health`, {
-        timeout: 3000, // 3 second timeout for health check
+        timeout: 10000, // 10 seconds - for Cloudflare tunnel + Windows SSL/TLS latency
         validateStatus: (status) => status < 500, // Accept any non-5xx status
       });
       return true;
@@ -69,13 +77,13 @@ class ApiConnectionService {
   }
 
   /**
-   * Check if CI/Test mode is enabled
-   * Used to bypass CAPTCHA and email verification during testing
+   * Check if CI mode is enabled
+   * Used to bypass CAPTCHA during testing
    */
   async isCiMode(): Promise<boolean> {
     try {
       const apiUrl = await this.getApiUrl();
-      const response = await axios.get(`${apiUrl}/health`, { timeout: 3000 });
+      const response = await axios.get(`${apiUrl}/health`, { timeout: 10000 }); // 10s for tunnel latency
       return response.data?.ciMode === true;
     } catch (error) {
       console.warn('Could not fetch CI mode status:', error);
@@ -128,7 +136,14 @@ class ApiConnectionService {
     const localhostUrl = this.getLocalhostUrl();
     const sandboxUrl = this.getSandboxUrl();
 
-    console.warn('[API Connection] DEBUG mode: Checking localhost availability...');
+    // Log whether we're using explicit VITE_API_URL or constructed localhost URL
+    const explicitApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+    if (explicitApiUrl) {
+      console.warn(`[API Connection] DEBUG mode: Using explicit VITE_API_URL: ${explicitApiUrl}`);
+    } else {
+      console.warn('[API Connection] DEBUG mode: Checking localhost availability...');
+    }
+
     const localhostAvailable = await this.checkEndpointHealth(localhostUrl);
 
     if (localhostAvailable) {

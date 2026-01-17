@@ -1,0 +1,63 @@
+---
+export interface Props {
+  title: string;
+  subtitle: string;
+  videoSrc?: string;
+  heroImage?: string;
+  heroImageAlt?: string;
+}
+
+const { title, subtitle, videoSrc = '/videos/demo.mp4', heroImage, heroImageAlt = '' } = Astro.props;
+---
+
+<section id="overview" class="hero-video-section">
+  <div class="container">
+    <div class="hero-video-content">
+      <div class="hero-text">
+        <h1 class="hero-title">{title}</h1>
+        <p class="hero-subtitle">{subtitle}</p>
+      </div>
+
+      {heroImage ? (
+        <div class="hero-image-container">
+          <img
+            src={heroImage}
+            alt={heroImageAlt}
+            class="hero-image"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      ) : (
+        <div class="video-container-inline">
+          <div class="video-wrapper-inline">
+            <video
+              class="video-element"
+              controls
+              preload="metadata"
+            >
+              <source src={videoSrc} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-image-container {
+    margin: 2rem auto;
+    max-width: 900px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .hero-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+</style>

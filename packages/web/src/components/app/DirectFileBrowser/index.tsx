@@ -1,4 +1,5 @@
 /* eslint-disable no-restricted-syntax, react/forbid-elements, @typescript-eslint/no-floating-promises, react-hooks/exhaustive-deps, @typescript-eslint/require-await, max-lines */
+
 import React, { useEffect, useState } from 'react';
 import {
   CloseOutlined,
@@ -28,13 +29,13 @@ import {
   Table,
   Tooltip,
   Typography,
-  Upload,
   theme,
+  Upload,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { MobileCard } from '@/components/common/MobileCard';
 import { SizedModal } from '@/components/common/SizedModal';
-import { useSftp, type SFTPFile } from '@/hooks/sftp/useSftp';
+import { type SFTPFile, useSftp } from '@/hooks/sftp/useSftp';
 import { isElectron } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { formatBytes } from '@/utils/formatters';

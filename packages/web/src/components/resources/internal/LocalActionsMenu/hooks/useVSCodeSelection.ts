@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { useDialogState } from '@/hooks/useDialogState';
 import type { MachineSSHCredentials } from '@/hooks/useMachineCredentials';
-import { isElectron, getElectronAPI, type VSCodeInstallations } from '@/types';
-import { DEFAULTS } from '@rediacc/shared/config';
+import { getElectronAPI, isElectron, type VSCodeInstallations } from '@/types';
 
 interface VSCodeSelectionData {
   installations: VSCodeInstallations;
@@ -53,7 +52,7 @@ export function useVSCodeSelection({
       });
 
       if (!result.success) {
-        onError(result.error ?? DEFAULTS.ERROR.VSCODE_CONNECTION_FAILED);
+        onError(result.error ?? 'shared:errors.vsCodeConnectionFailed');
       }
     },
     [teamName, machine, repository, modal.state.data, onError]

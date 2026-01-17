@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
-import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { getPlatform, commandExists } from '../utils/platform.js';
+import { commandExists, getPlatform } from '../utils/platform.js';
 
 /**
  * Default timeout for SSH agent operations in milliseconds (10 seconds)

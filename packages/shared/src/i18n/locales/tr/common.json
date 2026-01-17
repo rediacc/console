@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "Bir hata oluştu",
+    "cliCommandFailed": "CLI komutu başarısız oldu",
+    "criticalSystemError": "Sistemde kritik sorunlar var",
+    "failedToCreateTask": "Test görevi oluşturulamadı",
+    "failedToFork": "Depo çatallanamadı",
+    "helloFunctionError": "Hello işlevi bir hata bildirdi",
+    "machinesValidationError": "Makine doğrulama hatası",
+    "noErrorMessage": "(hata mesajı yok)",
+    "operationFailed": "İşlem başarısız oldu",
+    "passwordValidation": "Şifre büyük harf, küçük harf, rakam ve özel karakter içermelidir",
+    "tfaVerificationFailed": "TFA doğrulaması başarısız",
+    "unknownError": "Bilinmeyen hata",
+    "vaultTestFailed": "Vault bağlantı testi başarısız",
+    "vsCodeConnectionFailed": "VS Code bağlantısı başarısız"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello işlevi başarıyla tamamlandı"
+  },
   "status": {
     "cancelled": "İptal edildi",
     "completed": "Tamamlandı",

@@ -6,9 +6,9 @@ import {
   getRequiredTag,
   showMultiTargetSummary,
 } from '../hooks/useFunctionExecution';
-import type { PushFunctionData } from './types';
 import type { FunctionExecutionContext } from '../hooks/useFunctionExecution';
 import type { RepositoryTableRow } from '../types';
+import type { PushFunctionData } from './types';
 
 // Type alias for team repository data from context
 type TeamRepositoryData = FunctionExecutionContext['teamRepositories'][number];

@@ -185,7 +185,8 @@ async function sortTraceColumns(
 
     if (await columnHeader.isVisible({ timeout: 2000 }).catch(() => false)) {
       await columnHeader.click();
-      await page.waitForTimeout(500);
+      // Wait for table to re-render after sort
+      await page.waitForLoadState('networkidle');
     } else {
       await screenshotManager.captureStep(`trace_column_${columnName}_not_found`);
     }

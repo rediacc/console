@@ -1,4 +1,5 @@
 /* eslint-disable max-lines */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapse, Form, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -17,16 +18,15 @@ import { useDialogState } from '@/hooks/useDialogState';
 import { RootState } from '@/store/store';
 import { ModalSize } from '@/types/modal';
 import { AppstoreOutlined } from '@/utils/optimizedIcons';
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { QueueFunction } from '@rediacc/shared/types';
 import { InfrastructurePills } from './components/InfrastructurePills';
 import { ModalFooter } from './components/ModalFooter';
 import {
+  createFunctionSubtitle,
+  getBridgeName,
+  getFunctionTitle,
   ModalTitleRenderer,
   resolveTeamName,
-  getBridgeName,
-  createFunctionSubtitle,
-  getFunctionTitle,
 } from './components/ModalHeaderRenderer';
 import { ResourceModalDialogs } from './components/ResourceModalDialogs';
 import { useBridgeSelection } from './hooks/useBridgeSelection';
@@ -73,8 +73,7 @@ const normalizeExistingData = (
 ): ExistingResourceData | undefined => {
   if (!existingData) return undefined;
   if (existingData.vaultVersion == null) {
-    const { vaultVersion: _vaultVersion, ...rest } = existingData;
-    return { ...rest, vaultVersion: undefined };
+    return { ...existingData, vaultVersion: undefined };
   }
   return existingData;
 };
@@ -406,7 +405,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       if (mode === 'create' && resourceType === 'machine') {
         const validation = validateMachineCreation(data, testConnectionSuccess);
         if (!validation.valid) {
-          message.error(validation.errorKey ?? DEFAULTS.ERROR.MACHINES_VALIDATION_ERROR);
+          message.error(validation.errorKey ?? 'machines:validation.errorOccurred');
           return;
         }
         if ('warn' in validation && validation.warn) {

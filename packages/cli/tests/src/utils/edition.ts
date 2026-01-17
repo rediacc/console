@@ -7,7 +7,6 @@
 
 import { randomBytes } from 'node:crypto';
 import { expect } from '@playwright/test';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { CI_ACTIVATION_CODE, getApiUrl, TEST_EMAIL_DOMAIN } from '../constants';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 
@@ -318,8 +317,7 @@ export function expectEditionError(
  */
 export function expectEditionSuccess(result: CliResult): void {
   const errorResponse = result.json as { success: false; error?: { message?: string } } | null;
-  const errorMsg =
-    errorResponse?.error?.message ?? result.stderr ?? DEFAULTS.ERROR.NO_ERROR_MESSAGE;
+  const errorMsg = errorResponse?.error?.message ?? result.stderr ?? '(no error message)';
 
   // Build comprehensive debug info for assertion message
   const debugInfo = `

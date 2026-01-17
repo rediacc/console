@@ -1,11 +1,12 @@
+import type { HttpRetryConfig } from './retry';
 import type { VaultEncryptor } from '../../encryption';
 import type { ApiResponse } from '../../types/api';
 import type {
-  TokenAdapter,
   ApiUrlProvider,
-  MasterPasswordProvider,
   ErrorHandler,
+  MasterPasswordProvider,
   TelemetryHandler,
+  TokenAdapter,
 } from '../adapters/types';
 import type { ApiClient } from '../services/types';
 
@@ -43,6 +44,8 @@ export interface ApiClientConfig {
   errorHandler?: ErrorHandler;
   /** Optional handler for telemetry */
   telemetry?: TelemetryHandler;
+  /** Optional retry configuration for transient errors (502, 503, 504, network errors) */
+  retryConfig?: Partial<HttpRetryConfig>;
 }
 
 /**

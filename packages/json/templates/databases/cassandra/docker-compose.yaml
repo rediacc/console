@@ -1,0 +1,25 @@
+services:
+  cassandra:
+    image: cassandra:5.0
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: "${NETWORK_MODE:-bridge}"
+    environment:
+      CASSANDRA_CLUSTER_NAME: ${CASSANDRA_CLUSTER_NAME}
+      CASSANDRA_DC: ${CASSANDRA_DC}
+      CASSANDRA_RACK: ${CASSANDRA_RACK}
+      CASSANDRA_ENDPOINT_SNITCH: ${CASSANDRA_ENDPOINT_SNITCH}
+      CASSANDRA_NUM_TOKENS: ${CASSANDRA_NUM_TOKENS}
+      CASSANDRA_AUTHENTICATOR: ${CASSANDRA_AUTHENTICATOR}
+      CASSANDRA_AUTHORIZER: ${CASSANDRA_AUTHORIZER}
+    ports:
+      - "9042"
+    volumes:
+      - ./data:/var/lib/cassandra
+      - ./init-cassandra.cql:/docker-entrypoint-initdb.d/init.cql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES;' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

@@ -5,8 +5,8 @@ import { createTruncatedColumn, RESPONSIVE_HIDE_XS } from '@/components/common/c
 import { createActionColumn } from '@/components/common/columns/factories/action';
 import { createSorter } from '@/platform';
 import {
-  CloudUploadOutlined,
   CloudServerOutlined,
+  CloudUploadOutlined,
   FileImageOutlined,
 } from '@/utils/optimizedIcons';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';

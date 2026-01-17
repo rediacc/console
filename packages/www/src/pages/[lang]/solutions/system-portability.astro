@@ -1,0 +1,130 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProblemSolutionSection from '../../../components/ProblemSolutionSection';
+import SolutionHero from '../../../components/SolutionHero.astro';
+import SolutionImage from '../../../components/SolutionImage.astro';
+import SolutionCTA from '../../../components/SolutionCTA.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+import { EXTERNAL_LINKS } from '../../../config/constants';
+import ctaImage from '../../../assets/images/rediacc_resources_repos.png';
+import '../../../styles/solution-page.css';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, to } = createTranslator(lang);
+
+// Get system portability content
+const spContent = to('pages.solutions.systemPortability');
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.solutions.systemPortability.meta.title')}
+  description={t('pages.solutions.systemPortability.meta.description')}
+  keywords={t('pages.solutions.systemPortability.meta.keywords')}
+  ogType="website"
+>
+  <SolutionHero
+    title={spContent.hero.title}
+    subtitle={spContent.hero.subtitle}
+    heroImage="/assets/images/system-portability-hero.png"
+    heroImageAlt="Infrastructure box moving seamlessly between AWS, Azure, and Google Cloud platforms"
+  />
+
+  <!-- Problem-Solution Section 1: Vendor Lock-in -->
+  <ProblemSolutionSection
+    client:visible
+    number={1}
+    title={spContent.problems.vendorLockIn.title}
+    subtitle={spContent.problems.vendorLockIn.subtitle}
+    problem={{
+      description: spContent.problems.vendorLockIn.problem.description,
+      story: spContent.problems.vendorLockIn.problem.story,
+      additionalPoints: spContent.problems.vendorLockIn.problem.additionalPoints
+    }}
+    solution={{
+      title: spContent.problems.vendorLockIn.solution.title,
+      description: spContent.problems.vendorLockIn.solution.description,
+      benefits: spContent.problems.vendorLockIn.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: spContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="system-portability"
+  />
+
+  <!-- Problem-Solution Section 2: Testing Vendor Switches -->
+  <ProblemSolutionSection
+    client:visible
+    number={2}
+    title={spContent.problems.testingVendorSwitch.title}
+    subtitle={spContent.problems.testingVendorSwitch.subtitle}
+    problem={{
+      description: spContent.problems.testingVendorSwitch.problem.description,
+      story: spContent.problems.testingVendorSwitch.problem.story,
+      additionalPoints: spContent.problems.testingVendorSwitch.problem.additionalPoints
+    }}
+    solution={{
+      title: spContent.problems.testingVendorSwitch.solution.title,
+      description: spContent.problems.testingVendorSwitch.solution.description,
+      benefits: spContent.problems.testingVendorSwitch.solution.benefits
+    }}
+    variant="dark"
+    cta={{
+      text: spContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="system-portability"
+  />
+
+  <!-- Problem-Solution Section 3: Easy Deployment -->
+  <ProblemSolutionSection
+    client:visible
+    number={3}
+    title={spContent.problems.deployment.title}
+    subtitle={spContent.problems.deployment.subtitle}
+    problem={{
+      description: spContent.problems.deployment.problem.description,
+      additionalPoints: spContent.problems.deployment.problem.additionalPoints
+    }}
+    solution={{
+      title: spContent.problems.deployment.solution.title,
+      description: spContent.problems.deployment.solution.description,
+      benefits: spContent.problems.deployment.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: spContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="system-portability"
+  />
+
+  <!-- Bottom Image Section -->
+  <SolutionImage
+    imageSrc="/assets/images/system-portability-bottom.png"
+    imageAlt="World map showing tested failover paths between AWS, Azure, and Google Cloud with verification checkmarks"
+    variant="light"
+  />
+
+  <SolutionCTA
+    title={spContent.cta.title}
+    subtitle={spContent.cta.subtitle}
+    buttonText={spContent.cta.button}
+    imageSrc={ctaImage}
+    imageAlt="Rediacc portable system repositories"
+    lang={lang}
+  />
+
+</BaseLayout>
+

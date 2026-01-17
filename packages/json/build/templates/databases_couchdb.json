@@ -1,0 +1,35 @@
+{
+  "id": "databases_couchdb",
+  "name": "Apache CouchDB Database Template",
+  "description": "NoSQL document database with HTTP JSON API, multi-master replication, and optional web-based admin interface (Fauxton).",
+  "category": "databases",
+  "tags": ["databases", "couchdb"],
+  "files": [
+    {
+      "name": ".env",
+      "path": "couchdb/.env",
+      "type": "environment",
+      "content": "# Network Mode Configuration\n# Options:\n#   bridge - Isolated network, multiple instances supported (default)\n#   host   - Shared host network, checkpoint-compatible (for live migration)\nNETWORK_MODE=bridge\n\n# Note: Host networking required for Docker checkpoint/restore support\n# Bridge mode recommended for development and multi-instance deployments\n\n# CouchDB Configuration\nCONTAINER_NAME=couchdb-server\n\n# Admin Credentials (Required for CouchDB 3.0+)\nCOUCHDB_USER=admin\nCOUCHDB_PASSWORD=yourSecurePasswordHere123!\n\n# Cluster Secret (optional - auto-generated if not set)\n# Used for cookie authentication in clustered setups\nCOUCHDB_SECRET="
+    },
+    {
+      "name": "README.md",
+      "path": "couchdb/README.md",
+      "type": "markdown",
+      "content": "# Apache CouchDB Database Template\n\nNoSQL document database with HTTP JSON API, multi-master replication, and optional web-based admin interface (Fauxton).\n\n## Features\n\n- CouchDB 3.x with built-in Fauxton web UI\n- RESTful HTTP/JSON API for documents\n- Admin authentication and cluster-ready setup\n- Health checks and persistent data storage\n- Multi-master replication support\n\n## Usage\n\n```bash\nsource Rediaccfile\nprep  # Pull images and create directories\nup    # Start CouchDB\ndown  # Stop and cleanup\n```\n\n## Configuration\n\nEdit `.env` to customize:\n- `CONTAINER_NAME`: Container name (default: couchdb-server)\n- `COUCHDB_USER`: Admin username (default: admin)\n- `COUCHDB_PASSWORD`: Admin password (required)\n- `COUCHDB_SECRET`: Cluster authentication secret (auto-generated)\n\n## Access\n\n- **Port**: 5984 (Docker auto-assigns host port)\n- **Web UI**: http://localhost:5984/_utils (Fauxton)\n- **Credentials**: See `.env` for username/password\n- **Find assigned port**: `docker compose ps` or `docker port couchdb-server 5984`\n\n**Quick API Test:**\n```bash\n# Check server status\ncurl http://localhost:5984/\n\n# Create database (use credentials from .env)\ncurl -X PUT http://admin:yourPassword@localhost:5984/mydb\n```\n\n## Resources\n\n- [CouchDB Docker Hub](https://hub.docker.com/_/couchdb)\n- [Official CouchDB Documentation](https://docs.couchdb.org/)\n- [HTTP API Guide](https://docs.couchdb.org/en/stable/api/index.html)\n- [Fauxton Interface](https://docs.couchdb.org/en/stable/fauxton/index.html)"
+    },
+    {
+      "name": "Rediaccfile",
+      "path": "couchdb/Rediaccfile",
+      "type": "text",
+      "content": "#!/bin/bash\n\n# === Renet Compose Support ===\n_use_renet() {\n  [[ -n \"$REPOSITORY_NETWORK_ID\" ]] && command -v renet &>/dev/null\n}\n_compose() {\n  if _use_renet; then\n    renet compose --network-id \"$REPOSITORY_NETWORK_ID\" -- \"$@\"\n  else\n    docker compose \"$@\"\n  fi\n}\n\nprep() {\n    echo \"Pulling CouchDB image...\"\n    docker pull couchdb:3\n\n    echo \"Creating data and configuration directories...\"\n    mkdir -p ./data\n    mkdir -p ./etc/local.d\n    chmod 755 ./data\n    chmod 755 ./etc/local.d\n\n    return $?\n}\n\nup() {\n    if [ -f .env ]; then\n        source .env\n    fi\n\n    echo \"Starting CouchDB server...\"\n    _compose up -d\n\n    echo \"Waiting for CouchDB to be healthy...\"\n    sleep 3\n\n    echo \"\"\n    echo \"CouchDB is starting up!\"\n    echo \"Access Fauxton UI at: http://localhost:5984/_utils\"\n    echo \"Username: ${COUCHDB_USER:-admin}\"\n    echo \"\"\n    echo \"To find the assigned port, run:\"\n    echo \"  docker port ${CONTAINER_NAME:-couchdb-server} 5984\"\n    echo \"\"\n\n    return $?\n}\n\ndown() {\n    echo \"Stopping CouchDB server...\"\n    _compose down -v\n    return $?\n}"
+    },
+    {
+      "name": "docker-compose.yaml",
+      "path": "couchdb/docker-compose.yaml",
+      "type": "yaml",
+      "content": "services:\n  couchdb:\n    image: couchdb:3\n    container_name: ${CONTAINER_NAME}\n    restart: always\n    network_mode: \"${NETWORK_MODE:-bridge}\"\n    environment:\n      COUCHDB_USER: ${COUCHDB_USER}\n      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}\n      COUCHDB_SECRET: ${COUCHDB_SECRET}\n    ports:\n      - \"5984\"\n    volumes:\n      - ./data:/opt/couchdb/data\n      - ./etc/local.d:/opt/couchdb/etc/local.d\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:5984/_up\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 10s"
+    }
+  ],
+  "readme": "# Apache CouchDB Database Template\n\nNoSQL document database with HTTP JSON API, multi-master replication, and optional web-based admin interface (Fauxton).\n\n## Features\n\n- CouchDB 3.x with built-in Fauxton web UI\n- RESTful HTTP/JSON API for documents\n- Admin authentication and cluster-ready setup\n- Health checks and persistent data storage\n- Multi-master replication support\n\n## Usage\n\n```bash\nsource Rediaccfile\nprep  # Pull images and create directories\nup    # Start CouchDB\ndown  # Stop and cleanup\n```\n\n## Configuration\n\nEdit `.env` to customize:\n- `CONTAINER_NAME`: Container name (default: couchdb-server)\n- `COUCHDB_USER`: Admin username (default: admin)\n- `COUCHDB_PASSWORD`: Admin password (required)\n- `COUCHDB_SECRET`: Cluster authentication secret (auto-generated)\n\n## Access\n\n- **Port**: 5984 (Docker auto-assigns host port)\n- **Web UI**: http://localhost:5984/_utils (Fauxton)\n- **Credentials**: See `.env` for username/password\n- **Find assigned port**: `docker compose ps` or `docker port couchdb-server 5984`\n\n**Quick API Test:**\n```bash\n# Check server status\ncurl http://localhost:5984/\n\n# Create database (use credentials from .env)\ncurl -X PUT http://admin:yourPassword@localhost:5984/mydb\n```\n\n## Resources\n\n- [CouchDB Docker Hub](https://hub.docker.com/_/couchdb)\n- [Official CouchDB Documentation](https://docs.couchdb.org/)\n- [HTTP API Guide](https://docs.couchdb.org/en/stable/api/index.html)\n- [Fauxton Interface](https://docs.couchdb.org/en/stable/fauxton/index.html)",
+  "generated": "2026-01-16T09:43:38Z"
+}

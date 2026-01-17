@@ -3,10 +3,10 @@ import { Alert, Button, Card, Flex, Form, Input, Result, Typography } from 'antd
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
+  type EnableTwoFactorResponse,
   useDisableTFA,
   useEnableTFA,
   useGetTFAStatus,
-  type EnableTwoFactorResponse,
 } from '@/api/hooks-tfa';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import { SizedModal } from '@/components/common/SizedModal';

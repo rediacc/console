@@ -18,8 +18,8 @@ import { masterPasswordService } from '@/services/auth';
 import { loginSuccess } from '@/store/auth/authSlice';
 import { hashPassword, saveAuthData } from '@/utils/auth';
 import {
-  generateRandomOrganizationName,
   generateRandomEmail,
+  generateRandomOrganizationName,
   generateRandomPassword,
 } from '@/utils/generators';
 import { showMessage } from '@/utils/messages';
@@ -30,8 +30,7 @@ import {
   VaultProtocolState,
   validateMasterPassword,
 } from '@/utils/vaultProtocol';
-import { parseLoginResult as parseAuthenticationResult } from '@rediacc/shared/api';
-import { parseResponse } from '@rediacc/shared/api';
+import { parseLoginResult as parseAuthenticationResult, parseResponse } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { AuthLoginResult, VerifyTfaResult } from '@rediacc/shared/types';
 import { LoginForm } from './components/LoginForm';
@@ -85,7 +84,7 @@ const LoginPage: React.FC = () => {
               email: generateRandomEmail(),
               password: generateRandomPassword(),
               organizationName: generateRandomOrganizationName(),
-              activationCode: '111111',
+              activationCode: 'AAA111',
             };
             setQuickRegistrationData(randomData);
             setIsQuickRegistration(true);

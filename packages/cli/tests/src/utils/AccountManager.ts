@@ -104,7 +104,7 @@ export class AccountManager {
 
     if (!registerResult.success) {
       // Cleanup context on failure
-      await runner.run(['context', 'delete', account.contextName, '--force']);
+      await runner.run(['context', 'delete', account.contextName]);
       throw new Error(`Registration failed: ${contextRunner.getErrorMessage(registerResult)}`);
     }
 
@@ -116,7 +116,7 @@ export class AccountManager {
     );
 
     if (!activateResult.success) {
-      await runner.run(['context', 'delete', account.contextName, '--force']);
+      await runner.run(['context', 'delete', account.contextName]);
       throw new Error(`Activation failed: ${contextRunner.getErrorMessage(activateResult)}`);
     }
 
@@ -124,7 +124,7 @@ export class AccountManager {
     const loginResult = await contextRunner.login(account.email, account.password);
 
     if (!loginResult.success) {
-      await runner.run(['context', 'delete', account.contextName, '--force']);
+      await runner.run(['context', 'delete', account.contextName]);
       throw new Error(`Login failed: ${contextRunner.getErrorMessage(loginResult)}`);
     }
 
@@ -171,7 +171,7 @@ export class AccountManager {
     );
 
     if (!registerResult.success) {
-      await runner.run(['context', 'delete', account.contextName, '--force']);
+      await runner.run(['context', 'delete', account.contextName]);
       throw new Error(`Registration failed: ${contextRunner.getErrorMessage(registerResult)}`);
     }
 
@@ -183,7 +183,7 @@ export class AccountManager {
     );
 
     if (!activateResult.success) {
-      await runner.run(['context', 'delete', account.contextName, '--force']);
+      await runner.run(['context', 'delete', account.contextName]);
       throw new Error(`Activation failed: ${contextRunner.getErrorMessage(activateResult)}`);
     }
 
@@ -191,7 +191,7 @@ export class AccountManager {
     const loginResult = await contextRunner.login(account.email, account.password);
 
     if (!loginResult.success) {
-      await runner.run(['context', 'delete', account.contextName, '--force']);
+      await runner.run(['context', 'delete', account.contextName]);
       throw new Error(`Login failed: ${contextRunner.getErrorMessage(loginResult)}`);
     }
 

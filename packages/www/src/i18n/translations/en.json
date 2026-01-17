@@ -1,0 +1,1553 @@
+{
+  "common": {
+    "siteName": "Rediacc",
+    "logoAlt": "Rediacc - Infrastructure Automation Platform",
+    "buttons": {
+      "close": "Close",
+      "learnMore": "Learn More",
+      "requestEarlyAccess": "Apply",
+      "goToHomepage": "Go to Homepage",
+      "contactSupport": "Contact Support",
+      "sendMessage": "Apply"
+    },
+    "search": {
+      "placeholder": "Search documentation, solutions, features...",
+      "searching": "Searching...",
+      "noResults": "No results found",
+      "navigate": "Navigate",
+      "select": "Select",
+      "closeModal": "Close search",
+      "keyboardShortcut": "⌘K to search",
+      "suggestions": {
+        "title": "Try:",
+        "differentKeywords": "Different keywords or shorter terms",
+        "checkSpelling": "Checking your spelling",
+        "browseSolutions": "Browsing our solutions page",
+        "contactSupport": "Contacting our support team"
+      }
+    },
+    "aria": {
+      "mainNavigation": "Main navigation",
+      "previousImage": "Previous image",
+      "nextImage": "Next image",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom",
+      "closeImageModal": "Close image modal",
+      "statusMessage": "Status message"
+    },
+    "skipNavigation": {
+      "skipToMainContent": "Skip to main content",
+      "skipToNavigation": "Skip to navigation",
+      "skipToFooter": "Skip to footer"
+    }
+  },
+  "navigation": {
+    "home": "Home",
+    "blog": "Blog",
+    "docs": "Docs",
+    "contact": "Contact",
+    "downloads": "Downloads",
+    "toggleMenu": "Toggle menu",
+    "search": "Search",
+    "selectLanguage": "Select language",
+    "login": "Log in",
+    "solutions": {
+      "disasterRecovery": "Disaster Recovery",
+      "threatResponse": "Threat Response",
+      "dataSecurity": "Data Security",
+      "systemPortability": "System Portability",
+      "developmentEnvironments": "Development Environments"
+    }
+  },
+  "footer": {
+    "tagline": "Infrastructure Automation Platform for AI-Driven Operations",
+    "links": {
+      "returnToHome": "Return to Home",
+      "contactSupport": "Contact Support"
+    },
+    "copyright": "{{year}} Rediacc. All rights reserved.",
+    "columns": {
+      "product": "Product",
+      "organization": "Organization",
+      "support": "Support",
+      "legal": "Legal"
+    },
+    "productLinks": {
+      "solutions": "Solutions",
+      "overview": "Overview",
+      "pricing": "Pricing",
+      "professionalServices": "Professional Services"
+    },
+    "organizationLinks": {
+      "aboutUs": "About Us",
+      "team": "Team",
+      "contact": "Contact"
+    },
+    "supportLinks": {
+      "helpCenter": "Help Center",
+      "contactSupport": "Contact Support"
+    },
+    "legalLinks": {
+      "termsOfUse": "Terms of Use",
+      "privacyPolicy": "Privacy Policy"
+    }
+  },
+  "hero": {
+    "title": "Infrastructure That",
+    "titleHighlight": " Survives. Every Time.",
+    "subtitle": "Survive cloud outages. Deploy anywhere. Fail over fast.",
+    "cta": {
+      "contactUs": "Start Free",
+      "learnMore": "Learn More",
+      "bookDemo": "Book Demo",
+      "freeBadge": "FREE FOREVER • No credit card",
+      "benefits": "10 CPU cores • Unlimited teams • $0",
+      "seeDetails": "See full details"
+    }
+  },
+  "problem": {
+    "title": "The Speed Mismatch Crisis",
+    "subtitle": "When production environments have terabytes of data but sandbox environments only sync monthly, teams face impossible choices that lead to dangerous workarounds.",
+    "reality": {
+      "title": "The Reality: Frustrated Teams, Dangerous Workarounds",
+      "imageAlt": "Diagram illustrating traditional infrastructure workflow challenges: frustrated developers waiting for environment provisioning, stakeholders demanding faster deployment, and teams resorting to dangerous production testing due to slow sandbox updates"
+    },
+    "solution": {
+      "title": "The Solution: Rediacc Platform",
+      "imageAlt": "Rediacc platform solution diagram: automated infrastructure provisioning, instant production-like environment clones, streamlined developer workflows, and AI-safe operations with Model Context Protocol integration"
+    }
+  },
+  "solutions": {
+    "title": "How We Ensure Business Continuity",
+    "subtitle": "Five integrated solutions for rapid response when infrastructure fails or threats strike.",
+    "items": [
+      {
+        "title": "Ransomware Survival",
+        "description": "Recovery speed saves lives. Immutable backups. Rapid response.",
+        "benefits": [
+          "Immutable backups survive attacks",
+          "Recover in minutes, not hours or days",
+          "Risk-free OS testing"
+        ]
+      },
+      {
+        "title": "Multi-Cloud Always",
+        "description": "Single-cloud is dangerous. Deploy anywhere. Fail over fast.",
+        "benefits": ["Survive AWS outages", "Zero vendor lock-in", "Tested failover ready"]
+      },
+      {
+        "title": "Verified Backups",
+        "description": "Verified recovery guaranteed. Tested backups. Complete history.",
+        "benefits": ["Automatic verification", "Extended retention", "Recover in minutes"]
+      },
+      {
+        "title": "Encryption Control",
+        "description": "Everything encrypted. Everything audited. Complete control.",
+        "benefits": ["Encryption you control", "Full audit trail", "Migration-safe"]
+      },
+      {
+        "title": "Development Environments",
+        "description": "Instant production clones. Zero DevOps tickets. 60-second environments.",
+        "benefits": [
+          "60-second environment provisioning",
+          "Production-identical clones",
+          "Automatic Git integration"
+        ]
+      }
+    ]
+  },
+  "earlyAccess": {
+    "title": "Get Early Access",
+    "subtitle": "Be among the first to never lose data again.",
+    "benefits": [
+      "Work directly with our team",
+      "Shape the product",
+      "Priority support",
+      "Early access to new features"
+    ],
+    "notice": {
+      "title": "How to Submit",
+      "description": "Click submit to open your email. We'll respond within 48 hours.",
+      "emailLabel": "contact@rediacc.com"
+    },
+    "form": {
+      "fields": {
+        "name": {
+          "label": "Name *",
+          "autoComplete": "name"
+        },
+        "email": {
+          "label": "Email *",
+          "autoComplete": "email"
+        },
+        "organization": {
+          "label": "Organization *",
+          "autoComplete": "organization"
+        },
+        "role": {
+          "label": "Role",
+          "autoComplete": "organization-title"
+        },
+        "useCase": {
+          "label": "Primary interest",
+          "options": {
+            "placeholder": "Select one",
+            "disasterRecovery": "Disaster Recovery",
+            "aiSafeOperations": "Cybersecurity",
+            "developmentAcceleration": "Development",
+            "multiple": "Multiple",
+            "other": "Other"
+          }
+        },
+        "message": {
+          "label": "Message",
+          "placeholder": "Tell us about your needs..."
+        }
+      },
+      "submit": "Get Started"
+    }
+  },
+  "pages": {
+    "home": {
+      "meta": {
+        "title": "Rediacc - Infrastructure Automation Platform",
+        "description": "Transform development with Rediacc's infrastructure automation. Get instant environments, disaster recovery & AI-safe operations.",
+        "keywords": "infrastructure automation, development environments, disaster recovery, DevOps automation, CI/CD pipeline, cloud infrastructure, development operations, Model Context Protocol, AI-safe infrastructure"
+      },
+      "imageModal": {
+        "indicator": "{{current}} / {{total}}"
+      }
+    },
+    "contact": {
+      "meta": {
+        "title": "Apply | Rediacc",
+        "description": "Limited spots available.",
+        "keywords": "Rediacc early access, disaster recovery platform, verified backups"
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "contact": "Apply"
+      },
+      "hero": {
+        "title": "Apply Below",
+        "subtitle": "Fill out the form and we'll be in touch within 48 hours."
+      },
+      "info": {
+        "title": "What You Get",
+        "description": "Work directly with our team. Know your backups work.",
+        "methods": {
+          "general": {
+            "title": "Questions?",
+            "email": "contact@rediacc.com"
+          },
+          "earlyAccess": {
+            "title": "Early Access",
+            "description": "Limited spots. Priority support.",
+            "link": "Learn more"
+          },
+          "technicalSupport": {
+            "title": "Existing Customers",
+            "description": "Contact your support team directly."
+          }
+        }
+      },
+      "notice": {
+        "title": "How to Submit",
+        "description": "Click submit to open your email. Questions? Email",
+        "emailLabel": "contact@rediacc.com"
+      },
+      "form": {
+        "fields": {
+          "name": {
+            "label": "Name *"
+          },
+          "email": {
+            "label": "Email *"
+          },
+          "subject": {
+            "label": "I'm interested in *",
+            "options": {
+              "placeholder": "Select one",
+              "earlyAccess": "Disaster Recovery",
+              "partnership": "Partnership",
+              "technical": "Technical Question",
+              "general": "General",
+              "other": "Other"
+            }
+          },
+          "message": {
+            "label": "Message *",
+            "placeholder": "Tell us about your needs..."
+          }
+        },
+        "submit": "Get Started"
+      }
+    },
+    "team": {
+      "meta": {
+        "title": "Our Team | Rediacc - Building Infrastructure That Survives",
+        "description": "Meet the team building disaster-proof infrastructure. Engineers dedicated to ensuring your systems survive every challenge.",
+        "keywords": "Rediacc team, infrastructure engineering, disaster recovery experts, system reliability, DevOps team"
+      },
+      "hero": {
+        "title": "The Team Building Infrastructure That Survives",
+        "subtitle": "Engineers dedicated to making disasters impossible for your business."
+      },
+      "team": {
+        "title": "Meet Our Team"
+      },
+      "mission": {
+        "title": "Our Mission: Make Disasters Impossible",
+        "description": "Every 47 days, AI deletes a production database. Every year, 1.71% of drives fail. 75% of ransomware targets backups. We make all these disasters recoverable in 60 seconds.",
+        "belief": "We believe that every organization, regardless of size or budget, deserves access to the same powerful infrastructure tools that Fortune 500 companies use. That's why we built Rediacc—to level the playing field and empower businesses to focus on what they do best, while we handle the infrastructure complexity."
+      },
+      "values": {
+        "title": "Our Values"
+      },
+      "story": {
+        "title": "Our Story",
+        "beginning": {
+          "title": "The Beginning",
+          "paragraph1": "In 2018, I left my position as a software engineer to pursue building my own vision. The excitement kept me working 18-hour days, sleeping only 4-5 hours. I poured everything into the project for 5-6 months.",
+          "paragraph2": "Then I unexpectedly lost access to all my development infrastructure. Everything I'd built was suddenly inaccessible. I had no backups, and even if I had, I couldn't afford to replace the on-premises hardware I'd been using.",
+          "paragraph3": "To pay off debts and support my family, I had to return to a salaried job. It took 20 months to regain access to my work. During that time, I drifted far from my dreams, living with uncertainty and mounting financial pressure."
+        },
+        "turningPoint": {
+          "title": "The Turning Point",
+          "paragraph1": "Years later, I kept thinking about what I could do to prevent such a problem from happening again. I needed a tool that would allow me to move my systems to another environment whenever I wanted, activate them whenever needed, back them up easily, and store them securely no matter where I moved them.",
+          "paragraph2": "In 2021, I discovered Docker through NetworkChuck's video. I was shocked by what was possible. I wished I had known about this technology earlier—it could have changed everything.",
+          "paragraph3": "But Docker alone didn't solve all my problems. Moving container files between systems was difficult. I faced file ownership compatibility issues, and as data size grew, transfers took longer. Most critically, I had to keep services offline until migration finished, and Docker offered minimal security features."
+        },
+        "birth": {
+          "title": "Birth of Rediacc",
+          "paragraph1": "It all started with developing a portable filesystem logic. From there, I integrated a backup module. Then came one of the most critical challenges: enabling live system transfers with minimal downtime, regardless of data size. I added unique features based on real needs.",
+          "paragraph2": "This is how Rediacc was born—a product forged through the toughest challenges. Now, it's available to everyone. Use it and don't let anything hold your business back—be ready to survive and accelerate.",
+          "quote": "When I lost access to my infrastructure, I knew what I had to build: a system that makes disasters impossible."
+        }
+      },
+      "cta": {
+        "title": "Join Us on Our Mission",
+        "subtitle": "Whether as a customer, partner, or team member, be part of the infrastructure revolution.",
+        "buttons": {
+          "contact": "Get in Touch",
+          "learnMore": "Learn More"
+        }
+      }
+    },
+    "professionalServices": {
+      "meta": {
+        "title": "Professional Services | Expert Implementation & Support",
+        "description": "Get expert help when you need it most. From standard implementation to emergency response, our professional services ensure your success.",
+        "keywords": "professional services, implementation support, infrastructure consulting, emergency response, migration services, ransomware recovery"
+      },
+      "hero": {
+        "title": "Expert Help When You Need It Most",
+        "subtitle": "Fast-track your infrastructure deployment with professional implementation, migration support, and emergency response services.",
+        "badge": "Available for all subscription tiers"
+      },
+      "value": {
+        "heading": "Why Professional Services Matter",
+        "description": "Infrastructure challenges require expert guidance. Our professional services team brings years of experience to ensure your deployment succeeds, your migrations complete safely, and your emergencies resolve quickly.",
+        "statistics": [
+          "Average implementation time reduced by 75% with professional support",
+          "Emergency response team available within 2 hours for critical incidents",
+          "100% success rate on guided infrastructure migrations"
+        ]
+      },
+      "packages": {
+        "heading": "Professional Service Packages",
+        "subtitle": "Choose the service level that matches your urgency and complexity"
+      },
+      "cta": {
+        "heading": "Ready to Get Started?",
+        "description": "Schedule a consultation to discuss your infrastructure needs and get a custom quote.",
+        "button": "Schedule Consultation",
+        "subtext": "Most consultations completed within 48 hours"
+      }
+    },
+    "pricing": {
+      "meta": {
+        "title": "Pricing | Simple, Transparent Infrastructure Protection",
+        "description": "Choose the right plan for your business. From free community access to enterprise-grade protection. No hidden fees.",
+        "keywords": "pricing, infrastructure automation, disaster recovery pricing, backup pricing, business continuity plans"
+      },
+      "hero": {
+        "title": "Simple, Transparent Pricing",
+        "subtitle": "Choose the disaster recovery tier that protects your infrastructure today and scales as you grow."
+      },
+      "plans": {
+        "community": {
+          "name": "Community",
+          "description": "Production-ready disaster recovery from day one—Free forever",
+          "features": [
+            "Unlimited users & teams—collaborate freely",
+            "Latest snapshot restores—recover from failures in minutes",
+            "10 CPU cores—perfect for small workloads",
+            "10 Repositories, 10 GB each",
+            "2-hour job timeout, 2 active/1 reserved jobs",
+            "7-day audit log retention",
+            "Manual backup scheduling",
+            "Community Slack access",
+            "Self-service support & docs",
+            "\"Powered by Rediacc\" attribution"
+          ]
+        },
+        "professional": {
+          "name": "Professional",
+          "description": "Professional-grade disaster recovery without enterprise complexity",
+          "features": [
+            "Everything in Community +",
+            "Automated backup scheduling—set it and forget it",
+            "Point-in-time recovery (24h)",
+            "100 CPU cores—handle production scale",
+            "500 Repositories, 100 GB each",
+            "24-hour job timeout, 5 active/2 reserved jobs",
+            "30-day audit log retention",
+            "Email + chat support",
+            "Slack & PagerDuty notifications",
+            "No \"Powered by Rediacc\" attribution",
+            "Integrations API access"
+          ]
+        },
+        "business": {
+          "name": "Business",
+          "description": "Mission-Critical Protection + Expert Setup",
+          "features": [
+            "Everything in Professional +",
+            "$9,999 implementation support included (Launch Offer)",
+            "Geo-redundant storage (3 regions)—one failure won't stop you",
+            "Continuous data protection—zero data loss",
+            "4-hour recovery SLA (guaranteed)",
+            "500 CPU cores—enterprise workloads with 72-hour job windows",
+            "Unlimited Repositories, 500 GB each",
+            "7 active/3 reserved jobs",
+            "90-day audit log retention",
+            "Role-based access control & comprehensive audit logs",
+            "Compliance-ready audit reporting",
+            "Dedicated customer success manager",
+            "Phone support + collaboration spaces"
+          ]
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "White-glove disaster recovery for complex enterprise infrastructure",
+          "priceNote": "*Starting at",
+          "features": [
+            "Everything in Business +",
+            "Custom SLA (15-60 minute RTO)—your requirements, our commitment",
+            "Dedicated infrastructure tenant—maximum security & performance",
+            "24/7/365 white-glove support",
+            "1000+ CPU cores—unlimited scale for massive workloads",
+            "Unlimited Repositories, 1TB+ each",
+            "96+ hour job windows with 10+ active/5+ reserved jobs",
+            "1 Year+ audit log retention",
+            "Quarterly disaster recovery exercises—tested readiness",
+            "Executive escalation hotline",
+            "Custom integrations & workflows",
+            "Audit documentation support & security reviews"
+          ]
+        }
+      },
+      "psTeaser": {
+        "heading": "Need Expert Help Getting Started?",
+        "subtitle": "Professional implementation and support services available for all tiers",
+        "viewDetails": "Explore Professional Services",
+        "packages": {
+          "standard": {
+            "name": "Standard",
+            "price": "From $7,499"
+          },
+          "priority": {
+            "name": "Priority",
+            "price": "$19,999"
+          },
+          "emergency": {
+            "name": "Emergency",
+            "price": "$29,999"
+          }
+        }
+      },
+      "strategy": {
+        "heading": "Built for every stage",
+        "copy": "Choose the plan that fits your operational stage today and scale without switching platforms tomorrow.",
+        "distribution": [
+          "Community → Professional: Move from experiments to production with automation, recovery points, and live support.",
+          "Professional → Business: Add security & audit features, collaboration, and faster recovery windows as your team grows.",
+          "Business → Enterprise: Unlock custom SLAs, dedicated tenancy, and white-glove partnership when stakes are highest."
+        ]
+      },
+      "enterpriseCta": {
+        "heading": "Need a Custom Enterprise Solution?",
+        "description": "Get tailored infrastructure protection for your organization",
+        "button": "Contact Sales"
+      },
+      "professionalServices": {
+        "header": {
+          "title": "Professional Service Packages",
+          "subtitle": "Get expert help when you need it most",
+          "badge": "Fast-track your success with professional assistance",
+          "eligibility": "Professional services align to every plan via hybrid access. Use the matrix below to see what’s included and what can be added on."
+        },
+        "packages": {
+          "standard": {
+            "name": "Standard",
+            "turnaround": "3-5 Business Days",
+            "description": "Structured implementation that covers architecture, deployment, validation, and enablement.",
+            "benefits": [
+              "Project discovery and success plan",
+              "Environment provisioning and configuration",
+              "Validation checklist and knowledge transfer"
+            ],
+            "price": "From $7,499",
+            "tiers": [
+              "Starter (1-4 workloads): $7,499",
+              "Growth (5-10 workloads): $14,999",
+              "Scale (11-25 workloads): $29,999",
+              "Enterprise (25+ workloads): Custom quote"
+            ],
+            "tierHeading": "Workload-Based Implementation Pricing",
+            "tierNote": "A workload represents a distinct business process, application, or service requiring backup and disaster recovery protection. Implementation includes architecture design, deployment, validation, and team enablement."
+          },
+          "priority": {
+            "name": "Priority",
+            "turnaround": "24-48 Hours",
+            "description": "Accelerated delivery with extended availability and guided cutover support.",
+            "benefits": [
+              "Dedicated engagement manager",
+              "Evening/weekend availability",
+              "Production cutover assistance"
+            ],
+            "price": "$19,999",
+            "tiers": []
+          },
+          "emergency": {
+            "name": "Emergency",
+            "turnaround": "Same Day",
+            "description": "On-demand incident response team ready to contain and restore critical systems.",
+            "benefits": [
+              "Immediate engagement (under 2 hours)",
+              "Forensics, containment, and recovery plan",
+              "Stabilization report with hardening roadmap"
+            ],
+            "price": "$29,999",
+            "tiers": []
+          }
+        },
+        "pricingFactors": {
+          "heading": "Understanding Professional Service Pricing",
+          "intro": "Final project costs are determined by:",
+          "factors": [
+            {
+              "title": "Scope Complexity",
+              "description": "Number of systems, integrations, and dependencies involved"
+            },
+            {
+              "title": "Customization Level",
+              "description": "Off-the-shelf solutions vs. custom development requirements"
+            },
+            {
+              "title": "Team Size",
+              "description": "Single expert vs. full dedicated team of specialists"
+            }
+          ],
+          "note": "Example: A mid-sized implementation (120 machines) with security architecture review typically ranges from $14,999–$24,999 depending on integrations and retainer coverage."
+        },
+        "serviceTypes": {
+          "heading": "Available Services",
+          "intro": "Click any service to see turnaround times for each package tier",
+          "badgeLabels": {
+            "standard": "Standard",
+            "priority": "Priority",
+            "emergency": "Emergency"
+          },
+          "services": [
+            {
+              "name": "Data Migration",
+              "standard": "Complete end-to-end migration with full validation",
+              "priority": "Rapid migration pipeline setup + core data transferred within 48h",
+              "emergency": "Immediate assessment + critical systems online same-day + full migration begins",
+              "id": "data-migration"
+            },
+            {
+              "name": "Ransomware Recovery",
+              "standard": "Complete recovery with forensics and hardening",
+              "priority": "Rapid threat assessment + core operations restored within 48h",
+              "emergency": "Immediate containment + critical systems restored same-day + full recovery begins",
+              "id": "ransomware-recovery"
+            },
+            {
+              "name": "Security Assessment",
+              "standard": "Full security audit with implementation roadmap",
+              "priority": "Comprehensive vulnerability assessment + remediation plan within 48h",
+              "emergency": "Critical vulnerability scan + high-risk patches deployed same-day + full audit begins",
+              "id": "security-assessment"
+            },
+            {
+              "name": "Infrastructure Scaling",
+              "standard": "Complete infrastructure redesign with optimization",
+              "priority": "Rapid capacity increase + monitoring setup within 48h",
+              "emergency": "Critical resources provisioned same-day + auto-scaling configured + full plan begins",
+              "id": "infrastructure-scaling"
+            },
+            {
+              "name": "Team Training",
+              "standard": "Comprehensive multi-day training program",
+              "priority": "Intensive hands-on workshop + key workflows covered within 2 days",
+              "emergency": "Critical procedures briefing same-day + incident response prep + full program begins",
+              "id": "team-training"
+            },
+            {
+              "name": "Performance Optimization",
+              "standard": "Deep analysis with comprehensive performance tuning",
+              "priority": "Quick profiling + high-impact optimizations deployed within 48h",
+              "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full optimization begins",
+              "id": "performance-optimization"
+            },
+            {
+              "name": "Custom Integration",
+              "standard": "Complete integration with testing and documentation",
+              "priority": "Core integration functional + essential features live within 48h",
+              "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
+              "id": "custom-integration"
+            }
+          ]
+        },
+        "benefits": {
+          "heading": "Why Professional Services?",
+          "statistics": [
+            "The average cost of a ransomware attack is $4.62 million (IBM Security, 2023)",
+            "The average downtime cost is $5,600 per minute for enterprises"
+          ],
+          "description": "Our professional services ensure you're never alone when facing critical infrastructure challenges.",
+          "items": [
+            "Dedicated team of experts assigned to your project",
+            "Guaranteed response times with SLA",
+            "Switch between service tiers as needed",
+            "24/7 emergency hotline for Emergency tier"
+          ]
+        },
+        "cta": {
+          "heading": "Need Professional Assistance?",
+          "description": "Our experts are ready to help you succeed",
+          "button": "Schedule Consultation"
+        },
+        "access": {
+          "heading": "Professional services access by tier",
+          "description": "Hybrid coverage combines included onboarding with optional add-ons so every team can get the right help at the right time.",
+          "labels": {
+            "included": "Included",
+            "available": "Available add-ons"
+          },
+          "tiers": [
+            {
+              "planId": "community",
+              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "available": [
+                "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
+                "Emergency Response engagement ($29,999 on-demand)"
+              ]
+            },
+            {
+              "planId": "pro",
+              "included": [
+                "Email support",
+                "Standard onboarding session (setup call and configuration walkthrough)"
+              ],
+              "available": [
+                "Priority Implementation ($19,999)",
+                "Emergency Response engagement ($29,999 on-demand)",
+                "Custom integration projects (scoped)"
+              ]
+            },
+            {
+              "planId": "business",
+              "included": [
+                "Priority email/chat/phone support",
+                "Dedicated onboarding with configuration and runbook handoff",
+                "Standard Implementation package included ($9,999 value)",
+                "Quarterly success reviews"
+              ],
+              "available": [
+                "Priority Implementation upgrade ($19,999)",
+                "Emergency Response engagement ($29,999 on-demand)",
+                "Custom development and security architecture consulting"
+              ]
+            },
+            {
+              "planId": "enterprise",
+              "included": [
+                "24/7/365 white-glove support and dedicated CSM",
+                "Priority Implementation included ($19,999 value)",
+                "Quarterly disaster recovery testing",
+                "Annual business continuity planning workshop",
+                "Executive escalation hotline"
+              ],
+              "available": [
+                "Custom development and advanced integrations",
+                "Security & audit architecture consulting",
+                "Emergency Response retainer ($5,000-$7,500/month)"
+              ]
+            }
+          ]
+        },
+        "retainers": {
+          "heading": "Retainer options for always-on readiness",
+          "description": "Give executive stakeholders guaranteed access to our specialists with predictable monthly pricing.",
+          "items": [
+            {
+              "title": "Emergency Response Retainer",
+              "price": "$5,000–$7,500/month",
+              "bullets": [
+                "Guaranteed 2-hour response time",
+                "Priority escalation path with war-room coordination",
+                "Quarterly readiness review and playbook updates"
+              ]
+            }
+          ]
+        },
+        "advancedDetails": {
+          "heading": "Implementation & Pricing Details",
+          "description": "Service packages, implementation tiers, pricing factors, and retainer options"
+        }
+      },
+      "faq": {
+        "heading": "Frequently Asked Questions",
+        "items": [
+          {
+            "question": "Can I upgrade or downgrade my plan?",
+            "answer": "Yes, you can change your plan at any time. Upgrades take effect immediately, and downgrades will apply at the start of your next billing cycle."
+          },
+          {
+            "question": "What payment methods do you accept?",
+            "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and support invoice-based billing for annual Enterprise plans."
+          },
+          {
+            "question": "Is there a free trial available?",
+            "answer": "Our Community plan is free forever. For business plans, contact our sales team to discuss trial options."
+          },
+          {
+            "question": "What's included in support?",
+            "answer": "The Community plan includes community support and self-service documentation. Professional includes email and chat support. Business adds phone support and a dedicated customer success manager. Enterprise includes 24/7/365 white-glove support with executive escalation."
+          },
+          {
+            "question": "How fast can I recover from a disaster?",
+            "answer": "Recovery time depends on your tier: Community restores latest snapshots in minutes, Professional offers point-in-time recovery (24h), Business provides 4-hour SLA, and Enterprise delivers 15-60 minute custom RTO."
+          },
+          {
+            "question": "Are my backups actually tested and verified?",
+            "answer": "Yes. Unlike traditional backup systems, we automatically verify backups by testing restoration processes, so you know they work before you need them in an emergency."
+          },
+          {
+            "question": "What happens to my data if the service goes down?",
+            "answer": "Your data stays encrypted in your chosen storage location. You maintain full control and can access encrypted backups independently of our services."
+          }
+        ]
+      },
+      "finalCta": {
+        "heading": "Ready to Get Started?",
+        "description": "Start protecting your infrastructure from day one",
+        "buttons": {
+          "startFree": "Start Free",
+          "talkToSales": "Talk to Sales"
+        }
+      },
+      "trust": {
+        "heading": "Enterprise-Grade Security & Reliability",
+        "items": ["Bank-level encryption", "99.9% uptime commitment"]
+      },
+      "ui": {
+        "popular": "Most popular",
+        "bestValue": "Best Value",
+        "limitedOffer": "Limited Launch Offer",
+        "anchor": "Strategic anchor",
+        "whatsIncluded": "What's included:",
+        "getStarted": "Get Started",
+        "learnMore": "Learn More",
+        "contactSales": "Contact Sales",
+        "startingAt": "*Starting at",
+        "keyBenefits": "Key Benefits",
+        "monthOrYear": "per month or {{price}} per year",
+        "foreverFree": "Forever free",
+        "cta": {
+          "community": {
+            "primary": "Start Free",
+            "secondary": "Learn More",
+            "note": "No credit card required"
+          },
+          "pro": {
+            "primary": "Get Started",
+            "secondary": "Contact Sales",
+            "guarantee": "14-Day Money Payback Guarantee"
+          },
+          "business": {
+            "primary": "Schedule Implementation Call",
+            "secondary": "Contact Sales",
+            "guarantee": "14-Day Money Payback Guarantee",
+            "valueNote": "Includes $9,999 setup credit",
+            "launchBadge": "Limited Launch Offer"
+          },
+          "enterprise": {
+            "primary": "Schedule Executive Demo",
+            "secondary": "Contact Sales",
+            "guarantee": "14-Day Money Payback Guarantee",
+            "subtext": "Custom SLA · Dedicated support"
+          }
+        },
+        "guarantees": {
+          "moneyBack": "14-Day Money Payback Guarantee",
+          "cancelAnytime": "Cancel anytime",
+          "noContracts": "No long-term contracts"
+        }
+      },
+      "technicalSummary": {
+        "heading": "Technical limits at a glance",
+        "description": "Give your platform team a precise view of throughput, retention, and recovery expectations.",
+        "recoveryNote": "RPO (Recovery Point Objective): How much data you can afford to lose—measured in time. For example, 15-minute RPO means you might lose up to 15 minutes of recent changes.\n\nRTO (Recovery Time Objective): How quickly you need to be back online after a disaster. For example, 4-hour RTO means your systems will be restored within 4 hours.",
+        "metrics": [
+          {
+            "key": "cpuCore",
+            "label": "CPU Cores"
+          },
+          {
+            "key": "repositories",
+            "label": "Repositories"
+          },
+          {
+            "key": "repoSize",
+            "label": "Repository size limit"
+          },
+          {
+            "key": "jobTimeout",
+            "label": "Max job duration"
+          },
+          {
+            "key": "activeJobs",
+            "label": "Concurrent jobs"
+          },
+          {
+            "key": "reservedJobs",
+            "label": "Job queue depth"
+          },
+          {
+            "key": "rpo",
+            "label": "Recovery Point Objective (RPO)"
+          },
+          {
+            "key": "rto",
+            "label": "Recovery Time Objective (RTO)"
+          },
+          {
+            "key": "auditLogs",
+            "label": "Audit log retention"
+          }
+        ],
+        "values": {
+          "community": {
+            "cpuCore": "10 cores",
+            "repositories": "10 repos",
+            "repoSize": "10 GB",
+            "jobTimeout": "2 hours",
+            "activeJobs": "2 active",
+            "reservedJobs": "1 reserved",
+            "rpo": "Best effort",
+            "rto": "Best effort",
+            "auditLogs": "7 days"
+          },
+          "pro": {
+            "cpuCore": "100 cores",
+            "repositories": "500 repos",
+            "repoSize": "100 GB",
+            "jobTimeout": "24 hours",
+            "activeJobs": "5 active",
+            "reservedJobs": "2 reserved",
+            "rpo": "~15 minutes",
+            "rto": "Point-in-time restore",
+            "auditLogs": "30 days"
+          },
+          "business": {
+            "cpuCore": "500 cores",
+            "repositories": "Unlimited",
+            "repoSize": "500 GB",
+            "jobTimeout": "72 hours",
+            "activeJobs": "7 active",
+            "reservedJobs": "3 reserved",
+            "rpo": "~5 minutes (continuous)",
+            "rto": "4 hours (guaranteed)",
+            "auditLogs": "90 days"
+          },
+          "enterprise": {
+            "cpuCore": "1000+ cores",
+            "repositories": "Unlimited",
+            "repoSize": "1 TB+",
+            "jobTimeout": "96+ hours",
+            "activeJobs": "10+ active",
+            "reservedJobs": "5+ reserved",
+            "rpo": "Custom (near-zero)",
+            "rto": "15-60 minutes (custom)",
+            "auditLogs": "1+ year"
+          }
+        }
+      }
+    },
+    "blog": {
+      "meta": {
+        "title": "Blog | Rediacc - Infrastructure Automation Insights",
+        "description": "Read insights, guides, and updates about distributed task execution, infrastructure automation, and DevOps best practices.",
+        "keywords": "infrastructure automation blog, DevOps guides, distributed systems, task execution, cloud infrastructure"
+      },
+      "title": "Blog",
+      "subtitle": "Insights, guides, and updates about distributed task execution",
+      "featured": "Featured Articles",
+      "allArticles": "All Articles",
+      "byAuthor": "By {{author}}",
+      "published": "Published",
+      "category": "Category",
+      "readMore": "Read More",
+      "backToBlog": "Back to Blog",
+      "relatedArticles": "Related Articles",
+      "sharingIs": "Sharing is caring"
+    },
+    "docs": {
+      "meta": {
+        "title": "Documentation | Rediacc - Infrastructure Automation Platform",
+        "description": "Learn how to use Rediacc with our comprehensive documentation, guides, and API reference for distributed task execution.",
+        "keywords": "documentation, API reference, guides, infrastructure automation, CLI reference, queue system"
+      },
+      "title": "Documentation",
+      "subtitle": "Learn how to use Rediacc and master distributed task execution",
+      "welcome": "Welcome to Rediacc Documentation",
+      "welcomeDescription": "Rediacc is a powerful distributed task execution system. Whether you're just getting started or looking to master advanced features, you'll find everything you need here.",
+      "gettingStarted": "Getting Started",
+      "gettingStartedDesc": "New to Rediacc? Start with the basics and learn fundamental concepts.",
+      "cliReference": "CLI Reference",
+      "cliReferenceDesc": "Complete reference for all command-line interface commands and options.",
+      "queueSystem": "Queue System",
+      "queueSystemDesc": "Understand how tasks are managed and executed across machines.",
+      "allDocumentation": "All Documentation",
+      "tableOfContents": "On this page",
+      "backToDocs": "Back to Docs",
+      "fallbackNotice": {
+        "title": "Translation Not Available",
+        "message": "This page is not yet available in your selected language. Showing English version.",
+        "helpTranslate": "Help translate this page"
+      }
+    },
+    "downloads": {
+      "meta": {
+        "title": "Downloads | Rediacc Console Desktop Application",
+        "description": "Download the Rediacc Console desktop application for Windows, macOS, and Linux. Get the latest release with built-in auto-update functionality.",
+        "keywords": "Rediacc download, desktop application, Windows app, macOS app, Linux app, download console"
+      },
+      "hero": {
+        "title": "Downloads",
+        "subtitle": "Rediacc Console",
+        "released": "Released"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64-bit)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)",
+        "armv7l": "ARMv7"
+      },
+      "types": {
+        "appimage": "AppImage (portable)",
+        "deb": "Debian/Ubuntu (.deb)"
+      },
+      "actions": {
+        "download": "Download"
+      },
+      "noReleases": "No releases available at this time. Please check back later.",
+      "autoUpdate": {
+        "title": "Auto-Update Information",
+        "description": "The Rediacc Console desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
+      },
+      "installation": {
+        "title": "Installation Instructions",
+        "windows": "Windows: Run the .exe installer and follow the setup wizard. The application will be installed to your Program Files directory.",
+        "macos": "macOS: Open the .dmg file and drag Rediacc Console to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
+        "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
+        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager."
+      },
+      "requirements": {
+        "title": "System Requirements",
+        "windows": "Windows 10 or later (64-bit)",
+        "macos": "macOS 11 (Big Sur) or later",
+        "linux": "Modern Linux distribution with glibc 2.28+",
+        "diskTitle": "Disk Space",
+        "disk": "500 MB free disk space",
+        "ramTitle": "Memory",
+        "ram": "2 GB RAM minimum, 4 GB recommended"
+      }
+    },
+    "notFound": {
+      "meta": {
+        "title": "404 - Page Not Found | Rediacc",
+        "description": "The page you're looking for could not be found. Browse our infrastructure automation platform or contact us for assistance.",
+        "keywords": "404, page not found, infrastructure automation, Rediacc"
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "notFound": "404 - Page Not Found"
+      },
+      "title": "Page Not Found",
+      "description": "Sorry, the page you're looking for doesn't exist or has been moved. This might happen if you followed an outdated link or typed the URL incorrectly.",
+      "suggestions": {
+        "title": "What you can do:",
+        "items": [
+          "Check the URL for any typos",
+          "Go back to the homepage",
+          "Learn about our infrastructure automation solutions",
+          "Get in touch through our contact page",
+          "Request early access to our platform"
+        ],
+        "links": {
+          "homepage": "homepage",
+          "solutions": "infrastructure automation solutions",
+          "contact": "contact page",
+          "earlyAccess": "early access"
+        }
+      },
+      "actions": {
+        "homepage": "Go to Homepage",
+        "contactSupport": "Contact Support"
+      },
+      "help": {
+        "title": "Need Help?",
+        "description": "If you believe this is an error or you were expecting to find content here, please contact our support team. We're here to help you find what you're looking for.",
+        "link": "contact our support team"
+      }
+    },
+    "solutions": {
+      "disasterRecovery": {
+        "meta": {
+          "title": "Disaster Recovery Solutions | Verified Backups That Actually Work",
+          "description": "Stop hoping your backups work and know they do. Rediacc provides automated backup verification, unlimited retention, and incremental backup efficiency.",
+          "keywords": "disaster recovery, backup verification, incremental backups, data protection, backup testing, business continuity"
+        },
+        "hero": {
+          "title": "Disaster Recovery Done Right",
+          "subtitle": "Verified backups. Unlimited history. Incremental speed."
+        },
+        "video": {
+          "title": "See Disaster Recovery in Action",
+          "subtitle": "Watch how Rediacc automatically verifies your backups and keeps unlimited history with incremental efficiency."
+        },
+        "problems": {
+          "unverified": {
+            "title": "Untested Backup Systems",
+            "subtitle": "Trust but verify <small class='subtitle-attribution'>— Russian proverb/Reagan (1987)</small>",
+            "problem": {
+              "description": "Having backups and having working backups are two completely different things. Most organizations never test restores until disaster strikes—then discover their backups are corrupted, incomplete, or infected. By the time you need them, it's already too late to fix them.",
+              "story": "Baltimore's city systems were hit by ransomware in May 2019. <a href='https://en.wikipedia.org/wiki/2019_Baltimore_ransomware_attack' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Officials couldn't confirm backups were tested or viable. <a href='https://krebsonsecurity.com/2019/06/report-no-eternal-blue-exploit-found-in-baltimore-city-ransomware/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Recent backups infected. Older ones never tested. Recovery cost: $18 million.",
+              "additionalPoints": [
+                "Ransomware infects systems weeks before encrypting your data",
+                "Backup systems report success despite corrupted backup files",
+                "Manual restore testing takes hours nobody does regularly",
+                "Only sixty-three percent successfully restore despite having backups",
+                "Untested backups fail exactly when you need them"
+              ]
+            },
+            "solution": {
+              "title": "Automatic Backup Verification",
+              "description": "Rediacc doesn't just create backups—it verifies them by testing actual restoration. Every backup is proven to work before you need it in an emergency.",
+              "benefits": [
+                "Automatic verification by testing real restore operations daily",
+                "Know immediately if backups are corrupted or incomplete",
+                "Access clean tested backups from before any infection",
+                "No manual testing required automatic validation runs continuously",
+                "Every backup proven working before you need it"
+              ]
+            }
+          },
+          "limitedHistory": {
+            "title": "Short Backup History",
+            "subtitle": "The early bird catches the worm <small class='subtitle-attribution'>— William Camden (1636)</small>",
+            "problem": {
+              "description": "Short retention periods save storage space but create vulnerability. When you need data from before the infection—it's already been overwritten. Traditional systems can't afford long retention due to massive storage costs.",
+              "story": "Ransomware dwell time dropped to less than one day. <a href='https://www.secureworks.com/about/press/ransomware-dwell-time-hits-low-of-24-hours' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Attackers deliberately wait for infected backups to overwrite clean ones. Organizations with short retention periods discover all backups contain malware. <a href='https://www.sophos.com/en-us/press/press-releases/2023/08/dwell-time-time-start-attack-when-its-detected-shrinks-8-days-first' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>",
+              "additionalPoints": [
+                "Attackers deliberately wait for clean backups to expire",
+                "Traditional short retention periods leave vulnerabilities",
+                "Each full backup consumes massive storage limiting retention",
+                "Compliance requirements often demand months of history",
+                "Storage costs force choice between history and budget"
+              ]
+            },
+            "solution": {
+              "title": "Extended History Retention",
+              "description": "Rediacc's incremental deduplication lets you keep extended backup history without storage explosion. Only changes are stored—not duplicate data.",
+              "benefits": [
+                "Store months of backup history efficiently with deduplication",
+                "Access clean backups from before any infection",
+                "Incremental deduplication saves over ninety percent of storage",
+                "Meet regulatory data retention requirements cost effectively",
+                "Attackers can't wait out your retention period"
+              ]
+            }
+          },
+          "slowBackups": {
+            "title": "Slow Recovery Times",
+            "subtitle": "Make good use of five before five <small class='subtitle-attribution'>— Prophet Muhammad, Sunan Ibn Majah (4240)</small>",
+            "problem": {
+              "description": "Traditional full backups mean slow full restores. Organizations with modern recovery systems get back online in hours. Those with traditional backups? Days of downtime, cancelled services, and lost revenue.",
+              "story": "WannaCry hit NHS in May 2017, locking hospital systems nationwide. <a href='https://www.nao.org.uk/reports/investigation-wannacry-cyber-attack-and-the-nhs/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Some trusts recovered in hours. <a href='https://www.bridgeheadsoftware.com/2017/07/wannacry-nhs-attack-lessons-backup-data-recovery-strategies/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Others took days. Over 19,000 appointments cancelled. Recovery time: hours versus days of chaos.",
+              "additionalPoints": [
+                "Same ransomware attack produces drastically different recovery times",
+                "Traditional full restores mean days of downtime cancelled services",
+                "Modern incremental recovery back online in minutes",
+                "Healthcare cannot wait days patients need care now",
+                "Every downtime hour multiplies operational and financial damage"
+              ]
+            },
+            "solution": {
+              "title": "Rapid Recovery Process",
+              "description": "Rediacc's incremental architecture enables rapid recovery. Restore only what changed, not entire systems. Get critical operations back online in minutes while others are still recovering.",
+              "benefits": [
+                "Recover in minutes instead of days of downtime",
+                "Incremental restoration transfers only the changed data portions",
+                "Critical systems online while competitors stay down",
+                "Minimize revenue loss and service disruption with speed",
+                "Be the organization that recovers fast every time"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "Ready to Trust Your Backups?",
+          "subtitle": "Limited spots available.",
+          "button": "Build Your Recovery Plan"
+        }
+      },
+      "systemPortability": {
+        "meta": {
+          "title": "Universal System Portability | Move Your Infrastructure Anywhere Securely",
+          "description": "Break free from vendor lock-in. Complete system in one portable file, military-grade encryption, and zero-configuration deployment across any infrastructure.",
+          "keywords": "system portability, vendor lock-in, infrastructure mobility, cloud migration, multi-cloud, system encryption, data security, deployment automation"
+        },
+        "hero": {
+          "title": "Move Your Systems Anywhere, Securely",
+          "subtitle": "One portable file. Military-grade security. Deploy anywhere."
+        },
+        "problems": {
+          "vendorLockIn": {
+            "title": "Vendor Lock-In Trap",
+            "subtitle": "Don't put all your eggs in one basket <small class='subtitle-attribution'>— Cervantes (1605) / Carnegie (1885)</small>",
+            "problem": {
+              "description": "You built on one cloud provider. When they fail, you fail with them. No backup. No failover. No choice. Vendor lock-in isn't just expensive—it's a single point of failure that takes down your entire operation.",
+              "story": "October 20, 2025. AWS US-EAST-1 DNS failure lasted 15 hours. <a href='https://techcrunch.com/2025/10/21/amazon-dns-outage-breaks-much-of-the-internet/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Coinbase, Fortnite, Signal, Zoom—offline. AWS-locked organizations had zero options. Multi-region architectures failed over automatically. <a href='https://ine.com/blog/aws-october-2025-outage-multi-region-and-cloud-lessons-learned' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Single-cloud is single point of failure.",
+              "additionalPoints": [
+                "October twenty outage lasted fifteen hours globally",
+                "Regional outages mean production backup fail simultaneously",
+                "Multi region organizations stayed online single cloud",
+                "When cloud providers fail need alternative running",
+                "Vendor lock in eliminates failover options needed"
+              ]
+            },
+            "solution": {
+              "title": "True Multi-Cloud Redundancy",
+              "description": "Rediacc packages your complete system into single portable repository. Deploy on AWS, Azure, Google Cloud, or bare metal—without changes. When one provider fails, you're already running elsewhere. Failover takes minutes, not hours. Infrastructure never hostage to one provider's uptime.",
+              "benefits": [
+                "Deploy anywhere survive failures running multiple clouds",
+                "When cloud providers fail already running alternatives",
+                "Failover between providers in minutes tested validated",
+                "True multi cloud without separate infrastructure versions",
+                "Test failover before you need it works"
+              ]
+            }
+          },
+          "testingVendorSwitch": {
+            "title": "Untested Failover Plans",
+            "subtitle": "Practice makes perfect <small class='subtitle-attribution'>— Classical tradition (1500s+)</small>",
+            "problem": {
+              "description": "Single-cloud is risky. You want testing failover before disaster strikes. But testing means duplicate infrastructure mirroring production exactly, keeping sync over weeks. Most companies never test disaster recovery because risk and effort aren't worth it—until outage proves they should have.",
+              "story": "Only 7% of companies never test disaster recovery plans. <a href='https://invenioit.com/continuity/disaster-recovery-statistics/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Yet 46% test only annually. <a href='https://dbvisit.com/blog/five-consequences-of-not-testing-your-disaster-recovery-plan' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Why: lack of time, resources, complexity. <a href='https://www.techrepublic.com/article/why-23-of-companies-never-test-their-disaster-recovery-plan-despite-major-risks/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> Testing doubles costs. Provider outage proves they should have tested.",
+              "additionalPoints": [
+                "Seven percent of companies never test disaster recovery",
+                "Only forty six percent test annually outdated",
+                "Parallel infrastructure testing doubles costs during validation",
+                "Lack of time resources prevent regular testing",
+                "Untested failover plans fail when you need"
+              ]
+            },
+            "solution": {
+              "title": "Risk-Free Failover Testing",
+              "description": "Rediacc snapshots your exact production environment state. Deploy that snapshot on Azure or GCP with real configuration and data patterns. Test failover performance and validate disaster recovery without touching production. Only commit when proven working. Zero downtime. Zero risk.",
+              "benefits": [
+                "Validate disaster recovery with actual production architecture",
+                "Complete failover testing in weeks instead of months",
+                "Test with confidence zero impact to production",
+                "Benchmark failover speed before you need it",
+                "Know your backup plan works before disaster"
+              ]
+            }
+          },
+          "deployment": {
+            "title": "File Permission Conflicts",
+            "subtitle": "Haste is from the devil; deliberation is from Allah <small class='subtitle-attribution'>— Prophet Muhammad, Musnad Abu Ya'la (4256)</small>",
+            "problem": {
+              "description": "When moving files between Linux systems, file ownership becomes a nightmare. User 'appuser' is UID 1000 on Server A but 1005 on Server B. Applications can't access files because numeric UIDs don't match, requiring manual permission fixes every time.",
+              "story": "Docker containers face this constantly when moving between systems. <a href='https://www.joyfulbikeshedding.com/blog/2021-03-15-docker-and-the-host-filesystem-owner-matching-problem.html' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Linux uses numeric UIDs. Different systems assign different values, causing permission failures. <a href='https://stackoverflow.com/questions/51188997/docker-uid-gid-mapping-changes-on-different-host' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Minutes become hours of chown operations and debugging.",
+              "additionalPoints": [
+                "User IDs vary between different systems and distributions",
+                "Files owned by one user belong wrong elsewhere",
+                "Manual ownership operations required after every migration",
+                "Database files with wrong ownership will not start",
+                "Container applications fail due to permission mismatches"
+              ]
+            },
+            "solution": {
+              "title": "Automatic Ownership Resolution",
+              "description": "Rediacc handles user ownership at the filesystem level. When you migrate a repository to a new system, file ownership automatically works regardless of different user IDs. Team SSH keys centrally managed—developers connect automatically without sharing credentials.",
+              "benefits": [
+                "File ownership works across systems different IDs",
+                "No manual permission fixes after migration operations",
+                "Team SSH keys centrally managed no sharing",
+                "Databases and applications start immediately new systems",
+                "Move between Ubuntu Debian CentOS permissions work"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "Ready for True System Portability?",
+          "subtitle": "One portable file. Military-grade security. Limited spots available.",
+          "button": "Explore Migration Path"
+        }
+      },
+      "threatResponse": {
+        "meta": {
+          "title": "Ransomware & Cyber Resilience Solutions | Threats Move Fast",
+          "description": "Survive ransomware attacks with immutable backups, rapid recovery, and infrastructure portability. Evacuate compromised systems in minutes.",
+          "keywords": "ransomware protection, cyber resilience, immutable backups, rapid recovery, business continuity, infrastructure evacuation, disaster recovery"
+        },
+        "hero": {
+          "title": "Threats Move Fast. You Should Too.",
+          "subtitle": "Immutable backups. Minutes to recovery. Infrastructure evacuation across clouds."
+        },
+        "problems": {
+          "ransomwareBackups": {
+            "title": "Ransomware Targets Backups",
+            "subtitle": "Tie your camel and trust in Allah <small class='subtitle-attribution'>— Prophet Muhammad, Sunan at-Tirmidhi (2517)</small>",
+            "problem": {
+              "description": "Ransomware attackers target backup infrastructure—deleting or overwriting copies to eliminate recovery. Backups in the same cloud account with shared credentials let attackers delete months of history. Even immutable backups fail with admin access. Clean backups vanish before you realize.",
+              "story": "A 2024 Sophos study found 94% of ransomware victims had backups targeted, with 57% succeeding. <a href='https://www.techrepublic.com/article/ransomware-attackers-target-backups/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> When backups are compromised, median recovery costs reach $3 million—eight times higher. <a href='https://news.sophos.com/en-us/2024/03/26/the-impact-of-compromised-backups-on-ransomware-outcomes/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>",
+              "additionalPoints": [
+                "Ninety-four percent of ransomware attacks target backup infrastructure",
+                "Attackers wait weeks ensuring clean backups get overwritten",
+                "Immutable backups fail when attackers have admin credentials",
+                "Backup deletion eliminates recovery paths even after ransom",
+                "Encrypted provider backups mean providers cannot help restore"
+              ]
+            },
+            "solution": {
+              "title": "Immutable Backup Protection",
+              "description": "Rediacc stores encrypted backup copies immutable at storage level, not administratively. Even if attackers compromise infrastructure tokens or admin credentials, they can only read encrypted data—cannot modify, delete, or overwrite versions. Snapshots encrypted with your password remain worthless to attackers.",
+              "benefits": [
+                "Encrypted backups survive even complete credential compromise",
+                "Token immutability prevents deletion with admin access",
+                "Previous versions remain intact and encrypted indefinitely",
+                "Recovery possible after complete infrastructure compromise",
+                "No ransom payment needed backups remain your control"
+              ]
+            }
+          },
+          "infrastructureBlackBox": {
+            "title": "Infrastructure Black Box",
+            "subtitle": "You can't see the forest for the trees <small class='subtitle-attribution'>— John Heywood (1546)</small>",
+            "problem": {
+              "description": "Legacy systems accumulate undocumented SSH keys from contractors or attackers. Backups capture everything—garbage files, forgotten services, potential trojans. Attackers with persistence get backed up too. Migrations perpetuate unknown risks. Nobody knows what's in backups or what activates when restored.",
+              "story": "A financial firm discovered 47 undocumented SSH keys in production databases, including keys from vendors who'd left years prior. <a href='https://www.appviewx.com/blogs/ssh-key-sprawl-causes-and-consequences/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Ransomware recovery was delayed 2 weeks during forensic SSH key audit. <a href='https://www.encryptionconsulting.com/ssh-key-sprawl/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>",
+              "additionalPoints": [
+                "Organizations cannot account for all production SSH keys",
+                "Backup systems capture threats forgotten services potential trojans",
+                "Infrastructure migrations perpetuate accumulated risk forward",
+                "Legacy systems have unknown configurations affecting disaster recovery",
+                "Unknown access enables ransomware to re-infiltrate after recovery"
+              ]
+            },
+            "solution": {
+              "title": "Fresh Verified Infrastructure",
+              "description": "Rediacc enables complete system reconstruction on fresh infrastructure with verified essential components. You migrate intentionally selected system data and configurations, not 'everything'. SSH keys centrally managed and audited. Result: clean infrastructure with full visibility. No security debt. No hidden access.",
+              "benefits": [
+                "Migrate only verified essential system components",
+                "Eliminate accumulated security debt and legacy complexity",
+                "Centralized SSH key management replaces key sprawl",
+                "Complete auditability of production and backup systems",
+                "Fresh deployment provides clean slate without hidden threats"
+              ]
+            }
+          },
+          "osVulnerability": {
+            "title": "OS Update Delays",
+            "subtitle": "In every hardship lies ease <small class='subtitle-attribution'>— Al-Inshirah 94:5</small>",
+            "problem": {
+              "description": "Critical OS vulnerability discovered. Patches only for newer versions you're not running. Migration requires weeks of testing. Can't test against production without risking data. Rolling back means full restoration. You stay vulnerable hoping attackers don't exploit before migration completes.",
+              "story": "Log4Shell (December 2021) forced brutal choices. <a href='https://nvd.nist.gov/vuln/detail/CVE-2021-44228' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Companies spent 2-3 weeks validating OS migration. Only 45% patched within 11 days. Some remained vulnerable 4+ weeks during testing. <a href='https://www.crowdstrike.com/en-us/blog/log4j2-vulnerability-analysis-and-mitigation-recommendations/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>",
+              "additionalPoints": [
+                "Critical vulnerabilities in your OS have no patches",
+                "Full OS migrations require weeks of testing validation",
+                "Cannot test migration safely without production workload",
+                "Rolling back failed migrations means complete data restoration",
+                "Security vulnerability windows stay open for weeks"
+              ]
+            },
+            "solution": {
+              "title": "Risk-Free OS Testing",
+              "description": "Rediacc enables rapid, risk-free OS migration testing. Deploy infrastructure to a new OS and verify everything works with actual production workload. If issues appear, revert instantly—no data loss, no recovery. Once verified safe, commit permanently. Vulnerability windows close in minutes.",
+              "benefits": [
+                "Test new OS against actual production workload",
+                "Verify compatibility without risking your actual systems",
+                "Revert to previous OS instantly zero downtime",
+                "Migrate between Ubuntu Debian CentOS AlmaLinux in minutes",
+                "Close security vulnerability windows in minutes not weeks"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "Ready for Cyber Resilience?",
+          "subtitle": "Survive threats faster. Immutable. Portable. In your control.",
+          "button": "Protect Your Systems"
+        }
+      },
+      "dataSecurity": {
+        "meta": {
+          "title": "Data Security & Audit Controls | Encrypted Infrastructure With Audit Trails",
+          "description": "Zero-knowledge encryption for complete infrastructure protection. Compliance-ready architecture with comprehensive audit capabilities. Survive physical theft, maintain audit trails, migrate safely.",
+          "keywords": "data security, encryption, compliance, infrastructure encryption, audit trails, zero-knowledge"
+        },
+        "hero": {
+          "title": "Encrypt Everything. Control Everything. Complete Zero-Knowledge.",
+          "subtitle": "Encrypt everything. Audit everything. Control everything."
+        },
+        "problems": {
+          "physicalTheft": {
+            "title": "Physical Access Theft",
+            "subtitle": "Locks keep honest people honest <small class='subtitle-attribution'>— Folk saying (1912)</small>",
+            "problem": {
+              "description": "Someone steals your server, backup drive, or old hardware. OS passwords provide zero protection against physical access—they boot from USB, bypass authentication, mount disks, copy everything. Customer data, credentials, databases—all gone. Data centers experience theft regularly. Decommissioning creates exposure.",
+              "story": "Morgan Stanley hired movers to decommission data centers in 2016. <a href='https://techcrunch.com/2022/09/21/morgan-stanley-hard-drives-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Hard drives with 15 million customer records were auctioned online—unencrypted. <a href='https://www.bankinfosecurity.com/morgan-stanley-charged-sec-over-data-disposal-failures-a-12342' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> $35 million in fines. Most devices never recovered.",
+              "additionalPoints": [
+                "Stolen servers remain compromised if encryption is incomplete",
+                "Decommissioning procedures often skip encryption steps entirely",
+                "File deletion doesn't erase data just removes entries",
+                "Database backups frequently stored unencrypted in secure locations",
+                "Industry best practices require encryption at rest for data"
+              ]
+            },
+            "solution": {
+              "title": "Complete Zero-Knowledge Encryption",
+              "description": "Each repository encrypted with its own password. Every file, container, configuration, database, and backup protected. Only you hold the per-repo encryption key. Stolen hardware = worthless encrypted blobs.",
+              "benefits": [
+                "True zero knowledge per repo encryption you control",
+                "Military grade encryption on complete infrastructure and backups",
+                "Physical theft becomes worthless encrypted data has no value",
+                "Provable encryption from deployment through decommissioning and disposal",
+                "Built with compliance requirements in mind from start"
+              ]
+            }
+          },
+          "auditTrail": {
+            "title": "Missing Audit Trails",
+            "subtitle": "You can't manage what you can't measure <small class='subtitle-attribution'>— Peter Drucker</small>",
+            "problem": {
+              "description": "Infrastructure migrations happen in stages. Legacy systems left during transitions fall off audit radar. When auditors ask 'What's in production?' and 'Who accessed what?', you can't answer for systems thought decommissioned. Incomplete migrations create blind spots—systems holding data, vulnerable, unmonitored.",
+              "story": "Oracle Health inherited legacy Cerner servers from a 2022 acquisition. In January 2025, attackers breached an unmigrated system. <a href='https://www.hipaajournal.com/oracle-health-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Undetected for a month—no longer monitored. 262,831 patient records stolen. <a href='https://www.bleepingcomputer.com/news/security/oracle-health-breach-compromises-patient-data-at-us-hospitals/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> The breach happened on unaudited infrastructure.",
+              "additionalPoints": [
+                "Legacy systems from acquisitions remain for years unmigrated",
+                "Systems in transition fall off active audit monitoring",
+                "Incomplete migrations create audit blindness data still exposed",
+                "Breaches on decommissioned systems take weeks to detect",
+                "No audit trail means no proof what happened"
+              ]
+            },
+            "solution": {
+              "title": "Complete Audit Capabilities",
+              "description": "Every operation logged: who deployed, who accessed what, when changes were made. Complete visibility into your infrastructure. Audit team gets exact timestamps and authenticated access proof. Per-repo encryption stays separate from operational controls—data stays encrypted while audit trail proves access.",
+              "benefits": [
+                "Complete audit trail every operation logged and traceable",
+                "Full visibility auditors see what's protected who accessed",
+                "Access control proof who did what when why",
+                "Audit-ready documentation with comprehensive logs for security reviews",
+                "Transparent operations without exposing encrypted data to auditors"
+              ]
+            }
+          },
+          "migrationExposure": {
+            "title": "Migration Security Gaps",
+            "subtitle": "The best deeds are consistent, even if small <small class='subtitle-attribution'>— Prophet Muhammad, Sunan Ibn Majah (4240)</small>",
+            "problem": {
+              "description": "Infrastructure migrations require temporary security relaxation. Contractors disable firewalls to 'speed up the process.' Encryption bypassed for performance. Temporary windows become permanent attack vectors. Protected data gets exposed for hours or days. Attackers target migration windows when security controls weaken.",
+              "story": "Keepnet Labs hired a contractor to migrate its database in March 2020. Contractor disabled firewall for 10 minutes. <a href='https://www.verdict.co.uk/keepnet-labs-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 5 billion records indexed. Database exposed 24 hours. <a href='https://securityaffairs.com/100198/data-breach/uk-security-firm-data-leak.html' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> A cybersecurity firm's migration exposed billions.",
+              "additionalPoints": [
+                "Contractors disable security controls to expedite migration processes",
+                "Ten minute security window becomes twenty four hours",
+                "Search engines index unprotected systems during migration windows",
+                "Temporary security disabling can become permanent if forgotten",
+                "Migration windows create opportunities attackers actively exploit today"
+              ]
+            },
+            "solution": {
+              "title": "Encrypted Migration Process",
+              "description": "Infrastructure stays encrypted throughout migration. Encrypted snapshot at source, encrypted transport, encrypted deployment at destination. No decryption windows. No unencrypted staging copies. Per-repo encryption active from start to finish.",
+              "benefits": [
+                "Encrypt throughout migration data protected source to destination",
+                "No unencrypted staging encrypted snapshots stay encrypted transit",
+                "Safe rollback encrypted backups remain intact and usable",
+                "Vendor agnostic same encryption on all cloud providers",
+                "Zero downtime possible encrypted snapshots enable parallel migration"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "Ready for True Data Protection?",
+          "subtitle": "Zero-knowledge encryption. Complete audit trail. Compliance-ready architecture.",
+          "button": "Audit Your Security"
+        }
+      },
+      "developmentEnvironments": {
+        "meta": {
+          "title": "Development Environments That Spin Up in Seconds | Rediacc",
+          "description": "Clone your complete production infrastructure—apps, databases, configs—in under 60 seconds. Stop waiting days for development environments. Production-identical environments on demand.",
+          "keywords": "ephemeral environments, development environment provisioning, instant development environment, on-demand environments, preview environments, git-native environments, production clone"
+        },
+        "hero": {
+          "title": "Stop waiting days for development environments. Start deploying in seconds.",
+          "subtitle": "Clone your complete production infrastructure—apps, databases, configs, dependencies—with one click. Development teams get production-identical environments on demand while infrastructure costs drop by 60%."
+        },
+        "problems": {
+          "provisioningDelays": {
+            "title": "The Development Environment Bottleneck",
+            "subtitle": "Time is what we want most, but what we use worst <small class='subtitle-attribution'>— William Penn</small>",
+            "problem": {
+              "description": "Development teams waste 21+ hours every day waiting for environments. Manual setup requires DevOps intervention, multiple tickets, and days of waiting. By the time staging is ready, requirements have changed. This bottleneck kills velocity—61% of teams report environment provisioning as their major deployment roadblock. One in four organizations takes three-plus months from code complete to production deployment because environments can't keep pace.",
+              "story": "A mid-sized SaaS organization with 30 developers calculated they wasted 21 hours per day across the team just waiting for environment setup. Each developer needed 30-45 minutes daily for environment configuration issues. That's 525 hours monthly—equivalent to 3 full-time engineers doing nothing but fighting infrastructure instead of shipping features. The cost: $150K+ annually in wasted developer time, not counting delayed features and missed market opportunities.",
+              "additionalPoints": [
+                "Manual setup requires DevOps tickets creating 2-3 day delays",
+                "Each developer configures environments differently creating inconsistencies",
+                "Onboarding new developers takes 1-2 weeks just for environment setup",
+                "Context switching while waiting for environments kills productivity",
+                "DevOps teams become bottleneck handling provisioning requests"
+              ]
+            },
+            "solution": {
+              "title": "Instant Provisioning with Infrastructure Cloning",
+              "description": "Rediacc provisions complete development environments in under 60 seconds through automated infrastructure cloning. Developers trigger environment creation directly from Git branches without tickets or manual intervention. The platform replicates your entire production stack—applications, databases, configurations, network topology, dependencies—as exact copies. Ephemeral environments automatically clean up when branches merge, preventing infrastructure waste. DevOps teams define provisioning rules once, then developers self-serve infinitely.",
+              "benefits": [
+                "Provision complete environments in 60 seconds vs 2-3 days of waiting",
+                "Zero DevOps intervention—developers self-service from Git workflows",
+                "Automatic Git integration creates environments per branch automatically",
+                "Ephemeral architecture saves 40-70% on infrastructure costs",
+                "Onboard new developers in hours not weeks"
+              ]
+            }
+          },
+          "environmentDrift": {
+            "title": "The Production Parity Problem",
+            "subtitle": "An ounce of prevention is worth a pound of cure <small class='subtitle-attribution'>— Benjamin Franklin</small>",
+            "problem": {
+              "description": "Staging environments drift from production through manual changes, version mismatches, and configuration decay. What works in staging fails in production. Developers spend hours debugging environmental differences rather than fixing actual bugs. This 'works on my machine' syndrome wastes 30+ minutes per developer per day troubleshooting inconsistencies. Environment parity becomes impossible when each developer manually configures local setups differently.",
+              "story": "A fintech startup deployed a critical payment feature that passed all staging tests. In production, it failed immediately—a database collation setting differed between staging and production, breaking payment processing. The issue went undetected because staging had drifted from production over months of manual changes. Result: 4 hours of downtime during peak trading hours, $200K in lost transaction fees, and a regulatory compliance inquiry. The fix took 5 minutes. Finding the environmental difference took 4 hours.",
+              "additionalPoints": [
+                "Configuration files drift through manual edits not tracked in Git",
+                "Database schema versions mismatch between environments",
+                "Dependency versions diverge causing 'works here fails there' bugs",
+                "Environment variables differ breaking integrations in production",
+                "No way to guarantee staging matches production exactly"
+              ]
+            },
+            "solution": {
+              "title": "Guaranteed Production Parity Through Point-in-Time Cloning",
+              "description": "Rediacc eliminates drift by cloning production infrastructure at point-in-time, capturing exact application versions, database schemas, configuration files, and environment variables. Every clone guarantees production parity because it IS production—replicated atomically. Updates propagate automatically when production changes, keeping all environments synchronized. Developers work in containers or VMs that mirror production precisely, making 'it worked locally' synonymous with 'it will work in production.'",
+              "benefits": [
+                "Atomic cloning captures complete system state ensuring consistency",
+                "Zero configuration drift—clones match production exactly by design",
+                "Automatic synchronization propagates production changes to all environments",
+                "Catch environment-specific bugs in development not production",
+                "Eliminate 30+ minutes daily per developer debugging environment issues"
+              ]
+            }
+          },
+          "infrastructureCosts": {
+            "title": "The Always-On Infrastructure Waste",
+            "subtitle": "Waste not, want not <small class='subtitle-attribution'>— English proverb</small>",
+            "problem": {
+              "description": "Traditional development infrastructure requires always-on staging, QA, and developer environments consuming cloud resources 24/7. Multiply environments across teams and costs explode. A 30-developer team maintaining standard dev/staging/QA setups easily burns $50K-100K monthly on idle infrastructure. Storage costs compound with full database copies consuming terabytes unnecessarily. Finance pressures engineering to cut infrastructure spending without understanding the velocity impact.",
+              "story": "An e-commerce organization with 50 developers reviewed their AWS bill: $180K monthly for development infrastructure. Analysis showed 78% of environments sat idle after business hours and weekends. Each environment ran full database copies—30TB total storage for data that could fit in 3TB with deduplication. They had 15 permanent staging environments, but only 3-4 were actively used at any time. The waste: $140K monthly on idle infrastructure that developers forgot to shut down.",
+              "additionalPoints": [
+                "Always-on environments cost 24/7 but used 8-10 hours daily",
+                "Developers forget to shut down test environments after use",
+                "Full database copies multiply storage costs unnecessarily",
+                "Multiple staging environments 'just in case' sit idle most time",
+                "Infrastructure budget battles harm team morale and velocity"
+              ]
+            },
+            "solution": {
+              "title": "Ephemeral Environments with On-Demand Provisioning",
+              "description": "Rediacc's ephemeral approach cuts infrastructure costs 40-70% through on-demand provisioning and automatic cleanup. Environments exist only when actively used—create for testing, destroy when done. Thin cloning technology eliminates storage duplication, provisioning 10TB databases from less than 1GB storage through copy-on-write mechanics. Teams pay only for compute during active usage, not for always-on infrastructure sitting idle overnight and weekends. The ROI calculator shows typical 30-person teams save $750K to $1.5M annually.",
+              "benefits": [
+                "Reduce infrastructure costs 40-70% through ephemeral provisioning",
+                "Automatic cleanup when branches merge prevents environment sprawl",
+                "Thin cloning saves 90%+ storage with copy-on-write technology",
+                "Pay-per-use model charges only for active compute time",
+                "ROI payback typically within 3-6 months"
+              ]
+            }
+          },
+          "cicdComplexity": {
+            "title": "The Integration Overhead",
+            "subtitle": "Simplicity is the ultimate sophistication <small class='subtitle-attribution'>— Leonardo da Vinci</small>",
+            "problem": {
+              "description": "Adding environment provisioning to existing DevOps pipelines requires custom scripts, API integrations, and ongoing maintenance. Each new tool adds complexity to already-sprawling toolchains where 13% of teams juggle 14+ different tools. Integration failures break CI/CD pipelines. Documentation gaps mean only one engineer understands the provisioning system, creating knowledge concentration risk.",
+              "story": "A B2B SaaS organization attempted to automate environment provisioning through custom Jenkins scripts calling AWS CloudFormation and RDS APIs. Initial implementation took 3 months and 500 hours of DevOps engineering time. Six months later, when the original engineer left, nobody could modify the scripts safely. The provisioning system became technical debt—working but untouchable. When AWS deprecated an API endpoint, the entire pipeline broke. Recovery time: 2 weeks of lost development velocity while a consultant reverse-engineered the custom scripts.",
+              "additionalPoints": [
+                "Custom integration scripts require ongoing maintenance",
+                "API changes break custom integrations without warning",
+                "Only one person understands the provisioning system",
+                "Each CI/CD platform needs different integration approach",
+                "Tool sprawl increases cognitive load and failure points"
+              ]
+            },
+            "solution": {
+              "title": "Native CI/CD Integration with Infrastructure-as-Code Support",
+              "description": "Rediacc integrates with your existing stack through native plugins for GitHub, GitLab, Bitbucket, Jenkins, CircleCI, and major CI/CD platforms. Provisioning triggers automatically on PR creation or manual command. Infrastructure-as-code definitions using Terraform, Kubernetes, Docker Compose, or CloudFormation work unchanged. The platform complements rather than replaces existing tools—your development workflow stays familiar while environment provisioning becomes automatic. Setup takes minutes not weeks, and every engineer can provision environments without specialized knowledge.",
+              "benefits": [
+                "Native integrations for all major Git platforms and CI/CD tools",
+                "Infrastructure-as-code compatibility with Terraform Kubernetes Docker",
+                "Zero workflow disruption—works with existing development processes",
+                "Automatic provisioning on PR creation or Git events",
+                "Setup in minutes vs weeks of custom integration development"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "Ready to Accelerate Development?",
+          "subtitle": "Clone your first environment in seconds. Limited spots available.",
+          "button": "Apply for Early Access"
+        }
+      }
+    }
+  },
+  "layout": {
+    "meta": {
+      "defaultDescription": "Infrastructure Automation Platform designed for accelerated development operations. Get early access to instant development environments and next-generation disaster recovery.",
+      "defaultKeywords": "infrastructure automation, AI operations, disaster recovery, development environments, Model Context Protocol, DevOps, CI/CD",
+      "author": "Rediacc",
+      "siteName": "Rediacc",
+      "locale": "en_US",
+      "twitter": {
+        "site": "@rediacc",
+        "creator": "@rediacc"
+      }
+    }
+  }
+}

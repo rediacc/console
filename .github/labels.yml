@@ -1,0 +1,8 @@
+# CI Control Labels
+- name: no-cancel-push
+  color: "FEF2C0"
+  description: "Prevents new pushes from canceling previous CI runs"
+
+- name: no-cancel-failure
+  color: "FEF2C0"
+  description: "Prevents watchdog from canceling workflow on job failure"

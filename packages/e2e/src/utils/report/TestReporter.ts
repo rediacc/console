@@ -264,7 +264,7 @@ export class TestReporter {
         baseURL: requireEnvVar('E2E_BASE_URL'),
         nodeVersion: process.version,
         platform: process.platform,
-        ci: !!process.env.CI,
+        testEnv: true,
       },
       errors: this.testInfo.errors,
     };

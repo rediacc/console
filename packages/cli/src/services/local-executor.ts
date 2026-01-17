@@ -5,7 +5,7 @@
  * without going through middleware API. Used in "local mode" contexts.
  */
 
-import { spawn, type ChildProcess } from 'node:child_process';
+import { type ChildProcess, spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -15,7 +15,7 @@ import { outputService } from './output.js';
 import type { LocalMachineConfig } from '../types/index.js';
 
 /** Options for local execution */
-export interface LocalExecuteOptions {
+interface LocalExecuteOptions {
   /** Function name to execute */
   functionName: string;
   /** Target machine name (must exist in local context) */
@@ -31,7 +31,7 @@ export interface LocalExecuteOptions {
 }
 
 /** Result of local execution */
-export interface LocalExecuteResult {
+interface LocalExecuteResult {
   /** Whether execution succeeded */
   success: boolean;
   /** Exit code from renet */

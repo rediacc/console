@@ -8,9 +8,9 @@ import {
   Input,
   List,
   Table,
+  type TableProps,
   Tooltip,
   Typography,
-  type TableProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
@@ -197,30 +197,37 @@ function ResourceListView<T extends object = Record<string, unknown>>({
             );
           } else if (isMobile && mobileRender) {
             return (
-              <List
-                dataSource={data}
-                renderItem={(record, index) => (
-                  <List.Item
-                    key={getRowKey(record, index)}
-                    className="mobile-list-item"
-                    data-testid={getRowDataTestId(record)}
-                  >
-                    {mobileRender(record, index)}
-                  </List.Item>
+              <Flex vertical gap="middle">
+                {actions && (
+                  <Flex justify="flex-end" data-testid="resource-list-mobile-actions">
+                    {actions}
+                  </Flex>
                 )}
-                pagination={
-                  resolvedPagination
-                    ? {
-                        size: resolvedPagination.size,
-                        showSizeChanger: resolvedPagination.showSizeChanger,
-                        showTotal: resolvedPagination.showTotal,
-                        pageSizeOptions: resolvedPagination.pageSizeOptions,
-                        defaultPageSize: resolvedPagination.defaultPageSize,
-                      }
-                    : false
-                }
-                split={false}
-              />
+                <List
+                  dataSource={data}
+                  renderItem={(record, index) => (
+                    <List.Item
+                      key={getRowKey(record, index)}
+                      className="mobile-list-item"
+                      data-testid={getRowDataTestId(record)}
+                    >
+                      {mobileRender(record, index)}
+                    </List.Item>
+                  )}
+                  pagination={
+                    resolvedPagination
+                      ? {
+                          size: resolvedPagination.size,
+                          showSizeChanger: resolvedPagination.showSizeChanger,
+                          showTotal: resolvedPagination.showTotal,
+                          pageSizeOptions: resolvedPagination.pageSizeOptions,
+                          defaultPageSize: resolvedPagination.defaultPageSize,
+                        }
+                      : false
+                  }
+                  split={false}
+                />
+              </Flex>
             );
           }
           return (

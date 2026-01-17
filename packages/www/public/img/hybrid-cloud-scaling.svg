@@ -1,0 +1,81 @@
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="500" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Rediacc Dynamic Resource Scaling</text>
+  
+  <!-- Timeline -->
+  <line x1="100" y1="100" x2="700" y2="100" stroke="#ced4da" stroke-width="2"/>
+  <text x="100" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">08:00</text>
+  <text x="400" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">13:00</text>
+  <text x="700" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">17:00</text>
+  
+  <!-- On-premise Environment -->
+  <rect x="50" y="150" width="700" height="130" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
+  <text x="400" y="170" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">On-premise Environment</text>
+  
+  <!-- On-premise Servers -->
+  <rect x="100" y="190" width="60" height="60" fill="#f1f3f5" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
+  <text x="130" y="225" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Server 1</text>
+  
+  <rect x="180" y="190" width="60" height="60" fill="#f1f3f5" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
+  <text x="210" y="225" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Server 2</text>
+  
+  <rect x="260" y="190" width="60" height="60" fill="#f1f3f5" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
+  <text x="290" y="225" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Server 3</text>
+  
+  <!-- Usage Indicator - High -->
+  <rect x="350" y="190" width="150" height="20" fill="#dc3545" rx="5" ry="5"/>
+  <text x="425" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="white">99% Usage (Day)</text>
+  
+  <!-- Usage Indicator - Low -->
+  <rect x="350" y="230" width="60" height="20" fill="#198754" rx="5" ry="5"/>
+  <text x="425" y="245" font-family="Arial" font-size="12" text-anchor="middle" fill="white">10% Usage (Night)</text>
+  
+  <!-- Cloud Environment -->
+  <rect x="50" y="320" width="700" height="150" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
+  <text x="400" y="340" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Cloud Environment</text>
+  
+  <!-- Cloud Scaling -->
+  <rect x="100" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="130" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 1</text>
+  
+  <rect x="180" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="210" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 2</text>
+  
+  <rect x="260" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="290" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 3</text>
+  
+  <rect x="340" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="370" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 4</text>
+  
+  <rect x="420" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="450" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 5</text>
+  
+  <rect x="500" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="530" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 6</text>
+  
+  <rect x="580" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="610" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 7</text>
+  
+  <!-- Synchronization Arrows -->
+  <path d="M 200 250 L 200 320" stroke="#198754" stroke-width="2" fill="none" marker-end="url(#arrowhead1)"/>
+  <text x="220" y="290" font-family="Arial" font-size="10" text-anchor="middle" fill="#198754">9 min sync</text>
+  
+  <path d="M 550 360 L 550 280" stroke="#dc3545" stroke-width="2" fill="none" marker-end="url(#arrowhead2)"/>
+  <text x="580" y="290" font-family="Arial" font-size="10" text-anchor="middle" fill="#dc3545">Night Sync</text>
+  
+  <defs>
+    <marker id="arrowhead1" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#198754"/>
+    </marker>
+    <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="10 0, 0 3.5, 10 7" fill="#dc3545"/>
+    </marker>
+  </defs>
+  
+  <!-- Results Box -->
+  <rect x="80" y="450" width="640" height="30" fill="#d9f2e6" rx="5" ry="5" stroke="#198754" stroke-width="1"/>
+  <text x="400" y="470" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#198754">AI Training Time: 8 hours → 1.5 hours | Cost Reduced by 60%</text>
+</svg> 

@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+# Docker Mailserver Lifecycle Functions
+
+prep() {
+  echo "Pulling Docker Mailserver image..."
+  docker pull ghcr.io/docker-mailserver/docker-mailserver:latest
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    echo "Failed to pull image"
+    return $exit_code
+  fi
+
+  echo "Creating data directories..."
+  mkdir -p docker-data/dms/mail-data
+  mkdir -p docker-data/dms/mail-state
+  mkdir -p docker-data/dms/mail-logs
+  mkdir -p docker-data/dms/config
+
+  return $?
+}
+
+up() {
+  echo "Starting Docker Mailserver..."
+  _compose up -d
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    echo "Failed to start Docker Mailserver"
+    return $exit_code
+  fi
+
+  echo ""
+  echo "Docker Mailserver started successfully!"
+  echo ""
+
+  # Auto-create admin account on first run
+  local credentials_file="./docker-data/dms/admin-credentials.txt"
+
+  if [ ! -f "$credentials_file" ]; then
+    echo "First run detected - creating admin mail account..."
+    echo ""
+
+    # Extract domain from HOSTNAME in .env (default: mail.example.com)
+    source .env 2>/dev/null || true
+    local hostname="${HOSTNAME:-mail.example.com}"
+    local domain="${hostname#*.}"  # Remove first part (mail.) to get domain
+    local email="admin@${domain}"
+
+    # Generate random password (16 characters)
+    local password=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16)
+
+    echo "Waiting for mailserver to be ready (30 seconds)..."
+    sleep 30
+
+    # Create the admin account
+    echo "Creating admin account: ${email}"
+    docker exec mailserver setup email add "${email}" "${password}" 2>/dev/null
+
+    if [ $? -eq 0 ]; then
+      # Store credentials
+      echo "Email: ${email}" > "$credentials_file"
+      echo "Password: ${password}" >> "$credentials_file"
+      chmod 600 "$credentials_file"
+
+      echo ""
+      echo "✅ Admin account created successfully!"
+      echo ""
+      echo "📧 Credentials saved to: ${credentials_file}"
+      echo "   Email: ${email}"
+      echo "   Password: ${password}"
+      echo ""
+      echo "⚠️  IMPORTANT: Change this password after first login!"
+      echo ""
+    else
+      echo "⚠️  Failed to create admin account. You can create it manually with:"
+      echo "   docker exec -it mailserver setup email add ${email}"
+    fi
+  else
+    echo "Admin account already exists. Credentials in: ${credentials_file}"
+    echo ""
+  fi
+
+  echo "IMPORTANT: Before using in production, you must:"
+  echo "  1. Setup DNS records (SPF, DKIM, DMARC) for your domain"
+  echo "  2. Configure SSL/TLS certificates"
+  echo "  3. Generate DKIM keys using: ./tool.sh config dkim"
+  echo "  4. Change the default admin password"
+  echo ""
+  echo "Mail server ports:"
+  echo "  - SMTP: 25, 465, 587"
+  echo "  - IMAP: 993"
+  echo ""
+  echo "Quick management:"
+  echo "  - Run: ./tool.sh help  (for all available commands)"
+  echo "  - Examples: ./tool.sh email list, ./tool.sh email add user@domain.com"
+  echo ""
+  echo "Check logs with: docker compose logs -f"
+  echo "Official docs: https://docker-mailserver.github.io/docker-mailserver/latest/"
+  echo ""
+
+  return 0
+}
+
+down() {
+  echo "Stopping Docker Mailserver and cleaning up..."
+  _compose down -v
+  return $?
+}

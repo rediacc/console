@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import {
-  FUNCTION_DEFINITIONS,
   FUNCTION_CATEGORIES,
+  FUNCTION_DEFINITIONS,
   type FunctionDefinition,
 } from '@rediacc/shared/queue-vault/data/definitions';
 import { isBridgeFunction } from '@rediacc/shared/queue-vault/data/functions.generated';

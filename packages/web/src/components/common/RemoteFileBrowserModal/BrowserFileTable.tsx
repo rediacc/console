@@ -8,9 +8,9 @@ import {
   Radio,
   Space,
   Table,
+  type TableProps,
   Tooltip,
   Typography,
-  type TableProps,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';

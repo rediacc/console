@@ -12,7 +12,7 @@ import type { QueueFunction } from '@rediacc/shared/types';
 /**
  * Common parameters that appear in most function handlers.
  */
-export interface BaseHandlerParams {
+interface BaseHandlerParams {
   /** Repository GUID */
   repository?: string;
   /** Grand repository GUID for forked repos */

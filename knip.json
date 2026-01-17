@@ -3,7 +3,8 @@
   "exclude": ["types", "duplicates"],
   "workspaces": {
     ".": {
-      "project": ["*.{js,ts}"]
+      "entry": ["scripts/*.js"],
+      "project": ["*.{js,ts}", "scripts/**/*.js"]
     },
     "packages/shared": {
       "project": ["src/**/*.ts"]
@@ -60,12 +61,53 @@
         "src/main/protocol.ts"
       ],
       "project": ["src/**/*.ts", "*.ts"]
+    },
+    "packages/e2e": {
+      "entry": [
+        "tests/**/*.test.ts",
+        "tests/**/*.setup.ts",
+        "pages/**/*.ts"
+      ],
+      "project": ["**/*.ts"]
+    },
+    "packages/bridge-tests": {
+      "entry": [
+        "playwright.image.config.ts",
+        "tests/**/*.test.ts",
+        "src/base/*.ts",
+        "src/reporters/*.ts",
+        "src/utils/image/index.ts"
+      ],
+      "project": ["**/*.ts"]
+    },
+    "packages/www": {
+      "entry": [
+        "src/pages/**/*.astro",
+        "src/layouts/**/*.astro",
+        "scripts/generate-search-index.js",
+        "src/components/Navigation.tsx",
+        "src/components/Footer.tsx",
+        "src/components/Sidebar.tsx"
+      ],
+      "project": ["src/**/*.{ts,tsx,astro}", "scripts/**/*.js"],
+      "ignore": [
+        "public/scripts/**/*.js",
+        "scripts/check-translation-hashes.js",
+        "scripts/generate-favicons.js",
+        "scripts/generate-translation-hashes.js",
+        "src/components/EarlyAccess.tsx",
+        "src/components/GetInTouch.tsx",
+        "src/components/OptimizedImage.astro",
+        "src/components/Problem.tsx",
+        "src/components/VideoPlayer.tsx"
+      ]
     }
   },
   "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts"],
   "ignoreDependencies": [
     "@types/*",
     "@opentelemetry/instrumentation-*",
+    "astro",
     "dayjs",
     "@electron-toolkit/preload",
     "node-pty",
@@ -73,7 +115,8 @@
     "@rediacc/shared",
     "loupe",
     "@vitest/runner",
-    "@vitest/utils"
+    "@vitest/utils",
+    "astro-seo"
   ],
   "ignoreBinaries": ["rimraf"]
 }

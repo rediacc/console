@@ -1,0 +1,19 @@
+services:
+  rethinkdb:
+    image: rethinkdb:latest
+    container_name: ${CONTAINER_NAME}
+    network_mode: "${NETWORK_MODE:-bridge}"
+    command: rethinkdb --bind all --cache-size ${RETHINKDB_CACHE_SIZE}
+    ports:
+      - "8080"    # Web admin interface
+      - "28015"   # Client driver port
+      - "29015"   # Intracluster connections
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped

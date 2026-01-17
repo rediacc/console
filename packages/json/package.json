@@ -1,0 +1,9 @@
+{
+  "name": "@rediacc/json",
+  "version": "0.4.20",
+  "private": true,
+  "scripts": {
+    "build": "./generate.sh",
+    "test": "./test-templates.sh"
+  }
+}

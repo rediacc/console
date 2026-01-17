@@ -1,5 +1,5 @@
 import log from 'electron-log';
-import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
+import { autoUpdater, ProgressInfo, UpdateInfo } from 'electron-updater';
 import { sendToAllWindows } from '../ipc/updater';
 
 // Configure logging

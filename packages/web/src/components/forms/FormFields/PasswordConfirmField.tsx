@@ -2,7 +2,7 @@ import React from 'react';
 import { Form, Input } from 'antd';
 import type { Rule } from 'antd/es/form';
 
-export interface PasswordConfirmFieldProps {
+interface PasswordConfirmFieldProps {
   /** Field name for this confirmation field */
   name: string;
   /** Field label */

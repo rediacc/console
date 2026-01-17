@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type Key } from 'react';
+import { type Key, useCallback, useMemo, useState } from 'react';
 import {
   CameraOutlined,
   CloudUploadOutlined,
@@ -13,9 +13,9 @@ import {
 import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
-  useGetCephRbdSnapshots,
   useCreateCephRbdSnapshot,
   useDeleteCephRbdSnapshot,
+  useGetCephRbdSnapshots,
   useUpdateCephPoolVault,
 } from '@/api/api-hooks.generated';
 import { MobileCard } from '@/components/common/MobileCard';
@@ -28,10 +28,10 @@ import { useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import type {
-  CreateCephRbdSnapshotParams,
-  GetCephPools_ResultSet1 as CephPool,
   GetCephRbdImages_ResultSet1 as CephImage,
+  GetCephPools_ResultSet1 as CephPool,
   GetCephRbdSnapshots_ResultSet1 as CephSnapshot,
+  CreateCephRbdSnapshotParams,
 } from '@rediacc/shared/types';
 import { buildSnapshotColumns } from './columns';
 import type { MenuProps } from 'antd';

@@ -181,8 +181,8 @@
     "tryAgain": "重试"
   },
   "errors": {
-    "somethingWentWrong": "出现了问题",
-    "schemaValidationFailed": "检测到数据同步问题。请刷新页面，如果问题仍然存在，请联系支持。"
+    "schemaValidationFailed": "检测到数据同步问题。请刷新页面，如果问题仍然存在，请联系支持。",
+    "somethingWentWrong": "出现了问题"
   },
   "export": {
     "label": "导出",
@@ -376,8 +376,9 @@
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} 更多",
-    "selectTeams": "选择团队..."
+    "selectTeam": "选择团队...",
+    "selectTeams": "选择团队...",
+    "moreTeams": "+{{count}} 更多"
   },
   "terminal": {
     "terminal": "终端",

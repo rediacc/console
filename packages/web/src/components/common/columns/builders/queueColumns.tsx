@@ -1,9 +1,9 @@
 import { Space, Typography } from 'antd';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
-  PriorityWithTooltip,
   AgeRenderer,
   ErrorRetriesRenderer,
+  PriorityWithTooltip,
 } from '@/features/queue/components/QueueTableRenderers';
 import {
   ApiOutlined,

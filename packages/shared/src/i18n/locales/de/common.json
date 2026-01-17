@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "Ein Fehler ist aufgetreten",
+    "cliCommandFailed": "CLI-Befehl fehlgeschlagen",
+    "criticalSystemError": "System hat kritische Probleme",
+    "failedToCreateTask": "Testaufgabe konnte nicht erstellt werden",
+    "failedToFork": "Repository konnte nicht geforkt werden",
+    "helloFunctionError": "Hello-Funktion hat einen Fehler gemeldet",
+    "machinesValidationError": "Maschinenvalidierungsfehler",
+    "noErrorMessage": "(keine Fehlermeldung)",
+    "operationFailed": "Vorgang fehlgeschlagen",
+    "passwordValidation": "Passwort muss Großbuchstaben, Kleinbuchstaben, Zahl und Sonderzeichen enthalten",
+    "tfaVerificationFailed": "TFA-Verifizierung fehlgeschlagen",
+    "unknownError": "Unbekannter Fehler",
+    "vaultTestFailed": "Vault-Verbindungstest fehlgeschlagen",
+    "vsCodeConnectionFailed": "VS Code-Verbindung fehlgeschlagen"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello-Funktion erfolgreich abgeschlossen"
+  },
   "status": {
     "cancelled": "Abgebrochen",
     "completed": "Abgeschlossen",

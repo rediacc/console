@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { parseGetTeamRepositories, parseGetOrganizationVaults } from '@rediacc/shared/api';
+import { parseGetOrganizationVaults, parseGetTeamRepositories } from '@rediacc/shared/api';
 import { DEFAULT_REPOSITORY_TAG } from '@rediacc/shared/api/typedApi/defaults';
 import {
   canDeleteGrandRepo,

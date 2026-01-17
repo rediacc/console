@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "Aktivierung fehlgeschlagen",
+    "tfaVerificationFailed": "TFA-Verifizierung fehlgeschlagen",
     "authFailed": "Authentifizierung fehlgeschlagen",
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc login",
     "bridgeRequired": "Bridge-Name erforderlich. Verwenden Sie --bridge oder stellen Sie den Kontext ein.",
@@ -996,8 +997,8 @@
     "validationError": "Validierungsfehler: {{message}}",
     "vaultDataRequired": "Vault-Daten erforderlich. Verwenden Sie --vault <json> oder leiten Sie JSON über stdin weiter.",
     "vaultVersionRequired": "Vault-Version erforderlich. Verwenden Sie --vault-version <n>.",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "Unbekannter Befehl \"{{command}}\". Verfügbare Befehle: {{available}}.",
+    "unknownSubcommand": "Unbekannter Unterbefehl \"{{command}}\". Verfügbare {{parent}}-Unterbefehle: {{available}}."
   },
   "options": {
     "activationCode": "Aktivierungscode aus E-Mail",

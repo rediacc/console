@@ -14,8 +14,7 @@ import {
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useGetTeamMachines } from '@/api/api-hooks.generated';
-import { useGetTeamRepositories } from '@/api/api-hooks.generated';
+import { useGetTeamMachines, useGetTeamRepositories } from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import { RemoteFileBrowserModal } from '@/components/common/RemoteFileBrowserModal';

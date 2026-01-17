@@ -2,7 +2,7 @@
  * Resource Parsers (Bridges, Regions, Storage)
  */
 
-import { extractPrimaryOrSecondary, extractRowsByIndex, extractFirstByIndex } from './base';
+import { extractFirstByIndex, extractPrimaryOrSecondary, extractRowsByIndex } from './base';
 import type {
   GetOrganizationRegions_ResultSet1,
   GetRegionBridges_ResultSet1,

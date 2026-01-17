@@ -46,12 +46,14 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     );
     const vaultDataRef = useRef<Record<string, unknown>>(initialVaultData);
     const [isVaultValid, setIsVaultValid] = useState(false);
+    const [vaultHasChanges, setVaultHasChanges] = useState(false);
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false);
     const importExportHandlers = useRef<ImportExportHandlers | null>(null);
 
     const handleFormSubmit = useCallback(async () => {
-      // Only skip vault validation in edit mode, not in create mode (including credentials-only)
-      const shouldSkipVaultValidation = entityType === 'REPOSITORY' && isEditMode;
+      // Only skip vault validation in edit mode when vault isn't modified
+      const shouldSkipVaultValidation =
+        (entityType === 'REPOSITORY' && isEditMode) || (isEditMode && !vaultHasChanges);
 
       if (!isVaultValid && !shouldSkipVaultValidation) {
         setShowVaultValidationErrors(true);
@@ -70,10 +72,11 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       } catch {
         // Validation errors will be shown on form fields automatically
       }
-    }, [entityType, form, isEditMode, isVaultValid, message, onSubmit]);
+    }, [entityType, form, isEditMode, isVaultValid, message, onSubmit, vaultHasChanges]);
 
-    const handleVaultChange = useCallback((data: Record<string, unknown>) => {
+    const handleVaultChange = useCallback((data: Record<string, unknown>, hasChanges = false) => {
       vaultDataRef.current = data;
+      setVaultHasChanges(hasChanges);
     }, []);
 
     const handleVaultValidate = useCallback((valid: boolean) => {
@@ -185,6 +188,5 @@ export default ResourceFormWithVault;
 export type {
   FormFieldConfig,
   ImportExportHandlers,
-  ResourceFormWithVaultProps,
   ResourceFormWithVaultRef,
 } from './types';

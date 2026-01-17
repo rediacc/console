@@ -1,0 +1,131 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProblemSolutionSection from '../../../components/ProblemSolutionSection';
+import SolutionHero from '../../../components/SolutionHero.astro';
+import SolutionImage from '../../../components/SolutionImage.astro';
+import SolutionCTA from '../../../components/SolutionCTA.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+import { EXTERNAL_LINKS } from '../../../config/constants';
+import ctaImage from '../../../assets/images/rediacc_resources_repos.png';
+import '../../../styles/solution-page.css';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, to } = createTranslator(lang);
+
+// Get data security content
+const dsContent = to('pages.solutions.dataSecurity');
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.solutions.dataSecurity.meta.title')}
+  description={t('pages.solutions.dataSecurity.meta.description')}
+  keywords={t('pages.solutions.dataSecurity.meta.keywords')}
+  ogType="website"
+>
+  <SolutionHero
+    title={dsContent.hero.title}
+    subtitle={dsContent.hero.subtitle}
+    heroImage="/assets/images/data-security-hero.png"
+    heroImageAlt="Encrypted data pipeline with locked packets flowing through transparent infrastructure"
+  />
+
+  <!-- Problem-Solution Section 1: Physical Data Theft -->
+  <ProblemSolutionSection
+    client:visible
+    number={1}
+    title={dsContent.problems.physicalTheft.title}
+    subtitle={dsContent.problems.physicalTheft.subtitle}
+    problem={{
+      description: dsContent.problems.physicalTheft.problem.description,
+      story: dsContent.problems.physicalTheft.problem.story,
+      additionalPoints: dsContent.problems.physicalTheft.problem.additionalPoints
+    }}
+    solution={{
+      title: dsContent.problems.physicalTheft.solution.title,
+      description: dsContent.problems.physicalTheft.solution.description,
+      benefits: dsContent.problems.physicalTheft.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: dsContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="data-security"
+  />
+
+  <!-- Problem-Solution Section 2: Audit Trail -->
+  <ProblemSolutionSection
+    client:visible
+    number={2}
+    title={dsContent.problems.auditTrail.title}
+    subtitle={dsContent.problems.auditTrail.subtitle}
+    problem={{
+      description: dsContent.problems.auditTrail.problem.description,
+      story: dsContent.problems.auditTrail.problem.story,
+      additionalPoints: dsContent.problems.auditTrail.problem.additionalPoints
+    }}
+    solution={{
+      title: dsContent.problems.auditTrail.solution.title,
+      description: dsContent.problems.auditTrail.solution.description,
+      benefits: dsContent.problems.auditTrail.solution.benefits
+    }}
+    variant="dark"
+    cta={{
+      text: dsContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="data-security"
+  />
+
+  <!-- Problem-Solution Section 3: Migration Exposure -->
+  <ProblemSolutionSection
+    client:visible
+    number={3}
+    title={dsContent.problems.migrationExposure.title}
+    subtitle={dsContent.problems.migrationExposure.subtitle}
+    problem={{
+      description: dsContent.problems.migrationExposure.problem.description,
+      story: dsContent.problems.migrationExposure.problem.story,
+      additionalPoints: dsContent.problems.migrationExposure.problem.additionalPoints
+    }}
+    solution={{
+      title: dsContent.problems.migrationExposure.solution.title,
+      description: dsContent.problems.migrationExposure.solution.description,
+      benefits: dsContent.problems.migrationExposure.solution.benefits
+    }}
+    variant="light"
+    cta={{
+      text: dsContent.cta.button,
+      href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+    }}
+    pageSlug="data-security"
+  />
+
+  <!-- Bottom Image Section -->
+  <SolutionImage
+    imageSrc="/assets/images/data-security-bottom.png"
+    imageAlt="Compliance dashboard showing migration status, audit trail, and encryption verification with SOC 2, ISO 27001, and GDPR badges"
+    variant="light"
+  />
+
+  <SolutionCTA
+    title={dsContent.cta.title}
+    subtitle={dsContent.cta.subtitle}
+    buttonText={dsContent.cta.button}
+    imageSrc={ctaImage}
+    imageAlt="Rediacc data security and compliance"
+    lang={lang}
+  />
+
+</BaseLayout>
+

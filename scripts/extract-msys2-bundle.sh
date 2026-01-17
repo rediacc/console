@@ -106,6 +106,23 @@ detect_platform() {
 
 PLATFORM=$(detect_platform)
 
+# Detect CPU architecture for MSYS2 download
+detect_arch() {
+    case "$(uname -m)" in
+        x86_64|amd64)
+            echo "x86_64"
+            ;;
+        aarch64|arm64)
+            echo "clangarm64"
+            ;;
+        *)
+            echo "x86_64"  # fallback to x64
+            ;;
+    esac
+}
+
+MSYS2_ARCH=$(detect_arch)
+
 # Skip on macOS - not needed for development
 if [[ "$PLATFORM" == "macos" ]]; then
     log_info "Skipping MSYS2 bundle extraction on macOS (not needed)"
@@ -147,7 +164,7 @@ trap cleanup EXIT
 
 # Check if tar archive already exists (for caching)
 check_cached_archive() {
-    local archive_name="msys2-base-x86_64-${MSYS2_VERSION}.tar.xz"
+    local archive_name="msys2-base-${MSYS2_ARCH}-${MSYS2_VERSION}.tar.xz"
     local cache_dir="$CONSOLE_ROOT/.cache"
 
     if [[ -f "$cache_dir/$archive_name" ]]; then
@@ -161,7 +178,7 @@ check_cached_archive() {
 
 # Download MSYS2 base archive
 download_msys2() {
-    local archive_name="msys2-base-x86_64-${MSYS2_VERSION}.tar.xz"
+    local archive_name="msys2-base-${MSYS2_ARCH}-${MSYS2_VERSION}.tar.xz"
     # GitHub release tags use hyphenated date format (2024-12-08) while filenames don't (20241208)
     local version_tag="${MSYS2_VERSION:0:4}-${MSYS2_VERSION:4:2}-${MSYS2_VERSION:6:2}"
     local download_url="${MSYS2_MIRROR}/${version_tag}/${archive_name}"
@@ -323,6 +340,7 @@ verify_bundle() {
 main() {
     log_info "=== MSYS2 Bundle Extraction ==="
     log_info "Platform: $PLATFORM"
+    log_info "Architecture: $MSYS2_ARCH"
     log_info "MSYS2 Version: $MSYS2_VERSION"
     log_info "Output Directory: $OUTPUT_DIR"
     log_info ""

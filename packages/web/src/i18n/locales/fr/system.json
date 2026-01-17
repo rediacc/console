@@ -252,7 +252,7 @@
       "machines": "Machines de traitement",
       "members": "Membres",
       "repositories": "Dépôts",
-      "stats": "Stats",
+      "stats": "Statistiques",
       "storage": "Stockage",
       "teamName": "Nom de l'équipe",
       "vaultVersion": "Version du coffre-fort"
@@ -282,7 +282,7 @@
     }
   },
   "userSessions": {
-    "active": "Active",
+    "active": "Actif",
     "activeSessions": "Séances actives",
     "averageDuration": "Durée moyenne",
     "columns": {
@@ -291,7 +291,7 @@
       "duration": "Durée",
       "ipAddress": "Adresse IP",
       "lastActivity": "Dernière activité",
-      "sessionName": "Session",
+      "sessionName": "Nom de session",
       "status": "Statut",
       "user": "Utilisateur",
       "userAgent": "Agent utilisateur"
@@ -303,7 +303,7 @@
     "fork": "Fourchette",
     "forkToken": "Ceci est un jeton fork (session enfant)",
     "hasChildren": "{{count}} sessions enfants",
-    "inactive": "Inactive",
+    "inactive": "Inactif",
     "ipLabel": "IP",
     "minutes": "minutes",
     "notAvailable": "N / A",

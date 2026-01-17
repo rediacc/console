@@ -1,0 +1,358 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import DocsSidebar from '../components/DocsSidebar.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import type { Language } from '../i18n/types';
+import { createTranslator } from '../i18n/utils';
+import { generateTOCFromHtml } from '../utils/sidebar-behavior';
+import '../styles/sidebar-shared.css';
+
+interface Props {
+  frontmatter: {
+    title: string;
+    description: string;
+    category?: string;
+  };
+  url: string;
+  currentLang: Language;
+  availableLanguages?: Array<{ lang: Language; url: string }>;
+  showFallbackNotice?: boolean;
+}
+
+const { frontmatter, url, currentLang, availableLanguages = [], showFallbackNotice } = Astro.props;
+
+// Generate breadcrumbs
+const { t } = createTranslator(currentLang);
+const breadcrumbItems = [
+  {
+    name: t('navigation.home'),
+    url: `/${currentLang}/`
+  },
+  {
+    name: t('navigation.docs'),
+    url: `/${currentLang}/docs/`
+  },
+  {
+    name: frontmatter.title,
+    url: url
+  }
+];
+
+// Generate table of contents from rendered HTML using shared utility
+const toc = generateTOCFromHtml(await Astro.slots.render('default'));
+---
+
+<BaseLayout
+  title={frontmatter.title}
+  description={frontmatter.description}
+  lang={currentLang}
+>
+  <div class="docs-layout">
+    <DocsSidebar currentLang={currentLang} currentUrl={url} />
+
+    <main class="docs-content">
+      <article class="docs-article">
+        <Breadcrumb items={breadcrumbItems} />
+
+        {showFallbackNotice && (
+          <div class="fallback-notice" role="alert">
+            <div class="fallback-notice-icon">ℹ️</div>
+            <div class="fallback-notice-content">
+              <strong class="fallback-notice-title">{t('pages.docs.fallbackNotice.title')}</strong>
+              <p class="fallback-notice-message">{t('pages.docs.fallbackNotice.message')}</p>
+            </div>
+          </div>
+        )}
+
+        <header class="article-header">
+          <h1 class="article-title">{frontmatter.title}</h1>
+
+          {frontmatter.description && (
+            <p class="article-description">{frontmatter.description}</p>
+          )}
+        </header>
+
+        <div class="article-body">
+          <slot />
+        </div>
+      </article>
+    </main>
+
+    {toc.length > 0 && (
+      <aside class="sidebar-base sidebar-toc toc-sidebar">
+        <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
+          <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
+          <ul class="sidebar-list toc-list">
+            {toc.map(heading => (
+              <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
+                <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+    )}
+  </div>
+
+  <script is:inline>
+    // Initialize active state tracking for TOC as user scrolls
+    (function() {
+      // Prevent multiple initializations
+      if (window.rediaccTOCInitialized) return;
+      window.rediaccTOCInitialized = true;
+
+      function initTOCActiveState() {
+        const container = document.querySelector('.toc-sidebar');
+        if (!container) return; // No TOC sidebar on this page
+
+        const headings = document.querySelectorAll('.article-body h2, .article-body h3, .article-body h4');
+        if (headings.length === 0) return; // No headings to track
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            const id = entry.target.id;
+            if (!id) return;
+
+            const tocLink = container?.querySelector(`a[href="#${id}"]`);
+            if (!tocLink) return;
+
+            if (entry.isIntersecting) {
+              // Remove active class from all links
+              container?.querySelectorAll('a').forEach(link => {
+                link.classList.remove('active');
+              });
+
+              // Add active class to current link
+              tocLink.classList.add('active');
+            }
+          });
+        }, {
+          rootMargin: '-100px 0px -66%'
+        });
+
+        // Start observing all headings
+        headings.forEach(heading => {
+          observer.observe(heading);
+        });
+      }
+
+      // Initialize on load events
+      function init() {
+        initTOCActiveState();
+      }
+
+      // Astro View Transitions support
+      document.addEventListener('astro:page-load', init);
+
+      // Initial load
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+
+  <style>
+    .docs-layout {
+      display: grid;
+      grid-template-columns: 250px 1fr 250px;
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: calc(3.5rem + 2rem) 1rem 2rem 1rem; /* Account for fixed nav height (3.5rem) + spacing */
+    }
+
+
+    /* Main Content */
+    .docs-content {
+      min-width: 0;
+    }
+
+    .docs-article {
+      max-width: 800px;
+    }
+
+    /* Fallback Notice */
+    .fallback-notice {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      border-radius: 4px;
+      color: #1565c0;
+    }
+
+    .fallback-notice-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .fallback-notice-content {
+      flex: 1;
+    }
+
+    .fallback-notice-title {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+      color: #0d47a1;
+    }
+
+    .fallback-notice-message {
+      margin: 0;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      color: #1565c0;
+    }
+
+    .article-header {
+      margin-bottom: 2rem;
+    }
+
+    .article-title {
+      font-size: 2.5rem;
+      line-height: 1.2;
+      margin: 1rem 0;
+      color: #000;
+    }
+
+    .article-description {
+      font-size: 1.125rem;
+      color: #666;
+      margin: 1rem 0;
+    }
+
+    .article-body {
+      line-height: 1.8;
+    }
+
+    /* Right Sidebar - TOC (uses shared styles from sidebar-shared.css) */
+    .toc-sidebar {
+      /* All base styles inherited from sidebar-base */
+    }
+
+    /* Article Content Styles */
+    .article-body :global(h2),
+    .article-body :global(h3),
+    .article-body :global(h4),
+    .article-body :global(h5),
+    .article-body :global(h6) {
+      margin: 2rem 0 1rem 0;
+      scroll-margin-top: calc(3.5rem + 2rem); /* Account for fixed nav height + spacing */
+    }
+
+    .article-body :global(h2) {
+      font-size: 1.75rem;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 0.5rem;
+    }
+
+    .article-body :global(h3) {
+      font-size: 1.375rem;
+    }
+
+    .article-body :global(p) {
+      margin: 1rem 0;
+      line-height: 1.8;
+    }
+
+    .article-body :global(code) {
+      background-color: #f5f5f5;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+
+    .article-body :global(pre) {
+      background-color: #f5f5f5;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    .article-body :global(pre code) {
+      background-color: transparent;
+      padding: 0;
+    }
+
+    .article-body :global(blockquote) {
+      border-left: 4px solid #1A1A1A;
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: #666;
+      font-style: italic;
+    }
+
+    .article-body :global(ul),
+    .article-body :global(ol) {
+      margin: 1rem 0;
+      padding-left: 2rem;
+    }
+
+    .article-body :global(li) {
+      margin: 0.5rem 0;
+      line-height: 1.8;
+    }
+
+    .article-body :global(table) {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+
+    .article-body :global(th),
+    .article-body :global(td) {
+      border: 1px solid #e0e0e0;
+      padding: 0.75rem;
+      text-align: left;
+    }
+
+    .article-body :global(th) {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+
+    .article-body :global(a) {
+      color: #1A1A1A;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .article-body :global(a:hover) {
+      color: #000000;
+      text-decoration: underline;
+    }
+
+    .article-body :global(img) {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    /* Responsive Design - TOC sidebar is hidden on tablets/phones (handled in sidebar-shared.css) */
+    @media (max-width: 1200px) {
+      .docs-layout {
+        grid-template-columns: 250px 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .docs-layout {
+        grid-template-columns: 1fr;
+        padding: 1rem 0.5rem;
+      }
+
+      .article-title {
+        font-size: 1.75rem;
+      }
+    }
+  </style>
+
+</BaseLayout>

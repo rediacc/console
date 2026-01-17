@@ -107,10 +107,7 @@ test.describe('Machine Delete Tests', () => {
     // Wait for modal to close
     await expect(deleteModal).not.toBeVisible({ timeout: 10000 });
 
-    // Wait a bit for the table to refresh
-    await page.waitForTimeout(2000);
-
-    // Verify the specific machine is no longer in the table
+    // Verify the specific machine is no longer in the table (auto-waits for row to disappear)
     const deletedMachineRow = machineList.locator(
       `tbody tr[data-row-key="${machineNameToDelete}"]`
     );

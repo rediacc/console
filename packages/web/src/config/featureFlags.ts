@@ -118,7 +118,7 @@
 import { apiConnectionService } from '@/services/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 
-export interface FeatureFlag {
+interface FeatureFlag {
   enabled?: boolean; // If not specified, defaults to true. Only use false for truly disabled/deprecated features
   requiresLocalhost?: boolean; // Only show when connected to localhost
   requiresBuildType?: 'DEBUG' | 'RELEASE'; // Only show in specific build type

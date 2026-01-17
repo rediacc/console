@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Alert, Button, Card, Empty, Flex, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useGetCephClusters, useGetCephPools } from '@/api/api-hooks.generated';
 import {
   useCreateCephCluster,
   useCreateCephPool,
   useDeleteCephCluster,
   useDeleteCephPool,
+  useGetCephClusters,
+  useGetCephPools,
+  useGetUserOrganization,
   useUpdateCephClusterVault,
   useUpdateCephPoolVault,
 } from '@/api/api-hooks.generated';
-import { useGetUserOrganization } from '@/api/api-hooks.generated';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
@@ -21,10 +22,10 @@ import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined, SettingOutlined } from '@/utils/optimizedIcons';
 import type {
-  CreateCephClusterParams,
-  CreateCephPoolParams,
   GetCephClusters_ResultSet1 as CephCluster,
   GetCephPools_ResultSet1 as CephPool,
+  CreateCephClusterParams,
+  CreateCephPoolParams,
 } from '@rediacc/shared/types';
 import { CephMachinesTab } from '../components/CephMachinesTab';
 import { ClusterTable } from '../components/ClusterTable';
@@ -62,7 +63,14 @@ const isPoolEntity = (data: CephCluster | CephPool): data is CephPool => {
 const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   const { t } = useTranslation(['ceph', 'common']);
 
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
+    pageId: 'ceph',
+  });
   const queueTrace = useQueueTraceModal();
   const { data: organizationData } = useGetUserOrganization();
   const [modalState, setModalState] = useState<{
@@ -75,9 +83,9 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   // TODO: Replace hardcoded value with actual subscription from API when available
   const planCode = 'ENTERPRISE' as string;
   const hasCephAccess = ['ENTERPRISE', 'BUSINESS'].includes(planCode);
-  const hasSelectedTeam = selectedTeams.length > 0;
-  const teamFilter = hasSelectedTeam ? selectedTeams : undefined;
-  const primaryTeam = hasSelectedTeam ? selectedTeams[0] : undefined;
+  const hasSelectedTeam = selectedTeam !== null;
+  const teamFilter = hasSelectedTeam ? [selectedTeam] : undefined;
+  const primaryTeam = hasSelectedTeam ? selectedTeam : undefined;
 
   const isClustersView = view === 'clusters';
   const isPoolsView = view === 'pools';
@@ -93,7 +101,7 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
     data: pools = [],
     isLoading: poolsLoading,
     refetch: refetchPools,
-  } = useGetCephPools(teamFilter?.[0]);
+  } = useGetCephPools(primaryTeam);
 
   const createClusterMutation = useCreateCephCluster();
   const createPoolMutation = useCreateCephPool();
@@ -237,6 +245,15 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
   }
 
   const renderContent = () => {
+    // Show loading state while teams are being fetched
+    if (teamsLoading) {
+      return (
+        <Flex align="center" justify="center">
+          <Alert message={t('common:general.loading')} type="info" />
+        </Flex>
+      );
+    }
+
     if (!hasSelectedTeam) {
       return (
         <Flex align="center" justify="center">
@@ -336,8 +353,8 @@ const CephPage: React.FC<CephPageProps> = ({ view = 'clusters' }) => {
               >
                 <TeamSelector
                   teams={teams}
-                  selectedTeams={selectedTeams}
-                  onChange={setSelectedTeams}
+                  selectedTeam={selectedTeam}
+                  onChange={setSelectedTeam}
                   loading={teamsLoading}
                   placeholder={t('selectTeamToView')}
                   data-testid="ds-team-selector"

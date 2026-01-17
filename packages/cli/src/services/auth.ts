@@ -1,11 +1,10 @@
 import {
   extractNextToken,
-  parsePrivilegeAuthenticationRequest,
   parseLoginResult,
+  parsePrivilegeAuthenticationRequest,
 } from '@rediacc/shared/api';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { isEncrypted } from '@rediacc/shared/encryption';
-import { typedApi, apiClient } from './api.js';
+import { apiClient, typedApi } from './api.js';
 import { contextService } from './context.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { t } from '../i18n/index.js';
@@ -205,7 +204,7 @@ class AuthService {
     if (!result.isAuthorized) {
       return {
         success: false,
-        message: result.result ?? DEFAULTS.ERROR.TFA_VERIFICATION_FAILED,
+        message: result.result ?? t('shared:errors.tfaVerificationFailed'),
       };
     }
 

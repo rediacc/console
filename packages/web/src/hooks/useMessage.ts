@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { showMessage, type MessageType } from '@/utils/messages';
+import { type MessageType, showMessage } from '@/utils/messages';
 
 /**
  * Options for message interpolation

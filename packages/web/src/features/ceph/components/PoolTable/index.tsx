@@ -17,8 +17,8 @@ import { useExpandableTable, useTraceModal } from '@/hooks';
 import { confirmAction } from '@/utils/confirmations';
 import { DatabaseOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import type { GetCephClusters_ResultSet1, GetCephPools_ResultSet1 } from '@rediacc/shared/types';
-import { buildPoolColumns } from './columns';
 import { ClusterPoolsCard } from '../ClusterPoolsCard';
+import { buildPoolColumns } from './columns';
 import type { MenuProps } from 'antd';
 
 interface PoolTableProps {

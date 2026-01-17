@@ -1,8 +1,8 @@
 import React from 'react';
 import { Alert, Card, Col, Divider, Flex, Space, Typography } from 'antd';
-import { BulbOutlined, QuestionCircleOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
+import { BulbOutlined, InfoCircleOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons';
 import { VaultFieldRenderer } from '../fieldRenderers';
-import type { VaultFormValues, StorageProviderDefinition } from '../types';
+import type { StorageProviderDefinition, VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 
 interface VaultEditorProviderFieldsProps {

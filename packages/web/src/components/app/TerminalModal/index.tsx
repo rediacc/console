@@ -4,4 +4,3 @@
  */
 
 export { TerminalModal } from './TerminalModal';
-export type { TerminalModalProps } from './TerminalModal';

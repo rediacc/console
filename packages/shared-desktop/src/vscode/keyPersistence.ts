@@ -3,7 +3,7 @@
  * Persists SSH keys for long-running VS Code sessions
  */
 
-import { existsSync, writeFileSync, unlinkSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getPlatform } from '../utils/platform.js';
 import type { KeyPersistencePaths } from './types.js';

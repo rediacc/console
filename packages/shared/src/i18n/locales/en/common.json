@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "An error occurred",
+    "cliCommandFailed": "CLI command failed",
+    "criticalSystemError": "System has critical issues",
+    "failedToCreateTask": "Failed to create test task",
+    "failedToFork": "Failed to fork repository",
+    "helloFunctionError": "Hello function reported an error",
+    "machinesValidationError": "Machine validation error",
+    "noErrorMessage": "(no error message)",
+    "operationFailed": "Operation failed",
+    "passwordValidation": "Password must contain uppercase, lowercase, number and special character",
+    "tfaVerificationFailed": "TFA verification failed",
+    "unknownError": "Unknown error",
+    "vaultTestFailed": "Vault connection test failed",
+    "vsCodeConnectionFailed": "VS Code connection failed"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello function completed successfully"
+  },
   "status": {
     "cancelled": "Cancelled",
     "completed": "Completed",

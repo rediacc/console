@@ -7,6 +7,7 @@ import importPlugin from 'eslint-plugin-import';
 import unicornPlugin from 'eslint-plugin-unicorn';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import regexpPlugin from 'eslint-plugin-regexp';
+import playwrightPlugin from 'eslint-plugin-playwright';
 import globals from 'globals';
 import { requireTestId } from './eslint-rules/require-testid.js';
 import { requireTranslation } from './eslint-rules/require-translation.js';
@@ -42,12 +43,21 @@ export default tseslint.config(
       'packages/desktop/out/**',
       // Ignore custom eslint rules (plain JS)
       'eslint-rules/**',
-      // Ignore scripts directories (plain JS utilities)
-      'scripts/**',
+      // Ignore package-level scripts (plain JS utilities)
       'packages/*/scripts/**',
+      // Ignore Playwright report artifacts (generated trace viewer files)
+      'packages/e2e/reports/**',
+      'packages/bridge-tests/reports/**',
     ]
   },
   
+  // Linter options - treat unused directive comments as errors to avoid pollution
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'error',
+    },
+  },
+
   // Base JavaScript rules
   js.configs.recommended,
   
@@ -85,7 +95,9 @@ export default tseslint.config(
         ecmaFeatures: {
           jsx: true
         },
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['scripts/*.js'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -127,9 +139,11 @@ export default tseslint.config(
         ignoreParameters: false,
         ignoreProperties: false,
       }],
+      // STRICT: No underscore prefix allowed - if unused, delete it
+      // Only exception: function parameters required by interfaces (use _ prefix for those)
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_'
+        varsIgnorePattern: '^$' // Empty pattern = no variables allowed with underscore
       }],
       '@typescript-eslint/no-empty-interface': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
@@ -188,6 +202,9 @@ export default tseslint.config(
           '[]',           // Empty JSON array
           'default',      // CLI context default name
           '(none)',       // Display placeholder
+          'terminal',     // Default container action
+          // Health status messages (non-i18n context in shared package)
+          'System has critical issues',
         ],
       }],
 
@@ -355,6 +372,7 @@ export default tseslint.config(
   // Web UI i18n enforcement
   {
     files: ['packages/web/src/**/*.{js,jsx,ts,tsx}'],
+    ignores: ['packages/web/src/**/__tests__/**'],
     plugins: {
       'i18n-source': i18nSourcePlugin,
     },
@@ -666,12 +684,56 @@ export default tseslint.config(
     }
   },
 
-  // CLI test files - relaxed rules for test patterns
+  // =============================================================
+  // TEST FILE OVERRIDES
+  // =============================================================
+  // These patterns cover ALL test file locations:
+  // - E2E tests: packages/e2e/**
+  // - Bridge tests: packages/bridge-tests/**
+  // - CLI Playwright: packages/cli/tests/**
+  // - CLI Unit tests: packages/cli/src/__tests__/**
+  // - Web Vitest: packages/web/src/**/__tests__/**
+  // - Shared: packages/shared/src/**/__tests__/**
+  // =============================================================
   {
-    files: ['packages/cli/tests/**/*.ts'],
+    files: [
+      // Playwright/E2E test files
+      'packages/e2e/**/*.ts',
+      'packages/bridge-tests/**/*.ts',
+      'packages/cli/tests/**/*.ts',
+      // Unit test files (__tests__ convention)
+      'packages/web/src/**/__tests__/**/*.{ts,tsx}',
+      'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
+      'packages/cli/src/__tests__/**/*.ts',
+    ],
+    ignores: [
+      // Has legitimate waitForTimeout for exponential backoff retry logic
+      'packages/e2e/src/base/BasePage.ts',
+    ],
+    plugins: {
+      playwright: playwrightPlugin,
+    },
     rules: {
-      // Test files legitimately use boolean || for condition checks
-      // e.g., output.includes("foo") || output.includes("bar")
+      // --- Playwright-specific rules ---
+      'playwright/no-wait-for-timeout': 'error',
+      'playwright/no-focused-test': 'error',
+      'playwright/no-skipped-test': 'off',
+      'playwright/valid-expect': 'error',
+      'playwright/expect-expect': 'off',
+
+      // --- General test file rules ---
+      'max-lines': 'off',
+      'max-nested-callbacks': ['error', 5],
+
+      // --- Disable production-only rules ---
+      'custom/require-translation': 'off',
+      'custom/no-hardcoded-text': 'off',
+      'custom/no-hardcoded-cli-text': 'off',
+      'custom/no-hardcoded-nullish-defaults': 'off',
+      'react/forbid-elements': 'off',
+      'custom/require-testid': 'off',
+
+      // --- TypeScript relaxations for tests ---
       '@typescript-eslint/prefer-nullish-coalescing': ['error', {
         ignorePrimitives: {
           boolean: true,
@@ -679,11 +741,72 @@ export default tseslint.config(
           string: true,
         },
       }],
-      // Tests can be longer than production code
-      'max-lines': 'off',
-      // Test files use nested callbacks: describe -> test -> async -> array methods
-      // Limit of 3 is too restrictive for test patterns like find(), some(), map()
-      'max-nested-callbacks': ['error', 5],
+    },
+  },
+
+  // =============================================================
+  // WWW PACKAGE OVERRIDES (Astro marketing site)
+  // =============================================================
+  // Disable web-specific rules for www package since it's an Astro site
+  // with different translation patterns and no Ant Design components
+  {
+    files: ['packages/www/src/**/*.{ts,tsx}'],
+    rules: {
+      // Disable web-specific i18n rules (www uses different translation system)
+      'custom/require-translation': 'off',
+      'custom/no-hardcoded-text': 'off',
+      'custom/require-testid': 'off',
+      'custom/no-raw-api-calls': 'off',
+      // Disable Ant Design restrictions (www uses native HTML)
+      'react/forbid-elements': 'off',
+      'no-restricted-imports': 'off',
+    },
+  },
+
+  // WWW translation JSON files - basic JSON linting
+  {
+    files: ['packages/www/src/i18n/translations/*.json'],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      'json/no-duplicate-keys': 'error',
+      'i18n/no-empty-translations': 'error',
+      'i18n/sorted-keys': 'error',
+    },
+  },
+
+  // JSON package is bash-based, exclude from ESLint
+  {
+    ignores: ['packages/json/**'],
+  },
+
+  // CLI utility scripts - relaxed rules for command-line tools
+  {
+    files: ['scripts/**/*.js'],
+    rules: {
+      // CLI scripts output to console by design
+      'no-console': 'off',
+      // Utility scripts can have complex logic
+      'sonarjs/cognitive-complexity': 'off',
+      // Top-level async calls are handled at script exit
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/require-await': 'off',
+      // Relax TypeScript-specific rules for JS files
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off',
+      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'off',
+      '@typescript-eslint/require-array-sort-compare': 'off',
+      // Allow simple patterns in utility scripts
+      'unicorn/prefer-number-properties': 'off',
+      'unicorn/no-negated-condition': 'off',
+      'no-nested-ternary': 'off',
+      'prefer-template': 'off',
+      'no-regex-spaces': 'off',
+      // Custom rules not applicable to utility scripts
+      'custom/prefer-const-arrays': 'off',
     },
   },
 

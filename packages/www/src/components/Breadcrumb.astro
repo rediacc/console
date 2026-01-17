@@ -1,0 +1,135 @@
+---
+import StructuredData from './StructuredData.astro';
+
+export interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+export interface Props {
+  items: BreadcrumbItem[];
+  showStructuredData?: boolean;
+  class?: string;
+}
+
+const { items, showStructuredData = true, class: className = '' } = Astro.props;
+
+// Generate structured data for breadcrumbs
+const breadcrumbStructuredData = {
+  items: items.map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: item.name,
+    item: item.url
+  }))
+};
+
+const lastIndex = items.length - 1;
+---
+
+{showStructuredData && (
+  <StructuredData type="breadcrumb" data={breadcrumbStructuredData} />
+)}
+
+<nav class={`breadcrumb ${className}`.trim()} aria-label="Breadcrumb navigation">
+  <ol class="breadcrumb-list" itemscope itemtype="https://schema.org/BreadcrumbList">
+    {items.map((item, index) => (
+      <li
+        class={`breadcrumb-item ${index === lastIndex ? 'breadcrumb-current' : ''}`}
+        itemprop="itemListElement"
+        itemscope
+        itemtype="https://schema.org/ListItem"
+      >
+        {index === lastIndex ? (
+          <span
+            class="breadcrumb-text"
+            itemprop="name"
+            aria-current="page"
+          >
+            {item.name}
+          </span>
+        ) : (
+          <a
+            href={item.url}
+            class="breadcrumb-link"
+            itemprop="item"
+          >
+            <span itemprop="name">{item.name}</span>
+          </a>
+        )}
+        <meta itemprop="position" content={String(index + 1)} />
+        {index < lastIndex && (
+          <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+.breadcrumb {
+  margin-bottom: var(--space-4, 1rem);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-2, 0.5rem);
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.breadcrumb-link {
+  color: var(--text-secondary, #666);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-link:hover,
+.breadcrumb-link:focus {
+  color: var(--primary-color, #007bff);
+  text-decoration: underline;
+}
+
+.breadcrumb-link:focus {
+  outline: 2px solid var(--primary-color, #007bff);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.breadcrumb-text,
+.breadcrumb-current .breadcrumb-text {
+  color: var(--text-primary, #333);
+  font-weight: 500;
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted, #999);
+  font-weight: normal;
+  user-select: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .breadcrumb {
+    font-size: var(--font-size-xs, 0.75rem);
+  }
+
+  .breadcrumb-list {
+    gap: var(--space-1, 0.25rem);
+  }
+
+  .breadcrumb-item {
+    gap: var(--space-1, 0.25rem);
+  }
+}
+</style>

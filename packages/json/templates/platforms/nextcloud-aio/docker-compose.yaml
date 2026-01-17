@@ -1,0 +1,33 @@
+services:
+  nextcloud-aio-mastercontainer:
+    image: nextcloud/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    init: true
+    restart: always
+    network_mode: "${NETWORK_MODE:-bridge}"
+    ports:
+      - "80"      # HTTP (ACME challenges)
+      - "8080"    # AIO management interface
+      - "8443"    # HTTPS
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - ${DOCKER_HOST:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    environment:
+      - APACHE_PORT=${APACHE_PORT:-}
+      - APACHE_IP_BINDING=${APACHE_IP_BINDING:-}
+      - NEXTCLOUD_DATADIR=${NEXTCLOUD_DATADIR:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/aio-config

@@ -6,6 +6,7 @@
  * - Vault management
  * - Data import/export
  */
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { typedApi } from '@/api/client';
 import { useMutationWithFeedback } from '@/hooks/useMutationWithFeedback';

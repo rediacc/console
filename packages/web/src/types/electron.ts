@@ -193,7 +193,7 @@ export interface ContainerSessionResult {
 }
 
 // Window types
-export interface PopoutWindowOptions {
+interface PopoutWindowOptions {
   type: 'terminal' | 'container';
   sessionId: string;
   title?: string;
@@ -206,7 +206,7 @@ export interface PopoutWindowOptions {
   containerSessionType?: 'exec' | 'logs' | 'stats';
 }
 
-export interface PopoutWindowResult {
+interface PopoutWindowResult {
   success: boolean;
   windowId?: number;
   error?: string;

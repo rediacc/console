@@ -9,14 +9,6 @@ function getEnvOrDefault(key: string, defaultValue: string): string {
   return process.env[key] ?? defaultValue;
 }
 
-function _getEnvOrThrow(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(`Required environment variable ${key} is not set`);
-  }
-  return value;
-}
-
 // =============================================================================
 // API Configuration
 // =============================================================================
@@ -33,17 +25,11 @@ export function getApiUrl(): string {
 // Test Credentials
 // =============================================================================
 
-/** Default admin email */
-export const DEFAULT_ADMIN_EMAIL = 'admin@rediacc.io';
-
-/** Default admin password */
-export const DEFAULT_ADMIN_PASSWORD = 'admin';
-
 /** Email domain for generated test accounts */
 export const TEST_EMAIL_DOMAIN = 'rediacc.local';
 
-/** Activation code for CI mode */
-export const CI_ACTIVATION_CODE = '111111';
+/** Activation code for CI mode (alphanumeric format) */
+export const CI_ACTIVATION_CODE = 'AAA111';
 
 // =============================================================================
 // Timeouts
@@ -51,6 +37,9 @@ export const CI_ACTIVATION_CODE = '111111';
 
 /** Default CLI command timeout in milliseconds */
 export const DEFAULT_CLI_TIMEOUT = 30000;
+
+/** Default CLI output format for tests */
+export const DEFAULT_OUTPUT_FORMAT = 'json';
 
 /** Get configured CLI timeout */
 export function getCliTimeout(): number {

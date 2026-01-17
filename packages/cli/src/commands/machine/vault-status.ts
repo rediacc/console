@@ -3,10 +3,10 @@ import { parseGetTeamMachines } from '@rediacc/shared/api';
 import {
   getDeploymentSummary,
   getMachineSystemInfo,
-  parseListResult,
   type MachineWithVaultStatus,
-  parseVaultStatus,
   type ParsedVaultStatus,
+  parseListResult,
+  parseVaultStatus,
   type SystemInfo,
 } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';

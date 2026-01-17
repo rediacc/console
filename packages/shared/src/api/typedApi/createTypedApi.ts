@@ -23,7 +23,7 @@
  */
 
 import { applyProcedureDefaults } from './defaults';
-import { validateApiResponse, ApiValidationError } from '../../types/api-schema.zod';
+import { ApiValidationError, validateApiResponse } from '../../types/api-schema.zod';
 import type { TypedApi, TypedApiConfig, TypedApiResponse } from './types';
 import type { StoredProcedureName } from '../../types/api-schema.generated';
 import type { ErrorHandler } from '../adapters/types';

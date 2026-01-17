@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rediacc Repository Template Catalog</title>
+
+    <!-- Markdown and Syntax Highlighting Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f7fa; }
+        .container { max-width: 75rem; margin: 0 auto; padding: 1.25rem; }
+        header { text-align: center; margin-bottom: 2.5rem; background: white; padding: 2.5rem; border-radius: 0.625rem; box-shadow: 0 0.125rem 0.625rem rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; font-size: 2.5rem; margin-bottom: 0.625rem; }
+        .subtitle { color: #7f8c8d; font-size: 1.1rem; }
+        .stats { display: flex; justify-content: center; gap: 1.875rem; margin-top: 1.25rem; }
+        .stat { text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #3498db; }
+        .stat-label { color: #7f8c8d; font-size: 0.9rem; }
+        .test-summary { background: #f8f9fa; padding: 0.9375rem 1.25rem; border-radius: 0.625rem; margin-top: 1.25rem; border-left: 0.25rem solid #3498db; }
+        .test-summary-title { font-weight: 600; color: #2c3e50; font-size: 0.95rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .test-summary-stats { display: flex; gap: 1.25rem; font-size: 0.875rem; flex-wrap: wrap; }
+        .test-stat { display: flex; align-items: center; gap: 0.375rem; }
+        .test-stat.passed { color: #27ae60; }
+        .test-stat.failed { color: #e74c3c; }
+        .test-stat.skipped { color: #95a5a6; }
+        .test-stat-icon { font-size: 1rem; }
+        .test-timestamp { color: #7f8c8d; font-size: 0.8rem; margin-top: 0.5rem; }
+        .status-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: 0.9375rem; font-size: 0.75rem; font-weight: 500; }
+        .status-badge.passed { background: #d4edda; color: #155724; }
+        .status-badge.failed { background: #f8d7da; color: #721c24; }
+        .status-badge.skipped { background: #e2e3e5; color: #383d41; }
+        .status-badge.untested { background: #fff3cd; color: #856404; }
+        .filters { background: white; padding: 1.25rem; border-radius: 0.625rem; margin-bottom: 1.875rem; box-shadow: 0 0.125rem 0.625rem rgba(0,0,0,0.1); }
+        .filter-group { display: flex; gap: 0.9375rem; align-items: center; flex-wrap: wrap; }
+        .filter-group label { font-weight: 500; color: #2c3e50; }
+        input, select { padding: 0.5rem 0.75rem; border: 0.125rem solid #e0e6ed; border-radius: 0.3125rem; font-size: 0.875rem; }
+        input:focus, select:focus { outline: none; border-color: #3498db; }
+        .templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(21.875rem, 1fr)); gap: 1.5625rem; }
+        .template-card { background: white; border-radius: 0.625rem; overflow: hidden; box-shadow: 0 0.125rem 0.625rem rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
+        .template-card:hover { transform: translateY(-0.125rem); box-shadow: 0 0.25rem 1.25rem rgba(0,0,0,0.15); }
+        .template-header { padding: 1.25rem; border-bottom: 0.0625rem solid #e0e6ed; }
+        .template-title { font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem; }
+        .template-meta { display: flex; gap: 0.625rem; align-items: center; margin-bottom: 0.625rem; }
+        .template-category { background: #3498db; color: white; padding: 0.25rem 0.5rem; border-radius: 0.9375rem; font-size: 0.8rem; font-weight: 500; }
+        .template-files { background: #ecf0f1; color: #7f8c8d; padding: 0.25rem 0.5rem; border-radius: 0.9375rem; font-size: 0.8rem; }
+        .template-description { color: #7f8c8d; line-height: 1.5; }
+        .template-actions { padding: 1.25rem; background: #f8f9fa; }
+        .btn { display: inline-block; padding: 0.625rem 1.25rem; background: #3498db; color: white; text-decoration: none; border-radius: 0.3125rem; font-weight: 500; transition: background 0.2s; cursor: pointer; border: none; }
+        .btn:hover { background: #2980b9; }
+        .btn-secondary { background: #95a5a6; }
+        .btn-secondary:hover { background: #7f8c8d; }
+        .btn-disabled { background: #d5d8dc; color: #95a5a6; cursor: not-allowed; pointer-events: none; }
+        .template-skipped { opacity: 0.7; }
+        .template-skipped .template-title { color: #7f8c8d; }
+        .template-skipped .template-description { color: #95a5a6; }
+        .no-results { text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 3.75rem; }
+        .api-docs { background: white; padding: 1.875rem; border-radius: 0.625rem; margin-top: 2.5rem; box-shadow: 0 0.125rem 0.625rem rgba(0,0,0,0.1); }
+        .api-title { font-size: 1.5rem; color: #2c3e50; margin-bottom: 1.25rem; }
+        .endpoint { background: #f8f9fa; padding: 0.9375rem; border-radius: 0.3125rem; margin-bottom: 0.9375rem; font-family: 'Monaco', 'Menlo', monospace; }
+        .method { background: #27ae60; color: white; padding: 0.125rem 0.5rem; border-radius: 0.1875rem; font-size: 0.8rem; margin-right: 0.625rem; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(0.25rem);
+            z-index: 1000;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.25rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(1.875rem);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-container {
+            background: white;
+            border-radius: 0.75rem;
+            max-width: 87.5rem;
+            width: 100%;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 1.25rem 3.75rem rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .modal-header {
+            padding: 1.5625rem 1.875rem;
+            border-bottom: 0.0625rem solid #e0e6ed;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .modal-header-content {
+            display: flex;
+            align-items: center;
+            gap: 0.9375rem;
+        }
+
+        .modal-icon {
+            font-size: 2.5rem;
+        }
+
+        .modal-title-group h2 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin-bottom: 0.3125rem;
+        }
+
+        .modal-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .modal-tag {
+            background: #3498db;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.9375rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #7f8c8d;
+            cursor: pointer;
+            padding: 0.3125rem 0.625rem;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #2c3e50;
+        }
+
+        .modal-tabs {
+            display: flex;
+            padding: 0 1.875rem;
+            background: #f8f9fa;
+            border-bottom: 0.125rem solid #e0e6ed;
+            flex-shrink: 0;
+        }
+
+        .modal-tab {
+            padding: 0.9375rem 1.5625rem;
+            background: none;
+            border: none;
+            color: #7f8c8d;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .modal-tab:hover {
+            color: #2c3e50;
+        }
+
+        .modal-tab.active {
+            color: #3498db;
+        }
+
+        .modal-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -0.125rem;
+            left: 0;
+            right: 0;
+            height: 0.125rem;
+            background: #3498db;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.875rem;
+            min-height: 0;
+        }
+
+        .tab-content {
+            display: none;
+            height: 100%;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Overview Tab */
+        .overview-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.875rem;
+            height: 100%;
+        }
+
+        .readme-section, .features-section {
+            background: #f8f9fa;
+            padding: 1.5625rem;
+            border-radius: 0.625rem;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 0.9375rem;
+            font-weight: 600;
+        }
+
+        .readme-content {
+            color: #333;
+            line-height: 1.8;
+        }
+
+        .readme-content h1 { font-size: 1.8rem; margin: 1.25rem 0 0.625rem; color: #2c3e50; }
+        .readme-content h2 { font-size: 1.5rem; margin: 1.125rem 0 0.625rem; color: #2c3e50; }
+        .readme-content h3 { font-size: 1.3rem; margin: 0.9375rem 0 0.5rem; color: #34495e; }
+        .readme-content p { margin: 0.625rem 0; }
+        .readme-content ul, .readme-content ol { margin: 0.625rem 0 0.625rem 1.5625rem; }
+        .readme-content li { margin: 0.3125rem 0; }
+        .readme-content code { background: #2c3e50; color: #ecf0f1; padding: 0.125rem 0.375rem; border-radius: 0.1875rem; font-size: 0.9em; }
+        .readme-content pre { background: #2c3e50; color: #ecf0f1; padding: 0.9375rem; border-radius: 0.3125rem; overflow-x: auto; margin: 0.9375rem 0; }
+        .readme-content pre code { background: none; padding: 0; }
+        .readme-content blockquote { border-left: 0.25rem solid #3498db; padding-left: 0.9375rem; margin: 0.9375rem 0; color: #555; }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            margin-bottom: 0.75rem;
+            color: #555;
+        }
+
+        .feature-icon {
+            color: #27ae60;
+            font-size: 1.2rem;
+        }
+
+        /* Files Tab */
+        .files-content {
+            display: grid;
+            grid-template-columns: 18.75rem 1fr;
+            gap: 1.25rem;
+            height: 100%;
+        }
+
+        .file-list {
+            background: #f8f9fa;
+            border-radius: 0.625rem;
+            overflow-y: auto;
+        }
+
+        .file-list-header {
+            padding: 0.9375rem;
+            border-bottom: 0.0625rem solid #e0e6ed;
+            font-weight: 600;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+        }
+
+        .file-item {
+            padding: 0.75rem 0.9375rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 0.1875rem solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+        }
+
+        .file-item:hover {
+            background: #e8ecef;
+        }
+
+        .file-item.active {
+            background: rgba(52, 152, 219, 0.1);
+            border-left-color: #3498db;
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .file-icon {
+            font-size: 1.1rem;
+        }
+
+        .file-viewer {
+            background: #f8f9fa;
+            border-radius: 0.625rem;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .file-viewer-header {
+            padding: 0.9375rem;
+            border-bottom: 0.0625rem solid #e0e6ed;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #555;
+            background: #fff;
+            font-weight: 500;
+        }
+
+        .file-viewer-content {
+            flex: 1;
+            overflow: auto;
+            background: #1e1e1e;
+        }
+
+        .file-viewer-content pre {
+            margin: 0;
+            padding: 1.25rem;
+        }
+
+        .file-viewer-content code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Security Tab */
+        .security-content {
+            max-width: 56.25rem;
+        }
+
+        .security-alert {
+            background: #e3f2fd;
+            border-left: 0.25rem solid #2196f3;
+            padding: 1.25rem;
+            border-radius: 0.3125rem;
+            margin-bottom: 1.875rem;
+        }
+
+        .security-alert-title {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .security-alert-desc {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .security-section {
+            margin-bottom: 1.875rem;
+        }
+
+        .security-section h3 {
+            color: #2c3e50;
+            margin-bottom: 0.9375rem;
+            font-size: 1.3rem;
+        }
+
+        .security-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .security-section li {
+            padding: 0.625rem 0;
+            padding-left: 1.875rem;
+            position: relative;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .security-section li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* Tests Tab */
+        .tests-content {
+            max-width: 56.25rem;
+        }
+
+        .test-result-card {
+            background: #f8f9fa;
+            border-radius: 0.625rem;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .test-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .test-overall-status {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .test-overall-status.passed {
+            color: #27ae60;
+        }
+
+        .test-overall-status.failed {
+            color: #e74c3c;
+        }
+
+        .test-phases {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
+            gap: 0.75rem;
+        }
+
+        .test-phase {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 0.3125rem;
+            border-left: 0.25rem solid #95a5a6;
+        }
+
+        .test-phase.passed {
+            border-left-color: #27ae60;
+        }
+
+        .test-phase.failed {
+            border-left-color: #e74c3c;
+        }
+
+        .test-phase-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+        }
+
+        .test-phase-status {
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .test-phase-status.passed {
+            color: #27ae60;
+        }
+
+        .test-phase-status.failed {
+            color: #e74c3c;
+        }
+
+        .test-phase-duration {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-top: 0.25rem;
+        }
+
+        .test-error-message {
+            background: #fff3cd;
+            border-left: 0.25rem solid #ffc107;
+            padding: 0.75rem;
+            border-radius: 0.3125rem;
+            margin-top: 0.75rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+
+        .no-test-data {
+            text-align: center;
+            padding: 2.5rem;
+            color: #7f8c8d;
+        }
+
+        .no-test-data-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3.75rem;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 0.25rem solid #f3f3f3;
+            border-top: 0.25rem solid #3498db;
+            border-radius: 50%;
+            width: 3.125rem;
+            height: 3.125rem;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.25rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 64em) {
+            .overview-content {
+                grid-template-columns: 1fr;
+            }
+
+            .files-content {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .file-list {
+                max-height: 12.5rem;
+            }
+
+            .file-viewer {
+                min-height: 25rem;
+            }
+        }
+
+        @media (max-width: 48em) {
+            .container {
+                padding: 1rem;
+            }
+
+            header {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .templates-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .modal-container {
+                height: 95vh;
+                margin: 0.625rem;
+                border-radius: 0.5rem;
+            }
+
+            .modal-header {
+                padding: 1.25rem;
+            }
+
+            .modal-header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.625rem;
+            }
+
+            .modal-icon {
+                font-size: 2rem;
+            }
+
+            .modal-title-group h2 {
+                font-size: 1.5rem;
+            }
+
+            .modal-body {
+                padding: 1.25rem;
+            }
+
+            .modal-tabs {
+                overflow-x: auto;
+                padding: 0 1.25rem;
+            }
+
+            .modal-tab {
+                padding: 0.75rem 0.9375rem;
+                font-size: 0.9rem;
+                white-space: nowrap;
+            }
+
+            .overview-content {
+                gap: 1.25rem;
+            }
+
+            .files-content {
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Rediacc Repository Template Catalog</h1>
+            <p class="subtitle">Discover and download infrastructure templates</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number" id="total-templates">0</div>
+                    <div class="stat-label">Templates</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="total-categories">0</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+            </div>
+            <div class="test-summary" id="test-summary" style="display: none;">
+                <div class="test-summary-title">
+                    <span>🧪</span>
+                    <span>Latest Validation Results</span>
+                </div>
+                <div class="test-summary-stats">
+                    <div class="test-stat passed">
+                        <span class="test-stat-icon">✅</span>
+                        <span><strong id="test-passed">0</strong> Passed</span>
+                    </div>
+                    <div class="test-stat failed">
+                        <span class="test-stat-icon">❌</span>
+                        <span><strong id="test-failed">0</strong> Failed</span>
+                    </div>
+                    <div class="test-stat skipped">
+                        <span class="test-stat-icon">⏭️</span>
+                        <span><strong id="test-skipped">0</strong> Skipped</span>
+                    </div>
+                    <div class="test-stat">
+                        <span class="test-stat-icon">⏱️</span>
+                        <span id="test-duration">0s</span>
+                    </div>
+                </div>
+                <div class="test-timestamp" id="test-timestamp"></div>
+            </div>
+        </header>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>Search:</label>
+                <input type="text" id="search" placeholder="Search templates...">
+                <label>Category:</label>
+                <select id="category-filter">
+                    <option value="">All Categories</option>
+                </select>
+                <label>Docker:</label>
+                <select id="docker-filter">
+                    <option value="">All Templates</option>
+                    <option value="true">With Docker</option>
+                    <option value="false">Without Docker</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="templates-container">
+            <div class="templates-grid" id="templates-grid"></div>
+            <div class="no-results" id="no-results" style="display: none;">
+                No templates found matching your criteria.
+            </div>
+        </div>
+
+        <div class="api-docs">
+            <h2 class="api-title">API Endpoints</h2>
+            <div class="endpoint">
+                <span class="method">GET</span> /templates.json - Complete templates index
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span> /templates/{template-id}.json - Individual template
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span> /configs/pricing.json - Pricing configuration
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span> /configs/services.json - Services configuration
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Details Modal -->
+    <div class="modal-overlay" id="template-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-header-content">
+                    <div class="modal-icon">📦</div>
+                    <div class="modal-title-group">
+                        <h2 id="modal-template-name">Template Name</h2>
+                        <div class="modal-tags" id="modal-tags"></div>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-tab="overview" onclick="switchTab('overview')">
+                    📄 Overview
+                </button>
+                <button class="modal-tab" data-tab="files" onclick="switchTab('files')">
+                    📁 Files
+                </button>
+                <button class="modal-tab" data-tab="tests" onclick="switchTab('tests')">
+                    🧪 Tests
+                </button>
+                <button class="modal-tab" data-tab="security" onclick="switchTab('security')">
+                    🔒 Security
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Overview Tab -->
+                <div class="tab-content active" id="tab-overview">
+                    <div class="overview-content">
+                        <div class="readme-section">
+                            <h3 class="section-title">Description</h3>
+                            <div class="readme-content" id="readme-content">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="features-section">
+                            <h3 class="section-title">Features</h3>
+                            <ul class="feature-list" id="features-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Files Tab -->
+                <div class="tab-content" id="tab-files">
+                    <div class="files-content">
+                        <div class="file-list">
+                            <div class="file-list-header">Files</div>
+                            <div id="file-list-items"></div>
+                        </div>
+                        <div class="file-viewer">
+                            <div class="file-viewer-header" id="current-file-name">Select a file</div>
+                            <div class="file-viewer-content" id="file-content">
+                                <pre><code>Select a file to view its contents</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tests Tab -->
+                <div class="tab-content" id="tab-tests">
+                    <div class="tests-content" id="tests-content">
+                        <div class="no-test-data">
+                            <div class="no-test-data-icon">🧪</div>
+                            <p>No test results available for this template</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Tab -->
+                <div class="tab-content" id="tab-security">
+                    <div class="security-content">
+                        <div class="security-alert">
+                            <div class="security-alert-title">Security Review</div>
+                            <div class="security-alert-desc">
+                                Please review the template files for security considerations before deployment.
+                                Always verify configurations and credentials are properly secured.
+                            </div>
+                        </div>
+
+                        <div class="security-section">
+                            <h3>Best Practices</h3>
+                            <ul>
+                                <li>Review all configuration files before deployment</li>
+                                <li>Update default passwords and credentials immediately</li>
+                                <li>Ensure proper network security configuration</li>
+                                <li>Keep software components up to date with security patches</li>
+                                <li>Use environment variables for sensitive data</li>
+                                <li>Enable SSL/TLS for production deployments</li>
+                            </ul>
+                        </div>
+
+                        <div class="security-section">
+                            <h3>Container Security</h3>
+                            <ul>
+                                <li>Always review container configurations</li>
+                                <li>Use official images from trusted sources</li>
+                                <li>Implement proper access controls</li>
+                                <li>Regular security audits and updates</li>
+                                <li>Monitor container logs for suspicious activity</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allTemplates = [];
+        let filteredTemplates = [];
+        let currentTemplate = null;
+        let selectedFileIndex = 0;
+        let testResults = null;
+
+        // Initialize marked and highlight.js
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+        }
+
+        // Load test results
+        fetch('test-results.json')
+            .then(response => response.json())
+            .then(data => {
+                testResults = data;
+                updateTestSummary(data);
+            })
+            .catch(error => {
+                console.log('Test results not available:', error);
+                testResults = { summary: { total: 0, passed: 0, failed: 0, skipped: 0 }, results: [] };
+            });
+
+        // Update test summary in header
+        function updateTestSummary(data) {
+            if (!data || !data.summary || data.summary.total === 0) {
+                return;
+            }
+
+            const summary = data.summary;
+            document.getElementById('test-summary').style.display = 'block';
+            document.getElementById('test-passed').textContent = summary.passed;
+            document.getElementById('test-failed').textContent = summary.failed;
+            document.getElementById('test-skipped').textContent = summary.skipped;
+            document.getElementById('test-duration').textContent = summary.duration;
+
+            if (summary.timestamp) {
+                const timestamp = new Date(summary.timestamp);
+                const timeAgo = getTimeAgo(timestamp);
+                document.getElementById('test-timestamp').textContent = `Last run: ${timeAgo}`;
+            }
+        }
+
+        // Get human-readable time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Get test status for a template
+        function getTemplateTestStatus(templateId) {
+            if (!testResults || !testResults.results) {
+                return null;
+            }
+
+            // Match by template ID (e.g., "databases_postgresql" or "databases/postgresql")
+            const normalizedId = templateId.replace('_', '/');
+            const testResult = testResults.results.find(r => {
+                const normalizedName = r.name.replace('_', '/');
+                return normalizedName === normalizedId || r.name === templateId;
+            });
+
+            if (!testResult) {
+                return { status: 'untested', icon: '⚪', label: 'Not Tested' };
+            }
+
+            if (testResult.overall === 'passed') {
+                return { status: 'passed', icon: '✅', label: 'Passed' };
+            } else if (testResult.overall === 'failed') {
+                return { status: 'failed', icon: '❌', label: 'Failed' };
+            } else if (testResult.overall === 'skipped') {
+                return { status: 'skipped', icon: '⏭️', label: 'Skipped' };
+            }
+
+            return { status: 'untested', icon: '⚪', label: 'Not Tested' };
+        }
+
+        // Render test results in modal
+        function renderTestResults(templateId) {
+            const testsContent = document.getElementById('tests-content');
+
+            if (!testResults || !testResults.results) {
+                testsContent.innerHTML = `
+                    <div class="no-test-data">
+                        <div class="no-test-data-icon">🧪</div>
+                        <p>Test results are not available yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const normalizedId = templateId.replace('_', '/');
+            const testResult = testResults.results.find(r => {
+                const normalizedName = r.name.replace('_', '/');
+                return normalizedName === normalizedId || r.name === templateId;
+            });
+
+            if (!testResult) {
+                testsContent.innerHTML = `
+                    <div class="no-test-data">
+                        <div class="no-test-data-icon">🧪</div>
+                        <p>No test results available for this template</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">This template has not been tested yet in CI.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const statusClass = testResult.overall || 'unknown';
+            const statusIcon = statusClass === 'passed' ? '✅' : statusClass === 'failed' ? '❌' : '⏭️';
+            const statusLabel = statusClass === 'passed' ? 'All Tests Passed' : statusClass === 'failed' ? 'Tests Failed' : 'Tests Skipped';
+
+            let phasesHtml = '';
+            const phases = ['prep', 'up', 'health', 'down', 'cleanup'];
+
+            phases.forEach(phase => {
+                if (testResult[phase]) {
+                    const phaseData = testResult[phase];
+                    const phaseStatus = phaseData.status || 'unknown';
+                    const phaseIcon = phaseStatus === 'passed' ? '✅' : '❌';
+
+                    phasesHtml += `
+                        <div class="test-phase ${phaseStatus}">
+                            <div class="test-phase-name">${phase.charAt(0).toUpperCase() + phase.slice(1)}</div>
+                            <div class="test-phase-status ${phaseStatus}">
+                                <span>${phaseIcon}</span>
+                                <span>${phaseStatus}</span>
+                            </div>
+                            ${phaseData.duration ? `<div class="test-phase-duration">${phaseData.duration}</div>` : ''}
+                        </div>
+                    `;
+                }
+            });
+
+            let errorHtml = '';
+            if (testResult.error) {
+                errorHtml = `<div class="test-error-message">${escapeHtml(testResult.error)}</div>`;
+            }
+
+            testsContent.innerHTML = `
+                <div class="test-result-card">
+                    <div class="test-result-header">
+                        <div class="test-overall-status ${statusClass}">
+                            ${statusIcon} ${statusLabel}
+                        </div>
+                        <div style="font-size: 0.85rem; color: #7f8c8d;">
+                            Total: ${testResult.duration || 'N/A'}
+                        </div>
+                    </div>
+                    <div class="test-phases">
+                        ${phasesHtml}
+                    </div>
+                    ${errorHtml}
+                </div>
+            `;
+        }
+
+        // Load templates data
+        fetch('templates.json')
+            .then(response => response.json())
+            .then(data => {
+                allTemplates = data.templates;
+                filteredTemplates = [...allTemplates];
+
+                // Update stats
+                document.getElementById('total-templates').textContent = data.total_templates;
+                document.getElementById('total-categories').textContent = data.categories.length;
+
+                // Populate category filter
+                const categorySelect = document.getElementById('category-filter');
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                    categorySelect.appendChild(option);
+                });
+
+                // Initial render
+                renderTemplates();
+
+                // Setup event listeners
+                setupFilters();
+            })
+            .catch(error => console.error('Error loading templates:', error));
+
+        function renderTemplates() {
+            const grid = document.getElementById('templates-grid');
+            const noResults = document.getElementById('no-results');
+
+            if (filteredTemplates.length === 0) {
+                grid.style.display = 'none';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            noResults.style.display = 'none';
+
+            grid.innerHTML = filteredTemplates.map(template => {
+                // Check if template is skipped (from catalog status)
+                let statusBadge = '';
+                if (template.status === 'skipped') {
+                    statusBadge = '<span class="status-badge skipped">⏭️ Skipped</span>';
+                } else {
+                    // Otherwise check test results
+                    const testStatus = getTemplateTestStatus(template.id);
+                    statusBadge = testStatus ? `<span class="status-badge ${testStatus.status}">${testStatus.icon} ${testStatus.label}</span>` : '';
+                }
+
+                return `
+                <div class="template-card ${template.status === 'skipped' ? 'template-skipped' : ''}">
+                    <div class="template-header">
+                        <h3 class="template-title">${template.name}</h3>
+                        <div class="template-meta">
+                            <span class="template-category">${template.category}</span>
+                            <span class="template-files">${template.file_count} files</span>
+                            ${template.has_docker ? '<span class="template-files">Docker</span>' : ''}
+                            ${statusBadge}
+                        </div>
+                        <p class="template-description">${template.description}</p>
+                    </div>
+                    <div class="template-actions">
+                        <a href="${template.download_url}" class="btn ${template.status === 'skipped' ? 'btn-disabled' : ''}">Download JSON</a>
+                        <button onclick="viewTemplate('${template.id}')" class="btn btn-secondary">View Details</button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function setupFilters() {
+            const searchInput = document.getElementById('search');
+            const categoryFilter = document.getElementById('category-filter');
+            const dockerFilter = document.getElementById('docker-filter');
+
+            function applyFilters() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedCategory = categoryFilter.value;
+                const dockerRequirement = dockerFilter.value;
+
+                filteredTemplates = allTemplates.filter(template => {
+                    const matchesSearch = template.name.toLowerCase().includes(searchTerm) ||
+                                        template.description.toLowerCase().includes(searchTerm) ||
+                                        template.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+
+                    const matchesCategory = !selectedCategory || template.category === selectedCategory;
+
+                    const matchesDocker = !dockerRequirement ||
+                                        (dockerRequirement === 'true' && template.has_docker) ||
+                                        (dockerRequirement === 'false' && !template.has_docker);
+
+                    return matchesSearch && matchesCategory && matchesDocker;
+                });
+
+                renderTemplates();
+            }
+
+            searchInput.addEventListener('input', applyFilters);
+            categoryFilter.addEventListener('change', applyFilters);
+            dockerFilter.addEventListener('change', applyFilters);
+        }
+
+        function viewTemplate(templateId) {
+            // Check if template is skipped
+            const template = allTemplates.find(t => t.id === templateId);
+            if (template && template.status === 'skipped') {
+                // Show skipped message instead of loading
+                const modal = document.getElementById('template-modal');
+                const readmeContent = document.getElementById('readme-content');
+                const featuresList = document.getElementById('features-list');
+                const fileListItems = document.getElementById('file-list-items');
+
+                // Update modal header
+                document.getElementById('modal-template-name').textContent = template.name;
+                const tagsContainer = document.getElementById('modal-tags');
+                tagsContainer.innerHTML = '<span class="modal-tag" style="background: #95a5a6;">⏭️ Skipped</span>';
+
+                // Show skipped message
+                readmeContent.innerHTML = `
+                    <div style="padding: 2rem; text-align: center;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">⏭️</div>
+                        <h3 style="color: #2c3e50; margin-bottom: 1rem;">Template Skipped</h3>
+                        <p style="color: #7f8c8d; line-height: 1.6;">
+                            This template is currently excluded from automated testing and deployment.
+                            It may be temporarily unavailable or undergoing maintenance.
+                        </p>
+                        ${template.readme ? `<div style="margin-top: 2rem; text-align: left;">${marked.parse(template.readme)}</div>` : ''}
+                    </div>
+                `;
+                featuresList.innerHTML = '<li class="feature-item"><span class="feature-icon">ℹ️</span><span>Template is currently skipped</span></li>';
+                fileListItems.innerHTML = '<div style="padding: 1.25rem; text-align: center; color: #7f8c8d;">Files not available for skipped templates</div>';
+
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                return;
+            }
+
+            // Show loading state
+            const modal = document.getElementById('template-modal');
+            const readmeContent = document.getElementById('readme-content');
+            const featuresList = document.getElementById('features-list');
+            const fileListItems = document.getElementById('file-list-items');
+
+            readmeContent.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p>Loading template details...</p></div>';
+            featuresList.innerHTML = '';
+            fileListItems.innerHTML = '';
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Fetch template details
+            fetch(`templates/${templateId}.json`)
+                .then(response => response.json())
+                .then(data => {
+                    currentTemplate = data;
+                    selectedFileIndex = 0;
+
+                    // Update modal header
+                    document.getElementById('modal-template-name').textContent = data.name;
+
+                    // Update tags
+                    const tagsContainer = document.getElementById('modal-tags');
+                    tagsContainer.innerHTML = '';
+                    if (data.category) {
+                        const categoryTag = document.createElement('span');
+                        categoryTag.className = 'modal-tag';
+                        categoryTag.textContent = data.category;
+                        tagsContainer.appendChild(categoryTag);
+                    }
+                    if (data.tags && data.tags.length > 0) {
+                        // Filter out category from tags to avoid duplication
+                        const uniqueTags = data.tags.filter(tag => tag.toLowerCase() !== (data.category || '').toLowerCase());
+                        uniqueTags.slice(0, 3).forEach(tag => {
+                            const tagEl = document.createElement('span');
+                            tagEl.className = 'modal-tag';
+                            tagEl.style.background = '#95a5a6';
+                            tagEl.textContent = tag;
+                            tagsContainer.appendChild(tagEl);
+                        });
+                    }
+
+                    // Render README
+                    if (data.readme && typeof marked !== 'undefined') {
+                        readmeContent.innerHTML = marked.parse(data.readme);
+                    } else {
+                        readmeContent.textContent = data.readme || 'No description available.';
+                    }
+
+                    // Render features/tags
+                    if (data.tags && data.tags.length > 0) {
+                        featuresList.innerHTML = data.tags.map(tag => `
+                            <li class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span>${tag}</span>
+                            </li>
+                        `).join('');
+                    } else {
+                        featuresList.innerHTML = '<li class="feature-item"><span class="feature-icon">ℹ</span><span>No features listed</span></li>';
+                    }
+
+                    // Render file list
+                    if (data.files && data.files.length > 0) {
+                        fileListItems.innerHTML = data.files.map((file, index) => `
+                            <div class="file-item ${index === 0 ? 'active' : ''}" onclick="selectFile(${index})">
+                                <span class="file-icon">📄</span>
+                                <span>${file.path || file.name}</span>
+                            </div>
+                        `).join('');
+
+                        // Display first file by default
+                        selectFile(0);
+                    } else {
+                        fileListItems.innerHTML = '<div style="padding: 20px; text-align: center; color: #7f8c8d;">No files available</div>';
+                    }
+
+                    // Render test results for this template
+                    renderTestResults(templateId);
+                })
+                .catch(error => {
+                    console.error('Error loading template:', error);
+                    readmeContent.innerHTML = '<p style="color: #e74c3c;">Failed to load template details. Please try again.</p>';
+                });
+        }
+
+        function selectFile(index) {
+            if (!currentTemplate || !currentTemplate.files || !currentTemplate.files[index]) {
+                return;
+            }
+
+            selectedFileIndex = index;
+            const file = currentTemplate.files[index];
+
+            // Update active file in list
+            document.querySelectorAll('.file-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+
+            // Update file viewer header
+            document.getElementById('current-file-name').textContent = file.path || file.name;
+
+            // Update file content with syntax highlighting
+            const fileContent = document.getElementById('file-content');
+            const language = detectLanguage(file.name);
+
+            if (language === 'markdown' && typeof marked !== 'undefined') {
+                // Render markdown
+                fileContent.innerHTML = `<div style="padding: 20px; background: white; color: #333;">${marked.parse(file.content)}</div>`;
+            } else if (typeof hljs !== 'undefined') {
+                // Syntax highlighting
+                try {
+                    const highlighted = hljs.highlightAuto(file.content, [language]).value;
+                    fileContent.innerHTML = `<pre><code class="hljs">${highlighted}</code></pre>`;
+                } catch (e) {
+                    fileContent.innerHTML = `<pre><code>${escapeHtml(file.content)}</code></pre>`;
+                }
+            } else {
+                fileContent.innerHTML = `<pre><code>${escapeHtml(file.content)}</code></pre>`;
+            }
+        }
+
+        function detectLanguage(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const languageMap = {
+                'yaml': 'yaml',
+                'yml': 'yaml',
+                'json': 'json',
+                'sh': 'bash',
+                'bash': 'bash',
+                'env': 'bash',
+                'md': 'markdown',
+                'py': 'python',
+                'js': 'javascript',
+                'ts': 'typescript',
+                'jsx': 'javascript',
+                'tsx': 'typescript',
+                'html': 'html',
+                'css': 'css',
+                'sql': 'sql',
+                'xml': 'xml',
+                'conf': 'nginx',
+                'config': 'ini'
+            };
+            return languageMap[ext] || 'plaintext';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.modal-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+
+            // Update tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `tab-${tabName}`);
+            });
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('template-modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            currentTemplate = null;
+            selectedFileIndex = 0;
+
+            // Reset to overview tab
+            switchTab('overview');
+        }
+
+        // Close modal on overlay click
+        document.getElementById('template-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

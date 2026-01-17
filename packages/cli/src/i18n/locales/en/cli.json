@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "Activation failed",
+    "tfaVerificationFailed": "TFA verification failed",
     "authFailed": "Authentication failed",
     "authRequired": "Authentication required. Run: rdc login",
     "bridgeRequired": "Bridge name required. Use --bridge or set context.",

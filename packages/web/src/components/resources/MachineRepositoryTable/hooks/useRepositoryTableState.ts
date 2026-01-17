@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import { isValidGuid } from '@/platform/utils/formValidation';
 import type { Machine } from '@/types';
 import {
-  isListResult,
   getContainers,
   getServices,
+  isListResult,
 } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';

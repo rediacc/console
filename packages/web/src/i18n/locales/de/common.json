@@ -181,8 +181,8 @@
     "tryAgain": "Versuchen Sie es erneut"
   },
   "errors": {
-    "somethingWentWrong": "Etwas ist schief gelaufen",
-    "schemaValidationFailed": "Datensynchronisierungsproblem erkannt. Bitte aktualisieren Sie die Seite oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht."
+    "schemaValidationFailed": "Datensynchronisierungsproblem erkannt. Bitte aktualisieren Sie die Seite oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht.",
+    "somethingWentWrong": "Etwas ist schief gelaufen"
   },
   "export": {
     "label": "Exportieren",
@@ -376,8 +376,9 @@
     "showingRecords": "Es werden Datensätze {{start}}–{{end}} von {{total}} angezeigt"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} mehr",
-    "selectTeams": "Wählen Sie Teams..."
+    "selectTeam": "Wählen Sie Team...",
+    "selectTeams": "Wählen Sie Teams...",
+    "moreTeams": "+{{count}} mehr"
   },
   "terminal": {
     "terminal": "Terminal",

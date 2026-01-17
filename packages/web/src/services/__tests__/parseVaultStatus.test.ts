@@ -117,17 +117,13 @@ describe('parseVaultStatus', () => {
   });
 
   describe('error handling', () => {
-    // eslint-disable-next-line custom/require-translation
     it('should return error for jq: prefix', () => {
-      // eslint-disable-next-line custom/require-translation
       const result = parseVaultStatus('jq: error: invalid json');
       expect(result.error).toBeDefined();
       expect(result.status).toBe('unknown');
     });
 
-    // eslint-disable-next-line custom/require-translation
     it('should return error for error: prefix', () => {
-      // eslint-disable-next-line custom/require-translation
       const result = parseVaultStatus('error: something went wrong');
       expect(result.error).toBeDefined();
       expect(result.status).toBe('unknown');
