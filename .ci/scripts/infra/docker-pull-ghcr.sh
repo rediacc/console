@@ -3,7 +3,7 @@
 # Usage: docker-pull-ghcr.sh --image <image> [options]
 #
 # Authenticates with GHCR and pulls the specified image.
-# Cleans up credentials after pull for security.
+# Logs out of GHCR after pull (preserves other Docker credentials).
 #
 # Options:
 #   --image     Full image path (required, e.g., ghcr.io/org/repo:tag)
@@ -53,8 +53,7 @@ PULL_ARGS=()
 [[ "$QUIET" == "true" ]] && PULL_ARGS+=("--quiet")
 docker pull "${PULL_ARGS[@]}" "$IMAGE"
 
-log_step "Cleaning up credentials..."
+log_step "Cleaning up GHCR credentials..."
 docker logout ghcr.io
-rm -f ~/.docker/config.json 2>/dev/null || true
 
 log_info "Successfully pulled $IMAGE"
