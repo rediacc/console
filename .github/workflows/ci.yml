@@ -648,7 +648,7 @@ jobs:
       - name: Pull Renet Docker Image
         run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Provision Test VMs
