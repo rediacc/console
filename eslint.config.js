@@ -33,6 +33,9 @@ export default tseslint.config(
       'node_modules/',
       '*.config.js',
       '*.config.ts',
+      '*.config.cjs',
+      'packages/web/postcss.config.cjs',
+      'packages/web/tailwind.config.cjs',
       'packages/web/vite.config.ts',
       'packages/cli/bundle.mjs',
       // Ignore .d.ts files (generated type declarations)

@@ -378,9 +378,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     if (typeof entry.value === 'number') {
       return (
         <Input
-          className="w-full"
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ maxWidth: 240 }}
+          className="w-full max-w-[240px]"
           value={String(entry.value)}
           onChange={(event) =>
             handleUpdateEntry(index, { value: Number(event.currentTarget.value) })
@@ -444,9 +442,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           >
             <Flex align="center" wrap>
               <Flex
-                className="max-w-full"
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ flex: '1 1 60%', minWidth: 240 }}
+                className="max-w-full flex-[1_1_60%] min-w-[240px]"
               >
                 <Input
                   className="w-full"

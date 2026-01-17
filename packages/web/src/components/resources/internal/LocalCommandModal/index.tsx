@@ -310,7 +310,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         ]}
       />
 
-      <Flex vertical className="w-full gap-sm">
+      <Flex vertical className="w-full gap-2">
         <Flex align="center" justify="space-between" wrap>
           <Typography.Text strong>
             {t('resources:localCommandBuilder.generatedCommand')}:
@@ -327,7 +327,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         </Flex>
 
         {tokenError && (
-          <Flex vertical className="gap-sm">
+          <Flex vertical className="gap-2">
             <Typography.Text type="danger">
               {t('resources:localCommandBuilder.tokenGenerationFailed')}: {tokenError}
             </Typography.Text>

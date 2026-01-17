@@ -17,20 +17,23 @@ interface BlockDevicesSectionProps {
 }
 
 export const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t }) => (
-  <Flex vertical>
-    <DetailPanelDivider orientationMargin="left">
-      <HddOutlined />
-      {t('resources:repositories.blockDevices')}
+  <Flex vertical className="gap-4 !mb-6">
+    <DetailPanelDivider orientation="center" className="[&_.ant-divider-inner-text]:px-0">
+      <Flex align="center" className="gap-2">
+        <HddOutlined />
+        {t('resources:repositories.blockDevices')}
+      </Flex>
     </DetailPanelDivider>
 
     <List
       dataSource={devices}
       data-testid="vault-status-block-devices-list"
+      className="[&_.ant-list-items]:flex [&_.ant-list-items]:flex-col [&_.ant-list-items]:gap-4 [&_.ant-list-item]:p-0 [&_.ant-list-item]:border-0"
       renderItem={
         ((device: BlockDevice) => (
           <Card size="small" data-testid={`vault-status-block-device-${device.name}`}>
             <Flex justify="space-between" align="center">
-              <DetailPanelTitleGroup>
+              <DetailPanelTitleGroup className="gap-2">
                 <HddOutlined />
                 <DetailPanelFieldStrongValue
                   data-testid={`vault-status-device-path-${device.name}`}
@@ -38,7 +41,7 @@ export const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ device
                   {device.path}
                 </DetailPanelFieldStrongValue>
               </DetailPanelTitleGroup>
-              <Flex>
+              <Flex className="gap-2">
                 <Tag bordered={false} data-testid={`vault-status-device-type-${device.name}`}>
                   {device.type}
                 </Tag>
@@ -48,7 +51,7 @@ export const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ device
               </Flex>
             </Flex>
 
-            <Flex vertical>
+            <Flex vertical className="gap-2">
               {device.model && device.model !== 'Unknown' && (
                 <Flex justify="space-between" align="center">
                   <DetailPanelFieldLabel>
@@ -59,13 +62,13 @@ export const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ device
               )}
 
               {device.partitions.length > 0 && (
-                <Flex vertical>
+                <Flex vertical className="gap-1">
                   <DetailPanelFieldLabel>
                     {t('resources:repositories.partitions')}:
                   </DetailPanelFieldLabel>
-                  <Flex vertical>
+                  <Flex vertical className="gap-1">
                     {device.partitions.map((part: BlockDevicePartition) => (
-                      <Flex key={`${device.name}-${part.name}`} align="center">
+                      <Flex key={`${device.name}-${part.name}`} align="center" className="gap-2">
                         <CodeOutlined />
                         <Typography.Text>
                           {part.name}: {part.size_human}
