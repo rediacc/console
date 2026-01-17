@@ -7,6 +7,7 @@ import App from './App';
 import { AppProviders } from './components/app/AppProviders';
 import i18n from './i18n/config';
 import { store } from './store/store';
+import 'normalize.css';
 import './styles/global.css';
 
 const queryClient = new QueryClient({

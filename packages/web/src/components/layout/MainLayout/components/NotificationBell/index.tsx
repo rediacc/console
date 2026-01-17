@@ -97,8 +97,8 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <Card data-testid="notification-dropdown">
-      <Flex vertical className="notification-dropdown max-h-scroll-md min-w-dropdown">
+    <Card data-testid="notification-dropdown" size='small'>
+      <Flex vertical className="min-w-[320px] max-h-[400px] overflow-y-auto" gap={2}>
         <Flex align="center" justify="space-between">
           <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
           {notifications.length > 0 && (
@@ -122,12 +122,9 @@ const NotificationBell: React.FC = () => {
           )}
         </Flex>
 
-        <Flex vertical className="max-h-scroll-sm">
+        <Flex vertical className="max-h-[320px] overflow-y-auto">
           {notifications.length === 0 ? (
-            <Flex
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ padding: '40px 0' }}
-            >
+            <Flex align='center' justify='center'>
               <Empty description={t('notifications.empty', 'No notifications')} />
             </Flex>
           ) : (
@@ -136,14 +133,15 @@ const NotificationBell: React.FC = () => {
               renderItem={(notification: Notification, index: number) => (
                 <Flex
                   key={notification.id}
-                  className="cursor-pointer"
+                  className="w-full rounded-md transition-colors hover:bg-black/3"
                   onClick={() => handleMarkAsRead(notification.id)}
                   data-testid={`notification-item-${index}`}
                 >
                   <List.Item.Meta
+                    className="w-full p-2"
                     title={
                       <Flex justify="space-between" className="w-full">
-                        <Flex align="center" className="inline-flex flex-1">
+                        <Flex align="center" className="flex flex-1 min-w-0">
                           <Typography.Text>{notification.title}</Typography.Text>
                           <Typography.Text>
                             <Tag>{t(`notifications.types.${notification.type}`).toUpperCase()}</Tag>
@@ -162,7 +160,7 @@ const NotificationBell: React.FC = () => {
                     }
                     description={
                       <Flex vertical>
-                        <Flex className="notification-message">
+                        <Flex>
                           <Typography.Text type="secondary">{notification.message}</Typography.Text>
                         </Flex>
                         <Typography.Text type="secondary">

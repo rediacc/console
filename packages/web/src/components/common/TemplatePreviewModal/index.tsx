@@ -206,7 +206,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             title={<Typography.Text strong>{t('resources:templates.overview')}</Typography.Text>}
             data-testid="template-details-readme-content"
           >
-            <Flex className="line-height-normal">
+            <Flex className="leading-normal">
               <ReactMarkdown>{templateDetails?.readme ?? effectiveTemplate.readme}</ReactMarkdown>
             </Flex>
           </Card>
@@ -221,7 +221,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         <Flex
           vertical
           align="center"
-          className="gap-sm w-full"
+          className="w-full gap-2"
           data-testid="template-details-loading"
         >
           <LoadingWrapper loading centered minHeight={160}>
@@ -232,7 +232,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       );
     } else if (templateDetails && templateDetails.files.length > 0) {
       return (
-        <Flex className="gap-md w-full" wrap>
+        <Flex className="w-full gap-4" wrap>
           <Flex className="w-[32%]">
             <Card
               title={
@@ -251,7 +251,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                       onClick={() => setSelectedFileIndex(index)}
                       data-testid={`template-details-file-header-${index}`}
                     >
-                      <Flex vertical className="gap-sm">
+                      <Flex vertical className="gap-2">
                         <Flex align="center" className="inline-flex">
                           <CodeOutlined />
                           <Typography.Text code>{file.path || file.name}</Typography.Text>
@@ -311,7 +311,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           />
 
           <Typography.Title level={5}>{t('resources:templates.bestPractices')}</Typography.Title>
-          <ul className="line-height-normal">
+          <ul className="leading-normal">
             <li>{t('resources:templates.bestPractice1')}</li>
             <li>{t('resources:templates.bestPractice2')}</li>
             <li>{t('resources:templates.bestPractice3')}</li>
@@ -323,7 +323,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           <Typography.Title level={5}>
             {t('resources:templates.containerSecurity')}
           </Typography.Title>
-          <Typography.Paragraph className="line-height-normal">
+          <Typography.Paragraph className="leading-normal">
             {t('resources:templates.containerSecurityDesc')}
           </Typography.Paragraph>
         </Flex>
@@ -370,7 +370,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     <SizedModal
       data-testid="template-details-modal"
       title={
-        <Flex className="gap-md" align="center">
+        <Flex className="gap-4" align="center">
           {effectiveTemplate.iconUrl && !iconFailed ? (
             <img
               src={effectiveTemplate.iconUrl}

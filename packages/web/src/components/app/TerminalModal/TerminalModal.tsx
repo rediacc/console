@@ -198,8 +198,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
     >
       <Flex
         vertical
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ height: '60vh', minHeight: 400 }}
+        className="h-[60vh] min-h-[400px]"
       >
         {/* Error Alert */}
         {terminal.error && !terminal.isConnected && (
@@ -208,8 +207,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             message={t('common:terminal.connectionFailed')}
             description={terminal.error}
             showIcon
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ marginBottom: 16 }}
+            className="mb-4"
           />
         )}
 
@@ -220,8 +218,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             message={t('common:terminal.connecting')}
             description={t('common:terminal.establishingConnection', { host })}
             showIcon
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ marginBottom: 16 }}
+            className="mb-4"
           />
         )}
 
@@ -234,8 +231,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             resize={terminal.resize}
             onData={terminal.onData}
             onExit={terminal.onExit}
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ flex: 1, borderRadius: 8, overflow: 'hidden' }}
+            className="flex-1 rounded-lg overflow-hidden"
           />
         ) : (
           !terminal.isConnecting &&
@@ -243,12 +239,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
             <Flex
               justify="center"
               align="center"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{
-                flex: 1,
-                backgroundColor: '#1e1e2e',
-                borderRadius: 8,
-              }}
+              className="flex-1 bg-[#1e1e2e] rounded-lg"
             >
               <Text type="secondary">{t('common:terminal.waitingForConnection')}</Text>
             </Flex>

@@ -44,7 +44,6 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
         key={i18n.language}
         locale={currentLocale}
         theme={themeConfig}
-        flex={{ className: 'rediacc-flex' }}
       >
         <AntApp>{children}</AntApp>
       </ConfigProvider>

@@ -203,8 +203,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
     >
       <Flex
         vertical
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ height: '60vh', minHeight: 400 }}
+        className="h-[60vh] min-h-[400px]"
       >
         {/* Error Alert */}
         {container.error && !container.isConnected && (
@@ -213,8 +212,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             message={t('resources:localActions.containerConnectionFailed')}
             description={container.error}
             showIcon
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ marginBottom: 16 }}
+            className="mb-4"
           />
         )}
 
@@ -227,8 +225,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
               container: displayName,
             })}
             showIcon
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ marginBottom: 16 }}
+            className="mb-4"
           />
         )}
 
@@ -241,8 +238,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             resize={container.resize}
             onData={container.onData}
             onExit={container.onExit}
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ flex: 1, borderRadius: 8, overflow: 'hidden' }}
+            className="flex-1 rounded-lg overflow-hidden"
           />
         ) : (
           !container.isConnecting &&
@@ -250,12 +246,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             <Flex
               justify="center"
               align="center"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{
-                flex: 1,
-                backgroundColor: '#1e1e2e',
-                borderRadius: 8,
-              }}
+              className="flex-1 bg-[#1e1e2e] rounded-lg"
             >
               <Text type="secondary">
                 {t('resources:localActions.containerWaitingForConnection')}

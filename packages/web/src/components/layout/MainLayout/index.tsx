@@ -247,8 +247,7 @@ const MainLayout: React.FC = () => {
               <img
                 src={logo}
                 alt={t('common:alt.logo')}
-                // eslint-disable-next-line no-restricted-syntax
-                style={{ height: isMobile ? 24 : 32, width: 'auto', objectFit: 'contain' }}
+                className={isMobile ? 'h-6 w-auto object-contain' : 'h-8 w-auto object-contain'}
               />
             </Flex>
           </Flex>
@@ -261,7 +260,7 @@ const MainLayout: React.FC = () => {
           />
         )}
         // Content
-        contentStyle={{ padding: 24 }}
+        contentStyle={undefined}
         token={{
           header: {
             heightLayoutHeader: 64,
@@ -274,8 +273,7 @@ const MainLayout: React.FC = () => {
               vertical
               align="center"
               justify="center"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{ minHeight: 240 }}
+              className="min-h-[240px]"
             >
               <Flex>{uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}</Flex>
               <Flex>

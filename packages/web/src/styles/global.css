@@ -1,472 +1,117 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+@import "tailwindcss";
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
-#root {
-  min-height: 100vh;
-}
-
-/* Fix ProLayout to fill available width in flex containers */
-.ant-pro-layout {
-  width: 100%;
-}
-
-/* Center page content with max-width for better readability on wide screens */
-.ant-pro-layout-content {
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* ==========================================================================
-   Flex Spacing Defaults - Sensible gaps automatically applied
-   Most components need zero spacing props. Override only when different.
-   ========================================================================== */
-
-/* Vertical Flex: 16px gap (stacking elements need more breathing room) */
-.ant-flex-vertical {
-  width: 100%;
-  gap: 16px;
-}
-
-/* Horizontal Flex: 8px gap (inline elements need tighter spacing) */
-.ant-flex:not(.ant-flex-vertical) {
-  gap: 8px;
-}
-
-/* Fix table wrapper to fill available width */
-.ant-table-wrapper {
-  width: 100%;
-}
-
-/* Center sidebar logo */
-.ant-pro-layout .ant-pro-sider-logo {
-  justify-content: center;
-}
-
-/* ==========================================================================
-   Modal Sizing System
-   Matches ModalSize enum in types/modal.ts
-   ========================================================================== */
-
-/* Modal sizing - height and layout helpers
-   Width is set via Modal's width prop to avoid !important
-   See MODAL_WIDTHS in types/modal.ts for width values */
-
-/* Prevent page scroll when modal is open */
-.modal-sm.ant-modal-wrap,
-.modal-md.ant-modal-wrap,
-.modal-lg.ant-modal-wrap,
-.modal-fullscreen.ant-modal-wrap {
-  overflow: hidden;
-}
-
-/* All sized modals: establish flex layout with bounded height */
-.modal-sm .ant-modal-content,
-.modal-md .ant-modal-content,
-.modal-lg .ant-modal-content,
-.modal-fullscreen .ant-modal-content {
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 100px);
-}
-
-/* Modal body is the ONLY scroll container */
-.modal-sm .ant-modal-body,
-.modal-md .ant-modal-body,
-.modal-lg .ant-modal-body,
-.modal-fullscreen .ant-modal-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* ==========================================================================
-   Alert Defaults - Icons always visible
-   Most Alerts (41/43) use showIcon - make it the default behavior.
-   ========================================================================== */
-.ant-alert .ant-alert-icon {
-  display: inline-flex !important;
-}
-
-/* ==========================================================================
-   Table Defaults - Compact sizing
-   Most Tables (46+) use size="small" - apply compact padding by default.
-   ========================================================================== */
-.ant-table-wrapper .ant-table-thead > tr > th,
-.ant-table-wrapper .ant-table-tbody > tr > td {
-  padding: 8px 16px;
-}
-
-/* ==========================================================================
-   UTILITY CLASSES (Tailwind-style naming)
-   Use these instead of inline styles. ESLint enforces this rule.
-   ========================================================================== */
-
-/* Display */
-.block {
-  display: block;
-}
-.inline-block {
-  display: inline-block;
-}
-.inline-flex {
-  display: inline-flex;
-}
-.flex {
-  display: flex;
-}
-.hidden {
-  display: none;
-}
-
-/* Flexbox */
-.items-center {
-  align-items: center;
-}
-.justify-start {
-  justify-content: flex-start;
-}
-.justify-center {
-  justify-content: center;
-}
-.flex-1 {
-  flex: 1 1 0%;
-}
-.flex-shrink-0 {
-  flex-shrink: 0;
-}
-.flex-col {
-  flex-direction: column;
-}
-
-/* Gap Overrides - Higher specificity to override Flex defaults without !important */
-.ant-flex.gap-0 {
-  gap: 0;
-}
-.ant-flex.gap-sm {
-  gap: 8px;
-}
-.ant-flex.gap-md {
-  gap: 16px;
-}
-
-/* Width */
-.w-full {
-  width: 100%;
-}
-.min-w-0 {
-  min-width: 0;
-}
-.w-280 {
-  width: 280px;
-}
-.w-320 {
-  width: 320px;
-}
-
-/* Height */
-.h-full {
-  height: 100%;
-}
-
-/* Margin */
-.mb-0 {
-  margin-bottom: 0;
-}
-.mt-2 {
-  margin-top: 8px;
-}
-.mt-4 {
-  margin-top: 16px;
-}
-.mb-4 {
-  margin-bottom: 16px;
-}
-.my-3 {
-  margin-top: 12px;
-  margin-bottom: 12px;
-}
-.my-4 {
-  margin-top: 16px;
-  margin-bottom: 16px;
-}
-.my-6 {
-  margin-top: 24px;
-  margin-bottom: 24px;
-}
-
-/* Text */
-.text-center {
-  text-align: center;
-}
-.italic {
-  font-style: italic;
-}
-.capitalize {
-  text-transform: capitalize;
-}
-.text-ellipsis {
-  text-overflow: ellipsis;
-}
-.whitespace-nowrap {
-  white-space: nowrap;
-}
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.break-all {
-  word-break: break-all;
-}
-.break-words {
-  word-break: break-word;
-}
-
-/* Font Sizes */
-.text-xs {
-  font-size: 12px;
-}
-.text-sm {
-  font-size: 14px;
-}
-.text-base {
-  font-size: 16px;
-}
-.text-2xl {
-  font-size: 32px;
-}
-
-/* Font Weights */
-.font-medium {
-  font-weight: 500;
-}
-.font-semibold {
-  font-weight: 600;
-}
-
-/* Font Family */
-.font-mono {
-  font-family: monospace;
-}
-
-/* Line Height */
-.line-height-normal {
-  line-height: 1.5;
-}
-
-/* Overflow */
-.overflow-hidden {
-  overflow: hidden;
-}
-.overflow-auto {
-  overflow: auto;
-}
-
-/* Object Fit */
-.object-contain {
-  object-fit: contain;
-}
-
-/* Cursor */
-.cursor-pointer {
-  cursor: pointer;
-}
-.cursor-default {
-  cursor: default;
-}
-
-/* Position */
-.relative {
-  position: relative;
-}
-.absolute {
-  position: absolute;
-}
-.sticky {
-  position: sticky;
-}
-.top-0 {
-  top: 0;
-}
-.z-10 {
-  z-index: 10;
-}
-
-/* Transform */
-.expand-icon {
-  transition: transform 0.2s ease;
-}
-.expand-icon-rotated {
-  transform: rotate(90deg);
-}
-
-/* ==========================================================================
-   Mobile List View Styles
-   ========================================================================== */
-
-/* Mobile list item - full width without borders */
-.mobile-list-item {
-  width: 100%;
-  padding: 4px 0;
-  border: none;
-}
-
-/* ==========================================================================
-   Responsive Utilities
-   ========================================================================== */
-
-/* Scrollable container heights */
-.max-h-200 {
-  max-height: 200px;
-}
-
-.max-h-scroll-sm {
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.max-h-scroll-md {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-/* Width constraints */
-.w-full-max-sm {
-  width: 100%;
-  max-width: 360px;
-}
-
-.w-full-max-md {
-  width: 100%;
-  max-width: 600px;
-}
-
-/* Button/dropdown sizing */
-.min-w-btn {
-  min-width: 42px;
-}
-.min-h-btn {
-  min-height: 40px;
-}
-
-.min-w-dropdown {
-  min-width: 320px;
-}
-
-/* Select/input sizing for file browser */
-.max-w-select {
-  max-width: 280px;
-}
-
-.search-input-constrained {
-  min-width: 120px;
-  max-width: 200px;
-}
-
-/* Terminal/code output display */
-.terminal-output {
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-  padding: 12px;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
-  border-radius: 6px;
-  max-height: 300px;
-  overflow: auto;
-  font-family: monospace;
-  font-size: 13px;
-}
-
-/* ==========================================================================
-   Auth Layout - Split Screen
-   ========================================================================== */
-
-.auth-layout {
-  min-height: 100vh;
-  background-color: var(--ant-color-bg-base);
-}
-
-.auth-header {
-  padding: 16px 24px;
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 1;
-}
-
-.auth-logo {
-  height: 40px;
-  margin-bottom: 32px;
-}
-
-/* Desktop: side-by-side content */
-@media (min-width: 768px) {
-  .auth-content {
-    flex-direction: row;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
   }
-  .auth-branding-panel {
-    flex: 1;
-    background-color: var(--ant-color-bg-layout);
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    min-height: 100vh;
   }
 }
 
-/* Mobile: single column */
-@media (max-width: 767px) {
-  .auth-branding-panel {
-    display: none;
-  }
-  .auth-form-panel {
-    padding: 24px;
-  }
-}
-
-/* Mobile: Modal footer responsiveness
-   Prevents button overflow by stacking footer content vertically */
-@media (max-width: 767px) {
-  .modal-sm .ant-modal-footer,
-  .modal-md .ant-modal-footer,
-  .modal-lg .ant-modal-footer,
-  .modal-fullscreen .ant-modal-footer {
-    padding: 12px 16px;
+@layer components {
+  .ant-pro-layout {
+    width: 100%;
   }
 
-  /* Target the outer Flex container in footers - stack vertically */
-  .modal-sm .ant-modal-footer > .ant-flex,
-  .modal-md .ant-modal-footer > .ant-flex,
-  .modal-lg .ant-modal-footer > .ant-flex,
-  .modal-fullscreen .ant-modal-footer > .ant-flex {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
+  .ant-pro-layout-content {
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  /* Inner Flex containers: wrap and center */
-  .modal-sm .ant-modal-footer > .ant-flex > .ant-flex,
-  .modal-md .ant-modal-footer > .ant-flex > .ant-flex,
-  .modal-lg .ant-modal-footer > .ant-flex > .ant-flex,
-  .modal-fullscreen .ant-modal-footer > .ant-flex > .ant-flex {
-    flex-wrap: wrap;
-    justify-content: center;
+  .ant-flex-vertical {
+    width: 100%;
+    gap: 16px;
+  }
+
+  .ant-flex:not(.ant-flex-vertical) {
     gap: 8px;
   }
 
-  /* Ensure buttons don't have excessive min-width on mobile */
-  .modal-sm .ant-modal-footer .ant-btn,
-  .modal-md .ant-modal-footer .ant-btn,
-  .modal-lg .ant-modal-footer .ant-btn,
-  .modal-fullscreen .ant-modal-footer .ant-btn {
-    min-width: auto;
+  .ant-table-wrapper {
+    width: 100%;
+  }
+
+  .ant-pro-layout .ant-pro-sider-logo {
+    justify-content: center;
+  }
+
+  .modal-sm.ant-modal-wrap,
+  .modal-md.ant-modal-wrap,
+  .modal-lg.ant-modal-wrap,
+  .modal-fullscreen.ant-modal-wrap {
+    overflow: hidden;
+  }
+
+  .modal-sm .ant-modal-content,
+  .modal-md .ant-modal-content,
+  .modal-lg .ant-modal-content,
+  .modal-fullscreen .ant-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 100px);
+  }
+
+  .modal-sm .ant-modal-body,
+  .modal-md .ant-modal-body,
+  .modal-lg .ant-modal-body,
+  .modal-fullscreen .ant-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .ant-alert .ant-alert-icon {
+    display: inline-flex !important;
+  }
+
+  .ant-table-wrapper .ant-table-thead > tr > th,
+  .ant-table-wrapper .ant-table-tbody > tr > td {
+    padding: 8px 16px;
+  }
+
+  @media (max-width: 767px) {
+    .modal-sm .ant-modal-footer,
+    .modal-md .ant-modal-footer,
+    .modal-lg .ant-modal-footer,
+    .modal-fullscreen .ant-modal-footer {
+      padding: 12px 16px;
+    }
+
+    .modal-sm .ant-modal-footer > .ant-flex,
+    .modal-md .ant-modal-footer > .ant-flex,
+    .modal-lg .ant-modal-footer > .ant-flex,
+    .modal-fullscreen .ant-modal-footer > .ant-flex {
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .modal-sm .ant-modal-footer > .ant-flex > .ant-flex,
+    .modal-md .ant-modal-footer > .ant-flex > .ant-flex,
+    .modal-lg .ant-modal-footer > .ant-flex > .ant-flex,
+    .modal-fullscreen .ant-modal-footer > .ant-flex > .ant-flex {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .modal-sm .ant-modal-footer .ant-btn,
+    .modal-md .ant-modal-footer .ant-btn,
+    .modal-lg .ant-modal-footer .ant-btn,
+    .modal-fullscreen .ant-modal-footer .ant-btn {
+      min-width: auto;
+    }
   }
 }

@@ -88,7 +88,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
     onChange: (val: T) => void
   ) => (
     <Flex vertical>
-      <Typography.Text className="block font-medium text-sm">{label}</Typography.Text>
+      <Typography.Text className="block text-sm font-medium">{label}</Typography.Text>
       <Radio.Group
         className="block"
         value={value}
@@ -151,7 +151,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               {copiedField === field ? t('fieldGenerator.copied') : t('fieldGenerator.copy')}
             </Button>
           </Flex>
-          <Flex className="overflow-auto break-all max-h-200 text-xs line-height-normal">
+          <Flex className="max-h-[200px] overflow-auto break-all text-xs leading-normal">
             {value}
           </Flex>
         </Flex>
@@ -160,7 +160,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
   );
 
   const popoverContent = (
-    <Flex vertical className="max-w-full w-320">
+    <Flex vertical className="w-[320px] max-w-full">
       {fieldType === 'ssh_keys' && !Object.keys(generatedValues).length && renderSSHKeyOptions()}
 
       {Object.keys(generatedValues).length > 0 && renderGeneratedValues()}

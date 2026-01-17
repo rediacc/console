@@ -17,24 +17,24 @@ const AuthLayout: React.FC = () => {
 
   return (
     <ConfigProvider theme={getThemeConfig(isDark)}>
-      <Flex vertical className="auth-layout" data-testid="auth-layout-container">
+      <Flex vertical className="min-h-screen" data-testid="auth-layout-container">
         {/* Language selector - top right corner */}
-        <Flex className="auth-header" justify="flex-end" align="center">
+        <Flex className="absolute right-0 top-0 z-10 px-6 py-4" justify="flex-end" align="center">
           <LanguageSelector iconOnly />
         </Flex>
 
         {/* Content - split screen on desktop */}
-        <Flex className="auth-content flex-1">
-          <Flex className="auth-branding-panel" />
+        <Flex className="flex-1 md:flex-row" vertical>
+          <Flex className="hidden flex-1 md:flex" />
           <Flex
             vertical
             align="center"
             justify="center"
-            className="auth-form-panel flex-1"
+            className="flex-1 px-6 py-6 md:px-0 md:py-0"
             data-testid="auth-layout-content"
           >
             {/* Logo centered above form */}
-            <img src={logo} alt={t('alt.logo')} className="auth-logo" />
+            <img src={logo} alt={t('alt.logo')} className="mb-8 h-10" />
             <Outlet />
           </Flex>
         </Flex>

@@ -329,7 +329,7 @@ const LoginPage: React.FC = () => {
     <>
       <SandboxWarning />
       {/* eslint-disable-next-line no-restricted-syntax */}
-      <Flex className="w-full" style={{ maxWidth: 400 }}>
+      <Flex className="w-full max-w-[400px]">
         <Flex vertical className="w-full">
           {error && (
             <Alert
@@ -372,7 +372,7 @@ const LoginPage: React.FC = () => {
             </Typography.Text>
           </Flex>
 
-          <Flex vertical align="center" className="gap-sm">
+          <Flex vertical align="center" className="gap-2">
             {!showAdvancedOptions &&
               vaultProtocolState !== VaultProtocolState.PASSWORD_REQUIRED &&
               vaultProtocolState !== VaultProtocolState.INVALID_PASSWORD && (
@@ -382,12 +382,12 @@ const LoginPage: React.FC = () => {
                   onClick={() => setShowAdvancedOptions(true)}
                   data-testid="login-advanced-options-toggle"
                 >
-                  {t('auth:login.advancedOptions')} →
+                  {t('auth:login.advancedOptions')} 
                 </Button>
               )}
 
             {showAdvancedOptions && (
-              <Flex vertical className="w-full gap-sm" align="center">
+              <Flex vertical className="w-full gap-2" align="center">
                 <EndpointSelector />
               </Flex>
             )}

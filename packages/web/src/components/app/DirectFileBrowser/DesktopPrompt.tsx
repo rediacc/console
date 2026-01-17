@@ -69,7 +69,7 @@ export const DesktopPrompt: React.FC<DesktopPromptProps> = ({
       icon={<DesktopOutlined style={{ color: token.colorPrimary }} />}
       title={t('desktopPrompt.title', { feature: featureName })}
       subTitle={
-        <Paragraph type="secondary" style={{ maxWidth: 400, margin: '0 auto' }}>
+        <Paragraph type="secondary" className="max-w-[400px] mx-auto">
           {t('desktopPrompt.subtitle', { feature: featureName.toLowerCase() })}
         </Paragraph>
       }
@@ -82,15 +82,15 @@ export const DesktopPrompt: React.FC<DesktopPromptProps> = ({
         </Button>,
       ]}
     >
-      <div style={{ textAlign: 'center' }}>
+      <div className="text-center">
         <Paragraph type="secondary">
           <Text strong>{t('desktopPrompt.whyDesktopOnly')}</Text>
         </Paragraph>
-        <Paragraph type="secondary" style={{ maxWidth: 500, margin: '0 auto' }}>
+        <Paragraph type="secondary" className="max-w-[500px] mx-auto">
           {t('desktopPrompt.securityExplanation')}
         </Paragraph>
         {machineName && (
-          <Paragraph type="secondary" style={{ marginTop: 16 }}>
+          <Paragraph type="secondary" className="mt-4">
             <Text code>
               {t('desktopPrompt.machine')}: {machineName}
             </Text>

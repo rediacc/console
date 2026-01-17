@@ -135,7 +135,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     <Flex vertical className="w-full">
       <Flex vertical>
         <Flex vertical className="w-full">
-          <Flex align="center" justify="space-between" wrap className="gap-sm">
+          <Flex align="center" justify="space-between" wrap className="gap-2">
             <Typography.Text>
               {multiple
                 ? t('resources:templates.selectMultiple')
@@ -219,7 +219,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   </Typography.Text>
                 )}
 
-                <Flex vertical className="gap-sm w-full">
+                <Flex vertical className="w-full gap-2">
                   <Flex className="text-center">
                     <TemplateIconComponent />
                   </Flex>
@@ -261,7 +261,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 </Typography.Text>
               )}
 
-              <Flex vertical className="gap-sm w-full">
+              <Flex vertical className="w-full gap-2">
                 <Flex className="text-center">
                   <AppstoreOutlined />
                 </Flex>

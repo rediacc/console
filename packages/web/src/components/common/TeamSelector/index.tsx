@@ -31,7 +31,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
 
     return filtered.map((team) => ({
       label: (
-        <Flex align="center" wrap className="inline-flex">
+        <Flex align="center" className="flex w-full gap-2 pr-6">
           <Flex align="center" className="inline-flex">
             <TeamOutlined />
           </Flex>
@@ -73,9 +73,10 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
         );
       }}
       popupRender={(menu: React.ReactElement) => (
-        <>
-          <Flex>
+        <Flex gap={8} vertical>
+          <Flex className="w-full">
             <Input
+              className="flex w-full"
               placeholder={t('teams.placeholders.searchTeams')}
               prefix={<SearchOutlined />}
               value={searchValue}
@@ -85,8 +86,10 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
               data-testid="team-selector-search"
             />
           </Flex>
-          <Flex>{menu}</Flex>
-        </>
+          <Flex gap={2} className="[&_.ant-select-item-option-state]:ml-2">
+            {menu}
+          </Flex>
+        </Flex>
       )}
       maxTagCount="responsive"
       maxTagPlaceholder={(omittedValues: unknown[]) => (
