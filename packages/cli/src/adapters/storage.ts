@@ -132,6 +132,20 @@ class ConfigStorage {
   }
 
   /**
+   * Execute an operation with exclusive file lock, clearing cache first.
+   * Use this for API operations that read-modify-write the token.
+   *
+   * The cache must be cleared because another process may have updated
+   * the config file while we were waiting for the lock.
+   */
+  async withApiLock<T>(operation: () => Promise<T>): Promise<T> {
+    return this.withLock(async () => {
+      this.cache = null; // Force fresh read from file
+      return operation();
+    });
+  }
+
+  /**
    * Get the config file path.
    */
   getConfigPath(): string {
