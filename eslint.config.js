@@ -778,6 +778,33 @@ export default tseslint.config(
   },
 
   // =============================================================
+  // WEB PACKAGE UNIT TESTS - STRICT NO SKIP POLICY
+  // =============================================================
+  // Vitest unit tests should never be skipped - fix them
+  {
+    files: [
+      'packages/web/src/**/__tests__/**/*.{ts,tsx}',
+      'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-syntax': ['error',
+        {
+          selector: "CallExpression[callee.object.name='it'][callee.property.name='skip']",
+          message: 'it.skip() is not allowed in unit tests. Fix the test.',
+        },
+        {
+          selector: "CallExpression[callee.object.name='test'][callee.property.name='skip']",
+          message: 'test.skip() is not allowed in unit tests. Fix the test.',
+        },
+        {
+          selector: "CallExpression[callee.object.name='describe'][callee.property.name='skip']",
+          message: 'describe.skip() is not allowed in unit tests. Fix the tests.',
+        },
+      ],
+    },
+  },
+
+  // =============================================================
   // WWW PACKAGE OVERRIDES (Astro marketing site)
   // =============================================================
   // Disable web-specific rules for www package since it's an Astro site
