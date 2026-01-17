@@ -16,4 +16,4 @@ source "$SCRIPT_DIR/../lib/common.sh"
 REPO_ROOT="$(get_repo_root)"
 
 log_step "Checking dependency versions"
-node "$REPO_ROOT/scripts/check-deps.js"
+npx tsx "$REPO_ROOT/scripts/check-deps.ts"
