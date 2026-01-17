@@ -376,6 +376,14 @@ test_e2e() {
     "$ROOT_DIR/.ci/scripts/test/run-e2e.sh" "$@"
 }
 
+test_bridge() {
+    check_node_version
+    ensure_packages_built
+
+    log_step "Running bridge tests"
+    "$ROOT_DIR/.ci/scripts/test/run-bridge.sh" "$@"
+}
+
 test_all() {
     test_unit
     test_cli
@@ -593,6 +601,7 @@ TEST COMMANDS:
   test unit           Run unit tests
   test cli            Run CLI tests
   test e2e [opts]     Run E2E tests (requires backend)
+  test bridge [opts]  Run bridge tests (requires VMs)
   test all            Run all tests
 
 BUILD COMMANDS:
@@ -677,11 +686,12 @@ main() {
                 unit) shift; test_unit "$@" ;;
                 cli) shift; test_cli "$@" ;;
                 e2e) shift; test_e2e "$@" ;;
+                bridge) shift; test_bridge "$@" ;;
                 all) test_all ;;
                 *)
                     log_error "Unknown test command: ${1:-}"
                     echo ""
-                    echo "Usage: ./go test [unit|cli|e2e|all]"
+                    echo "Usage: ./go test [unit|cli|e2e|bridge|all]"
                     exit 1
                     ;;
             esac
