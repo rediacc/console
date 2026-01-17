@@ -645,6 +645,9 @@ jobs:
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
 
       - name: Pull Renet Docker Image
         run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
