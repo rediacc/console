@@ -11,9 +11,9 @@
     "validate:content:strict": "node scripts/validate-content.js --strict"
   },
   "dependencies": {
-    "@astrojs/react": "^4.4.0",
-    "@astrojs/rss": "^4.0.13",
-    "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/react": "^4.4.2",
+    "@astrojs/rss": "^4.0.15",
+    "@astrojs/sitemap": "^3.7.0",
     "@types/react": "^19.1.15",
     "@types/react-dom": "^19.1.9",
     "astro": "^5.16.11",

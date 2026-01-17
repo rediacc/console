@@ -106,6 +106,7 @@
   "ignoreDependencies": [
     "@types/*",
     "@opentelemetry/instrumentation-*",
+    "astro",
     "dayjs",
     "@electron-toolkit/preload",
     "node-pty",
