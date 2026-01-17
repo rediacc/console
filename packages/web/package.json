@@ -56,7 +56,7 @@
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
-    "@tailwindcss/postcss": "^4.1.18",
+    "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
