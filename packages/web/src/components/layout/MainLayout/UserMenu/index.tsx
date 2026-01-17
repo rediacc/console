@@ -39,10 +39,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   return (
     <Card>
-      <Flex vertical className="w-280">
+      <Flex vertical className="w-[280px] gap-3">
         <Flex align="center" wrap data-testid="user-info">
           <Avatar icon={<UserOutlined />} size={48} />
-          <Flex vertical className="flex-1 min-w-0">
+          <Flex vertical className="min-w-0 flex-1 gap-1">
             <Typography.Text strong className="block" data-testid="user-info-email">
               {user?.email}
             </Typography.Text>
@@ -63,7 +63,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           </Flex>
         </Flex>
 
-        <Divider className="my-3" />
+        <Divider size="small" />
 
         <Flex vertical>
           <Typography.Text type="secondary">{t('uiMode.label')}</Typography.Text>
@@ -99,7 +99,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           />
         </Flex>
 
-        <Divider className="my-3" />
+        <Divider size="small" />
 
         <Flex vertical>
           <Typography.Text type="secondary">{t('theme.label')}</Typography.Text>
@@ -135,7 +135,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           />
         </Flex>
 
-        <Divider className="my-3" />
+        <Divider size="small" />
 
         <Flex vertical>
           <Typography.Text strong className="block">
@@ -144,7 +144,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <LanguageSelector iconOnly={false} />
         </Flex>
 
-        <Divider className="my-3" />
+        <Divider size="small" />
 
         <Button
           type="text"

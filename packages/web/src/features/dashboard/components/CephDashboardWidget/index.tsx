@@ -141,7 +141,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
 
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
-            <Flex vertical className="gap-sm" data-testid="ds-widget-cluster-summary">
+            <Flex vertical className="gap-2" data-testid="ds-widget-cluster-summary">
               <Typography.Text strong>{t('ceph:dashboard.clusterSummary')}</Typography.Text>
               <Row gutter={16}>
                 <Col span={12}>
@@ -164,7 +164,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
           </Col>
 
           <Col xs={24} md={12}>
-            <Flex vertical className="gap-sm" data-testid="ds-widget-machine-utilization">
+            <Flex vertical className="gap-2" data-testid="ds-widget-machine-utilization">
               <Typography.Text strong>{t('ceph:dashboard.machineUtilization')}</Typography.Text>
               <Progress
                 data-testid="ds-widget-progress-utilization"
@@ -182,7 +182,7 @@ const CephDashboardWidget: React.FC<CephDashboardWidgetProps> = ({ stats, teamBr
         </Row>
 
         {teamBreakdown.length > 0 && (
-          <Flex vertical className="gap-sm" data-testid="ds-widget-team-breakdown">
+          <Flex vertical className="gap-2" data-testid="ds-widget-team-breakdown">
             <Flex align="center">
               <Flex align="center" className="inline-flex">
                 <TeamOutlined />

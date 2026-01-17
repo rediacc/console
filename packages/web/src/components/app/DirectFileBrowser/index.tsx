@@ -142,7 +142,7 @@ export const DirectFileBrowser: React.FC<DirectFileBrowserProps> = ({
       {
         key: 'home',
         title: (
-          <span onClick={() => sftp.navigate('/')} style={{ cursor: 'pointer' }}>
+          <span onClick={() => sftp.navigate('/')} className="cursor-pointer">
             <HomeOutlined /> {t('common:fileBrowser.root')}
           </span>
         ),
