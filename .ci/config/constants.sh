@@ -51,6 +51,12 @@ readonly API_HEALTH_TIMEOUT=120  # seconds (matches CI)
 readonly API_HEALTH_INTERVAL=2    # seconds between retries
 
 # =============================================================================
+# BACKEND PRESETS (for --backend parameter)
+# =============================================================================
+readonly BACKEND_PRESET_LOCAL="http://localhost:7322"
+readonly BACKEND_PRESET_SANDBOX="https://sandbox.rediacc.com"
+
+# =============================================================================
 # PORTS
 # =============================================================================
 readonly PORT_WEB=80              # Elite web proxy (nginx)

@@ -22,7 +22,7 @@ const MONOREPO_ROOT = path.resolve(__dirname, '../../../../..');
  * 2. {RENET_ROOT}/../ops (relative to renet root)
  * 3. {monorepo}/ops (fallback)
  */
-export function getOpsHome(): string {
+function getOpsHome(): string {
   // Check OPS_HOME env var first (highest priority)
   const envOpsHome = process.env.OPS_HOME;
   if (envOpsHome) {
@@ -40,31 +40,10 @@ export function getOpsHome(): string {
 }
 
 /**
- * Get the staging folder path.
- */
-export function getStagingFolder(): string {
-  return path.join(getOpsHome(), 'staging');
-}
-
-/**
- * Get the SSH folder path.
- */
-export function getSSHFolder(): string {
-  return path.join(getStagingFolder(), '.ssh');
-}
-
-/**
  * Get the SSH private key path.
  */
 export function getSSHPrivateKeyPath(): string {
-  return path.join(getSSHFolder(), 'id_rsa');
-}
-
-/**
- * Get the SSH config file path.
- */
-export function getSSHConfigPath(): string {
-  return path.join(getSSHFolder(), 'config');
+  return path.join(getOpsHome(), 'staging', '.ssh', 'id_rsa');
 }
 
 /**
