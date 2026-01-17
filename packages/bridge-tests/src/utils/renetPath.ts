@@ -1,40 +1,32 @@
 import * as path from 'node:path';
+import { getRenetResolver } from './RenetResolver';
+
+// Path from this file to monorepo root: src/utils -> bridge-tests -> packages -> console -> monorepo
+const MONOREPO_ROOT = path.resolve(__dirname, '../../../../..');
 
 /**
- * Get the path to the local renet binary.
- *
- * Resolution order:
- * 1. RENET_BINARY_PATH env var (CI mode - pre-extracted binary)
- * 2. RENET_BIN env var (deprecated, backwards compatibility)
- * 3. RENET_ROOT/bin/renet (if RENET_ROOT is set)
- * 4. Auto-detected {monorepo}/bin/renet
- *
- * @param renetRoot Optional override for renet root directory
- * @returns Resolved path to renet binary (may not exist)
+ * Get path to renet binary built from source.
+ * Internal helper for getRenetBinaryPath fallback.
  */
-export function getRenetBinaryPath(renetRoot?: string): string {
-  // 1. CI mode: RENET_BINARY_PATH takes precedence
-  const ciPath = process.env.RENET_BINARY_PATH;
-  if (ciPath) {
-    return ciPath;
-  }
+function getRenetSourceBinaryPath(): string {
+  return path.join(MONOREPO_ROOT, 'renet', 'bin', 'renet');
+}
 
-  // 2. Deprecated: RENET_BIN for backwards compatibility
-  const legacyPath = process.env.RENET_BIN;
-  if (legacyPath) {
-    return legacyPath;
+/**
+ * Get the path to the local renet binary (synchronous).
+ *
+ * For async code with auto-build support, use RenetResolver.ensureBinary() instead.
+ * This function is useful for synchronous initialization (e.g., in constructors).
+ *
+ * @returns Resolved path to renet binary from resolver cache, or source binary path as fallback
+ */
+export function getRenetBinaryPath(): string {
+  try {
+    return getRenetResolver().getPath();
+  } catch {
+    // Resolver not initialized yet, return source binary path
+    return getRenetSourceBinaryPath();
   }
-
-  // 3. Use provided or env RENET_ROOT
-  const root = renetRoot ?? process.env.RENET_ROOT;
-  if (root) {
-    return path.join(root, 'bin', 'renet');
-  }
-
-  // 4. Auto-detect from current location
-  // Path: packages/bridge-tests/src/utils -> monorepo root
-  const autoRoot = path.resolve(__dirname, '../../../..');
-  return path.join(autoRoot, 'bin', 'renet');
 }
 
 /**
@@ -48,6 +40,5 @@ export function getRenetRoot(): string {
   if (process.env.RENET_ROOT) {
     return process.env.RENET_ROOT;
   }
-  // Path: packages/bridge-tests/src/utils -> monorepo root
-  return path.resolve(__dirname, '../../../..');
+  return MONOREPO_ROOT;
 }

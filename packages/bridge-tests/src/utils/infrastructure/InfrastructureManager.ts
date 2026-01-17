@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
-import { getRenetBinaryPath } from '../renetPath';
+import { getRenetResolver, RenetResolver } from '../RenetResolver';
 
 const execAsync = promisify(exec);
 
@@ -33,11 +33,12 @@ export interface InfrastructureConfig {
  */
 export class InfrastructureManager {
   private readonly config: InfrastructureConfig;
-  private detectedRenetPath: string | null = null;
   private readonly opsManager: OpsManager;
+  private readonly resolver: RenetResolver;
 
   constructor() {
     this.opsManager = getOpsManager();
+    this.resolver = getRenetResolver();
 
     this.config = {
       bridgeVM: this.opsManager.getBridgeVMIp(),
@@ -50,46 +51,23 @@ export class InfrastructureManager {
   }
 
   /**
-   * Get the path to renet binary (cached after first detection).
+   * Get the path to renet binary (from resolver).
    */
   getRenetPath(): string {
-    if (this.detectedRenetPath) {
-      return this.detectedRenetPath;
-    }
-    return getRenetBinaryPath();
+    return this.resolver.getPath();
   }
 
   /**
    * Check if renet binary is available locally.
-   *
-   * Uses centralized getRenetBinaryPath() which handles:
-   * - VM_RENET_INSTALL_PATH env var (CI mode)
-   * - RENET_BIN env var (deprecated)
-   * - RENET_ROOT/bin/renet
-   * - Auto-detected path
+   * Uses RenetResolver which handles all resolution and auto-build logic.
    */
   async isRenetAvailable(): Promise<{ available: boolean; path: string }> {
-    const renetPath = getRenetBinaryPath();
-
-    // Try the resolved path first
     try {
-      await execAsync(`${renetPath} version`, { timeout: 5000 });
-      this.detectedRenetPath = renetPath;
-      return { available: true, path: renetPath };
+      const result = await this.resolver.ensureBinary();
+      return { available: true, path: result.path };
     } catch {
-      // Continue to PATH check
+      return { available: false, path: '' };
     }
-
-    // Fallback: Check if in PATH
-    try {
-      await execAsync('renet version', { timeout: 5000 });
-      this.detectedRenetPath = 'renet';
-      return { available: true, path: 'renet' };
-    } catch {
-      // Not found
-    }
-
-    return { available: false, path: '' };
   }
 
   /**
@@ -162,11 +140,8 @@ export class InfrastructureManager {
     console.log('  Worker VM:', status.workerVM ? 'OK' : 'DOWN');
 
     if (!status.renet.available) {
-      throw new Error(
-        'Renet binary not found.\n' +
-          'Build manually with: cd renet && ./go dev\n' +
-          'Or set RENET_BINARY_PATH environment variable.'
-      );
+      // RenetResolver already tried all resolution strategies including auto-build
+      throw new Error('Renet binary not available.\n' + 'Check error messages above for details.');
     }
 
     // Always ensure VMs are running
@@ -487,7 +462,7 @@ export class InfrastructureManager {
 
     const vmId = ip.split('.').pop();
 
-    await execAsync(`${getRenetBinaryPath()} ops worker install-criu ${vmId}`, {
+    await execAsync(`${this.getRenetPath()} ops worker install-criu ${vmId}`, {
       timeout: 600000,
     }).catch((error: unknown) => ({
       stdout: '',

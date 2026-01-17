@@ -37,6 +37,8 @@
     "test:lifecycle": "playwright test --grep @lifecycle",
     "test:report": "playwright show-report reports/bridge --port 9323",
     "test:ui": "playwright test --ui",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -49,6 +51,7 @@
     "@types/node": "^22.10.2",
     "@types/ssh2": "^1.15.1",
     "rimraf": "^6.0.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   }
 }
