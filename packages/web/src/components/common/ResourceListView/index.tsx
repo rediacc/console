@@ -202,7 +202,7 @@ function ResourceListView<T extends object = Record<string, unknown>>({
                 renderItem={(record, index) => (
                   <List.Item
                     key={getRowKey(record, index)}
-                    className="mobile-list-item"
+                    className="w-full border-0 py-1"
                     data-testid={getRowDataTestId(record)}
                   >
                     {mobileRender(record, index)}

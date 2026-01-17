@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
+import { Button, Card, Empty, Flex, Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMachineMutations, useGetTeamMachines } from '@/api/api-hooks.generated';
@@ -301,10 +301,10 @@ const MachinesPage: React.FC = () => {
   return (
     <>
       <Flex vertical>
-        <Card>
-          <Flex justify="space-between" align="center" wrap>
+        <Card classNames={{ body: 'flex flex-col gap-3' }}>
+          <Flex justify="space-between" align="center" wrap className="w-full !gap-3">
             {/* eslint-disable-next-line no-restricted-syntax */}
-            <Flex style={{ flex: 1, minWidth: 260 }}>
+            <Flex className="flex-1 min-w-[260px]">
               <TeamSelector
                 data-testid="machines-team-selector"
                 teams={teams}
@@ -315,7 +315,7 @@ const MachinesPage: React.FC = () => {
               />
             </Flex>
             {selectedTeams.length > 0 && (
-              <Space size="small">
+              <Flex align="center">
                 <Tooltip title={t('machines:createMachine')}>
                   <Button
                     type="primary"
@@ -335,7 +335,7 @@ const MachinesPage: React.FC = () => {
                     aria-label={t('machines:checkAndRefresh')}
                   />
                 </Tooltip>
-              </Space>
+              </Flex>
             )}
           </Flex>
 
