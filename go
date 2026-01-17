@@ -447,6 +447,11 @@ quality_all() {
     npm run quality
 }
 
+quality_deps() {
+    check_node_version
+    "$ROOT_DIR/.ci/scripts/quality/check-deps.sh"
+}
+
 quality_audit() {
     check_node_version
     "$ROOT_DIR/.ci/scripts/security/audit.sh"
@@ -595,6 +600,7 @@ QUALITY COMMANDS:
   quality lint        Run linting (ESLint + Knip)
   quality format      Check code formatting (Biome)
   quality types       Check TypeScript types
+  quality deps        Check for outdated dependencies
   quality audit       Run security audit (npm audit)
   quality shell       Run shellcheck on shell scripts
   quality all         Run all quality checks
@@ -700,13 +706,14 @@ main() {
                 lint) quality_lint ;;
                 format) quality_format ;;
                 types) quality_types ;;
+                deps) quality_deps ;;
                 audit) quality_audit ;;
                 shell) quality_shell ;;
                 all|"") quality_all ;;
                 *)
                     log_error "Unknown quality command: ${1:-}"
                     echo ""
-                    echo "Usage: ./go quality [lint|format|types|audit|shell|all]"
+                    echo "Usage: ./go quality [lint|format|types|deps|audit|shell|all]"
                     exit 1
                     ;;
             esac

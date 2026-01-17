@@ -589,7 +589,7 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = '0.4.19';
+export const BRIDGE_FUNCTIONS_VERSION = '0.4.20-1-g9589e3a';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
