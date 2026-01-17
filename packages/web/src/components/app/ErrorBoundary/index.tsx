@@ -117,12 +117,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <Typography.Text>{i18n.t('common:errorBoundary.description')}</Typography.Text>
                 {import.meta.env.DEV && this.state.error && (
                   <details
-                    // eslint-disable-next-line no-restricted-syntax
-                    style={{
-                      padding: 12,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                    }}
+                    className="p-3 text-xs font-mono"
                   >
                     <summary className="cursor-pointer">
                       {i18n.t('common:errorBoundary.errorDetails')}
