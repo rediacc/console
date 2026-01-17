@@ -3,17 +3,15 @@ import { DashboardPage } from '../../pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
 import { test, expect } from '../../src/base/BaseTest';
 import { E2E_DEFAULTS } from '../../src/utils/constants';
-import { TestDataManager } from '../../src/utils/data/TestDataManager';
+import { createTeamViaUI, waitForTeamRow } from '../helpers/team-helpers';
 
 test.describe('Team Trace Tests', () => {
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
-  let testDataManager: TestDataManager;
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
-    testDataManager = new TestDataManager();
 
     await loginPage.navigate();
     await loginPage.performQuickLogin();
@@ -25,25 +23,24 @@ test.describe('Team Trace Tests', () => {
     screenshotManager: _screenshotManager,
     testReporter,
   }) => {
-    testReporter.startStep('Navigate to Organization Users section');
-
-    // Get created user
-    const createdUser = testDataManager.getCreatedUser();
-
-    //organization
-    await page.getByTestId(TeamPageIDS.mainNavOrganization).click();
-
-    // user table
-    await page.getByTestId(TeamPageIDS.mainNavOrganizationUsers).click();
-    await expect(page.getByRole('cell', { name: `user ${createdUser.email}` })).toBeVisible();
-
-    testReporter.completeStep('Navigate to Organization Users section', 'passed');
+    const teamName = `e2e-team-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
     testReporter.startStep('Trace team audit records');
 
-    await page.getByTestId(TeamPageIDS.systemTeamTraceButton('test-TEAM-2')).click();
+    await createTeamViaUI(page, teamName);
+    const teamRow = await waitForTeamRow(page, teamName);
+    await teamRow.scrollIntoViewIfNeeded();
+    const traceButton = page.getByTestId(TeamPageIDS.systemTeamTraceButton(teamName));
+    if (await traceButton.isVisible().catch(() => false)) {
+      await traceButton.click();
+    } else {
+      const actionsButton = teamRow.getByRole('button', { name: /actions/i });
+      await actionsButton.click();
+      await page.getByRole('menuitem', { name: /trace/i }).click();
+    }
     const auditRecordsText = await page
       .getByTestId(TeamPageIDS.auditTraceTotalRecords)
+      .locator('strong')
       .textContent();
     const recordCount = Number.parseInt(auditRecordsText ?? E2E_DEFAULTS.CPU_COUNT_STRING);
     expect(recordCount).toBeGreaterThan(0);

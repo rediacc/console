@@ -181,8 +181,8 @@
     "tryAgain": "Réessayer"
   },
   "errors": {
-    "somethingWentWrong": "Quelque chose s'est mal passé",
-    "schemaValidationFailed": "Problème de synchronisation des données détecté. Veuillez actualiser la page ou contacter le support si le problème persiste."
+    "schemaValidationFailed": "Problème de synchronisation des données détecté. Veuillez actualiser la page ou contacter le support si le problème persiste.",
+    "somethingWentWrong": "Quelque chose s'est mal passé"
   },
   "export": {
     "label": "Exportation",
@@ -242,7 +242,7 @@
   "general": {
     "cancel": "Annuler",
     "defaultsApplied": "Valeurs par défaut appliquées",
-    "important": "Importante",
+    "important": "Important",
     "loading": "Chargement...",
     "no": "Non",
     "path": "Chemin",
@@ -376,8 +376,9 @@
     "showingRecords": "Affichage des enregistrements {{start}}-{{end}} sur {{total}}"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} de plus",
-    "selectTeams": "Sélectionner les équipes..."
+    "selectTeam": "Sélectionner l'équipe...",
+    "selectTeams": "Sélectionner les équipes...",
+    "moreTeams": "+{{count}} de plus"
   },
   "terminal": {
     "terminal": "Terminal",
@@ -737,7 +738,7 @@
     "optionalFields": "Champs facultatifs",
     "pleaseFixErrors": "Veuillez corriger les erreurs de validation avant d'enregistrer",
     "portPlaceholder": "Numéro de port (1-65535)",
-    "providerFields": "{{provider}} Configuration",
+    "providerFields": "Configuration {{provider}}",
     "providerRequiredFields": "Champs obligatoires pour {{provider}}",
     "rawJsonEditor": "Éditeur JSON brut (mode expert)",
     "rawJsonTooltip": "Édition JSON directe – À utiliser avec prudence !",

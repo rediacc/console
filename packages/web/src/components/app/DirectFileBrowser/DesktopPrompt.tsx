@@ -1,8 +1,10 @@
 /* eslint-disable no-restricted-syntax, react/forbid-elements */
+
 import React from 'react';
 import { DesktopOutlined, DownloadOutlined } from '@ant-design/icons';
-import { Button, Result, theme, Typography } from 'antd';
+import { Button, Result, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
+
 const { Paragraph, Text } = Typography;
 
 interface DesktopPromptProps {

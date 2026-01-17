@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import {
+  extractFirstByIndex,
+  parseGetOrganizationDashboard,
   parseGetOrganizationVault,
   parseGetOrganizationVaults,
-  parseGetOrganizationDashboard,
-  extractFirstByIndex,
 } from '@rediacc/shared/api';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';

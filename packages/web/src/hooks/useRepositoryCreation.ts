@@ -1,6 +1,5 @@
 ﻿import { useTranslation } from 'react-i18next';
-import { useCreateRepository } from '@/api/api-hooks.generated';
-import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
+import { useCreateRepository, useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { typedApi } from '@/api/client';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
@@ -79,10 +78,12 @@ export function useRepositoryCreation(machines: Machine[]): UseRepoCreationRetur
   const createWithMachineProvisioning = async (
     data: RepoCreationData
   ): Promise<RepoCreationResult> => {
-    const { machineName, size: _size, ...repositoryData } = data;
+    const { machineName, ...repositoryData } = data;
+    const repoParams = { ...repositoryData };
+    delete repoParams.size;
     await createRepositoryMutation.mutateAsync({
-      ...repositoryData,
-      vaultContent: repositoryData.vaultContent ?? '{}',
+      ...repoParams,
+      vaultContent: repoParams.vaultContent ?? '{}',
     });
 
     try {

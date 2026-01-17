@@ -1,0 +1,15 @@
+# Templates Skip List
+# One template path per line (relative to templates/ directory)
+# These templates will be excluded from:
+# - CI test runs
+# - Generated catalog (json.rediacc.com)
+# - GitHub Pages website
+#
+# Format: category/template-name
+#
+# Example:
+# databases/mssql
+# networking/cloud-switch
+
+networking/cloud-switch
+search/elasticsearch

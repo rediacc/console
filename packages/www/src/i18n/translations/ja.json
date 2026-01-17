@@ -1,0 +1,1555 @@
+{
+  "common": {
+    "aria": {
+      "closeImageModal": "画像モーダルを閉じる",
+      "mainNavigation": "メインナビゲーション",
+      "nextImage": "次の画像",
+      "previousImage": "前の画像",
+      "resetZoom": "ズームをリセットする",
+      "statusMessage": "ステータスメッセージ",
+      "zoomIn": "ズームイン",
+      "zoomOut": "ズームアウト"
+    },
+    "buttons": {
+      "close": "閉じる",
+      "contactSupport": "サポートに連絡する",
+      "goToHomepage": "ホームページへ行く",
+      "learnMore": "もっと詳しく知る",
+      "requestEarlyAccess": "適用する",
+      "sendMessage": "適用する"
+    },
+    "logoAlt": "Rediacc - インフラストラクチャ自動化プラットフォーム",
+    "search": {
+      "closeModal": "検索を閉じる",
+      "keyboardShortcut": "⌘Kで検索",
+      "navigate": "ナビゲート",
+      "noResults": "結果が見つかりませんでした",
+      "placeholder": "ドキュメント、ソリューション、機能を検索...",
+      "searching": "検索中...",
+      "select": "選択",
+      "suggestions": {
+        "browseSolutions": "ソリューションページの閲覧",
+        "checkSpelling": "スペルをチェックする",
+        "contactSupport": "サポートチームへのお問い合わせ",
+        "differentKeywords": "異なるキーワードまたは短い用語",
+        "title": "試す："
+      }
+    },
+    "siteName": "Rediacc",
+    "skipNavigation": {
+      "skipToFooter": "フッターにスキップ",
+      "skipToMainContent": "メインコンテンツにスキップ",
+      "skipToNavigation": "ナビゲーションにスキップ"
+    }
+  },
+  "earlyAccess": {
+    "benefits": [
+      "私たちのチームと直接協力しましょう",
+      "製品の形を整える",
+      "優先サポート",
+      "新機能への早期アクセス"
+    ],
+    "form": {
+      "fields": {
+        "organization": {
+          "autoComplete": "組織",
+          "label": "会社 *"
+        },
+        "email": {
+          "autoComplete": "電子メール",
+          "label": "電子メール *"
+        },
+        "message": {
+          "label": "メッセージ",
+          "placeholder": "あなたのニーズについてお聞かせください..."
+        },
+        "name": {
+          "autoComplete": "名前",
+          "label": "名前 *"
+        },
+        "role": {
+          "autoComplete": "組織のタイトル",
+          "label": "役割"
+        },
+        "useCase": {
+          "label": "主な関心事",
+          "options": {
+            "aiSafeOperations": "サイバーセキュリティ",
+            "developmentAcceleration": "開発",
+            "disasterRecovery": "災害復旧",
+            "multiple": "複数",
+            "other": "他の",
+            "placeholder": "1 つ選択してください"
+          }
+        }
+      },
+      "submit": "始めましょう"
+    },
+    "notice": {
+      "description": "「送信」をクリックして電子メールを開きます。 48時間以内に返信させていただきます。",
+      "emailLabel": "contact@rediacc.com",
+      "title": "提出方法"
+    },
+    "subtitle": "誰よりも早くデータを二度と失わないようにしてください。",
+    "title": "早期アクセスを入手"
+  },
+  "footer": {
+    "columns": {
+      "organization": "会社",
+      "legal": "法律上の",
+      "product": "製品",
+      "support": "サポート"
+    },
+    "organizationLinks": {
+      "aboutUs": "私たちについて",
+      "contact": "お問い合わせ",
+      "team": "チーム"
+    },
+    "copyright": "{{year}} Rediacc。 無断転載を禁じます。",
+    "legalLinks": {
+      "privacyPolicy": "プライバシーポリシー",
+      "termsOfUse": "利用規約"
+    },
+    "links": {
+      "contactSupport": "サポートに連絡する",
+      "returnToHome": "ホームに戻る"
+    },
+    "productLinks": {
+      "overview": "概要",
+      "pricing": "価格設定",
+      "professionalServices": "プロフェッショナルサービス",
+      "solutions": "ソリューション"
+    },
+    "supportLinks": {
+      "contactSupport": "サポートに連絡する",
+      "helpCenter": "ヘルプセンター"
+    },
+    "tagline": "AI主導の運用のためのインフラストラクチャ自動化プラットフォーム"
+  },
+  "hero": {
+    "cta": {
+      "benefits": "10 CPU コア • 無制限のチーム • $0",
+      "bookDemo": "デモを予約する",
+      "contactUs": "無料で始める",
+      "freeBadge": "永久無料 • クレジットカード不要",
+      "learnMore": "もっと詳しく知る",
+      "seeDetails": "詳細を見る"
+    },
+    "subtitle": "クラウドの停止を生き延びます。 どこにでも導入可能。 迅速にフェイルオーバーします。",
+    "title": "インフラストラクチャ",
+    "titleHighlight": "生き残る。 毎回。"
+  },
+  "layout": {
+    "meta": {
+      "author": "Rediacc",
+      "defaultDescription": "開発運用を加速するために設計されたインフラストラクチャ自動化プラットフォーム。 インスタント開発環境と次世代の災害復旧に早期にアクセスできます。",
+      "defaultKeywords": "インフラストラクチャの自動化、AI 運用、災害復旧、開発環境、モデル コンテキスト プロトコル、DevOps、CI/CD",
+      "locale": "ja_JP",
+      "siteName": "Rediacc",
+      "twitter": {
+        "creator": "@rediacc",
+        "site": "@rediacc"
+      }
+    }
+  },
+  "navigation": {
+    "blog": "ブログ",
+    "contact": "お問い合わせ",
+    "docs": "ドキュメント",
+    "downloads": "Downloads",
+    "home": "ホーム",
+    "login": "ログイン",
+    "search": "検索",
+    "selectLanguage": "言語を選択してください",
+    "solutions": {
+      "dataSecurity": "データセキュリティ",
+      "developmentEnvironments": "開発環境",
+      "disasterRecovery": "災害復旧",
+      "systemPortability": "システムの移植性",
+      "threatResponse": "脅威への対応"
+    },
+    "toggleMenu": "メニューの切り替え"
+  },
+  "pages": {
+    "blog": {
+      "allArticles": "すべての記事",
+      "backToBlog": "ブログに戻る",
+      "byAuthor": "投稿者: {{author}}",
+      "category": "カテゴリ",
+      "featured": "注目の記事",
+      "meta": {
+        "description": "分散タスクの実行、インフラストラクチャの自動化、DevOps のベスト プラクティスに関する洞察、ガイド、最新情報をお読みください。",
+        "keywords": "インフラストラクチャ自動化ブログ、DevOps ガイド、分散システム、タスク実行、クラウド インフラストラクチャ",
+        "title": "ブログ | Rediacc - インフラストラクチャ自動化の洞察"
+      },
+      "published": "発行済み",
+      "readMore": "続きを読む",
+      "relatedArticles": "関連記事",
+      "sharingIs": "共有することは思いやりです",
+      "subtitle": "分散タスクの実行に関する洞察、ガイド、最新情報",
+      "title": "ブログ"
+    },
+    "contact": {
+      "breadcrumb": {
+        "contact": "適用する",
+        "home": "ホーム"
+      },
+      "form": {
+        "fields": {
+          "email": {
+            "label": "電子メール *"
+          },
+          "message": {
+            "label": "メッセージ *",
+            "placeholder": "あなたのニーズについてお聞かせください..."
+          },
+          "name": {
+            "label": "名前 *"
+          },
+          "subject": {
+            "label": "*に興味があります",
+            "options": {
+              "earlyAccess": "災害復旧",
+              "general": "一般的な",
+              "other": "他の",
+              "partnership": "パートナーシップ",
+              "placeholder": "1 つ選択してください",
+              "technical": "技術的な質問"
+            }
+          }
+        },
+        "submit": "始めましょう"
+      },
+      "hero": {
+        "subtitle": "フォームにご記入いただければ、48 時間以内にご連絡いたします。",
+        "title": "以下からお申し込みください"
+      },
+      "info": {
+        "description": "私たちのチームと直接協力してください。 バックアップが機能することを確認してください。",
+        "methods": {
+          "earlyAccess": {
+            "description": "限られたスポット。 優先サポート。",
+            "link": "もっと詳しく知る",
+            "title": "早期アクセス"
+          },
+          "general": {
+            "email": "contact@rediacc.com",
+            "title": "質問がありますか?"
+          },
+          "technicalSupport": {
+            "description": "サポート チームに直接お問い合わせください。",
+            "title": "既存のお客様"
+          }
+        },
+        "title": "得られるもの"
+      },
+      "meta": {
+        "description": "利用できるスポットは限られています。",
+        "keywords": "Rediacc 早期アクセス、災害復旧プラットフォーム、検証済みバックアップ",
+        "title": "申し込む | Rediacc"
+      },
+      "notice": {
+        "description": "「送信」をクリックして電子メールを開きます。 質問がありますか? 電子メール",
+        "emailLabel": "contact@rediacc.com",
+        "title": "提出方法"
+      }
+    },
+    "docs": {
+      "allDocumentation": "すべてのドキュメント",
+      "backToDocs": "ドキュメントに戻る",
+      "fallbackNotice": {
+        "title": "翻訳は利用できません",
+        "message": "このページは選択した言語ではまだ利用できません。英語版を表示しています。",
+        "helpTranslate": "このページの翻訳を手伝ってください"
+      },
+      "cliReference": "CLI リファレンス",
+      "cliReferenceDesc": "すべてのコマンドライン インターフェイスのコマンドとオプションの完全なリファレンス。",
+      "gettingStarted": "はじめる",
+      "gettingStartedDesc": "Rediacc を初めてご利用ですか? 基本から始めて、基本的な概念を学びます。",
+      "meta": {
+        "description": "分散タスク実行のための包括的なドキュメント、ガイド、API リファレンスを使用して、Rediacc の使用方法を学びます。",
+        "keywords": "ドキュメント、API リファレンス、ガイド、インフラストラクチャ自動化、CLI リファレンス、キュー システム",
+        "title": "ドキュメント | Rediacc - インフラストラクチャ自動化プラットフォーム"
+      },
+      "queueSystem": "キューシステム",
+      "queueSystemDesc": "複数のマシン間でタスクがどのように管理および実行されるかを理解します。",
+      "subtitle": "Rediacc の使用方法を学び、分散タスクの実行をマスターする",
+      "tableOfContents": "このページでは",
+      "title": "ドキュメント",
+      "welcome": "Rediacc ドキュメントへようこそ",
+      "welcomeDescription": "Rediacc は、強力な分散タスク実行システムです。 始めたばかりの場合でも、高度な機能をマスターしたい場合でも、必要なものはすべてここで見つかります。"
+    },
+    "downloads": {
+      "meta": {
+        "title": "Downloads | Rediacc Console Desktop Application",
+        "description": "Download the Rediacc Console desktop application for Windows, macOS, and Linux. Get the latest release with built-in auto-update functionality.",
+        "keywords": "Rediacc download, desktop application, Windows app, macOS app, Linux app, download console"
+      },
+      "hero": {
+        "title": "Downloads",
+        "subtitle": "Rediacc Console",
+        "released": "Released"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64-bit)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)",
+        "armv7l": "ARMv7"
+      },
+      "types": {
+        "appimage": "AppImage (portable)",
+        "deb": "Debian/Ubuntu (.deb)"
+      },
+      "actions": {
+        "download": "Download"
+      },
+      "noReleases": "No releases available at this time. Please check back later.",
+      "autoUpdate": {
+        "title": "Auto-Update Information",
+        "description": "The Rediacc Console desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
+      },
+      "installation": {
+        "title": "Installation Instructions",
+        "windows": "Windows: Run the .exe installer and follow the setup wizard. The application will be installed to your Program Files directory.",
+        "macos": "macOS: Open the .dmg file and drag Rediacc Console to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
+        "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
+        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager."
+      },
+      "requirements": {
+        "title": "System Requirements",
+        "windows": "Windows 10 or later (64-bit)",
+        "macos": "macOS 11 (Big Sur) or later",
+        "linux": "Modern Linux distribution with glibc 2.28+",
+        "diskTitle": "Disk Space",
+        "disk": "500 MB free disk space",
+        "ramTitle": "Memory",
+        "ram": "2 GB RAM minimum, 4 GB recommended"
+      }
+    },
+    "home": {
+      "imageModal": {
+        "indicator": "{{current}} / {{total}}"
+      },
+      "meta": {
+        "description": "Rediacc のインフラストラクチャ自動化で開発を変革します。 インスタント環境、災害復旧、AI に安全な運用を実現します。",
+        "keywords": "インフラストラクチャ自動化、開発環境、災害復旧、DevOps 自動化、CI/CD パイプライン、クラウド インフラストラクチャ、開発運用、モデル コンテキスト プロトコル、AI セーフ インフラストラクチャ",
+        "title": "Rediacc - インフラストラクチャ自動化プラットフォーム"
+      }
+    },
+    "notFound": {
+      "actions": {
+        "contactSupport": "サポートに連絡する",
+        "homepage": "ホームページへ行く"
+      },
+      "breadcrumb": {
+        "home": "ホーム",
+        "notFound": "404 - ページが見つかりません"
+      },
+      "description": "申し訳ございませんが、お探しのページは存在しないか、移動されました。 これは、古いリンクをたどった場合、または URL を間違って入力した場合に発生する可能性があります。",
+      "help": {
+        "description": "これがエラーであると思われる場合、またはここにコンテンツがあることを期待していた場合は、サポート チームにご連絡ください。 あなたが探しているものを見つけるお手伝いをします。",
+        "link": "サポートチームにお問い合わせください",
+        "title": "助けが必要ですか?"
+      },
+      "meta": {
+        "description": "お探しのページは見つかりませんでした。 当社のインフラ自動化プラットフォームを参照するか、サポートが必要な場合はお問い合わせください。",
+        "keywords": "404、ページが見つかりません、インフラストラクチャ自動化、Rediacc",
+        "title": "404 - ページが見つかりません | Rediacc"
+      },
+      "suggestions": {
+        "items": [
+          "URL にタイプミスがないか確認してください",
+          "ホームページに戻る",
+          "当社のインフラストラクチャ自動化ソリューションについて学ぶ",
+          "お問い合わせページからご連絡ください",
+          "プラットフォームへの早期アクセスをリクエストする"
+        ],
+        "links": {
+          "contact": "お問い合わせページ",
+          "earlyAccess": "早期アクセス",
+          "homepage": "ホームページ",
+          "solutions": "インフラ自動化ソリューション"
+        },
+        "title": "できること:"
+      },
+      "title": "ページが見つかりません"
+    },
+    "pricing": {
+      "enterpriseCta": {
+        "button": "営業担当者へのお問い合わせ",
+        "description": "組織に合わせてインフラストラクチャを保護します",
+        "heading": "カスタムのエンタープライズ ソリューションが必要ですか?"
+      },
+      "faq": {
+        "heading": "よくある質問",
+        "items": [
+          {
+            "answer": "はい、プランはいつでも変更できます。 アップグレードはすぐに有効になり、ダウングレードは次の請求サイクルの開始時に適用されます。",
+            "question": "プランをアップグレードまたはダウングレードできますか?"
+          },
+          {
+            "answer": "すべての主要なクレジット カード (Visa、MasterCard、American Express) を受け入れ、年間 Enterprise プランについては請求書ベースの請求をサポートしています。",
+            "question": "どのような支払い方法を利用できますか?"
+          },
+          {
+            "answer": "私たちのコミュニティプランは永久に無料です。 ビジネス プランについては、トライアル オプションについて弊社の営業チームにお問い合わせください。",
+            "question": "無料トライアルはありますか?"
+          },
+          {
+            "answer": "コミュニティ プランには、コミュニティ サポートとセルフサービス ドキュメントが含まれています。 Professional には電子メールとチャットのサポートが含まれます。 Business には電話サポートと専任のカスタマー サクセス マネージャーが追加されます。 Enterprise には、エグゼクティブ エスカレーションを伴う 24 時間年中無休のホワイトグローブ サポートが含まれています。",
+            "question": "サポートには何が含まれますか?"
+          },
+          {
+            "answer": "リカバリ時間は層によって異なります。Community は最新のスナップショットを数分で復元し、Professional はポイントインタイムリカバリ (24 時間) を提供し、Business は 4 時間の SLA を提供し、Enterprise は 15 ～ 60 分のカスタム RTO を提供します。",
+            "question": "災害からどれくらい早く復旧できますか?"
+          },
+          {
+            "answer": "はい。 従来のバックアップ システムとは異なり、復元プロセスをテストすることでバックアップが自動的に検証されるため、緊急時に必要になる前にバックアップが機能することがわかります。",
+            "question": "私のバックアップは実際にテストされ、検証されていますか?"
+          },
+          {
+            "answer": "データは、選択した保存場所に暗号化されたままになります。 お客様は完全な制御を維持し、当社のサービスとは独立して暗号化されたバックアップにアクセスできます。",
+            "question": "サービスがダウンした場合、データはどうなりますか?"
+          }
+        ]
+      },
+      "finalCta": {
+        "buttons": {
+          "startFree": "無料で始める",
+          "talkToSales": "営業担当者に相談する"
+        },
+        "description": "インフラストラクチャの保護を初日から始めましょう",
+        "heading": "始める準備はできましたか?"
+      },
+      "hero": {
+        "subtitle": "現在のインフラストラクチャを保護し、成長に合わせて拡張できる災害復旧層を選択してください。",
+        "title": "シンプルで透明性のある価格設定"
+      },
+      "meta": {
+        "description": "ビジネスに最適なプランをお選びください。 無料のコミュニティ アクセスからエンタープライズ グレードの保護まで。 隠れた手数料はありません。",
+        "keywords": "価格設定、インフラストラクチャの自動化、災害復旧の価格設定、バックアップの価格設定、事業継続計画",
+        "title": "価格 | シンプルで透過的なインフラ保護"
+      },
+      "plans": {
+        "business": {
+          "description": "ミッションクリティカルな保護 + エキスパートセットアップ",
+          "features": [
+            "Professional + のすべて",
+            "9,999 ドルの導入サポートが含まれます (ローンチ オファー)",
+            "地理的冗長ストレージ (3 リージョン) - 1 つの障害が発生しても停止しません",
+            "継続的なデータ保護 - データ損失ゼロ",
+            "4 時間のリカバリ SLA (保証)",
+            "500 CPU コア - 72 時間のジョブウィンドウを持つエンタープライズワークロード",
+            "無制限のリポジトリ、それぞれ 500 GB",
+            "7 つのアクティブなジョブ / 3 つの予約済みジョブ",
+            "90 日間の監査ログの保持",
+            "役割ベースのアクセス制御と包括的な監査ログ",
+            "コンプライアンス対応の監査レポート",
+            "専任のカスタマーサクセスマネージャー",
+            "電話サポート + コラボレーション スペース"
+          ],
+          "name": "仕事"
+        },
+        "community": {
+          "description": "初日から本番環境に対応した災害復旧 — 永久無料",
+          "features": [
+            "無制限のユーザーとチーム - 自由にコラボレーション",
+            "最新のスナップショットの復元 - 数分で障害から回復します",
+            "10 CPU コア - 小規模なワークロードに最適",
+            "10 個のリポジトリ、それぞれ 10 GB",
+            "2 時間のジョブ タイムアウト、2 つのアクティブなジョブ/1 つの予約済みジョブ",
+            "7 日間の監査ログの保持",
+            "手動バックアップのスケジュール設定",
+            "コミュニティ Slack へのアクセス",
+            "セルフサービスのサポートとドキュメント",
+            "「Rediacc による」帰属"
+          ],
+          "name": "コミュニティ"
+        },
+        "enterprise": {
+          "description": "複雑なエンタープライズ インフラストラクチャに対するホワイト グローブの災害復旧",
+          "features": [
+            "ビジネスのすべて +",
+            "カスタム SLA (15 ～ 60 分の RTO) - お客様の要件と当社の取り組み",
+            "専用のインフラストラクチャ テナント - 最大のセキュリティとパフォーマンス",
+            "24 時間年中無休の徹底したサポート",
+            "1000 以上の CPU コア - 大規模なワークロードに無制限に拡張可能",
+            "無制限のリポジトリ、それぞれ 1TB 以上",
+            "96 時間以上のジョブ ウィンドウ (10 個以上のアクティブなジョブ/5 個以上の予約済みジョブ)",
+            "1 年以上の監査ログの保持",
+            "四半期ごとの災害復旧演習 - 準備状況をテストする",
+            "エグゼクティブエスカレーションホットライン",
+            "カスタム統合とワークフロー",
+            "監査文書サポートとセキュリティレビュー"
+          ],
+          "name": "企業",
+          "priceNote": "*開始時間"
+        },
+        "professional": {
+          "description": "企業の複雑さを必要としない、プロフェッショナル レベルの災害復旧",
+          "features": [
+            "コミュニティのすべて +",
+            "自動バックアップ スケジュール - 設定すればあとは忘れます",
+            "ポイントインタイムリカバリ(24時間)",
+            "100 CPU コア - 生産規模に対応",
+            "500 リポジトリ、それぞれ 100 GB",
+            "24 時間のジョブ タイムアウト、5 つのアクティブなジョブ/2 つの予約済みジョブ",
+            "30 日間の監査ログの保持",
+            "メール+チャットサポート",
+            "Slack と PagerDuty の通知",
+            "「Powered by Rediacc」の帰属なし",
+            "統合 API アクセス"
+          ],
+          "name": "プロ"
+        }
+      },
+      "professionalServices": {
+        "access": {
+          "description": "ハイブリッド カバレッジでは、含まれているオンボーディングとオプションのアドオンを組み合わせているため、すべてのチームが適切なタイミングで適切なサポートを受けることができます。",
+          "heading": "階層別のプロフェッショナル サービスへのアクセス",
+          "labels": {
+            "available": "利用可能なアドオン",
+            "included": "付属"
+          },
+          "tiers": [
+            {
+              "available": [
+                "標準実装 ($9,999) または階層型パッケージ (小規模 $7,499、中規模 $14,999、大規模 $29,999、エンタープライズ カスタム)",
+                "緊急対応業務 (オンデマンドで 29,999 ドル)"
+              ],
+              "included": [
+                "セルフサービスのドキュメント、ビデオチュートリアル、コミュニティフォーラム"
+              ],
+              "planId": "コミュニティ"
+            },
+            {
+              "available": [
+                "優先実装 ($19,999)",
+                "緊急対応業務 (オンデマンドで 29,999 ドル)",
+                "カスタム統合プロジェクト (範囲指定)"
+              ],
+              "included": [
+                "電子メールサポート",
+                "標準オンボーディング セッション (セットアップ コールと構成のウォークスルー)"
+              ],
+              "planId": "プロ"
+            },
+            {
+              "available": [
+                "優先実装アップグレード ($19,999)",
+                "緊急対応業務 (オンデマンドで 29,999 ドル)",
+                "カスタム開発とセキュリティ アーキテクチャのコンサルティング"
+              ],
+              "included": [
+                "優先メール/チャット/電話サポート",
+                "構成とランブックの引き継ぎによる専用のオンボーディング",
+                "標準実装パッケージが含まれています (9,999 ドル相当)",
+                "四半期ごとの成功レビュー"
+              ],
+              "planId": "仕事"
+            },
+            {
+              "available": [
+                "カスタム開発と高度な統合",
+                "セキュリティおよび監査アーキテクチャのコンサルティング",
+                "緊急対応補助金 (月額 5,000 ～ 7,500 ドル)"
+              ],
+              "included": [
+                "24 時間年中無休の徹底したサポートと専用の CSM",
+                "優先実装が含まれます (19,999 ドル相当)",
+                "四半期ごとの災害復旧テスト",
+                "年次事業継続計画ワークショップ",
+                "エグゼクティブエスカレーションホットライン"
+              ],
+              "planId": "企業"
+            }
+          ]
+        },
+        "advancedDetails": {
+          "description": "サービス パッケージ、実装層、価格設定要素、およびリテイナー オプション",
+          "heading": "実装と価格の詳細"
+        },
+        "benefits": {
+          "description": "当社のプロフェッショナル サービスは、重要なインフラストラクチャの課題に直面しても、決して孤独ではないことを保証します。",
+          "heading": "なぜプロフェッショナルサービスなのか?",
+          "items": [
+            "あなたのプロジェクトに割り当てられた専門家からなる専任チーム",
+            "SLAによる応答時間の保証",
+            "必要に応じてサービス層を切り替える",
+            "緊急層向けの 24 時間年中無休の緊急ホットライン"
+          ],
+          "statistics": [
+            "ランサムウェア攻撃の平均コストは 462 万ドル (IBM Security、2023 年)",
+            "企業の平均ダウンタイムコストは 1 分あたり 5,600 ドルです"
+          ]
+        },
+        "cta": {
+          "button": "相談のスケジュールを立てる",
+          "description": "当社の専門家がお客様の成功をお手伝いいたします",
+          "heading": "専門家のサポートが必要ですか?"
+        },
+        "header": {
+          "badge": "専門家のサポートを受けて成功を早めましょう",
+          "eligibility": "プロフェッショナル サービスは、ハイブリッド アクセスを介してあらゆるプランに対応します。 以下のマトリックスを使用して、何が含まれ、何が追加できるかを確認してください。",
+          "subtitle": "最も必要なときに専門家のサポートを受けることができます",
+          "title": "プロフェッショナルサービスパッケージ"
+        },
+        "packages": {
+          "emergency": {
+            "benefits": [
+              "即時対応 (2 時間以内)",
+              "フォレンジック、封じ込め、および回復計画",
+              "強化ロードマップを含む安定化レポート"
+            ],
+            "description": "オンデマンドのインシデント対応チームは、重要なシステムを封じ込めて復旧する準備ができています。",
+            "name": "緊急",
+            "price": "29,999ドル",
+            "tiers": [],
+            "turnaround": "同日"
+          },
+          "priority": {
+            "benefits": [
+              "専任のエンゲージメントマネージャー",
+              "夕方/週末の空き状況",
+              "生産切り替え支援"
+            ],
+            "description": "拡張された可用性とガイド付きカットオーバー サポートにより、配信が迅速化されます。",
+            "name": "優先度",
+            "price": "19,999ドル",
+            "tiers": [],
+            "turnaround": "24～48時間"
+          },
+          "standard": {
+            "benefits": [
+              "プロジェクトの発見と成功計画",
+              "環境のプロビジョニングと構成",
+              "検証チェックリストと知識の伝達"
+            ],
+            "description": "アーキテクチャ、展開、検証、有効化をカバーする構造化された実装。",
+            "name": "標準",
+            "price": "7,499ドルから",
+            "tierHeading": "ワークロードベースの実装価格設定",
+            "tierNote": "ワークロードは、バックアップおよび災害復旧保護を必要とする個別のビジネス プロセス、アプリケーション、またはサービスを表します。 実装には、アーキテクチャの設計、展開、検証、チームの有効化が含まれます。",
+            "tiers": [
+              "スターター (1 ～ 4 ワークロード): $7,499",
+              "成長 (5 ～ 10 ワークロード): 14,999 ドル",
+              "規模 (11 ～ 25 ワークロード): 29,999 ドル",
+              "エンタープライズ (25 以上のワークロード): カスタム見積もり"
+            ],
+            "turnaround": "3～5営業日"
+          }
+        },
+        "pricingFactors": {
+          "factors": [
+            {
+              "description": "関連するシステム、統合、および依存関係の数",
+              "title": "スコープの複雑さ"
+            },
+            {
+              "description": "既製のソリューションとカスタム開発要件",
+              "title": "カスタマイズレベル"
+            },
+            {
+              "description": "1 人の専門家と完全な専任の専門家チーム",
+              "title": "チームの規模"
+            }
+          ],
+          "heading": "プロフェッショナル サービスの価格設定を理解する",
+          "intro": "最終的なプロジェクトのコストは次のように決定されます。",
+          "note": "例: セキュリティ アーキテクチャのレビューを伴う中規模の実装 (マシン 120 台) の場合、通常、統合と保持範囲に応じて 14,999 ～ 24,999 ドルの範囲になります。"
+        },
+        "retainers": {
+          "description": "予測可能な月額料金で、経営陣の関係者に当社のスペシャリストへの確実なアクセスを提供します。",
+          "heading": "常時稼働の準備を整えるためのリテーナー オプション",
+          "items": [
+            {
+              "bullets": [
+                "2 時間の応答時間を保証",
+                "作戦室調整による優先エスカレーション パス",
+                "四半期ごとの準備状況レビューとハンドブックの更新"
+              ],
+              "price": "月額 5,000 ～ 7,500 ドル",
+              "title": "緊急対応用リテイナー"
+            }
+          ]
+        },
+        "serviceTypes": {
+          "badgeLabels": {
+            "emergency": "緊急",
+            "priority": "優先度",
+            "standard": "標準"
+          },
+          "heading": "利用可能なサービス",
+          "intro": "任意のサービスをクリックすると、各パッケージ層の所要時間が表示されます",
+          "services": [
+            {
+              "emergency": "即時評価 + 重要なシステムを同日にオンライン + 完全な移行を開始",
+              "id": "データ移行",
+              "name": "データ移行",
+              "priority": "迅速な移行パイプラインのセットアップ + コア データは 48 時間以内に転送",
+              "standard": "完全な検証を行ってエンドツーエンドの移行を完了する"
+            },
+            {
+              "emergency": "即時封じ込め + 重要なシステムは同日に復旧 + 完全復旧が開始",
+              "id": "ランサムウェアの回復",
+              "name": "ランサムウェアの回復",
+              "priority": "迅速な脅威評価 + コア業務は 48 時間以内に復旧",
+              "standard": "フォレンジックと強化による完全な回復"
+            },
+            {
+              "emergency": "重大な脆弱性スキャン + 高リスクパッチの同日展開 + 完全な監査の開始",
+              "id": "セキュリティ評価",
+              "name": "セキュリティ評価",
+              "priority": "包括的な脆弱性評価と 48 時間以内の修復計画",
+              "standard": "実装ロードマップを含む完全なセキュリティ監査"
+            },
+            {
+              "emergency": "重要なリソースは同日にプロビジョニング + 自動スケーリングの設定 + フルプランの開始",
+              "id": "インフラストラクチャのスケーリング",
+              "name": "インフラストラクチャのスケーリング",
+              "priority": "急速な容量増加 + 48 時間以内の監視セットアップ",
+              "standard": "最適化によるインフラストラクチャの完全な再設計"
+            },
+            {
+              "emergency": "重要な手順の説明会を同日開催 + インシデント対応の準備 + 完全なプログラムを開始",
+              "id": "チームトレーニング",
+              "name": "チームトレーニング",
+              "priority": "集中的な実践ワークショップ + 主要なワークフローを 2 日間でカバー",
+              "standard": "包括的な複数日間のトレーニング プログラム"
+            },
+            {
+              "emergency": "重大なボトルネックを特定 + 即時ホットフィックスを同日展開 + 完全な最適化を開始",
+              "id": "パフォーマンスの最適化",
+              "name": "パフォーマンスの最適化",
+              "priority": "迅速なプロファイリング + 影響の大きい最適化を 48 時間以内に導入",
+              "standard": "包括的なパフォーマンスチューニングによる詳細な分析"
+            },
+            {
+              "emergency": "重要な接続が同日に確立 + 基本的なデータ フローが動作 + 完全な開発が開始",
+              "id": "カスタム統合",
+              "name": "カスタム統合",
+              "priority": "コア統合機能 + 必須機能は 48 時間以内に有効になります",
+              "standard": "テストとドキュメントの完全な統合"
+            }
+          ]
+        }
+      },
+      "psTeaser": {
+        "heading": "始めるにあたって専門家の助けが必要ですか?",
+        "packages": {
+          "emergency": {
+            "name": "緊急",
+            "price": "29,999ドル"
+          },
+          "priority": {
+            "name": "優先度",
+            "price": "19,999ドル"
+          },
+          "standard": {
+            "name": "標準",
+            "price": "7,499ドルから"
+          }
+        },
+        "subtitle": "専門的な実装およびサポート サービスをすべての層で利用可能",
+        "viewDetails": "プロフェッショナル サービスを詳しく見る"
+      },
+      "strategy": {
+        "copy": "現在の運用段階に適したプランを選択し、明日はプラットフォームを切り替えることなく拡張できます。",
+        "distribution": [
+          "コミュニティ → プロフェッショナル: 自動化、復旧ポイント、ライブ サポートにより、実験から本番環境に移行します。",
+          "プロフェッショナルからビジネスへ: チームの成長に合わせて、セキュリティと監査機能、コラボレーション、より迅速な復旧期間を追加します。",
+          "ビジネス → エンタープライズ: リスクが最も高い場合に、カスタム SLA、専用テナンシー、ホワイトグローブ パートナーシップを解除します。"
+        ],
+        "heading": "あらゆるステージに合わせて構築"
+      },
+      "technicalSummary": {
+        "description": "プラットフォーム チームにスループット、保持、回復の期待値を正確に把握してもらいます。",
+        "heading": "技術的な限界が一目でわかる",
+        "metrics": [
+          {
+            "key": "CPUコア",
+            "label": "CPUコア"
+          },
+          {
+            "key": "リポジトリ",
+            "label": "リポジトリ"
+          },
+          {
+            "key": "リポジトリサイズ",
+            "label": "リポジトリのサイズ制限"
+          },
+          {
+            "key": "ジョブタイムアウト",
+            "label": "ジョブの最大期間"
+          },
+          {
+            "key": "アクティブなジョブ",
+            "label": "同時ジョブ"
+          },
+          {
+            "key": "予約済みジョブ",
+            "label": "ジョブキューの深さ"
+          },
+          {
+            "key": "RPO",
+            "label": "目標復旧時点 (RPO)"
+          },
+          {
+            "key": "rto",
+            "label": "目標復旧時間 (RTO)"
+          },
+          {
+            "key": "監査ウィンドウ",
+            "label": "監査ログの保存"
+          }
+        ],
+        "recoveryNote": "RPO (目標復旧時点): 時間内に測定した、損失しても許容できるデータ量。 たとえば、15 分の RPO は、最近の変更が最大 15 分間失われる可能性があることを意味します。 \n\nRTO (目標復旧時間): 災害後にどれだけ早くオンラインに戻る必要があるか。 たとえば、4 時間の RTO は、システムが 4 時間以内に復元されることを意味します。",
+        "values": {
+          "business": {
+            "activeJobs": "7 アクティブ",
+            "auditLogs": "90日",
+            "cpuCore": "500コア",
+            "jobTimeout": "72時間",
+            "repoSize": "500GB",
+            "repositories": "無制限",
+            "reservedJobs": "3 予約済み",
+            "rpo": "～5分（連続）",
+            "rto": "4時間（保証あり）"
+          },
+          "community": {
+            "activeJobs": "2 アクティブ",
+            "auditLogs": "7日間",
+            "cpuCore": "10コア",
+            "jobTimeout": "2時間",
+            "repoSize": "10GB",
+            "repositories": "10リポジトリ",
+            "reservedJobs": "1 予約済み",
+            "rpo": "ベストエフォート",
+            "rto": "ベストエフォート"
+          },
+          "enterprise": {
+            "activeJobs": "10 人以上がアクティブ",
+            "auditLogs": "1年以上",
+            "cpuCore": "1000以上のコア",
+            "jobTimeout": "96時間以上",
+            "repoSize": "1TB以上",
+            "repositories": "無制限",
+            "reservedJobs": "5+ 予約済み",
+            "rpo": "カスタム (ほぼゼロ)",
+            "rto": "15～60分（カスタム）"
+          },
+          "pro": {
+            "activeJobs": "5 アクティブ",
+            "auditLogs": "30日",
+            "cpuCore": "100コア",
+            "jobTimeout": "24時間",
+            "repoSize": "100GB",
+            "repositories": "500リポジトリ",
+            "reservedJobs": "2 予約済み",
+            "rpo": "～15分",
+            "rto": "ポイントインタイム復元"
+          }
+        }
+      },
+      "trust": {
+        "heading": "エンタープライズグレードのセキュリティと信頼性",
+        "items": ["銀行レベルの暗号化", "99.9% の稼働率を約束"]
+      },
+      "ui": {
+        "anchor": "戦略的アンカー",
+        "bestValue": "ベストバリュー",
+        "contactSales": "営業担当者へのお問い合わせ",
+        "cta": {
+          "business": {
+            "guarantee": "14日間の返金保証",
+            "launchBadge": "限定発売オファー",
+            "primary": "実装コールのスケジュールを設定する",
+            "secondary": "営業担当者へのお問い合わせ",
+            "valueNote": "9,999 ドルのセットアップ クレジットが含まれています"
+          },
+          "community": {
+            "note": "クレジットカードは必要ありません",
+            "primary": "無料で始める",
+            "secondary": "もっと詳しく知る"
+          },
+          "enterprise": {
+            "guarantee": "14日間の返金保証",
+            "primary": "エグゼクティブデモをスケジュールする",
+            "secondary": "営業担当者へのお問い合わせ",
+            "subtext": "カスタムSLA・専用サポート"
+          },
+          "pro": {
+            "guarantee": "14日間の返金保証",
+            "primary": "始めましょう",
+            "secondary": "営業担当者へのお問い合わせ"
+          }
+        },
+        "foreverFree": "永遠に無料",
+        "getStarted": "始めましょう",
+        "guarantees": {
+          "cancelAnytime": "いつでもキャンセル可能",
+          "moneyBack": "14日間の返金保証",
+          "noContracts": "長期契約はありません"
+        },
+        "keyBenefits": "主な利点",
+        "learnMore": "もっと詳しく知る",
+        "limitedOffer": "限定発売オファー",
+        "monthOrYear": "月額または年間 {{price}}",
+        "popular": "最も人気のある",
+        "startingAt": "*開始時間",
+        "whatsIncluded": "含まれるもの:"
+      }
+    },
+    "professionalServices": {
+      "cta": {
+        "button": "相談のスケジュールを立てる",
+        "description": "インフラストラクチャのニーズについて話し合うためのコンサルティングをスケジュールし、カスタム見積もりを取得します。",
+        "heading": "始める準備はできましたか?",
+        "subtext": "ほとんどの相談は 48 時間以内に完了"
+      },
+      "hero": {
+        "badge": "すべてのサブスクリプション層で利用可能",
+        "subtitle": "専門的な導入、移行サポート、緊急対応サービスを利用して、インフラストラクチャの導入を迅速化します。",
+        "title": "最も必要なときに専門家がサポート"
+      },
+      "meta": {
+        "description": "最も必要なときに専門家のサポートを受けてください。 標準的な実装から緊急対応まで、当社のプロフェッショナル サービスがお客様の成功を保証します。",
+        "keywords": "プロフェッショナル サービス、導入サポート、インフラストラクチャ コンサルティング、緊急対応、移行サービス、ランサムウェア回復",
+        "title": "プロフェッショナルサービス | 専門家の導入とサポート"
+      },
+      "packages": {
+        "heading": "プロフェッショナルサービスパッケージ",
+        "subtitle": "緊急性と複雑さに応じたサービス レベルを選択してください"
+      },
+      "value": {
+        "description": "インフラストラクチャの課題には専門家の指導が必要です。 当社のプロフェッショナル サービス チームは、長年の経験を活かして、お客様の導入を成功させ、移行を安全に完了し、緊急事態を迅速に解決することを保証します。",
+        "heading": "プロフェッショナルサービスが重要な理由",
+        "statistics": [
+          "専門的なサポートにより平均実装時間が 75% 短縮されました",
+          "重大なインシデントに対して緊急対応チームが 2 時間以内に対応可能",
+          "ガイド付きインフラストラクチャ移行の成功率は 100%"
+        ]
+      }
+    },
+    "solutions": {
+      "dataSecurity": {
+        "cta": {
+          "button": "セキュリティを監査する",
+          "subtitle": "ゼロ知識暗号化。 監査証跡を完了します。 コンプライアンス対応のアーキテクチャ。",
+          "title": "真のデータ保護の準備はできていますか?"
+        },
+        "hero": {
+          "subtitle": "すべてを暗号化します。 すべてを監査します。 すべてをコントロールします。",
+          "title": "すべてを暗号化します。 すべてをコントロールします。 完全な知識ゼロ。"
+        },
+        "meta": {
+          "description": "完全なインフラストラクチャ保護のためのゼロ知識暗号化。 包括的な監査機能を備えたコンプライアンス対応アーキテクチャ。 物理的な盗難に耐え、監査証跡を維持し、安全に移行します。",
+          "keywords": "データセキュリティ、暗号化、コンプライアンス、インフラストラクチャ暗号化、監査証跡、ゼロ知識",
+          "title": "データセキュリティと監査管理 | 監査証跡を備えた暗号化インフラストラクチャ"
+        },
+        "problems": {
+          "auditTrail": {
+            "problem": {
+              "additionalPoints": [
+                "買収時のレガシー システムが何年も移行されずに残る",
+                "移行中のシステムはアクティブな監査監視を無効にする",
+                "移行が不完全な場合、監査盲目データが依然として公開される",
+                "廃止されたシステムへの侵害は検出するまでに数週間かかる",
+                "監査証跡がないということは、何が起こったのかを証明できないことを意味します"
+              ],
+              "description": "インフラストラクチャの移行は段階的に行われます。 移行中に残されたレガシー システムは監査レーダーから外れます。 監査人が「本番では何が行われているのか?」と尋ねると、 「誰が何にアクセスしたのか?」という質問に対して、廃止されたと思われるシステムについては答えることができません。 移行が不完全であると、データを保持するシステムが脆弱で監視されていないという盲点が生じます。",
+              "story": "Oracle Health は、2022 年の買収から従来の Cerner サーバーを継承しました。 2025 年 1 月、攻撃者は移行されていないシステムに侵入しました。 <a href='https://www.hipaajournal.com/oracle-health-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 1 か月間検出されず、監視されなくなりました。 262,831 人の患者記録が盗まれた。 <a href='https://www.bleepingcomputer.com/news/security/oracle-health-breach-compromises-patient-data-at-us-hospitals/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> この侵害は、監査されていないインフラストラクチャで発生しました。"
+            },
+            "solution": {
+              "benefits": [
+                "すべての操作がログに記録され、追跡可能な完全な監査証跡",
+                "完全に可視化された監査人は、何が保護されているか、誰がアクセスしたかを確認します",
+                "アクセス制御の証明 誰がいつ何をなぜ行ったのか",
+                "セキュリティレビューのための包括的なログを備えた監査対応ドキュメント",
+                "暗号化データを監査人に公開しない透過的な運用"
+              ],
+              "description": "すべての操作がログに記録されます: 誰がデプロイしたのか、誰が何にアクセスしたのか、いつ変更が行われたのか。 インフラストラクチャを完全に可視化します。 監査チームは正確なタイムスタンプと認証されたアクセス証明を取得します。 リポジトリごとの暗号化は運用制御から切り離されており、監査証跡でアクセスが証明されている間、データは暗号化されたままになります。",
+              "title": "完全な監査機能"
+            },
+            "subtitle": "測定できないものは管理できません <small class='subtitle-attribution'>— ピーター・ドラッカー</small>",
+            "title": "監査証跡の欠落"
+          },
+          "migrationExposure": {
+            "problem": {
+              "additionalPoints": [
+                "請負業者は移行プロセスを促進するためにセキュリティ制御を無効にします",
+                "10分のセキュリティウィンドウが24時間に",
+                "検索エンジンは移行期間中に保護されていないシステムにインデックスを付ける",
+                "セキュリティの一時的な無効化は、忘れると永続化される可能性があります",
+                "移行期間は攻撃者が今日積極的に悪用する機会を生み出します"
+              ],
+              "description": "インフラストラクチャの移行には、一時的なセキュリティの緩和が必要です。 請負業者は「プロセスをスピードアップする」ためにファイアウォールを無効にします。 パフォーマンスのために暗号化はバイパスされます。 一時的なウィンドウは永続的な攻撃ベクトルになります。 保護されたデータは数時間または数日間にわたって公開されます。 攻撃者は、セキュリティ制御が弱まる移行期間をターゲットにします。",
+              "story": "Keepnet Labs は、2020 年 3 月にデータベースを移行するために請負業者を雇いました。請負業者はファイアウォールを 10 分間無効にしました。 <a href='https://www.verdict.co.uk/keepnet-labs-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 50 億レコードのインデックスが作成されました。 データベースは 24 時間公開されます。 <a href='https://securityaffairs.com/100198/data-breach/uk-security-firm-data-leak.html' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> サイバーセキュリティ企業の移行により、数十億ドルが被害に遭いました。"
+            },
+            "solution": {
+              "benefits": [
+                "移行全体でデータを暗号化してソースから移行先まで保護",
+                "暗号化されていないステージングは​​ありません 暗号化されたスナップショットは暗号化されたまま転送されます",
+                "安全なロールバック暗号化バックアップはそのまま残り使用可能",
+                "すべてのクラウドプロバイダーでベンダーに依存しない同じ暗号化を実現",
+                "ゼロダウンタイムの可能性のある暗号化されたスナップショットにより、並行移行が可能になります"
+              ],
+              "description": "移行中、インフラストラクチャは暗号化されたままになります。 ソースでの暗号化されたスナップショット、暗号化されたトランスポート、宛先での暗号化されたデプロイメント。 復号化ウィンドウはありません。 暗号化されていないステージング コピーはありません。 リポジトリごとの暗号化は最初から最後まで有効です。",
+              "title": "暗号化された移行プロセス"
+            },
+            "subtitle": "<small class='subtitle-attribution'> たとえ小さくても、最良の行為には一貫性がある—預言者ムハンマド、スナン・イブン・マジャ (4240)</small>",
+            "title": "移行のセキュリティギャップ"
+          },
+          "physicalTheft": {
+            "problem": {
+              "additionalPoints": [
+                "暗号化が不完全な場合、盗難されたサーバーは危険にさらされたままになります",
+                "廃止手順では暗号化手順が完全にスキップされることがよくあります",
+                "ファイルを削除してもデータは消去されず、エントリが削除されるだけです",
+                "データベースのバックアップは頻繁に暗号化されずに安全な場所に保存されます",
+                "業界のベストプラクティスでは、保存データの暗号化が必要です"
+              ],
+              "description": "誰かがあなたのサーバー、バックアップドライブ、または古いハードウェアを盗みます。 OS パスワードは物理的アクセスに対する保護をまったく提供しません。USB から起動し、認証をバイパスし、ディスクをマウントし、すべてをコピーします。 顧客データ、認証情報、データベースはすべて消えてしまいました。 データセンターでは定期的に盗難が発生します。 廃止措置は危険にさらされます。",
+              "story": "モルガン スタンレーは、2016 年にデータ センターを廃止するために引っ越し業者を雇いました。<a href='https://techcrunch.com/2022/09/21/morgan-stanley-hard-drives-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 1,500 万件の顧客記録が保存されたハード ドライブが、暗号化されていない状態でオンライン オークションに出品されました。 <a href='https://www.bankinfosecurity.com/morgan-stanley-charged-sec-over-data-disposal-failures-a-12342' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 3,500 万ドルの罰金。 ほとんどのデバイスは回復しませんでした。"
+            },
+            "solution": {
+              "benefits": [
+                "あなたが制御するリポジトリ暗号化ごとの真のゼロ知識",
+                "完全なインフラストラクチャとバックアップにおける軍事グレードの暗号化",
+                "物理的な盗難は無価値になる 暗号化されたデータには価値がない",
+                "導入から廃止および廃棄までの証明可能な暗号化",
+                "最初からコンプライアンス要件を念頭に置いて構築"
+              ],
+              "description": "各リポジトリは独自のパスワードで暗号化されます。 すべてのファイル、コンテナ、構成、データベース、バックアップが保護されます。 リポジトリごとの暗号化キーを保持しているのはあなただけです。 盗難されたハードウェア = 価値のない暗号化された BLOB。",
+              "title": "完全なゼロナレッジ暗号化"
+            },
+            "subtitle": "錠前は正直な人を正直に保つ <small class='subtitle-attribution'>— 民間のことわざ (1912 年)</small>",
+            "title": "物理的アクセスによる盗難"
+          }
+        }
+      },
+      "developmentEnvironments": {
+        "cta": {
+          "button": "早期アクセスを申し込む",
+          "subtitle": "最初の環境のクローンを数秒で作成します。 利用できるスポットは限られています。",
+          "title": "開発を加速する準備はできていますか?"
+        },
+        "hero": {
+          "subtitle": "ワンクリックで、完全な運用インフラストラクチャ (アプリ、データベース、構成、依存関係) のクローンを作成します。 開発チームはオンデマンドで運用環境と同じ環境を取得できると同時に、インフラストラクチャのコストが 60% 削減されます。",
+          "title": "開発環境を何日も待つ必要はありません。 数秒で展開を開始できます。"
+        },
+        "meta": {
+          "description": "アプリ、データベース、構成など、完全な運用インフラストラクチャのクローンを 60 秒以内に作成します。 開発環境を何日も待つ必要はありません。 本番環境と同じ環境をオンデマンドで利用できます。",
+          "keywords": "一時的な環境、開発環境のプロビジョニング、インスタント開発環境、オンデマンド環境、プレビュー環境、Git ネイティブ環境、実稼働クローン",
+          "title": "数秒で起動する開発環境 | Rediacc"
+        },
+        "problems": {
+          "cicdComplexity": {
+            "problem": {
+              "additionalPoints": [
+                "カスタム統合スクリプトには継続的なメンテナンスが必要です",
+                "API の変更により、警告なしにカスタム統合が中断される",
+                "プロビジョニング システムを理解しているのは 1 人だけ",
+                "各 CI/CD プラットフォームには異なる統合アプローチが必要です",
+                "ツールの無秩序な増加により、認知負荷が増加し、障害点が増加します"
+              ],
+              "description": "既存の DevOps パイプラインに環境プロビジョニングを追加するには、カスタム スクリプト、API 統合、継続的なメンテナンスが必要です。 新しいツールごとに、すでに無秩序に広がっているツールチェーンがさらに複雑になり、チームの 13% が 14 以上の異なるツールを使いこなしています。 統合に失敗すると、CI/CD パイプラインが中断されます。 ドキュメントのギャップにより、プロビジョニング システムを理解しているエンジニアは 1 人だけとなり、知識が集中するリスクが生じます。",
+              "story": "ある B2B SaaS 企業は、AWS CloudFormation および RDS API を呼び出すカスタム Jenkins スクリプトを通じて環境プロビジョニングを自動化しようとしました。 最初の実装には 3 か月と 500 時間の DevOps エンジニアリング時間がかかりました。 6 か月後、元のエンジニアが退職したため、誰もスクリプトを安全に変更できなくなりました。 プロビジョニング システムは技術的負債となり、機能していても手を付けることはできませんでした。 AWS が API エンドポイントを非推奨にしたとき、パイプライン全体が壊れました。 回復時間: コンサルタントがカスタム スクリプトをリバース エンジニアリングする間に開発速度が失われ、2 週間かかりました。"
+            },
+            "solution": {
+              "benefits": [
+                "すべての主要な Git プラットフォームと CI/CD ツールのネイティブ統合",
+                "Terraform Kubernetes Docker とのコードとしてのインフラストラクチャの互換性",
+                "ワークフローの中断なし - 既存の開発プロセスと連携",
+                "PR 作成または Git イベントでの自動プロビジョニング",
+                "カスタム統合開発に数週間かかるのに対し、セットアップは数分で完了"
+              ],
+              "description": "Rediacc は、GitHub、GitLab、Bitbucket、Jenkins、CircleCI、および主要な CI/CD プラットフォームのネイティブ プラグインを通じて既存のスタックと統合します。 プロビジョニングは、PR の作成または手動コマンドで自動的にトリガーされます。 Terraform、Kubernetes、Docker Compose、または CloudFormation を使用したコードとしてのインフラストラクチャ定義は変更されずに機能します。 このプラットフォームは既存のツールを置き換えるのではなく、補完するものです。環境のプロビジョニングが自動化されながらも、開発ワークフローは使い慣れたままになります。 セットアップには数週間ではなく数分かかり、すべてのエンジニアは専門知識がなくても環境をプロビジョニングできます。",
+              "title": "Infrastructure-as-Code サポートによるネイティブ CI/CD 統合"
+            },
+            "subtitle": "シンプルさは究極の洗練である <small class='subtitle-attribution'>— レオナルド ダ ヴィンチ</small>",
+            "title": "統合のオーバーヘッド"
+          },
+          "environmentDrift": {
+            "problem": {
+              "additionalPoints": [
+                "Git で追跡されない手動編集によって構成ファイルがドリフトする",
+                "環境間でデータベース スキーマのバージョンが一致しない",
+                "依存関係のバージョンが異なると、「ここで機能してもそこで機能しない」というバグが発生する",
+                "環境変数が異なるため、本番環境での統合が中断される",
+                "ステージングが本番環境と正確に一致することを保証する方法はありません"
+              ],
+              "description": "ステージング環境は、手動による変更、バージョンの不一致、構成の劣化によって本番環境からドリフトします。 ステージングで機能するものは、本番環境では機能しません。 開発者は、実際のバグを修正するのではなく、環境の違いのデバッグに何時間も費やします。 この「自分のマシンで動作する」症候群により、開発者ごとに 1 日あたり 30 分以上が不整合のトラブルシューティングに無駄になります。 各開発者が手動でローカル設定を異なるように構成すると、環境の同等性は不可能になります。",
+              "story": "フィンテックのスタートアップ企業は、すべてのステージング テストに合格した重要な支払い機能を導入しました。 実稼働環境では、すぐに失敗しました。データベースの照合設定がステージングと実稼働環境で異なり、支払い処理が中断されました。 この問題は、数か月にわたる手動変更によりステージングが運用環境から逸脱していたため、検出されませんでした。 結果: ピーク取引時間中に 4 時間のダウンタイムが発生し、取引手数料が 20 万ドル損失し、規制遵守に関する調査が発生しました。 修正には 5 分かかりました。 環境の違いを見つけるのに4時間かかりました。"
+            },
+            "solution": {
+              "benefits": [
+                "アトミック クローニングは完全なシステム状態をキャプチャし、一貫性を確保します",
+                "構成ドリフトゼロ - クローンは設計どおりに本番環境と正確に一致します",
+                "自動同期により、本番環境の変更がすべての環境に反映されます。",
+                "実稼働環境ではなく開発段階で環境固有のバグを捕捉する",
+                "開発者ごとに毎日 30 分以上かかるデバッグ環境の問題を排除"
+              ],
+              "description": "Rediacc は、実稼働インフラストラクチャを特定の時点で複製し、アプリケーションの正確なバージョン、データベース スキーマ、構成ファイル、環境変数をキャプチャすることでドリフトを排除します。 すべてのクローンは本番環境であり、アトミックに複製されるため、本番環境の同等性が保証されます。 運用環境が変更されると更新が自動的に反映され、すべての環境の同期が維持されます。 開発者は、運用環境を正確に反映するコンテナまたは VM で作業するため、「ローカルで動作した」ということが「運用環境でも動作する」と同義になります。",
+              "title": "ポイントインタイムクローン作成による本番環境の同等性の保証"
+            },
+            "subtitle": "1 オンスの予防は 1 ポンドの治療に匹敵します <small class='subtitle-attribution'>— ベンジャミン フランクリン</small>",
+            "title": "生産パリティ問題"
+          },
+          "infrastructureCosts": {
+            "problem": {
+              "additionalPoints": [
+                "常時稼働環境は 24 時間 365 日コストがかかりますが、毎日 8 ～ 10 時間使用されます",
+                "開発者は使用後にテスト環境をシャットダウンするのを忘れる",
+                "データベース全体のコピーにより、ストレージ コストが不必要に増加します",
+                "複数のステージング環境は「万が一に備えて」ほとんどの時間アイドル状態にあります",
+                "インフラストラクチャ予算の戦いはチームの士気と速度を損なう"
+              ],
+              "description": "従来の開発インフラストラクチャでは、常時稼働のステージング、QA、およびクラウド リソースを 24 時間年中無休で消費する開発環境が必要です。 チーム全体で環境を増やすと、コストが爆発的に増加します。 標準的な開発/ステージング/QA セットアップを維持する 30 人の開発者チームは、アイドル状態のインフラストラクチャで月に 5 万ドルから 10 万ドルを簡単に消費します。 データベース全体のコピーがテラバイトを不必要に消費するため、ストレージのコストがさらに増大します。 財務部門は、速度への影響を理解せずに、インフラストラクチャ支出を削減するようエンジニアリングに圧力をかけています。",
+              "story": "50 人の開発者を擁する e コマース会社は、AWS の請求書を見直しました。開発インフラストラクチャに月々 18 万ドルかかりました。 分析によると、環境の 78% が営業時間外と週末にアイドル状態になっていることがわかりました。 各環境では、データベースのフル コピーを実行しました。つまり、重複排除機能を使用すると 3 TB に収まるデータ用の合計 30 TB のストレージが実行されました。 彼らには 15 の永続的なステージング環境がありましたが、常に 3 ～ 4 つのみがアクティブに使用されていました。 無駄: 開発者がシャットダウンするのを忘れたアイドル状態のインフラストラクチャに毎月 14 万ドルが費やされます。"
+            },
+            "solution": {
+              "benefits": [
+                "一時的なプロビジョニングによりインフラストラクチャのコストを 40 ～ 70% 削減",
+                "ブランチのマージ時の自動クリーンアップにより、環境の無秩序な拡大を防止します",
+                "シン クローン作成により、コピーオンライト テクノロジーにより 90% 以上のストレージを節約",
+                "従量課金制モデルでは、アクティブなコンピューティング時間に対してのみ料金が発生します",
+                "ROI は通常 3 ～ 6 か月以内に回収されます"
+              ],
+              "description": "Rediacc の一時的なアプローチは、オンデマンド プロビジョニングと自動クリーンアップを通じてインフラストラクチャ コストを 40 ～ 70% 削減します。 環境はアクティブに使用される場合にのみ存在します。テスト用に作成され、完了したら破棄されます。 シン クローン作成テクノロジーによりストレージの重複が排除され、コピーオンライトの仕組みにより 1 GB 未満のストレージから 10 TB のデータベースがプロビジョニングされます。 チームは、夜間や週末にアイドル状態になっている常時稼働のインフラストラクチャではなく、アクティブな使用中のコンピューティングに対してのみ料金を支払います。 ROI 計算ツールによると、典型的な 30 人チームは年間 75 万ドルから 150 万ドルを節約できることがわかります。",
+              "title": "オンデマンドプロビジョニングによる一時的な環境"
+            },
+            "subtitle": "<small class='subtitle-attribution'> 無駄にするな、欲しがるな — イギリスのことわざ</small>",
+            "title": "常時接続のインフラストラクチャの無駄"
+          },
+          "provisioningDelays": {
+            "problem": {
+              "additionalPoints": [
+                "手動セットアップには DevOps チケットが必要で、2 ～ 3 日の遅延が発生します",
+                "開発者ごとに環境の構成が異なるため、不整合が発生する",
+                "新しい開発者のオンボーディングには、環境セットアップだけで 1 ～ 2 週間かかります",
+                "環境の待機中にコンテキストを切り替えると生産性が低下します",
+                "DevOps チームがプロビジョニング リクエストの処理のボトルネックになる"
+              ],
+              "description": "開発チームは環境の待機で毎日 21 時間以上を無駄にしています。 手動セットアップには、DevOps の介入、複数のチケット、および数日間の待機が必要です。 ステージングの準備が完了するまでに、要件は変化しています。 このボトルネックにより速度が低下します。チームの 61% が、環境プロビジョニングが導入の主要な障害であると報告しています。 4 社に 1 社の組織では、環境の対応が追いつかないため、コードの完成から運用展開までに 3 か月以上かかっています。",
+              "story": "30 人の開発者を抱える中規模の SaaS 企業は、環境のセットアップを待つだけでチーム全体で 1 日あたり 21 時間を無駄にしていると計算しました。 各開発者は、環境構成の問題に毎日 30 ～ 45 分を要しました。 これは月に 525 時間に相当します。これは、フルタイムのエンジニア 3 名が、機能の出荷ではなくインフラストラクチャとの戦いだけをしていることに相当します。 コスト: 開発者の時間の無駄として年間 15 万ドル以上 (機能の遅延や市場機会の損失は考慮しません)。"
+            },
+            "solution": {
+              "benefits": [
+                "2 ～ 3 日かかるのに対し、60 秒で完全な環境をプロビジョニング",
+                "DevOps 介入ゼロ - 開発者は Git ワークフローからセルフサービスを利用できます",
+                "自動 Git 統合により、ブランチごとに環境が自動的に作成されます",
+                "一時的なアーキテクチャによりインフラストラクチャのコストを 40 ～ 70% 節約",
+                "新しい開発者を数週間ではなく数時間でオンボードします"
+              ],
+              "description": "Rediacc は、インフラストラクチャの自動複製により、60 秒以内に完全な開発環境をプロビジョニングします。 開発者は、チケットや手動介入を行わずに、Git ブランチから直接環境作成をトリガーします。 このプラットフォームは、運用スタック全体 (アプリケーション、データベース、構成、ネットワーク トポロジ、依存関係) を正確なコピーとして複製します。 ブランチがマージされると一時的な環境が自動的にクリーンアップされ、インフラストラクチャの無駄が防止されます。 DevOps チームはプロビジョニング ルールを一度定義すれば、開発者は無限にセルフサービスを行うことができます。",
+              "title": "インフラストラクチャのクローン作成によるインスタント プロビジョニング"
+            },
+            "subtitle": "時間は私たちが最も望むものですが、最も最悪に使うものです<small class='subtitle-attribution'>— ウィリアム・ペン</small>",
+            "title": "開発環境のボトルネック"
+          }
+        }
+      },
+      "disasterRecovery": {
+        "cta": {
+          "button": "回復計画を立てる",
+          "subtitle": "利用できるスポットは限られています。",
+          "title": "バックアップを信頼する準備はできていますか?"
+        },
+        "hero": {
+          "subtitle": "バックアップを確認しました。 無制限の歴史。 増加速度。",
+          "title": "災害復旧は正しく行われる"
+        },
+        "meta": {
+          "description": "バックアップが機能することを期待するのはやめて、実際にバックアップが機能することを確認してください。 Rediacc は、自動バックアップ検証、無制限の保持、増分バックアップ効率を提供します。",
+          "keywords": "災害復旧、バックアップ検証、増分バックアップ、データ保護、バックアップ テスト、ビジネス継続性",
+          "title": "災害復旧ソリューション | 実際に機能する検証済みのバックアップ"
+        },
+        "problems": {
+          "limitedHistory": {
+            "problem": {
+              "additionalPoints": [
+                "攻撃者はクリーンなバックアップの有効期限が切れるのを意図的に待ちます。",
+                "従来の短い保存期間では脆弱性が残る",
+                "完全バックアップごとに大量のストレージが消費されるため、保存期間が制限されます",
+                "コンプライアンス要件には、多くの場合、数か月にわたる履歴が必要です",
+                "ストレージコストは歴史と予算の間で選択を迫られます"
+              ],
+              "description": "保存期間が短いとストレージ容量は節約されますが、脆弱性が生じます。 感染前のデータが必要な場合、そのデータはすでに上書きされています。 従来のシステムでは、膨大なストレージコストが発生するため、長期保存する余裕がありません。",
+              "story": "ランサムウェアの滞留時間は 1 日未満に短縮されました。 <a href='https://www.secureworks.com/about/press/ransomware-dwell-time-hits-low-of-24-hours' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 攻撃者は、感染したバックアップがクリーンなバックアップを上書きするのを意図的に待ちます。 保持期間が短い組織は、すべてのバックアップにマルウェアが含まれていることを発見します。 <a href='https://www.sophos.com/en-us/press/press-releases/2023/08/dwell-time-time-start- Attack-when-its-detected-shrinks-8-days-first' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "重複排除により数か月分のバックアップ履歴を効率的に保存",
+                "感染前のクリーンなバックアップにアクセス",
+                "増分重複排除によりストレージの 90% 以上を節約",
+                "法的なデータ保持要件をコスト効率よく満たします",
+                "攻撃者は保存期間が過ぎるのを待つことはできません"
+              ],
+              "description": "Rediacc の増分重複排除により、ストレージを爆発的に増やすことなく、拡張されたバックアップ履歴を保存できます。 変更のみが保存され、重複データは保存されません。",
+              "title": "拡張された履歴保持"
+            },
+            "subtitle": "早起きは虫を捕まえる <small class='subtitle-attribution'>— ウィリアム カムデン (1636)</small>",
+            "title": "短いバックアップ履歴"
+          },
+          "slowBackups": {
+            "problem": {
+              "additionalPoints": [
+                "同じランサムウェア攻撃による回復時間の大幅な違い",
+                "従来の完全復元では、数日間のダウンタイムが発生し、サービスがキャンセルされます",
+                "最新の増分リカバリを数分でオンラインに戻す",
+                "医療は患者がケアを必要とする日を待つことができない",
+                "ダウンタイムが 1 時間発生するごとに、運用上および財務上の損害が倍増します"
+              ],
+              "description": "従来の完全バックアップでは、完全復元に時間がかかります。 最新の回復システムを備えた組織は、数時間でオンラインに戻ります。 従来のバックアップをお持ちですか? 数日間のダウンタイム、サービスのキャンセル、収益の損失。",
+              "story": "WannaCry は 2017 年 5 月に NHS を襲い、全国の病院システムをロックしました。 <a href='https://www.nao.org.uk/reports/investigation-wannacry-cyber-攻撃-and-the-nhs/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 一部の信頼は数時間で回復しました。 <a href='https://www.bridgeheadsoftware.com/2017/07/wannacry-nhs- Attack-lessons-backup-data-recovery-strategies/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 他のものは数日かかりました。 1万9000件以上の予約がキャンセルされた。 回復時間: 数時間の混乱と数日。"
+            },
+            "solution": {
+              "benefits": [
+                "数日にわたるダウンタイムではなく、数分で回復します",
+                "増分復元では、変更されたデータ部分のみが転送されます。",
+                "競合他社がダウンしている間、重要なシステムはオンラインに",
+                "収益の損失とサービスの中断を迅速に最小限に抑えます",
+                "いつでも迅速に回復できる組織になる"
+              ],
+              "description": "Rediacc の増分アーキテクチャにより、迅速なリカバリが可能になります。 システム全体ではなく、変更された部分のみを復元します。 他のオペレーションがまだ復旧している間に、重要なオペレーションを数分でオンラインに戻します。",
+              "title": "迅速な回復プロセス"
+            },
+            "subtitle": "5 つ前の 5 つをうまく活用する <small class='subtitle-attribution'>— 預言者ムハンマド、スナン・イブン・マジャ (4240)</small>",
+            "title": "回復時間が遅い"
+          },
+          "unverified": {
+            "problem": {
+              "additionalPoints": [
+                "ランサムウェアはデータを暗号化する数週間前にシステムに感染します",
+                "バックアップ ファイルが破損しているにもかかわらず、バックアップ システムが成功を報告する",
+                "手動復元テストには何時間もかかりますが、定期的にテストする人はいません",
+                "バックアップがあったにもかかわらず、復元に成功したのは 63% だけでした",
+                "テストされていないバックアップは必要なときに失敗します"
+              ],
+              "description": "バックアップがあることと、動作するバックアップがあることは、まったく別のことです。 ほとんどの組織は、災害が発生するまで復元をテストしません。その後、バックアップが破損しているか、不完全であるか、感染していることが判明します。 必要なときには、修正するにはすでに手遅れです。",
+              "story": "ボルチモア市のシステムは、2019 年 5 月にランサムウェアの攻撃を受けました。<a href='https://en.wikipedia.org/wiki/2019_Baltimore_ransomware_attach' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 当局は、バックアップがテストされたか、実行可能であるかを確認できませんでした。 <a href='https://krebsonsecurity.com/2019/06/report-no-eternal-blue-exploit-found-in-baltimore-city-ransomware/' target='_blank' rel='noopener noreferrer' class='quote'>[2]</a> 最近のバックアップが感染しました。 古いものはテストされていません。 回収費用：1,800万ドル。"
+            },
+            "solution": {
+              "benefits": [
+                "実際の復元操作を毎日テストすることによる自動検証",
+                "バックアップが破損しているか不完全かどうかをすぐに知ることができます",
+                "感染前のクリーンテスト済みバックアップにアクセス",
+                "手動テストは不要で、自動検証が継続的に実行されます",
+                "すべてのバックアップは必要になる前に機能することが証明されています"
+              ],
+              "description": "Rediacc はバックアップを作成するだけではなく、実際の復元をテストすることでバックアップを検証します。 すべてのバックアップは、緊急時に必要になる前に機能することが証明されています。",
+              "title": "自動バックアップ検証"
+            },
+            "subtitle": "信頼するが検証してください <small class='subtitle-attribution'>— ロシアのことわざ/レーガン (1987)</small>",
+            "title": "テストされていないバックアップ システム"
+          }
+        },
+        "video": {
+          "subtitle": "Rediacc がバックアップを自動的に検証し、効率を高めながら無制限の履歴を保存する様子をご覧ください。",
+          "title": "災害復旧の実際の様子をご覧ください"
+        }
+      },
+      "systemPortability": {
+        "cta": {
+          "button": "移行パスを探索する",
+          "subtitle": "ポータブル ファイル 1 つ。 軍事レベルのセキュリティ。 利用できるスポットは限られています。",
+          "title": "真のシステム移植性を実現する準備はできていますか?"
+        },
+        "hero": {
+          "subtitle": "ポータブル ファイル 1 つ。 軍事レベルのセキュリティ。 どこにでも導入可能。",
+          "title": "システムをどこにでも安全に移動"
+        },
+        "meta": {
+          "description": "ベンダーロックインから解放されます。 1 つのポータブル ファイル、軍用レベルの暗号化、およびあらゆるインフラストラクチャにわたるゼロ構成の展開で完全なシステムを実現します。",
+          "keywords": "システムのポータビリティ、ベンダー ロックイン、インフラストラクチャのモビリティ、クラウド移行、マルチクラウド、システム暗号化、データ セキュリティ、展開の自動化",
+          "title": "ユニバーサル システムの移植性 | インフラストラクチャをどこにでも安全に移動"
+        },
+        "problems": {
+          "deployment": {
+            "problem": {
+              "additionalPoints": [
+                "ユーザー ID はシステムやディストリビューションによって異なります",
+                "あるユーザーが所有するファイルは別の場所に属している",
+                "移行のたびに手動による所有権操作が必要",
+                "所有権が間違っているデータベース ファイルは起動しません",
+                "権限の不一致によりコンテナ アプリケーションが失敗する"
+              ],
+              "description": "Linux システム間でファイルを移動する場合、ファイルの所有権が悪夢になります。 ユーザー 'appuser' は、サーバー A では UID 1000 ですが、サーバー B では 1005 です。数値 UID が一致しないため、アプリケーションはファイルにアクセスできず、毎回手動で権限を修正する必要があります。",
+              "story": "Docker コンテナは、システム間を移動するときに常にこの問題に直面します。 <a href='https://www.joyfulbikeshedding.com/blog/2021-03-15-docker-and-the-host-filesystem-owner-matching-problem.html' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Linux は数値 UID を使用します。 システムごとに異なる値が割り当てられるため、権限の失敗が発生します。 <a href='https://stackoverflow.com/questions/51188997/docker-uid-gid-mapping-changes-on- Different-host' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> chown 操作とデバッグは数分で何時間にもなります。"
+            },
+            "solution": {
+              "benefits": [
+                "ファイルの所有権はシステムの異なる ID 間でも機能します",
+                "移行操作後に手動で権限を修正する必要はありません",
+                "チーム SSH キーは共有なしで一元管理される",
+                "データベースとアプリケーションは新しいシステムをすぐに開始します",
+                "Ubuntu Debian CentOS 権限間の移動が機能する"
+              ],
+              "description": "Rediacc は、ファイルシステム レベルでユーザーの所有権を処理します。 リポジトリを新しいシステムに移行すると、ファイルの所有権は、異なるユーザー ID に関係なく自動的に機能します。 チームの SSH キーは一元管理され、開発者は資格情報を共有せずに自動的に接続します。",
+              "title": "自動所有権解決"
+            },
+            "subtitle": "性急さは悪魔から来るものです。 熟慮はアッラーからのものである <small class='subtitle-attribution'>— 預言者ムハンマド、ムスナド・アブ・ヤラ (4256)</small>",
+            "title": "ファイル権限の競合"
+          },
+          "testingVendorSwitch": {
+            "problem": {
+              "additionalPoints": [
+                "7% の企業は災害復旧をテストしたことがありません",
+                "毎年、古いテストはわずか 46%",
+                "インフラストラクチャの並行テストにより、検証中のコストが 2 倍になる",
+                "時間リソースの不足により定期的なテストができない",
+                "テストされていないフェイルオーバー プランは必要なときに失敗します"
+              ],
+              "description": "単一クラウドにはリスクがあります。 災害が発生する前にフェイルオーバーをテストしたいと考えています。 しかし、テストとは、本番環境を正確にミラーリングするインフラストラクチャを複製し、数週間にわたって同期を維持することを意味します。 ほとんどの企業は、障害が発生してテストすべきであることが判明するまで、リスクと労力を費やす価値がないため、ディザスタリカバリをテストしません。",
+              "story": "災害復旧計画をまったくテストしていない企業はわずか 7% です。 <a href='https://invenioit.com/continuity/disaster-recovery-statistics/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> しかし、46% は毎年のみ検査を行っています。 <a href='https://dbvisit.com/blog/five-consequences-of-not-testing-your-disaster-recovery-plan' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 理由: 時間、リソース、複雑さの不足。 <a href='https://www.techrepublic.com/article/why-23-of-companies-never-test-their-disaster-recovery-plan-despite-major-risks/' target='_blank' rel='noopener noreferrer' class='quote'>[3]</a> テストのコストは 2 倍になります。 プロバイダーの停止は、テストする必要があったことを証明します。"
+            },
+            "solution": {
+              "benefits": [
+                "実際の運用アーキテクチャを使用して災害復旧を検証する",
+                "フェールオーバー テストを数か月ではなく数週間で完了する",
+                "本番環境への影響をゼロにして自信を持ってテストする",
+                "必要になる前にフェイルオーバー速度のベンチマークを行う",
+                "障害が発生する前にバックアップ計画が機能することを確認する"
+              ],
+              "description": "Rediacc は、本番環境の正確な状態のスナップショットを作成します。 実際の構成とデータ パターンを使用して、そのスナップショットを Azure または GCP にデプロイします。 本番環境に触れることなく、フェイルオーバーのパフォーマンスをテストし、災害復旧を検証します。 動作することが証明された場合にのみコミットしてください。 ダウンタイムゼロ。 リスクゼロ。",
+              "title": "リスクのないフェイルオーバーテスト"
+            },
+            "subtitle": "練習すれば完璧になる <small class='subtitle-attribution'>— 古典的な伝統 (1500 年代以上)</small>",
+            "title": "未テストのフェイルオーバー計画"
+          },
+          "vendorLockIn": {
+            "problem": {
+              "additionalPoints": [
+                "10月20日の停電は世界中で15時間続いた",
+                "地域的な停止により、本番環境のバックアップが同時に失敗する",
+                "複数地域の組織が単一クラウドでオンラインを維持",
+                "クラウドプロバイダーに障害が発生した場合は代替運用が必要",
+                "ベンダーロックインにより、必要なフェイルオーバーオプションが不要になります"
+              ],
+              "description": "1 つのクラウド プロバイダーを基盤に構築しました。 彼らが失敗すると、あなたも彼らと一緒に失敗します。 バックアップはありません。 フェイルオーバーはありません。 選択の余地はありません。 ベンダー ロックインはコストがかかるだけでなく、運用全体を停止させる単一障害点となります。",
+              "story": "2025 年 10 月 20 日。AWS US-EAST-1 DNS 障害は 15 時間続きました。 <a href='https://techcrunch.com/2025/10/21/amazon-dns-outage-breaks-much-of-the-internet/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Coinbase、Fortnite、Signal、Zoom - オフライン。 AWS に縛られた組織には選択肢がありませんでした。 マルチリージョン アーキテクチャは自動的にフェイルオーバーします。 <a href='https://ine.com/blog/aws-october-2025-outage-multi-region-and-cloud-lessons-learned' target='_blank' rel='noopener noreferrer' class='quote'>[2]</a> 単一クラウドは単一障害点です。"
+            },
+            "solution": {
+              "benefits": [
+                "複数のクラウドを実行していて障害が発生してもどこにでも導入可能",
+                "クラウドプロバイダーがすでに実行中の代替サービスに失敗した場合",
+                "プロバイダー間のフェイルオーバーは数分でテスト済み、検証済み",
+                "個別のインフラストラクチャ バージョンを必要としない真のマルチクラウド",
+                "フェイルオーバーが機能する必要がある前にテストする"
+              ],
+              "description": "Rediacc は、完全なシステムを単一のポータブル リポジトリにパッケージ化します。 変更を加えずに、AWS、Azure、Google Cloud、またはベアメタルにデプロイします。 1 つのプロバイダーに障害が発生しても、すでに別のプロバイダーが稼働しています。 フェイルオーバーには数時間ではなく数分かかります。 インフラストラクチャが 1 つのプロバイダーの稼働時間を奪うことはありません。",
+              "title": "真のマルチクラウド冗長性"
+            },
+            "subtitle": "すべての卵を 1 つのカゴに入れないでください <small class='subtitle-attribution'>— セルバンテス (1605) / カーネギー (1885)</small>",
+            "title": "ベンダーロックイントラップ"
+          }
+        }
+      },
+      "threatResponse": {
+        "cta": {
+          "button": "システムを保護する",
+          "subtitle": "脅威からより早く生き残ります。 不変。 ポータブル。 あなたのコントロールで。",
+          "title": "サイバーレジリエンスへの準備はできていますか?"
+        },
+        "hero": {
+          "subtitle": "不変のバックアップ。 回復まであと数分。 クラウド全体でのインフラストラクチャの避難。",
+          "title": "脅威は素早く移動します。 あなたもすべきです。"
+        },
+        "meta": {
+          "description": "不変のバックアップ、迅速なリカバリ、インフラストラクチャの移植性により、ランサムウェア攻撃から生き残ります。 侵害されたシステムを数分で避難させます。",
+          "keywords": "ランサムウェア保護、サイバー回復力、不変バックアップ、迅速な回復、ビジネス継続性、インフラストラクチャの避難、災害復旧",
+          "title": "ランサムウェアおよびサイバーレジリエンス ソリューション | 脅威は急速に変化する"
+        },
+        "problems": {
+          "infrastructureBlackBox": {
+            "problem": {
+              "additionalPoints": [
+                "組織はすべての本番 SSH キーを説明できるわけではありません",
+                "バックアップ システムは、忘れられたサービスの潜在的なトロイの木馬の脅威を捕捉します",
+                "インフラストラクチャの移行により蓄積されたリスクが今後も永続化する",
+                "レガシー システムには災害復旧に影響を与える不明な構成がある",
+                "未知のアクセスにより、回復後にランサムウェアが再侵入する可能性がある"
+              ],
+              "description": "レガシー システムは、請負業者または攻撃者から文書化されていない SSH キーを蓄積します。 バックアップは、ガベージ ファイル、忘れられたサービス、潜在的なトロイの木馬など、あらゆるものをキャプチャします。 粘り強い攻撃者もバックアップされます。 移行には未知のリスクが永続します。 バックアップに何が含まれているのか、復元時に何がアクティブになるのかは誰も知りません。",
+              "story": "ある金融会社が、運用データベースで文書化されていない 47 個の SSH キーを発見しました。これには、数年前に撤退したベンダーからのキーも含まれています。 <a href='https://www.appviewx.com/blogs/ssh-key-sprawl-causes-and-consequences/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> フォレンジック SSH キー監査中にランサムウェアの回復が 2 週間遅れました。 <a href='https://www.encryptionconsulting.com/ssh-key-sprawl/' target='_blank' rel='noopener noreferrer' class='quote'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "検証済みの必須システム コンポーネントのみを移行する",
+                "蓄積されたセキュリティ負債と従来の複雑さを解消します",
+                "一元化された SSH キー管理により、キーのスプロール化が解消されます",
+                "本番システムとバックアップシステムの完全な監査可能性",
+                "新たな導入により、隠れた脅威のない白紙の状態が提供されます"
+              ],
+              "description": "Rediacc では、検証済みの必須コンポーネントを備えた新しいインフラストラクチャ上でシステムを完全に再構築できます。 「すべて」ではなく、意図的に選択したシステム データと構成を移行します。 SSH キーは一元的に管理および監査されます。 結果: 完全な可視性を備えたクリーンなインフラストラクチャ。 担保債務はありません。 隠しアクセスはありません。",
+              "title": "新しく検証されたインフラストラクチャ"
+            },
+            "subtitle": "木を見て森を見ず <small class='subtitle-attribution'>— ジョン・ヘイウッド (1546)</small>",
+            "title": "インフラストラクチャのブラックボックス"
+          },
+          "osVulnerability": {
+            "problem": {
+              "additionalPoints": [
+                "OS の重大な脆弱性にはパッチがありません",
+                "OS の完全な移行には数週間のテスト検証が必要",
+                "実稼働ワークロードがなければ移行を安全にテストできない",
+                "失敗した移行をロールバックすると、データが完全に復元されます",
+                "セキュリティ脆弱性の窓は数週間開いたままになる"
+              ],
+              "description": "OSの重大な脆弱性が発見されました。 実行していない新しいバージョンのみにパッチを適用します。 移行には数週間のテストが必要です。 データを危険にさらさずに本番環境に対してテストすることはできません。 ロールバックとは完全な復元を意味します。 移行が完了する前に攻撃者が悪用しないことを願って、脆弱なままになります。",
+              "story": "Log4Shell (2021 年 12 月) 残酷な選択を強いられました。 <a href='https://nvd.nist.gov/vuln/detail/CVE-2021-44228' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 企業は OS の移行の検証に 2 ～ 3 週間を費やしました。 11 日以内にパッチが適用されたのは 45% のみでした。 一部はテスト中 4 週間以上脆弱なままでした。 <a href='https://www.crowdstrike.com/en-us/blog/log4j2-vulnerability-analysis-and-mitigation-recommendations/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "実際の運用ワークロードに対して新しい OS をテストする",
+                "実際のシステムを危険にさらさずに互換性を検証",
+                "ダウンタイムゼロで即座に以前の OS に戻ります",
+                "Ubuntu Debian CentOS AlmaLinux 間を数分で移行",
+                "セキュリティ脆弱性のウィンドウを数週間ではなく数分で閉じる"
+              ],
+              "description": "Rediacc により、迅速でリスクのない OS 移行テストが可能になります。 インフラストラクチャを新しい OS にデプロイし、すべてが実際の運用ワークロードで動作することを確認します。 問題が発生した場合は、すぐに元に戻してください。データの損失や回復はありません。 安全であることが確認されたら、永続的にコミットします。 脆弱性のウィンドウは数分で閉じます。",
+              "title": "リスクのない OS テスト"
+            },
+            "subtitle": "あらゆる困難の中に安らぎがある<small class='subtitle-attribution'>— アル・インシラ 94:5</small>",
+            "title": "OSアップデートの遅延"
+          },
+          "ransomwareBackups": {
+            "problem": {
+              "additionalPoints": [
+                "ランサムウェア攻撃の 94% はバックアップ インフラストラクチャを標的としています",
+                "攻撃者はクリーンなバックアップが上書きされるまで数週間待機する",
+                "攻撃者が管理者の資格情報を持っている場合、不変バックアップは失敗します",
+                "バックアップを削除すると、身代金を要求された後でも回復パスがなくなる",
+                "プロバイダーのバックアップが暗号化されているため、プロバイダーは復元を支援できません"
+              ],
+              "description": "ランサムウェア攻撃者はバックアップ インフラストラクチャをターゲットにし、コピーを削除または上書きしてリカバリを不可能にします。 共有資格情報を使用して同じクラウド アカウントにバックアップを作成すると、攻撃者は数か月分の履歴を削除できます。 不変のバックアップであっても、管理者アクセスでは失敗します。 クリーンなバックアップは気づかないうちに消えてしまいます。",
+              "story": "2024 年のソフォスの調査では、ランサムウェア被害者の 94% がバックアップを標的にしており、57% が成功していることがわかりました。 <a href='https://www.techrepublic.com/article/ransomware-attackers-target-backups/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> バックアップが侵害された場合、回復コストの中央値は 300 万ドルに達し、8 倍になります。 <a href='https://news.sophos.com/en-us/2024/03/26/the-impact-of-compromized-backups-on-ransomware-outcomes/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "暗号化されたバックアップは、資格情報が完全に侵害されても存続します",
+                "トークンの不変性により、管理者アクセスによる削除が防止されます",
+                "以前のバージョンはそのまま残り、無期限に暗号化されます",
+                "インフラストラクチャが完全に侵害された後でも復旧は可能",
+                "身代金の支払いは不要で、バックアップはお客様の管理下に残ります"
+              ],
+              "description": "Rediacc は、管理上ではなく、ストレージ レベルで不変の暗号化されたバックアップ コピーを保存します。 攻撃者がインフラストラクチャ トークンや管理者の資格情報を侵害したとしても、暗号化されたデータを読み取ることのみが可能であり、バージョンを変更、削除、または上書きすることはできません。 パスワードで暗号化されたスナップショットは、攻撃者にとっては無価値のままです。",
+              "title": "不変のバックアップ保護"
+            },
+            "subtitle": "ラクダを結び、アッラーを信頼してください <small class='subtitle-attribution'>—預言者ムハンマド、スナン・アト・ティルミディ (2517)</small>",
+            "title": "ランサムウェアのターゲットのバックアップ"
+          }
+        }
+      }
+    },
+    "team": {
+      "cta": {
+        "buttons": {
+          "contact": "連絡する",
+          "learnMore": "もっと詳しく知る"
+        },
+        "subtitle": "顧客、パートナー、チームメンバーとして、インフラストラクチャ革命に参加してください。",
+        "title": "私たちの使命に参加しましょう"
+      },
+      "hero": {
+        "subtitle": "お客様のビジネスにおける災害を不可能にすることに専念するエンジニア。",
+        "title": "生き残るためのインフラストラクチャを構築するチーム"
+      },
+      "meta": {
+        "description": "災害に強いインフラを構築するチームを紹介します。 エンジニアは、お客様のシステムがあらゆる課題に耐えられるようにすることに専念します。",
+        "keywords": "Rediacc チーム、インフラストラクチャ エンジニアリング、災害復旧専門家、システム信頼性、DevOps チーム",
+        "title": "私たちのチーム | Rediacc - 生き残るインフラの構築"
+      },
+      "mission": {
+        "belief": "私たちは、規模や予算に関係なく、すべての企業はフォーチュン 500 企業が使用しているものと同じ強力なインフラストラクチャ ツールにアクセスする権利があると信じています。 だからこそ、私たちはインフラの複雑さに対処しながら、競争の場を平等にし、企業が最も得意なことに集中できるようにするために Rediacc を構築しました。",
+        "description": "AI は 47 日ごとに実稼働データベースを削除します。 毎年、1.71% のドライブが故障します。 ランサムウェアの 75% はバックアップをターゲットとしています。 私たちはこれらすべての災害を 60 秒以内に回復できるようにします。",
+        "title": "私たちの使命: 災害を不可能にする"
+      },
+      "story": {
+        "beginning": {
+          "paragraph1": "2018 年に私はソフトウェア エンジニアの職を離れ、自分自身のビジョンの構築を追求しました。 興奮のあまり、私は1日18時間働き続け、睡眠時間はわずか4～5時間でした。 5〜6か月間、すべてをプロジェクトに注ぎ込みました。",
+          "paragraph2": "その後、予期せずすべての開発インフラストラクチャにアクセスできなくなりました。 私が構築したものすべてに突然アクセスできなくなりました。 バックアップはありませんでした。バックアップがあったとしても、それまで使用していたオンプレミスのハードウェアを交換する余裕はありませんでした。",
+          "paragraph3": "借金を返済して家族を養うために、私はサラリーマンに戻らなければなりませんでした。 仕事に再びアクセスできるようになるまでに 20 か月かかりました。 その間、私は夢から遠ざかり、不安と増大する経済的プレッシャーを抱えて暮らしていました。",
+          "title": "始まり"
+        },
+        "birth": {
+          "paragraph1": "すべてはポータブル ファイルシステム ロジックの開発から始まりました。 そこから、バックアップ モジュールを統合しました。 次に、最も重要な課題の 1 つが生じました。それは、データ サイズに関係なく、最小限のダウンタイムでライブ システム転送を可能にすることです。 実際のニーズに基づいて独自の機能を追加しました。",
+          "paragraph2": "こうして、最も困難な課題を乗り越えて作られた製品である Rediacc が誕生しました。 今では誰でも利用できるようになりました。 これを使用して、何事にもビジネスを妨げることなく、生き残り、加速する準備を整えてください。",
+          "quote": "インフラにアクセスできなくなったとき、何を構築しなければならないか、それは災害を不可能にするシステムだということがわかりました。",
+          "title": "レディアックの誕生"
+        },
+        "title": "私たちのストーリー",
+        "turningPoint": {
+          "paragraph1": "数年後、私はこのような問題が再び起こらないようにするために何ができるかを考え続けました。 私は、いつでもシステムを別の環境に移動でき、必要なときにいつでもアクティブ化でき、簡単にバックアップでき、どこに移動しても安全に保存できるツールを必要としていました。",
+          "paragraph2": "2021 年に、NetworkChuck のビデオを通じて Docker を知りました。 何が可能なのかということに衝撃を受けました。 このテクノロジーについてもっと早く知っていればよかったと思いました。このテクノロジーによってすべてが変わったかもしれません。",
+          "paragraph3": "しかし、Docker だけですべての問題が解決されたわけではありません。 システム間でコンテナ ファイルを移動するのは困難でした。 ファイルの所有権の互換性の問題に直面し、データ サイズが大きくなるにつれて転送に時間がかかるようになりました。 最も重要なのは、移行が完了するまでサービスをオフラインにしておく必要があり、Docker は最小限のセキュリティ機能を提供していました。",
+          "title": "転換点"
+        }
+      },
+      "team": {
+        "title": "私たちのチームのご紹介"
+      },
+      "values": {
+        "title": "私たちの価値観"
+      }
+    }
+  },
+  "problem": {
+    "reality": {
+      "imageAlt": "従来のインフラストラクチャ ワークフローの課題を示す図: 環境のプロビジョニングを待ってイライラする開発者、より迅速な展開を要求する関係者、サンドボックスの更新が遅いためにチームが危険な実稼働テストに頼っている",
+      "title": "現実: 不満を抱えるチーム、危険な回避策"
+    },
+    "solution": {
+      "imageAlt": "Rediacc プラットフォーム ソリューションの図: 自動化されたインフラストラクチャ プロビジョニング、即時本番環境のような環境クローン、合理化された開発者ワークフロー、モデル コンテキスト プロトコル統合による AI 安全な運用",
+      "title": "ソリューション: Rediacc プラットフォーム"
+    },
+    "subtitle": "実稼働環境にはテラバイト規模のデータがあるが、サンドボックス環境では毎月しか同期しない場合、チームは危険な回避策につながる不可能な選択に直面します。",
+    "title": "スピードミスマッチの危機"
+  },
+  "solutions": {
+    "items": [
+      {
+        "benefits": [
+          "不変のバックアップは攻撃に耐えます",
+          "数時間や数日ではなく、数分で回復します",
+          "リスクのない OS テスト"
+        ],
+        "description": "回復速度が命を救います。 不変のバックアップ。 迅速な対応。",
+        "title": "ランサムウェアの生存"
+      },
+      {
+        "benefits": [
+          "AWS の停止から生き残る",
+          "ベンダーロックインゼロ",
+          "テスト済みフェイルオーバーの準備完了"
+        ],
+        "description": "単一クラウドは危険です。 どこにでも導入可能。 迅速にフェイルオーバーします。",
+        "title": "常にマルチクラウド"
+      },
+      {
+        "benefits": ["自動検証", "長期保存", "数分で回復します"],
+        "description": "検証済みの回復が保証されています。 テスト済みのバックアップ。 完全な履歴。",
+        "title": "検証済みのバックアップ"
+      },
+      {
+        "benefits": ["あなたが制御する暗号化", "完全な監査証跡", "移行しても安全"],
+        "description": "すべてが暗号化されています。 すべてが監査されました。 完全なコントロール。",
+        "title": "暗号化制御"
+      },
+      {
+        "benefits": ["60秒の環境プロビジョニング", "本番環境と同一のクローン", "自動 Git 統合"],
+        "description": "インスタント本番クローン。 DevOps チケットはゼロです。 60秒環境。",
+        "title": "開発環境"
+      }
+    ],
+    "subtitle": "インフラストラクチャに障害が発生した場合や脅威が発生した場合に迅速に対応するための 5 つの統合ソリューション。",
+    "title": "ビジネス継続性を確保する方法"
+  }
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Flex, List, Tag, Typography, type ListProps } from 'antd';
+import { Card, Flex, List, type ListProps, Tag, Typography } from 'antd';
 import {
   DetailPanelDivider,
   DetailPanelFieldLabel,

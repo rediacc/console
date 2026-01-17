@@ -1,5 +1,5 @@
-export { tokenAdapter } from './tokenAdapter';
-export { urlAdapter } from './urlAdapter';
+export { errorHandler } from './errorHandler';
 export { masterPasswordAdapter } from './masterPasswordAdapter';
 export { telemetryAdapter } from './telemetryAdapter';
-export { errorHandler } from './errorHandler';
+export { tokenAdapter } from './tokenAdapter';
+export { urlAdapter } from './urlAdapter';

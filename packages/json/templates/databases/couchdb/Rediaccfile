@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+    echo "Pulling CouchDB image..."
+    docker pull couchdb:3
+
+    echo "Creating data and configuration directories..."
+    mkdir -p ./data
+    mkdir -p ./etc/local.d
+    chmod 755 ./data
+    chmod 755 ./etc/local.d
+
+    return $?
+}
+
+up() {
+    if [ -f .env ]; then
+        source .env
+    fi
+
+    echo "Starting CouchDB server..."
+    _compose up -d
+
+    echo "Waiting for CouchDB to be healthy..."
+    sleep 3
+
+    echo ""
+    echo "CouchDB is starting up!"
+    echo "Access Fauxton UI at: http://localhost:5984/_utils"
+    echo "Username: ${COUCHDB_USER:-admin}"
+    echo ""
+    echo "To find the assigned port, run:"
+    echo "  docker port ${CONTAINER_NAME:-couchdb-server} 5984"
+    echo ""
+
+    return $?
+}
+
+down() {
+    echo "Stopping CouchDB server..."
+    _compose down -v
+    return $?
+}

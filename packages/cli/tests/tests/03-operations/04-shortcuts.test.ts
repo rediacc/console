@@ -53,15 +53,15 @@ test.describe('Shortcut Commands @cli @operations', () => {
 
   test.describe
     .skip('cancel shortcut', () => {
-      test('should cancel a task via shortcut', async () => {
-        // Requires an active task to cancel
+      test.skip('should cancel a task via shortcut', async () => {
+        // TODO: Requires an active task to cancel
       });
     });
 
   test.describe
     .skip('retry shortcut', () => {
-      test('should retry a failed task via shortcut', async () => {
-        // Requires a failed task to retry
+      test.skip('should retry a failed task via shortcut', async () => {
+        // TODO: Requires a failed task to retry
       });
     });
 });

@@ -1,4 +1,4 @@
-import { SSHConnection, testSSHConnectivity, type SSHSetupResult } from '../ssh/connection.js';
+import { SSHConnection, type SSHSetupResult, testSSHConnectivity } from '../ssh/connection.js';
 // RepositoryConnectionOptions - future use for enhanced connection handling
 
 /**

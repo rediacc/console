@@ -1,6 +1,6 @@
 import { typedApi } from '@/api/client';
+import i18n from '@/i18n/config';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
-import { DEFAULTS, SUCCESS_MESSAGES } from '@rediacc/shared/config';
 import type { GetTeamQueueItems_ResultSet1, QueueTrace } from '@rediacc/shared/types';
 
 interface HelloResponseData {
@@ -93,7 +93,7 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
   const responseVault = trace.responseVaultContent;
 
   if (!responseVault?.vaultContent) {
-    return createSuccessResult(SUCCESS_MESSAGES.HELLO_SUCCESS, 'COMPLETED');
+    return createSuccessResult(i18n.t('shared:success.helloFunctionSuccess'), 'COMPLETED');
   }
 
   const vaultData = parseResponseVaultContent(responseVault.vaultContent);
@@ -102,18 +102,22 @@ function handleCompletedStatus(trace: QueueTrace): QueueItemCompletionResult {
 
   return isError
     ? createErrorResult(
-        resultMessage ?? DEFAULTS.ERROR.HELLO_FUNCTION_ERROR,
+        resultMessage ?? i18n.t('shared:errors.helloFunctionError'),
         'COMPLETED',
         vaultData
       )
-    : createSuccessResult(resultMessage ?? SUCCESS_MESSAGES.HELLO_SUCCESS, 'COMPLETED', vaultData);
+    : createSuccessResult(
+        resultMessage ?? i18n.t('shared:success.helloFunctionSuccess'),
+        'COMPLETED',
+        vaultData
+      );
 }
 
 function handleFailedStatus(
   queueDetails: GetTeamQueueItems_ResultSet1,
   status: string
 ): QueueItemCompletionResult {
-  const failureReason = queueDetails.lastFailureReason ?? DEFAULTS.ERROR.OPERATION_FAILED;
+  const failureReason = queueDetails.lastFailureReason ?? i18n.t('shared:errors.operationFailed');
 
   return createErrorResult(failureReason, status);
 }

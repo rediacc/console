@@ -4,7 +4,7 @@
  * Helper functions to extract typed data from TypedApiResponse objects.
  */
 
-import type { TypedApiResponse, PrimaryResult } from './types';
+import type { PrimaryResult, TypedApiResponse } from './types';
 import type { StoredProcedureName } from '../../types/api-schema.generated';
 
 /**

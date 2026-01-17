@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCliCommand,
   buildProtocolUrl,
-  parseProtocolUrl,
   PROTOCOL_SCHEME,
+  parseProtocolUrl,
   VALID_ACTIONS,
   validateToken,
 } from '../parser.js';

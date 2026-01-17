@@ -2,11 +2,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Empty, Flex, Modal, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMachineMutations, useGetTeamMachines } from '@/api/api-hooks.generated';
-import { useGetTeamRepositories } from '@/api/api-hooks.generated';
-import { useGetTeamStorages } from '@/api/api-hooks.generated';
+import {
+  useGetTeamMachines,
+  useGetTeamRepositories,
+  useGetTeamStorages,
+  useMachineMutations,
+} from '@/api/api-hooks.generated';
+import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { SplitResourceView, type ContainerData } from '@/components/common/SplitResourceView';
+import { type ContainerData, SplitResourceView } from '@/components/common/SplitResourceView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
 import ConnectivityTestModal from '@/features/machines/components/ConnectivityTestModal';
@@ -19,7 +23,7 @@ import { showMessage } from '@/utils/messages';
 import { PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { useMachineFunctionHandlers } from './hooks/useMachineFunctionHandlers';
-import type { MachineFunctionData, MachineFormValues } from './types';
+import type { MachineFormValues, MachineFunctionData } from './types';
 
 const MachinesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common']);
@@ -28,7 +32,14 @@ const MachinesPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Use custom hooks for common patterns
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
+    pageId: 'machines',
+  });
   const {
     modalState: unifiedModalState,
     currentResource,
@@ -53,14 +64,10 @@ const MachinesPage: React.FC = () => {
   const connectivityTest = useDialogState();
 
   const { data: machines = [], refetch: refetchMachines } = useGetTeamMachines(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
+    selectedTeam ?? undefined
   );
-  const { data: repositories = [] } = useGetTeamRepositories(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
-  );
-  const { data: storages = [] } = useGetTeamStorages(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
-  );
+  const { data: repositories = [] } = useGetTeamRepositories(selectedTeam ?? undefined);
+  const { data: storages = [] } = useGetTeamStorages(selectedTeam ?? undefined);
 
   const mutations = useMachineMutations();
   const { executeDynamic, isExecuting } = useQueueAction();
@@ -298,6 +305,54 @@ const MachinesPage: React.FC = () => {
   // Note: This page uses SplitResourceView instead of ResourceListView
   // to support the side panel detail view. This is intentional.
 
+  const renderContent = () => {
+    if (!selectedTeam) {
+      return (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('teams.selectTeamPrompt')} />
+      );
+    }
+
+    return (
+      <SplitResourceView
+        type="machine"
+        teamFilter={[selectedTeam]}
+        showFilters
+        showActions
+        onCreateMachine={() => openUnifiedModal('create')}
+        onEditMachine={(machine) =>
+          openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
+        }
+        onVaultMachine={(machine) =>
+          openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
+        }
+        onFunctionsMachine={(machine, functionName) => {
+          // WARNING: Do not change this pattern!
+          // - Specific functions (functionName defined): Queue directly with defaults, NO modal
+          // - "Advanced" (functionName undefined): Open modal with function list
+          // This split behavior is intentional - users expect quick actions for specific
+          // functions and full configuration only when clicking "Advanced".
+          if (functionName) {
+            void handleDirectFunctionQueue(machine, functionName);
+          } else {
+            openUnifiedModal('create', machine as Machine & Record<string, unknown>);
+          }
+        }}
+        onDeleteMachine={handleDeleteMachine}
+        enabled
+        refreshKeys={refreshKeys}
+        onQueueItemCreated={(taskId, machineName) => {
+          openQueueTrace(taskId, machineName);
+        }}
+        selectedResource={
+          selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine
+        }
+        onResourceSelect={handleResourceSelection}
+        isPanelCollapsed={isPanelCollapsed}
+        onTogglePanelCollapse={handleTogglePanelCollapse}
+      />
+    );
+  };
+
   return (
     <>
       <Flex vertical>
@@ -308,13 +363,13 @@ const MachinesPage: React.FC = () => {
               <TeamSelector
                 data-testid="machines-team-selector"
                 teams={teams}
-                selectedTeams={selectedTeams}
-                onChange={setSelectedTeams}
+                selectedTeam={selectedTeam}
+                onChange={setSelectedTeam}
                 loading={teamsLoading}
                 placeholder={t('teams.selectTeamToView')}
               />
             </Flex>
-            {selectedTeams.length > 0 && (
+            {selectedTeam && (
               <Space size="small">
                 <Tooltip title={t('machines:createMachine')}>
                   <Button
@@ -340,49 +395,12 @@ const MachinesPage: React.FC = () => {
           </Flex>
 
           <Flex vertical>
-            {selectedTeams.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('teams.selectTeamPrompt')}
-              />
+            {teamsLoading ? (
+              <LoadingWrapper loading centered minHeight={200}>
+                <Flex />
+              </LoadingWrapper>
             ) : (
-              <SplitResourceView
-                type="machine"
-                teamFilter={selectedTeams}
-                showFilters
-                showActions
-                onCreateMachine={() => openUnifiedModal('create')}
-                onEditMachine={(machine) =>
-                  openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
-                }
-                onVaultMachine={(machine) =>
-                  openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
-                }
-                onFunctionsMachine={(machine, functionName) => {
-                  // WARNING: Do not change this pattern!
-                  // - Specific functions (functionName defined): Queue directly with defaults, NO modal
-                  // - "Advanced" (functionName undefined): Open modal with function list
-                  // This split behavior is intentional - users expect quick actions for specific
-                  // functions and full configuration only when clicking "Advanced".
-                  if (functionName) {
-                    void handleDirectFunctionQueue(machine, functionName);
-                  } else {
-                    openUnifiedModal('create', machine as Machine & Record<string, unknown>);
-                  }
-                }}
-                onDeleteMachine={handleDeleteMachine}
-                enabled={selectedTeams.length > 0}
-                refreshKeys={refreshKeys}
-                onQueueItemCreated={(taskId, machineName) => {
-                  openQueueTrace(taskId, machineName);
-                }}
-                selectedResource={
-                  selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine
-                }
-                onResourceSelect={handleResourceSelection}
-                isPanelCollapsed={isPanelCollapsed}
-                onTogglePanelCollapse={handleTogglePanelCollapse}
-              />
+              renderContent()
             )}
           </Flex>
         </Card>
@@ -395,7 +413,7 @@ const MachinesPage: React.FC = () => {
         resourceType="machine"
         mode={unifiedModalState.mode}
         existingData={modalExistingData}
-        teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+        teamFilter={selectedTeam ? [selectedTeam] : undefined}
         preselectedFunction={unifiedModalState.preselectedFunction}
         onSubmit={async (data) => {
           await handleUnifiedModalSubmit(data as unknown as MachineFormValues);
@@ -437,7 +455,7 @@ const MachinesPage: React.FC = () => {
           handleRefreshMachines();
         }}
         machines={machines}
-        teamFilter={selectedTeams}
+        teamFilter={selectedTeam ? [selectedTeam] : []}
       />
 
       {contextHolder}

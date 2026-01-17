@@ -4,23 +4,22 @@
  */
 
 export {
-  parseProtocolUrl,
+  getElectronExecutablePath,
+  getProtocolHandler,
+  getProtocolStatus,
+  isProtocolSupported,
+  LinuxProtocolHandler,
+  MacOSProtocolHandler,
+  ProtocolHandlerError,
+  type ProtocolStatus,
+  registerProtocol,
+  unregisterProtocol,
+  WindowsProtocolHandler,
+} from './handlers.js';
+export {
   buildCliCommand,
   buildProtocolUrl,
   PROTOCOL_SCHEME,
+  parseProtocolUrl,
   VALID_ACTIONS,
 } from './parser.js';
-
-export {
-  ProtocolHandlerError,
-  WindowsProtocolHandler,
-  LinuxProtocolHandler,
-  MacOSProtocolHandler,
-  getProtocolHandler,
-  registerProtocol,
-  unregisterProtocol,
-  getProtocolStatus,
-  isProtocolSupported,
-  getElectronExecutablePath,
-  type ProtocolStatus,
-} from './handlers.js';

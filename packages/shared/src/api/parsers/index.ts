@@ -2,95 +2,67 @@
  * Parser Module Exports
  */
 
-// Base utilities
-export {
-  extractRowsByIndex,
-  extractFirstByIndex,
-  extractPrimaryOrSecondary,
-  toBoolean,
-  safeJsonParse,
-} from './base';
-
-// Parser types
-export type { ListParser, SingleParser, CompositeParser, ParserOptions } from './types';
-
-// Teams
-export {
-  parseGetOrganizationTeams,
-  parseGetTeamMembers,
-  parseTeamList,
-  parseTeamMembers,
-} from './teams';
-
-// Machines
-export {
-  parseGetTeamMachines,
-  parseCreateMachine,
-  parseMachineList,
-} from './machines';
-
-// Queue
-export type { QueueCreateResult } from './queue';
-export {
-  parseGetTeamQueueItems,
-  parseGetQueueItemsNext,
-  parseCreateQueueItem,
-  parseGetQueueItemTrace,
-  parseQueueList,
-  parseQueueTrace,
-} from './queue';
-
-// Auth
-export {
-  parseGetRequestAuthenticationStatus,
-  parseCreateAuthenticationRequest,
-  parseUpdateUserTFA,
-  parsePrivilegeAuthenticationRequest,
-  parseForkAuthenticationRequest,
-  parseGetUserRequests,
-  parseIsRegistered,
-  parseAuthStatus,
-  parseLoginResult,
-  parseTfaVerification,
-} from './auth';
-
-// Ceph
-export {
-  parseGetCephClusters,
-  parseGetCephClusterMachines,
-  parseGetCephPools,
-  parseGetCephRbdImages,
-  parseGetCephRbdSnapshots,
-  parseGetCephRbdClones,
-  parseGetMachineAssignmentStatus,
-  parseGetAvailableMachinesForClone,
-  parseGetCloneMachineAssignmentValidation,
-  parseGetCloneMachines,
-  parseClusters,
-  parsePools,
-  parseImages,
-  parseSnapshots,
-  parseClones,
-} from './ceph';
-
-// Organization
-export {
-  parseGetOrganizationDashboard,
-  parseOrganizationInfo,
-  parseGetOrganizationVault,
-  parseGetOrganizationVaults,
-  parseDashboard,
-  parseOrganizationVault,
-} from './organization';
-
 // Audit
 export {
-  parseGetAuditLogs,
-  parseGetEntityAuditTrace,
   parseAuditLogs,
   parseEntityTrace,
+  parseGetAuditLogs,
+  parseGetEntityAuditTrace,
 } from './audit';
-
+// Auth
+export {
+  parseAuthStatus,
+  parseCreateAuthenticationRequest,
+  parseForkAuthenticationRequest,
+  parseGetRequestAuthenticationStatus,
+  parseGetUserRequests,
+  parseIsRegistered,
+  parseLoginResult,
+  parsePrivilegeAuthenticationRequest,
+  parseTfaVerification,
+  parseUpdateUserTFA,
+} from './auth';
+// Base utilities
+export {
+  extractFirstByIndex,
+  extractPrimaryOrSecondary,
+  extractRowsByIndex,
+  safeJsonParse,
+  toBoolean,
+} from './base';
+// Ceph
+export {
+  parseClones,
+  parseClusters,
+  parseGetAvailableMachinesForClone,
+  parseGetCephClusterMachines,
+  parseGetCephClusters,
+  parseGetCephPools,
+  parseGetCephRbdClones,
+  parseGetCephRbdImages,
+  parseGetCephRbdSnapshots,
+  parseGetCloneMachineAssignmentValidation,
+  parseGetCloneMachines,
+  parseGetMachineAssignmentStatus,
+  parseImages,
+  parsePools,
+  parseSnapshots,
+} from './ceph';
+// Machines
+export {
+  parseCreateMachine,
+  parseGetTeamMachines,
+  parseMachineList,
+} from './machines';
+// Organization
+export {
+  parseDashboard,
+  parseGetOrganizationDashboard,
+  parseGetOrganizationVault,
+  parseGetOrganizationVaults,
+  parseOrganizationInfo,
+  parseOrganizationVault,
+} from './organization';
 // Permissions
 export type {
   PermissionGroupWithPermissions,
@@ -99,33 +71,50 @@ export type {
 export {
   parseGetOrganizationPermissionGroups,
   parseGetPermissionGroupDetails,
-  parsePermissionGroups,
   parsePermissionDetails,
+  parsePermissionGroups,
 } from './permissions';
-
+// Queue
+export type { QueueCreateResult } from './queue';
+export {
+  parseCreateQueueItem,
+  parseGetQueueItemsNext,
+  parseGetQueueItemTrace,
+  parseGetTeamQueueItems,
+  parseQueueList,
+  parseQueueTrace,
+} from './queue';
 // Repositories
 export type { NormalizedRepository } from './repositories';
 export {
-  parseGetTeamRepositories,
   parseCreateRepository,
+  parseGetTeamRepositories,
   parseRepositoryList,
 } from './repositories';
-
 // Resources (Bridges, Regions, Storage)
 export {
+  parseBridgeList,
+  parseCreateBridge,
+  parseCreateStorage,
   parseGetOrganizationRegions,
   parseGetRegionBridges,
-  parseCreateBridge,
   parseGetTeamStorages,
-  parseCreateStorage,
   parseRegionList,
-  parseBridgeList,
   parseStorageList,
 } from './resources';
+// Teams
+export {
+  parseGetOrganizationTeams,
+  parseGetTeamMembers,
+  parseTeamList,
+  parseTeamMembers,
+} from './teams';
+// Parser types
+export type { CompositeParser, ListParser, ParserOptions, SingleParser } from './types';
 
 // Users
 export {
-  parseGetOrganizationUsers,
   parseCreateUser,
+  parseGetOrganizationUsers,
   parseUserList,
 } from './users';

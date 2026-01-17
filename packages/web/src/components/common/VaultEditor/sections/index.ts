@@ -1,7 +1,7 @@
-export { VaultEditorRequiredFields } from './VaultEditorRequiredFields';
+export { VaultEditorExtraFields } from './VaultEditorExtraFields';
 export { VaultEditorOptionalFields } from './VaultEditorOptionalFields';
 export { VaultEditorProviderFields } from './VaultEditorProviderFields';
-export { VaultEditorExtraFields } from './VaultEditorExtraFields';
 export { VaultEditorRawJson } from './VaultEditorRawJson';
-export { VaultEditorTestConnection } from './VaultEditorTestConnection';
+export { VaultEditorRequiredFields } from './VaultEditorRequiredFields';
 export { VaultEditorSystemCompatibility } from './VaultEditorSystemCompatibility';
+export { VaultEditorTestConnection } from './VaultEditorTestConnection';

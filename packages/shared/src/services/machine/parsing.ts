@@ -3,22 +3,21 @@
  * This service consolidates duplicated parsing logic from 6+ components
  */
 
-import { DEFAULTS } from '../../config';
 import {
-  isListResult,
-  getContainers,
-  getSystemContainers,
-  getServices,
-  getSystemInfo,
-  getBlockDevices,
-  getNetworkInterfaces,
-  getHealthSummary as getListHealthSummary,
-  type ListResult,
+  type BlockDevice,
   type ContainerInfo,
+  getBlockDevices,
+  getContainers,
+  getHealthSummary as getListHealthSummary,
+  getNetworkInterfaces,
+  getServices,
+  getSystemContainers,
+  getSystemInfo,
+  isListResult,
+  type ListResult,
+  type NetworkInterface,
   type ServiceInfo,
   type SystemInfo,
-  type BlockDevice,
-  type NetworkInterface,
 } from '../../queue-vault/data/list-types.generated';
 import { isValidGuid } from '../../validation';
 
@@ -668,7 +667,7 @@ function getHealthMessage(exitCode: number): string {
     1: 'System has warnings',
     2: 'System has errors',
   };
-  return messages[exitCode] ?? DEFAULTS.ERROR.CRITICAL_SYSTEM_ERROR;
+  return messages[exitCode] ?? 'System has critical issues';
 }
 
 /**

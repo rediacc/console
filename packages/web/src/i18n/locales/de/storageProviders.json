@@ -586,7 +586,7 @@
         },
         "mountpoint": {
           "helpText": "Zu verwendender Mountpunkt (Archivieren, Synchronisieren oder Sichern)",
-          "label": "Mountpoint",
+          "label": "Einhängepunkt",
           "placeholder": "Archiv"
         },
         "pass": {

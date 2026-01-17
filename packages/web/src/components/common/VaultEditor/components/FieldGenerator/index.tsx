@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Flex, Popover, Radio, Tooltip, Typography, type RadioChangeEvent } from 'antd';
+import { Button, Flex, Popover, Radio, type RadioChangeEvent, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useMessage } from '@/hooks';
 import { GenerationOptions, generateRepoCredential, generateSSHKeyPair } from '@/utils/generators';

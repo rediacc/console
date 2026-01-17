@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# export CLOUDFLARE_TUNNEL_HOST="foo.bar.com"
+
+prep() {
+  # https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes
+  sudo sysctl -w net.core.rmem_max=7500000
+  sudo sysctl -w net.core.wmem_max=7500000
+
+  docker build -t rediacc/template-cloudflared web
+  ./tunnel.sh up # Here because, takes 30 seconds at cloudflare side to propagate changes
+  return $?
+}
+
+up() {
+  docker run \
+    --detach \
+    --name rediacc-template-cloudflared-web \
+    --network host \
+    --rm \
+    --volume $(pwd)/data:/app/data \
+    rediacc/template-cloudflared
+  return $?
+}
+
+down() {
+  docker rm rediacc-template-cloudflared-web -f
+  ./tunnel.sh down
+  return $?
+}

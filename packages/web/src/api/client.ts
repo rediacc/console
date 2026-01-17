@@ -8,11 +8,11 @@ import {
 } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import {
-  tokenAdapter,
-  urlAdapter,
+  errorHandler,
   masterPasswordAdapter,
   telemetryAdapter,
-  errorHandler,
+  tokenAdapter,
+  urlAdapter,
 } from './adapters';
 
 // Create axios instance

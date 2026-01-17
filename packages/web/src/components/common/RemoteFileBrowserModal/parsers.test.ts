@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  parseJsonFileList,
-  parseRcloneFileList,
-  parsePlainTextFileList,
-  parseFallbackFormats,
   cleanJsonOutput,
+  parseFallbackFormats,
+  parseJsonFileList,
+  parsePlainTextFileList,
+  parseRcloneFileList,
 } from './parsers';
 
 const mockRepositoryMapper = (guid: string) => ({

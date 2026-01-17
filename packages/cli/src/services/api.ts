@@ -1,8 +1,8 @@
 import axios from 'axios';
 import {
+  ApiClientError,
   createApiClient,
   createTypedApi,
-  ApiClientError,
   type FullApiClient,
   type HttpClient,
   type MasterPasswordProvider,
@@ -12,11 +12,12 @@ import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
 import { contextService } from './context.js';
 import {
+  configStorage,
+  errorHandler,
   nodeCryptoProvider,
+  telemetryAdapter,
   tokenAdapter,
   urlAdapter,
-  errorHandler,
-  telemetryAdapter,
 } from '../adapters/index.js';
 import { EXIT_CODES } from '../types/index.js';
 import type { ErrorCode } from '../types/errors.js';
@@ -121,13 +122,17 @@ class CliApiClient {
     passwordHash: string,
     sessionName = 'CLI Session'
   ): Promise<ApiResponse> {
-    const client = this.ensureInitialized();
-    return client.login(email, passwordHash, sessionName);
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.login(email, passwordHash, sessionName);
+    });
   }
 
   async logout(): Promise<ApiResponse> {
-    const client = this.ensureInitialized();
-    return client.logout();
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.logout();
+    });
   }
 
   async activateUser(
@@ -135,8 +140,10 @@ class CliApiClient {
     activationCode: string,
     passwordHash: string
   ): Promise<ApiResponse> {
-    const client = this.ensureInitialized();
-    return client.activateUser(email, activationCode, passwordHash);
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.activateUser(email, activationCode, passwordHash);
+    });
   }
 
   async register(
@@ -146,10 +153,12 @@ class CliApiClient {
     subscriptionPlan = 'COMMUNITY',
     languagePreference = 'en'
   ): Promise<ApiResponse> {
-    const client = this.ensureInitialized();
-    return client.register(organizationName, email, passwordHash, {
-      languagePreference,
-      subscriptionPlan,
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.register(organizationName, email, passwordHash, {
+        languagePreference,
+        subscriptionPlan,
+      });
     });
   }
 
@@ -159,8 +168,10 @@ class CliApiClient {
     params?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    const client = this.ensureInitialized();
-    return client.get<T>(endpoint, params);
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.get<T>(endpoint, params);
+    });
   }
 
   async post<T = unknown>(
@@ -168,8 +179,10 @@ class CliApiClient {
     data?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    const client = this.ensureInitialized();
-    return client.post<T>(endpoint, data);
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.post<T>(endpoint, data);
+    });
   }
 
   async put<T = unknown>(
@@ -177,8 +190,10 @@ class CliApiClient {
     data?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    const client = this.ensureInitialized();
-    return client.put<T>(endpoint, data);
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.put<T>(endpoint, data);
+    });
   }
 
   async delete<T = unknown>(
@@ -186,8 +201,10 @@ class CliApiClient {
     data?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    const client = this.ensureInitialized();
-    return client.delete<T>(endpoint, data);
+    return configStorage.withApiLock(async () => {
+      const client = this.ensureInitialized();
+      return client.delete<T>(endpoint, data);
+    });
   }
 
   // Token management utilities

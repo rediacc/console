@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+    echo "Pulling Memcached image..."
+    docker pull memcached:latest
+
+    return $?
+}
+
+up() {
+    if [ -f .env ]; then
+        source .env
+    fi
+
+    echo "Starting Memcached server..."
+    _compose up -d
+    return $?
+}
+
+down() {
+    echo "Stopping Memcached server..."
+    _compose down -v
+    return $?
+}

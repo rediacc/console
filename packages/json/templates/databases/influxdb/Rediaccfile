@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+    echo "Pulling InfluxDB image..."
+    docker pull influxdb:2.7
+
+    echo "Creating data and config directories..."
+    mkdir -p ./data
+    mkdir -p ./config
+    chmod 755 ./data ./config
+
+    return $?
+}
+
+up() {
+    if [ -f .env ]; then
+        source .env
+    fi
+
+    echo "Starting InfluxDB server..."
+    _compose up -d
+
+    echo ""
+    echo "InfluxDB is starting up..."
+    echo "Web UI will be available at: http://localhost:8086"
+    echo ""
+    echo "To get your admin token after setup:"
+    echo "  docker logs ${CONTAINER_NAME:-influxdb-server} 2>&1 | grep 'token'"
+    echo ""
+
+    return $?
+}
+
+down() {
+    echo "Stopping InfluxDB server..."
+    _compose down -v
+    return $?
+}

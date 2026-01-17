@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "激活失败",
+    "tfaVerificationFailed": "TFA验证失败",
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc login",
     "bridgeRequired": "需要网桥名称。使用 --bridge 或设置上下文。",
@@ -996,8 +997,8 @@
     "validationError": "验证错误：{{message}}",
     "vaultDataRequired": "需要保险箱数据。使用 --vault <json> 或通过 stdin 管道传输 JSON。",
     "vaultVersionRequired": "需要保险箱版本。使用 --vault-version <n>。",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "未知命令 \"{{command}}\"。可用命令：{{available}}。",
+    "unknownSubcommand": "未知子命令 \"{{command}}\"。可用的 {{parent}} 子命令：{{available}}。"
   },
   "options": {
     "activationCode": "来自电子邮件的激活码",

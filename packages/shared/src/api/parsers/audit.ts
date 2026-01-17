@@ -2,7 +2,7 @@
  * Audit Parsers
  */
 
-import { extractRowsByIndex, extractFirstByIndex } from './base';
+import { extractFirstByIndex, extractRowsByIndex } from './base';
 import type {
   AuditTraceRecord,
   AuditTraceResponse,

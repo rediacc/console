@@ -11,7 +11,7 @@ interface DropdownData {
   bridges?: { label: string; value: string }[];
 }
 
-export interface QueueFilterValues {
+interface QueueFilterValues {
   teamName: string;
   machineName: string;
   regionName: string;

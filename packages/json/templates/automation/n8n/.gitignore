@@ -1,0 +1,5 @@
+# Auto-generated encryption key
+n8n-data/encryption-key.txt
+
+# n8n data directory (workflows, credentials, database)
+n8n-data/

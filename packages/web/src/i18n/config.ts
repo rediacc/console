@@ -15,6 +15,7 @@ import enResources from './locales/en/resources.json';
 import enSettings from './locales/en/settings.json';
 import enStorageProviders from './locales/en/storageProviders.json';
 import enSystem from './locales/en/system.json';
+
 // Import shared translations from @rediacc/shared
 
 const defaultNS = 'common';

@@ -1,25 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
-  // Size validation
-  parseSize,
-  validateSize,
-  validateSizeWithMin,
   formatSizeBytes,
-  // Network ID validation
-  MIN_NETWORK_ID,
-  NETWORK_ID_INCREMENT,
-  validateNetworkId,
-  isValidNetworkId,
-  // SSH key validation
-  validateSSHPrivateKey,
-  isValidSSHPrivateKey,
+  isValidHost,
+  isValidHostname,
+  isValidIP,
   // IP/Port validation (existing)
   isValidIPv4,
   isValidIPv6,
-  isValidIP,
-  isValidHostname,
-  isValidHost,
+  isValidNetworkId,
   isValidPort,
+  isValidSSHPrivateKey,
+  // Network ID validation
+  MIN_NETWORK_ID,
+  NETWORK_ID_INCREMENT,
+  // Size validation
+  parseSize,
+  validateNetworkId,
+  validateSize,
+  validateSizeWithMin,
+  // SSH key validation
+  validateSSHPrivateKey,
 } from '../validation.js';
 
 // ============================================

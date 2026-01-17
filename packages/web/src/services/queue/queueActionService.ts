@@ -1,9 +1,7 @@
 // Re-export from shared
 export {
-  type QueueActionBaseParams,
-  type QueueActionResult,
-  type TypedQueueActionParams,
-  type AnyTypedQueueActionParams,
   type DynamicQueueActionParams,
+  type QueueActionResult,
   QueueActionService,
+  type TypedQueueActionParams,
 } from '@rediacc/shared/services/queue';

@@ -2,10 +2,10 @@ import React from 'react';
 import { Descriptions, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
+  formatDurationFull,
+  formatTimestampAsIs,
   normalizeToNumber,
   normalizeToString,
-  formatTimestampAsIs,
-  formatDurationFull,
 } from '@/platform';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 

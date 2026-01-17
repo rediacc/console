@@ -1,0 +1,33 @@
+# GitHub Pages configuration
+title: Template Catalog
+description: Infrastructure template catalog and configuration repository
+baseurl: ""
+url: ""
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Include/exclude files
+include:
+  - "*.json"
+  - "templates/"
+  - "configs/"
+  - "assets/"
+
+exclude:
+  - "README.md"
+  - "Gemfile"
+  - "Gemfile.lock"
+
+# Enable directory indexes
+plugins:
+  - jekyll-optional-front-matter
+
+# MIME types for JSON files
+defaults:
+  - scope:
+      path: "**/*.json"
+    values:
+      layout: null

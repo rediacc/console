@@ -10,7 +10,7 @@ export interface FilterTagConfig {
   label: string;
 }
 
-export interface FilterTagDisplayProps {
+interface FilterTagDisplayProps {
   filters: FilterTagConfig[];
   onClear: (key: string, value?: string) => void;
   onClearAll?: () => void;

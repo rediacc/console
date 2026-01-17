@@ -3,7 +3,6 @@ export * from './config';
 export * from './encryption';
 export * from './error-parser';
 export * from './formatters';
-export * from './telemetry';
 export {
   ACTIVE_STATUSES,
   filterActiveItems,
@@ -25,6 +24,7 @@ export {
 } from './queue';
 export * from './queue-vault';
 export * from './services';
+export * from './telemetry';
 export * from './types';
 export * from './utils';
 export * from './validation';

@@ -1,0 +1,315 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import '../../styles/downloads-page.css';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+
+// GitHub Release Data Fetching
+const GITHUB_REPO = 'rediacc/rediacc';
+
+interface DownloadFile {
+  platform: 'windows' | 'macos' | 'linux';
+  arch: 'x64' | 'arm64' | 'armv7l';
+  type: 'exe' | 'dmg' | 'AppImage' | 'deb';
+  url: string;
+  size: string;
+  name: string;
+}
+
+interface ReleaseData {
+  version: string;
+  publishedAt: string;
+  files: DownloadFile[];
+}
+
+// Helper functions for file parsing
+function detectPlatform(filename: string): 'windows' | 'macos' | 'linux' {
+  if (filename.includes('-win-')) return 'windows';
+  if (filename.includes('-mac-')) return 'macos';
+  if (filename.includes('-linux-')) return 'linux';
+  return 'linux';
+}
+
+function detectArch(filename: string): 'x64' | 'arm64' | 'armv7l' {
+  if (filename.includes('-arm64.')) return 'arm64';
+  if (filename.includes('-armv7l.')) return 'armv7l';
+  return 'x64';
+}
+
+function detectType(filename: string): 'exe' | 'dmg' | 'AppImage' | 'deb' {
+  if (filename.endsWith('.exe')) return 'exe';
+  if (filename.endsWith('.dmg')) return 'dmg';
+  if (filename.endsWith('.AppImage')) return 'AppImage';
+  if (filename.endsWith('.deb')) return 'deb';
+  return 'AppImage';
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Fetch release data at build time
+let releaseData: ReleaseData | null = null;
+try {
+  const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+  if (response.ok) {
+    const release = await response.json();
+
+    const files: DownloadFile[] = release.assets
+      .filter((asset: any) => asset.name.startsWith('rediacc-console-'))
+      .map((asset: any) => ({
+        platform: detectPlatform(asset.name),
+        arch: detectArch(asset.name),
+        type: detectType(asset.name),
+        url: asset.browser_download_url,
+        size: formatBytes(asset.size),
+        name: asset.name
+      }));
+
+    releaseData = {
+      version: release.tag_name.replace('v', ''),
+      publishedAt: new Date(release.published_at).toLocaleDateString(lang === 'en' ? 'en-US' : lang, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      files
+    };
+  }
+} catch (error) {
+  console.error('Failed to fetch GitHub release:', error);
+}
+
+// Group files by platform
+const windowsFiles = releaseData?.files.filter(f => f.platform === 'windows') || [];
+const macosFiles = releaseData?.files.filter(f => f.platform === 'macos') || [];
+const linuxAppImages = releaseData?.files.filter(f => f.platform === 'linux' && f.type === 'AppImage') || [];
+const linuxDebs = releaseData?.files.filter(f => f.platform === 'linux' && f.type === 'deb') || [];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.downloads.meta.title')}
+  description={t('pages.downloads.meta.description')}
+  keywords={t('pages.downloads.meta.keywords')}
+  ogType="website"
+  structuredDataType="organization"
+>
+  <article class="downloads-page">
+    <!-- Hero Section -->
+    <section class="downloads-hero section-dark">
+      <div class="downloads-hero-content">
+        <h1>{t('pages.downloads.hero.title')}</h1>
+        {releaseData && (
+          <p class="hero-subtitle">
+            {t('pages.downloads.hero.subtitle')} <strong>v{releaseData.version}</strong>
+          </p>
+          <p class="hero-release-date">
+            {t('pages.downloads.hero.released')}: {releaseData.publishedAt}
+          </p>
+        )}
+      </div>
+    </section>
+
+    <!-- Downloads Section -->
+    <section class="downloads-content section-light">
+      <div class="container">
+        {releaseData ? (
+          <>
+            <!-- Windows Section -->
+            <div class="platform-section" data-platform="windows">
+              <div class="platform-header">
+                <h2>{t('pages.downloads.platforms.windows')}</h2>
+              </div>
+              <div class="download-list">
+                {windowsFiles.map(file => (
+                  <div class="download-item">
+                    <div class="download-info">
+                      <span class="download-arch">{t(`pages.downloads.architectures.${file.arch}`)}</span>
+                      <span class="download-size">{file.size}</span>
+                    </div>
+                    <a href={file.url} class="btn btn-primary download-button">
+                      {t('pages.downloads.actions.download')} .{file.type}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <!-- macOS Section -->
+            <div class="platform-section" data-platform="macos">
+              <div class="platform-header">
+                <h2>{t('pages.downloads.platforms.macos')}</h2>
+              </div>
+              <div class="download-list">
+                {macosFiles.map(file => (
+                  <div class="download-item">
+                    <div class="download-info">
+                      <span class="download-arch">
+                        {file.arch === 'arm64'
+                          ? t('pages.downloads.architectures.arm64_apple')
+                          : t('pages.downloads.architectures.x64_intel')}
+                      </span>
+                      <span class="download-size">{file.size}</span>
+                    </div>
+                    <a href={file.url} class="btn btn-primary download-button">
+                      {t('pages.downloads.actions.download')} .{file.type}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <!-- Linux Section -->
+            <div class="platform-section" data-platform="linux">
+              <div class="platform-header">
+                <h2>{t('pages.downloads.platforms.linux')}</h2>
+              </div>
+
+              {linuxAppImages.length > 0 && (
+                <div class="linux-subsection">
+                  <h3>{t('pages.downloads.types.appimage')}</h3>
+                  <div class="download-list">
+                    {linuxAppImages.map(file => (
+                      <div class="download-item">
+                        <div class="download-info">
+                          <span class="download-arch">{t(`pages.downloads.architectures.${file.arch}`)}</span>
+                          <span class="download-size">{file.size}</span>
+                        </div>
+                        <a href={file.url} class="btn btn-primary download-button">
+                          {t('pages.downloads.actions.download')}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {linuxDebs.length > 0 && (
+                <div class="linux-subsection">
+                  <h3>{t('pages.downloads.types.deb')}</h3>
+                  <div class="download-list">
+                    {linuxDebs.map(file => (
+                      <div class="download-item">
+                        <div class="download-info">
+                          <span class="download-arch">{t(`pages.downloads.architectures.${file.arch}`)}</span>
+                          <span class="download-size">{file.size}</span>
+                        </div>
+                        <a href={file.url} class="btn btn-primary download-button">
+                          {t('pages.downloads.actions.download')}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div class="no-releases">
+            <p>{t('pages.downloads.noReleases')}</p>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- Auto-Update Information -->
+    <section class="auto-update-section section-dark">
+      <div class="container">
+        <h2>{t('pages.downloads.autoUpdate.title')}</h2>
+        <p class="auto-update-description">{t('pages.downloads.autoUpdate.description')}</p>
+      </div>
+    </section>
+
+    <!-- Installation Instructions -->
+    <section class="installation-section section-light">
+      <div class="container">
+        <h2>{t('pages.downloads.installation.title')}</h2>
+
+        <details class="installation-details">
+          <summary>{t('pages.downloads.platforms.windows')}</summary>
+          <p>{t('pages.downloads.installation.windows')}</p>
+        </details>
+
+        <details class="installation-details">
+          <summary>{t('pages.downloads.platforms.macos')}</summary>
+          <p>{t('pages.downloads.installation.macos')}</p>
+        </details>
+
+        <details class="installation-details">
+          <summary>{t('pages.downloads.platforms.linux')} - AppImage</summary>
+          <p>{t('pages.downloads.installation.linux_appimage')}</p>
+        </details>
+
+        <details class="installation-details">
+          <summary>{t('pages.downloads.platforms.linux')} - DEB</summary>
+          <p>{t('pages.downloads.installation.linux_deb')}</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- System Requirements -->
+    <section class="requirements-section section-light">
+      <div class="container">
+        <h2>{t('pages.downloads.requirements.title')}</h2>
+
+        <div class="requirements-grid">
+          <div class="requirement-card">
+            <h3>{t('pages.downloads.platforms.windows')}</h3>
+            <p>{t('pages.downloads.requirements.windows')}</p>
+          </div>
+
+          <div class="requirement-card">
+            <h3>{t('pages.downloads.platforms.macos')}</h3>
+            <p>{t('pages.downloads.requirements.macos')}</p>
+          </div>
+
+          <div class="requirement-card">
+            <h3>{t('pages.downloads.platforms.linux')}</h3>
+            <p>{t('pages.downloads.requirements.linux')}</p>
+          </div>
+
+          <div class="requirement-card">
+            <h3>{t('pages.downloads.requirements.diskTitle')}</h3>
+            <p>{t('pages.downloads.requirements.disk')}</p>
+          </div>
+
+          <div class="requirement-card">
+            <h3>{t('pages.downloads.requirements.ramTitle')}</h3>
+            <p>{t('pages.downloads.requirements.ram')}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </article>
+
+  <!-- Client-side platform detection -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const platform = userAgent.includes('win') ? 'windows'
+                     : userAgent.includes('mac') ? 'macos'
+                     : 'linux';
+
+      const platformSection = document.querySelector(`[data-platform="${platform}"]`);
+      if (platformSection) {
+        platformSection.classList.add('recommended');
+      }
+    });
+  </script>
+</BaseLayout>

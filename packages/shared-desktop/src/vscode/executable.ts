@@ -3,16 +3,16 @@
  * Ported from desktop/src/cli/core/vscode_shared.py
  */
 
-import { spawn, execSync } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  getPlatform,
   commandExists,
-  isWSLAvailable,
-  getDefaultWSLDistro,
   commandExistsInWSL,
   execInWSL,
+  getDefaultWSLDistro,
+  getPlatform,
+  isWSLAvailable,
 } from '../utils/platform.js';
 import type { VSCodeInfo, VSCodeInstallations, VSCodeLaunchOptions } from './types.js';
 

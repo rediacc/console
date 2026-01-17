@@ -3,58 +3,55 @@
  * Ported from desktop/src/cli/core/shared.py
  */
 
-// Key management
-export {
-  decodeSSHKey,
-  createTempSSHKeyFile,
-  removeTempSSHKeyFile,
-  extractKeyInfo,
-  isValidSSHKey,
-  type ExtractedKeyInfo,
-} from './keyManager.js';
-
-// Known hosts handling
-export {
-  decodeKnownHosts,
-  createTempKnownHostsFile,
-  removeTempKnownHostsFile,
-  isValidKnownHosts,
-  extractHostname,
-  extractKeyType,
-} from './knownHosts.js';
-
-// SSH connection
-export {
-  SSHConnection,
-  setupSSHConnection,
-  setupSSHAgentConnection,
-  cleanupSSHConnection,
-  buildSSHOptions,
-  convertPathForSSH,
-  spawnSSH,
-  testSSHConnectivity,
-  type ConnectionMethod,
-  type SSHSetupResult,
-  type SSHConnectionCtorOptions,
-} from './connection.js';
-
 // SSH agent
 export {
-  startSSHAgent,
   addKeyToAgent,
-  stopSSHAgent,
-  isSSHAgentAvailable,
   getSSHAgentEnv,
-  type SSHAgentResult,
+  isSSHAgentAvailable,
   type SSHAgentEnv,
+  type SSHAgentResult,
+  startSSHAgent,
+  stopSSHAgent,
 } from './agent.js';
+// SSH connection
+export {
+  buildSSHOptions,
+  type ConnectionMethod,
+  cleanupSSHConnection,
+  convertPathForSSH,
+  SSHConnection,
+  type SSHConnectionCtorOptions,
+  type SSHSetupResult,
+  setupSSHAgentConnection,
+  setupSSHConnection,
+  spawnSSH,
+  testSSHConnectivity,
+} from './connection.js';
+// Key management
+export {
+  createTempSSHKeyFile,
+  decodeSSHKey,
+  type ExtractedKeyInfo,
+  extractKeyInfo,
+  isValidSSHKey,
+  removeTempSSHKeyFile,
+} from './keyManager.js';
+// Known hosts handling
+export {
+  createTempKnownHostsFile,
+  decodeKnownHosts,
+  extractHostname,
+  extractKeyType,
+  isValidKnownHosts,
+  removeTempKnownHostsFile,
+} from './knownHosts.js';
 
 // PTY handling
 export {
-  createSSHPTYSession,
   createLocalPTYSession,
+  createSSHPTYSession,
   getActiveSession,
-  isSessionActive,
   getActiveSessionCount,
+  isSessionActive,
   killAllSessions,
 } from './pty.js';

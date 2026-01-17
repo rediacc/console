@@ -1,7 +1,7 @@
 import {
-  parseProtocolUrl,
   buildCliCommand,
   PROTOCOL_SCHEME,
+  parseProtocolUrl,
 } from '@rediacc/shared-desktop/protocol';
 import { app, BrowserWindow } from 'electron';
 import type { ProtocolUrl } from '@rediacc/shared-desktop';

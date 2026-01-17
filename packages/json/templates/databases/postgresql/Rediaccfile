@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+  docker pull postgres
+  mkdir -p data
+  return $?
+}
+
+up() {
+  _compose up -d
+  return $?
+}
+
+down() {
+  _compose down -v
+  return $?
+}

@@ -1,5 +1,5 @@
 import { Space, Tag } from 'antd';
-import { ActionButtonGroup, type ActionButtonConfig } from '@/components/common/ActionButtonGroup';
+import { type ActionButtonConfig, ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { COLUMN_RESPONSIVE, COLUMN_WIDTHS } from '@/components/common/ResourceListView';
 import { featureFlags } from '@/config/featureFlags';
 import {

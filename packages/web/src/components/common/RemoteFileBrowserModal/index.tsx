@@ -7,10 +7,12 @@ import {
 } from '@ant-design/icons';
 import { Alert, Button, Empty, Flex, Input, Select, Space, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useGetTeamMachines } from '@/api/api-hooks.generated';
-import { useGetTeamRepositories } from '@/api/api-hooks.generated';
-import { useGetTeamStorages } from '@/api/api-hooks.generated';
-import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
+import {
+  useGetOrganizationTeams,
+  useGetTeamMachines,
+  useGetTeamRepositories,
+  useGetTeamStorages,
+} from '@/api/api-hooks.generated';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -88,7 +90,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   onQueueItemCreated,
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines']);
-  const { data: _dropdownData } = useDropdownData();
+  useDropdownData();
   const { data: storageData, isLoading: isLoadingStorage } = useGetTeamStorages(teamName);
   const { data: machinesData, isLoading: isLoadingMachines } = useGetTeamMachines(teamName);
   const { data: teamsData } = useGetOrganizationTeams();

@@ -18,7 +18,7 @@ import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
 import { registerUserCommands } from './commands/user.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
-import { initI18n, changeLanguage, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
+import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { contextService } from './services/context.js';
 import { outputService } from './services/output.js';
 import { telemetryService } from './services/telemetry.js';

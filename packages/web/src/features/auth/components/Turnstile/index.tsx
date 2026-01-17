@@ -98,7 +98,7 @@ interface TurnstileRenderOptions {
   language?: string;
 }
 
-export interface TurnstileProps {
+interface TurnstileProps {
   sitekey: string;
   action?: string;
   cData?: string;

@@ -1,4 +1,4 @@
-import { Badge, Button, Popconfirm, Space, Tooltip, Typography, type TableProps } from 'antd';
+import { Badge, Button, Popconfirm, Space, type TableProps, Tooltip, Typography } from 'antd';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import { featureFlags } from '@/config/featureFlags';
 import {

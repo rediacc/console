@@ -155,9 +155,6 @@ const SIZE_MULTIPLIERS: Record<string, number> = {
   P: 1024 * 1024 * 1024 * 1024 * 1024,
 };
 
-/** Valid size suffixes */
-const _VALID_SIZE_SUFFIXES = ['K', 'M', 'G', 'T', 'P'];
-
 /**
  * Parse a size string (e.g., "20G", "500M", "1T") into bytes.
  * Matches renet's ParseSize function exactly.

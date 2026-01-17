@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "Une erreur s'est produite",
+    "cliCommandFailed": "Commande CLI échouée",
+    "criticalSystemError": "Le système a des problèmes critiques",
+    "failedToCreateTask": "Échec de la création de la tâche de test",
+    "failedToFork": "Échec du fork du dépôt",
+    "helloFunctionError": "La fonction Hello a signalé une erreur",
+    "machinesValidationError": "Erreur de validation de machine",
+    "noErrorMessage": "(pas de message d'erreur)",
+    "operationFailed": "Opération échouée",
+    "passwordValidation": "Le mot de passe doit contenir une majuscule, une minuscule, un chiffre et un caractère spécial",
+    "tfaVerificationFailed": "La vérification TFA a échoué",
+    "unknownError": "Erreur inconnue",
+    "vaultTestFailed": "Test de connexion Vault échoué",
+    "vsCodeConnectionFailed": "Connexion VS Code échouée"
+  },
+  "success": {
+    "helloFunctionSuccess": "Fonction Hello terminée avec succès"
+  },
   "status": {
     "cancelled": "Annulé",
     "completed": "Terminé",

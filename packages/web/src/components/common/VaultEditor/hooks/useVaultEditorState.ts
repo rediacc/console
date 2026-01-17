@@ -5,7 +5,6 @@ import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { useCreateQueueItemWithValidation, useQueueItemTraceWithEnabled } from '@/api/hooks-queue';
 import { useMessage } from '@/hooks';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { parseSshTestResult } from '@rediacc/shared/utils';
 import type { SSHTestResult } from '@rediacc/shared/utils';
 import { STORAGE_FIELDS_TO_KEEP, storageProviderConfig, vaultDefinitionConfig } from '../constants';
@@ -136,7 +135,7 @@ const handleSshTestFailure = (
   setTestConnectionSuccess: (value: boolean) => void,
   onTestConnectionStateChange: ((success: boolean) => void) | undefined
 ): void => {
-  message.error(errorMessage ?? DEFAULTS.ERROR.VAULT_TEST_FAILED);
+  message.error(errorMessage ?? 'common:vaultEditor.testConnection.failed');
   setTestConnectionSuccess(false);
   onTestConnectionStateChange?.(false);
 };
@@ -442,6 +441,17 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
 
     updateRawJson(completeData);
     setLastInitializedData(initialDataJson);
+
+    const validateOptions = showValidationErrors ? undefined : { validateOnly: true };
+    form
+      .validateFields(undefined, validateOptions)
+      .then(() => {
+        onValidate?.(true);
+      })
+      .catch((errorInfo: unknown) => {
+        const errors = formatValidationErrors(errorInfo as ValidateErrorEntity<VaultFormValues>);
+        onValidate?.(false, errors);
+      });
   }, [
     form,
     entityDef,
@@ -450,6 +460,8 @@ export const useVaultEditorState = (props: VaultEditorProps) => {
     updateRawJson,
     lastInitializedData,
     stableInitialData,
+    onValidate,
+    showValidationErrors,
   ]);
 
   // Pass form instance to parent when ready

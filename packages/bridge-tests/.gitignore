@@ -1,0 +1,9 @@
+# Test outputs
+reports/
+test-results/
+
+# Environment
+.env
+
+# Dependencies
+node_modules/

@@ -9,7 +9,7 @@ import {
   formatErrors,
   parseFailureReason,
 } from '@rediacc/shared/error-parser';
-import { STALE_TASK_CONSTANTS, getPriorityLabel } from '@rediacc/shared/queue';
+import { getPriorityLabel, STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
 
 // Re-export formatAge for backwards compatibility
 export { formatAge } from '@rediacc/shared/formatters';

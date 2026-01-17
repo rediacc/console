@@ -18,9 +18,9 @@ import { useDialogState, useExpandableTable, useTraceModal } from '@/hooks';
 import { confirmAction } from '@/utils/confirmations';
 import { CloudServerOutlined, FunctionOutlined } from '@/utils/optimizedIcons';
 import type { GetCephClusters_ResultSet1 } from '@rediacc/shared/types';
-import { buildClusterColumns } from './columns';
 import { ClusterMachineCountBadge } from '../ClusterMachineCountBadge';
 import { ClusterMachines } from '../ClusterMachines';
+import { buildClusterColumns } from './columns';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 

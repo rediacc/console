@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
-  moveToExtraFields,
-  moveFromExtraFields,
-  processExtraFields,
   buildValidationRules,
+  moveFromExtraFields,
+  moveToExtraFields,
+  processExtraFields,
 } from '../../utils';
 import type { Rule } from 'antd/es/form';
 

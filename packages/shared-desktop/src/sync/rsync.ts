@@ -3,12 +3,12 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { prepareRsyncPaths } from './pathConverter.js';
 import {
+  findSystemMsys2Path,
+  getMsys2Environment,
   getRsyncPath,
   getSshPath,
-  getMsys2Environment,
-  findSystemMsys2Path,
 } from '../msys2/paths.js';
-import { getPlatform, commandExists } from '../utils/platform.js';
+import { commandExists, getPlatform } from '../utils/platform.js';
 import type { SyncProgress, SyncResult } from '../types/index.js';
 
 /**

@@ -14,15 +14,15 @@ import {
 import { useTranslation } from 'react-i18next';
 import {
   CodeOutlined,
-  RightOutlined,
   RetweetOutlined,
+  RightOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
+import { getPriorityInfo } from '../utils';
 import { ConsoleOutput } from './ConsoleOutput';
 import { StatsPanel } from './StatsPanel';
-import { getPriorityInfo } from '../utils';
 import type { ConsoleViewMode } from '../types';
 
 interface MachineDetailsProps {

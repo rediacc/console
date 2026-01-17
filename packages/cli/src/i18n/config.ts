@@ -1,5 +1,5 @@
-import i18n from 'i18next';
 // Import all locale files directly - they get bundled by esbuild
+import i18n from 'i18next';
 import { getAllTranslations, SHARED_NAMESPACE } from '@rediacc/shared/i18n';
 import arCli from './locales/ar/cli.json' with { type: 'json' };
 import deCli from './locales/de/cli.json' with { type: 'json' };
@@ -14,7 +14,7 @@ import zhCli from './locales/zh/cli.json' with { type: 'json' };
 // Import shared translations from @rediacc/shared
 
 export const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
-export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 // Get all shared translations
 const sharedTranslations = getAllTranslations();

@@ -9,7 +9,7 @@ import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askText } from '../utils/prompt.js';
-import type { NamedContext, OutputFormat, LocalMachineConfig } from '../types/index.js';
+import type { LocalMachineConfig, NamedContext, OutputFormat } from '../types/index.js';
 
 export function registerContextCommands(program: Command): void {
   const context = program.command('context').description(t('commands.context.description'));

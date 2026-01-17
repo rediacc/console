@@ -5,7 +5,7 @@
 import dayjs from 'dayjs';
 
 // Re-export from shared for backward compatibility
-export { escapeCSVValue, buildCSVContent } from '@rediacc/shared/utils';
+export { buildCSVContent, escapeCSVValue } from '@rediacc/shared/utils';
 
 /**
  * Download content as a file

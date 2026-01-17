@@ -5,12 +5,12 @@ import { createActionColumn } from '@/components/common/columns/factories/action
 import { buildPoolMenuItems } from '@/features/ceph/utils/menuItems';
 import { createSorter } from '@/platform';
 import {
+  DatabaseOutlined,
   DeleteOutlined,
   EditOutlined,
   FunctionOutlined,
   HistoryOutlined,
   RightOutlined,
-  DatabaseOutlined,
 } from '@/utils/optimizedIcons';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { GetCephPools_ResultSet1 } from '@rediacc/shared/types';

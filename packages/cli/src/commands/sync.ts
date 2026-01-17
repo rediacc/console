@@ -3,11 +3,11 @@ import { resolve } from 'node:path';
 import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
 import {
   executeRsync,
-  getRsyncPreview,
   formatChangesSummary,
   formatDetailedChanges,
-  type RsyncExecutorOptions,
+  getRsyncPreview,
   type RsyncChanges,
+  type RsyncExecutorOptions,
 } from '@rediacc/shared-desktop/sync';
 import chalk from 'chalk';
 import { Command } from 'commander';

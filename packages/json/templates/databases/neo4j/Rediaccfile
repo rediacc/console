@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+    echo "Pulling Neo4j image..."
+    docker pull neo4j:5-community
+
+    echo "Creating required directories..."
+    mkdir -p ./data ./logs ./conf ./plugins
+    chmod 755 ./data ./logs ./conf ./plugins 2>/dev/null || true
+
+    return 0
+}
+
+up() {
+    if [ -f .env ]; then
+        source .env
+    fi
+
+    echo "Starting Neo4j server..."
+    _compose up -d
+
+    echo ""
+    echo "Waiting for Neo4j to become healthy..."
+    sleep 5
+
+    # Get the assigned ports
+    HTTP_PORT=$(docker port ${CONTAINER_NAME} 7474 2>/dev/null | cut -d: -f2)
+    BOLT_PORT=$(docker port ${CONTAINER_NAME} 7687 2>/dev/null | cut -d: -f2)
+
+    if [ -n "$HTTP_PORT" ] && [ -n "$BOLT_PORT" ]; then
+        echo ""
+        echo "========================================="
+        echo "Neo4j is starting up!"
+        echo "========================================="
+        echo "Neo4j Browser: http://localhost:${HTTP_PORT}"
+        echo "Bolt Protocol: bolt://localhost:${BOLT_PORT}"
+        echo ""
+        echo "Default credentials:"
+        echo "  Username: neo4j"
+        echo "  Password: changeme123!"
+        echo ""
+        echo "First login will prompt to change password."
+        echo "========================================="
+    fi
+
+    return $?
+}
+
+down() {
+    echo "Stopping Neo4j server..."
+    _compose down -v
+    return $?
+}

@@ -1,0 +1,176 @@
+---
+import { EXTERNAL_LINKS } from '../config/constants';
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  plan: {
+    id: string;
+    name: string;
+    price: string;
+    priceNote?: string;
+    period?: string | null;
+    description: string;
+    isPopular?: boolean;
+    badgeLabel?: string;
+    badgeVariant?: string;
+    features: string[];
+  };
+  lang: Language;
+}
+
+const { plan, lang } = Astro.props;
+const { t } = createTranslator(lang);
+
+const cardClasses = ['pricing-card'];
+if (plan.isPopular) {
+  cardClasses.push('popular');
+}
+if (plan.badgeVariant) {
+  cardClasses.push(`badge-${plan.badgeVariant}`);
+}
+
+const priceDisplay = plan.id === 'enterprise'
+  ? `${plan.price}*`
+  : plan.price;
+
+// Tier-specific CTAs
+const getPrimaryCta = (planId: string) => {
+  const ctaKey = `pages.pricing.ui.cta.${planId}.primary`;
+  return {
+    label: t(ctaKey),
+    href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION,
+  };
+};
+
+const getSecondaryCta = (planId: string) => {
+  if (planId === 'community') {
+    return {
+      href: `/${lang}/docs`,
+      label: t('pages.pricing.ui.cta.community.secondary'),
+      target: undefined,
+      rel: undefined,
+    };
+  }
+  return {
+    href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION,
+    label: t(`pages.pricing.ui.cta.${planId}.secondary`),
+    target: '_blank',
+    rel: 'noopener noreferrer',
+  };
+};
+
+const primaryCta = getPrimaryCta(plan.id);
+const secondaryCta = getSecondaryCta(plan.id);
+
+// Savings calculation for annual pricing
+const showSavings = plan.id !== 'community';
+const calculateSavings = (monthlyPrice: number) => {
+  const yearlyPrice = monthlyPrice * 10;
+  const fullPrice = monthlyPrice * 12;
+  const savings = fullPrice - yearlyPrice;
+  // Round up to nearest hundred
+  const roundedSavings = Math.ceil(savings / 100) * 100;
+  const percentage = Math.round(((fullPrice - yearlyPrice) / fullPrice) * 100);
+  return `Save $${roundedSavings.toLocaleString()} (${percentage}% off)`;
+};
+
+// Extract monthly price from the price string (e.g., "$349" -> 349)
+const getMonthlyPrice = () => {
+  if (plan.id === 'community') return 0;
+  const priceMatch = plan.price.match(/\$([0-9,]+)/);
+  if (priceMatch) {
+    return parseInt(priceMatch[1].replace(/,/g, ''));
+  }
+  return 0;
+};
+
+const monthlyPrice = getMonthlyPrice();
+const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice) : null;
+---
+
+<div class={cardClasses.join(' ')}>
+  {(plan.badgeLabel || plan.isPopular) && (
+    <div class="popular-badge">{plan.badgeLabel ?? t('pages.pricing.ui.popular')}</div>
+  )}
+
+  <div class="card-header">
+    <h3>{plan.name}</h3>
+    <p class="card-description">{plan.description}</p>
+  </div>
+
+  <div class="card-price">
+    <div class="price-wrapper">
+      <span class="price">{priceDisplay}</span>
+    </div>
+    <div class="billing-row">
+      {plan.period ? <span class="billing">{plan.period}</span> : <span class="billing-placeholder">&nbsp;</span>}
+    </div>
+    <div class="savings-row">
+      {savings ? <span class="savings-badge">{savings}</span> : <span class="savings-placeholder">&nbsp;</span>}
+    </div>
+    <div class="price-note-row">
+      {plan.priceNote ? <span class="price-note-inline">{plan.priceNote}</span> : <span class="price-note-placeholder">&nbsp;</span>}
+    </div>
+  </div>
+
+  <div class="pre-cta-section">
+    {plan.id === 'business' && (
+      <div class="value-note">{t('pages.pricing.ui.cta.business.valueNote')}</div>
+    )}
+    {plan.id === 'enterprise' && (
+      <div class="subtext">{t('pages.pricing.ui.cta.enterprise.subtext')}</div>
+    )}
+    {plan.id !== 'business' && plan.id !== 'enterprise' && (
+      <div class="pre-cta-placeholder">&nbsp;</div>
+    )}
+  </div>
+
+  <div class="card-actions">
+    <a
+      href={primaryCta.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn btn-primary btn-large"
+    >
+      {primaryCta.label}
+    </a>
+    <a
+      href={secondaryCta.href}
+      class="btn btn-secondary btn-large"
+      target={secondaryCta.target}
+      rel={secondaryCta.rel}
+    >
+      {secondaryCta.label}
+    </a>
+  </div>
+
+  <div class="post-cta-section">
+    {plan.id !== 'community' && (
+      <div class="card-guarantees">
+        <div class="guarantee-badge">{t(`pages.pricing.ui.cta.${plan.id}.guarantee`)}</div>
+        <div class="guarantee-items">
+          <span>{t('pages.pricing.ui.guarantees.cancelAnytime')}</span>
+          <span class="separator">·</span>
+          <span>{t('pages.pricing.ui.guarantees.noContracts')}</span>
+        </div>
+      </div>
+    )}
+    {plan.id === 'community' && (
+      <div class="card-note">{t('pages.pricing.ui.cta.community.note')}</div>
+    )}
+  </div>
+
+  <div class="card-features">
+    <ul>
+      {plan.features.map((feature) => (
+        <li>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/>
+          </svg>
+          {feature}
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>

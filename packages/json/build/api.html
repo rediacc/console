@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Template Catalog</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .endpoint { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #007bff; }
+        .method { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .url { font-family: 'Monaco', 'Menlo', monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px; }
+        code { background: #f1f3f4; padding: 2px 4px; border-radius: 3px; font-family: 'Monaco', 'Menlo', monospace; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back to Catalog</a>
+
+    <div class="header">
+        <h1>API Documentation</h1>
+        <p>RESTful JSON API for accessing template and configuration data</p>
+    </div>
+
+    <div class="endpoint">
+        <h3><span class="method">GET</span> <span class="url">/templates.json</span></h3>
+        <p>Returns the complete templates index with metadata for all available templates.</p>
+        <h4>Response Format:</h4>
+        <pre><code>{
+  "version": "1.0",
+  "generated": "2024-01-01T00:00:00Z",
+  "total_templates": 22,
+  "categories": ["api", "auth", "cache", "db", ...],
+  "templates": [
+    {
+      "id": "template_name",
+      "name": "Display Name",
+      "description": "Template description",
+      "category": "category_name",
+      "tags": ["tag1", "tag2"],
+      "file_count": 4,
+      "has_readme": true,
+      "has_docker": true,
+      "download_url": "templates/template_name.json"
+    }
+  ]
+}</code></pre>
+    </div>
+
+    <div class="endpoint">
+        <h3><span class="method">GET</span> <span class="url">/templates/{template-id}.json</span></h3>
+        <p>Returns detailed information and file contents for a specific template.</p>
+        <h4>Example URLs:</h4>
+        <ul>
+            <li><code>/templates/api-gateway_kong.json</code></li>
+            <li><code>/templates/databases_mysql.json</code></li>
+            <li><code>/templates/caching_redis.json</code></li>
+        </ul>
+        <h4>Response Format:</h4>
+        <pre><code>{
+  "id": "template_name",
+  "name": "Display Name",
+  "description": "Template description",
+  "category": "category_name",
+  "tags": ["tag1", "tag2"],
+  "files": [
+    {
+      "name": "docker-compose.yaml",
+      "path": "docker-compose.yaml",
+      "type": "yaml",
+      "content": "file contents here..."
+    }
+  ],
+  "readme": "README.md contents...",
+  "generated": "2024-01-01T00:00:00Z"
+}</code></pre>
+    </div>
+
+    <div class="endpoint">
+        <h3><span class="method">GET</span> <span class="url">/configs/pricing.json</span></h3>
+        <p>Returns pricing configuration data including tiers and professional services.</p>
+    </div>
+
+    <div class="endpoint">
+        <h3><span class="method">GET</span> <span class="url">/configs/services.json</span></h3>
+        <p>Returns services configuration data.</p>
+    </div>
+
+    <div class="endpoint">
+        <h3><span class="method">GET</span> <span class="url">/configs/tiers.json</span></h3>
+        <p>Returns tier configuration data.</p>
+    </div>
+
+    <h2>Usage Examples</h2>
+    <h3>JavaScript/Fetch</h3>
+    <pre><code>// Load templates index
+const templates = await fetch('/templates.json').then(r => r.json());
+
+// Load specific template
+const template = await fetch(`/templates/${templateId}.json`).then(r => r.json());
+
+// Get file content
+const dockerCompose = template.files.find(f => f.name === 'docker-compose.yaml')?.content;</code></pre>
+
+    <h3>curl</h3>
+    <pre><code># Get templates index
+curl https://json.rediacc.com/templates.json
+
+# Get specific template
+curl https://json.rediacc.com/templates/api-gateway_kong.json</code></pre>
+</body>
+</html>

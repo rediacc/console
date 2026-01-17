@@ -25,6 +25,9 @@ packages/desktop/*.js
 packages/desktop/*.d.ts
 packages/desktop/out/
 
+# Astro cache
+.astro/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -46,6 +49,7 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+.backend-state
 
 # Build artifacts
 .build_cache/
@@ -67,6 +71,7 @@ logs/
 packages/cli/tests/reports/
 packages/cli/test-results/
 **/test-results/
+packages/e2e/utils/data/.created-users.json
 
 # Screenshots (removed from tracking)
 error_screenshot.png

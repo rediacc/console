@@ -1,27 +1,34 @@
 import { promises as fs } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import lockfile from 'proper-lockfile';
-import { createEmptyConfig, type CliConfig } from '../types/index.js';
+import { type CliConfig, createEmptyConfig } from '../types/index.js';
 
 const CONFIG_DIR = join(homedir(), '.rediacc');
 const CONFIG_FILE = 'config.json';
-const CONFIG_PATH = join(CONFIG_DIR, CONFIG_FILE);
+const DEFAULT_CONFIG_PATH = join(CONFIG_DIR, CONFIG_FILE);
 
 /**
  * Storage adapter for CLI configuration with file locking for multi-process safety.
  *
  * Uses proper-lockfile for cross-platform file locking:
- * - 10 second timeout
+ * - 45 second timeout (to accommodate long-running API operations)
  * - 50ms polling interval
  * - Atomic temp file + rename pattern for crash safety
  */
-class ConfigStorage {
+export class ConfigStorage {
   private cache: CliConfig | null = null;
+  private lockDepth = 0; // Track re-entrant lock depth
+  private readonly configPath: string;
+
+  constructor(configPath: string = DEFAULT_CONFIG_PATH) {
+    this.configPath = configPath;
+  }
 
   private async ensureDirectory(): Promise<void> {
+    const configDir = dirname(this.configPath);
     try {
-      await fs.mkdir(CONFIG_DIR, { recursive: true, mode: 0o700 });
+      await fs.mkdir(configDir, { recursive: true, mode: 0o700 });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
         throw error;
@@ -32,38 +39,52 @@ class ConfigStorage {
   private async ensureConfigFile(): Promise<void> {
     await this.ensureDirectory();
     try {
-      await fs.access(CONFIG_PATH);
+      await fs.access(this.configPath);
     } catch {
       const emptyConfig = createEmptyConfig();
-      await fs.writeFile(CONFIG_PATH, JSON.stringify(emptyConfig, null, 2), { mode: 0o600 });
+      await fs.writeFile(this.configPath, JSON.stringify(emptyConfig, null, 2), { mode: 0o600 });
     }
   }
 
   /**
    * Execute an operation with exclusive file lock.
+   * Supports re-entrant calls - if we already hold the lock, skip acquisition.
    */
   private async withLock<T>(operation: () => Promise<T>): Promise<T> {
     await this.ensureConfigFile();
 
-    const release = await lockfile.lock(CONFIG_PATH, {
-      stale: 10000,
+    // Re-entrant check: if we already hold the lock, just run the operation
+    if (this.lockDepth > 0) {
+      this.lockDepth++;
+      try {
+        return await operation();
+      } finally {
+        this.lockDepth--;
+      }
+    }
+
+    // Acquire lock for the first time
+    const release = await lockfile.lock(this.configPath, {
+      stale: 45000,
       retries: {
-        retries: 200,
+        retries: 900,
         minTimeout: 50,
         maxTimeout: 50,
       },
     });
 
+    this.lockDepth++;
     try {
       return await operation();
     } finally {
+      this.lockDepth--;
       await release();
     }
   }
 
   private async loadUnlocked(): Promise<CliConfig> {
     try {
-      const content = await fs.readFile(CONFIG_PATH, 'utf-8');
+      const content = await fs.readFile(this.configPath, 'utf-8');
       const data = JSON.parse(content);
       return {
         contexts: data.contexts ?? {},
@@ -93,11 +114,11 @@ class ConfigStorage {
   private async saveUnlocked(config: CliConfig): Promise<void> {
     await this.ensureDirectory();
 
-    const tempPath = `${CONFIG_PATH}.tmp.${process.pid}.${Date.now()}`;
+    const tempPath = `${this.configPath}.tmp.${process.pid}.${Date.now()}`;
     const content = JSON.stringify(config, null, 2);
 
     await fs.writeFile(tempPath, content, { mode: 0o600 });
-    await fs.rename(tempPath, CONFIG_PATH);
+    await fs.rename(tempPath, this.configPath);
 
     this.cache = config;
   }
@@ -132,10 +153,24 @@ class ConfigStorage {
   }
 
   /**
+   * Execute an operation with exclusive file lock, clearing cache first.
+   * Use this for API operations that read-modify-write the token.
+   *
+   * The cache must be cleared because another process may have updated
+   * the config file while we were waiting for the lock.
+   */
+  async withApiLock<T>(operation: () => Promise<T>): Promise<T> {
+    return this.withLock(async () => {
+      this.cache = null; // Force fresh read from file
+      return operation();
+    });
+  }
+
+  /**
    * Get the config file path.
    */
   getConfigPath(): string {
-    return CONFIG_PATH;
+    return this.configPath;
   }
 }
 

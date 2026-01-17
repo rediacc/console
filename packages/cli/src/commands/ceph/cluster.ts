@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { parseGetCephClusters, parseGetCephClusterMachines } from '@rediacc/shared/api';
+import { parseGetCephClusterMachines, parseGetCephClusters } from '@rediacc/shared/api';
 import type {
   CreateCephClusterParams,
   DeleteCephClusterParams,

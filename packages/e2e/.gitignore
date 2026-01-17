@@ -16,6 +16,8 @@ dist/
 # Playwright state
 auth.json
 storageState.json
+.e2e-state.json
 
-# Test data
-src/utils/data/test-data.json
+# Per-project test data files (auto-generated)
+utils/data/test-data-*.json
+utils/data/.created-users-*.json

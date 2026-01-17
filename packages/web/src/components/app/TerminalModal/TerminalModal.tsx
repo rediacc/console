@@ -9,13 +9,13 @@ import { useTranslation } from 'react-i18next';
 import { Terminal, type TerminalRef } from '@/components/app/Terminal/Terminal';
 import { SizedModal } from '@/components/common/SizedModal';
 import { useTerminal } from '@/hooks/terminal/useTerminal';
-import { isElectron, getElectronAPI } from '@/types';
+import { getElectronAPI, isElectron } from '@/types';
 import { ModalSize } from '@/types/modal';
-import { CodeOutlined, ReloadOutlined, ExpandOutlined } from '@/utils/optimizedIcons';
+import { CodeOutlined, ExpandOutlined, ReloadOutlined } from '@/utils/optimizedIcons';
 
 const { Text } = Typography;
 
-export interface TerminalModalProps {
+interface TerminalModalProps {
   /** Whether the modal is open */
   open: boolean;
   /** Callback when modal is closed */

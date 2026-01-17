@@ -1,9 +1,9 @@
 export const TeamPageIDS = {
   // Navigation
   mainNavOrganization: 'main-nav-organization',
-  mainNavOrganizationUsers: 'main-nav-organization-users',
-  mainNavOrganizationTeams: 'main-nav-organization-teams',
-  mainNavOrganizationAccess: 'main-nav-organization-access',
+  subNavOrganizationUsers: 'sub-nav-organization-users',
+  subNavOrganizationTeams: 'sub-nav-organization-teams',
+  subNavOrganizationAccess: 'sub-nav-organization-access',
   mainNavMachines: 'main-nav-machines',
   mainNavSettings: 'main-nav-settings',
   notificationBell: 'notification-bell',

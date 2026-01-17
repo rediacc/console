@@ -1,0 +1,125 @@
+{
+  "professionalServices": {
+    "packages": {
+      "standard": {
+        "name": "pricing.speedTiers.tiers.standard.name",
+        "speed": "pricing.speedTiers.tiers.standard.speed",
+        "price": 9999,
+        "pricePrefix": "From $",
+        "description": "pricing.speedTiers.tiers.standard.description",
+        "highlight": false
+      },
+      "priority": {
+        "name": "pricing.speedTiers.tiers.priority.name",
+        "speed": "pricing.speedTiers.tiers.priority.speed",
+        "price": 19999,
+        "pricePrefix": "From $",
+        "description": "pricing.speedTiers.tiers.priority.description",
+        "highlight": true
+      },
+      "emergency": {
+        "name": "pricing.speedTiers.tiers.emergency.name",
+        "speed": "pricing.speedTiers.tiers.emergency.speed",
+        "price": 29999,
+        "pricePrefix": "From $",
+        "description": "pricing.speedTiers.tiers.emergency.description",
+        "highlight": false
+      }
+    },
+    "services": {
+      "migration": {
+        "name": "pricing.speedTiers.services.migration.name",
+        "icon": "🚚",
+        "description": "pricing.speedTiers.services.migration.description",
+        "timelines": {
+          "standard": "pricing.speedTiers.services.migration.standard",
+          "priority": "pricing.speedTiers.services.migration.priority",
+          "emergency": "pricing.speedTiers.services.migration.emergency"
+        }
+      },
+      "ransomware": {
+        "name": "pricing.speedTiers.services.ransomware.name",
+        "icon": "🛡️",
+        "description": "pricing.speedTiers.services.ransomware.description",
+        "timelines": {
+          "standard": "pricing.speedTiers.services.ransomware.standard",
+          "priority": "pricing.speedTiers.services.ransomware.priority",
+          "emergency": "pricing.speedTiers.services.ransomware.emergency"
+        }
+      },
+      "compliance": {
+        "name": "pricing.speedTiers.services.compliance.name",
+        "icon": "📋",
+        "description": "pricing.speedTiers.services.compliance.description",
+        "timelines": {
+          "standard": "pricing.speedTiers.services.compliance.standard",
+          "priority": "pricing.speedTiers.services.compliance.priority",
+          "emergency": "pricing.speedTiers.services.compliance.emergency"
+        }
+      },
+      "scaling": {
+        "name": "pricing.speedTiers.services.scaling.name",
+        "icon": "📈",
+        "description": "pricing.speedTiers.services.scaling.description",
+        "timelines": {
+          "standard": "pricing.speedTiers.services.scaling.standard",
+          "priority": "pricing.speedTiers.services.scaling.priority",
+          "emergency": "pricing.speedTiers.services.scaling.emergency"
+        }
+      },
+      "training": {
+        "name": "pricing.speedTiers.services.training.name",
+        "icon": "🎓",
+        "description": "pricing.speedTiers.services.training.description",
+        "timelines": {
+          "standard": "pricing.speedTiers.services.training.standard",
+          "priority": "pricing.speedTiers.services.training.priority",
+          "emergency": "pricing.speedTiers.services.training.emergency"
+        }
+      },
+      "optimization": {
+        "name": "pricing.speedTiers.services.optimization.name",
+        "icon": "⚡",
+        "description": "pricing.speedTiers.services.optimization.description",
+        "timelines": {
+          "standard": "pricing.speedTiers.services.optimization.standard",
+          "priority": "pricing.speedTiers.services.optimization.priority",
+          "emergency": "pricing.speedTiers.services.optimization.emergency"
+        }
+      },
+      "integration": {
+        "name": "pricing.speedTiers.services.integration.name",
+        "icon": "🔧",
+        "description": "pricing.speedTiers.services.integration.description",
+        "timelines": {
+          "standard": "pricing.speedTiers.services.integration.standard",
+          "priority": "pricing.speedTiers.services.integration.priority",
+          "emergency": "pricing.speedTiers.services.integration.emergency"
+        }
+      }
+    },
+    "eligibility": {
+      "label": "pricing.speedTiers.eligibility.label",
+      "description": "pricing.speedTiers.eligibility.description"
+    },
+    "benefits": {
+      "title": "pricing.speedTiers.benefits.title",
+      "facts": [
+        {
+          "label": "pricing.speedTiers.benefits.facts.ransomwareCost",
+          "type": "cost"
+        },
+        {
+          "label": "pricing.speedTiers.benefits.facts.downtimeCost",
+          "type": "downtime"
+        }
+      ],
+      "description": "pricing.speedTiers.benefits.description",
+      "features": [
+        "pricing.speedTiers.benefits.features.dedicatedTeam",
+        "pricing.speedTiers.benefits.features.tierSwitch",
+        "pricing.speedTiers.benefits.features.ongoingSupport"
+      ]
+    }
+  }
+}

@@ -13,18 +13,18 @@
  * ```
  */
 
-export { createTypedApi, type CreateTypedApiOptions } from './createTypedApi';
-export { PROCEDURE_DEFAULTS, applyProcedureDefaults } from './defaults';
+export { type CreateTypedApiOptions, createTypedApi } from './createTypedApi';
+export { applyProcedureDefaults, PROCEDURE_DEFAULTS } from './defaults';
 export {
-  extractPrimary,
-  extractFirst,
   extractByIndex,
+  extractFirst,
   extractFirstByIndex,
+  extractPrimary,
 } from './extractors';
 export type {
+  PrimaryResult,
+  ResultAtIndex,
   TypedApi,
   TypedApiConfig,
   TypedApiResponse,
-  PrimaryResult,
-  ResultAtIndex,
 } from './types';

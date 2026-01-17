@@ -78,7 +78,7 @@
   "selectStatus": "Tous les statuts",
   "selectTeam": "Sélectionnez une équipe pour afficher les éléments de la file d'attente",
   "statistics": {
-    "active": "Active",
+    "active": "Actif",
     "failed": "Échoué",
     "processing": "Traitement",
     "stale": "Périmé",
@@ -87,7 +87,7 @@
     "totalDuration": "Durée totale"
   },
   "status": "Statut",
-  "statusActive": "Active",
+  "statusActive": "Actif",
   "statusAssigned": "Attribué",
   "statusCancelled": "Annulé",
   "statusCancelling": "Annulation",

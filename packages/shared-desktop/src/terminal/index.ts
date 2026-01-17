@@ -3,11 +3,11 @@
  * Ported from desktop/src/cli/core/config.py (TerminalDetector class)
  */
 
-export { TerminalDetector, findMSYS2Installation } from './detector.js';
+export { findMSYS2Installation, TerminalDetector } from './detector.js';
 
 export {
-  launchTerminal,
-  launchInline,
   getDefaultTerminalType,
   type LaunchResult,
+  launchInline,
+  launchTerminal,
 } from './launchers.js';

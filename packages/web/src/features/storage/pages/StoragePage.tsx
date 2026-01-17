@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
-import { Flex, Modal, Space, Tag, Typography, type MenuProps } from 'antd';
+import { Flex, type MenuProps, Modal, Space, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useGetTeamMachines } from '@/api/api-hooks.generated';
 import {
   useCreateStorage,
   useDeleteStorage,
+  useGetTeamMachines,
   useGetTeamStorages,
   useUpdateStorageName,
   useUpdateStorageVault,
@@ -62,7 +62,14 @@ const StoragePage: React.FC = () => {
   const [modal, contextHolder] = Modal.useModal();
 
   // Custom hooks for common patterns
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
+    pageId: 'storage',
+  });
   const {
     modalState: unifiedModalState,
     currentResource,
@@ -90,11 +97,9 @@ const StoragePage: React.FC = () => {
     data: storages = [],
     isLoading: storagesLoading,
     refetch: refetchStorage,
-  } = useGetTeamStorages(selectedTeams.length > 0 ? selectedTeams[0] : undefined);
+  } = useGetTeamStorages(selectedTeam ?? undefined);
 
-  const { data: machines = [] } = useGetTeamMachines(
-    selectedTeams.length > 0 ? selectedTeams[0] : undefined
-  );
+  const { data: machines = [] } = useGetTeamMachines(selectedTeam ?? undefined);
 
   const { data: dropdownData } = useDropdownData();
   const { executeDynamic, isExecuting } = useQueueAction();
@@ -196,9 +201,12 @@ const StoragePage: React.FC = () => {
 
   const modalExistingData = unifiedModalState.data ?? currentResource ?? undefined;
 
-  const hasTeamSelection = selectedTeams.length > 0;
+  const hasTeamSelection = selectedTeam !== null;
   const displayedStorages = hasTeamSelection ? storages : [];
   const emptyDescription = hasTeamSelection ? t('storage.noStorage') : t('teams.selectTeamPrompt');
+
+  // Show loading when teams are being fetched OR when storages are loading
+  const isLoading = teamsLoading || storagesLoading;
 
   return (
     <>
@@ -207,8 +215,8 @@ const StoragePage: React.FC = () => {
           <TeamSelector
             data-testid="resources-team-selector"
             teams={teams}
-            selectedTeams={selectedTeams}
-            onChange={setSelectedTeams}
+            selectedTeam={selectedTeam}
+            onChange={setSelectedTeam}
             loading={teamsLoading}
             placeholder={t('teams.selectTeamToView')}
           />
@@ -216,7 +224,7 @@ const StoragePage: React.FC = () => {
 
         <ResourceListView<GetTeamStorages_ResultSet1>
           title={<PageHeader title={t('storage.title')} subtitle={t('storage.subtitle')} />}
-          loading={storagesLoading}
+          loading={isLoading}
           data={displayedStorages}
           columns={storageColumns}
           mobileRender={mobileRender}
@@ -285,7 +293,7 @@ const StoragePage: React.FC = () => {
         resourceType="storage"
         mode={unifiedModalState.mode}
         existingData={modalExistingData}
-        teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+        teamFilter={selectedTeam ? [selectedTeam] : undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
@@ -321,7 +329,7 @@ const StoragePage: React.FC = () => {
         data-testid="resources-rclone-import-wizard"
         open={rcloneImportWizard.isOpen}
         onClose={rcloneImportWizard.close}
-        teamName={selectedTeams[0] || ''}
+        teamName={selectedTeam ?? ''}
         onImportComplete={() => {
           void refetchStorage();
           showMessage('success', t('resources:storage.import.successMessage'));

@@ -28,12 +28,11 @@
  * ```
  */
 
+// Re-export types for convenience
+export type { FileInfo, SFTPSession, SSHCredentials } from '../types/index.js';
 export {
-  SFTPClient,
   createSFTPClient,
+  SFTPClient,
   type SFTPClientConfig,
   type TransferProgressCallback,
 } from './client.js';
-
-// Re-export types for convenience
-export type { FileInfo, SFTPSession, SSHCredentials } from '../types/index.js';

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseLogLine, parseLogOutput, parseLogLevel } from '../logParser';
+import { describe, expect, it } from 'vitest';
+import { parseLogLevel, parseLogLine, parseLogOutput } from '../logParser';
 
 describe('logParser', () => {
   describe('parseLogLevel', () => {

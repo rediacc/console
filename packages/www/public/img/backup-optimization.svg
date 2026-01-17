@@ -1,0 +1,49 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="400" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Rediacc Smart Backup Technology</text>
+  
+  <!-- Traditional Backup Section -->
+  <rect x="50" y="80" width="300" height="270" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
+  <text x="200" y="110" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Traditional Backup</text>
+  
+  <!-- Traditional Backup Illustration -->
+  <rect x="80" y="130" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
+  <text x="200" y="155" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Full Backup - Day 1</text>
+  
+  <rect x="80" y="180" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
+  <text x="200" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Full Backup - Day 2</text>
+  
+  <rect x="80" y="230" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
+  <text x="200" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Full Backup - Day 3</text>
+  
+  <text x="200" y="320" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#dc3545">300 TB Storage / Month</text>
+  
+  <!-- Rediacc Backup Section -->
+  <rect x="450" y="80" width="300" height="270" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
+  <text x="600" y="110" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Rediacc Backup</text>
+  
+  <!-- Rediacc Backup Illustration -->
+  <rect x="480" y="130" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
+  <text x="600" y="155" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Initial Backup</text>
+  
+  <rect x="480" y="180" width="40" height="40" fill="#c5e8f7" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="500" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">100 GB</text>
+  <text x="600" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Only Changed Data - Day 2</text>
+  
+  <rect x="480" y="230" width="40" height="40" fill="#c5e8f7" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
+  <text x="500" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">100 GB</text>
+  <text x="600" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Only Changed Data - Day 3</text>
+  
+  <text x="600" y="320" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#198754">~3 TB Storage / Month</text>
+  
+  <!-- Arrow -->
+  <path d="M 370 200 L 430 200" stroke="#333" stroke-width="2" fill="none"/>
+  <polygon points="430,200 420,195 420,205" fill="#333"/>
+  
+  <!-- Legend -->
+  <rect x="300" y="360" width="200" height="20" fill="none" rx="0" ry="0"/>
+  <text x="400" y="375" font-family="Arial" font-size="12" font-weight="bold" text-anchor="middle" fill="#198754">99.99% Storage Cost Reduction</text>
+</svg> 

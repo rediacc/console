@@ -1,0 +1,23 @@
+services:
+  memcached:
+    image: memcached:latest
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: "${NETWORK_MODE:-bridge}"
+    command:
+      - memcached
+      - -m
+      - "${MEMCACHED_MEMORY}"
+      - -c
+      - "${MEMCACHED_MAX_CONN}"
+      - -t
+      - "${MEMCACHED_THREADS}"
+      - ${MEMCACHED_VERBOSITY:+-v}
+    ports:
+      - "11211"
+    healthcheck:
+      test: ["CMD", "timeout", "1", "bash", "-c", "</dev/tcp/127.0.0.1/11211"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

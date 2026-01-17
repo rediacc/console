@@ -3,7 +3,7 @@
  *
  * Generated from: middleware/AppData/stored-procedures.json
  * Configuration: packages/web/src/api/hooks.config.json
- * Generated at: 2026-01-06T18:32:56Z
+ * Generated at: 2026-01-14T10:37:48Z
  * Schema version: 3.0.0
  *
  * To regenerate, run: ./go deploy prep
@@ -56,7 +56,6 @@ import type {
 import { getInvalidationKeys, getMessages, getQueryOptions } from './hooks.config';
 import {
   ensureVaultContent,
-  generateActivationCode,
   hashPassword,
   type CreateBridgeInput,
   type CreateCephClusterInput,
@@ -758,7 +757,6 @@ export const useCreateNewUser = () => {
       const params = {
         newUserEmail: input.email,
         newUserHash: await hashPassword(input.password),
-        activationCode: generateActivationCode(),
       };
       return typedApi.CreateNewUser(params);
     },

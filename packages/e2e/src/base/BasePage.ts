@@ -1,16 +1,80 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { TIMEOUT_DEFAULTS } from '../utils/constants';
 
 export abstract class BasePage {
   protected page: Page;
   protected url: string;
+  private static readonly SIDEBAR_TOGGLE_TEST_ID = 'sidebar-toggle-button';
 
   constructor(page: Page, url: string) {
     this.page = page;
     this.url = url;
   }
 
+  /**
+   * Detect if running in Electron context.
+   * Electron loads from file:// protocol, web loads from http(s)://
+   * Note: We only check for file:// to avoid false positives from about:blank
+   * which is the initial state for all browsers.
+   */
+  protected isElectronContext(): boolean {
+    const currentUrl = this.page.url();
+    return currentUrl.startsWith('file://');
+  }
+
+  /**
+   * Normalize route by stripping /console prefix and ensuring leading slash.
+   * /console/login -> /login
+   * machines -> /machines
+   */
+  private normalizeRoute(route: string): string {
+    let normalized = route;
+    if (normalized.startsWith('/console')) {
+      normalized = normalized.slice('/console'.length);
+    }
+    if (!normalized.startsWith('/')) {
+      normalized = `/${normalized}`;
+    }
+    return normalized;
+  }
+
+  /**
+   * Wait for a route to become active. Works for both Electron (HashRouter)
+   * and Web (BrowserRouter) contexts.
+   *
+   * @param route - The route to wait for (e.g., '/machines', '/login')
+   * @param options - Optional timeout configuration
+   */
+  protected async waitForRoute(route: string, options?: { timeout?: number }): Promise<void> {
+    const timeout = options?.timeout ?? TIMEOUT_DEFAULTS.ROUTE;
+    const normalizedRoute = this.normalizeRoute(route);
+
+    if (this.isElectronContext()) {
+      await this.page.waitForFunction(
+        (expectedRoute) => {
+          const hash = window.location.hash;
+          const currentRoute = hash ? hash.slice(1) : '/';
+          return currentRoute.includes(expectedRoute) || currentRoute === expectedRoute;
+        },
+        normalizedRoute,
+        { timeout }
+      );
+    } else {
+      await this.page.waitForURL(`**${normalizedRoute}*`, { timeout });
+    }
+  }
+
   async navigate(): Promise<void> {
-    await this.page.goto(this.url);
+    const normalizedRoute = this.normalizeRoute(this.url);
+
+    if (this.isElectronContext()) {
+      await this.page.evaluate((route) => {
+        window.location.hash = route;
+      }, normalizedRoute);
+      await this.page.waitForTimeout(100);
+    } else {
+      await this.page.goto(this.url);
+    }
     await this.waitForPageLoad();
   }
 
@@ -44,19 +108,11 @@ export abstract class BasePage {
   }
 
   async waitForElementToDisappear(locator: Locator, timeout = 10000): Promise<void> {
-    await locator.waitFor({ state: 'hidden', timeout });
+    await expect(locator).toBeHidden({ timeout });
   }
 
-  async clickWithRetry(locator: Locator, maxRetries = 3): Promise<void> {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await locator.click();
-        break;
-      } catch (error) {
-        if (i === maxRetries - 1) throw error;
-        await this.page.waitForTimeout(1000);
-      }
-    }
+  async clickWithRetry(locator: Locator, _maxRetries = 1): Promise<void> {
+    await locator.click();
   }
 
   async fillWithClear(locator: Locator, value: string): Promise<void> {
@@ -126,6 +182,27 @@ export abstract class BasePage {
   async goForward(): Promise<void> {
     await this.page.goForward();
     await this.waitForPageLoad();
+  }
+
+  protected async ensureTestIdVisible(testId: string, timeout = 5000): Promise<void> {
+    const target = this.page.getByTestId(testId);
+    if (await target.isVisible().catch(() => false)) {
+      return;
+    }
+
+    const toggle = this.page.getByTestId(BasePage.SIDEBAR_TOGGLE_TEST_ID);
+    if ((await toggle.count()) === 0) {
+      return;
+    }
+
+    await toggle.click();
+    try {
+      await target.waitFor({ state: 'visible', timeout });
+      return;
+    } catch {
+      await toggle.click();
+      await target.waitFor({ state: 'visible', timeout });
+    }
   }
 
   async getDOMAttribute(locator: Locator, attributeName: string): Promise<string | null> {

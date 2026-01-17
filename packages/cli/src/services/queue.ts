@@ -1,17 +1,17 @@
 import {
-  parseGetOrganizationVault,
   parseGetOrganizationTeams,
+  parseGetOrganizationVault,
+  parseGetRegionBridges,
   parseGetTeamMachines,
   parseGetTeamRepositories,
   parseGetTeamStorages,
-  parseGetRegionBridges,
 } from '@rediacc/shared/api';
 import {
   type FunctionRequirements,
+  parseVaultContent,
   type QueueRequestContext,
   QueueVaultBuilder,
   type QueueVaultBuilderConfig,
-  parseVaultContent,
 } from '@rediacc/shared/queue-vault';
 import type {
   GetOrganizationTeams_ResultSet1,
@@ -20,7 +20,7 @@ import type {
   GetTeamRepositories_ResultSet1,
   GetTeamStorages_ResultSet1,
 } from '@rediacc/shared/types';
-import { typedApi, apiClient } from './api.js';
+import { apiClient, typedApi } from './api.js';
 
 /** Generic vault data type for parsed vault content */
 type ParsedVaultData = Record<string, unknown>;

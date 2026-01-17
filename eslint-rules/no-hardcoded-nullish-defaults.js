@@ -87,6 +87,15 @@ export const noHardcodedNullishDefaults = {
     allowedStrings.add('');
 
     /**
+     * Check if a string looks like an i18n translation key.
+     * i18n keys follow the pattern "namespace:path.to.key" (e.g., "common:errors.unknownError")
+     */
+    function isI18nKey(str) {
+      // Match patterns like "common:errors.xyz" or "machines:validation.error"
+      return /^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9.]*$/.test(str);
+    }
+
+    /**
      * Check if a node is a number literal (including negative numbers)
      */
     function getNumberValue(node) {
@@ -148,6 +157,10 @@ export const noHardcodedNullishDefaults = {
         // Check for string literals
         const stringValue = getStringValue(right);
         if (stringValue !== null) {
+          // Allow i18n translation keys (e.g., "common:errors.xyz")
+          if (isI18nKey(stringValue)) {
+            return;
+          }
           if (!allowedStrings.has(stringValue)) {
             context.report({
               node: right,

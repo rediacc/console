@@ -28,6 +28,9 @@ const PACKAGES = [
   { path: 'packages/web', name: '@rediacc/web' },
   { path: 'packages/desktop', name: '@rediacc/desktop' },
   { path: 'packages/e2e', name: '@rediacc/e2e' },
+  { path: 'packages/bridge-tests', name: '@rediacc/bridge-tests' },
+  { path: 'packages/www', name: '@rediacc/www' },
+  { path: 'packages/json', name: '@rediacc/json' },
 ];
 
 function readPackageJson(packagePath) {

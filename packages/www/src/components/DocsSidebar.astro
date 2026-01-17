@@ -1,0 +1,324 @@
+---
+import { getCollection } from 'astro:content';
+import type { Language } from '../i18n/types';
+import { createTranslator } from '../i18n/utils';
+import '../styles/sidebar-shared.css';
+
+interface Props {
+  currentLang: Language;
+  currentUrl: string;
+}
+
+const { currentLang, currentUrl } = Astro.props;
+
+// Fetch all docs for navigation
+const allDocs = await getCollection('docs');
+const docs = allDocs
+  .filter((doc) => doc.data.language === currentLang)
+  .sort((a, b) => {
+    const categorySort = (a.data.category || 'other').localeCompare(
+      b.data.category || 'other'
+    );
+    if (categorySort !== 0) return categorySort;
+    return (a.data.order ?? 999) - (b.data.order ?? 999);
+  });
+
+// Extract base slug helper function (removes language prefix)
+const getBaseSlug = (slug: string) => {
+  const parts = slug.split('/');
+  return parts.length > 1 ? parts[parts.length - 1] : slug;
+};
+
+// Group docs by category
+const docsByCategory = docs.reduce((acc, doc) => {
+  const category = doc.data.category || 'Other';
+  if (!acc[category]) acc[category] = [];
+  acc[category].push(doc);
+  return acc;
+}, {} as Record<string, typeof docs>);
+
+const categories = Object.keys(docsByCategory).sort();
+
+// Get current doc slug for active state
+const currentSlug = currentUrl.split('/').pop();
+
+// Get translator
+const { t } = createTranslator(currentLang);
+
+// Pre-calculate category states to avoid JSX parsing issues
+const categoryStates = categories.map(category => {
+  const itemCount = docsByCategory[category].length;
+  const categoryId = `category-${category.toLowerCase().replace(/\s+/g, '-')}`;
+  const hasActiveDoc = docsByCategory[category].some(doc => {
+    const docSlug = getBaseSlug(doc.slug);
+    return docSlug === currentSlug;
+  });
+  const isSmall = itemCount <= 3;
+  const initialExpanded = hasActiveDoc || isSmall;
+
+  return {
+    category,
+    itemCount,
+    categoryId,
+    hasActiveDoc,
+    expandedAttr: initialExpanded ? 'true' as const : 'false' as const
+  };
+});
+---
+
+<aside class="sidebar-base docs-sidebar">
+  <nav class="sidebar-nav docs-nav" role="navigation" aria-label="Documentation navigation">
+    <h2 class="sidebar-title">{t('pages.docs.title')}</h2>
+
+    <div class="sidebar-search-container">
+      <input
+        type="text"
+        class="sidebar-search-input"
+        placeholder="Search docs..."
+        aria-label="Search documentation"
+      />
+    </div>
+
+    <ul class="sidebar-list category-list">
+      {categoryStates.map(({ category, itemCount, categoryId, hasActiveDoc, expandedAttr }) => {
+
+        return (
+          <li
+            class="sidebar-item category-item"
+            data-category={category}
+            data-item-count={String(itemCount)}
+            data-is-active={hasActiveDoc ? 'true' : 'false'}
+            aria-expanded={expandedAttr}
+          >
+            <button
+              class="category-header"
+              aria-expanded={expandedAttr}
+              aria-controls={categoryId}
+              data-collapsible={itemCount > 0 ? 'true' : 'false'}
+            >
+              {category}
+              <span class="category-chevron" aria-hidden="true">▶</span>
+            </button>
+            <ul class="sidebar-list collapsible-list doc-list" id={categoryId}>
+              {docsByCategory[category].map(doc => {
+                const docSlug = getBaseSlug(doc.slug);
+                const isActive = docSlug === currentSlug;
+                return (
+                  <li class="sidebar-item">
+                    <a
+                      href={`/${currentLang}/docs/${docSlug}`}
+                      class={`sidebar-link doc-link ${isActive ? 'active' : ''}`}
+                    >
+                      {doc.data.title}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        );
+      })}
+    </ul>
+  </nav>
+</aside>
+
+<style>
+  /* DocsSidebar specific overrides */
+  .docs-sidebar {
+    /* Uses shared sidebar-base styles from sidebar-shared.css */
+  }
+
+  .docs-nav {
+    /* Uses shared sidebar-nav styles from sidebar-shared.css */
+  }
+
+  /* Search Input Container */
+  .sidebar-search-container {
+    margin: 0 0 1rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+
+  .sidebar-search-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background-color: #ffffff;
+    color: var(--text-primary);
+    transition: border-color var(--transition-speed);
+  }
+
+  .sidebar-search-input:focus {
+    outline: none;
+    border-color: var(--sidebar-accent);
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+  }
+
+  .sidebar-search-input::placeholder {
+    color: var(--text-secondary);
+  }
+
+  /* Add extra margin to category items for spacing */
+  .category-item {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Highlight search matches */
+  .doc-link.search-match {
+    background-color: rgba(26, 26, 26, 0.05);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .docs-sidebar {
+      position: static;
+      max-height: none;
+      overflow-y: visible;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    // Prevent multiple initialization
+    if (window.rediaccDocsSidebarInitialized) return;
+    window.rediaccDocsSidebarInitialized = true;
+
+    /**
+     * Set collapsed/expanded state of a category
+     */
+    function setCollapsedState(categoryItem, isCollapsed) {
+      const button = categoryItem.querySelector('.category-header');
+      if (!button) return;
+
+      if (isCollapsed) {
+        button.setAttribute('aria-expanded', 'false');
+        categoryItem.setAttribute('aria-expanded', 'false');
+      } else {
+        button.setAttribute('aria-expanded', 'true');
+        categoryItem.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    /**
+     * Initialize collapsible category menus
+     */
+    function initCollapsibleCategories() {
+      const categoryItems = document.querySelectorAll('[data-category][data-item-count]');
+
+      categoryItems.forEach(item => {
+        // Skip if already initialized
+        if (item.dataset.initialized === 'true') return;
+        item.dataset.initialized = 'true';
+
+        const button = item.querySelector('.category-header');
+        const category = item.dataset.category;
+        const _itemCount = parseInt(item.dataset.itemCount, 10);
+        const _isActive = item.dataset.isActive === 'true';
+
+        if (!button) return;
+
+        // Check sessionStorage for saved state
+        const storageKey = `rediacc_docs_cat_${category}`;
+        const savedState = sessionStorage.getItem(storageKey);
+
+        if (savedState !== null) {
+          // Apply saved state
+          const isExpanded = savedState === 'true';
+          setCollapsedState(item, !isExpanded);
+        }
+        // Otherwise, keep the HTML's initial state (no flash)
+
+        // Click handler
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const currentExpanded = item.getAttribute('aria-expanded') === 'true';
+          const newExpanded = !currentExpanded;
+
+          setCollapsedState(item, !newExpanded);
+          sessionStorage.setItem(storageKey, newExpanded ? 'true' : 'false');
+        });
+
+        // Keyboard navigation
+        button.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            button.click();
+          }
+        });
+      });
+    }
+
+    /**
+     * Initialize search/filter functionality for sidebar navigation
+     */
+    function initSidebarSearch() {
+      const sidebar = document.querySelector('.docs-sidebar');
+      const input = document.querySelector('.sidebar-search-input');
+
+      if (!sidebar || !input) return;
+
+      input.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+
+        // Get all items to filter
+        const categoryItems = sidebar.querySelectorAll('[data-category]');
+        const docLinks = sidebar.querySelectorAll('.doc-link');
+
+        if (searchTerm.length === 0) {
+          // Reset view - show all
+          categoryItems.forEach(item => {
+            item.style.display = '';
+          });
+          docLinks.forEach(link => {
+            link.style.display = '';
+            link.classList.remove('search-match');
+          });
+          return;
+        }
+
+        // Filter and highlight
+        categoryItems.forEach(item => {
+          const links = item.querySelectorAll('.doc-link');
+          let hasMatch = false;
+
+          links.forEach(link => {
+            const text = link.textContent.toLowerCase();
+            const matches = text.includes(searchTerm);
+
+            if (matches) {
+              hasMatch = true;
+              link.style.display = '';
+              link.classList.add('search-match');
+            } else {
+              link.style.display = 'none';
+              link.classList.remove('search-match');
+            }
+          });
+
+          // Show category if it has matching items
+          item.style.display = hasMatch ? '' : 'none';
+        });
+      });
+    }
+
+    // Initialize on various events
+    function init() {
+      initCollapsibleCategories();
+      initSidebarSearch();
+    }
+
+    // Astro View Transitions support
+    document.addEventListener('astro:page-load', init);
+
+    // Initial load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

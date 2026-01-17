@@ -3,8 +3,8 @@
  */
 
 import {
-  extractPrimaryOrSecondary,
   extractFirstByIndex,
+  extractPrimaryOrSecondary,
   extractRowsByIndex,
   toBoolean,
 } from './base';

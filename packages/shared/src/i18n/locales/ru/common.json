@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "Произошла ошибка",
+    "cliCommandFailed": "Команда CLI не выполнена",
+    "criticalSystemError": "В системе критические проблемы",
+    "failedToCreateTask": "Не удалось создать тестовую задачу",
+    "failedToFork": "Не удалось создать форк репозитория",
+    "helloFunctionError": "Функция Hello сообщила об ошибке",
+    "machinesValidationError": "Ошибка проверки машины",
+    "noErrorMessage": "(нет сообщения об ошибке)",
+    "operationFailed": "Операция не выполнена",
+    "passwordValidation": "Пароль должен содержать заглавную букву, строчную букву, цифру и специальный символ",
+    "tfaVerificationFailed": "Проверка TFA не удалась",
+    "unknownError": "Неизвестная ошибка",
+    "vaultTestFailed": "Тест соединения с Vault не пройден",
+    "vsCodeConnectionFailed": "Подключение VS Code не удалось"
+  },
+  "success": {
+    "helloFunctionSuccess": "Функция Hello успешно завершена"
+  },
   "status": {
     "cancelled": "Отменено",
     "completed": "Завершено",

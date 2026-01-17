@@ -1,23 +1,20 @@
+export * from './adapters';
+// Client factory and adapters
+export * from './client';
+export * from './errorUtils';
 export * from './normalizer';
 export * from './parseResponse';
+// Parsers - export all including base extraction utilities
+export * from './parsers';
 export * from './services';
-export * from './tokenUtils';
-export * from './errorUtils';
 export * from './statusCodes';
-
-// TypedApi - only export the factory and types, not extractors (use parsers instead)
-export { createTypedApi } from './typedApi';
+export * from './tokenUtils';
 export type {
+  PrimaryResult,
+  ResultAtIndex,
   TypedApi,
   TypedApiConfig,
   TypedApiResponse,
-  PrimaryResult,
-  ResultAtIndex,
 } from './typedApi';
-
-// Parsers - export all including base extraction utilities
-export * from './parsers';
-
-// Client factory and adapters
-export * from './client';
-export * from './adapters';
+// TypedApi - only export the factory and types, not extractors (use parsers instead)
+export { createTypedApi } from './typedApi';

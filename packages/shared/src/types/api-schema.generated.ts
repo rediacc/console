@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2026-01-04T11:59:36Z
+ * Generated at: 2026-01-14T10:37:46Z
  * Schema version: 3.0.0
- * Schema generated: 2026-01-04T11:59:34.8284318Z
+ * Schema generated: 2026-01-14T10:37:45.4819389Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: dotnet run -- --generate-types
@@ -184,8 +184,6 @@ export interface CreateNewUserParams {
   newUserEmail: string;
   /** @sqlType binary */
   newUserHash: string;
-  /** @sqlType char */
-  activationCode: string;
   /** @sqlType nvarchar */
   languagePreference?: string;
 }
@@ -1147,8 +1145,8 @@ export interface CreateNewUser_ResultSet1 {
   result: string | null;
   /** @sqlType nvarchar */
   languagePreference: string | null;
-  /** @sqlType char */
-  activationCode: string | null;
+  /** @sqlType int */
+  activationCode: number | null;
   /** @sqlType nvarchar */
   createdBy: string | null;
 }
@@ -6679,7 +6677,7 @@ export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2026-01-04T11:59:34.8284318Z',
+  generated: '2026-01-14T10:37:45.4819389Z',
   procedureCount: 115,
 } as const;
 

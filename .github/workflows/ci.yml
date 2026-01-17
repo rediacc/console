@@ -4,32 +4,143 @@ on:
   pull_request:
     branches:
       - main
-      - develop
     types: [opened, synchronize, reopened, edited]
   push:
     branches:
       - main
-      - develop
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'  # Version tags like 0.4.20
+  schedule:
+    - cron: '0 3 * * *'  # Nightly at 3:00 UTC
+  workflow_dispatch:
+    inputs:
+      browsers:
+        description: 'E2E browsers to test'
+        required: false
+        type: choice
+        default: 'chromium-only'
+        options:
+          - 'chromium-only'
+          - 'all-browsers'
 
-# Required for cancel-on-failure to work
+# Required for cancel-watchdog to cancel workflow on job failures
+# and for GitHub Pages deployment
 permissions:
   actions: write
   contents: read
+  pages: write
+  id-token: write
 
 # Cancel in-progress runs when a new run is triggered for the same branch/PR
+# Use 'no-cancel-push' PR label to disable (see .github/labels.yml)
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'no-cancel-push') }}
+
+# E2E Browser Configuration
+# Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.
+# To permanently enable all browsers, change the fallback value below.
+env:
+  E2E_BROWSERS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
 
 jobs:
+  # ============================================================================
+  # CANCEL WATCHDOG - Monitors all jobs and cancels workflow on any failure
+  # ============================================================================
+  cancel-watchdog:
+    name: Cancel Watchdog
+    runs-on: ubuntu-slim
+    if: always()
+    steps:
+      - name: Monitor jobs and cancel on failure
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        with:
+          script: |
+            const pollInterval = 10000; // 10 seconds
+            const maxRuntime = 1800000; // 30 minutes max
+            const minRuntime = 120000;  // 2 minutes minimum before allowing workflow-complete exit
+            const startTime = Date.now();
+
+            // Check for skip-cancellation label
+            let skipCancellationOnFailure = false;
+            if (context.payload.pull_request) {
+              const labels = context.payload.pull_request.labels.map(l => l.name);
+              skipCancellationOnFailure = labels.includes('no-cancel-failure');
+              if (skipCancellationOnFailure) {
+                console.log('Label "no-cancel-failure" detected - will not cancel on job failures');
+              }
+            }
+
+            console.log('Watchdog started - monitoring for job failures...');
+
+            while (Date.now() - startTime < maxRuntime) {
+              const elapsed = Date.now() - startTime;
+              const elapsedSec = Math.round(elapsed / 1000);
+
+              const { data: run } = await github.rest.actions.getWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId
+              });
+
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId
+              });
+
+              const otherJobs = jobs.jobs.filter(j => !j.name.includes('Watchdog'));
+              const completed = otherJobs.filter(j => j.status === 'completed').length;
+              const inProgress = otherJobs.filter(j => j.status === 'in_progress').length;
+              const queued = otherJobs.filter(j => j.status === 'queued').length;
+
+              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued (workflow: ${run.status})`);
+
+              const failedJob = otherJobs.find(job => job.conclusion === 'failure');
+
+              if (failedJob) {
+                const failureMsg = `Job failed: "${failedJob.name}"`;
+                console.log('');
+                console.log('='.repeat(70));
+                console.log(failureMsg);
+                console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/job/${failedJob.id}`);
+                console.log('='.repeat(70));
+
+                if (skipCancellationOnFailure) {
+                  console.log('');
+                  console.log('NOTICE: Skipping workflow cancellation due to "no-cancel-failure" label');
+                  console.log('Workflow will continue running despite this failure.');
+                  core.setFailed(failureMsg + ' (cancellation skipped due to label)');
+                  return;
+                }
+
+                await github.rest.actions.cancelWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: context.runId
+                });
+
+                core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
+                return;
+              }
+
+              if (run.status === 'completed' && elapsed >= minRuntime) {
+                console.log(`Workflow completed - exiting watchdog (after ${elapsedSec}s)`);
+                return;
+              }
+
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+
+            console.log('Watchdog timeout reached (30 min) - exiting');
+
   # ============================================================================
   # TIER 2: PR VALIDATION (PR-only, no dependencies)
   # ============================================================================
   pr-title:
-    name: 📋 PR - Title Format
-    runs-on: ubuntu-latest
+    name: PR - Title Format
+    runs-on: ubuntu-slim
     if: github.event_name == 'pull_request'
-
     steps:
       - name: Check PR title format
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
@@ -37,7 +148,6 @@ jobs:
           script: |
             const title = context.payload.pull_request.title;
             const pattern = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .+/;
-
             if (!pattern.test(title)) {
               core.setFailed(
                 'PR title must follow Conventional Commits format:\n' +
@@ -46,7 +156,7 @@ jobs:
                 'Example: feat(ui): add dark mode toggle'
               );
             } else {
-              core.info('✅ PR title follows Conventional Commits format');
+              core.info('PR title follows Conventional Commits format');
             }
 
       - name: Check PR description
@@ -54,11 +164,8 @@ jobs:
         with:
           script: |
             const body = context.payload.pull_request.body || '';
-
             if (body.length < 20) {
               core.setFailed('PR description is too short. Please provide a detailed description.');
-            } else {
-              core.info('✅ PR description is adequate');
             }
 
       - name: Check for linked issues
@@ -67,33 +174,16 @@ jobs:
           script: |
             const body = context.payload.pull_request.body || '';
             const issuePattern = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|ref|refs)\s+#\d+/i;
-
             if (!issuePattern.test(body)) {
               core.warning('PR does not reference any issues. Consider linking related issues.');
-            } else {
-              core.info('✅ PR references issues');
             }
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            console.log('Job failed - cancelling workflow run...');
-            await github.rest.actions.cancelWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId
-            });
-
   pr-size:
-    name: 📊 PR - Size
-    runs-on: ubuntu-latest
+    name: PR - Size
+    runs-on: ubuntu-slim
     if: github.event_name == 'pull_request'
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
         with:
           fetch-depth: 0
 
@@ -106,50 +196,24 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             });
-
             const additions = files.reduce((sum, file) => sum + file.additions, 0);
             const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
             const totalChanges = additions + deletions;
             const fileCount = files.length;
 
-            core.info(`Files changed: ${fileCount}`);
-            core.info(`Lines added: ${additions}`);
-            core.info(`Lines deleted: ${deletions}`);
-            core.info(`Total changes: ${totalChanges}`);
-
-            // Warning thresholds
             if (totalChanges > 1000) {
-              core.warning(
-                `⚠️ Large PR detected (${totalChanges} lines changed). ` +
-                'Consider breaking it into smaller PRs for easier review.'
-              );
+              core.warning(`Large PR detected (${totalChanges} lines changed). Consider breaking it into smaller PRs.`);
             }
-
             if (fileCount > 30) {
-              core.warning(
-                `⚠️ Many files changed (${fileCount} files). ` +
-                'Consider breaking it into smaller PRs.'
-              );
+              core.warning(`Many files changed (${fileCount} files). Consider breaking it into smaller PRs.`);
             }
 
-            // Add comment summary
-            const comment = `## PR Size Summary\n\n` +
-              `- **Files changed:** ${fileCount}\n` +
-              `- **Lines added:** ${additions}\n` +
-              `- **Lines deleted:** ${deletions}\n` +
-              `- **Total changes:** ${totalChanges}\n`;
-
-            core.summary.addRaw(comment).write();
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+            core.summary.addRaw(`## PR Size Summary\n\n- **Files changed:** ${fileCount}\n- **Lines added:** ${additions}\n- **Lines deleted:** ${deletions}\n- **Total changes:** ${totalChanges}\n`).write();
 
   pr-conflicts:
-    name: 🔀 PR - Conflicts
-    runs-on: ubuntu-latest
+    name: PR - Conflicts
+    runs-on: ubuntu-slim
     if: github.event_name == 'pull_request'
-
     steps:
       - name: Check mergeable state
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
@@ -160,13 +224,8 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             });
-
             if (pr.mergeable_state === 'dirty') {
-              core.setFailed('❌ PR has merge conflicts. Please resolve them.');
-            } else if (pr.mergeable_state === 'unknown') {
-              core.info('⏳ Merge status is being calculated...');
-            } else {
-              core.info('✅ No merge conflicts detected');
+              core.setFailed('PR has merge conflicts. Please resolve them.');
             }
 
       - name: Cancel workflow on failure
@@ -174,7 +233,6 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
         with:
           script: |
-            console.log('Job failed - cancelling workflow run...');
             await github.rest.actions.cancelWorkflowRun({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -185,346 +243,278 @@ jobs:
   # TIER 1: CODE QUALITY & SECURITY (Fast checks, no dependencies)
   # ============================================================================
   quality-versions:
-    name: 📦 Quality - Versions
-    runs-on: ubuntu-latest
-
+    name: Quality - Versions
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - name: Block legacy-peer-deps workarounds
         run: |
-          # Fail if .npmrc contains legacy-peer-deps or force
-          if [ -f .npmrc ]; then
-            if grep -qiE "legacy-peer-deps|force" .npmrc; then
-              echo "❌ .npmrc contains legacy-peer-deps or force=true"
-              echo "Fix peer dependency conflicts properly instead of bypassing checks."
-              exit 1
-            fi
-          fi
-          echo "✅ No legacy-peer-deps workarounds detected"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify no peer dependency conflicts
-        run: |
-          # npm ls returns non-zero if there are invalid peer deps
-          if ! npm ls 2>&1 | grep -q "invalid"; then
-            echo "✅ No peer dependency conflicts"
-          else
-            echo "❌ Peer dependency conflicts detected:"
-            npm ls 2>&1 | grep "invalid" || true
-            echo ""
-            echo "Fix by aligning versions in package.json, not with --legacy-peer-deps"
+          if [ -f .npmrc ] && grep -qiE "legacy-peer-deps|force" .npmrc; then
+            echo "Error: .npmrc contains legacy-peer-deps or force=true"
             exit 1
           fi
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - name: Verify no peer dependency conflicts
+        run: |
+          if npm ls 2>&1 | grep -q "invalid"; then
+            echo "Peer dependency conflicts detected"
+            npm ls 2>&1 | grep "invalid" || true
+            exit 1
+          fi
+      - run: npm run version:check
 
-      - name: Check version consistency
-        run: npm run version:check
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+  quality-deps:
+    name: Quality - Deps
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/quality/check-deps.sh
 
   quality-lint:
-    name: ✨ Quality - Lint
+    name: Quality - Lint
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint (zero warnings policy)
-        run: npm run lint -- --max-warnings 0
-
-      - name: Check unused code (knip)
-        run: npm run lint:unused
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run lint -- --max-warnings 0
+      - run: npm run lint:unused
 
   quality-format:
-    name: 🎨 Quality - Format
-    runs-on: ubuntu-latest
-
+    name: Quality - Format
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run check:format
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check code formatting (Biome)
-        run: npm run format:check
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+  quality-i18n:
+    name: Quality - i18n
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run check:i18n
 
   quality-types:
-    name: 🔍 Quality - TypeScript
-    runs-on: ubuntu-latest
-
+    name: Quality - TypeScript
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run TypeScript project references
-        run: npm run typecheck
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run typecheck
 
   quality-security:
-    name: 🔒 Quality - Security
-    runs-on: ubuntu-latest
-
+    name: Quality - Security
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
-
-      - name: Check for vulnerable dependencies
-        run: |
-          echo "Checking for known vulnerabilities..."
-          npm audit --json > audit-report.json
-          cat audit-report.json
-
-      - name: Upload audit report
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/security/audit.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
           name: security-audit-${{ github.sha }}
           path: audit-report.json
-          retention-days: 30
+          retention-days: 3
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+  quality-shell:
+    name: Quality - Shell
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - run: .ci/scripts/security/shellcheck.sh
+      - run: .ci/scripts/security/check-commands.sh
 
   # ============================================================================
   # TIER 3: BUILD & UNIT TESTS (Depends on Tier 1)
   # ============================================================================
   test-unit:
-    name: 🧪 Test - Unit
-    runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
-
+    name: Test - Unit
+    runs-on: ubuntu-slim
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Run unit tests
-        run: |
-          npm run test -w @rediacc/shared
-          npm run test -w @rediacc/shared-desktop
-          npm run test:run -w @rediacc/web
-          npm run test:unit -w @rediacc/cli
-
-      - name: Generate coverage report
-        if: always()
-        run: npm run test:coverage
-
-      - name: Upload coverage to artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/test/run-unit.sh --coverage
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
           name: coverage-report-${{ github.sha }}
           path: packages/web/coverage/
-          retention-days: 30
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+          retention-days: 3
 
   build-cli:
-    name: 🔧 Build - CLI
-    runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
-
+    name: Build - CLI
+    runs-on: ubuntu-slim
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build CLI workspace
-        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
-
-      - name: Check CLI build output
-        run: |
-          if [ ! -d "packages/cli/dist" ]; then
-            echo "Error: CLI dist directory not created"
-            exit 1
-          fi
-          if [ ! -f "packages/cli/dist/index.js" ]; then
-            echo "Error: CLI index.js not found in dist"
-            exit 1
-          fi
-          echo "CLI build successful!"
-          ls -lah packages/cli/dist/
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
 
   test-vscode:
-    name: 🔍 Test - VS Code (${{ matrix.os }})
+    name: Test - VS Code (${{ matrix.os }})
     timeout-minutes: 15
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     strategy:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        if: runner.os != 'Windows'
-        run: npm ci
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: npm ci --ignore-scripts
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build CLI
-        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
-
-      - name: Create minimal test env (Unix)
-        if: runner.os != 'Windows'
-        working-directory: packages/cli/tests
-        run: |
-          echo "CLI_API_URL=http://localhost/api" > .env
-          echo "CLI_MASTER_EMAIL=test@example.com" >> .env
-          echo "CLI_MASTER_PASSWORD=testpass" >> .env
-          echo "CLI_TIMEOUT=30000" >> .env
-          echo "CI=true" >> .env
-
-      - name: Create minimal test env (Windows)
-        if: runner.os == 'Windows'
-        working-directory: packages/cli/tests
-        shell: pwsh
-        run: |
-          @"
-          CLI_API_URL=http://localhost/api
-          CLI_MASTER_EMAIL=test@example.com
-          CLI_MASTER_PASSWORD=testpass
-          CLI_TIMEOUT=30000
-          CI=true
-          "@ | Out-File -FilePath .env -Encoding utf8
-
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-cli.sh
+        shell: bash
+      - run: .ci/scripts/env/create-cli-env.sh --minimal --output packages/cli/tests/.env
+        shell: bash
       - name: Run VS Code detection tests
         working-directory: packages/cli
         run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts
         env:
-          # Skip global setup since we're only testing detection (no API needed)
           PLAYWRIGHT_SKIP_GLOBAL_SETUP: 'true'
-
-      - name: Upload test results on failure
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
           name: vscode-detection-results-${{ matrix.os }}-${{ github.sha }}
           path: packages/cli/tests/test-results/
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: ignore
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+  build-web:
+    name: Build - Web (${{ matrix.build-type }})
+    runs-on: ubuntu-slim
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+    strategy:
+      matrix:
+        build-type: [DEBUG, RELEASE]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-web.sh --type ${{ matrix.build-type }}
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-${{ matrix.build-type }}-${{ github.sha }}
+          path: packages/web/dist/
+          retention-days: 3
+
+  # ============================================================================
+  # BUILD: STATIC SITES (www, json)
+  # ============================================================================
+  build-www:
+    name: Build - WWW
+    runs-on: ubuntu-slim
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/build/build-www.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-www-${{ github.sha }}
+          path: packages/www/dist/
+          retention-days: 3
+
+  build-json:
+    name: Build - JSON
+    runs-on: ubuntu-slim
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/build/build-json.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-json-${{ github.sha }}
+          path: packages/json/dist/
+          retention-days: 3
 
   # ============================================================================
   # TIER 4: INTEGRATION TESTS (Depends on Tier 3, long-running)
-  # Only runs after all builds and unit tests pass to avoid wasting resources
-  # Shared backend starts first, then each platform downloads tunnel URL
   # ============================================================================
   infra-backend:
-    name: 🖥️ Infra - Backend
+    name: Infra - Backend
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
     timeout-minutes: 120
-
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
     steps:
       - name: Checkout Elite Repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
         with:
           repository: rediacc/elite
           path: elite
+
+      - name: Checkout Console Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          path: console
+          submodules: true
 
       - name: Pull Elite Docker Images
         working-directory: elite
@@ -541,9 +531,8 @@ jobs:
 
       - name: Wait for Services
         run: |
-          echo "Waiting for Elite services to be ready..."
           timeout 120 bash -c 'until curl -sf http://localhost/health; do sleep 2; done'
-          echo "✓ Elite services are ready"
+          echo "Elite services are ready"
 
       - name: Create Cloudflare Tunnel
         id: tunnel
@@ -555,861 +544,567 @@ jobs:
       - name: Verify Tunnel
         run: |
           TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          echo "Tunnel URL: $TUNNEL_URL"
           for i in {1..20}; do
             if curl -sf "$TUNNEL_URL/health"; then
-              echo "✓ Tunnel verified"
+              echo "Tunnel verified"
               exit 0
             fi
-            echo "Attempt $i/20 - waiting..."
             sleep 3
           done
-          echo "✗ Tunnel verification failed"
           exit 1
 
-      - name: Create Tunnel URL File
-        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
-
       - name: Upload Tunnel URL
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
           name: tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
-          retention-days: 1
+          retention-days: 3
+
+      # Bridge tests
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: console/package-lock.json
+
+      - name: Build CLI
+        working-directory: console
+        run: |
+          npm ci
+          npm run build:packages
+          npm run build:cli
+          npm run build:bundle -w @rediacc/cli
+
+      - name: Install CLI Globally
+        working-directory: console/packages/cli
+        run: |
+          npm pack
+          npm install -g rediacc-cli-*.tgz
+
+      # Login to Docker Hub to avoid rate limiting (fails gracefully if credentials not set)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        continue-on-error: true
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pre-pull Docker Images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull --quiet "$RENET_DOCKER_IMAGE"
+          docker logout ghcr.io
+          rm -f ~/.docker/config.json 2>/dev/null || true
+
+      - name: Provision Test VMs
+        id: vms
+        uses: rediacc/ops/.github/actions/setup-vms@main
+        with:
+          provider: kvm
+          configuration: Standard
+          duration: '120'
+        env:
+          VM_OS_IMAGE: rediacc-ubuntu-24.04
+          TAG: latest
+          SKIP_MACHINE_REGISTRATION: 'true'
+
+      - name: Extract renet binary
+        run: |
+          CONTAINER_ID=$(docker create $RENET_DOCKER_IMAGE)
+          docker cp $CONTAINER_ID:/opt/renet/renet-linux-amd64 /tmp/renet
+          docker rm $CONTAINER_ID
+          chmod +x /tmp/renet
+          echo "RENET_BINARY_PATH=/tmp/renet" >> $GITHUB_ENV
+
+      - name: Create Bridge Test Environment
+        working-directory: console/packages/bridge-tests
+        run: |
+          cat > .env << EOF
+          VM_NET_BASE=192.168.111
+          VM_NET_OFFSET=0
+          VM_BRIDGE=1
+          VM_WORKERS=11 12
+          BRIDGE_TIMEOUT=${BRIDGE_TIMEOUT:-120000}
+          RENET_BINARY_PATH=${RENET_BINARY_PATH}
+          CI=true
+          NODE_ENV=test
+          EOF
+
+      - name: Run Bridge Tests
+        working-directory: console/packages/bridge-tests
+        run: npm test -- --workers=1
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: bridge-test-report-${{ github.sha }}
+          path: console/packages/bridge-tests/reports/bridge/
+          retention-days: 3
 
       - name: Wait for Completion Signals
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Waiting for test jobs to complete..."
-          MAX_WAIT=7200  # 2 hours
+          MAX_WAIT=7200
           ELAPSED=0
-          PLATFORMS=("linux" "windows" "macos" "e2e")
+          CLI_PLATFORMS=("Linux" "Windows" "macOS")
+          # Parse browsers from workflow env variable
+          IFS=' ' read -ra E2E_BROWSERS <<< "${{ env.E2E_BROWSERS }}"
+          E2E_RESOLUTIONS=("resolution-1920x1080" "resolution-1366x768" "resolution-1536x864")
+          E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
+          E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
           COMPLETED=()
+          EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS[@]} + ${#E2E_RESOLUTIONS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
-            # Get all artifacts for this run
             ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[].name' 2>/dev/null || echo "")
 
-            for platform in "${PLATFORMS[@]}"; do
-              if [[ ! " ${COMPLETED[*]} " =~ " ${platform} " ]]; then
-                if echo "$ARTIFACTS" | grep -q "^test-complete-${platform}$"; then
-                  echo "✓ ${platform} tests completed"
-                  COMPLETED+=("$platform")
-                fi
-              fi
+            for platform in "${CLI_PLATFORMS[@]}"; do
+              [[ ! " ${COMPLETED[*]} " =~ " cli-${platform} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-cli-${platform}$" && COMPLETED+=("cli-$platform") && echo "CLI ${platform} completed"
+            done
+            for browser in "${E2E_BROWSERS[@]}"; do
+              [[ ! " ${COMPLETED[*]} " =~ " e2e-${browser} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${browser}$" && COMPLETED+=("e2e-$browser") && echo "E2E ${browser} completed"
+            done
+            for resolution in "${E2E_RESOLUTIONS[@]}"; do
+              [[ ! " ${COMPLETED[*]} " =~ " e2e-${resolution} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${resolution}$" && COMPLETED+=("e2e-$resolution") && echo "E2E ${resolution} completed"
+            done
+            for device in "${E2E_DEVICES[@]}"; do
+              [[ ! " ${COMPLETED[*]} " =~ " e2e-${device} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${device}$" && COMPLETED+=("e2e-$device") && echo "E2E ${device} completed"
+            done
+            for platform in "${E2E_ELECTRON[@]}"; do
+              [[ ! " ${COMPLETED[*]} " =~ " e2e-${platform} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${platform}$" && COMPLETED+=("e2e-$platform") && echo "E2E Electron ${platform} completed"
             done
 
-            if [ ${#COMPLETED[@]} -eq ${#PLATFORMS[@]} ]; then
-              echo "✓ All platform tests completed"
-              break
-            fi
-
+            [ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ] && echo "All platform tests completed" && break
             sleep 30
             ELAPSED=$((ELAPSED + 30))
-            echo "Waiting... (${ELAPSED}s / ${MAX_WAIT}s) - Completed: ${COMPLETED[*]:-none}"
+            echo "Waiting... (${ELAPSED}s / ${MAX_WAIT}s) - Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
           done
 
-          if [ ${#COMPLETED[@]} -ne ${#PLATFORMS[@]} ]; then
-            echo "⚠ Timeout waiting for some platforms. Completed: ${COMPLETED[*]:-none}"
-          fi
+      - name: Collect Backend Logs
+        if: always()
+        working-directory: console
+        run: .ci/scripts/infra/collect-backend-logs.sh ${{ runner.temp }}/backend-logs
 
-      - name: Cleanup Elite Services
+      - name: Upload Backend Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: backend-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/backend-logs/
+          retention-days: 3
+
+      - name: Cleanup
         if: always()
         working-directory: elite
         run: ./go down || true
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            console.log('Job failed - cancelling workflow run...');
-            await github.rest.actions.cancelWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId
-            });
-
-  test-cli-linux:
-    name: 🧪 Test - CLI (Linux)
-    runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
-    timeout-minutes: 120
-
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-      REDIACC_TEST_TIMEOUT: 30000
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build CLI
-        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
-
-      - name: Download Tunnel URL
-        id: tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          MAX_WAIT=1500  # 25 minutes
-          ELAPSED=0
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
-              TUNNEL_URL=$(cat tunnel-url.txt)
-              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
-              exit 0
-            fi
-            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
-            sleep 10
-            ELAPSED=$((ELAPSED + 10))
-          done
-          echo "✗ Failed to download tunnel URL"
-          exit 1
-
-      - name: Verify Tunnel Connectivity
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          for i in {1..10}; do
-            if curl -sf "$TUNNEL_URL/health"; then
-              echo "✓ Tunnel connectivity verified"
-              exit 0
-            fi
-            echo "Attempt $i/10 - waiting..."
-            sleep 5
-          done
-          echo "✗ Could not connect to tunnel"
-          exit 1
-
-      - name: Create CLI Test Environment
-        working-directory: packages/cli/tests
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          echo "CLI_API_URL=${TUNNEL_URL}/api" > .env
-          echo "CLI_MASTER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "CLI_MASTER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "CLI_TIMEOUT=30000" >> .env
-          echo "CI=true" >> .env
-          echo "DEBUG=false" >> .env
-          echo "✓ Created .env for CLI tests"
-        env:
-          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
-          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
-
-      - name: Install VS Code (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gpg apt-transport-https
-          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-          sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-          echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list
-          sudo apt-get update
-          sudo apt-get install -y code
-          rm -f packages.microsoft.gpg
-          echo "✓ VS Code installed"
-          code --version
-
-      - name: Run CLI Tests
-        working-directory: packages/cli
-        run: npm test
-
-      - name: Create Completion Signal
-        if: always()
-        run: echo "complete" > ${{ runner.temp }}/complete.txt
-
-      - name: Upload Completion Signal
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: test-complete-linux
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
-
-      - name: Upload CLI Test Report
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-report-linux-${{ github.sha }}
-          path: packages/cli/tests/reports/cli/
-          retention-days: 7
-
-      - name: Upload CLI Test Logs
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-logs-linux-${{ github.sha }}
-          path: packages/cli/tests/reports/cli-logs/
-          retention-days: 7
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
-
-  test-cli-windows:
-    name: 🧪 Test - CLI (Windows)
-    runs-on: windows-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
-    timeout-minutes: 120
-
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-      REDIACC_TEST_TIMEOUT: 30000
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build CLI
-        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
-
-      - name: Download Tunnel URL
-        id: tunnel
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $maxWait = 1500  # 25 minutes
-          $elapsed = 0
-          while ($elapsed -lt $maxWait) {
-            try {
-              gh run download ${{ github.run_id }} -n tunnel-url 2>$null
-              if (Test-Path "tunnel-url.txt") {
-                $tunnelUrl = Get-Content "tunnel-url.txt" -Raw
-                $tunnelUrl = $tunnelUrl.Trim()
-                "tunnel-url=$tunnelUrl" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
-                Write-Host "Downloaded tunnel URL: $tunnelUrl"
-                exit 0
-              }
-            } catch {}
-            Write-Host "Waiting for tunnel URL... ($elapsed s / $maxWait s)"
-            Start-Sleep -Seconds 10
-            $elapsed += 10
-          }
-          Write-Error "Failed to download tunnel URL"
-          exit 1
-
-      - name: Verify Tunnel Connectivity
-        shell: pwsh
-        run: |
-          $tunnelUrl = "${{ steps.tunnel.outputs.tunnel-url }}"
-          for ($i = 1; $i -le 10; $i++) {
-            try {
-              $response = Invoke-WebRequest -Uri "$tunnelUrl/health" -UseBasicParsing -TimeoutSec 10
-              if ($response.StatusCode -eq 200) {
-                Write-Host "Tunnel connectivity verified"
-                exit 0
-              }
-            } catch {}
-            Write-Host "Attempt $i/10 - waiting..."
-            Start-Sleep -Seconds 5
-          }
-          Write-Error "Could not connect to tunnel"
-          exit 1
-
-      - name: Create CLI Test Environment
-        shell: pwsh
-        working-directory: packages/cli/tests
-        run: |
-          $tunnelUrl = "${{ steps.tunnel.outputs.tunnel-url }}"
-          @"
-          CLI_API_URL=$tunnelUrl/api
-          CLI_MASTER_EMAIL=${{ env.REDIACC_TEST_EMAIL }}
-          CLI_MASTER_PASSWORD=${{ env.REDIACC_TEST_PASSWORD }}
-          CLI_TIMEOUT=30000
-          CI=true
-          DEBUG=false
-          "@ | Out-File -FilePath .env -Encoding utf8
-          Write-Host "Created .env for CLI tests"
-
-      - name: Install VS Code (Windows)
-        shell: pwsh
-        run: |
-          choco install vscode -y
-          Write-Host "VS Code installed"
-          # Refresh PATH to include VS Code
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          code --version
-
-      - name: Run CLI Tests
-        working-directory: packages/cli
-        run: npm test
-
-      - name: Create Completion Signal
-        if: always()
-        shell: pwsh
-        run: |
-          "complete" | Out-File -FilePath "${{ runner.temp }}/complete.txt" -Encoding utf8
-
-      - name: Upload Completion Signal
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: test-complete-windows
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
-
-      - name: Upload CLI Test Report
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-report-windows-${{ github.sha }}
-          path: packages/cli/tests/reports/cli/
-          retention-days: 7
-
-      - name: Upload CLI Test Logs
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-logs-windows-${{ github.sha }}
-          path: packages/cli/tests/reports/cli-logs/
-          retention-days: 7
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
-
-  test-cli-macos:
-    name: 🧪 Test - CLI (macOS)
-    runs-on: macos-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
-    timeout-minutes: 120
-
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-      REDIACC_TEST_TIMEOUT: 30000
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build CLI
-        run: npm run build:cli && npm run build:bundle -w @rediacc/cli
-
-      - name: Download Tunnel URL
-        id: tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          MAX_WAIT=1500  # 25 minutes
-          ELAPSED=0
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
-              TUNNEL_URL=$(cat tunnel-url.txt)
-              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
-              exit 0
-            fi
-            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
-            sleep 10
-            ELAPSED=$((ELAPSED + 10))
-          done
-          echo "✗ Failed to download tunnel URL"
-          exit 1
-
-      - name: Verify Tunnel Connectivity
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          for i in {1..10}; do
-            if curl -sf "$TUNNEL_URL/health"; then
-              echo "✓ Tunnel connectivity verified"
-              exit 0
-            fi
-            echo "Attempt $i/10 - waiting..."
-            sleep 5
-          done
-          echo "✗ Could not connect to tunnel"
-          exit 1
-
-      - name: Create CLI Test Environment
-        working-directory: packages/cli/tests
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          echo "CLI_API_URL=${TUNNEL_URL}/api" > .env
-          echo "CLI_MASTER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "CLI_MASTER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "CLI_TIMEOUT=30000" >> .env
-          echo "CI=true" >> .env
-          echo "DEBUG=false" >> .env
-          echo "✓ Created .env for CLI tests"
-        env:
-          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
-          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
-
-      - name: Install VS Code (macOS)
-        run: |
-          brew install --cask visual-studio-code
-          echo "✓ VS Code installed"
-          code --version
-
-      - name: Run CLI Tests
-        working-directory: packages/cli
-        run: npm test
-
-      - name: Create Completion Signal
-        if: always()
-        run: echo "complete" > ${{ runner.temp }}/complete.txt
-
-      - name: Upload Completion Signal
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: test-complete-macos
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
-
-      - name: Upload CLI Test Report
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-report-macos-${{ github.sha }}
-          path: packages/cli/tests/reports/cli/
-          retention-days: 7
-
-      - name: Upload CLI Test Logs
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: cli-test-logs-macos-${{ github.sha }}
-          path: packages/cli/tests/reports/cli-logs/
-          retention-days: 7
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
-
   test-e2e:
-    name: 🌐 Test - E2E
+    name: Test - E2E (All Projects)
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web, build-desktop]
-    timeout-minutes: 45
-
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-
+    needs: [test-unit, build-cli, test-vscode, build-web]
+    timeout-minutes: 60
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
       - name: Install Playwright Browsers
         working-directory: packages/e2e
-        run: npx playwright install --with-deps chromium
-
+        run: |
+          # Install chromium for browsers and resolutions, webkit for iOS devices
+          npx playwright install --with-deps chromium webkit
+          # Install additional browsers if requested
+          BROWSERS="${{ env.E2E_BROWSERS }}"
+          for browser in $BROWSERS; do
+            [[ "$browser" != "chromium" && "$browser" != "webkit" ]] && npx playwright install $browser || true
+          done
       - name: Download Tunnel URL
         id: tunnel
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          MAX_WAIT=1500
-          ELAPSED=0
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            if gh run download ${{ github.run_id }} -n tunnel-url 2>/dev/null; then
-              TUNNEL_URL=$(cat tunnel-url.txt)
-              echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-              echo "✓ Downloaded tunnel URL: $TUNNEL_URL"
-              exit 0
-            fi
-            echo "Waiting for tunnel URL... (${ELAPSED}s / ${MAX_WAIT}s)"
-            sleep 10
-            ELAPSED=$((ELAPSED + 10))
-          done
-          echo "✗ Failed to download tunnel URL"
-          exit 1
-
-      - name: Verify Tunnel Connectivity
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
+      - name: Run E2E Tests - Browser Only
         run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          for i in {1..10}; do
-            if curl -sf "$TUNNEL_URL/health"; then
-              echo "✓ Tunnel connectivity verified"
-              exit 0
-            fi
-            echo "Attempt $i/10 - waiting..."
-            sleep 5
-          done
-          echo "✗ Could not connect to tunnel"
-          exit 1
-
-      - name: Create E2E Test Environment
-        working-directory: packages/e2e
+          .ci/scripts/test/run-e2e.sh --projects \
+            ${{ env.E2E_BROWSERS }}
+      - name: Create Completion Signals
+        if: always()
         run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          # E2E tests now run against Vite dev server (source code), not Docker container
-          # Vite proxies /api/* to the tunnel URL (backend)
-          echo "E2E_BASE_URL=http://localhost:3000/console/" > .env
-          echo "VITE_API_URL=${TUNNEL_URL}" >> .env
-          echo "TEST_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "TEST_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "ADMIN_USER_EMAIL=$REDIACC_TEST_EMAIL" >> .env
-          echo "ADMIN_USER_PASSWORD=$REDIACC_TEST_PASSWORD" >> .env
-          echo "CI=true" >> .env
-          echo "✓ Created .env for E2E tests (testing source code via Vite)"
-        env:
-          REDIACC_TEST_EMAIL: ${{ env.REDIACC_TEST_EMAIL }}
-          REDIACC_TEST_PASSWORD: ${{ env.REDIACC_TEST_PASSWORD }}
-
-      - name: Run E2E Tests
-        working-directory: packages/e2e
-        # Use 'ci' suite which only includes auth tests (no VM infrastructure needed)
-        run: npm run test:suite ci
-
-      - name: Create Completion Signal
+          # Browser signals
+          for browser in ${{ env.E2E_BROWSERS }}; do
+            .ci/scripts/signal/create-complete.sh --name "e2e-$browser"
+          done
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
-        run: echo "complete" > ${{ runner.temp }}/complete.txt
-
-      - name: Upload Completion Signal
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: test-complete-e2e
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 1
-
-      - name: Upload E2E Test Report
+          name: test-complete-e2e-${{ github.sha }}
+          path: ${{ runner.temp }}/complete-e2e-*.txt
+          retention-days: 3
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: e2e-test-report-${{ github.sha }}
+          name: e2e-report-${{ github.sha }}
           path: packages/e2e/reports/e2e/
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: ignore
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
-
-  build-web:
-    name: 🏗️ Build - Web
-    runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
-
+  test-e2e-electron:
+    name: Test - E2E Electron (${{ matrix.project }})
+    runs-on: ${{ matrix.os }}
+    needs: [test-unit, build-cli, test-vscode, build-web]
+    timeout-minutes: 60
     strategy:
+      fail-fast: true
       matrix:
-        build-type: [DEBUG, RELEASE]
-
+        include:
+          - os: ubuntu-latest
+            project: electron-linux-x64
+            install: npx playwright install --with-deps chromium
+          - os: ubuntu-24.04-arm
+            project: electron-linux-arm64
+            install: npx playwright install --with-deps chromium
+          - os: macos-15-intel
+            project: electron-macos-x64
+            install: npx playwright install chromium
+          - os: macos-latest
+            project: electron-macos-arm64
+            install: npx playwright install chromium
+          - os: windows-latest
+            project: electron-windows-x64
+            install: npx playwright install chromium
+          - os: windows-11-arm
+            project: electron-windows-arm64
+            install: npx playwright install chromium
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build web application (${{ matrix.build-type }})
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - if: runner.os == 'Windows'
+        name: Install Electron binary
+        working-directory: packages/desktop
+        shell: bash
+        run: |
+          echo "Installing Electron binary (skipped during --ignore-scripts)..."
+          npm rebuild electron
+      - name: Build desktop
+        working-directory: packages/desktop
+        run: npm run build
+      - name: Install Playwright
+        working-directory: packages/e2e
+        run: ${{ matrix.install }}
+      - if: runner.os == 'Linux'
+        run: .ci/scripts/setup/setup-display.sh
+      - name: Download Tunnel URL
+        id: tunnel
         env:
-          REDIACC_BUILD_TYPE: ${{ matrix.build-type }}
-          VITE_APP_VERSION: ${{ github.sha }}
-          VITE_BASE_PATH: /
-          NODE_ENV: production
-        run: npm run build:web
-
-      - name: Check build output
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          if [ ! -d "packages/web/dist" ]; then
-            echo "Error: dist directory not created"
-            exit 1
-          fi
-          if [ ! -f "packages/web/dist/index.html" ]; then
-            echo "Error: index.html not found in dist"
-            exit 1
-          fi
-          echo "Build successful!"
-          ls -lah packages/web/dist/
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+        shell: bash
+      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
+        shell: bash
+      - name: Run Electron E2E Tests
+        working-directory: packages/e2e
+        run: npx playwright test --project=${{ matrix.project }}
+        env:
+          DISPLAY: ${{ env.DISPLAY }}
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-${{ matrix.project }}"
+        shell: bash
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
         with:
-          name: build-${{ matrix.build-type }}-${{ github.sha }}
-          path: packages/web/dist/
-          retention-days: 90
+          name: test-complete-e2e-${{ matrix.project }}
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
 
-      # Bundle Size Analysis (RELEASE only)
-      - name: Analyze bundle size
-        if: matrix.build-type == 'RELEASE'
+  test-cli:
+    name: Test - CLI (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    needs: [test-unit, build-cli, test-vscode, build-web]
+    timeout-minutes: 120
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+    env:
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-cli.sh
+        shell: bash
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          echo "## 📦 Bundle Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Main Bundles" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -h packages/web/dist/assets/js/*.js | sort -h >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Total Size" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -sh packages/web/dist/ >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+        shell: bash
+      - run: .ci/scripts/env/create-cli-env.sh --api-url "${{ steps.tunnel.outputs.tunnel-url }}/api" --email ${{ env.REDIACC_TEST_EMAIL }} --password ${{ env.REDIACC_TEST_PASSWORD }} --output packages/cli/tests/.env
+        shell: bash
+      - run: .ci/scripts/setup/install-vscode.sh
+        shell: bash
+      - run: .ci/scripts/test/run-cli.sh
+        shell: bash
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "cli-${{ matrix.platform }}"
+        shell: bash
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-complete-cli-${{ matrix.platform }}
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: cli-test-report-${{ matrix.platform }}-${{ github.sha }}
+          path: packages/cli/tests/reports/cli/
+          retention-days: 3
 
-      - name: Check bundle size limits
-        if: matrix.build-type == 'RELEASE'
-        run: |
-          TOTAL_SIZE=$(du -sb packages/web/dist/ | cut -f1)
-          MAX_SIZE=$((10 * 1024 * 1024))  # 10MB limit
-
-          if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then
-            echo "::warning::Bundle size ($TOTAL_SIZE bytes) exceeds 10MB limit"
-          else
-            echo "Bundle size OK: $TOTAL_SIZE bytes"
-          fi
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
-
+  # ============================================================================
+  # TIER 5: PACKAGING (Depends on Tier 4, creates distributable artifacts)
+  # ============================================================================
   build-desktop:
-    name: 🖥️ Build - Desktop (${{ matrix.os }})
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security]
+    name: Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
+    needs: [test-e2e, test-e2e-electron, test-cli]
     timeout-minutes: 30
     strategy:
       fail-fast: true
       matrix:
-        # windows-latest works now that native module rebuild is skipped (beforeBuild hook)
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+          - os: windows-latest
+            platform: win
+            arch: x64
+          - os: windows-11-arm
+            platform: win
+            arch: arm64
     runs-on: ${{ matrix.os }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
-          node-version: '22'  # Required for @electron/rebuild 4.x
+          node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        if: runner.os != 'Windows'
-        run: npm ci
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        # Skip postinstall scripts to avoid electron-builder install-app-deps timeout.
-        # Native module rebuild is skipped entirely via beforeBuild hook (scripts/before-build.js).
-        run: npm ci --ignore-scripts
-
-      - name: Upload npm logs on failure (Windows)
-        if: (failure() || cancelled()) && runner.os == 'Windows'
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: npm-debug-logs-windows-${{ github.sha }}
-          path: C:\npm\cache\_logs\
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Build shared libraries
-        run: npm run build:packages
-
-      - name: Build web application
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-web.sh --type RELEASE
+        shell: bash
         env:
-          REDIACC_BUILD_TYPE: RELEASE
           VITE_APP_VERSION: ${{ github.sha }}
-          NODE_ENV: production
-        run: npm run build:web
-
-      - name: Build Electron main/preload
+      - name: Build Electron
         working-directory: packages/desktop
         run: npm run build
-
-      - name: Check desktop build output (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "Checking Electron build output..."
-          if [ ! -d "packages/desktop/out" ]; then
-            echo "Error: desktop out directory not created"
-            exit 1
-          fi
-          if [ ! -f "packages/desktop/out/main/index.js" ]; then
-            echo "Error: main process bundle not found"
-            exit 1
-          fi
-          if [ ! -f "packages/desktop/out/preload/index.js" ]; then
-            echo "Error: preload script bundle not found"
-            exit 1
-          fi
-          echo "Desktop build successful!"
-          echo "## Desktop Build Output (${{ matrix.os }})" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ls -lah packages/desktop/out/ >> $GITHUB_STEP_SUMMARY
-          ls -lah packages/desktop/out/main/ >> $GITHUB_STEP_SUMMARY
-          ls -lah packages/desktop/out/preload/ >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Check desktop build output (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Write-Host "Checking Electron build output..."
-          if (-not (Test-Path "packages/desktop/out")) {
-            Write-Error "Error: desktop out directory not created"
-            exit 1
-          }
-          if (-not (Test-Path "packages/desktop/out/main/index.js")) {
-            Write-Error "Error: main process bundle not found"
-            exit 1
-          }
-          if (-not (Test-Path "packages/desktop/out/preload/index.js")) {
-            Write-Error "Error: preload script bundle not found"
-            exit 1
-          }
-          Write-Host "Desktop build successful!"
-          "## Desktop Build Output (${{ matrix.os }})" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          "``````" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Get-ChildItem packages/desktop/out/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Get-ChildItem packages/desktop/out/main/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          Get-ChildItem packages/desktop/out/preload/ | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-          "``````" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-
-      # Create distribution packages for each platform
-      - name: Create distribution packages (Linux)
-        if: runner.os == 'Linux'
-        working-directory: packages/desktop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist:linux
-
-      - name: Create distribution packages (macOS)
-        if: runner.os == 'macOS'
-        working-directory: packages/desktop
+      - run: .ci/scripts/build/build-desktop.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run dist:mac
-
-      - name: Bundle MSYS2 for Windows
-        if: runner.os == 'Windows'
-        working-directory: packages/desktop
-        shell: bash
-        run: npm run bundle:msys2
-
-      - name: Create distribution packages (Windows)
-        if: runner.os == 'Windows'
-        working-directory: packages/desktop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist:win
-
-      - name: Upload desktop artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
-          name: desktop-${{ matrix.os }}-${{ github.sha }}
+          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}
           path: dist/desktop/
-          retention-days: 30
+          retention-days: 3
           if-no-files-found: error
 
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: ./.github/actions/cancel-on-failure
+  # ============================================================================
+  # TIER 6: DEPLOYMENT (on version tags only, after all tests pass)
+  # ============================================================================
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-slim
+    needs: [build-www, build-json, test-unit, test-vscode, test-e2e, test-e2e-electron, test-cli, build-desktop, infra-backend]
+    if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
+        with:
+          pattern: desktop-*
+          path: dist/desktop/
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/desktop/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  deploy-pages:
+    name: Deploy - Pages
+    runs-on: ubuntu-slim
+    needs: [build-www, build-json, test-unit, test-vscode, test-e2e, test-e2e-electron, test-cli, build-desktop, infra-backend]
+    if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: .ci/scripts/setup/install-deps.sh
+
+      - name: Build packages
+        run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build web for Pages (with /console/ base path)
+        run: .ci/scripts/build/build-web.sh --type RELEASE
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /console/
+
+      - name: Download www build
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
+        with:
+          name: build-www-${{ github.sha }}
+          path: packages/www/dist/
+
+      - name: Download json build
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
+        with:
+          name: build-json-${{ github.sha }}
+          path: packages/json/dist/
+
+      - name: Assemble pages package
+        run: .ci/scripts/build/build-pages.sh --output dist
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
 
   # ============================================================================
-  # TIER 5: CI SUMMARY (Depends on all)
+  # TIER 7: CI SUMMARY (Depends on all)
   # ============================================================================
   summary:
-    name: ✅ Summary
-    runs-on: ubuntu-latest
-    needs: [quality-versions, quality-lint, quality-format, quality-types, quality-security, test-unit, build-cli, test-vscode, infra-backend, test-cli-linux, test-cli-windows, test-cli-macos, test-e2e, build-web, build-desktop]
+    name: Summary
+    runs-on: ubuntu-slim
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, release, deploy-pages]
     if: always()
-
     steps:
       - name: Check job results
         run: |
           echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tier 1: Quality & Security" >> $GITHUB_STEP_SUMMARY
+          echo "### Quality & Security" >> $GITHUB_STEP_SUMMARY
+          echo "- Versions: ${{ needs.quality-versions.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Deps: ${{ needs.quality-deps.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Lint: ${{ needs.quality-lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Format: ${{ needs.quality-format.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- i18n: ${{ needs.quality-i18n.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- TypeScript: ${{ needs.quality-types.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security: ${{ needs.quality-security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Shell: ${{ needs.quality-shell.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tier 3: Build & Unit Tests" >> $GITHUB_STEP_SUMMARY
+          echo "### Unit Tests" >> $GITHUB_STEP_SUMMARY
           echo "- Unit Tests: ${{ needs.test-unit.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI Build: ${{ needs.build-cli.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Web Build: ${{ needs.build-web.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Desktop Build: ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tier 4: Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "### Builds" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI: ${{ needs.build-cli.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Web: ${{ needs.build-web.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- WWW: ${{ needs.build-www.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- JSON: ${{ needs.build-json.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Integration Tests" >> $GITHUB_STEP_SUMMARY
           echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI (Linux): ${{ needs.test-cli-linux.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI (Windows): ${{ needs.test-cli-windows.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI (macOS): ${{ needs.test-cli-macos.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E (All Projects): ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Packaging" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop: ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub Release: ${{ needs.release.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub Pages: ${{ needs.deploy-pages.result }}" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.quality-lint.result }}" != "success" ] || \
-             [ "${{ needs.quality-format.result }}" != "success" ] || \
-             [ "${{ needs.quality-types.result }}" != "success" ] || \
-             [ "${{ needs.test-unit.result }}" != "success" ] || \
-             [ "${{ needs.build-cli.result }}" != "success" ] || \
-             [ "${{ needs.test-vscode.result }}" != "success" ] || \
-             [ "${{ needs.test-cli-linux.result }}" != "success" ] || \
-             [ "${{ needs.test-cli-windows.result }}" != "success" ] || \
-             [ "${{ needs.test-cli-macos.result }}" != "success" ] || \
-             [ "${{ needs.test-e2e.result }}" != "success" ] || \
-             [ "${{ needs.build-web.result }}" != "success" ] || \
-             [ "${{ needs.build-desktop.result }}" != "success" ]; then
+          FAILED=false
+          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
+            [ "$result" != "success" ] && FAILED=true
+          done
+
+          # Check deployment jobs separately (they're conditional, so "skipped" is acceptable)
+          RELEASE_RESULT="${{ needs.release.result }}"
+          if [ "$RELEASE_RESULT" = "failure" ]; then
+            FAILED=true
+          fi
+
+          DEPLOY_RESULT="${{ needs.deploy-pages.result }}"
+          if [ "$DEPLOY_RESULT" = "failure" ]; then
+            FAILED=true
+          fi
+
+          if [ "$FAILED" = "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "❌ **CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
+            echo "**CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ **All CI Checks Passed**" >> $GITHUB_STEP_SUMMARY
+            echo "**All CI Checks Passed**" >> $GITHUB_STEP_SUMMARY
           fi

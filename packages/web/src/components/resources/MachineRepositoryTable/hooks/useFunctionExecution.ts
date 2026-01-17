@@ -1,26 +1,14 @@
 import type {
+  DynamicQueueActionParams,
   QueueActionResult,
   TypedQueueActionParams,
-  DynamicQueueActionParams,
 } from '@/services/queue';
 import { showMessage } from '@/utils/messages';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import type { QueueFunction } from '@rediacc/shared/types';
 import type { Repository } from '../types';
-
 // Re-export typed function data interfaces from handlers/types.ts
-export type {
-  PushFunctionParams,
-  ForkFunctionParams,
-  PullFunctionParams,
-  CustomFunctionParams,
-  PushFunctionData,
-  ForkFunctionData,
-  PullFunctionData,
-  CustomFunctionData,
-  BaseFunctionData,
-} from '../handlers/types';
 
 export interface FunctionExecutionContext {
   selectedRepository: Repository | null;

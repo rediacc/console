@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { parseGetOrganizationUsers, parseCreateUser, parseIsRegistered } from '@rediacc/shared/api';
+import { parseGetOrganizationUsers, parseIsRegistered } from '@rediacc/shared/api';
 import { t } from '../i18n/index.js';
 import { apiClient, typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
@@ -60,25 +60,16 @@ export function registerUserCommands(program: Command): void {
         const { nodeCryptoProvider } = await import('../adapters/crypto.js');
         const passwordHash = await nodeCryptoProvider.generateHash(password);
 
-        // Server generates secure activation code - do not send one from client
-        // Middleware rejects requests that include activationCode, so we omit it
-        const response = await withSpinner(
+        // Users are auto-activated - no activation code needed
+        await withSpinner(
           t('commands.user.create.creating', { email }),
           () =>
             typedApi.CreateNewUser({
               newUserEmail: email,
               newUserHash: passwordHash,
-            } as Parameters<typeof typedApi.CreateNewUser>[0]),
+            }),
           t('commands.user.create.success')
         );
-
-        // Extract server-generated activation code from response
-        const result = parseCreateUser(response as never);
-        if (result?.activationCode) {
-          outputService.success(
-            t('commands.user.create.activationCode', { code: result.activationCode })
-          );
-        }
       } catch (error) {
         handleError(error);
       }

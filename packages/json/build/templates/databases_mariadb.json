@@ -1,0 +1,35 @@
+{
+  "id": "databases_mariadb",
+  "name": "MariaDB Database Server",
+  "description": "Production-ready MariaDB database server with persistent storage and automatic configuration.",
+  "category": "databases",
+  "tags": ["databases", "mariadb"],
+  "files": [
+    {
+      "name": ".env",
+      "path": "mariadb/.env",
+      "type": "environment",
+      "content": "# Network Mode Configuration\n# Options:\n#   bridge - Isolated network, multiple instances supported (default)\n#   host   - Shared host network, checkpoint-compatible (for live migration)\nNETWORK_MODE=bridge\n\n# Note: Host networking required for Docker checkpoint/restore support\n# Bridge mode recommended for development and multi-instance deployments\n\n# MariaDB Root Password (required)\n# This is the password for the root superuser account\nMARIADB_ROOT_PASSWORD=changeme\n\n# Application Database and User\n# These will be created automatically on first startup\nMARIADB_DATABASE=appdb\nMARIADB_USER=appuser\nMARIADB_PASSWORD=changeme\n\n# Enable localhost helper user for health checks and backup scripts\n# Set to 1 to create mysql@localhost user\nMARIADB_MYSQL_LOCALHOST_USER=1"
+    },
+    {
+      "name": "README.md",
+      "path": "mariadb/README.md",
+      "type": "markdown",
+      "content": "# MariaDB Database Server\n\nProduction-ready MariaDB database server with persistent storage and automatic configuration.\n\n## Features\n- Persistent data storage with bind mounts\n- Health check monitoring\n- Initialization script support for automated schema setup\n- Custom configuration support via `.cnf` files\n- Optimized for production workloads\n\n## Usage\n```bash\nsource Rediaccfile\nprep  # Pull MariaDB image and create directories\nup    # Start MariaDB server\ndown  # Stop and cleanup\n```\n\n## Configuration\nEdit `.env` to customize:\n- `MARIADB_ROOT_PASSWORD`: Root user password (default: changeme)\n- `MARIADB_DATABASE`: Initial database name (default: appdb)\n- `MARIADB_USER`: Application user name (default: appuser)\n- `MARIADB_PASSWORD`: Application user password (default: changeme)\n\n**Custom Configuration**: Place `.cnf` files in `./config/` directory\n**Initialization Scripts**: Place SQL or shell scripts in `./init/` directory (executed alphabetically on first startup)\n\n## Access\n- **Port**: 3306 (Docker auto-assigns host port)\n- **Find assigned port**: `docker compose ps`\n- **Connect**: `mysql -h 127.0.0.1 -P <assigned-port> -u root -p`\n\n## Backup\n```bash\n# Full backup\ndocker compose exec db mariadb-dump -u root -p --all-databases > backup.sql\n\n# Restore\ndocker compose exec -T db mariadb -u root -p < backup.sql\n```\n\n## Resources\n- [Official Docker Hub](https://hub.docker.com/_/mariadb)\n- [Official Documentation](https://mariadb.com/kb/en/documentation/)\n- [Environment Variables](https://mariadb.com/kb/en/mariadb-docker-environment-variables/)"
+    },
+    {
+      "name": "Rediaccfile",
+      "path": "mariadb/Rediaccfile",
+      "type": "text",
+      "content": "#!/bin/bash\n\n# === Renet Compose Support ===\n_use_renet() {\n  [[ -n \"$REPOSITORY_NETWORK_ID\" ]] && command -v renet &>/dev/null\n}\n_compose() {\n  if _use_renet; then\n    renet compose --network-id \"$REPOSITORY_NETWORK_ID\" -- \"$@\"\n  else\n    docker compose \"$@\"\n  fi\n}\n\nprep() {\n  docker pull mariadb:latest\n  mkdir -p data config init\n  return $?\n}\n\nup() {\n  _compose up -d\n  return $?\n}\n\ndown() {\n  _compose down -v\n  return $?\n}"
+    },
+    {
+      "name": "docker-compose.yaml",
+      "path": "mariadb/docker-compose.yaml",
+      "type": "yaml",
+      "content": "services:\n  db:\n    image: mariadb:latest\n    restart: unless-stopped\n    network_mode: \"${NETWORK_MODE:-bridge}\"\n    env_file:\n      - .env\n    environment:\n      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}\n      MARIADB_DATABASE: ${MARIADB_DATABASE}\n      MARIADB_USER: ${MARIADB_USER}\n      MARIADB_PASSWORD: ${MARIADB_PASSWORD}\n      MARIADB_MYSQL_LOCALHOST_USER: ${MARIADB_MYSQL_LOCALHOST_USER}\n    ports:\n      - \"3306\"\n    volumes:\n      # Data persistence - bind mount overrides the VOLUME declaration\n      - ./data:/var/lib/mysql\n      # Custom configuration files\n      - ./config:/etc/mysql/conf.d:ro\n      # Initialization scripts\n      - ./init:/docker-entrypoint-initdb.d:ro\n    healthcheck:\n      test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]\n      interval: 30s\n      timeout: 5s\n      retries: 3\n      start_period: 30s"
+    }
+  ],
+  "readme": "# MariaDB Database Server\n\nProduction-ready MariaDB database server with persistent storage and automatic configuration.\n\n## Features\n- Persistent data storage with bind mounts\n- Health check monitoring\n- Initialization script support for automated schema setup\n- Custom configuration support via `.cnf` files\n- Optimized for production workloads\n\n## Usage\n```bash\nsource Rediaccfile\nprep  # Pull MariaDB image and create directories\nup    # Start MariaDB server\ndown  # Stop and cleanup\n```\n\n## Configuration\nEdit `.env` to customize:\n- `MARIADB_ROOT_PASSWORD`: Root user password (default: changeme)\n- `MARIADB_DATABASE`: Initial database name (default: appdb)\n- `MARIADB_USER`: Application user name (default: appuser)\n- `MARIADB_PASSWORD`: Application user password (default: changeme)\n\n**Custom Configuration**: Place `.cnf` files in `./config/` directory\n**Initialization Scripts**: Place SQL or shell scripts in `./init/` directory (executed alphabetically on first startup)\n\n## Access\n- **Port**: 3306 (Docker auto-assigns host port)\n- **Find assigned port**: `docker compose ps`\n- **Connect**: `mysql -h 127.0.0.1 -P <assigned-port> -u root -p`\n\n## Backup\n```bash\n# Full backup\ndocker compose exec db mariadb-dump -u root -p --all-databases > backup.sql\n\n# Restore\ndocker compose exec -T db mariadb -u root -p < backup.sql\n```\n\n## Resources\n- [Official Docker Hub](https://hub.docker.com/_/mariadb)\n- [Official Documentation](https://mariadb.com/kb/en/documentation/)\n- [Environment Variables](https://mariadb.com/kb/en/mariadb-docker-environment-variables/)",
+  "generated": "2026-01-16T09:43:38Z"
+}

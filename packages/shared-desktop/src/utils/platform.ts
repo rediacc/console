@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { homedir, tmpdir, platform as osPlatform } from 'node:os';
+import { homedir, platform as osPlatform, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Platform, PlatformInfo, WindowsSubsystem } from '../types/index.js';
 

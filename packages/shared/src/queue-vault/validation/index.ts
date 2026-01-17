@@ -7,30 +7,29 @@
 //
 
 import {
-  isBridgeFunction,
   BRIDGE_FUNCTIONS_VERSION,
   type BridgeFunctionName,
+  isBridgeFunction,
 } from '../data/functions.generated';
 
+// Re-export type guards from generated types
+export { assertQueueVaultV2, isQueueVaultV2 } from '../data/vault.generated';
 // Re-export vault validation from generated schemas
 export {
-  QueueVaultV2Schema,
-  TaskSectionSchema,
-  SSHSectionSchema,
-  MachineSectionSchema,
-  StorageSectionSchema,
-  RepositoryInfoSchema,
   ContextSectionSchema,
-  validateQueueVault,
-  parseQueueVault,
   getVaultValidationErrors,
+  MachineSectionSchema,
+  parseQueueVault,
+  QueueVaultV2Schema,
+  RepositoryInfoSchema,
+  SSHSectionSchema,
+  StorageSectionSchema,
+  TaskSectionSchema,
+  validateQueueVault,
 } from '../data/vault.schema';
 
-// Re-export type guards from generated types
-export { isQueueVaultV2, assertQueueVaultV2 } from '../data/vault.generated';
-
 // Re-export vault types for convenience
-export type { QueueVaultV2, MachineSection, StorageSection, RepositoryInfo } from '../types';
+export type { MachineSection, QueueVaultV2, RepositoryInfo, StorageSection } from '../types';
 
 // =============================================================================
 // Bridge Function Validation

@@ -1,0 +1,1565 @@
+{
+  "common": {
+    "aria": {
+      "closeImageModal": "Bildmodal schließen",
+      "mainNavigation": "Hauptnavigation",
+      "nextImage": "Nächstes Bild",
+      "previousImage": "Vorheriges Bild",
+      "resetZoom": "Zoom zurücksetzen",
+      "statusMessage": "Statusmeldung",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Herauszoomen"
+    },
+    "buttons": {
+      "close": "Schließen",
+      "contactSupport": "Kontaktieren Sie den Support",
+      "goToHomepage": "Gehen Sie zur Startseite",
+      "learnMore": "Mehr erfahren",
+      "requestEarlyAccess": "Bewerben",
+      "sendMessage": "Nachricht senden"
+    },
+    "logoAlt": "Rediacc – Infrastrukturautomatisierungsplattform",
+    "search": {
+      "closeModal": "Suche schließen",
+      "keyboardShortcut": "⌘K zum Suchen",
+      "navigate": "Navigieren",
+      "noResults": "Keine Ergebnisse gefunden",
+      "placeholder": "Durchsuchen Sie Dokumentation, Lösungen, Funktionen ...",
+      "searching": "Suche...",
+      "select": "Wählen",
+      "suggestions": {
+        "browseSolutions": "Durchsuchen Sie unsere Lösungsseite",
+        "checkSpelling": "Überprüfen Sie Ihre Rechtschreibung",
+        "contactSupport": "Kontaktieren Sie unser Support-Team",
+        "differentKeywords": "Andere Schlüsselwörter oder kürzere Begriffe",
+        "title": "Versuchen:"
+      }
+    },
+    "siteName": "Rediacc",
+    "skipNavigation": {
+      "skipToFooter": "Zur Fußzeile springen",
+      "skipToMainContent": "Zum Hauptinhalt springen",
+      "skipToNavigation": "Zur Navigation springen"
+    }
+  },
+  "earlyAccess": {
+    "benefits": [
+      "Arbeiten Sie direkt mit unserem Team zusammen",
+      "Formen Sie das Produkt",
+      "Vorrangiger Support",
+      "Frühzeitiger Zugriff auf neue Funktionen"
+    ],
+    "form": {
+      "fields": {
+        "organization": {
+          "autoComplete": "Organisation",
+          "label": "Unternehmen *"
+        },
+        "email": {
+          "autoComplete": "E-Mail",
+          "label": "E-Mail *"
+        },
+        "message": {
+          "label": "Nachricht",
+          "placeholder": "Erzählen Sie uns von Ihren Bedürfnissen..."
+        },
+        "name": {
+          "autoComplete": "Name",
+          "label": "Name *"
+        },
+        "role": {
+          "autoComplete": "Organisationstitel",
+          "label": "Rolle"
+        },
+        "useCase": {
+          "label": "Hauptinteresse",
+          "options": {
+            "aiSafeOperations": "Cybersicherheit",
+            "developmentAcceleration": "Entwicklung",
+            "disasterRecovery": "Notfallwiederherstellung",
+            "multiple": "Mehrere",
+            "other": "Andere",
+            "placeholder": "Wählen Sie eine aus"
+          }
+        }
+      },
+      "submit": "Legen Sie los"
+    },
+    "notice": {
+      "description": "Klicken Sie auf „Senden“, um Ihre E-Mail zu öffnen. Wir antworten innerhalb von 48 Stunden.",
+      "emailLabel": "contact@rediacc.com",
+      "title": "So reichen Sie ein"
+    },
+    "subtitle": "Gehören Sie zu den Ersten, die nie wieder Daten verlieren.",
+    "title": "Erhalten Sie Early Access"
+  },
+  "footer": {
+    "columns": {
+      "organization": "Unternehmen",
+      "legal": "Rechtliches",
+      "product": "Produkt",
+      "support": "Unterstützung"
+    },
+    "organizationLinks": {
+      "aboutUs": "Über uns",
+      "contact": "Kontakt",
+      "team": "Team"
+    },
+    "copyright": "{{year}} Rediacc. Alle Rechte vorbehalten.",
+    "legalLinks": {
+      "privacyPolicy": "Datenschutzrichtlinie",
+      "termsOfUse": "Nutzungsbedingungen"
+    },
+    "links": {
+      "contactSupport": "Kontaktieren Sie den Support",
+      "returnToHome": "Zurück nach Hause"
+    },
+    "productLinks": {
+      "overview": "Überblick",
+      "pricing": "Preise",
+      "professionalServices": "Professionelle Dienstleistungen",
+      "solutions": "Lösungen"
+    },
+    "supportLinks": {
+      "contactSupport": "Kontaktieren Sie den Support",
+      "helpCenter": "Hilfecenter"
+    },
+    "tagline": "Infrastrukturautomatisierungsplattform für KI-gesteuerte Abläufe"
+  },
+  "hero": {
+    "cta": {
+      "benefits": "10 CPU-Kerne • Unbegrenzte Teams • 0 $",
+      "bookDemo": "Demo buchen",
+      "contactUs": "Kostenlos starten",
+      "freeBadge": "FÜR IMMER KOSTENLOS • Keine Kreditkarte",
+      "learnMore": "Mehr erfahren",
+      "seeDetails": "Sehen Sie sich alle Details an"
+    },
+    "subtitle": "Überstehen Sie Cloud-Ausfälle. Überall einsetzbar. Schnelles Failover.",
+    "title": "Infrastruktur Das",
+    "titleHighlight": "Überlebt. Jedes Mal."
+  },
+  "layout": {
+    "meta": {
+      "author": "Rediacc",
+      "defaultDescription": "Infrastrukturautomatisierungsplattform für beschleunigte Entwicklungsvorgänge. Erhalten Sie frühzeitig Zugriff auf sofortige Entwicklungsumgebungen und Disaster Recovery der nächsten Generation.",
+      "defaultKeywords": "Infrastrukturautomatisierung, KI-Betrieb, Disaster Recovery, Entwicklungsumgebungen, Model Context Protocol, DevOps, CI/CD",
+      "locale": "de_DE",
+      "siteName": "Rediacc",
+      "twitter": {
+        "creator": "@rediacc",
+        "site": "@rediacc"
+      }
+    }
+  },
+  "navigation": {
+    "blog": "Blog",
+    "contact": "Kontakt",
+    "docs": "Dokumente",
+    "downloads": "Downloads",
+    "home": "Startseite",
+    "login": "Einloggen",
+    "search": "Suchen",
+    "selectLanguage": "Sprache auswählen",
+    "solutions": {
+      "dataSecurity": "Datensicherheit",
+      "developmentEnvironments": "Entwicklungsumgebungen",
+      "disasterRecovery": "Notfallwiederherstellung",
+      "systemPortability": "Systemportabilität",
+      "threatResponse": "Bedrohungsreaktion"
+    },
+    "toggleMenu": "Menü umschalten"
+  },
+  "pages": {
+    "blog": {
+      "allArticles": "Alle Artikel",
+      "backToBlog": "Zurück zum Blog",
+      "byAuthor": "Von {{author}}",
+      "category": "Kategorie",
+      "featured": "Ausgewählte Artikel",
+      "meta": {
+        "description": "Lesen Sie Einblicke, Leitfäden und Updates zur verteilten Aufgabenausführung, Infrastrukturautomatisierung und DevOps-Best Practices.",
+        "keywords": "Blog zur Infrastrukturautomatisierung, DevOps-Anleitungen, verteilte Systeme, Aufgabenausführung, Cloud-Infrastruktur",
+        "title": "Blog | Rediacc – Einblicke in die Infrastrukturautomatisierung"
+      },
+      "published": "Veröffentlicht",
+      "readMore": "Mehr lesen",
+      "relatedArticles": "Verwandte Artikel",
+      "sharingIs": "Teilen ist wichtig",
+      "subtitle": "Einblicke, Anleitungen und Updates zur verteilten Aufgabenausführung",
+      "title": "Blog"
+    },
+    "contact": {
+      "breadcrumb": {
+        "contact": "Kontakt",
+        "home": "Startseite"
+      },
+      "form": {
+        "fields": {
+          "email": {
+            "label": "E-Mail *"
+          },
+          "message": {
+            "label": "Nachricht *",
+            "placeholder": "Erzählen Sie uns von Ihren Bedürfnissen..."
+          },
+          "name": {
+            "label": "Name *"
+          },
+          "subject": {
+            "label": "Ich interessiere mich für *",
+            "options": {
+              "earlyAccess": "Notfallwiederherstellung",
+              "general": "Allgemein",
+              "other": "Andere",
+              "partnership": "Partnerschaft",
+              "placeholder": "Wählen Sie eine aus",
+              "technical": "Technische Frage"
+            }
+          }
+        },
+        "submit": "Legen Sie los"
+      },
+      "hero": {
+        "subtitle": "Füllen Sie das Formular aus und wir werden uns innerhalb von 48 Stunden bei Ihnen melden.",
+        "title": "Bewerben Sie sich unten"
+      },
+      "info": {
+        "description": "Arbeiten Sie direkt mit unserem Team zusammen. Wissen Sie, dass Ihre Backups funktionieren.",
+        "methods": {
+          "earlyAccess": {
+            "description": "Begrenzte Plätze. Vorrangiger Support.",
+            "link": "Erfahren Sie mehr",
+            "title": "Früher Zugriff"
+          },
+          "general": {
+            "email": "contact@rediacc.com",
+            "title": "Fragen?"
+          },
+          "technicalSupport": {
+            "description": "Kontaktieren Sie direkt Ihr Support-Team.",
+            "title": "Bestehende Kunden"
+          }
+        },
+        "title": "Was Sie bekommen"
+      },
+      "meta": {
+        "description": "Begrenzte Plätze verfügbar.",
+        "keywords": "Früher Rediacc-Zugriff, Disaster-Recovery-Plattform, verifizierte Backups",
+        "title": "Bewerben | Rediacc"
+      },
+      "notice": {
+        "description": "Klicken Sie auf „Senden“, um Ihre E-Mail zu öffnen. Fragen? E-Mail",
+        "emailLabel": "contact@rediacc.com",
+        "title": "So reichen Sie ein"
+      }
+    },
+    "docs": {
+      "allDocumentation": "Sämtliche Dokumentation",
+      "backToDocs": "Zurück zu Docs",
+      "fallbackNotice": {
+        "title": "Übersetzung nicht verfügbar",
+        "message": "Diese Seite ist in Ihrer ausgewählten Sprache noch nicht verfügbar. Englische Version wird angezeigt.",
+        "helpTranslate": "Hilf mit, diese Seite zu übersetzen"
+      },
+      "cliReference": "CLI-Referenz",
+      "cliReferenceDesc": "Vollständige Referenz für alle Befehle und Optionen der Befehlszeilenschnittstelle.",
+      "gettingStarted": "Erste Schritte",
+      "gettingStartedDesc": "Neu bei Rediacc? Beginnen Sie mit den Grundlagen und lernen Sie grundlegende Konzepte.",
+      "meta": {
+        "description": "Erfahren Sie mit unserer umfassenden Dokumentation, Anleitungen und API-Referenz für die verteilte Aufgabenausführung, wie Sie Rediacc verwenden.",
+        "keywords": "Dokumentation, API-Referenz, Leitfäden, Infrastrukturautomatisierung, CLI-Referenz, Warteschlangensystem",
+        "title": "Dokumentation | Rediacc – Infrastrukturautomatisierungsplattform"
+      },
+      "queueSystem": "Warteschlangensystem",
+      "queueSystemDesc": "Verstehen Sie, wie Aufgaben maschinenübergreifend verwaltet und ausgeführt werden.",
+      "subtitle": "Erfahren Sie, wie Sie Rediacc verwenden und die verteilte Aufgabenausführung meistern",
+      "tableOfContents": "Auf dieser Seite",
+      "title": "Dokumentation",
+      "welcome": "Willkommen bei der Rediacc-Dokumentation",
+      "welcomeDescription": "Rediacc ist ein leistungsstarkes System zur verteilten Aufgabenausführung. Egal, ob Sie gerade erst anfangen oder erweiterte Funktionen beherrschen möchten, hier finden Sie alles, was Sie brauchen."
+    },
+    "downloads": {
+      "meta": {
+        "title": "Downloads | Rediacc Console Desktop Application",
+        "description": "Download the Rediacc Console desktop application for Windows, macOS, and Linux. Get the latest release with built-in auto-update functionality.",
+        "keywords": "Rediacc download, desktop application, Windows app, macOS app, Linux app, download console"
+      },
+      "hero": {
+        "title": "Downloads",
+        "subtitle": "Rediacc Console",
+        "released": "Released"
+      },
+      "platforms": {
+        "windows": "Windows",
+        "macos": "macOS",
+        "linux": "Linux"
+      },
+      "architectures": {
+        "x64": "x64 (64-bit)",
+        "x64_intel": "Intel (x64)",
+        "arm64": "ARM64",
+        "arm64_apple": "Apple Silicon (ARM64)",
+        "armv7l": "ARMv7"
+      },
+      "types": {
+        "appimage": "AppImage (portable)",
+        "deb": "Debian/Ubuntu (.deb)"
+      },
+      "actions": {
+        "download": "Download"
+      },
+      "noReleases": "No releases available at this time. Please check back later.",
+      "autoUpdate": {
+        "title": "Auto-Update Information",
+        "description": "The Rediacc Console desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
+      },
+      "installation": {
+        "title": "Installation Instructions",
+        "windows": "Windows: Run the .exe installer and follow the setup wizard. The application will be installed to your Program Files directory.",
+        "macos": "macOS: Open the .dmg file and drag Rediacc Console to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
+        "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
+        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager."
+      },
+      "requirements": {
+        "title": "System Requirements",
+        "windows": "Windows 10 or later (64-bit)",
+        "macos": "macOS 11 (Big Sur) or later",
+        "linux": "Modern Linux distribution with glibc 2.28+",
+        "diskTitle": "Disk Space",
+        "disk": "500 MB free disk space",
+        "ramTitle": "Memory",
+        "ram": "2 GB RAM minimum, 4 GB recommended"
+      }
+    },
+    "home": {
+      "imageModal": {
+        "indicator": "{{current}} / {{total}}"
+      },
+      "meta": {
+        "description": "Transformieren Sie die Entwicklung mit der Infrastrukturautomatisierung von Rediacc. Erhalten Sie sofortige Umgebungen, Notfallwiederherstellung und KI-sichere Abläufe.",
+        "keywords": "Infrastrukturautomatisierung, Entwicklungsumgebungen, Disaster Recovery, DevOps-Automatisierung, CI/CD-Pipeline, Cloud-Infrastruktur, Entwicklungsbetrieb, Model Context Protocol, KI-sichere Infrastruktur",
+        "title": "Rediacc – Infrastrukturautomatisierungsplattform"
+      }
+    },
+    "notFound": {
+      "actions": {
+        "contactSupport": "Kontaktieren Sie den Support",
+        "homepage": "Gehen Sie zur Startseite"
+      },
+      "breadcrumb": {
+        "home": "Startseite",
+        "notFound": "404 – Seite nicht gefunden"
+      },
+      "description": "Leider existiert die gesuchte Seite nicht oder wurde verschoben. Dies kann passieren, wenn Sie einem veralteten Link gefolgt sind oder die URL falsch eingegeben haben.",
+      "help": {
+        "description": "Wenn Sie glauben, dass es sich hierbei um einen Fehler handelt oder Sie erwartet haben, hier Inhalte zu finden, wenden Sie sich bitte an unser Support-Team. Wir sind hier, um Ihnen zu helfen, das zu finden, was Sie suchen.",
+        "link": "Kontaktieren Sie unser Support-Team",
+        "title": "Brauchen Sie Hilfe?"
+      },
+      "meta": {
+        "description": "Die gesuchte Seite konnte nicht gefunden werden. Durchsuchen Sie unsere Infrastrukturautomatisierungsplattform oder kontaktieren Sie uns für Unterstützung.",
+        "keywords": "404, Seite nicht gefunden, Infrastrukturautomatisierung, Rediacc",
+        "title": "404 – Seite nicht gefunden | Rediacc"
+      },
+      "suggestions": {
+        "items": [
+          "Überprüfen Sie die URL auf Tippfehler",
+          "Gehen Sie zurück zur Homepage",
+          "Erfahren Sie mehr über unsere Lösungen zur Infrastrukturautomatisierung",
+          "Kontaktieren Sie uns über unsere Kontaktseite",
+          "Fordern Sie frühzeitig Zugang zu unserer Plattform an"
+        ],
+        "links": {
+          "contact": "Kontaktseite",
+          "earlyAccess": "früher Zugang",
+          "homepage": "Homepage",
+          "solutions": "Lösungen zur Infrastrukturautomatisierung"
+        },
+        "title": "Was Sie tun können:"
+      },
+      "title": "Seite nicht gefunden"
+    },
+    "pricing": {
+      "enterpriseCta": {
+        "button": "Kontaktieren Sie den Vertrieb",
+        "description": "Erhalten Sie maßgeschneiderten Infrastrukturschutz für Ihr Unternehmen",
+        "heading": "Benötigen Sie eine maßgeschneiderte Unternehmenslösung?"
+      },
+      "faq": {
+        "heading": "Häufig gestellte Fragen",
+        "items": [
+          {
+            "answer": "Ja, Sie können Ihren Plan jederzeit ändern. Upgrades werden sofort wirksam und Downgrades gelten zu Beginn Ihres nächsten Abrechnungszeitraums.",
+            "question": "Kann ich meinen Plan upgraden oder downgraden?"
+          },
+          {
+            "answer": "Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express) und unterstützen die rechnungsbasierte Abrechnung für jährliche Enterprise-Pläne.",
+            "question": "Welche Zahlungsmethoden akzeptieren Sie?"
+          },
+          {
+            "answer": "Unser Community-Plan ist für immer kostenlos. Für Geschäftspläne wenden Sie sich bitte an unser Vertriebsteam, um Testoptionen zu besprechen.",
+            "question": "Gibt es eine kostenlose Testversion?"
+          },
+          {
+            "answer": "Der Community-Plan umfasst Community-Support und Self-Service-Dokumentation. Professional umfasst E-Mail- und Chat-Support. Das Unternehmen bietet telefonischen Support und einen engagierten Kundenerfolgsmanager. Enterprise umfasst 24/7/365 White-Glove-Support mit Eskalation durch Führungskräfte.",
+            "question": "Was ist im Support enthalten?"
+          },
+          {
+            "answer": "Die Wiederherstellungszeit hängt von Ihrer Stufe ab: Community stellt die neuesten Snapshots in wenigen Minuten wieder her, Professional bietet eine Point-in-Time-Wiederherstellung (24 Stunden), Business bietet ein 4-Stunden-SLA und Enterprise liefert eine benutzerdefinierte RTO von 15–60 Minuten.",
+            "question": "Wie schnell kann ich mich von einer Katastrophe erholen?"
+          },
+          {
+            "answer": "Ja. Im Gegensatz zu herkömmlichen Backup-Systemen überprüfen wir Backups automatisch, indem wir Wiederherstellungsprozesse testen, sodass Sie wissen, dass sie funktionieren, bevor Sie sie im Notfall benötigen.",
+            "question": "Werden meine Backups tatsächlich getestet und verifiziert?"
+          },
+          {
+            "answer": "Ihre Daten bleiben verschlüsselt an dem von Ihnen gewählten Speicherort. Sie behalten die volle Kontrolle und können unabhängig von unseren Diensten auf verschlüsselte Backups zugreifen.",
+            "question": "Was passiert mit meinen Daten, wenn der Dienst ausfällt?"
+          }
+        ]
+      },
+      "finalCta": {
+        "buttons": {
+          "startFree": "Kostenlos starten",
+          "talkToSales": "Sprechen Sie mit dem Vertrieb"
+        },
+        "description": "Beginnen Sie vom ersten Tag an mit dem Schutz Ihrer Infrastruktur",
+        "heading": "Bereit zum Einstieg?"
+      },
+      "hero": {
+        "subtitle": "Wählen Sie die Disaster-Recovery-Stufe, die Ihre Infrastruktur schon heute schützt und mit Ihrem Wachstum skaliert.",
+        "title": "Einfache, transparente Preisgestaltung"
+      },
+      "meta": {
+        "description": "Wählen Sie den richtigen Plan für Ihr Unternehmen. Vom kostenlosen Community-Zugang bis zum Schutz auf Unternehmensniveau. Keine versteckten Gebühren.",
+        "keywords": "Preise, Infrastrukturautomatisierung, Preise für Disaster Recovery, Backup-Preise, Geschäftskontinuitätspläne",
+        "title": "Preise | Einfacher, transparenter Infrastrukturschutz"
+      },
+      "plans": {
+        "business": {
+          "description": "Einsatzkritischer Schutz + Experten-Setup",
+          "features": [
+            "Alles in Professional +",
+            "9.999 $ Implementierungsunterstützung inklusive (Einführungsangebot)",
+            "Georedundanter Speicher (3 Regionen) – ein Ausfall kann Sie nicht aufhalten",
+            "Kontinuierlicher Datenschutz – kein Datenverlust",
+            "4-Stunden-Wiederherstellungs-SLA (garantiert)",
+            "500 CPU-Kerne – Unternehmens-Workloads mit 72-Stunden-Jobfenstern",
+            "Unbegrenzte Repositorys, jeweils 500 GB",
+            "7 aktive/3 reservierte Jobs",
+            "90-tägige Aufbewahrung des Prüfprotokolls",
+            "Rollenbasierte Zugriffskontrolle und umfassende Audit-Protokolle",
+            "Compliance-fähiges Audit-Reporting",
+            "Engagierter Kundenerfolgsmanager",
+            "Telefonsupport + Räume für die Zusammenarbeit"
+          ],
+          "name": "Geschäft"
+        },
+        "community": {
+          "description": "Produktionsbereite Notfallwiederherstellung vom ersten Tag an – für immer kostenlos",
+          "features": [
+            "Unbegrenzte Anzahl an Benutzern und Teams – frei zusammenarbeiten",
+            "Aktuelle Snapshot-Wiederherstellungen – Wiederherstellung nach Ausfällen in wenigen Minuten",
+            "10 CPU-Kerne – perfekt für kleine Arbeitslasten",
+            "10 Repositorys, jeweils 10 GB",
+            "2 Stunden Job-Timeout, 2 aktive/1 reservierte Jobs",
+            "7-tägige Aufbewahrung des Prüfprotokolls",
+            "Manuelle Backup-Planung",
+            "Community-Slack-Zugriff",
+            "Self-Service-Support und Dokumente",
+            "Quellenangabe „Powered by Rediacc“."
+          ],
+          "name": "Gemeinschaft"
+        },
+        "enterprise": {
+          "description": "Notwendige Notfallwiederherstellung für komplexe Unternehmensinfrastrukturen",
+          "features": [
+            "Alles in Business +",
+            "Maßgeschneidertes SLA (15–60 Minuten RTO) – Ihre Anforderungen, unser Engagement",
+            "Dedizierter Infrastrukturmieter – maximale Sicherheit und Leistung",
+            "24/7/365 White-Glove-Support",
+            "Über 1000 CPU-Kerne – unbegrenzte Skalierbarkeit für große Arbeitslasten",
+            "Unbegrenzte Repositories, je 1 TB+",
+            "96+ Stunden-Jobfenster mit 10+ aktiven/5+ reservierten Jobs",
+            "1 Jahr+Aufbewahrung des Audit-Protokolls",
+            "Vierteljährliche Notfallwiederherstellungsübungen – geprüfte Bereitschaft",
+            "Eskalations-Hotline für Führungskräfte",
+            "Benutzerdefinierte Integrationen und Workflows",
+            "Unterstützung bei der Prüfungsdokumentation und Sicherheitsüberprüfungen"
+          ],
+          "name": "Unternehmen",
+          "priceNote": "*Beginnt um"
+        },
+        "professional": {
+          "description": "Professionelle Notfallwiederherstellung ohne Unternehmenskomplexität",
+          "features": [
+            "Alles in Community +",
+            "Automatisierte Backup-Planung – einrichten und vergessen",
+            "Point-in-Time-Wiederherstellung (24 Stunden)",
+            "100 CPU-Kerne – bewältigen den Produktionsumfang",
+            "500 Repositorys, jeweils 100 GB",
+            "24-Stunden-Job-Timeout, 5 aktive/2 reservierte Jobs",
+            "30-tägige Aufbewahrung des Prüfprotokolls",
+            "E-Mail- und Chat-Support",
+            "Slack- und PagerDuty-Benachrichtigungen",
+            "Keine Angabe „Powered by Rediacc“.",
+            "Zugriff auf die Integrations-API"
+          ],
+          "name": "Professional"
+        }
+      },
+      "professionalServices": {
+        "access": {
+          "description": "Hybrid-Abdeckung kombiniert enthaltenes Onboarding mit optionalen Add-ons, sodass jedes Team die richtige Hilfe zur richtigen Zeit erhalten kann.",
+          "heading": "Zugriff auf professionelle Dienstleistungen nach Stufe",
+          "labels": {
+            "available": "Verfügbare Add-ons",
+            "included": "Im Lieferumfang enthalten"
+          },
+          "tiers": [
+            {
+              "available": [
+                "Standardimplementierung (9.999 $) oder gestaffelte Pakete (klein: 7.499 $, mittel: 14.999 $, groß: 29.999 $, benutzerdefiniert für Unternehmen)",
+                "Notfalleinsatz (29.999 $ auf Anfrage)"
+              ],
+              "included": ["Self-Service-Dokumentation, Video-Tutorials und Community-Forum"],
+              "planId": "Gemeinschaft"
+            },
+            {
+              "available": [
+                "Vorrangige Implementierung (19.999 $)",
+                "Notfalleinsatz (29.999 $ auf Anfrage)",
+                "Benutzerdefinierte Integrationsprojekte (umfangreich)"
+              ],
+              "included": [
+                "E-Mail-Support",
+                "Standard-Onboarding-Sitzung (Setup-Anruf und Konfigurations-Walkthrough)"
+              ],
+              "planId": "Profi"
+            },
+            {
+              "available": [
+                "Priority Implementation Upgrade (19.999 $)",
+                "Notfalleinsatz (29.999 $ auf Anfrage)",
+                "Kundenspezifische Entwicklungs- und Sicherheitsarchitekturberatung"
+              ],
+              "included": [
+                "Vorrangiger E-Mail-/Chat-/Telefonsupport",
+                "Dediziertes Onboarding mit Konfiguration und Runbook-Übergabe",
+                "Standard-Implementierungspaket enthalten (Wert 9.999 $)",
+                "Vierteljährliche Erfolgskontrollen"
+              ],
+              "planId": "Geschäft"
+            },
+            {
+              "available": [
+                "Kundenspezifische Entwicklung und erweiterte Integrationen",
+                "Beratung zu Sicherheits- und Audit-Architektur",
+                "Honorar für Notfallmaßnahmen (5.000–7.500 $/Monat)"
+              ],
+              "included": [
+                "Rund-um-die-Uhr-Support und dedizierter CSM",
+                "Vorrangige Implementierung inbegriffen (Wert 19.999 $)",
+                "Vierteljährliche Tests zur Notfallwiederherstellung",
+                "Jährlicher Workshop zur Geschäftskontinuitätsplanung",
+                "Eskalations-Hotline für Führungskräfte"
+              ],
+              "planId": "Unternehmen"
+            }
+          ]
+        },
+        "advancedDetails": {
+          "description": "Servicepakete, Implementierungsstufen, Preisfaktoren und Einbehaltungsoptionen",
+          "heading": "Implementierungs- und Preisdetails"
+        },
+        "benefits": {
+          "description": "Unsere professionellen Dienstleistungen stellen sicher, dass Sie bei kritischen Infrastrukturherausforderungen nie allein sind.",
+          "heading": "Warum professionelle Dienstleistungen?",
+          "items": [
+            "Ein engagiertes Expertenteam wird Ihrem Projekt zugewiesen",
+            "Garantierte Reaktionszeiten mit SLA",
+            "Wechseln Sie nach Bedarf zwischen den Serviceebenen",
+            "24/7-Notfall-Hotline für die Notfallstufe"
+          ],
+          "statistics": [
+            "Die durchschnittlichen Kosten eines Ransomware-Angriffs betragen 4,62 Millionen US-Dollar (IBM Security, 2023).",
+            "Die durchschnittlichen Ausfallkosten betragen für Unternehmen 5.600 US-Dollar pro Minute"
+          ]
+        },
+        "cta": {
+          "button": "Termin für Beratung vereinbaren",
+          "description": "Unsere Experten sind bereit, Ihnen zum Erfolg zu verhelfen",
+          "heading": "Benötigen Sie professionelle Unterstützung?"
+        },
+        "header": {
+          "badge": "Beschleunigen Sie Ihren Erfolg mit professioneller Unterstützung",
+          "eligibility": "Professionelle Dienstleistungen passen sich über den Hybridzugang an jeden Plan an. Verwenden Sie die folgende Matrix, um zu sehen, was enthalten ist und was hinzugefügt werden kann.",
+          "subtitle": "Holen Sie sich kompetente Hilfe, wenn Sie sie am meisten brauchen",
+          "title": "Professionelle Servicepakete"
+        },
+        "packages": {
+          "emergency": {
+            "benefits": [
+              "Sofortiger Einsatz (unter 2 Stunden)",
+              "Forensik, Eindämmung und Wiederherstellungsplan",
+              "Stabilisierungsbericht mit Verhärtungsfahrplan"
+            ],
+            "description": "On-Demand-Team zur Reaktion auf Vorfälle, das bereit ist, kritische Systeme einzudämmen und wiederherzustellen.",
+            "name": "Notfall",
+            "price": "29.999 $",
+            "tiers": [],
+            "turnaround": "Am selben Tag"
+          },
+          "priority": {
+            "benefits": [
+              "Engagierter Engagement-Manager",
+              "Verfügbarkeit abends/am Wochenende",
+              "Unterstützung bei der Produktionsumstellung"
+            ],
+            "description": "Beschleunigte Lieferung mit erweiterter Verfügbarkeit und geführter Umstellungsunterstützung.",
+            "name": "Priorität",
+            "price": "19.999 $",
+            "tiers": [],
+            "turnaround": "24–48 Stunden"
+          },
+          "standard": {
+            "benefits": [
+              "Projektfindungs- und Erfolgsplan",
+              "Bereitstellung und Konfiguration der Umgebung",
+              "Validierungscheckliste und Wissenstransfer"
+            ],
+            "description": "Strukturierte Implementierung, die Architektur, Bereitstellung, Validierung und Aktivierung umfasst.",
+            "name": "Standard",
+            "price": "Ab 7.499 $",
+            "tierHeading": "Workload-basierte Implementierungspreise",
+            "tierNote": "Eine Arbeitslast stellt einen bestimmten Geschäftsprozess, eine bestimmte Anwendung oder einen bestimmten Dienst dar, der einen Backup- und Disaster-Recovery-Schutz erfordert. Die Implementierung umfasst Architekturdesign, Bereitstellung, Validierung und Teamaktivierung.",
+            "tiers": [
+              "Starter (1–4 Workloads): 7.499 $",
+              "Wachstum (5–10 Workloads): 14.999 $",
+              "Umfang (11–25 Workloads): 29.999 $",
+              "Unternehmen (25+ Workloads): Individuelles Angebot"
+            ],
+            "turnaround": "3-5 Werktage"
+          }
+        },
+        "pricingFactors": {
+          "factors": [
+            {
+              "description": "Anzahl der beteiligten Systeme, Integrationen und Abhängigkeiten",
+              "title": "Umfangskomplexität"
+            },
+            {
+              "description": "Standardlösungen vs. individuelle Entwicklungsanforderungen",
+              "title": "Anpassungsebene"
+            },
+            {
+              "description": "Einzelner Experte vs. voll engagiertes Spezialistenteam",
+              "title": "Teamgröße"
+            }
+          ],
+          "heading": "Preisgestaltung für professionelle Dienstleistungen verstehen",
+          "intro": "Die endgültigen Projektkosten werden bestimmt durch:",
+          "note": "Beispiel: Eine mittelgroße Implementierung (120 Maschinen) mit Überprüfung der Sicherheitsarchitektur kostet in der Regel zwischen 14.999 und 24.999 US-Dollar, je nach Integration und Retainer-Abdeckung."
+        },
+        "retainers": {
+          "description": "Bieten Sie Führungskräften garantierten Zugang zu unseren Spezialisten zu vorhersehbaren monatlichen Preisen.",
+          "heading": "Retainer-Optionen für ständige Verfügbarkeit",
+          "items": [
+            {
+              "bullets": [
+                "Garantierte Reaktionszeit von 2 Stunden",
+                "Vorrangiger Eskalationspfad mit War-Room-Koordination",
+                "Vierteljährliche Bereitschaftsüberprüfung und Playbook-Updates"
+              ],
+              "price": "5.000–7.500 $/Monat",
+              "title": "Retainer für Notfalleinsätze"
+            }
+          ]
+        },
+        "serviceTypes": {
+          "badgeLabels": {
+            "emergency": "Notfall",
+            "priority": "Priorität",
+            "standard": "Standard"
+          },
+          "heading": "Verfügbare Dienste",
+          "intro": "Klicken Sie auf einen beliebigen Dienst, um die Bearbeitungszeiten für jede Paketstufe anzuzeigen",
+          "services": [
+            {
+              "emergency": "Sofortige Bewertung + kritische Systeme online am selben Tag + vollständige Migration beginnt",
+              "id": "Datenmigration",
+              "name": "Datenmigration",
+              "priority": "Schnelle Einrichtung der Migrationspipeline + Übertragung der Kerndaten innerhalb von 48 Stunden",
+              "standard": "Vollständige End-to-End-Migration mit vollständiger Validierung"
+            },
+            {
+              "emergency": "Sofortige Eindämmung + Wiederherstellung kritischer Systeme am selben Tag + Beginn der vollständigen Wiederherstellung",
+              "id": "Ransomware-Wiederherstellung",
+              "name": "Ransomware-Wiederherstellung",
+              "priority": "Schnelle Bedrohungsanalyse + Wiederherstellung des Kernbetriebs innerhalb von 48 Stunden",
+              "standard": "Vollständige Wiederherstellung mit Forensik und Härtung"
+            },
+            {
+              "emergency": "Kritischer Schwachstellenscan + Hochrisiko-Patches werden noch am selben Tag bereitgestellt + vollständige Prüfung beginnt",
+              "id": "Sicherheitsbewertung",
+              "name": "Sicherheitsbewertung",
+              "priority": "Umfassende Schwachstellenbewertung + Sanierungsplan innerhalb von 48 Stunden",
+              "standard": "Vollständiges Sicherheitsaudit mit Implementierungs-Roadmap"
+            },
+            {
+              "emergency": "Kritische Ressourcen werden am selben Tag bereitgestellt + automatische Skalierung konfiguriert + der vollständige Plan beginnt",
+              "id": "Infrastruktur-Skalierung",
+              "name": "Skalierung der Infrastruktur",
+              "priority": "Schnelle Kapazitätssteigerung + Überwachungseinrichtung innerhalb von 48 Stunden",
+              "standard": "Komplette Neugestaltung der Infrastruktur mit Optimierung"
+            },
+            {
+              "emergency": "Einweisung in kritische Verfahren am selben Tag + Vorbereitung der Reaktion auf Vorfälle + Beginn des vollständigen Programms",
+              "id": "Teamtraining",
+              "name": "Teamtraining",
+              "priority": "Intensiver praktischer Workshop + wichtige Arbeitsabläufe innerhalb von 2 Tagen abgedeckt",
+              "standard": "Umfangreiches mehrtägiges Schulungsprogramm"
+            },
+            {
+              "emergency": "Kritischer Engpass erkannt + sofortiger Hotfix am selben Tag bereitgestellt + vollständige Optimierung beginnt",
+              "id": "Leistungsoptimierung",
+              "name": "Leistungsoptimierung",
+              "priority": "Schnelle Profilerstellung + wirkungsvolle Optimierungen, die innerhalb von 48 Stunden bereitgestellt werden",
+              "standard": "Tiefgreifende Analyse mit umfassender Leistungsoptimierung"
+            },
+            {
+              "emergency": "Kritische Verbindung wird am selben Tag hergestellt + grundlegender Datenfluss funktioniert + vollständige Entwicklung beginnt",
+              "id": "kundenspezifische Integration",
+              "name": "Benutzerdefinierte Integration",
+              "priority": "Kernintegrationsfunktionen und wesentliche Funktionen sind innerhalb von 48 Stunden verfügbar",
+              "standard": "Vollständige Integration mit Tests und Dokumentation"
+            }
+          ]
+        }
+      },
+      "psTeaser": {
+        "heading": "Benötigen Sie Expertenhilfe für den Einstieg?",
+        "packages": {
+          "emergency": {
+            "name": "Notfall",
+            "price": "29.999 $"
+          },
+          "priority": {
+            "name": "Priorität",
+            "price": "19.999 $"
+          },
+          "standard": {
+            "name": "Standard",
+            "price": "Ab 7.499 $"
+          }
+        },
+        "subtitle": "Professionelle Implementierungs- und Supportdienste für alle Ebenen verfügbar",
+        "viewDetails": "Entdecken Sie professionelle Dienstleistungen"
+      },
+      "strategy": {
+        "copy": "Wählen Sie heute den Plan, der zu Ihrer Betriebsphase passt, und skalieren Sie morgen, ohne die Plattform wechseln zu müssen.",
+        "distribution": [
+          "Community → Professionell: Wechseln Sie vom Experiment zur Produktion mit Automatisierung, Wiederherstellungspunkten und Live-Support.",
+          "Professionell → Business: Fügen Sie Sicherheits- und Prüffunktionen, Zusammenarbeit und schnellere Wiederherstellungsfenster hinzu, wenn Ihr Team wächst.",
+          "Business → Enterprise: Nutzen Sie maßgeschneiderte SLAs, dedizierte Mietverträge und erstklassige Partnerschaften, wenn es am meisten auf dem Spiel steht."
+        ],
+        "heading": "Gebaut für jede Bühne"
+      },
+      "technicalSummary": {
+        "description": "Geben Sie Ihrem Plattformteam einen genauen Überblick über die Erwartungen an Durchsatz, Aufbewahrung und Wiederherstellung.",
+        "heading": "Technische Grenzen auf einen Blick",
+        "metrics": [
+          {
+            "key": "cpuCore",
+            "label": "CPU-Kerne"
+          },
+          {
+            "key": "Repositories",
+            "label": "Repositories"
+          },
+          {
+            "key": "repoSize",
+            "label": "Beschränkung der Repository-Größe"
+          },
+          {
+            "key": "jobTimeout",
+            "label": "Maximale Jobdauer"
+          },
+          {
+            "key": "aktiveJobs",
+            "label": "Gleichzeitige Jobs"
+          },
+          {
+            "key": "reservierteJobs",
+            "label": "Tiefe der Auftragswarteschlange"
+          },
+          {
+            "key": "rpo",
+            "label": "Wiederherstellungspunktziel (RPO)"
+          },
+          {
+            "key": "rto",
+            "label": "Wiederherstellungszeitziel (RTO)"
+          },
+          {
+            "key": "auditWindow",
+            "label": "Aufbewahrung des Audit-Protokolls"
+          }
+        ],
+        "recoveryNote": "RPO (Recovery Point Objective): Wie viele Daten Sie sich leisten können, zu verlieren – gemessen in der Zeit. Beispielsweise bedeutet ein RPO von 15 Minuten, dass Sie möglicherweise bis zu 15 Minuten der letzten Änderungen verlieren. \n\nRTO (Recovery Time Objective): Wie schnell Sie nach einer Katastrophe wieder online sein müssen. Beispielsweise bedeutet eine RTO von 4 Stunden, dass Ihre Systeme innerhalb von 4 Stunden wiederhergestellt werden.",
+        "values": {
+          "business": {
+            "activeJobs": "7 aktiv",
+            "auditLogs": "90 Tage",
+            "cpuCore": "500 Kerne",
+            "jobTimeout": "72 Stunden",
+            "repoSize": "500 GB",
+            "repositories": "Unbegrenzt",
+            "reservedJobs": "3 reserviert",
+            "rpo": "~5 Minuten (kontinuierlich)",
+            "rto": "4 Stunden (garantiert)"
+          },
+          "community": {
+            "activeJobs": "2 aktiv",
+            "auditLogs": "7 Tage",
+            "cpuCore": "10 Kerne",
+            "jobTimeout": "2 Stunden",
+            "repoSize": "10 GB",
+            "repositories": "10 Repos",
+            "reservedJobs": "1 reserviert",
+            "rpo": "Beste Anstrengung",
+            "rto": "Beste Anstrengung"
+          },
+          "enterprise": {
+            "activeJobs": "10+ aktiv",
+            "auditLogs": "1+ Jahr",
+            "cpuCore": "Über 1000 Kerne",
+            "jobTimeout": "96+ Stunden",
+            "repoSize": "1 TB+",
+            "repositories": "Unbegrenzt",
+            "reservedJobs": "5+ reserviert",
+            "rpo": "Benutzerdefiniert (nahe Null)",
+            "rto": "15–60 Minuten (benutzerdefiniert)"
+          },
+          "pro": {
+            "activeJobs": "5 aktiv",
+            "auditLogs": "30 Tage",
+            "cpuCore": "100 Kerne",
+            "jobTimeout": "24 Stunden",
+            "repoSize": "100 GB",
+            "repositories": "500 Repos",
+            "reservedJobs": "2 reserviert",
+            "rpo": "~15 Minuten",
+            "rto": "Point-in-Time-Wiederherstellung"
+          }
+        }
+      },
+      "trust": {
+        "heading": "Sicherheit und Zuverlässigkeit auf Unternehmensniveau",
+        "items": ["Verschlüsselung auf Bankebene", "99,9 % Verfügbarkeitsgarantie"]
+      },
+      "ui": {
+        "anchor": "Strategischer Anker",
+        "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+        "contactSales": "Kontaktieren Sie den Vertrieb",
+        "cta": {
+          "business": {
+            "guarantee": "14-tägige Geld-zurück-Garantie",
+            "launchBadge": "Begrenztes Einführungsangebot",
+            "primary": "Planen Sie einen Implementierungsanruf",
+            "secondary": "Kontaktieren Sie den Vertrieb",
+            "valueNote": "Inklusive Einrichtungsguthaben in Höhe von 9.999 $"
+          },
+          "community": {
+            "note": "Keine Kreditkarte erforderlich",
+            "primary": "Kostenlos starten",
+            "secondary": "Erfahren Sie mehr"
+          },
+          "enterprise": {
+            "guarantee": "14-tägige Geld-zurück-Garantie",
+            "primary": "Planen Sie eine Executive-Demo",
+            "secondary": "Kontaktieren Sie den Vertrieb",
+            "subtext": "Benutzerdefiniertes SLA · Dedizierter Support"
+          },
+          "pro": {
+            "guarantee": "14-tägige Geld-zurück-Garantie",
+            "primary": "Legen Sie los",
+            "secondary": "Kontaktieren Sie den Vertrieb"
+          }
+        },
+        "foreverFree": "Für immer frei",
+        "getStarted": "Legen Sie los",
+        "guarantees": {
+          "cancelAnytime": "Jederzeit kündbar",
+          "moneyBack": "14-tägige Geld-zurück-Garantie",
+          "noContracts": "Keine langfristigen Verträge"
+        },
+        "keyBenefits": "Hauptvorteile",
+        "learnMore": "Mehr erfahren",
+        "limitedOffer": "Begrenztes Einführungsangebot",
+        "monthOrYear": "pro Monat oder {{price}} pro Jahr",
+        "popular": "Am beliebtesten",
+        "startingAt": "*Beginnt um",
+        "whatsIncluded": "Was ist enthalten:"
+      }
+    },
+    "professionalServices": {
+      "cta": {
+        "button": "Termin für Beratung vereinbaren",
+        "description": "Vereinbaren Sie einen Beratungstermin, um Ihre Infrastrukturanforderungen zu besprechen und ein individuelles Angebot zu erhalten.",
+        "heading": "Bereit zum Einstieg?",
+        "subtext": "Die meisten Beratungen wurden innerhalb von 48 Stunden abgeschlossen"
+      },
+      "hero": {
+        "badge": "Verfügbar für alle Abonnementstufen",
+        "subtitle": "Beschleunigen Sie die Bereitstellung Ihrer Infrastruktur mit professioneller Implementierung, Migrationsunterstützung und Notfalldiensten.",
+        "title": "Kompetente Hilfe, wenn Sie sie am meisten brauchen"
+      },
+      "meta": {
+        "description": "Holen Sie sich kompetente Hilfe, wenn Sie sie am meisten brauchen. Von der Standardimplementierung bis zur Notfallreaktion sichern unsere professionellen Dienstleistungen Ihren Erfolg.",
+        "keywords": "Professionelle Dienstleistungen, Implementierungsunterstützung, Infrastrukturberatung, Notfallmaßnahmen, Migrationsdienste, Ransomware-Wiederherstellung",
+        "title": "Professionelle Dienstleistungen | Kompetente Implementierung und Support"
+      },
+      "packages": {
+        "heading": "Professionelle Servicepakete",
+        "subtitle": "Wählen Sie den Servicelevel, der Ihrer Dringlichkeit und Komplexität entspricht"
+      },
+      "value": {
+        "description": "Infrastrukturherausforderungen erfordern fachkundige Beratung. Unser professionelles Serviceteam verfügt über jahrelange Erfahrung, um sicherzustellen, dass Ihre Bereitstellung erfolgreich ist, Ihre Migrationen sicher abgeschlossen werden und Ihre Notfälle schnell gelöst werden.",
+        "heading": "Warum professionelle Dienstleistungen wichtig sind",
+        "statistics": [
+          "Durch professionelle Unterstützung wurde die durchschnittliche Implementierungszeit um 75 % verkürzt",
+          "Das Notfallteam ist bei kritischen Vorfällen innerhalb von 2 Stunden verfügbar",
+          "100 % Erfolgsquote bei geführten Infrastrukturmigrationen"
+        ]
+      }
+    },
+    "solutions": {
+      "dataSecurity": {
+        "cta": {
+          "button": "Überprüfen Sie Ihre Sicherheit",
+          "subtitle": "Wissensfreie Verschlüsselung. Vollständiger Audit-Trail. Compliance-fähige Architektur.",
+          "title": "Bereit für echten Datenschutz?"
+        },
+        "hero": {
+          "subtitle": "Alles verschlüsseln. Überprüfen Sie alles. Kontrolliere alles.",
+          "title": "Alles verschlüsseln. Kontrollieren Sie alles. Vollständiges Zero-Knowledge."
+        },
+        "meta": {
+          "description": "Wissensfreie Verschlüsselung für vollständigen Schutz der Infrastruktur. Compliance-fähige Architektur mit umfassenden Audit-Funktionen. Überstehen Sie physischen Diebstahl, pflegen Sie Prüfprotokolle und migrieren Sie sicher.",
+          "keywords": "Datensicherheit, Verschlüsselung, Compliance, Infrastrukturverschlüsselung, Prüfpfade, Zero-Knowledge",
+          "title": "Datensicherheit und Auditkontrollen | Verschlüsselte Infrastruktur mit Audit Trails"
+        },
+        "problems": {
+          "auditTrail": {
+            "problem": {
+              "additionalPoints": [
+                "Altsysteme aus Übernahmen bleiben über Jahre hinweg unmigriert",
+                "Systeme im Übergang fallen von der aktiven Audit-Überwachung ab",
+                "Unvollständige Migrationen führen zu Audit-Blindheit, Daten bleiben weiterhin offengelegt",
+                "Es dauert Wochen, bis Verstöße in stillgelegten Systemen entdeckt werden",
+                "Kein Audit-Trail bedeutet, dass es keinen Beweis dafür gibt, was passiert ist"
+              ],
+              "description": "Infrastrukturmigrationen erfolgen in Etappen. Legacy-Systeme, die während der Umstellung zurückbleiben, fallen aus dem Audit-Radar. Wenn Prüfer fragen: „Was ist in Produktion?“ und „Wer hat auf was zugegriffen?“ können Sie nicht für Systeme beantworten, die als stillgelegt gelten. Unvollständige Migrationen schaffen blinde Flecken – Systeme, die Daten enthalten, anfällig und nicht überwacht werden.",
+              "story": "Oracle Health hat die alten Cerner-Server aus einer Übernahme im Jahr 2022 übernommen. Im Januar 2025 drangen Angreifer in ein nicht migriertes System ein. <a href='https://www.hipaajournal.com/oracle-health-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Einen Monat lang unentdeckt – nicht mehr überwacht. 262.831 Patientenakten gestohlen. <a href='https://www.bleepingcomputer.com/news/security/oracle-health-breach-compromises-patient-data-at-us-hospitals/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Der Verstoß ereignete sich in einer ungeprüften Infrastruktur."
+            },
+            "solution": {
+              "benefits": [
+                "Vollständiger Audit-Trail, jeder Vorgang wird protokolliert und ist rückverfolgbar",
+                "Prüfer mit vollständiger Transparenz sehen, was geschützt ist und wer darauf zugegriffen hat",
+                "Zugangskontrollnachweis, wer was wann und warum getan hat",
+                "Revisionsfähige Dokumentation mit umfassenden Protokollen für Sicherheitsüberprüfungen",
+                "Transparente Abläufe, ohne verschlüsselte Daten den Prüfern preiszugeben"
+              ],
+              "description": "Jeder Vorgang wird protokolliert: Wer hat die Daten bereitgestellt, wer hat auf was zugegriffen und wann wurden Änderungen vorgenommen? Vollständige Transparenz Ihrer Infrastruktur. Das Prüfteam erhält genaue Zeitstempel und authentifizierte Zugriffsnachweise. Die Per-Repo-Verschlüsselung bleibt von den Betriebskontrollen getrennt – die Daten bleiben verschlüsselt, während der Prüfpfad den Zugriff nachweist.",
+              "title": "Vollständige Audit-Funktionen"
+            },
+            "subtitle": "Sie können nicht verwalten, was Sie nicht messen können <small class='subtitle-attribution'>– Peter Drucker</small>",
+            "title": "Fehlende Audit Trails"
+          },
+          "migrationExposure": {
+            "problem": {
+              "additionalPoints": [
+                "Auftragnehmer deaktivieren Sicherheitskontrollen, um Migrationsprozesse zu beschleunigen",
+                "Aus einem zehnminütigen Sicherheitsfenster werden vierundzwanzig Stunden",
+                "Suchmaschinen indizieren ungeschützte Systeme während der Migrationsfenster",
+                "Eine vorübergehende Sicherheitsdeaktivierung kann dauerhaft werden, wenn sie vergessen wird",
+                "Migrationsfenster bieten Möglichkeiten, die Angreifer heute aktiv ausnutzen"
+              ],
+              "description": "Infrastrukturmigrationen erfordern vorübergehende Sicherheitslockerungen. Auftragnehmer deaktivieren Firewalls, um „den Prozess zu beschleunigen“. Aus Leistungsgründen wurde die Verschlüsselung umgangen. Temporäre Fenster werden zu permanenten Angriffsvektoren. Geschützte Daten bleiben stunden- oder tagelang offengelegt. Angreifer zielen auf Migrationsfenster ab, wenn die Sicherheitskontrollen schwächer werden.",
+              "story": "Keepnet Labs beauftragte im März 2020 einen Auftragnehmer mit der Migration seiner Datenbank. Der Auftragnehmer deaktivierte die Firewall für 10 Minuten. <a href='https://www.verdict.co.uk/keepnet-labs-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> 5 Milliarden Datensätze indiziert. Datenbank 24 Stunden lang verfügbar. <a href='https://securityaffairs.com/100198/data-breach/uk-security-firm-data-leak.html' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Die Migration eines Cybersicherheitsunternehmens hat Milliarden offengelegt."
+            },
+            "solution": {
+              "benefits": [
+                "Verschlüsseln Sie die Daten während der gesamten Migration von der geschützten Quelle zum Ziel",
+                "Kein unverschlüsseltes Staging, verschlüsselte Snapshots bleiben verschlüsselte Übertragung",
+                "Durch sicheres Rollback verschlüsselte Backups bleiben intakt und nutzbar",
+                "Herstellerunabhängige gleiche Verschlüsselung bei allen Cloud-Anbietern",
+                "Keine Ausfallzeiten möglich, verschlüsselte Snapshots ermöglichen eine parallele Migration"
+              ],
+              "description": "Die Infrastruktur bleibt während der gesamten Migration verschlüsselt. Verschlüsselter Snapshot an der Quelle, verschlüsselter Transport, verschlüsselte Bereitstellung am Ziel. Keine Entschlüsselungsfenster. Keine unverschlüsselten Staging-Kopien. Per-Repo-Verschlüsselung von Anfang bis Ende aktiv.",
+              "title": "Verschlüsselter Migrationsprozess"
+            },
+            "subtitle": "Die besten Taten sind beständig, auch wenn sie klein sind <small class='subtitle-attribution'> – Prophet Muhammad, Sunan Ibn Majah (4240)</small>",
+            "title": "Sicherheitslücken bei der Migration"
+          },
+          "physicalTheft": {
+            "problem": {
+              "additionalPoints": [
+                "Gestohlene Server bleiben gefährdet, wenn die Verschlüsselung unvollständig ist",
+                "Bei Stilllegungsverfahren werden Verschlüsselungsschritte häufig vollständig übersprungen",
+                "Durch das Löschen von Dateien werden keine Daten gelöscht, sondern nur Einträge",
+                "Datenbanksicherungen werden häufig unverschlüsselt an sicheren Orten gespeichert",
+                "Best Practices der Branche erfordern die Verschlüsselung ruhender Daten"
+              ],
+              "description": "Jemand stiehlt Ihren Server, Ihr Backup-Laufwerk oder Ihre alte Hardware. Betriebssystemkennwörter bieten keinerlei Schutz vor physischem Zugriff – sie booten von USB, umgehen die Authentifizierung, mounten Festplatten und kopieren alles. Kundendaten, Anmeldeinformationen, Datenbanken – alles weg. In Rechenzentren kommt es regelmäßig zu Diebstählen. Die Stilllegung schafft Aufsehen.",
+              "story": "Morgan Stanley beauftragte 2016 Umzugsunternehmen mit der Stilllegung von Rechenzentren. <a href='https://techcrunch.com/2022/09/21/morgan-stanley-hard-drives-data-breach/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Festplatten mit 15 Millionen Kundendatensätzen wurden online versteigert – unverschlüsselt. <a href='https://www.bankinfosecurity.com/morgan-stanley-charged-sec-over-data-disposal-failures-a-12342' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Bußgelder in Höhe von 35 Millionen US-Dollar. Die meisten Geräte wurden nie wiederhergestellt."
+            },
+            "solution": {
+              "benefits": [
+                "Echte Zero-Knowledge-Pro-Repo-Verschlüsselung, die Sie kontrollieren",
+                "Verschlüsselung nach Militärstandard für die gesamte Infrastruktur und Backups",
+                "Physischer Diebstahl wird wertlos. Verschlüsselte Daten haben keinen Wert",
+                "Nachweisbare Verschlüsselung vom Einsatz bis zur Stilllegung und Entsorgung",
+                "Von Anfang an unter Berücksichtigung der Compliance-Anforderungen entwickelt"
+              ],
+              "description": "Jedes Repository ist mit einem eigenen Passwort verschlüsselt. Jede Datei, jeder Container, jede Konfiguration, jede Datenbank und jedes Backup ist geschützt. Nur Sie besitzen den Pro-Repo-Verschlüsselungsschlüssel. Gestohlene Hardware = wertlose verschlüsselte Blobs.",
+              "title": "Vollständige Zero-Knowledge-Verschlüsselung"
+            },
+            "subtitle": "Schlösser halten ehrliche Menschen ehrlich <small class='subtitle-attribution'> – Volksspruch (1912)</small>",
+            "title": "Diebstahl von physischem Zugang"
+          }
+        }
+      },
+      "developmentEnvironments": {
+        "cta": {
+          "button": "Beantragen Sie den Early Access",
+          "subtitle": "Klonen Sie Ihre erste Umgebung in Sekundenschnelle. Begrenzte Plätze verfügbar.",
+          "title": "Bereit, die Entwicklung zu beschleunigen?"
+        },
+        "hero": {
+          "subtitle": "Klonen Sie Ihre gesamte Produktionsinfrastruktur – Apps, Datenbanken, Konfigurationen, Abhängigkeiten – mit einem Klick. Entwicklungsteams erhalten bei Bedarf produktionsidentische Umgebungen, während die Infrastrukturkosten um 60 % sinken.",
+          "title": "Warten Sie nicht mehr tagelang auf Entwicklungsumgebungen. Beginnen Sie in Sekundenschnelle mit der Bereitstellung."
+        },
+        "meta": {
+          "description": "Klonen Sie Ihre komplette Produktionsinfrastruktur – Apps, Datenbanken, Konfigurationen – in weniger als 60 Sekunden. Warten Sie nicht mehr tagelang auf Entwicklungsumgebungen. Produktionsidentische Umgebungen auf Anfrage.",
+          "keywords": "Kurzlebige Umgebungen, Bereitstellung von Entwicklungsumgebungen, sofortige Entwicklungsumgebung, On-Demand-Umgebungen, Vorschauumgebungen, Git-native Umgebungen, Produktionsklon",
+          "title": "Entwicklungsumgebungen, die in Sekundenschnelle hochfahren | Rediacc"
+        },
+        "problems": {
+          "cicdComplexity": {
+            "problem": {
+              "additionalPoints": [
+                "Benutzerdefinierte Integrationsskripte erfordern eine fortlaufende Wartung",
+                "API-Änderungen unterbrechen benutzerdefinierte Integrationen ohne Vorwarnung",
+                "Nur eine Person versteht das Bereitstellungssystem",
+                "Jede CI/CD-Plattform benötigt einen anderen Integrationsansatz",
+                "Die Werkzeugvielfalt erhöht die kognitive Belastung und die Fehlerquellen"
+              ],
+              "description": "Das Hinzufügen der Umgebungsbereitstellung zu bestehenden DevOps-Pipelines erfordert benutzerdefinierte Skripte, API-Integrationen und laufende Wartung. Jedes neue Tool erhöht die Komplexität der bereits weitläufigen Toolchains, in denen 13 % der Teams mit mehr als 14 verschiedenen Tools jonglieren. Integrationsfehler unterbrechen CI/CD-Pipelines. Dokumentationslücken führen dazu, dass nur ein Ingenieur das Bereitstellungssystem versteht, was zu einem Risiko der Wissenskonzentration führt.",
+              "story": "Ein B2B-SaaS-Unternehmen versuchte, die Umgebungsbereitstellung durch benutzerdefinierte Jenkins-Skripts zu automatisieren, die AWS CloudFormation und RDS-APIs aufrufen. Die erste Implementierung dauerte drei Monate und 500 Stunden DevOps-Engineering-Zeit. Sechs Monate später, als der ursprüngliche Ingenieur ging, konnte niemand die Skripte sicher ändern. Das Bereitstellungssystem wurde zur technischen Schuld – funktionsfähig, aber unantastbar. Als AWS einen API-Endpunkt ablehnte, brach die gesamte Pipeline zusammen. Wiederherstellungszeit: 2 Wochen verlorene Entwicklungsgeschwindigkeit, während ein Berater die benutzerdefinierten Skripte zurückentwickelte."
+            },
+            "solution": {
+              "benefits": [
+                "Native Integrationen für alle wichtigen Git-Plattformen und CI/CD-Tools",
+                "Infrastructure-as-Code-Kompatibilität mit Terraform Kubernetes Docker",
+                "Keine Unterbrechung des Arbeitsablaufs – funktioniert mit vorhandenen Entwicklungsprozessen",
+                "Automatische Bereitstellung bei PR-Erstellung oder Git-Ereignissen",
+                "Einrichtung in wenigen Minuten statt wochenlanger kundenspezifischer Integrationsentwicklung"
+              ],
+              "description": "Rediacc lässt sich über native Plugins für GitHub, GitLab, Bitbucket, Jenkins, CircleCI und die wichtigsten CI/CD-Plattformen in Ihren vorhandenen Stack integrieren. Die Bereitstellung wird automatisch bei PR-Erstellung oder manuellem Befehl ausgelöst. Infrastructure-as-Code-Definitionen mit Terraform, Kubernetes, Docker Compose oder CloudFormation funktionieren unverändert. Die Plattform ergänzt vorhandene Tools, anstatt sie zu ersetzen – Ihr Entwicklungsworkflow bleibt vertraut, während die Umgebungsbereitstellung automatisch erfolgt. Die Einrichtung dauert nur wenige Minuten statt Wochen, und jeder Techniker kann Umgebungen ohne spezielle Kenntnisse bereitstellen.",
+              "title": "Native CI/CD-Integration mit Infrastructure-as-Code-Unterstützung"
+            },
+            "subtitle": "Einfachheit ist die ultimative Raffinesse <small class='subtitle-attribution'> – Leonardo da Vinci</small>",
+            "title": "Der Integrationsaufwand"
+          },
+          "environmentDrift": {
+            "problem": {
+              "additionalPoints": [
+                "Konfigurationsdateien driften durch manuelle Bearbeitungen, die nicht in Git verfolgt werden",
+                "Datenbankschemaversionen stimmen zwischen den Umgebungen nicht überein",
+                "Abhängigkeitsversionen weichen voneinander ab, was zu Fehlern führt, bei denen „funktioniert hier fehlschlägt“.",
+                "Umgebungsvariablen unterscheiden sich durch die Unterbrechung von Integrationen in der Produktion",
+                "Es gibt keine Möglichkeit zu garantieren, dass die Inszenierung genau mit der Produktion übereinstimmt"
+              ],
+              "description": "Staging-Umgebungen weichen durch manuelle Änderungen, Versionskonflikte und Konfigurationsverfall von der Produktion ab. Was in der Inszenierung funktioniert, scheitert in der Produktion. Entwickler verbringen Stunden damit, Umgebungsunterschiede zu debuggen, anstatt tatsächliche Fehler zu beheben. Dieses „Funktioniert auf meinem Computer“-Syndrom verschwendet mehr als 30 Minuten pro Entwickler und Tag mit der Behebung von Inkonsistenzen. Umgebungsparität wird unmöglich, wenn jeder Entwickler die lokalen Setups manuell anders konfiguriert.",
+              "story": "Ein Fintech-Startup hat eine wichtige Zahlungsfunktion implementiert, die alle Staging-Tests bestanden hat. In der Produktion scheiterte es sofort – eine Datenbank-Sortierungseinstellung unterschied sich zwischen Staging und Produktion, wodurch die Zahlungsabwicklung unterbrochen wurde. Das Problem blieb unentdeckt, da das Staging über Monate hinweg durch manuelle Änderungen von der Produktion abgewichen war. Ergebnis: 4 Stunden Ausfallzeit während der Haupthandelszeiten, 200.000 US-Dollar an entgangenen Transaktionsgebühren und eine Untersuchung zur Einhaltung gesetzlicher Vorschriften. Die Reparatur dauerte 5 Minuten. Die Ermittlung des Umweltunterschieds dauerte 4 Stunden."
+            },
+            "solution": {
+              "benefits": [
+                "Atomares Klonen erfasst den gesamten Systemstatus und sorgt so für Konsistenz",
+                "Kein Konfigurationsdrift – Klone entsprechen der Produktion exakt vom Design her",
+                "Durch die automatische Synchronisierung werden Produktionsänderungen auf alle Umgebungen übertragen",
+                "Erkennen Sie umgebungsspezifische Fehler in der Entwicklung, nicht in der Produktion",
+                "Eliminieren Sie täglich mehr als 30 Minuten pro Entwickler für das Debuggen von Umgebungsproblemen"
+              ],
+              "description": "Rediacc eliminiert Abweichungen durch das Klonen der Produktionsinfrastruktur zu einem bestimmten Zeitpunkt und die Erfassung exakter Anwendungsversionen, Datenbankschemata, Konfigurationsdateien und Umgebungsvariablen. Jeder Klon garantiert Produktionsparität, da es sich um eine atomar replizierte Produktion handelt. Aktualisierungen werden automatisch verbreitet, wenn sich die Produktion ändert, sodass alle Umgebungen synchronisiert bleiben. Entwickler arbeiten in Containern oder VMs, die die Produktion genau widerspiegeln, sodass „es lokal funktionierte“ gleichbedeutend mit „es wird in der Produktion funktionieren“ ist.",
+              "title": "Garantierte Produktionsparität durch zeitpunktbezogenes Klonen"
+            },
+            "subtitle": "Eine Unze Prävention ist ein Pfund Heilung wert <small class='subtitle-attribution'>- Benjamin Franklin</small>",
+            "title": "Das Produktionsparitätsproblem"
+          },
+          "infrastructureCosts": {
+            "problem": {
+              "additionalPoints": [
+                "Always-on-Umgebungen kosten rund um die Uhr, werden aber täglich 8–10 Stunden genutzt",
+                "Entwickler vergessen, Testumgebungen nach der Nutzung herunterzufahren",
+                "Vollständige Datenbankkopien vervielfachen die Speicherkosten unnötig",
+                "Mehrere Staging-Umgebungen bleiben „nur für den Fall“ die meiste Zeit ungenutzt",
+                "Streit um das Infrastrukturbudget beeinträchtigt die Moral und Geschwindigkeit des Teams"
+              ],
+              "description": "Herkömmliche Entwicklungsinfrastrukturen erfordern Staging, Qualitätssicherung und Entwicklerumgebungen, die rund um die Uhr Cloud-Ressourcen verbrauchen. Vervielfachen Sie Umgebungen über mehrere Teams hinweg, explodieren die Kosten. Ein 30-köpfiges Entwicklerteam, das Standard-Entwicklungs-/Staging-/QA-Setups aufrechterhält, verbrennt monatlich problemlos 50.000 bis 100.000 US-Dollar für ungenutzte Infrastruktur. Die Speicherkosten erhöhen sich, da vollständige Datenbankkopien unnötig Terabyte verbrauchen. Die Finanzabteilung drängt die Technik, die Infrastrukturausgaben zu kürzen, ohne die Auswirkungen auf die Geschwindigkeit zu verstehen.",
+              "story": "Ein E-Commerce-Unternehmen mit 50 Entwicklern überprüfte seine AWS-Rechnung: 180.000 US-Dollar monatlich für die Entwicklungsinfrastruktur. Die Analyse ergab, dass 78 % der Umgebungen außerhalb der Geschäftszeiten und am Wochenende ungenutzt blieben. In jeder Umgebung wurden vollständige Datenbankkopien ausgeführt – insgesamt 30 TB Speicherplatz für Daten, die mit Deduplizierung in 3 TB passen. Sie verfügten über 15 permanente Staging-Umgebungen, aber nur drei bis vier wurden zu irgendeinem Zeitpunkt aktiv genutzt. Die Verschwendung: 140.000 US-Dollar monatlich für ungenutzte Infrastruktur, die die Entwickler vergessen haben, herunterzufahren."
+            },
+            "solution": {
+              "benefits": [
+                "Reduzieren Sie die Infrastrukturkosten um 40–70 % durch kurzlebige Bereitstellung",
+                "Die automatische Bereinigung beim Zusammenführen von Zweigen verhindert eine Ausbreitung der Umgebung",
+                "Durch das Thin Cloning wird mit der Copy-on-Write-Technologie über 90 % Speicherplatz eingespart",
+                "Beim Pay-per-Use-Modell wird nur die aktive Rechenzeit berechnet",
+                "Die Amortisation des ROI erfolgt in der Regel innerhalb von 3–6 Monaten"
+              ],
+              "description": "Der kurzlebige Ansatz von Rediacc senkt die Infrastrukturkosten durch bedarfsgesteuerte Bereitstellung und automatische Bereinigung um 40–70 %. Umgebungen existieren nur, wenn sie aktiv genutzt werden – zum Testen erstellen und anschließend zerstören. Die Thin-Cloning-Technologie eliminiert die Speicherduplizierung und stellt durch Copy-on-Write-Mechaniken 10-TB-Datenbanken aus weniger als 1 GB Speicher bereit. Teams zahlen nur für die Rechenleistung während der aktiven Nutzung, nicht für die ständig verfügbare Infrastruktur, die über Nacht und am Wochenende ungenutzt bleibt. Der ROI-Rechner zeigt, dass typische 30-köpfige Teams jährlich 750.000 bis 1,5 Millionen US-Dollar einsparen.",
+              "title": "Kurzlebige Umgebungen mit On-Demand-Bereitstellung"
+            },
+            "subtitle": "Nicht verschwenden, nicht wollen <small class='subtitle-attribution'> – englisches Sprichwort</small>",
+            "title": "Die Always-On-Infrastrukturverschwendung"
+          },
+          "provisioningDelays": {
+            "problem": {
+              "additionalPoints": [
+                "Für die manuelle Einrichtung sind DevOps-Tickets erforderlich, die zu Verzögerungen von 2–3 Tagen führen",
+                "Jeder Entwickler konfiguriert Umgebungen anders, was zu Inkonsistenzen führt",
+                "Das Onboarding neuer Entwickler dauert allein für die Einrichtung der Umgebung 1–2 Wochen",
+                "Der Kontextwechsel beim Warten auf Umgebungen beeinträchtigt die Produktivität",
+                "DevOps-Teams werden zu Engpässen bei der Bearbeitung von Bereitstellungsanfragen"
+              ],
+              "description": "Entwicklungsteams verschwenden täglich mehr als 21 Stunden mit dem Warten auf Umgebungen. Die manuelle Einrichtung erfordert einen DevOps-Eingriff, mehrere Tickets und tagelange Wartezeit. Bis die Bereitstellung fertig ist, haben sich die Anforderungen geändert. Dieser Engpass verringert die Geschwindigkeit – 61 % der Teams geben an, dass die Bereitstellung der Umgebung ihr größtes Hindernis für die Bereitstellung darstellt. Jedes vierte Unternehmen benötigt von der Fertigstellung des Codes bis zur Produktionsbereitstellung mehr als drei Monate, da die Umgebungen nicht mithalten können.",
+              "story": "Ein mittelgroßes SaaS-Unternehmen mit 30 Entwicklern hat berechnet, dass das gesamte Team 21 Stunden pro Tag damit verschwendet, nur auf die Einrichtung der Umgebung zu warten. Jeder Entwickler benötigte täglich 30–45 Minuten für Probleme bei der Umgebungskonfiguration. Das sind 525 Stunden pro Monat – das entspricht drei Vollzeit-Ingenieuren, die nichts anderes tun, als die Infrastruktur zu bekämpfen, anstatt Funktionen auszuliefern. Die Kosten: Mehr als 150.000 US-Dollar jährlich an verschwendeter Entwicklerzeit, verzögerte Funktionen und verpasste Marktchancen nicht eingerechnet."
+            },
+            "solution": {
+              "benefits": [
+                "Stellen Sie komplette Umgebungen in 60 Sekunden bereit, statt 2–3 Tage Wartezeit",
+                "Kein DevOps-Eingriff – Entwickler-Self-Service über Git-Workflows",
+                "Durch die automatische Git-Integration werden automatisch Umgebungen pro Zweig erstellt",
+                "Ephemere Architektur spart 40–70 % der Infrastrukturkosten",
+                "Onboarding neuer Entwickler innerhalb von Stunden statt Wochen"
+              ],
+              "description": "Rediacc stellt vollständige Entwicklungsumgebungen in weniger als 60 Sekunden durch automatisiertes Klonen der Infrastruktur bereit. Entwickler lösen die Umgebungserstellung direkt aus Git-Zweigen aus, ohne Tickets oder manuelle Eingriffe. Die Plattform repliziert Ihren gesamten Produktions-Stack – Anwendungen, Datenbanken, Konfigurationen, Netzwerktopologie, Abhängigkeiten – als exakte Kopien. Vergängliche Umgebungen werden automatisch bereinigt, wenn Zweigstellen zusammengelegt werden, wodurch Infrastrukturverschwendung vermieden wird. DevOps-Teams definieren einmalig Bereitstellungsregeln, dann übernehmen die Entwickler endlos die Selbstbedienung.",
+              "title": "Sofortige Bereitstellung mit Infrastrukturklonen"
+            },
+            "subtitle": "Zeit ist das, was wir am meisten wollen, aber das, was wir am schlechtesten nutzen <small class='subtitle-attribution'>– William Penn</small>",
+            "title": "Der Engpass in der Entwicklungsumgebung"
+          }
+        }
+      },
+      "disasterRecovery": {
+        "cta": {
+          "button": "Erstellen Sie Ihren Wiederherstellungsplan",
+          "subtitle": "Begrenzte Plätze verfügbar.",
+          "title": "Sind Sie bereit, Ihren Backups zu vertrauen?"
+        },
+        "hero": {
+          "subtitle": "Verifizierte Backups. Unbegrenzte Geschichte. Inkrementelle Geschwindigkeit.",
+          "title": "Disaster Recovery richtig gemacht"
+        },
+        "meta": {
+          "description": "Hören Sie auf zu hoffen, dass Ihre Backups funktionieren, und seien Sie sich bewusst, dass sie funktionieren. Rediacc bietet automatische Backup-Verifizierung, unbegrenzte Aufbewahrung und inkrementelle Backup-Effizienz.",
+          "keywords": "Notfallwiederherstellung, Backup-Verifizierung, inkrementelle Backups, Datenschutz, Backup-Tests, Geschäftskontinuität",
+          "title": "Lösungen zur Notfallwiederherstellung | Verifizierte Backups, die tatsächlich funktionieren"
+        },
+        "problems": {
+          "limitedHistory": {
+            "problem": {
+              "additionalPoints": [
+                "Angreifer warten bewusst darauf, dass saubere Backups ablaufen",
+                "Herkömmliche kurze Aufbewahrungsfristen bergen Schwachstellen",
+                "Jedes vollständige Backup verbraucht enorm viel Speicherplatz und schränkt die Aufbewahrung ein",
+                "Compliance-Anforderungen erfordern oft eine monatelange Vorgeschichte",
+                "Die Lagerkosten zwingen zur Wahl zwischen Historie und Budget"
+              ],
+              "description": "Kurze Aufbewahrungsfristen sparen Speicherplatz, schaffen aber auch Schwachstellen. Wenn Sie Daten von vor der Infektion benötigen, wurden diese bereits überschrieben. Herkömmliche Systeme können sich aufgrund der enormen Speicherkosten keine lange Aufbewahrung leisten.",
+              "story": "Die Verweildauer der Ransomware sank auf weniger als einen Tag. <a href='https://www.secureworks.com/about/press/ransomware-dwell-time-hits-low-of-24-hours' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Angreifer warten absichtlich darauf, dass infizierte Backups saubere Backups überschreiben. Organisationen mit kurzen Aufbewahrungsfristen stellen fest, dass alle Backups Malware enthalten. <a href='https://www.sophos.com/en-us/press/press-releases/2023/08/dwell-time-time-start-attack-when-its-detected-shrinks-8-days-first' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "Speichern Sie den Backup-Verlauf über Monate effizient mit Deduplizierung",
+                "Greifen Sie auf saubere Backups vor einer Infektion zu",
+                "Durch die inkrementelle Deduplizierung werden über neunzig Prozent Speicherplatz eingespart",
+                "Erfüllen Sie die gesetzlichen Anforderungen zur Datenaufbewahrung kostengünstig",
+                "Angreifer können Ihren Aufbewahrungszeitraum nicht abwarten"
+              ],
+              "description": "Mit der inkrementellen Deduplizierung von Rediacc können Sie einen erweiterten Backup-Verlauf ohne Speicherexplosion beibehalten. Es werden nur Änderungen gespeichert, keine doppelten Daten.",
+              "title": "Erweiterte Aufbewahrung des Verlaufs"
+            },
+            "subtitle": "Der frühe Vogel fängt den Wurm <small class='subtitle-attribution'>– William Camden (1636)</small>",
+            "title": "Kurzer Backup-Verlauf"
+          },
+          "slowBackups": {
+            "problem": {
+              "additionalPoints": [
+                "Derselbe Ransomware-Angriff führt zu drastisch unterschiedlichen Wiederherstellungszeiten",
+                "Herkömmliche vollständige Wiederherstellungen bedeuten tagelange Ausfallzeiten für den Ausfall von Diensten",
+                "Moderne inkrementelle Wiederherstellung innerhalb weniger Minuten wieder online",
+                "Das Gesundheitswesen kann nicht darauf warten, dass Patienten jetzt Pflege benötigen",
+                "Jede Ausfallstunde vervielfacht den betrieblichen und finanziellen Schaden"
+              ],
+              "description": "Herkömmliche vollständige Backups bedeuten langsame vollständige Wiederherstellungen. Organisationen mit modernen Wiederherstellungssystemen sind innerhalb weniger Stunden wieder online. Diejenigen mit herkömmlichen Backups? Tagelange Ausfallzeiten, stornierte Dienste und entgangene Einnahmen.",
+              "story": "WannaCry kam im Mai 2017 auf den NHS und sperrte landesweit Krankenhaussysteme. <a href='https://www.nao.org.uk/reports/investigation-wannacry-cyber-attack-and-the-nhs/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Einige Vertrauensstellungen wurden innerhalb von Stunden wiederhergestellt. <a href='https://www.bridgeheadsoftware.com/2017/07/wannacry-nhs-attack-lessons-backup-data-recovery-strategies/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Andere brauchten Tage. Über 19.000 Termine abgesagt. Erholungszeit: Stunden statt Tage voller Chaos."
+            },
+            "solution": {
+              "benefits": [
+                "Wiederherstellen innerhalb von Minuten statt tagelanger Ausfallzeiten",
+                "Bei der inkrementellen Wiederherstellung werden nur die geänderten Datenteile übertragen",
+                "Kritische Systeme sind online, während die Konkurrenz offline bleibt",
+                "Minimieren Sie Umsatzverluste und Serviceunterbrechungen schnell",
+                "Seien Sie die Organisation, die sich jedes Mal schnell erholt"
+              ],
+              "description": "Die inkrementelle Architektur von Rediacc ermöglicht eine schnelle Wiederherstellung. Stellen Sie nur das wieder her, was sich geändert hat, nicht ganze Systeme. Bringen Sie wichtige Vorgänge in wenigen Minuten wieder in Betrieb, während andere sich noch in der Wiederherstellung befinden.",
+              "title": "Schneller Genesungsprozess"
+            },
+            "subtitle": "Machen Sie guten Gebrauch von fünf vor fünf <small class='subtitle-attribution'> – Prophet Muhammad, Sunan Ibn Majah (4240)</small>",
+            "title": "Langsame Erholungszeiten"
+          },
+          "unverified": {
+            "problem": {
+              "additionalPoints": [
+                "Ransomware infiziert Systeme Wochen vor der Verschlüsselung Ihrer Daten",
+                "Backup-Systeme melden trotz beschädigter Backup-Dateien Erfolg",
+                "Manuelle Wiederherstellungstests dauern Stunden, was niemand regelmäßig durchführt",
+                "Trotz Backups konnten nur 63 % der Fälle die Wiederherstellung erfolgreich durchführen",
+                "Ungetestete Backups schlagen genau dann fehl, wenn Sie sie brauchen"
+              ],
+              "description": "Backups zu haben und funktionierende Backups zu haben, sind zwei völlig verschiedene Dinge. Die meisten Unternehmen testen Wiederherstellungen erst dann, wenn eine Katastrophe eintritt – und stellen dann fest, dass ihre Backups beschädigt, unvollständig oder infiziert sind. Wenn Sie sie brauchen, ist es bereits zu spät, sie zu reparieren.",
+              "story": "Die Stadtsysteme von Baltimore wurden im Mai 2019 von Ransomware heimgesucht. <a href='https://en.wikipedia.org/wiki/2019_Baltimore_ransomware_attack' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Beamte konnten nicht bestätigen, dass Backups getestet oder brauchbar waren. <a href='https://krebsonsecurity.com/2019/06/report-no-eternal-blue-exploit-found-in-baltimore-city-ransomware/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Aktuelle Backups infiziert. Ältere wurden nie getestet. Wiederherstellungskosten: 18 Millionen US-Dollar."
+            },
+            "solution": {
+              "benefits": [
+                "Automatische Überprüfung durch tägliches Testen realer Wiederherstellungsvorgänge",
+                "Erfahren Sie sofort, ob Backups beschädigt oder unvollständig sind",
+                "Greifen Sie auf sauber getestete Backups vor einer Infektion zu",
+                "Es sind keine manuellen Tests erforderlich, die automatische Validierung läuft kontinuierlich",
+                "Jedes Backup funktioniert bereits, bevor Sie es benötigen"
+              ],
+              "description": "Rediacc erstellt nicht nur Backups, sondern überprüft diese auch, indem es die tatsächliche Wiederherstellung testet. Jedes Backup funktioniert nachweislich, bevor Sie es im Notfall benötigen.",
+              "title": "Automatische Backup-Verifizierung"
+            },
+            "subtitle": "Vertraue, aber überprüfe <small class='subtitle-attribution'> – Russisches Sprichwort/Reagan (1987)</small>",
+            "title": "Ungetestete Backup-Systeme"
+          }
+        },
+        "video": {
+          "subtitle": "Sehen Sie, wie Rediacc Ihre Backups automatisch überprüft und den unbegrenzten Verlauf mit inkrementeller Effizienz speichert.",
+          "title": "Sehen Sie sich Disaster Recovery in Aktion an"
+        }
+      },
+      "systemPortability": {
+        "cta": {
+          "button": "Entdecken Sie den Migrationspfad",
+          "subtitle": "Eine tragbare Datei. Sicherheit auf Militärniveau. Begrenzte Plätze verfügbar.",
+          "title": "Bereit für echte Systemportabilität?"
+        },
+        "hero": {
+          "subtitle": "Eine tragbare Datei. Sicherheit auf Militärniveau. Überall einsetzbar.",
+          "title": "Bewegen Sie Ihre Systeme sicher überall hin"
+        },
+        "meta": {
+          "description": "Befreien Sie sich von der Lieferantenbindung. Komplettes System in einer tragbaren Datei, Verschlüsselung auf Militärniveau und konfigurationsfreie Bereitstellung in jeder Infrastruktur.",
+          "keywords": "Systemportabilität, Anbieterbindung, Infrastrukturmobilität, Cloud-Migration, Multi-Cloud, Systemverschlüsselung, Datensicherheit, Bereitstellungsautomatisierung",
+          "title": "Universelle Systemportabilität | Verschieben Sie Ihre Infrastruktur sicher überall hin"
+        },
+        "problems": {
+          "deployment": {
+            "problem": {
+              "additionalPoints": [
+                "Benutzer-IDs variieren zwischen verschiedenen Systemen und Distributionen",
+                "Dateien, die einem Benutzer gehören, gehören fälschlicherweise woanders hin",
+                "Nach jeder Migration sind manuelle Eigentumsvorgänge erforderlich",
+                "Datenbankdateien mit falschem Besitzer werden nicht gestartet",
+                "Containeranwendungen schlagen aufgrund von Berechtigungskonflikten fehl"
+              ],
+              "description": "Beim Verschieben von Dateien zwischen Linux-Systemen wird der Dateibesitz zum Albtraum. Der Benutzer „appuser“ hat die UID 1000 auf Server A, aber 1005 auf Server B. Anwendungen können nicht auf Dateien zugreifen, da die numerischen UIDs nicht übereinstimmen, sodass jedes Mal manuelle Korrekturen der Berechtigungen erforderlich sind.",
+              "story": "Docker-Container sind beim Wechsel zwischen Systemen ständig damit konfrontiert. <a href='https://www.joyfulbikeshedding.com/blog/2021-03-15-docker-and-the-host-filesystem-owner-matching-problem.html' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Linux verwendet numerische UIDs. Verschiedene Systeme weisen unterschiedliche Werte zu, was zu Berechtigungsfehlern führt. <a href='https://stackoverflow.com/questions/51188997/docker-uid-gid-mapping-changes-on-different-host' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Aus Minuten werden Stunden voller Chown-Operationen und Debugging."
+            },
+            "solution": {
+              "benefits": [
+                "Der Dateibesitz funktioniert systemübergreifend mit unterschiedlichen IDs",
+                "Keine manuellen Berechtigungskorrekturen nach Migrationsvorgängen",
+                "Team-SSH-Schlüssel zentral verwaltet, keine gemeinsame Nutzung",
+                "Datenbanken und Anwendungen starten sofort neue Systeme",
+                "Der Wechsel zwischen Ubuntu-Debian-CentOS-Berechtigungen funktioniert"
+              ],
+              "description": "Rediacc verwaltet den Benutzerbesitz auf Dateisystemebene. Wenn Sie ein Repository auf ein neues System migrieren, funktioniert der Dateieigentum automatisch unabhängig von unterschiedlichen Benutzer-IDs. Zentral verwaltete Team-SSH-Schlüssel – Entwickler stellen automatisch eine Verbindung her, ohne Anmeldeinformationen weiterzugeben.",
+              "title": "Automatische Eigentumsauflösung"
+            },
+            "subtitle": "Eile kommt vom Teufel; Die Überlegung stammt von Allah <small class='subtitle-attribution'> – Prophet Muhammad, Musnad Abu Ya'la (4256)</small>",
+            "title": "Dateiberechtigungskonflikte"
+          },
+          "testingVendorSwitch": {
+            "problem": {
+              "additionalPoints": [
+                "Sieben Prozent der Unternehmen testen die Notfallwiederherstellung nie",
+                "Nur 46 Prozent der Tests pro Jahr sind veraltet",
+                "Parallele Infrastrukturtests verdoppeln die Kosten während der Validierung",
+                "Mangelnde Zeitressourcen verhindern regelmäßige Tests",
+                "Ungetestete Failover-Pläne schlagen bei Bedarf fehl"
+              ],
+              "description": "Eine Single-Cloud ist riskant. Sie möchten das Failover testen, bevor eine Katastrophe eintritt. Beim Testen ist jedoch eine doppelte Infrastruktur erforderlich, die die Produktion exakt widerspiegelt und über Wochen hinweg synchronisiert bleibt. Die meisten Unternehmen testen die Notfallwiederherstellung nie, weil sich Risiko und Aufwand nicht lohnen – bis ein Ausfall beweist, dass dies der Fall sein sollte.",
+              "story": "Nur 7 % der Unternehmen testen niemals Disaster-Recovery-Pläne. <a href='https://invenioit.com/continuity/disaster-recovery-statistics/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Doch 46 % testen nur jährlich. <a href='https://dbvisit.com/blog/ five-consequences-of-not-testing-your-disaster-recovery-plan' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Warum: Mangel an Zeit, Ressourcen, Komplexität. <a href='https://www.techrepublic.com/article/why-23-of-companies-never-test-their-disaster-recovery-plan-despite-major-risks/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> Tests verdoppeln die Kosten. Der Ausfall des Anbieters beweist, dass er hätte testen sollen."
+            },
+            "solution": {
+              "benefits": [
+                "Validieren Sie die Notfallwiederherstellung mit der tatsächlichen Produktionsarchitektur",
+                "Komplette Failover-Tests in Wochen statt Monaten",
+                "Testen Sie mit Zuversicht, ohne Auswirkungen auf die Produktion",
+                "Benchmarken Sie die Failover-Geschwindigkeit, bevor Sie sie benötigen",
+                "Stellen Sie sicher, dass Ihr Backup-Plan funktioniert, bevor es zu einer Katastrophe kommt"
+              ],
+              "description": "Rediacc erstellt einen Snapshot Ihres genauen Produktionsumgebungsstatus. Stellen Sie diesen Snapshot auf Azure oder GCP mit echten Konfigurations- und Datenmustern bereit. Testen Sie die Failover-Leistung und validieren Sie die Notfallwiederherstellung, ohne die Produktion zu beeinträchtigen. Führen Sie eine Verpflichtung nur dann durch, wenn nachgewiesen wurde, dass sie funktioniert. Keine Ausfallzeiten. Null Risiko.",
+              "title": "Risikofreie Failover-Tests"
+            },
+            "subtitle": "Übung macht den Meister <small class='subtitle-attribution'> – Klassische Tradition (1500+)</small>",
+            "title": "Ungetestete Failover-Pläne"
+          },
+          "vendorLockIn": {
+            "problem": {
+              "additionalPoints": [
+                "Der Ausfall am 22. Oktober dauerte weltweit fünfzehn Stunden",
+                "Regionale Ausfälle führen dazu, dass die Produktionssicherung gleichzeitig ausfällt",
+                "Organisationen mit mehreren Regionen blieben online in einer einzigen Cloud",
+                "Wenn Cloud-Anbieter ausfallen, benötigen sie einen alternativen Betrieb",
+                "Durch die Anbieterbindung entfallen die erforderlichen Failover-Optionen"
+              ],
+              "description": "Sie haben auf einen Cloud-Anbieter gesetzt. Wenn sie scheitern, scheitern Sie mit ihnen. Keine Sicherung. Kein Failover. Keine Wahl. Die Bindung an einen Anbieter ist nicht nur teuer, sondern auch ein Single Point of Failure, der Ihren gesamten Betrieb lahmlegt.",
+              "story": "20. Oktober 2025. Der DNS-Fehler von AWS US-EAST-1 dauerte 15 Stunden. <a href='https://techcrunch.com/2025/10/21/amazon-dns-outage-breaks-much-of-the-internet/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Coinbase, Fortnite, Signal, Zoom – offline. AWS-gesperrte Organisationen hatten keine Optionen. Bei Architekturen mit mehreren Regionen erfolgt automatisch ein Failover. <a href='https://ine.com/blog/aws-october-2025-outage-multi-region-and-cloud-lessons-learned' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Eine einzelne Cloud ist ein einzelner Fehlerpunkt."
+            },
+            "solution": {
+              "benefits": [
+                "Stellen Sie es überall bereit und überstehen Sie Ausfälle beim Betrieb mehrerer Clouds",
+                "Wenn Cloud-Anbieter scheitern, gibt es bereits laufende Alternativen",
+                "Failover zwischen Anbietern in Minuten getestet und validiert",
+                "Echte Multi-Cloud ohne separate Infrastrukturversionen",
+                "Testen Sie das Failover, bevor es funktioniert"
+              ],
+              "description": "Rediacc verpackt Ihr komplettes System in einem einzigen tragbaren Repository. Bereitstellung auf AWS, Azure, Google Cloud oder Bare Metal – ohne Änderungen. Wenn ein Anbieter ausfällt, sind Sie bereits woanders unterwegs. Ein Failover dauert Minuten, nicht Stunden. Die Infrastruktur wird niemals von der Betriebszeit eines Anbieters beeinträchtigt.",
+              "title": "Echte Multi-Cloud-Redundanz"
+            },
+            "subtitle": "Legen Sie nicht alles auf eine Karte <small class='subtitle-attribution'>– Cervantes (1605) / Carnegie (1885)</small>",
+            "title": "Vendor Lock-In-Falle"
+          }
+        }
+      },
+      "threatResponse": {
+        "cta": {
+          "button": "Schützen Sie Ihre Systeme",
+          "subtitle": "Überstehen Sie Bedrohungen schneller. Unveränderlich. Tragbar. Unter Ihrer Kontrolle.",
+          "title": "Bereit für Cyber-Resilienz?"
+        },
+        "hero": {
+          "subtitle": "Unveränderliche Backups. Minuten bis zur Genesung. Evakuierung der Infrastruktur über Wolken hinweg.",
+          "title": "Bedrohungen breiten sich schnell aus. Das sollten Sie auch."
+        },
+        "meta": {
+          "description": "Überstehen Sie Ransomware-Angriffe mit unveränderlichen Backups, schneller Wiederherstellung und Infrastrukturportabilität. Evakuieren Sie kompromittierte Systeme in wenigen Minuten.",
+          "keywords": "Ransomware-Schutz, Cyber-Resilienz, unveränderliche Backups, schnelle Wiederherstellung, Geschäftskontinuität, Evakuierung der Infrastruktur, Notfallwiederherstellung",
+          "title": "Ransomware- und Cyber-Resilienz-Lösungen | Bedrohungen breiten sich schnell aus"
+        },
+        "problems": {
+          "infrastructureBlackBox": {
+            "problem": {
+              "additionalPoints": [
+                "Organisationen können nicht alle Produktions-SSH-Schlüssel berücksichtigen",
+                "Backup-Systeme erfassen Bedrohungen, vergessene Dienste und potenzielle Trojaner",
+                "Infrastrukturmigrationen setzen das angesammelte Risiko fort",
+                "Legacy-Systeme weisen unbekannte Konfigurationen auf, die sich auf die Notfallwiederherstellung auswirken",
+                "Durch unbekannten Zugriff kann Ransomware nach der Wiederherstellung erneut eindringen"
+              ],
+              "description": "Legacy-Systeme sammeln undokumentierte SSH-Schlüssel von Auftragnehmern oder Angreifern. Backups erfassen alles – Mülldateien, vergessene Dienste, potenzielle Trojaner. Auch hartnäckige Angreifer werden gesichert. Migrationen verewigen unbekannte Risiken. Niemand weiß, was in Backups enthalten ist oder was bei der Wiederherstellung aktiviert wird.",
+              "story": "Ein Finanzunternehmen entdeckte 47 undokumentierte SSH-Schlüssel in Produktionsdatenbanken, darunter Schlüssel von Anbietern, die das Unternehmen vor Jahren verlassen hatten. <a href='https://www.appviewx.com/blogs/ssh-key-sprawl-causes-and-consequences/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Die Ransomware-Wiederherstellung verzögerte sich während der forensischen SSH-Schlüsselprüfung um 2 Wochen. <a href='https://www.encryptionconsulting.com/ssh-key-sprawl/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "Migrieren Sie nur verifizierte wesentliche Systemkomponenten",
+                "Beseitigen Sie angesammelte Sicherheitsschulden und die Komplexität der Altlasten",
+                "Die zentralisierte SSH-Schlüsselverwaltung ersetzt die Schlüsselwucherung",
+                "Vollständige Überprüfbarkeit der Produktions- und Backup-Systeme",
+                "Eine neue Bereitstellung sorgt für einen sauberen Zustand ohne versteckte Bedrohungen"
+              ],
+              "description": "Rediacc ermöglicht eine vollständige Systemrekonstruktion auf einer neuen Infrastruktur mit verifizierten wesentlichen Komponenten. Sie migrieren bewusst ausgewählte Systemdaten und -konfigurationen, nicht „alles“. SSH-Schlüssel zentral verwaltet und geprüft. Ergebnis: saubere Infrastruktur mit voller Transparenz. Keine Sicherheitsschulden. Kein versteckter Zugang.",
+              "title": "Frisch verifizierte Infrastruktur"
+            },
+            "subtitle": "Man sieht den Wald vor lauter Bäumen nicht <small class='subtitle-attribution'>– John Heywood (1546)</small>",
+            "title": "Infrastruktur-Blackbox"
+          },
+          "osVulnerability": {
+            "problem": {
+              "additionalPoints": [
+                "Für kritische Schwachstellen in Ihrem Betriebssystem gibt es keine Patches",
+                "Vollständige Betriebssystemmigrationen erfordern eine wochenlange Testvalidierung",
+                "Ohne Produktionsauslastung kann die Migration nicht sicher getestet werden",
+                "Ein Rollback fehlgeschlagener Migrationen bedeutet eine vollständige Datenwiederherstellung",
+                "Fenster zu Sicherheitslücken bleiben wochenlang geöffnet"
+              ],
+              "description": "Kritische Sicherheitslücke im Betriebssystem entdeckt. Patches nur für neuere Versionen, die Sie nicht ausführen. Die Migration erfordert wochenlange Tests. Ein Test gegen die Produktion ist nicht möglich, ohne die Daten zu gefährden. Ein Rollback bedeutet eine vollständige Wiederherstellung. Sie bleiben angreifbar und hoffen, dass Angreifer nicht ausnutzen, bevor die Migration abgeschlossen ist.",
+              "story": "Log4Shell (Dezember 2021) erzwang brutale Entscheidungen. <a href='https://nvd.nist.gov/vuln/detail/CVE-2021-44228' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Unternehmen verbrachten zwei bis drei Wochen mit der Validierung der Betriebssystemmigration. Nur 45 % wurden innerhalb von 11 Tagen gepatcht. Einige blieben während des Tests mehr als vier Wochen lang anfällig. <a href='https://www.crowdstrike.com/en-us/blog/log4j2-vulnerability-analysis-and-mitigation-recommendations/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "Testen Sie das neue Betriebssystem anhand der tatsächlichen Produktionsauslastung",
+                "Überprüfen Sie die Kompatibilität, ohne Ihre tatsächlichen Systeme zu gefährden",
+                "Kehren Sie sofort zum vorherigen Betriebssystem zurück, ohne Ausfallzeiten",
+                "Migrieren Sie zwischen Ubuntu Debian CentOS AlmaLinux in wenigen Minuten",
+                "Schließen Sie Sicherheitslückenfenster in Minuten statt Wochen"
+              ],
+              "description": "Rediacc ermöglicht schnelle, risikofreie Tests der Betriebssystemmigration. Stellen Sie die Infrastruktur auf einem neuen Betriebssystem bereit und überprüfen Sie, ob alles mit der tatsächlichen Produktionsauslastung funktioniert. Wenn Probleme auftreten, können Sie die Lösung sofort wiederherstellen – kein Datenverlust, keine Wiederherstellung. Sobald die Sicherheit überprüft wurde, verpflichten Sie sich dauerhaft. Schwachstellenfenster schließen sich innerhalb von Minuten.",
+              "title": "Risikofreies Testen des Betriebssystems"
+            },
+            "subtitle": "In jeder Not liegt Leichtigkeit <small class='subtitle-attribution'> – Al-Inshirah 94:5</small>",
+            "title": "Verzögerungen bei Betriebssystemaktualisierungen"
+          },
+          "ransomwareBackups": {
+            "problem": {
+              "additionalPoints": [
+                "94 Prozent der Ransomware-Angriffe zielen auf die Backup-Infrastruktur ab",
+                "Angreifer warten wochenlang darauf, sicherzustellen, dass saubere Backups überschrieben werden",
+                "Unveränderliche Backups schlagen fehl, wenn Angreifer über Administratoranmeldeinformationen verfügen",
+                "Durch das Löschen von Backups werden Wiederherstellungspfade eliminiert, auch nach einer Lösegeldzahlung",
+                "Verschlüsselte Anbieter-Backups bedeuten, dass Anbieter bei der Wiederherstellung nicht helfen können"
+              ],
+              "description": "Ransomware-Angreifer zielen auf die Backup-Infrastruktur ab und löschen oder überschreiben Kopien, um eine Wiederherstellung zu verhindern. Backups im selben Cloud-Konto mit gemeinsamen Anmeldeinformationen ermöglichen es Angreifern, den Verlauf von Monaten zu löschen. Selbst unveränderliche Backups schlagen bei Administratorzugriff fehl. Saubere Backups verschwinden, bevor Sie es merken.",
+              "story": "Eine Sophos-Studie aus dem Jahr 2024 ergab, dass 94 % der Ransomware-Opfer Backups anvisierten, wobei 57 % erfolgreich waren. <a href='https://www.techrepublic.com/article/ransomware-attackers-target-backups/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> Wenn Backups kompromittiert werden, belaufen sich die durchschnittlichen Wiederherstellungskosten auf 3 Millionen US-Dollar – achtmal höher. <a href='https://news.sophos.com/en-us/2024/03/26/the-impact-of-compromised-backups-on-ransomware-outcomes/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "Verschlüsselte Backups überstehen sogar eine vollständige Gefährdung der Anmeldedaten",
+                "Die Unveränderlichkeit des Tokens verhindert das Löschen mit Administratorzugriff",
+                "Frühere Versionen bleiben auf unbestimmte Zeit intakt und verschlüsselt",
+                "Wiederherstellung nach vollständiger Kompromittierung der Infrastruktur möglich",
+                "Es ist keine Lösegeldzahlung erforderlich, die Backups verbleiben in Ihrer Kontrolle"
+              ],
+              "description": "Rediacc speichert verschlüsselte Sicherungskopien unveränderlich auf Speicherebene, nicht administrativ. Selbst wenn Angreifer Infrastruktur-Tokens oder Administratoranmeldeinformationen kompromittieren, können sie nur verschlüsselte Daten lesen – Versionen nicht ändern, löschen oder überschreiben. Mit Ihrem Passwort verschlüsselte Snapshots bleiben für Angreifer wertlos.",
+              "title": "Unveränderlicher Backup-Schutz"
+            },
+            "subtitle": "Binden Sie Ihr Kamel an und vertrauen Sie auf Allah <small class='subtitle-attribution'> – Prophet Muhammad, Sunan at-Tirmidhi (2517)</small>",
+            "title": "Ransomware zielt auf Backups ab"
+          }
+        }
+      }
+    },
+    "team": {
+      "cta": {
+        "buttons": {
+          "contact": "Nehmen Sie Kontakt auf",
+          "learnMore": "Mehr erfahren"
+        },
+        "subtitle": "Ob als Kunde, Partner oder Teammitglied – seien Sie Teil der Infrastrukturrevolution.",
+        "title": "Begleiten Sie uns auf unserer Mission"
+      },
+      "hero": {
+        "subtitle": "Ingenieure, die sich dafür einsetzen, Katastrophen für Ihr Unternehmen unmöglich zu machen.",
+        "title": "Die Teambuilding-Infrastruktur, die überlebt"
+      },
+      "meta": {
+        "description": "Lernen Sie die katastrophensichere Teambuilding-Infrastruktur kennen. Ingenieure, die sich dafür einsetzen, dass Ihre Systeme jeder Herausforderung standhalten.",
+        "keywords": "Rediacc-Team, Infrastrukturtechnik, Disaster-Recovery-Experten, Systemzuverlässigkeit, DevOps-Team",
+        "title": "Unser Team | Rediacc – Aufbau einer Infrastruktur, die überlebt"
+      },
+      "mission": {
+        "belief": "Wir glauben, dass jedes Unternehmen, unabhängig von Größe oder Budget, Zugriff auf dieselben leistungsstarken Infrastrukturtools verdient, die Fortune-500-Unternehmen verwenden. Aus diesem Grund haben wir Rediacc entwickelt – um gleiche Wettbewerbsbedingungen zu schaffen und Unternehmen die Möglichkeit zu geben, sich auf das zu konzentrieren, was sie am besten können, während wir die Komplexität der Infrastruktur bewältigen.",
+        "description": "Alle 47 Tage löscht AI eine Produktionsdatenbank. Jedes Jahr fallen 1,71 % der Laufwerke aus. 75 % der Ransomware zielt auf Backups ab. Wir machen alle diese Katastrophen in 60 Sekunden behebbar.",
+        "title": "Unsere Mission: Katastrophen unmöglich machen"
+      },
+      "story": {
+        "beginning": {
+          "paragraph1": "Im Jahr 2018 habe ich meine Position als Softwareentwickler aufgegeben, um meine eigene Vision weiterzuentwickeln. Die Aufregung sorgte dafür, dass ich 18 Stunden am Tag arbeitete und nur 4 bis 5 Stunden schlief. Ich habe 5-6 Monate lang alles in das Projekt gesteckt.",
+          "paragraph2": "Dann verlor ich unerwartet den Zugriff auf meine gesamte Entwicklungsinfrastruktur. Alles, was ich gebaut hatte, war plötzlich unzugänglich. Ich hatte keine Backups und selbst wenn, könnte ich es mir nicht leisten, die von mir verwendete lokale Hardware zu ersetzen.",
+          "paragraph3": "Um meine Schulden zu begleichen und meine Familie zu ernähren, musste ich zu einem bezahlten Job zurückkehren. Es dauerte 20 Monate, bis ich wieder Zugang zu meiner Arbeit bekam. Während dieser Zeit entfernte ich mich weit von meinen Träumen und lebte mit Unsicherheit und zunehmendem finanziellen Druck.",
+          "title": "Der Anfang"
+        },
+        "birth": {
+          "paragraph1": "Alles begann mit der Entwicklung einer portablen Dateisystemlogik. Von dort habe ich ein Backup-Modul integriert. Dann kam eine der größten Herausforderungen: die Ermöglichung von Live-Systemübertragungen mit minimalen Ausfallzeiten, unabhängig von der Datengröße. Ich habe einzigartige Funktionen hinzugefügt, die auf tatsächlichen Bedürfnissen basieren.",
+          "paragraph2": "So wurde Rediacc geboren – ein Produkt, das selbst die härtesten Herausforderungen meistert. Jetzt steht es jedem zur Verfügung. Nutzen Sie es und lassen Sie nicht zu, dass Ihr Unternehmen durch irgendetwas gebremst wird – seien Sie bereit zu überleben und zu beschleunigen.",
+          "quote": "Als ich den Zugang zu meiner Infrastruktur verlor, wusste ich, was ich aufbauen musste: ein System, das Katastrophen unmöglich macht.",
+          "title": "Geburt von Rediacc"
+        },
+        "title": "Unsere Geschichte",
+        "turningPoint": {
+          "paragraph1": "Jahre später dachte ich immer wieder darüber nach, was ich tun könnte, um zu verhindern, dass ein solches Problem erneut auftritt. Ich brauchte ein Tool, mit dem ich meine Systeme jederzeit in eine andere Umgebung verschieben, sie bei Bedarf aktivieren, einfach sichern und sicher speichern kann, egal wohin ich sie verschoben habe.",
+          "paragraph2": "Im Jahr 2021 habe ich Docker durch das Video von NetworkChuck entdeckt. Ich war schockiert darüber, was möglich war. Ich wünschte, ich hätte früher von dieser Technologie gewusst – sie hätte alles verändern können.",
+          "paragraph3": "Aber Docker allein hat nicht alle meine Probleme gelöst. Das Verschieben von Containerdateien zwischen Systemen war schwierig. Ich hatte Probleme mit der Kompatibilität der Dateieigentümer und mit zunehmender Datengröße dauerten die Übertragungen länger. Am kritischsten war, dass ich die Dienste bis zum Abschluss der Migration offline halten musste und Docker nur minimale Sicherheitsfunktionen bot.",
+          "title": "Der Wendepunkt"
+        }
+      },
+      "team": {
+        "title": "Lernen Sie unser Team kennen"
+      },
+      "values": {
+        "title": "Unsere Werte"
+      }
+    }
+  },
+  "problem": {
+    "reality": {
+      "imageAlt": "Diagramm, das die Herausforderungen traditioneller Infrastruktur-Workflows veranschaulicht: frustrierte Entwickler, die auf die Bereitstellung der Umgebung warten, Stakeholder, die eine schnellere Bereitstellung fordern, und Teams, die aufgrund langsamer Sandbox-Updates auf gefährliche Produktionstests zurückgreifen",
+      "title": "Die Realität: Frustrierte Teams, gefährliche Workarounds"
+    },
+    "solution": {
+      "imageAlt": "Lösungsdiagramm der Rediacc-Plattform: automatisierte Infrastrukturbereitstellung, sofortige produktionsähnliche Umgebungsklone, optimierte Entwickler-Workflows und KI-sichere Vorgänge mit Model Context Protocol-Integration",
+      "title": "Die Lösung: Rediacc-Plattform"
+    },
+    "subtitle": "Wenn Produktionsumgebungen über Terabytes an Daten verfügen, Sandbox-Umgebungen jedoch nur monatlich synchronisiert werden, stehen Teams vor unmöglichen Entscheidungen, die zu gefährlichen Problemumgehungen führen.",
+    "title": "Die Speed-Mismatch-Krise"
+  },
+  "solutions": {
+    "items": [
+      {
+        "benefits": [
+          "Unveränderliche Backups überstehen Angriffe",
+          "Wiederherstellen in Minuten, nicht in Stunden oder Tagen",
+          "Risikofreies Testen des Betriebssystems"
+        ],
+        "description": "Wiederherstellungsgeschwindigkeit rettet Leben. Unveränderliche Backups. Schnelle Reaktion.",
+        "title": "Ransomware-Überleben"
+      },
+      {
+        "benefits": [
+          "Überstehen Sie AWS-Ausfälle",
+          "Keine Lieferantenbindung",
+          "Getestete Failover-Bereitschaft"
+        ],
+        "description": "Single-Cloud ist gefährlich. Überall einsetzbar. Schnelles Failover.",
+        "title": "Immer Multi-Cloud"
+      },
+      {
+        "benefits": [
+          "Automatische Überprüfung",
+          "Erweiterte Aufbewahrung",
+          "Erholen Sie sich in wenigen Minuten"
+        ],
+        "description": "Verifizierte Wiederherstellung garantiert. Getestete Backups. Komplette Geschichte.",
+        "title": "Verifizierte Backups"
+      },
+      {
+        "benefits": [
+          "Verschlüsselung, die Sie kontrollieren",
+          "Vollständiger Prüfpfad",
+          "Migrationssicher"
+        ],
+        "description": "Alles verschlüsselt. Alles geprüft. Vollständige Kontrolle.",
+        "title": "Verschlüsselungskontrolle"
+      },
+      {
+        "benefits": [
+          "60-Sekunden-Umgebungsbereitstellung",
+          "Produktionsidentische Klone",
+          "Automatische Git-Integration"
+        ],
+        "description": "Sofortige Produktionsklone. Keine DevOps-Tickets. 60-Sekunden-Umgebungen.",
+        "title": "Entwicklungsumgebungen"
+      }
+    ],
+    "subtitle": "Fünf integrierte Lösungen für schnelle Reaktion bei Infrastrukturausfällen oder Bedrohungen.",
+    "title": "Wie wir die Geschäftskontinuität sicherstellen"
+  }
+}

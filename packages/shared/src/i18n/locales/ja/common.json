@@ -1,4 +1,23 @@
 {
+  "errors": {
+    "anErrorOccurred": "エラーが発生しました",
+    "cliCommandFailed": "CLIコマンドが失敗しました",
+    "criticalSystemError": "システムに重大な問題があります",
+    "failedToCreateTask": "テストタスクの作成に失敗しました",
+    "failedToFork": "リポジトリのフォークに失敗しました",
+    "helloFunctionError": "Hello関数がエラーを報告しました",
+    "machinesValidationError": "マシン検証エラー",
+    "noErrorMessage": "(エラーメッセージなし)",
+    "operationFailed": "操作が失敗しました",
+    "passwordValidation": "パスワードには大文字、小文字、数字、特殊文字を含める必要があります",
+    "tfaVerificationFailed": "TFA認証に失敗しました",
+    "unknownError": "不明なエラー",
+    "vaultTestFailed": "Vault接続テストに失敗しました",
+    "vsCodeConnectionFailed": "VS Code接続に失敗しました"
+  },
+  "success": {
+    "helloFunctionSuccess": "Hello関数が正常に完了しました"
+  },
   "status": {
     "cancelled": "キャンセル済み",
     "completed": "完了",

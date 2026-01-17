@@ -1,7 +1,6 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BrowserWindow, screen } from 'electron';
-import { app } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 
 interface WindowState {
   width: number;

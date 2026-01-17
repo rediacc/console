@@ -2,7 +2,7 @@
  * Repository Parsers
  */
 
-import { extractPrimaryOrSecondary, extractFirstByIndex } from './base';
+import { extractFirstByIndex, extractPrimaryOrSecondary } from './base';
 import { DEFAULTS } from '../../config';
 import type { GetTeamRepositories_ResultSet1 } from '../../types';
 import type { ApiResponse } from '../../types/api';

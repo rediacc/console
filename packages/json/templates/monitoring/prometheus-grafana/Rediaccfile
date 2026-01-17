@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+prep() {
+    echo "Pulling Prometheus and Grafana images..."
+    docker pull prom/prometheus:latest
+    docker pull grafana/grafana:latest
+
+    echo "Creating directories..."
+    mkdir -p ./prometheus/data
+    mkdir -p ./grafana/data
+    chmod 777 ./prometheus/data
+    chmod 777 ./grafana/data
+
+    return $?
+}
+
+up() {
+    if [ -f .env ]; then
+        source .env
+    fi
+
+    echo "Starting Prometheus and Grafana..."
+    _compose up -d
+
+    echo "Waiting for services to be ready..."
+    sleep 10
+
+    echo "Prometheus is running on http://localhost:${PROMETHEUS_PORT:-9090}"
+    echo "Grafana is running on http://localhost:${GRAFANA_PORT:-3000}"
+    echo "Default Grafana credentials: admin / ${GRAFANA_ADMIN_PASSWORD:-admin}"
+
+    return $?
+}
+
+down() {
+    echo "Stopping Prometheus and Grafana..."
+    _compose down -v
+    return $?
+}

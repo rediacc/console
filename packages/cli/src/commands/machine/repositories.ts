@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { parseGetTeamMachines } from '@rediacc/shared/api';
-import { parseListResult, type MachineWithVaultStatus } from '@rediacc/shared/services/machine';
+import { type MachineWithVaultStatus, parseListResult } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';

@@ -1,14 +1,14 @@
 import { Command } from 'commander';
 import {
-  parseGetUserRequests,
   parseForkAuthenticationRequest,
-  parseUpdateUserTFA,
   parseGetRequestAuthenticationStatus,
+  parseGetUserRequests,
+  parseUpdateUserTFA,
 } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { isValidEmail } from '@rediacc/shared/validation';
 import { t } from '../i18n/index.js';
-import { typedApi, apiClient } from '../services/api.js';
+import { apiClient, typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -381,6 +381,7 @@ export function registerAuthCommands(program: Command): void {
     .option('-m, --master-password <password>', t('options.masterPassword'))
     .option('-n, --name <name>', t('options.sessionName'))
     .option('--endpoint <url>', t('options.endpoint'))
+    .option('--save-as <context>', t('options.saveAs'))
     .action(async (options) => {
       // Forward to auth login
       await auth.commands
@@ -393,6 +394,7 @@ export function registerAuthCommands(program: Command): void {
           ...(options.masterPassword ? ['-m', options.masterPassword] : []),
           ...(options.name ? ['-n', options.name] : []),
           ...(options.endpoint ? ['--endpoint', options.endpoint] : []),
+          ...(options.saveAs ? ['--save-as', options.saveAs] : []),
         ]);
     });
 

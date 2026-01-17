@@ -1,0 +1,168 @@
+---
+import { CONTACT_EMAIL } from '../config/constants';
+
+export interface Props {
+  type?: 'organization' | 'website' | 'service' | 'breadcrumb' | 'sitenavigation' | 'blogposting';
+  data?: any;
+}
+
+const { type = 'organization', data = {} } = Astro.props;
+
+const baseUrl = 'https://www.rediacc.com';
+
+const getStructuredData = (type: string, customData: any = {}) => {
+  const commonData = {
+    '@context': 'https://schema.org',
+  };
+
+  switch (type) {
+    case 'organization':
+      return {
+        ...commonData,
+        '@type': 'Organization',
+        name: 'Rediacc',
+        url: baseUrl,
+        description: 'Infrastructure Automation Platform designed for accelerated development operations',
+        logo: `${baseUrl}/favicon.svg`,
+        sameAs: [
+          // Add social media URLs when available
+        ],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'Customer Service',
+          email: CONTACT_EMAIL,
+          url: `${baseUrl}/contact`
+        },
+        address: {
+          '@type': 'PostalAddress',
+          addressCountry: 'US'
+        },
+        foundingDate: '2024',
+        ...customData
+      };
+
+    case 'website':
+      return {
+        ...commonData,
+        '@type': 'WebSite',
+        name: 'Rediacc',
+        url: baseUrl,
+        description: 'Infrastructure Automation Platform designed for accelerated development operations',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl
+        },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${baseUrl}/search?q={search_term_string}`
+          },
+          'query-input': 'required name=search_term_string'
+        },
+        ...customData
+      };
+
+    case 'service':
+      return {
+        ...commonData,
+        '@type': 'Service',
+        name: 'Infrastructure Automation Platform',
+        description: 'Accelerate development workflows with instant environment provisioning and production-like testing',
+        provider: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl
+        },
+        serviceType: 'Infrastructure Automation',
+        category: 'Software Development Tools',
+        offers: {
+          '@type': 'Offer',
+          availability: 'https://schema.org/PreOrder',
+          priceValidUntil: '2025-12-31',
+          description: 'Early access program available'
+        },
+        ...customData
+      };
+
+    case 'breadcrumb':
+      return {
+        ...commonData,
+        '@type': 'BreadcrumbList',
+        itemListElement: customData.items || []
+      };
+
+    case 'sitenavigation':
+      return {
+        ...commonData,
+        '@type': 'SiteNavigationElement',
+        name: customData.name || 'Main Navigation',
+        url: customData.url || baseUrl,
+        about: customData.about || 'Infrastructure Automation Platform',
+        hasPart: customData.navigationItems || [
+          {
+            '@type': 'WebPage',
+            name: 'Home',
+            url: baseUrl
+          },
+          {
+            '@type': 'WebPage',
+            name: 'Contact',
+            url: `${baseUrl}/contact`
+          }
+        ]
+      };
+
+    case 'blogposting':
+      return {
+        ...commonData,
+        '@type': 'BlogPosting',
+        headline: customData.title,
+        description: customData.description,
+        author: {
+          '@type': 'Person',
+          name: customData.author
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${baseUrl}/favicon.svg`
+          }
+        },
+        datePublished: customData.publishedDate,
+        dateModified: customData.updatedDate || customData.publishedDate,
+        image: customData.image ? {
+          '@type': 'ImageObject',
+          url: customData.image,
+          width: 1200,
+          height: 630
+        } : {
+          '@type': 'ImageObject',
+          url: `${baseUrl}/favicon.svg`,
+          width: 512,
+          height: 512
+        },
+        url: customData.url || baseUrl,
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': customData.url || baseUrl
+        },
+        inLanguage: customData.language || 'en',
+        keywords: customData.tags ? customData.tags.join(', ') : '',
+        articleSection: customData.category,
+        ...customData.additionalData
+      };
+
+    default:
+      return { ...commonData, ...customData };
+  }
+};
+
+const structuredData = getStructuredData(type, data);
+---
+
+<script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />

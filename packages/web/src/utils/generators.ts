@@ -75,7 +75,7 @@ async function exportRSAPrivateKeyToPEM(privateKey: CryptoKey): Promise<string> 
     '-----BEGIN PRIVATE KEY-----',
     '-----END PRIVATE KEY-----'
   );
-  return btoa(pemExported);
+  return pemExported;
 }
 
 // Export Ed25519 private key to PEM format
@@ -87,7 +87,7 @@ async function exportEd25519PrivateKeyToPEM(privateKey: CryptoKey): Promise<stri
     '-----BEGIN PRIVATE KEY-----',
     '-----END PRIVATE KEY-----'
   );
-  return btoa(pemExported);
+  return pemExported;
 }
 
 // Export RSA public key to SSH format

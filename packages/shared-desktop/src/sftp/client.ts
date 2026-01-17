@@ -5,10 +5,10 @@
  * This is used by Electron for the direct file browser feature.
  */
 
-import { Client as SSHClient, type ConnectConfig } from 'ssh2';
+import { type ConnectConfig, Client as SSHClient } from 'ssh2';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { FileInfo, SSHCredentials } from '../types/index.js';
-import type { SFTPWrapper, FileEntry, Stats } from 'ssh2';
+import type { FileEntry, SFTPWrapper, Stats } from 'ssh2';
 
 /**
  * Configuration for SFTP client connection

@@ -181,8 +181,8 @@
     "tryAgain": "Intentar de nuevo"
   },
   "errors": {
-    "somethingWentWrong": "Algo salió mal",
-    "schemaValidationFailed": "Se detectó un problema de sincronización de datos. Por favor, actualice la página o contacte al soporte si el problema persiste."
+    "schemaValidationFailed": "Se detectó un problema de sincronización de datos. Por favor, actualice la página o contacte al soporte si el problema persiste.",
+    "somethingWentWrong": "Algo salió mal"
   },
   "export": {
     "label": "Exportar",
@@ -376,8 +376,9 @@
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
   "teamSelector": {
-    "moreTeams": "+{{count}} más",
-    "selectTeams": "Seleccionar equipos..."
+    "selectTeam": "Seleccionar equipo...",
+    "selectTeams": "Seleccionar equipos...",
+    "moreTeams": "+{{count}} más"
   },
   "terminal": {
     "terminal": "Terminal",

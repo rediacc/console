@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Flex, Space, Typography, type MenuProps } from 'antd';
+import { Alert, Flex, type MenuProps, Space, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useGetTeamRepositories } from '@/api/api-hooks.generated';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';

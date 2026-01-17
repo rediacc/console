@@ -1,4 +1,5 @@
 // Authentication and password utilities for browser environment
+
 import { tokenService } from '@/services/auth';
 import { secureMemoryStorage as secureStorage } from '@/services/crypto';
 import { PASSWORD_SALT } from '@rediacc/shared/encryption';

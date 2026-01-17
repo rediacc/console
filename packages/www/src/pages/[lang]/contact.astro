@@ -1,0 +1,207 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GetInTouch from '../../components/GetInTouch.astro';
+import { createTranslator } from '../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import { CONTACT_EMAIL } from '../../config/constants';
+import type { Language } from '../../i18n/types';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+
+// Get interest parameter from URL if present
+const interest = Astro.url.searchParams.get('interest') || '';
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.contact.meta.title')}
+  description={t('pages.contact.meta.description')}
+  keywords={t('pages.contact.meta.keywords')}
+  ogType="website"
+  structuredDataType="organization"
+  structuredData={{
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'Customer Service',
+      email: CONTACT_EMAIL,
+      url: 'https://www.rediacc.com/contact'
+    }
+  }}
+>
+  <section id="contact" class="contact-content">
+    <div class="container">
+      <div class="contact-grid">
+        <div class="contact-info">
+          <h2>{t('pages.contact.info.title')}</h2>
+          <p>
+            {t('pages.contact.info.description')}
+          </p>
+
+          <div class="contact-methods">
+            <div class="contact-method">
+              <h3>{t('pages.contact.info.methods.general.title')}</h3>
+              <p><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+            </div>
+
+            <div class="contact-method">
+              <h3>{t('pages.contact.info.methods.technicalSupport.title')}</h3>
+              <p>
+                {t('pages.contact.info.methods.technicalSupport.description')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-form-section">
+          <GetInTouch
+            title={t('pages.contact.notice.title')}
+            description={t('pages.contact.notice.description')}
+          />
+          <form
+            class="contact-form"
+            method="POST"
+            action={`mailto:${CONTACT_EMAIL}?subject=Contact%20Form%20Submission`}
+            enctype="text/plain"
+          >
+            <div class="form-group">
+              <label for="contact-name" class="form-label">{t('pages.contact.form.fields.name.label')}</label>
+              <input
+                type="text"
+                id="contact-name"
+                name="name"
+                class="form-input"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="contact-email" class="form-label">{t('pages.contact.form.fields.email.label')}</label>
+              <input
+                type="email"
+                id="contact-email"
+                name="email"
+                class="form-input"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="contact-subject" class="form-label">{t('pages.contact.form.fields.subject.label')}</label>
+              <select id="contact-subject" name="subject" class="form-select" required>
+                <option value="" selected={!interest}>{t('pages.contact.form.fields.subject.options.placeholder')}</option>
+                <option value="earlyAccess" selected={interest === 'disaster-recovery'}>{t('pages.contact.form.fields.subject.options.earlyAccess')}</option>
+                <option value="partnership" selected={interest === 'partnership'}>{t('pages.contact.form.fields.subject.options.partnership')}</option>
+                <option value="technical" selected={interest === 'threat-response' || interest === 'system-portability' || interest === 'data-security'}>{t('pages.contact.form.fields.subject.options.technical')}</option>
+                <option value="general" selected={interest === 'general'}>{t('pages.contact.form.fields.subject.options.general')}</option>
+                <option value="other" selected={interest === 'other'}>{t('pages.contact.form.fields.subject.options.other')}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="contact-message" class="form-label">{t('pages.contact.form.fields.message.label')}</label>
+              <textarea
+                id="contact-message"
+                name="message"
+                class="form-textarea"
+                rows="6"
+                required
+                placeholder={t('pages.contact.form.fields.message.placeholder')}
+              ></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">
+              {t('pages.contact.form.submit')}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+.contact-content {
+  padding: var(--space-20) 0;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12);
+  align-items: start;
+}
+
+.contact-info h2 {
+  color: var(--primary-color);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-2xl);
+}
+
+.contact-info p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-8);
+}
+
+.contact-methods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.contact-method {
+  padding: var(--space-4);
+  background: var(--background-alt);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.contact-method h3 {
+  color: var(--primary-color);
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.contact-method p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.contact-method a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.contact-method a:hover {
+  text-decoration: underline;
+}
+
+.contact-form-section {
+  background: var(--background-alt);
+  padding: var(--space-8);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+}
+</style>

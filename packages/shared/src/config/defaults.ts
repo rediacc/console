@@ -269,36 +269,6 @@ export const ANALYTICS_DEFAULTS = {
 } as const;
 
 /**
- * Error message defaults
- */
-export const ERROR_DEFAULTS = {
-  /** Critical system error message */
-  CRITICAL_SYSTEM_ERROR: 'System has critical issues',
-
-  /** Generic error messages */
-  UNKNOWN_ERROR: 'Unknown error',
-  AN_ERROR_OCCURRED: 'An error occurred',
-  OPERATION_FAILED: 'Operation failed',
-  NO_ERROR_MESSAGE: '(no error message)',
-  CLI_COMMAND_FAILED: 'CLI command failed',
-
-  /** Specific error messages */
-  FAILED_TO_CREATE_TASK: 'Failed to create test task',
-  FAILED_TO_FORK: 'Failed to fork Repository',
-  HELLO_FUNCTION_ERROR: 'Hello function reported an error',
-  VSCODE_CONNECTION_FAILED: 'common:vscodeConnectionFailed',
-  VAULT_TEST_FAILED: 'common:vaultEditor.testConnection.failed',
-  MACHINES_VALIDATION_ERROR: 'machines:validation.error',
-
-  /** Password validation */
-  PASSWORD_VALIDATION_MESSAGE:
-    'Password must contain uppercase, lowercase, number and special character',
-
-  /** TFA */
-  TFA_VERIFICATION_FAILED: 'TFA verification failed',
-} as const;
-
-/**
  * Subscription and licensing defaults
  */
 export const SUBSCRIPTION_DEFAULTS = {
@@ -362,7 +332,6 @@ export const DEFAULTS = {
   PLATFORM: PLATFORM_DEFAULTS,
   LOCALE: LOCALE_DEFAULTS,
   STATUS: STATUS_DEFAULTS,
-  ERROR: ERROR_DEFAULTS,
   HOST: HOST_DEFAULTS,
   UI: UI_DEFAULTS,
   PRIORITY: PRIORITY_DEFAULTS,
@@ -478,14 +447,6 @@ export const LIMITS_DEFAULTS = {
 } as const;
 
 /**
- * Success messages
- */
-export const SUCCESS_MESSAGES = {
-  /** Hello function success */
-  HELLO_SUCCESS: 'Hello function completed successfully',
-} as const;
-
-/**
  * Version defaults
  */
 export const VERSION_DEFAULTS = {
@@ -549,7 +510,6 @@ export const DEFAULTS_EXTENDED = {
   SEVERITY: SEVERITY_DEFAULTS,
   SSH_KEY: SSH_KEY_DEFAULTS,
   LIMITS: LIMITS_DEFAULTS,
-  SUCCESS: SUCCESS_MESSAGES,
   FILE: FILE_DEFAULTS,
   E2E: E2E_DEFAULTS,
   CLI_TEST: CLI_TEST_DEFAULTS,

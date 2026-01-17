@@ -7,9 +7,9 @@
 
 import type { ApiResponse } from '../../types/api';
 import type {
-  StoredProcedureName,
   ProcedureParamsMap,
   ProcedureResultsMap,
+  StoredProcedureName,
 } from '../../types/api-schema.generated';
 
 /**

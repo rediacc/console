@@ -1,0 +1,73 @@
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="500" fill="#f8f9fa" rx="10" ry="10"/>
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Rediacc Legacy Database Scaling</text>
+  
+  <!-- Legacy Database (Primary) -->
+  <rect x="300" y="80" width="200" height="80" fill="#f5e9d6" rx="10" ry="10" stroke="#e9a13d" stroke-width="2"/>
+  <text x="400" y="115" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Legacy Database</text>
+  <text x="400" y="140" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">(Write Operations)</text>
+  
+  <!-- Data Replication Arrows -->
+  <path d="M 400 160 L 200 200" stroke="#6c757d" stroke-width="2" fill="none" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  <path d="M 400 160 L 600 200" stroke="#6c757d" stroke-width="2" fill="none" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  <path d="M 400 160 L 400 200" stroke="#6c757d" stroke-width="2" fill="none" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  
+  <text x="310" y="190" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10-15 min</text>
+  <text x="310" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">sync</text>
+  
+  <text x="490" y="190" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10-15 min</text>
+  <text x="490" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">sync</text>
+  
+  <text x="440" y="190" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10-15 min</text>
+  <text x="440" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">sync</text>
+  
+  <!-- Read-Only Replicas -->
+  <rect x="100" y="220" width="200" height="80" fill="#d6ebf5" rx="10" ry="10" stroke="#5499c7" stroke-width="2"/>
+  <text x="200" y="255" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Read Replica 1</text>
+  <text x="200" y="280" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">(Read-Only)</text>
+  
+  <rect x="300" y="220" width="200" height="80" fill="#d6ebf5" rx="10" ry="10" stroke="#5499c7" stroke-width="2"/>
+  <text x="400" y="255" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Read Replica 2</text>
+  <text x="400" y="280" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">(Read-Only)</text>
+  
+  <rect x="500" y="220" width="200" height="80" fill="#d6ebf5" rx="10" ry="10" stroke="#5499c7" stroke-width="2"/>
+  <text x="600" y="255" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Read Replica 3</text>
+  <text x="600" y="280" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">(Read-Only)</text>
+  
+  <!-- Application/Query Layer -->
+  <rect x="150" y="350" width="500" height="60" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
+  <text x="400" y="385" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Query Distribution Layer</text>
+  
+  <!-- Query Arrows -->
+  <path d="M 200 350 L 200 300" stroke="#198754" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="170" y="330" font-family="Arial" font-size="12" text-anchor="middle" fill="#198754">READ</text>
+  
+  <path d="M 400 350 L 400 300" stroke="#198754" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="370" y="330" font-family="Arial" font-size="12" text-anchor="middle" fill="#198754">READ</text>
+  
+  <path d="M 600 350 L 600 300" stroke="#198754" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="570" y="330" font-family="Arial" font-size="12" text-anchor="middle" fill="#198754">READ</text>
+  
+  <path d="M 400 350 L 400 160" stroke="#dc3545" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="420" y="260" font-family="Arial" font-size="12" text-anchor="middle" fill="#dc3545">WRITE</text>
+  
+  <!-- Clients -->
+  <rect x="150" y="450" width="500" height="30" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
+  <text x="400" y="470" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">Client Applications</text>
+  
+  <!-- Client to App Arrows -->
+  <path d="M 400 450 L 400 410" stroke="#333" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- Result Box -->
+  <rect x="100" y="500" width="600" height="30" fill="#d9f2e6" rx="5" ry="5" stroke="#198754" stroke-width="1" transform="translate(0, -40)"/>
+  <text x="400" y="520" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#198754" transform="translate(0, -40)">Query Time: 55s → 7s | System Capacity: 8x Increase</text>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+    </marker>
+  </defs>
+</svg> 

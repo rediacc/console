@@ -1,7 +1,7 @@
 import { join } from 'node:path';
-import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, session, shell } from 'electron';
-import { registerIpcHandlers, cleanupIpcHandlers } from './ipc';
+import { cleanupIpcHandlers, registerIpcHandlers } from './ipc';
 import { setupProtocolHandler } from './protocol';
 import { setupAutoUpdater } from './updater/autoUpdater';
 import { WindowManager } from './windowManager';

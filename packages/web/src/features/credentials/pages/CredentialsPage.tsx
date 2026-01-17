@@ -58,7 +58,14 @@ const CredentialsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection();
+  const {
+    teams,
+    selectedTeam,
+    setSelectedTeam,
+    isLoading: teamsLoading,
+  } = useTeamSelection({
+    pageId: 'credentials',
+  });
   const {
     modalState: unifiedModalState,
     currentResource,
@@ -76,7 +83,7 @@ const CredentialsPage: React.FC = () => {
   const { execute } = useAsyncAction();
 
   const { dropdownData, repositories, repositoriesLoading, refetchRepos, machines, storages } =
-    useCredentialsData(selectedTeams);
+    useCredentialsData(selectedTeam);
 
   const createRepositoryMutation = useCreateRepository();
   const updateRepoNameMutation = useUpdateRepositoryName();
@@ -303,7 +310,7 @@ const CredentialsPage: React.FC = () => {
     if (!state?.createRepository) return;
 
     if (state.selectedTeam) {
-      setSelectedTeams([state.selectedTeam]);
+      setSelectedTeam(state.selectedTeam);
     }
 
     setTimeout(() => {
@@ -316,7 +323,7 @@ const CredentialsPage: React.FC = () => {
     }, 100);
 
     void navigate(location.pathname, { replace: true });
-  }, [location, navigate, openUnifiedModal, setSelectedTeams]);
+  }, [location, navigate, openUnifiedModal, setSelectedTeam]);
 
   const repositoryColumns = useMemo(
     () =>
@@ -338,11 +345,14 @@ const CredentialsPage: React.FC = () => {
     [auditTrace, handleDeleteRepository, openUnifiedModal, t]
   );
 
-  const hasTeamSelection = selectedTeams.length > 0;
+  const hasTeamSelection = selectedTeam !== null;
   const displayedRepositories = hasTeamSelection ? originalRepositories : [];
   const emptyDescription = hasTeamSelection
     ? t('repositories.noRepositories')
     : t('teams.selectTeamPrompt');
+
+  // Show loading when teams are being fetched OR when repositories are loading
+  const isLoading = teamsLoading || repositoriesLoading;
 
   const mobileRender = useCallback(
     (record: GetTeamRepositories_ResultSet1) => (
@@ -365,8 +375,8 @@ const CredentialsPage: React.FC = () => {
             <TeamSelector
               data-testid="resources-team-selector"
               teams={teams}
-              selectedTeams={selectedTeams}
-              onChange={setSelectedTeams}
+              selectedTeam={selectedTeam}
+              onChange={setSelectedTeam}
               loading={teamsLoading}
               placeholder={t('teams.selectTeamToView')}
             />
@@ -376,7 +386,7 @@ const CredentialsPage: React.FC = () => {
             title={
               <PageHeader title={t('credentials.title')} subtitle={t('credentials.subtitle')} />
             }
-            loading={repositoriesLoading}
+            loading={isLoading}
             data={displayedRepositories}
             columns={repositoryColumns}
             mobileRender={mobileRender}
@@ -440,7 +450,7 @@ const CredentialsPage: React.FC = () => {
         resourceType="repository"
         mode={unifiedModalState.mode}
         existingData={(unifiedModalState.data ?? currentResource) as RepoModalData | undefined}
-        teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+        teamFilter={selectedTeam ? [selectedTeam] : undefined}
         creationContext={unifiedModalState.creationContext}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}

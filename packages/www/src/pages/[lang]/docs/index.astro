@@ -1,0 +1,323 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import DocsSidebar from '../../../components/DocsSidebar.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+// DEFAULT_LANGUAGE is not used in this file
+import type { Language } from '../../../i18n/types';
+import '../../../styles/sidebar-shared.css';
+
+export async function getStaticPaths() {
+  const _allDocs = await getCollection('docs');
+
+  const paths = [];
+
+  // Generate paths for each supported language
+  for (const lang of SUPPORTED_LANGUAGES) {
+    paths.push({
+      params: { lang },
+      props: { lang },
+    });
+  }
+
+  return paths;
+}
+
+const { lang } = Astro.props as { lang: Language };
+const { t } = createTranslator(lang);
+
+// Get docs for current language, sorted by category and order
+const allDocs = await getCollection('docs');
+const docs = allDocs
+  .filter((doc) => doc.data.language === lang)
+  .sort((a, b) => {
+    const categorySort = (a.data.category || 'other').localeCompare(
+      b.data.category || 'other'
+    );
+    if (categorySort !== 0) return categorySort;
+    return (a.data.order ?? 999) - (b.data.order ?? 999);
+  });
+
+// Extract base slug helper function (removes language prefix)
+const getBaseSlug = (slug: string) => {
+  const parts = slug.split('/');
+  return parts.length > 1 ? parts[parts.length - 1] : slug;
+};
+
+// Group docs by category
+const docsByCategory = docs.reduce((acc, doc) => {
+  const category = doc.data.category || 'Other';
+  if (!acc[category]) acc[category] = [];
+  acc[category].push(doc);
+  return acc;
+}, {} as Record<string, typeof docs>);
+
+const categories = Object.keys(docsByCategory).sort();
+
+// Get the current page URL
+const currentUrl = `/${lang}/docs/`;
+---
+
+<BaseLayout lang={lang} title={t('pages.docs.title')}>
+  <div class="docs-page">
+    <DocsSidebar currentLang={lang} currentUrl={currentUrl} />
+
+    <section class="docs-content">
+      <div class="welcome-section" id="welcome">
+        <h2>{t('pages.docs.welcome')}</h2>
+        <p>
+          {t('pages.docs.welcomeDescription')}
+        </p>
+
+        <div class="quick-links" id="quick-links">
+          <div class="quick-link-card">
+            <h3>{t('pages.docs.gettingStarted')}</h3>
+            <p>{t('pages.docs.gettingStartedDesc')}</p>
+            <a href={`/${lang}/blog/getting-started-with-rediacc`} class="btn-link">{t('common.buttons.learnMore')} →</a>
+          </div>
+          <div class="quick-link-card">
+            <h3>{t('pages.docs.cliReference')}</h3>
+            <p>{t('pages.docs.cliReferenceDesc')}</p>
+            <a href={`/${lang}/docs/cli-reference`} class="btn-link">{t('common.buttons.learnMore')} →</a>
+          </div>
+          <div class="quick-link-card">
+            <h3>{t('pages.docs.queueSystem')}</h3>
+            <p>{t('pages.docs.queueSystemDesc')}</p>
+            <a href={`/${lang}/docs/queue-system`} class="btn-link">{t('common.buttons.learnMore')} →</a>
+          </div>
+        </div>
+      </div>
+
+      <section class="all-docs-section" id="all-documentation">
+        <h2>{t('pages.docs.allDocumentation')}</h2>
+        {categories.map(category => (
+          <div class="doc-category" id={category.toLowerCase().replace(/\s+/g, '-')}>
+            <h3>{category}</h3>
+            <ul class="doc-items">
+              {docsByCategory[category].map(doc => (
+                <li>
+                  <article class="doc-item">
+                    <h4>
+                      <a href={`/${lang}/docs/${getBaseSlug(doc.slug)}`}>{doc.data.title}</a>
+                    </h4>
+                    <p>{doc.data.description}</p>
+                  </article>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    </section>
+
+    <aside class="sidebar-base sidebar-toc toc-sidebar">
+      <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
+        <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
+        <ul class="sidebar-list toc-list">
+          <li class="sidebar-item toc-item toc-level-2">
+            <a href="#welcome" class="sidebar-link toc-link">{t('pages.docs.welcome')}</a>
+          </li>
+          <li class="sidebar-item toc-item toc-level-2">
+            <a href="#quick-links" class="sidebar-link toc-link">Quick Links</a>
+          </li>
+          <li class="sidebar-item toc-item toc-level-2">
+            <a href="#all-documentation" class="sidebar-link toc-link">{t('pages.docs.allDocumentation')}</a>
+          </li>
+          {categories.map(category => (
+            <li class="sidebar-item toc-item toc-level-3">
+              <a href={`#${category.toLowerCase().replace(/\s+/g, '-')}`} class="sidebar-link toc-link">
+                {category} <span class="doc-count">({docsByCategory[category].length})</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </aside>
+  </div>
+
+  <style>
+    .docs-page {
+      display: grid;
+      grid-template-columns: 250px 1fr 250px;
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: calc(3.5rem + 2rem) 1rem 2rem 1rem; /* Account for fixed nav height (3.5rem) + spacing */
+    }
+
+
+    .docs-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+      grid-column: 2; /* Stay in middle column */
+    }
+
+    .welcome-section h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .welcome-section p {
+      font-size: 1.0625rem;
+      color: #666;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .quick-link-card {
+      padding: 1.5rem;
+      background-color: #F5F5F7;
+      border-radius: 8px;
+      border-left: 4px solid #1A1A1A;
+    }
+
+    .quick-link-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.125rem;
+    }
+
+    .quick-link-card p {
+      margin: 0.5rem 0;
+      color: #666;
+      font-size: 0.9375rem;
+    }
+
+    .btn-link {
+      display: inline-block;
+      margin-top: 1rem;
+      color: #1A1A1A;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .btn-link:hover {
+      color: #000000;
+    }
+
+    .all-docs-section h2 {
+      font-size: 1.75rem;
+      margin: 2rem 0 1.5rem 0;
+      border-top: 2px solid #e0e0e0;
+      padding-top: 1rem;
+    }
+
+    .doc-category {
+      margin-bottom: 2rem;
+    }
+
+    .doc-category h3 {
+      font-size: 1.25rem;
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .doc-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .doc-item {
+      padding: 1rem;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      border-left: 3px solid #1A1A1A;
+      transition: background-color 0.2s;
+    }
+
+    .doc-item:hover {
+      background-color: #F5F5F7;
+    }
+
+    .doc-item h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.0625rem;
+    }
+
+    .doc-item h4 a {
+      color: #1A1A1A;
+      text-decoration: none;
+    }
+
+    .doc-item h4 a:hover {
+      color: #000000;
+      text-decoration: underline;
+    }
+
+    .doc-item p {
+      margin: 0;
+      color: #666;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* TOC Sidebar (uses shared styles from sidebar-shared.css) */
+    .toc-sidebar {
+      /* All base styles inherited from sidebar-base */
+    }
+
+    .toc-nav {
+      /* All nav styles inherited from sidebar-nav and sidebar-nav-with-accent */
+    }
+
+    .doc-count {
+      color: #666;
+      font-size: 0.85rem;
+      font-weight: normal;
+    }
+
+    /* Add scroll offset for anchor links */
+    #welcome,
+    #quick-links,
+    #all-documentation,
+    .doc-category {
+      scroll-margin-top: calc(3.5rem + 2rem);
+    }
+
+    @media (max-width: 1200px) {
+      .toc-sidebar {
+        display: none;
+      }
+    }
+
+    @media (max-width: 1200px) {
+      .docs-page {
+        grid-template-columns: 250px 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .docs-page {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1rem 0.5rem;
+      }
+
+      .docs-nav {
+        position: static;
+        top: auto;
+      }
+
+      .docs-header h1 {
+        font-size: 1.75rem;
+      }
+
+      .quick-links {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</BaseLayout>

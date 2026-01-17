@@ -2,7 +2,7 @@
  * Machine Parsers
  */
 
-import { extractPrimaryOrSecondary, extractFirstByIndex } from './base';
+import { extractFirstByIndex, extractPrimaryOrSecondary } from './base';
 import type { GetTeamMachines_ResultSet1 } from '../../types';
 import type { ApiResponse } from '../../types/api';
 

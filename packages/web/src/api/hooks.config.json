@@ -389,8 +389,7 @@
       "async": true,
       "transform": {
         "newUserEmail": "input.email",
-        "newUserHash": "await hashPassword(input.password)",
-        "activationCode": "generateActivationCode()"
+        "newUserHash": "await hashPassword(input.password)"
       }
     },
     "CreateTeam": {

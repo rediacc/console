@@ -1,0 +1,26 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    network_mode: "${NETWORK_MODE:-bridge}"
+    hostname: ${GITLAB_HOSTNAME}
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://${GITLAB_HOSTNAME}:${GITLAB_HTTP_PORT}'
+        gitlab_rails['gitlab_shell_ssh_port'] = ${GITLAB_SSH_PORT}
+        ${GITLAB_OMNIBUS_CONFIG}
+    ports:
+      - "${GITLAB_HTTP_PORT}:80"
+      - "${GITLAB_HTTPS_PORT}:443"
+      - "${GITLAB_SSH_PORT}:22"
+    volumes:
+      - ./config:/etc/gitlab
+      - ./logs:/var/log/gitlab
+      - ./data:/var/opt/gitlab
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 6
+      start_period: 180s

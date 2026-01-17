@@ -1,11 +1,11 @@
 import { Command } from 'commander';
-import { parseGetTeamStorages, parseGetOrganizationVaults } from '@rediacc/shared/api';
+import { parseGetOrganizationVaults, parseGetTeamStorages } from '@rediacc/shared/api';
 import type {
   CreateStorageParams,
   DeleteStorageParams,
+  GetOrganizationVaults_ResultSet1,
   UpdateStorageNameParams,
   UpdateStorageVaultParams,
-  GetOrganizationVaults_ResultSet1,
 } from '@rediacc/shared/types';
 import { typedApi } from '../services/api.js';
 import { createResourceCommands } from '../utils/commandFactory.js';

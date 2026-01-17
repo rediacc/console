@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_use_renet() {
+  [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null
+}
+_compose() {
+  if _use_renet; then
+    renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+# n8n Workflow Automation Lifecycle Functions
+
+prep() {
+  echo "Pulling n8n image..."
+  docker pull n8nio/n8n:latest
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    echo "Failed to pull image"
+    return $exit_code
+  fi
+
+  echo "Creating data directory..."
+  mkdir -p n8n-data
+  return $?
+}
+
+up() {
+  echo "Starting n8n..."
+
+  # Auto-generate encryption key on first run
+  local key_file="./n8n-data/encryption-key.txt"
+
+  if [ ! -f "$key_file" ]; then
+    echo "First run detected - generating encryption key..."
+    echo ""
+
+    # Generate random 32-character encryption key
+    local encryption_key=$(openssl rand -hex 16)
+
+    # Store encryption key
+    echo "N8N_ENCRYPTION_KEY=${encryption_key}" > "$key_file"
+    chmod 600 "$key_file"
+
+    # Export for docker compose
+    export N8N_ENCRYPTION_KEY="$encryption_key"
+
+    echo "✅ Encryption key generated and saved!"
+    echo ""
+    echo "📁 Key file: ${key_file}"
+    echo "   Encryption Key: ${encryption_key}"
+    echo ""
+    echo "⚠️  IMPORTANT: Keep this file secure - required for credential decryption!"
+    echo ""
+  else
+    echo "Loading existing encryption key..."
+    source "$key_file"
+    export N8N_ENCRYPTION_KEY
+    echo ""
+  fi
+
+  _compose up -d
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    echo "Failed to start n8n"
+    return $exit_code
+  fi
+
+  echo ""
+  echo "n8n started successfully!"
+  echo ""
+  echo "Access the web interface:"
+  echo "  1. Run: docker compose ps"
+  echo "  2. Find the mapped port for ${N8N_PORT:-5678}/tcp"
+  echo "  3. Open: http://localhost:<mapped-port>"
+  echo ""
+  echo "Default credentials:"
+  echo "  Username: ${N8N_BASIC_AUTH_USER:-admin}"
+  echo "  Password: ${N8N_BASIC_AUTH_PASSWORD:-changeme}"
+  echo ""
+  echo "⚠️  IMPORTANT: Change the default password in .env and restart!"
+  echo ""
+  echo "Check logs with: docker compose logs -f"
+  echo "Official docs: https://docs.n8n.io/"
+  echo ""
+
+  return 0
+}
+
+down() {
+  echo "Stopping n8n and cleaning up..."
+  _compose down -v
+  return $?
+}

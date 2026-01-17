@@ -1,17 +1,11 @@
 import {
-  validateSize,
   validateNetworkId,
+  validateSize,
   validateSSHPrivateKey,
 } from '@rediacc/shared/queue-vault';
 import type { Rule } from 'antd/es/form';
 
 export { isValidGuid } from '@rediacc/shared/validation';
-
-// Used by UsersPage
-export interface CreateUserFormValues {
-  newUserEmail: string;
-  newUserPassword: string;
-}
 
 // Validation rules
 export const validationRules = {

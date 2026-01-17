@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "description": "CI matrix configurations for GitHub Actions and GitLab CI",
+
+  "quality": {
+    "jobs": ["versions", "lint", "format", "i18n", "types", "security"],
+    "runner": "ubuntu-slim"
+  },
+
+  "e2e": {
+    "browsers": {
+      "projects": ["chromium", "firefox", "webkit", "msedge"],
+      "runner": "ubuntu-latest",
+      "timeout": 90,
+      "browsers_to_install": ["chromium", "firefox", "webkit", "msedge"]
+    },
+    "resolutions": {
+      "projects": ["resolution-1920x1080", "resolution-1366x768", "resolution-1536x864"],
+      "runner": "ubuntu-latest",
+      "timeout": 90,
+      "browsers_to_install": ["chromium"]
+    },
+    "devices": {
+      "projects": ["galaxy-s24", "galaxy-tab-s9", "iphone-15-pro-max", "ipad-pro-11"],
+      "runner": "ubuntu-latest",
+      "timeout": 90,
+      "browsers_to_install": ["chromium", "webkit"]
+    }
+  },
+
+  "electron": {
+    "timeout": 60,
+    "platforms": [
+      {
+        "os": "ubuntu-latest",
+        "project": "electron-linux-x64",
+        "install_cmd": "npx playwright install --with-deps chromium",
+        "needs_display": true
+      },
+      {
+        "os": "ubuntu-24.04-arm",
+        "project": "electron-linux-arm64",
+        "install_cmd": "npx playwright install --with-deps chromium",
+        "needs_display": true
+      },
+      {
+        "os": "macos-15-intel",
+        "project": "electron-macos-x64",
+        "install_cmd": "npx playwright install chromium",
+        "needs_display": false
+      },
+      {
+        "os": "macos-latest",
+        "project": "electron-macos-arm64",
+        "install_cmd": "npx playwright install chromium",
+        "needs_display": false
+      },
+      {
+        "os": "windows-latest",
+        "project": "electron-windows-x64",
+        "install_cmd": "npx playwright install chromium",
+        "needs_display": false
+      },
+      {
+        "os": "windows-11-arm",
+        "project": "electron-windows-arm64",
+        "install_cmd": "npx playwright install chromium",
+        "needs_display": false
+      }
+    ]
+  },
+
+  "cli": {
+    "timeout": 120,
+    "platforms": [
+      {"os": "ubuntu-latest", "platform": "Linux"},
+      {"os": "windows-latest", "platform": "Windows"},
+      {"os": "macos-latest", "platform": "macOS"}
+    ]
+  },
+
+  "vscode": {
+    "timeout": 15,
+    "platforms": ["ubuntu-latest", "macos-latest", "windows-latest"]
+  },
+
+  "desktop": {
+    "timeout": 30,
+    "platforms": [
+      {"os": "ubuntu-latest", "platform": "linux", "arch": "x64"},
+      {"os": "ubuntu-24.04-arm", "platform": "linux", "arch": "arm64"},
+      {"os": "macos-latest", "platform": "mac", "arch": "arm64"},
+      {"os": "macos-15-intel", "platform": "mac", "arch": "x64"},
+      {"os": "windows-latest", "platform": "win", "arch": "x64"},
+      {"os": "windows-11-arm", "platform": "win", "arch": "arm64"}
+    ]
+  },
+
+  "web": {
+    "build_types": ["DEBUG", "RELEASE"],
+    "runner": "ubuntu-slim"
+  },
+
+  "completion_signals": {
+    "cli": ["Linux", "Windows", "macOS"],
+    "e2e_browsers": ["chromium", "firefox", "webkit", "msedge"],
+    "e2e_resolutions": ["resolution-1920x1080", "resolution-1366x768", "resolution-1536x864"],
+    "e2e_devices": ["galaxy-s24", "galaxy-tab-s9", "iphone-15-pro-max", "ipad-pro-11"],
+    "e2e_electron": [
+      "electron-linux-x64",
+      "electron-linux-arm64",
+      "electron-macos-x64",
+      "electron-macos-arm64",
+      "electron-windows-x64",
+      "electron-windows-arm64"
+    ]
+  },
+
+  "timeouts": {
+    "tunnel_download": 1500,
+    "tunnel_verify": 50,
+    "tunnel_verify_interval": 5,
+    "completion_wait": 7200
+  },
+
+  "artifacts": {
+    "retention_days": 3
+  }
+}

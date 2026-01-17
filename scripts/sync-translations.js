@@ -47,7 +47,8 @@ function mergeTranslations(target, source) {
       result[key] = value;
     } else {
       const sourceIsObject = typeof value === 'object' && value !== null && !Array.isArray(value);
-      const targetIsObject = typeof result[key] === 'object' && result[key] !== null && !Array.isArray(result[key]);
+      const targetIsObject =
+        typeof result[key] === 'object' && result[key] !== null && !Array.isArray(result[key]);
 
       if (sourceIsObject && targetIsObject) {
         // Both are objects - merge recursively
@@ -117,17 +118,19 @@ async function main() {
   console.log(`Locales directory: ${LOCALES_DIR}\n`);
 
   // Get all language directories
-  const languages = fs.readdirSync(LOCALES_DIR, { withFileTypes: true })
-    .filter(d => d.isDirectory() && d.name !== SOURCE_LANG)
-    .map(d => d.name);
+  const languages = fs
+    .readdirSync(LOCALES_DIR, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name !== SOURCE_LANG)
+    .map((d) => d.name);
 
   console.log(`Target languages: ${languages.join(', ')}\n`);
 
   // Get all English locale files
   const englishDir = path.join(LOCALES_DIR, SOURCE_LANG);
-  const namespaces = fs.readdirSync(englishDir)
-    .filter(f => f.endsWith('.json'))
-    .map(f => f.replace('.json', ''));
+  const namespaces = fs
+    .readdirSync(englishDir)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.replace('.json', ''));
 
   console.log(`Namespaces: ${namespaces.join(', ')}\n`);
   console.log('─'.repeat(60));
@@ -147,11 +150,8 @@ async function main() {
       const langFile = path.join(langDir, `${namespace}.json`);
 
       let langContent = {};
-      let existed = false;
-
       if (fs.existsSync(langFile)) {
         langContent = JSON.parse(fs.readFileSync(langFile, 'utf-8'));
-        existed = true;
       }
 
       const beforeCount = countKeys(langContent);

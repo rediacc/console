@@ -19,12 +19,13 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Generate a 6-digit activation code.
- * Used for: CreateNewUser
+ * Fixed activation code for ORGANIZATION registration only.
+ * Used for: RegistrationModal (organization signup via CreateNewOrganization)
+ *
+ * NOTE: This is NOT used for CreateNewUser - in-org users are auto-activated.
+ * Format: 6 alphanumeric characters (A-Z, 0-9) - matches CI_MODE test code.
  */
-export function generateActivationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
+export const ACTIVATION_CODE = 'AAA111';
 
 /**
  * Ensure vault content is valid JSON, defaulting to empty object.

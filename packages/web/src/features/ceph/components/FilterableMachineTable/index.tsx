@@ -11,7 +11,7 @@ import { DesktopOutlined } from '@/utils/optimizedIcons';
 import { buildMachineTableColumns } from './columns';
 import type { TableRowSelection } from 'antd/es/table/interface';
 
-export interface FilterableMachineTableProps {
+interface FilterableMachineTableProps {
   machines: Machine[];
   loading?: boolean;
   selectedRowKeys?: string[];

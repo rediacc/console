@@ -1,5 +1,5 @@
 import { FUNCTION_REQUIREMENTS, isBridgeFunction } from '../data/functionRequirements';
-import { safeValidateFunctionParams, getValidationErrors } from '../data/functions.schema';
+import { getValidationErrors, safeValidateFunctionParams } from '../data/functions.schema';
 import { minifyJSON } from '../utils/json';
 import { getParamArray, getParamValue, isBase64, validateMachineVault } from '../utils/validation';
 import { assertPublicBridgeFunction } from '../validation';

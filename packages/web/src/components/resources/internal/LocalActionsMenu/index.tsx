@@ -12,7 +12,7 @@ import { LocalCommandModal } from '@/components/resources/internal/LocalCommandM
 import { PipInstallationModal } from '@/components/resources/internal/PipInstallationModal';
 import { useMessage } from '@/hooks';
 import { useDialogState } from '@/hooks/useDialogState';
-import { useMachineCredentials, type MachineSSHCredentials } from '@/hooks/useMachineCredentials';
+import { type MachineSSHCredentials, useMachineCredentials } from '@/hooks/useMachineCredentials';
 import type { ProtocolAction } from '@/services/protocolUrlService';
 import type { RootState } from '@/store/store';
 import type { PluginContainer } from '@/types';
@@ -25,10 +25,10 @@ import {
 } from '@/utils/optimizedIcons';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
-  handleElectronFlow,
-  handleWebProtocolFlow,
   type ContainerMenuAction,
   type ContainerModalData,
+  handleElectronFlow,
+  handleWebProtocolFlow,
 } from './helpers';
 import { useVSCodeSelection } from './hooks/useVSCodeSelection';
 import type { MenuProps } from 'antd';

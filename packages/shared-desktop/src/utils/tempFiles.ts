@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { chmod, mkdtemp, rm, writeFile, mkdir, readFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getTempPath, getConfigPath, getPlatform } from './platform.js';
+import { getConfigPath, getPlatform, getTempPath } from './platform.js';
 
 /**
  * Generates a random file name with optional prefix and extension

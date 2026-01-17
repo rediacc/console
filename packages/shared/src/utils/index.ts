@@ -3,37 +3,29 @@
  * Platform-agnostic functions that work in both web and CLI environments
  */
 
-// Property normalization
-export { normalizeToString, normalizeToNumber, normalizeToBoolean } from './normalize';
-
 // CSV utilities
-export { escapeCSVValue, buildCSVContent } from './csv';
-
+export { buildCSVContent, escapeCSVValue } from './csv';
+// Text formatting
+export { unescapeLogOutput } from './format';
+export type { LogLevel, ParsedLogLine } from './logParser';
+// Log parsing
+export { parseLogLevel, parseLogLine, parseLogOutput } from './logParser';
+// Property normalization
+export { normalizeToBoolean, normalizeToNumber, normalizeToString } from './normalize';
 // Progress parsing
 export { extractMostRecentProgress, extractProgressMessage } from './progress';
-
+// Search utilities
+export { searchInFields } from './search';
+// Size parsing utilities
+export { calculateResourcePercent, parseMemorySize } from './size';
 // Sorting utilities
 export {
   compareValues,
-  createSorter,
-  createDateSorter,
-  createCustomSorter,
   createArrayLengthSorter,
+  createCustomSorter,
+  createDateSorter,
+  createSorter,
 } from './sorting';
-
-// Size parsing utilities
-export { parseMemorySize, calculateResourcePercent } from './size';
-
-// Search utilities
-export { searchInFields } from './search';
-
-// Text formatting
-export { unescapeLogOutput } from './format';
-
-// Log parsing
-export { parseLogLine, parseLogOutput, parseLogLevel } from './logParser';
-export type { ParsedLogLine, LogLevel } from './logParser';
-
+export type { SSHTestResult } from './sshTestResult';
 // SSH test parsing
 export { parseSshTestResult } from './sshTestResult';
-export type { SSHTestResult } from './sshTestResult';

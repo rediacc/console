@@ -916,6 +916,7 @@
   },
   "errors": {
     "activationFailed": "Falló la activación",
+    "tfaVerificationFailed": "Falló la verificación TFA",
     "authFailed": "Falló la autenticación",
     "authRequired": "Se requiere autenticación. Ejecute: rdc login",
     "bridgeRequired": "Nombre de puente requerido. Use --bridge o establezca contexto.",
@@ -996,8 +997,8 @@
     "validationError": "Error de validación: {{message}}",
     "vaultDataRequired": "Datos de bóveda requeridos. Use --vault <json> o redirija JSON vía stdin.",
     "vaultVersionRequired": "Versión de bóveda requerida. Use --vault-version <n>.",
-    "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
-    "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}."
+    "unknownCommand": "Comando desconocido \"{{command}}\". Comandos disponibles: {{available}}.",
+    "unknownSubcommand": "Subcomando desconocido \"{{command}}\". Subcomandos {{parent}} disponibles: {{available}}."
   },
   "options": {
     "activationCode": "Código de activación del correo electrónico",

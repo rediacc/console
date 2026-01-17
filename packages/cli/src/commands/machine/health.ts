@@ -2,8 +2,8 @@ import { Command } from 'commander';
 import { parseGetTeamMachines } from '@rediacc/shared/api';
 import {
   getMachineHealth,
-  type MachineWithVaultStatus,
   type MachineHealthResult,
+  type MachineWithVaultStatus,
 } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';

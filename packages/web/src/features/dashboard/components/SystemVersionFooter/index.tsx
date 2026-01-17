@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ClockCircleOutlined, CloudServerOutlined, DesktopOutlined } from '@ant-design/icons';
-import { Tag, Tooltip, Typography, Flex } from 'antd';
+import { Flex, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useApiHealth } from '@/api/hooks-system';
 import { versionService } from '@/services/versionService';

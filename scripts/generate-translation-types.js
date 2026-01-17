@@ -20,7 +20,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Configuration
 const WEB_LOCALES_DIR = path.join(__dirname, '../packages/web/src/i18n/locales/en');
 const SHARED_LOCALES_DIR = path.join(__dirname, '../packages/shared/src/i18n/locales/en');
-const OUTPUT_FILE = path.join(__dirname, '../packages/shared/src/i18n/translation-keys.generated.ts');
+const OUTPUT_FILE = path.join(
+  __dirname,
+  '../packages/shared/src/i18n/translation-keys.generated.ts'
+);
 
 /**
  * Recursively flatten nested object to dot-notation keys
@@ -49,7 +52,7 @@ function flattenKeys(obj, prefix = '') {
 function toPascalCase(str) {
   return str
     .split(/[-_]/)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');
 }
 
@@ -65,7 +68,7 @@ function generateNamespaceType(namespace, keys) {
     return `export type ${typeName} = never;`;
   }
   const sortedKeys = [...keys].sort();
-  const quotedKeys = sortedKeys.map(k => `  | '${k}'`).join('\n');
+  const quotedKeys = sortedKeys.map((k) => `  | '${k}'`).join('\n');
   return `export type ${typeName} =\n${quotedKeys};`;
 }
 
@@ -178,7 +181,9 @@ function generate() {
   lines.push('/**');
   lines.push(' * List of all translation namespaces');
   lines.push(' */');
-  lines.push(`export const TRANSLATION_NAMESPACES = [${namespaceNames.map(n => `'${n}'`).join(', ')}] as const;`);
+  lines.push(
+    `export const TRANSLATION_NAMESPACES = [${namespaceNames.map((n) => `'${n}'`).join(', ')}] as const;`
+  );
   lines.push('');
   lines.push('export type TranslationNamespace = typeof TRANSLATION_NAMESPACES[number];');
   lines.push('');

@@ -7,8 +7,7 @@ import { SizedModal } from '@/components/common/SizedModal';
 import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
-import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import { WarningOutlined } from '@/utils/optimizedIcons';
+import { CloudServerOutlined, WarningOutlined } from '@/utils/optimizedIcons';
 import type { ColumnsType } from 'antd/es/table';
 
 interface RemoveFromClusterModalProps {

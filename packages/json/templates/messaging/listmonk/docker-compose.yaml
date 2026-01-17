@@ -1,0 +1,57 @@
+services:
+
+  listmonk:
+    image: listmonk/listmonk:latest
+    container_name: listmonk
+    restart: always
+    networks:
+      - listmonk_network
+    ports:
+      - "${LISTMONK_PORT:-9000}"
+    command: sh -c "./listmonk --install --idempotent --yes && ./listmonk"
+    environment:
+      - TZ=${TZ:-Etc/UTC}
+      - LISTMONK_app__address=0.0.0.0:9000
+      - LISTMONK_db__host=listmonk_db
+      - LISTMONK_db__port=5432
+      - LISTMONK_db__user=${POSTGRES_USER:-listmonk}
+      - LISTMONK_db__password=${POSTGRES_PASSWORD:-listmonk}
+      - LISTMONK_db__database=${POSTGRES_DB:-listmonk}
+      - LISTMONK_db__ssl_mode=disable
+      - LISTMONK_db__max_open=25
+      - LISTMONK_db__max_idle=25
+      - LISTMONK_db__max_lifetime=300s
+    volumes:
+      - ./uploads:/listmonk/uploads
+    depends_on:
+      listmonk_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:9000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  listmonk_db:
+    image: postgres:17-alpine
+    container_name: listmonk_db
+    restart: always
+    networks:
+      - listmonk_network
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-listmonk}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-listmonk}
+      - POSTGRES_DB=${POSTGRES_DB:-listmonk}
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-listmonk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  listmonk_network:
+    driver: bridge

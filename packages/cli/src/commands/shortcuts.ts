@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
+  getValidationErrors,
   isBridgeFunction,
   safeValidateFunctionParams,
-  getValidationErrors,
 } from '@rediacc/shared/queue-vault';
 import {
   type CreateActionOptions,
