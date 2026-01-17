@@ -9,9 +9,9 @@
  *   owner/repo@<max-version # reason
  *
  * Usage:
- *   node scripts/check-actions.js           # Check for outdated actions
- *   node scripts/check-actions.js --verbose # Show all actions
- *   node scripts/check-actions.js --help    # Show help
+ *   npx tsx scripts/check-actions.ts           # Check for outdated actions
+ *   npx tsx scripts/check-actions.ts --verbose # Show all actions
+ *   npx tsx scripts/check-actions.ts --help    # Show help
  *
  * Exit codes:
  *   0 - All actions are up-to-date (or allowlisted)
@@ -22,20 +22,12 @@ import fs from 'node:fs';
 import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
 const WORKFLOWS_DIR = path.join(CONSOLE_ROOT, '.github', 'workflows');
 const ALLOWLIST_FILE = path.join(CONSOLE_ROOT, '.actions-outdated-allowlist');
-
-// ANSI colors (disabled if not a terminal)
-const isTTY = process.stdout.isTTY;
-const RED = isTTY ? '\x1b[31m' : '';
-const GREEN = isTTY ? '\x1b[32m' : '';
-const YELLOW = isTTY ? '\x1b[33m' : '';
-const BLUE = isTTY ? '\x1b[34m' : '';
-const DIM = isTTY ? '\x1b[2m' : '';
-const NC = isTTY ? '\x1b[0m' : '';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -43,12 +35,49 @@ const showHelp = args.includes('--help') || args.includes('-h');
 const verboseMode = args.includes('--verbose') || args.includes('-v');
 
 // GitHub token from environment (optional, increases rate limit)
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+
+interface ParsedVersion {
+  major: number;
+  minor: number;
+  patch: number;
+  full: string;
+}
+
+interface ActionLocation {
+  file: string;
+  line: number;
+}
+
+interface ActionInfo {
+  version: string | null;
+  sha: string | null;
+  locations: ActionLocation[];
+}
+
+interface AllowlistEntry {
+  constraint: string;
+  reason: string;
+}
+
+interface GitHubRelease {
+  tag: string;
+  url: string;
+  targetCommit: string;
+}
+
+interface ActionResult extends ActionInfo {
+  name: string;
+  latest?: string;
+  releaseUrl?: string;
+  constraint?: string;
+  reason?: string;
+}
 
 /**
  * Parse a version string (e.g., "v5", "v5.1.0") into components
  */
-function parseVersion(version) {
+function parseVersion(version: string): ParsedVersion | null {
   if (!version) return null;
 
   // Remove 'v' prefix if present
@@ -56,7 +85,7 @@ function parseVersion(version) {
 
   // Handle simple major version (e.g., "5")
   if (/^\d+$/.test(v)) {
-    return { major: parseInt(v, 10), minor: 0, patch: 0, full: version };
+    return { major: Number.parseInt(v, 10), minor: 0, patch: 0, full: version };
   }
 
   // Handle semver (e.g., "5.1.0")
@@ -64,9 +93,9 @@ function parseVersion(version) {
   if (!match) return null;
 
   return {
-    major: parseInt(match[1], 10),
-    minor: match[2] ? parseInt(match[2], 10) : 0,
-    patch: match[3] ? parseInt(match[3], 10) : 0,
+    major: Number.parseInt(match[1], 10),
+    minor: match[2] ? Number.parseInt(match[2], 10) : 0,
+    patch: match[3] ? Number.parseInt(match[3], 10) : 0,
     full: version,
   };
 }
@@ -77,7 +106,7 @@ function parseVersion(version) {
  * If the current version is a major-only version (e.g., "v3"), only compare major versions.
  * This handles floating major version tags used in GitHub Actions.
  */
-function compareVersions(a, b) {
+function compareVersions(a: string, b: string): number {
   const va = parseVersion(a);
   const vb = parseVersion(b);
 
@@ -101,7 +130,7 @@ function compareVersions(a, b) {
 /**
  * Check if version satisfies constraint (e.g., "<v3")
  */
-function satisfiesConstraint(version, constraint) {
+function satisfiesConstraint(version: string, constraint: string): boolean {
   if (!constraint.startsWith('<')) {
     console.error(`Invalid constraint format: ${constraint} (must start with '<')`);
     return false;
@@ -114,8 +143,8 @@ function satisfiesConstraint(version, constraint) {
 /**
  * Load and parse the allowlist file
  */
-function loadAllowlist() {
-  const allowlist = new Map();
+function loadAllowlist(): Map<string, AllowlistEntry> {
+  const allowlist = new Map<string, AllowlistEntry>();
 
   if (!fs.existsSync(ALLOWLIST_FILE)) {
     return allowlist;
@@ -161,8 +190,8 @@ function loadAllowlist() {
 /**
  * Parse workflow files and extract action references
  */
-function parseWorkflowFiles() {
-  const actions = new Map(); // action name -> { version, sha, locations: [...] }
+function parseWorkflowFiles(): Map<string, ActionInfo> {
+  const actions = new Map<string, ActionInfo>();
 
   if (!fs.existsSync(WORKFLOWS_DIR)) {
     console.error(`Workflows directory not found: ${WORKFLOWS_DIR}`);
@@ -198,8 +227,8 @@ function parseWorkflowFiles() {
       //   owner/repo@sha  # v5
       //   owner/repo@v5
       //   owner/repo@v5.1.0
-      let version = null;
-      let sha = null;
+      let version: string | null = null;
+      let sha: string | null = null;
 
       // Check if ref looks like a SHA (40 hex chars)
       if (/^[a-f0-9]{40}$/i.test(ref)) {
@@ -220,10 +249,10 @@ function parseWorkflowFiles() {
         version = ref;
       }
 
-      const location = { file, line: lineNum };
+      const location: ActionLocation = { file, line: lineNum };
 
       if (actions.has(actionName)) {
-        const existing = actions.get(actionName);
+        const existing = actions.get(actionName)!;
         existing.locations.push(location);
       } else {
         actions.set(actionName, {
@@ -241,11 +270,11 @@ function parseWorkflowFiles() {
 /**
  * Fetch latest release for an action from GitHub API
  */
-async function fetchLatestRelease(owner, repo) {
+async function fetchLatestRelease(owner: string, repo: string): Promise<GitHubRelease | null> {
   return new Promise((resolve) => {
     const url = `/repos/${owner}/${repo}/releases/latest`;
 
-    const options = {
+    const options: https.RequestOptions = {
       hostname: 'api.github.com',
       path: url,
       method: 'GET',
@@ -257,20 +286,27 @@ async function fetchLatestRelease(owner, repo) {
     };
 
     if (GITHUB_TOKEN) {
-      options.headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
+      options.headers = {
+        ...options.headers,
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+      };
     }
 
     const req = https.request(options, (res) => {
       let data = '';
 
-      res.on('data', (chunk) => {
-        data += chunk;
+      res.on('data', (chunk: Buffer) => {
+        data += chunk.toString();
       });
 
       res.on('end', () => {
         if (res.statusCode === 200) {
           try {
-            const json = JSON.parse(data);
+            const json = JSON.parse(data) as {
+              tag_name: string;
+              html_url: string;
+              target_commitish: string;
+            };
             resolve({
               tag: json.tag_name,
               url: json.html_url,
@@ -310,9 +346,11 @@ async function fetchLatestRelease(owner, repo) {
 /**
  * Fetch latest releases for multiple actions in parallel
  */
-async function fetchLatestReleases(actions) {
-  const results = new Map();
-  const promises = [];
+async function fetchLatestReleases(
+  actions: Map<string, ActionInfo>
+): Promise<Map<string, GitHubRelease | null>> {
+  const results = new Map<string, GitHubRelease | null>();
+  const promises: Promise<void>[] = [];
 
   for (const [actionName] of actions) {
     const [owner, repo] = actionName.split('/');
@@ -330,12 +368,12 @@ async function fetchLatestReleases(actions) {
 /**
  * Show help message
  */
-function showHelpMessage() {
+function showHelpMessage(): void {
   console.log(`
-${BLUE}check-actions.js${NC} - GitHub Actions version enforcement
+${BLUE}check-actions.ts${NC} - GitHub Actions version enforcement
 
 ${YELLOW}USAGE${NC}
-  node scripts/check-actions.js [OPTIONS]
+  npx tsx scripts/check-actions.ts [OPTIONS]
 
 ${YELLOW}OPTIONS${NC}
   --verbose, -v  Show all actions including up-to-date ones
@@ -353,17 +391,17 @@ ${YELLOW}ALLOWLIST FORMAT${NC}
   owner/repo@<max-version # reason
 
 ${YELLOW}EXAMPLES${NC}
-  node scripts/check-actions.js           # Check for outdated actions
-  node scripts/check-actions.js --verbose # Show all actions
-  npm run check:actions                   # Via npm script
-  ./go quality actions                    # Via go script
+  npx tsx scripts/check-actions.ts           # Check for outdated actions
+  npx tsx scripts/check-actions.ts --verbose # Show all actions
+  npm run check:actions                      # Via npm script
+  ./go quality actions                       # Via go script
 `);
 }
 
 /**
  * Main check function
  */
-async function checkActions() {
+async function checkActions(): Promise<void> {
   if (showHelp) {
     showHelpMessage();
     process.exit(0);
@@ -383,11 +421,11 @@ async function checkActions() {
 
   const latestReleases = await fetchLatestReleases(actions);
 
-  const mustUpgrade = [];
-  const constraintExceeded = [];
-  const allowed = [];
-  const upToDate = [];
-  const unknown = [];
+  const mustUpgrade: ActionResult[] = [];
+  const constraintExceeded: ActionResult[] = [];
+  const allowed: ActionResult[] = [];
+  const upToDate: ActionResult[] = [];
+  const unknown: ActionResult[] = [];
 
   for (const [actionName, info] of actions) {
     const release = latestReleases.get(actionName);
@@ -505,7 +543,7 @@ async function checkActions() {
   if (unknown.length > 0 && verboseMode) {
     console.log(`${DIM}Unknown actions (${unknown.length}):${NC}\n`);
     for (const action of unknown) {
-      console.log(`  ${action.name}: ${action.version || 'unknown'}`);
+      console.log(`  ${action.name}: ${action.version ?? 'unknown'}`);
       console.log(`    Could not fetch latest release (may not use GitHub Releases)`);
       console.log(`    Files: ${action.locations.map((l) => `${l.file}:${l.line}`).join(', ')}`);
     }
@@ -525,7 +563,7 @@ async function checkActions() {
     process.exit(1);
   }
 
-  const summary = [];
+  const summary: string[] = [];
   if (upToDate.length > 0) summary.push(`${upToDate.length} up-to-date`);
   if (allowed.length > 0) summary.push(`${allowed.length} allowlisted`);
   if (unknown.length > 0) summary.push(`${unknown.length} unknown`);

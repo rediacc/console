@@ -13,7 +13,7 @@
  * 6. Key order consistency: Keys appear in same order across language versions
  *
  * Usage:
- *   node scripts/check-docs-inline-translations.js
+ *   npx tsx scripts/check-docs-inline-translations.ts
  *
  * Exit codes:
  *   0 - All inline translation keys are valid
@@ -30,21 +30,33 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Configuration
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
 const WEB_LOCALES = path.join(__dirname, '../packages/web/src/i18n/locales');
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
 const KEY_PATTERN = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
+
+type Language = (typeof LANGUAGES)[number];
+
+interface LangVersionInfo {
+  file: string;
+  keys: string[];
+}
+
+type DocGroup = Record<Language, LangVersionInfo>;
 
 /**
  * Resolve a nested key path in a translation object
  */
-function resolveKeyPath(translations, keyPath) {
+function resolveKeyPath(
+  translations: Record<string, unknown>,
+  keyPath: string
+): unknown {
   const keys = keyPath.split('.');
-  let current = translations;
+  let current: unknown = translations;
 
   for (const key of keys) {
     if (current === null || current === undefined || typeof current !== 'object') {
       return undefined;
     }
-    current = current[key];
+    current = (current as Record<string, unknown>)[key];
   }
 
   return current;
@@ -53,7 +65,11 @@ function resolveKeyPath(translations, keyPath) {
 /**
  * CHECK 1: Validate each key exists in web locales (all 9 languages)
  */
-function validateKeyInWebLocales(namespace, keyPath, lang) {
+function validateKeyInWebLocales(
+  namespace: string,
+  keyPath: string,
+  lang: Language
+): string | null {
   const filePath = path.join(WEB_LOCALES, lang, `${namespace}.json`);
 
   if (!fs.existsSync(filePath)) {
@@ -61,7 +77,9 @@ function validateKeyInWebLocales(namespace, keyPath, lang) {
   }
 
   try {
-    const translations = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const translations = JSON.parse(
+      fs.readFileSync(filePath, 'utf-8')
+    ) as Record<string, unknown>;
     const value = resolveKeyPath(translations, keyPath);
 
     if (value === undefined) {
@@ -72,7 +90,8 @@ function validateKeyInWebLocales(namespace, keyPath, lang) {
       return `Key '${namespace}.${keyPath}' in ${lang} is not a string (got ${typeof value})`;
     }
   } catch (e) {
-    return `Failed to parse ${filePath}: ${e.message}`;
+    const message = e instanceof Error ? e.message : String(e);
+    return `Failed to parse ${filePath}: ${message}`;
   }
 
   return null;
@@ -81,9 +100,9 @@ function validateKeyInWebLocales(namespace, keyPath, lang) {
 /**
  * Extract all {{t:key}} from file content, preserving order
  */
-function extractKeys(content) {
-  const keys = [];
-  let match;
+function extractKeys(content: string): string[] {
+  const keys: string[] = [];
+  let match: RegExpExecArray | null;
   const pattern = new RegExp(KEY_PATTERN.source, 'g');
 
   while ((match = pattern.exec(content)) !== null) {
@@ -96,16 +115,16 @@ function extractKeys(content) {
 /**
  * Get the base slug from a file path (e.g., "en/web-application.md" -> "web-application.md")
  */
-function getBaseSlug(filePath, langDir) {
+function getBaseSlug(filePath: string, langDir: string): string {
   return path.relative(langDir, filePath);
 }
 
 /**
  * CHECK 2-6: Cross-MD consistency validation
  */
-function validateCrossMdConsistency(errors) {
+function validateCrossMdConsistency(errors: string[]): void {
   // Group files by base slug (e.g., "web-application.md")
-  const docGroups = new Map();
+  const docGroups = new Map<string, Partial<DocGroup>>();
 
   for (const lang of LANGUAGES) {
     const langDir = path.join(DOCS_DIR, lang);
@@ -121,7 +140,7 @@ function validateCrossMdConsistency(errors) {
       }
 
       const content = fs.readFileSync(file, 'utf-8');
-      docGroups.get(relativePath)[lang] = {
+      docGroups.get(relativePath)![lang] = {
         file,
         keys: extractKeys(content),
       };
@@ -139,7 +158,9 @@ function validateCrossMdConsistency(errors) {
     const enKeys = enVersion.keys;
     const enKeyCount = enKeys.length;
 
-    for (const [lang, version] of Object.entries(langVersions)) {
+    for (const [lang, version] of Object.entries(langVersions) as Array<
+      [Language, LangVersionInfo]
+    >) {
       if (lang === 'en') continue;
 
       const langKeys = version.keys;
@@ -192,13 +213,13 @@ function validateCrossMdConsistency(errors) {
 /**
  * Main validation function
  */
-function main() {
+function main(): void {
   console.log('Docs Inline Translation Validation');
   console.log('============================================================\n');
 
-  const errors = [];
+  const errors: string[] = [];
   let totalKeys = 0;
-  const filesWithKeys = new Set();
+  const filesWithKeys = new Set<string>();
 
   // Check if docs directory exists
   if (!fs.existsSync(DOCS_DIR)) {
@@ -219,10 +240,6 @@ function main() {
 
     filesWithKeys.add(file);
     totalKeys += keys.length;
-
-    // Extract document language from frontmatter
-    const langMatch = content.match(/^---[\s\S]*?language:\s*['"]?([a-z]{2})['"]?[\s\S]*?---/m);
-    const docLang = langMatch ? langMatch[1] : 'en';
 
     const relPath = path.relative(DOCS_DIR, file);
 

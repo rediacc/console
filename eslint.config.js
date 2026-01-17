@@ -66,10 +66,39 @@ export default tseslint.config(
   
   // TypeScript rules
   ...tseslint.configs.recommended,
-  
+
+  // =============================================================
+  // SCRIPTS - TypeScript utility scripts
+  // =============================================================
+  // Scripts are parsed with TypeScript parser via allowDefaultProject
+  {
+    files: ['scripts/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      }
+    },
+    rules: {
+      // CLI scripts output to console by design
+      'no-console': 'off',
+      // Utility scripts can have complex logic
+      'sonarjs/cognitive-complexity': 'off',
+      // Allow simple patterns in utility scripts
+      'unicorn/prefer-number-properties': 'off',
+      'unicorn/no-negated-condition': 'off',
+      'no-nested-ternary': 'off',
+      'prefer-template': 'off',
+      'no-regex-spaces': 'off',
+    }
+  },
+
   // React plugin configuration
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
+    ignores: ['scripts/**/*.ts'],
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
@@ -99,7 +128,8 @@ export default tseslint.config(
           jsx: true
         },
         projectService: {
-          allowDefaultProject: ['scripts/*.js'],
+          allowDefaultProject: ['scripts/*.ts', 'scripts/utils/*.ts'],
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 12,
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -788,7 +818,7 @@ export default tseslint.config(
 
   // CLI utility scripts - relaxed rules for command-line tools
   {
-    files: ['scripts/**/*.js'],
+    files: ['scripts/**/*.ts'],
     rules: {
       // CLI scripts output to console by design
       'no-console': 'off',
@@ -797,11 +827,6 @@ export default tseslint.config(
       // Top-level async calls are handled at script exit
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/require-await': 'off',
-      // Relax TypeScript-specific rules for JS files
-      '@typescript-eslint/prefer-nullish-coalescing': 'off',
-      '@typescript-eslint/prefer-regexp-exec': 'off',
-      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'off',
-      '@typescript-eslint/require-array-sort-compare': 'off',
       // Allow simple patterns in utility scripts
       'unicorn/prefer-number-properties': 'off',
       'unicorn/no-negated-condition': 'off',
