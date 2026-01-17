@@ -2,10 +2,6 @@ import React from 'react';
 import { Flex } from 'antd';
 import { DEFAULTS, UI_SIZING } from '@rediacc/shared/config';
 
-const baseStyle: React.CSSProperties = {
-  borderRadius: 4,
-};
-
 /**
  * Skeleton Loader Components
  *
@@ -28,9 +24,9 @@ export interface SkeletonTextProps {
 const SkeletonText: React.FC<SkeletonTextProps> = ({ width, height }) => {
   return (
     <Flex
+      className="rounded"
       // eslint-disable-next-line no-restricted-syntax
       style={{
-        ...baseStyle,
         width: width ?? DEFAULTS.UI.SKELETON_WIDTH,
         height: height ?? UI_SIZING.SKELETON_HEIGHT,
       }}
@@ -47,16 +43,12 @@ const SkeletonRow: React.FC<SkeletonRowProps> = ({ columns = 4 }) => {
   return (
     <Flex
       align="center"
-      className="w-full"
-      // eslint-disable-next-line no-restricted-syntax
-      style={{ padding: '12px 0' }}
+      className="w-full py-3"
     >
       {Array.from({ length: columns }).map((_, index) => (
         <Flex
           key={index}
-          className="flex-1"
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ ...baseStyle, height: 20 }}
+          className="flex-1 rounded h-5"
         />
       ))}
     </Flex>
@@ -72,11 +64,7 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
   return (
     <Flex
       vertical
-      // eslint-disable-next-line no-restricted-syntax
-      style={{
-        borderRadius: 6,
-        padding: 24,
-      }}
+      className="rounded-md p-6"
     >
       {Array.from({ length: lines }).map((_, index) => (
         <SkeletonText key={index} width={index === lines - 1 ? '60%' : '100%'} height="16px" />
@@ -87,27 +75,21 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({ lines = 3 }) => {
 
 const SkeletonButton: React.FC = () => {
   return (
-    <Flex
-      // eslint-disable-next-line no-restricted-syntax
-      style={{ ...baseStyle, height: 40, width: 120, borderRadius: 6 }}
-    />
+    <Flex className="h-10 w-[120px] rounded-md" />
   );
 };
 
 const SkeletonInput: React.FC = () => {
   return (
-    <Flex
-      className="w-full"
-      // eslint-disable-next-line no-restricted-syntax
-      style={{ ...baseStyle, height: 40 }}
-    />
+    <Flex className="w-full h-10 rounded" />
   );
 };
 
 const SkeletonBase = (props: React.HTMLAttributes<HTMLDivElement>) => (
   <Flex
+    className="rounded"
     // eslint-disable-next-line no-restricted-syntax
-    style={{ ...baseStyle, ...props.style }}
+    style={props.style}
     {...props}
   />
 );

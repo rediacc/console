@@ -23,10 +23,12 @@ export const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) =>
   );
 
   return (
-    <Flex vertical>
-      <DetailPanelDivider orientationMargin="left">
-        <WifiOutlined />
-        {t('resources:repositories.networkInfo')}
+    <Flex vertical className="gap-4">
+      <DetailPanelDivider orientation="center" className="[&_.ant-divider-inner-text]:px-0">
+        <Flex align="center" className="gap-2">
+          <WifiOutlined />
+          {t('resources:repositories.networkInfo')}
+        </Flex>
       </DetailPanelDivider>
 
       {network.default_gateway && (
@@ -57,11 +59,12 @@ export const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) =>
       <List
         dataSource={interfaces}
         data-testid="vault-status-network-list"
+        className="[&_.ant-list-items]:flex [&_.ant-list-items]:flex-col [&_.ant-list-items]:gap-4 [&_.ant-list-item]:p-0 [&_.ant-list-item]:border-0"
         renderItem={
           ((iface: NetworkInterface) => (
             <Card size="small" data-testid={`vault-status-network-${iface.name}`}>
               <Flex justify="space-between" align="center">
-                <DetailPanelTitleGroup>
+                <DetailPanelTitleGroup className="gap-2">
                   <CompassOutlined />
                   <DetailPanelFieldStrongValue
                     data-testid={`vault-status-network-name-${iface.name}`}
@@ -73,13 +76,13 @@ export const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) =>
                   {iface.state}
                 </Tag>
               </Flex>
-              <Flex vertical>
+              <Flex vertical className="gap-2">
                 {iface.ipv4_addresses.length > 0 && (
-                  <Flex vertical>
+                  <Flex vertical className="gap-1">
                     <DetailPanelFieldLabel>
                       {t('resources:repositories.ipAddresses')}:
                     </DetailPanelFieldLabel>
-                    <Flex>
+                    <Flex className="flex-wrap gap-2">
                       {iface.ipv4_addresses.map((ip: string) => (
                         <Tag key={ip} bordered={false} data-testid={`vault-status-ip-${ip}`}>
                           {ip}

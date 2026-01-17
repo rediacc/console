@@ -28,7 +28,7 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   return (
     <Flex
       ref={consoleOutputRef}
-      className="terminal-output"
+      className="m-0 max-h-[300px] overflow-auto whitespace-pre-wrap break-words rounded-md bg-[#1e1e1e] p-3 font-mono text-[13px] text-[#d4d4d4]"
       data-testid="queue-trace-console-output"
     >
       {formattedContent}

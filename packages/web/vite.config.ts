@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import tailwind from '@tailwindcss/vite';
 import fs from 'fs';
 import path from 'path';
 import { defineConfig, Plugin } from 'vite';
@@ -44,6 +45,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       sharedSourcePlugin(isDev), // Must be first to intercept @rediacc/shared
+      tailwind(),
       react(),
       tsconfigPaths({ root: '../..' }), // Resolve tsconfig paths from monorepo root
     ],

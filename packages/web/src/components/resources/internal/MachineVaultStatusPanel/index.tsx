@@ -9,7 +9,6 @@ import {
   DetailPanelFieldMonospaceValue,
   DetailPanelFieldRow,
   DetailPanelFieldValue,
-  DetailPanelSectionHeader,
   DetailPanelSectionTitle,
   DetailPanelSurface,
 } from '@/components/resources/internal/detailPanelPrimitives';
@@ -133,12 +132,21 @@ interface SystemInfoSectionProps {
 const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => {
   return (
     <Flex vertical>
-      <DetailPanelSectionHeader>
-        <DesktopOutlined />
-        <DetailPanelSectionTitle level={5} data-testid="vault-status-system-info-title">
-          {t('resources:repositories.systemInfo')}
-        </DetailPanelSectionTitle>
-      </DetailPanelSectionHeader>
+      <DetailPanelDivider
+        orientation="center"
+        className="!mt-0 [&_.ant-divider-inner-text]:px-0"
+      >
+        <Flex align="center" className="gap-2">
+          <DesktopOutlined />
+          <DetailPanelSectionTitle
+            level={5}
+            className="!m-0"
+            data-testid="vault-status-system-info-title"
+          >
+            {t('resources:repositories.systemInfo')}
+          </DetailPanelSectionTitle>
+        </Flex>
+      </DetailPanelDivider>
 
       <Card size="small" data-testid="vault-status-system-info-card">
         <Flex vertical className="w-full gap-sm">
@@ -196,17 +204,23 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
 
   return (
     <Flex vertical>
-      <DetailPanelDivider orientationMargin="left">
-        <InfoCircleOutlined />
-        {t('resources:repositories.resourceUsage')}
+      <DetailPanelDivider orientation="center" className="[&_.ant-divider-inner-text]:px-0">
+        <Flex align="center" className="gap-2">
+          <InfoCircleOutlined />
+          <DetailPanelSectionTitle level={5} className="!m-0">
+            {t('resources:repositories.resourceUsage')}
+          </DetailPanelSectionTitle>
+        </Flex>
       </DetailPanelDivider>
 
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card size="small" data-testid="vault-status-memory-card">
-            <Flex justify="space-between" align="center">
+            <Flex className="gap-2" align="center">
               <DatabaseOutlined />
-              <Typography.Title level={5}>{t('resources:repositories.memory')}</Typography.Title>
+              <Typography.Title level={5} className="!m-0">
+                {t('resources:repositories.memory')}
+              </Typography.Title>
             </Flex>
             <Progress percent={Math.round(memoryPercent)} />
             <Typography.Text>
@@ -220,9 +234,11 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
 
         <Col span={24}>
           <Card size="small" data-testid="vault-status-disk-card">
-            <Flex justify="space-between" align="center">
+            <Flex className="gap-2" align="center">
               <HddOutlined />
-              <Typography.Title level={5}>{t('resources:repositories.disk')}</Typography.Title>
+              <Typography.Title level={5} className="!m-0">
+                {t('resources:repositories.disk')}
+              </Typography.Title>
             </Flex>
             <Progress percent={diskPercent} />
             <Typography.Text>
@@ -236,9 +252,11 @@ const ResourceUsageSection: React.FC<ResourceUsageSectionProps> = ({ system, t }
 
         <Col span={24}>
           <Card size="small" data-testid="vault-status-datastore-card">
-            <Flex justify="space-between" align="center">
+            <Flex className="gap-2" align="center">
               <DatabaseOutlined />
-              <Typography.Title level={5}>{t('resources:repositories.datastore')}</Typography.Title>
+              <Typography.Title level={5} className="!m-0">
+                {t('resources:repositories.datastore')}
+              </Typography.Title>
             </Flex>
             {system.datastore.path && (
               <DetailPanelFieldRow>

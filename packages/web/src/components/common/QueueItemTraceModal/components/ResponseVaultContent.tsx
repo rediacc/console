@@ -51,7 +51,11 @@ export const ResponseVaultContent: React.FC<ResponseVaultContentProps> = ({
       return <SimpleJsonEditor value={JSON.stringify(parsed, null, 2)} readOnly height="300px" />;
     } catch {
       // Plain text output from bridge - display as preformatted text
-      return <pre className="terminal-output">{content}</pre>;
+      return (
+        <pre className="m-0 max-h-[300px] overflow-auto whitespace-pre-wrap break-words rounded-md bg-[#1e1e1e] p-3 font-mono text-[13px] text-[#d4d4d4]">
+          {content}
+        </pre>
+      );
     }
   };
 

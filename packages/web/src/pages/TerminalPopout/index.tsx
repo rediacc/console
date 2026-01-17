@@ -164,8 +164,7 @@ export const TerminalPopout: React.FC = () => {
       <Flex
         align="center"
         justify="center"
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ height: '100vh', backgroundColor: '#1e1e2e', padding: 24 }}
+        className="h-screen bg-[#1e1e2e] p-6"
       >
         <Alert
           type="error"
@@ -183,8 +182,7 @@ export const TerminalPopout: React.FC = () => {
       <Flex
         align="center"
         justify="center"
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ height: '100vh', backgroundColor: '#1e1e2e', padding: 24 }}
+        className="h-screen bg-[#1e1e2e] p-6"
       >
         <Alert
           type="error"
@@ -204,12 +202,10 @@ export const TerminalPopout: React.FC = () => {
         justify="center"
         vertical
         gap={16}
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ height: '100vh', backgroundColor: '#1e1e2e' }}
+        className="h-screen bg-[#1e1e2e]"
       >
         <Spin size="large" />
-        {/* eslint-disable-next-line no-restricted-syntax */}
-        <Text style={{ color: '#cdd6f4' }}>{t('resources:localActions.popoutConnecting')}</Text>
+        <Text className="text-[#cdd6f4]">{t('resources:localActions.popoutConnecting')}</Text>
       </Flex>
     );
   }
@@ -217,13 +213,7 @@ export const TerminalPopout: React.FC = () => {
   return (
     <Flex
       vertical
-      // eslint-disable-next-line no-restricted-syntax
-      style={{
-        height: '100vh',
-        width: '100vw',
-        backgroundColor: '#1e1e2e',
-        overflow: 'hidden',
-      }}
+      className="h-screen w-screen bg-[#1e1e2e] overflow-hidden"
     >
       {sessionId && (
         <Terminal
@@ -234,8 +224,7 @@ export const TerminalPopout: React.FC = () => {
           onData={handleOnData}
           onExit={handleOnExit}
           onReady={handleTerminalReady}
-          // eslint-disable-next-line no-restricted-syntax
-          style={{ flex: 1, width: '100%', height: '100%' }}
+          className="flex-1 w-full h-full"
         />
       )}
     </Flex>

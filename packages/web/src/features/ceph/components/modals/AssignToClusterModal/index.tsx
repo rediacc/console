@@ -218,7 +218,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
         ) : (
           machine && (
             <>
-              <Flex vertical className="gap-sm">
+              <Flex vertical className="gap-2">
                 <Flex align="flex-start" wrap>
                   <Typography.Text strong>{t('machines:machine')}:</Typography.Text>
                   <Typography.Text>{machine.machineName}</Typography.Text>
@@ -241,7 +241,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
           )
         )}
 
-        <Flex vertical className="gap-sm w-full">
+        <Flex vertical className="w-full gap-2">
           <Typography.Text>{t('ceph:clusters.cluster')}:</Typography.Text>
           {clustersLoading ? (
             <LoadingWrapper loading centered minHeight={80}>

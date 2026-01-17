@@ -81,13 +81,10 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   return (
     <Flex
       vertical
-      className={`relative overflow-hidden ${className}`}
+      className={`relative overflow-hidden font-mono text-sm leading-[1.5] ${className}`}
       // eslint-disable-next-line no-restricted-syntax
       style={{
         height: typeof height === 'number' ? `${height}px` : height,
-        fontFamily: 'monospace',
-        fontSize: 14,
-        lineHeight: 1.5,
       }}
     >
       <textarea
@@ -101,29 +98,12 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         data-testid={dataTestId}
-        className="w-full h-full"
-        // eslint-disable-next-line no-restricted-syntax
-        style={{
-          outline: 'none',
-          resize: 'none',
-          fontFamily: 'inherit',
-          fontSize: 'inherit',
-          lineHeight: 'inherit',
-          tabSize: 2,
-        }}
+        className="w-full h-full outline-none resize-none font-inherit text-inherit leading-inherit [tab-size:2]"
       />
 
       {error && (
         <Typography.Text
-          className="absolute"
-          // eslint-disable-next-line no-restricted-syntax
-          style={{
-            bottom: 0,
-            left: 0,
-            right: 0,
-            fontSize: 12,
-            fontWeight: 500,
-          }}
+          className="absolute inset-x-0 bottom-0 text-xs font-medium"
         >
           {t('defaults.jsonError')}: {error}
         </Typography.Text>

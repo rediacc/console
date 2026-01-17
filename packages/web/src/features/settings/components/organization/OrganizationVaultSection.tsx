@@ -16,9 +16,9 @@ export const OrganizationVaultSection: React.FC<OrganizationVaultSectionProps> =
 }) => {
   return (
     <Card>
-      <Flex align="flex-start" justify="space-between" className="gap-md" wrap>
+      <Flex align="flex-start" justify="space-between" className="gap-4" wrap>
         {/* eslint-disable-next-line no-restricted-syntax */}
-        <Flex vertical className="gap-sm" style={{ flex: 1, minWidth: 240 }}>
+        <Flex vertical className="gap-2" style={{ flex: 1, minWidth: 240 }}>
           <Flex align="center">
             <BankOutlined />
             <Typography.Title level={4}>{t('organization.title')}</Typography.Title>

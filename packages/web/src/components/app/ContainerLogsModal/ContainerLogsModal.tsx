@@ -202,8 +202,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
     >
       <Flex
         vertical
-        // eslint-disable-next-line no-restricted-syntax
-        style={{ height: '60vh', minHeight: 400 }}
+        className="h-[60vh] min-h-[400px]"
       >
         {/* Error Alert */}
         {container.error && !container.isConnected && (
@@ -212,8 +211,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
             message={t('resources:localActions.containerConnectionFailed')}
             description={container.error}
             showIcon
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ marginBottom: 16 }}
+            className="mb-4"
           />
         )}
 
@@ -226,8 +224,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
               container: displayName,
             })}
             showIcon
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ marginBottom: 16 }}
+            className="mb-4"
           />
         )}
 
@@ -240,8 +237,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
             resize={container.resize}
             onData={container.onData}
             onExit={container.onExit}
-            // eslint-disable-next-line no-restricted-syntax
-            style={{ flex: 1, borderRadius: 8, overflow: 'hidden' }}
+            className="flex-1 rounded-lg overflow-hidden"
           />
         ) : (
           !container.isConnecting &&
@@ -249,12 +245,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
             <Flex
               justify="center"
               align="center"
-              // eslint-disable-next-line no-restricted-syntax
-              style={{
-                flex: 1,
-                backgroundColor: '#1e1e2e',
-                borderRadius: 8,
-              }}
+              className="flex-1 bg-[#1e1e2e] rounded-lg"
             >
               <Text type="secondary">
                 {t('resources:localActions.containerWaitingForConnection')}

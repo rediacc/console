@@ -221,7 +221,7 @@ const AuditPage = () => {
           <Space direction="vertical" size="large">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={24} md={8}>
-                <Flex vertical className="gap-sm w-full">
+                <Flex vertical className="w-full gap-2">
                   <Typography.Text>{t('system:audit.filters.dateRange')}</Typography.Text>
                   <RangePicker
                     data-testid="audit-filter-date"
@@ -271,7 +271,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Flex vertical className="gap-sm w-full">
+                <Flex vertical className="w-full gap-2">
                   <Typography.Text>{t('system:audit.filters.entityType')}</Typography.Text>
                   <Select
                     data-testid="audit-filter-entity"
@@ -287,7 +287,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Flex vertical className="gap-sm w-full">
+                <Flex vertical className="w-full gap-2">
                   <Typography.Text>{t('system:audit.filters.search')}</Typography.Text>
                   <Input
                     data-testid="audit-filter-search"
@@ -301,7 +301,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <Flex vertical className="gap-sm w-full">
+                <Flex vertical className="w-full gap-2">
                   <Typography.Text>{t('system:audit.filters.actions')}</Typography.Text>
                   <Button
                     data-testid="audit-refresh-button"
@@ -322,7 +322,7 @@ const AuditPage = () => {
                 </Flex>
               </Col>
               <Col xs={24} sm={12} md={2}>
-                <Flex vertical className="gap-sm w-full">
+                <Flex vertical className="w-full gap-2">
                   <Typography.Text>{t('system:audit.filters.export')}</Typography.Text>
                   <Tooltip
                     title={
