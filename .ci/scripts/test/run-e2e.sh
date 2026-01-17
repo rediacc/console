@@ -127,6 +127,15 @@ fi
 # Change to repo root
 cd "$(get_repo_root)"
 
+# Find available port for Vite dev server (avoids conflicts with other services)
+source "$SCRIPT_DIR/../../lib/find-port.sh"
+E2E_PORT=$(find_preferred_port 3000 3001 3999) || {
+    log_error "No available port found in range 3000-3999"
+    exit 1
+}
+log_info "Using port: $E2E_PORT for Vite dev server"
+export E2E_PORT
+
 E2E_DIR="packages/e2e"
 
 log_step "Running E2E tests for projects: ${PROJECTS[*]}"
@@ -158,6 +167,9 @@ for project in "${PROJECTS[@]}"; do
     fi
     if [[ -n "${BACKEND_URL:-}" ]]; then
         ENV_VARS+=("VITE_API_URL=$BACKEND_URL")
+    fi
+    if [[ -n "${E2E_PORT:-}" ]]; then
+        ENV_VARS+=("E2E_PORT=$E2E_PORT")
     fi
 
     if (cd "$E2E_DIR" && env ${ENV_VARS[@]+"${ENV_VARS[@]}"} "${CMD[@]}"); then
