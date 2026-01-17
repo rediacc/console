@@ -228,10 +228,7 @@ function checkLocaleDir(name, localeDir) {
   const languages = fs
     .readdirSync(localeDir)
     .filter(
-      (d) =>
-        d !== 'en' &&
-        !d.startsWith('.') &&
-        fs.statSync(path.join(localeDir, d)).isDirectory()
+      (d) => d !== 'en' && !d.startsWith('.') && fs.statSync(path.join(localeDir, d)).isDirectory()
     );
 
   const stats = {};
@@ -247,9 +244,7 @@ function checkLocaleDir(name, localeDir) {
       const langFile = path.join(langDir, file);
       if (!fs.existsSync(langFile)) {
         // Count all keys from this file as missing
-        const enContent = JSON.parse(
-          fs.readFileSync(path.join(enDir, file), 'utf-8')
-        );
+        const enContent = JSON.parse(fs.readFileSync(path.join(enDir, file), 'utf-8'));
         missing += Object.keys(flatten(enContent)).length;
         continue;
       }
@@ -285,9 +280,7 @@ function checkLocaleDir(name, localeDir) {
 
     // Report issues
     if (missing > 0) {
-      errors.push(
-        `[${name}/${lang}] Missing ${missing} keys (${missingPercent}%)`
-      );
+      errors.push(`[${name}/${lang}] Missing ${missing} keys (${missingPercent}%)`);
     }
 
     if (Number.parseFloat(untranslatedPercent) > MAX_UNTRANSLATED_PERCENT) {
@@ -377,9 +370,7 @@ function main() {
     console.log('Errors:');
     allErrors.forEach((e) => console.log(`  \u001B[31m\u2717\u001B[0m ${e}`));
     console.log('\nTo fix missing keys, run: npm run i18n:sync');
-    console.log(
-      'Untranslated strings need manual translation or AI assistance.\n'
-    );
+    console.log('Untranslated strings need manual translation or AI assistance.\n');
     process.exit(1);
   }
 

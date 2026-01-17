@@ -20,6 +20,7 @@
 
 import { execSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -174,6 +175,87 @@ function isMajorUpgrade(current, latest) {
   return vl.major > vc.major;
 }
 
+// Cache for changelog URLs to avoid duplicate fetches
+const changelogCache = new Map();
+
+/**
+ * Fetch package info from npm registry and extract changelog URL
+ */
+async function fetchChangelogUrl(packageName) {
+  // Check cache first
+  if (changelogCache.has(packageName)) {
+    return changelogCache.get(packageName);
+  }
+
+  return new Promise((resolve) => {
+    const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
+
+    const req = https.get(url, { timeout: 5000 }, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const repoUrl = json.repository?.url || '';
+
+          // Transform git URL to GitHub releases URL
+          // Examples:
+          //   git+https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
+          //   git://github.com/owner/repo.git -> https://github.com/owner/repo/releases
+          //   https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
+          let changelogUrl = null;
+
+          if (repoUrl.includes('github.com')) {
+            const match = repoUrl.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
+            if (match) {
+              changelogUrl = `https://github.com/${match[1]}/${match[2]}/releases`;
+            }
+          } else if (repoUrl.includes('gitlab.com')) {
+            const match = repoUrl.match(/gitlab\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
+            if (match) {
+              changelogUrl = `https://gitlab.com/${match[1]}/${match[2]}/-/releases`;
+            }
+          }
+
+          changelogCache.set(packageName, changelogUrl);
+          resolve(changelogUrl);
+        } catch {
+          changelogCache.set(packageName, null);
+          resolve(null);
+        }
+      });
+    });
+
+    req.on('error', () => {
+      changelogCache.set(packageName, null);
+      resolve(null);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      changelogCache.set(packageName, null);
+      resolve(null);
+    });
+  });
+}
+
+/**
+ * Fetch changelog URLs for multiple packages in parallel
+ */
+async function fetchChangelogUrls(packages) {
+  const results = new Map();
+  const promises = packages.map(async (pkg) => {
+    const url = await fetchChangelogUrl(pkg.name);
+    results.set(pkg.name, url);
+  });
+  await Promise.all(promises);
+  return results;
+}
+
 /**
  * Upgrade packages using npm update (for minor/patch) or npm install (for major)
  */
@@ -235,7 +317,9 @@ function upgradePackages(packages, forceMajor = false) {
       console.log();
       console.log(`These require manual review. To upgrade, run:`);
       console.log(`  node scripts/check-deps.js --upgrade --force`);
-      console.log(`Or manually: npm install ${majorUpdates.map((p) => `${p.name}@latest`).join(' ')}`);
+      console.log(
+        `Or manually: npm install ${majorUpdates.map((p) => `${p.name}@latest`).join(' ')}`
+      );
     }
   }
 
@@ -277,7 +361,7 @@ ${YELLOW}EXAMPLES${NC}
 /**
  * Main check function
  */
-function checkDependencies() {
+async function checkDependencies() {
   if (showHelp) {
     showHelpMessage();
     process.exit(0);
@@ -342,9 +426,13 @@ function checkDependencies() {
 
     if (packagesToUpgrade.length === 0) {
       if (allowed.length > 0) {
-        console.log(`${GREEN}All dependencies are up-to-date${NC} (${allowed.length} allowlisted)\n`);
+        console.log(
+          `${GREEN}All dependencies are up-to-date${NC} (${allowed.length} allowlisted)\n`
+        );
         for (const pkg of allowed) {
-          console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest} (allowed: ${pkg.constraint})`);
+          console.log(
+            `  ${pkg.name}: ${pkg.current} -> ${pkg.latest} (allowed: ${pkg.constraint})`
+          );
         }
       } else {
         console.log(`${GREEN}All dependencies are up-to-date${NC}`);
@@ -363,6 +451,10 @@ function checkDependencies() {
     process.exit(success ? 0 : 1);
   }
 
+  // Check mode - fetch changelog URLs for all packages that will be displayed
+  const allPackages = [...mustUpgrade, ...constraintExceeded, ...allowed];
+  const changelogUrls = await fetchChangelogUrls(allPackages);
+
   // Check mode - output results
   let hasFailure = false;
 
@@ -376,6 +468,10 @@ function checkDependencies() {
       if (pkg.reason) {
         console.log(`    Original reason: ${pkg.reason}`);
       }
+      const changelog = changelogUrls.get(pkg.name);
+      if (changelog) {
+        console.log(`    Changelog: ${changelog}`);
+      }
       console.log();
     }
   }
@@ -385,6 +481,10 @@ function checkDependencies() {
     console.log(`${RED}Outdated packages (must upgrade):${NC}\n`);
     for (const pkg of mustUpgrade) {
       console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}`);
+      const changelog = changelogUrls.get(pkg.name);
+      if (changelog) {
+        console.log(`    Changelog: ${changelog}`);
+      }
     }
     console.log();
     console.log(`Run: npm run check:deps -- --upgrade`);
@@ -398,6 +498,10 @@ function checkDependencies() {
       console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest} (allowed: ${pkg.constraint})`);
       if (pkg.reason) {
         console.log(`    Reason: ${pkg.reason}`);
+      }
+      const changelog = changelogUrls.get(pkg.name);
+      if (changelog) {
+        console.log(`    Changelog: ${changelog}`);
       }
     }
     console.log();

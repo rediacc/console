@@ -452,6 +452,12 @@ quality_deps() {
     "$ROOT_DIR/.ci/scripts/quality/check-deps.sh"
 }
 
+quality_actions() {
+    check_node_version
+    log_step "Checking GitHub Actions versions..."
+    node "$ROOT_DIR/scripts/check-actions.js"
+}
+
 quality_audit() {
     check_node_version
     "$ROOT_DIR/.ci/scripts/security/audit.sh"
@@ -707,13 +713,14 @@ main() {
                 format) quality_format ;;
                 types) quality_types ;;
                 deps) quality_deps ;;
+                actions) quality_actions ;;
                 audit) quality_audit ;;
                 shell) quality_shell ;;
                 all|"") quality_all ;;
                 *)
                     log_error "Unknown quality command: ${1:-}"
                     echo ""
-                    echo "Usage: ./go quality [lint|format|types|deps|audit|shell|all]"
+                    echo "Usage: ./go quality [lint|format|types|deps|actions|audit|shell|all]"
                     exit 1
                     ;;
             esac

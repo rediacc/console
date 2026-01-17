@@ -43,8 +43,7 @@ export default tseslint.config(
       'packages/desktop/out/**',
       // Ignore custom eslint rules (plain JS)
       'eslint-rules/**',
-      // Ignore scripts directories (plain JS utilities)
-      'scripts/**',
+      // Ignore package-level scripts (plain JS utilities)
       'packages/*/scripts/**',
       // Ignore Playwright report artifacts (generated trace viewer files)
       'packages/e2e/reports/**',
@@ -96,7 +95,9 @@ export default tseslint.config(
         ecmaFeatures: {
           jsx: true
         },
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['scripts/*.js'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -780,6 +781,33 @@ export default tseslint.config(
   // JSON package is bash-based, exclude from ESLint
   {
     ignores: ['packages/json/**'],
+  },
+
+  // CLI utility scripts - relaxed rules for command-line tools
+  {
+    files: ['scripts/**/*.js'],
+    rules: {
+      // CLI scripts output to console by design
+      'no-console': 'off',
+      // Utility scripts can have complex logic
+      'sonarjs/cognitive-complexity': 'off',
+      // Top-level async calls are handled at script exit
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/require-await': 'off',
+      // Relax TypeScript-specific rules for JS files
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off',
+      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'off',
+      '@typescript-eslint/require-array-sort-compare': 'off',
+      // Allow simple patterns in utility scripts
+      'unicorn/prefer-number-properties': 'off',
+      'unicorn/no-negated-condition': 'off',
+      'no-nested-ternary': 'off',
+      'prefer-template': 'off',
+      'no-regex-spaces': 'off',
+      // Custom rules not applicable to utility scripts
+      'custom/prefer-const-arrays': 'off',
+    },
   },
 
 );

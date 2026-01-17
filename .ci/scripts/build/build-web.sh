@@ -68,7 +68,7 @@ if [[ "$ANALYZE" == "true" ]] || [[ "$BUILD_TYPE" == "RELEASE" ]]; then
     # Total size (cross-platform: use -sk for kilobytes, works on both GNU and BSD)
     TOTAL_SIZE_KB=$(du -sk packages/web/dist/ | cut -f1)
     TOTAL_SIZE=$((TOTAL_SIZE_KB * 1024))
-    TOTAL_SIZE_MB=$(echo "scale=2; $TOTAL_SIZE_KB / 1024" | bc)
+    TOTAL_SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $TOTAL_SIZE_KB / 1024}")
 
     log_info "Total bundle size: ${TOTAL_SIZE_MB}MB"
 

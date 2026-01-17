@@ -111,7 +111,7 @@ function processLocaleDir(config) {
 
   if (multipleNamespaces) {
     // Web: Process each namespace file (common.json, auth.json, etc.)
-    const files = fs.readdirSync(englishDir).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(englishDir).filter((f) => f.endsWith('.json'));
 
     for (const file of files) {
       const namespace = file.replace('.json', '');
@@ -124,7 +124,7 @@ function processLocaleDir(config) {
     }
   } else {
     // CLI: Process single file per language
-    const files = fs.readdirSync(englishDir).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(englishDir).filter((f) => f.endsWith('.json'));
 
     for (const file of files) {
       const filePath = path.join(englishDir, file);

@@ -240,6 +240,40 @@ wait_for() {
     return 1
 }
 
+# Run a command with a timeout (portable: works on Linux, macOS, Windows Git Bash)
+# Usage: run_with_timeout <timeout_seconds> <command...>
+# Returns: 0 on success, 124 on timeout, or command's exit code on failure
+run_with_timeout() {
+    local timeout_secs="$1"
+    shift
+
+    # Run command in background
+    "$@" &
+    local cmd_pid=$!
+
+    # Monitor in background
+    (
+        sleep "$timeout_secs"
+        kill -0 "$cmd_pid" 2>/dev/null && kill -TERM "$cmd_pid" 2>/dev/null
+    ) &
+    local watchdog_pid=$!
+
+    # Wait for command
+    local exit_code=0
+    wait "$cmd_pid" 2>/dev/null || exit_code=$?
+
+    # Clean up watchdog
+    kill -0 "$watchdog_pid" 2>/dev/null && kill "$watchdog_pid" 2>/dev/null
+    wait "$watchdog_pid" 2>/dev/null || true
+
+    # Check if killed by timeout (SIGTERM = 143)
+    if [[ $exit_code -eq 143 ]]; then
+        return 124  # Standard timeout exit code
+    fi
+
+    return "$exit_code"
+}
+
 # =============================================================================
 # ARGUMENT PARSING HELPERS
 # =============================================================================

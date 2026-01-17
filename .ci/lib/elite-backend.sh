@@ -76,7 +76,7 @@ elite_pull_images() {
 
     for image in "${images[@]}"; do
         log_info "Pulling: $image"
-        timeout "$TIMEOUT_DOCKER_PULL" docker pull --quiet "$image" || {
+        run_with_timeout "$TIMEOUT_DOCKER_PULL" docker pull --quiet "$image" || {
             log_error "Failed to pull image: $image"
             return 1
         }

@@ -350,6 +350,7 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - run: .ci/scripts/security/shellcheck.sh
+      - run: .ci/scripts/security/check-commands.sh
 
   # ============================================================================
   # TIER 3: BUILD & UNIT TESTS (Depends on Tier 1)
