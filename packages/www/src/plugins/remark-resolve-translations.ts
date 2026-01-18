@@ -15,8 +15,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Root, Text } from 'mdast';
 import { visit } from 'unist-util-visit';
+import type { Root, Text } from 'mdast';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -39,7 +39,7 @@ function loadTranslationFile(namespace: string, lang: string): Record<string, un
   const cacheKey = `${lang}/${namespace}`;
 
   if (translationCache.has(cacheKey)) {
-    return translationCache.get(cacheKey) || null;
+    return translationCache.get(cacheKey) ?? null;
   }
 
   const filePath = path.join(WEB_LOCALES_PATH, lang, `${namespace}.json`);
@@ -97,14 +97,14 @@ function getTranslation(namespace: string, keyPath: string, lang: string): strin
  */
 function extractLanguageFromContent(content: string): string {
   // Match frontmatter block
-  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const frontmatterMatch = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
   if (!frontmatterMatch) {
     return DEFAULT_LANGUAGE;
   }
 
   const frontmatter = frontmatterMatch[1];
   // Match language field
-  const languageMatch = frontmatter.match(/^language:\s*['"]?([a-z]{2})['"]?\s*$/m);
+  const languageMatch = /^language:\s*['"]?([a-z]{2})['"]?\s*$/m.exec(frontmatter);
   if (languageMatch) {
     return languageMatch[1];
   }
@@ -121,7 +121,9 @@ function replaceTranslationKeys(text: string, lang: string, filePath?: string): 
     if (resolved === null) {
       const location = filePath ? ` in ${filePath}` : '';
       // Log warning but don't throw - allows build to continue
-      console.warn(`[remark-resolve-translations] Translation key not found: ${namespace}.${keyPath} for language '${lang}'${location}`);
+      console.warn(
+        `[remark-resolve-translations] Translation key not found: ${namespace}.${keyPath} for language '${lang}'${location}`
+      );
       // Return the original pattern so it's visible in output (helps debugging)
       return match;
     }
@@ -138,7 +140,7 @@ export interface RemarkResolveTranslationsOptions {
  * Remark plugin that resolves {{t:namespace.key}} patterns in markdown content
  */
 export function remarkResolveTranslations(options: RemarkResolveTranslationsOptions = {}) {
-  const defaultLang = options.defaultLanguage || DEFAULT_LANGUAGE;
+  const defaultLang = options.defaultLanguage ?? DEFAULT_LANGUAGE;
 
   return function transformer(tree: Root, file: { value?: string; path?: string }) {
     // Extract language from file content (frontmatter)
@@ -165,5 +167,3 @@ export function remarkResolveTranslations(options: RemarkResolveTranslationsOpti
     });
   };
 }
-
-export default remarkResolveTranslations;

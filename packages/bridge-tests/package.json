@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/bridge-tests",
-  "version": "0.4.20",
+  "version": "0.4.29",
   "private": true,
   "type": "commonjs",
   "scripts": {
@@ -15,8 +15,8 @@
     "test:05-rediaccfiles": "playwright test tests/05-rediaccfiles-updown.test.ts",
     "test:06-daemon": "playwright test tests/06-daemon-operations.test.ts",
     "test:07-container": "playwright test tests/07-container-operations.test.ts",
-    "test:08-ceph-pool": "playwright test tests/08-ceph-pool-image.test.ts",
-    "test:09-ceph-clone": "playwright test tests/09-ceph-snapshot-clone.test.ts",
+    "test:08-ceph-pool": "playwright test --config=playwright.ceph.config.ts tests/ceph/08-ceph-pool-image.test.ts",
+    "test:09-ceph-clone": "playwright test --config=playwright.ceph.config.ts tests/ceph/09-ceph-snapshot-clone.test.ts",
     "test:10-backup": "playwright test tests/10-backup-checkpoint.test.ts",
     "test:11-multi": "playwright test tests/11-multi-machine.test.ts",
     "test:12-integration": "playwright test tests/12-full-integration.test.ts",
@@ -30,7 +30,8 @@
     "test:20-image": "playwright test tests/20-image-build.test.ts",
     "test:21-local": "playwright test tests/21-local-executor.test.ts",
     "test:22-setup": "playwright test tests/22-setup-command.test.ts",
-    "test:ceph": "playwright test tests/08-ceph-pool-image.test.ts tests/09-ceph-snapshot-clone.test.ts",
+    "test:bridge:ceph": "playwright test --config=playwright.ceph.config.ts",
+    "test:ceph": "playwright test --config=playwright.ceph.config.ts",
     "test:debug": "playwright test --debug",
     "test:headed": "playwright test --headed",
     "test:install": "playwright install",

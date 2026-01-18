@@ -376,19 +376,19 @@
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"
   },
   "teamSelector": {
+    "moreTeams": "+{{count}} فريق آخر",
     "selectTeam": "اختر الفريق...",
-    "selectTeams": "اختر الفرق...",
-    "moreTeams": "+{{count}} فريق آخر"
+    "selectTeams": "اختر الفرق..."
   },
   "terminal": {
-    "terminal": "الطرفية",
+    "connectedTo": "متصل بـ {{host}}",
     "connecting": "جاري الاتصال",
     "connectionFailed": "فشل الاتصال",
-    "connectedTo": "متصل بـ {{host}}",
     "establishingConnection": "جاري إنشاء اتصال SSH إلى {{host}}...",
-    "waitingForConnection": "في انتظار الاتصال...",
+    "popout": "فتح في نافذة جديدة",
     "reconnect": "إعادة الاتصال",
-    "popout": "فتح في نافذة جديدة"
+    "terminal": "الطرفية",
+    "waitingForConnection": "في انتظار الاتصال..."
   },
   "theme": {
     "dark": "مظلم",
@@ -520,13 +520,13 @@
           "label": "مسار مخزن البيانات"
         },
         "description": "تكوين الجهاز للوصول إلى SSH وتخزينه",
-        "known_hosts": {
-          "description": "إدخال مضيف معروف لـ SSH للتحقق من الأمان",
-          "label": "دخول المضيف"
-        },
         "ip": {
           "description": "عنوان IP الخاص بالجهاز",
           "label": "عنوان IP"
+        },
+        "known_hosts": {
+          "description": "إدخال مضيف معروف لـ SSH للتحقق من الأمان",
+          "label": "دخول المضيف"
         },
         "port": {
           "description": "رقم منفذ SSH",
@@ -718,13 +718,13 @@
     "fieldsMovedFromExtra": "تمت استعادة {{count}} الحقول من الحقول الإضافية: {{fields}}",
     "fieldsMovedToExtra": "تم نقل {{count}} الحقل (الحقول) إلى الحقول الإضافية: {{fields}}",
     "formatJson": "تنسيق جيسون",
-    "knownHostsHelp": "خياري. سيتم اكتشاف إدخال مضيف SSH المعروف تلقائيًا.",
-    "knownHostsPlaceholder": "يتم ملؤها تلقائيًا أثناء اختبار الاتصال",
     "importJson": "استيراد جسون",
     "invalidFormat": "التنسيق غير صالح. {{description}}",
     "invalidJsonFormat": "تنسيق JSON غير صالح",
     "isRequired": "{{field}} مطلوب",
     "jsonError": "خطأ JSON",
+    "knownHostsHelp": "خياري. سيتم اكتشاف إدخال مضيف SSH المعروف تلقائيًا.",
+    "knownHostsPlaceholder": "يتم ملؤها تلقائيًا أثناء اختبار الاتصال",
     "maxLength": "الحد الأقصى للطول هو {{length}}",
     "maxValue": "الحد الأقصى للقيمة هو {{value}}",
     "minLength": "الحد الأدنى للطول هو {{length}}",
@@ -791,17 +791,17 @@
     "versionWillIncrement": "سيتم زيادة الإصدار إلى {{version}}"
   },
   "viewDetails": "عرض التفاصيل",
+  "vscodeSelection": {
+    "description": "تم اكتشاف عدة إصدارات من VS Code. اختر الإصدار الذي تريد استخدامه:",
+    "open": "فتح",
+    "rememberChoice": "تذكر اختياري",
+    "title": "اختر إصدار VS Code",
+    "windowsVSCode": "VS Code لنظام Windows",
+    "wslVSCode": "VS Code في WSL (لينكس)"
+  },
   "warnings": {
     "sandboxEnvironment": "بيئة رمل",
     "sandboxMessage": "قد تتم إعادة ضبط البيانات أثناء التحديثات. للاختبار فقط."
-  },
-  "vscodeSelection": {
-    "title": "اختر إصدار VS Code",
-    "open": "فتح",
-    "description": "تم اكتشاف عدة إصدارات من VS Code. اختر الإصدار الذي تريد استخدامه:",
-    "windowsVSCode": "VS Code لنظام Windows",
-    "wslVSCode": "VS Code في WSL (لينكس)",
-    "rememberChoice": "تذكر اختياري"
   },
   "yes": "نعم",
   "yesterday": "أمس"

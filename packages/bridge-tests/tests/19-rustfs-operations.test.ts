@@ -32,80 +32,79 @@ test.describe('RustFS Lifecycle @bridge @rustfs', () => {
     }
   });
 
-  test.describe
-    .serial('Container Operations', () => {
-      test('should stop RustFS if running', async () => {
-        // Check if RustFS is running
-        const isRunning = await ops.isRustFSRunning();
+  test.describe('Container Operations', () => {
+    test('should stop RustFS if running', async () => {
+      // Check if RustFS is running
+      const isRunning = await ops.isRustFSRunning();
 
-        if (isRunning) {
-          // eslint-disable-next-line no-console
-          console.log('RustFS is running, stopping it...');
-          const result = await ops.stopRustFS();
-          expect(result.success).toBe(true);
-
-          // Verify it's stopped
-          const stillRunning = await ops.isRustFSRunning();
-          expect(stillRunning).toBe(false);
-          // eslint-disable-next-line no-console
-          console.log('RustFS stopped');
-        } else {
-          // eslint-disable-next-line no-console
-          console.log('RustFS is not running, skipping stop');
-        }
-      });
-
-      test('should start RustFS', async () => {
-        const result = await ops.startRustFS();
-
+      if (isRunning) {
+        // eslint-disable-next-line no-console
+        console.log('RustFS is running, stopping it...');
+        const result = await ops.stopRustFS();
         expect(result.success).toBe(true);
-        expect(result.message).toContain('success');
 
-        // Verify it's running
-        const isRunning = await ops.isRustFSRunning();
-        expect(isRunning).toBe(true);
-
+        // Verify it's stopped
+        const stillRunning = await ops.isRustFSRunning();
+        expect(stillRunning).toBe(false);
         // eslint-disable-next-line no-console
-        console.log('RustFS started successfully');
-      });
-
-      test('should verify RustFS S3 endpoint is accessible', async () => {
-        const bridgeIp = ops.getBridgeVMIp();
-
-        // Check S3 endpoint (returns 403 for unauthenticated requests)
-        const result = await ops.executeOnVM(
-          bridgeIp,
-          "curl -s -o /dev/null -w '%{http_code}' http://localhost:9000/"
-        );
-
-        expect(result.code).toBe(0);
-        const httpCode = result.stdout.trim();
-        // 403 = server running, auth required (expected)
-        // 200 = server running, no auth (also acceptable)
-        expect(['200', '403']).toContain(httpCode);
-
+        console.log('RustFS stopped');
+      } else {
         // eslint-disable-next-line no-console
-        console.log(`RustFS S3 endpoint HTTP status: ${httpCode}`);
-      });
-
-      test('should verify RustFS console is accessible', async () => {
-        const bridgeIp = ops.getBridgeVMIp();
-
-        // Check console endpoint on port 9001
-        const result = await ops.executeOnVM(
-          bridgeIp,
-          "curl -s -o /dev/null -w '%{http_code}' http://localhost:9001/"
-        );
-
-        expect(result.code).toBe(0);
-        const httpCode = result.stdout.trim();
-        // Console should return 200 or redirect (302)
-        expect(['200', '302', '403']).toContain(httpCode);
-
-        // eslint-disable-next-line no-console
-        console.log(`RustFS console HTTP status: ${httpCode}`);
-      });
+        console.log('RustFS is not running, skipping stop');
+      }
     });
+
+    test('should start RustFS', async () => {
+      const result = await ops.startRustFS();
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('success');
+
+      // Verify it's running
+      const isRunning = await ops.isRustFSRunning();
+      expect(isRunning).toBe(true);
+
+      // eslint-disable-next-line no-console
+      console.log('RustFS started successfully');
+    });
+
+    test('should verify RustFS S3 endpoint is accessible', async () => {
+      const bridgeIp = ops.getBridgeVMIp();
+
+      // Check S3 endpoint (returns 403 for unauthenticated requests)
+      const result = await ops.executeOnVM(
+        bridgeIp,
+        "curl -s -o /dev/null -w '%{http_code}' http://localhost:9000/"
+      );
+
+      expect(result.code).toBe(0);
+      const httpCode = result.stdout.trim();
+      // 403 = server running, auth required (expected)
+      // 200 = server running, no auth (also acceptable)
+      expect(['200', '403']).toContain(httpCode);
+
+      // eslint-disable-next-line no-console
+      console.log(`RustFS S3 endpoint HTTP status: ${httpCode}`);
+    });
+
+    test('should verify RustFS console is accessible', async () => {
+      const bridgeIp = ops.getBridgeVMIp();
+
+      // Check console endpoint on port 9001
+      const result = await ops.executeOnVM(
+        bridgeIp,
+        "curl -s -o /dev/null -w '%{http_code}' http://localhost:9001/"
+      );
+
+      expect(result.code).toBe(0);
+      const httpCode = result.stdout.trim();
+      // Console should return 200 or redirect (302)
+      expect(['200', '302', '403']).toContain(httpCode);
+
+      // eslint-disable-next-line no-console
+      console.log(`RustFS console HTTP status: ${httpCode}`);
+    });
+  });
 });
 
 /**
@@ -129,74 +128,73 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
     }
   });
 
-  test.describe
-    .serial('Bucket CRUD', () => {
-      const testBucket = 'e2e-test-bucket';
+  test.describe('Bucket CRUD', () => {
+    const testBucket = 'e2e-test-bucket';
 
-      test('should create default bucket', async () => {
-        const result = await ops.createRustFSBucket();
+    test('should create default bucket', async () => {
+      const result = await ops.createRustFSBucket();
 
-        expect(result.success).toBe(true);
-        // eslint-disable-next-line no-console
-        console.log(result.message);
-      });
-
-      test('should create custom bucket', async () => {
-        const result = await ops.createRustFSBucket(testBucket);
-
-        expect(result.success).toBe(true);
-        expect(result.message).toContain(testBucket);
-        // eslint-disable-next-line no-console
-        console.log(result.message);
-      });
-
-      test('should list default bucket', async () => {
-        const result = await ops.listRustFSBucket();
-
-        expect(result.success).toBe(true);
-        // Empty bucket is fine
-        // eslint-disable-next-line no-console
-        console.log(`Default bucket contents: ${result.contents || '(empty)'}`);
-      });
-
-      test('should list custom bucket', async () => {
-        const result = await ops.listRustFSBucket(testBucket);
-
-        expect(result.success).toBe(true);
-        // Empty bucket is fine
-        // eslint-disable-next-line no-console
-        console.log(`${testBucket} contents: ${result.contents || '(empty)'}`);
-      });
-
-      test('should upload test file to bucket', async () => {
-        const bridgeIp = ops.getBridgeVMIp();
-
-        // Create a test file and upload via rclone
-        const result = await ops.executeOnVM(
-          bridgeIp,
-          `echo "e2e-test-content-$(date +%s)" > /tmp/test-file.txt && ` +
-            `rclone copy /tmp/test-file.txt rustfs:${testBucket}/ ` +
-            `--s3-provider Other ` +
-            `--s3-endpoint http://localhost:9000 ` +
-            `--s3-access-key-id ${rustfsAccessKey} ` +
-            `--s3-secret-access-key ${rustfsSecretKey} ` +
-            `--s3-force-path-style`
-        );
-
-        expect(result.code).toBe(0);
-        // eslint-disable-next-line no-console
-        console.log('Test file uploaded');
-      });
-
-      test('should list bucket with uploaded file', async () => {
-        const result = await ops.listRustFSBucket(testBucket);
-
-        expect(result.success).toBe(true);
-        expect(result.contents).toContain('test-file.txt');
-        // eslint-disable-next-line no-console
-        console.log(`Bucket contents: ${result.contents}`);
-      });
+      expect(result.success).toBe(true);
+      // eslint-disable-next-line no-console
+      console.log(result.message);
     });
+
+    test('should create custom bucket', async () => {
+      const result = await ops.createRustFSBucket(testBucket);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain(testBucket);
+      // eslint-disable-next-line no-console
+      console.log(result.message);
+    });
+
+    test('should list default bucket', async () => {
+      const result = await ops.listRustFSBucket();
+
+      expect(result.success).toBe(true);
+      // Empty bucket is fine
+      // eslint-disable-next-line no-console
+      console.log(`Default bucket contents: ${result.contents || '(empty)'}`);
+    });
+
+    test('should list custom bucket', async () => {
+      const result = await ops.listRustFSBucket(testBucket);
+
+      expect(result.success).toBe(true);
+      // Empty bucket is fine
+      // eslint-disable-next-line no-console
+      console.log(`${testBucket} contents: ${result.contents || '(empty)'}`);
+    });
+
+    test('should upload test file to bucket', async () => {
+      const bridgeIp = ops.getBridgeVMIp();
+
+      // Create a test file and upload via rclone
+      const result = await ops.executeOnVM(
+        bridgeIp,
+        `echo "e2e-test-content-$(date +%s)" > /tmp/test-file.txt && ` +
+          `rclone copy /tmp/test-file.txt rustfs:${testBucket}/ ` +
+          `--s3-provider Other ` +
+          `--s3-endpoint http://localhost:9000 ` +
+          `--s3-access-key-id ${rustfsAccessKey} ` +
+          `--s3-secret-access-key ${rustfsSecretKey} ` +
+          `--s3-force-path-style`
+      );
+
+      expect(result.code).toBe(0);
+      // eslint-disable-next-line no-console
+      console.log('Test file uploaded');
+    });
+
+    test('should list bucket with uploaded file', async () => {
+      const result = await ops.listRustFSBucket(testBucket);
+
+      expect(result.success).toBe(true);
+      expect(result.contents).toContain('test-file.txt');
+      // eslint-disable-next-line no-console
+      console.log(`Bucket contents: ${result.contents}`);
+    });
+  });
 });
 
 /**
@@ -292,69 +290,79 @@ test.describe('RustFS Integration @bridge @rustfs @slow', () => {
 
   test.setTimeout(300000); // 5 minutes
 
-  test.describe
-    .serial('End-to-End Workflow', () => {
-      test('should start RustFS', async () => {
-        const result = await ops.startRustFS();
-        expect(result.success).toBe(true);
-      });
-
-      test('should create integration bucket', async () => {
-        const result = await ops.createRustFSBucket(integrationBucket);
-        expect(result.success).toBe(true);
-      });
-
-      test('should configure all workers', async () => {
-        const result = await ops.configureRustFSWorkers();
-        expect(result.success).toBe(true);
-      });
-
-      test('should upload file from worker to RustFS', async () => {
-        const vmIds = ops.getVMIds();
-        const workerId = vmIds.workers[0];
-        const workerIp = ops.calculateVMIp(workerId);
-
-        // Create and upload a file from worker
-        const result = await ops.executeOnVM(
-          workerIp,
-          `echo "uploaded-from-worker-$(hostname)-$(date +%s)" > /tmp/worker-test.txt && ` +
-            `rclone copy /tmp/worker-test.txt rustfs:${integrationBucket}/`
-        );
-
-        expect(result.code).toBe(0);
-        // eslint-disable-next-line no-console
-        console.log('File uploaded from worker to RustFS');
-      });
-
-      test('should download file from RustFS to another worker', async () => {
-        const vmIds = ops.getVMIds();
-
-        // Use second worker if available, otherwise first
-        const downloadWorkerId = vmIds.workers.length > 1 ? vmIds.workers[1] : vmIds.workers[0];
-        const downloadWorkerIp = ops.calculateVMIp(downloadWorkerId);
-
-        // Download the file to another worker
-        const result = await ops.executeOnVM(
-          downloadWorkerIp,
-          `rclone copy rustfs:${integrationBucket}/worker-test.txt /tmp/downloaded/ && ` +
-            `cat /tmp/downloaded/worker-test.txt`
-        );
-
-        expect(result.code).toBe(0);
-        expect(result.stdout).toContain('uploaded-from-worker');
-        // eslint-disable-next-line no-console
-        console.log(`Downloaded content: ${result.stdout.trim()}`);
-      });
-
-      test('should list integration bucket with uploaded files', async () => {
-        const result = await ops.listRustFSBucket(integrationBucket);
-
-        expect(result.success).toBe(true);
-        expect(result.contents).toContain('worker-test.txt');
-        // eslint-disable-next-line no-console
-        console.log(`Integration bucket: ${result.contents}`);
-      });
+  test.describe('End-to-End Workflow', () => {
+    test('should start RustFS', async () => {
+      const result = await ops.startRustFS();
+      expect(result.success).toBe(true);
     });
+
+    test('should create integration bucket', async () => {
+      const result = await ops.createRustFSBucket(integrationBucket);
+      expect(result.success).toBe(true);
+    });
+
+    test('should configure all workers', async () => {
+      const result = await ops.configureRustFSWorkers();
+      expect(result.success).toBe(true);
+    });
+
+    test('should upload file from worker to RustFS', async () => {
+      const vmIds = ops.getVMIds();
+      const workerId = vmIds.workers[0];
+      const workerIp = ops.calculateVMIp(workerId);
+
+      // Create and upload a file from worker (add -v for verbose output)
+      const result = await ops.executeOnVM(
+        workerIp,
+        `echo "uploaded-from-worker-$(hostname)-$(date +%s)" > /tmp/worker-test.txt && ` +
+          `rclone copy /tmp/worker-test.txt rustfs:${integrationBucket}/ -v 2>&1`
+      );
+
+      // Always log output for debugging
+      console.warn(`[RustFS Upload] Worker ${workerId} (${workerIp}) exit code: ${result.code}`);
+      console.warn(`[RustFS Upload] stdout: ${result.stdout}`);
+      if (result.stderr) console.warn(`[RustFS Upload] stderr: ${result.stderr}`);
+
+      expect(result.code).toBe(0);
+    });
+
+    test('should download file from RustFS to another worker', async () => {
+      const vmIds = ops.getVMIds();
+
+      // Use second worker if available, otherwise first
+      const downloadWorkerId = vmIds.workers.length > 1 ? vmIds.workers[1] : vmIds.workers[0];
+      const downloadWorkerIp = ops.calculateVMIp(downloadWorkerId);
+
+      // Download the file to another worker (add -v for verbose output)
+      const result = await ops.executeOnVM(
+        downloadWorkerIp,
+        `rclone copy rustfs:${integrationBucket}/worker-test.txt /tmp/downloaded/ -v 2>&1 && ` +
+          `cat /tmp/downloaded/worker-test.txt`
+      );
+
+      // Always log output for debugging
+      console.warn(
+        `[RustFS Download] Worker ${downloadWorkerId} (${downloadWorkerIp}) exit code: ${result.code}`
+      );
+      console.warn(`[RustFS Download] stdout: ${result.stdout}`);
+      if (result.stderr) console.warn(`[RustFS Download] stderr: ${result.stderr}`);
+
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain('uploaded-from-worker');
+    });
+
+    test('should list integration bucket with uploaded files', async () => {
+      const result = await ops.listRustFSBucket(integrationBucket);
+
+      // Always log output for debugging
+      console.warn(`[RustFS List] Bucket ${integrationBucket} success: ${result.success}`);
+      console.warn(`[RustFS List] contents: ${result.contents}`);
+      console.warn(`[RustFS List] message: ${result.message}`);
+
+      expect(result.success).toBe(true);
+      expect(result.contents).toContain('worker-test.txt');
+    });
+  });
 });
 
 /**

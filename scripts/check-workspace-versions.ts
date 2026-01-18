@@ -6,7 +6,7 @@
  * matches the root package.json version.
  *
  * Usage:
- *   node scripts/check-workspace-versions.js
+ *   npx tsx scripts/check-workspace-versions.ts
  *
  * Exit codes:
  *   0 - All versions match
@@ -20,7 +20,34 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
 
-const PACKAGES = [
+interface PackageConfig {
+  path: string;
+  name: string;
+}
+
+interface PackageJson {
+  version?: string;
+}
+
+interface VersionInfo {
+  version: string;
+  path: string;
+}
+
+interface VersionMismatch {
+  name: string;
+  path: string;
+  actual: string;
+  expected: string;
+}
+
+interface CheckResult {
+  success: boolean;
+  errors?: string[];
+  version?: string;
+}
+
+const PACKAGES: PackageConfig[] = [
   { path: '', name: 'rediacc-console (root)' },
   { path: 'packages/shared', name: '@rediacc/shared' },
   { path: 'packages/shared-desktop', name: '@rediacc/shared-desktop' },
@@ -33,19 +60,19 @@ const PACKAGES = [
   { path: 'packages/json', name: '@rediacc/json' },
 ];
 
-function readPackageJson(packagePath) {
+function readPackageJson(packagePath: string): PackageJson | null {
   const fullPath = path.join(CONSOLE_ROOT, packagePath, 'package.json');
   try {
     const content = fs.readFileSync(fullPath, 'utf-8');
-    return JSON.parse(content);
+    return JSON.parse(content) as PackageJson;
   } catch {
     return null;
   }
 }
 
-function checkVersionConsistency() {
-  const errors = [];
-  const versions = new Map();
+function checkVersionConsistency(): CheckResult {
+  const errors: string[] = [];
+  const versions = new Map<string, VersionInfo>();
 
   for (const pkg of PACKAGES) {
     const packageJson = readPackageJson(pkg.path);
@@ -54,7 +81,7 @@ function checkVersionConsistency() {
       continue;
     }
     versions.set(pkg.name, {
-      version: packageJson.version,
+      version: packageJson.version ?? '',
       path: pkg.path || '.',
     });
   }
@@ -69,7 +96,7 @@ function checkVersionConsistency() {
     return { success: false, errors };
   }
 
-  const mismatches = [];
+  const mismatches: VersionMismatch[] = [];
   for (const [name, info] of versions) {
     if (info.version !== rootVersion) {
       mismatches.push({
@@ -101,7 +128,7 @@ const result = checkVersionConsistency();
 
 if (!result.success) {
   console.error('Workspace version check FAILED:\n');
-  result.errors.forEach((e) => console.error(e));
+  result.errors?.forEach((e) => console.error(e));
   process.exit(1);
 }
 

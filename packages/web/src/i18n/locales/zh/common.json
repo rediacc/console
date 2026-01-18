@@ -376,19 +376,19 @@
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"
   },
   "teamSelector": {
+    "moreTeams": "+{{count}} 更多",
     "selectTeam": "选择团队...",
-    "selectTeams": "选择团队...",
-    "moreTeams": "+{{count}} 更多"
+    "selectTeams": "选择团队..."
   },
   "terminal": {
-    "terminal": "终端",
+    "connectedTo": "已连接到 {{host}}",
     "connecting": "连接中",
     "connectionFailed": "连接失败",
-    "connectedTo": "已连接到 {{host}}",
     "establishingConnection": "正在建立到 {{host}} 的 SSH 连接...",
-    "waitingForConnection": "等待连接...",
+    "popout": "弹出到新窗口",
     "reconnect": "重新连接",
-    "popout": "弹出到新窗口"
+    "terminal": "终端",
+    "waitingForConnection": "等待连接..."
   },
   "theme": {
     "dark": "深色",
@@ -520,13 +520,13 @@
           "label": "数据存储路径"
         },
         "description": "SSH访问和存储的机器配置",
-        "known_hosts": {
-          "description": "用于安全验证的SSH已知主机条目",
-          "label": "主机条目"
-        },
         "ip": {
           "description": "机器的IP地址",
           "label": "IP地址"
+        },
+        "known_hosts": {
+          "description": "用于安全验证的SSH已知主机条目",
+          "label": "主机条目"
         },
         "port": {
           "description": "SSH端口号",
@@ -718,13 +718,13 @@
     "fieldsMovedFromExtra": "{{count}} 个字段已从 extraFields 恢复：{{fields}}",
     "fieldsMovedToExtra": "{{count}} 个字段已移至 extraFields：{{fields}}",
     "formatJson": "格式化JSON",
-    "knownHostsHelp": "选修的。 将自动检测 SSH 已知主机条目。",
-    "knownHostsPlaceholder": "连接测试期间自动填充",
     "importJson": "导入JSON",
     "invalidFormat": "格式无效。{{description}}",
     "invalidJsonFormat": "无效的JSON格式",
     "isRequired": "{{field}} 为必填",
     "jsonError": "JSON错误",
+    "knownHostsHelp": "选修的。 将自动检测 SSH 已知主机条目。",
+    "knownHostsPlaceholder": "连接测试期间自动填充",
     "maxLength": "最大长度为 {{length}}",
     "maxValue": "最大值为 {{value}}",
     "minLength": "最小长度为 {{length}}",
@@ -791,17 +791,17 @@
     "versionWillIncrement": "版本将递增到 {{version}}"
   },
   "viewDetails": "查看详情",
+  "vscodeSelection": {
+    "description": "检测到多个 VS Code 安装。请选择要使用的版本：",
+    "open": "打开",
+    "rememberChoice": "记住我的选择",
+    "title": "选择 VS Code 安装",
+    "windowsVSCode": "Windows 版 VS Code",
+    "wslVSCode": "WSL 版 VS Code (Linux)"
+  },
   "warnings": {
     "sandboxEnvironment": "沙盒环境",
     "sandboxMessage": "更新期间数据可能会重置。 仅用于测试。"
-  },
-  "vscodeSelection": {
-    "title": "选择 VS Code 安装",
-    "open": "打开",
-    "description": "检测到多个 VS Code 安装。请选择要使用的版本：",
-    "windowsVSCode": "Windows 版 VS Code",
-    "wslVSCode": "WSL 版 VS Code (Linux)",
-    "rememberChoice": "记住我的选择"
   },
   "yes": "是",
   "yesterday": "昨天"
