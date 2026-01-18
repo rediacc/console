@@ -36,7 +36,7 @@ export interface SSHResult {
 /**
  * Default SSH configuration values.
  */
-export const SSH_DEFAULTS = {
+const SSH_DEFAULTS = {
   CONNECT_TIMEOUT: 10, // Standardized to 10s for CI environments
   EXEC_TIMEOUT: 60000,
   BATCH_MODE: true,
