@@ -3,17 +3,21 @@
 # Usage: run-bridge.sh [options]
 #
 # Options:
-#   --workers   Number of parallel workers (default: 1 in CI, 4 local)
-#   --filter    Test name filter pattern (passed to --grep)
-#   --test      Test file filter(s) passed to Playwright
-#   --headed    Run tests with visible browser
-#   --debug     Open Playwright Inspector for debugging
-#   --ui        Open Playwright UI mode (interactive)
+#   --workers       Number of parallel workers (default: 1 in CI, 4 local)
+#   --filter        Test name filter pattern (passed to --grep)
+#   --grep          Alias for --filter (passed to Playwright --grep)
+#   --grep-invert   Exclude tests matching pattern (passed to Playwright --grep-invert)
+#   --test          Test file filter(s) passed to Playwright
+#   --headed        Run tests with visible browser
+#   --debug         Open Playwright Inspector for debugging
+#   --ui            Open Playwright UI mode (interactive)
 #
 # Example:
 #   .ci/scripts/test/run-bridge.sh
 #   .ci/scripts/test/run-bridge.sh --workers 2
 #   .ci/scripts/test/run-bridge.sh --filter "system-checks"
+#   .ci/scripts/test/run-bridge.sh --grep "@ceph"
+#   .ci/scripts/test/run-bridge.sh --grep-invert "@ceph"
 #   .ci/scripts/test/run-bridge.sh --test tests/01-system-checks.test.ts
 #   .ci/scripts/test/run-bridge.sh --debug
 
@@ -24,6 +28,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Parse arguments
 WORKERS=""
 FILTER=""
+GREP_INVERT=""
 TEST_FILES=()
 HEADED=false
 DEBUG=false
@@ -35,8 +40,11 @@ for arg in "$@"; do
         --workers)
             CURRENT_ARG="workers"
             ;;
-        --filter)
+        --filter|--grep)
             CURRENT_ARG="filter"
+            ;;
+        --grep-invert)
+            CURRENT_ARG="grep-invert"
             ;;
         --test)
             CURRENT_ARG="test"
@@ -58,6 +66,10 @@ for arg in "$@"; do
                     ;;
                 filter)
                     FILTER="$arg"
+                    CURRENT_ARG=""
+                    ;;
+                grep-invert)
+                    GREP_INVERT="$arg"
                     CURRENT_ARG=""
                     ;;
                 test)
@@ -91,6 +103,9 @@ CMD+=("--workers=$WORKERS")
 
 # Add filter if provided
 [[ -n "$FILTER" ]] && CMD+=("--grep" "$FILTER")
+
+# Add grep-invert if provided
+[[ -n "$GREP_INVERT" ]] && CMD+=("--grep-invert" "$GREP_INVERT")
 
 # Add test files if provided
 if [[ ${#TEST_FILES[@]} -gt 0 ]]; then
