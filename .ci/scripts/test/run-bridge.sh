@@ -4,6 +4,7 @@
 #
 # Options:
 #   --workers       Number of parallel workers (default: 1 in CI, 4 local)
+#   --config        Playwright config file (default: playwright.config.ts)
 #   --filter        Test name filter pattern (passed to --grep)
 #   --grep          Alias for --filter (passed to Playwright --grep)
 #   --grep-invert   Exclude tests matching pattern (passed to Playwright --grep-invert)
@@ -15,6 +16,7 @@
 # Example:
 #   .ci/scripts/test/run-bridge.sh
 #   .ci/scripts/test/run-bridge.sh --workers 2
+#   .ci/scripts/test/run-bridge.sh --config playwright.ceph.config.ts
 #   .ci/scripts/test/run-bridge.sh --filter "system-checks"
 #   .ci/scripts/test/run-bridge.sh --grep "@ceph"
 #   .ci/scripts/test/run-bridge.sh --grep-invert "@ceph"
@@ -27,6 +29,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 # Parse arguments
 WORKERS=""
+CONFIG=""
 FILTER=""
 GREP_INVERT=""
 TEST_FILES=()
@@ -39,6 +42,9 @@ for arg in "$@"; do
     case "$arg" in
         --workers)
             CURRENT_ARG="workers"
+            ;;
+        --config)
+            CURRENT_ARG="config"
             ;;
         --filter|--grep)
             CURRENT_ARG="filter"
@@ -62,6 +68,10 @@ for arg in "$@"; do
             case "$CURRENT_ARG" in
                 workers)
                     WORKERS="$arg"
+                    CURRENT_ARG=""
+                    ;;
+                config)
+                    CONFIG="$arg"
                     CURRENT_ARG=""
                     ;;
                 filter)
@@ -100,6 +110,9 @@ log_step "Running bridge tests (workers: $WORKERS)..."
 # Build command
 CMD=(npx playwright test)
 CMD+=("--workers=$WORKERS")
+
+# Add config if provided
+[[ -n "$CONFIG" ]] && CMD+=("--config" "$CONFIG")
 
 # Add filter if provided
 [[ -n "$FILTER" ]] && CMD+=("--grep" "$FILTER")

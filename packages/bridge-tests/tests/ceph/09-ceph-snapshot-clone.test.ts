@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
-import { CephTestHelper } from '../src/utils/bridge/CephTestHelper';
+import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
+import { CephTestHelper } from '../../src/utils/bridge/CephTestHelper';
 
 // Check if Ceph is configured - skip all tests if not
 // VM_CEPH_NODES can be empty, "NONE", or space-separated list of VM IDs

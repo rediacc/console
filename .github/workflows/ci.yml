@@ -669,7 +669,7 @@ jobs:
         run: .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
 
       - name: Run Bridge Tests (Workers)
-        run: .ci/scripts/test/run-bridge.sh --workers 1 --grep-invert "@ceph"
+        run: .ci/scripts/test/run-bridge.sh --workers 1
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "bridge-workers"
@@ -689,14 +689,12 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-  # NOTE: test-bridge-ceph is disabled until Ceph infrastructure is available in CI.
-  # Ceph tests require a real Ceph cluster which we don't provision in the standard CI flow.
-  # To run Ceph tests locally: npm run test:bridge -- --grep "@ceph"
+  # Ceph integration tests - provisions 1 bridge + 3 Ceph nodes (no workers)
+  # Tests pool/image operations, snapshot/clone, and COW mount functionality
   test-bridge-ceph:
     name: Test - Bridge (Ceph)
     runs-on: ubuntu-latest
     needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    if: false  # Disabled: Ceph cluster not available in CI
     timeout-minutes: 45
     env:
       CI: 'true'
@@ -736,7 +734,7 @@ jobs:
         run: .ci/scripts/env/create-bridge-env.sh --ceph --output packages/bridge-tests/.env
 
       - name: Run Bridge Tests (Ceph)
-        run: .ci/scripts/test/run-bridge.sh --workers 1 --grep "@ceph"
+        run: .ci/scripts/test/run-bridge.sh --workers 1 --config playwright.ceph.config.ts
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph"
@@ -752,7 +750,7 @@ jobs:
         if: always()
         with:
           name: bridge-ceph-test-report-${{ github.sha }}
-          path: packages/bridge-tests/reports/bridge/
+          path: packages/bridge-tests/reports/bridge-ceph/
           retention-days: 3
           if-no-files-found: ignore
 
@@ -1120,7 +1118,7 @@ jobs:
           echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Bridge (Workers): ${{ needs.test-bridge-workers.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Bridge (Ceph): ${{ needs.test-bridge-ceph.result }} (disabled - no Ceph infra in CI)" >> $GITHUB_STEP_SUMMARY
+          echo "- Bridge (Ceph): ${{ needs.test-bridge-ceph.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E (All Projects): ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
@@ -1133,8 +1131,7 @@ jobs:
           echo "- GitHub Pages: ${{ needs.deploy-pages.result }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
-          # Note: test-bridge-ceph is excluded from failure check as it's intentionally disabled (no Ceph infra in CI)
-          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-bridge-workers.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
+          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-bridge-workers.result }}" "${{ needs.test-bridge-ceph.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
             [ "$result" != "success" ] && FAILED=true
           done
 
