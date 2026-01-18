@@ -604,13 +604,6 @@ jobs:
         working-directory: console
         run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
 
-      - name: Start RustFS on Bridge VM
-        working-directory: console
-        run: |
-          # Start RustFS S3-compatible storage on bridge VM (192.168.111.1)
-          /tmp/renet ops rustfs start
-          echo "RustFS started on bridge VM"
-
       - name: Wait for Completion Signals
         working-directory: console
         run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200

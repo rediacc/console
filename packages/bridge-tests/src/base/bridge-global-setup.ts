@@ -273,6 +273,18 @@ async function bridgeGlobalSetup(_config: FullConfig) {
       throw new Error(`RustFS failed to start: ${rustfsResult.message}`);
     }
 
+    // Step 4b: Configure rclone on workers for RustFS access (if workers exist)
+    if (workerIps.length > 0) {
+      console.warn('');
+      console.warn('Step 4b: Configuring workers for RustFS access...');
+      const configResult = await opsManager.configureRustFSWorkers();
+      if (configResult.success) {
+        console.warn(`  ✓ ${configResult.message}`);
+      } else {
+        console.warn(`  ! ${configResult.message} (non-fatal, tests may configure individually)`);
+      }
+    }
+
     // Step 5: Initialize datastores on all worker VMs
     await initializeDatastoresIfNeeded(opsManager, workerIps);
 
