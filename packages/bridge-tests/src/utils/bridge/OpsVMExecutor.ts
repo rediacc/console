@@ -19,21 +19,34 @@ const UNKNOWN_ERROR = 'Unknown error';
  * SSH KEYS:
  * Uses SSH keys from OPS_HOME/staging/.ssh/id_rsa (same location as renet).
  * Falls back to default SSH if key is not available.
+ *
+ * NOTE: SSH options are computed dynamically (not cached in constructor) because
+ * renet creates SSH keys during `ops up`, which happens after this class is instantiated.
  */
 export class OpsVMExecutor {
-  private readonly sshOptions: string;
+  private sshKeyLogged = false;
 
-  constructor() {
-    // Get SSH options with identity file if available
-    this.sshOptions = `${getSSHOptions()} -q -o ConnectTimeout=5`;
+  /**
+   * Get SSH options dynamically.
+   *
+   * This is called fresh each time because the SSH key may be created by renet
+   * during ops up, after this executor is instantiated.
+   */
+  private getSSHOptionsWithTimeout(): string {
+    const baseOptions = getSSHOptions();
 
-    // Log SSH key status on initialization
-    const keyPath = getSSHPrivateKeyPath();
-    if (isSSHKeyAvailable()) {
-      console.warn(`[OpsVMExecutor] Using SSH key: ${keyPath}`);
-    } else {
-      console.warn(`[OpsVMExecutor] SSH key not found at ${keyPath}, using default SSH`);
+    // Log key status once per session
+    if (!this.sshKeyLogged) {
+      const keyPath = getSSHPrivateKeyPath();
+      if (isSSHKeyAvailable()) {
+        console.warn(`[OpsVMExecutor] Using SSH key: ${keyPath}`);
+      } else {
+        console.warn(`[OpsVMExecutor] SSH key not found at ${keyPath}, using default SSH`);
+      }
+      this.sshKeyLogged = true;
     }
+
+    return `${baseOptions} -q -o ConnectTimeout=5`;
   }
 
   /**
@@ -59,7 +72,8 @@ export class OpsVMExecutor {
       if (!user) {
         throw new Error('USER environment variable is not set');
       }
-      await execAsync(`ssh ${this.sshOptions} ${user}@${ip} "echo ready"`, { timeout: 10000 });
+      const sshOptions = this.getSSHOptionsWithTimeout();
+      await execAsync(`ssh ${sshOptions} ${user}@${ip} "echo ready"`, { timeout: 10000 });
       return true;
     } catch {
       return false;
@@ -104,7 +118,8 @@ export class OpsVMExecutor {
     if (!user) {
       throw new Error('USER environment variable is not set');
     }
-    const sshCommand = `ssh ${this.sshOptions} ${user}@${ip} "${command.replaceAll('"', '\\"')}"`;
+    const sshOptions = this.getSSHOptionsWithTimeout();
+    const sshCommand = `ssh ${sshOptions} ${user}@${ip} "${command.replaceAll('"', '\\"')}"`;
 
     try {
       const { stdout, stderr } = await execAsync(sshCommand, { timeout: timeoutMs });
