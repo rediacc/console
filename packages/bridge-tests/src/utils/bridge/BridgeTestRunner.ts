@@ -106,10 +106,20 @@ export class BridgeTestRunner {
    */
   private resolveTargetVM(target: VMTarget): string {
     switch (target) {
-      case 'worker1':
-        return this.opsManager.getWorkerVMIps()[0];
-      case 'worker2':
-        return this.opsManager.getWorkerVMIps()[1];
+      case 'worker1': {
+        const workers = this.opsManager.getWorkerVMIps();
+        if (workers.length === 0) {
+          throw new Error('No worker VMs configured - cannot target worker1 in Ceph-only mode');
+        }
+        return workers[0];
+      }
+      case 'worker2': {
+        const workers = this.opsManager.getWorkerVMIps();
+        if (workers.length < 2) {
+          throw new Error('Less than 2 worker VMs configured - cannot target worker2');
+        }
+        return workers[1];
+      }
       case 'ceph1':
         return this.opsManager.getCephVMIps()[0];
       case 'ceph2':
@@ -163,16 +173,26 @@ export class BridgeTestRunner {
 
   /**
    * Get first worker VM IP (calculated from ops config).
+   * Throws if no worker VMs are configured (Ceph-only mode).
    */
   getWorkerVM(): string {
-    return this.opsManager.getWorkerVMIps()[0];
+    const workers = this.opsManager.getWorkerVMIps();
+    if (workers.length === 0) {
+      throw new Error('No worker VMs configured - cannot get worker VM in Ceph-only mode');
+    }
+    return workers[0];
   }
 
   /**
    * Get second worker VM IP (calculated from ops config).
+   * Throws if less than 2 worker VMs are configured.
    */
   getWorkerVM2(): string {
-    return this.opsManager.getWorkerVMIps()[1];
+    const workers = this.opsManager.getWorkerVMIps();
+    if (workers.length < 2) {
+      throw new Error('Less than 2 worker VMs configured - cannot get worker2');
+    }
+    return workers[1];
   }
 
   /**

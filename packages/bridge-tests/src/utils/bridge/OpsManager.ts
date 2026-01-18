@@ -93,18 +93,12 @@ export class OpsManager {
     }
     const bridgeId = Number.parseInt(bridgeIdStr, 10);
 
-    // Parse worker IDs from space-separated string
-    const workersStr = process.env.VM_WORKERS;
-    if (!workersStr) {
-      throw new Error('VM_WORKERS environment variable is required');
-    }
+    // Parse worker IDs from space-separated string (can be empty in Ceph-only mode)
+    const workersStr = process.env.VM_WORKERS ?? '';
     const workerIds = workersStr
       .split(/\s+/)
       .map((id) => Number.parseInt(id, 10))
       .filter((id) => !Number.isNaN(id));
-    if (workerIds.length === 0) {
-      throw new Error('VM_WORKERS must contain at least one worker ID');
-    }
 
     // Parse ceph node IDs (optional - empty means Ceph disabled)
     const cephStr = process.env.VM_CEPH_NODES ?? '';
@@ -112,7 +106,13 @@ export class OpsManager {
       .split(/\s+/)
       .map((id) => Number.parseInt(id, 10))
       .filter((id) => !Number.isNaN(id));
-    // No error if empty - Ceph is optional for faster test cycles
+
+    // Allow empty workers if Ceph nodes are configured (Ceph-only mode)
+    if (workerIds.length === 0 && cephIds.length === 0) {
+      throw new Error(
+        'VM_WORKERS must contain at least one worker ID (or configure VM_CEPH_NODES for Ceph-only mode)'
+      );
+    }
 
     return { netBase, netOffset, bridgeId, workerIds, cephIds };
   }

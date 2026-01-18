@@ -110,6 +110,39 @@ async function verifyVMsWithRetry(
 }
 
 /**
+ * Initialize datastores on worker VMs if workers are configured.
+ */
+async function initializeDatastoresIfNeeded(
+  opsManager: ReturnType<typeof getOpsManager>,
+  workerIps: string[]
+) {
+  if (workerIps.length > 0) {
+    console.warn('');
+    console.warn('Step 5: Initializing datastores on all worker VMs...');
+    await opsManager.initializeAllDatastores('10G', DEFAULT_DATASTORE_PATH);
+    console.warn('  ✓ All datastores initialized');
+  } else {
+    console.warn('');
+    console.warn('Step 5: Skipping datastore initialization (Ceph-only mode, no workers)');
+  }
+}
+
+/**
+ * Deploy CRIU to worker VMs if workers are configured.
+ */
+async function deployCRIUIfNeeded(infra: InfrastructureManager, workerIps: string[]) {
+  if (workerIps.length > 0) {
+    console.warn('');
+    console.warn('Step 6: Deploying CRIU to all worker VMs...');
+    await infra.deployCRIUToAllVMs();
+    console.warn('  ✓ CRIU deployed to all worker VMs');
+  } else {
+    console.warn('');
+    console.warn('Step 6: Skipping CRIU deployment (Ceph-only mode, no workers)');
+  }
+}
+
+/**
  * Write setup error to log file
  */
 function writeSetupErrorLog(error: unknown) {
@@ -216,7 +249,13 @@ async function bridgeGlobalSetup(_config: FullConfig) {
 
     // Step 2b: Run renet setup on all worker VMs to create universal user (rediacc)
     // This is required for multi-machine operations (push/pull) that use sudo -u rediacc
-    await setupWorkerVMs(opsManager);
+    const workerIps = opsManager.getWorkerVMIps();
+    if (workerIps.length > 0) {
+      await setupWorkerVMs(opsManager);
+    } else {
+      console.warn('');
+      console.warn('Step 2b: Skipping worker setup (Ceph-only mode, no workers)');
+    }
 
     // Step 3: Verify all VMs are ready
     await verifyVMsWithRetry(opsManager, infra);
@@ -235,22 +274,10 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     }
 
     // Step 5: Initialize datastores on all worker VMs
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 5: Initializing datastores on all worker VMs...');
-    await opsManager.initializeAllDatastores('10G', DEFAULT_DATASTORE_PATH);
-    // eslint-disable-next-line no-console
-    console.log('  ✓ All datastores initialized');
+    await initializeDatastoresIfNeeded(opsManager, workerIps);
 
     // Step 6: Deploy CRIU to all worker VMs
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 6: Deploying CRIU to all worker VMs...');
-    await infra.deployCRIUToAllVMs();
-    // eslint-disable-next-line no-console
-    console.log('  ✓ CRIU deployed to all worker VMs');
+    await deployCRIUIfNeeded(infra, workerIps);
 
     /* eslint-disable no-console */
     console.log('');

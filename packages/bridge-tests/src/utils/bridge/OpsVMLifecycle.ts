@@ -100,9 +100,14 @@ export class OpsVMLifecycle {
    * Wait for worker VMs to be ready
    */
   async waitForWorkerVMs(timeoutMs = 180000): Promise<boolean> {
+    const workerIps = this.getWorkerVMIps();
+    if (workerIps.length === 0) {
+      console.warn('[OpsVMLifecycle] No worker VMs configured, skipping wait');
+      return true; // No workers to wait for = success
+    }
     console.warn('[OpsVMLifecycle] Waiting for worker VMs to be ready...');
 
-    const promises = this.getWorkerVMIps().map((ip) => this.vmExecutor.waitForVM(ip, timeoutMs));
+    const promises = workerIps.map((ip) => this.vmExecutor.waitForVM(ip, timeoutMs));
     const results = await Promise.all(promises);
 
     return results.every((ready) => ready);
