@@ -489,7 +489,7 @@ jobs:
     name: Infra - Backend
     runs-on: ubuntu-latest
     needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    timeout-minutes: 120
+    timeout-minutes: 60
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 120000
@@ -596,10 +596,20 @@ jobs:
           VM_OS_IMAGE: rediacc-ubuntu-24.04
           TAG: latest
           SKIP_MACHINE_REGISTRATION: 'true'
+          VM_BRIDGE: '1'
+          VM_WORKERS: '11 12'
+          VM_CEPH_NODES: ''
 
       - name: Extract renet binary
         working-directory: console
         run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Start RustFS on Bridge VM
+        working-directory: console
+        run: |
+          # Start RustFS S3-compatible storage on bridge VM (192.168.111.1)
+          /tmp/renet ops rustfs start
+          echo "RustFS started on bridge VM"
 
       - name: Wait for Completion Signals
         working-directory: console

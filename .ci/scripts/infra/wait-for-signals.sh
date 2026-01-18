@@ -42,8 +42,11 @@ require_var GITHUB_RUN_ID
 
 # Define expected signals
 CLI_PLATFORMS=("Linux" "Windows" "macOS")
-E2E_RESOLUTIONS=("resolution-1920x1080" "resolution-1366x768" "resolution-1536x864")
-E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
+# TODO: Re-enable when resolution/device tests are active
+# E2E_RESOLUTIONS=("resolution-1920x1080" "resolution-1366x768" "resolution-1536x864")
+# E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
+E2E_RESOLUTIONS=()
+E2E_DEVICES=()
 E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
 
 # Parse E2E_BROWSERS from environment
@@ -56,8 +59,9 @@ EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS_ARR[@]} + ${#E2E_RESOLU
 log_step "Waiting for $EXPECTED_COUNT completion signals (timeout: ${TIMEOUT}s)..."
 log_info "CLI platforms: ${CLI_PLATFORMS[*]}"
 log_info "E2E browsers: ${E2E_BROWSERS_ARR[*]}"
-log_info "E2E resolutions: ${E2E_RESOLUTIONS[*]}"
-log_info "E2E devices: ${E2E_DEVICES[*]}"
+# TODO: Re-enable when resolution/device tests are active
+# log_info "E2E resolutions: ${E2E_RESOLUTIONS[*]}"
+# log_info "E2E devices: ${E2E_DEVICES[*]}"
 log_info "E2E Electron: ${E2E_ELECTRON[*]}"
 
 # Track completed signals
@@ -100,19 +104,21 @@ while [[ $ELAPSED -lt $TIMEOUT ]]; do
         fi
     done
 
+    # TODO: Re-enable when resolution tests are active
     # Check E2E resolutions
-    for resolution in "${E2E_RESOLUTIONS[@]}"; do
-        if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${resolution}$"; then
-            mark_completed "e2e-${resolution}"
-        fi
-    done
+    # for resolution in "${E2E_RESOLUTIONS[@]}"; do
+    #     if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${resolution}$"; then
+    #         mark_completed "e2e-${resolution}"
+    #     fi
+    # done
 
+    # TODO: Re-enable when device tests are active
     # Check E2E devices
-    for device in "${E2E_DEVICES[@]}"; do
-        if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${device}$"; then
-            mark_completed "e2e-${device}"
-        fi
-    done
+    # for device in "${E2E_DEVICES[@]}"; do
+    #     if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${device}$"; then
+    #         mark_completed "e2e-${device}"
+    #     fi
+    # done
 
     # Check E2E Electron platforms
     for platform in "${E2E_ELECTRON[@]}"; do
@@ -148,12 +154,13 @@ done
 for browser in "${E2E_BROWSERS_ARR[@]}"; do
     is_completed "e2e-${browser}" || echo "  - e2e-${browser}"
 done
-for resolution in "${E2E_RESOLUTIONS[@]}"; do
-    is_completed "e2e-${resolution}" || echo "  - e2e-${resolution}"
-done
-for device in "${E2E_DEVICES[@]}"; do
-    is_completed "e2e-${device}" || echo "  - e2e-${device}"
-done
+# TODO: Re-enable when resolution/device tests are active
+# for resolution in "${E2E_RESOLUTIONS[@]}"; do
+#     is_completed "e2e-${resolution}" || echo "  - e2e-${resolution}"
+# done
+# for device in "${E2E_DEVICES[@]}"; do
+#     is_completed "e2e-${device}" || echo "  - e2e-${device}"
+# done
 for platform in "${E2E_ELECTRON[@]}"; do
     is_completed "e2e-${platform}" || echo "  - e2e-${platform}"
 done
