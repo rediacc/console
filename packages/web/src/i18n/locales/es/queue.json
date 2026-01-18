@@ -252,6 +252,13 @@
     "staleTaskTitle": "Tarea antigua",
     "staleTitle": "La tarea puede estar obsoleta",
     "status": "Estado",
+    "structuredLog": {
+      "level": "Nivel",
+      "message": "Mensaje",
+      "time": "Hora",
+      "viewRaw": "Sin formato",
+      "viewStructured": "Estructurado"
+    },
     "sudoSupport": "Compatibilidad Sudo",
     "system": "Sistema",
     "systemInfo": "Información del sistema",
@@ -272,13 +279,6 @@
     "user": "Usuario",
     "vaultContent": "Contenido de bóveda",
     "version": "Versión",
-    "waiting": "Esperando",
-    "structuredLog": {
-      "time": "Hora",
-      "level": "Nivel",
-      "message": "Mensaje",
-      "viewStructured": "Estructurado",
-      "viewRaw": "Sin formato"
-    }
+    "waiting": "Esperando"
   }
 }

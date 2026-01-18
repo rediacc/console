@@ -376,19 +376,19 @@
     "showingRecords": "Es werden Datensätze {{start}}–{{end}} von {{total}} angezeigt"
   },
   "teamSelector": {
+    "moreTeams": "+{{count}} mehr",
     "selectTeam": "Wählen Sie Team...",
-    "selectTeams": "Wählen Sie Teams...",
-    "moreTeams": "+{{count}} mehr"
+    "selectTeams": "Wählen Sie Teams..."
   },
   "terminal": {
-    "terminal": "Terminal",
+    "connectedTo": "Verbunden mit {{host}}",
     "connecting": "Verbinden",
     "connectionFailed": "Verbindung fehlgeschlagen",
-    "connectedTo": "Verbunden mit {{host}}",
     "establishingConnection": "SSH-Verbindung zu {{host}} wird hergestellt...",
-    "waitingForConnection": "Warten auf Verbindung...",
+    "popout": "In neuem Fenster öffnen",
     "reconnect": "Erneut verbinden",
-    "popout": "In neuem Fenster öffnen"
+    "terminal": "Terminal",
+    "waitingForConnection": "Warten auf Verbindung..."
   },
   "theme": {
     "dark": "Dunkel",
@@ -520,13 +520,13 @@
           "label": "Datenspeicherpfad"
         },
         "description": "Maschinenkonfiguration für SSH-Zugriff und -Speicherung",
-        "known_hosts": {
-          "description": "SSH-Eintrag bekannter Hosts zur Sicherheitsüberprüfung",
-          "label": "Host-Eintrag"
-        },
         "ip": {
           "description": "IP-Adresse der Maschine",
           "label": "IP-Adresse"
+        },
+        "known_hosts": {
+          "description": "SSH-Eintrag bekannter Hosts zur Sicherheitsüberprüfung",
+          "label": "Host-Eintrag"
         },
         "port": {
           "description": "SSH-Portnummer",
@@ -718,13 +718,13 @@
     "fieldsMovedFromExtra": "{{count}} Feld(er) aus extraFields wiederhergestellt: {{fields}}",
     "fieldsMovedToExtra": "{{count}} Feld(er) wurden nach extraFields verschoben: {{fields}}",
     "formatJson": "JSON formatieren",
-    "knownHostsHelp": "Optional. Der bekannte SSH-Hosteintrag wird automatisch erkannt.",
-    "knownHostsPlaceholder": "Wird während des Verbindungstests automatisch ausgefüllt",
     "importJson": "JSON importieren",
     "invalidFormat": "Ungültiges Format. {{description}}",
     "invalidJsonFormat": "Ungültiges JSON-Format",
     "isRequired": "{{field}} ist erforderlich",
     "jsonError": "JSON-Fehler",
+    "knownHostsHelp": "Optional. Der bekannte SSH-Hosteintrag wird automatisch erkannt.",
+    "knownHostsPlaceholder": "Wird während des Verbindungstests automatisch ausgefüllt",
     "maxLength": "Die maximale Länge beträgt {{length}}",
     "maxValue": "Maximalwert ist {{value}}",
     "minLength": "Die Mindestlänge beträgt {{length}}",
@@ -791,17 +791,17 @@
     "versionWillIncrement": "Die Version wird auf {{version}} erhöht"
   },
   "viewDetails": "Details anzeigen",
+  "vscodeSelection": {
+    "description": "Mehrere VS Code-Installationen erkannt. Wählen Sie aus, welche verwendet werden soll:",
+    "open": "Öffnen",
+    "rememberChoice": "Meine Wahl merken",
+    "title": "VS Code-Installation auswählen",
+    "windowsVSCode": "Windows-VS Code",
+    "wslVSCode": "WSL-VS Code (Linux)"
+  },
   "warnings": {
     "sandboxEnvironment": "Sandbox-Umgebung",
     "sandboxMessage": "Bei Aktualisierungen können Daten zurückgesetzt werden. Nur zum Testen."
-  },
-  "vscodeSelection": {
-    "title": "VS Code-Installation auswählen",
-    "open": "Öffnen",
-    "description": "Mehrere VS Code-Installationen erkannt. Wählen Sie aus, welche verwendet werden soll:",
-    "windowsVSCode": "Windows-VS Code",
-    "wslVSCode": "WSL-VS Code (Linux)",
-    "rememberChoice": "Meine Wahl merken"
   },
   "yes": "Ja",
   "yesterday": "Gestern"

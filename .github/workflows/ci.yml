@@ -688,7 +688,9 @@ jobs:
         if: always()
         with:
           name: bridge-workers-test-report-${{ github.sha }}
-          path: packages/bridge-tests/reports/bridge/
+          path: |
+            packages/bridge-tests/reports/bridge/
+            packages/bridge-tests/reports/bridge-logs/
           retention-days: 3
           if-no-files-found: ignore
 
@@ -752,7 +754,9 @@ jobs:
         if: always()
         with:
           name: bridge-ceph-test-report-${{ github.sha }}
-          path: packages/bridge-tests/reports/bridge-ceph/
+          path: |
+            packages/bridge-tests/reports/bridge-ceph/
+            packages/bridge-tests/reports/bridge-logs/
           retention-days: 3
           if-no-files-found: ignore
 

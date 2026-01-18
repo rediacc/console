@@ -109,7 +109,7 @@ User management allows you to control access to the platform for people in your 
 
 1. Click **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** option in the left sidebar.
 2. View the list of all users in table format.
-3. Each user row shows email, status (Active/Inactive), permission group, and last activity time.
+3. Each user row shows email, status ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), permission group, and last activity time.
 
 ![Users management page - active users list](/assets/images/UserGuideEng/07_users.png)
 *(Figure 7: Users section under Organization - all users' information is displayed)*
@@ -160,7 +160,7 @@ You can reactivate disabled users.
 ![User activation - "Activate" tooltip view](/assets/images/UserGuideEng/12_users_activation.png)
 *(Figure 12: Activating an inactive user)*
 
-3. Click the **Yes** button in the confirmation window.
+3. Click the **{{t:common.general.yes}}** button in the confirmation window.
 
 ![Activation confirmation modal](/assets/images/UserGuideEng/13_users_activation_confirm.png)
 *(Figure 13: Modal window for confirming user activation)*
@@ -179,7 +179,7 @@ You can use the trace feature to monitor user activities.
 
 3. The user's past activities are listed on the opened screen.
 4. Statistics are displayed at the top: Total Records, Viewed Records, Last Activity.
-5. Click the **{{t:common.actions.export}}** button and select format: **CSV** or **JSON**.
+5. Click the **{{t:common.actions.export}}** button and select format: **{{t:common.exportCSV}}** or **{{t:common.exportJSON}}**.
 
 ![Audit History - Export options](/assets/images/UserGuideEng/15_user_trace_export.png)
 *(Figure 15: User's complete activity history - statistics, details, and Export options)*
@@ -221,8 +221,8 @@ Teams allow you to group users and provide bulk access to resources.
 ### 2.2.3 Team Members Management
 
 1. Select a team and click the user icon.
-2. View members already assigned to the team in the **Current Members** tab.
-3. Switch to the **Add Member** tab.
+2. View members already assigned to the team in the **{{t:organization.teams.manageMembers.currentTab}}** tab.
+3. Switch to the **{{t:organization.teams.manageMembers.addTab}}** tab.
 4. Enter an email address or select a user from the dropdown.
 5. Click the **"+"** button to add the member to the team.
 
@@ -235,8 +235,8 @@ Teams allow you to group users and provide bulk access to resources.
 
 1. Select the team you want to trace.
 2. Click the clock/history icon.
-3. Review Total Records, Viewed Records, and Last Activity counts in the **Audit History** modal.
-4. Click the **{{t:common.actions.export}}** button to export in CSV or JSON format.
+3. Review Total Records, Viewed Records, and Last Activity counts in the **{{t:resources.audit.title}}** modal.
+4. Click the **{{t:common.actions.export}}** button to export in {{t:common.exportCSV}} or {{t:common.exportJSON}} format.
 
 ![Audit history modal - DataBassTeam team](/assets/images/UserGuideEng/19_teams_trace.png)
 *(Figure 19: Viewing team audit history)*
@@ -247,7 +247,7 @@ Teams allow you to group users and provide bulk access to resources.
 
 1. Click the trash can (red) icon next to the team you want to delete.
 2. Verify the team name is correct in the confirmation dialog.
-3. Click the **Yes** button.
+3. Click the **{{t:common.general.yes}}** button.
 
 ![Team deletion confirmation dialog](/assets/images/UserGuideEng/20_teams_delete.png)
 *(Figure 20: Team deletion confirmation)*
@@ -264,8 +264,8 @@ Access control allows you to centrally manage user permissions by creating permi
 
 1. Go to **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}** tab.
 2. Click the **"+"** button.
-3. Enter a meaningful name in the **Enter group name** field.
-4. Click the **OK** button to create the group.
+3. Enter a meaningful name in the **{{t:organization.access.modals.groupPlaceholder}}** field.
+4. Click the **{{t:common.actions.confirm}}** button to create the group.
 
 ![Permission group creation form](/assets/images/UserGuideEng/21_create_access.png)
 *(Figure 21: Creating a new Permission Group)*
@@ -274,10 +274,10 @@ Access control allows you to centrally manage user permissions by creating permi
 
 ### 2.3.2 Permission Management
 
-1. Select a Permission Group and click the **Manage Permissions** option.
-2. View the group's access rights in the **Current Permissions** tab.
+1. Select a Permission Group and click the **{{t:organization.access.modals.managePermissionsTitle}}** option.
+2. View the group's access rights in the **{{t:organization.access.modals.currentPermissionsTab}}** tab.
 3. You can revoke a permission by clicking the red **{{t:common.delete}}** button next to each action.
-4. Click the **Add Permission** tab to add new permissions to the group.
+4. Click the **{{t:organization.access.modals.addPermissionsTab}}** tab to add new permissions to the group.
 
 ![Permission management panel - assigned permissions list](/assets/images/UserGuideEng/22_access_permission.png)
 *(Figure 22: Managing Permissions for Permission Group)*
@@ -317,7 +317,7 @@ The Machines section allows you to manage your servers and repository resources.
 ![Machine creation completed - task tracking window](/assets/images/UserGuideEng/25_machine_create_complete.png)
 *(Figure 25: Task tracking window after machine is successfully created)*
 
-6. Watch the stages: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+6. Watch the stages: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 7. Click the **{{t:common.actions.close}}** button to close the operation.
 
 > **Tip**: Click the "{{t:common.actions.refresh}}" button to manually check the latest status.
@@ -332,7 +332,7 @@ You can check the connection status of existing machines.
 *(Figure 26: Connectivity Test button in machine actions toolbar)*
 
 2. See the list of machines to be tested.
-3. Click the **Test** button.
+3. Click the **{{t:machines.runTest}}** button.
 4. Successful results are shown in green, failures in red.
 
 ![Connectivity test form - machine list](/assets/images/UserGuideEng/27_connectivity_test_form.png)
@@ -393,10 +393,10 @@ Click the **{{t:common.actions.refresh}}** button to update the machine list.
 *(Figure 33: Clock icon in machine actions column)*
 
 2. Review operations in the audit history window:
-   - **Action**: Type of operation performed
+   - **{{t:resources.audit.action}}**: Type of operation performed
    - **Details**: Changed fields
-   - **Performed By**: User who performed the action
-   - **Timestamp**: Date and time
+   - **{{t:resources.audit.performedBy}}**: User who performed the action
+   - **{{t:resources.audit.timestamp}}**: Date and time
 
 ![Machine audit history window](/assets/images/UserGuideEng/34_trace_list.png)
 *(Figure 34: Audit history - list of all changes)*
@@ -422,20 +422,20 @@ Click the **{{t:common.actions.refresh}}** button to update the machine list.
 
 You can perform various remote operations on machines.
 
-1. Select the machine and click the **Remote** button.
+1. Select the machine and click the **{{t:common.actions.remote}}** button.
 2. See options in the dropdown menu:
-   - **Run on Server**: Execute function on machine
-   - **Test Connection**: Ping the machine
+   - **{{t:machines.runAction}}**: Execute function on machine
+   - **{{t:common.vaultEditor.testConnection.button}}**: Ping the machine
 
 ![Remote menu - Run on Server and Test Connection](/assets/images/UserGuideEng/37_remote_button.png)
 *(Figure 37: Remote button - function execution menu on selected machine)*
 
-> **Tip**: Use "Test Connection" option to verify the machine is accessible before running functions.
+> **Tip**: Use "{{t:common.vaultEditor.testConnection.button}}" option to verify the machine is accessible before running functions.
 
 #### Setup
 
-1. Select the **Run on Server** option.
-2. Find the **setup** function in the **Available Functions** list.
+1. Select the **{{t:machines.runAction}}** option.
+2. Find the **setup** function in the **{{t:functions.availableFunctions}}** list.
 3. Click on the function name to select it.
 
 ![Machine functions list - setup function](/assets/images/UserGuideEng/38_server_setup.png)
@@ -445,14 +445,14 @@ You can perform various remote operations on machines.
 
 #### Connection Check (Hello)
 
-1. Select **Run on Server** > **hello** function.
+1. Select **{{t:machines.runAction}}** > **hello** function.
 2. Click the **{{t:common.actions.addToQueue}}** button.
 
 ![Hello function selection](/assets/images/UserGuideEng/39_remote_hello.png)
 *(Figure 39: Hello function - simple test function, returns hostname)*
 
 3. Watch the results in the task tracking window.
-4. See the machine's output in the **Response (Console)** section.
+4. See the machine's output in the **{{t:queue.trace.responseConsole}}** section.
 
 ![Hello function completed](/assets/images/UserGuideEng/40_remote_hello_complete.png)
 *(Figure 40: Hello function completed successfully - hostname response)*
@@ -461,7 +461,7 @@ You can perform various remote operations on machines.
 
 #### Advanced Operations
 
-1. Follow the **Remote** > **Run on Server** > **Advanced** path.
+1. Follow the **{{t:common.actions.remote}}** > **{{t:machines.runAction}}** > **{{t:common.actions.advanced}}** path.
 2. See available functions: setup, hello, ping, ssh_test, uninstall
 3. Select the required function and click the **{{t:common.actions.addToQueue}}** button.
 
@@ -492,10 +492,10 @@ Repositories are the fundamental units where your backup data is stored.
 *(Figure 43: Machine repository management screen - Create Repository button)*
 
 3. Fill in the form:
-   - **Repository Name**: Enter the repository name (e.g., postgresql)
-   - **Size**: Enter the repository size (e.g., 2GB)
-   - **Credential ID**: View the automatically generated credential
-   - **Select Template**: Choose a template (e.g., databases_postgresql)
+   - **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}**: Enter the repository name (e.g., postgresql)
+   - **{{t:resources.repositories.size}}**: Enter the repository size (e.g., 2GB)
+   - **{{t:resources.repositories.repositoryGuid}}**: View the automatically generated credential
+   - **{{t:resources.templates.selectTemplate}}**: Choose a template (e.g., databases_postgresql)
 
 ![Repository creation form](/assets/images/UserGuideEng/44_repo_form.png)
 *(Figure 44: Repository creation form - repository name, size, and template selection)*
@@ -504,7 +504,7 @@ Repositories are the fundamental units where your backup data is stored.
 
 > **Tip**: Credential ID is automatically generated, manual modification is not recommended.
 
-5. Watch the stages in the task tracking window: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+5. Watch the stages in the task tracking window: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 
 ![Repository creation completed](/assets/images/UserGuideEng/45_repo_complete.png)
 *(Figure 45: Repository creation queued - task monitoring)*
@@ -527,7 +527,7 @@ You can create a new repository by copying an existing one.
 ![fx menu - fork option](/assets/images/UserGuideEng/47_fork_button.png)
 *(Figure 47: fx menu on the right side - repository operations)*
 
-4. Enter a new tag in the **Tag ID** field (e.g., 2025-12-06-20-37-08).
+4. Enter a new tag in the **{{t:functions.functions.fork.params.tag.label}}** field (e.g., 2025-12-06-20-37-08).
 5. Click the **{{t:common.actions.addToQueue}}** button.
 
 ![Fork configuration form](/assets/images/UserGuideEng/48_fork_form.png)
@@ -581,9 +581,9 @@ To deploy the repository to a different location:
 ![Deploy operation](/assets/images/UserGuideEng/54_deploy_button.png)
 *(Figure 54: "deploy" option from fx menu)*
 
-2. Enter the version to deploy in the **Tag ID** field.
-3. Select target machines in the **Target Machines** field.
-4. Check the **Override existing file** option (if applicable).
+2. Enter the version to deploy in the **{{t:functions.functions.fork.params.tag.label}}** field.
+3. Select target machines in the **{{t:functions.functions.backup_deploy.params.machines.label}}** field.
+4. Check the **{{t:functions.checkboxOptions.overrideExistingFile}}** option (if applicable).
 5. Click the **{{t:common.actions.addToQueue}}** button.
 
 ![Deploy form](/assets/images/UserGuideEng/55_deploy_form.png)
@@ -606,10 +606,10 @@ To backup the repository:
 *(Figure 57: "backup" option from fx menu)*
 
 2. Fill in the form:
-   - **Backup Tag**: Enter a descriptive name (e.g., backup01012025)
-   - **Target Storage Systems**: Select the backup location
-   - **Override Existing File**: Enable or disable the option
-   - **Enable Checkpoint**: Review the setting
+   - **{{t:functions.functions.fork.params.tag.label}}**: Enter a descriptive name (e.g., backup01012025)
+   - **{{t:functions.functions.backup_create.params.storages.label}}**: Select the backup location
+   - **{{t:functions.checkboxOptions.overrideExistingFile}}**: Enable or disable the option
+   - **{{t:functions.functions.backup_deploy.params.checkpoint.label}}**: Review the setting
 
 ![Backup form](/assets/images/UserGuideEng/58_backup_form.png)
 *(Figure 58: Backup configuration form - target, filename, and options)*
@@ -641,7 +641,7 @@ To apply a new template to the repository:
 ![Template selection form](/assets/images/UserGuideEng/61_templates_form.png)
 *(Figure 61: Searching and selecting available templates)*
 
-> **Tip**: Use the search box to quickly find templates. Use "View Details" to learn about template features.
+> **Tip**: Use the search box to quickly find templates. Use "{{t:common.viewDetails}}" to learn about template features.
 
 5. Wait for the **{{t:queue.statusCompleted}}** message.
 
@@ -652,7 +652,7 @@ To apply a new template to the repository:
 
 To disconnect the repository:
 
-1. Select the repository and follow the **fx** > **Advanced** > **Unmount** path.
+1. Select the repository and follow the **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}** path.
 
 ![Unmount operation](/assets/images/UserGuideEng/63_unmount_button.png)
 *(Figure 63: "Unmount" option in the advanced menu)*
@@ -668,12 +668,12 @@ To disconnect the repository:
 
 To increase the repository size:
 
-1. Select the repository and follow the **fx** > **Advanced** > **Expand** path.
+1. Select the repository and follow the **fx** > **{{t:common.actions.advanced}}** > **{{t:functions.functions.repository_expand.name}}** path.
 
 ![Expand operation](/assets/images/UserGuideEng/65_expand_button.png)
 *(Figure 65: "Expand" option in the advanced menu)*
 
-2. Enter the desired size in the **New Size** field.
+2. Enter the desired size in the **{{t:functions.functions.repository_expand.params.size.label}}** field.
 3. Select the unit from the dropdown on the right (GB, TB).
 4. Click the **{{t:common.actions.addToQueue}}** button.
 
@@ -691,7 +691,7 @@ To increase the repository size:
 
 To change the repository name:
 
-1. Select the repository and follow the **fx** > **Rename** path.
+1. Select the repository and follow the **fx** > **{{t:common.actions.rename}}** path.
 
 ![Rename operation](/assets/images/UserGuideEng/68_rename_button.png)
 *(Figure 68: "Rename" option from fx menu)*
@@ -708,7 +708,7 @@ To change the repository name:
 
 To permanently delete the repository:
 
-1. Select the repository and follow the **fx** > **Delete Repository** path.
+1. Select the repository and follow the **fx** > **{{t:resources.repositories.deleteRepository}}** path.
 
 ![Delete Repository operation](/assets/images/UserGuideEng/70_delete_repo_button.png)
 *(Figure 70: "Delete Repository" option from fx menu - red)*
@@ -750,21 +750,21 @@ You can connect to repositories using different methods.
 
 ### 2.6.1 Desktop Application Connection
 
-1. Click the **Local** button in the repository row.
+1. Click the **{{t:resources.localActions.local}}** button in the repository row.
 
 ![Local connection button](/assets/images/UserGuideEng/73_repo_connection_local.png)
 *(Figure 73: "Local" button in repository row - desktop application access)*
 
 2. Select the access method from the dropdown menu:
-   - **Desktop Application**: Access with graphical interface
-   - **VS Code**: Open in code editor
-   - **Terminal**: Access via command line
-   - **CLI Commands**: Command line tools
+   - **{{t:resources.localActions.openInDesktop}}**: Access with graphical interface
+   - **{{t:resources.localCommandBuilder.vscodeTab}}**: Open in code editor
+   - **{{t:common.terminal.terminal}}**: Access via command line
+   - **{{t:resources.localActions.showCLICommands}}**: Command line tools
 
 ![Connection options menu](/assets/images/UserGuideEng/74_repo_connection.png)
 *(Figure 74: Repository connection menu - different access paths)*
 
-> **Tip**: If working with VS Code, the "VS Code" option provides the fastest integration.
+> **Tip**: If working with VS Code, the "{{t:resources.localCommandBuilder.vscodeTab}}" option provides the fastest integration.
 
 3. Click the **Open** button when the browser requests permission.
 
@@ -786,7 +786,7 @@ You can manage your profile and system settings from the Settings section.
 ![Profile settings page](/assets/images/UserGuideEng/76_profiles_button.png)
 *(Figure 76: Settings → Profile page - personal vault settings)*
 
-2. Click the **Change Password** button.
+2. Click the **{{t:settings.personal.changePassword.submit}}** button.
 
 ![Change Password button](/assets/images/UserGuideEng/77_profiles_change_button.png)
 *(Figure 77: "Change Password" button in personal settings section)*
@@ -797,8 +797,8 @@ You can manage your profile and system settings from the Settings section.
    - Must contain at least one number
    - Must contain at least one special character
 
-4. Re-enter the same password in the **Confirm New Password** field.
-5. Click the **Change Password** button.
+4. Re-enter the same password in the **{{t:settings.personal.changePassword.confirmPasswordLabel}}** field.
+5. Click the **{{t:settings.personal.changePassword.submit}}** button.
 
 ![Password change form](/assets/images/UserGuideEng/78_profiles_change_form.png)
 *(Figure 78: Change Password form - security requirements visible)*
@@ -814,17 +814,17 @@ The Storage section allows you to manage the physical areas where your backup da
 ### 2.8.1 Adding Storage
 
 1. Go to the **{{t:common.navigation.storage}}** tab from the left menu.
-2. Click the **Add Storage** button.
+2. Click the **{{t:resources.storage.createStorage}}** button.
 
 ![Add Storage button](/assets/images/UserGuideEng/79_storage_add_button.png)
 *(Figure 79: Storage management page - "Add Storage" button)*
 
 3. Fill in the form:
-   - **Storage Name**: Enter a descriptive name
-   - **Storage Provider**: Select (e.g., s3)
-   - **Description**: Add optional description
-   - **Disable Versioning**: Optional
-   - **Additional Parameters**: rclone flags (e.g., --transfers 4)
+   - **{{t:common.vaultEditor.fields.STORAGE.name.label}}**: Enter a descriptive name
+   - **{{t:common.vaultEditor.fields.STORAGE.provider.label}}**: Select (e.g., s3)
+   - **{{t:common.vaultEditor.fields.STORAGE.description.label}}**: Add optional description
+   - **{{t:common.vaultEditor.fields.STORAGE.noVersioning.label}}**: Optional
+   - **{{t:common.vaultEditor.fields.STORAGE.parameters.label}}**: rclone flags (e.g., --transfers 4)
 
 ![Storage creation form](/assets/images/UserGuideEng/80_storage_form.png)
 *(Figure 80: Add Storage form - name, provider, description, and parameters)*
@@ -848,7 +848,7 @@ The Credentials section allows you to securely manage access information for you
 ![Credentials list](/assets/images/UserGuideEng/81_credentials.png)
 *(Figure 81: Credentials page - repository names, teams, and management buttons)*
 
-4. Change the **Repository Name** if needed.
+4. Change the **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}** if needed.
 5. Save with the **{{t:common.save}}** button.
 
 ![Credential editing form](/assets/images/UserGuideEng/82_credentials_form.png)
@@ -865,7 +865,7 @@ The Credentials section allows you to securely manage access information for you
 *(Figure 83: "Trace" button in Credentials table)*
 
 3. Review the audit history.
-4. Select format from the **{{t:common.actions.export}}** button: **CSV** or **JSON**.
+4. Select format from the **{{t:common.actions.export}}** button: **{{t:common.exportCSV}}** or **{{t:common.exportJSON}}**.
 
 ![Credential audit history](/assets/images/UserGuideEng/84_credentials_list_export.png)
 *(Figure 84: Credentials list - Export options)*
@@ -902,8 +902,8 @@ The Queue section allows you to track pending and completed operations in the sy
 
 2. To filter queue items:
    - Use **{{t:queue.trace.team}}**, **{{t:queue.trace.machine}}**, **{{t:queue.trace.region}}**, and **{{t:queue.trace.bridge}}** filters
-   - Specify **Date range**
-   - Check **Only Stale Items** option
+   - Specify **{{t:system.audit.filters.dateRange}}**
+   - Check **{{t:queue.filters.onlyStale}}** option
 
 3. View details in status tabs:
    - **{{t:queue.statusActive}}**: Tasks being processed
@@ -911,12 +911,12 @@ The Queue section allows you to track pending and completed operations in the sy
    - **{{t:queue.statusCancelled}}**: Cancelled tasks
    - **{{t:queue.statusFailed}}**: Failed tasks
 
-4. Select a format from the **{{t:common.actions.export}}** button: **CSV** or **JSON**.
+4. Select a format from the **{{t:common.actions.export}}** button: **{{t:common.exportCSV}}** or **{{t:common.exportJSON}}**.
 
 ![Queue export](/assets/images/UserGuideEng/88_queue_export.png)
 *(Figure 88: Queue list - Export options)*
 
-> **Tip**: The "Only Stale Items" option helps find tasks that have been processing for a long time. Regularly export queue history to analyze task execution trends.
+> **Tip**: The "{{t:queue.filters.onlyStale}}" option helps find tasks that have been processing for a long time. Regularly export queue history to analyze task execution trends.
 
 ---
 
@@ -944,7 +944,7 @@ The Audit section maintains records of all operations performed in the system.
    - **User**: User who performed the operation
    - **Details**: Additional information about the operation
 
-4. Select a format from the **{{t:common.actions.export}}** button: **CSV** or **JSON**.
+4. Select a format from the **{{t:common.actions.export}}** button: **{{t:common.exportCSV}}** or **{{t:common.exportJSON}}**.
 
 ![Audit export](/assets/images/UserGuideEng/90_audit_export.png)
 *(Figure 90: Audit record export - CSV and JSON options)*

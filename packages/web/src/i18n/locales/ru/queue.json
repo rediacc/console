@@ -252,6 +252,13 @@
     "staleTaskTitle": "Устаревшая задача",
     "staleTitle": "Задача может быть устаревшей",
     "status": "Статус",
+    "structuredLog": {
+      "level": "Уровень",
+      "message": "Сообщение",
+      "time": "Время",
+      "viewRaw": "Необработанный",
+      "viewStructured": "Структурированный"
+    },
     "sudoSupport": "Поддержка Sudo",
     "system": "Система",
     "systemInfo": "Информация о системе",
@@ -272,13 +279,6 @@
     "user": "Пользователь",
     "vaultContent": "Содержимое хранилища",
     "version": "Версия",
-    "waiting": "Ожидание",
-    "structuredLog": {
-      "time": "Время",
-      "level": "Уровень",
-      "message": "Сообщение",
-      "viewStructured": "Структурированный",
-      "viewRaw": "Необработанный"
-    }
+    "waiting": "Ожидание"
   }
 }

@@ -109,7 +109,7 @@ language: ru
 
 1. Нажмите **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** в левой боковой панели.
 2. Просмотрите список всех пользователей в табличном формате.
-3. Каждая строка пользователя показывает email, статус (Активный/Неактивный), группу разрешений и время последней активности.
+3. Каждая строка пользователя показывает email, статус ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), группу разрешений и время последней активности.
 
 ![Страница управления пользователями - список активных пользователей](/assets/images/UserGuideEng/07_users.png)
 *(Рисунок 7: Раздел Пользователи в разделе Организация - отображается информация обо всех пользователях)*
@@ -160,7 +160,7 @@ language: ru
 ![Активация пользователя - всплывающая подсказка "Activate"](/assets/images/UserGuideEng/12_users_activation.png)
 *(Рисунок 12: Активация неактивного пользователя)*
 
-3. Нажмите кнопку **Yes** в окне подтверждения.
+3. Нажмите кнопку **{{t:common.general.yes}}** в окне подтверждения.
 
 ![Модальное окно подтверждения активации](/assets/images/UserGuideEng/13_users_activation_confirm.png)
 *(Рисунок 13: Модальное окно для подтверждения активации пользователя)*
@@ -179,7 +179,7 @@ language: ru
 
 3. Прошлые действия пользователя перечислены на открывшемся экране.
 4. Статистика отображается вверху: Всего записей, Просмотренных записей, Последняя активность.
-5. Нажмите кнопку **{{t:common.actions.export}}** и выберите формат: **CSV** или **JSON**.
+5. Нажмите кнопку **{{t:common.actions.export}}** и выберите формат: **{{t:common.exportCSV}}** или **{{t:common.exportJSON}}**.
 
 ![История аудита - Опции экспорта](/assets/images/UserGuideEng/15_user_trace_export.png)
 *(Рисунок 15: Полная история действий пользователя - статистика, детали и опции экспорта)*
@@ -221,8 +221,8 @@ language: ru
 ### 2.2.3 Управление членами команды
 
 1. Выберите команду и нажмите значок пользователя.
-2. Просмотрите членов, уже назначенных команде, на вкладке **Current Members**.
-3. Переключитесь на вкладку **Add Member**.
+2. Просмотрите уже назначенных членов команды на вкладке **{{t:organization.teams.manageMembers.currentTab}}**.
+3. Перейдите на вкладку **{{t:organization.teams.manageMembers.addTab}}**.
 4. Введите адрес электронной почты или выберите пользователя из выпадающего списка.
 5. Нажмите кнопку **"+"** для добавления члена в команду.
 
@@ -235,8 +235,8 @@ language: ru
 
 1. Выберите команду, которую хотите отследить.
 2. Нажмите значок часов/истории.
-3. Просмотрите количество Всего записей, Просмотренных записей и Последней активности в модальном окне **Audit History**.
-4. Нажмите кнопку **{{t:common.actions.export}}** для экспорта в формате CSV или JSON.
+3. Проверьте показатели Всего записей, Просмотренных записей и Последней активности в окне **{{t:resources.audit.title}}**.
+4. Нажмите кнопку **{{t:common.actions.export}}** для экспорта в формате {{t:common.exportCSV}} или {{t:common.exportJSON}}.
 
 ![Модальное окно истории аудита - команда DataBassTeam](/assets/images/UserGuideEng/19_teams_trace.png)
 *(Рисунок 19: Просмотр истории аудита команды)*
@@ -247,7 +247,7 @@ language: ru
 
 1. Нажмите значок корзины (красный) рядом с командой, которую хотите удалить.
 2. Проверьте, что название команды правильное в диалоговом окне подтверждения.
-3. Нажмите кнопку **Yes**.
+3. Нажмите кнопку **{{t:common.general.yes}}**.
 
 ![Диалоговое окно подтверждения удаления команды](/assets/images/UserGuideEng/20_teams_delete.png)
 *(Рисунок 20: Подтверждение удаления команды)*
@@ -264,8 +264,8 @@ language: ru
 
 1. Перейдите на вкладку **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}**.
 2. Нажмите кнопку **"+"**.
-3. Введите осмысленное название в поле **Enter group name**.
-4. Нажмите кнопку **OK** для создания группы.
+3. Введите осмысленное название в поле **{{t:organization.access.modals.groupPlaceholder}}**.
+4. Нажмите кнопку **{{t:common.actions.confirm}}** для создания группы.
 
 ![Форма создания группы разрешений](/assets/images/UserGuideEng/21_create_access.png)
 *(Рисунок 21: Создание новой группы разрешений)*
@@ -274,10 +274,10 @@ language: ru
 
 ### 2.3.2 Управление разрешениями
 
-1. Выберите группу разрешений и нажмите опцию **Manage Permissions**.
-2. Просмотрите права доступа группы на вкладке **Current Permissions**.
+1. Выберите группу разрешений и нажмите опцию **{{t:organization.access.modals.managePermissionsTitle}}**.
+2. Просмотрите права доступа группы на вкладке **{{t:organization.access.modals.currentPermissionsTab}}**.
 3. Вы можете отозвать разрешение, нажав красную кнопку **{{t:common.delete}}** рядом с каждым действием.
-4. Нажмите вкладку **Add Permission** для добавления новых разрешений в группу.
+4. Нажмите вкладку **{{t:organization.access.modals.addPermissionsTab}}** для добавления новых разрешений в группу.
 
 ![Панель управления разрешениями - список назначенных разрешений](/assets/images/UserGuideEng/22_access_permission.png)
 *(Рисунок 22: Управление разрешениями для группы разрешений)*
@@ -317,7 +317,7 @@ language: ru
 ![Создание машины завершено - окно отслеживания задачи](/assets/images/UserGuideEng/25_machine_create_complete.png)
 *(Рисунок 25: Окно отслеживания задачи после успешного создания машины)*
 
-6. Наблюдайте за этапами: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+6. Наблюдайте за этапами: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 7. Нажмите кнопку **{{t:common.actions.close}}** для закрытия операции.
 
 > **Совет**: Нажмите кнопку "{{t:common.actions.refresh}}" для ручной проверки последнего статуса.
@@ -332,7 +332,7 @@ language: ru
 *(Рисунок 26: Кнопка Connectivity Test на панели инструментов действий с машинами)*
 
 2. Увидите список машин, которые будут протестированы.
-3. Нажмите кнопку **Test**.
+3. Нажмите кнопку **{{t:machines.runTest}}**.
 4. Успешные результаты отображаются зеленым цветом, неудачные - красным.
 
 ![Форма теста подключения - список машин](/assets/images/UserGuideEng/27_connectivity_test_form.png)
@@ -393,10 +393,10 @@ language: ru
 *(Рисунок 33: Значок часов в столбце действий с машинами)*
 
 2. Просмотрите операции в окне истории аудита:
-   - **Action**: Тип выполненной операции
+   - **{{t:resources.audit.action}}**: Тип выполненной операции
    - **Details**: Измененные поля
-   - **Performed By**: Пользователь, выполнивший действие
-   - **Timestamp**: Дата и время
+   - **{{t:resources.audit.performedBy}}**: Пользователь, выполнивший действие
+   - **{{t:resources.audit.timestamp}}**: Дата и время
 
 ![Окно истории аудита машины](/assets/images/UserGuideEng/34_trace_list.png)
 *(Рисунок 34: История аудита - список всех изменений)*
@@ -422,20 +422,20 @@ language: ru
 
 Вы можете выполнять различные удаленные операции на машинах.
 
-1. Выберите машину и нажмите кнопку **Remote**.
+1. Выберите машину и нажмите кнопку **{{t:common.actions.remote}}**.
 2. Увидите опции в выпадающем меню:
-   - **Run on Server**: Выполнить функцию на машине
-   - **Test Connection**: Проверить связь с машиной
+   - **{{t:machines.runAction}}**: Выполнить функцию на машине
+   - **{{t:common.vaultEditor.testConnection.button}}**: Проверить доступность машины
 
 ![Меню Remote - Run on Server и Test Connection](/assets/images/UserGuideEng/37_remote_button.png)
 *(Рисунок 37: Кнопка Remote - меню выполнения функций на выбранной машине)*
 
-> **Совет**: Используйте опцию "Test Connection" для проверки доступности машины перед запуском функций.
+> **Совет**: Используйте опцию "{{t:common.vaultEditor.testConnection.button}}" для проверки доступности машины перед запуском функций.
 
 #### Setup
 
-1. Выберите опцию **Run on Server**.
-2. Найдите функцию **setup** в списке **Available Functions**.
+1. Выберите опцию **{{t:machines.runAction}}**.
+2. Найдите функцию **setup** в списке **{{t:functions.availableFunctions}}**.
 3. Нажмите на название функции для ее выбора.
 
 ![Список функций машины - функция setup](/assets/images/UserGuideEng/38_server_setup.png)
@@ -445,14 +445,14 @@ language: ru
 
 #### Проверка соединения (Hello)
 
-1. Выберите **Run on Server** > функцию **hello**.
+1. Выберите **{{t:machines.runAction}}** > функцию **hello**.
 2. Нажмите кнопку **{{t:common.actions.addToQueue}}**.
 
 ![Выбор функции Hello](/assets/images/UserGuideEng/39_remote_hello.png)
 *(Рисунок 39: Функция Hello - простая тестовая функция, возвращает имя хоста)*
 
 3. Наблюдайте за результатами в окне отслеживания задачи.
-4. Увидите вывод машины в разделе **Response (Console)**.
+4. Посмотрите вывод машины в разделе **{{t:queue.trace.responseConsole}}**.
 
 ![Функция Hello завершена](/assets/images/UserGuideEng/40_remote_hello_complete.png)
 *(Рисунок 40: Функция Hello выполнена успешно - ответ с именем хоста)*
@@ -461,7 +461,7 @@ language: ru
 
 #### Расширенные операции
 
-1. Следуйте по пути **Remote** > **Run on Server** > **Advanced**.
+1. Следуйте по пути **{{t:common.actions.remote}}** > **{{t:machines.runAction}}** > **{{t:common.actions.advanced}}**.
 2. Увидите доступные функции: setup, hello, ping, ssh_test, uninstall
 3. Выберите требуемую функцию и нажмите кнопку **{{t:common.actions.addToQueue}}**.
 
@@ -492,10 +492,10 @@ language: ru
 *(Рисунок 43: Экран управления репозиториями машины - кнопка Create Repository)*
 
 3. Заполните форму:
-   - **Repository Name**: Введите имя репозитория (например, postgresql)
-   - **Size**: Введите размер репозитория (например, 2GB)
-   - **Credential ID**: Просмотрите автоматически сгенерированные учетные данные
-   - **Select Template**: Выберите шаблон (например, databases_postgresql)
+   - **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}**: Введите имя репозитория (например, postgresql)
+   - **{{t:resources.repositories.size}}**: Введите размер репозитория (например, 2GB)
+   - **{{t:resources.repositories.repositoryGuid}}**: Просмотрите автоматически сгенерированные учетные данные
+   - **{{t:resources.templates.selectTemplate}}**: Выберите шаблон (например, databases_postgresql)
 
 ![Форма создания репозитория](/assets/images/UserGuideEng/44_repo_form.png)
 *(Рисунок 44: Форма создания репозитория - имя репозитория, размер и выбор шаблона)*
@@ -504,7 +504,7 @@ language: ru
 
 > **Совет**: Credential ID генерируется автоматически, ручное изменение не рекомендуется.
 
-5. Наблюдайте за этапами в окне отслеживания задачи: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+5. Наблюдайте за этапами в окне отслеживания задачи: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 
 ![Создание репозитория завершено](/assets/images/UserGuideEng/45_repo_complete.png)
 *(Рисунок 45: Создание репозитория поставлено в очередь - мониторинг задачи)*
@@ -527,7 +527,7 @@ language: ru
 ![Меню fx - опция fork](/assets/images/UserGuideEng/47_fork_button.png)
 *(Рисунок 47: Меню fx справа - операции с репозиторием)*
 
-4. Введите новый тег в поле **Tag ID** (например, 2025-12-06-20-37-08).
+4. Введите новый тег в поле **{{t:functions.functions.fork.params.tag.label}}** (например, 2025-12-06-20-37-08).
 5. Нажмите кнопку **{{t:common.actions.addToQueue}}**.
 
 ![Форма конфигурации Fork](/assets/images/UserGuideEng/48_fork_form.png)
@@ -581,9 +581,9 @@ language: ru
 ![Операция Deploy](/assets/images/UserGuideEng/54_deploy_button.png)
 *(Рисунок 54: Опция "deploy" из меню fx)*
 
-2. Введите версию для развертывания в поле **Tag ID**.
-3. Выберите целевые машины в поле **Target Machines**.
-4. Отметьте опцию **Override existing file** (если применимо).
+2. Введите версию для развертывания в поле **{{t:functions.functions.fork.params.tag.label}}**.
+3. Выберите целевые машины в поле **{{t:functions.functions.backup_deploy.params.machines.label}}**.
+4. Отметьте опцию **{{t:functions.checkboxOptions.overrideExistingFile}}** (если применимо).
 5. Нажмите кнопку **{{t:common.actions.addToQueue}}**.
 
 ![Форма Deploy](/assets/images/UserGuideEng/55_deploy_form.png)
@@ -606,10 +606,10 @@ language: ru
 *(Рисунок 57: Опция "backup" из меню fx)*
 
 2. Заполните форму:
-   - **Backup Tag**: Введите описательное имя (например, backup01012025)
-   - **Target Storage Systems**: Выберите место резервного копирования
-   - **Override Existing File**: Включите или отключите опцию
-   - **Enable Checkpoint**: Просмотрите настройку
+   - **{{t:functions.functions.fork.params.tag.label}}**: Введите описательное имя (например, backup01012025)
+   - **{{t:functions.functions.backup_create.params.storages.label}}**: Выберите место хранения резервной копии
+   - **{{t:functions.checkboxOptions.overrideExistingFile}}**: Включите или отключите опцию
+   - **{{t:functions.functions.backup_deploy.params.checkpoint.label}}**: Проверьте настройку
 
 ![Форма Backup](/assets/images/UserGuideEng/58_backup_form.png)
 *(Рисунок 58: Форма настройки резервного копирования - цель, имя файла и опции)*
@@ -641,7 +641,7 @@ language: ru
 ![Форма выбора шаблона](/assets/images/UserGuideEng/61_templates_form.png)
 *(Рисунок 61: Поиск и выбор доступных шаблонов)*
 
-> **Совет**: Используйте поле поиска для быстрого поиска шаблонов. Используйте "View Details" для изучения возможностей шаблона.
+> **Совет**: Используйте поле поиска для быстрого поиска шаблонов. Используйте "{{t:common.viewDetails}}" для изучения возможностей шаблона.
 
 5. Дождитесь сообщения **{{t:queue.statusCompleted}}**.
 
@@ -652,7 +652,7 @@ language: ru
 
 Чтобы отключить репозиторий:
 
-1. Выберите репозиторий и следуйте по пути **fx** > **Advanced** > **Unmount**.
+1. Выберите репозиторий и следуйте по пути **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}**.
 
 ![Операция Unmount](/assets/images/UserGuideEng/63_unmount_button.png)
 *(Рисунок 63: Опция "Unmount" в расширенном меню)*
@@ -668,12 +668,12 @@ language: ru
 
 Чтобы увеличить размер репозитория:
 
-1. Выберите репозиторий и следуйте по пути **fx** > **Advanced** > **Expand**.
+1. Выберите репозиторий и следуйте по пути **fx** > **{{t:common.actions.advanced}}** > **{{t:functions.functions.repository_expand.name}}**.
 
 ![Операция Expand](/assets/images/UserGuideEng/65_expand_button.png)
 *(Рисунок 65: Опция "Expand" в расширенном меню)*
 
-2. Введите желаемый размер в поле **New Size**.
+2. Введите желаемый размер в поле **{{t:functions.functions.repository_expand.params.size.label}}**.
 3. Выберите единицу измерения из выпадающего списка справа (GB, TB).
 4. Нажмите кнопку **{{t:common.actions.addToQueue}}**.
 
@@ -691,7 +691,7 @@ language: ru
 
 Чтобы изменить имя репозитория:
 
-1. Выберите репозиторий и следуйте по пути **fx** > **Rename**.
+1. Выберите репозиторий и следуйте по пути **fx** > **{{t:common.actions.rename}}**.
 
 ![Операция Rename](/assets/images/UserGuideEng/68_rename_button.png)
 *(Рисунок 68: Опция "Rename" из меню fx)*
@@ -708,7 +708,7 @@ language: ru
 
 Чтобы окончательно удалить репозиторий:
 
-1. Выберите репозиторий и следуйте по пути **fx** > **Delete Repository**.
+1. Выберите репозиторий и следуйте по пути **fx** > **{{t:resources.repositories.deleteRepository}}**.
 
 ![Операция Delete Repository](/assets/images/UserGuideEng/70_delete_repo_button.png)
 *(Рисунок 70: Опция "Delete Repository" из меню fx - красная)*
@@ -750,21 +750,21 @@ language: ru
 
 ### 2.6.1 Подключение через настольное приложение
 
-1. Нажмите кнопку **Local** в строке репозитория.
+1. Нажмите кнопку **{{t:resources.localActions.local}}** в строке репозитория.
 
 ![Кнопка Local connection](/assets/images/UserGuideEng/73_repo_connection_local.png)
 *(Рисунок 73: Кнопка "Local" в строке репозитория - доступ через настольное приложение)*
 
 2. Выберите метод доступа из выпадающего меню:
-   - **Desktop Application**: Доступ с графическим интерфейсом
-   - **VS Code**: Открыть в редакторе кода
-   - **Terminal**: Доступ через командную строку
-   - **CLI Commands**: Инструменты командной строки
+   - **{{t:resources.localActions.openInDesktop}}**: Доступ через графический интерфейс
+   - **{{t:resources.localCommandBuilder.vscodeTab}}**: Открыть в редакторе кода
+   - **{{t:common.terminal.terminal}}**: Доступ через командную строку
+   - **{{t:resources.localActions.showCLICommands}}**: Инструменты командной строки
 
 ![Меню опций подключения](/assets/images/UserGuideEng/74_repo_connection.png)
 *(Рисунок 74: Меню подключения к репозиторию - различные пути доступа)*
 
-> **Совет**: Если вы работаете с VS Code, опция "VS Code" обеспечивает самую быструю интеграцию.
+> **Совет**: При работе с VS Code опция "{{t:resources.localCommandBuilder.vscodeTab}}" обеспечивает самую быструю интеграцию.
 
 3. Нажмите кнопку **Open**, когда браузер запросит разрешение.
 
@@ -786,7 +786,7 @@ language: ru
 ![Страница настроек профиля](/assets/images/UserGuideEng/76_profiles_button.png)
 *(Рисунок 76: Страница Настройки → Профиль - настройки личного хранилища)*
 
-2. Нажмите кнопку **Change Password**.
+2. Нажмите кнопку **{{t:settings.personal.changePassword.submit}}**.
 
 ![Кнопка Change Password](/assets/images/UserGuideEng/77_profiles_change_button.png)
 *(Рисунок 77: Кнопка "Change Password" в разделе личных настроек)*
@@ -797,8 +797,8 @@ language: ru
    - Должен содержать хотя бы одну цифру
    - Должен содержать хотя бы один специальный символ
 
-4. Введите тот же пароль повторно в поле **Confirm New Password**.
-5. Нажмите кнопку **Change Password**.
+4. Повторно введите тот же пароль в поле **{{t:settings.personal.changePassword.confirmPasswordLabel}}**.
+5. Нажмите кнопку **{{t:settings.personal.changePassword.submit}}**.
 
 ![Форма смены пароля](/assets/images/UserGuideEng/78_profiles_change_form.png)
 *(Рисунок 78: Форма смены пароля - видны требования безопасности)*
@@ -814,17 +814,17 @@ language: ru
 ### 2.8.1 Добавление хранилища
 
 1. Перейдите на вкладку **{{t:common.navigation.storage}}** из левого меню.
-2. Нажмите кнопку **Add Storage**.
+2. Нажмите кнопку **{{t:resources.storage.createStorage}}**.
 
 ![Кнопка Add Storage](/assets/images/UserGuideEng/79_storage_add_button.png)
 *(Рисунок 79: Страница управления хранилищем - кнопка "Add Storage")*
 
 3. Заполните форму:
-   - **Storage Name**: Введите описательное имя
-   - **Storage Provider**: Выберите (например, s3)
-   - **Description**: Добавьте необязательное описание
-   - **Disable Versioning**: Необязательно
-   - **Additional Parameters**: флаги rclone (например, --transfers 4)
+   - **{{t:common.vaultEditor.fields.STORAGE.name.label}}**: Введите описательное название
+   - **{{t:common.vaultEditor.fields.STORAGE.provider.label}}**: Выберите (например, s3)
+   - **{{t:common.vaultEditor.fields.STORAGE.description.label}}**: Добавьте необязательное описание
+   - **{{t:common.vaultEditor.fields.STORAGE.noVersioning.label}}**: Необязательно
+   - **{{t:common.vaultEditor.fields.STORAGE.parameters.label}}**: флаги rclone (например, --transfers 4)
 
 ![Форма создания хранилища](/assets/images/UserGuideEng/80_storage_form.png)
 *(Рисунок 80: Форма Add Storage - имя, провайдер, описание и параметры)*
@@ -848,7 +848,7 @@ language: ru
 ![Список учетных данных](/assets/images/UserGuideEng/81_credentials.png)
 *(Рисунок 81: Страница учетных данных - имена репозиториев, команды и кнопки управления)*
 
-4. При необходимости измените **Repository Name**.
+4. Измените **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}** при необходимости.
 5. Сохраните с помощью кнопки **{{t:common.save}}**.
 
 ![Форма редактирования учетных данных](/assets/images/UserGuideEng/82_credentials_form.png)
@@ -865,7 +865,7 @@ language: ru
 *(Рисунок 83: Кнопка "Trace" в таблице учетных данных)*
 
 3. Просмотрите историю аудита.
-4. Выберите формат из кнопки **{{t:common.actions.export}}**: **CSV** или **JSON**.
+4. Выберите формат из кнопки **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** или **{{t:common.exportJSON}}**.
 
 ![История аудита учетных данных](/assets/images/UserGuideEng/84_credentials_list_export.png)
 *(Рисунок 84: Список учетных данных - опции экспорта)*
@@ -902,8 +902,8 @@ language: ru
 
 2. Для фильтрации элементов очереди:
    - Используйте фильтры **{{t:queue.trace.team}}**, **{{t:queue.trace.machine}}**, **{{t:queue.trace.region}}** и **{{t:queue.trace.bridge}}**
-   - Укажите **Date range**
-   - Отметьте опцию **Only Stale Items**
+   - Укажите **{{t:system.audit.filters.dateRange}}**
+   - Отметьте опцию **{{t:queue.filters.onlyStale}}**
 
 3. Просмотрите детали на вкладках статусов:
    - **{{t:queue.statusActive}}**: Задачи в процессе обработки
@@ -911,12 +911,12 @@ language: ru
    - **{{t:queue.statusCancelled}}**: Отмененные задачи
    - **{{t:queue.statusFailed}}**: Неудачные задачи
 
-4. Выберите формат из кнопки **{{t:common.actions.export}}**: **CSV** или **JSON**.
+4. Выберите формат из кнопки **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** или **{{t:common.exportJSON}}**.
 
 ![Экспорт очереди](/assets/images/UserGuideEng/88_queue_export.png)
 *(Рисунок 88: Список очереди - опции экспорта)*
 
-> **Совет**: Опция "Only Stale Items" помогает найти задачи, которые обрабатываются длительное время. Регулярно экспортируйте историю очереди для анализа тенденций выполнения задач.
+> **Совет**: Опция "{{t:queue.filters.onlyStale}}" помогает найти задачи, которые обрабатываются длительное время. Регулярно экспортируйте историю очереди для анализа тенденций выполнения задач.
 
 ---
 
@@ -944,7 +944,7 @@ language: ru
    - **User**: Пользователь, выполнивший операцию
    - **Details**: Дополнительная информация об операции
 
-4. Выберите формат из кнопки **{{t:common.actions.export}}**: **CSV** или **JSON**.
+4. Выберите формат из кнопки **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** или **{{t:common.exportJSON}}**.
 
 ![Экспорт аудита](/assets/images/UserGuideEng/90_audit_export.png)
 *(Рисунок 90: Экспорт записей аудита - опции CSV и JSON)*

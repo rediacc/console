@@ -252,6 +252,13 @@
     "staleTaskTitle": "陈旧任务",
     "staleTitle": "任务可能已陈旧",
     "status": "状态",
+    "structuredLog": {
+      "level": "级别",
+      "message": "消息",
+      "time": "时间",
+      "viewRaw": "原始",
+      "viewStructured": "结构化"
+    },
     "sudoSupport": "Sudo 支持",
     "system": "系统",
     "systemInfo": "系统信息",
@@ -272,13 +279,6 @@
     "user": "用户",
     "vaultContent": "保险库内容",
     "version": "版本",
-    "waiting": "等待中",
-    "structuredLog": {
-      "time": "时间",
-      "level": "级别",
-      "message": "消息",
-      "viewStructured": "结构化",
-      "viewRaw": "原始"
-    }
+    "waiting": "等待中"
   }
 }

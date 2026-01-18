@@ -32,7 +32,7 @@ Um die Rediacc-Plattform nutzen zu können, müssen Sie zunächst ein Konto erst
 
 1. Navigieren Sie in Ihrem Browser zu [https://www.rediacc.com/](https://www.rediacc.com/).
 2. Klicken Sie auf die Schaltfläche **{{t:auth.login.signIn}}** in der oberen rechten Ecke der Seite.
-3. Wählen Sie **Loslegen** für kostenlosen Zugang oder **Demo anfordern** für eine Demonstration.
+3. Wählen Sie **Get Started** für kostenlosen Zugang oder **Request Demo** für eine Demonstration.
 
 > **Tipp**: Sie können ein kostenloses Konto ohne Kreditkarte erstellen. Beinhaltet 10 CPU-Kerne und unbegrenzte Teams.
 
@@ -109,7 +109,7 @@ Die Benutzerverwaltung ermöglicht Ihnen, den Zugang zur Plattform für Personen
 
 1. Klicken Sie in der linken Seitenleiste auf **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}**.
 2. Zeigen Sie die Liste aller Benutzer im Tabellenformat an.
-3. Jede Benutzerzeile zeigt E-Mail, Status (Aktiv/Inaktiv), Berechtigungsgruppe und letzte Aktivitätszeit.
+3. Jede Benutzerzeile zeigt E-Mail, Status ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), Berechtigungsgruppe und letzte Aktivitätszeit an.
 
 ![Benutzerverwaltungsseite - Liste aktiver Benutzer](/assets/images/UserGuideEng/07_users.png)
 *(Abbildung 7: Benutzerbereich unter Organisation - alle Benutzerinformationen werden angezeigt)*
@@ -160,7 +160,7 @@ Sie können deaktivierte Benutzer reaktivieren.
 ![Benutzeraktivierung - "Aktivieren" Tooltip-Ansicht](/assets/images/UserGuideEng/12_users_activation.png)
 *(Abbildung 12: Aktivieren eines inaktiven Benutzers)*
 
-3. Klicken Sie im Bestätigungsfenster auf die Schaltfläche **Ja**.
+3. Klicken Sie auf die Schaltfläche **{{t:common.general.yes}}** im Bestätigungsfenster.
 
 ![Aktivierungsbestätigungs-Modal](/assets/images/UserGuideEng/13_users_activation_confirm.png)
 *(Abbildung 13: Modal-Fenster zur Bestätigung der Benutzeraktivierung)*
@@ -179,7 +179,7 @@ Sie können die Trace-Funktion verwenden, um Benutzeraktivitäten zu überwachen
 
 3. Die vergangenen Aktivitäten des Benutzers werden auf dem geöffneten Bildschirm aufgelistet.
 4. Statistiken werden oben angezeigt: Gesamteinträge, Angezeigte Einträge, Letzte Aktivität.
-5. Klicken Sie auf die Schaltfläche **{{t:common.actions.export}}** und wählen Sie das Format: **CSV** oder **JSON**.
+5. Klicken Sie auf die Schaltfläche **{{t:common.actions.export}}** und wählen Sie das Format: **{{t:common.exportCSV}}** oder **{{t:common.exportJSON}}**.
 
 ![Audit-Historie - Export-Optionen](/assets/images/UserGuideEng/15_user_trace_export.png)
 *(Abbildung 15: Vollständige Aktivitätshistorie des Benutzers - Statistiken, Details und Export-Optionen)*
@@ -221,8 +221,8 @@ Teams ermöglichen es Ihnen, Benutzer zu gruppieren und Massenzugriff auf Ressou
 ### 2.2.3 Teammitglieder-Verwaltung
 
 1. Wählen Sie ein Team und klicken Sie auf das Benutzer-Symbol.
-2. Zeigen Sie bereits dem Team zugewiesene Mitglieder in der Registerkarte **Aktuelle Mitglieder** an.
-3. Wechseln Sie zur Registerkarte **Mitglied hinzufügen**.
+2. Sehen Sie bereits zum Team zugewiesene Mitglieder im Tab **{{t:organization.teams.manageMembers.currentTab}}**.
+3. Wechseln Sie zum Tab **{{t:organization.teams.manageMembers.addTab}}**.
 4. Geben Sie eine E-Mail-Adresse ein oder wählen Sie einen Benutzer aus dem Dropdown.
 5. Klicken Sie auf die Schaltfläche **"+"**, um das Mitglied zum Team hinzuzufügen.
 
@@ -235,8 +235,8 @@ Teams ermöglichen es Ihnen, Benutzer zu gruppieren und Massenzugriff auf Ressou
 
 1. Wählen Sie das Team, das Sie verfolgen möchten.
 2. Klicken Sie auf das Uhr-/Historie-Symbol.
-3. Überprüfen Sie die Gesamteinträge, Angezeigten Einträge und Letzte Aktivität im **Audit-Historie**-Modal.
-4. Klicken Sie auf die Schaltfläche **{{t:common.actions.export}}**, um im CSV- oder JSON-Format zu exportieren.
+3. Überprüfen Sie Gesamteinträge, Angezeigte Einträge und Letzte Aktivität im Fenster **{{t:resources.audit.title}}**.
+4. Klicken Sie auf die Schaltfläche **{{t:common.actions.export}}**, um im Format {{t:common.exportCSV}} oder {{t:common.exportJSON}} zu exportieren.
 
 ![Audit-Historie-Modal - DataBassTeam Team](/assets/images/UserGuideEng/19_teams_trace.png)
 *(Abbildung 19: Team-Audit-Historie anzeigen)*
@@ -247,7 +247,7 @@ Teams ermöglichen es Ihnen, Benutzer zu gruppieren und Massenzugriff auf Ressou
 
 1. Klicken Sie auf das Papierkorb-Symbol (rot) neben dem Team, das Sie löschen möchten.
 2. Überprüfen Sie, ob der Teamname im Bestätigungsdialog korrekt ist.
-3. Klicken Sie auf die Schaltfläche **Ja**.
+3. Klicken Sie auf die Schaltfläche **{{t:common.general.yes}}**.
 
 ![Team-Löschbestätigungsdialog](/assets/images/UserGuideEng/20_teams_delete.png)
 *(Abbildung 20: Team-Löschbestätigung)*
@@ -264,8 +264,8 @@ Die Zugriffskontrolle ermöglicht es Ihnen, Benutzerberechtigungen zentral zu ve
 
 1. Gehen Sie zur Registerkarte **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}**.
 2. Klicken Sie auf die Schaltfläche **"+"**.
-3. Geben Sie einen aussagekräftigen Namen in das Feld **Gruppenname eingeben** ein.
-4. Klicken Sie auf die Schaltfläche **OK**, um die Gruppe zu erstellen.
+3. Geben Sie einen aussagekräftigen Namen in das Feld **{{t:organization.access.modals.groupPlaceholder}}** ein.
+4. Klicken Sie auf die Schaltfläche **{{t:common.actions.confirm}}**, um die Gruppe zu erstellen.
 
 ![Berechtigungsgruppen-Erstellungsformular](/assets/images/UserGuideEng/21_create_access.png)
 *(Abbildung 21: Erstellen einer neuen Berechtigungsgruppe)*
@@ -274,10 +274,10 @@ Die Zugriffskontrolle ermöglicht es Ihnen, Benutzerberechtigungen zentral zu ve
 
 ### 2.3.2 Berechtigungsverwaltung
 
-1. Wählen Sie eine Berechtigungsgruppe und klicken Sie auf die Option **Berechtigungen verwalten**.
-2. Zeigen Sie die Zugriffsrechte der Gruppe in der Registerkarte **Aktuelle Berechtigungen** an.
+1. Wählen Sie eine Berechtigungsgruppe und klicken Sie auf die Option **{{t:organization.access.modals.managePermissionsTitle}}**.
+2. Sehen Sie die Zugriffsrechte der Gruppe im Tab **{{t:organization.access.modals.currentPermissionsTab}}**.
 3. Sie können eine Berechtigung widerrufen, indem Sie auf die rote Schaltfläche **{{t:common.delete}}** neben jeder Aktion klicken.
-4. Klicken Sie auf die Registerkarte **Berechtigung hinzufügen**, um neue Berechtigungen zur Gruppe hinzuzufügen.
+4. Klicken Sie auf den Tab **{{t:organization.access.modals.addPermissionsTab}}**, um neue Berechtigungen zur Gruppe hinzuzufügen.
 
 ![Berechtigungsverwaltungs-Panel - Liste zugewiesener Berechtigungen](/assets/images/UserGuideEng/22_access_permission.png)
 *(Abbildung 22: Berechtigungen für Berechtigungsgruppe verwalten)*
@@ -317,7 +317,7 @@ Der Maschinenbereich ermöglicht es Ihnen, Ihre Server und Repository-Ressourcen
 ![Maschinenerstellung abgeschlossen - Aufgabenverfolgungsfenster](/assets/images/UserGuideEng/25_machine_create_complete.png)
 *(Abbildung 25: Aufgabenverfolgungsfenster nach erfolgreicher Maschinenerstellung)*
 
-6. Beobachten Sie die Phasen: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+6. Beobachten Sie die Phasen: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 7. Klicken Sie auf die Schaltfläche **{{t:common.actions.close}}**, um den Vorgang zu beenden.
 
 > **Tipp**: Klicken Sie auf die Schaltfläche "{{t:common.actions.refresh}}", um den neuesten Status manuell zu überprüfen.
@@ -332,7 +332,7 @@ Sie können den Verbindungsstatus vorhandener Maschinen überprüfen.
 *(Abbildung 26: Konnektivitätstest-Schaltfläche in der Maschinenaktions-Symbolleiste)*
 
 2. Sehen Sie die Liste der zu testenden Maschinen.
-3. Klicken Sie auf die Schaltfläche **Test**.
+3. Klicken Sie auf die Schaltfläche **{{t:machines.runTest}}**.
 4. Erfolgreiche Ergebnisse werden in Grün, Fehler in Rot angezeigt.
 
 ![Konnektivitätstest-Formular - Maschinenliste](/assets/images/UserGuideEng/27_connectivity_test_form.png)
@@ -393,10 +393,10 @@ Klicken Sie auf die Schaltfläche **{{t:common.actions.refresh}}**, um die Masch
 *(Abbildung 33: Uhr-Symbol in der Maschinenaktionsspalte)*
 
 2. Überprüfen Sie Operationen im Audit-Historie-Fenster:
-   - **Aktion**: Art der durchgeführten Operation
+   - **{{t:resources.audit.action}}**: Art der durchgeführten Operation
    - **Details**: Geänderte Felder
-   - **Durchgeführt von**: Benutzer, der die Aktion ausgeführt hat
-   - **Zeitstempel**: Datum und Uhrzeit
+   - **{{t:resources.audit.performedBy}}**: Benutzer, der die Aktion durchgeführt hat
+   - **{{t:resources.audit.timestamp}}**: Datum und Uhrzeit
 
 ![Maschinen-Audit-Historie-Fenster](/assets/images/UserGuideEng/34_trace_list.png)
 *(Abbildung 34: Audit-Historie - Liste aller Änderungen)*
@@ -422,20 +422,20 @@ Klicken Sie auf die Schaltfläche **{{t:common.actions.refresh}}**, um die Masch
 
 Sie können verschiedene Remote-Operationen auf Maschinen durchführen.
 
-1. Wählen Sie die Maschine und klicken Sie auf die Schaltfläche **Remote**.
+1. Wählen Sie die Maschine und klicken Sie auf die Schaltfläche **{{t:common.actions.remote}}**.
 2. Sehen Sie Optionen im Dropdown-Menü:
-   - **Auf Server ausführen**: Funktion auf Maschine ausführen
-   - **Verbindung testen**: Maschine anpingen
+   - **{{t:machines.runAction}}**: Funktion auf Maschine ausführen
+   - **{{t:common.vaultEditor.testConnection.button}}**: Maschine anpingen
 
 ![Remote-Menü - Auf Server ausführen und Verbindung testen](/assets/images/UserGuideEng/37_remote_button.png)
 *(Abbildung 37: Remote-Schaltfläche - Funktionsausführungsmenü auf ausgewählter Maschine)*
 
-> **Tipp**: Verwenden Sie die Option "Verbindung testen", um zu überprüfen, ob die Maschine erreichbar ist, bevor Sie Funktionen ausführen.
+> **Tipp**: Verwenden Sie die Option "{{t:common.vaultEditor.testConnection.button}}", um zu überprüfen, ob die Maschine erreichbar ist, bevor Sie Funktionen ausführen.
 
 #### Setup
 
-1. Wählen Sie die Option **Auf Server ausführen**.
-2. Finden Sie die Funktion **setup** in der Liste **Verfügbare Funktionen**.
+1. Wählen Sie die Option **{{t:machines.runAction}}**.
+2. Finden Sie die Funktion **setup** in der Liste **{{t:functions.availableFunctions}}**.
 3. Klicken Sie auf den Funktionsnamen, um sie auszuwählen.
 
 ![Maschinenfunktionsliste - setup Funktion](/assets/images/UserGuideEng/38_server_setup.png)
@@ -445,14 +445,14 @@ Sie können verschiedene Remote-Operationen auf Maschinen durchführen.
 
 #### Verbindungsprüfung (Hello)
 
-1. Wählen Sie **Auf Server ausführen** > Funktion **hello**.
+1. Wählen Sie **{{t:machines.runAction}}** > Funktion **hello**.
 2. Klicken Sie auf die Schaltfläche **{{t:common.actions.addToQueue}}**.
 
 ![Hello-Funktionsauswahl](/assets/images/UserGuideEng/39_remote_hello.png)
 *(Abbildung 39: Hello-Funktion - einfache Testfunktion, gibt Hostname zurück)*
 
 3. Beobachten Sie die Ergebnisse im Aufgabenverfolgungsfenster.
-4. Sehen Sie die Ausgabe der Maschine im Abschnitt **Antwort (Konsole)**.
+4. Sehen Sie die Ausgabe der Maschine im Abschnitt **{{t:queue.trace.responseConsole}}**.
 
 ![Hello-Funktion abgeschlossen](/assets/images/UserGuideEng/40_remote_hello_complete.png)
 *(Abbildung 40: Hello-Funktion erfolgreich abgeschlossen - Hostname-Antwort)*
@@ -461,7 +461,7 @@ Sie können verschiedene Remote-Operationen auf Maschinen durchführen.
 
 #### Erweiterte Operationen
 
-1. Folgen Sie dem Pfad **Remote** > **Auf Server ausführen** > **Erweitert**.
+1. Folgen Sie dem Pfad **{{t:common.actions.remote}}** > **{{t:machines.runAction}}** > **{{t:common.actions.advanced}}**.
 2. Sehen Sie verfügbare Funktionen: setup, hello, ping, ssh_test, uninstall
 3. Wählen Sie die erforderliche Funktion und klicken Sie auf die Schaltfläche **{{t:common.actions.addToQueue}}**.
 
@@ -492,10 +492,10 @@ Repositories sind die grundlegenden Einheiten, in denen Ihre Backup-Daten gespei
 *(Abbildung 43: Maschinen-Repository-Verwaltungsbildschirm - Repository erstellen Schaltfläche)*
 
 3. Füllen Sie das Formular aus:
-   - **Repository-Name**: Geben Sie den Repository-Namen ein (z.B. postgresql)
-   - **Größe**: Geben Sie die Repository-Größe ein (z.B. 2GB)
-   - **Credential ID**: Zeigen Sie die automatisch generierte Anmeldeinformation an
-   - **Vorlage auswählen**: Wählen Sie eine Vorlage (z.B. databases_postgresql)
+   - **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}**: Geben Sie den Repository-Namen ein (z.B. postgresql)
+   - **{{t:resources.repositories.size}}**: Geben Sie die Repository-Größe ein (z.B. 2GB)
+   - **{{t:resources.repositories.repositoryGuid}}**: Sehen Sie die automatisch generierte Anmeldedaten
+   - **{{t:resources.templates.selectTemplate}}**: Wählen Sie eine Vorlage (z.B. databases_postgresql)
 
 ![Repository-Erstellungsformular](/assets/images/UserGuideEng/44_repo_form.png)
 *(Abbildung 44: Repository-Erstellungsformular - Repository-Name, Größe und Vorlagenauswahl)*
@@ -504,7 +504,7 @@ Repositories sind die grundlegenden Einheiten, in denen Ihre Backup-Daten gespei
 
 > **Tipp**: Die Credential ID wird automatisch generiert, eine manuelle Änderung wird nicht empfohlen.
 
-5. Beobachten Sie die Phasen im Aufgabenverfolgungsfenster: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+5. Beobachten Sie die Phasen im Aufgabenverfolgungsfenster: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 
 ![Repository-Erstellung abgeschlossen](/assets/images/UserGuideEng/45_repo_complete.png)
 *(Abbildung 45: Repository-Erstellung in Warteschlange - Aufgabenüberwachung)*
@@ -527,7 +527,7 @@ Sie können ein neues Repository erstellen, indem Sie ein vorhandenes kopieren.
 ![fx Menü - fork Option](/assets/images/UserGuideEng/47_fork_button.png)
 *(Abbildung 47: fx Menü auf der rechten Seite - Repository-Operationen)*
 
-4. Geben Sie ein neues Tag im Feld **Tag ID** ein (z.B. 2025-12-06-20-37-08).
+4. Geben Sie ein neues Tag in das Feld **{{t:functions.functions.fork.params.tag.label}}** ein (z.B. 2025-12-06-20-37-08).
 5. Klicken Sie auf die Schaltfläche **{{t:common.actions.addToQueue}}**.
 
 ![Fork-Konfigurationsformular](/assets/images/UserGuideEng/48_fork_form.png)
@@ -581,9 +581,9 @@ Um das Repository an einen anderen Ort bereitzustellen:
 ![Deploy-Operation](/assets/images/UserGuideEng/54_deploy_button.png)
 *(Abbildung 54: "deploy" Option aus fx Menü)*
 
-2. Geben Sie die Version zur Bereitstellung im Feld **Tag ID** ein.
-3. Wählen Sie Zielmaschinen im Feld **Zielmaschinen**.
-4. Aktivieren Sie die Option **Vorhandene Datei überschreiben** (falls zutreffend).
+2. Geben Sie die bereitzustellende Version in das Feld **{{t:functions.functions.fork.params.tag.label}}** ein.
+3. Wählen Sie Zielmaschinen im Feld **{{t:functions.functions.backup_deploy.params.machines.label}}**.
+4. Aktivieren Sie die Option **{{t:functions.checkboxOptions.overrideExistingFile}}** (falls zutreffend).
 5. Klicken Sie auf die Schaltfläche **{{t:common.actions.addToQueue}}**.
 
 ![Deploy-Formular](/assets/images/UserGuideEng/55_deploy_form.png)
@@ -606,10 +606,10 @@ Um das Repository zu sichern:
 *(Abbildung 57: "backup" Option aus fx Menü)*
 
 2. Füllen Sie das Formular aus:
-   - **Backup-Tag**: Geben Sie einen beschreibenden Namen ein (z.B. backup01012025)
-   - **Zielspeichersysteme**: Wählen Sie den Backup-Speicherort
-   - **Vorhandene Datei überschreiben**: Aktivieren oder deaktivieren Sie die Option
-   - **Checkpoint aktivieren**: Überprüfen Sie die Einstellung
+   - **{{t:functions.functions.fork.params.tag.label}}**: Geben Sie einen beschreibenden Namen ein (z.B. backup01012025)
+   - **{{t:functions.functions.backup_create.params.storages.label}}**: Wählen Sie den Backup-Speicherort
+   - **{{t:functions.checkboxOptions.overrideExistingFile}}**: Aktivieren oder deaktivieren Sie die Option
+   - **{{t:functions.functions.backup_deploy.params.checkpoint.label}}**: Überprüfen Sie die Einstellung
 
 ![Backup-Formular](/assets/images/UserGuideEng/58_backup_form.png)
 *(Abbildung 58: Backup-Konfigurationsformular - Ziel, Dateiname und Optionen)*
@@ -641,7 +641,7 @@ Um eine neue Vorlage auf das Repository anzuwenden:
 ![Vorlagenauswahlformular](/assets/images/UserGuideEng/61_templates_form.png)
 *(Abbildung 61: Suchen und Auswählen verfügbarer Vorlagen)*
 
-> **Tipp**: Verwenden Sie das Suchfeld, um Vorlagen schnell zu finden. Verwenden Sie "Details anzeigen", um mehr über Vorlagenfunktionen zu erfahren.
+> **Tipp**: Verwenden Sie das Suchfeld, um schnell Vorlagen zu finden. Verwenden Sie "{{t:common.viewDetails}}", um mehr über Vorlagenfunktionen zu erfahren.
 
 5. Warten Sie auf die Nachricht **{{t:queue.statusCompleted}}**.
 
@@ -652,7 +652,7 @@ Um eine neue Vorlage auf das Repository anzuwenden:
 
 Um das Repository zu trennen:
 
-1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **Erweitert** > **Unmount**.
+1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}**.
 
 ![Unmount-Operation](/assets/images/UserGuideEng/63_unmount_button.png)
 *(Abbildung 63: "Unmount" Option im erweiterten Menü)*
@@ -668,12 +668,12 @@ Um das Repository zu trennen:
 
 Um die Repository-Größe zu erhöhen:
 
-1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **Erweitert** > **Erweitern**.
+1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **{{t:common.actions.advanced}}** > **{{t:functions.functions.repository_expand.name}}**.
 
 ![Erweitern-Operation](/assets/images/UserGuideEng/65_expand_button.png)
 *(Abbildung 65: "Erweitern" Option im erweiterten Menü)*
 
-2. Geben Sie die gewünschte Größe im Feld **Neue Größe** ein.
+2. Geben Sie die gewünschte Größe in das Feld **{{t:functions.functions.repository_expand.params.size.label}}** ein.
 3. Wählen Sie die Einheit aus dem Dropdown rechts (GB, TB).
 4. Klicken Sie auf die Schaltfläche **{{t:common.actions.addToQueue}}**.
 
@@ -691,7 +691,7 @@ Um die Repository-Größe zu erhöhen:
 
 Um den Repository-Namen zu ändern:
 
-1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **Umbenennen**.
+1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **{{t:common.actions.rename}}**.
 
 ![Umbenennen-Operation](/assets/images/UserGuideEng/68_rename_button.png)
 *(Abbildung 68: "Umbenennen" Option aus fx Menü)*
@@ -708,7 +708,7 @@ Um den Repository-Namen zu ändern:
 
 Um das Repository dauerhaft zu löschen:
 
-1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **Repository löschen**.
+1. Wählen Sie das Repository und folgen Sie dem Pfad **fx** > **{{t:resources.repositories.deleteRepository}}**.
 
 ![Repository löschen Operation](/assets/images/UserGuideEng/70_delete_repo_button.png)
 *(Abbildung 70: "Repository löschen" Option aus fx Menü - rot)*
@@ -750,21 +750,21 @@ Sie können sich mit verschiedenen Methoden mit Repositories verbinden.
 
 ### 2.6.1 Desktop-Anwendungsverbindung
 
-1. Klicken Sie auf die Schaltfläche **Lokal** in der Repository-Zeile.
+1. Klicken Sie auf die Schaltfläche **{{t:resources.localActions.local}}** in der Repository-Zeile.
 
 ![Lokale Verbindungsschaltfläche](/assets/images/UserGuideEng/73_repo_connection_local.png)
 *(Abbildung 73: "Lokal" Schaltfläche in der Repository-Zeile - Desktop-Anwendungszugriff)*
 
 2. Wählen Sie die Zugriffsmethode aus dem Dropdown-Menü:
-   - **Desktop-Anwendung**: Zugriff mit grafischer Oberfläche
-   - **VS Code**: Im Code-Editor öffnen
-   - **Terminal**: Zugriff über Befehlszeile
-   - **CLI-Befehle**: Befehlszeilen-Tools
+   - **{{t:resources.localActions.openInDesktop}}**: Zugriff mit grafischer Oberfläche
+   - **{{t:resources.localCommandBuilder.vscodeTab}}**: Im Code-Editor öffnen
+   - **{{t:common.terminal.terminal}}**: Zugriff über Kommandozeile
+   - **{{t:resources.localActions.showCLICommands}}**: Kommandozeilen-Tools
 
 ![Verbindungsoptionsmenü](/assets/images/UserGuideEng/74_repo_connection.png)
 *(Abbildung 74: Repository-Verbindungsmenü - verschiedene Zugriffspfade)*
 
-> **Tipp**: Wenn Sie mit VS Code arbeiten, bietet die "VS Code"-Option die schnellste Integration.
+> **Tipp**: Wenn Sie mit VS Code arbeiten, bietet die Option "{{t:resources.localCommandBuilder.vscodeTab}}" die schnellste Integration.
 
 3. Klicken Sie auf die Schaltfläche **Öffnen**, wenn der Browser um Erlaubnis bittet.
 
@@ -786,7 +786,7 @@ Sie können Ihre Profil- und Systemeinstellungen im Einstellungsbereich verwalte
 ![Profileinstellungsseite](/assets/images/UserGuideEng/76_profiles_button.png)
 *(Abbildung 76: Einstellungen → Profil-Seite - persönliche Vault-Einstellungen)*
 
-2. Klicken Sie auf die Schaltfläche **Passwort ändern**.
+2. Klicken Sie auf die Schaltfläche **{{t:settings.personal.changePassword.submit}}**.
 
 ![Passwort ändern Schaltfläche](/assets/images/UserGuideEng/77_profiles_change_button.png)
 *(Abbildung 77: "Passwort ändern" Schaltfläche im persönlichen Einstellungsbereich)*
@@ -797,8 +797,8 @@ Sie können Ihre Profil- und Systemeinstellungen im Einstellungsbereich verwalte
    - Muss mindestens eine Zahl enthalten
    - Muss mindestens ein Sonderzeichen enthalten
 
-4. Geben Sie dasselbe Passwort im Feld **Neues Passwort bestätigen** erneut ein.
-5. Klicken Sie auf die Schaltfläche **Passwort ändern**.
+4. Geben Sie das gleiche Passwort erneut in das Feld **{{t:settings.personal.changePassword.confirmPasswordLabel}}** ein.
+5. Klicken Sie auf die Schaltfläche **{{t:settings.personal.changePassword.submit}}**.
 
 ![Passwort ändern Formular](/assets/images/UserGuideEng/78_profiles_change_form.png)
 *(Abbildung 78: Passwort ändern Formular - Sicherheitsanforderungen sichtbar)*
@@ -814,17 +814,17 @@ Der Speicherbereich ermöglicht es Ihnen, die physischen Bereiche zu verwalten, 
 ### 2.8.1 Speicher hinzufügen
 
 1. Gehen Sie im linken Menü zur Registerkarte **{{t:common.navigation.storage}}**.
-2. Klicken Sie auf die Schaltfläche **Speicher hinzufügen**.
+2. Klicken Sie auf die Schaltfläche **{{t:resources.storage.createStorage}}**.
 
 ![Speicher hinzufügen Schaltfläche](/assets/images/UserGuideEng/79_storage_add_button.png)
 *(Abbildung 79: Speicherverwaltungsseite - "Speicher hinzufügen" Schaltfläche)*
 
 3. Füllen Sie das Formular aus:
-   - **Speichername**: Geben Sie einen beschreibenden Namen ein
-   - **Speicheranbieter**: Wählen Sie (z.B. s3)
-   - **Beschreibung**: Fügen Sie eine optionale Beschreibung hinzu
-   - **Versionierung deaktivieren**: Optional
-   - **Zusätzliche Parameter**: rclone-Flags (z.B. --transfers 4)
+   - **{{t:common.vaultEditor.fields.STORAGE.name.label}}**: Geben Sie einen beschreibenden Namen ein
+   - **{{t:common.vaultEditor.fields.STORAGE.provider.label}}**: Wählen Sie (z.B. s3)
+   - **{{t:common.vaultEditor.fields.STORAGE.description.label}}**: Fügen Sie eine optionale Beschreibung hinzu
+   - **{{t:common.vaultEditor.fields.STORAGE.noVersioning.label}}**: Optional
+   - **{{t:common.vaultEditor.fields.STORAGE.parameters.label}}**: rclone-Flags (z.B. --transfers 4)
 
 ![Speicher-Erstellungsformular](/assets/images/UserGuideEng/80_storage_form.png)
 *(Abbildung 80: Speicher hinzufügen Formular - Name, Anbieter, Beschreibung und Parameter)*
@@ -848,7 +848,7 @@ Der Anmeldedatenbereich ermöglicht es Ihnen, Zugangsinformationen für Ihre Rep
 ![Anmeldedatenliste](/assets/images/UserGuideEng/81_credentials.png)
 *(Abbildung 81: Anmeldedatenseite - Repository-Namen, Teams und Verwaltungsschaltflächen)*
 
-4. Ändern Sie bei Bedarf den **Repository-Namen**.
+4. Ändern Sie den **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}** bei Bedarf.
 5. Speichern Sie mit der Schaltfläche **{{t:common.save}}**.
 
 ![Anmeldedaten-Bearbeitungsformular](/assets/images/UserGuideEng/82_credentials_form.png)
@@ -865,7 +865,7 @@ Der Anmeldedatenbereich ermöglicht es Ihnen, Zugangsinformationen für Ihre Rep
 *(Abbildung 83: "Trace" Schaltfläche in der Anmeldedatentabelle)*
 
 3. Überprüfen Sie die Audit-Historie.
-4. Wählen Sie das Format über die Schaltfläche **{{t:common.actions.export}}**: **CSV** oder **JSON**.
+4. Wählen Sie das Format über die Schaltfläche **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** oder **{{t:common.exportJSON}}**.
 
 ![Anmeldedaten-Audit-Historie](/assets/images/UserGuideEng/84_credentials_list_export.png)
 *(Abbildung 84: Anmeldedatenliste - Export-Optionen)*
@@ -902,8 +902,8 @@ Der Warteschlangenbereich ermöglicht es Ihnen, ausstehende und abgeschlossene O
 
 2. Um Warteschlangenelemente zu filtern:
    - Verwenden Sie **{{t:queue.trace.team}}**, **{{t:queue.trace.machine}}**, **{{t:queue.trace.region}}** und **{{t:queue.trace.bridge}}** Filter
-   - Geben Sie den **Datumsbereich** an
-   - Aktivieren Sie die Option **Nur veraltete Elemente**
+   - Geben Sie **{{t:system.audit.filters.dateRange}}** an
+   - Aktivieren Sie die Option **{{t:queue.filters.onlyStale}}**
 
 3. Zeigen Sie Details in Status-Registerkarten an:
    - **{{t:queue.statusActive}}**: Aufgaben, die verarbeitet werden
@@ -911,12 +911,12 @@ Der Warteschlangenbereich ermöglicht es Ihnen, ausstehende und abgeschlossene O
    - **{{t:queue.statusCancelled}}**: Abgebrochene Aufgaben
    - **{{t:queue.statusFailed}}**: Fehlgeschlagene Aufgaben
 
-4. Wählen Sie ein Format über die Schaltfläche **{{t:common.actions.export}}**: **CSV** oder **JSON**.
+4. Wählen Sie ein Format über die Schaltfläche **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** oder **{{t:common.exportJSON}}**.
 
 ![Warteschlangen-Export](/assets/images/UserGuideEng/88_queue_export.png)
 *(Abbildung 88: Warteschlangenliste - Export-Optionen)*
 
-> **Tipp**: Die Option "Nur veraltete Elemente" hilft, Aufgaben zu finden, die lange verarbeitet werden. Exportieren Sie regelmäßig die Warteschlangenhistorie, um Aufgabenausführungstrends zu analysieren.
+> **Tipp**: Die Option "{{t:queue.filters.onlyStale}}" hilft, Aufgaben zu finden, die lange in Bearbeitung sind. Exportieren Sie regelmäßig die Warteschlangenhistorie, um Aufgabenausführungstrends zu analysieren.
 
 ---
 
@@ -944,7 +944,7 @@ Der Audit-Bereich führt Aufzeichnungen über alle im System durchgeführten Ope
    - **Benutzer**: Benutzer, der die Operation durchgeführt hat
    - **Details**: Zusätzliche Informationen über die Operation
 
-4. Wählen Sie ein Format über die Schaltfläche **{{t:common.actions.export}}**: **CSV** oder **JSON**.
+4. Wählen Sie ein Format über die Schaltfläche **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** oder **{{t:common.exportJSON}}**.
 
 ![Audit-Export](/assets/images/UserGuideEng/90_audit_export.png)
 *(Abbildung 90: Audit-Aufzeichnung exportieren - CSV und JSON Optionen)*

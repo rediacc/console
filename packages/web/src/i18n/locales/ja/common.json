@@ -376,19 +376,19 @@
     "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています"
   },
   "teamSelector": {
+    "moreTeams": "+{{count}}個の追加チーム",
     "selectTeam": "チームを選択...",
-    "selectTeams": "チームを選択...",
-    "moreTeams": "+{{count}}個の追加チーム"
+    "selectTeams": "チームを選択..."
   },
   "terminal": {
-    "terminal": "ターミナル",
+    "connectedTo": "{{host}} に接続中",
     "connecting": "接続中",
     "connectionFailed": "接続に失敗しました",
-    "connectedTo": "{{host}} に接続中",
     "establishingConnection": "{{host}} への SSH 接続を確立中...",
-    "waitingForConnection": "接続を待機中...",
+    "popout": "新しいウィンドウで開く",
     "reconnect": "再接続",
-    "popout": "新しいウィンドウで開く"
+    "terminal": "ターミナル",
+    "waitingForConnection": "接続を待機中..."
   },
   "theme": {
     "dark": "ダーク",
@@ -520,13 +520,13 @@
           "label": "データストアのパス"
         },
         "description": "SSH アクセスとストレージのためのマシン構成",
-        "known_hosts": {
-          "description": "セキュリティ検証用の SSH 既知のホスト エントリ",
-          "label": "ホストエントリー"
-        },
         "ip": {
           "description": "マシンのIPアドレス",
           "label": "IPアドレス"
+        },
+        "known_hosts": {
+          "description": "セキュリティ検証用の SSH 既知のホスト エントリ",
+          "label": "ホストエントリー"
         },
         "port": {
           "description": "SSHポート番号",
@@ -718,13 +718,13 @@
     "fieldsMovedFromExtra": "extraFields から復元された {{count}} 個のフィールド: {{fields}}",
     "fieldsMovedToExtra": "{{count}} 個のフィールドが extraFields に移動されました: {{fields}}",
     "formatJson": "JSON形式",
-    "knownHostsHelp": "オプション。 SSH の既知のホスト エントリは自動的に検出されます。",
-    "knownHostsPlaceholder": "接続テスト中に自動入力されます",
     "importJson": "JSONをインポートする",
     "invalidFormat": "無効な形式です。 {{description}}",
     "invalidJsonFormat": "無効な JSON 形式",
     "isRequired": "{{field}}は必須です",
     "jsonError": "JSONエラー",
+    "knownHostsHelp": "オプション。 SSH の既知のホスト エントリは自動的に検出されます。",
+    "knownHostsPlaceholder": "接続テスト中に自動入力されます",
     "maxLength": "最大長は {{length}} です",
     "maxValue": "最大値は {{value}} です",
     "minLength": "最小の長さは {{length}} です",
@@ -791,17 +791,17 @@
     "versionWillIncrement": "バージョンは {{version}} に増加します"
   },
   "viewDetails": "詳細を見る",
+  "vscodeSelection": {
+    "description": "複数のVS Codeインストールが検出されました。使用するものを選択してください：",
+    "open": "開く",
+    "rememberChoice": "選択を記憶する",
+    "title": "VS Codeのインストールを選択",
+    "windowsVSCode": "Windows版 VS Code",
+    "wslVSCode": "WSL版 VS Code (Linux)"
+  },
   "warnings": {
     "sandboxEnvironment": "サンドボックス環境",
     "sandboxMessage": "アップデート中にデータがリセットされる場合があります。 テスト専用。"
-  },
-  "vscodeSelection": {
-    "title": "VS Codeのインストールを選択",
-    "open": "開く",
-    "description": "複数のVS Codeインストールが検出されました。使用するものを選択してください：",
-    "windowsVSCode": "Windows版 VS Code",
-    "wslVSCode": "WSL版 VS Code (Linux)",
-    "rememberChoice": "選択を記憶する"
   },
   "yes": "はい",
   "yesterday": "昨日"

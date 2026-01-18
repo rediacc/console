@@ -376,19 +376,19 @@
     "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}"
   },
   "teamSelector": {
+    "moreTeams": "+{{count}} ещё",
     "selectTeam": "Выберите команду...",
-    "selectTeams": "Выберите команды...",
-    "moreTeams": "+{{count}} ещё"
+    "selectTeams": "Выберите команды..."
   },
   "terminal": {
-    "terminal": "Терминал",
+    "connectedTo": "Подключено к {{host}}",
     "connecting": "Подключение",
     "connectionFailed": "Ошибка подключения",
-    "connectedTo": "Подключено к {{host}}",
     "establishingConnection": "Установка SSH-соединения с {{host}}...",
-    "waitingForConnection": "Ожидание подключения...",
+    "popout": "Открыть в новом окне",
     "reconnect": "Переподключиться",
-    "popout": "Открыть в новом окне"
+    "terminal": "Терминал",
+    "waitingForConnection": "Ожидание подключения..."
   },
   "theme": {
     "dark": "Тёмный",
@@ -520,13 +520,13 @@
           "label": "Путь к хранилищу данных"
         },
         "description": "Конфигурация машины для доступа и хранения по SSH",
-        "known_hosts": {
-          "description": "Запись известного хоста SSH для проверки безопасности",
-          "label": "Вход хоста"
-        },
         "ip": {
           "description": "IP-адрес машины",
           "label": "IP-адрес"
+        },
+        "known_hosts": {
+          "description": "Запись известного хоста SSH для проверки безопасности",
+          "label": "Вход хоста"
         },
         "port": {
           "description": "Номер SSH-порта",
@@ -718,13 +718,13 @@
     "fieldsMovedFromExtra": "{{count}} полей восстановлено из extraFields: {{fields}}",
     "fieldsMovedToExtra": "Поля ({{count}}) перемещены в extraFields: {{fields}}",
     "formatJson": "Формат JSON",
-    "knownHostsHelp": "Необязательный. Запись известного хоста SSH будет обнаружена автоматически.",
-    "knownHostsPlaceholder": "Автоматически заполняется во время проверки соединения",
     "importJson": "Импортировать JSON",
     "invalidFormat": "Неверный формат. {{description}}",
     "invalidJsonFormat": "Неверный формат JSON",
     "isRequired": "{{field}} обязательно",
     "jsonError": "Ошибка JSON",
+    "knownHostsHelp": "Необязательный. Запись известного хоста SSH будет обнаружена автоматически.",
+    "knownHostsPlaceholder": "Автоматически заполняется во время проверки соединения",
     "maxLength": "Максимальная длина — {{length}}.",
     "maxValue": "Максимальное значение — {{value}}.",
     "minLength": "Минимальная длина – {{length}}.",
@@ -791,17 +791,17 @@
     "versionWillIncrement": "Версия увеличится до {{version}}."
   },
   "viewDetails": "Посмотреть детали",
+  "vscodeSelection": {
+    "description": "Обнаружено несколько установок VS Code. Выберите, какую использовать:",
+    "open": "Открыть",
+    "rememberChoice": "Запомнить мой выбор",
+    "title": "Выберите установку VS Code",
+    "windowsVSCode": "VS Code для Windows",
+    "wslVSCode": "VS Code в WSL (Linux)"
+  },
   "warnings": {
     "sandboxEnvironment": "Песочница",
     "sandboxMessage": "Данные могут быть сброшены во время обновлений. Только для тестирования."
-  },
-  "vscodeSelection": {
-    "title": "Выберите установку VS Code",
-    "open": "Открыть",
-    "description": "Обнаружено несколько установок VS Code. Выберите, какую использовать:",
-    "windowsVSCode": "VS Code для Windows",
-    "wslVSCode": "VS Code в WSL (Linux)",
-    "rememberChoice": "Запомнить мой выбор"
   },
   "yes": "Да",
   "yesterday": "Вчера"

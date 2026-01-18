@@ -252,6 +252,13 @@
     "staleTaskTitle": "مهمة قديمة",
     "staleTitle": "قد تكون المهمة قديمة",
     "status": "الحالة",
+    "structuredLog": {
+      "level": "المستوى",
+      "message": "الرسالة",
+      "time": "الوقت",
+      "viewRaw": "خام",
+      "viewStructured": "منظم"
+    },
     "sudoSupport": "دعم Sudo",
     "system": "نظام",
     "systemInfo": "معلومات النظام",
@@ -272,13 +279,6 @@
     "user": "مستخدم",
     "vaultContent": "محتوى الخزنة",
     "version": "الإصدار",
-    "waiting": "في الانتظار",
-    "structuredLog": {
-      "time": "الوقت",
-      "level": "المستوى",
-      "message": "الرسالة",
-      "viewStructured": "منظم",
-      "viewRaw": "خام"
-    }
+    "waiting": "في الانتظار"
   }
 }

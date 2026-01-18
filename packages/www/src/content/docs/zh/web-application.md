@@ -32,7 +32,7 @@ language: zh
 
 1. 在浏览器中导航至 [https://www.rediacc.com/](https://www.rediacc.com/)。
 2. 点击页面右上角的 **{{t:auth.login.signIn}}** 按钮。
-3. 选择 **Get Started** 获取免费访问或选择 **Request Demo** 进行演示。
+3. 选择 **Get Started** 进行免费访问，或选择 **Request Demo** 进行演示。
 
 > **提示**：您可以创建免费账户，无需任何信用卡。包含 10 个 CPU 核心和无限团队。
 
@@ -109,7 +109,7 @@ language: zh
 
 1. 在左侧边栏中点击 **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** 选项。
 2. 以表格格式查看所有用户的列表。
-3. 每个用户行显示电子邮件、状态（活动/非活动）、权限组和最后活动时间。
+3. 每个用户行显示电子邮件、状态（{{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}）、权限组和最后活动时间。
 
 ![用户管理页面 - 活动用户列表](/assets/images/UserGuideEng/07_users.png)
 *（图 7：组织下的用户部分 - 显示所有用户的信息）*
@@ -136,7 +136,7 @@ language: zh
 您可以通过向用户分配特定权限组来管理访问权限。
 
 1. 从 **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** 标签中选择用户。
-2. 点击操作列中的盾牌图标（**Permissions**）。
+2. 点击操作列中的盾牌图标（**权限**）。
 
 ![权限管理 - 盾牌、齿轮和删除图标](/assets/images/UserGuideEng/10_users_permissions.png)
 *（图 10：用户操作的图标显示 - 每个图标代表不同的操作）*
@@ -154,13 +154,13 @@ language: zh
 
 您可以重新激活已禁用的用户。
 
-1. 在 **Users** 列表中找到状态为非活动的用户。
+1. 在 **用户** 列表中找到状态为非活动的用户。
 2. 点击操作列中的红色图标。
 
 ![用户激活 - "激活"工具提示视图](/assets/images/UserGuideEng/12_users_activation.png)
 *（图 12：激活非活动用户）*
 
-3. 在确认窗口中点击 **Yes** 按钮。
+3. 在确认窗口中点击 **{{t:common.general.yes}}** 按钮。
 
 ![激活确认模态框](/assets/images/UserGuideEng/13_users_activation_confirm.png)
 *（图 13：确认用户激活的模态窗口）*
@@ -179,7 +179,7 @@ language: zh
 
 3. 用户的过去活动列在打开的屏幕上。
 4. 顶部显示统计信息：总记录数、已查看记录数、最后活动。
-5. 点击 **{{t:common.actions.export}}** 按钮并选择格式：**CSV** 或 **JSON**。
+5. 点击 **{{t:common.actions.export}}** 按钮并选择格式：**{{t:common.exportCSV}}** 或 **{{t:common.exportJSON}}**。
 
 ![审计历史 - 导出选项](/assets/images/UserGuideEng/15_user_trace_export.png)
 *（图 15：用户的完整活动历史 - 统计、详细信息和导出选项）*
@@ -221,8 +221,8 @@ language: zh
 ### 2.2.3 团队成员管理
 
 1. 选择团队并点击用户图标。
-2. 在 **Current Members** 标签中查看已分配给团队的成员。
-3. 切换到 **Add Member** 标签。
+2. 在 **{{t:organization.teams.manageMembers.currentTab}}** 标签页中查看已分配给团队的成员。
+3. 切换到 **{{t:organization.teams.manageMembers.addTab}}** 标签页。
 4. 输入电子邮件地址或从下拉菜单中选择用户。
 5. 点击 **"+"** 按钮将成员添加到团队。
 
@@ -235,8 +235,8 @@ language: zh
 
 1. 选择要追踪的团队。
 2. 点击时钟/历史图标。
-3. 在 **Audit History** 模态框中查看总记录数、已查看记录数和最后活动计数。
-4. 点击 **{{t:common.actions.export}}** 按钮以 CSV 或 JSON 格式导出。
+3. 在 **{{t:resources.audit.title}}** 模态窗口中查看总记录数、已查看记录数和最后活动计数。
+4. 点击 **{{t:common.actions.export}}** 按钮以 {{t:common.exportCSV}} 或 {{t:common.exportJSON}} 格式导出。
 
 ![审计历史模态框 - DataBassTeam 团队](/assets/images/UserGuideEng/19_teams_trace.png)
 *（图 19：查看团队审计历史）*
@@ -247,7 +247,7 @@ language: zh
 
 1. 点击要删除的团队旁边的垃圾桶（红色）图标。
 2. 在确认对话框中验证团队名称正确。
-3. 点击 **Yes** 按钮。
+3. 点击 **{{t:common.general.yes}}** 按钮。
 
 ![团队删除确认对话框](/assets/images/UserGuideEng/20_teams_delete.png)
 *（图 20：团队删除确认）*
@@ -264,8 +264,8 @@ language: zh
 
 1. 转到 **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}** 标签。
 2. 点击 **"+"** 按钮。
-3. 在 **Enter group name** 字段中输入有意义的名称。
-4. 点击 **OK** 按钮创建组。
+3. 在 **{{t:organization.access.modals.groupPlaceholder}}** 字段中输入有意义的名称。
+4. 点击 **{{t:common.actions.confirm}}** 按钮创建组。
 
 ![权限组创建表单](/assets/images/UserGuideEng/21_create_access.png)
 *（图 21：创建新的权限组）*
@@ -274,10 +274,10 @@ language: zh
 
 ### 2.3.2 权限管理
 
-1. 选择权限组并点击 **Manage Permissions** 选项。
-2. 在 **Current Permissions** 标签中查看组的访问权限。
+1. 选择权限组并点击 **{{t:organization.access.modals.managePermissionsTitle}}** 选项。
+2. 在 **{{t:organization.access.modals.currentPermissionsTab}}** 标签页中查看组的访问权限。
 3. 您可以通过点击每个操作旁边的红色 **{{t:common.delete}}** 按钮来撤销权限。
-4. 点击 **Add Permission** 标签向组添加新权限。
+4. 点击 **{{t:organization.access.modals.addPermissionsTab}}** 标签页向组添加新权限。
 
 ![权限管理面板 - 分配的权限列表](/assets/images/UserGuideEng/22_access_permission.png)
 *（图 22：管理权限组的权限）*
@@ -317,7 +317,7 @@ language: zh
 ![机器创建完成 - 任务追踪窗口](/assets/images/UserGuideEng/25_machine_create_complete.png)
 *（图 25：机器成功创建后的任务追踪窗口）*
 
-6. 观察阶段：**{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+6. 观察阶段：**Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 7. 点击 **{{t:common.actions.close}}** 按钮关闭操作。
 
 > **提示**：点击"{{t:common.actions.refresh}}"按钮手动检查最新状态。
@@ -332,7 +332,7 @@ language: zh
 *（图 26：机器操作工具栏中的连接测试按钮）*
 
 2. 查看要测试的机器列表。
-3. 点击 **Test** 按钮。
+3. 点击 **{{t:machines.runTest}}** 按钮。
 4. 成功结果显示为绿色，失败显示为红色。
 
 ![连接测试表单 - 机器列表](/assets/images/UserGuideEng/27_connectivity_test_form.png)
@@ -350,18 +350,18 @@ language: zh
 ### 2.4.4 机器详情
 
 1. 选择要查看详情的机器。
-2. 点击眼睛图标按钮（**View Details**）。
+2. 点击眼睛图标按钮（**查看详情**）。
 
 ![查看详情按钮](/assets/images/UserGuideEng/29_view_details_button.png)
 *（图 29：机器操作列中的眼睛图标）*
 
 3. 右侧打开机器详情面板：
-   - **Hostname**：机器名称
-   - **Uptime**：运行时间
-   - **Operating System**：操作系统和版本
-   - **Kernel**：内核版本
+   - **主机名**：机器名称
+   - **运行时间**：系统运行时间
+   - **操作系统**：操作系统和版本
+   - **内核**：内核版本
    - **CPU**：处理器信息
-   - **System Time**：系统时钟
+   - **系统时间**：系统时钟
 
 ![机器详情面板 - 系统信息](/assets/images/UserGuideEng/30_machine_view_details.png)
 *（图 30：机器详情面板 - 主机名、运行时间、操作系统、内核、CPU 信息）*
@@ -393,10 +393,10 @@ language: zh
 *（图 33：机器操作列中的时钟图标）*
 
 2. 在审计历史窗口中查看操作：
-   - **Action**：执行的操作类型
+   - **{{t:resources.audit.action}}**：执行的操作类型
    - **Details**：更改的字段
-   - **Performed By**：执行操作的用户
-   - **Timestamp**：日期和时间
+   - **{{t:resources.audit.performedBy}}**：执行操作的用户
+   - **{{t:resources.audit.timestamp}}**：日期和时间
 
 ![机器审计历史窗口](/assets/images/UserGuideEng/34_trace_list.png)
 *（图 34：审计历史 - 所有更改的列表）*
@@ -422,20 +422,20 @@ language: zh
 
 您可以在机器上执行各种远程操作。
 
-1. 选择机器并点击 **Remote** 按钮。
+1. 选择机器并点击 **{{t:common.actions.remote}}** 按钮。
 2. 在下拉菜单中查看选项：
-   - **Run on Server**：在机器上执行函数
-   - **Test Connection**：Ping 机器
+   - **{{t:machines.runAction}}**：在机器上执行函数
+   - **{{t:common.vaultEditor.testConnection.button}}**：Ping 机器
 
 ![远程菜单 - 在服务器上运行和测试连接](/assets/images/UserGuideEng/37_remote_button.png)
 *（图 37：远程按钮 - 在选定机器上执行函数菜单）*
 
-> **提示**：在运行函数前使用"测试连接"选项验证机器是否可访问。
+> **提示**：使用 "{{t:common.vaultEditor.testConnection.button}}" 选项在运行函数前验证机器是否可访问。
 
 #### Setup
 
-1. 选择 **Run on Server** 选项。
-2. 在 **Available Functions** 列表中找到 **setup** 函数。
+1. 选择 **{{t:machines.runAction}}** 选项。
+2. 在 **{{t:functions.availableFunctions}}** 列表中找到 **setup** 函数。
 3. 点击函数名称选择它。
 
 ![机器函数列表 - setup 函数](/assets/images/UserGuideEng/38_server_setup.png)
@@ -445,14 +445,14 @@ language: zh
 
 #### 连接检查（Hello）
 
-1. 选择 **Run on Server** > **hello** 函数。
+1. 选择 **{{t:machines.runAction}}** > **hello** 函数。
 2. 点击 **{{t:common.actions.addToQueue}}** 按钮。
 
 ![Hello 函数选择](/assets/images/UserGuideEng/39_remote_hello.png)
 *（图 39：Hello 函数 - 简单测试函数，返回主机名）*
 
 3. 在任务追踪窗口中观察结果。
-4. 在 **Response (Console)** 部分查看机器的输出。
+4. 在 **{{t:queue.trace.responseConsole}}** 部分查看机器的输出。
 
 ![Hello 函数完成](/assets/images/UserGuideEng/40_remote_hello_complete.png)
 *（图 40：Hello 函数成功完成 - 主机名响应）*
@@ -461,7 +461,7 @@ language: zh
 
 #### 高级操作
 
-1. 按照 **Remote** > **Run on Server** > **Advanced** 路径。
+1. 按照 **{{t:common.actions.remote}}** > **{{t:machines.runAction}}** > **{{t:common.actions.advanced}}** 路径操作。
 2. 查看可用函数：setup、hello、ping、ssh_test、uninstall
 3. 选择所需函数并点击 **{{t:common.actions.addToQueue}}** 按钮。
 
@@ -492,10 +492,10 @@ language: zh
 *（图 43：机器仓库管理屏幕 - 创建仓库按钮）*
 
 3. 填写表单：
-   - **Repository Name**：输入仓库名称（例如，postgresql）
-   - **Size**：输入仓库大小（例如，2GB）
-   - **Credential ID**：查看自动生成的凭证
-   - **Select Template**：选择模板（例如，databases_postgresql）
+   - **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}**：输入仓库名称（例如，postgresql）
+   - **{{t:resources.repositories.size}}**：输入仓库大小（例如，2GB）
+   - **{{t:resources.repositories.repositoryGuid}}**：查看自动生成的凭证
+   - **{{t:resources.templates.selectTemplate}}**：选择模板（例如，databases_postgresql）
 
 ![仓库创建表单](/assets/images/UserGuideEng/44_repo_form.png)
 *（图 44：仓库创建表单 - 仓库名称、大小和模板选择）*
@@ -504,7 +504,7 @@ language: zh
 
 > **提示**：凭证 ID 自动生成，不建议手动修改。
 
-5. 在任务追踪窗口中观察阶段：**{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+5. 在任务追踪窗口中观察阶段：**Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 
 ![仓库创建完成](/assets/images/UserGuideEng/45_repo_complete.png)
 *（图 45：仓库创建已排队 - 任务监控）*
@@ -527,7 +527,7 @@ language: zh
 ![fx 菜单 - fork 选项](/assets/images/UserGuideEng/47_fork_button.png)
 *（图 47：右侧的 fx 菜单 - 仓库操作）*
 
-4. 在 **Tag ID** 字段中输入新标签（例如，2025-12-06-20-37-08）。
+4. 在 **{{t:functions.functions.fork.params.tag.label}}** 字段中输入新标签（例如，2025-12-06-20-37-08）。
 5. 点击 **{{t:common.actions.addToQueue}}** 按钮。
 
 ![Fork 配置表单](/assets/images/UserGuideEng/48_fork_form.png)
@@ -581,9 +581,9 @@ language: zh
 ![Deploy 操作](/assets/images/UserGuideEng/54_deploy_button.png)
 *（图 54：从 fx 菜单选择"deploy"选项）*
 
-2. 在 **Tag ID** 字段中输入要部署的版本。
-3. 在 **Target Machines** 字段中选择目标机器。
-4. 勾选 **Override existing file** 选项（如适用）。
+2. 在 **{{t:functions.functions.fork.params.tag.label}}** 字段中输入要部署的版本。
+3. 在 **{{t:functions.functions.backup_deploy.params.machines.label}}** 字段中选择目标机器。
+4. 勾选 **{{t:functions.checkboxOptions.overrideExistingFile}}** 选项（如适用）。
 5. 点击 **{{t:common.actions.addToQueue}}** 按钮。
 
 ![Deploy 表单](/assets/images/UserGuideEng/55_deploy_form.png)
@@ -606,10 +606,10 @@ language: zh
 *（图 57：从 fx 菜单选择"backup"选项）*
 
 2. 填写表单：
-   - **Backup Tag**：输入描述性名称（例如，backup01012025）
-   - **Target Storage Systems**：选择备份位置
-   - **Override Existing File**：启用或禁用选项
-   - **Enable Checkpoint**：查看设置
+   - **{{t:functions.functions.fork.params.tag.label}}**：输入描述性名称（例如，backup01012025）
+   - **{{t:functions.functions.backup_create.params.storages.label}}**：选择备份位置
+   - **{{t:functions.checkboxOptions.overrideExistingFile}}**：启用或禁用该选项
+   - **{{t:functions.functions.backup_deploy.params.checkpoint.label}}**：查看设置
 
 ![Backup 表单](/assets/images/UserGuideEng/58_backup_form.png)
 *（图 58：备份配置表单 - 目标、文件名和选项）*
@@ -641,7 +641,7 @@ language: zh
 ![模板选择表单](/assets/images/UserGuideEng/61_templates_form.png)
 *（图 61：搜索和选择可用模板）*
 
-> **提示**：使用搜索框快速找到模板。使用"查看详情"了解模板功能。
+> **提示**：使用搜索框快速查找模板。使用 "{{t:common.viewDetails}}" 了解模板功能。
 
 5. 等待 **{{t:queue.statusCompleted}}** 消息。
 
@@ -652,7 +652,7 @@ language: zh
 
 断开仓库连接：
 
-1. 选择仓库并按照 **fx** > **Advanced** > **Unmount** 路径。
+1. 选择仓库并按照 **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}** 路径操作。
 
 ![Unmount 操作](/assets/images/UserGuideEng/63_unmount_button.png)
 *（图 63：高级菜单中的"Unmount"选项）*
@@ -668,12 +668,12 @@ language: zh
 
 增加仓库大小：
 
-1. 选择仓库并按照 **fx** > **Advanced** > **Expand** 路径。
+1. 选择仓库并按照 **fx** > **{{t:common.actions.advanced}}** > **{{t:functions.functions.repository_expand.name}}** 路径操作。
 
 ![Expand 操作](/assets/images/UserGuideEng/65_expand_button.png)
 *（图 65：高级菜单中的"Expand"选项）*
 
-2. 在 **New Size** 字段中输入所需大小。
+2. 在 **{{t:functions.functions.repository_expand.params.size.label}}** 字段中输入所需大小。
 3. 从右侧下拉菜单中选择单位（GB、TB）。
 4. 点击 **{{t:common.actions.addToQueue}}** 按钮。
 
@@ -691,7 +691,7 @@ language: zh
 
 更改仓库名称：
 
-1. 选择仓库并按照 **fx** > **Rename** 路径。
+1. 选择仓库并按照 **fx** > **{{t:common.actions.rename}}** 路径操作。
 
 ![Rename 操作](/assets/images/UserGuideEng/68_rename_button.png)
 *（图 68：从 fx 菜单选择"Rename"选项）*
@@ -708,7 +708,7 @@ language: zh
 
 永久删除仓库：
 
-1. 选择仓库并按照 **fx** > **Delete Repository** 路径。
+1. 选择仓库并按照 **fx** > **{{t:resources.repositories.deleteRepository}}** 路径操作。
 
 ![Delete Repository 操作](/assets/images/UserGuideEng/70_delete_repo_button.png)
 *（图 70：从 fx 菜单选择"删除仓库"选项 - 红色）*
@@ -722,20 +722,20 @@ language: zh
 获取有关仓库的详细信息：
 
 1. 选择仓库。
-2. 点击眼睛图标（**View Details**）。
+2. 点击眼睛图标（**查看详情**）。
 
 ![查看详情按钮](/assets/images/UserGuideEng/71_repo_view_button.png)
 *（图 71：打开仓库详情的眼睛图标）*
 
 3. 在详情面板中查看信息：
-   - **Repository name** 和类型
-   - **Team**：所属团队
-   - **Machine**：所在机器
-   - **Vault Version**：加密版本
-   - **Repository GUID**：唯一标识符
-   - **Status**：挂载/卸载状态
-   - **Image Size**：总大小
-   - **Last Modified**：最后修改日期
+   - **仓库名称** 和类型
+   - **团队**：所属团队
+   - **机器**：所在机器
+   - **保险库版本**：加密版本
+   - **仓库 GUID**：唯一标识符
+   - **状态**：挂载/卸载状态
+   - **镜像大小**：总大小
+   - **最后修改**：最后修改日期
 
 ![仓库详情面板](/assets/images/UserGuideEng/72_repo_details_view.png)
 *（图 72：有关选定仓库的全面信息）*
@@ -750,23 +750,23 @@ language: zh
 
 ### 2.6.1 桌面应用程序连接
 
-1. 点击仓库行中的 **Local** 按钮。
+1. 点击仓库行中的 **{{t:resources.localActions.local}}** 按钮。
 
 ![本地连接按钮](/assets/images/UserGuideEng/73_repo_connection_local.png)
 *（图 73：仓库行中的"Local"按钮 - 桌面应用程序访问）*
 
 2. 从下拉菜单中选择访问方法：
-   - **Desktop Application**：使用图形界面访问
-   - **VS Code**：在代码编辑器中打开
-   - **Terminal**：通过命令行访问
-   - **CLI Commands**：命令行工具
+   - **{{t:resources.localActions.openInDesktop}}**：使用图形界面访问
+   - **{{t:resources.localCommandBuilder.vscodeTab}}**：在代码编辑器中打开
+   - **{{t:common.terminal.terminal}}**：通过命令行访问
+   - **{{t:resources.localActions.showCLICommands}}**：命令行工具
 
 ![连接选项菜单](/assets/images/UserGuideEng/74_repo_connection.png)
 *（图 74：仓库连接菜单 - 不同的访问路径）*
 
-> **提示**：如果使用 VS Code，"VS Code"选项提供最快的集成。
+> **提示**：如果使用 VS Code 工作，"{{t:resources.localCommandBuilder.vscodeTab}}" 选项提供最快的集成。
 
-3. 当浏览器请求权限时点击 **Open** 按钮。
+3. 当浏览器请求权限时，点击 **Open** 按钮。
 
 ![桌面应用程序打开权限](/assets/images/UserGuideEng/75_desktop_open_page.png)
 *（图 75：浏览器请求打开桌面应用程序的权限）*
@@ -786,7 +786,7 @@ language: zh
 ![个人资料设置页面](/assets/images/UserGuideEng/76_profiles_button.png)
 *（图 76：设置 → 个人资料页面 - 个人保险库设置）*
 
-2. 点击 **Change Password** 按钮。
+2. 点击 **{{t:settings.personal.changePassword.submit}}** 按钮。
 
 ![更改密码按钮](/assets/images/UserGuideEng/77_profiles_change_button.png)
 *（图 77：个人设置部分中的"更改密码"按钮）*
@@ -797,8 +797,8 @@ language: zh
    - 必须包含至少一个数字
    - 必须包含至少一个特殊字符
 
-4. 在 **Confirm New Password** 字段中重新输入相同密码。
-5. 点击 **Change Password** 按钮。
+4. 在 **{{t:settings.personal.changePassword.confirmPasswordLabel}}** 字段中重新输入相同的密码。
+5. 点击 **{{t:settings.personal.changePassword.submit}}** 按钮。
 
 ![密码更改表单](/assets/images/UserGuideEng/78_profiles_change_form.png)
 *（图 78：更改密码表单 - 安全要求可见）*
@@ -814,17 +814,17 @@ language: zh
 ### 2.8.1 添加存储
 
 1. 从左侧菜单转到 **{{t:common.navigation.storage}}** 标签。
-2. 点击 **Add Storage** 按钮。
+2. 点击 **{{t:resources.storage.createStorage}}** 按钮。
 
 ![添加存储按钮](/assets/images/UserGuideEng/79_storage_add_button.png)
 *（图 79：存储管理页面 - "添加存储"按钮）*
 
 3. 填写表单：
-   - **Storage Name**：输入描述性名称
-   - **Storage Provider**：选择（例如，s3）
-   - **Description**：添加可选描述
-   - **Disable Versioning**：可选
-   - **Additional Parameters**：rclone 标志（例如，--transfers 4）
+   - **{{t:common.vaultEditor.fields.STORAGE.name.label}}**：输入描述性名称
+   - **{{t:common.vaultEditor.fields.STORAGE.provider.label}}**：选择（例如，s3）
+   - **{{t:common.vaultEditor.fields.STORAGE.description.label}}**：添加可选描述
+   - **{{t:common.vaultEditor.fields.STORAGE.noVersioning.label}}**：可选
+   - **{{t:common.vaultEditor.fields.STORAGE.parameters.label}}**：rclone 标志（例如，--transfers 4）
 
 ![存储创建表单](/assets/images/UserGuideEng/80_storage_form.png)
 *（图 80：添加存储表单 - 名称、提供商、描述和参数）*
@@ -848,7 +848,7 @@ language: zh
 ![凭证列表](/assets/images/UserGuideEng/81_credentials.png)
 *（图 81：凭证页面 - 仓库名称、团队和管理按钮）*
 
-4. 如需要，更改 **Repository Name**。
+4. 如需要，更改 **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}**。
 5. 使用 **{{t:common.save}}** 按钮保存。
 
 ![凭证编辑表单](/assets/images/UserGuideEng/82_credentials_form.png)
@@ -865,7 +865,7 @@ language: zh
 *（图 83：凭证表中的"追踪"按钮）*
 
 3. 查看审计历史。
-4. 从 **{{t:common.actions.export}}** 按钮中选择格式：**CSV** 或 **JSON**。
+4. 从 **{{t:common.actions.export}}** 按钮选择格式：**{{t:common.exportCSV}}** 或 **{{t:common.exportJSON}}**。
 
 ![凭证审计历史](/assets/images/UserGuideEng/84_credentials_list_export.png)
 *（图 84：凭证列表 - 导出选项）*
@@ -902,8 +902,8 @@ language: zh
 
 2. 要过滤队列项：
    - 使用 **{{t:queue.trace.team}}**、**{{t:queue.trace.machine}}**、**{{t:queue.trace.region}}** 和 **{{t:queue.trace.bridge}}** 过滤器
-   - 指定 **日期范围**
-   - 勾选 **Only Stale Items** 选项
+   - 指定 **{{t:system.audit.filters.dateRange}}**
+   - 勾选 **{{t:queue.filters.onlyStale}}** 选项
 
 3. 在状态标签中查看详情：
    - **{{t:queue.statusActive}}**：正在处理的任务
@@ -911,12 +911,12 @@ language: zh
    - **{{t:queue.statusCancelled}}**：已取消的任务
    - **{{t:queue.statusFailed}}**：失败的任务
 
-4. 从 **{{t:common.actions.export}}** 按钮中选择格式：**CSV** 或 **JSON**。
+4. 从 **{{t:common.actions.export}}** 按钮选择格式：**{{t:common.exportCSV}}** 或 **{{t:common.exportJSON}}**。
 
 ![队列导出](/assets/images/UserGuideEng/88_queue_export.png)
 *（图 88：队列列表 - 导出选项）*
 
-> **提示**："仅显示过时项"选项有助于查找已处理很长时间的任务。定期导出队列历史以分析任务执行趋势。
+> **提示**："{{t:queue.filters.onlyStale}}" 选项有助于查找长时间处理的任务。定期导出队列历史以分析任务执行趋势。
 
 ---
 
@@ -932,19 +932,19 @@ language: zh
 *（图 89：审计页面 - 所有系统操作的详细记录）*
 
 2. 过滤审计记录：
-   - **Date Range**：过滤特定时期
-   - **Entity Type**：按请求、机器、队列等过滤
-   - **Search**：执行文本搜索
+   - **日期范围**：过滤特定时期
+   - **实体类型**：按请求、机器、队列等过滤
+   - **搜索**：执行文本搜索
 
 3. 查看每条记录的信息：
-   - **Timestamp**：操作的日期和时间
-   - **Action**：操作类型（创建、编辑、删除等）
-   - **Entity Type**：受影响对象的类型
-   - **Entity Name**：特定对象标识符
-   - **User**：执行操作的用户
-   - **Details**：有关操作的附加信息
+   - **时间戳**：操作的日期和时间
+   - **操作**：操作类型（创建、编辑、删除等）
+   - **实体类型**：受影响对象的类型
+   - **实体名称**：特定对象标识符
+   - **用户**：执行操作的用户
+   - **详情**：有关操作的附加信息
 
-4. 从 **{{t:common.actions.export}}** 按钮中选择格式：**CSV** 或 **JSON**。
+4. 从 **{{t:common.actions.export}}** 按钮选择格式：**{{t:common.exportCSV}}** 或 **{{t:common.exportJSON}}**。
 
 ![审计导出](/assets/images/UserGuideEng/90_audit_export.png)
 *（图 90：审计记录导出 - CSV 和 JSON 选项）*

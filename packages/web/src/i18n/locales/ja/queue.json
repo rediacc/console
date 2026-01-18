@@ -252,6 +252,13 @@
     "staleTaskTitle": "古いタスク",
     "staleTitle": "タスクが古い可能性があります",
     "status": "ステータス",
+    "structuredLog": {
+      "level": "レベル",
+      "message": "メッセージ",
+      "time": "時刻",
+      "viewRaw": "生データ",
+      "viewStructured": "構造化"
+    },
     "sudoSupport": "Sudoサポート",
     "system": "システム",
     "systemInfo": "システム情報",
@@ -272,13 +279,6 @@
     "user": "ユーザー",
     "vaultContent": "ボールトコンテンツ",
     "version": "バージョン",
-    "waiting": "待機中",
-    "structuredLog": {
-      "time": "時刻",
-      "level": "レベル",
-      "message": "メッセージ",
-      "viewStructured": "構造化",
-      "viewRaw": "生データ"
-    }
+    "waiting": "待機中"
   }
 }

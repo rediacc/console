@@ -109,7 +109,7 @@ language: ar
 
 1. انقر على خيار **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** في الشريط الجانبي الأيسر.
 2. اعرض قائمة جميع المستخدمين بتنسيق جدول.
-3. يظهر كل صف مستخدم البريد الإلكتروني، والحالة (نشط/غير نشط)، ومجموعة الأذونات، ووقت النشاط الأخير.
+3. يعرض كل صف مستخدم البريد الإلكتروني والحالة ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}) ومجموعة الأذونات ووقت آخر نشاط.
 
 ![صفحة إدارة المستخدمين - قائمة المستخدمين النشطين](/assets/images/UserGuideEng/07_users.png)
 *(الشكل 7: قسم المستخدمين تحت المؤسسة - يتم عرض معلومات جميع المستخدمين)*
@@ -160,7 +160,7 @@ language: ar
 ![تفعيل المستخدم - عرض تلميح "Activate"](/assets/images/UserGuideEng/12_users_activation.png)
 *(الشكل 12: تفعيل مستخدم غير نشط)*
 
-3. انقر على زر **Yes** في نافذة التأكيد.
+3. انقر على زر **{{t:common.general.yes}}** في نافذة التأكيد.
 
 ![نافذة تأكيد التفعيل](/assets/images/UserGuideEng/13_users_activation_confirm.png)
 *(الشكل 13: نافذة منبثقة لتأكيد تفعيل المستخدم)*
@@ -179,7 +179,7 @@ language: ar
 
 3. يتم سرد الأنشطة السابقة للمستخدم على الشاشة المفتوحة.
 4. يتم عرض الإحصائيات في الأعلى: إجمالي السجلات، السجلات المعروضة، النشاط الأخير.
-5. انقر على زر **{{t:common.actions.export}}** واختر التنسيق: **CSV** أو **JSON**.
+5. انقر على زر **{{t:common.actions.export}}** وحدد التنسيق: **{{t:common.exportCSV}}** أو **{{t:common.exportJSON}}**.
 
 ![سجل التدقيق - خيارات التصدير](/assets/images/UserGuideEng/15_user_trace_export.png)
 *(الشكل 15: سجل نشاط المستخدم الكامل - الإحصائيات والتفاصيل وخيارات التصدير)*
@@ -221,8 +221,8 @@ language: ar
 ### 2.2.3 إدارة أعضاء الفريق
 
 1. حدد فريقاً وانقر على أيقونة المستخدم.
-2. اعرض الأعضاء المعينين بالفعل للفريق في علامة التبويب **Current Members**.
-3. انتقل إلى علامة التبويب **Add Member**.
+2. اعرض الأعضاء المعينين بالفعل للفريق في علامة التبويب **{{t:organization.teams.manageMembers.currentTab}}**.
+3. انتقل إلى علامة التبويب **{{t:organization.teams.manageMembers.addTab}}**.
 4. أدخل عنوان بريد إلكتروني أو حدد مستخدماً من القائمة المنسدلة.
 5. انقر على زر **"+"** لإضافة العضو إلى الفريق.
 
@@ -235,8 +235,8 @@ language: ar
 
 1. حدد الفريق الذي تريد تتبعه.
 2. انقر على أيقونة الساعة/السجل.
-3. راجع أعداد إجمالي السجلات والسجلات المعروضة والنشاط الأخير في نافذة **Audit History** المنبثقة.
-4. انقر على زر **{{t:common.actions.export}}** للتصدير بتنسيق CSV أو JSON.
+3. راجع إجمالي السجلات والسجلات المعروضة وعدد آخر نشاط في نافذة **{{t:resources.audit.title}}**.
+4. انقر على زر **{{t:common.actions.export}}** للتصدير بتنسيق {{t:common.exportCSV}} أو {{t:common.exportJSON}}.
 
 ![نافذة سجل التدقيق - فريق DataBassTeam](/assets/images/UserGuideEng/19_teams_trace.png)
 *(الشكل 19: عرض سجل تدقيق الفريق)*
@@ -247,7 +247,7 @@ language: ar
 
 1. انقر على أيقونة سلة المهملات (الحمراء) بجوار الفريق الذي تريد حذفه.
 2. تحقق من صحة اسم الفريق في مربع حوار التأكيد.
-3. انقر على زر **Yes**.
+3. انقر على زر **{{t:common.general.yes}}**.
 
 ![مربع حوار تأكيد حذف الفريق](/assets/images/UserGuideEng/20_teams_delete.png)
 *(الشكل 20: تأكيد حذف الفريق)*
@@ -264,8 +264,8 @@ language: ar
 
 1. انتقل إلى علامة التبويب **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}**.
 2. انقر على زر **"+"**.
-3. أدخل اسماً ذا معنى في حقل **Enter group name**.
-4. انقر على زر **OK** لإنشاء المجموعة.
+3. أدخل اسماً ذا معنى في حقل **{{t:organization.access.modals.groupPlaceholder}}**.
+4. انقر على زر **{{t:common.actions.confirm}}** لإنشاء المجموعة.
 
 ![نموذج إنشاء مجموعة الأذونات](/assets/images/UserGuideEng/21_create_access.png)
 *(الشكل 21: إنشاء مجموعة أذونات جديدة)*
@@ -274,10 +274,10 @@ language: ar
 
 ### 2.3.2 إدارة الأذونات
 
-1. حدد مجموعة أذونات وانقر على خيار **Manage Permissions**.
-2. اعرض حقوق الوصول الخاصة بالمجموعة في علامة التبويب **Current Permissions**.
+1. حدد مجموعة أذونات وانقر على خيار **{{t:organization.access.modals.managePermissionsTitle}}**.
+2. اعرض حقوق وصول المجموعة في علامة التبويب **{{t:organization.access.modals.currentPermissionsTab}}**.
 3. يمكنك إلغاء إذن بالنقر على زر **{{t:common.delete}}** الأحمر بجوار كل إجراء.
-4. انقر على علامة التبويب **Add Permission** لإضافة أذونات جديدة إلى المجموعة.
+4. انقر على علامة التبويب **{{t:organization.access.modals.addPermissionsTab}}** لإضافة أذونات جديدة للمجموعة.
 
 ![لوحة إدارة الأذونات - قائمة الأذونات المعينة](/assets/images/UserGuideEng/22_access_permission.png)
 *(الشكل 22: إدارة الأذونات لمجموعة الأذونات)*
@@ -317,7 +317,7 @@ language: ar
 ![اكتمل إنشاء الجهاز - نافذة تتبع المهام](/assets/images/UserGuideEng/25_machine_create_complete.png)
 *(الشكل 25: نافذة تتبع المهام بعد إنشاء الجهاز بنجاح)*
 
-6. راقب المراحل: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+6. راقب المراحل: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 7. انقر على زر **{{t:common.actions.close}}** لإغلاق العملية.
 
 > **نصيحة**: انقر على زر "{{t:common.actions.refresh}}" للتحقق يدوياً من أحدث حالة.
@@ -332,7 +332,7 @@ language: ar
 *(الشكل 26: زر اختبار الاتصال في شريط أدوات إجراءات الجهاز)*
 
 2. شاهد قائمة الأجهزة التي سيتم اختبارها.
-3. انقر على زر **Test**.
+3. انقر على زر **{{t:machines.runTest}}**.
 4. يتم عرض النتائج الناجحة باللون الأخضر، والفشل باللون الأحمر.
 
 ![نموذج اختبار الاتصال - قائمة الأجهزة](/assets/images/UserGuideEng/27_connectivity_test_form.png)
@@ -393,10 +393,10 @@ language: ar
 *(الشكل 33: أيقونة الساعة في عمود إجراءات الجهاز)*
 
 2. راجع العمليات في نافذة سجل التدقيق:
-   - **Action**: نوع العملية التي تم تنفيذها
+   - **{{t:resources.audit.action}}**: نوع العملية المنفذة
    - **Details**: الحقول المتغيرة
-   - **Performed By**: المستخدم الذي قام بالإجراء
-   - **Timestamp**: التاريخ والوقت
+   - **{{t:resources.audit.performedBy}}**: المستخدم الذي نفذ الإجراء
+   - **{{t:resources.audit.timestamp}}**: التاريخ والوقت
 
 ![نافذة سجل تدقيق الجهاز](/assets/images/UserGuideEng/34_trace_list.png)
 *(الشكل 34: سجل التدقيق - قائمة بجميع التغييرات)*
@@ -422,20 +422,20 @@ language: ar
 
 يمكنك إجراء عمليات مختلفة عن بُعد على الأجهزة.
 
-1. حدد الجهاز وانقر على زر **Remote**.
+1. حدد الجهاز وانقر على زر **{{t:common.actions.remote}}**.
 2. شاهد الخيارات في القائمة المنسدلة:
-   - **Run on Server**: تنفيذ وظيفة على الجهاز
-   - **Test Connection**: إرسال ping إلى الجهاز
+   - **{{t:machines.runAction}}**: تنفيذ وظيفة على الجهاز
+   - **{{t:common.vaultEditor.testConnection.button}}**: اختبار اتصال الجهاز
 
 ![قائمة Remote - Run on Server و Test Connection](/assets/images/UserGuideEng/37_remote_button.png)
 *(الشكل 37: زر Remote - قائمة تنفيذ الوظائف على الجهاز المحدد)*
 
-> **نصيحة**: استخدم خيار "Test Connection" للتحقق من إمكانية الوصول إلى الجهاز قبل تشغيل الوظائف.
+> **نصيحة**: استخدم خيار "{{t:common.vaultEditor.testConnection.button}}" للتحقق من إمكانية الوصول إلى الجهاز قبل تشغيل الوظائف.
 
 #### الإعداد
 
-1. حدد خيار **Run on Server**.
-2. ابحث عن وظيفة **setup** في قائمة **Available Functions**.
+1. حدد خيار **{{t:machines.runAction}}**.
+2. ابحث عن وظيفة **setup** في قائمة **{{t:functions.availableFunctions}}**.
 3. انقر على اسم الوظيفة لتحديدها.
 
 ![قائمة وظائف الجهاز - وظيفة الإعداد](/assets/images/UserGuideEng/38_server_setup.png)
@@ -445,14 +445,14 @@ language: ar
 
 #### فحص الاتصال (Hello)
 
-1. حدد **Run on Server** > وظيفة **hello**.
+1. حدد **{{t:machines.runAction}}** > وظيفة **hello**.
 2. انقر على زر **{{t:common.actions.addToQueue}}**.
 
 ![تحديد وظيفة Hello](/assets/images/UserGuideEng/39_remote_hello.png)
 *(الشكل 39: وظيفة Hello - وظيفة اختبار بسيطة، تُرجع اسم المضيف)*
 
 3. راقب النتائج في نافذة تتبع المهام.
-4. شاهد مخرجات الجهاز في قسم **Response (Console)**.
+4. شاهد مخرجات الجهاز في قسم **{{t:queue.trace.responseConsole}}**.
 
 ![اكتملت وظيفة Hello](/assets/images/UserGuideEng/40_remote_hello_complete.png)
 *(الشكل 40: اكتملت وظيفة Hello بنجاح - استجابة اسم المضيف)*
@@ -461,7 +461,7 @@ language: ar
 
 #### العمليات المتقدمة
 
-1. اتبع المسار **Remote** > **Run on Server** > **Advanced**.
+1. اتبع المسار **{{t:common.actions.remote}}** > **{{t:machines.runAction}}** > **{{t:common.actions.advanced}}**.
 2. شاهد الوظائف المتاحة: setup، hello، ping، ssh_test، uninstall
 3. حدد الوظيفة المطلوبة وانقر على زر **{{t:common.actions.addToQueue}}**.
 
@@ -492,10 +492,10 @@ language: ar
 *(الشكل 43: شاشة إدارة مستودعات الجهاز - زر إنشاء المستودع)*
 
 3. املأ النموذج:
-   - **Repository Name**: أدخل اسم المستودع (على سبيل المثال، postgresql)
-   - **Size**: أدخل حجم المستودع (على سبيل المثال، 2GB)
-   - **Credential ID**: اعرض بيانات الاعتماد المُنشأة تلقائياً
-   - **Select Template**: اختر قالباً (على سبيل المثال، databases_postgresql)
+   - **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}**: أدخل اسم المستودع (على سبيل المثال، postgresql)
+   - **{{t:resources.repositories.size}}**: أدخل حجم المستودع (على سبيل المثال، 2GB)
+   - **{{t:resources.repositories.repositoryGuid}}**: اعرض بيانات الاعتماد المُنشأة تلقائياً
+   - **{{t:resources.templates.selectTemplate}}**: اختر قالباً (على سبيل المثال، databases_postgresql)
 
 ![نموذج إنشاء المستودع](/assets/images/UserGuideEng/44_repo_form.png)
 *(الشكل 44: نموذج إنشاء المستودع - اسم المستودع والحجم واختيار القالب)*
@@ -504,7 +504,7 @@ language: ar
 
 > **نصيحة**: يتم إنشاء معرف بيانات الاعتماد تلقائياً، ولا يُوصى بالتعديل اليدوي.
 
-5. راقب المراحل في نافذة تتبع المهام: **{{t:queue.statusAssigned}}** → **{{t:queue.statusProcessing}}** → **{{t:queue.statusCompleted}}**
+5. راقب المراحل في نافذة تتبع المهام: **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
 
 ![اكتمل إنشاء المستودع](/assets/images/UserGuideEng/45_repo_complete.png)
 *(الشكل 45: تم وضع إنشاء المستودع في قائمة الانتظار - مراقبة المهام)*
@@ -527,7 +527,7 @@ language: ar
 ![قائمة fx - خيار fork](/assets/images/UserGuideEng/47_fork_button.png)
 *(الشكل 47: قائمة fx على الجانب الأيمن - عمليات المستودع)*
 
-4. أدخل علامة جديدة في حقل **Tag ID** (على سبيل المثال، 2025-12-06-20-37-08).
+4. أدخل علامة جديدة في حقل **{{t:functions.functions.fork.params.tag.label}}** (على سبيل المثال، 2025-12-06-20-37-08).
 5. انقر على زر **{{t:common.actions.addToQueue}}**.
 
 ![نموذج تكوين Fork](/assets/images/UserGuideEng/48_fork_form.png)
@@ -581,9 +581,9 @@ language: ar
 ![عملية Deploy](/assets/images/UserGuideEng/54_deploy_button.png)
 *(الشكل 54: خيار "deploy" من قائمة fx)*
 
-2. أدخل الإصدار المراد نشره في حقل **Tag ID**.
-3. حدد الأجهزة المستهدفة في حقل **Target Machines**.
-4. حدد خيار **Override existing file** (إذا كان قابلاً للتطبيق).
+2. أدخل الإصدار المراد نشره في حقل **{{t:functions.functions.fork.params.tag.label}}**.
+3. حدد الأجهزة المستهدفة في حقل **{{t:functions.functions.backup_deploy.params.machines.label}}**.
+4. حدد خيار **{{t:functions.checkboxOptions.overrideExistingFile}}** (إن أمكن).
 5. انقر على زر **{{t:common.actions.addToQueue}}**.
 
 ![نموذج Deploy](/assets/images/UserGuideEng/55_deploy_form.png)
@@ -606,10 +606,10 @@ language: ar
 *(الشكل 57: خيار "backup" من قائمة fx)*
 
 2. املأ النموذج:
-   - **Backup Tag**: أدخل اسماً وصفياً (على سبيل المثال، backup01012025)
-   - **Target Storage Systems**: حدد موقع النسخ الاحتياطي
-   - **Override Existing File**: تمكين أو تعطيل الخيار
-   - **Enable Checkpoint**: راجع الإعداد
+   - **{{t:functions.functions.fork.params.tag.label}}**: أدخل اسماً وصفياً (على سبيل المثال، backup01012025)
+   - **{{t:functions.functions.backup_create.params.storages.label}}**: حدد موقع النسخ الاحتياطي
+   - **{{t:functions.checkboxOptions.overrideExistingFile}}**: قم بتمكين أو تعطيل الخيار
+   - **{{t:functions.functions.backup_deploy.params.checkpoint.label}}**: راجع الإعداد
 
 ![نموذج النسخ الاحتياطي](/assets/images/UserGuideEng/58_backup_form.png)
 *(الشكل 58: نموذج تكوين النسخ الاحتياطي - الهدف واسم الملف والخيارات)*
@@ -641,7 +641,7 @@ language: ar
 ![نموذج اختيار القالب](/assets/images/UserGuideEng/61_templates_form.png)
 *(الشكل 61: البحث واختيار القوالب المتاحة)*
 
-> **نصيحة**: استخدم مربع البحث للعثور بسرعة على القوالب. استخدم "View Details" للتعرف على ميزات القالب.
+> **نصيحة**: استخدم مربع البحث للعثور بسرعة على القوالب. استخدم "{{t:common.viewDetails}}" للتعرف على ميزات القالب.
 
 5. انتظر رسالة **{{t:queue.statusCompleted}}**.
 
@@ -652,7 +652,7 @@ language: ar
 
 لفصل المستودع:
 
-1. حدد المستودع واتبع المسار **fx** > **Advanced** > **Unmount**.
+1. حدد المستودع واتبع المسار **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}**.
 
 ![عملية Unmount](/assets/images/UserGuideEng/63_unmount_button.png)
 *(الشكل 63: خيار "Unmount" في القائمة المتقدمة)*
@@ -668,12 +668,12 @@ language: ar
 
 لزيادة حجم المستودع:
 
-1. حدد المستودع واتبع المسار **fx** > **Advanced** > **Expand**.
+1. حدد المستودع واتبع المسار **fx** > **{{t:common.actions.advanced}}** > **{{t:functions.functions.repository_expand.name}}**.
 
 ![عملية Expand](/assets/images/UserGuideEng/65_expand_button.png)
 *(الشكل 65: خيار "Expand" في القائمة المتقدمة)*
 
-2. أدخل الحجم المطلوب في حقل **New Size**.
+2. أدخل الحجم المطلوب في حقل **{{t:functions.functions.repository_expand.params.size.label}}**.
 3. حدد الوحدة من القائمة المنسدلة على اليمين (GB، TB).
 4. انقر على زر **{{t:common.actions.addToQueue}}**.
 
@@ -691,7 +691,7 @@ language: ar
 
 لتغيير اسم المستودع:
 
-1. حدد المستودع واتبع المسار **fx** > **Rename**.
+1. حدد المستودع واتبع المسار **fx** > **{{t:common.actions.rename}}**.
 
 ![عملية Rename](/assets/images/UserGuideEng/68_rename_button.png)
 *(الشكل 68: خيار "Rename" من قائمة fx)*
@@ -708,7 +708,7 @@ language: ar
 
 لحذف المستودع بشكل دائم:
 
-1. حدد المستودع واتبع المسار **fx** > **Delete Repository**.
+1. حدد المستودع واتبع المسار **fx** > **{{t:resources.repositories.deleteRepository}}**.
 
 ![عملية حذف المستودع](/assets/images/UserGuideEng/70_delete_repo_button.png)
 *(الشكل 70: خيار "Delete Repository" من قائمة fx - أحمر)*
@@ -750,21 +750,21 @@ language: ar
 
 ### 2.6.1 اتصال تطبيق سطح المكتب
 
-1. انقر على زر **Local** في صف المستودع.
+1. انقر على زر **{{t:resources.localActions.local}}** في صف المستودع.
 
 ![زر الاتصال المحلي](/assets/images/UserGuideEng/73_repo_connection_local.png)
 *(الشكل 73: زر "Local" في صف المستودع - الوصول إلى تطبيق سطح المكتب)*
 
 2. حدد طريقة الوصول من القائمة المنسدلة:
-   - **Desktop Application**: الوصول بواجهة رسومية
-   - **VS Code**: الفتح في محرر الأكواد
-   - **Terminal**: الوصول عبر سطر الأوامر
-   - **CLI Commands**: أدوات سطر الأوامر
+   - **{{t:resources.localActions.openInDesktop}}**: الوصول عبر واجهة رسومية
+   - **{{t:resources.localCommandBuilder.vscodeTab}}**: فتح في محرر الكود
+   - **{{t:common.terminal.terminal}}**: الوصول عبر سطر الأوامر
+   - **{{t:resources.localActions.showCLICommands}}**: أدوات سطر الأوامر
 
 ![قائمة خيارات الاتصال](/assets/images/UserGuideEng/74_repo_connection.png)
 *(الشكل 74: قائمة اتصال المستودع - مسارات وصول مختلفة)*
 
-> **نصيحة**: إذا كنت تعمل مع VS Code، فإن خيار "VS Code" يوفر أسرع تكامل.
+> **نصيحة**: إذا كنت تعمل مع VS Code، فإن خيار "{{t:resources.localCommandBuilder.vscodeTab}}" يوفر أسرع تكامل.
 
 3. انقر على زر **Open** عندما يطلب المتصفح الإذن.
 
@@ -786,7 +786,7 @@ language: ar
 ![صفحة إعدادات الملف الشخصي](/assets/images/UserGuideEng/76_profiles_button.png)
 *(الشكل 76: صفحة الإعدادات → الملف الشخصي - إعدادات الخزنة الشخصية)*
 
-2. انقر على زر **Change Password**.
+2. انقر على زر **{{t:settings.personal.changePassword.submit}}**.
 
 ![زر تغيير كلمة المرور](/assets/images/UserGuideEng/77_profiles_change_button.png)
 *(الشكل 77: زر "Change Password" في قسم الإعدادات الشخصية)*
@@ -797,8 +797,8 @@ language: ar
    - يجب أن تحتوي على رقم واحد على الأقل
    - يجب أن تحتوي على حرف خاص واحد على الأقل
 
-4. أعد إدخال نفس كلمة المرور في حقل **Confirm New Password**.
-5. انقر على زر **Change Password**.
+4. أعد إدخال نفس كلمة المرور في حقل **{{t:settings.personal.changePassword.confirmPasswordLabel}}**.
+5. انقر على زر **{{t:settings.personal.changePassword.submit}}**.
 
 ![نموذج تغيير كلمة المرور](/assets/images/UserGuideEng/78_profiles_change_form.png)
 *(الشكل 78: نموذج تغيير كلمة المرور - متطلبات الأمان مرئية)*
@@ -814,17 +814,17 @@ language: ar
 ### 2.8.1 إضافة التخزين
 
 1. انتقل إلى علامة التبويب **{{t:common.navigation.storage}}** من القائمة اليسرى.
-2. انقر على زر **Add Storage**.
+2. انقر على زر **{{t:resources.storage.createStorage}}**.
 
 ![زر إضافة التخزين](/assets/images/UserGuideEng/79_storage_add_button.png)
 *(الشكل 79: صفحة إدارة التخزين - زر "Add Storage")*
 
 3. املأ النموذج:
-   - **Storage Name**: أدخل اسماً وصفياً
-   - **Storage Provider**: حدد (على سبيل المثال، s3)
-   - **Description**: أضف وصفاً اختيارياً
-   - **Disable Versioning**: اختياري
-   - **Additional Parameters**: أعلام rclone (على سبيل المثال، --transfers 4)
+   - **{{t:common.vaultEditor.fields.STORAGE.name.label}}**: أدخل اسماً وصفياً
+   - **{{t:common.vaultEditor.fields.STORAGE.provider.label}}**: حدد (على سبيل المثال، s3)
+   - **{{t:common.vaultEditor.fields.STORAGE.description.label}}**: أضف وصفاً اختيارياً
+   - **{{t:common.vaultEditor.fields.STORAGE.noVersioning.label}}**: اختياري
+   - **{{t:common.vaultEditor.fields.STORAGE.parameters.label}}**: أعلام rclone (على سبيل المثال، --transfers 4)
 
 ![نموذج إنشاء التخزين](/assets/images/UserGuideEng/80_storage_form.png)
 *(الشكل 80: نموذج إضافة التخزين - الاسم والموفر والوصف والمعاملات)*
@@ -848,7 +848,7 @@ language: ar
 ![قائمة بيانات الاعتماد](/assets/images/UserGuideEng/81_credentials.png)
 *(الشكل 81: صفحة بيانات الاعتماد - أسماء المستودعات والفرق وأزرار الإدارة)*
 
-4. غيّر **Repository Name** إذا لزم الأمر.
+4. غيّر **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}** إذا لزم الأمر.
 5. احفظ باستخدام زر **{{t:common.save}}**.
 
 ![نموذج تحرير بيانات الاعتماد](/assets/images/UserGuideEng/82_credentials_form.png)
@@ -865,7 +865,7 @@ language: ar
 *(الشكل 83: زر "Trace" في جدول بيانات الاعتماد)*
 
 3. راجع سجل التدقيق.
-4. حدد التنسيق من زر **{{t:common.actions.export}}**: **CSV** أو **JSON**.
+4. حدد التنسيق من زر **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** أو **{{t:common.exportJSON}}**.
 
 ![سجل تدقيق بيانات الاعتماد](/assets/images/UserGuideEng/84_credentials_list_export.png)
 *(الشكل 84: قائمة بيانات الاعتماد - خيارات التصدير)*
@@ -902,8 +902,8 @@ language: ar
 
 2. لتصفية عناصر قائمة الانتظار:
    - استخدم عوامل التصفية **{{t:queue.trace.team}}** و **{{t:queue.trace.machine}}** و **{{t:queue.trace.region}}** و **{{t:queue.trace.bridge}}**
-   - حدد **Date range**
-   - حدد خيار **Only Stale Items**
+   - حدد **{{t:system.audit.filters.dateRange}}**
+   - حدد خيار **{{t:queue.filters.onlyStale}}**
 
 3. اعرض التفاصيل في علامات تبويب الحالة:
    - **{{t:queue.statusActive}}**: المهام قيد المعالجة
@@ -911,12 +911,12 @@ language: ar
    - **{{t:queue.statusCancelled}}**: المهام الملغاة
    - **{{t:queue.statusFailed}}**: المهام الفاشلة
 
-4. حدد تنسيقاً من زر **{{t:common.actions.export}}**: **CSV** أو **JSON**.
+4. حدد تنسيقاً من زر **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** أو **{{t:common.exportJSON}}**.
 
 ![تصدير قائمة الانتظار](/assets/images/UserGuideEng/88_queue_export.png)
 *(الشكل 88: قائمة الانتظار - خيارات التصدير)*
 
-> **نصيحة**: يساعد خيار "Only Stale Items" في العثور على المهام التي تستغرق وقتاً طويلاً في المعالجة. قم بتصدير سجل قائمة الانتظار بانتظام لتحليل اتجاهات تنفيذ المهام.
+> **نصيحة**: يساعد خيار "{{t:queue.filters.onlyStale}}" في العثور على المهام التي تمت معالجتها لفترة طويلة. قم بتصدير سجل قائمة الانتظار بانتظام لتحليل اتجاهات تنفيذ المهام.
 
 ---
 
@@ -944,7 +944,7 @@ language: ar
    - **User**: المستخدم الذي أجرى العملية
    - **Details**: معلومات إضافية حول العملية
 
-4. حدد تنسيقاً من زر **{{t:common.actions.export}}**: **CSV** أو **JSON**.
+4. حدد تنسيقاً من زر **{{t:common.actions.export}}**: **{{t:common.exportCSV}}** أو **{{t:common.exportJSON}}**.
 
 ![تصدير التدقيق](/assets/images/UserGuideEng/90_audit_export.png)
 *(الشكل 90: تصدير سجل التدقيق - خيارات CSV و JSON)*
