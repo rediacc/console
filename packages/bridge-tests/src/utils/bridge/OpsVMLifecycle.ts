@@ -121,14 +121,8 @@ export class OpsVMLifecycle {
 
     console.warn('[OpsVMLifecycle] Performing soft reset (renet ops up --force --parallel)...');
     // 30 min timeout to allow Ceph provisioning to complete fully
-    const extraEnv: Record<string, string> = {};
-    if (this.getCephVMIps().length > 0) {
-      extraEnv.PROVISION_CEPH_CLUSTER = 'true';
-    }
-    const result =
-      Object.keys(extraEnv).length > 0
-        ? await this.commandRunner.runWithEnv(['up'], ['--force', '--parallel'], extraEnv, 1800000)
-        : await this.commandRunner.run(['up'], ['--force', '--parallel'], 1800000);
+    // Note: Ceph provisioning is automatically enabled when VM_CEPH_NODES is configured
+    const result = await this.commandRunner.run(['up'], ['--force', '--parallel'], 1800000);
 
     // Check for infrastructure errors that should fail fast
     if (result.code !== 0) {

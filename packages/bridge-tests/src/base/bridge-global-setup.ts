@@ -202,7 +202,7 @@ function writeSetupErrorLog(error: unknown) {
  * The renet binary must be available before running tests. In CI, it's pre-extracted
  * from the Docker image. Locally, build with: cd renet && ./go dev
  *
- * NOTE: Ceph provisioning is handled by `ops up` when PROVISION_CEPH_CLUSTER=true.
+ * NOTE: Ceph provisioning is automatically handled by `ops up` when VM_CEPH_NODES is configured.
  * Do NOT call provisionCeph() separately as this causes duplicate provisioning conflicts.
  */
 async function bridgeGlobalSetup(_config: FullConfig) {
@@ -232,7 +232,7 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     // eslint-disable-next-line no-console
     console.log(`  ✓ VM reset completed in ${(resetResult.duration / 1000).toFixed(1)}s`);
 
-    // Note: Ceph provisioning is handled by ops up when PROVISION_CEPH_CLUSTER=true
+    // Note: Ceph provisioning is automatically handled by ops up when VM_CEPH_NODES is configured
     const cephNodes = opsManager.getCephVMIps();
     if (cephNodes.length > 0) {
       await waitForCephHealth(opsManager);
