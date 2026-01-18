@@ -1,10 +1,5 @@
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import { getSSHOptions, getSSHPrivateKeyPath, isSSHKeyAvailable } from '../sshConfig';
-
-const execAsync = promisify(exec);
-
-const UNKNOWN_ERROR = 'Unknown error';
+import { getSSHExecutor, SSHExecutor } from '../ssh';
+import { SSH_DEFAULTS } from '../sshConfig';
 
 /**
  * OpsVMExecutor - Handles SSH command execution on VMs
@@ -16,94 +11,39 @@ const UNKNOWN_ERROR = 'Unknown error';
  * - Batch command execution on multiple VMs
  * - Renet version detection
  *
- * SSH KEYS:
- * Uses SSH keys from OPS_HOME/staging/.ssh/id_rsa (same location as renet).
- * Falls back to default SSH if key is not available.
- *
- * NOTE: SSH options are computed dynamically (not cached in constructor) because
- * renet creates SSH keys during `ops up`, which happens after this class is instantiated.
+ * DELEGATES TO SSHExecutor:
+ * All SSH operations are delegated to the centralized SSHExecutor to ensure
+ * consistent behavior and avoid code duplication.
  */
 export class OpsVMExecutor {
-  private sshKeyLogged = false;
+  private readonly sshExecutor: SSHExecutor;
 
-  /**
-   * Get SSH options dynamically.
-   *
-   * This is called fresh each time because the SSH key may be created by renet
-   * during ops up, after this executor is instantiated.
-   */
-  private getSSHOptionsWithTimeout(): string {
-    const baseOptions = getSSHOptions();
-
-    // Log key status once per session
-    if (!this.sshKeyLogged) {
-      const keyPath = getSSHPrivateKeyPath();
-      if (isSSHKeyAvailable()) {
-        console.warn(`[OpsVMExecutor] Using SSH key: ${keyPath}`);
-      } else {
-        console.warn(`[OpsVMExecutor] SSH key not found at ${keyPath}, using default SSH`);
-      }
-      this.sshKeyLogged = true;
-    }
-
-    return `${baseOptions} -q -o ConnectTimeout=5`;
+  constructor() {
+    this.sshExecutor = getSSHExecutor();
   }
 
   /**
    * Check if a VM is reachable via ping
    */
   async isVMReachable(ip: string, timeoutSeconds = 2): Promise<boolean> {
-    try {
-      await execAsync(`ping -c 1 -W ${timeoutSeconds} ${ip}`, {
-        timeout: (timeoutSeconds + 1) * 1000,
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    return this.sshExecutor.isReachable(ip, timeoutSeconds);
   }
 
   /**
    * Check if SSH is available on a VM
    */
   async isSSHReady(ip: string): Promise<boolean> {
-    try {
-      const user = process.env.USER;
-      if (!user) {
-        throw new Error('USER environment variable is not set');
-      }
-      const sshOptions = this.getSSHOptionsWithTimeout();
-      await execAsync(`ssh ${sshOptions} ${user}@${ip} "echo ready"`, { timeout: 10000 });
-      return true;
-    } catch {
-      return false;
-    }
+    return this.sshExecutor.isSSHReady(ip, {
+      connectTimeout: 5,
+      quiet: true,
+    });
   }
 
   /**
    * Wait for a VM to be ready (ping + SSH)
    */
   async waitForVM(ip: string, timeoutMs = 120000): Promise<boolean> {
-    const startTime = Date.now();
-    const checkInterval = 5000; // 5 seconds
-
-    console.warn(`[OpsVMExecutor] Waiting for VM ${ip} to be ready...`);
-
-    while (Date.now() - startTime < timeoutMs) {
-      const reachable = await this.isVMReachable(ip);
-      if (reachable) {
-        const sshReady = await this.isSSHReady(ip);
-        if (sshReady) {
-          console.warn(`[OpsVMExecutor] VM ${ip} is ready`);
-          return true;
-        }
-      }
-
-      await this.sleep(checkInterval);
-    }
-
-    console.warn(`[OpsVMExecutor] Timeout waiting for VM ${ip}`);
-    return false;
+    return this.sshExecutor.waitForHost(ip, timeoutMs);
   }
 
   /**
@@ -112,26 +52,18 @@ export class OpsVMExecutor {
   async executeOnVM(
     ip: string,
     command: string,
-    timeoutMs = 60000
+    timeoutMs: number = SSH_DEFAULTS.EXEC_TIMEOUT
   ): Promise<{ stdout: string; stderr: string; code: number }> {
-    const user = process.env.USER;
-    if (!user) {
-      throw new Error('USER environment variable is not set');
-    }
-    const sshOptions = this.getSSHOptionsWithTimeout();
-    const sshCommand = `ssh ${sshOptions} ${user}@${ip} "${command.replaceAll('"', '\\"')}"`;
-
-    try {
-      const { stdout, stderr } = await execAsync(sshCommand, { timeout: timeoutMs });
-      return { stdout, stderr, code: 0 };
-    } catch (error: unknown) {
-      const err = error as { stdout?: string; stderr?: string; code?: number; message?: string };
-      return {
-        stdout: err.stdout ?? '',
-        stderr: err.stderr ?? err.message ?? UNKNOWN_ERROR,
-        code: err.code ?? 1,
-      };
-    }
+    const result = await this.sshExecutor.execute(ip, command, {
+      connectTimeout: 5,
+      quiet: true,
+      execTimeout: timeoutMs,
+    });
+    return {
+      stdout: result.stdout,
+      stderr: result.stderr,
+      code: result.code,
+    };
   }
 
   /**
@@ -140,7 +72,7 @@ export class OpsVMExecutor {
   async executeOnMultipleVMs(
     ips: string[],
     command: string,
-    timeoutMs = 60000
+    timeoutMs: number = SSH_DEFAULTS.EXEC_TIMEOUT
   ): Promise<Map<string, { stdout: string; stderr: string; code: number }>> {
     const results = new Map<string, { stdout: string; stderr: string; code: number }>();
 
@@ -179,7 +111,10 @@ export class OpsVMExecutor {
     return null;
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  /**
+   * Get the underlying SSHExecutor for advanced operations
+   */
+  getSSHExecutor(): SSHExecutor {
+    return this.sshExecutor;
   }
 }

@@ -2,6 +2,25 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 /**
+ * Standardized SSH configuration constants.
+ *
+ * These values are used across all SSH operations to ensure consistency:
+ * - SSHExecutor
+ * - OpsVMExecutor
+ * - BridgeTestRunner
+ * - InfrastructureManager
+ * - StorageTestHelper
+ */
+export const SSH_DEFAULTS = {
+  /** Connection timeout in seconds. 10s is more lenient for CI environments. */
+  CONNECT_TIMEOUT: 10,
+  /** Command execution timeout in milliseconds. */
+  EXEC_TIMEOUT: 60000,
+  /** Enable batch mode by default (no password prompts). */
+  BATCH_MODE: true,
+} as const;
+
+/**
  * SSH configuration for bridge tests.
  *
  * Mirrors renet's SSH path resolution logic from:

@@ -6,7 +6,7 @@ import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
 import { getRenetResolver, RenetResolver } from '../RenetResolver';
-import { getSCPOptions, getSSHOptions } from '../sshConfig';
+import { getSSHExecutor, SSHExecutor } from '../ssh';
 
 const execAsync = promisify(exec);
 
@@ -32,18 +32,20 @@ export interface InfrastructureConfig {
  * - Verifies renet is installed on all VMs
  * - No middleware or Docker containers required - renet runs in local/test mode
  *
- * NOTE: SSH options are computed dynamically (not cached in constructor) because
- * renet creates SSH keys during `ops up`, which happens after this class is instantiated.
+ * DELEGATES TO SSHExecutor:
+ * All SSH operations are delegated to the centralized SSHExecutor to ensure
+ * consistent behavior and avoid code duplication.
  */
 export class InfrastructureManager {
   private readonly config: InfrastructureConfig;
   private readonly opsManager: OpsManager;
   private readonly resolver: RenetResolver;
-  private sshKeyLogged = false;
+  private readonly sshExecutor: SSHExecutor;
 
   constructor() {
     this.opsManager = getOpsManager();
     this.resolver = getRenetResolver();
+    this.sshExecutor = getSSHExecutor();
 
     this.config = {
       bridgeVM: this.opsManager.getBridgeVMIp(),
@@ -53,29 +55,6 @@ export class InfrastructureManager {
         10
       ),
     };
-  }
-
-  /**
-   * Get SSH options dynamically.
-   * Called fresh each time because SSH keys may be created after instantiation.
-   */
-  private getSSHOpts(): string {
-    const baseOpts = getSSHOptions();
-
-    // Log key status once per session
-    if (!this.sshKeyLogged) {
-      console.warn(`[InfrastructureManager] SSH options: ${baseOpts}`);
-      this.sshKeyLogged = true;
-    }
-
-    return `${baseOpts} -o ConnectTimeout=5 -o BatchMode=yes`;
-  }
-
-  /**
-   * Get SCP options dynamically.
-   */
-  private getSCPOpts(): string {
-    return `${getSCPOptions()} -q`;
   }
 
   /**
@@ -100,44 +79,32 @@ export class InfrastructureManager {
 
   /**
    * Check if bridge VM is reachable via SSH.
+   * Delegates to SSHExecutor for consistent behavior.
    */
   async isBridgeVMReachable(): Promise<boolean> {
-    const user = process.env.USER;
-    if (!user) {
-      console.warn('[InfrastructureManager] USER env not set, cannot check bridge VM');
-      return false;
+    const ready = await this.sshExecutor.isSSHReady(this.config.bridgeVM, {
+      connectTimeout: 5,
+      batchMode: true,
+    });
+    if (!ready) {
+      console.warn('[InfrastructureManager] Bridge VM check failed');
     }
-    const sshOpts = this.getSSHOpts();
-    const cmd = `ssh ${sshOpts} ${user}@${this.config.bridgeVM} "echo ok"`;
-    try {
-      await execAsync(cmd, { timeout: 10000 });
-      return true;
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      console.warn(`[InfrastructureManager] Bridge VM check failed: ${err.message ?? 'unknown'}`);
-      return false;
-    }
+    return ready;
   }
 
   /**
    * Check if worker VM is reachable via SSH.
+   * Delegates to SSHExecutor for consistent behavior.
    */
   async isWorkerVMReachable(): Promise<boolean> {
-    const user = process.env.USER;
-    if (!user) {
-      console.warn('[InfrastructureManager] USER env not set, cannot check worker VM');
-      return false;
+    const ready = await this.sshExecutor.isSSHReady(this.config.workerVM, {
+      connectTimeout: 5,
+      batchMode: true,
+    });
+    if (!ready) {
+      console.warn('[InfrastructureManager] Worker VM check failed');
     }
-    const sshOpts = this.getSSHOpts();
-    const cmd = `ssh ${sshOpts} ${user}@${this.config.workerVM} "echo ok"`;
-    try {
-      await execAsync(cmd, { timeout: 10000 });
-      return true;
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      console.warn(`[InfrastructureManager] Worker VM check failed: ${err.message ?? 'unknown'}`);
-      return false;
-    }
+    return ready;
   }
 
   /**
@@ -267,26 +234,26 @@ export class InfrastructureManager {
       return false; // Already up to date
     }
 
-    // Deploy via scp to temp then sudo mv
-    const user = process.env.USER;
-    if (!user) {
-      throw new Error('USER environment variable is not set');
-    }
-
-    const scpOpts = this.getSCPOpts();
-    const sshOpts = this.getSSHOpts();
-
     try {
-      // Copy to temp location using centralized SCP options
-      await execAsync(`scp ${scpOpts} "${localPath}" ${user}@${ip}:/tmp/renet`, {
-        timeout: 60000, // Increased timeout for larger binaries
+      // Copy to temp location using SSHExecutor
+      const copyResult = await this.sshExecutor.copyTo(ip, localPath, '/tmp/renet', {
+        execTimeout: 60000, // Increased timeout for larger binaries
       });
 
-      // Move to final location and set permissions using centralized SSH options
-      await execAsync(
-        `ssh ${sshOpts} ${user}@${ip} "sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}"`,
-        { timeout: 10000 }
+      if (!copyResult.success) {
+        throw new Error(`SCP failed: ${copyResult.stderr}`);
+      }
+
+      // Move to final location and set permissions using SSHExecutor
+      const moveResult = await this.sshExecutor.execute(
+        ip,
+        `sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}`,
+        { execTimeout: 10000 }
       );
+
+      if (!moveResult.success) {
+        throw new Error(`Move/chmod failed: ${moveResult.stderr}`);
+      }
 
       // Verify the deployment by checking MD5
       const newRemoteMD5 = await this.getRemoteRenetMD5(ip);
@@ -472,6 +439,7 @@ export class InfrastructureManager {
 
   /**
    * Copy CRIU from bridge VM to worker VM.
+   * Uses SSHExecutor for consistent SSH options in nested commands.
    */
   private async copyCriuFromBridge(
     ip: string,
@@ -479,20 +447,23 @@ export class InfrastructureManager {
     bridgeIP: string,
     user: string
   ): Promise<boolean> {
-    // eslint-disable-next-line no-console
-    console.log(`  ${ip}: Copying CRIU from bridge...`);
+    console.warn(`  ${ip}: Copying CRIU from bridge...`);
+
+    // Get SSH options for the nested commands (from bridge to worker)
+    // These are used inside the command executed on bridgeIP
+    const nestedOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const scpOpts = this.sshExecutor.getSCPOptions({ quiet: true });
+
     const copyResult = await this.opsManager.executeOnVM(
       bridgeIP,
-      `scp -o StrictHostKeyChecking=no ${criuSourcePath} ${user}@${ip}:/tmp/criu && ssh -o StrictHostKeyChecking=no ${user}@${ip} "sudo mv /tmp/criu /usr/local/bin/criu && sudo chmod +x /usr/local/bin/criu"`
+      `scp ${scpOpts} ${criuSourcePath} ${user}@${ip}:/tmp/criu && ssh ${nestedOpts} ${user}@${ip} "sudo mv /tmp/criu /usr/local/bin/criu && sudo chmod +x /usr/local/bin/criu"`
     );
 
     if (copyResult.code === 0) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ ${ip}: CRIU installed from container`);
+      console.warn(`  ✓ ${ip}: CRIU installed from container`);
       return true;
     }
-    // eslint-disable-next-line no-console
-    console.log(`  Warning: Copy failed for ${ip}, will try building from source`);
+    console.warn(`  Warning: Copy failed for ${ip}, will try building from source`);
     return false;
   }
 

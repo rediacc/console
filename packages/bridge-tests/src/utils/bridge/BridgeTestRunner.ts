@@ -15,7 +15,7 @@ import { RepositoryMethods } from './methods/RepositoryMethods';
 import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
-import { getSSHOptions } from '../sshConfig';
+import { getSSHExecutor, SSHExecutor } from '../ssh';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
 import type { VaultBuilder } from '../vault/VaultBuilder';
 
@@ -46,7 +46,7 @@ export class BridgeTestRunner {
   private readonly opsManager: OpsManager;
   private readonly bridgeVM: string;
   private readonly targetVM: string;
-  private readonly sshOpts: string;
+  private readonly sshExecutor: SSHExecutor;
 
   // Method groups
   private readonly systemCheckMethods: SystemCheckMethods;
@@ -72,8 +72,9 @@ export class BridgeTestRunner {
     this.bridgeVM = this.opsManager.getBridgeVMIp();
     this.targetVM = this.resolveTargetVM(config.targetVM);
 
-    // Get SSH options with identity file if available
-    this.sshOpts = `${getSSHOptions()} -o BatchMode=yes -o ConnectTimeout=10`;
+    // Use SSHExecutor for all SSH operations - computes options fresh each time
+    // to ensure SSH keys created by `ops up` are always detected
+    this.sshExecutor = getSSHExecutor();
 
     const timeoutStr = process.env.BRIDGE_TIMEOUT;
     if (!timeoutStr) {
@@ -252,9 +253,17 @@ export class BridgeTestRunner {
     const cmdTimeout = timeout ?? this.defaultTimeout;
     const escapedForBridge = this.escapeForNestedSSH(command);
 
+    // Get SSH options fresh each time (never cache - keys may be created after instantiation)
+    const sshOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const user = process.env.USER;
+    if (!user) {
+      throw new Error('USER environment variable is not set');
+    }
+
     // Two-hop SSH command: Host → Bridge → Target
     // Uses identity file from OPS_HOME/staging/.ssh/id_rsa if available
-    const sshCmd = `ssh ${this.sshOpts} ${this.bridgeVM} "ssh ${this.sshOpts} ${this.targetVM} \\"${escapedForBridge}\\""`;
+    // Always use user@host format for consistency
+    const sshCmd = `ssh ${sshOpts} ${user}@${this.bridgeVM} "ssh ${sshOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
 
     // Log the command being executed
     // eslint-disable-next-line no-console
@@ -298,7 +307,16 @@ export class BridgeTestRunner {
    */
   async executeOnVM(host: string, command: string, timeout?: number): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
-    const sshCmd = `ssh ${this.sshOpts} ${host} "${command.replaceAll('"', '\\"')}"`;
+
+    // Get SSH options fresh each time (never cache - keys may be created after instantiation)
+    const sshOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const user = process.env.USER;
+    if (!user) {
+      throw new Error('USER environment variable is not set');
+    }
+
+    // Always use user@host format for consistency
+    const sshCmd = `ssh ${sshOpts} ${user}@${host} "${command.replaceAll('"', '\\"')}"`;
 
     // Log the command being executed
     // eslint-disable-next-line no-console
