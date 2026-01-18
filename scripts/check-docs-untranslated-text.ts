@@ -28,7 +28,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
-const ENGLISH_LANG = 'en';
 
 // Languages to check (excluding English)
 const NON_ENGLISH_LANGS = ['ar', 'de', 'es', 'fr', 'ja', 'ru', 'tr', 'zh'] as const;
