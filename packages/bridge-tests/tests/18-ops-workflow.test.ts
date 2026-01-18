@@ -17,6 +17,9 @@ import { InfrastructureManager } from '../src/utils/infrastructure/Infrastructur
  * Run with care and only in isolated test environments.
  */
 test.describe('OPS Workflow @bridge @ops @slow', () => {
+  // Skip destructive VM tests in CI - these stop/start VMs and break subsequent tests
+  test.skip(!!process.env.CI, 'Destructive VM tests skipped in CI');
+
   const ops = getOpsManager();
 
   // Increase timeout for infrastructure operations
@@ -162,6 +165,9 @@ test.describe('OPS Workflow @bridge @ops @slow', () => {
  * Tests the soft reset functionality that recreates VMs while preserving configuration.
  */
 test.describe('VM Reset @bridge @ops @slow', () => {
+  // Skip destructive VM reset tests in CI - these recreate VMs and break subsequent tests
+  test.skip(!!process.env.CI, 'Destructive VM tests skipped in CI');
+
   const ops = getOpsManager();
 
   test.setTimeout(600000); // 10 minutes

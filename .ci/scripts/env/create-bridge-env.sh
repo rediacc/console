@@ -10,12 +10,15 @@
 #   --vm-net-offset VM network offset (default: 0)
 #   --vm-bridge     Bridge VM ID (default: 1)
 #   --vm-workers    Worker VM IDs, space-separated (default: "11 12")
+#   --vm-ceph-nodes Ceph node VM IDs, space-separated (default: "21 22 23" if --ceph)
+#   --ceph          Enable Ceph mode (no workers, only Ceph nodes)
 #   --timeout       Bridge timeout in ms (default: BRIDGE_TIMEOUT env or 120000)
 #   --renet-path    Path to renet binary (default: RENET_BINARY_PATH env)
 #
 # Example:
 #   .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
 #   .ci/scripts/env/create-bridge-env.sh --output .env --vm-workers "11 12 13"
+#   .ci/scripts/env/create-bridge-env.sh --ceph --output packages/bridge-tests/.env
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,9 +31,20 @@ OUTPUT="${ARG_OUTPUT:-}"
 VM_NET_BASE="${ARG_VM_NET_BASE:-192.168.111}"
 VM_NET_OFFSET="${ARG_VM_NET_OFFSET:-0}"
 VM_BRIDGE="${ARG_VM_BRIDGE:-1}"
-VM_WORKERS="${ARG_VM_WORKERS:-11 12}"
 TIMEOUT="${ARG_TIMEOUT:-${BRIDGE_TIMEOUT:-120000}}"
 RENET_PATH="${ARG_RENET_PATH:-${RENET_BINARY_PATH:-}}"
+
+# Handle Ceph mode
+CEPH_MODE="${ARG_CEPH:-false}"
+if [[ "$CEPH_MODE" == "true" ]]; then
+    VM_WORKERS=""
+    VM_CEPH_NODES="${ARG_VM_CEPH_NODES:-21 22 23}"
+    PROVISION_CEPH_CLUSTER="true"
+else
+    VM_WORKERS="${ARG_VM_WORKERS:-11 12}"
+    VM_CEPH_NODES="${ARG_VM_CEPH_NODES:-}"
+    PROVISION_CEPH_CLUSTER="false"
+fi
 
 # Determine OPS_HOME for SSH keys
 # Priority: OPS_HOME env > derive from renet's default logic (cwd/../ops)
@@ -63,6 +77,9 @@ VM_NET_BASE=$VM_NET_BASE
 VM_NET_OFFSET=$VM_NET_OFFSET
 VM_BRIDGE=$VM_BRIDGE
 VM_WORKERS=$VM_WORKERS
+VM_CEPH_NODES=$VM_CEPH_NODES
+PROVISION_CEPH_CLUSTER=$PROVISION_CEPH_CLUSTER
+CEPH_MODE=$CEPH_MODE
 BRIDGE_TIMEOUT=$TIMEOUT
 RENET_BINARY_PATH=$RENET_PATH
 OPS_HOME=$OPS_HOME_VALUE

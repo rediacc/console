@@ -5,6 +5,7 @@ import {
   getSCPOptions,
   isSSHKeyAvailable,
   getSSHPrivateKeyPath,
+  SSH_DEFAULTS,
 } from '../sshConfig';
 
 const execAsync = promisify(exec);
@@ -32,16 +33,6 @@ export interface SSHResult {
   code: number;
   success: boolean;
 }
-
-/**
- * Default SSH configuration values.
- */
-const SSH_DEFAULTS = {
-  CONNECT_TIMEOUT: 10, // Standardized to 10s for CI environments
-  EXEC_TIMEOUT: 60000,
-  BATCH_MODE: true,
-  QUIET: false,
-} as const;
 
 /**
  * SSHExecutor - Centralized SSH operations handler.
@@ -289,7 +280,7 @@ export class SSHExecutor {
   /**
    * Escape a command for single-hop SSH.
    */
-  private escapeForSSH(command: string): string {
+  escapeForSSH(command: string): string {
     return command.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
   }
 
@@ -297,7 +288,7 @@ export class SSHExecutor {
    * Escape a command for nested (two-hop) SSH.
    * Requires double escaping: first for inner SSH, then for outer SSH.
    */
-  private escapeForNestedSSH(command: string): string {
+  escapeForNestedSSH(command: string): string {
     // First escape for the inner SSH (target), then for outer SSH (bridge)
     const escapedForTarget = command.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
     return escapedForTarget.replaceAll('\\', '\\\\').replaceAll('"', '\\"');

@@ -220,15 +220,6 @@ export class BridgeTestRunner {
   // ===========================================================================
 
   /**
-   * Escape command for nested SSH execution.
-   */
-  private escapeForNestedSSH(command: string): string {
-    // First escape for the inner SSH (target), then for outer SSH (bridge)
-    const escapedForTarget = command.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-    return escapedForTarget.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-  }
-
-  /**
    * Log command execution outputs for Playwright capture.
    */
   private logExecutionResult(stdout: string, stderr: string, code: number): void {
@@ -251,7 +242,7 @@ export class BridgeTestRunner {
    */
   async executeViaBridge(command: string, timeout?: number): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
-    const escapedForBridge = this.escapeForNestedSSH(command);
+    const escapedForBridge = this.sshExecutor.escapeForNestedSSH(command);
 
     // Get SSH options fresh each time (never cache - keys may be created after instantiation)
     const sshOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });

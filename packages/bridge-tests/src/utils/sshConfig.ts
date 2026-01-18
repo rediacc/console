@@ -18,6 +18,8 @@ export const SSH_DEFAULTS = {
   EXEC_TIMEOUT: 60000,
   /** Enable batch mode by default (no password prompts). */
   BATCH_MODE: true,
+  /** Suppress warnings by default. */
+  QUIET: false,
 } as const;
 
 /**
