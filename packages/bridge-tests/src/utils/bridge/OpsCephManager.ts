@@ -29,11 +29,11 @@ export class OpsCephManager {
     console.warn('[OpsCephManager] Provisioning Ceph cluster...');
 
     // Run provisioning via OPS command (provision_ceph_cluster)
-    // Set PROVISION_CEPH_CLUSTER=true to ensure provisioning runs
+    // Note: Ceph provisioning is automatically enabled when VM_CEPH_NODES is configured
     const result = await this.runOpsCommandWithEnv(
       ['ceph', 'provision'],
       [],
-      { PROVISION_CEPH_CLUSTER: 'true' },
+      {},
       600000 // 10 minute timeout
     );
 

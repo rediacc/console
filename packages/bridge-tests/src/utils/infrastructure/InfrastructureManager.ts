@@ -6,6 +6,7 @@ import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
 import { getRenetResolver, RenetResolver } from '../RenetResolver';
+import { getSSHExecutor, SSHExecutor } from '../ssh';
 
 const execAsync = promisify(exec);
 
@@ -19,7 +20,7 @@ function getFileMD5(filePath: string): string {
 
 export interface InfrastructureConfig {
   bridgeVM: string;
-  workerVM: string;
+  workerVM: string | undefined; // Can be undefined in Ceph-only mode
   defaultTimeout: number;
 }
 
@@ -30,19 +31,26 @@ export interface InfrastructureConfig {
  * - Automatically starts VMs using renet ops commands if not running
  * - Verifies renet is installed on all VMs
  * - No middleware or Docker containers required - renet runs in local/test mode
+ *
+ * DELEGATES TO SSHExecutor:
+ * All SSH operations are delegated to the centralized SSHExecutor to ensure
+ * consistent behavior and avoid code duplication.
  */
 export class InfrastructureManager {
   private readonly config: InfrastructureConfig;
   private readonly opsManager: OpsManager;
   private readonly resolver: RenetResolver;
+  private readonly sshExecutor: SSHExecutor;
 
   constructor() {
     this.opsManager = getOpsManager();
     this.resolver = getRenetResolver();
+    this.sshExecutor = getSSHExecutor();
 
+    const workerIps = this.opsManager.getWorkerVMIps();
     this.config = {
       bridgeVM: this.opsManager.getBridgeVMIp(),
-      workerVM: this.opsManager.getWorkerVMIps()[0],
+      workerVM: workerIps.length > 0 ? workerIps[0] : undefined,
       defaultTimeout: Number.parseInt(
         process.env.BRIDGE_TIMEOUT ?? LIMITS_DEFAULTS.CONNECTION_TIMEOUT,
         10
@@ -72,32 +80,37 @@ export class InfrastructureManager {
 
   /**
    * Check if bridge VM is reachable via SSH.
+   * Delegates to SSHExecutor for consistent behavior.
    */
   async isBridgeVMReachable(): Promise<boolean> {
-    try {
-      await execAsync(
-        `ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${this.config.bridgeVM} "echo ok"`,
-        { timeout: 10000 }
-      );
-      return true;
-    } catch {
-      return false;
+    const ready = await this.sshExecutor.isSSHReady(this.config.bridgeVM, {
+      connectTimeout: 5,
+      batchMode: true,
+    });
+    if (!ready) {
+      console.warn('[InfrastructureManager] Bridge VM check failed');
     }
+    return ready;
   }
 
   /**
    * Check if worker VM is reachable via SSH.
+   * Delegates to SSHExecutor for consistent behavior.
+   * Returns true if no worker VMs are configured (Ceph-only mode).
    */
   async isWorkerVMReachable(): Promise<boolean> {
-    try {
-      await execAsync(
-        `ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no ${this.config.workerVM} "echo ok"`,
-        { timeout: 10000 }
-      );
+    // In Ceph-only mode, there are no workers - return true
+    if (this.config.workerVM === undefined) {
       return true;
-    } catch {
-      return false;
     }
+    const ready = await this.sshExecutor.isSSHReady(this.config.workerVM, {
+      connectTimeout: 5,
+      batchMode: true,
+    });
+    if (!ready) {
+      console.warn('[InfrastructureManager] Worker VM check failed');
+    }
+    return ready;
   }
 
   /**
@@ -152,6 +165,31 @@ export class InfrastructureManager {
   }
 
   /**
+   * Check if workers are configured (not Ceph-only mode).
+   */
+  private hasWorkerVMs(): boolean {
+    return this.config.workerVM !== undefined;
+  }
+
+  /**
+   * Check if worker VMs are ready, accounting for Ceph-only mode.
+   */
+  private isWorkerVMStatusReady(workerStatus: boolean): boolean {
+    return this.hasWorkerVMs() ? workerStatus : true;
+  }
+
+  /**
+   * Log worker VM status with Ceph-only mode support.
+   */
+  private logWorkerStatus(workerStatus: boolean): void {
+    if (this.hasWorkerVMs()) {
+      console.warn('  Worker VM:', workerStatus ? 'OK' : 'DOWN');
+    } else {
+      console.warn('  Worker VM: N/A (Ceph-only mode)');
+    }
+  }
+
+  /**
    * Ensure VMs are running and ready.
    */
   private async ensureVMsRunning(status: {
@@ -159,16 +197,14 @@ export class InfrastructureManager {
     bridgeVM: boolean;
     workerVM: boolean;
   }): Promise<void> {
-    const vmsReady = status.bridgeVM && status.workerVM;
+    const vmsReady = status.bridgeVM && this.isWorkerVMStatusReady(status.workerVM);
 
     if (vmsReady) {
       return;
     }
 
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('VMs not ready - starting via ops scripts...');
+    console.warn('');
+    console.warn('VMs not ready - starting via ops scripts...');
 
     const result = await this.opsManager.ensureVMsRunning();
 
@@ -176,24 +212,20 @@ export class InfrastructureManager {
       throw new Error(`Failed to start VMs: ${result.message}\n` + 'Check ops logs for details.');
     }
 
-    // eslint-disable-next-line no-console
-    console.log(result.message);
+    console.warn(result.message);
 
     // Verify VMs are now ready
     const newStatus = await this.getStatus();
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Updated Status:');
-    // eslint-disable-next-line no-console
-    console.log('  Bridge VM:', newStatus.bridgeVM ? 'OK' : 'DOWN');
-    // eslint-disable-next-line no-console
-    console.log('  Worker VM:', newStatus.workerVM ? 'OK' : 'DOWN');
+    console.warn('');
+    console.warn('Updated Status:');
+    console.warn('  Bridge VM:', newStatus.bridgeVM ? 'OK' : 'DOWN');
+    this.logWorkerStatus(newStatus.workerVM);
 
-    if (!newStatus.bridgeVM || !newStatus.workerVM) {
+    const workerReady = this.isWorkerVMStatusReady(newStatus.workerVM);
+    if (!newStatus.bridgeVM || !workerReady) {
       const missing: string[] = [];
       if (!newStatus.bridgeVM) missing.push('bridge VM');
-      if (!newStatus.workerVM) missing.push('worker VM');
+      if (this.hasWorkerVMs() && !newStatus.workerVM) missing.push('worker VM');
 
       throw new Error(
         `VMs started but still not reachable: ${missing.join(', ')}\n` +
@@ -227,23 +259,26 @@ export class InfrastructureManager {
       return false; // Already up to date
     }
 
-    // Deploy via scp to temp then sudo mv
-    const user = process.env.USER;
-    if (!user) {
-      throw new Error('USER environment variable is not set');
-    }
     try {
-      // Copy to temp location
-      await execAsync(
-        `scp -q -o StrictHostKeyChecking=no "${localPath}" ${user}@${ip}:/tmp/renet`,
-        { timeout: 60000 } // Increased timeout for larger binaries
+      // Copy to temp location using SSHExecutor
+      const copyResult = await this.sshExecutor.copyTo(ip, localPath, '/tmp/renet', {
+        execTimeout: 60000, // Increased timeout for larger binaries
+      });
+
+      if (!copyResult.success) {
+        throw new Error(`SCP failed: ${copyResult.stderr}`);
+      }
+
+      // Move to final location and set permissions using SSHExecutor
+      const moveResult = await this.sshExecutor.execute(
+        ip,
+        `sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}`,
+        { execTimeout: 10000 }
       );
 
-      // Move to final location and set permissions
-      await execAsync(
-        `ssh -q -o StrictHostKeyChecking=no ${user}@${ip} "sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}"`,
-        { timeout: 10000 }
-      );
+      if (!moveResult.success) {
+        throw new Error(`Move/chmod failed: ${moveResult.stderr}`);
+      }
 
       // Verify the deployment by checking MD5
       const newRemoteMD5 = await this.getRemoteRenetMD5(ip);
@@ -429,6 +464,7 @@ export class InfrastructureManager {
 
   /**
    * Copy CRIU from bridge VM to worker VM.
+   * Uses SSHExecutor for consistent SSH options in nested commands.
    */
   private async copyCriuFromBridge(
     ip: string,
@@ -436,20 +472,23 @@ export class InfrastructureManager {
     bridgeIP: string,
     user: string
   ): Promise<boolean> {
-    // eslint-disable-next-line no-console
-    console.log(`  ${ip}: Copying CRIU from bridge...`);
+    console.warn(`  ${ip}: Copying CRIU from bridge...`);
+
+    // Get SSH options for the nested commands (from bridge to worker)
+    // These are used inside the command executed on bridgeIP
+    const nestedOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const scpOpts = this.sshExecutor.getSCPOptions({ quiet: true });
+
     const copyResult = await this.opsManager.executeOnVM(
       bridgeIP,
-      `scp -o StrictHostKeyChecking=no ${criuSourcePath} ${user}@${ip}:/tmp/criu && ssh -o StrictHostKeyChecking=no ${user}@${ip} "sudo mv /tmp/criu /usr/local/bin/criu && sudo chmod +x /usr/local/bin/criu"`
+      `scp ${scpOpts} ${criuSourcePath} ${user}@${ip}:/tmp/criu && ssh ${nestedOpts} ${user}@${ip} "sudo mv /tmp/criu /usr/local/bin/criu && sudo chmod +x /usr/local/bin/criu"`
     );
 
     if (copyResult.code === 0) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ ${ip}: CRIU installed from container`);
+      console.warn(`  ✓ ${ip}: CRIU installed from container`);
       return true;
     }
-    // eslint-disable-next-line no-console
-    console.log(`  Warning: Copy failed for ${ip}, will try building from source`);
+    console.warn(`  Warning: Copy failed for ${ip}, will try building from source`);
     return false;
   }
 

@@ -441,9 +441,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             }
           >
             <Flex align="center" wrap>
-              <Flex
-                className="max-w-full flex-[1_1_60%] min-w-[240px]"
-              >
+              <Flex className="max-w-full flex-[1_1_60%] min-w-[240px]">
                 <Input
                   className="w-full"
                   placeholder={t('nestedObjectEditor.Enter key name')}

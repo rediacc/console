@@ -102,9 +102,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       />
 
       {error && (
-        <Typography.Text
-          className="absolute inset-x-0 bottom-0 text-xs font-medium"
-        >
+        <Typography.Text className="absolute inset-x-0 bottom-0 text-xs font-medium">
           {t('defaults.jsonError')}: {error}
         </Typography.Text>
       )}

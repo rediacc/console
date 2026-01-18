@@ -161,11 +161,7 @@ export const TerminalPopout: React.FC = () => {
   // Validation error state (from useMemo, no setState needed)
   if (validationError) {
     return (
-      <Flex
-        align="center"
-        justify="center"
-        className="h-screen bg-[#1e1e2e] p-6"
-      >
+      <Flex align="center" justify="center" className="h-screen bg-[#1e1e2e] p-6">
         <Alert
           type="error"
           message={t('resources:localActions.terminalError')}
@@ -179,11 +175,7 @@ export const TerminalPopout: React.FC = () => {
   // Error state (from async transfer)
   if (error) {
     return (
-      <Flex
-        align="center"
-        justify="center"
-        className="h-screen bg-[#1e1e2e] p-6"
-      >
+      <Flex align="center" justify="center" className="h-screen bg-[#1e1e2e] p-6">
         <Alert
           type="error"
           message={t('resources:localActions.terminalError')}
@@ -197,13 +189,7 @@ export const TerminalPopout: React.FC = () => {
   // Loading state
   if (!isReady) {
     return (
-      <Flex
-        align="center"
-        justify="center"
-        vertical
-        gap={16}
-        className="h-screen bg-[#1e1e2e]"
-      >
+      <Flex align="center" justify="center" vertical gap={16} className="h-screen bg-[#1e1e2e]">
         <Spin size="large" />
         <Text className="text-[#cdd6f4]">{t('resources:localActions.popoutConnecting')}</Text>
       </Flex>
@@ -211,10 +197,7 @@ export const TerminalPopout: React.FC = () => {
   }
 
   return (
-    <Flex
-      vertical
-      className="h-screen w-screen bg-[#1e1e2e] overflow-hidden"
-    >
+    <Flex vertical className="h-screen w-screen bg-[#1e1e2e] overflow-hidden">
       {sessionId && (
         <Terminal
           ref={terminalRef}

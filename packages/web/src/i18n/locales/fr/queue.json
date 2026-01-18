@@ -252,6 +252,13 @@
     "staleTaskTitle": "Tâche périmée",
     "staleTitle": "La tâche peut être périmée",
     "status": "Statut",
+    "structuredLog": {
+      "level": "Niveau",
+      "message": "Message",
+      "time": "Heure",
+      "viewRaw": "Brut",
+      "viewStructured": "Structuré"
+    },
     "sudoSupport": "Support Sudo",
     "system": "Système",
     "systemInfo": "Informations système",
@@ -272,13 +279,6 @@
     "user": "Utilisateur",
     "vaultContent": "Contenu du coffre-fort",
     "version": "Version",
-    "waiting": "En attente",
-    "structuredLog": {
-      "time": "Heure",
-      "level": "Niveau",
-      "message": "Message",
-      "viewStructured": "Structuré",
-      "viewRaw": "Brut"
-    }
+    "waiting": "En attente"
   }
 }

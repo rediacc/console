@@ -1,13 +1,10 @@
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import {
   DEFAULT_RUSTFS_ACCESS_KEY,
   DEFAULT_RUSTFS_BUCKET,
   DEFAULT_RUSTFS_ENDPOINT,
   DEFAULT_RUSTFS_SECRET_KEY,
 } from '../../constants';
-
-const execAsync = promisify(exec);
+import { getSSHExecutor, SSHExecutor } from '../ssh';
 
 /**
  * S3-compatible storage configuration.
@@ -46,38 +43,41 @@ export interface StorageResult {
  *
  * Uses rclone for all operations, which is available on bridge/worker VMs.
  * Operations are executed via SSH to the bridge VM.
+ *
+ * DELEGATES TO SSHExecutor:
+ * All SSH operations are delegated to the centralized SSHExecutor to ensure
+ * consistent behavior and avoid code duplication.
  */
 export class StorageTestHelper {
   private readonly bridgeHost: string;
   private readonly s3Config: S3Config;
-  private readonly sshOptions = '-o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10';
+  private readonly sshExecutor: SSHExecutor;
 
   constructor(bridgeHost: string, s3Config: S3Config = DEFAULT_RUSTFS_CONFIG) {
     this.bridgeHost = bridgeHost;
     this.s3Config = s3Config;
+    this.sshExecutor = getSSHExecutor();
   }
 
   /**
    * Execute a command on the bridge VM via SSH.
+   * Uses SSHExecutor for consistent SSH options.
    */
   private async executeOnBridge(command: string, timeout = 30000): Promise<StorageResult> {
-    const sshCmd = `ssh ${this.sshOptions} ${this.bridgeHost} "${command.replaceAll('"', '\\"')}"`;
+    console.warn(`[Storage SSH ${this.bridgeHost}] ${command}`);
 
-    // eslint-disable-next-line no-console
-    console.log(`[Storage SSH ${this.bridgeHost}] ${command}`);
+    const result = await this.sshExecutor.execute(this.bridgeHost, command, {
+      connectTimeout: 10,
+      batchMode: true,
+      execTimeout: timeout,
+    });
 
-    try {
-      const { stdout, stderr } = await execAsync(sshCmd, { timeout });
-      return { success: true, stdout, stderr, code: 0 };
-    } catch (error: unknown) {
-      const err = error as Error & { stdout?: string; stderr?: string; code?: number };
-      return {
-        success: false,
-        stdout: err.stdout ?? '',
-        stderr: err.stderr ?? '',
-        code: err.code ?? 1,
-      };
-    }
+    return {
+      success: result.success,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      code: result.code,
+    };
   }
 
   /**

@@ -110,6 +110,72 @@ async function verifyVMsWithRetry(
 }
 
 /**
+ * Initialize datastores on worker VMs if workers are configured.
+ */
+async function initializeDatastoresIfNeeded(
+  opsManager: ReturnType<typeof getOpsManager>,
+  workerIps: string[]
+) {
+  if (workerIps.length > 0) {
+    console.warn('');
+    console.warn('Step 5: Initializing datastores on all worker VMs...');
+    await opsManager.initializeAllDatastores('10G', DEFAULT_DATASTORE_PATH);
+    console.warn('  ✓ All datastores initialized');
+  } else {
+    console.warn('');
+    console.warn('Step 5: Skipping datastore initialization (Ceph-only mode, no workers)');
+  }
+}
+
+/**
+ * Deploy CRIU to worker VMs if workers are configured.
+ */
+async function deployCRIUIfNeeded(infra: InfrastructureManager, workerIps: string[]) {
+  if (workerIps.length > 0) {
+    console.warn('');
+    console.warn('Step 6: Deploying CRIU to all worker VMs...');
+    await infra.deployCRIUToAllVMs();
+    console.warn('  ✓ CRIU deployed to all worker VMs');
+  } else {
+    console.warn('');
+    console.warn('Step 6: Skipping CRIU deployment (Ceph-only mode, no workers)');
+  }
+}
+
+/**
+ * Start RustFS S3 storage on bridge VM.
+ */
+async function startRustFSStorage(opsManager: ReturnType<typeof getOpsManager>) {
+  console.warn('');
+  console.warn('Step 4: Starting RustFS S3 storage...');
+  const rustfsResult = await opsManager.startRustFS();
+  if (!rustfsResult.success) {
+    throw new Error(`RustFS failed to start: ${rustfsResult.message}`);
+  }
+  console.warn(`  ✓ ${rustfsResult.message}`);
+}
+
+/**
+ * Configure rclone on workers for RustFS access if workers exist.
+ */
+async function configureRustFSWorkersIfNeeded(
+  opsManager: ReturnType<typeof getOpsManager>,
+  workerIps: string[]
+) {
+  if (workerIps.length === 0) {
+    return;
+  }
+  console.warn('');
+  console.warn('Step 4b: Configuring workers for RustFS access...');
+  const configResult = await opsManager.configureRustFSWorkers();
+  if (configResult.success) {
+    console.warn(`  ✓ ${configResult.message}`);
+  } else {
+    console.warn(`  ! ${configResult.message} (non-fatal, tests may configure individually)`);
+  }
+}
+
+/**
  * Write setup error to log file
  */
 function writeSetupErrorLog(error: unknown) {
@@ -169,7 +235,7 @@ function writeSetupErrorLog(error: unknown) {
  * The renet binary must be available before running tests. In CI, it's pre-extracted
  * from the Docker image. Locally, build with: cd renet && ./go dev
  *
- * NOTE: Ceph provisioning is handled by `ops up` when PROVISION_CEPH_CLUSTER=true.
+ * NOTE: Ceph provisioning is automatically handled by `ops up` when VM_CEPH_NODES is configured.
  * Do NOT call provisionCeph() separately as this causes duplicate provisioning conflicts.
  */
 async function bridgeGlobalSetup(_config: FullConfig) {
@@ -199,7 +265,7 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     // eslint-disable-next-line no-console
     console.log(`  ✓ VM reset completed in ${(resetResult.duration / 1000).toFixed(1)}s`);
 
-    // Note: Ceph provisioning is handled by ops up when PROVISION_CEPH_CLUSTER=true
+    // Note: Ceph provisioning is automatically handled by ops up when VM_CEPH_NODES is configured
     const cephNodes = opsManager.getCephVMIps();
     if (cephNodes.length > 0) {
       await waitForCephHealth(opsManager);
@@ -216,41 +282,28 @@ async function bridgeGlobalSetup(_config: FullConfig) {
 
     // Step 2b: Run renet setup on all worker VMs to create universal user (rediacc)
     // This is required for multi-machine operations (push/pull) that use sudo -u rediacc
-    await setupWorkerVMs(opsManager);
+    const workerIps = opsManager.getWorkerVMIps();
+    if (workerIps.length > 0) {
+      await setupWorkerVMs(opsManager);
+    } else {
+      console.warn('');
+      console.warn('Step 2b: Skipping worker setup (Ceph-only mode, no workers)');
+    }
 
     // Step 3: Verify all VMs are ready
     await verifyVMsWithRetry(opsManager, infra);
 
     // Step 4: Start RustFS S3 storage on bridge VM (mandatory for storage tests)
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 4: Starting RustFS S3 storage...');
-    const rustfsResult = await opsManager.startRustFS();
-    if (rustfsResult.success) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ ${rustfsResult.message}`);
-    } else {
-      throw new Error(`RustFS failed to start: ${rustfsResult.message}`);
-    }
+    await startRustFSStorage(opsManager);
+
+    // Step 4b: Configure rclone on workers for RustFS access (if workers exist)
+    await configureRustFSWorkersIfNeeded(opsManager, workerIps);
 
     // Step 5: Initialize datastores on all worker VMs
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 5: Initializing datastores on all worker VMs...');
-    await opsManager.initializeAllDatastores('10G', DEFAULT_DATASTORE_PATH);
-    // eslint-disable-next-line no-console
-    console.log('  ✓ All datastores initialized');
+    await initializeDatastoresIfNeeded(opsManager, workerIps);
 
     // Step 6: Deploy CRIU to all worker VMs
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 6: Deploying CRIU to all worker VMs...');
-    await infra.deployCRIUToAllVMs();
-    // eslint-disable-next-line no-console
-    console.log('  ✓ CRIU deployed to all worker VMs');
+    await deployCRIUIfNeeded(infra, workerIps);
 
     /* eslint-disable no-console */
     console.log('');

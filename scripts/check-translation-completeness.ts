@@ -3,14 +3,14 @@
  * Translation Completeness Check
  *
  * Validates that translations are actually translated (not just English placeholders).
- * This complements check-translation-hashes.js which only checks hash freshness.
+ * This complements check-translation-hashes.ts which only checks hash freshness.
  *
  * Checks:
  * 1. All languages have all keys (sync check)
  * 2. Non-English files don't have English values (untranslated placeholders)
  *
  * Usage:
- *   node scripts/check-translation-completeness.js
+ *   npx tsx scripts/check-translation-completeness.ts
  *   npm run check:i18n:completeness
  *
  * Exit codes:
@@ -148,7 +148,7 @@ const ALLOWED_IDENTICAL = new Set([
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
-const PLACEHOLDER_PATTERNS = [
+const PLACEHOLDER_PATTERNS: RegExp[] = [
   /placeholder$/i, // Keys ending in "placeholder"
   /^https?:\/\//, // URLs
   /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]+$/i, // Emails
@@ -176,12 +176,30 @@ const PLACEHOLDER_PATTERNS = [
   /^Cancelling\.\.\.$/i, // Progress indicator
 ];
 
-function flatten(obj, prefix = '') {
-  const result = {};
+type TranslationValue = string | TranslationObject;
+type TranslationObject = Record<string, TranslationValue>;
+
+interface LanguageStats {
+  total: number;
+  untranslated: number;
+  untranslatedPercent: string;
+  missing: number;
+  missingPercent: string;
+  untranslatedKeys: string[];
+}
+
+interface CheckResult {
+  errors: string[];
+  warnings: string[];
+  stats?: Record<string, LanguageStats>;
+}
+
+function flatten(obj: TranslationObject, prefix = ''): Record<string, TranslationValue> {
+  const result: Record<string, TranslationValue> = {};
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      Object.assign(result, flatten(value, fullKey));
+      Object.assign(result, flatten(value as TranslationObject, fullKey));
     } else {
       result[fullKey] = value;
     }
@@ -189,7 +207,7 @@ function flatten(obj, prefix = '') {
   return result;
 }
 
-function shouldSkipValue(value, key = '') {
+function shouldSkipValue(value: TranslationValue, key = ''): boolean {
   if (typeof value !== 'string') return true;
   if (value.length <= MIN_STRING_LENGTH) return true;
   if (ALLOWED_IDENTICAL.has(value)) return true;
@@ -200,9 +218,9 @@ function shouldSkipValue(value, key = '') {
   return false;
 }
 
-function checkLocaleDir(name, localeDir) {
-  const errors = [];
-  const warnings = [];
+function checkLocaleDir(name: string, localeDir: string): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
   const enDir = path.join(localeDir, 'en');
   if (!fs.existsSync(enDir)) {
@@ -211,11 +229,13 @@ function checkLocaleDir(name, localeDir) {
   }
 
   // Load English translations
-  const enKeys = {};
+  const enKeys: Record<string, TranslationValue> = {};
   const enFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
 
   for (const file of enFiles) {
-    const content = JSON.parse(fs.readFileSync(path.join(enDir, file), 'utf-8'));
+    const content = JSON.parse(
+      fs.readFileSync(path.join(enDir, file), 'utf-8')
+    ) as TranslationObject;
     const flat = flatten(content);
     for (const [key, value] of Object.entries(flat)) {
       enKeys[key] = value;
@@ -231,11 +251,11 @@ function checkLocaleDir(name, localeDir) {
       (d) => d !== 'en' && !d.startsWith('.') && fs.statSync(path.join(localeDir, d)).isDirectory()
     );
 
-  const stats = {};
+  const stats: Record<string, LanguageStats> = {};
 
   for (const lang of languages) {
     const langDir = path.join(localeDir, lang);
-    const langKeys = {};
+    const langKeys: Record<string, TranslationValue> = {};
     let untranslated = 0;
     let missing = 0;
 
@@ -244,18 +264,20 @@ function checkLocaleDir(name, localeDir) {
       const langFile = path.join(langDir, file);
       if (!fs.existsSync(langFile)) {
         // Count all keys from this file as missing
-        const enContent = JSON.parse(fs.readFileSync(path.join(enDir, file), 'utf-8'));
+        const enContent = JSON.parse(
+          fs.readFileSync(path.join(enDir, file), 'utf-8')
+        ) as TranslationObject;
         missing += Object.keys(flatten(enContent)).length;
         continue;
       }
 
-      const content = JSON.parse(fs.readFileSync(langFile, 'utf-8'));
+      const content = JSON.parse(fs.readFileSync(langFile, 'utf-8')) as TranslationObject;
       const flat = flatten(content);
       Object.assign(langKeys, flat);
     }
 
     // Check for untranslated strings
-    const untranslatedKeys = [];
+    const untranslatedKeys: string[] = [];
     for (const [key, enValue] of Object.entries(enKeys)) {
       if (!(key in langKeys)) {
         missing++;
@@ -303,12 +325,12 @@ function checkLocaleDir(name, localeDir) {
   return { errors, warnings, stats };
 }
 
-function main() {
+function main(): void {
   console.log('Translation Completeness Check');
   console.log('============================================================\n');
 
-  const allErrors = [];
-  const allWarnings = [];
+  const allErrors: string[] = [];
+  const allWarnings: string[] = [];
 
   // Check web locales
   const webLocales = path.join(__dirname, '../packages/web/src/i18n/locales');

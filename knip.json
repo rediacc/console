@@ -3,8 +3,8 @@
   "exclude": ["types", "duplicates"],
   "workspaces": {
     ".": {
-      "entry": ["scripts/*.js"],
-      "project": ["*.{js,ts}", "scripts/**/*.js"]
+      "entry": ["scripts/*.ts"],
+      "project": ["*.{js,ts}", "scripts/**/*.ts"]
     },
     "packages/shared": {
       "project": ["src/**/*.ts"]
@@ -116,7 +116,8 @@
     "loupe",
     "@vitest/runner",
     "@vitest/utils",
-    "astro-seo"
+    "astro-seo",
+    "glob"
   ],
   "ignoreBinaries": ["rimraf"]
 }

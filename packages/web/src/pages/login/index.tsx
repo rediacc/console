@@ -327,7 +327,7 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      {/* eslint-disable-next-line no-restricted-syntax */}
+      {}
       <Flex className="w-full max-w-[400px]">
         <Flex vertical className="w-full">
           {error && (
