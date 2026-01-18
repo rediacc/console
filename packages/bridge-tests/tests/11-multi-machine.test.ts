@@ -162,6 +162,13 @@ test.describe
     test('push repository from VM1 to VM2', async () => {
       test.skip(!crossVMSSHAvailable, 'Cross-VM SSH not available - skipping data transfer tests');
       const result = await runner.push(testRepo, runner.getWorkerVM2(), DEFAULT_DATASTORE_PATH);
+
+      // Always log output for debugging
+      console.warn(`[Push] From ${runner.getWorkerVM()} to ${runner.getWorkerVM2()}`);
+      console.warn(`[Push] Exit code: ${result.code}`);
+      console.warn(`[Push] stdout: ${result.stdout}`);
+      if (result.stderr) console.warn(`[Push] stderr: ${result.stderr}`);
+
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -170,6 +177,13 @@ test.describe
       // Use vm2Runner to pull FROM VM1 TO VM2
       // This tests pulling from source machine (VM1) to destination (VM2)
       const result = await vm2Runner.pull(testRepo, runner.getWorkerVM(), DEFAULT_DATASTORE_PATH);
+
+      // Always log output for debugging
+      console.warn(`[Pull] From ${runner.getWorkerVM()} to ${runner.getWorkerVM2()}`);
+      console.warn(`[Pull] Exit code: ${result.code}`);
+      console.warn(`[Pull] stdout: ${result.stdout}`);
+      if (result.stderr) console.warn(`[Pull] stderr: ${result.stderr}`);
+
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -179,6 +193,13 @@ test.describe
 
       for (const vm of workers) {
         const result = await runner.deploy(testRepo, vm, DEFAULT_DATASTORE_PATH);
+
+        // Always log output for debugging
+        console.warn(`[Deploy] To ${vm}`);
+        console.warn(`[Deploy] Exit code: ${result.code}`);
+        console.warn(`[Deploy] stdout: ${result.stdout}`);
+        if (result.stderr) console.warn(`[Deploy] stderr: ${result.stderr}`);
+
         expect(runner.isSuccess(result)).toBe(true);
       }
     });

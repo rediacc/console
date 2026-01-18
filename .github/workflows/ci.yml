@@ -791,18 +791,14 @@ jobs:
         run: |
           .ci/scripts/test/run-e2e.sh --projects \
             ${{ env.E2E_BROWSERS }}
-      - name: Create Completion Signals
+      - name: Create Completion Signal
         if: always()
-        run: |
-          # Browser signals
-          for browser in ${{ env.E2E_BROWSERS }}; do
-            .ci/scripts/signal/create-complete.sh --name "e2e-$browser"
-          done
+        run: echo "completed" > ${{ runner.temp }}/complete.txt
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: test-complete-e2e-${{ github.sha }}
-          path: ${{ runner.temp }}/complete-e2e-*.txt
+          name: test-complete-e2e-chromium
+          path: ${{ runner.temp }}/complete.txt
           retention-days: 3
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()

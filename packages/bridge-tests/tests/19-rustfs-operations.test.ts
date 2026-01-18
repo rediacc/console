@@ -311,16 +311,19 @@ test.describe('RustFS Integration @bridge @rustfs @slow', () => {
       const workerId = vmIds.workers[0];
       const workerIp = ops.calculateVMIp(workerId);
 
-      // Create and upload a file from worker
+      // Create and upload a file from worker (add -v for verbose output)
       const result = await ops.executeOnVM(
         workerIp,
         `echo "uploaded-from-worker-$(hostname)-$(date +%s)" > /tmp/worker-test.txt && ` +
-          `rclone copy /tmp/worker-test.txt rustfs:${integrationBucket}/`
+          `rclone copy /tmp/worker-test.txt rustfs:${integrationBucket}/ -v 2>&1`
       );
 
+      // Always log output for debugging
+      console.warn(`[RustFS Upload] Worker ${workerId} (${workerIp}) exit code: ${result.code}`);
+      console.warn(`[RustFS Upload] stdout: ${result.stdout}`);
+      if (result.stderr) console.warn(`[RustFS Upload] stderr: ${result.stderr}`);
+
       expect(result.code).toBe(0);
-      // eslint-disable-next-line no-console
-      console.log('File uploaded from worker to RustFS');
     });
 
     test('should download file from RustFS to another worker', async () => {
@@ -330,26 +333,34 @@ test.describe('RustFS Integration @bridge @rustfs @slow', () => {
       const downloadWorkerId = vmIds.workers.length > 1 ? vmIds.workers[1] : vmIds.workers[0];
       const downloadWorkerIp = ops.calculateVMIp(downloadWorkerId);
 
-      // Download the file to another worker
+      // Download the file to another worker (add -v for verbose output)
       const result = await ops.executeOnVM(
         downloadWorkerIp,
-        `rclone copy rustfs:${integrationBucket}/worker-test.txt /tmp/downloaded/ && ` +
+        `rclone copy rustfs:${integrationBucket}/worker-test.txt /tmp/downloaded/ -v 2>&1 && ` +
           `cat /tmp/downloaded/worker-test.txt`
       );
 
+      // Always log output for debugging
+      console.warn(
+        `[RustFS Download] Worker ${downloadWorkerId} (${downloadWorkerIp}) exit code: ${result.code}`
+      );
+      console.warn(`[RustFS Download] stdout: ${result.stdout}`);
+      if (result.stderr) console.warn(`[RustFS Download] stderr: ${result.stderr}`);
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('uploaded-from-worker');
-      // eslint-disable-next-line no-console
-      console.log(`Downloaded content: ${result.stdout.trim()}`);
     });
 
     test('should list integration bucket with uploaded files', async () => {
       const result = await ops.listRustFSBucket(integrationBucket);
 
+      // Always log output for debugging
+      console.warn(`[RustFS List] Bucket ${integrationBucket} success: ${result.success}`);
+      console.warn(`[RustFS List] contents: ${result.contents}`);
+      console.warn(`[RustFS List] message: ${result.message}`);
+
       expect(result.success).toBe(true);
       expect(result.contents).toContain('worker-test.txt');
-      // eslint-disable-next-line no-console
-      console.log(`Integration bucket: ${result.contents}`);
     });
   });
 });
