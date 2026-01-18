@@ -143,6 +143,39 @@ async function deployCRIUIfNeeded(infra: InfrastructureManager, workerIps: strin
 }
 
 /**
+ * Start RustFS S3 storage on bridge VM.
+ */
+async function startRustFSStorage(opsManager: ReturnType<typeof getOpsManager>) {
+  console.warn('');
+  console.warn('Step 4: Starting RustFS S3 storage...');
+  const rustfsResult = await opsManager.startRustFS();
+  if (!rustfsResult.success) {
+    throw new Error(`RustFS failed to start: ${rustfsResult.message}`);
+  }
+  console.warn(`  ✓ ${rustfsResult.message}`);
+}
+
+/**
+ * Configure rclone on workers for RustFS access if workers exist.
+ */
+async function configureRustFSWorkersIfNeeded(
+  opsManager: ReturnType<typeof getOpsManager>,
+  workerIps: string[]
+) {
+  if (workerIps.length === 0) {
+    return;
+  }
+  console.warn('');
+  console.warn('Step 4b: Configuring workers for RustFS access...');
+  const configResult = await opsManager.configureRustFSWorkers();
+  if (configResult.success) {
+    console.warn(`  ✓ ${configResult.message}`);
+  } else {
+    console.warn(`  ! ${configResult.message} (non-fatal, tests may configure individually)`);
+  }
+}
+
+/**
  * Write setup error to log file
  */
 function writeSetupErrorLog(error: unknown) {
@@ -261,29 +294,10 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     await verifyVMsWithRetry(opsManager, infra);
 
     // Step 4: Start RustFS S3 storage on bridge VM (mandatory for storage tests)
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 4: Starting RustFS S3 storage...');
-    const rustfsResult = await opsManager.startRustFS();
-    if (rustfsResult.success) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ ${rustfsResult.message}`);
-    } else {
-      throw new Error(`RustFS failed to start: ${rustfsResult.message}`);
-    }
+    await startRustFSStorage(opsManager);
 
     // Step 4b: Configure rclone on workers for RustFS access (if workers exist)
-    if (workerIps.length > 0) {
-      console.warn('');
-      console.warn('Step 4b: Configuring workers for RustFS access...');
-      const configResult = await opsManager.configureRustFSWorkers();
-      if (configResult.success) {
-        console.warn(`  ✓ ${configResult.message}`);
-      } else {
-        console.warn(`  ! ${configResult.message} (non-fatal, tests may configure individually)`);
-      }
-    }
+    await configureRustFSWorkersIfNeeded(opsManager, workerIps);
 
     // Step 5: Initialize datastores on all worker VMs
     await initializeDatastoresIfNeeded(opsManager, workerIps);
