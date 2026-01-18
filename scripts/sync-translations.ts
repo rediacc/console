@@ -14,15 +14,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = path.join(__dirname, '../packages/web/src/i18n/locales');
 const SOURCE_LANG = 'en';
 
+type TranslationValue = string | TranslationObject;
+type TranslationObject = Record<string, TranslationValue>;
+
 /**
  * Recursively sort object keys alphabetically
  */
-function sortKeys(obj) {
+function sortKeys(obj: TranslationValue): TranslationValue {
   if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
     return obj;
   }
 
-  const sorted = {};
+  const sorted: TranslationObject = {};
   const keys = Object.keys(obj).sort((a, b) =>
     a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
   );
@@ -38,7 +41,7 @@ function sortKeys(obj) {
  * Deep merge source into target, only adding missing keys
  * Handles structure mismatches by preferring source structure
  */
-function mergeTranslations(target, source) {
+function mergeTranslations(target: TranslationObject, source: TranslationObject): TranslationObject {
   const result = { ...target };
 
   for (const [key, value] of Object.entries(source)) {
@@ -52,7 +55,10 @@ function mergeTranslations(target, source) {
 
       if (sourceIsObject && targetIsObject) {
         // Both are objects - merge recursively
-        result[key] = mergeTranslations(result[key], value);
+        result[key] = mergeTranslations(
+          result[key] as TranslationObject,
+          value as TranslationObject
+        );
       } else if (sourceIsObject && !targetIsObject) {
         // Source is object but target is not - use source structure
         result[key] = value;
@@ -67,8 +73,8 @@ function mergeTranslations(target, source) {
 /**
  * Remove keys from target that don't exist in source
  */
-function removeExtraKeys(target, source) {
-  const result = {};
+function removeExtraKeys(target: TranslationObject, source: TranslationObject): TranslationObject {
+  const result: TranslationObject = {};
 
   for (const [key, value] of Object.entries(target)) {
     if (!(key in source)) {
@@ -85,7 +91,10 @@ function removeExtraKeys(target, source) {
       !Array.isArray(source[key])
     ) {
       // Both are objects - recurse
-      result[key] = removeExtraKeys(value, source[key]);
+      result[key] = removeExtraKeys(
+        value as TranslationObject,
+        source[key] as TranslationObject
+      );
     } else {
       // Keep the value
       result[key] = value;
@@ -98,12 +107,12 @@ function removeExtraKeys(target, source) {
 /**
  * Count keys in an object recursively
  */
-function countKeys(obj, prefix = '') {
+function countKeys(obj: TranslationObject): number {
   let count = 0;
 
-  for (const [key, value] of Object.entries(obj)) {
+  for (const [, value] of Object.entries(obj)) {
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      count += countKeys(value, `${prefix}${key}.`);
+      count += countKeys(value as TranslationObject);
     } else {
       count += 1;
     }
@@ -112,8 +121,8 @@ function countKeys(obj, prefix = '') {
   return count;
 }
 
-async function main() {
-  console.log('🌐 Translation Sync Script\n');
+async function main(): Promise<void> {
+  console.log('Translation Sync Script\n');
   console.log(`Source language: ${SOURCE_LANG}`);
   console.log(`Locales directory: ${LOCALES_DIR}\n`);
 
@@ -133,25 +142,25 @@ async function main() {
     .map((f) => f.replace('.json', ''));
 
   console.log(`Namespaces: ${namespaces.join(', ')}\n`);
-  console.log('─'.repeat(60));
+  console.log('\u2500'.repeat(60));
 
   let totalAdded = 0;
   let totalRemoved = 0;
 
   for (const namespace of namespaces) {
     const englishFile = path.join(englishDir, `${namespace}.json`);
-    const englishContent = JSON.parse(fs.readFileSync(englishFile, 'utf-8'));
+    const englishContent = JSON.parse(fs.readFileSync(englishFile, 'utf-8')) as TranslationObject;
     const englishKeyCount = countKeys(englishContent);
 
-    console.log(`\n📁 ${namespace}.json (${englishKeyCount} keys in English)`);
+    console.log(`\n${namespace}.json (${englishKeyCount} keys in English)`);
 
     for (const lang of languages) {
       const langDir = path.join(LOCALES_DIR, lang);
       const langFile = path.join(langDir, `${namespace}.json`);
 
-      let langContent = {};
+      let langContent: TranslationObject = {};
       if (fs.existsSync(langFile)) {
-        langContent = JSON.parse(fs.readFileSync(langFile, 'utf-8'));
+        langContent = JSON.parse(fs.readFileSync(langFile, 'utf-8')) as TranslationObject;
       }
 
       const beforeCount = countKeys(langContent);
@@ -167,7 +176,7 @@ async function main() {
       const added = afterMergeCount - afterCleanCount;
 
       // Sort keys alphabetically
-      const sorted = sortKeys(merged);
+      const sorted = sortKeys(merged) as TranslationObject;
 
       // Write back
       fs.writeFileSync(langFile, JSON.stringify(sorted, null, 2) + '\n');
@@ -180,8 +189,8 @@ async function main() {
     }
   }
 
-  console.log('\n' + '─'.repeat(60));
-  console.log(`\n✅ Sync complete!`);
+  console.log('\n' + '\u2500'.repeat(60));
+  console.log(`\nSync complete!`);
   console.log(`   Total keys added: ${totalAdded}`);
   console.log(`   Total keys removed: ${totalRemoved}`);
 }

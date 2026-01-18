@@ -18,6 +18,8 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  */
 export default test.defineConfig({
   testDir: './tests',
+  /* Exclude Ceph tests - they have their own config (playwright.ceph.config.ts) */
+  testIgnore: ['**/ceph/**'],
   /* Global setup ensures infrastructure is running */
   globalSetup: require.resolve('./src/base/bridge-global-setup'),
   globalTeardown: require.resolve('./src/base/bridge-global-teardown'),
@@ -56,8 +58,7 @@ export default test.defineConfig({
     { name: 'test-05', testMatch: '05-*.test.ts' },
     { name: 'test-06', testMatch: '06-*.test.ts' },
     { name: 'test-07', testMatch: '07-*.test.ts' },
-    { name: 'test-08', testMatch: '08-*.test.ts' },
-    { name: 'test-09', testMatch: '09-*.test.ts' },
+    // test-08 and test-09 (Ceph) moved to tests/ceph/ - use playwright.ceph.config.ts
     { name: 'test-10', testMatch: '10-*.test.ts' },
     { name: 'test-11', testMatch: '11-*.test.ts' },
     { name: 'test-12', testMatch: '12-*.test.ts' },

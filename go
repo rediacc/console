@@ -363,17 +363,34 @@ test_cli() {
 test_e2e() {
     check_node_version
 
-    # Require backend for E2E tests
-    if ! elite_health &>/dev/null; then
-        log_error "Backend is not running or unhealthy"
-        log_info "E2E tests require a running backend"
-        log_info "Start backend with: ./go backend start"
-        exit 1
+    # Check if --backend is specified
+    local has_backend=false
+    for arg in "$@"; do
+        [[ "$arg" == "--backend" || "$arg" == --backend=* ]] && has_backend=true
+    done
+
+    # Only require local backend if --backend not specified
+    if [[ "$has_backend" == "false" ]]; then
+        if ! elite_health &>/dev/null; then
+            log_error "Backend is not running or unhealthy"
+            log_info "E2E tests require a running backend"
+            log_info "Start backend with: ./go backend start"
+            log_info "Or use external backend: ./go test e2e --backend <url>"
+            exit 1
+        fi
     fi
 
     log_step "Running E2E tests"
     "$ROOT_DIR/.ci/scripts/build/build-web.sh"
     "$ROOT_DIR/.ci/scripts/test/run-e2e.sh" "$@"
+}
+
+test_bridge() {
+    check_node_version
+    ensure_packages_built
+
+    log_step "Running bridge tests"
+    "$ROOT_DIR/.ci/scripts/test/run-bridge.sh" "$@"
 }
 
 test_all() {
@@ -591,9 +608,16 @@ DEVELOPMENT COMMANDS:
 
 TEST COMMANDS:
   test unit           Run unit tests
-  test cli            Run CLI tests
+  test cli [opts]     Run CLI tests
   test e2e [opts]     Run E2E tests (requires backend)
+  test bridge [opts]  Run bridge tests (requires VMs)
   test all            Run all tests
+
+  Test Options (for e2e and cli):
+    --backend <url|preset>  Use external backend instead of local
+                            Presets: local, sandbox
+                            Example: --backend https://xxx.trycloudflare.com
+    --skip-health-check     Skip backend health validation
 
 BUILD COMMANDS:
   build web           Build web application
@@ -677,11 +701,12 @@ main() {
                 unit) shift; test_unit "$@" ;;
                 cli) shift; test_cli "$@" ;;
                 e2e) shift; test_e2e "$@" ;;
+                bridge) shift; test_bridge "$@" ;;
                 all) test_all ;;
                 *)
                     log_error "Unknown test command: ${1:-}"
                     echo ""
-                    echo "Usage: ./go test [unit|cli|e2e|all]"
+                    echo "Usage: ./go test [unit|cli|e2e|bridge|all]"
                     exit 1
                     ;;
             esac

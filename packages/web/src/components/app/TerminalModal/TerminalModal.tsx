@@ -196,10 +196,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
       }
       destroyOnHidden
     >
-      <Flex
-        vertical
-        className="h-[60vh] min-h-[400px]"
-      >
+      <Flex vertical className="h-[60vh] min-h-[400px]">
         {/* Error Alert */}
         {terminal.error && !terminal.isConnected && (
           <Alert
@@ -236,11 +233,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({
         ) : (
           !terminal.isConnecting &&
           !terminal.error && (
-            <Flex
-              justify="center"
-              align="center"
-              className="flex-1 bg-[#1e1e2e] rounded-lg"
-            >
+            <Flex justify="center" align="center" className="flex-1 bg-[#1e1e2e] rounded-lg">
               <Text type="secondary">{t('common:terminal.waitingForConnection')}</Text>
             </Flex>
           )

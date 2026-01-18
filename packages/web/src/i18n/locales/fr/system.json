@@ -221,14 +221,14 @@
     "success": {
       "errorCount": "{{count}} erreurs",
       "importComplete": "Importation terminée : {{summary}}",
+      "imported": "Données de l'entreprise importées avec succès",
       "importedCount": "{{count}} éléments importés",
       "requestsBlocked": "Demandes des utilisateurs bloquées avec succès",
       "requestsBlockedWithTerminations": "Demandes des utilisateurs bloquées. {{count}} sessions actives ont été interrompues.",
       "requestsUnblocked": "Demandes des utilisateurs débloquées avec succès",
       "skippedCount": "{{count}} éléments ignorés",
-      "vaultUpdated": "La configuration du coffre-fort a été mise à jour avec succès",
-      "imported": "Données de l'entreprise importées avec succès",
-      "vaultsUpdated": "Toutes les configurations du coffre-fort mises à jour avec succès"
+      "vaultsUpdated": "Toutes les configurations du coffre-fort mises à jour avec succès",
+      "vaultUpdated": "La configuration du coffre-fort a été mise à jour avec succès"
     }
   },
   "personal": {

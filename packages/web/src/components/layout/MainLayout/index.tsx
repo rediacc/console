@@ -271,12 +271,7 @@ const MainLayout: React.FC = () => {
       >
         <Flex vertical data-testid="main-content">
           {isTransitioning ? (
-            <Flex
-              vertical
-              align="center"
-              justify="center"
-              className="min-h-[240px]"
-            >
+            <Flex vertical align="center" justify="center" className="min-h-[240px]">
               <Flex>{uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}</Flex>
               <Flex>
                 {t('uiMode.switching', {

@@ -376,19 +376,19 @@
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
   "teamSelector": {
+    "moreTeams": "+{{count}} más",
     "selectTeam": "Seleccionar equipo...",
-    "selectTeams": "Seleccionar equipos...",
-    "moreTeams": "+{{count}} más"
+    "selectTeams": "Seleccionar equipos..."
   },
   "terminal": {
-    "terminal": "Terminal",
+    "connectedTo": "Conectado a {{host}}",
     "connecting": "Conectando",
     "connectionFailed": "Conexión fallida",
-    "connectedTo": "Conectado a {{host}}",
     "establishingConnection": "Estableciendo conexión SSH a {{host}}...",
-    "waitingForConnection": "Esperando conexión...",
+    "popout": "Abrir en nueva ventana",
     "reconnect": "Reconectar",
-    "popout": "Abrir en nueva ventana"
+    "terminal": "Terminal",
+    "waitingForConnection": "Esperando conexión..."
   },
   "theme": {
     "dark": "Oscuro",
@@ -520,13 +520,13 @@
           "label": "Ruta del almacén de datos"
         },
         "description": "Configuración de la máquina para acceso y almacenamiento SSH",
-        "known_hosts": {
-          "description": "Entrada de host conocido SSH para verificación de seguridad",
-          "label": "Entrada de anfitrión"
-        },
         "ip": {
           "description": "Dirección IP de la máquina",
           "label": "Dirección IP"
+        },
+        "known_hosts": {
+          "description": "Entrada de host conocido SSH para verificación de seguridad",
+          "label": "Entrada de anfitrión"
         },
         "port": {
           "description": "número de puerto SSH",
@@ -718,13 +718,13 @@
     "fieldsMovedFromExtra": "{{count}} campo(s) restaurados desde extraFields: {{fields}}",
     "fieldsMovedToExtra": "{{count}} campo(s) movido(s) a extraFields: {{fields}}",
     "formatJson": "Formato JSON",
-    "knownHostsHelp": "Opcional. La entrada de host conocida por SSH se detectará automáticamente.",
-    "knownHostsPlaceholder": "Autocompletado durante la prueba de conexión",
     "importJson": "Importar JSON",
     "invalidFormat": "Formato no válido. {{description}}",
     "invalidJsonFormat": "Formato JSON no válido",
     "isRequired": "{{field}} es obligatorio",
     "jsonError": "Error JSON",
+    "knownHostsHelp": "Opcional. La entrada de host conocida por SSH se detectará automáticamente.",
+    "knownHostsPlaceholder": "Autocompletado durante la prueba de conexión",
     "maxLength": "La longitud máxima es {{length}}",
     "maxValue": "El valor máximo es {{value}}",
     "minLength": "La longitud mínima es {{length}}",
@@ -791,17 +791,17 @@
     "versionWillIncrement": "La versión aumentará a {{version}}"
   },
   "viewDetails": "Ver detalles",
+  "vscodeSelection": {
+    "description": "Se detectaron múltiples instalaciones de VS Code. Elige cuál usar:",
+    "open": "Abrir",
+    "rememberChoice": "Recordar mi elección",
+    "title": "Seleccionar instalación de VS Code",
+    "windowsVSCode": "VS Code de Windows",
+    "wslVSCode": "VS Code de WSL (Linux)"
+  },
   "warnings": {
     "sandboxEnvironment": "Entorno de zona de pruebas",
     "sandboxMessage": "Los datos pueden restablecerse durante las actualizaciones. Sólo para pruebas."
-  },
-  "vscodeSelection": {
-    "title": "Seleccionar instalación de VS Code",
-    "open": "Abrir",
-    "description": "Se detectaron múltiples instalaciones de VS Code. Elige cuál usar:",
-    "windowsVSCode": "VS Code de Windows",
-    "wslVSCode": "VS Code de WSL (Linux)",
-    "rememberChoice": "Recordar mi elección"
   },
   "yes": "Sí",
   "yesterday": "Ayer"

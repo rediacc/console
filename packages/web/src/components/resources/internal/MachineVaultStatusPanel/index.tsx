@@ -132,10 +132,7 @@ interface SystemInfoSectionProps {
 const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({ system, t }) => {
   return (
     <Flex vertical>
-      <DetailPanelDivider
-        orientation="center"
-        className="!mt-0 [&_.ant-divider-inner-text]:px-0"
-      >
+      <DetailPanelDivider orientation="center" className="!mt-0 [&_.ant-divider-inner-text]:px-0">
         <Flex align="center" className="gap-2">
           <DesktopOutlined />
           <DetailPanelSectionTitle

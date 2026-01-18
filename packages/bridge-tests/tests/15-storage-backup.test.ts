@@ -24,8 +24,8 @@ import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
  * - Storage connectivity and configuration
  *
  * Prerequisites:
- * - RustFS must be running on bridge VM (ops: ./go rustfs_start)
- * - rclone must be configured on worker VMs (ops: ./go rustfs_configure_workers)
+ * - RustFS must be running on bridge VM (renet ops rustfs start)
+ * - rclone must be configured on worker VMs (renet ops rustfs configure-workers)
  *
  * VMs are automatically started via global-setup.ts.
  */

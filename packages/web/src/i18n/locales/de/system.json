@@ -215,8 +215,8 @@
       "blockRequestsFailed": "Der Blockierungsstatus der Benutzeranfrage konnte nicht aktualisiert werden",
       "importFailed": "Organisationsdaten konnten nicht importiert werden",
       "noExportData": "Es wurden keine Exportdaten zurückgegeben",
-      "vaultUpdateFailed": "Die Tresorkonfiguration konnte nicht aktualisiert werden",
-      "vaultsUpdateFailed": "Die Tresorkonfigurationen konnten nicht aktualisiert werden"
+      "vaultsUpdateFailed": "Die Tresorkonfigurationen konnten nicht aktualisiert werden",
+      "vaultUpdateFailed": "Die Tresorkonfiguration konnte nicht aktualisiert werden"
     },
     "success": {
       "errorCount": "{{count}} Fehler",
@@ -227,8 +227,8 @@
       "requestsBlockedWithTerminations": "Benutzeranfragen blockiert. {{count}} aktive Sitzungen wurden beendet.",
       "requestsUnblocked": "Benutzeranfragen wurden erfolgreich entsperrt",
       "skippedCount": "{{count}} Elemente übersprungen",
-      "vaultUpdated": "Die Tresorkonfiguration wurde erfolgreich aktualisiert",
-      "vaultsUpdated": "Alle Tresorkonfigurationen wurden erfolgreich aktualisiert"
+      "vaultsUpdated": "Alle Tresorkonfigurationen wurden erfolgreich aktualisiert",
+      "vaultUpdated": "Die Tresorkonfiguration wurde erfolgreich aktualisiert"
     }
   },
   "personal": {

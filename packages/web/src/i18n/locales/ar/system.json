@@ -215,8 +215,8 @@
       "blockRequestsFailed": "فشل تحديث حالة حظر طلب المستخدم",
       "importFailed": "فشل في استيراد بيانات الشركة",
       "noExportData": "لم يتم إرجاع أي بيانات تصدير",
-      "vaultUpdateFailed": "فشل تحديث تكوين المخزن",
-      "vaultsUpdateFailed": "فشل تحديث تكوينات المخزن"
+      "vaultsUpdateFailed": "فشل تحديث تكوينات المخزن",
+      "vaultUpdateFailed": "فشل تحديث تكوين المخزن"
     },
     "success": {
       "errorCount": "{{count}} أخطاء",
@@ -227,8 +227,8 @@
       "requestsBlockedWithTerminations": "تم حظر طلبات المستخدم. تم إنهاء {{count}} من الجلسات النشطة.",
       "requestsUnblocked": "تم إلغاء حظر طلبات المستخدم بنجاح",
       "skippedCount": "تم تخطي {{count}} من العناصر",
-      "vaultUpdated": "تم تحديث تكوين Vault بنجاح",
-      "vaultsUpdated": "تم تحديث جميع تكوينات المخزن بنجاح"
+      "vaultsUpdated": "تم تحديث جميع تكوينات المخزن بنجاح",
+      "vaultUpdated": "تم تحديث تكوين Vault بنجاح"
     }
   },
   "personal": {

@@ -8,6 +8,20 @@ import type { OpsVMExecutor } from './OpsVMExecutor';
  * Handles starting, stopping, resetting, and waiting for VMs.
  */
 export class OpsVMLifecycle {
+  /**
+   * Error patterns that indicate missing infrastructure (KVM/libvirt not installed).
+   * When these errors occur, we fail fast instead of waiting for VMs that can't be created.
+   */
+  private static readonly INFRASTRUCTURE_ERROR_PATTERNS = [
+    'failed to list networks',
+    'failed to check network',
+    'virsh: command not found',
+    'qemu-img: command not found',
+    'libvirt',
+    'cannot connect to',
+    'failed to connect socket',
+  ];
+
   constructor(
     private readonly commandRunner: OpsCommandRunner,
     private readonly vmExecutor: OpsVMExecutor,
@@ -15,6 +29,17 @@ export class OpsVMLifecycle {
     private readonly getWorkerVMIps: () => string[],
     private readonly getCephVMIps: () => string[]
   ) {}
+
+  /**
+   * Check if an error output indicates missing infrastructure (KVM/libvirt not installed).
+   * These errors should fail fast rather than waiting for VMs that can never be created.
+   */
+  private isInfrastructureError(output: string): boolean {
+    const lowerOutput = output.toLowerCase();
+    return OpsVMLifecycle.INFRASTRUCTURE_ERROR_PATTERNS.some((pattern) =>
+      lowerOutput.includes(pattern.toLowerCase())
+    );
+  }
 
   /**
    * Get ops status
@@ -75,9 +100,14 @@ export class OpsVMLifecycle {
    * Wait for worker VMs to be ready
    */
   async waitForWorkerVMs(timeoutMs = 180000): Promise<boolean> {
+    const workerIps = this.getWorkerVMIps();
+    if (workerIps.length === 0) {
+      console.warn('[OpsVMLifecycle] No worker VMs configured, skipping wait');
+      return true; // No workers to wait for = success
+    }
     console.warn('[OpsVMLifecycle] Waiting for worker VMs to be ready...');
 
-    const promises = this.getWorkerVMIps().map((ip) => this.vmExecutor.waitForVM(ip, timeoutMs));
+    const promises = workerIps.map((ip) => this.vmExecutor.waitForVM(ip, timeoutMs));
     const results = await Promise.all(promises);
 
     return results.every((ready) => ready);
@@ -91,18 +121,22 @@ export class OpsVMLifecycle {
 
     console.warn('[OpsVMLifecycle] Performing soft reset (renet ops up --force --parallel)...');
     // 30 min timeout to allow Ceph provisioning to complete fully
-    const extraEnv: Record<string, string> = {};
-    if (this.getCephVMIps().length > 0) {
-      extraEnv.PROVISION_CEPH_CLUSTER = 'true';
-    }
-    const result =
-      Object.keys(extraEnv).length > 0
-        ? await this.commandRunner.runWithEnv(['up'], ['--force', '--parallel'], extraEnv, 1800000)
-        : await this.commandRunner.run(['up'], ['--force', '--parallel'], 1800000);
+    // Note: Ceph provisioning is automatically enabled when VM_CEPH_NODES is configured
+    const result = await this.commandRunner.run(['up'], ['--force', '--parallel'], 1800000);
 
-    // Note: The command may return non-zero if middleware auth fails (rdc not found),
-    // but VMs may still be successfully created. We verify actual VM readiness below.
+    // Check for infrastructure errors that should fail fast
     if (result.code !== 0) {
+      const combinedOutput = `${result.stdout} ${result.stderr}`;
+
+      if (this.isInfrastructureError(combinedOutput)) {
+        console.error('[OpsVMLifecycle] Infrastructure error - KVM/libvirt not available');
+        console.error('[OpsVMLifecycle] Run: sudo renet ops host setup');
+        console.error('[OpsVMLifecycle] Error output:', combinedOutput.slice(0, 500));
+        return { success: false, duration: Date.now() - startTime };
+      }
+
+      // Note: The command may return non-zero if middleware auth fails (rdc not found),
+      // but VMs may still be successfully created. We verify actual VM readiness below.
       console.warn(
         '[OpsVMLifecycle] renet ops command returned non-zero, verifying VM readiness anyway...'
       );

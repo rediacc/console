@@ -267,40 +267,6 @@
       "description": "Testen Sie die Netzwerkverbindung zur Maschine",
       "name": "Klingeln"
     },
-    "setup": {
-      "description": "Richten Sie das Betriebssystem mit den erforderlichen Tools und Konfigurationen ein",
-      "name": "aufstellen",
-      "params": {
-        "datastore_size": {
-          "help": "Datenspeichergröße (z. B. 95 %, 100 GB)",
-          "label": "Datenspeichergröße"
-        },
-        "docker_source": {
-          "help": "So installieren Sie Docker (Docker-Repo = offizielles Repository, Paketmanager = Betriebssystempakete, Snap = Snap Store, Handbuch = Überspringen)",
-          "label": "Docker-Installationsquelle"
-        },
-        "install_amd_driver": {
-          "help": "AMD-GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)",
-          "label": "Installieren Sie den AMD GPU-Treiber"
-        },
-        "install_criu": {
-          "help": "Installieren Sie CRIU für Checkpoint-/Wiederherstellungsunterstützung (auto = installieren, wenn Kernel >= 3.11, true = Installation erzwingen, false = überspringen, manuell = Benutzerinstallationen)",
-          "label": "Installieren Sie CREATE"
-        },
-        "install_nvidia_driver": {
-          "help": "NVIDIA-GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)",
-          "label": "Installieren Sie den NVIDIA GPU-Treiber"
-        },
-        "rclone_source": {
-          "help": "So installieren Sie rclone (install-script = offizielles Skript, Paketmanager = apt/dnf, manuell = überspringen)",
-          "label": "Rclone-Installationsquelle"
-        },
-        "source": {
-          "help": "Paketquelle",
-          "label": "Quelle"
-        }
-      }
-    },
     "machine_uninstall": {
       "description": "Systemkomponenten bereinigen und deinstallieren",
       "name": "deinstallieren"
@@ -541,6 +507,40 @@
         "timeout": {
           "help": "Maximale Zeit pro Funktion in Sekunden (Standard: 300)",
           "label": "Timeout (Sekunden)"
+        }
+      }
+    },
+    "setup": {
+      "description": "Richten Sie das Betriebssystem mit den erforderlichen Tools und Konfigurationen ein",
+      "name": "aufstellen",
+      "params": {
+        "datastore_size": {
+          "help": "Datenspeichergröße (z. B. 95 %, 100 GB)",
+          "label": "Datenspeichergröße"
+        },
+        "docker_source": {
+          "help": "So installieren Sie Docker (Docker-Repo = offizielles Repository, Paketmanager = Betriebssystempakete, Snap = Snap Store, Handbuch = Überspringen)",
+          "label": "Docker-Installationsquelle"
+        },
+        "install_amd_driver": {
+          "help": "AMD-GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)",
+          "label": "Installieren Sie den AMD GPU-Treiber"
+        },
+        "install_criu": {
+          "help": "Installieren Sie CRIU für Checkpoint-/Wiederherstellungsunterstützung (auto = installieren, wenn Kernel >= 3.11, true = Installation erzwingen, false = überspringen, manuell = Benutzerinstallationen)",
+          "label": "Installieren Sie CREATE"
+        },
+        "install_nvidia_driver": {
+          "help": "NVIDIA-GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)",
+          "label": "Installieren Sie den NVIDIA GPU-Treiber"
+        },
+        "rclone_source": {
+          "help": "So installieren Sie rclone (install-script = offizielles Skript, Paketmanager = apt/dnf, manuell = überspringen)",
+          "label": "Rclone-Installationsquelle"
+        },
+        "source": {
+          "help": "Paketquelle",
+          "label": "Quelle"
         }
       }
     }

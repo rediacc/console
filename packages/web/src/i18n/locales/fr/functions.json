@@ -267,40 +267,6 @@
       "description": "Tester la connectivité réseau à la machine",
       "name": "pinger"
     },
-    "setup": {
-      "description": "Configurer le système d'exploitation avec les outils et configurations requis",
-      "name": "installation",
-      "params": {
-        "datastore_size": {
-          "help": "Taille de la banque de données (par exemple, 95 %, 100 G)",
-          "label": "Taille de la banque de données"
-        },
-        "docker_source": {
-          "help": "Comment installer Docker (docker-repo = référentiel officiel, package-manager = packages du système d'exploitation, snap = snap store, manuel = ignorer)",
-          "label": "Source d'installation de Docker"
-        },
-        "install_amd_driver": {
-          "help": "Installez les pilotes GPU AMD (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
-          "label": "Installer le pilote GPU AMD"
-        },
-        "install_criu": {
-          "help": "Installez CRIU pour la prise en charge des points de contrôle/restauration (auto = installer si le noyau >= 3.11, true = forcer l'installation, false = ignorer, manuel = installations utilisateur)",
-          "label": "Installer CRÉER"
-        },
-        "install_nvidia_driver": {
-          "help": "Installez les pilotes GPU NVIDIA (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
-          "label": "Installer le pilote GPU NVIDIA"
-        },
-        "rclone_source": {
-          "help": "Comment installer rclone (install-script = script officiel, package-manager = apt/dnf, manuel = sauter)",
-          "label": "Source d'installation de Rclone"
-        },
-        "source": {
-          "help": "Source du paquet",
-          "label": "Source d'installation"
-        }
-      }
-    },
     "machine_uninstall": {
       "description": "Nettoyer et désinstaller les composants du système",
       "name": "désinstaller"
@@ -541,6 +507,40 @@
         "timeout": {
           "help": "Temps maximum par fonction en secondes (par défaut : 300)",
           "label": "Délai d'expiration (secondes)"
+        }
+      }
+    },
+    "setup": {
+      "description": "Configurer le système d'exploitation avec les outils et configurations requis",
+      "name": "installation",
+      "params": {
+        "datastore_size": {
+          "help": "Taille de la banque de données (par exemple, 95 %, 100 G)",
+          "label": "Taille de la banque de données"
+        },
+        "docker_source": {
+          "help": "Comment installer Docker (docker-repo = référentiel officiel, package-manager = packages du système d'exploitation, snap = snap store, manuel = ignorer)",
+          "label": "Source d'installation de Docker"
+        },
+        "install_amd_driver": {
+          "help": "Installez les pilotes GPU AMD (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
+          "label": "Installer le pilote GPU AMD"
+        },
+        "install_criu": {
+          "help": "Installez CRIU pour la prise en charge des points de contrôle/restauration (auto = installer si le noyau >= 3.11, true = forcer l'installation, false = ignorer, manuel = installations utilisateur)",
+          "label": "Installer CRÉER"
+        },
+        "install_nvidia_driver": {
+          "help": "Installez les pilotes GPU NVIDIA (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
+          "label": "Installer le pilote GPU NVIDIA"
+        },
+        "rclone_source": {
+          "help": "Comment installer rclone (install-script = script officiel, package-manager = apt/dnf, manuel = sauter)",
+          "label": "Source d'installation de Rclone"
+        },
+        "source": {
+          "help": "Source du paquet",
+          "label": "Source d'installation"
         }
       }
     }

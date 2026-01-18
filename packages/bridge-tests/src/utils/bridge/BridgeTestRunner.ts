@@ -15,6 +15,7 @@ import { RepositoryMethods } from './methods/RepositoryMethods';
 import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
+import { getSSHExecutor, SSHExecutor } from '../ssh';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
 import type { VaultBuilder } from '../vault/VaultBuilder';
 
@@ -45,6 +46,7 @@ export class BridgeTestRunner {
   private readonly opsManager: OpsManager;
   private readonly bridgeVM: string;
   private readonly targetVM: string;
+  private readonly sshExecutor: SSHExecutor;
 
   // Method groups
   private readonly systemCheckMethods: SystemCheckMethods;
@@ -69,6 +71,10 @@ export class BridgeTestRunner {
     this.opsManager = getOpsManager();
     this.bridgeVM = this.opsManager.getBridgeVMIp();
     this.targetVM = this.resolveTargetVM(config.targetVM);
+
+    // Use SSHExecutor for all SSH operations - computes options fresh each time
+    // to ensure SSH keys created by `ops up` are always detected
+    this.sshExecutor = getSSHExecutor();
 
     const timeoutStr = process.env.BRIDGE_TIMEOUT;
     if (!timeoutStr) {
@@ -100,10 +106,20 @@ export class BridgeTestRunner {
    */
   private resolveTargetVM(target: VMTarget): string {
     switch (target) {
-      case 'worker1':
-        return this.opsManager.getWorkerVMIps()[0];
-      case 'worker2':
-        return this.opsManager.getWorkerVMIps()[1];
+      case 'worker1': {
+        const workers = this.opsManager.getWorkerVMIps();
+        if (workers.length === 0) {
+          throw new Error('No worker VMs configured - cannot target worker1 in Ceph-only mode');
+        }
+        return workers[0];
+      }
+      case 'worker2': {
+        const workers = this.opsManager.getWorkerVMIps();
+        if (workers.length < 2) {
+          throw new Error('Less than 2 worker VMs configured - cannot target worker2');
+        }
+        return workers[1];
+      }
       case 'ceph1':
         return this.opsManager.getCephVMIps()[0];
       case 'ceph2':
@@ -157,16 +173,26 @@ export class BridgeTestRunner {
 
   /**
    * Get first worker VM IP (calculated from ops config).
+   * Throws if no worker VMs are configured (Ceph-only mode).
    */
   getWorkerVM(): string {
-    return this.opsManager.getWorkerVMIps()[0];
+    const workers = this.opsManager.getWorkerVMIps();
+    if (workers.length === 0) {
+      throw new Error('No worker VMs configured - cannot get worker VM in Ceph-only mode');
+    }
+    return workers[0];
   }
 
   /**
    * Get second worker VM IP (calculated from ops config).
+   * Throws if less than 2 worker VMs are configured.
    */
   getWorkerVM2(): string {
-    return this.opsManager.getWorkerVMIps()[1];
+    const workers = this.opsManager.getWorkerVMIps();
+    if (workers.length < 2) {
+      throw new Error('Less than 2 worker VMs configured - cannot get worker2');
+    }
+    return workers[1];
   }
 
   /**
@@ -214,15 +240,6 @@ export class BridgeTestRunner {
   // ===========================================================================
 
   /**
-   * Escape command for nested SSH execution.
-   */
-  private escapeForNestedSSH(command: string): string {
-    // First escape for the inner SSH (target), then for outer SSH (bridge)
-    const escapedForTarget = command.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-    return escapedForTarget.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-  }
-
-  /**
    * Log command execution outputs for Playwright capture.
    */
   private logExecutionResult(stdout: string, stderr: string, code: number): void {
@@ -245,10 +262,19 @@ export class BridgeTestRunner {
    */
   async executeViaBridge(command: string, timeout?: number): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
-    const escapedForBridge = this.escapeForNestedSSH(command);
+    const escapedForBridge = this.sshExecutor.escapeForNestedSSH(command);
+
+    // Get SSH options fresh each time (never cache - keys may be created after instantiation)
+    const sshOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const user = process.env.USER;
+    if (!user) {
+      throw new Error('USER environment variable is not set');
+    }
 
     // Two-hop SSH command: Host → Bridge → Target
-    const sshCmd = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${this.bridgeVM} "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${this.targetVM} \\"${escapedForBridge}\\""`;
+    // Uses identity file from OPS_HOME/staging/.ssh/id_rsa if available
+    // Always use user@host format for consistency
+    const sshCmd = `ssh ${sshOpts} ${user}@${this.bridgeVM} "ssh ${sshOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
 
     // Log the command being executed
     // eslint-disable-next-line no-console
@@ -292,7 +318,16 @@ export class BridgeTestRunner {
    */
   async executeOnVM(host: string, command: string, timeout?: number): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
-    const sshCmd = `ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no ${host} "${command.replaceAll('"', '\\"')}"`;
+
+    // Get SSH options fresh each time (never cache - keys may be created after instantiation)
+    const sshOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const user = process.env.USER;
+    if (!user) {
+      throw new Error('USER environment variable is not set');
+    }
+
+    // Always use user@host format for consistency
+    const sshCmd = `ssh ${sshOpts} ${user}@${host} "${command.replaceAll('"', '\\"')}"`;
 
     // Log the command being executed
     // eslint-disable-next-line no-console

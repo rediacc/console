@@ -252,6 +252,13 @@
     "staleTaskTitle": "Veraltete Aufgabe",
     "staleTitle": "Aufgabe ist möglicherweise veraltet",
     "status": "Status",
+    "structuredLog": {
+      "level": "Stufe",
+      "message": "Nachricht",
+      "time": "Zeit",
+      "viewRaw": "Roh",
+      "viewStructured": "Strukturiert"
+    },
     "sudoSupport": "Sudo-Unterstützung",
     "system": "System",
     "systemInfo": "Systeminformationen",
@@ -272,13 +279,6 @@
     "user": "Benutzer",
     "vaultContent": "Tresor-Inhalt",
     "version": "Version",
-    "waiting": "Wartend",
-    "structuredLog": {
-      "time": "Zeit",
-      "level": "Stufe",
-      "message": "Nachricht",
-      "viewStructured": "Strukturiert",
-      "viewRaw": "Roh"
-    }
+    "waiting": "Wartend"
   }
 }

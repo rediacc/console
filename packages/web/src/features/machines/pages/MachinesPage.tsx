@@ -358,7 +358,7 @@ const MachinesPage: React.FC = () => {
       <Flex vertical>
         <Card classNames={{ body: 'flex flex-col gap-3' }}>
           <Flex justify="space-between" align="center" wrap className="w-full !gap-3">
-            {/* eslint-disable-next-line no-restricted-syntax */}
+            {}
             <Flex className="flex-1 min-w-[260px]">
               <TeamSelector
                 data-testid="machines-team-selector"

@@ -248,23 +248,14 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - name: Block legacy-peer-deps workarounds
-        run: |
-          if [ -f .npmrc ] && grep -qiE "legacy-peer-deps|force" .npmrc; then
-            echo "Error: .npmrc contains legacy-peer-deps or force=true"
-            exit 1
-          fi
+        run: .ci/scripts/quality/check-npmrc.sh
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - name: Verify no peer dependency conflicts
-        run: |
-          if npm ls 2>&1 | grep -q "invalid"; then
-            echo "Peer dependency conflicts detected"
-            npm ls 2>&1 | grep "invalid" || true
-            exit 1
-          fi
+        run: .ci/scripts/quality/check-peer-deps.sh
       - run: npm run version:check
 
   quality-deps:
@@ -498,7 +489,7 @@ jobs:
     name: Infra - Backend
     runs-on: ubuntu-latest
     needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    timeout-minutes: 120
+    timeout-minutes: 60
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 120000
@@ -530,9 +521,8 @@ jobs:
           ci-mode: 'true'
 
       - name: Wait for Services
-        run: |
-          timeout 120 bash -c 'until curl -sf http://localhost/health; do sleep 2; done'
-          echo "Elite services are ready"
+        working-directory: console
+        run: .ci/scripts/infra/wait-for-health.sh --url http://localhost/health --timeout 120 --message "Elite services are ready"
 
       - name: Create Cloudflare Tunnel
         id: tunnel
@@ -577,10 +567,8 @@ jobs:
           npm run build:bundle -w @rediacc/cli
 
       - name: Install CLI Globally
-        working-directory: console/packages/cli
-        run: |
-          npm pack
-          npm install -g rediacc-cli-*.tgz
+        working-directory: console
+        run: .ci/scripts/setup/install-cli-global.sh
 
       # Login to Docker Hub to avoid rate limiting (fails gracefully if credentials not set)
       - name: Login to Docker Hub
@@ -591,13 +579,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Pre-pull Docker Images
+        working-directory: console
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull --quiet "$RENET_DOCKER_IMAGE"
-          docker logout ghcr.io
-          rm -f ~/.docker/config.json 2>/dev/null || true
+          GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Provision Test VMs
         id: vms
@@ -610,79 +596,22 @@ jobs:
           VM_OS_IMAGE: rediacc-ubuntu-24.04
           TAG: latest
           SKIP_MACHINE_REGISTRATION: 'true'
+          VM_BRIDGE: '1'
+          VM_WORKERS: '11 12'
+          VM_CEPH_NODES: ''
 
       - name: Extract renet binary
-        run: |
-          CONTAINER_ID=$(docker create $RENET_DOCKER_IMAGE)
-          docker cp $CONTAINER_ID:/opt/renet/renet-linux-amd64 /tmp/renet
-          docker rm $CONTAINER_ID
-          chmod +x /tmp/renet
-          echo "RENET_BINARY_PATH=/tmp/renet" >> $GITHUB_ENV
-
-      - name: Create Bridge Test Environment
-        working-directory: console/packages/bridge-tests
-        run: |
-          cat > .env << EOF
-          VM_NET_BASE=192.168.111
-          VM_NET_OFFSET=0
-          VM_BRIDGE=1
-          VM_WORKERS=11 12
-          BRIDGE_TIMEOUT=${BRIDGE_TIMEOUT:-120000}
-          RENET_BINARY_PATH=${RENET_BINARY_PATH}
-          CI=true
-          NODE_ENV=test
-          EOF
-
-      - name: Run Bridge Tests
-        working-directory: console/packages/bridge-tests
-        run: npm test -- --workers=1
-
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: bridge-test-report-${{ github.sha }}
-          path: console/packages/bridge-tests/reports/bridge/
-          retention-days: 3
+        working-directory: console
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
 
       - name: Wait for Completion Signals
+        working-directory: console
+        run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          MAX_WAIT=7200
-          ELAPSED=0
-          CLI_PLATFORMS=("Linux" "Windows" "macOS")
-          # Parse browsers from workflow env variable
-          IFS=' ' read -ra E2E_BROWSERS <<< "${{ env.E2E_BROWSERS }}"
-          E2E_RESOLUTIONS=("resolution-1920x1080" "resolution-1366x768" "resolution-1536x864")
-          E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
-          E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
-          COMPLETED=()
-          EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS[@]} + ${#E2E_RESOLUTIONS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
-
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[].name' 2>/dev/null || echo "")
-
-            for platform in "${CLI_PLATFORMS[@]}"; do
-              [[ ! " ${COMPLETED[*]} " =~ " cli-${platform} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-cli-${platform}$" && COMPLETED+=("cli-$platform") && echo "CLI ${platform} completed"
-            done
-            for browser in "${E2E_BROWSERS[@]}"; do
-              [[ ! " ${COMPLETED[*]} " =~ " e2e-${browser} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${browser}$" && COMPLETED+=("e2e-$browser") && echo "E2E ${browser} completed"
-            done
-            for resolution in "${E2E_RESOLUTIONS[@]}"; do
-              [[ ! " ${COMPLETED[*]} " =~ " e2e-${resolution} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${resolution}$" && COMPLETED+=("e2e-$resolution") && echo "E2E ${resolution} completed"
-            done
-            for device in "${E2E_DEVICES[@]}"; do
-              [[ ! " ${COMPLETED[*]} " =~ " e2e-${device} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${device}$" && COMPLETED+=("e2e-$device") && echo "E2E ${device} completed"
-            done
-            for platform in "${E2E_ELECTRON[@]}"; do
-              [[ ! " ${COMPLETED[*]} " =~ " e2e-${platform} " ]] && echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${platform}$" && COMPLETED+=("e2e-$platform") && echo "E2E Electron ${platform} completed"
-            done
-
-            [ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ] && echo "All platform tests completed" && break
-            sleep 30
-            ELAPSED=$((ELAPSED + 30))
-            echo "Waiting... (${ELAPSED}s / ${MAX_WAIT}s) - Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
-          done
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          E2E_BROWSERS: ${{ env.E2E_BROWSERS }}
 
       - name: Collect Backend Logs
         if: always()
@@ -702,6 +631,135 @@ jobs:
         working-directory: elite
         run: ./go down || true
 
+  test-bridge-workers:
+    name: Test - Bridge (Workers)
+    runs-on: ubuntu-latest
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
+      OPS_HOME: /home/runner/work/ops
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: ''
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Pull Renet Docker Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Create Bridge Test Environment
+        run: .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
+
+      - name: Run Bridge Tests (Workers)
+        run: .ci/scripts/test/run-bridge.sh --workers 1
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "bridge-workers"
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-complete-bridge-workers
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: bridge-workers-test-report-${{ github.sha }}
+          path: |
+            packages/bridge-tests/reports/bridge/
+            packages/bridge-tests/reports/bridge-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  # Ceph integration tests - provisions 1 bridge + 3 Ceph nodes (no workers)
+  # Tests pool/image operations, snapshot/clone, and COW mount functionality
+  test-bridge-ceph:
+    name: Test - Bridge (Ceph)
+    runs-on: ubuntu-latest
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
+      OPS_HOME: /home/runner/work/ops
+      VM_BRIDGE: '1'
+      VM_WORKERS: ''
+      VM_CEPH_NODES: '21 22 23'
+      CEPH_MODE: 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Pull Renet Docker Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Create Bridge Test Environment
+        run: .ci/scripts/env/create-bridge-env.sh --ceph --output packages/bridge-tests/.env
+
+      - name: Run Bridge Tests (Ceph)
+        run: .ci/scripts/test/run-bridge.sh --workers 1 --config playwright.ceph.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph"
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-complete-bridge-ceph
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: bridge-ceph-test-report-${{ github.sha }}
+          path: |
+            packages/bridge-tests/reports/bridge-ceph/
+            packages/bridge-tests/reports/bridge-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
   test-e2e:
     name: Test - E2E (All Projects)
     runs-on: ubuntu-latest
@@ -716,15 +774,7 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - name: Install Playwright Browsers
-        working-directory: packages/e2e
-        run: |
-          # Install chromium for browsers and resolutions, webkit for iOS devices
-          npx playwright install --with-deps chromium webkit
-          # Install additional browsers if requested
-          BROWSERS="${{ env.E2E_BROWSERS }}"
-          for browser in $BROWSERS; do
-            [[ "$browser" != "chromium" && "$browser" != "webkit" ]] && npx playwright install $browser || true
-          done
+        run: .ci/scripts/setup/install-playwright.sh --browsers "chromium webkit ${{ env.E2E_BROWSERS }}"
       - name: Download Tunnel URL
         id: tunnel
         env:
@@ -738,18 +788,14 @@ jobs:
         run: |
           .ci/scripts/test/run-e2e.sh --projects \
             ${{ env.E2E_BROWSERS }}
-      - name: Create Completion Signals
+      - name: Create Completion Signal
         if: always()
-        run: |
-          # Browser signals
-          for browser in ${{ env.E2E_BROWSERS }}; do
-            .ci/scripts/signal/create-complete.sh --name "e2e-$browser"
-          done
+        run: echo "completed" > ${{ runner.temp }}/complete.txt
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: test-complete-e2e-${{ github.sha }}
-          path: ${{ runner.temp }}/complete-e2e-*.txt
+          name: test-complete-e2e-chromium
+          path: ${{ runner.temp }}/complete.txt
           retention-days: 3
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
@@ -1044,7 +1090,7 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, test-unit, build-cli, test-vscode, infra-backend, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, release, deploy-pages]
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, test-unit, build-cli, test-vscode, infra-backend, test-bridge-workers, test-bridge-ceph, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, release, deploy-pages]
     if: always()
     steps:
       - name: Check job results
@@ -1073,6 +1119,8 @@ jobs:
           echo "### Integration Tests" >> $GITHUB_STEP_SUMMARY
           echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Bridge (Workers): ${{ needs.test-bridge-workers.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Bridge (Ceph): ${{ needs.test-bridge-ceph.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E (All Projects): ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
@@ -1085,7 +1133,7 @@ jobs:
           echo "- GitHub Pages: ${{ needs.deploy-pages.result }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
-          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
+          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-bridge-workers.result }}" "${{ needs.test-bridge-ceph.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
             [ "$result" != "success" ] && FAILED=true
           done
 

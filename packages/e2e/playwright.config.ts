@@ -6,8 +6,12 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // Note: These constants are inlined here because playwright.config.ts is loaded
 // by knip before build, and @rediacc/shared/config requires compiled output.
+// E2E_PORT is set by run-e2e.sh to avoid port conflicts when running multiple worktrees
+const E2E_PORT = Number(process.env.E2E_PORT) || 3000;
+
 const E2E_DEFAULTS = {
-  CONSOLE_URL: 'http://localhost:3000/console/',
+  PORT: E2E_PORT,
+  CONSOLE_URL: `http://localhost:${E2E_PORT}/console/`,
   KEEPALIVE_TIMEOUT: 10000,
   CONNECTION_TIMEOUT: 30000,
 } as const;
@@ -19,7 +23,8 @@ const E2E_DEFAULTS = {
  * NOT the pre-built Docker container assets.
  *
  * Environment Variables:
- * - E2E_BASE_URL: Base URL for the application (default: http://localhost:3000/console/)
+ * - E2E_PORT: Port for Vite dev server (default: 3000, auto-detected by run-e2e.sh)
+ * - E2E_BASE_URL: Base URL for the application (default: http://localhost:E2E_PORT/console/)
  * - VITE_API_URL: API backend URL for Vite proxy (e.g., tunnel URL in CI)
  * - API_TIMEOUT: Action timeout in ms (default: 10000)
  * - PAGE_TIMEOUT: Navigation timeout in ms (default: 30000)
@@ -243,8 +248,8 @@ export default test.defineConfig({
 
   /* Web server configuration - starts Vite dev server automatically */
   webServer: {
-    command: 'npm run --prefix ../.. dev -w @rediacc/web',
-    url: 'http://localhost:3000/console/',
+    command: `npm run --prefix ../.. dev -w @rediacc/web -- --port ${E2E_PORT}`,
+    url: E2E_DEFAULTS.CONSOLE_URL,
     reuseExistingServer: false,
     timeout: 120000, // 2 minutes for Vite to start
     stdout: 'pipe',

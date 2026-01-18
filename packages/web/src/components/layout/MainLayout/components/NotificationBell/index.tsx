@@ -97,7 +97,7 @@ const NotificationBell: React.FC = () => {
   };
 
   const dropdownContent = (
-    <Card data-testid="notification-dropdown" size='small'>
+    <Card data-testid="notification-dropdown" size="small">
       <Flex vertical className="min-w-[320px] max-h-[400px] overflow-y-auto" gap={2}>
         <Flex align="center" justify="space-between">
           <Typography.Text strong>{t('notifications.title', 'Notifications')}</Typography.Text>
@@ -124,7 +124,7 @@ const NotificationBell: React.FC = () => {
 
         <Flex vertical className="max-h-[320px] overflow-y-auto">
           {notifications.length === 0 ? (
-            <Flex align='center' justify='center'>
+            <Flex align="center" justify="center">
               <Empty description={t('notifications.empty', 'No notifications')} />
             </Flex>
           ) : (

@@ -252,6 +252,13 @@
     "staleTaskTitle": "Eski Görev",
     "staleTitle": "Görev Eski Olabilir",
     "status": "Durum",
+    "structuredLog": {
+      "level": "Seviye",
+      "message": "Mesaj",
+      "time": "Zaman",
+      "viewRaw": "Ham",
+      "viewStructured": "Yapılandırılmış"
+    },
     "sudoSupport": "Sudo Desteği",
     "system": "Sistem",
     "systemInfo": "Sistem Bilgileri",
@@ -272,13 +279,6 @@
     "user": "Kullanıcı",
     "vaultContent": "Kasa İçeriği",
     "version": "Sürüm",
-    "waiting": "Bekleme",
-    "structuredLog": {
-      "time": "Zaman",
-      "level": "Seviye",
-      "message": "Mesaj",
-      "viewStructured": "Yapılandırılmış",
-      "viewRaw": "Ham"
-    }
+    "waiting": "Bekleme"
   }
 }

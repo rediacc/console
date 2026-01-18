@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 
 // Check if Ceph is configured - skip Ceph tests if not
-const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim().toLowerCase();
-const hasCeph = cephNodes.length > 0 && cephNodes !== 'none';
+// VM_CEPH_NODES can be empty or space-separated list of VM IDs (e.g., "21 22 23")
+const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
+const hasCeph = cephNodes.length > 0;
 
 /**
  * Ceph Full Stack Workflow

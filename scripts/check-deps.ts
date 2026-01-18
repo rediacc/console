@@ -9,9 +9,9 @@
  *   package-name@<max-version # reason
  *
  * Usage:
- *   node scripts/check-deps.js           # Check for outdated packages
- *   node scripts/check-deps.js --upgrade # Upgrade outdated packages
- *   node scripts/check-deps.js --help    # Show help
+ *   npx tsx scripts/check-deps.ts           # Check for outdated packages
+ *   npx tsx scripts/check-deps.ts --upgrade # Upgrade outdated packages
+ *   npx tsx scripts/check-deps.ts --help    # Show help
  *
  * Exit codes:
  *   0 - All dependencies are up-to-date (or allowlisted), or upgrade succeeded
@@ -23,18 +23,11 @@ import fs from 'node:fs';
 import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BLUE, GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
 const ALLOWLIST_FILE = path.join(CONSOLE_ROOT, '.deps-outdated-allowlist');
-
-// ANSI colors (disabled if not a terminal)
-const isTTY = process.stdout.isTTY;
-const RED = isTTY ? '\x1b[31m' : '';
-const GREEN = isTTY ? '\x1b[32m' : '';
-const YELLOW = isTTY ? '\x1b[33m' : '';
-const BLUE = isTTY ? '\x1b[34m' : '';
-const NC = isTTY ? '\x1b[0m' : '';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -42,16 +35,48 @@ const showHelp = args.includes('--help') || args.includes('-h');
 const upgradeMode = args.includes('--upgrade') || args.includes('-u');
 const forceMode = args.includes('--force') || args.includes('-f');
 
+interface ParsedVersion {
+  major: number;
+  minor: number;
+  patch: number;
+  prerelease: string | null;
+}
+
+interface AllowlistEntry {
+  constraint: string;
+  reason: string;
+}
+
+interface OutdatedPackageInfo {
+  current?: string;
+  wanted?: string;
+  latest?: string;
+  dependent?: string;
+  location?: string;
+}
+
+interface PackageInfo {
+  name: string;
+  current: string;
+  latest: string;
+  wanted?: string;
+  constraint?: string;
+  reason?: string;
+}
+
+// Cache for changelog URLs to avoid duplicate fetches
+const changelogCache = new Map<string, string | null>();
+
 /**
  * Parse a semver version string into components
  */
-function parseVersion(version) {
+function parseVersion(version: string): ParsedVersion | null {
   const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
   if (!match) return null;
   return {
-    major: parseInt(match[1], 10),
-    minor: parseInt(match[2], 10),
-    patch: parseInt(match[3], 10),
+    major: Number.parseInt(match[1], 10),
+    minor: Number.parseInt(match[2], 10),
+    patch: Number.parseInt(match[3], 10),
     prerelease: match[4] || null,
   };
 }
@@ -59,7 +84,7 @@ function parseVersion(version) {
 /**
  * Compare two versions: returns -1 if a < b, 0 if a == b, 1 if a > b
  */
-function compareVersions(a, b) {
+function compareVersions(a: string, b: string): number {
   const va = parseVersion(a);
   const vb = parseVersion(b);
 
@@ -79,7 +104,7 @@ function compareVersions(a, b) {
 /**
  * Check if version satisfies constraint (e.g., "<3.0.0")
  */
-function satisfiesConstraint(version, constraint) {
+function satisfiesConstraint(version: string, constraint: string): boolean {
   if (!constraint.startsWith('<')) {
     console.error(`Invalid constraint format: ${constraint} (must start with '<')`);
     return false;
@@ -92,8 +117,8 @@ function satisfiesConstraint(version, constraint) {
 /**
  * Load and parse the allowlist file
  */
-function loadAllowlist() {
-  const allowlist = new Map();
+function loadAllowlist(): Map<string, AllowlistEntry> {
+  const allowlist = new Map<string, AllowlistEntry>();
 
   if (!fs.existsSync(ALLOWLIST_FILE)) {
     return allowlist;
@@ -140,7 +165,7 @@ function loadAllowlist() {
 /**
  * Get outdated packages using npm outdated
  */
-function getOutdatedPackages() {
+function getOutdatedPackages(): Record<string, OutdatedPackageInfo> {
   try {
     // npm outdated returns exit code 1 if there are outdated packages
     execSync('npm outdated --json', {
@@ -152,9 +177,10 @@ function getOutdatedPackages() {
     return {};
   } catch (error) {
     // npm outdated returns exit code 1 when packages are outdated
-    if (error.stdout) {
+    const execError = error as { stdout?: string };
+    if (execError.stdout) {
       try {
-        return JSON.parse(error.stdout);
+        return JSON.parse(execError.stdout) as Record<string, OutdatedPackageInfo>;
       } catch {
         console.error('Failed to parse npm outdated output');
         return {};
@@ -167,7 +193,7 @@ function getOutdatedPackages() {
 /**
  * Check if upgrade is a major version bump
  */
-function isMajorUpgrade(current, latest) {
+function isMajorUpgrade(current: string, latest: string): boolean {
   if (!current || !latest) return false;
   const vc = parseVersion(current);
   const vl = parseVersion(latest);
@@ -175,16 +201,13 @@ function isMajorUpgrade(current, latest) {
   return vl.major > vc.major;
 }
 
-// Cache for changelog URLs to avoid duplicate fetches
-const changelogCache = new Map();
-
 /**
  * Fetch package info from npm registry and extract changelog URL
  */
-async function fetchChangelogUrl(packageName) {
+async function fetchChangelogUrl(packageName: string): Promise<string | null> {
   // Check cache first
   if (changelogCache.has(packageName)) {
-    return changelogCache.get(packageName);
+    return changelogCache.get(packageName) ?? null;
   }
 
   return new Promise((resolve) => {
@@ -193,21 +216,21 @@ async function fetchChangelogUrl(packageName) {
     const req = https.get(url, { timeout: 5000 }, (res) => {
       let data = '';
 
-      res.on('data', (chunk) => {
-        data += chunk;
+      res.on('data', (chunk: Buffer) => {
+        data += chunk.toString();
       });
 
       res.on('end', () => {
         try {
-          const json = JSON.parse(data);
-          const repoUrl = json.repository?.url || '';
+          const json = JSON.parse(data) as { repository?: { url?: string } };
+          const repoUrl = json.repository?.url ?? '';
 
           // Transform git URL to GitHub releases URL
           // Examples:
           //   git+https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
           //   git://github.com/owner/repo.git -> https://github.com/owner/repo/releases
           //   https://github.com/owner/repo.git -> https://github.com/owner/repo/releases
-          let changelogUrl = null;
+          let changelogUrl: string | null = null;
 
           if (repoUrl.includes('github.com')) {
             const match = repoUrl.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
@@ -246,8 +269,8 @@ async function fetchChangelogUrl(packageName) {
 /**
  * Fetch changelog URLs for multiple packages in parallel
  */
-async function fetchChangelogUrls(packages) {
-  const results = new Map();
+async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, string | null>> {
+  const results = new Map<string, string | null>();
   const promises = packages.map(async (pkg) => {
     const url = await fetchChangelogUrl(pkg.name);
     results.set(pkg.name, url);
@@ -259,7 +282,7 @@ async function fetchChangelogUrls(packages) {
 /**
  * Upgrade packages using npm update (for minor/patch) or npm install (for major)
  */
-function upgradePackages(packages, forceMajor = false) {
+function upgradePackages(packages: PackageInfo[], forceMajor = false): boolean {
   if (packages.length === 0) {
     console.log(`${GREEN}No packages to upgrade${NC}`);
     return true;
@@ -316,7 +339,7 @@ function upgradePackages(packages, forceMajor = false) {
       }
       console.log();
       console.log(`These require manual review. To upgrade, run:`);
-      console.log(`  node scripts/check-deps.js --upgrade --force`);
+      console.log(`  npx tsx scripts/check-deps.ts --upgrade --force`);
       console.log(
         `Or manually: npm install ${majorUpdates.map((p) => `${p.name}@latest`).join(' ')}`
       );
@@ -329,12 +352,12 @@ function upgradePackages(packages, forceMajor = false) {
 /**
  * Show help message
  */
-function showHelpMessage() {
+function showHelpMessage(): void {
   console.log(`
-${BLUE}check-deps.js${NC} - Dependency version enforcement
+${BLUE}check-deps.ts${NC} - Dependency version enforcement
 
 ${YELLOW}USAGE${NC}
-  node scripts/check-deps.js [OPTIONS]
+  npx tsx scripts/check-deps.ts [OPTIONS]
 
 ${YELLOW}OPTIONS${NC}
   --upgrade, -u   Upgrade outdated packages (minor/patch only)
@@ -350,18 +373,18 @@ ${YELLOW}ALLOWLIST FORMAT${NC}
   package-name@<max-version # reason
 
 ${YELLOW}EXAMPLES${NC}
-  node scripts/check-deps.js           # Check for outdated packages
-  node scripts/check-deps.js --upgrade # Upgrade all outdated packages
-  npm run check:deps                   # Via npm script
-  npm run check:deps -- --upgrade      # Upgrade via npm script
-  ./go quality deps                    # Via go script
+  npx tsx scripts/check-deps.ts           # Check for outdated packages
+  npx tsx scripts/check-deps.ts --upgrade # Upgrade all outdated packages
+  npm run check:deps                      # Via npm script
+  npm run check:deps -- --upgrade         # Upgrade via npm script
+  ./go quality deps                       # Via go script
 `);
 }
 
 /**
  * Main check function
  */
-async function checkDependencies() {
+async function checkDependencies(): Promise<void> {
   if (showHelp) {
     showHelpMessage();
     process.exit(0);
@@ -372,14 +395,13 @@ async function checkDependencies() {
   const outdated = getOutdatedPackages();
   const allowlist = loadAllowlist();
 
-  const mustUpgrade = [];
-  const constraintExceeded = [];
-  const allowed = [];
+  const mustUpgrade: PackageInfo[] = [];
+  const constraintExceeded: PackageInfo[] = [];
+  const allowed: PackageInfo[] = [];
 
   for (const [name, info] of Object.entries(outdated)) {
     const current = info.current;
     const latest = info.latest;
-    const wanted = info.wanted;
 
     // Skip if current equals latest (shouldn't happen, but just in case)
     if (current === latest) {
@@ -388,6 +410,10 @@ async function checkDependencies() {
 
     // Skip optional dependencies that aren't installed (current is undefined)
     if (!current || current === 'undefined') {
+      continue;
+    }
+
+    if (!latest) {
       continue;
     }
 
@@ -416,7 +442,7 @@ async function checkDependencies() {
       }
     } else {
       // Not in allowlist - must upgrade
-      mustUpgrade.push({ name, current, latest, wanted });
+      mustUpgrade.push({ name, current, latest, wanted: info.wanted });
     }
   }
 
@@ -488,7 +514,7 @@ async function checkDependencies() {
     }
     console.log();
     console.log(`Run: npm run check:deps -- --upgrade`);
-    console.log(`Or:  node scripts/check-deps.js --upgrade`);
+    console.log(`Or:  npx tsx scripts/check-deps.ts --upgrade`);
     console.log();
   }
 

@@ -6,7 +6,7 @@
  * If they differ, it means English values changed but hashes weren't regenerated.
  *
  * Usage:
- *   node scripts/check-translation-hashes.js
+ *   npx tsx scripts/check-translation-hashes.ts
  *   npm run i18n:check-hashes
  *
  * Exit codes:
@@ -17,54 +17,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { flattenAndHash } from './utils/crc32.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// CRC32 implementation (IEEE polynomial)
-const crc32Table = (() => {
-  const table = new Uint32Array(256);
-  for (let i = 0; i < 256; i++) {
-    let c = i;
-    for (let j = 0; j < 8; j++) {
-      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    }
-    table[i] = c;
-  }
-  return table;
-})();
-
-function crc32(str) {
-  let crc = 0xffffffff;
-  for (let i = 0; i < str.length; i++) {
-    const byte = str.charCodeAt(i) & 0xff;
-    crc = crc32Table[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  }
-  return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0');
+interface HashManifest {
+  hashes: Record<string, string>;
 }
 
-function flattenAndHash(obj, prefix = '') {
-  const hashes = {};
-  for (const [key, value] of Object.entries(obj)) {
-    const fullPath = prefix ? `${prefix}.${key}` : key;
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      Object.assign(hashes, flattenAndHash(value, fullPath));
-    } else if (typeof value === 'string') {
-      hashes[fullPath] = crc32(value);
-    }
-  }
-  return hashes;
-}
-
-function checkLocaleDir(name, localeDir, useNamespacePrefix = true) {
+function checkLocaleDir(name: string, localeDir: string, useNamespacePrefix = true): string[] {
   const hashFile = path.join(localeDir, '.translation-hashes.json');
-  const errors = [];
+  const errors: string[] = [];
 
   if (!fs.existsSync(hashFile)) {
     errors.push(`Hash manifest not found: ${hashFile}`);
     return errors;
   }
 
-  const manifest = JSON.parse(fs.readFileSync(hashFile, 'utf-8'));
+  const manifest = JSON.parse(fs.readFileSync(hashFile, 'utf-8')) as HashManifest;
   const storedHashes = manifest.hashes || {};
 
   // Get all English JSON files in the locale directory
@@ -74,21 +44,23 @@ function checkLocaleDir(name, localeDir, useNamespacePrefix = true) {
     return errors;
   }
 
-  const currentHashes = {};
+  const currentHashes: Record<string, string> = {};
   const jsonFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
 
   for (const file of jsonFiles) {
     // Web: use namespace prefix (common.welcome, auth.login)
     // CLI: no namespace prefix (flat keys)
     const namespace = useNamespacePrefix ? file.replace('.json', '') : '';
-    const content = JSON.parse(fs.readFileSync(path.join(enDir, file), 'utf-8'));
+    const content = JSON.parse(
+      fs.readFileSync(path.join(enDir, file), 'utf-8')
+    ) as Record<string, unknown>;
     const fileHashes = flattenAndHash(content, namespace);
     Object.assign(currentHashes, fileHashes);
   }
 
   // Compare hashes
-  const staleKeys = [];
-  const newKeys = [];
+  const staleKeys: string[] = [];
+  const newKeys: string[] = [];
 
   for (const [key, hash] of Object.entries(currentHashes)) {
     if (!(key in storedHashes)) {
@@ -117,8 +89,8 @@ function checkLocaleDir(name, localeDir, useNamespacePrefix = true) {
   return errors;
 }
 
-function main() {
-  const errors = [];
+function main(): void {
+  const errors: string[] = [];
 
   // Check web locales (uses namespace prefixes like common.welcome, auth.login)
   const webLocales = path.join(__dirname, '../packages/web/src/i18n/locales');

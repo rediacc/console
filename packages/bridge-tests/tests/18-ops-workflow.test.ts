@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { getOpsManager } from '../src/utils/bridge/OpsManager';
+import { InfrastructureManager } from '../src/utils/infrastructure/InfrastructureManager';
 
 /**
  * OPS Workflow Tests
@@ -16,150 +17,146 @@ import { getOpsManager } from '../src/utils/bridge/OpsManager';
  * Run with care and only in isolated test environments.
  */
 test.describe('OPS Workflow @bridge @ops @slow', () => {
+  // Skip destructive VM tests in CI - these stop/start VMs and break subsequent tests
+  test.skip(!!process.env.CI, 'Destructive VM tests skipped in CI');
+
   const ops = getOpsManager();
 
   // Increase timeout for infrastructure operations
   test.setTimeout(600000); // 10 minutes
 
-  test.describe
-    .serial('VM Lifecycle', () => {
-      test('should report initial status', async () => {
-        const result = await ops.getStatus();
+  test.describe('VM Lifecycle', () => {
+    test('should report initial status', async () => {
+      const result = await ops.getStatus();
 
-        // Status command should succeed regardless of VM state
-        expect(result.code).toBe(0);
-        expect(result.stdout).toBeTruthy();
-      });
-
-      test('should check VM reachability', async () => {
-        const vmIds = ops.getVMIds();
-        const bridgeIp = ops.getBridgeVMIp();
-        const workerIps = ops.getWorkerVMIps();
-
-        // eslint-disable-next-line no-console
-        console.log(`Bridge VM: ${vmIds.bridge} -> ${bridgeIp}`);
-        // eslint-disable-next-line no-console
-        console.log(`Worker VMs: ${vmIds.workers.join(', ')} -> ${workerIps.join(', ')}`);
-
-        // Just log the current state - don't fail if VMs are down
-        const bridgeReachable = await ops.isVMReachable(bridgeIp);
-        // eslint-disable-next-line no-console
-        console.log(`Bridge VM reachable: ${bridgeReachable}`);
-
-        for (const ip of workerIps) {
-          const reachable = await ops.isVMReachable(ip);
-          // eslint-disable-next-line no-console
-          console.log(`Worker ${ip} reachable: ${reachable}`);
-        }
-      });
-
-      test('should stop VMs if running', async () => {
-        // Check current state
-        const { ready } = await ops.areAllVMsReady();
-
-        if (ready) {
-          // eslint-disable-next-line no-console
-          console.log('VMs are running, stopping them...');
-          await ops.stopVMs();
-
-          // Allow some time for VMs to fully stop
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-
-          // Verify VMs are stopped (not reachable)
-          const bridgeIp = ops.getBridgeVMIp();
-          const stillReachable = await ops.isVMReachable(bridgeIp);
-          expect(stillReachable).toBe(false);
-
-          // eslint-disable-next-line no-console
-          console.log('VMs stopped successfully');
-        } else {
-          // eslint-disable-next-line no-console
-          console.log('VMs are already stopped, skipping');
-        }
-      });
-
-      test('should start VMs with basic mode', async () => {
-        // eslint-disable-next-line no-console
-        console.log('Starting VMs with --basic mode...');
-
-        const result = await ops.startVMs({ basic: true, parallel: true });
-
-        // Note: The command may return non-zero if some orchestration steps fail
-        // (e.g., middleware auth), but VMs may still be created successfully.
-        // We verify actual VM readiness below.
-
-        // eslint-disable-next-line no-console
-        console.log(`Start command returned code: ${result.success ? 0 : 1}`);
-
-        // Wait for bridge VM to be ready
-        const bridgeIp = ops.getBridgeVMIp();
-        const bridgeReady = await ops.waitForVM(bridgeIp, 180000);
-        expect(bridgeReady).toBe(true);
-
-        // eslint-disable-next-line no-console
-        console.log('Bridge VM is ready');
-      });
-
-      test('should verify SSH connectivity to all VMs', async () => {
-        // In basic mode (from previous test), only bridge + first worker are created
-        const bridgeIp = ops.getBridgeVMIp();
-        const workerIps = ops.getWorkerVMIps();
-        const basicVMs = [bridgeIp, workerIps[0]];
-
-        for (const ip of basicVMs) {
-          const ready = await ops.waitForVM(ip, 180000);
-          expect(ready).toBe(true);
-          const sshReady = await ops.isSSHReady(ip);
-          expect(sshReady).toBe(true);
-          // eslint-disable-next-line no-console
-          console.log(`SSH ready on ${ip}`);
-        }
-      });
-
-      test('should execute commands on VMs', async () => {
-        // In basic mode, only bridge + first worker are created
-        const bridgeIp = ops.getBridgeVMIp();
-        const workerIps = ops.getWorkerVMIps();
-        const basicVMs = [bridgeIp, workerIps[0]];
-
-        for (const ip of basicVMs) {
-          const result = await ops.executeOnVM(ip, 'hostname && uptime');
-
-          expect(result.code).toBe(0);
-          expect(result.stdout).toBeTruthy();
-          // eslint-disable-next-line no-console
-          console.log(`${ip}: ${result.stdout.trim().split('\n')[0]}`);
-        }
-      });
-
-      test('should verify renet is installed on VMs', async () => {
-        // In basic mode, only bridge + first worker are created
-        const bridgeIp = ops.getBridgeVMIp();
-        const workerIps = ops.getWorkerVMIps();
-        const basicVMs = [bridgeIp, workerIps[0]];
-
-        for (const ip of basicVMs) {
-          const installed = await ops.isRenetInstalledOnVM(ip);
-          const version = await ops.getRenetVersionOnVM(ip);
-
-          expect(installed).toBe(true);
-          expect(version).toBeTruthy();
-          // eslint-disable-next-line no-console
-          console.log(`${ip}: renet ${version}`);
-        }
-      });
-
-      test('should report status after VMs are up', async () => {
-        const result = await ops.getStatus();
-
-        expect(result.code).toBe(0);
-        expect(result.stdout).toBeTruthy();
-
-        // Should show running VMs
-        const output = result.stdout.toLowerCase();
-        expect(output).toMatch(/running|up|ready/i);
-      });
+      // Status command should succeed regardless of VM state
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
     });
+
+    test('should check VM reachability', async () => {
+      const vmIds = ops.getVMIds();
+      const bridgeIp = ops.getBridgeVMIp();
+      const workerIps = ops.getWorkerVMIps();
+
+      console.warn(`Bridge VM: ${vmIds.bridge} -> ${bridgeIp}`);
+      console.warn(`Worker VMs: ${vmIds.workers.join(', ')} -> ${workerIps.join(', ')}`);
+
+      // Just log the current state - don't fail if VMs are down
+      const bridgeReachable = await ops.isVMReachable(bridgeIp);
+      console.warn(`Bridge VM reachable: ${bridgeReachable}`);
+
+      for (const ip of workerIps) {
+        const reachable = await ops.isVMReachable(ip);
+        console.warn(`Worker ${ip} reachable: ${reachable}`);
+      }
+    });
+
+    test('should stop VMs if running', async () => {
+      // Check current state
+      const { ready } = await ops.areAllVMsReady();
+
+      if (ready) {
+        console.warn('VMs are running, stopping them...');
+        await ops.stopVMs();
+
+        // Allow some time for VMs to fully stop
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+
+        // Verify VMs are stopped (not reachable)
+        const bridgeIp = ops.getBridgeVMIp();
+        const stillReachable = await ops.isVMReachable(bridgeIp);
+        expect(stillReachable).toBe(false);
+
+        console.warn('VMs stopped successfully');
+      } else {
+        console.warn('VMs are already stopped, skipping');
+      }
+    });
+
+    test('should start VMs with basic mode', async () => {
+      console.warn('Starting VMs with --basic mode...');
+
+      const result = await ops.startVMs({ basic: true, parallel: true });
+
+      // Note: The command may return non-zero if some orchestration steps fail
+      // (e.g., middleware auth), but VMs may still be created successfully.
+      // We verify actual VM readiness below.
+
+      console.warn(`Start command returned code: ${result.success ? 0 : 1}`);
+
+      // Wait for bridge VM to be ready
+      const bridgeIp = ops.getBridgeVMIp();
+      const bridgeReady = await ops.waitForVM(bridgeIp, 180000);
+      expect(bridgeReady).toBe(true);
+
+      console.warn('Bridge VM is ready');
+
+      // Re-deploy renet to VMs after fresh start
+      // This is needed because startVMs creates fresh VMs without renet
+      console.warn('Re-deploying renet to fresh VMs...');
+      const infra = new InfrastructureManager();
+      await infra.ensureRenetOnVMs();
+      console.warn('Renet deployed to VMs');
+    });
+
+    test('should verify SSH connectivity to all VMs', async () => {
+      // In basic mode (from previous test), only bridge + first worker are created
+      const bridgeIp = ops.getBridgeVMIp();
+      const workerIps = ops.getWorkerVMIps();
+      const basicVMs = [bridgeIp, workerIps[0]];
+
+      for (const ip of basicVMs) {
+        const ready = await ops.waitForVM(ip, 180000);
+        expect(ready).toBe(true);
+        const sshReady = await ops.isSSHReady(ip);
+        expect(sshReady).toBe(true);
+        console.warn(`SSH ready on ${ip}`);
+      }
+    });
+
+    test('should execute commands on VMs', async () => {
+      // In basic mode, only bridge + first worker are created
+      const bridgeIp = ops.getBridgeVMIp();
+      const workerIps = ops.getWorkerVMIps();
+      const basicVMs = [bridgeIp, workerIps[0]];
+
+      for (const ip of basicVMs) {
+        const result = await ops.executeOnVM(ip, 'hostname && uptime');
+
+        expect(result.code).toBe(0);
+        expect(result.stdout).toBeTruthy();
+        console.warn(`${ip}: ${result.stdout.trim().split('\n')[0]}`);
+      }
+    });
+
+    test('should verify renet is installed on VMs', async () => {
+      // In basic mode, only bridge + first worker are created
+      const bridgeIp = ops.getBridgeVMIp();
+      const workerIps = ops.getWorkerVMIps();
+      const basicVMs = [bridgeIp, workerIps[0]];
+
+      for (const ip of basicVMs) {
+        const installed = await ops.isRenetInstalledOnVM(ip);
+        const version = await ops.getRenetVersionOnVM(ip);
+
+        expect(installed).toBe(true);
+        expect(version).toBeTruthy();
+        console.warn(`${ip}: renet ${version}`);
+      }
+    });
+
+    test('should report status after VMs are up', async () => {
+      const result = await ops.getStatus();
+
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+
+      // Should show running VMs
+      const output = result.stdout.toLowerCase();
+      expect(output).toMatch(/running|up|ready/i);
+    });
+  });
 });
 
 /**
@@ -168,6 +165,9 @@ test.describe('OPS Workflow @bridge @ops @slow', () => {
  * Tests the soft reset functionality that recreates VMs while preserving configuration.
  */
 test.describe('VM Reset @bridge @ops @slow', () => {
+  // Skip destructive VM reset tests in CI - these recreate VMs and break subsequent tests
+  test.skip(!!process.env.CI, 'Destructive VM tests skipped in CI');
+
   const ops = getOpsManager();
 
   test.setTimeout(600000); // 10 minutes
@@ -176,8 +176,7 @@ test.describe('VM Reset @bridge @ops @slow', () => {
     const result = await ops.resetVMs();
 
     expect(result.success).toBe(true);
-    // eslint-disable-next-line no-console
-    console.log(`Reset completed in ${(result.duration / 1000).toFixed(1)}s`);
+    console.warn(`Reset completed in ${(result.duration / 1000).toFixed(1)}s`);
 
     // In basic mode, only bridge + first worker are created
     const bridgeIp = ops.getBridgeVMIp();
@@ -189,6 +188,13 @@ test.describe('VM Reset @bridge @ops @slow', () => {
       const ready = await ops.waitForVM(ip, 180000);
       expect(ready).toBe(true);
     }
+
+    // Re-deploy renet to VMs after reset
+    // This is needed because resetVMs recreates fresh VMs without renet
+    console.warn('Re-deploying renet to fresh VMs after reset...');
+    const infra = new InfrastructureManager();
+    await infra.ensureRenetOnVMs();
+    console.warn('Renet deployed to VMs');
   });
 
   test('should have clean state after reset', async () => {
@@ -206,8 +212,7 @@ test.describe('VM Reset @bridge @ops @slow', () => {
       const uptimeSeconds = Number.parseFloat(result.stdout.trim());
       // VM should have been up for less than 10 minutes after reset
       expect(uptimeSeconds).toBeLessThan(600);
-      // eslint-disable-next-line no-console
-      console.log(`${ip}: uptime ${uptimeSeconds.toFixed(0)}s`);
+      console.warn(`${ip}: uptime ${uptimeSeconds.toFixed(0)}s`);
     }
   });
 });
@@ -234,8 +239,7 @@ test.describe('Parallel Execution @bridge @ops', () => {
       // Check that our expected IP is the first one in the output
       const firstIp = result.stdout.trim().split(/\s+/)[0];
       expect(firstIp).toBe(ip);
-      // eslint-disable-next-line no-console
-      console.log(`Worker ${ip}: OK`);
+      console.warn(`Worker ${ip}: OK`);
     }
   });
 });

@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Create mock function that will be used by promisify
 const execAsyncMock = vi.fn();
@@ -9,8 +9,16 @@ vi.mock('node:util', () => ({
   promisify: () => execAsyncMock,
 }));
 
-// Import the module under test
-const { RenetResolver, getRenetResolver } = await import('../RenetResolver');
+// Module under test - imported dynamically after mock setup
+let RenetResolver: typeof import('../RenetResolver').RenetResolver;
+let getRenetResolver: typeof import('../RenetResolver').getRenetResolver;
+
+beforeAll(async () => {
+  // Import the module under test after mocks are set up
+  const module = await import('../RenetResolver.js');
+  RenetResolver = module.RenetResolver;
+  getRenetResolver = module.getRenetResolver;
+});
 
 describe('RenetResolver', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -145,7 +153,7 @@ describe('getRenetBinaryPath fallback', () => {
     process.env.RENET_BINARY_PATH = '/ci/path/renet';
 
     // Import fresh to avoid cached resolver
-    const { getRenetBinaryPath } = await import('../renetPath');
+    const { getRenetBinaryPath } = await import('../renetPath.js');
 
     // Create new resolver instance that hasn't been initialized
     // The getRenetBinaryPath should fall back to env var

@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
-import { CephTestHelper } from '../src/utils/bridge/CephTestHelper';
+import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
+import { CephTestHelper } from '../../src/utils/bridge/CephTestHelper';
 
 // Check if Ceph is configured - skip all tests if not
-// VM_CEPH_NODES can be empty, "NONE", or space-separated list of VM IDs
-const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim().toLowerCase();
-const hasCeph = cephNodes.length > 0 && cephNodes !== 'none';
+// VM_CEPH_NODES can be empty or space-separated list of VM IDs (e.g., "21 22 23")
+const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
+const hasCeph = cephNodes.length > 0;
 
 /**
  * Ceph Snapshot/Clone Operations Tests (12 functions)

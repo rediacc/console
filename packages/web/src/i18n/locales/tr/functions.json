@@ -267,40 +267,6 @@
       "description": "Makineye ağ bağlantısını test edin",
       "name": "Ping"
     },
-    "setup": {
-      "description": "İşletim sistemini gerekli araçlar ve konfigürasyonlarla kurma",
-      "name": "kurulum",
-      "params": {
-        "datastore_size": {
-          "help": "Veri deposu boyutu (örn. %95, 100G)",
-          "label": "Veri Deposu Boyutu"
-        },
-        "docker_source": {
-          "help": "Docker nasıl kurulur (docker-repo = resmi depo, package-manager = işletim sistemi paketleri, snap = snap deposu, manual = atla)",
-          "label": "Docker Kurulum Kaynağı"
-        },
-        "install_amd_driver": {
-          "help": "AMD GPU sürücülerini yükle (auto = önce GPU'yu algıla, true = her zaman yükle, false = atla)",
-          "label": "AMD GPU Sürücüsünü Yükleme"
-        },
-        "install_criu": {
-          "help": "Kontrol noktası/geri yükleme desteği için CRIU'yu yükleyin (auto = kernel >= 3.11 ise yükle, true = yüklemeye zorla, false = atla, manual = kullanıcı yükler)",
-          "label": "CRIU'yu yükleyin"
-        },
-        "install_nvidia_driver": {
-          "help": "NVIDIA GPU sürücülerini yükleme (auto = önce GPU'yu algıla, true = her zaman yükle, false = atla)",
-          "label": "NVIDIA GPU Sürücüsünü Yükleme"
-        },
-        "rclone_source": {
-          "help": "rclone nasıl kurulur (install-script = resmi betik, package-manager = apt/dnf, manual = atla)",
-          "label": "Rclone Kurulum Kaynağı"
-        },
-        "source": {
-          "help": "Kaynak paket",
-          "label": "Kaynak"
-        }
-      }
-    },
     "machine_uninstall": {
       "description": "Sistem bileşenlerini temizleme ve kaldırma",
       "name": "Kaldır"
@@ -541,6 +507,40 @@
         "timeout": {
           "help": "Saniye cinsinden işlev başına maksimum süre (varsayılan: 300)",
           "label": "Zaman aşımı (saniye)"
+        }
+      }
+    },
+    "setup": {
+      "description": "İşletim sistemini gerekli araçlar ve konfigürasyonlarla kurma",
+      "name": "kurulum",
+      "params": {
+        "datastore_size": {
+          "help": "Veri deposu boyutu (örn. %95, 100G)",
+          "label": "Veri Deposu Boyutu"
+        },
+        "docker_source": {
+          "help": "Docker nasıl kurulur (docker-repo = resmi depo, package-manager = işletim sistemi paketleri, snap = snap deposu, manual = atla)",
+          "label": "Docker Kurulum Kaynağı"
+        },
+        "install_amd_driver": {
+          "help": "AMD GPU sürücülerini yükle (auto = önce GPU'yu algıla, true = her zaman yükle, false = atla)",
+          "label": "AMD GPU Sürücüsünü Yükleme"
+        },
+        "install_criu": {
+          "help": "Kontrol noktası/geri yükleme desteği için CRIU'yu yükleyin (auto = kernel >= 3.11 ise yükle, true = yüklemeye zorla, false = atla, manual = kullanıcı yükler)",
+          "label": "CRIU'yu yükleyin"
+        },
+        "install_nvidia_driver": {
+          "help": "NVIDIA GPU sürücülerini yükleme (auto = önce GPU'yu algıla, true = her zaman yükle, false = atla)",
+          "label": "NVIDIA GPU Sürücüsünü Yükleme"
+        },
+        "rclone_source": {
+          "help": "rclone nasıl kurulur (install-script = resmi betik, package-manager = apt/dnf, manual = atla)",
+          "label": "Rclone Kurulum Kaynağı"
+        },
+        "source": {
+          "help": "Kaynak paket",
+          "label": "Kaynak"
         }
       }
     }

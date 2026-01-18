@@ -267,40 +267,6 @@
       "description": "测试到机器的网络连接",
       "name": "ping 测试"
     },
-    "setup": {
-      "description": "使用所需工具和配置设置操作系统",
-      "name": "设置",
-      "params": {
-        "datastore_size": {
-          "help": "数据存储大小（例如：95%, 100G）",
-          "label": "数据存储大小"
-        },
-        "docker_source": {
-          "help": "如何安装Docker（docker-repo = 官方仓库，package-manager = OS包，snap = snap商店，manual = 跳过）",
-          "label": "Docker安装源"
-        },
-        "install_amd_driver": {
-          "help": "安装AMD GPU驱动（auto = 先检测GPU，true = 始终安装，false = 跳过）",
-          "label": "安装AMD GPU驱动"
-        },
-        "install_criu": {
-          "help": "安装 CRIU 以支持检查点/恢复（如果内核 >= 3.11，则自动 = 安装，true = 强制安装，false = 跳过，手动 = 用户安装）",
-          "label": "安装创建"
-        },
-        "install_nvidia_driver": {
-          "help": "安装NVIDIA GPU驱动（auto = 先检测GPU，true = 始终安装，false = 跳过）",
-          "label": "安装NVIDIA GPU驱动"
-        },
-        "rclone_source": {
-          "help": "如何安装rclone（install-script = 官方脚本，package-manager = apt/dnf，manual = 跳过）",
-          "label": "Rclone安装源"
-        },
-        "source": {
-          "help": "包源",
-          "label": "源"
-        }
-      }
-    },
     "machine_uninstall": {
       "description": "清理和卸载系统组件",
       "name": "卸载"
@@ -541,6 +507,40 @@
         "timeout": {
           "help": "每个函数的最长时间（以秒为单位）（默认值：300）",
           "label": "超时（秒）"
+        }
+      }
+    },
+    "setup": {
+      "description": "使用所需工具和配置设置操作系统",
+      "name": "设置",
+      "params": {
+        "datastore_size": {
+          "help": "数据存储大小（例如：95%, 100G）",
+          "label": "数据存储大小"
+        },
+        "docker_source": {
+          "help": "如何安装Docker（docker-repo = 官方仓库，package-manager = OS包，snap = snap商店，manual = 跳过）",
+          "label": "Docker安装源"
+        },
+        "install_amd_driver": {
+          "help": "安装AMD GPU驱动（auto = 先检测GPU，true = 始终安装，false = 跳过）",
+          "label": "安装AMD GPU驱动"
+        },
+        "install_criu": {
+          "help": "安装 CRIU 以支持检查点/恢复（如果内核 >= 3.11，则自动 = 安装，true = 强制安装，false = 跳过，手动 = 用户安装）",
+          "label": "安装创建"
+        },
+        "install_nvidia_driver": {
+          "help": "安装NVIDIA GPU驱动（auto = 先检测GPU，true = 始终安装，false = 跳过）",
+          "label": "安装NVIDIA GPU驱动"
+        },
+        "rclone_source": {
+          "help": "如何安装rclone（install-script = 官方脚本，package-manager = apt/dnf，manual = 跳过）",
+          "label": "Rclone安装源"
+        },
+        "source": {
+          "help": "包源",
+          "label": "源"
         }
       }
     }

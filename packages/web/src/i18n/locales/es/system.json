@@ -215,8 +215,8 @@
       "blockRequestsFailed": "No se pudo actualizar el estado de bloqueo de solicitudes de usuario",
       "importFailed": "No se pudieron importar los datos de la empresa",
       "noExportData": "No se devolvieron datos de exportación",
-      "vaultUpdateFailed": "No se pudo actualizar la configuración del almacén",
-      "vaultsUpdateFailed": "No se pudieron actualizar las configuraciones del almacén"
+      "vaultsUpdateFailed": "No se pudieron actualizar las configuraciones del almacén",
+      "vaultUpdateFailed": "No se pudo actualizar la configuración del almacén"
     },
     "success": {
       "errorCount": "{{count}} errores",
@@ -227,8 +227,8 @@
       "requestsBlockedWithTerminations": "Solicitudes de usuarios bloqueadas. Se finalizaron {{count}} sesiones activas.",
       "requestsUnblocked": "Solicitudes de usuarios desbloqueadas con éxito",
       "skippedCount": "{{count}} elementos omitidos",
-      "vaultUpdated": "La configuración de la bóveda se actualizó correctamente",
-      "vaultsUpdated": "Todas las configuraciones de la bóveda se actualizaron correctamente"
+      "vaultsUpdated": "Todas las configuraciones de la bóveda se actualizaron correctamente",
+      "vaultUpdated": "La configuración de la bóveda se actualizó correctamente"
     }
   },
   "personal": {

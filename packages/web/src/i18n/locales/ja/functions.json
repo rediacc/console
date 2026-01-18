@@ -267,40 +267,6 @@
       "description": "マシンへのネットワーク接続をテストする",
       "name": "ピング"
     },
-    "setup": {
-      "description": "必要なツールと構成を使用してオペレーティング システムをセットアップする",
-      "name": "設定",
-      "params": {
-        "datastore_size": {
-          "help": "データストアのサイズ (例: 95%、100G)",
-          "label": "データストアのサイズ"
-        },
-        "docker_source": {
-          "help": "Docker のインストール方法 (docker-repo = 公式リポジトリ、package-manager = OS パッケージ、snap = スナップ ストア、manual = スキップ)",
-          "label": "Docker インストール ソース"
-        },
-        "install_amd_driver": {
-          "help": "AMD GPU ドライバーをインストールします (auto = 最初に GPU を検出、true = 常にインストール、false = スキップ)",
-          "label": "AMD GPUドライバーをインストールする"
-        },
-        "install_criu": {
-          "help": "チェックポイント/復元サポートのために CRIU をインストールします (auto = カーネル >= 3.11 の場合にインストール、true = 強制インストール、false = スキップ、手動 = ユーザー インストール)",
-          "label": "CREATEをインストールする"
-        },
-        "install_nvidia_driver": {
-          "help": "NVIDIA GPU ドライバーをインストールします (auto = 最初に GPU を検出、true = 常にインストール、false = スキップ)",
-          "label": "NVIDIA GPU ドライバーをインストールする"
-        },
-        "rclone_source": {
-          "help": "rcloneのインストール方法（install-script=公式スクリプト、package-manager=apt/dnf、manual=skip）",
-          "label": "Rclone インストール ソース"
-        },
-        "source": {
-          "help": "パッケージソース",
-          "label": "ソース"
-        }
-      }
-    },
     "machine_uninstall": {
       "description": "システムコンポーネントのクリーンアップとアンインストール",
       "name": "アンインストールする"
@@ -541,6 +507,40 @@
         "timeout": {
           "help": "関数ごとの最大時間 (秒単位) (デフォルト: 300)",
           "label": "タイムアウト (秒)"
+        }
+      }
+    },
+    "setup": {
+      "description": "必要なツールと構成を使用してオペレーティング システムをセットアップする",
+      "name": "設定",
+      "params": {
+        "datastore_size": {
+          "help": "データストアのサイズ (例: 95%、100G)",
+          "label": "データストアのサイズ"
+        },
+        "docker_source": {
+          "help": "Docker のインストール方法 (docker-repo = 公式リポジトリ、package-manager = OS パッケージ、snap = スナップ ストア、manual = スキップ)",
+          "label": "Docker インストール ソース"
+        },
+        "install_amd_driver": {
+          "help": "AMD GPU ドライバーをインストールします (auto = 最初に GPU を検出、true = 常にインストール、false = スキップ)",
+          "label": "AMD GPUドライバーをインストールする"
+        },
+        "install_criu": {
+          "help": "チェックポイント/復元サポートのために CRIU をインストールします (auto = カーネル >= 3.11 の場合にインストール、true = 強制インストール、false = スキップ、手動 = ユーザー インストール)",
+          "label": "CREATEをインストールする"
+        },
+        "install_nvidia_driver": {
+          "help": "NVIDIA GPU ドライバーをインストールします (auto = 最初に GPU を検出、true = 常にインストール、false = スキップ)",
+          "label": "NVIDIA GPU ドライバーをインストールする"
+        },
+        "rclone_source": {
+          "help": "rcloneのインストール方法（install-script=公式スクリプト、package-manager=apt/dnf、manual=skip）",
+          "label": "Rclone インストール ソース"
+        },
+        "source": {
+          "help": "パッケージソース",
+          "label": "ソース"
         }
       }
     }
