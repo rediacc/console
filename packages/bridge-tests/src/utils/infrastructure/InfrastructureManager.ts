@@ -31,21 +31,19 @@ export interface InfrastructureConfig {
  * - Automatically starts VMs using renet ops commands if not running
  * - Verifies renet is installed on all VMs
  * - No middleware or Docker containers required - renet runs in local/test mode
+ *
+ * NOTE: SSH options are computed dynamically (not cached in constructor) because
+ * renet creates SSH keys during `ops up`, which happens after this class is instantiated.
  */
 export class InfrastructureManager {
   private readonly config: InfrastructureConfig;
   private readonly opsManager: OpsManager;
   private readonly resolver: RenetResolver;
-  private readonly sshOpts: string;
-  private readonly scpOpts: string;
+  private sshKeyLogged = false;
 
   constructor() {
     this.opsManager = getOpsManager();
     this.resolver = getRenetResolver();
-
-    // Get SSH options with identity file if available
-    this.sshOpts = `${getSSHOptions()} -o ConnectTimeout=5 -o BatchMode=yes`;
-    this.scpOpts = `${getSCPOptions()} -q`;
 
     this.config = {
       bridgeVM: this.opsManager.getBridgeVMIp(),
@@ -55,6 +53,29 @@ export class InfrastructureManager {
         10
       ),
     };
+  }
+
+  /**
+   * Get SSH options dynamically.
+   * Called fresh each time because SSH keys may be created after instantiation.
+   */
+  private getSSHOpts(): string {
+    const baseOpts = getSSHOptions();
+
+    // Log key status once per session
+    if (!this.sshKeyLogged) {
+      console.warn(`[InfrastructureManager] SSH options: ${baseOpts}`);
+      this.sshKeyLogged = true;
+    }
+
+    return `${baseOpts} -o ConnectTimeout=5 -o BatchMode=yes`;
+  }
+
+  /**
+   * Get SCP options dynamically.
+   */
+  private getSCPOpts(): string {
+    return `${getSCPOptions()} -q`;
   }
 
   /**
@@ -81,10 +102,19 @@ export class InfrastructureManager {
    * Check if bridge VM is reachable via SSH.
    */
   async isBridgeVMReachable(): Promise<boolean> {
+    const user = process.env.USER;
+    if (!user) {
+      console.warn('[InfrastructureManager] USER env not set, cannot check bridge VM');
+      return false;
+    }
+    const sshOpts = this.getSSHOpts();
+    const cmd = `ssh ${sshOpts} ${user}@${this.config.bridgeVM} "echo ok"`;
     try {
-      await execAsync(`ssh ${this.sshOpts} ${this.config.bridgeVM} "echo ok"`, { timeout: 10000 });
+      await execAsync(cmd, { timeout: 10000 });
       return true;
-    } catch {
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.warn(`[InfrastructureManager] Bridge VM check failed: ${err.message ?? 'unknown'}`);
       return false;
     }
   }
@@ -93,10 +123,19 @@ export class InfrastructureManager {
    * Check if worker VM is reachable via SSH.
    */
   async isWorkerVMReachable(): Promise<boolean> {
+    const user = process.env.USER;
+    if (!user) {
+      console.warn('[InfrastructureManager] USER env not set, cannot check worker VM');
+      return false;
+    }
+    const sshOpts = this.getSSHOpts();
+    const cmd = `ssh ${sshOpts} ${user}@${this.config.workerVM} "echo ok"`;
     try {
-      await execAsync(`ssh ${this.sshOpts} ${this.config.workerVM} "echo ok"`, { timeout: 10000 });
+      await execAsync(cmd, { timeout: 10000 });
       return true;
-    } catch {
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.warn(`[InfrastructureManager] Worker VM check failed: ${err.message ?? 'unknown'}`);
       return false;
     }
   }
@@ -233,15 +272,19 @@ export class InfrastructureManager {
     if (!user) {
       throw new Error('USER environment variable is not set');
     }
+
+    const scpOpts = this.getSCPOpts();
+    const sshOpts = this.getSSHOpts();
+
     try {
       // Copy to temp location using centralized SCP options
-      await execAsync(`scp ${this.scpOpts} "${localPath}" ${user}@${ip}:/tmp/renet`, {
+      await execAsync(`scp ${scpOpts} "${localPath}" ${user}@${ip}:/tmp/renet`, {
         timeout: 60000, // Increased timeout for larger binaries
       });
 
       // Move to final location and set permissions using centralized SSH options
       await execAsync(
-        `ssh ${this.sshOpts} ${user}@${ip} "sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}"`,
+        `ssh ${sshOpts} ${user}@${ip} "sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}"`,
         { timeout: 10000 }
       );
 

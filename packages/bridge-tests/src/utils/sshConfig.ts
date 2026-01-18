@@ -70,12 +70,16 @@ export function getSSHOptions(): string {
 
   const keyPath = getSSHPrivateKeyPath();
   if (isSSHKeyAvailable()) {
+    console.warn(`[sshConfig] SSH key found at ${keyPath}`);
     return `${baseOptions} -i "${keyPath}"`;
   }
 
   // Log warning but continue without key
   // In CI, the setup action should have created the key
-  console.warn(`[sshConfig] SSH key not found at ${keyPath}, using default SSH options`);
+  const opsHome = process.env.OPS_HOME ?? '(not set)';
+  console.warn(
+    `[sshConfig] SSH key not found at ${keyPath} (OPS_HOME=${opsHome}), using default SSH options`
+  );
   return baseOptions;
 }
 
