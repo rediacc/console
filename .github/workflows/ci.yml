@@ -544,14 +544,6 @@ jobs:
           done
           exit 1
 
-      - name: Upload Tunnel URL
-        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: tunnel-url
-          path: ${{ runner.temp }}/tunnel-url.txt
-          retention-days: 3
-
       # Bridge tests
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
@@ -604,6 +596,14 @@ jobs:
       - name: Extract renet binary
         working-directory: console
         run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Upload Tunnel URL
+        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: tunnel-url
+          path: ${{ runner.temp }}/tunnel-url.txt
+          retention-days: 3
 
       - name: Wait for Completion Signals
         working-directory: console
