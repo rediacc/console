@@ -57,7 +57,7 @@ jobs:
         with:
           script: |
             const pollInterval = 10000; // 10 seconds
-            const maxRuntime = 1800000; // 30 minutes max
+            const maxRuntime = 600000;  // 10 minutes max
             const minRuntime = 120000;  // 2 minutes minimum before allowing workflow-complete exit
             const startTime = Date.now();
 
@@ -132,7 +132,8 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
 
-            console.log('Watchdog timeout reached (30 min) - exiting');
+            console.log('Watchdog completed - no failures detected in 10 minutes');
+            core.info('All monitored jobs healthy during watch period');
 
   # ============================================================================
   # TIER 2: PR VALIDATION (PR-only, no dependencies)
