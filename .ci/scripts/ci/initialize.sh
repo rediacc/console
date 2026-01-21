@@ -144,7 +144,15 @@ log_info "Plugins tag: $PLUGINS_TAG (console commit)"
 log_info "Web tag: $WEB_TAG (console commit)"
 
 # =============================================================================
-# Step 5: Check if images exist in registry (requires Docker)
+# Step 5: Calculate next version
+# =============================================================================
+log_step "Calculating next version..."
+NEXT_VERSION=$(.ci/scripts/version/bump.sh --auto --dry-run | tail -n 1)
+write_output "next_version" "$NEXT_VERSION"
+log_info "Next version: $NEXT_VERSION"
+
+# =============================================================================
+# Step 6: Check if images exist in registry (requires Docker)
 # =============================================================================
 log_step "Checking image cache in registry..."
 
