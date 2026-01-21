@@ -280,7 +280,7 @@ async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, 
 }
 
 /**
- * Upgrade packages using npm update (for minor/patch) or npm install (for major)
+ * Upgrade packages using npm install (npm update doesn't update to latest within semver range)
  */
 function upgradePackages(packages: PackageInfo[], forceMajor = false): boolean {
   if (packages.length === 0) {
@@ -294,11 +294,12 @@ function upgradePackages(packages: PackageInfo[], forceMajor = false): boolean {
 
   let success = true;
 
-  // Run npm update for minor/patch updates
+  // Run npm install for minor/patch updates (npm update doesn't update to latest within semver)
   if (minorUpdates.length > 0) {
     console.log(`${BLUE}Upgrading ${minorUpdates.length} package(s) (minor/patch)...${NC}\n`);
 
-    const result = spawnSync('npm', ['update', ...minorUpdates.map((p) => p.name)], {
+    const installArgs = minorUpdates.map((p) => `${p.name}@latest`);
+    const result = spawnSync('npm', ['install', '-ws', ...installArgs], {
       cwd: CONSOLE_ROOT,
       stdio: 'inherit',
       shell: true,
@@ -320,7 +321,7 @@ function upgradePackages(packages: PackageInfo[], forceMajor = false): boolean {
 
       // Use npm install package@latest for major updates
       const installArgs = majorUpdates.map((p) => `${p.name}@latest`);
-      const result = spawnSync('npm', ['install', ...installArgs], {
+      const result = spawnSync('npm', ['install', '-ws', ...installArgs], {
         cwd: CONSOLE_ROOT,
         stdio: 'inherit',
         shell: true,

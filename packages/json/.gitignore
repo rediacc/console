@@ -1,0 +1,3 @@
+# Build output directories (deprecated - now generated via packages/www)
+/build/
+/dist/

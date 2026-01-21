@@ -162,4 +162,10 @@
   .sidebar-overlay {
     transition: none;
   }
+
+  /* Disable View Transitions animations */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }

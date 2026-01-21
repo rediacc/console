@@ -30,6 +30,8 @@ interface RediaccConfig {
   docsUrl: string;
   supportUrl: string;
   templatesUrl: string;
+  /** Base URL for JSON configuration files (e.g., '/json' or 'https://custom.server/json') */
+  jsonUrl?: string;
 
   // Security Settings
   csrfEnabled: string;

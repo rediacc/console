@@ -3,9 +3,9 @@ import LanguageMenu from './LanguageMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
 import { getConsoleUrl } from '../config/constants';
-import { SUPPORTED_LANGUAGES, getLanguageFromPath } from '../i18n/language-utils';
+import { useLanguage } from '../hooks/useLanguage';
+import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
-import type { Language } from '../i18n/types';
 
 interface NavigationProps {
   origin?: string;
@@ -14,11 +14,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  // eslint-disable-next-line react/hook-use-state
-  const currentLang = useState<Language>(() => {
-    if (typeof window === 'undefined') return 'en';
-    return getLanguageFromPath(window.location.pathname);
-  })[0];
+  const currentLang = useLanguage();
   const [isVisible, setIsVisible] = useState(() => {
     if (typeof window === 'undefined') return true;
     const isOnSolutionsPage = window.location.pathname.includes('/solutions');

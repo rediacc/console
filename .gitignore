@@ -87,3 +87,6 @@ playwright/**/*.png
 playwright_env/
 .playwright-mcp/
 packages/cli/reports/
+
+# CI backend data (SQL Server volumes)
+.ci/docker/ci/mssql/

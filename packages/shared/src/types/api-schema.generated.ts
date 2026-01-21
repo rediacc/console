@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
  *
  * Generated from: middleware/AppData/stored-procedures.json
- * Generated at: 2026-01-14T10:37:46Z
+ * Generated at: 2026-01-19T19:58:17Z
  * Schema version: 3.0.0
- * Schema generated: 2026-01-14T10:37:45.4819389Z
+ * Schema generated: 2026-01-19T19:58:11.2376335Z
  *
  * To regenerate, run: ./go deploy prep
  * Or directly: dotnet run -- --generate-types
@@ -6677,7 +6677,7 @@ export const PROCEDURE_GUID_PARAMS: Partial<Record<StoredProcedureName, readonly
 
 export const API_SCHEMA_METADATA = {
   version: '3.0.0',
-  generated: '2026-01-14T10:37:45.4819389Z',
+  generated: '2026-01-19T19:58:11.2376335Z',
   procedureCount: 115,
 } as const;
 

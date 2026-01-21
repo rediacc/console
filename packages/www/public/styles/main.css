@@ -15,9 +15,9 @@
   --color-hover: #f5f5f7;
 
   /* Brand Olive Green Palette */
-  --color-red-primary: #556b2f;
-  --color-red-secondary: #4c6029;
-  --color-red-dark: #3d5217;
+  --color-brand-primary: #556b2f;
+  --color-brand-secondary: #4c6029;
+  --color-brand-dark: #3d5217;
 
   /* Typography */
   --font-family:
@@ -489,24 +489,40 @@ body.sidebar-active {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-red-primary) 0%, var(--color-red-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-primary) 0%,
+    var(--color-brand-secondary) 100%
+  );
   color: white;
   border: none;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--color-red-secondary) 0%, var(--color-red-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-secondary) 0%,
+    var(--color-brand-dark) 100%
+  );
   opacity: 1;
 }
 
 .btn-light {
-  background: linear-gradient(135deg, var(--color-red-primary) 0%, var(--color-red-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-primary) 0%,
+    var(--color-brand-secondary) 100%
+  );
   color: white;
   border: none;
 }
 
 .btn-light:hover {
-  background: linear-gradient(135deg, var(--color-red-secondary) 0%, var(--color-red-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-secondary) 0%,
+    var(--color-brand-dark) 100%
+  );
   opacity: 1;
 }
 
@@ -658,7 +674,7 @@ body.sidebar-active {
 .solution-card-link:hover {
   transform: translateY(-8px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border-color: var(--color-red-primary);
+  border-color: var(--color-brand-primary);
 }
 
 .solution-card-footer {
@@ -1000,11 +1016,19 @@ body.sidebar-active {
 }
 
 .gradient-primary {
-  background: linear-gradient(135deg, var(--color-red-primary) 0%, var(--color-red-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-primary) 0%,
+    var(--color-brand-secondary) 100%
+  );
 }
 
 .gradient-primary-hover {
-  background: linear-gradient(135deg, var(--color-red-secondary) 0%, var(--color-red-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-secondary) 0%,
+    var(--color-brand-dark) 100%
+  );
 }
 
 /* Grid Utilities */

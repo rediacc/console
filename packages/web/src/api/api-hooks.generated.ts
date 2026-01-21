@@ -3,7 +3,7 @@
  *
  * Generated from: middleware/AppData/stored-procedures.json
  * Configuration: packages/web/src/api/hooks.config.json
- * Generated at: 2026-01-14T10:37:48Z
+ * Generated at: 2026-01-19T19:58:19Z
  * Schema version: 3.0.0
  *
  * To regenerate, run: ./go deploy prep
