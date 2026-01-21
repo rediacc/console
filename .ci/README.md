@@ -14,8 +14,9 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   ├── ci/
 │   │   └── generate-tag.sh # Generate time-based CI tag (YYYYMMDD-HHMMSS)
 │   ├── version/
-│   │   ├── bump.sh         # Semantic version bump (patch/minor/major)
-│   │   └── commit.sh       # Commit/push version changes (CI-safe)
+│   │   ├── bump.sh            # Semantic version bump (patch/minor/major)
+│   │   ├── commit.sh          # Commit/push version changes (CI-safe)
+│   │   └── bump-submodules.sh # Bump and tag submodule versions
 │   ├── setup/
 │   │   ├── install-deps.sh     # npm ci with platform handling
 │   │   ├── build-packages.sh   # Build shared libraries
@@ -84,6 +85,14 @@ For CI, write the computed version to an output file:
 ```
 
 Version commits use `.ci/scripts/version/commit.sh`, which includes `[skip ci]` by default to prevent CI loops.
+
+Submodule version bumps (renet/middleware) are handled via:
+
+```bash
+.ci/scripts/version/bump-submodules.sh --version 1.2.3
+```
+
+This will commit and tag submodule repos, then update submodule pointers in the console repo.
 
 ## Environment Variables
 

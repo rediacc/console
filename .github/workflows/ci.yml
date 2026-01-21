@@ -438,6 +438,8 @@ jobs:
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
+      - name: Check submodule versions
+        run: .ci/scripts/quality/check-submodule-versions.sh
 
       - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
         with:
@@ -761,8 +763,6 @@ jobs:
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
-          fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref }}
 
       - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
         with:
@@ -1424,7 +1424,7 @@ jobs:
     needs: [test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-middleware, build-renet, build-plugins, build-web-docker, initialize]
     outputs:
       version: ${{ steps.version.outputs.version }}
-      release_sha: ${{ steps.bump.outputs.release_sha }}
+      release_sha: ${{ steps.release.outputs.sha }}
     # Only run when:
     # 1. No build jobs failed (skipped is OK for plugins, but middleware/renet must succeed)
     # 2. On main branch push
@@ -1433,6 +1433,7 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
         with:
           fetch-depth: 0
+          submodules: true
           token: ${{ secrets.GH_PAT }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
@@ -1473,9 +1474,18 @@ jobs:
         run: |
           .ci/scripts/version/bump.sh --version ${{ steps.version.outputs.version }}
           .ci/scripts/version/commit.sh --version ${{ steps.version.outputs.version }} --push
-          echo "release_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         env:
           GITHUB_HEAD_REF: main
+
+      - name: Bump submodule versions
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump-submodules.sh --version ${{ steps.version.outputs.version }}
+        env:
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
+
+      - name: Capture release SHA
+        id: release
+        run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Summary
         run: |
           echo "## Docker Publishing Complete" >> $GITHUB_STEP_SUMMARY
