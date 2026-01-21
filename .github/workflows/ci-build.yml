@@ -1,0 +1,386 @@
+name: Console CI - Build
+
+on:
+  workflow_call:
+    inputs:
+      next_version:
+        required: true
+        type: string
+      api_tag:
+        required: true
+        type: string
+      api_exists:
+        required: true
+        type: string
+      bridge_tag:
+        required: true
+        type: string
+      bridge_exists:
+        required: true
+        type: string
+      plugins_tag:
+        required: true
+        type: string
+      plugins_exists:
+        required: true
+        type: string
+      web_tag:
+        required: true
+        type: string
+      web_exists:
+        required: true
+        type: string
+    secrets:
+      GH_PAT:
+        required: false
+
+jobs:
+  build-cli:
+    name: Build - CLI
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+
+  build-web:
+    name: Build - Web
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-web.sh --type RELEASE
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-web-${{ github.sha }}
+          path: packages/web/dist/
+          retention-days: 3
+
+  build-www:
+    name: Build - WWW
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/build/build-www.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-www-${{ github.sha }}
+          path: packages/www/dist/
+          retention-days: 3
+
+  build-json:
+    name: Build - JSON
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/build/build-json.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-json-${{ github.sha }}
+          path: packages/json/dist/
+          retention-days: 3
+
+  build-desktop:
+    name: Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            timeout: 30
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+            timeout: 30
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+            timeout: 30
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+            timeout: 30
+          - os: windows-latest
+            platform: win
+            arch: x64
+            timeout: 30
+          - os: windows-11-arm
+            platform: win
+            arch: arm64
+            timeout: 60
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-web.sh --type RELEASE
+        shell: bash
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+      - name: Build Electron
+        working-directory: packages/desktop
+        run: npm run build
+      - run: .ci/scripts/build/build-desktop.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-desktop-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}
+          path: dist/desktop/
+          retention-days: 3
+          if-no-files-found: error
+
+  build-plugins:
+    name: Build - Plugins & Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build validation (dry-run)
+      - name: Validate plugin images
+        run: .ci/scripts/build/build-plugins.sh --dry-run
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Determine version
+        id: version
+        run: |
+          echo "version=${{ inputs.next_version }}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Plugin Docker images
+        if: inputs.plugins_exists != 'true'
+        run: |
+          .ci/scripts/docker/build-image.sh --image plugin-terminal --ci-tag ${{ inputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
+          .ci/scripts/docker/build-image.sh --image plugin-browser --ci-tag ${{ inputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
+
+      - name: Skip Docker build (cached)
+        if: inputs.plugins_exists == 'true'
+        run: echo "::notice::Skipping Docker build - plugins:${{ inputs.plugins_tag }} already exists in registry"
+
+  build-web-docker:
+    name: Build - Web & Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Build & Push Web Docker image
+        if: inputs.web_exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/rediacc/elite/web:${{ inputs.web_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            REDIACC_BUILD_TYPE=RELEASE
+            VITE_APP_VERSION=${{ inputs.web_tag }}
+
+      - name: Skip Docker build (cached)
+        if: inputs.web_exists == 'true'
+        run: echo "::notice::Skipping Docker build - web:${{ inputs.web_tag }} already exists in registry"
+
+  build-middleware:
+    name: Build - Middleware & Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: TestPassword123!
+          MSSQL_PID: Express
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P TestPassword123! -C -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 40s
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+
+      - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
+        with:
+          dotnet-version: 9.0.x
+
+      # Build
+      - name: Run middleware build
+        run: .ci/scripts/private/run-middleware.sh build
+
+      # Test
+      - name: Install sqlcmd
+        run: sudo private/middleware/scripts/install-sqlcmd.sh
+
+      - name: Run middleware tests
+        run: .ci/scripts/private/run-middleware.sh test
+
+      - name: Check API types freshness
+        run: .ci/scripts/quality/check-api-types.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: build-middleware-coverage-${{ github.sha }}
+          path: private/middleware/coverage/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # Docker
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Determine version
+        id: version
+        run: |
+          echo "version=${{ inputs.next_version }}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push API Docker image
+        if: inputs.api_exists != 'true'
+        run: .ci/scripts/docker/build-image.sh --image api --ci-tag ${{ inputs.api_tag }} --version ${{ steps.version.outputs.version }} --push
+
+      - name: Skip Docker build (cached)
+        if: inputs.api_exists == 'true'
+        run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
+
+  build-renet:
+    name: Build - Renet & Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      # Build (cross-compile for both architectures)
+      - name: Build verification (cross-compile)
+        run: .ci/scripts/private/renet-build.sh --cross-compile
+
+      # Move binaries to Docker build context
+      - name: Prepare binaries for Docker build
+        run: |
+          mkdir -p private/renet/build
+          if [[ -f private/bin/renet-linux-amd64 && -f private/bin/renet-linux-arm64 ]]; then
+            cp private/bin/renet-linux-amd64 private/renet/build/
+            cp private/bin/renet-linux-arm64 private/renet/build/
+          else
+            cp private/renet/bin/renet-linux-amd64 private/renet/build/
+            cp private/renet/bin/renet-linux-arm64 private/renet/build/
+          fi
+
+      # Docker
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Determine version
+        id: version
+        run: |
+          echo "version=${{ inputs.next_version }}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Bridge Docker image
+        if: inputs.bridge_exists != 'true'
+        run: .ci/scripts/docker/build-image.sh --image bridge --ci-tag ${{ inputs.bridge_tag }} --version ${{ steps.version.outputs.version }} --push
+
+      - name: Skip Docker build (cached)
+        if: inputs.bridge_exists == 'true'
+        run: echo "::notice::Skipping Docker build - bridge:${{ inputs.bridge_tag }} already exists in registry"

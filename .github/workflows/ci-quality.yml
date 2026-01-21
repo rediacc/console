@@ -1,0 +1,205 @@
+name: Console CI - Quality
+
+on:
+  workflow_call:
+    inputs:
+      is_bot:
+        required: true
+        type: string
+      next_version:
+        required: true
+        type: string
+    secrets:
+      GH_PAT:
+        required: false
+
+jobs:
+  quality-versions:
+    name: Quality - Versions
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Block legacy-peer-deps workarounds
+        run: .ci/scripts/quality/check-npmrc.sh
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - name: Verify no peer dependency conflicts
+        run: .ci/scripts/quality/check-peer-deps.sh
+      - run: npm run version:check
+
+  quality-submodule-versions:
+    name: Quality - Submodule Versions
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+      - run: .ci/scripts/quality/check-submodule-versions.sh
+
+  quality-deps:
+    name: Quality - Deps
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GH_PAT }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/quality/check-deps.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+
+  quality-lint:
+    name: Quality - Lint
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run lint -- --max-warnings 0
+      - run: npm run lint:unused
+
+  quality-format:
+    name: Quality - Format
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run check:format
+
+  quality-i18n:
+    name: Quality - i18n
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run check:i18n
+
+  quality-types:
+    name: Quality - TypeScript
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run typecheck
+
+  quality-security:
+    name: Quality - Security
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/security/audit.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: quality-security-${{ github.sha }}
+          path: audit-report.json
+          retention-days: 3
+
+  quality-shell:
+    name: Quality - Shell
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - run: .ci/scripts/security/shellcheck.sh
+      - run: .ci/scripts/security/check-commands.sh
+
+  quality-middleware:
+    name: Quality - Middleware
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+      - name: Check submodule versions
+        run: .ci/scripts/quality/check-submodule-versions.sh
+
+      - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
+        with:
+          dotnet-version: 9.0.x
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+
+      - name: Run middleware quality
+        run: .ci/scripts/private/run-middleware.sh quality
+
+  quality-renet:
+    name: Quality - Renet
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - name: Run renet quality
+        run: .ci/scripts/private/run-renet.sh quality
+
+      - name: Check renet types freshness
+        run: .ci/scripts/quality/check-renet-types.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
