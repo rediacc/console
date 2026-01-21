@@ -54,6 +54,7 @@ jobs:
     if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
+      next_version: ${{ steps.init.outputs.next_version }}
       api_tag: ${{ steps.init.outputs.api_tag }}
       api_exists: ${{ steps.init.outputs.api_exists }}
       bridge_tag: ${{ steps.init.outputs.bridge_tag }}
@@ -336,6 +337,10 @@ jobs:
     if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -351,6 +356,10 @@ jobs:
     if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -426,6 +435,9 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.GH_PAT }}
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
 
       - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
         with:
@@ -478,6 +490,9 @@ jobs:
     needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -492,6 +507,9 @@ jobs:
     needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -514,6 +532,9 @@ jobs:
     needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -532,6 +553,9 @@ jobs:
     needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -641,6 +665,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -657,14 +684,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [[ -n "${{ github.event.inputs.version }}" ]]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            VERSION=$(jq -r '.version' package.json)
-            PATCH=$((${VERSION##*.} + 1))
-            NEW_VERSION="${VERSION%.*}.$PATCH"
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          fi
+          echo "version=${{ needs.initialize.outputs.next_version }}" >> $GITHUB_OUTPUT
 
       - name: Build & Push Plugin Docker images
         if: needs.initialize.outputs.plugins_exists != 'true'
@@ -694,18 +714,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GH_PAT }}
-
-      - name: Determine version
-        id: version
-        run: |
-          if [[ -n "${{ github.event.inputs.version }}" ]]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            VERSION=$(jq -r '.version' package.json)
-            PATCH=$((${VERSION##*.} + 1))
-            NEW_VERSION="${VERSION%.*}.$PATCH"
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          fi
 
       - name: Build & Push Web Docker image
         if: needs.initialize.outputs.web_exists != 'true'
@@ -750,6 +758,9 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.GH_PAT }}
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref }}
 
@@ -794,14 +805,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [[ -n "${{ github.event.inputs.version }}" ]]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            VERSION=$(jq -r '.version' package.json)
-            PATCH=$((${VERSION##*.} + 1))
-            NEW_VERSION="${VERSION%.*}.$PATCH"
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          fi
+          echo "version=${{ needs.initialize.outputs.next_version }}" >> $GITHUB_OUTPUT
 
       - name: Build & Push API Docker image
         if: needs.initialize.outputs.api_exists != 'true'
@@ -821,6 +825,9 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.GH_PAT }}
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ needs.initialize.outputs.next_version }}
 
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
         with:
@@ -851,14 +858,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [[ -n "${{ github.event.inputs.version }}" ]]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            VERSION=$(jq -r '.version' package.json)
-            PATCH=$((${VERSION##*.} + 1))
-            NEW_VERSION="${VERSION%.*}.$PATCH"
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          fi
+          echo "version=${{ needs.initialize.outputs.next_version }}" >> $GITHUB_OUTPUT
 
       - name: Build & Push Bridge Docker image
         if: needs.initialize.outputs.bridge_exists != 'true'
@@ -1422,6 +1422,9 @@ jobs:
     name: Deploy - Publish
     runs-on: ubuntu-latest
     needs: [test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-middleware, build-renet, build-plugins, build-web-docker, initialize]
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_sha: ${{ steps.bump.outputs.release_sha }}
     # Only run when:
     # 1. No build jobs failed (skipped is OK for plugins, but middleware/renet must succeed)
     # 2. On main branch push
@@ -1437,8 +1440,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          VERSION=$(.ci/scripts/version/bump.sh --auto --dry-run | tail -n 1)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=${{ needs.initialize.outputs.next_version }}" >> $GITHUB_OUTPUT
 
       - uses: docker/login-action@v3
         with:
@@ -1466,10 +1468,12 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$PLUGINS_TAG" --to "$VERSION" $PUSH_LATEST
 
       - name: Version bump and commit
+        id: bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           .ci/scripts/version/bump.sh --version ${{ steps.version.outputs.version }}
           .ci/scripts/version/commit.sh --version ${{ steps.version.outputs.version }} --push
+          echo "release_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         env:
           GITHUB_HEAD_REF: main
       - name: Summary
@@ -1487,18 +1491,14 @@ jobs:
   deploy-release:
     name: Deploy - Release
     runs-on: ubuntu-slim
-    needs: [initialize, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-www, build-json, build-desktop]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [deploy-publish, initialize, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-www, build-json, build-desktop]
+    if: needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-
-      - name: Determine version
-        id: version
-        run: |
-          VERSION=$(.ci/scripts/version/bump.sh --auto --dry-run | tail -n 1)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        with:
+          ref: ${{ needs.deploy-publish.outputs.release_sha || github.sha }}
 
       - name: Download all desktop artifacts
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
@@ -1510,9 +1510,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
-          target_commitish: ${{ github.sha }}
+          tag_name: v${{ needs.deploy-publish.outputs.version || needs.initialize.outputs.next_version }}
+          name: v${{ needs.deploy-publish.outputs.version || needs.initialize.outputs.next_version }}
+          target_commitish: ${{ needs.deploy-publish.outputs.release_sha || github.sha }}
           files: dist/desktop/**/*
           draft: false
           prerelease: false
@@ -1521,13 +1521,15 @@ jobs:
   deploy-pages:
     name: Deploy - Pages
     runs-on: ubuntu-slim
-    needs: [initialize, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-www, build-json, build-desktop]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [deploy-publish, initialize, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-www, build-json, build-desktop]
+    if: needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          ref: ${{ needs.deploy-publish.outputs.release_sha || github.sha }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
