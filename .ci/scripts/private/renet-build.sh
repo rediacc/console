@@ -44,11 +44,28 @@ export CROSS_COMPILE
 
 "$RENET_DIR/.ci/ci.sh" build
 
+select_binary_dir() {
+    local monorepo_bin="$REPO_ROOT/private/bin"
+    local submodule_bin="$RENET_DIR/bin"
+
+    if [[ -f "$monorepo_bin/renet-linux-amd64" && -f "$monorepo_bin/renet-linux-arm64" ]]; then
+        echo "$monorepo_bin"
+        return 0
+    fi
+
+    if [[ -f "$submodule_bin/renet-linux-amd64" && -f "$submodule_bin/renet-linux-arm64" ]]; then
+        echo "$submodule_bin"
+        return 0
+    fi
+
+    echo "$monorepo_bin"
+}
+
 # Verify cross-compiled binaries exist
 if [[ "$CROSS_COMPILE" == "true" ]]; then
     log_step "Verifying cross-compiled binaries..."
 
-    BINARY_DIR="$RENET_DIR/bin"
+    BINARY_DIR="$(select_binary_dir)"
 
     if [[ -f "$BINARY_DIR/renet-linux-amd64" ]]; then
         log_info "linux/amd64: OK ($(du -h "$BINARY_DIR/renet-linux-amd64" | cut -f1))"
