@@ -28,6 +28,9 @@ readonly CI_CONFIG_DIR="$CI_DIR/config"
 readonly DOCKER_REGISTRY="ghcr.io/rediacc/elite"
 readonly DOCKER_TAG="${DOCKER_TAG:-latest}"
 
+# Supported architectures for multi-arch builds
+readonly SUPPORTED_ARCHS=("amd64" "arm64")
+
 # Docker Images
 readonly ELITE_IMAGE_WEB="${DOCKER_REGISTRY}/web:${DOCKER_TAG}"
 readonly ELITE_IMAGE_API="${DOCKER_REGISTRY}/api:${DOCKER_TAG}"
