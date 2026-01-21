@@ -30,10 +30,22 @@ const EXCLUSIONS = {
   docs: ['cli/'], // CLI API reference is technical docs, English-only by design
 };
 
-// Required frontmatter fields per collection
+// Required frontmatter fields per collection (must match Astro content schema)
 const REQUIRED_FIELDS = {
-  blog: ['title', 'description', 'publishedDate'],
+  blog: ['title', 'description', 'publishedDate', 'author', 'category', 'tags'],
   docs: ['title', 'description'],
+};
+
+// Valid enum values per collection (must match Astro content schema)
+const ENUM_VALUES = {
+  blog: {
+    category: ['tutorial', 'announcement', 'guide', 'case-study', 'other'],
+  },
+};
+
+// Array fields that must be non-empty
+const ARRAY_FIELDS = {
+  blog: ['tags'],
 };
 
 // ANSI colors
@@ -201,11 +213,42 @@ function validateContent(_strict = false) {
               });
             }
           }
+
+          // Check enum fields
+          const enumFields = ENUM_VALUES[collection] || {};
+          for (const [field, validValues] of Object.entries(enumFields)) {
+            if (frontmatter[field] && !validValues.includes(frontmatter[field])) {
+              errors.push({
+                rule: 'invalid-enum-value',
+                severity: 'error',
+                file: relativeFile,
+                message: `Invalid value "${frontmatter[field]}" for field "${field}"`,
+                suggestion: `Use one of: ${validValues.join(', ')}`,
+              });
+            }
+          }
+
+          // Check array fields are non-empty
+          const arrayFields = ARRAY_FIELDS[collection] || [];
+          for (const field of arrayFields) {
+            if (
+              frontmatter[field] &&
+              (!Array.isArray(frontmatter[field]) || frontmatter[field].length === 0)
+            ) {
+              errors.push({
+                rule: 'invalid-array-field',
+                severity: 'error',
+                file: relativeFile,
+                message: `Field "${field}" must be a non-empty array`,
+                suggestion: `Add at least one item to "${field}"`,
+              });
+            }
+          }
         }
       }
     }
 
-    // Also validate English files for required fields
+    // Also validate English files for required fields, enums, and arrays
     for (const file of englishFiles) {
       const frontmatter = parseFrontmatter(file.fullPath);
       const relativeFile = `${collection}/${SOURCE_LANGUAGE}/${file.relativePath}`;
@@ -220,6 +263,37 @@ function validateContent(_strict = false) {
               file: relativeFile,
               message: `Missing required field "${field}"`,
               suggestion: `Add "${field}" to frontmatter`,
+            });
+          }
+        }
+
+        // Check enum fields for English
+        const enumFields = ENUM_VALUES[collection] || {};
+        for (const [field, validValues] of Object.entries(enumFields)) {
+          if (frontmatter[field] && !validValues.includes(frontmatter[field])) {
+            errors.push({
+              rule: 'invalid-enum-value',
+              severity: 'error',
+              file: relativeFile,
+              message: `Invalid value "${frontmatter[field]}" for field "${field}"`,
+              suggestion: `Use one of: ${validValues.join(', ')}`,
+            });
+          }
+        }
+
+        // Check array fields for English
+        const arrayFields = ARRAY_FIELDS[collection] || [];
+        for (const field of arrayFields) {
+          if (
+            frontmatter[field] &&
+            (!Array.isArray(frontmatter[field]) || frontmatter[field].length === 0)
+          ) {
+            errors.push({
+              rule: 'invalid-array-field',
+              severity: 'error',
+              file: relativeFile,
+              message: `Field "${field}" must be a non-empty array`,
+              suggestion: `Add at least one item to "${field}"`,
             });
           }
         }
@@ -334,6 +408,8 @@ Rules:
   localized-filename     Filenames must use English slugs across all languages
   orphan-file            File exists in translation but not in English
   missing-required-field Required frontmatter fields must be present
+  invalid-enum-value     Enum fields must use valid values (e.g., category)
+  invalid-array-field    Array fields must be non-empty (e.g., tags)
 
 Exclusions:
   - docs/en/cli/  (CLI API reference, English-only by design)

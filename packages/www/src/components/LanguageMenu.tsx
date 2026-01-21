@@ -200,7 +200,22 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
         >
           <span className="flag">{getLanguageFlag(lang)}</span>
           <span className="name">{getLanguageName(lang)}</span>
-          {lang === currentLang && <span className="checkmark">✓</span>}
+          {lang === currentLang && (
+            <svg
+              className="checkmark"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
         </a>
       ));
     }
@@ -216,7 +231,22 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
       >
         <span className="flag">{getLanguageFlag(lang)}</span>
         <span className="name">{getLanguageName(lang)}</span>
-        {lang === currentLang && <span className="checkmark">✓</span>}
+        {lang === currentLang && (
+          <svg
+            className="checkmark"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
       </button>
     ));
   };

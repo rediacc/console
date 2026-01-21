@@ -6,6 +6,7 @@ import { execSync } from 'child_process';
 import react from '@astrojs/react';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
+import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
 
 // Integration to generate search index before build
 const searchIndexIntegration = {
@@ -119,7 +120,8 @@ export default defineConfig({
         return item;
       }
     }),
-    searchIndexIntegration
+    searchIndexIntegration,
+    jsonGeneratorIntegration()
   ],
   output: 'static',
   build: {
