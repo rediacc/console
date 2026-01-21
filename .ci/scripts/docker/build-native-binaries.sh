@@ -236,7 +236,30 @@ build_rsync_cross() {
         export DEBIAN_FRONTEND=noninteractive
         sudo dpkg --add-architecture arm64
 
-        # Configure apt sources for arm64
+        # Configure apt sources for multi-arch support
+        # The default sources only serve amd64, so we need to:
+        # 1. Constrain default sources to amd64 only
+        # 2. Add ports.ubuntu.com for arm64 packages
+        log_info "Configuring apt sources for multi-arch..."
+
+        # Convert default sources to amd64-only (handles both sources.list and .sources format)
+        if [[ -f /etc/apt/sources.list ]] && [[ -s /etc/apt/sources.list ]]; then
+            # Traditional sources.list format - add [arch=amd64] constraint
+            sudo sed -i 's/^deb \([^[]\)/deb [arch=amd64] \1/g' /etc/apt/sources.list
+            sudo sed -i 's/^deb-src \([^[]\)/deb-src [arch=amd64] \1/g' /etc/apt/sources.list
+        fi
+
+        # Handle DEB822 format (.sources files) used in newer Ubuntu
+        for sources_file in /etc/apt/sources.list.d/*.sources; do
+            if [[ -f "$sources_file" ]]; then
+                # Add Architectures: amd64 if not already present
+                if ! grep -q "^Architectures:" "$sources_file"; then
+                    sudo sed -i '/^Types:/a Architectures: amd64' "$sources_file"
+                fi
+            fi
+        done
+
+        # Add arm64 sources from ports.ubuntu.com
         sudo bash -c 'cat > /etc/apt/sources.list.d/arm64-ports.list << EOF
 deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
 deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
