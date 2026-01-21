@@ -11,6 +11,11 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 ├── scripts/
 │   ├── lib/
 │   │   └── common.sh       # Shared utilities (OS detection, logging)
+│   ├── ci/
+│   │   └── generate-tag.sh # Generate time-based CI tag (YYYYMMDD-HHMMSS)
+│   ├── version/
+│   │   ├── bump.sh         # Semantic version bump (patch/minor/major)
+│   │   └── commit.sh       # Commit/push version changes (CI-safe)
 │   ├── setup/
 │   │   ├── install-deps.sh     # npm ci with platform handling
 │   │   ├── build-packages.sh   # Build shared libraries
@@ -28,6 +33,9 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   │   ├── run-unit.sh         # Run unit tests
 │   │   ├── run-e2e.sh          # Run E2E tests
 │   │   └── run-cli.sh          # Run CLI tests
+│   ├── docker/
+│   │   ├── build-image.sh      # Build Docker images (supports --ci-tag)
+│   │   └── retag-image.sh      # Re-tag CI images to semantic version
 │   └── build/
 │       ├── build-web.sh        # Build web application
 │       ├── build-cli.sh        # Build CLI
@@ -52,6 +60,30 @@ All scripts are designed to be run from the repository root:
 # Run E2E tests for specific browsers
 .ci/scripts/test/run-e2e.sh --projects chromium firefox
 ```
+
+## Versioning
+
+Semantic versioning is managed centrally via `.ci/scripts/version/bump.sh`:
+
+```bash
+# Auto-increment patch (X.Y.Z -> X.Y.(Z+1))
+.ci/scripts/version/bump.sh --auto
+
+# Manual minor/major bump
+.ci/scripts/version/bump.sh --minor
+.ci/scripts/version/bump.sh --major
+
+# Explicit version
+.ci/scripts/version/bump.sh --version 1.2.3
+```
+
+For CI, write the computed version to an output file:
+
+```bash
+.ci/scripts/version/bump.sh --auto --output "$GITHUB_OUTPUT"
+```
+
+Version commits use `.ci/scripts/version/commit.sh`, which includes `[skip ci]` by default to prevent CI loops.
 
 ## Environment Variables
 

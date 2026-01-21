@@ -1,0 +1,42 @@
+name: 'Start Backend Services'
+description: 'Start Rediacc backend services (web, API, SQL Server) for CI testing'
+author: 'Rediacc'
+
+branding:
+  icon: 'database'
+  color: 'blue'
+
+inputs:
+  keep-alive:
+    description: 'Skip automatic cleanup to keep services running (default: false)'
+    required: false
+    default: 'false'
+  ci-mode:
+    description: 'Enable CI/TEST mode (bypasses email and captcha validation)'
+    required: false
+    default: 'true'
+
+outputs:
+  api-url:
+    description: 'API endpoint URL (http://localhost)'
+    value: ${{ steps.start.outputs.api-url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Start Backend Services
+      id: start
+      shell: bash
+      env:
+        CI_MODE: ${{ inputs.ci-mode }}
+      run: ${{ github.action_path }}/../../../.ci/scripts/infra/ci-start.sh
+
+    - name: Cleanup Services
+      if: always() && inputs.keep-alive != 'true'
+      shell: bash
+      run: |
+        echo "Cleaning up backend services..."
+        cd ${{ github.action_path }}/../../../.ci/docker/ci
+        docker compose down --volumes --remove-orphans || true
+        rm -rf mssql || true
+        echo "Cleanup complete"

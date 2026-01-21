@@ -26,7 +26,20 @@ const Hero: React.FC<HeroProps> = ({ lang = 'en', origin }) => {
           <div className="hero-cta">
             <div className="hero-cta-primary">
               <div className="hero-badge">
-                <span className="badge-icon">✓</span>
+                <svg
+                  className="badge-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
                 <span>{t('hero.cta.freeBadge')}</span>
               </div>
               <a

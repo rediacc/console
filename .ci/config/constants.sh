@@ -1,11 +1,6 @@
 #!/bin/bash
 # Console development constants
 # Single source of truth for all configuration
-#
-# ⚠️  IMPORTANT: When updating constants or configuration:
-# ⚠️  1. Update this file (constants.sh)
-# ⚠️  2. Update the main 'go' script if needed (console/go)
-# ⚠️  3. Update documentation (console/docs/BACKEND.md)
 
 # Prevent re-sourcing
 [[ -n "${REDIACC_CONSTANTS_LOADED:-}" ]] && return 0
@@ -19,27 +14,51 @@ readonly NODE_VERSION_MIN="22.0.0"
 readonly NPM_VERSION_MIN="10.0.0"
 
 # =============================================================================
-# ELITE BACKEND CONFIGURATION
+# PATHS (must be defined early, used by other sections)
 # =============================================================================
-readonly ELITE_REPO_URL="https://github.com/rediacc/elite.git"
-readonly ELITE_LOCAL_PATH="${ELITE_LOCAL_PATH:-$HOME/.rediacc/elite}"
-readonly ELITE_DOCKER_REGISTRY="ghcr.io/rediacc/elite"
-readonly ELITE_TAG="${ELITE_TAG:-latest}"
+readonly CONSOLE_ROOT_DIR="${CONSOLE_ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+readonly CI_DIR="$CONSOLE_ROOT_DIR/.ci"
+readonly CI_SCRIPTS_DIR="$CI_DIR/scripts"
+readonly CI_LIB_DIR="$CI_DIR/lib"
+readonly CI_CONFIG_DIR="$CI_DIR/config"
 
-# Elite Docker Images
-readonly ELITE_IMAGE_WEB="${ELITE_DOCKER_REGISTRY}/web:${ELITE_TAG}"
-readonly ELITE_IMAGE_API="${ELITE_DOCKER_REGISTRY}/api:${ELITE_TAG}"
-readonly ELITE_IMAGE_BRIDGE="${ELITE_DOCKER_REGISTRY}/bridge:${ELITE_TAG}"
+# =============================================================================
+# DOCKER REGISTRY CONFIGURATION
+# =============================================================================
+readonly DOCKER_REGISTRY="ghcr.io/rediacc/elite"
+readonly DOCKER_TAG="${DOCKER_TAG:-latest}"
+
+# Docker Images
+readonly ELITE_IMAGE_WEB="${DOCKER_REGISTRY}/web:${DOCKER_TAG}"
+readonly ELITE_IMAGE_API="${DOCKER_REGISTRY}/api:${DOCKER_TAG}"
+readonly ELITE_IMAGE_BRIDGE="${DOCKER_REGISTRY}/bridge:${DOCKER_TAG}"
 readonly ELITE_IMAGE_SQL="mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04"
 
-# Elite Container Names (matches CI standalone mode)
-readonly ELITE_CONTAINER_WEB="rediacc-web"
-readonly ELITE_CONTAINER_API="rediacc-api"
-readonly ELITE_CONTAINER_SQL="rediacc-sql"
+# Docker Networks
+readonly DOCKER_NETWORK_INTERNET="rediacc_internet"
+readonly DOCKER_NETWORK_INTRANET="rediacc_intranet"
 
-# Elite Docker Networks
-readonly ELITE_NETWORK_INTERNET="rediacc_internet"
-readonly ELITE_NETWORK_INTRANET="rediacc_intranet"
+# =============================================================================
+# BACKEND CONFIGURATION (self-contained docker-compose)
+# =============================================================================
+readonly CI_DOCKER_DIR="${CONSOLE_ROOT_DIR}/.ci/docker/ci"
+readonly CI_COMPOSE_FILE="${CI_DOCKER_DIR}/docker-compose.yml"
+
+# Container Names
+readonly CI_CONTAINER_WEB="rediacc-web"
+readonly CI_CONTAINER_API="rediacc-api"
+readonly CI_CONTAINER_SQL="rediacc-sql"
+
+# Backend state file
+readonly BACKEND_STATE_FILE="$CONSOLE_ROOT_DIR/.backend-state"
+
+# Default System Configuration
+readonly SYSTEM_ADMIN_EMAIL="admin@rediacc.io"
+readonly SYSTEM_ADMIN_PASSWORD="admin"
+readonly SYSTEM_ORGANIZATION_NAME="Default Organization"
+readonly SYSTEM_DEFAULT_BRIDGE_NAME="Global Bridges"
+readonly SYSTEM_DEFAULT_REGION_NAME="Default Region"
+readonly SYSTEM_DEFAULT_TEAM_NAME="Private Team"
 
 # =============================================================================
 # API CONFIGURATION
@@ -47,8 +66,8 @@ readonly ELITE_NETWORK_INTRANET="rediacc_intranet"
 readonly API_URL_LOCAL="http://localhost/api"
 readonly API_URL_SANDBOX="https://sandbox.rediacc.com/api"
 readonly API_HEALTH_ENDPOINT="/health"
-readonly API_HEALTH_TIMEOUT=120  # seconds (matches CI)
-readonly API_HEALTH_INTERVAL=2    # seconds between retries
+readonly API_HEALTH_TIMEOUT=120  # seconds
+readonly API_HEALTH_INTERVAL=2   # seconds between retries
 
 # =============================================================================
 # BACKEND PRESETS (for --backend parameter)
@@ -59,23 +78,10 @@ readonly BACKEND_PRESET_SANDBOX="https://sandbox.rediacc.com"
 # =============================================================================
 # PORTS
 # =============================================================================
-readonly PORT_WEB=80              # Elite web proxy (nginx)
-readonly PORT_WEB_HTTPS=443       # Elite web proxy (https)
-readonly PORT_SQL=1433            # SQL Server
-readonly PORT_CONSOLE_DEV=3000    # Console dev server default
-
-# =============================================================================
-# PATHS
-# =============================================================================
-readonly CONSOLE_ROOT_DIR="${CONSOLE_ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
-readonly CI_DIR="$CONSOLE_ROOT_DIR/.ci"
-readonly CI_SCRIPTS_DIR="$CI_DIR/scripts"
-readonly CI_LIB_DIR="$CI_DIR/lib"
-readonly CI_CONFIG_DIR="$CI_DIR/config"
-
-# Backend management
-readonly BACKEND_STATE_FILE="$CONSOLE_ROOT_DIR/.backend-state"
-readonly BACKEND_ENV_FILE="$ELITE_LOCAL_PATH/.env"
+readonly PORT_WEB=80
+readonly PORT_WEB_HTTPS=443
+readonly PORT_SQL=1433
+readonly PORT_CONSOLE_DEV=3000
 
 # =============================================================================
 # BUILD CONFIGURATION
@@ -88,11 +94,51 @@ readonly BUILD_TYPE_DEFAULT="$BUILD_TYPE_DEBUG"
 readonly DOCKER_BUILD_ARG_NODE_VERSION="NODE_VERSION=$NODE_VERSION_REQUIRED"
 
 # =============================================================================
-# BACKEND MODES
+# PUBLISHING CONFIGURATION
 # =============================================================================
-readonly BACKEND_MODE_GHCR="ghcr"        # Pull from ghcr.io (CI mode)
-readonly BACKEND_MODE_LOCAL="local"      # Build from elite source
-readonly BACKEND_MODE_DEFAULT="$BACKEND_MODE_GHCR"
+readonly PUBLISH_DOCKER_REGISTRY="ghcr.io/rediacc/elite"
+
+# Bot identity for CI commits
+readonly PUBLISH_BOT_NAME="github-actions[bot]"
+readonly PUBLISH_BOT_EMAIL="github-actions[bot]@users.noreply.github.com"
+
+# Docker images to publish
+readonly PUBLISH_IMAGES=("api" "bridge" "plugin-terminal" "plugin-browser" "web")
+
+# Dockerfiles (relative to CONSOLE_ROOT_DIR)
+declare -A DOCKERFILES=(
+    ["api"]="private/middleware/Dockerfile"
+    ["bridge"]="private/renet/Dockerfile"
+    ["plugin-terminal"]="packages/plugins/terminal/Dockerfile"
+    ["plugin-browser"]="packages/plugins/browser/Dockerfile"
+    ["web"]="Dockerfile"
+)
+
+# Build contexts (relative to CONSOLE_ROOT_DIR)
+declare -A BUILD_CONTEXTS=(
+    ["api"]="private/middleware"
+    ["bridge"]="private/renet"
+    ["plugin-terminal"]="packages/plugins/terminal"
+    ["plugin-browser"]="packages/plugins/browser"
+    ["web"]="."
+)
+
+# Version files to update (relative to CONSOLE_ROOT_DIR)
+readonly VERSION_FILES_JSON=(
+    "package.json"
+    "packages/cli/package.json"
+    "packages/shared/package.json"
+    "packages/shared-desktop/package.json"
+    "packages/web/package.json"
+    "packages/desktop/package.json"
+    "packages/e2e/package.json"
+    "packages/bridge-tests/package.json"
+    "packages/www/package.json"
+    "packages/json/package.json"
+)
+readonly VERSION_FILE_TS="packages/cli/src/version.ts"
+readonly VERSION_FILE_GO="private/renet/cmd/renet/version.go"
+readonly VERSION_FILE_CSPROJ="private/middleware/middleware.csproj"
 
 # =============================================================================
 # SQL CONFIGURATION
@@ -100,7 +146,6 @@ readonly BACKEND_MODE_DEFAULT="$BACKEND_MODE_GHCR"
 readonly SQL_SA_USER="sa"
 readonly SQL_RA_USER_PREFIX="rediacc"
 readonly SQL_DATABASE_PREFIX="RediaccMiddleware"
-readonly SQL_INSTANCE_NAME="${SQL_INSTANCE_NAME:-local}"
 
 # =============================================================================
 # LOGGING
@@ -111,13 +156,13 @@ readonly LOG_LEVEL_WARN="warn"
 readonly LOG_LEVEL_ERROR="error"
 readonly LOG_LEVEL_DEFAULT="$LOG_LEVEL_INFO"
 
-# Color codes (if terminal supports)
+# Color codes
 readonly COLOR_RED='\033[0;31m'
 readonly COLOR_GREEN='\033[0;32m'
 readonly COLOR_YELLOW='\033[1;33m'
 readonly COLOR_BLUE='\033[0;34m'
 readonly COLOR_CYAN='\033[0;36m'
-readonly COLOR_NC='\033[0m' # No Color
+readonly COLOR_NC='\033[0m'
 
 # =============================================================================
 # TIMEOUTS
@@ -130,19 +175,12 @@ readonly TIMEOUT_NPM_INSTALL=600      # 10 minutes
 # =============================================================================
 # VALIDATION
 # =============================================================================
-# Validate constants are set correctly
 if [[ -z "$NODE_VERSION_REQUIRED" ]]; then
     echo "ERROR: NODE_VERSION_REQUIRED not set" >&2
     exit 1
 fi
 
-if [[ -z "$ELITE_REPO_URL" ]]; then
-    echo "ERROR: ELITE_REPO_URL not set" >&2
-    exit 1
-fi
-
 # Export for subprocess access
 export NODE_VERSION_REQUIRED
-export ELITE_LOCAL_PATH
 export API_URL_LOCAL
 export PORT_CONSOLE_DEV

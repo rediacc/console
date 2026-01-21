@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { getLanguageFromPath } from '../i18n/language-utils';
+import React, { useEffect } from 'react';
+import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import type { Language } from '../i18n/types';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -9,11 +8,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  // eslint-disable-next-line react/hook-use-state
-  const currentLang = useState<Language>(() => {
-    if (typeof window === 'undefined') return 'en';
-    return getLanguageFromPath(window.location.pathname);
-  })[0];
+  const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
 
   const navItems = [

@@ -283,7 +283,7 @@ sandbox() {
 
         # Build the Docker image
         log_info "Building Docker image"
-        docker build -f Dockerfile.standalone -t rediacc-console:sandbox \
+        docker build -t rediacc-console:sandbox \
           --build-arg REDIACC_BUILD_TYPE=DEBUG . || {
             log_error "Docker build failed"
             return 1

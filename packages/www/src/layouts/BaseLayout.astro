@@ -205,14 +205,14 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
         position: absolute;
         top: -100px;
         left: 6px;
-        background: #000;
-        color: #fff;
+        background: var(--color-text);
+        color: var(--color-bg-alt);
         padding: 8px 16px;
         text-decoration: none;
         font-size: 14px;
         border-radius: 0 0 4px 4px;
         transition: top 0.3s ease;
-        border: 2px solid #fff;
+        border: 2px solid var(--color-bg-alt);
       }
 
       .skip-nav-link:focus {
@@ -221,7 +221,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
       }
 
       .skip-nav-link:hover:focus {
-        background: #333;
+        background: var(--color-text-secondary);
       }
     </style>
 

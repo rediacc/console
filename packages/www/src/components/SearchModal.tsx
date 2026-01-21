@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Fuse from 'fuse.js';
-import { getLanguageFromPath } from '../i18n/language-utils';
+import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import type { Language } from '../i18n/types';
 
 interface SearchItem {
   id: string;
@@ -25,11 +24,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [fuse, setFuse] = useState<Fuse<SearchItem> | null>(null);
-  // eslint-disable-next-line react/hook-use-state
-  const currentLang = useState<Language>(() => {
-    if (typeof window === 'undefined') return 'en';
-    return getLanguageFromPath(window.location.pathname);
-  })[0];
+  const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);

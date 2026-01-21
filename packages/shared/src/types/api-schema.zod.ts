@@ -4,7 +4,7 @@
  * Zod schemas for runtime validation of API responses.
  * Generated alongside api-schema.generated.ts for fail-fast validation.
  *
- * Generated at: 2026-01-14T10:37:46Z
+ * Generated at: 2026-01-19T19:58:17Z
  * Schema version: 3.0.0
  *
  * To regenerate, run: ./go deploy prep

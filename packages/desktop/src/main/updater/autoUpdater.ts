@@ -1,12 +1,71 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { app } from 'electron';
 import log from 'electron-log';
 import { autoUpdater, ProgressInfo, UpdateInfo } from 'electron-updater';
+import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { sendToAllWindows } from '../ipc/updater';
 
 // Configure logging
 autoUpdater.logger = log;
 log.transports.file.level = 'info';
 
+/**
+ * Update configuration from ~/.rediacc/updates.json
+ *
+ * Example configuration:
+ * {
+ *   "feedUrl": "https://intranet.company.com/rediacc/updates",
+ *   "provider": "generic",
+ *   "channel": "latest"
+ * }
+ */
+interface UpdateConfig {
+  /** URL of the update server */
+  feedUrl?: string;
+  /** Update provider type */
+  provider?: 'github' | 'generic' | 's3';
+  /** Update channel */
+  channel?: 'latest' | 'beta' | 'alpha';
+}
+
+/**
+ * Load update configuration from ~/.rediacc/updates.json
+ * @returns The update configuration or null if not found/invalid
+ */
+function getUpdateConfig(): UpdateConfig | null {
+  const configPath = join(app.getPath('home'), '.rediacc', 'updates.json');
+
+  if (existsSync(configPath)) {
+    try {
+      const content = readFileSync(configPath, 'utf-8');
+      const config = JSON.parse(content) as UpdateConfig;
+      log.info('Loaded update config from:', configPath);
+      return config;
+    } catch (error) {
+      log.error('Failed to parse updates.json:', error);
+    }
+  }
+
+  return null;
+}
+
 export function setupAutoUpdater(): void {
+  // Check for custom update config from ~/.rediacc/updates.json
+  const updateConfig = getUpdateConfig();
+
+  if (updateConfig?.feedUrl) {
+    log.info('Using custom update server:', updateConfig.feedUrl);
+    autoUpdater.setFeedURL({
+      provider: updateConfig.provider ?? UPDATE_DEFAULTS.PROVIDER,
+      url: updateConfig.feedUrl,
+    });
+
+    if (updateConfig.channel) {
+      autoUpdater.channel = updateConfig.channel;
+    }
+  }
+
   // Configure update settings
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;

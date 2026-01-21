@@ -500,6 +500,17 @@ export const WINDOW_DEFAULTS = {
   POPOUT_HEIGHT: 600,
 } as const;
 
+/**
+ * Auto-update defaults
+ */
+export const UPDATE_DEFAULTS = {
+  /** Default update provider */
+  PROVIDER: 'generic' as const,
+
+  /** Default update channel */
+  CHANNEL: 'latest' as const,
+} as const;
+
 // Re-export aggregated defaults with new additions
 export const DEFAULTS_EXTENDED = {
   ...DEFAULTS,
@@ -514,4 +525,5 @@ export const DEFAULTS_EXTENDED = {
   E2E: E2E_DEFAULTS,
   CLI_TEST: CLI_TEST_DEFAULTS,
   WINDOW: WINDOW_DEFAULTS,
+  UPDATE: UPDATE_DEFAULTS,
 } as const;

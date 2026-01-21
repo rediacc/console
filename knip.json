@@ -85,6 +85,7 @@
         "src/pages/**/*.astro",
         "src/layouts/**/*.astro",
         "scripts/generate-search-index.js",
+        "scripts/generate-json.js",
         "src/components/Navigation.tsx",
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"

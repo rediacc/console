@@ -33,6 +33,27 @@ if [[ -z "$IMAGE" ]]; then
     exit 1
 fi
 
+# Validate :latest usage in CI
+# - USE_CI_IMAGES=true  + :latest → ERROR (should be using CI tag)
+# - USE_CI_IMAGES=false + :latest → OK (expected fallback when builds skipped)
+# - CI without USE_CI_IMAGES + :latest → ERROR (legacy check)
+if [[ -n "${CI:-}" ]] && [[ "$IMAGE" == *":latest" ]]; then
+    if [[ "${USE_CI_IMAGES:-}" == "true" ]]; then
+        log_error "ERROR: Pulling :latest tag when USE_CI_IMAGES=true"
+        log_error "This indicates a configuration error - CI tag should be used"
+        log_error "Image requested: $IMAGE"
+        exit 1
+    elif [[ "${USE_CI_IMAGES:-}" == "false" ]]; then
+        log_warn "Using :latest tag (builds were skipped due to no private repo access)"
+    else
+        # Legacy fallback: reject :latest in CI without explicit flag
+        log_error "ERROR: Pulling :latest tag is not allowed in CI"
+        log_error "Set USE_CI_IMAGES=false to explicitly allow :latest, or use CI tag"
+        log_error "Image requested: $IMAGE"
+        exit 1
+    fi
+fi
+
 if [[ -z "$TOKEN" ]]; then
     log_error "GitHub token required (--token or GITHUB_TOKEN environment variable)"
     exit 1

@@ -64,9 +64,9 @@ log_info "E2E browsers: ${E2E_BROWSERS_ARR[*]}"
 # log_info "E2E devices: ${E2E_DEVICES[*]}"
 log_info "E2E Electron: ${E2E_ELECTRON[*]}"
 
-# Track completed signals
+# Track completed signals and failed signals
 declare -a COMPLETED=()
-ELAPSED=0
+declare -a FAILED_SIGNALS=()
 
 # Helper to check if signal is already completed
 is_completed() {
@@ -86,64 +86,139 @@ mark_completed() {
     fi
 }
 
-while [[ $ELAPSED -lt $TIMEOUT ]]; do
+# Helper to check if signal indicates failure
+is_signal_failed() {
+    local signal="$1"
+    for failed in "${FAILED_SIGNALS[@]:-}"; do
+        [[ "$failed" == "$signal" ]] && return 0
+    done
+    return 1
+}
+
+# Check signal status by downloading and reading artifact content
+check_signal_status() {
+    local signal="$1"
+    local artifact_name="$2"
+    local temp_dir
+    temp_dir=$(mktemp -d)
+
+    # Download the artifact
+    if gh run download "$GITHUB_RUN_ID" --name "$artifact_name" --dir "$temp_dir" 2>/dev/null; then
+        # Read the status from complete.txt
+        local status
+        status=$(cat "$temp_dir/complete.txt" 2>/dev/null || echo "unknown")
+        rm -rf "$temp_dir"
+
+        # Check if status indicates failure
+        if [[ "$status" == "failure" ]] || [[ "$status" == "cancelled" ]]; then
+            if ! is_signal_failed "$signal"; then
+                FAILED_SIGNALS+=("$signal")
+                log_error "Signal $signal reported status: $status"
+            fi
+            return 1  # Signal indicates failure
+        fi
+        return 0  # Success
+    fi
+
+    rm -rf "$temp_dir"
+    return 2  # Not found or download failed
+}
+
+# Fetch artifacts and check for completion signals
+fetch_and_check_signals() {
     # Fetch current artifacts
-    ARTIFACTS=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --jq '.artifacts[].name' 2>/dev/null || echo "")
+    local artifacts
+    artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --jq '.artifacts[].name' 2>/dev/null || echo "")
 
     # Check CLI platforms
     for platform in "${CLI_PLATFORMS[@]}"; do
-        if echo "$ARTIFACTS" | grep -q "^test-complete-cli-${platform}$"; then
-            mark_completed "cli-${platform}"
+        local artifact_name="test-complete-cli-${platform}"
+        if echo "$artifacts" | grep -q "^${artifact_name}$"; then
+            if ! is_completed "cli-${platform}"; then
+                mark_completed "cli-${platform}"
+                # Check signal status
+                check_signal_status "cli-${platform}" "$artifact_name" || true
+            fi
         fi
     done
 
     # Check E2E browsers
     for browser in "${E2E_BROWSERS_ARR[@]}"; do
-        if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${browser}$"; then
-            mark_completed "e2e-${browser}"
+        local artifact_name="test-complete-e2e-${browser}"
+        if echo "$artifacts" | grep -q "^${artifact_name}$"; then
+            if ! is_completed "e2e-${browser}"; then
+                mark_completed "e2e-${browser}"
+                # Check signal status
+                check_signal_status "e2e-${browser}" "$artifact_name" || true
+            fi
         fi
     done
 
     # TODO: Re-enable when resolution tests are active
-    # Check E2E resolutions
     # for resolution in "${E2E_RESOLUTIONS[@]}"; do
-    #     if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${resolution}$"; then
+    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${resolution}$"; then
     #         mark_completed "e2e-${resolution}"
     #     fi
     # done
 
     # TODO: Re-enable when device tests are active
-    # Check E2E devices
     # for device in "${E2E_DEVICES[@]}"; do
-    #     if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${device}$"; then
+    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${device}$"; then
     #         mark_completed "e2e-${device}"
     #     fi
     # done
 
     # Check E2E Electron platforms
     for platform in "${E2E_ELECTRON[@]}"; do
-        if echo "$ARTIFACTS" | grep -q "^test-complete-e2e-${platform}$"; then
-            mark_completed "e2e-${platform}"
+        local artifact_name="test-complete-e2e-${platform}"
+        if echo "$artifacts" | grep -q "^${artifact_name}$"; then
+            if ! is_completed "e2e-${platform}"; then
+                mark_completed "e2e-${platform}"
+                # Check signal status
+                check_signal_status "e2e-${platform}" "$artifact_name" || true
+            fi
         fi
     done
+}
 
-    # Check if all completed
-    if [[ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ]]; then
-        log_info "All $EXPECTED_COUNT signals received!"
-        exit 0
+# Check if any signals have failed
+has_failures() {
+    [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]
+}
+
+# Condition: all signals received
+all_signals_received() {
+    fetch_and_check_signals
+    [[ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ]]
+}
+
+# Progress callback
+on_poll() {
+    local elapsed="$1"
+    local timeout="$2"
+    log_debug "Waiting... (${elapsed}s / ${timeout}s) - Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
+}
+
+# Main wait loop using poll_with_watchdog
+if poll_with_watchdog "$TIMEOUT" "$INTERVAL" all_signals_received on_poll; then
+    # All signals received - check for failures
+    if has_failures; then
+        log_error "All $EXPECTED_COUNT signals received, but ${#FAILED_SIGNALS[@]} reported failure!"
+        log_error "Failed signals: ${FAILED_SIGNALS[*]}"
+        exit 1
     fi
-
-    # Wait and increment
-    sleep "$INTERVAL"
-    ELAPSED=$((ELAPSED + INTERVAL))
-    log_debug "Waiting... (${ELAPSED}s / ${TIMEOUT}s) - Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
-done
+    log_info "All $EXPECTED_COUNT signals received successfully!"
+    exit 0
+fi
 
 # Timeout reached
 log_warn "Timeout reached after ${TIMEOUT}s"
 log_warn "Completed: ${#COMPLETED[@]}/${EXPECTED_COUNT}"
 if [[ ${#COMPLETED[@]} -gt 0 ]]; then
     log_info "Received signals: ${COMPLETED[*]}"
+fi
+if has_failures; then
+    log_error "Failed signals: ${FAILED_SIGNALS[*]}"
 fi
 
 # List missing signals

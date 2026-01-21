@@ -7,3 +7,7 @@
 # tar <=7.5.2 path traversal (GHSA-8qq5-rm4j-mr97)
 # In electron-builder dependency chain, can't upgrade - tar@7.5.3 has breaking ESM changes
 1112255
+
+# tar <=7.5.3 race condition with Unicode ligatures (GHSA-r6q2-hw4h-h46w)
+# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
+1112329

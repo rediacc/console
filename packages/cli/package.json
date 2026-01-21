@@ -40,7 +40,7 @@
     "rdc": "./dist/cli-bundle.cjs"
   },
   "dependencies": {
-    "inquirer": "^13.2.0"
+    "inquirer": "^13.2.1"
   },
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "devDependencies": {
@@ -62,7 +62,7 @@
     "esbuild": "^0.27.1",
     "execa": "^9.6.1",
     "i18next": "^25.7.2",
-    "ora": "^9.0.0",
+    "ora": "^9.1.0",
     "otpauth": "^9.4.1",
     "rimraf": "^6.1.2",
     "tsx": "^4.19.2",

@@ -8,8 +8,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - '[0-9]*.[0-9]*.[0-9]*'  # Version tags like 0.4.20
   schedule:
     - cron: '0 3 * * *'  # Nightly at 3:00 UTC
   workflow_dispatch:
@@ -22,14 +20,23 @@ on:
         options:
           - 'chromium-only'
           - 'all-browsers'
+      publish:
+        description: 'Publish Docker images to GHCR'
+        type: boolean
+        default: false
+      version:
+        description: 'Version to publish (leave empty for auto-increment)'
+        required: false
+        default: ''
 
-# Required for cancel-watchdog to cancel workflow on job failures
-# and for GitHub Pages deployment
+# Required for cancel-watchdog to cancel workflow on job failures,
+# GitHub Pages deployment, autofix commits, and Docker publishing
 permissions:
   actions: write
-  contents: read
+  contents: write
   pages: write
   id-token: write
+  packages: write  # For GHCR push
 
 # Cancel in-progress runs when a new run is triggered for the same branch/PR
 # Use 'no-cancel-push' PR label to disable (see .github/labels.yml)
@@ -45,12 +52,155 @@ env:
 
 jobs:
   # ============================================================================
-  # CANCEL WATCHDOG - Monitors all jobs and cancels workflow on any failure
+  # COLUMN 1: INITIALIZE
+  # Jobs: initialize, cancel-watchdog
+  # Dependencies: None
   # ============================================================================
+  initialize:
+    name: Initialize
+    runs-on: ubuntu-latest  # Needs Docker for registry cache check
+    if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
+    outputs:
+      is_bot: ${{ steps.init.outputs.is_bot }}
+      api_tag: ${{ steps.init.outputs.api_tag }}
+      api_exists: ${{ steps.init.outputs.api_exists }}
+      bridge_tag: ${{ steps.init.outputs.bridge_tag }}
+      bridge_exists: ${{ steps.init.outputs.bridge_exists }}
+      plugins_tag: ${{ steps.init.outputs.plugins_tag }}
+      plugins_exists: ${{ steps.init.outputs.plugins_exists }}
+      web_tag: ${{ steps.init.outputs.web_tag }}
+      web_exists: ${{ steps.init.outputs.web_exists }}
+      image_tag: ${{ steps.init.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      # PR Validation (PR events only)
+      - name: Validate PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const errors = [];
+            const warnings = [];
+
+            // Check PR title format (Conventional Commits)
+            const titlePattern = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .+/;
+            if (!titlePattern.test(pr.title)) {
+              errors.push(
+                'PR title must follow Conventional Commits format:\n' +
+                'type(scope): description\n\n' +
+                'Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert\n' +
+                'Example: feat(ui): add dark mode toggle'
+              );
+            }
+
+            // Check PR description length
+            const body = pr.body || '';
+            if (body.length < 20) {
+              errors.push('PR description is too short. Please provide a detailed description.');
+            }
+
+            // Check for linked issues (warning only)
+            const issuePattern = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|ref|refs)\s+#\d+/i;
+            if (!issuePattern.test(body)) {
+              warnings.push('PR does not reference any issues. Consider linking related issues.');
+            }
+
+            // Check PR size
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+            const additions = files.reduce((sum, file) => sum + file.additions, 0);
+            const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
+            const totalChanges = additions + deletions;
+            const fileCount = files.length;
+
+            if (totalChanges > 1000) {
+              warnings.push(`Large PR detected (${totalChanges} lines changed). Consider breaking it into smaller PRs.`);
+            }
+            if (fileCount > 30) {
+              warnings.push(`Many files changed (${fileCount} files). Consider breaking it into smaller PRs.`);
+            }
+
+            // Check mergeable state
+            const { data: prData } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+            if (prData.mergeable_state === 'dirty') {
+              errors.push('PR has merge conflicts. Please resolve them.');
+            }
+
+            // Write summary
+            let summary = `## PR Validation\n\n`;
+            summary += `- **Files changed:** ${fileCount}\n`;
+            summary += `- **Lines added:** ${additions}\n`;
+            summary += `- **Lines deleted:** ${deletions}\n`;
+            summary += `- **Total changes:** ${totalChanges}\n\n`;
+
+            if (warnings.length > 0) {
+              summary += `### Warnings\n`;
+              warnings.forEach(w => {
+                core.warning(w);
+                summary += `- ⚠️ ${w}\n`;
+              });
+              summary += '\n';
+            }
+
+            if (errors.length > 0) {
+              summary += `### Errors\n`;
+              errors.forEach(e => summary += `- ❌ ${e}\n`);
+              core.summary.addRaw(summary).write();
+              core.setFailed(errors.join('\n\n'));
+            } else {
+              summary += `✅ All PR checks passed\n`;
+              core.summary.addRaw(summary).write();
+            }
+
+      # Login to GHCR for registry cache check
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      # Run consolidated initialization script
+      - name: Initialize CI
+        id: init
+        env:
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
+        run: |
+          .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
+
+      # Upload CI tags as artifact for debugging
+      - name: Upload CI Tags
+        if: steps.init.outputs.is_bot != 'true'
+        run: |
+          cat > ci-tags.txt << EOF
+          api_tag=${{ steps.init.outputs.api_tag }}
+          bridge_tag=${{ steps.init.outputs.bridge_tag }}
+          plugins_tag=${{ steps.init.outputs.plugins_tag }}
+          web_tag=${{ steps.init.outputs.web_tag }}
+          EOF
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: steps.init.outputs.is_bot != 'true'
+        with:
+          name: ci-tags-${{ github.sha }}
+          path: ci-tags.txt
+          retention-days: 1
+
   cancel-watchdog:
     name: Cancel Watchdog
     runs-on: ubuntu-slim
-    if: always()
+    if: always() && (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')))
     steps:
       - name: Monitor jobs and cancel on failure
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
@@ -96,6 +246,14 @@ jobs:
 
               console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued (workflow: ${run.status})`);
 
+              // Check if workflow was externally cancelled (e.g., by concurrency or manual cancellation)
+              const cancelledJobs = otherJobs.filter(job => job.conclusion === 'cancelled');
+              const completedJobs = otherJobs.filter(job => job.status === 'completed');
+              if (cancelledJobs.length > 0 && cancelledJobs.length >= completedJobs.length / 2) {
+                console.log(`Workflow externally cancelled (${cancelledJobs.length}/${completedJobs.length} jobs cancelled) - exiting watchdog`);
+                return;
+              }
+
               const failedJob = otherJobs.find(job => job.conclusion === 'failure');
 
               if (failedJob) {
@@ -136,116 +294,15 @@ jobs:
             core.info('All monitored jobs healthy during watch period');
 
   # ============================================================================
-  # TIER 2: PR VALIDATION (PR-only, no dependencies)
-  # ============================================================================
-  pr-title:
-    name: PR - Title Format
-    runs-on: ubuntu-slim
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Check PR title format
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            const title = context.payload.pull_request.title;
-            const pattern = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .+/;
-            if (!pattern.test(title)) {
-              core.setFailed(
-                'PR title must follow Conventional Commits format:\n' +
-                'type(scope): description\n\n' +
-                'Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert\n' +
-                'Example: feat(ui): add dark mode toggle'
-              );
-            } else {
-              core.info('PR title follows Conventional Commits format');
-            }
-
-      - name: Check PR description
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            const body = context.payload.pull_request.body || '';
-            if (body.length < 20) {
-              core.setFailed('PR description is too short. Please provide a detailed description.');
-            }
-
-      - name: Check for linked issues
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            const body = context.payload.pull_request.body || '';
-            const issuePattern = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|ref|refs)\s+#\d+/i;
-            if (!issuePattern.test(body)) {
-              core.warning('PR does not reference any issues. Consider linking related issues.');
-            }
-
-  pr-size:
-    name: PR - Size
-    runs-on: ubuntu-slim
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-        with:
-          fetch-depth: 0
-
-      - name: Check PR size
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            const { data: files } = await github.rest.pulls.listFiles({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-            });
-            const additions = files.reduce((sum, file) => sum + file.additions, 0);
-            const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
-            const totalChanges = additions + deletions;
-            const fileCount = files.length;
-
-            if (totalChanges > 1000) {
-              core.warning(`Large PR detected (${totalChanges} lines changed). Consider breaking it into smaller PRs.`);
-            }
-            if (fileCount > 30) {
-              core.warning(`Many files changed (${fileCount} files). Consider breaking it into smaller PRs.`);
-            }
-
-            core.summary.addRaw(`## PR Size Summary\n\n- **Files changed:** ${fileCount}\n- **Lines added:** ${additions}\n- **Lines deleted:** ${deletions}\n- **Total changes:** ${totalChanges}\n`).write();
-
-  pr-conflicts:
-    name: PR - Conflicts
-    runs-on: ubuntu-slim
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Check mergeable state
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-            });
-            if (pr.mergeable_state === 'dirty') {
-              core.setFailed('PR has merge conflicts. Please resolve them.');
-            }
-
-      - name: Cancel workflow on failure
-        if: failure()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            await github.rest.actions.cancelWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId
-            });
-
-  # ============================================================================
-  # TIER 1: CODE QUALITY & SECURITY (Fast checks, no dependencies)
+  # COLUMN 2: QUALITY
+  # Jobs: All quality-* jobs (10 total)
+  # Dependencies: [initialize]
   # ============================================================================
   quality-versions:
     name: Quality - Versions
     runs-on: ubuntu-slim
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - name: Block legacy-peer-deps workarounds
@@ -262,18 +319,29 @@ jobs:
   quality-deps:
     name: Quality - Deps
     runs-on: ubuntu-slim
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GH_PAT }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/quality/check-deps.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
 
   quality-lint:
     name: Quality - Lint
     runs-on: ubuntu-latest
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -287,6 +355,8 @@ jobs:
   quality-format:
     name: Quality - Format
     runs-on: ubuntu-slim
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -299,6 +369,8 @@ jobs:
   quality-i18n:
     name: Quality - i18n
     runs-on: ubuntu-slim
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -311,6 +383,8 @@ jobs:
   quality-types:
     name: Quality - TypeScript
     runs-on: ubuntu-slim
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -323,6 +397,8 @@ jobs:
   quality-security:
     name: Quality - Security
     runs-on: ubuntu-slim
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -334,25 +410,613 @@ jobs:
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: security-audit-${{ github.sha }}
+          name: quality-security-${{ github.sha }}
           path: audit-report.json
           retention-days: 3
 
   quality-shell:
     name: Quality - Shell
     runs-on: ubuntu-slim
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - run: .ci/scripts/security/shellcheck.sh
       - run: .ci/scripts/security/check-commands.sh
 
+  quality-middleware:
+    name: Quality - Middleware
+    runs-on: ubuntu-latest
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
+        with:
+          dotnet-version: 9.0.x
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+
+      - name: Run middleware quality
+        run: .ci/scripts/private/run-middleware.sh quality
+
+  quality-renet:
+    name: Quality - Renet
+    runs-on: ubuntu-latest
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - name: Run renet quality
+        run: .ci/scripts/private/run-renet.sh quality
+
+      - name: Check renet types freshness
+        run: .ci/scripts/quality/check-renet-types.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+
   # ============================================================================
-  # TIER 3: BUILD & UNIT TESTS (Depends on Tier 1)
+  # COLUMN 3: BUILD & DOCKER
+  # Jobs: build-cli, build-web, build-www, build-json, build-desktop,
+  #       build-plugins, build-web-docker, build-middleware, build-renet
+  # Dependencies: All quality jobs
+  # ============================================================================
+  build-cli:
+    name: Build - CLI
+    runs-on: ubuntu-slim
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+
+  build-web:
+    name: Build - Web
+    runs-on: ubuntu-slim
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-web.sh --type RELEASE
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-web-${{ github.sha }}
+          path: packages/web/dist/
+          retention-days: 3
+
+  build-www:
+    name: Build - WWW
+    runs-on: ubuntu-slim
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/build/build-www.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-www-${{ github.sha }}
+          path: packages/www/dist/
+          retention-days: 3
+
+  build-json:
+    name: Build - JSON
+    runs-on: ubuntu-slim
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/build/build-json.sh
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-json-${{ github.sha }}
+          path: packages/json/dist/
+          retention-days: 3
+
+  build-desktop:
+    name: Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+          - os: windows-latest
+            platform: win
+            arch: x64
+          # NOTE: win-arm64 moved to separate job (build-desktop-win-arm64) to avoid blocking pipeline
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-web.sh --type RELEASE
+        shell: bash
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+      - name: Build Electron
+        working-directory: packages/desktop
+        run: npm run build
+      - run: .ci/scripts/build/build-desktop.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-desktop-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}
+          path: dist/desktop/
+          retention-days: 3
+          if-no-files-found: error
+
+  # Separate job for win-arm64 to avoid blocking pipeline (slow build)
+  # Nothing depends on this job - it runs independently and uploads artifacts
+  build-desktop-win-arm64:
+    name: Build - Desktop (win-arm64)
+    runs-on: windows-11-arm
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh --ignore-scripts
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-web.sh --type RELEASE
+        shell: bash
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+      - name: Build Electron
+        working-directory: packages/desktop
+        run: npm run build
+      - run: .ci/scripts/build/build-desktop.sh --platform win --arch arm64
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: build-desktop-win-arm64-${{ github.sha }}
+          path: dist/desktop/
+          retention-days: 3
+          if-no-files-found: error
+
+  build-plugins:
+    name: Build - Plugins & Docker
+    runs-on: ubuntu-latest
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build validation (dry-run)
+      - name: Validate plugin images
+        run: .ci/scripts/build/build-plugins.sh --dry-run
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(jq -r '.version' package.json)
+            PATCH=$((${VERSION##*.} + 1))
+            NEW_VERSION="${VERSION%.*}.$PATCH"
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build & Push Plugin Docker images
+        if: needs.initialize.outputs.plugins_exists != 'true'
+        run: |
+          .ci/scripts/docker/build-image.sh --image plugin-terminal --ci-tag ${{ needs.initialize.outputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
+          .ci/scripts/docker/build-image.sh --image plugin-browser --ci-tag ${{ needs.initialize.outputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
+
+      - name: Skip Docker build (cached)
+        if: needs.initialize.outputs.plugins_exists == 'true'
+        run: echo "::notice::Skipping Docker build - plugins:${{ needs.initialize.outputs.plugins_tag }} already exists in registry"
+
+  build-web-docker:
+    name: Build - Web & Docker
+    runs-on: ubuntu-latest
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(jq -r '.version' package.json)
+            PATCH=$((${VERSION##*.} + 1))
+            NEW_VERSION="${VERSION%.*}.$PATCH"
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build & Push Web Docker image
+        if: needs.initialize.outputs.web_exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/rediacc/elite/web:${{ needs.initialize.outputs.web_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            REDIACC_BUILD_TYPE=RELEASE
+            VITE_APP_VERSION=${{ needs.initialize.outputs.web_tag }}
+
+      - name: Skip Docker build (cached)
+        if: needs.initialize.outputs.web_exists == 'true'
+        run: echo "::notice::Skipping Docker build - web:${{ needs.initialize.outputs.web_tag }} already exists in registry"
+
+  build-middleware:
+    name: Build - Middleware & Docker
+    runs-on: ubuntu-latest
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    timeout-minutes: 30
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: TestPassword123!
+          MSSQL_PID: Express
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P TestPassword123! -C -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 40s
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+
+      - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
+        with:
+          dotnet-version: 9.0.x
+
+      # Build
+      - name: Run middleware build
+        run: .ci/scripts/private/run-middleware.sh build
+
+      # Test
+      - name: Install sqlcmd
+        run: sudo private/middleware/scripts/install-sqlcmd.sh
+
+      - name: Run middleware tests
+        run: .ci/scripts/private/run-middleware.sh test
+
+      - name: Check API types freshness
+        run: .ci/scripts/quality/check-api-types.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: build-middleware-coverage-${{ github.sha }}
+          path: private/middleware/coverage/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # Docker
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(jq -r '.version' package.json)
+            PATCH=$((${VERSION##*.} + 1))
+            NEW_VERSION="${VERSION%.*}.$PATCH"
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build & Push API Docker image
+        if: needs.initialize.outputs.api_exists != 'true'
+        run: .ci/scripts/docker/build-image.sh --image api --ci-tag ${{ needs.initialize.outputs.api_tag }} --version ${{ steps.version.outputs.version }} --push
+
+      - name: Skip Docker build (cached)
+        if: needs.initialize.outputs.api_exists == 'true'
+        run: echo "::notice::Skipping Docker build - api:${{ needs.initialize.outputs.api_tag }} already exists in registry"
+
+  build-renet:
+    name: Build - Renet & Docker
+    runs-on: ubuntu-latest
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      # Build (cross-compile for both architectures)
+      - name: Build verification (cross-compile)
+        run: .ci/scripts/private/renet-build.sh --cross-compile
+
+      # Move binaries to Docker build context
+      - name: Prepare binaries for Docker build
+        run: |
+          mkdir -p private/renet/build
+          cp private/renet/bin/renet-linux-amd64 private/renet/build/
+          cp private/renet/bin/renet-linux-arm64 private/renet/build/
+
+      # Docker
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(jq -r '.version' package.json)
+            PATCH=$((${VERSION##*.} + 1))
+            NEW_VERSION="${VERSION%.*}.$PATCH"
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build & Push Bridge Docker image
+        if: needs.initialize.outputs.bridge_exists != 'true'
+        run: .ci/scripts/docker/build-image.sh --image bridge --ci-tag ${{ needs.initialize.outputs.bridge_tag }} --version ${{ steps.version.outputs.version }} --push
+
+      - name: Skip Docker build (cached)
+        if: needs.initialize.outputs.bridge_exists == 'true'
+        run: echo "::notice::Skipping Docker build - bridge:${{ needs.initialize.outputs.bridge_tag }} already exists in registry"
+
+  # infra-backend is part of Column 4 (Tests + Infra), runs in parallel with tests
+  infra-backend:
+    name: Infra - Backend
+    runs-on: ubuntu-latest
+    needs: [build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet, initialize]
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ needs.initialize.outputs.bridge_tag }}
+      DOCKER_REGISTRY: ghcr.io/rediacc/elite
+      USE_CI_IMAGES: 'true'
+      # Per-image tags for backend services
+      API_TAG: ${{ needs.initialize.outputs.api_tag }}
+      BRIDGE_TAG: ${{ needs.initialize.outputs.bridge_tag }}
+      WEB_TAG: ${{ needs.initialize.outputs.web_tag }}
+    steps:
+      - name: Checkout Console Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Pull Backend Docker Images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: .ci/scripts/infra/ci-pull-images.sh
+
+      - name: Start Backend Services
+        uses: ./.github/actions/start-backend
+        with:
+          keep-alive: 'true'
+          ci-mode: 'true'
+
+      - name: Wait for Services
+        run: .ci/scripts/infra/wait-for-health.sh --url http://localhost/health --timeout 120 --message "Backend services are ready"
+
+      - name: Create Cloudflare Tunnel
+        id: tunnel
+        uses: rediacc/action-cloudflare-tunnel@v1
+        with:
+          url: http://localhost
+          timeout: 60
+
+      - name: Verify Tunnel
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..20}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "Tunnel verified"
+              exit 0
+            fi
+            sleep 3
+          done
+          exit 1
+
+      # Bridge tests
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build CLI
+        run: |
+          npm ci
+          npm run build:packages
+          npm run build:cli
+          npm run build:bundle -w @rediacc/cli
+
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      # Login to Docker Hub to avoid rate limiting (fails gracefully if credentials not set)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        continue-on-error: true
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pre-pull Bridge Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      # Note: VM provisioning removed - standard GHA runners don't support KVM,
+      # and the renet bridge image doesn't have embedded ops assets (CRIU, rsync).
+      # VM-based tests (test-bridge-workers, test-bridge-ceph) need self-hosted runners
+      # or a separate renet-ops image with embedded assets.
+
+      - name: Upload Tunnel URL
+        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: tunnel-url
+          path: ${{ runner.temp }}/tunnel-url.txt
+          retention-days: 3
+
+      - name: Wait for Completion Signals
+        run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          E2E_BROWSERS: ${{ env.E2E_BROWSERS }}
+
+      - name: Collect Backend Logs
+        if: always()
+        run: .ci/scripts/infra/collect-backend-logs.sh ${{ runner.temp }}/backend-logs
+
+      - name: Upload Backend Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: infra-backend-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/backend-logs/
+          retention-days: 3
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Stop VMs
+          sudo /tmp/renet ops down || true
+          # Stop backend services
+          cd .ci/docker/ci && docker compose down --volumes --remove-orphans || true
+          rm -rf mssql || true
+
+  # ============================================================================
+  # COLUMN 4: TESTS + INFRA
+  # Jobs: test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron,
+  #       test-bridge-workers, test-bridge-ceph, test-renet, infra-backend
+  # Dependencies: All build jobs (runs in parallel with infra-backend)
+  # Note: Tests that need the backend tunnel URL will download the artifact
+  #       uploaded by infra-backend early in its execution
   # ============================================================================
   test-unit:
     name: Test - Unit
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+    needs: [initialize, build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -365,28 +1029,14 @@ jobs:
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: coverage-report-${{ github.sha }}
+          name: test-unit-coverage-${{ github.sha }}
           path: packages/web/coverage/
           retention-days: 3
 
-  build-cli:
-    name: Build - CLI
-    runs-on: ubuntu-slim
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - run: .ci/scripts/build/build-cli.sh
-
   test-vscode:
-    name: Test - VS Code (${{ matrix.os }})
+    name: Test - VSCode (${{ matrix.os }})
     timeout-minutes: 15
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+    needs: [initialize, build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet]
     strategy:
       fail-fast: true
       matrix:
@@ -414,357 +1064,77 @@ jobs:
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: failure()
         with:
-          name: vscode-detection-results-${{ matrix.os }}-${{ github.sha }}
+          name: test-vscode-${{ matrix.os }}-${{ github.sha }}
           path: packages/cli/tests/test-results/
           retention-days: 3
           if-no-files-found: ignore
 
-  build-web:
-    name: Build - Web (${{ matrix.build-type }})
-    runs-on: ubuntu-slim
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
+  test-cli:
+    name: Test - CLI (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    needs: [initialize, build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet]
+    timeout-minutes: 120
     strategy:
+      fail-fast: true
       matrix:
-        build-type: [DEBUG, RELEASE]
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - run: .ci/scripts/build/build-web.sh --type ${{ matrix.build-type }}
-        env:
-          VITE_APP_VERSION: ${{ github.sha }}
-          VITE_BASE_PATH: /
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: build-${{ matrix.build-type }}-${{ github.sha }}
-          path: packages/web/dist/
-          retention-days: 3
-
-  # ============================================================================
-  # BUILD: STATIC SITES (www, json)
-  # ============================================================================
-  build-www:
-    name: Build - WWW
-    runs-on: ubuntu-slim
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/build/build-www.sh
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: build-www-${{ github.sha }}
-          path: packages/www/dist/
-          retention-days: 3
-
-  build-json:
-    name: Build - JSON
-    runs-on: ubuntu-slim
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/build/build-json.sh
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: build-json-${{ github.sha }}
-          path: packages/json/dist/
-          retention-days: 3
-
-  # ============================================================================
-  # TIER 4: INTEGRATION TESTS (Depends on Tier 3, long-running)
-  # ============================================================================
-  infra-backend:
-    name: Infra - Backend
-    runs-on: ubuntu-latest
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    timeout-minutes: 60
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
     env:
-      CI: 'true'
-      BRIDGE_TIMEOUT: 120000
-      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
     steps:
-      - name: Checkout Elite Repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-        with:
-          repository: rediacc/elite
-          path: elite
-
-      - name: Checkout Console Repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-        with:
-          path: console
-          submodules: true
-
-      - name: Pull Elite Docker Images
-        working-directory: elite
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          TAG: latest
-        run: ./action/ci-pull-images.sh
-
-      - name: Start Elite Services
-        uses: ./elite/action
-        with:
-          keep-alive: 'true'
-          ci-mode: 'true'
-
-      - name: Wait for Services
-        working-directory: console
-        run: .ci/scripts/infra/wait-for-health.sh --url http://localhost/health --timeout 120 --message "Elite services are ready"
-
-      - name: Create Cloudflare Tunnel
-        id: tunnel
-        uses: rediacc/action-cloudflare-tunnel@v1
-        with:
-          url: http://localhost
-          timeout: 60
-
-      - name: Verify Tunnel
-        run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          for i in {1..20}; do
-            if curl -sf "$TUNNEL_URL/health"; then
-              echo "Tunnel verified"
-              exit 0
-            fi
-            sleep 3
-          done
-          exit 1
-
-      # Bridge tests
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: console/package-lock.json
-
-      - name: Build CLI
-        working-directory: console
-        run: |
-          npm ci
-          npm run build:packages
-          npm run build:cli
-          npm run build:bundle -w @rediacc/cli
-
-      - name: Install CLI Globally
-        working-directory: console
-        run: .ci/scripts/setup/install-cli-global.sh
-
-      # Login to Docker Hub to avoid rate limiting (fails gracefully if credentials not set)
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        continue-on-error: true
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Pre-pull Docker Images
-        working-directory: console
-        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Provision Test VMs
-        id: vms
-        uses: rediacc/ops/.github/actions/setup-vms@main
-        with:
-          provider: kvm
-          configuration: Standard
-          duration: '120'
-        env:
-          VM_OS_IMAGE: rediacc-ubuntu-24.04
-          TAG: latest
-          SKIP_MACHINE_REGISTRATION: 'true'
-          VM_BRIDGE: '1'
-          VM_WORKERS: '11 12'
-          VM_CEPH_NODES: ''
-
-      - name: Extract renet binary
-        working-directory: console
-        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
-
-      - name: Upload Tunnel URL
-        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: tunnel-url
-          path: ${{ runner.temp }}/tunnel-url.txt
-          retention-days: 3
-
-      - name: Wait for Completion Signals
-        working-directory: console
-        run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-cli.sh
+        shell: bash
+      - name: Download Tunnel URL
+        id: tunnel
         env:
           GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          E2E_BROWSERS: ${{ env.E2E_BROWSERS }}
-
-      - name: Collect Backend Logs
-        if: always()
-        working-directory: console
-        run: .ci/scripts/infra/collect-backend-logs.sh ${{ runner.temp }}/backend-logs
-
-      - name: Upload Backend Logs
-        if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        with:
-          name: backend-logs-${{ github.sha }}
-          path: ${{ runner.temp }}/backend-logs/
-          retention-days: 3
-
-      - name: Cleanup
-        if: always()
-        working-directory: elite
-        run: ./go down || true
-
-  test-bridge-workers:
-    name: Test - Bridge (Workers)
-    runs-on: ubuntu-latest
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    timeout-minutes: 45
-    env:
-      CI: 'true'
-      BRIDGE_TIMEOUT: 120000
-      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
-      OPS_HOME: /home/runner/work/ops
-      VM_BRIDGE: '1'
-      VM_WORKERS: '11 12'
-      VM_CEPH_NODES: ''
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - run: .ci/scripts/build/build-cli.sh
-      - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
-
-      - name: Pull Renet Docker Image
-        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Extract renet binary
-        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
-
-      - name: Setup KVM Host
-        run: sudo /tmp/renet ops host setup
-
-      - name: Create Bridge Test Environment
-        run: .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
-
-      - name: Run Bridge Tests (Workers)
-        run: .ci/scripts/test/run-bridge.sh --workers 1
-
+        shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+        shell: bash
+      - run: .ci/scripts/env/create-cli-env.sh --api-url "${{ steps.tunnel.outputs.tunnel-url }}/api" --email ${{ env.REDIACC_TEST_EMAIL }} --password ${{ env.REDIACC_TEST_PASSWORD }} --output packages/cli/tests/.env
+        shell: bash
+      - run: .ci/scripts/setup/install-vscode.sh
+        shell: bash
+      - run: .ci/scripts/test/run-cli.sh
+        shell: bash
       - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "bridge-workers"
-
+        run: .ci/scripts/signal/create-complete.sh --name "cli-${{ matrix.platform }}" --status ${{ job.status }}
+        shell: bash
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: test-complete-bridge-workers
+          name: test-complete-cli-${{ matrix.platform }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
-
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: bridge-workers-test-report-${{ github.sha }}
-          path: |
-            packages/bridge-tests/reports/bridge/
-            packages/bridge-tests/reports/bridge-logs/
+          name: test-cli-report-${{ matrix.platform }}-${{ github.sha }}
+          path: packages/cli/tests/reports/cli/
           retention-days: 3
-          if-no-files-found: ignore
-
-  # Ceph integration tests - provisions 1 bridge + 3 Ceph nodes (no workers)
-  # Tests pool/image operations, snapshot/clone, and COW mount functionality
-  test-bridge-ceph:
-    name: Test - Bridge (Ceph)
-    runs-on: ubuntu-latest
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell]
-    timeout-minutes: 45
-    env:
-      CI: 'true'
-      BRIDGE_TIMEOUT: 120000
-      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:latest
-      OPS_HOME: /home/runner/work/ops
-      VM_BRIDGE: '1'
-      VM_WORKERS: ''
-      VM_CEPH_NODES: '21 22 23'
-      CEPH_MODE: 'true'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
-      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - run: .ci/scripts/build/build-cli.sh
-      - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
-
-      - name: Pull Renet Docker Image
-        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Extract renet binary
-        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
-
-      - name: Setup KVM Host
-        run: sudo /tmp/renet ops host setup
-
-      - name: Create Bridge Test Environment
-        run: .ci/scripts/env/create-bridge-env.sh --ceph --output packages/bridge-tests/.env
-
-      - name: Run Bridge Tests (Ceph)
-        run: .ci/scripts/test/run-bridge.sh --workers 1 --config playwright.ceph.config.ts
-
-      - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph"
-
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-bridge-ceph
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 3
-
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: bridge-ceph-test-report-${{ github.sha }}
-          path: |
-            packages/bridge-tests/reports/bridge-ceph/
-            packages/bridge-tests/reports/bridge-logs/
-          retention-days: 3
-          if-no-files-found: ignore
 
   test-e2e:
-    name: Test - E2E (All Projects)
+    name: Test - E2E
     runs-on: ubuntu-latest
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [initialize, build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -791,7 +1161,7 @@ jobs:
             ${{ env.E2E_BROWSERS }}
       - name: Create Completion Signal
         if: always()
-        run: echo "completed" > ${{ runner.temp }}/complete.txt
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-chromium" --status ${{ job.status }}
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
@@ -801,7 +1171,7 @@ jobs:
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
         with:
-          name: e2e-report-${{ github.sha }}
+          name: test-e2e-report-${{ github.sha }}
           path: packages/e2e/reports/e2e/
           retention-days: 3
           if-no-files-found: ignore
@@ -809,7 +1179,7 @@ jobs:
   test-e2e-electron:
     name: Test - E2E Electron (${{ matrix.project }})
     runs-on: ${{ matrix.os }}
-    needs: [test-unit, build-cli, test-vscode, build-web]
+    needs: [initialize, build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet]
     timeout-minutes: 60
     strategy:
       fail-fast: true
@@ -876,7 +1246,7 @@ jobs:
         env:
           DISPLAY: ${{ env.DISPLAY }}
       - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "e2e-${{ matrix.project }}"
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-${{ matrix.project }}" --status ${{ job.status }}
         shell: bash
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         if: always()
@@ -885,135 +1255,254 @@ jobs:
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
 
-  test-cli:
-    name: Test - CLI (${{ matrix.platform }})
-    runs-on: ${{ matrix.os }}
-    needs: [test-unit, build-cli, test-vscode, build-web]
-    timeout-minutes: 120
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: Linux
-          - os: windows-latest
-            platform: Windows
-          - os: macos-latest
-            platform: macOS
+  test-bridge-workers:
+    name: Test - Bridge Workers
+    runs-on: ubuntu-latest
+    needs: [build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet, initialize]
+    timeout-minutes: 45
     env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ needs.initialize.outputs.bridge_tag }}
+      USE_CI_IMAGES: 'true'
+      OPS_HOME: /home/runner/work/ops
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: ''
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
-        shell: bash
+      - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
       - run: .ci/scripts/build/build-cli.sh
-        shell: bash
-      - name: Download Tunnel URL
-        id: tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
-        shell: bash
-      - run: .ci/scripts/env/create-cli-env.sh --api-url "${{ steps.tunnel.outputs.tunnel-url }}/api" --email ${{ env.REDIACC_TEST_EMAIL }} --password ${{ env.REDIACC_TEST_PASSWORD }} --output packages/cli/tests/.env
-        shell: bash
-      - run: .ci/scripts/setup/install-vscode.sh
-        shell: bash
-      - run: .ci/scripts/test/run-cli.sh
-        shell: bash
-      - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "cli-${{ matrix.platform }}"
-        shell: bash
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: test-complete-cli-${{ matrix.platform }}
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 3
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
-        if: always()
-        with:
-          name: cli-test-report-${{ matrix.platform }}-${{ github.sha }}
-          path: packages/cli/tests/reports/cli/
-          retention-days: 3
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
 
-  # ============================================================================
-  # TIER 5: PACKAGING (Depends on Tier 4, creates distributable artifacts)
-  # ============================================================================
-  build-desktop:
-    name: Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
-    needs: [test-e2e, test-e2e-electron, test-cli]
-    timeout-minutes: 30
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
-          - os: ubuntu-24.04-arm
-            platform: linux
-            arch: arm64
-          - os: macos-latest
-            platform: mac
-            arch: arm64
-          - os: macos-15-intel
-            platform: mac
-            arch: x64
-          - os: windows-latest
-            platform: win
-            arch: x64
-          - os: windows-11-arm
-            platform: win
-            arch: arm64
-    runs-on: ${{ matrix.os }}
+      - name: Pull Renet Docker Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Create Bridge Test Environment
+        run: .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
+
+      - name: Run Bridge Tests (Workers)
+        run: .ci/scripts/test/run-bridge.sh --workers 1
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "bridge-workers" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-bridge-workers-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/bridge-tests/reports/bridge/
+            packages/bridge-tests/reports/bridge-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  test-bridge-ceph:
+    name: Test - Bridge Ceph
+    runs-on: ubuntu-latest
+    needs: [build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet, initialize]
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ needs.initialize.outputs.bridge_tag }}
+      USE_CI_IMAGES: 'true'
+      OPS_HOME: /home/runner/work/ops
+      VM_BRIDGE: '1'
+      VM_WORKERS: ''
+      VM_CEPH_NODES: '21 22 23'
+      CEPH_MODE: 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
-        shell: bash
+      - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
-      - run: .ci/scripts/build/build-web.sh --type RELEASE
-        shell: bash
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Pull Renet Docker Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
         env:
-          VITE_APP_VERSION: ${{ github.sha }}
-      - name: Build Electron
-        working-directory: packages/desktop
-        run: npm run build
-      - run: .ci/scripts/build/build-desktop.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Create Bridge Test Environment
+        run: .ci/scripts/env/create-bridge-env.sh --ceph --output packages/bridge-tests/.env
+
+      - name: Run Bridge Tests (Ceph)
+        run: .ci/scripts/test/run-bridge.sh --workers 1 --config playwright.ceph.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph" --status ${{ job.status }}
+
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
         with:
-          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}
-          path: dist/desktop/
+          name: test-bridge-ceph-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/bridge-tests/reports/bridge-ceph/
+            packages/bridge-tests/reports/bridge-logs/
           retention-days: 3
-          if-no-files-found: error
+          if-no-files-found: ignore
+
+  test-renet:
+    name: Test - Renet
+    runs-on: ubuntu-latest
+    needs: [initialize, build-cli, build-web, build-www, build-json, build-desktop, build-plugins, build-web-docker, build-middleware, build-renet]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      # Unit tests
+      - name: Run renet tests
+        run: .ci/scripts/private/run-renet.sh test
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-renet-coverage-${{ github.sha }}
+          path: private/renet/coverage.out
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-renet-results-${{ github.sha }}
+          path: private/renet/test-results.xml
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # Integration tests (needs sudo for KVM)
+      - name: Run integration tests
+        run: sudo .ci/scripts/private/renet-integration.sh --no-cleanup
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-renet-integration-${{ github.sha }}
+          path: private/renet/test-results.xml
+          retention-days: 3
+          if-no-files-found: ignore
 
   # ============================================================================
-  # TIER 6: DEPLOYMENT (on version tags only, after all tests pass)
+  # COLUMN 5: DEPLOY/RELEASE
+  # Jobs: deploy-publish, deploy-release, deploy-pages
+  # Dependencies: All test jobs (all deploy jobs run in parallel)
   # ============================================================================
-  release:
-    name: Create GitHub Release
+  deploy-publish:
+    name: Deploy - Publish
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-middleware, build-renet, build-plugins, build-web-docker, initialize]
+    # Only run when:
+    # 1. No build jobs failed (skipped is OK for plugins, but middleware/renet must succeed)
+    # 2. Publishing is enabled (manual trigger or main branch push)
+    if: needs.build-middleware.result == 'success' && needs.build-renet.result == 'success' && (github.event.inputs.publish == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+      - name: Determine version
+        id: version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(jq -r '.version' package.json)
+            PATCH=$((${VERSION##*.} + 1))
+            NEW_VERSION="${VERSION%.*}.$PATCH"
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Re-tag images to semantic version
+        run: |
+          API_TAG="${{ needs.initialize.outputs.api_tag }}"
+          BRIDGE_TAG="${{ needs.initialize.outputs.bridge_tag }}"
+          PLUGINS_TAG="${{ needs.initialize.outputs.plugins_tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          PUSH_LATEST=""
+
+          # Push :latest only on main branch
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            PUSH_LATEST="--push-latest"
+          fi
+
+          # Re-tag each image with its specific commit hash tag
+          .ci/scripts/docker/retag-image.sh --image api --from "$API_TAG" --to "$VERSION" $PUSH_LATEST
+          .ci/scripts/docker/retag-image.sh --image bridge --from "$BRIDGE_TAG" --to "$VERSION" $PUSH_LATEST
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$PLUGINS_TAG" --to "$VERSION" $PUSH_LATEST
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$PLUGINS_TAG" --to "$VERSION" $PUSH_LATEST
+
+      - name: Version bump and commit
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          .ci/scripts/version/bump.sh --version ${{ steps.version.outputs.version }}
+          .ci/scripts/version/commit.sh --version ${{ steps.version.outputs.version }} --push
+        env:
+          GITHUB_HEAD_REF: main
+      - name: Summary
+        run: |
+          echo "## Docker Publishing Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Images re-tagged (using commit hash caching):**" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/api:${{ needs.initialize.outputs.api_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/bridge:${{ needs.initialize.outputs.bridge_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/plugin-terminal:${{ needs.initialize.outputs.plugins_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/plugin-browser:${{ needs.initialize.outputs.plugins_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-release:
+    name: Deploy - Release
     runs-on: ubuntu-slim
-    needs: [build-www, build-json, test-unit, test-vscode, test-e2e, test-e2e-electron, test-cli, build-desktop, infra-backend]
-    if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
+    needs: [initialize, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-www, build-json, build-desktop]
+    if: github.event.inputs.publish == 'true' && github.event.inputs.version != ''
     permissions:
       contents: write
     steps:
@@ -1022,7 +1511,7 @@ jobs:
       - name: Download all desktop artifacts
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e  # v4
         with:
-          pattern: desktop-*
+          pattern: build-desktop-*
           path: dist/desktop/
           merge-multiple: true
 
@@ -1037,8 +1526,8 @@ jobs:
   deploy-pages:
     name: Deploy - Pages
     runs-on: ubuntu-slim
-    needs: [build-www, build-json, test-unit, test-vscode, test-e2e, test-e2e-electron, test-cli, build-desktop, infra-backend]
-    if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
+    needs: [initialize, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, build-www, build-json, build-desktop]
+    if: github.event.inputs.publish == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -1086,19 +1575,26 @@ jobs:
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
 
   # ============================================================================
-  # TIER 7: CI SUMMARY (Depends on all)
+  # COLUMN 6: SUMMARY
+  # Jobs: summary
+  # Dependencies: All jobs
   # ============================================================================
   summary:
     name: Summary
     runs-on: ubuntu-slim
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, test-unit, build-cli, test-vscode, infra-backend, test-bridge-workers, test-bridge-ceph, test-cli, test-e2e, test-e2e-electron, build-web, build-desktop, build-www, build-json, release, deploy-pages]
-    if: always()
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, build-cli, build-web, build-www, build-json, build-desktop, build-desktop-win-arm64, build-plugins, build-web-docker, build-middleware, build-renet, infra-backend, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, deploy-publish, deploy-release, deploy-pages]
+    if: always() && (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))) && needs.initialize.result != 'skipped' && needs.initialize.outputs.is_bot != 'true'
     steps:
       - name: Check job results
         run: |
           echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Quality & Security" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Column 1: Initialize" >> $GITHUB_STEP_SUMMARY
+          echo "- Initialize: ${{ needs.initialize.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Column 2: Quality" >> $GITHUB_STEP_SUMMARY
           echo "- Versions: ${{ needs.quality-versions.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Deps: ${{ needs.quality-deps.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Lint: ${{ needs.quality-lint.result }}" >> $GITHUB_STEP_SUMMARY
@@ -1107,47 +1603,53 @@ jobs:
           echo "- TypeScript: ${{ needs.quality-types.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security: ${{ needs.quality-security.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Shell: ${{ needs.quality-shell.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Middleware: ${{ needs.quality-middleware.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Renet: ${{ needs.quality-renet.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Unit Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- Unit Tests: ${{ needs.test-unit.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Builds" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Column 3: Build & Docker" >> $GITHUB_STEP_SUMMARY
           echo "- CLI: ${{ needs.build-cli.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Web: ${{ needs.build-web.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- WWW: ${{ needs.build-www.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- JSON: ${{ needs.build-json.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Integration Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- VS Code: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Backend Infra: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Bridge (Workers): ${{ needs.test-bridge-workers.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Bridge (Ceph): ${{ needs.test-bridge-ceph.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E (All Projects): ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Packaging" >> $GITHUB_STEP_SUMMARY
           echo "- Desktop: ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop (win-arm64): ${{ needs.build-desktop-win-arm64.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Plugins & Docker: ${{ needs.build-plugins.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Web & Docker: ${{ needs.build-web-docker.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Middleware & Docker: ${{ needs.build-middleware.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Renet & Docker: ${{ needs.build-renet.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "- GitHub Release: ${{ needs.release.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- GitHub Pages: ${{ needs.deploy-pages.result }}" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Column 4: Tests + Infra" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: ${{ needs.infra-backend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit: ${{ needs.test-unit.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- VSCode: ${{ needs.test-vscode.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI: ${{ needs.test-cli.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Electron: ${{ needs.test-e2e-electron.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Bridge Workers: ${{ needs.test-bridge-workers.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Bridge Ceph: ${{ needs.test-bridge-ceph.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Renet: ${{ needs.test-renet.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Column 5: Deploy/Release" >> $GITHUB_STEP_SUMMARY
+          echo "- Publish: ${{ needs.deploy-publish.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Release: ${{ needs.deploy-release.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Pages: ${{ needs.deploy-pages.result }}" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
-          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.test-unit.result }}" "${{ needs.build-cli.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-bridge-workers.result }}" "${{ needs.test-bridge-ceph.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.build-web.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}"; do
+
+          # Check required jobs (must succeed)
+          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.build-cli.result }}" "${{ needs.build-web.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.test-unit.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.test-bridge-workers.result }}" "${{ needs.test-bridge-ceph.result }}" "${{ needs.test-renet.result }}"; do
             [ "$result" != "success" ] && FAILED=true
           done
 
-          # Check deployment jobs separately (they're conditional, so "skipped" is acceptable)
-          RELEASE_RESULT="${{ needs.release.result }}"
-          if [ "$RELEASE_RESULT" = "failure" ]; then
-            FAILED=true
-          fi
-
-          DEPLOY_RESULT="${{ needs.deploy-pages.result }}"
-          if [ "$DEPLOY_RESULT" = "failure" ]; then
-            FAILED=true
-          fi
+          # Check conditional jobs separately (skipped is acceptable, failure is not)
+          for result in "${{ needs.build-plugins.result }}" "${{ needs.build-web-docker.result }}" "${{ needs.build-middleware.result }}" "${{ needs.build-renet.result }}" "${{ needs.build-desktop-win-arm64.result }}" "${{ needs.deploy-publish.result }}" "${{ needs.deploy-release.result }}" "${{ needs.deploy-pages.result }}" "${{ needs.quality-middleware.result }}" "${{ needs.quality-renet.result }}"; do
+            if [ "$result" = "failure" ]; then
+              FAILED=true
+            fi
+          done
 
           if [ "$FAILED" = "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
