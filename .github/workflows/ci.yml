@@ -856,8 +856,13 @@ jobs:
       - name: Prepare binaries for Docker build
         run: |
           mkdir -p private/renet/build
-          cp private/renet/bin/renet-linux-amd64 private/renet/build/
-          cp private/renet/bin/renet-linux-arm64 private/renet/build/
+          if [[ -f private/bin/renet-linux-amd64 && -f private/bin/renet-linux-arm64 ]]; then
+            cp private/bin/renet-linux-amd64 private/renet/build/
+            cp private/bin/renet-linux-arm64 private/renet/build/
+          else
+            cp private/renet/bin/renet-linux-amd64 private/renet/build/
+            cp private/renet/bin/renet-linux-arm64 private/renet/build/
+          fi
 
       # Docker
       - uses: docker/setup-buildx-action@v3
