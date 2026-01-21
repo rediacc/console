@@ -43,6 +43,13 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@opentelemetry/context-zone": "^2.5.0",
+    "@opentelemetry/core": "^2.5.0",
+    "@opentelemetry/instrumentation": "^0.211.0",
+    "@opentelemetry/instrumentation-fetch": "^0.211.0",
+    "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
+    "@opentelemetry/sdk-node": "^0.211.0",
+    "@opentelemetry/sdk-trace-web": "^2.5.0",
     "@playwright/test": "^1.56.1",
     "@rediacc/shared": "*",
     "dotenv": "^16.4.5",

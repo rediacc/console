@@ -40,6 +40,12 @@
     "rdc": "./dist/cli-bundle.cjs"
   },
   "dependencies": {
+    "@opentelemetry/context-zone": "^2.5.0",
+    "@opentelemetry/core": "^2.5.0",
+    "@opentelemetry/instrumentation": "^0.211.0",
+    "@opentelemetry/instrumentation-fetch": "^0.211.0",
+    "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
+    "@opentelemetry/sdk-trace-web": "^2.5.0",
     "inquirer": "^13.2.1"
   },
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
@@ -47,7 +53,7 @@
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.210.0",
     "@opentelemetry/resources": "^2.1.0",
-    "@opentelemetry/sdk-node": "^0.210.0",
+    "@opentelemetry/sdk-node": "^0.211.0",
     "@opentelemetry/semantic-conventions": "^1.28.0",
     "@playwright/test": "^1.40.0",
     "@rediacc/shared": "*",
