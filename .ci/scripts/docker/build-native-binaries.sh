@@ -76,6 +76,11 @@ if [[ -z "$OUTPUT_DIR" ]]; then
     exit 1
 fi
 
+# Convert OUTPUT_DIR to absolute path (critical: we cd into temp dirs during build)
+if [[ "$OUTPUT_DIR" != /* ]]; then
+    OUTPUT_DIR="$(pwd)/$OUTPUT_DIR"
+fi
+
 # Detect architecture
 ARCH=$(detect_arch)
 case "$ARCH" in
