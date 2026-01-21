@@ -288,7 +288,7 @@ jobs:
 
   # ============================================================================
   # COLUMN 2: QUALITY
-  # Jobs: All quality-* jobs (10 total)
+  # Jobs: All quality-* jobs (11 total)
   # Dependencies: [initialize]
   # ============================================================================
   quality-versions:
@@ -308,6 +308,19 @@ jobs:
       - name: Verify no peer dependency conflicts
         run: .ci/scripts/quality/check-peer-deps.sh
       - run: npm run version:check
+
+  quality-submodule-versions:
+    name: Quality - Submodule Versions
+    runs-on: ubuntu-latest
+    needs: [initialize]
+    if: needs.initialize.outputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+      - run: .ci/scripts/quality/check-submodule-versions.sh
+
 
   quality-deps:
     name: Quality - Deps
@@ -489,7 +502,7 @@ jobs:
   build-cli:
     name: Build - CLI
     runs-on: ubuntu-slim
-    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - name: Apply version bump
@@ -506,7 +519,7 @@ jobs:
   build-web:
     name: Build - Web
     runs-on: ubuntu-slim
-    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - name: Apply version bump
@@ -531,7 +544,7 @@ jobs:
   build-www:
     name: Build - WWW
     runs-on: ubuntu-slim
-    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - name: Apply version bump
@@ -552,7 +565,7 @@ jobs:
   build-json:
     name: Build - JSON
     runs-on: ubuntu-slim
-    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
       - name: Apply version bump
@@ -573,7 +586,7 @@ jobs:
   build-desktop:
     name: Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
-    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet]
     timeout-minutes: 30
     strategy:
       fail-fast: true
@@ -629,7 +642,7 @@ jobs:
   build-desktop-win-arm64:
     name: Build - Desktop (win-arm64)
     runs-on: windows-11-arm
-    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet]
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -663,7 +676,7 @@ jobs:
   build-plugins:
     name: Build - Plugins & Docker
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet, initialize]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -701,7 +714,7 @@ jobs:
   build-web-docker:
     name: Build - Web & Docker
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet, initialize]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -738,7 +751,7 @@ jobs:
   build-middleware:
     name: Build - Middleware & Docker
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet, initialize]
     timeout-minutes: 30
     services:
       mssql:
@@ -818,7 +831,7 @@ jobs:
   build-renet:
     name: Build - Renet & Docker
     runs-on: ubuntu-latest
-    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, initialize]
+    needs: [quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet, initialize]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -1589,7 +1602,7 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-slim
-    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-middleware, quality-renet, build-cli, build-web, build-www, build-json, build-desktop, build-desktop-win-arm64, build-plugins, build-web-docker, build-middleware, build-renet, infra-backend, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, deploy-publish, deploy-release, deploy-pages]
+    needs: [initialize, quality-versions, quality-deps, quality-lint, quality-format, quality-i18n, quality-types, quality-security, quality-shell, quality-submodule-versions, quality-middleware, quality-renet, build-cli, build-web, build-www, build-json, build-desktop, build-desktop-win-arm64, build-plugins, build-web-docker, build-middleware, build-renet, infra-backend, test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron, test-bridge-workers, test-bridge-ceph, test-renet, deploy-publish, deploy-release, deploy-pages]
     if: always() && (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))) && needs.initialize.result != 'skipped' && needs.initialize.outputs.is_bot != 'true'
     steps:
       - name: Check job results
@@ -1610,6 +1623,7 @@ jobs:
           echo "- TypeScript: ${{ needs.quality-types.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security: ${{ needs.quality-security.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Shell: ${{ needs.quality-shell.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Submodule Versions: ${{ needs.quality-submodule-versions.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Middleware: ${{ needs.quality-middleware.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Renet: ${{ needs.quality-renet.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1647,12 +1661,12 @@ jobs:
           FAILED=false
 
           # Check required jobs (must succeed)
-          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.build-cli.result }}" "${{ needs.build-web.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.test-unit.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.test-bridge-workers.result }}" "${{ needs.test-bridge-ceph.result }}" "${{ needs.test-renet.result }}"; do
+          for result in "${{ needs.quality-versions.result }}" "${{ needs.quality-deps.result }}" "${{ needs.quality-lint.result }}" "${{ needs.quality-format.result }}" "${{ needs.quality-i18n.result }}" "${{ needs.quality-types.result }}" "${{ needs.quality-shell.result }}" "${{ needs.quality-submodule-versions.result }}" "${{ needs.build-cli.result }}" "${{ needs.build-web.result }}" "${{ needs.build-www.result }}" "${{ needs.build-json.result }}" "${{ needs.build-desktop.result }}" "${{ needs.infra-backend.result }}" "${{ needs.test-unit.result }}" "${{ needs.test-vscode.result }}" "${{ needs.test-cli.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-e2e-electron.result }}" "${{ needs.test-bridge-workers.result }}" "${{ needs.test-bridge-ceph.result }}" "${{ needs.test-renet.result }}"; do
             [ "$result" != "success" ] && FAILED=true
           done
 
           # Check conditional jobs separately (skipped is acceptable, failure is not)
-          for result in "${{ needs.build-plugins.result }}" "${{ needs.build-web-docker.result }}" "${{ needs.build-middleware.result }}" "${{ needs.build-renet.result }}" "${{ needs.build-desktop-win-arm64.result }}" "${{ needs.deploy-publish.result }}" "${{ needs.deploy-release.result }}" "${{ needs.deploy-pages.result }}" "${{ needs.quality-middleware.result }}" "${{ needs.quality-renet.result }}"; do
+          for result in "${{ needs.build-plugins.result }}" "${{ needs.build-web-docker.result }}" "${{ needs.build-middleware.result }}" "${{ needs.build-renet.result }}" "${{ needs.build-desktop-win-arm64.result }}" "${{ needs.deploy-publish.result }}" "${{ needs.deploy-release.result }}" "${{ needs.deploy-pages.result }}" "${{ needs.quality-submodule-versions.result }}" "${{ needs.quality-middleware.result }}" "${{ needs.quality-renet.result }}"; do
             if [ "$result" = "failure" ]; then
               FAILED=true
             fi
