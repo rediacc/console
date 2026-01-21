@@ -21,7 +21,7 @@ on:
 
 jobs:
   deploy-publish:
-    name: Deploy - Publish
+    name: Publish
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -98,7 +98,7 @@ jobs:
           echo "- ghcr.io/rediacc/elite/plugin-browser:${{ inputs.plugins_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
 
   deploy-release:
-    name: Deploy - Release
+    name: Release
     runs-on: ubuntu-slim
     needs: [deploy-publish]
     if: needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -128,7 +128,7 @@ jobs:
           generate_release_notes: true
 
   deploy-pages:
-    name: Deploy - Pages
+    name: Pages
     runs-on: ubuntu-slim
     needs: [deploy-publish]
     if: needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'

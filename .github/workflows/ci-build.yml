@@ -36,7 +36,7 @@ on:
 
 jobs:
   build-cli:
-    name: Build - CLI
+    name: CLI
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -52,7 +52,7 @@ jobs:
       - run: .ci/scripts/build/build-cli.sh
 
   build-web:
-    name: Build - Web
+    name: Web
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -76,7 +76,7 @@ jobs:
           retention-days: 3
 
   build-www:
-    name: Build - WWW
+    name: WWW
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -96,7 +96,7 @@ jobs:
           retention-days: 3
 
   build-json:
-    name: Build - JSON
+    name: JSON
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -116,7 +116,7 @@ jobs:
           retention-days: 3
 
   build-desktop:
-    name: Build - Desktop (${{ matrix.platform }}-${{ matrix.arch }})
+    name: Desktop (${{ matrix.platform }}-${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.timeout }}
     strategy:
@@ -177,7 +177,7 @@ jobs:
           if-no-files-found: error
 
   build-plugins:
-    name: Build - Plugins & Docker
+    name: Plugins & Docker
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -214,7 +214,7 @@ jobs:
         run: echo "::notice::Skipping Docker build - plugins:${{ inputs.plugins_tag }} already exists in registry"
 
   build-web-docker:
-    name: Build - Web & Docker
+    name: Web & Docker
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -250,7 +250,7 @@ jobs:
         run: echo "::notice::Skipping Docker build - web:${{ inputs.web_tag }} already exists in registry"
 
   build-middleware:
-    name: Build - Middleware & Docker
+    name: Middleware & Docker
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -329,7 +329,7 @@ jobs:
         run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
 
   build-renet:
-    name: Build - Renet & Docker
+    name: Renet & Docker
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

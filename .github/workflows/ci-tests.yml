@@ -163,7 +163,7 @@ jobs:
   #       uploaded by infra-backend early in its execution
   # ============================================================================
   test-unit:
-    name: Test - Unit
+    name: Unit
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
@@ -182,7 +182,7 @@ jobs:
           retention-days: 3
 
   test-vscode:
-    name: Test - VSCode (${{ matrix.os }})
+    name: VSCode (${{ matrix.os }})
     timeout-minutes: 15
     strategy:
       fail-fast: true
@@ -217,7 +217,7 @@ jobs:
           if-no-files-found: ignore
 
   test-cli:
-    name: Test - CLI (${{ matrix.platform }})
+    name: CLI (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -278,7 +278,7 @@ jobs:
           retention-days: 3
 
   test-e2e:
-    name: Test - E2E
+    name: E2E
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -322,7 +322,7 @@ jobs:
           if-no-files-found: ignore
 
   test-e2e-electron:
-    name: Test - E2E Electron (${{ matrix.project }})
+    name: E2E Electron (${{ matrix.project }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -400,7 +400,7 @@ jobs:
           retention-days: 3
 
   test-bridge-workers:
-    name: Test - Bridge Workers
+    name: Bridge Workers
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -457,7 +457,7 @@ jobs:
           if-no-files-found: ignore
 
   test-bridge-ceph:
-    name: Test - Bridge Ceph
+    name: Bridge Ceph
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -515,7 +515,7 @@ jobs:
           if-no-files-found: ignore
 
   test-renet:
-    name: Test - Renet
+    name: Renet
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

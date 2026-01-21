@@ -15,7 +15,7 @@ on:
 
 jobs:
   quality-versions:
-    name: Quality - Versions
+    name: Versions
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
@@ -32,7 +32,7 @@ jobs:
       - run: npm run version:check
 
   quality-submodule-versions:
-    name: Quality - Submodule Versions
+    name: Submodule Versions
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
@@ -43,7 +43,7 @@ jobs:
       - run: .ci/scripts/quality/check-submodule-versions.sh
 
   quality-deps:
-    name: Quality - Deps
+    name: Deps
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
@@ -63,7 +63,7 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
 
   quality-lint:
-    name: Quality - Lint
+    name: Lint
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
@@ -81,7 +81,7 @@ jobs:
       - run: npm run lint:unused
 
   quality-format:
-    name: Quality - Format
+    name: Format
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
@@ -98,7 +98,7 @@ jobs:
       - run: npm run check:format
 
   quality-i18n:
-    name: Quality - i18n
+    name: i18n
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
@@ -111,7 +111,7 @@ jobs:
       - run: npm run check:i18n
 
   quality-types:
-    name: Quality - TypeScript
+    name: TypeScript
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
@@ -124,7 +124,7 @@ jobs:
       - run: npm run typecheck
 
   quality-security:
-    name: Quality - Security
+    name: Security
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
@@ -143,7 +143,7 @@ jobs:
           retention-days: 3
 
   quality-shell:
-    name: Quality - Shell
+    name: Shell
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
@@ -152,7 +152,7 @@ jobs:
       - run: .ci/scripts/security/check-commands.sh
 
   quality-middleware:
-    name: Quality - Middleware
+    name: Middleware
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
@@ -178,7 +178,7 @@ jobs:
         run: .ci/scripts/private/run-middleware.sh quality
 
   quality-renet:
-    name: Quality - Renet
+    name: Renet
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
