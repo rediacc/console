@@ -117,7 +117,9 @@ build_criu() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    trap "rm -rf $build_dir" EXIT
+    # We intentionally expand $build_dir now to capture the temp directory path
+    # shellcheck disable=SC2064
+    trap "rm -rf '$build_dir'" EXIT
 
     cd "$build_dir"
 
@@ -164,7 +166,9 @@ build_rsync() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    trap "rm -rf $build_dir" EXIT
+    # We intentionally expand $build_dir now to capture the temp directory path
+    # shellcheck disable=SC2064
+    trap "rm -rf '$build_dir'" EXIT
 
     cd "$build_dir"
 
@@ -215,7 +219,9 @@ build_rsync_cross() {
 
     local build_dir
     build_dir=$(mktemp -d)
-    trap "rm -rf $build_dir" EXIT
+    # We intentionally expand $build_dir now to capture the temp directory path
+    # shellcheck disable=SC2064
+    trap "rm -rf '$build_dir'" EXIT
 
     cd "$build_dir"
 

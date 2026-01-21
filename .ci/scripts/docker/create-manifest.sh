@@ -3,15 +3,13 @@
 # Combines :tag-amd64 and :tag-arm64 images into a single :tag manifest
 #
 # Usage:
-#   create-manifest.sh --image api --tag 20260121-120000              # Create manifest
-#   create-manifest.sh --image bridge --tag 20260121-120000 --push    # Create and push
+#   create-manifest.sh --image api --tag 20260121-120000              # Create and push manifest
 #   create-manifest.sh --image api --tag 0.5.0 --push-latest          # Also push :latest
 #   create-manifest.sh --dry-run --image api --tag 20260121-120000    # Preview
 #
 # Options:
 #   --image NAME      Image name (api, bridge, web, plugin-terminal, plugin-browser)
 #   --tag TAG         Tag for the manifest (e.g., 20260121-120000 or 0.5.0)
-#   --push            Push manifest to registry (default)
 #   --push-latest     Also create and push :latest manifest
 #   --dry-run         Preview without creating manifest
 #
@@ -29,7 +27,6 @@ source "$SCRIPT_DIR/../../config/constants.sh"
 DRY_RUN="${DRY_RUN:-false}"
 IMAGE_NAME=""
 TAG=""
-PUSH=true
 PUSH_LATEST=false
 
 # Supported architectures
@@ -45,10 +42,6 @@ while [[ $# -gt 0 ]]; do
         --tag)
             TAG="$2"
             shift 2
-            ;;
-        --push)
-            PUSH=true
-            shift
             ;;
         --push-latest)
             PUSH_LATEST=true
@@ -66,7 +59,6 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --image NAME      Image name (api, bridge, etc.)"
             echo "  --tag TAG         Tag for the manifest"
-            echo "  --push            Push manifest to registry (default)"
             echo "  --push-latest     Also create and push :latest manifest"
             echo "  --dry-run         Preview without creating manifest"
             exit 0
