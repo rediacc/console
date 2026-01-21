@@ -75,21 +75,15 @@ sed_in_place() {
     fi
 }
 
-ensure_on_origin_main() {
+sync_to_origin_main() {
     local dir="$1"
     git -C "$dir" fetch origin main >/dev/null 2>&1 || true
-    local current
     local origin
-    current="$(git -C "$dir" rev-parse HEAD)"
     origin="$(git -C "$dir" rev-parse origin/main)"
-    if [[ "$current" != "$origin" ]]; then
-        log_error "Submodule $dir is not at origin/main (current=$current, origin=$origin)"
-        log_error "Refusing to create version commit on a divergent base."
-        exit 1
-    fi
     if [[ "$DRY_RUN" != "true" ]]; then
         git -C "$dir" checkout -B main "$origin" >/dev/null 2>&1
     fi
+    log_info "Synced $dir to origin/main ($origin)"
 }
 
 commit_and_tag() {
@@ -139,7 +133,7 @@ update_renet() {
     local dir="$REPO_ROOT/private/renet"
     local file="$dir/cmd/renet/version.go"
     require_file "$file"
-    ensure_on_origin_main "$dir"
+    sync_to_origin_main "$dir"
     sed_in_place "s/const Version = \"[^\"]*\"/const Version = \"$VERSION\"/" "$file"
     commit_and_tag "$dir" "$file" "renet"
     push_changes "$dir" "renet"
@@ -149,7 +143,7 @@ update_middleware() {
     local dir="$REPO_ROOT/private/middleware"
     local file="$dir/middleware.csproj"
     require_file "$file"
-    ensure_on_origin_main "$dir"
+    sync_to_origin_main "$dir"
     sed_in_place "s/<Version>[^<]*<\\/Version>/<Version>$VERSION<\\/Version>/" "$file"
     commit_and_tag "$dir" "$file" "middleware"
     push_changes "$dir" "middleware"

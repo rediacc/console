@@ -25,8 +25,8 @@ if [[ ! -f "$REN_VERSION_FILE" || ! -f "$MID_VERSION_FILE" ]]; then
     exit 0
 fi
 
-REN_VERSION="$(sed -n -E 's/const Version = \"([^\"]+)\"/\\1/p' "$REN_VERSION_FILE" | head -n 1)"
-MID_VERSION="$(sed -n -E 's/.*<Version>([^<]+)<\\/Version>.*/\\1/p' "$MID_VERSION_FILE" | head -n 1)"
+REN_VERSION="$(awk -F '\"' '/const Version =/ {print $2; exit}' "$REN_VERSION_FILE")"
+MID_VERSION="$(awk -F '[<>]' '/<Version>/ {print $3; exit}' "$MID_VERSION_FILE")"
 
 if [[ -z "$REN_VERSION" || -z "$MID_VERSION" ]]; then
     log_error "Failed to parse submodule version files"
