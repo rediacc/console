@@ -3,18 +3,18 @@
  * Check that all dependencies are up-to-date.
  *
  * This script runs `npm outdated` and fails if any dependencies are outdated,
- * unless they are in the allowlist with a valid version constraint.
+ * unless they are in the blocklist (packages that should NOT be auto-upgraded).
  *
- * Allowlist format (.deps-outdated-allowlist):
- *   package-name@<max-version # reason
+ * Blocklist format (.deps-upgrade-blocklist):
+ *   package-name # reason for blocking
  *
  * Usage:
  *   npx tsx scripts/check-deps.ts           # Check for outdated packages
- *   npx tsx scripts/check-deps.ts --upgrade # Upgrade outdated packages
+ *   npx tsx scripts/check-deps.ts --upgrade # Upgrade all non-blocked packages
  *   npx tsx scripts/check-deps.ts --help    # Show help
  *
  * Exit codes:
- *   0 - All dependencies are up-to-date (or allowlisted), or upgrade succeeded
+ *   0 - All dependencies are up-to-date (or blocked), or upgrade succeeded
  *   1 - Outdated dependencies found (check mode) or upgrade failed
  */
 
@@ -27,13 +27,12 @@ import { BLUE, GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
-const ALLOWLIST_FILE = path.join(CONSOLE_ROOT, '.deps-outdated-allowlist');
+const BLOCKLIST_FILE = path.join(CONSOLE_ROOT, '.deps-upgrade-blocklist');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
 const showHelp = args.includes('--help') || args.includes('-h');
 const upgradeMode = args.includes('--upgrade') || args.includes('-u');
-const forceMode = args.includes('--force') || args.includes('-f');
 
 interface ParsedVersion {
   major: number;
@@ -42,8 +41,7 @@ interface ParsedVersion {
   prerelease: string | null;
 }
 
-interface AllowlistEntry {
-  constraint: string;
+interface BlocklistEntry {
   reason: string;
 }
 
@@ -60,12 +58,47 @@ interface PackageInfo {
   current: string;
   latest: string;
   wanted?: string;
-  constraint?: string;
   reason?: string;
 }
 
 // Cache for changelog URLs to avoid duplicate fetches
 const changelogCache = new Map<string, string | null>();
+
+/**
+ * Find which workspace packages contain a given dependency
+ */
+function findWorkspacesWithPackage(packageName: string): string[] {
+  const workspaces: string[] = [];
+  const packagesDir = path.join(CONSOLE_ROOT, 'packages');
+
+  if (!fs.existsSync(packagesDir)) return workspaces;
+
+  for (const dir of fs.readdirSync(packagesDir)) {
+    const pkgPath = path.join(packagesDir, dir, 'package.json');
+    if (!fs.existsSync(pkgPath)) continue;
+
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+        peerDependencies?: Record<string, string>;
+      };
+      const allDeps = {
+        ...pkg.dependencies,
+        ...pkg.devDependencies,
+        ...pkg.peerDependencies,
+      };
+
+      if (packageName in allDeps) {
+        workspaces.push(dir);
+      }
+    } catch {
+      // Skip invalid package.json files
+    }
+  }
+
+  return workspaces;
+}
 
 /**
  * Parse a semver version string into components
@@ -82,49 +115,27 @@ function parseVersion(version: string): ParsedVersion | null {
 }
 
 /**
- * Compare two versions: returns -1 if a < b, 0 if a == b, 1 if a > b
+ * Check if upgrade is a major version bump
  */
-function compareVersions(a: string, b: string): number {
-  const va = parseVersion(a);
-  const vb = parseVersion(b);
-
-  if (!va || !vb) return 0;
-
-  if (va.major !== vb.major) return va.major < vb.major ? -1 : 1;
-  if (va.minor !== vb.minor) return va.minor < vb.minor ? -1 : 1;
-  if (va.patch !== vb.patch) return va.patch < vb.patch ? -1 : 1;
-
-  // Prerelease versions are less than release versions
-  if (va.prerelease && !vb.prerelease) return -1;
-  if (!va.prerelease && vb.prerelease) return 1;
-
-  return 0;
+function isMajorUpgrade(current: string, latest: string): boolean {
+  if (!current || !latest) return false;
+  const vc = parseVersion(current);
+  const vl = parseVersion(latest);
+  if (!vc || !vl) return false;
+  return vl.major > vc.major;
 }
 
 /**
- * Check if version satisfies constraint (e.g., "<3.0.0")
+ * Load and parse the blocklist file
  */
-function satisfiesConstraint(version: string, constraint: string): boolean {
-  if (!constraint.startsWith('<')) {
-    console.error(`Invalid constraint format: ${constraint} (must start with '<')`);
-    return false;
+function loadBlocklist(): Map<string, BlocklistEntry> {
+  const blocklist = new Map<string, BlocklistEntry>();
+
+  if (!fs.existsSync(BLOCKLIST_FILE)) {
+    return blocklist;
   }
 
-  const maxVersion = constraint.slice(1);
-  return compareVersions(version, maxVersion) < 0;
-}
-
-/**
- * Load and parse the allowlist file
- */
-function loadAllowlist(): Map<string, AllowlistEntry> {
-  const allowlist = new Map<string, AllowlistEntry>();
-
-  if (!fs.existsSync(ALLOWLIST_FILE)) {
-    return allowlist;
-  }
-
-  const content = fs.readFileSync(ALLOWLIST_FILE, 'utf-8');
+  const content = fs.readFileSync(BLOCKLIST_FILE, 'utf-8');
   const lines = content.split('\n');
 
   for (const line of lines) {
@@ -135,31 +146,19 @@ function loadAllowlist(): Map<string, AllowlistEntry> {
       continue;
     }
 
-    // Parse: package-name@<version # reason
+    // Parse: package-name # reason
     const commentIndex = trimmed.indexOf('#');
-    const spec = commentIndex >= 0 ? trimmed.slice(0, commentIndex).trim() : trimmed;
+    const packageName = commentIndex >= 0 ? trimmed.slice(0, commentIndex).trim() : trimmed;
     const reason = commentIndex >= 0 ? trimmed.slice(commentIndex + 1).trim() : '';
 
-    // Find the @ that separates package name from version constraint
-    // Handle scoped packages like @scope/package@<1.0.0
-    const atIndex = spec.lastIndexOf('@');
-    if (atIndex <= 0) {
-      console.error(`Invalid allowlist entry: ${trimmed}`);
+    if (!packageName) {
       continue;
     }
 
-    const packageName = spec.slice(0, atIndex);
-    const constraint = spec.slice(atIndex + 1);
-
-    if (!constraint.startsWith('<')) {
-      console.error(`Invalid constraint in allowlist: ${constraint} (must start with '<')`);
-      continue;
-    }
-
-    allowlist.set(packageName, { constraint, reason });
+    blocklist.set(packageName, { reason });
   }
 
-  return allowlist;
+  return blocklist;
 }
 
 /**
@@ -188,17 +187,6 @@ function getOutdatedPackages(): Record<string, OutdatedPackageInfo> {
     }
     return {};
   }
-}
-
-/**
- * Check if upgrade is a major version bump
- */
-function isMajorUpgrade(current: string, latest: string): boolean {
-  if (!current || !latest) return false;
-  const vc = parseVersion(current);
-  const vl = parseVersion(latest);
-  if (!vc || !vl) return false;
-  return vl.major > vc.major;
 }
 
 /**
@@ -280,73 +268,75 @@ async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, 
 }
 
 /**
- * Upgrade packages using npm install (npm update doesn't update to latest within semver range)
+ * Upgrade packages using npm install
+ *
+ * Intelligently handles workspace vs root-only dependencies:
+ * - Packages that exist in child package.json files: use -ws to update version specifiers
+ * - Packages that only exist in root: install without -ws to avoid corrupting child packages
  */
-function upgradePackages(packages: PackageInfo[], forceMajor = false): boolean {
+function upgradePackages(packages: PackageInfo[]): boolean {
   if (packages.length === 0) {
     console.log(`${GREEN}No packages to upgrade${NC}`);
     return true;
   }
 
-  // Separate minor/patch updates from major updates
-  const minorUpdates = packages.filter((p) => !isMajorUpgrade(p.current, p.latest));
-  const majorUpdates = packages.filter((p) => isMajorUpgrade(p.current, p.latest));
+  // Separate packages into workspace-wide vs root-only
+  const workspacePackages: Array<PackageInfo & { workspaces: string[] }> = [];
+  const rootOnlyPackages: PackageInfo[] = [];
+
+  for (const pkg of packages) {
+    const workspaces = findWorkspacesWithPackage(pkg.name);
+    if (workspaces.length > 0) {
+      workspacePackages.push({ ...pkg, workspaces });
+    } else {
+      rootOnlyPackages.push(pkg);
+    }
+  }
 
   let success = true;
 
-  // Run npm install for minor/patch updates (npm update doesn't update to latest within semver)
-  if (minorUpdates.length > 0) {
-    console.log(`${BLUE}Upgrading ${minorUpdates.length} package(s) (minor/patch)...${NC}\n`);
+  // Upgrade workspace-wide packages (updates version specifiers in child package.json)
+  if (workspacePackages.length > 0) {
+    console.log(`${BLUE}Upgrading ${workspacePackages.length} workspace package(s)...${NC}\n`);
+    for (const pkg of workspacePackages) {
+      const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
+      console.log(`    in: ${pkg.workspaces.join(', ')}`);
+    }
+    console.log();
 
-    const installArgs = minorUpdates.map((p) => `${p.name}@latest`);
-    const result = spawnSync('npm', ['install', '-ws', ...installArgs], {
+    const wsInstallArgs = workspacePackages.map((p) => `${p.name}@latest`);
+    const wsResult = spawnSync('npm', ['install', '-ws', ...wsInstallArgs], {
       cwd: CONSOLE_ROOT,
       stdio: 'inherit',
       shell: true,
     });
-
-    if (result.status !== 0) {
-      console.log(`\n${RED}Minor/patch upgrade failed${NC}`);
-      success = false;
-    } else {
-      console.log(`\n${GREEN}Minor/patch upgrades completed${NC}`);
-    }
+    if (wsResult.status !== 0) success = false;
   }
 
-  // Handle major updates
-  if (majorUpdates.length > 0) {
+  // Upgrade root-only packages (no -ws flag to avoid corrupting child packages)
+  if (rootOnlyPackages.length > 0) {
+    console.log(`${BLUE}Upgrading ${rootOnlyPackages.length} root-only package(s)...${NC}\n`);
+    for (const pkg of rootOnlyPackages) {
+      const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
+    }
     console.log();
-    if (forceMajor) {
-      console.log(`${BLUE}Upgrading ${majorUpdates.length} package(s) (major)...${NC}\n`);
 
-      // Use npm install package@latest for major updates
-      const installArgs = majorUpdates.map((p) => `${p.name}@latest`);
-      const result = spawnSync('npm', ['install', '-ws', ...installArgs], {
-        cwd: CONSOLE_ROOT,
-        stdio: 'inherit',
-        shell: true,
-      });
-
-      if (result.status !== 0) {
-        console.log(`\n${RED}Major upgrade failed${NC}`);
-        success = false;
-      } else {
-        console.log(`\n${GREEN}Major upgrades completed${NC}`);
-      }
-    } else {
-      console.log(`${YELLOW}Major version upgrades available (${majorUpdates.length}):${NC}\n`);
-      for (const pkg of majorUpdates) {
-        console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}`);
-      }
-      console.log();
-      console.log(`These require manual review. To upgrade, run:`);
-      console.log(`  npx tsx scripts/check-deps.ts --upgrade --force`);
-      console.log(
-        `Or manually: npm install ${majorUpdates.map((p) => `${p.name}@latest`).join(' ')}`
-      );
-    }
+    const rootInstallArgs = rootOnlyPackages.map((p) => `${p.name}@latest`);
+    const rootResult = spawnSync('npm', ['install', ...rootInstallArgs], {
+      cwd: CONSOLE_ROOT,
+      stdio: 'inherit',
+      shell: true,
+    });
+    if (rootResult.status !== 0) success = false;
   }
 
+  if (success) {
+    console.log(`\n${GREEN}Upgrades completed${NC}`);
+  } else {
+    console.log(`\n${RED}Some upgrades failed${NC}`);
+  }
   return success;
 }
 
@@ -361,17 +351,16 @@ ${YELLOW}USAGE${NC}
   npx tsx scripts/check-deps.ts [OPTIONS]
 
 ${YELLOW}OPTIONS${NC}
-  --upgrade, -u   Upgrade outdated packages (minor/patch only)
-  --force, -f     With --upgrade: also upgrade major versions
+  --upgrade, -u   Upgrade all outdated packages (including major versions)
   --help, -h      Show this help message
 
 ${YELLOW}DESCRIPTION${NC}
   Checks for outdated npm dependencies and fails if any are found.
-  Packages can be allowlisted in .deps-outdated-allowlist with a
-  max version constraint to defer upgrades.
+  Packages can be blocklisted in .deps-upgrade-blocklist to prevent
+  auto-upgrades (e.g., packages requiring manual migration).
 
-${YELLOW}ALLOWLIST FORMAT${NC}
-  package-name@<max-version # reason
+${YELLOW}BLOCKLIST FORMAT${NC}
+  package-name # reason for blocking
 
 ${YELLOW}EXAMPLES${NC}
   npx tsx scripts/check-deps.ts           # Check for outdated packages
@@ -394,11 +383,10 @@ async function checkDependencies(): Promise<void> {
   console.log('Checking dependency versions...\n');
 
   const outdated = getOutdatedPackages();
-  const allowlist = loadAllowlist();
+  const blocklist = loadBlocklist();
 
   const mustUpgrade: PackageInfo[] = [];
-  const constraintExceeded: PackageInfo[] = [];
-  const allowed: PackageInfo[] = [];
+  const blocked: PackageInfo[] = [];
 
   for (const [name, info] of Object.entries(outdated)) {
     const current = info.current;
@@ -418,48 +406,30 @@ async function checkDependencies(): Promise<void> {
       continue;
     }
 
-    const allowEntry = allowlist.get(name);
+    const blockEntry = blocklist.get(name);
 
-    if (allowEntry) {
-      // Check if latest version exceeds the constraint
-      if (satisfiesConstraint(latest, allowEntry.constraint)) {
-        // Allowed - latest is still under the max version
-        allowed.push({
-          name,
-          current,
-          latest,
-          constraint: allowEntry.constraint,
-          reason: allowEntry.reason,
-        });
-      } else {
-        // Constraint exceeded - latest version is at or above max
-        constraintExceeded.push({
-          name,
-          current,
-          latest,
-          constraint: allowEntry.constraint,
-          reason: allowEntry.reason,
-        });
-      }
+    if (blockEntry) {
+      // Package is blocked from upgrading - skip it
+      blocked.push({
+        name,
+        current,
+        latest,
+        reason: blockEntry.reason,
+      });
     } else {
-      // Not in allowlist - must upgrade
+      // Not in blocklist - must upgrade
       mustUpgrade.push({ name, current, latest, wanted: info.wanted });
     }
   }
 
-  // In upgrade mode, upgrade all outdated packages (except allowlisted)
+  // In upgrade mode, upgrade all non-blocked packages
   if (upgradeMode) {
-    const packagesToUpgrade = [...mustUpgrade, ...constraintExceeded];
-
-    if (packagesToUpgrade.length === 0) {
-      if (allowed.length > 0) {
-        console.log(
-          `${GREEN}All dependencies are up-to-date${NC} (${allowed.length} allowlisted)\n`
-        );
-        for (const pkg of allowed) {
-          console.log(
-            `  ${pkg.name}: ${pkg.current} -> ${pkg.latest} (allowed: ${pkg.constraint})`
-          );
+    if (mustUpgrade.length === 0) {
+      if (blocked.length > 0) {
+        console.log(`${GREEN}All dependencies are up-to-date${NC} (${blocked.length} blocked)\n`);
+        for (const pkg of blocked) {
+          const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+          console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag} (blocked)`);
         }
       } else {
         console.log(`${GREEN}All dependencies are up-to-date${NC}`);
@@ -467,47 +437,23 @@ async function checkDependencies(): Promise<void> {
       process.exit(0);
     }
 
-    console.log(`Found ${packagesToUpgrade.length} package(s) to upgrade:\n`);
-    for (const pkg of packagesToUpgrade) {
-      const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
-      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
-    }
-    console.log();
-
-    const success = upgradePackages(packagesToUpgrade, forceMode);
+    const success = upgradePackages(mustUpgrade);
     process.exit(success ? 0 : 1);
   }
 
   // Check mode - fetch changelog URLs for all packages that will be displayed
-  const allPackages = [...mustUpgrade, ...constraintExceeded, ...allowed];
+  const allPackages = [...mustUpgrade, ...blocked];
   const changelogUrls = await fetchChangelogUrls(allPackages);
 
   // Check mode - output results
   let hasFailure = false;
 
-  if (constraintExceeded.length > 0) {
-    hasFailure = true;
-    console.log(`${RED}Allowlist constraint exceeded:${NC}\n`);
-    for (const pkg of constraintExceeded) {
-      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}`);
-      console.log(`    Allowed: ${pkg.constraint}, but latest is ${pkg.latest}`);
-      console.log(`    Action: Review allowlist, package may now be compatible`);
-      if (pkg.reason) {
-        console.log(`    Original reason: ${pkg.reason}`);
-      }
-      const changelog = changelogUrls.get(pkg.name);
-      if (changelog) {
-        console.log(`    Changelog: ${changelog}`);
-      }
-      console.log();
-    }
-  }
-
   if (mustUpgrade.length > 0) {
     hasFailure = true;
     console.log(`${RED}Outdated packages (must upgrade):${NC}\n`);
     for (const pkg of mustUpgrade) {
-      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}`);
+      const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
       const changelog = changelogUrls.get(pkg.name);
       if (changelog) {
         console.log(`    Changelog: ${changelog}`);
@@ -519,10 +465,11 @@ async function checkDependencies(): Promise<void> {
     console.log();
   }
 
-  if (allowed.length > 0) {
-    console.log(`${YELLOW}Allowlisted packages (${allowed.length}):${NC}\n`);
-    for (const pkg of allowed) {
-      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest} (allowed: ${pkg.constraint})`);
+  if (blocked.length > 0) {
+    console.log(`${YELLOW}Blocked packages (${blocked.length}):${NC}\n`);
+    for (const pkg of blocked) {
+      const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
       if (pkg.reason) {
         console.log(`    Reason: ${pkg.reason}`);
       }
@@ -539,8 +486,8 @@ async function checkDependencies(): Promise<void> {
     process.exit(1);
   }
 
-  if (allowed.length > 0) {
-    console.log(`${GREEN}All dependencies are up-to-date${NC} (${allowed.length} allowlisted)`);
+  if (blocked.length > 0) {
+    console.log(`${GREEN}All dependencies are up-to-date${NC} (${blocked.length} blocked)`);
   } else {
     console.log(`${GREEN}All dependencies are up-to-date${NC}`);
   }

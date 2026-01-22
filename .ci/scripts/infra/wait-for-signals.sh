@@ -128,7 +128,7 @@ check_signal_status() {
 fetch_and_check_signals() {
     # Fetch current artifacts
     local artifacts
-    artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --jq '.artifacts[].name' 2>/dev/null || echo "")
+    artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --paginate --jq '.artifacts[].name' 2>/dev/null || echo "")
 
     # Check CLI platforms
     for platform in "${CLI_PLATFORMS[@]}"; do

@@ -25,8 +25,9 @@ readonly CI_CONFIG_DIR="$CI_DIR/config"
 # =============================================================================
 # DOCKER REGISTRY CONFIGURATION
 # =============================================================================
-readonly DOCKER_REGISTRY="ghcr.io/rediacc/elite"
-readonly DOCKER_TAG="${DOCKER_TAG:-latest}"
+# DOCKER_REGISTRY can be overridden by .env for local development
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
+DOCKER_TAG="${DOCKER_TAG:-latest}"
 
 # Supported architectures for multi-arch builds
 readonly SUPPORTED_ARCHS=("amd64" "arm64")
@@ -36,6 +37,7 @@ readonly ELITE_IMAGE_WEB="${DOCKER_REGISTRY}/web:${DOCKER_TAG}"
 readonly ELITE_IMAGE_API="${DOCKER_REGISTRY}/api:${DOCKER_TAG}"
 readonly ELITE_IMAGE_BRIDGE="${DOCKER_REGISTRY}/bridge:${DOCKER_TAG}"
 readonly ELITE_IMAGE_SQL="mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04"
+readonly ELITE_IMAGE_SQL_ARM64="mcr.microsoft.com/azure-sql-edge:1.0.7"
 
 # Docker Networks
 readonly DOCKER_NETWORK_INTERNET="rediacc_internet"
@@ -55,13 +57,13 @@ readonly CI_CONTAINER_SQL="rediacc-sql"
 # Backend state file
 readonly BACKEND_STATE_FILE="$CONSOLE_ROOT_DIR/.backend-state"
 
-# Default System Configuration
-readonly SYSTEM_ADMIN_EMAIL="admin@rediacc.io"
-readonly SYSTEM_ADMIN_PASSWORD="admin"
-readonly SYSTEM_ORGANIZATION_NAME="Default Organization"
-readonly SYSTEM_DEFAULT_BRIDGE_NAME="Global Bridges"
-readonly SYSTEM_DEFAULT_REGION_NAME="Default Region"
-readonly SYSTEM_DEFAULT_TEAM_NAME="Private Team"
+# Default System Configuration (can be overridden by .env)
+SYSTEM_ADMIN_EMAIL="${SYSTEM_ADMIN_EMAIL:-admin@rediacc.io}"
+SYSTEM_ADMIN_PASSWORD="${SYSTEM_ADMIN_PASSWORD:-admin}"
+SYSTEM_ORGANIZATION_NAME="${SYSTEM_ORGANIZATION_NAME:-Default Organization}"
+SYSTEM_DEFAULT_BRIDGE_NAME="${SYSTEM_DEFAULT_BRIDGE_NAME:-Global Bridges}"
+SYSTEM_DEFAULT_REGION_NAME="${SYSTEM_DEFAULT_REGION_NAME:-Default Region}"
+SYSTEM_DEFAULT_TEAM_NAME="${SYSTEM_DEFAULT_TEAM_NAME:-Private Team}"
 
 # =============================================================================
 # API CONFIGURATION
@@ -99,7 +101,7 @@ readonly DOCKER_BUILD_ARG_NODE_VERSION="NODE_VERSION=$NODE_VERSION_REQUIRED"
 # =============================================================================
 # PUBLISHING CONFIGURATION
 # =============================================================================
-readonly PUBLISH_DOCKER_REGISTRY="ghcr.io/rediacc/elite"
+PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
 
 # Bot identity for CI commits
 readonly PUBLISH_BOT_NAME="github-actions[bot]"

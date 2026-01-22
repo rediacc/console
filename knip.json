@@ -121,6 +121,10 @@
     "loupe",
     "@vitest/runner",
     "@vitest/utils",
+    "@vitest/coverage-v8",
+    "@vitest/ui",
+    "unist-util-visit",
+    "zod",
     "astro-seo",
     "glob"
   ],

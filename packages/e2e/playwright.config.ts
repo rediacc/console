@@ -104,6 +104,8 @@ export default test.defineConfig({
       // Setup needs more time: wait for Vite + registration flow + slower Windows runners
       // Increased to 180s to accommodate Windows tunnel latency (60s health + 60s registration + 30s buffer)
       timeout: 180000,
+      // Retry setup in CI - network issues here cascade to all tests
+      retries: process.env.CI ? 2 : 0,
     },
 
     // =========================================================================

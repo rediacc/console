@@ -26,45 +26,40 @@ export const SSH_DEFAULTS = {
  * SSH configuration for bridge tests.
  *
  * Mirrors renet's SSH path resolution logic from:
- * renet/pkg/infra/config/config.go (lines 226-236, 432-442)
+ * renet/pkg/infra/config/config.go (resolveDataDir function)
  *
- * SSH keys are stored at {OPS_HOME}/staging/.ssh/id_rsa
+ * SSH keys are stored at {RENET_DATA_DIR}/staging/.ssh/id_rsa
  */
-
-// Path from this file to monorepo root
-// packages/bridge-tests/src/utils -> packages/bridge-tests/src -> packages/bridge-tests -> packages -> console -> monorepo
-const MONOREPO_ROOT = path.resolve(__dirname, '../../../../..');
 
 /**
- * Get OPS_HOME directory.
+ * Get renet data directory.
  *
  * Resolution order (matches renet):
- * 1. OPS_HOME environment variable
- * 2. {RENET_ROOT}/../ops (relative to renet root)
- * 3. {monorepo}/ops (fallback)
+ * 1. RENET_DATA_DIR environment variable
+ * 2. CI auto-detect: $RUNNER_TEMP/renet (GitHub Actions) or /tmp/renet
+ * 3. ~/.renet (user home directory)
  */
-function getOpsHome(): string {
-  // Check OPS_HOME env var first (highest priority)
-  const envOpsHome = process.env.OPS_HOME;
-  if (envOpsHome) {
-    return envOpsHome;
+function getRenetDataDir(): string {
+  // Check RENET_DATA_DIR env var first (highest priority)
+  if (process.env.RENET_DATA_DIR) {
+    return process.env.RENET_DATA_DIR;
   }
 
-  // Try relative to RENET_ROOT if set
-  const renetRoot = process.env.RENET_ROOT;
-  if (renetRoot) {
-    return path.join(renetRoot, '..', 'ops');
+  // CI auto-detect
+  if (process.env.CI === 'true') {
+    const runnerTemp = process.env.RUNNER_TEMP;
+    return runnerTemp ? path.join(runnerTemp, 'renet') : '/tmp/renet';
   }
 
-  // Default: monorepo/ops
-  return path.join(MONOREPO_ROOT, 'ops');
+  // Default: ~/.renet
+  return path.join(process.env.HOME || '', '.renet');
 }
 
 /**
  * Get the SSH private key path.
  */
 export function getSSHPrivateKeyPath(): string {
-  return path.join(getOpsHome(), 'staging', '.ssh', 'id_rsa');
+  return path.join(getRenetDataDir(), 'staging', '.ssh', 'id_rsa');
 }
 
 /**
@@ -97,9 +92,9 @@ export function getSSHOptions(): string {
 
   // Log warning but continue without key
   // In CI, the setup action should have created the key
-  const opsHome = process.env.OPS_HOME ?? '(not set)';
+  const dataDir = getRenetDataDir();
   console.warn(
-    `[sshConfig] SSH key not found at ${keyPath} (OPS_HOME=${opsHome}), using default SSH options`
+    `[sshConfig] SSH key not found at ${keyPath} (DataDir=${dataDir}), using default SSH options`
   );
   return baseOptions;
 }

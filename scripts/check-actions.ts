@@ -3,10 +3,10 @@
  * Check that all GitHub Actions are up-to-date.
  *
  * This script parses workflow files and checks if actions are outdated,
- * unless they are in the allowlist with a valid version constraint.
+ * unless they are in the blocklist (actions that should NOT be upgraded).
  *
- * Allowlist format (.actions-outdated-allowlist):
- *   owner/repo@<max-version # reason
+ * Blocklist format (.actions-upgrade-blocklist):
+ *   owner/repo # reason for blocking
  *
  * Usage:
  *   npx tsx scripts/check-actions.ts           # Check for outdated actions
@@ -14,7 +14,7 @@
  *   npx tsx scripts/check-actions.ts --help    # Show help
  *
  * Exit codes:
- *   0 - All actions are up-to-date (or allowlisted)
+ *   0 - All actions are up-to-date (or blocked)
  *   1 - Outdated actions found
  */
 
@@ -27,7 +27,7 @@ import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
 const WORKFLOWS_DIR = path.join(CONSOLE_ROOT, '.github', 'workflows');
-const ALLOWLIST_FILE = path.join(CONSOLE_ROOT, '.actions-outdated-allowlist');
+const BLOCKLIST_FILE = path.join(CONSOLE_ROOT, '.actions-upgrade-blocklist');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -55,8 +55,7 @@ interface ActionInfo {
   locations: ActionLocation[];
 }
 
-interface AllowlistEntry {
-  constraint: string;
+interface BlocklistEntry {
   reason: string;
 }
 
@@ -70,7 +69,6 @@ interface ActionResult extends ActionInfo {
   name: string;
   latest?: string;
   releaseUrl?: string;
-  constraint?: string;
   reason?: string;
 }
 
@@ -128,29 +126,16 @@ function compareVersions(a: string, b: string): number {
 }
 
 /**
- * Check if version satisfies constraint (e.g., "<v3")
+ * Load and parse the blocklist file
  */
-function satisfiesConstraint(version: string, constraint: string): boolean {
-  if (!constraint.startsWith('<')) {
-    console.error(`Invalid constraint format: ${constraint} (must start with '<')`);
-    return false;
+function loadBlocklist(): Map<string, BlocklistEntry> {
+  const blocklist = new Map<string, BlocklistEntry>();
+
+  if (!fs.existsSync(BLOCKLIST_FILE)) {
+    return blocklist;
   }
 
-  const maxVersion = constraint.slice(1);
-  return compareVersions(version, maxVersion) < 0;
-}
-
-/**
- * Load and parse the allowlist file
- */
-function loadAllowlist(): Map<string, AllowlistEntry> {
-  const allowlist = new Map<string, AllowlistEntry>();
-
-  if (!fs.existsSync(ALLOWLIST_FILE)) {
-    return allowlist;
-  }
-
-  const content = fs.readFileSync(ALLOWLIST_FILE, 'utf-8');
+  const content = fs.readFileSync(BLOCKLIST_FILE, 'utf-8');
   const lines = content.split('\n');
 
   for (const line of lines) {
@@ -161,30 +146,19 @@ function loadAllowlist(): Map<string, AllowlistEntry> {
       continue;
     }
 
-    // Parse: owner/repo@<version # reason
+    // Parse: owner/repo # reason
     const commentIndex = trimmed.indexOf('#');
-    const spec = commentIndex >= 0 ? trimmed.slice(0, commentIndex).trim() : trimmed;
+    const actionName = commentIndex >= 0 ? trimmed.slice(0, commentIndex).trim() : trimmed;
     const reason = commentIndex >= 0 ? trimmed.slice(commentIndex + 1).trim() : '';
 
-    // Find the @ that separates action name from version constraint
-    const atIndex = spec.lastIndexOf('@');
-    if (atIndex <= 0) {
-      console.error(`Invalid allowlist entry: ${trimmed}`);
+    if (!actionName) {
       continue;
     }
 
-    const actionName = spec.slice(0, atIndex);
-    const constraint = spec.slice(atIndex + 1);
-
-    if (!constraint.startsWith('<')) {
-      console.error(`Invalid constraint in allowlist: ${constraint} (must start with '<')`);
-      continue;
-    }
-
-    allowlist.set(actionName, { constraint, reason });
+    blocklist.set(actionName, { reason });
   }
 
-  return allowlist;
+  return blocklist;
 }
 
 /**
@@ -384,11 +358,11 @@ ${YELLOW}ENVIRONMENT${NC}
 
 ${YELLOW}DESCRIPTION${NC}
   Checks for outdated GitHub Actions in workflow files and fails if any
-  are found. Actions can be allowlisted in .actions-outdated-allowlist
-  with a max version constraint to defer upgrades.
+  are found. Actions can be blocklisted in .actions-upgrade-blocklist to
+  prevent upgrade enforcement (e.g., actions requiring workflow changes).
 
-${YELLOW}ALLOWLIST FORMAT${NC}
-  owner/repo@<max-version # reason
+${YELLOW}BLOCKLIST FORMAT${NC}
+  owner/repo # reason for blocking
 
 ${YELLOW}EXAMPLES${NC}
   npx tsx scripts/check-actions.ts           # Check for outdated actions
@@ -410,7 +384,7 @@ async function checkActions(): Promise<void> {
   console.log('Checking GitHub Actions versions...\n');
 
   const actions = parseWorkflowFiles();
-  const allowlist = loadAllowlist();
+  const blocklist = loadBlocklist();
 
   if (actions.size === 0) {
     console.log(`${GREEN}No external actions found in workflow files${NC}`);
@@ -422,14 +396,13 @@ async function checkActions(): Promise<void> {
   const latestReleases = await fetchLatestReleases(actions);
 
   const mustUpgrade: ActionResult[] = [];
-  const constraintExceeded: ActionResult[] = [];
-  const allowed: ActionResult[] = [];
+  const blocked: ActionResult[] = [];
   const upToDate: ActionResult[] = [];
   const unknown: ActionResult[] = [];
 
   for (const [actionName, info] of actions) {
     const release = latestReleases.get(actionName);
-    const allowEntry = allowlist.get(actionName);
+    const blockEntry = blocklist.get(actionName);
 
     if (!release) {
       unknown.push({ name: actionName, ...info });
@@ -459,28 +432,18 @@ async function checkActions(): Promise<void> {
       continue;
     }
 
-    // Outdated - check allowlist
-    if (allowEntry) {
-      if (satisfiesConstraint(latestVersion, allowEntry.constraint)) {
-        allowed.push({
-          name: actionName,
-          ...info,
-          latest: latestVersion,
-          releaseUrl: release.url,
-          constraint: allowEntry.constraint,
-          reason: allowEntry.reason,
-        });
-      } else {
-        constraintExceeded.push({
-          name: actionName,
-          ...info,
-          latest: latestVersion,
-          releaseUrl: release.url,
-          constraint: allowEntry.constraint,
-          reason: allowEntry.reason,
-        });
-      }
+    // Outdated - check blocklist
+    if (blockEntry) {
+      // Action is blocked from upgrading
+      blocked.push({
+        name: actionName,
+        ...info,
+        latest: latestVersion,
+        releaseUrl: release.url,
+        reason: blockEntry.reason,
+      });
     } else {
+      // Not in blocklist - must upgrade
       mustUpgrade.push({
         name: actionName,
         ...info,
@@ -492,22 +455,6 @@ async function checkActions(): Promise<void> {
 
   // Output results
   let hasFailure = false;
-
-  if (constraintExceeded.length > 0) {
-    hasFailure = true;
-    console.log(`${RED}Allowlist constraint exceeded:${NC}\n`);
-    for (const action of constraintExceeded) {
-      console.log(`  ${action.name}: ${action.version} -> ${action.latest}`);
-      console.log(`    Allowed: ${action.constraint}, but latest is ${action.latest}`);
-      console.log(`    Action: Review allowlist, action may now be compatible`);
-      if (action.reason) {
-        console.log(`    Original reason: ${action.reason}`);
-      }
-      console.log(`    Release: ${action.releaseUrl}`);
-      console.log(`    Files: ${action.locations.map((l) => `${l.file}:${l.line}`).join(', ')}`);
-      console.log();
-    }
-  }
 
   if (mustUpgrade.length > 0) {
     hasFailure = true;
@@ -526,12 +473,10 @@ async function checkActions(): Promise<void> {
     console.log();
   }
 
-  if (allowed.length > 0) {
-    console.log(`${YELLOW}Allowlisted actions (${allowed.length}):${NC}\n`);
-    for (const action of allowed) {
-      console.log(
-        `  ${action.name}: ${action.version} -> ${action.latest} (allowed: ${action.constraint})`
-      );
+  if (blocked.length > 0) {
+    console.log(`${YELLOW}Blocked actions (${blocked.length}):${NC}\n`);
+    for (const action of blocked) {
+      console.log(`  ${action.name}: ${action.version} -> ${action.latest}`);
       if (action.reason) {
         console.log(`    Reason: ${action.reason}`);
       }
@@ -565,7 +510,7 @@ async function checkActions(): Promise<void> {
 
   const summary: string[] = [];
   if (upToDate.length > 0) summary.push(`${upToDate.length} up-to-date`);
-  if (allowed.length > 0) summary.push(`${allowed.length} allowlisted`);
+  if (blocked.length > 0) summary.push(`${blocked.length} blocked`);
   if (unknown.length > 0) summary.push(`${unknown.length} unknown`);
 
   console.log(

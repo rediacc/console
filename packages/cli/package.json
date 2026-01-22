@@ -46,7 +46,13 @@
     "@opentelemetry/instrumentation-fetch": "^0.211.0",
     "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
     "@opentelemetry/sdk-trace-web": "^2.5.0",
-    "inquirer": "^13.2.1"
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/runner": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
+    "@vitest/utils": "^4.0.18",
+    "inquirer": "^13.2.1",
+    "unist-util-visit": "^5.1.0",
+    "zod": "^4.3.6"
   },
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "devDependencies": {
