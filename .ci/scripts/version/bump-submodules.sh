@@ -109,7 +109,8 @@ commit_and_tag() {
         if git -C "$dir" rev-parse "v$VERSION" >/dev/null 2>&1; then
             log_info "Tag v$VERSION already exists in $label"
         else
-            git -C "$dir" tag -a "v$VERSION" -m "v$VERSION"
+            git -C "$dir" -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
+                tag -a "v$VERSION" -m "v$VERSION"
             log_info "Tagged $label with v$VERSION"
         fi
     fi
