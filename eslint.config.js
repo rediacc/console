@@ -51,6 +51,8 @@ export default tseslint.config(
       // Ignore Playwright report artifacts (generated trace viewer files)
       'packages/e2e/reports/**',
       'packages/bridge-tests/reports/**',
+      // Ignore private submodules (they have their own linting)
+      'private/**',
     ]
   },
   

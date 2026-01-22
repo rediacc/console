@@ -108,6 +108,10 @@
   "ignoreDependencies": [
     "@types/*",
     "@opentelemetry/instrumentation-*",
+    "@opentelemetry/context-zone",
+    "@opentelemetry/core",
+    "@opentelemetry/sdk-node",
+    "@opentelemetry/sdk-trace-web",
     "astro",
     "dayjs",
     "@electron-toolkit/preload",
