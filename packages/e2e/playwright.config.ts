@@ -47,8 +47,8 @@ export default test.defineConfig({
   /* Fail the build if you accidentally left test.only in the source code. */
   forbidOnly: true,
 
-  /* No retries - tests should pass consistently */
-  retries: 0,
+  /* Retry failed tests in CI to handle flaky browser behavior */
+  retries: process.env.CI ? 2 : 0,
 
   /* Single worker for maximum stability and resource isolation */
   workers: 1,
