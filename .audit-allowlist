@@ -11,3 +11,8 @@
 # tar <=7.5.3 race condition with Unicode ligatures (GHSA-r6q2-hw4h-h46w)
 # Same electron-builder dependency chain, tar@8+ has breaking ESM changes
 1112329
+
+# lodash <=4.17.21 prototype pollution in _.unset and _.omit (GHSA-xxjr-mmjv-4gpg)
+# In yaml-language-server dependency chain via vscode extensions, can't upgrade
+1112453
+1112455
