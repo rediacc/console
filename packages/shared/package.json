@@ -10,6 +10,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@opentelemetry/context-zone": "^2.5.0",
+    "@opentelemetry/core": "^2.5.0",
+    "@opentelemetry/instrumentation": "^0.211.0",
+    "@opentelemetry/instrumentation-fetch": "^0.211.0",
+    "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
+    "@opentelemetry/sdk-node": "^0.211.0",
+    "@opentelemetry/sdk-trace-web": "^2.5.0",
     "loupe": "^3.2.1",
     "zod": "^4.2.1"
   },

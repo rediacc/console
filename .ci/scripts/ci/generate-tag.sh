@@ -68,7 +68,9 @@ done
 
 # Determine tag based on mode
 if [[ -n "$SUBMODULE_PATH" ]]; then
-    # Submodule commit hash mode
+    # Submodule commit hash mode with build config hash
+    # Includes both submodule code AND build configuration to trigger rebuilds
+    # when Dockerfiles or CI workflows change
     if [[ ! -d "$SUBMODULE_PATH" ]]; then
         log_error "Submodule not found: $SUBMODULE_PATH"
         exit 1
@@ -79,7 +81,29 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
         exit 1
     fi
 
-    CI_TAG=$(git -C "$SUBMODULE_PATH" rev-parse --short HEAD)
+    SUBMODULE_COMMIT=$(git -C "$SUBMODULE_PATH" rev-parse --short HEAD)
+
+    # Include build config files in tag hash (Dockerfiles, CI build workflow)
+    BUILD_CONFIG_HASH=""
+    BUILD_CONFIG_FILES=(
+        "$SUBMODULE_PATH/Dockerfile"
+        "$SUBMODULE_PATH/Dockerfile.native"
+        ".github/workflows/ci-build.yml"
+        ".ci/scripts/docker/build-native-binaries.sh"
+    )
+    for f in "${BUILD_CONFIG_FILES[@]}"; do
+        if [[ -f "$f" ]]; then
+            BUILD_CONFIG_HASH+=$(sha256sum "$f" 2>/dev/null | cut -c1-8)
+        fi
+    done
+
+    # Combine submodule commit with build config hash (first 7 chars each)
+    if [[ -n "$BUILD_CONFIG_HASH" ]]; then
+        CONFIG_SHORT=$(echo -n "$BUILD_CONFIG_HASH" | sha256sum | cut -c1-3)
+        CI_TAG="${SUBMODULE_COMMIT}-${CONFIG_SHORT}"
+    else
+        CI_TAG="$SUBMODULE_COMMIT"
+    fi
     # Log to stderr so it doesn't interfere with captured stdout
     log_info "Generated submodule tag ($SUBMODULE_PATH): $CI_TAG" >&2
 

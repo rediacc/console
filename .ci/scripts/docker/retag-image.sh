@@ -69,20 +69,23 @@ retag_image() {
     log_step "Re-tagging $name: $FROM_TAG -> $TO_TAG"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] docker pull $src"
-        log_info "[DRY-RUN] docker tag $src $dst"
-        log_info "[DRY-RUN] docker push $dst"
-        [[ "$PUSH_LATEST" == "true" ]] && log_info "[DRY-RUN] docker tag $src $dst_latest && docker push $dst_latest"
+        log_info "[DRY-RUN] docker buildx imagetools create -t $dst $src"
+        [[ "$PUSH_LATEST" == "true" ]] && log_info "[DRY-RUN] docker buildx imagetools create -t $dst_latest $src"
         return 0
     fi
 
-    docker pull "$src"
-    docker tag "$src" "$dst"
-    docker push "$dst"
+    # Use docker buildx imagetools to re-tag multi-arch manifests
+    # This preserves all architecture variants without pulling/pushing individual images
+    if ! docker buildx imagetools create -t "$dst" "$src"; then
+        log_error "Failed to re-tag $src -> $dst"
+        return 1
+    fi
 
     if [[ "$PUSH_LATEST" == "true" ]]; then
-        docker tag "$src" "$dst_latest"
-        docker push "$dst_latest"
+        if ! docker buildx imagetools create -t "$dst_latest" "$src"; then
+            log_error "Failed to re-tag $src -> $dst_latest"
+            return 1
+        fi
         log_info "Pushed :latest tag"
     fi
 

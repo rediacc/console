@@ -1,0 +1,563 @@
+name: Console CI - Tests
+
+on:
+  workflow_call:
+    inputs:
+      api_tag:
+        required: true
+        type: string
+      bridge_tag:
+        required: true
+        type: string
+      web_tag:
+        required: true
+        type: string
+      e2e_browsers:
+        required: true
+        type: string
+    secrets:
+      GH_PAT:
+        required: false
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
+
+env:
+  E2E_BROWSERS: ${{ inputs.e2e_browsers }}
+
+jobs:
+  infra-backend:
+    name: Infra - Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}
+      DOCKER_REGISTRY: ghcr.io/rediacc/elite
+      USE_CI_IMAGES: 'true'
+      # Per-image tags for backend services
+      API_TAG: ${{ inputs.api_tag }}
+      BRIDGE_TAG: ${{ inputs.bridge_tag }}
+      WEB_TAG: ${{ inputs.web_tag }}
+    steps:
+      - name: Checkout Console Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Pull Backend Docker Images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: .ci/scripts/infra/ci-pull-images.sh
+
+      - name: Start Backend Services
+        uses: ./.github/actions/start-backend
+        with:
+          keep-alive: 'true'
+          ci-mode: 'true'
+
+      - name: Wait for Services
+        run: .ci/scripts/infra/wait-for-health.sh --url http://localhost/health --timeout 120 --message "Backend services are ready"
+
+      - name: Create Cloudflare Tunnel
+        id: tunnel
+        uses: rediacc/action-cloudflare-tunnel@v1
+        with:
+          url: http://localhost
+          timeout: 60
+
+      - name: Verify Tunnel
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          for i in {1..20}; do
+            if curl -sf "$TUNNEL_URL/health"; then
+              echo "Tunnel verified"
+              exit 0
+            fi
+            sleep 3
+          done
+          exit 1
+
+      # Bridge tests
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build CLI
+        run: |
+          npm ci
+          npm run build:packages
+          npm run build:cli
+          npm run build:bundle -w @rediacc/cli
+
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      # Login to Docker Hub to avoid rate limiting (fails gracefully if credentials not set)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        continue-on-error: true
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pre-pull Bridge Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      # Note: VM provisioning removed - standard GHA runners don't support KVM,
+      # and the renet bridge image doesn't have embedded ops assets (CRIU, rsync).
+      # VM-based tests (test-bridge-workers, test-bridge-ceph) need self-hosted runners
+      # or a separate renet-ops image with embedded assets.
+
+      - name: Upload Tunnel URL
+        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: tunnel-url
+          path: ${{ runner.temp }}/tunnel-url.txt
+          retention-days: 3
+
+      - name: Wait for Completion Signals
+        run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          E2E_BROWSERS: ${{ env.E2E_BROWSERS }}
+
+      - name: Collect Backend Logs
+        if: always()
+        run: .ci/scripts/infra/collect-backend-logs.sh ${{ runner.temp }}/backend-logs
+
+      - name: Upload Backend Logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        with:
+          name: infra-backend-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/backend-logs/
+          retention-days: 3
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Stop VMs
+          sudo /tmp/renet ops down || true
+          # Stop backend services
+          cd .ci/docker/ci && docker compose down --volumes --remove-orphans || true
+          rm -rf mssql || true
+
+  # ============================================================================
+  # COLUMN 4: TESTS + INFRA
+  # Jobs: test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron,
+  #       test-bridge-workers, test-bridge-ceph, test-renet, infra-backend
+  # Dependencies: All build jobs (runs in parallel with infra-backend)
+  # Note: Tests that need the backend tunnel URL will download the artifact
+  #       uploaded by infra-backend early in its execution
+  # ============================================================================
+  test-unit:
+    name: Unit
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/test/run-unit.sh --coverage
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-unit-coverage-${{ github.sha }}
+          path: packages/web/coverage/
+          retention-days: 3
+
+  test-vscode:
+    name: VSCode (${{ matrix.os }})
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-cli.sh
+        shell: bash
+      - run: .ci/scripts/env/create-cli-env.sh --minimal --output packages/cli/tests/.env
+        shell: bash
+      - name: Run VS Code detection tests
+        working-directory: packages/cli
+        run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts
+        env:
+          PLAYWRIGHT_SKIP_GLOBAL_SETUP: 'true'
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: failure()
+        with:
+          name: test-vscode-${{ matrix.os }}-${{ github.sha }}
+          path: packages/cli/tests/test-results/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  test-cli:
+    name: CLI (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+    env:
+      REDIACC_TEST_EMAIL: admin@rediacc.io
+      REDIACC_TEST_PASSWORD: admin
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - run: .ci/scripts/build/build-cli.sh
+        shell: bash
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+        shell: bash
+      - run: .ci/scripts/env/create-cli-env.sh --api-url "${{ steps.tunnel.outputs.tunnel-url }}/api" --email ${{ env.REDIACC_TEST_EMAIL }} --password ${{ env.REDIACC_TEST_PASSWORD }} --output packages/cli/tests/.env
+        shell: bash
+      - run: .ci/scripts/setup/install-vscode.sh
+        shell: bash
+      - run: .ci/scripts/test/run-cli.sh
+        shell: bash
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "cli-${{ matrix.platform }}" --status ${{ job.status }}
+        shell: bash
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-complete-cli-${{ matrix.platform }}
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-cli-report-${{ matrix.platform }}-${{ github.sha }}
+          path: packages/cli/tests/reports/cli/
+          retention-days: 3
+
+  test-e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - name: Install Playwright Browsers
+        run: .ci/scripts/setup/install-playwright.sh --browsers "chromium webkit ${{ env.E2E_BROWSERS }}"
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
+      - name: Run E2E Tests - Browser Only
+        run: |
+          .ci/scripts/test/run-e2e.sh --projects \
+            ${{ env.E2E_BROWSERS }}
+      - name: Create Completion Signal
+        if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-chromium" --status ${{ job.status }}
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-complete-e2e-chromium
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-e2e-report-${{ github.sha }}
+          path: packages/e2e/reports/e2e/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  test-e2e-electron:
+    name: E2E Electron (${{ matrix.project }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            project: electron-linux-x64
+            install: npx playwright install --with-deps chromium
+          - os: ubuntu-24.04-arm
+            project: electron-linux-arm64
+            install: npx playwright install --with-deps chromium
+          - os: macos-15-intel
+            project: electron-macos-x64
+            install: npx playwright install chromium
+          - os: macos-latest
+            project: electron-macos-arm64
+            install: npx playwright install chromium
+          - os: windows-latest
+            project: electron-windows-x64
+            install: npx playwright install chromium
+          - os: windows-11-arm
+            project: electron-windows-arm64
+            install: npx playwright install chromium
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+      - if: runner.os == 'Windows'
+        name: Install Electron binary
+        working-directory: packages/desktop
+        shell: bash
+        run: |
+          echo "Installing Electron binary (skipped during --ignore-scripts)..."
+          npm rebuild electron
+      - name: Build desktop
+        working-directory: packages/desktop
+        run: npm run build
+      - name: Install Playwright
+        working-directory: packages/e2e
+        run: ${{ matrix.install }}
+      - if: runner.os == 'Linux'
+        run: .ci/scripts/setup/setup-display.sh
+      - name: Download Tunnel URL
+        id: tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
+      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+        shell: bash
+      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
+        shell: bash
+      - name: Run Electron E2E Tests
+        working-directory: packages/e2e
+        run: npx playwright test --project=${{ matrix.project }}
+        env:
+          DISPLAY: ${{ env.DISPLAY }}
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-${{ matrix.project }}" --status ${{ job.status }}
+        shell: bash
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-complete-e2e-${{ matrix.project }}
+          path: ${{ runner.temp }}/complete.txt
+          retention-days: 3
+
+  test-bridge-workers:
+    name: Bridge Workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}
+      USE_CI_IMAGES: 'true'
+      OPS_HOME: /home/runner/work/ops
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: ''
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Pull Renet Docker Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Create Bridge Test Environment
+        run: .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
+
+      - name: Run Bridge Tests (Workers)
+        run: .ci/scripts/test/run-bridge.sh --workers 1
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "bridge-workers" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-bridge-workers-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/bridge-tests/reports/bridge/
+            packages/bridge-tests/reports/bridge-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  test-bridge-ceph:
+    name: Bridge Ceph
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 120000
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}
+      USE_CI_IMAGES: 'true'
+      OPS_HOME: /home/runner/work/ops
+      VM_BRIDGE: '1'
+      VM_WORKERS: ''
+      VM_CEPH_NODES: '21 22 23'
+      CEPH_MODE: 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Pull Renet Docker Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Create Bridge Test Environment
+        run: .ci/scripts/env/create-bridge-env.sh --ceph --output packages/bridge-tests/.env
+
+      - name: Run Bridge Tests (Ceph)
+        run: .ci/scripts/test/run-bridge.sh --workers 1 --config playwright.ceph.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-bridge-ceph-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/bridge-tests/reports/bridge-ceph/
+            packages/bridge-tests/reports/bridge-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  test-renet:
+    name: Renet
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      # Unit tests
+      - name: Run renet tests
+        run: .ci/scripts/private/run-renet.sh test
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-renet-coverage-${{ github.sha }}
+          path: private/renet/coverage.out
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-renet-results-${{ github.sha }}
+          path: private/renet/test-results.xml
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # Integration tests (needs sudo for KVM)
+      - name: Run integration tests
+        run: sudo .ci/scripts/private/renet-integration.sh --no-cleanup
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+        if: always()
+        with:
+          name: test-renet-integration-${{ github.sha }}
+          path: private/renet/test-results.xml
+          retention-days: 3
+          if-no-files-found: ignore
