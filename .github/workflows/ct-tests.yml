@@ -1,4 +1,4 @@
-name: Console CI - Tests
+name: Console CT - Tests
 
 on:
   workflow_call:

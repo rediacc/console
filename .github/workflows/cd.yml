@@ -1,4 +1,4 @@
-name: Console CI - Merge
+name: Console CD
 
 on:
   push:
@@ -93,7 +93,7 @@ jobs:
   deploy:
     name: Deploy
     needs: [initialize, build-docker, build-desktop]
-    uses: ./.github/workflows/ci-deploy.yml
+    uses: ./.github/workflows/cd-deploy.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}

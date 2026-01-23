@@ -1,4 +1,4 @@
-name: Console CI - Deploy
+name: Console CD - Deploy
 
 on:
   workflow_call:

@@ -333,7 +333,7 @@ jobs:
   tests:
     name: Tests + Infra
     needs: [initialize, build-docker]
-    uses: ./.github/workflows/ci-tests.yml
+    uses: ./.github/workflows/ct-tests.yml
     with:
       api_tag: ${{ needs.initialize.outputs.api_tag }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
