@@ -1,0 +1,17 @@
+name: Console Housekeeping
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Every night at 2 AM UTC
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  cleanup:
+    name: Cleanup old versions
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Cleanup old releases, tags, and packages
+        run: .ci/scripts/housekeeping/cleanup-versions.sh
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}

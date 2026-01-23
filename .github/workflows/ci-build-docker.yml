@@ -30,6 +30,12 @@ on:
       web_exists:
         required: true
         type: string
+      cli_tag:
+        required: true
+        type: string
+      cli_exists:
+        required: true
+        type: string
     secrets:
       GH_PAT:
         required: false
@@ -187,6 +193,34 @@ jobs:
       - name: Skip Docker build (cached)
         if: inputs.web_exists == 'true'
         run: echo "::notice::Skipping Docker build - web:${{ inputs.web_tag }} already exists in registry"
+
+  build-cli-docker:
+    name: CLI Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Build & Push CLI image
+        if: inputs.cli_exists != 'true'
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83  # v6
+        with:
+          context: .
+          file: ./packages/cli/Dockerfile
+          push: true
+          tags: ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Skip Docker build (cached)
+        if: inputs.cli_exists == 'true'
+        run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
 
   # ============================================================
   # MIDDLEWARE/API: Native Architecture Builds

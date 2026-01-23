@@ -37,6 +37,8 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   ├── docker/
 │   │   ├── build-image.sh      # Build Docker images (supports --ci-tag)
 │   │   └── retag-image.sh      # Re-tag CI images to semantic version
+│   ├── housekeeping/
+│   │   └── cleanup-versions.sh # Cleanup old releases, tags, and GHCR packages
 │   └── build/
 │       ├── build-web.sh        # Build web application
 │       ├── build-cli.sh        # Build CLI

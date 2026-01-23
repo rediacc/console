@@ -1,0 +1,310 @@
+#!/bin/bash
+# Cleanup old GitHub releases, git tags, and GHCR package versions
+# Usage: cleanup-versions.sh [options]
+#
+# Options:
+#   --days N       Retention days (default: 10)
+#   --versions N   Number of versions to always keep (default: 10)
+#   --dry-run      Preview what would be deleted without deleting
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/common.sh"
+source "$SCRIPT_DIR/../../config/constants.sh"
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
+parse_args "$@"
+
+RETENTION_DAYS="${ARG_DAYS:-10}"
+KEEP_VERSIONS="${ARG_VERSIONS:-10}"
+DRY_RUN="${ARG_DRY_RUN:-false}"
+
+# GitHub organization
+GITHUB_ORG="rediacc"
+
+# Repos to clean tags from
+TAG_REPOS=("console" "renet" "middleware")
+
+# GHCR packages to clean (under ghcr.io/rediacc/elite/*)
+GHCR_PACKAGES=("api" "bridge" "web" "plugin-terminal" "plugin-browser" "cli")
+
+# Release repo
+RELEASE_REPO="rediacc/console"
+
+# =============================================================================
+# PREREQUISITES
+# =============================================================================
+
+require_cmd gh
+require_cmd jq
+require_var GH_TOKEN
+
+# =============================================================================
+# HELPERS
+# =============================================================================
+
+# Check if a version should be retained
+# Usage: should_retain <created_at_iso> <index_from_newest>
+# Returns 0 if should keep, 1 if can delete
+should_retain() {
+    local created_at="$1"
+    local index="$2"
+
+    # Keep if within last N versions (0-indexed)
+    if [[ "$index" -lt "$KEEP_VERSIONS" ]]; then
+        return 0
+    fi
+
+    # Keep if within retention days
+    local created_epoch
+    created_epoch="$(date -d "$created_at" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo 0)"
+    local cutoff_epoch
+    cutoff_epoch="$(date -d "$RETENTION_DAYS days ago" +%s 2>/dev/null || date -v-${RETENTION_DAYS}d +%s 2>/dev/null)"
+
+    # If date parsing failed, retain by default (don't delete what we can't date)
+    if [[ "$created_epoch" -eq 0 ]]; then
+        log_warn "Could not parse date '$created_at' - retaining item"
+        return 0
+    fi
+
+    if [[ "$created_epoch" -gt "$cutoff_epoch" ]]; then
+        return 0
+    fi
+
+    # Both conditions met: old AND outside keep count
+    return 1
+}
+
+# =============================================================================
+# PHASE 1: GITHUB RELEASES
+# =============================================================================
+
+cleanup_releases() {
+    log_step "Phase 1: Cleaning up GitHub releases ($RELEASE_REPO)"
+
+    local releases
+    releases="$(gh release list --repo "$RELEASE_REPO" --limit 200 --json tagName,createdAt,isDraft,isPrerelease \
+        --jq 'sort_by(.createdAt) | reverse' 2>/dev/null || echo "[]")"
+
+    local total
+    total="$(echo "$releases" | jq 'length')"
+    log_debug "Found $total releases"
+
+    local deleted=0
+    local index=0
+
+    while IFS= read -r release; do
+        local tag created_at
+        tag="$(echo "$release" | jq -r '.tagName')"
+        created_at="$(echo "$release" | jq -r '.createdAt')"
+
+        if should_retain "$created_at" "$index"; then
+            log_debug "Keeping release: $tag (index=$index)"
+        else
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "[DRY-RUN] Would delete release: $tag (created: $created_at)"
+            else
+                if retry_with_backoff 3 2 gh release delete "$tag" --repo "$RELEASE_REPO" --yes --cleanup-tag; then
+                    log_debug "Deleted release: $tag"
+                    deleted=$((deleted + 1))
+                else
+                    log_warn "Failed to delete release: $tag"
+                fi
+            fi
+        fi
+
+        index=$((index + 1))
+    done < <(echo "$releases" | jq -c '.[]')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "Releases: would delete $deleted of $total"
+    else
+        log_info "Releases: deleted $deleted of $total"
+    fi
+}
+
+# =============================================================================
+# PHASE 2: GIT TAGS
+# =============================================================================
+
+cleanup_tags() {
+    log_step "Phase 2: Cleaning up git tags"
+
+    for repo in "${TAG_REPOS[@]}"; do
+        local full_repo="$GITHUB_ORG/$repo"
+        log_step "  Processing tags for $full_repo"
+
+        # List tags sorted by date (newest first)
+        local tags
+        tags="$(gh api "repos/$full_repo/tags" --paginate --jq '.[].name' 2>/dev/null || echo "")"
+
+        if [[ -z "$tags" ]]; then
+            log_debug "  No tags found for $full_repo"
+            continue
+        fi
+
+        # Get tag details with dates
+        local tag_data="[]"
+        while IFS= read -r tag_name; do
+            [[ -z "$tag_name" ]] && continue
+
+            # Try to get annotated tag date, fall back to commit date
+            local ref_data
+            ref_data="$(gh api "repos/$full_repo/git/ref/tags/$tag_name" 2>/dev/null || echo "")"
+            if [[ -z "$ref_data" ]]; then
+                continue
+            fi
+
+            local obj_type obj_sha
+            obj_type="$(echo "$ref_data" | jq -r '.object.type')"
+            obj_sha="$(echo "$ref_data" | jq -r '.object.sha')"
+
+            local tag_date=""
+            if [[ "$obj_type" == "tag" ]]; then
+                # Annotated tag - get tagger date
+                tag_date="$(gh api "repos/$full_repo/git/tags/$obj_sha" --jq '.tagger.date' 2>/dev/null || echo "")"
+            fi
+
+            if [[ -z "$tag_date" ]]; then
+                # Lightweight tag or fallback - use commit date
+                local commit_sha="$obj_sha"
+                if [[ "$obj_type" == "tag" ]]; then
+                    commit_sha="$(gh api "repos/$full_repo/git/tags/$obj_sha" --jq '.object.sha' 2>/dev/null || echo "$obj_sha")"
+                fi
+                tag_date="$(gh api "repos/$full_repo/git/commits/$commit_sha" --jq '.committer.date' 2>/dev/null || echo "")"
+            fi
+
+            if [[ -n "$tag_date" ]]; then
+                tag_data="$(echo "$tag_data" | jq --arg name "$tag_name" --arg date "$tag_date" '. + [{"name": $name, "date": $date}]')"
+            fi
+        done <<< "$tags"
+
+        # Sort by date descending and apply retention
+        tag_data="$(echo "$tag_data" | jq 'sort_by(.date) | reverse')"
+        local total
+        total="$(echo "$tag_data" | jq 'length')"
+
+        local deleted=0
+        local index=0
+
+        while IFS= read -r entry; do
+            local tag_name tag_date
+            tag_name="$(echo "$entry" | jq -r '.name')"
+            tag_date="$(echo "$entry" | jq -r '.date')"
+
+            if should_retain "$tag_date" "$index"; then
+                log_debug "  Keeping tag: $tag_name"
+            else
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "  [DRY-RUN] Would delete tag: $tag_name ($tag_date)"
+                else
+                    if retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/git/refs/tags/$tag_name" 2>/dev/null; then
+                        log_debug "  Deleted tag: $tag_name"
+                        deleted=$((deleted + 1))
+                    else
+                        log_warn "  Failed to delete tag: $tag_name"
+                    fi
+                fi
+            fi
+
+            index=$((index + 1))
+        done < <(echo "$tag_data" | jq -c '.[]')
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_info "  Tags ($full_repo): would delete $deleted of $total"
+        else
+            log_info "  Tags ($full_repo): deleted $deleted of $total"
+        fi
+    done
+}
+
+# =============================================================================
+# PHASE 3: GHCR PACKAGE VERSIONS
+# =============================================================================
+
+cleanup_packages() {
+    log_step "Phase 3: Cleaning up GHCR package versions"
+
+    for package in "${GHCR_PACKAGES[@]}"; do
+        local package_name="elite/${package}"
+        local encoded_package
+        encoded_package="$(echo "$package_name" | sed 's|/|%2F|g')"
+
+        log_step "  Processing package: $package_name"
+
+        # List versions with pagination (sorted newest first by API default)
+        local versions
+        versions="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions" \
+            --paginate \
+            --jq '[.[] | {id: .id, tags: .metadata.container.tags, created: .created_at}]' \
+            2>/dev/null || echo "[]")"
+
+        # Flatten paginated results and sort by created date
+        versions="$(echo "$versions" | jq -s 'flatten | sort_by(.created) | reverse')"
+
+        local total
+        total="$(echo "$versions" | jq 'length')"
+        log_debug "  Found $total versions for $package_name"
+
+        local deleted=0
+        local index=0
+
+        while IFS= read -r version; do
+            local version_id created_at tags
+            version_id="$(echo "$version" | jq -r '.id')"
+            created_at="$(echo "$version" | jq -r '.created')"
+            tags="$(echo "$version" | jq -r '.tags // [] | join(", ")')"
+
+            if should_retain "$created_at" "$index"; then
+                log_debug "  Keeping version: $version_id (tags: $tags)"
+            else
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "  [DRY-RUN] Would delete version: $version_id (tags: $tags, created: $created_at)"
+                else
+                    local http_code
+                    http_code="$(gh api -X DELETE "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions/$version_id" \
+                        2>&1 && echo "204" || echo "failed")"
+
+                    if [[ "$http_code" == "204" ]]; then
+                        log_debug "  Deleted version: $version_id (tags: $tags)"
+                        deleted=$((deleted + 1))
+                    else
+                        # Handle 400 errors gracefully (e.g., >5000 downloads)
+                        log_warn "  Could not delete version $version_id (tags: $tags) - may have >5000 downloads"
+                    fi
+                fi
+            fi
+
+            index=$((index + 1))
+        done < <(echo "$versions" | jq -c '.[]')
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_info "  Package $package_name: would delete $deleted of $total versions"
+        else
+            log_info "  Package $package_name: deleted $deleted of $total versions"
+        fi
+    done
+}
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+log_step "Housekeeping: cleanup-versions"
+log_step "  Retention: ${RETENTION_DAYS} days OR last ${KEEP_VERSIONS} versions"
+if [[ "$DRY_RUN" == "true" ]]; then
+    log_warn "  DRY-RUN mode: no deletions will be performed"
+fi
+echo ""
+
+cleanup_releases
+echo ""
+cleanup_tags
+echo ""
+cleanup_packages
+
+echo ""
+log_info "Housekeeping complete"

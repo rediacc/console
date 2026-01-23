@@ -1,0 +1,51 @@
+name: Console CI - Build (CLI Executables)
+
+on:
+  workflow_call:
+    inputs:
+      next_version:
+        required: true
+        type: string
+    secrets:
+      GH_PAT:
+        required: false
+
+jobs:
+  build-cli-executables:
+    name: CLI Executables
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build CLI executables
+        working-directory: packages/cli
+        run: bun run build:exe:all
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p dist/cli
+          cp packages/cli/dist/rdc-* dist/cli/
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: build-cli-executables-${{ github.sha }}
+          path: dist/cli/
+          retention-days: 3
+          if-no-files-found: error
