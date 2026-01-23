@@ -359,7 +359,15 @@ jobs:
           submodules: true
           token: ${{ secrets.GH_PAT }}
 
+      - name: Restore native binary cache
+        id: cache-binaries
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7  # v5
+        with:
+          path: binaries/
+          key: native-binaries-amd64-${{ hashFiles('.ci/scripts/docker/build-native-binaries.sh') }}
+
       - name: Build native binaries (amd64 host)
+        if: steps.cache-binaries.outputs.cache-hit != 'true'
         run: .ci/scripts/docker/build-native-binaries.sh --output ./binaries --cross-rsync
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
@@ -379,7 +387,15 @@ jobs:
           submodules: true
           token: ${{ secrets.GH_PAT }}
 
+      - name: Restore native binary cache
+        id: cache-binaries
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7  # v5
+        with:
+          path: binaries/
+          key: native-binaries-arm64-${{ hashFiles('.ci/scripts/docker/build-native-binaries.sh') }}
+
       - name: Build CRIU arm64 natively
+        if: steps.cache-binaries.outputs.cache-hit != 'true'
         run: .ci/scripts/docker/build-native-binaries.sh --output ./binaries --criu-only
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
