@@ -78,9 +78,9 @@ const allPlans = [
     badgeLabel: t('pages.pricing.ui.foreverFree')
   }),
   buildPlan({
-    id: 'pro',
+    id: 'professional',
     monthlyPrice: 349,
-    description: t('pages.pricing.plans.pro.description')
+    description: t('pages.pricing.plans.professional.description')
   }),
   buildPlan({
     id: 'business',
@@ -246,8 +246,8 @@ const technicalCards = allPlans.map(plan => ({
             ))}
           </div>
 
-          <div class="technical-summary-header" style="margin-top: var(--space-6);">
-            <p style="white-space: pre-line;">{t('pages.pricing.technicalSummary.recoveryNote')}</p>
+          <div class="technical-summary-header recovery-note">
+            <p>{t('pages.pricing.technicalSummary.recoveryNote')}</p>
           </div>
         </div>
       </div>

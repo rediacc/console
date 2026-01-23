@@ -16,7 +16,7 @@ const EarlyAccess: React.FC = () => {
             <p className="section-subtitle">{t('earlyAccess.subtitle')}</p>
             <ul className="early-access-benefits">
               {benefits.map((benefit, index) => (
-                <li key={index}>{benefit}</li>
+                <li key={`benefit-${index}-${benefit.substring(0, 20)}`}>{benefit}</li>
               ))}
             </ul>
           </div>
@@ -39,6 +39,13 @@ const EarlyAccess: React.FC = () => {
                   className="form-input"
                   required
                   aria-describedby="name-error"
+                  aria-invalid="false"
+                  onInvalid={(e) => e.currentTarget.setAttribute('aria-invalid', 'true')}
+                  onInput={(e) => {
+                    if (e.currentTarget.validity.valid) {
+                      e.currentTarget.setAttribute('aria-invalid', 'false');
+                    }
+                  }}
                   autoComplete={formFields.name.autoComplete}
                   suppressHydrationWarning
                 />
@@ -56,6 +63,13 @@ const EarlyAccess: React.FC = () => {
                   className="form-input"
                   required
                   aria-describedby="email-error"
+                  aria-invalid="false"
+                  onInvalid={(e) => e.currentTarget.setAttribute('aria-invalid', 'true')}
+                  onInput={(e) => {
+                    if (e.currentTarget.validity.valid) {
+                      e.currentTarget.setAttribute('aria-invalid', 'false');
+                    }
+                  }}
                   autoComplete={formFields.email.autoComplete}
                   suppressHydrationWarning
                 />
@@ -102,7 +116,13 @@ const EarlyAccess: React.FC = () => {
                 <label htmlFor="use-case" className="form-label">
                   {formFields.useCase.label}
                 </label>
-                <select id="use-case" name="use-case" className="form-select">
+                <select
+                  id="use-case"
+                  name="use-case"
+                  className="form-select"
+                  required
+                  aria-describedby="use-case-error"
+                >
                   <option value="">{formFields.useCase.options.placeholder}</option>
                   <option value="development-acceleration">
                     {formFields.useCase.options.developmentAcceleration}
@@ -116,6 +136,7 @@ const EarlyAccess: React.FC = () => {
                   <option value="multiple">{formFields.useCase.options.multiple}</option>
                   <option value="other">{formFields.useCase.options.other}</option>
                 </select>
+                <div className="form-error" id="use-case-error" role="alert" aria-live="polite" />
               </div>
 
               <div className="form-group">
@@ -127,9 +148,11 @@ const EarlyAccess: React.FC = () => {
                   name="message"
                   className="form-textarea"
                   rows={4}
+                  aria-describedby="message-error"
                   placeholder={formFields.message.placeholder}
                   suppressHydrationWarning
                 />
+                <div className="form-error" id="message-error" role="alert" aria-live="polite" />
               </div>
 
               <button type="submit" className="btn btn-primary btn-full">

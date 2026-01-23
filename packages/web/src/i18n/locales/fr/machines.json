@@ -1,7 +1,23 @@
 {
   "addSystemFunction": "Ajouter une fonction système à la file d'attente",
   "addToQueue": "Ajouter à la file d'attente",
-  "advanced": "Options avancées",
+  "advanced": "Avancé",
+  "functions": {
+    "title": "Fonctions",
+    "setup": "Configuration",
+    "hello": "Bonjour"
+  },
+  "info": {
+    "hostname": "Nom d'hôte",
+    "uptime": "Temps de fonctionnement",
+    "cpu": "CPU",
+    "systemTime": "Heure système"
+  },
+  "actions": {
+    "add": "Ajouter une machine",
+    "runOnServer": "Exécuter sur le serveur"
+  },
+  "noVaultData": "Aucune donnée de coffre disponible",
   "allMachinesConnected": "Toutes les {{count}} machines sont connectées avec succès",
   "assignedDate": "Date d'affectation",
   "assignmentStatus": {
@@ -90,7 +106,6 @@
     },
     "vaultConfig": "Configuration du coffre-fort (JSON)"
   },
-  "functions": "Fonctions disponibles",
   "goToMachinesPage": "Page Machines",
   "gridView": "Dépôt",
   "groupBy": "Regrouper par",
@@ -124,7 +139,6 @@
   "noAvailableMachinesForClone": "Aucune machine disponible pour l'attribution de clone",
   "noMachinesFound": "Aucune machine trouvée",
   "noMachinesWithClusters": "Aucune des machines sélectionnées n'est affectée à un cluster",
-  "noVaultData": "Aucune donnée de coffre-fort disponible",
   "pending": "En attente",
   "placeholders": {
     "selectMachine": "Sélectionnez une machine"

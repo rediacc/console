@@ -3,11 +3,12 @@ export interface Props {
   title: string;
   subtitle: string;
   videoSrc?: string;
+  captionsSrc?: string;
   heroImage?: string;
   heroImageAlt?: string;
 }
 
-const { title, subtitle, videoSrc = '/videos/demo.mp4', heroImage, heroImageAlt = '' } = Astro.props;
+const { title, subtitle, videoSrc = '/videos/demo.mp4', captionsSrc, heroImage, heroImageAlt = '' } = Astro.props;
 ---
 
 <section id="overview" class="hero-video-section">
@@ -15,7 +16,7 @@ const { title, subtitle, videoSrc = '/videos/demo.mp4', heroImage, heroImageAlt 
     <div class="hero-video-content">
       <div class="hero-text">
         <h1 class="hero-title">{title}</h1>
-        <p class="hero-subtitle">{subtitle}</p>
+        <p class="hero-subtitle" set:html={subtitle} />
       </div>
 
       {heroImage ? (
@@ -24,8 +25,11 @@ const { title, subtitle, videoSrc = '/videos/demo.mp4', heroImage, heroImageAlt 
             src={heroImage}
             alt={heroImageAlt}
             class="hero-image"
+            width="1200"
+            height="675"
             loading="eager"
             decoding="async"
+            fetchpriority="high"
           />
         </div>
       ) : (
@@ -35,8 +39,12 @@ const { title, subtitle, videoSrc = '/videos/demo.mp4', heroImage, heroImageAlt 
               class="video-element"
               controls
               preload="metadata"
+              aria-label={`${title}: ${subtitle}`}
             >
               <source src={videoSrc} type="video/mp4" />
+              {captionsSrc && (
+                <track kind="captions" src={captionsSrc} srcLang="en" label="English captions" />
+              )}
               Your browser does not support the video tag.
             </video>
           </div>
@@ -48,11 +56,11 @@ const { title, subtitle, videoSrc = '/videos/demo.mp4', heroImage, heroImageAlt 
 
 <style>
   .hero-image-container {
-    margin: 2rem auto;
+    margin: var(--space-8) auto;
     max-width: 900px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, var(--opacity-10));
   }
 
   .hero-image {

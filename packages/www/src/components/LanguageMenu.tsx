@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { getLanguageName, getLanguageFlag, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { getLanguageFlag, getLanguageName, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { setLanguageCookie } from '../utils/language-cookie';
 import type { Language } from '../i18n/types';
 import '../styles/language-switcher.css';
@@ -67,38 +67,41 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
     return '#';
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        !triggerRef.current?.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
+  // Close dropdown when clicking outside - memoized for performance
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target as Node) &&
+      !triggerRef.current?.contains(event.target as Node)
+    ) {
+      setIsOpen(false);
+    }
+  }, []);
 
+  useEffect(() => {
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isOpen]);
+  }, [isOpen, handleClickOutside]);
 
-  // Handle keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+  // Handle keyboard navigation - memoized for performance
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
         setIsOpen(false);
         triggerRef.current?.focus();
       }
-    };
+    },
+    [isOpen]
+  );
 
+  useEffect(() => {
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen]);
+  }, [isOpen, handleKeyDown]);
 
   // Handle pending navigation
   useEffect(() => {

@@ -8,7 +8,8 @@
       "resetZoom": "Yakınlaştırmayı sıfırla",
       "statusMessage": "Durum mesajı",
       "zoomIn": "Yakınlaştır",
-      "zoomOut": "Uzaklaştır"
+      "zoomOut": "Uzaklaştır",
+      "clickToEnlarge": "Resmi büyütmek için tıklayın"
     },
     "buttons": {
       "close": "Kapat",
@@ -277,7 +278,8 @@
       "tableOfContents": "Bu sayfada",
       "title": "Dokümantasyon",
       "welcome": "Rediacc Belgelerine Hoş Geldiniz",
-      "welcomeDescription": "Rediacc güçlü bir dağıtılmış görev yürütme sistemidir. İster yeni başlıyor olun ister gelişmiş özelliklerde uzmanlaşmak istiyor olun, ihtiyacınız olan her şeyi burada bulacaksınız."
+      "welcomeDescription": "Rediacc güçlü bir dağıtılmış görev yürütme sistemidir. İster yeni başlıyor olun ister gelişmiş özelliklerde uzmanlaşmak istiyor olun, ihtiyacınız olan her şeyi burada bulacaksınız.",
+      "searchPlaceholder": "Search docs..."
     },
     "downloads": {
       "meta": {
@@ -842,7 +844,7 @@
             "rpo": "Özel (sıfıra yakın)",
             "rto": "15-60 dakika (özel)"
           },
-          "pro": {
+          "professional": {
             "activeJobs": "5 aktif",
             "auditLogs": "30 gün",
             "cpuCore": "100 çekirdek",
@@ -882,7 +884,7 @@
             "secondary": "Satış Ekibiyle İletişime Geçin",
             "subtext": "Özel SLA · Özel destek"
           },
-          "pro": {
+          "professional": {
             "guarantee": "14 Günlük Para İade Garantisi",
             "primary": "Başlayın",
             "secondary": "Satış Ekibiyle İletişime Geçin"
@@ -1495,7 +1497,33 @@
         "title": "Ekibimizle Tanışın"
       },
       "values": {
-        "title": "Değerlerimiz"
+        "title": "Değerlerimiz",
+        "items": {
+          "simplicity": {
+            "title": "Simplicity First",
+            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+          },
+          "security": {
+            "title": "Security by Design",
+            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+          },
+          "success": {
+            "title": "Customer Success",
+            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          },
+          "innovation": {
+            "title": "Continuous Innovation",
+            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+          },
+          "global": {
+            "title": "Global Thinking",
+            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          },
+          "transparency": {
+            "title": "Transparency",
+            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
+          }
+        }
       }
     }
   },

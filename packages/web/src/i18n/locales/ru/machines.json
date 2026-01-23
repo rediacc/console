@@ -1,7 +1,23 @@
 {
   "addSystemFunction": "Добавить системную функцию в очередь",
   "addToQueue": "Добавить в очередь",
-  "advanced": "Дополнительно",
+  "advanced": "Расширенные",
+  "functions": {
+    "title": "Функции",
+    "setup": "Настройка",
+    "hello": "Привет"
+  },
+  "info": {
+    "hostname": "Имя хоста",
+    "uptime": "Время работы",
+    "cpu": "ЦП",
+    "systemTime": "Системное время"
+  },
+  "actions": {
+    "add": "Добавить машину",
+    "runOnServer": "Запустить на сервере"
+  },
+  "noVaultData": "Нет данных хранилища",
   "allMachinesConnected": "Все машины ({{count}}) успешно подключены.",
   "assignedDate": "Дата назначения",
   "assignmentStatus": {
@@ -90,7 +106,6 @@
     },
     "vaultConfig": "Конфигурация хранилища (JSON)"
   },
-  "functions": "Функции",
   "goToMachinesPage": "Страница машин",
   "gridView": "Репозиторий",
   "groupBy": "Группировать по",
@@ -124,7 +139,6 @@
   "noAvailableMachinesForClone": "Нет доступных компьютеров для назначения клонов.",
   "noMachinesFound": "Машины не найдены",
   "noMachinesWithClusters": "Ни одна из выбранных машин не назначена кластеру.",
-  "noVaultData": "Данные хранилища недоступны",
   "pending": "В ожидании",
   "placeholders": {
     "selectMachine": "Выберите машину"

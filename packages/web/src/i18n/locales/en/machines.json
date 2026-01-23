@@ -1,6 +1,20 @@
 {
   "advanced": "Advanced",
-  "functions": "Functions",
+  "functions": {
+    "title": "Functions",
+    "setup": "Setup",
+    "hello": "Hello"
+  },
+  "info": {
+    "hostname": "Hostname",
+    "uptime": "Uptime",
+    "cpu": "CPU",
+    "systemTime": "System Time"
+  },
+  "actions": {
+    "add": "Add Machine",
+    "runOnServer": "Run on Server"
+  },
   "noVaultData": "No vault data available",
   "showingMachines": "Showing {{start}}-{{end}} of {{total}} machines",
   "removeFromCluster": "Remove from Cluster",

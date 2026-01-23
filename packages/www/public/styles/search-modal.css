@@ -11,10 +11,17 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-toast);
   padding: var(--space-3) var(--space-2);
-  backdrop-filter: blur(1px);
   animation: fadeIn 0.15s ease-in-out;
+}
+
+/* Backdrop filter with fallback for unsupported browsers */
+@supports (backdrop-filter: blur(1px)) {
+  .search-modal-backdrop {
+    backdrop-filter: blur(1px);
+    background-color: rgba(0, 0, 0, 0.4);
+  }
 }
 
 @keyframes fadeIn {
@@ -29,7 +36,7 @@
 /* Modal Content */
 .search-modal-content {
   background: var(--color-bg-alt);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-shadow:
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -78,21 +85,21 @@
   flex: 1;
   padding: var(--space-3) var(--space-7) var(--space-3) var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
   font-family: inherit;
   background: var(--color-bg-alt);
   color: var(--color-text);
   min-height: 48px;
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+    border-color var(--transition-duration-base),
+    box-shadow var(--transition-duration-base);
 }
 
-.search-modal-input:focus {
+.search-modal-input:focus-visible {
   outline: none;
   border-color: var(--color-text);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, var(--opacity-05));
 }
 
 .search-modal-input::placeholder {
@@ -117,7 +124,7 @@
 
 .search-modal-results::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 
 .search-modal-results::-webkit-scrollbar-thumb:hover {
@@ -129,7 +136,26 @@
   padding: var(--space-5) var(--space-4);
   text-align: center;
   color: var(--color-text-secondary);
-  font-size: 15px;
+  font-size: var(--font-size-sm);
+}
+
+/* Error State */
+.search-modal-error {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  color: var(--color-error);
+}
+
+.search-modal-error h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.search-modal-error p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 /* No Results State */
@@ -140,7 +166,7 @@
 
 .search-modal-no-results h3 {
   margin: 0 0 var(--space-3) 0;
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -153,7 +179,7 @@
 .search-modal-suggestions p {
   margin: 0 0 var(--space-2) 0;
   color: var(--color-text-secondary);
-  font-size: 15px;
+  font-size: var(--font-size-sm);
 }
 
 .search-modal-suggestions ul {
@@ -163,16 +189,16 @@
 }
 
 .search-modal-suggestions li {
-  padding: 4px 0 4px 20px;
+  padding: var(--space-1) 0 var(--space-1) var(--space-5);
   position: relative;
   color: var(--color-text-secondary);
-  font-size: 15px;
+  font-size: var(--font-size-sm);
 }
 
 .search-modal-suggestions li::before {
   content: '•';
   position: absolute;
-  left: 8px;
+  left: var(--space-2);
 }
 
 /* Category */
@@ -183,10 +209,10 @@
 
 .search-modal-category-title {
   margin: var(--space-3) var(--space-4) var(--space-2) var(--space-4);
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--tracking-wide);
   color: var(--color-text-secondary);
 }
 
@@ -201,7 +227,7 @@
 .search-modal-result-item {
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--transition-duration-fast);
   border-left: 2px solid transparent;
   min-height: 48px;
   display: flex;
@@ -213,37 +239,48 @@
   background-color: var(--color-hover);
 }
 
+.search-modal-result-item:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+  background-color: var(--color-hover);
+}
+
 .search-modal-result-item.selected {
   background-color: var(--color-hover);
-  border-left-color: var(--color-text);
+  border-left-color: var(--color-brand-primary);
+}
+
+.search-modal-result-item:active {
+  transform: scale(0.98);
+  background-color: rgba(0, 0, 0, var(--opacity-10));
 }
 
 .search-modal-result-title {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--color-text);
-  margin: 0 0 4px 0;
-  line-height: 1.5;
+  margin: 0 0 var(--space-1) 0;
+  line-height: var(--leading-normal);
 }
 
 .search-modal-result-title mark {
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 2px;
-  padding: 0 2px;
+  background-color: rgba(0, 0, 0, var(--opacity-10));
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
   font-weight: 600;
 }
 
 .search-modal-result-excerpt {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin: 0;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
 }
 
 .search-modal-result-excerpt mark {
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 2px;
-  padding: 0 2px;
+  background-color: rgba(0, 0, 0, var(--opacity-10));
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
   font-weight: 600;
 }
 
@@ -257,7 +294,7 @@
   .search-modal-content {
     max-height: 85vh;
     margin-top: var(--space-3);
-    border-radius: 6px;
+    border-radius: var(--radius-md);
   }
 
   .search-modal-header {
@@ -265,7 +302,7 @@
   }
 
   .search-modal-input {
-    font-size: 18px;
+    font-size: var(--font-size-lg);
     min-height: 56px;
     padding: var(--space-3) var(--space-7) var(--space-3) var(--space-3);
   }
@@ -280,12 +317,12 @@
   }
 
   .search-modal-result-title {
-    font-size: 18px;
-    margin-bottom: 6px;
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--space-2);
   }
 
   .search-modal-result-excerpt {
-    font-size: 15px;
+    font-size: var(--font-size-sm);
   }
 
   .search-modal-category-title {
@@ -293,7 +330,7 @@
   }
 
   .search-modal-no-results h3 {
-    font-size: 20px;
+    font-size: clamp(1.125rem, 2vw, 1.375rem);
   }
 
   .search-modal-loading,

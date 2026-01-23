@@ -1,5 +1,5 @@
-import react from '@vitejs/plugin-react';
 import tailwind from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 import { defineConfig, Plugin } from 'vite';
@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => {
     ],
     // Use environment variable for base path configuration
     // Local development: defaults to '/console/' (works with middleware at localhost:7322/console/)
-    // Production (GitHub Pages): set VITE_BASE_PATH=/console/ (works at www.rediacc.com/console/)
+    // Production (GitHub Pages): set VITE_BASE_PATH=/ (works at console.rediacc.com/)
     base: process.env.VITE_BASE_PATH || '/console/',
     resolve: {
       alias: [{ find: '@', replacement: path.resolve(__dirname, './src') }],

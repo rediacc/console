@@ -8,7 +8,8 @@
       "resetZoom": "重置变焦",
       "statusMessage": "状态信息",
       "zoomIn": "放大",
-      "zoomOut": "缩小"
+      "zoomOut": "缩小",
+      "clickToEnlarge": "点击放大图片"
     },
     "buttons": {
       "close": "关闭",
@@ -272,7 +273,8 @@
       "tableOfContents": "在此页面上",
       "title": "文档",
       "welcome": "欢迎来到 Rediacc 文档",
-      "welcomeDescription": "Rediacc是一个强大的分布式任务执行系统。 无论您是刚刚入门还是希望掌握高级功能，您都可以在这里找到所需的一切。"
+      "welcomeDescription": "Rediacc是一个强大的分布式任务执行系统。 无论您是刚刚入门还是希望掌握高级功能，您都可以在这里找到所需的一切。",
+      "searchPlaceholder": "Search docs..."
     },
     "downloads": {
       "meta": {
@@ -826,7 +828,7 @@
             "rpo": "自定义（接近于零）",
             "rto": "15-60 分钟（定制）"
           },
-          "pro": {
+          "professional": {
             "activeJobs": "5 活跃",
             "auditLogs": "30天",
             "cpuCore": "100个核心",
@@ -866,7 +868,7 @@
             "secondary": "联系销售人员",
             "subtext": "定制 SLA · 专门支持"
           },
-          "pro": {
+          "professional": {
             "guarantee": "14 天退款保证",
             "primary": "开始使用",
             "secondary": "联系销售人员"
@@ -1479,7 +1481,33 @@
         "title": "认识我们的团队"
       },
       "values": {
-        "title": "我们的价值观"
+        "title": "我们的价值观",
+        "items": {
+          "simplicity": {
+            "title": "Simplicity First",
+            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+          },
+          "security": {
+            "title": "Security by Design",
+            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+          },
+          "success": {
+            "title": "Customer Success",
+            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          },
+          "innovation": {
+            "title": "Continuous Innovation",
+            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+          },
+          "global": {
+            "title": "Global Thinking",
+            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          },
+          "transparency": {
+            "title": "Transparency",
+            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
+          }
+        }
       }
     }
   },
