@@ -17,6 +17,7 @@
     "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
     "@opentelemetry/sdk-node": "^0.211.0",
     "@opentelemetry/sdk-trace-web": "^2.5.0",
+    "@tanstack/react-query": "^5.90.20",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "loupe": "^3.2.1",
