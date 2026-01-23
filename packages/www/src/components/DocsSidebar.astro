@@ -74,7 +74,7 @@ const categoryStates = categories.map(category => {
       <input
         type="text"
         class="sidebar-search-input"
-        placeholder="Search docs..."
+        placeholder={t('pages.docs.searchPlaceholder')}
         aria-label="Search documentation"
       />
     </div>
@@ -143,10 +143,10 @@ const categoryStates = categories.map(category => {
     width: 100%;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--sidebar-border);
-    border-radius: 4px;
-    font-size: 0.875rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
     font-family: inherit;
-    background-color: #ffffff;
+    background-color: var(--color-bg-alt);
     color: var(--text-primary);
     transition: border-color var(--transition-speed);
   }
@@ -154,7 +154,7 @@ const categoryStates = categories.map(category => {
   .sidebar-search-input:focus {
     outline: none;
     border-color: var(--sidebar-accent);
-    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, var(--opacity-10));
   }
 
   .sidebar-search-input::placeholder {

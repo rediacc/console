@@ -34,13 +34,20 @@
       "zoomOut": "Zoom out",
       "resetZoom": "Reset zoom",
       "closeImageModal": "Close image modal",
-      "statusMessage": "Status message"
+      "statusMessage": "Status message",
+      "clickToEnlarge": "Click to enlarge image"
     },
     "skipNavigation": {
       "skipToMainContent": "Skip to main content",
       "skipToNavigation": "Skip to navigation",
       "skipToFooter": "Skip to footer"
-    }
+    },
+    "copied": "Copied!",
+    "copyLink": "Copy link to this section",
+    "section": "section",
+    "realStory": "Real Story",
+    "theProblem": "The Problem",
+    "contentNotAvailable": "This content is not available in {{language}}. Showing English version."
   },
   "navigation": {
     "home": "Home",
@@ -51,6 +58,7 @@
     "toggleMenu": "Toggle menu",
     "search": "Search",
     "selectLanguage": "Select language",
+    "languageSelectionMenu": "Language selection menu",
     "login": "Log in",
     "solutions": {
       "disasterRecovery": "Disaster Recovery",
@@ -303,7 +311,33 @@
         "belief": "We believe that every organization, regardless of size or budget, deserves access to the same powerful infrastructure tools that Fortune 500 companies use. That's why we built Rediacc—to level the playing field and empower businesses to focus on what they do best, while we handle the infrastructure complexity."
       },
       "values": {
-        "title": "Our Values"
+        "title": "Our Values",
+        "items": {
+          "simplicity": {
+            "title": "Simplicity First",
+            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+          },
+          "security": {
+            "title": "Security by Design",
+            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+          },
+          "success": {
+            "title": "Customer Success",
+            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          },
+          "innovation": {
+            "title": "Continuous Innovation",
+            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+          },
+          "global": {
+            "title": "Global Thinking",
+            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          },
+          "transparency": {
+            "title": "Transparency",
+            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
+          }
+        }
       },
       "story": {
         "title": "Our Story",
@@ -754,7 +788,7 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": ["Bank-level encryption", "99.9% uptime commitment"]
+        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
       },
       "ui": {
         "popular": "Most popular",
@@ -775,22 +809,22 @@
             "secondary": "Learn More",
             "note": "No credit card required"
           },
-          "pro": {
+          "professional": {
             "primary": "Get Started",
             "secondary": "Contact Sales",
-            "guarantee": "14-Day Money Payback Guarantee"
+            "guarantee": "Money Back Guarantee"
           },
           "business": {
-            "primary": "Schedule Implementation Call",
+            "primary": "Book Setup Call",
             "secondary": "Contact Sales",
-            "guarantee": "14-Day Money Payback Guarantee",
+            "guarantee": "Money Back Guarantee",
             "valueNote": "Includes $9,999 setup credit",
             "launchBadge": "Limited Launch Offer"
           },
           "enterprise": {
-            "primary": "Schedule Executive Demo",
+            "primary": "Book Demo",
             "secondary": "Contact Sales",
-            "guarantee": "14-Day Money Payback Guarantee",
+            "guarantee": "Money Back Guarantee",
             "subtext": "Custom SLA · Dedicated support"
           }
         },
@@ -854,7 +888,7 @@
             "rto": "Best effort",
             "auditLogs": "7 days"
           },
-          "pro": {
+          "professional": {
             "cpuCore": "100 cores",
             "repositories": "500 repos",
             "repoSize": "100 GB",
@@ -927,6 +961,7 @@
       "allDocumentation": "All Documentation",
       "tableOfContents": "On this page",
       "backToDocs": "Back to Docs",
+      "searchPlaceholder": "Search docs...",
       "fallbackNotice": {
         "title": "Translation Not Available",
         "message": "This page is not yet available in your selected language. Showing English version.",

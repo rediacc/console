@@ -5,6 +5,7 @@ interface VideoPlayerProps {
   subtitle: string;
   videoSrc: string;
   posterSrc?: string;
+  captionsSrc?: string;
   id?: string;
 }
 
@@ -13,6 +14,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   subtitle,
   videoSrc,
   posterSrc,
+  captionsSrc,
   id = 'video',
 }) => {
   return (
@@ -24,8 +26,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
         <div className="video-container">
           <div className="video-wrapper">
-            <video className="video-element" controls preload="metadata" poster={posterSrc}>
+            <video
+              className="video-element"
+              controls
+              preload="metadata"
+              poster={posterSrc}
+              aria-label={`${title}: ${subtitle}`}
+            >
               <source src={videoSrc} type="video/mp4" />
+              {captionsSrc && (
+                <track kind="captions" src={captionsSrc} srcLang="en" label="English captions" />
+              )}
               Your browser does not support the video tag.
             </video>
           </div>

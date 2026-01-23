@@ -265,9 +265,12 @@ function showMessage(type, title, text) {
   titleElement.textContent = title;
   textElement.textContent = text;
 
-  // Set icon
+  // Set icon using SVG
   icon.className = `message-icon ${type}`;
-  icon.textContent = type === 'success' ? '✓' : '✕';
+  icon.innerHTML =
+    type === 'success'
+      ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>'
+      : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
   // Show overlay
   overlay.setAttribute('aria-hidden', 'false');
@@ -451,60 +454,70 @@ const imageGallery = [
 
 let currentImageIndex = 0;
 
+function handleImageModalKeydown(modal, e) {
+  if (modal.getAttribute('aria-hidden') !== 'false') return;
+
+  const keyActions = {
+    Escape: closeImageModal,
+    ArrowLeft: previousImage,
+    ArrowRight: nextImage,
+    '+': zoomIn,
+    '=': zoomIn,
+    '-': zoomOut,
+    0: resetZoom,
+  };
+
+  const action = keyActions[e.key];
+  if (action) {
+    if (e.key !== 'Escape') e.preventDefault();
+    action();
+  }
+}
+
 function initImageModal() {
   const modal = document.getElementById('image-modal');
   const imageContainer = document.querySelector('.image-container');
   const modalImage = document.getElementById('modal-image');
 
-  if (!modal || !imageContainer || !modalImage) return; // Skip if no image modal exists on the page
+  if (!modal || !imageContainer || !modalImage) return;
+
+  // Button event listeners
+  const closeBtn = document.getElementById('image-modal-close-btn');
+  const prevBtn = document.getElementById('image-modal-prev-btn');
+  const nextBtn = document.getElementById('image-modal-next-btn');
+  const zoomInBtn = document.getElementById('image-modal-zoom-in-btn');
+  const zoomOutBtn = document.getElementById('image-modal-zoom-out-btn');
+  const zoomResetBtn = document.getElementById('image-modal-zoom-reset-btn');
+
+  if (closeBtn) closeBtn.addEventListener('click', closeImageModal);
+  if (prevBtn) prevBtn.addEventListener('click', previousImage);
+  if (nextBtn) nextBtn.addEventListener('click', nextImage);
+  if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', resetZoom);
+
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeImageModal();
+  });
 
   // Keyboard controls
-  document.addEventListener('keydown', (e) => {
-    if (modal.getAttribute('aria-hidden') === 'false') {
-      switch (e.key) {
-        case 'Escape':
-          closeImageModal();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          previousImage();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          nextImage();
-          break;
-        case '+':
-        case '=':
-          e.preventDefault();
-          zoomIn();
-          break;
-        case '-':
-          e.preventDefault();
-          zoomOut();
-          break;
-        case '0':
-          e.preventDefault();
-          resetZoom();
-          break;
-      }
-    }
-  });
+  document.addEventListener('keydown', (e) => handleImageModalKeydown(modal, e));
 
   // Mouse wheel zoom
   imageContainer.addEventListener(
     'wheel',
     (e) => {
-      if (modal.getAttribute('aria-hidden') === 'false') {
-        e.preventDefault();
-        if (e.deltaY < 0) {
-          zoomIn();
-        } else {
-          zoomOut();
-        }
+      if (modal.getAttribute('aria-hidden') !== 'false') return;
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        zoomIn();
+      } else {
+        zoomOut();
       }
     },
     { passive: false }
-  ); // Explicitly non-passive because we call preventDefault()
+  );
 
   // Drag functionality for zoomed images
   imageContainer.addEventListener('mousedown', startDrag);

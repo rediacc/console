@@ -92,7 +92,9 @@ try {
     };
   }
 } catch (error) {
-  console.error('Failed to fetch GitHub release:', error);
+  if (import.meta.env.DEV) {
+    console.error('Failed to fetch GitHub release:', error);
+  }
 }
 
 // Group files by platform

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '../i18n/react';
 import { generateSectionAnchorId } from '../utils/slug';
 
 interface ProblemSolutionSectionProps {
@@ -103,6 +104,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
   cta,
   pageSlug,
 }) => {
+  const { t } = useTranslation();
   const anchorId = pageSlug ? generateSectionAnchorId(pageSlug, number, title) : undefined;
   const [copied, setCopied] = React.useState(false);
   const sectionRef = React.useRef<HTMLElement>(null);
@@ -137,11 +139,11 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
                 type="button"
                 onClick={handleCopyLink}
                 className="copy-link-button"
-                title={copied ? 'Copied!' : 'Copy link to this section'}
-                aria-label={`Copy link to ${title} section`}
+                title={copied ? t('common.copied') : t('common.copyLink')}
+                aria-label={`${t('common.copyLink')} ${title} ${t('common.section')}`}
               >
                 <LinkIcon />
-                <span className="copy-feedback">{copied ? 'Copied!' : ''}</span>
+                <span className="copy-feedback">{copied ? t('common.copied') : ''}</span>
               </button>
             )}
           </div>
@@ -151,7 +153,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
 
           {problem.story && (
             <div className="story-box-featured">
-              <div className="story-label">Real Story:</div>
+              <div className="story-label">{t('common.realStory')}:</div>
               <p className="story-text" dangerouslySetInnerHTML={{ __html: problem.story }} />
             </div>
           )}
@@ -161,13 +163,13 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
             <div className="problem-box">
               <div className="box-header">
                 <ProblemIcon />
-                <h3 className="box-title">The Problem</h3>
+                <h3 className="box-title">{t('common.theProblem')}</h3>
               </div>
               <p className="problem-description">{problem.description}</p>
               {problem.additionalPoints && problem.additionalPoints.length > 0 && (
                 <ul className="additional-points">
                   {problem.additionalPoints.map((point, index) => (
-                    <li key={index}>{point}</li>
+                    <li key={`point-${index}-${point.substring(0, 20)}`}>{point}</li>
                   ))}
                 </ul>
               )}
@@ -182,7 +184,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
               <p className="solution-description">{solution.description}</p>
               <ul className="solution-benefits">
                 {solution.benefits.map((benefit, index) => (
-                  <li key={index}>
+                  <li key={`benefit-${index}-${benefit.substring(0, 20)}`}>
                     <BenefitCheckmark />
                     <span>{benefit}</span>
                   </li>

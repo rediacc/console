@@ -81,7 +81,7 @@ sync_to_origin_main() {
     local origin
     origin="$(git -C "$dir" rev-parse origin/main)"
     if [[ "$DRY_RUN" != "true" ]]; then
-        git -C "$dir" checkout -B main "$origin" --force >/dev/null 2>&1
+        git -C "$dir" checkout -B main "$origin" >/dev/null 2>&1
     fi
     log_info "Synced $dir to origin/main ($origin)"
 }

@@ -27,16 +27,16 @@ Ce guide explique l'utilisation de base de l'interface web sur [https://www.redi
 
 Pour commencer à utiliser la plateforme Rediacc, vous devez d'abord créer un compte.
 
-![Page de connexion Rediacc - infrastructure toujours active](/assets/images/UserGuideEng/01_login.png)
+![Page de connexion Rediacc - infrastructure toujours active](/assets/images/user-guide/01_login.png)
 *(Figure 1 : Page de connexion principale, présentant les principales fonctionnalités de la plateforme Rediacc)*
 
 1. Accédez à [https://www.rediacc.com/](https://www.rediacc.com/) dans votre navigateur.
 2. Cliquez sur le bouton **{{t:auth.login.signIn}}** dans le coin supérieur droit de la page.
-3. Choisissez **Get Started** pour un accès gratuit ou **Request Demo** pour une démonstration.
+3. Choisissez **Commencer** pour un accès gratuit ou **Demander une démo** pour une démonstration.
 
 > **Astuce** : Vous pouvez créer un compte gratuit sans carte de crédit. Comprend 10 cœurs CPU et des équipes illimitées.
 
-![Formulaire de connexion Rediacc - champs email et mot de passe](/assets/images/UserGuideEng/02_register.png)
+![Formulaire de connexion Rediacc - champs email et mot de passe](/assets/images/user-guide/02_register.png)
 *(Figure 2 : Écran de connexion pour les utilisateurs existants)*
 
 4. Si vous n'avez pas de compte, cliquez sur le lien **{{t:auth.login.register}}** pour créer un nouveau compte.
@@ -47,7 +47,7 @@ Pour commencer à utiliser la plateforme Rediacc, vous devez d'abord créer un c
    - **{{t:auth.login.password}}** : Créez un mot de passe d'au moins 8 caractères
    - **{{t:auth.registration.passwordConfirm}}** : Saisissez à nouveau le même mot de passe
 
-![Modal Créer un Compte - étapes inscription, vérification et finalisation](/assets/images/UserGuideEng/03_create_account.png)
+![Modal Créer un Compte - étapes inscription, vérification et finalisation](/assets/images/user-guide/03_create_account.png)
 *(Figure 3 : Formulaire d'inscription étape par étape pour nouvel utilisateur - Inscription > Vérification > Finalisation)*
 
 6. Cochez la case pour accepter les conditions d'utilisation et la politique de confidentialité.
@@ -58,7 +58,7 @@ Pour commencer à utiliser la plateforme Rediacc, vous devez d'abord créer un c
 8. Entrez le code de vérification à 6 chiffres envoyé à votre email dans les cases de manière séquentielle.
 9. Cliquez sur le bouton **{{t:auth.registration.verifyAccount}}**.
 
-![Saisie du code de vérification - code d'activation à 6 chiffres](/assets/images/UserGuideEng/04_verification_code.png)
+![Saisie du code de vérification - code d'activation à 6 chiffres](/assets/images/user-guide/04_verification_code.png)
 *(Figure 4 : Fenêtre pour saisir le code d'activation envoyé à l'administrateur)*
 
 > **Astuce** : Le code de vérification est valide pendant une durée limitée. Si vous ne recevez pas le code, vérifiez votre dossier spam.
@@ -73,14 +73,14 @@ Une fois votre compte créé, vous pouvez vous connecter à la plateforme.
 2. Remplissez le champ **{{t:auth.login.password}}**.
 3. Cliquez sur le bouton **{{t:auth.login.signIn}}**.
 
-![Formulaire de connexion - champs obligatoires avec avertissement d'erreur](/assets/images/UserGuideEng/05_sign_in.png)
+![Formulaire de connexion - champs obligatoires avec avertissement d'erreur](/assets/images/user-guide/05_sign_in.png)
 *(Figure 5 : Formulaire de connexion - les messages d'erreur sont marqués d'une bordure rouge)*
 
 > **Astuce** : Si le message d'erreur indique "Ce champ est obligatoire", remplissez les champs vides. Contactez l'administrateur pour les mots de passe oubliés.
 
 4. Après une connexion réussie, vous serez redirigé vers l'écran **{{t:common.navigation.dashboard}}**.
 
-![Tableau de bord Rediacc - liste des machines et menu de la barre latérale](/assets/images/UserGuideEng/06_dashboard.png)
+![Tableau de bord Rediacc - liste des machines et menu de la barre latérale](/assets/images/user-guide/06_dashboard.png)
 *(Figure 6 : Tableau de bord principal après connexion réussie - menus Organisation, Machines et Paramètres dans la barre latérale gauche)*
 
 > **Astuce** : Le tableau de bord se rafraîchit automatiquement. Vous pouvez actualiser la page avec F5 pour obtenir des informations à jour.
@@ -111,7 +111,7 @@ La gestion des utilisateurs vous permet de contrôler l'accès à la plateforme 
 2. Visualisez la liste de tous les utilisateurs au format tableau.
 3. Chaque ligne d'utilisateur affiche l'email, le statut ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), le groupe de permissions et l'heure de dernière activité.
 
-![Page de gestion des utilisateurs - liste des utilisateurs actifs](/assets/images/UserGuideEng/07_users.png)
+![Page de gestion des utilisateurs - liste des utilisateurs actifs](/assets/images/user-guide/07_users.png)
 *(Figure 7 : Section Utilisateurs sous Organisation - toutes les informations des utilisateurs sont affichées)*
 
 4. Cliquez sur l'icône **"+"** dans le coin supérieur droit.
@@ -119,14 +119,14 @@ La gestion des utilisateurs vous permet de contrôler l'accès à la plateforme 
    - **{{t:organization.users.form.emailLabel}}** : Entrez l'adresse email de l'utilisateur
    - **{{t:organization.users.form.passwordLabel}}** : Entrez un mot de passe temporaire
 
-![Modal de création d'utilisateur - champs email et mot de passe](/assets/images/UserGuideEng/08_user_add.png)
+![Modal de création d'utilisateur - champs email et mot de passe](/assets/images/user-guide/08_user_add.png)
 *(Figure 8 : Fenêtre modale pour ajouter un nouvel utilisateur - formulaire simple et rapide de création d'utilisateur)*
 
 6. Cliquez sur le bouton **{{t:common.actions.create}}**.
 
 > **Astuce** : Les identifiants de connexion doivent être communiqués de manière sécurisée à l'utilisateur créé. Il est recommandé de changer le mot de passe à la première connexion.
 
-![Liste des utilisateurs - vue tableau complète avec trois utilisateurs](/assets/images/UserGuideEng/09_user_list.png)
+![Liste des utilisateurs - vue tableau complète avec trois utilisateurs](/assets/images/user-guide/09_user_list.png)
 *(Figure 9 : Tous les utilisateurs actifs et inactifs sur la page de gestion des utilisateurs)*
 
 > **Astuce** : La page affiche automatiquement 20 enregistrements. Utilisez la pagination pour voir plus d'enregistrements.
@@ -136,16 +136,16 @@ La gestion des utilisateurs vous permet de contrôler l'accès à la plateforme 
 Vous pouvez gérer les droits d'accès en attribuant des groupes de permissions spécifiques aux utilisateurs.
 
 1. Sélectionnez un utilisateur dans l'onglet **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}**.
-2. Cliquez sur l'icône de bouclier dans la colonne d'actions (**Permissions**).
+2. Cliquez sur l'icône de bouclier dans la colonne d'actions (**{{t:organization.access.tabs.permissions}}**).
 
-![Gestion des permissions - icônes bouclier, engrenage et suppression](/assets/images/UserGuideEng/10_users_permissions.png)
+![Gestion des permissions - icônes bouclier, engrenage et suppression](/assets/images/user-guide/10_users_permissions.png)
 *(Figure 10 : Affichage des icônes d'actions utilisateur - chaque icône représente une action différente)*
 
 3. Sélectionnez un **{{t:organization.users.modals.permissionGroupLabel}}** dans le formulaire qui s'ouvre.
 4. Le nombre d'utilisateurs et de permissions dans le groupe est affiché à côté de l'utilisateur.
 5. Cliquez sur le bouton **{{t:organization.users.modals.assignTitle}}** pour enregistrer les modifications.
 
-![Modal d'attribution de permissions - groupe Administrateurs](/assets/images/UserGuideEng/11_user_permissions_form.png)
+![Modal d'attribution de permissions - groupe Administrateurs](/assets/images/user-guide/11_user_permissions_form.png)
 *(Figure 11 : Modal pour attribuer un groupe de permissions à l'utilisateur sélectionné - liste déroulante avec les groupes disponibles)*
 
 > **Astuce** : Certains groupes de permissions sont fixés par le système et ne peuvent pas être modifiés.
@@ -157,12 +157,12 @@ Vous pouvez réactiver les utilisateurs désactivés.
 1. Trouvez l'utilisateur avec le statut inactif dans la liste **Utilisateurs**.
 2. Cliquez sur l'icône rouge dans la colonne d'actions.
 
-![Activation d'utilisateur - vue de l'infobulle "Activer"](/assets/images/UserGuideEng/12_users_activation.png)
+![Activation d'utilisateur - vue de l'infobulle "Activer"](/assets/images/user-guide/12_users_activation.png)
 *(Figure 12 : Activation d'un utilisateur inactif)*
 
 3. Cliquez sur le bouton **{{t:common.general.yes}}** dans la fenêtre de confirmation.
 
-![Modal de confirmation d'activation](/assets/images/UserGuideEng/13_users_activation_confirm.png)
+![Modal de confirmation d'activation](/assets/images/user-guide/13_users_activation_confirm.png)
 *(Figure 13 : Fenêtre modale pour confirmer l'activation de l'utilisateur)*
 
 > **Astuce** : Cette action est réversible. Vous pouvez désactiver l'utilisateur de la même manière.
@@ -174,14 +174,14 @@ Vous pouvez utiliser la fonction de traçabilité pour surveiller les activités
 1. Sélectionnez un utilisateur et cliquez sur l'icône d'engrenage dans la colonne d'actions.
 2. Cliquez sur l'option **{{t:common.actions.trace}}** pour ouvrir l'historique d'activité de l'utilisateur.
 
-![Traçabilité utilisateur - infobulle "Trace" avec bouton d'action](/assets/images/UserGuideEng/14_users_trace.png)
+![Traçabilité utilisateur - infobulle "Trace" avec bouton d'action](/assets/images/user-guide/14_users_trace.png)
 *(Figure 14 : Option de traçabilité de l'activité utilisateur)*
 
 3. Les activités passées de l'utilisateur sont répertoriées sur l'écran ouvert.
 4. Les statistiques sont affichées en haut : Enregistrements Totaux, Enregistrements Consultés, Dernière Activité.
 5. Cliquez sur le bouton **{{t:common.actions.export}}** et sélectionnez le format : **{{t:common.exportCSV}}** ou **{{t:common.exportJSON}}**.
 
-![Historique d'Audit - Options d'exportation](/assets/images/UserGuideEng/15_user_trace_export.png)
+![Historique d'Audit - Options d'exportation](/assets/images/user-guide/15_user_trace_export.png)
 *(Figure 15 : Historique d'activité complet de l'utilisateur - statistiques, détails et options d'exportation)*
 
 > **Astuce** : Exportez régulièrement les données d'audit pour maintenir des enregistrements de sécurité et de conformité. Le format CSV peut être ouvert dans Excel.
@@ -199,8 +199,8 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 3. Entrez le nom de votre équipe dans le champ **{{t:common.vaultEditor.fields.TEAM.name.label}}**.
 4. Remplissez les champs **{{t:common.vaultEditor.fields.TEAM.SSH_PRIVATE_KEY.label}}** et **{{t:common.vaultEditor.fields.TEAM.SSH_PUBLIC_KEY.label}}** dans la section **{{t:common.vaultEditor.vaultConfiguration}}**.
 
-![Formulaire de création de nouvelle équipe - nom d'équipe et clés SSH](/assets/images/UserGuideEng/16_teams_create.png)
-*(Figure 16 : Création d'une nouvelle équipe dans "Private Team")*
+![Formulaire de création de nouvelle équipe - nom d'équipe et clés SSH](/assets/images/user-guide/16_teams_create.png)
+*(Figure 16 : Création d'une nouvelle équipe dans "Équipe Privée")*
 
 5. Cliquez sur le bouton **{{t:common.actions.create}}** pour enregistrer l'équipe.
 
@@ -213,7 +213,7 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 3. Mettez à jour les clés SSH dans la section **{{t:common.vaultEditor.vaultConfiguration}}**.
 4. Cliquez sur le bouton **{{t:common.save}}** pour appliquer les modifications.
 
-![Formulaire de modification d'équipe - message d'information bleu](/assets/images/UserGuideEng/17_teams_edit_form.png)
+![Formulaire de modification d'équipe - message d'information bleu](/assets/images/user-guide/17_teams_edit_form.png)
 *(Figure 17 : Modification des informations d'une équipe existante)*
 
 > **Astuce** : La configuration de l'équipe est utilisée pour la structure organisationnelle. Les modifications prennent effet pour tous les membres de l'équipe.
@@ -226,7 +226,7 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 4. Entrez une adresse email ou sélectionnez un utilisateur dans la liste déroulante.
 5. Cliquez sur le bouton **"+"** pour ajouter le membre à l'équipe.
 
-![Formulaire de gestion des membres de l'équipe - onglets "Current Members" et "Add Member"](/assets/images/UserGuideEng/18_teams_members_form.png)
+![Formulaire de gestion des membres de l'équipe - onglets "Membres Actuels" et "Ajouter un Membre"](/assets/images/user-guide/18_teams_members_form.png)
 *(Figure 18 : Panneau de gestion des membres de l'équipe)*
 
 > **Astuce** : Vous pouvez attribuer le même membre à plusieurs équipes.
@@ -238,7 +238,7 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 3. Vérifiez les compteurs Enregistrements Totaux, Enregistrements Consultés et Dernière Activité dans la fenêtre **{{t:resources.audit.title}}**.
 4. Cliquez sur le bouton **{{t:common.actions.export}}** pour exporter au format {{t:common.exportCSV}} ou {{t:common.exportJSON}}.
 
-![Modal d'historique d'audit - équipe DataBassTeam](/assets/images/UserGuideEng/19_teams_trace.png)
+![Modal d'historique d'audit - équipe DataBassTeam](/assets/images/user-guide/19_teams_trace.png)
 *(Figure 19 : Visualisation de l'historique d'audit de l'équipe)*
 
 > **Astuce** : L'historique d'audit est important pour la conformité et le contrôle de sécurité.
@@ -249,7 +249,7 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 2. Vérifiez que le nom de l'équipe est correct dans la boîte de dialogue de confirmation.
 3. Cliquez sur le bouton **{{t:common.general.yes}}**.
 
-![Dialogue de confirmation de suppression d'équipe](/assets/images/UserGuideEng/20_teams_delete.png)
+![Dialogue de confirmation de suppression d'équipe](/assets/images/user-guide/20_teams_delete.png)
 *(Figure 20 : Confirmation de suppression d'équipe)*
 
 > **Avertissement** : La suppression d'équipe est irréversible. Vérifiez s'il y a des données importantes dans l'équipe avant de supprimer.
@@ -267,7 +267,7 @@ Le contrôle d'accès vous permet de gérer de manière centralisée les permiss
 3. Entrez un nom significatif dans le champ **{{t:organization.access.modals.groupPlaceholder}}**.
 4. Cliquez sur le bouton **{{t:common.actions.confirm}}** pour créer le groupe.
 
-![Formulaire de création de groupe de permissions](/assets/images/UserGuideEng/21_create_access.png)
+![Formulaire de création de groupe de permissions](/assets/images/user-guide/21_create_access.png)
 *(Figure 21 : Création d'un nouveau Groupe de Permissions)*
 
 > **Astuce** : Les groupes de permissions sont utilisés pour organiser les utilisateurs avec des permissions similaires. Gardez les noms de groupes descriptifs (par exemple, "Admin", "Lecture Seule", "Gestionnaire de Dépôt").
@@ -279,7 +279,7 @@ Le contrôle d'accès vous permet de gérer de manière centralisée les permiss
 3. Vous pouvez révoquer une permission en cliquant sur le bouton rouge **{{t:common.delete}}** à côté de chaque action.
 4. Cliquez sur l'onglet **{{t:organization.access.modals.addPermissionsTab}}** pour ajouter de nouvelles permissions au groupe.
 
-![Panneau de gestion des permissions - liste des permissions attribuées](/assets/images/UserGuideEng/22_access_permission.png)
+![Panneau de gestion des permissions - liste des permissions attribuées](/assets/images/user-guide/22_access_permission.png)
 *(Figure 22 : Gestion des Permissions pour le Groupe de Permissions)*
 
 > **Astuce** : Accordez les permissions selon le principe du moindre privilège. Révisez et supprimez régulièrement les permissions inutiles.
@@ -295,7 +295,7 @@ La section Machines vous permet de gérer vos serveurs et ressources de dépôt.
 1. Accédez à l'onglet **{{t:common.navigation.machines}}** depuis le menu de gauche.
 2. Cliquez sur le bouton **{{t:machines.createMachine}}** dans le coin supérieur droit.
 
-![Page Machines - bouton "Ajouter une Machine"](/assets/images/UserGuideEng/23_machines_add.png)
+![Page Machines - bouton "Ajouter une Machine"](/assets/images/user-guide/23_machines_add.png)
 *(Figure 23 : Page d'accueil de gestion des Machines)*
 
 3. Remplissez le formulaire qui s'ouvre :
@@ -306,7 +306,7 @@ La section Machines vous permet de gérer vos serveurs et ressources de dépôt.
    - **{{t:common.vaultEditor.fields.MACHINE.port.label}}** : Entrez le numéro de port (par défaut : 22)
    - **{{t:common.vaultEditor.fields.MACHINE.ssh_password.label}}** : Entrez le mot de passe (optionnel)
 
-![Formulaire d'ajout de machine - tous les champs](/assets/images/UserGuideEng/24_machine_create.png)
+![Formulaire d'ajout de machine - tous les champs](/assets/images/user-guide/24_machine_create.png)
 *(Figure 24 : Formulaire d'ajout de nouvelle machine - nom de machine, paramètres réseau, identifiants SSH)*
 
 4. Cliquez sur le bouton **{{t:common.vaultEditor.testConnection.button}}** pour vérifier la connexion.
@@ -314,10 +314,10 @@ La section Machines vous permet de gérer vos serveurs et ressources de dépôt.
 
 > **Astuce** : Si l'option "Démarrer automatiquement la configuration après la création de la machine" est cochée, la machine effectuera automatiquement des étapes de configuration supplémentaires.
 
-![Création de machine terminée - fenêtre de suivi de tâche](/assets/images/UserGuideEng/25_machine_create_complete.png)
+![Création de machine terminée - fenêtre de suivi de tâche](/assets/images/user-guide/25_machine_create_complete.png)
 *(Figure 25 : Fenêtre de suivi de tâche après la création réussie de la machine)*
 
-6. Observez les étapes : **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
+6. Observez les étapes : **{{t:queue.trace.assigned}}** → **Traitement** → **{{t:queue.statusCompleted}}**
 7. Cliquez sur le bouton **{{t:common.actions.close}}** pour fermer l'opération.
 
 > **Astuce** : Cliquez sur le bouton "{{t:common.actions.refresh}}" pour vérifier manuellement le dernier statut.
@@ -328,14 +328,14 @@ Vous pouvez vérifier l'état de connexion des machines existantes.
 
 1. Cliquez sur le bouton **{{t:machines.connectivityTest}}**.
 
-![Bouton Test de Connectivité](/assets/images/UserGuideEng/26_connectivity_test_button.png)
+![Bouton Test de Connectivité](/assets/images/user-guide/26_connectivity_test_button.png)
 *(Figure 26 : Bouton Test de Connectivité dans la barre d'outils d'actions de la machine)*
 
 2. Consultez la liste des machines à tester.
 3. Cliquez sur le bouton **{{t:machines.runTest}}**.
 4. Les résultats réussis sont affichés en vert, les échecs en rouge.
 
-![Formulaire de test de connectivité - liste des machines](/assets/images/UserGuideEng/27_connectivity_test_form.png)
+![Formulaire de test de connectivité - liste des machines](/assets/images/user-guide/27_connectivity_test_form.png)
 *(Figure 27 : Formulaire de test de connectivité - fonction ping pour les machines sélectionnées)*
 
 > **Astuce** : Si le test échoue, vérifiez l'adresse IP de la machine et les paramètres SSH.
@@ -344,26 +344,26 @@ Vous pouvez vérifier l'état de connexion des machines existantes.
 
 Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la liste des machines.
 
-![Bouton Actualiser](/assets/images/UserGuideEng/28_refresh.png)
+![Bouton Actualiser](/assets/images/user-guide/28_refresh.png)
 *(Figure 28 : Bouton Actualiser dans la barre d'outils d'actions de la machine)*
 
 ### 2.4.4 Détails de la Machine
 
 1. Sélectionnez la machine dont vous souhaitez voir les détails.
-2. Cliquez sur le bouton icône œil (**View Details**).
+2. Cliquez sur le bouton icône œil (**{{t:common.viewDetails}}**).
 
-![Bouton Voir les Détails](/assets/images/UserGuideEng/29_view_details_button.png)
+![Bouton Voir les Détails](/assets/images/user-guide/29_view_details_button.png)
 *(Figure 29 : Icône œil dans la colonne d'actions de la machine)*
 
 3. Le panneau de détails de la machine s'ouvre sur le côté droit :
-   - **Hostname** : Nom de la machine
-   - **Uptime** : Temps de fonctionnement
-   - **Operating System** : OS et version
-   - **Kernel** : Version du noyau
+   - **Nom d'hôte** : Nom de la machine
+   - **Temps de fonctionnement** : Temps de fonctionnement
+   - **{{t:queue.trace.operatingSystem}}** : OS et version
+   - **{{t:queue.trace.kernelVersion}}** : Version du noyau
    - **CPU** : Informations sur le processeur
-   - **System Time** : Horloge système
+   - **Heure système** : Horloge système
 
-![Panneau de détails de la machine - informations système](/assets/images/UserGuideEng/30_machine_view_details.png)
+![Panneau de détails de la machine - informations système](/assets/images/user-guide/30_machine_view_details.png)
 *(Figure 30 : Panneau de détails de la machine - hostname, uptime, OS, noyau, informations CPU)*
 
 > **Astuce** : Révisez régulièrement ces informations pour vérifier la compatibilité de l'OS et la disponibilité des ressources.
@@ -373,14 +373,14 @@ Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la li
 1. Sélectionnez la machine que vous souhaitez modifier.
 2. Cliquez sur le bouton icône crayon (**{{t:common.actions.edit}}**).
 
-![Bouton Modifier](/assets/images/UserGuideEng/31_edit_button.png)
+![Bouton Modifier](/assets/images/user-guide/31_edit_button.png)
 *(Figure 31 : Icône crayon dans la colonne d'actions de la machine)*
 
 3. Effectuez les modifications nécessaires.
 4. Cliquez sur le bouton **{{t:common.vaultEditor.testConnection.button}}**.
 5. Lorsque la connexion est réussie, cliquez sur le bouton **{{t:common.save}}**.
 
-![Formulaire de modification de machine](/assets/images/UserGuideEng/32_edit_form.png)
+![Formulaire de modification de machine](/assets/images/user-guide/32_edit_form.png)
 *(Figure 32 : Formulaire de modification de machine - nom de machine, région et configuration du coffre-fort)*
 
 > **Astuce** : Exécutez toujours "Test Connection" après avoir modifié des paramètres critiques.
@@ -389,31 +389,31 @@ Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la li
 
 1. Sélectionnez la machine et cliquez sur le bouton icône horloge (**{{t:common.actions.trace}}**).
 
-![Bouton Traçabilité](/assets/images/UserGuideEng/33_trace_button.png)
+![Bouton Traçabilité](/assets/images/user-guide/33_trace_button.png)
 *(Figure 33 : Icône horloge dans la colonne d'actions de la machine)*
 
 2. Consultez les opérations dans la fenêtre d'historique d'audit :
    - **{{t:resources.audit.action}}** : Type d'opération effectuée
-   - **Details** : Champs modifiés
+   - **Détails** : Champs modifiés
    - **{{t:resources.audit.performedBy}}** : Utilisateur ayant effectué l'action
-   - **{{t:resources.audit.timestamp}}** : Date et heure
+   - **Horodatage** : Date et heure
 
-![Fenêtre d'historique d'audit de la machine](/assets/images/UserGuideEng/34_trace_list.png)
+![Fenêtre d'historique d'audit de la machine](/assets/images/user-guide/34_trace_list.png)
 *(Figure 34 : Historique d'audit - liste de tous les changements)*
 
-> **Astuce** : Cliquez sur la colonne Timestamp pour visualiser les changements par ordre chronologique.
+> **Astuce** : Cliquez sur la colonne Horodatage pour visualiser les changements par ordre chronologique.
 
 ### 2.4.7 Suppression de Machine
 
 1. Sélectionnez la machine que vous souhaitez supprimer.
 2. Cliquez sur le bouton icône corbeille (**{{t:common.delete}}**).
 
-![Bouton Supprimer](/assets/images/UserGuideEng/35_delete_button.png)
+![Bouton Supprimer](/assets/images/user-guide/35_delete_button.png)
 *(Figure 35 : Icône corbeille dans la colonne d'actions de la machine)*
 
 3. Cliquez sur le bouton **{{t:common.delete}}** dans la fenêtre de confirmation.
 
-![Fenêtre de confirmation de suppression de machine](/assets/images/UserGuideEng/36_delete_form.png)
+![Fenêtre de confirmation de suppression de machine](/assets/images/user-guide/36_delete_form.png)
 *(Figure 36 : Fenêtre de confirmation "Êtes-vous sûr de vouloir supprimer cette machine ?")*
 
 > **Avertissement** : Lorsqu'une machine est supprimée, toutes les définitions de dépôt qu'elle contient sont également supprimées. Cette action est irréversible.
@@ -427,7 +427,7 @@ Vous pouvez effectuer diverses opérations à distance sur les machines.
    - **{{t:machines.runAction}}** : Exécuter une fonction sur la machine
    - **{{t:common.vaultEditor.testConnection.button}}** : Tester la connectivité de la machine
 
-![Menu Remote - Run on Server et Test Connection](/assets/images/UserGuideEng/37_remote_button.png)
+![Menu Remote - Exécuter sur le serveur et Tester la connexion](/assets/images/user-guide/37_remote_button.png)
 *(Figure 37 : Bouton Remote - menu d'exécution de fonction sur la machine sélectionnée)*
 
 > **Astuce** : Utilisez l'option "{{t:common.vaultEditor.testConnection.button}}" pour vérifier que la machine est accessible avant d'exécuter des fonctions.
@@ -435,29 +435,29 @@ Vous pouvez effectuer diverses opérations à distance sur les machines.
 #### Configuration
 
 1. Sélectionnez l'option **{{t:machines.runAction}}**.
-2. Trouvez la fonction **setup** dans la liste **{{t:functions.availableFunctions}}**.
+2. Trouvez la fonction **Setup** dans la liste **{{t:functions.availableFunctions}}**.
 3. Cliquez sur le nom de la fonction pour la sélectionner.
 
-![Liste des fonctions de la machine - fonction setup](/assets/images/UserGuideEng/38_server_setup.png)
-*(Figure 38 : Fonction Setup - prépare la machine avec les outils et configurations requis)*
+![Liste des fonctions de la machine - fonction de configuration](/assets/images/user-guide/38_server_setup.png)
+*(Figure 38 : Fonction Configuration - prépare la machine avec les outils et configurations requis)*
 
-> **Astuce** : Il est recommandé d'exécuter d'abord la fonction "setup" lors de la configuration d'une nouvelle machine.
+> **Astuce** : Il est recommandé d'exécuter d'abord la fonction "Setup" lors de la configuration d'une nouvelle machine.
 
-#### Vérification de Connexion (Hello)
+#### Bonjour
 
-1. Sélectionnez **{{t:machines.runAction}}** > fonction **hello**.
+1. Sélectionnez **{{t:machines.runAction}}** > fonction **Bonjour**.
 2. Cliquez sur le bouton **{{t:common.actions.addToQueue}}**.
 
-![Sélection de la fonction Hello](/assets/images/UserGuideEng/39_remote_hello.png)
-*(Figure 39 : Fonction Hello - fonction de test simple, renvoie le hostname)*
+![Sélection de la fonction Bonjour](/assets/images/user-guide/39_remote_hello.png)
+*(Figure 39 : Fonction Bonjour - fonction de test simple, renvoie le nom d'hôte)*
 
 3. Observez les résultats dans la fenêtre de suivi de tâche.
 4. Consultez la sortie de la machine dans la section **{{t:queue.trace.responseConsole}}**.
 
-![Fonction Hello terminée](/assets/images/UserGuideEng/40_remote_hello_complete.png)
-*(Figure 40 : Fonction Hello terminée avec succès - réponse hostname)*
+![Fonction Bonjour terminée](/assets/images/user-guide/40_remote_hello_complete.png)
+*(Figure 40 : Fonction Bonjour terminée avec succès - réponse nom d'hôte)*
 
-> **Astuce** : La fonction hello est idéale pour vérifier la connectivité de la machine.
+> **Astuce** : La fonction Hello est idéale pour vérifier la connectivité de la machine.
 
 #### Opérations Avancées
 
@@ -465,15 +465,15 @@ Vous pouvez effectuer diverses opérations à distance sur les machines.
 2. Consultez les fonctions disponibles : setup, hello, ping, ssh_test, uninstall
 3. Sélectionnez la fonction requise et cliquez sur le bouton **{{t:common.actions.addToQueue}}**.
 
-![Liste des fonctions avancées](/assets/images/UserGuideEng/41_remote_advanced.png)
-*(Figure 41 : Option Advanced - liste des fonctions avancées)*
+![Liste des fonctions avancées](/assets/images/user-guide/41_remote_advanced.png)
+*(Figure 41 : Option Avancées - liste des fonctions avancées)*
 
-> **Astuce** : Assurez-vous que la configuration de la machine est terminée avant d'utiliser les fonctions Advanced.
+> **Astuce** : Assurez-vous que la configuration de la machine est terminée avant d'utiliser les fonctions Avancées.
 
 #### Test de Connectivité Rapide
 
-![Menu Remote - Test Connection](/assets/images/UserGuideEng/42_connectivity_test.png)
-*(Figure 42 : Option Test Connection depuis le menu Remote)*
+![Menu Remote - Test de Connexion](/assets/images/user-guide/42_connectivity_test.png)
+*(Figure 42 : Option Test de Connexion depuis le menu Distant)*
 
 > **Astuce** : Si la machine a des problèmes SSH ou réseau, vous pouvez identifier rapidement les problèmes avec ce test.
 
@@ -488,7 +488,7 @@ Les dépôts sont les unités fondamentales où vos données de sauvegarde sont 
 1. Sélectionnez une machine dans l'onglet **{{t:common.navigation.machines}}**.
 2. Cliquez sur le bouton **{{t:machines.createRepository}}** dans le coin supérieur droit.
 
-![Bouton Créer un Dépôt](/assets/images/UserGuideEng/43_create_repo_add.png)
+![Bouton Créer un Dépôt](/assets/images/user-guide/43_create_repo_add.png)
 *(Figure 43 : Écran de gestion des dépôts de la machine - bouton Créer un Dépôt)*
 
 3. Remplissez le formulaire :
@@ -497,23 +497,23 @@ Les dépôts sont les unités fondamentales où vos données de sauvegarde sont 
    - **{{t:resources.repositories.repositoryGuid}}** : Consultez l'identifiant généré automatiquement
    - **{{t:resources.templates.selectTemplate}}** : Choisissez un modèle (par exemple, databases_postgresql)
 
-![Formulaire de création de dépôt](/assets/images/UserGuideEng/44_repo_form.png)
+![Formulaire de création de dépôt](/assets/images/user-guide/44_repo_form.png)
 *(Figure 44 : Formulaire de création de dépôt - nom du dépôt, taille et sélection de modèle)*
 
 4. Cliquez sur le bouton **{{t:common.actions.create}}**.
 
 > **Astuce** : L'ID d'identification est généré automatiquement, la modification manuelle n'est pas recommandée.
 
-5. Observez les étapes dans la fenêtre de suivi de tâche : **Assigned** → **Processing** → **{{t:queue.statusCompleted}}**
+5. Observez les étapes dans la fenêtre de suivi de tâche : **{{t:queue.trace.assigned}}** → **Traitement** → **{{t:queue.statusCompleted}}**
 
-![Création de dépôt terminée](/assets/images/UserGuideEng/45_repo_complete.png)
+![Création de dépôt terminée](/assets/images/user-guide/45_repo_complete.png)
 *(Figure 45 : Création de dépôt mise en file d'attente - surveillance de tâche)*
 
 6. Cliquez sur le bouton **{{t:common.actions.close}}**.
 
 > **Astuce** : La tâche se termine généralement en 1-2 minutes.
 
-![Liste des dépôts](/assets/images/UserGuideEng/46_repo_list.png)
+![Liste des dépôts](/assets/images/user-guide/46_repo_list.png)
 *(Figure 46 : Le dépôt créé apparaît dans la liste)*
 
 ### 2.5.2 Fork de Dépôt
@@ -524,18 +524,18 @@ Vous pouvez créer un nouveau dépôt en copiant un dépôt existant.
 2. Cliquez sur le menu **fx** (fonction).
 3. Cliquez sur l'option **fork**.
 
-![Menu fx - option fork](/assets/images/UserGuideEng/47_fork_button.png)
+![Menu fx - option fork](/assets/images/user-guide/47_fork_button.png)
 *(Figure 47 : Menu fx sur le côté droit - opérations de dépôt)*
 
 4. Entrez un nouveau tag dans le champ **{{t:functions.functions.fork.params.tag.label}}** (par exemple, 2025-12-06-20-37-08).
 5. Cliquez sur le bouton **{{t:common.actions.addToQueue}}**.
 
-![Formulaire de configuration de Fork](/assets/images/UserGuideEng/48_fork_form.png)
+![Formulaire de configuration de Fork](/assets/images/user-guide/48_fork_form.png)
 *(Figure 48 : Spécifier le nouveau tag pour le dépôt dans l'opération fork)*
 
 6. Attendez le message **{{t:queue.statusCompleted}}** et cliquez sur le bouton **{{t:common.actions.close}}**.
 
-![Fork terminé](/assets/images/UserGuideEng/49_repo_completed.png)
+![Fork terminé](/assets/images/user-guide/49_repo_completed.png)
 *(Figure 49 : Opération Fork terminée avec succès)*
 
 > **Astuce** : Créer des tags au format date-heure par défaut est une bonne pratique. L'opération fork n'affecte pas le dépôt original.
@@ -546,12 +546,12 @@ Pour activer le dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **up**.
 
-![Opération Up](/assets/images/UserGuideEng/50_repo_up.png)
+![Opération Up](/assets/images/user-guide/50_repo_up.png)
 *(Figure 50 : Option "up" du menu fx - démarrage du dépôt)*
 
 2. Attendez le message **{{t:queue.statusCompleted}}**.
 
-![Up terminé](/assets/images/UserGuideEng/51_repo_up_complete.png)
+![Up terminé](/assets/images/user-guide/51_repo_up_complete.png)
 *(Figure 51 : Démarrage du dépôt terminé)*
 
 > **Astuce** : L'opération "Up" démarre les services Docker définis dans le dépôt.
@@ -562,12 +562,12 @@ Pour arrêter un dépôt actif :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **down**.
 
-![Opération Down](/assets/images/UserGuideEng/52_down_button.png)
+![Opération Down](/assets/images/user-guide/52_down_button.png)
 *(Figure 52 : Option "down" du menu fx - arrêt du dépôt)*
 
 2. Attendez le message **{{t:queue.statusCompleted}}**.
 
-![Down terminé](/assets/images/UserGuideEng/53_down_completed.png)
+![Down terminé](/assets/images/user-guide/53_down_completed.png)
 *(Figure 53 : Arrêt du dépôt terminé)*
 
 > **Astuce** : L'opération "Down" arrête le dépôt en toute sécurité. Aucune donnée n'est perdue, seuls les services sont arrêtés.
@@ -578,7 +578,7 @@ Pour déployer le dépôt vers un emplacement différent :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **deploy**.
 
-![Opération Deploy](/assets/images/UserGuideEng/54_deploy_button.png)
+![Opération Deploy](/assets/images/user-guide/54_deploy_button.png)
 *(Figure 54 : Option "deploy" du menu fx)*
 
 2. Entrez la version à déployer dans le champ **{{t:functions.functions.fork.params.tag.label}}**.
@@ -586,12 +586,12 @@ Pour déployer le dépôt vers un emplacement différent :
 4. Cochez l'option **{{t:functions.checkboxOptions.overrideExistingFile}}** (si applicable).
 5. Cliquez sur le bouton **{{t:common.actions.addToQueue}}**.
 
-![Formulaire Deploy](/assets/images/UserGuideEng/55_deploy_form.png)
+![Formulaire Deploy](/assets/images/user-guide/55_deploy_form.png)
 *(Figure 55 : Configuration de l'opération deploy - tag, machines cibles et options)*
 
 6. Attendez le message **{{t:queue.statusCompleted}}**.
 
-![Deploy terminé](/assets/images/UserGuideEng/56_deploy_completed.png)
+![Deploy terminé](/assets/images/user-guide/56_deploy_completed.png)
 *(Figure 56 : Déploiement du dépôt terminé)*
 
 > **Astuce** : Une fois l'opération deploy terminée, vous pouvez exécuter la commande "up" pour démarrer le dépôt sur les machines cibles.
@@ -602,7 +602,7 @@ Pour sauvegarder le dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **backup**.
 
-![Opération Backup](/assets/images/UserGuideEng/57_backup_button.png)
+![Opération Backup](/assets/images/user-guide/57_backup_button.png)
 *(Figure 57 : Option "backup" du menu fx)*
 
 2. Remplissez le formulaire :
@@ -611,7 +611,7 @@ Pour sauvegarder le dépôt :
    - **{{t:functions.checkboxOptions.overrideExistingFile}}** : Activez ou désactivez l'option
    - **{{t:functions.functions.backup_deploy.params.checkpoint.label}}** : Vérifiez le paramètre
 
-![Formulaire Backup](/assets/images/UserGuideEng/58_backup_form.png)
+![Formulaire Backup](/assets/images/user-guide/58_backup_form.png)
 *(Figure 58 : Formulaire de configuration de sauvegarde - cible, nom de fichier et options)*
 
 3. Cliquez sur le bouton **{{t:common.actions.addToQueue}}**.
@@ -620,7 +620,7 @@ Pour sauvegarder le dépôt :
 
 4. Attendez le message **{{t:queue.statusCompleted}}**.
 
-![Backup terminé](/assets/images/UserGuideEng/59_backup_completed.png)
+![Backup terminé](/assets/images/user-guide/59_backup_completed.png)
 *(Figure 59 : Tâche de sauvegarde terminée avec succès)*
 
 > **Astuce** : Attendez patiemment avant d'atteindre le statut terminé ; les grandes sauvegardes peuvent prendre plusieurs minutes.
@@ -629,23 +629,23 @@ Pour sauvegarder le dépôt :
 
 Pour appliquer un nouveau modèle au dépôt :
 
-1. Sélectionnez le dépôt et suivez le chemin **fx** > **Templates**.
+1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:resources.templates.selectTemplate}}**.
 
-![Opération Templates](/assets/images/UserGuideEng/60_templates_button.png)
+![Opération Templates](/assets/images/user-guide/60_templates_button.png)
 *(Figure 60 : Option "Templates" du menu fx)*
 
 2. Filtrez les modèles en tapant dans la boîte de recherche.
 3. Cliquez sur le modèle souhaité pour le sélectionner (le modèle sélectionné est surligné avec une bordure en gras).
 4. Cliquez sur le bouton **{{t:common.actions.addToQueue}}**.
 
-![Formulaire de sélection de modèle](/assets/images/UserGuideEng/61_templates_form.png)
+![Formulaire de sélection de modèle](/assets/images/user-guide/61_templates_form.png)
 *(Figure 61 : Recherche et sélection des modèles disponibles)*
 
-> **Astuce** : Utilisez la boîte de recherche pour trouver rapidement des modèles. Utilisez "{{t:common.viewDetails}}" pour en savoir plus sur les fonctionnalités des modèles.
+> **Astuce** : Utilisez la boîte de recherche pour trouver rapidement des modèles. Utilisez **{{t:common.viewDetails}}** pour en savoir plus sur les fonctionnalités des modèles.
 
 5. Attendez le message **{{t:queue.statusCompleted}}**.
 
-![Modèle appliqué](/assets/images/UserGuideEng/62_templates_completed.png)
+![Modèle appliqué](/assets/images/user-guide/62_templates_completed.png)
 *(Figure 62 : Application du modèle terminée avec succès)*
 
 ### 2.5.8 Démontage
@@ -654,12 +654,12 @@ Pour déconnecter le dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}**.
 
-![Opération Unmount](/assets/images/UserGuideEng/63_unmount_button.png)
+![Opération Unmount](/assets/images/user-guide/63_unmount_button.png)
 *(Figure 63 : Option "Unmount" dans le menu avancé)*
 
 2. Attendez le message **{{t:queue.statusCompleted}}**.
 
-![Unmount terminé](/assets/images/UserGuideEng/64_unmount_completed.png)
+![Unmount terminé](/assets/images/user-guide/64_unmount_completed.png)
 *(Figure 64 : Opération Unmount terminée)*
 
 > **Astuce** : Assurez-vous qu'il n'y a pas d'opérations actives sur le dépôt avant de démonter. Après démontage, le dépôt devient inaccessible.
@@ -670,21 +670,21 @@ Pour augmenter la taille du dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:common.actions.advanced}}** > **{{t:functions.functions.repository_expand.name}}**.
 
-![Opération Expand](/assets/images/UserGuideEng/65_expand_button.png)
+![Opération Expand](/assets/images/user-guide/65_expand_button.png)
 *(Figure 65 : Option "Expand" dans le menu avancé)*
 
 2. Entrez la taille souhaitée dans le champ **{{t:functions.functions.repository_expand.params.size.label}}**.
 3. Sélectionnez l'unité dans la liste déroulante à droite (GB, TB).
 4. Cliquez sur le bouton **{{t:common.actions.addToQueue}}**.
 
-![Formulaire Expand](/assets/images/UserGuideEng/66_expand_form.png)
+![Formulaire Expand](/assets/images/user-guide/66_expand_form.png)
 *(Figure 66 : Nouveau paramètre de taille pour augmenter la taille du dépôt)*
 
 > **Astuce** : N'entrez pas une valeur inférieure à la taille actuelle. Le service n'est pas interrompu pendant l'extension du dépôt.
 
 5. Attendez le message **{{t:queue.statusCompleted}}**.
 
-![Expand terminé](/assets/images/UserGuideEng/67_expand_completed.png)
+![Expand terminé](/assets/images/user-guide/67_expand_completed.png)
 *(Figure 67 : Extension du dépôt terminée)*
 
 ### 2.5.10 Renommage
@@ -693,13 +693,13 @@ Pour changer le nom du dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:common.actions.rename}}**.
 
-![Opération Rename](/assets/images/UserGuideEng/68_rename_button.png)
+![Opération Rename](/assets/images/user-guide/68_rename_button.png)
 *(Figure 68 : Option "Rename" du menu fx)*
 
 2. Entrez le nouveau nom du dépôt.
 3. Cliquez sur le bouton **{{t:common.save}}**.
 
-![Formulaire Rename](/assets/images/UserGuideEng/69_rename_form.png)
+![Formulaire Rename](/assets/images/user-guide/69_rename_form.png)
 *(Figure 69 : Dialogue pour entrer le nouveau nom du dépôt)*
 
 > **Astuce** : Les noms de dépôt doivent être significatifs pour refléter le type et l'objectif du dépôt. Évitez les caractères spéciaux.
@@ -710,8 +710,8 @@ Pour supprimer définitivement le dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:resources.repositories.deleteRepository}}**.
 
-![Opération Delete Repository](/assets/images/UserGuideEng/70_delete_repo_button.png)
-*(Figure 70 : Option "Delete Repository" du menu fx - rouge)*
+![Opération Supprimer le Dépôt](/assets/images/user-guide/70_delete_repo_button.png)
+*(Figure 70 : Option "Supprimer le Dépôt" du menu fx - rouge)*
 
 2. Cliquez sur le bouton **{{t:common.delete}}** dans la fenêtre de confirmation.
 
@@ -722,22 +722,22 @@ Pour supprimer définitivement le dépôt :
 Pour obtenir des informations détaillées sur le dépôt :
 
 1. Sélectionnez le dépôt.
-2. Cliquez sur l'icône œil (**View Details**).
+2. Cliquez sur l'icône œil (**{{t:common.viewDetails}}**).
 
-![Bouton View Details](/assets/images/UserGuideEng/71_repo_view_button.png)
+![Bouton Afficher les détails](/assets/images/user-guide/71_repo_view_button.png)
 *(Figure 71 : Icône œil pour ouvrir les détails du dépôt)*
 
 3. Consultez les informations dans le panneau de détails :
-   - **Repository name** et type
-   - **Team** : L'équipe à laquelle il appartient
+   - **Nom du dépôt** et type
+   - **Équipe** : L'équipe à laquelle il appartient
    - **Machine** : La machine sur laquelle il se trouve
-   - **Vault Version** : Version de chiffrement
-   - **Repository GUID** : Identifiant unique
-   - **Status** : Statut Monté/Démonté
-   - **Image Size** : Taille totale
-   - **Last Modified** : Date de dernière modification
+   - **Version du coffre-fort** : Version de chiffrement
+   - **GUID du dépôt** : Identifiant unique
+   - **Statut** : Statut Monté/Démonté
+   - **Taille de l'image** : Taille totale
+   - **Dernière modification** : Date de dernière modification
 
-![Panneau de détails du dépôt](/assets/images/UserGuideEng/72_repo_details_view.png)
+![Panneau de détails du dépôt](/assets/images/user-guide/72_repo_details_view.png)
 *(Figure 72 : Informations complètes sur le dépôt sélectionné)*
 
 > **Astuce** : Toutes les informations affichées dans ce panneau sont à titre de référence. Utilisez les options du menu fx pour les opérations de dépôt.
@@ -752,7 +752,7 @@ Vous pouvez vous connecter aux dépôts en utilisant différentes méthodes.
 
 1. Cliquez sur le bouton **{{t:resources.localActions.local}}** dans la ligne du dépôt.
 
-![Bouton de connexion Local](/assets/images/UserGuideEng/73_repo_connection_local.png)
+![Bouton de connexion Local](/assets/images/user-guide/73_repo_connection_local.png)
 *(Figure 73 : Bouton "Local" dans la ligne du dépôt - accès à l'application de bureau)*
 
 2. Sélectionnez la méthode d'accès dans le menu déroulant :
@@ -761,14 +761,14 @@ Vous pouvez vous connecter aux dépôts en utilisant différentes méthodes.
    - **{{t:common.terminal.terminal}}** : Accès via ligne de commande
    - **{{t:resources.localActions.showCLICommands}}** : Outils en ligne de commande
 
-![Menu d'options de connexion](/assets/images/UserGuideEng/74_repo_connection.png)
+![Menu d'options de connexion](/assets/images/user-guide/74_repo_connection.png)
 *(Figure 74 : Menu de connexion au dépôt - différents chemins d'accès)*
 
 > **Astuce** : Si vous travaillez avec VS Code, l'option "{{t:resources.localCommandBuilder.vscodeTab}}" offre l'intégration la plus rapide.
 
-3. Cliquez sur le bouton **Open** lorsque le navigateur demande la permission.
+3. Cliquez sur le bouton **{{t:common.vscodeSelection.open}}** lorsque le navigateur demande la permission.
 
-![Permission d'ouverture de l'application de bureau](/assets/images/UserGuideEng/75_desktop_open_page.png)
+![Permission d'ouverture de l'application de bureau](/assets/images/user-guide/75_desktop_open_page.png)
 *(Figure 75 : Le navigateur demandant la permission d'ouvrir l'application de bureau)*
 
 > **Astuce** : Si vous ne souhaitez pas accorder la permission à chaque fois que vous ouvrez l'application de bureau, cochez l'option "Toujours autoriser".
@@ -783,12 +783,12 @@ Vous pouvez gérer votre profil et les paramètres système depuis la section Pa
 
 1. Accédez à l'onglet **{{t:common.navigation.settings}}** > **{{t:common.navigation.settingsProfile}}** depuis le menu de gauche.
 
-![Page des paramètres de profil](/assets/images/UserGuideEng/76_profiles_button.png)
+![Page des paramètres de profil](/assets/images/user-guide/76_profiles_button.png)
 *(Figure 76 : Page Paramètres → Profil - paramètres du coffre-fort personnel)*
 
 2. Cliquez sur le bouton **{{t:settings.personal.changePassword.submit}}**.
 
-![Bouton Changer le Mot de Passe](/assets/images/UserGuideEng/77_profiles_change_button.png)
+![Bouton Changer le Mot de Passe](/assets/images/user-guide/77_profiles_change_button.png)
 *(Figure 77 : Bouton "Change Password" dans la section des paramètres personnels)*
 
 3. Entrez votre nouveau mot de passe. Exigences du mot de passe :
@@ -800,7 +800,7 @@ Vous pouvez gérer votre profil et les paramètres système depuis la section Pa
 4. Saisissez à nouveau le même mot de passe dans le champ **{{t:settings.personal.changePassword.confirmPasswordLabel}}**.
 5. Cliquez sur le bouton **{{t:settings.personal.changePassword.submit}}**.
 
-![Formulaire de changement de mot de passe](/assets/images/UserGuideEng/78_profiles_change_form.png)
+![Formulaire de changement de mot de passe](/assets/images/user-guide/78_profiles_change_form.png)
 *(Figure 78 : Formulaire Change Password - exigences de sécurité visibles)*
 
 > **Astuce** : Utilisez des combinaisons aléatoires lors de la création d'un mot de passe robuste.
@@ -816,7 +816,7 @@ La section Stockage vous permet de gérer les zones physiques où vos données d
 1. Accédez à l'onglet **{{t:common.navigation.storage}}** depuis le menu de gauche.
 2. Cliquez sur le bouton **{{t:resources.storage.createStorage}}**.
 
-![Bouton Add Storage](/assets/images/UserGuideEng/79_storage_add_button.png)
+![Bouton Add Storage](/assets/images/user-guide/79_storage_add_button.png)
 *(Figure 79 : Page de gestion du stockage - bouton "Add Storage")*
 
 3. Remplissez le formulaire :
@@ -826,7 +826,7 @@ La section Stockage vous permet de gérer les zones physiques où vos données d
    - **{{t:common.vaultEditor.fields.STORAGE.noVersioning.label}}** : Optionnel
    - **{{t:common.vaultEditor.fields.STORAGE.parameters.label}}** : Drapeaux rclone (par exemple, --transfers 4)
 
-![Formulaire de création de stockage](/assets/images/UserGuideEng/80_storage_form.png)
+![Formulaire de création de stockage](/assets/images/user-guide/80_storage_form.png)
 *(Figure 80 : Formulaire Add Storage - nom, fournisseur, description et paramètres)*
 
 4. Cliquez sur le bouton **{{t:common.actions.create}}**.
@@ -845,14 +845,14 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 2. Sélectionnez l'enregistrement que vous souhaitez modifier.
 3. Cliquez sur le bouton **{{t:common.actions.edit}}**.
 
-![Liste des identifiants](/assets/images/UserGuideEng/81_credentials.png)
+![Liste des identifiants](/assets/images/user-guide/81_credentials.png)
 *(Figure 81 : Page Identifiants - noms de dépôt, équipes et boutons de gestion)*
 
 4. Modifiez le **{{t:common.vaultEditor.fields.REPOSITORY.name.label}}** si nécessaire.
 5. Enregistrez avec le bouton **{{t:common.save}}**.
 
-![Formulaire de modification d'identifiants](/assets/images/UserGuideEng/82_credentials_form.png)
-*(Figure 82 : Formulaire Edit Repository Name - champs de configuration du coffre-fort)*
+![Formulaire de modification d'identifiants](/assets/images/user-guide/82_credentials_form.png)
+*(Figure 82 : Formulaire Modifier le Nom du Dépôt - champs de configuration du coffre-fort)*
 
 > **Astuce** : Les identifiants sont stockés chiffrés et ne sont déchiffrés que pendant le déploiement.
 
@@ -861,13 +861,13 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 1. Sélectionnez l'enregistrement que vous souhaitez tracer.
 2. Cliquez sur le bouton **{{t:common.actions.trace}}**.
 
-![Bouton Trace](/assets/images/UserGuideEng/83_credentials_trace_button.png)
+![Bouton Trace](/assets/images/user-guide/83_credentials_trace_button.png)
 *(Figure 83 : Bouton "Trace" dans le tableau Identifiants)*
 
 3. Consultez l'historique d'audit.
 4. Sélectionnez le format depuis le bouton **{{t:common.actions.export}}** : **{{t:common.exportCSV}}** ou **{{t:common.exportJSON}}**.
 
-![Historique d'audit des identifiants](/assets/images/UserGuideEng/84_credentials_list_export.png)
+![Historique d'audit des identifiants](/assets/images/user-guide/84_credentials_list_export.png)
 *(Figure 84 : Liste des identifiants - Options d'exportation)*
 
 > **Astuce** : La fonction de traçabilité fournit un suivi d'utilisation des identifiants à des fins d'audit de sécurité.
@@ -877,12 +877,12 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 1. Sélectionnez l'enregistrement que vous souhaitez supprimer.
 2. Cliquez sur le bouton rouge **{{t:common.delete}}**.
 
-![Bouton Supprimer](/assets/images/UserGuideEng/85_credentials_delete.png)
-*(Figure 85 : Bouton rouge "Delete" sur la page Identifiants)*
+![Bouton Supprimer](/assets/images/user-guide/85_credentials_delete.png)
+*(Figure 85 : Bouton rouge "Supprimer" sur la page Identifiants)*
 
 3. Cliquez sur le bouton **{{t:common.delete}}** dans la fenêtre de confirmation.
 
-![Confirmation de suppression](/assets/images/UserGuideEng/86_credentials_delete_confirm.png)
+![Confirmation de suppression](/assets/images/user-guide/86_credentials_delete_confirm.png)
 *(Figure 86 : Dialogue de confirmation de suppression - avertissement d'action irréversible)*
 
 > **Avertissement** : Avant de supprimer, assurez-vous que l'identifiant n'est pas utilisé sur d'autres machines ou dans d'autres opérations. Assurez-vous d'avoir une sauvegarde des identifiants critiques avant de supprimer.
@@ -897,7 +897,7 @@ La section File d'Attente vous permet de suivre les opérations en attente et te
 
 1. Cliquez sur l'onglet **{{t:common.navigation.queue}}** depuis le menu de gauche.
 
-![Page File d'Attente](/assets/images/UserGuideEng/87_queue_button.png)
+![Page File d'Attente](/assets/images/user-guide/87_queue_button.png)
 *(Figure 87 : Page File d'Attente - options de filtrage et onglets de statut)*
 
 2. Pour filtrer les éléments de la file d'attente :
@@ -913,7 +913,7 @@ La section File d'Attente vous permet de suivre les opérations en attente et te
 
 4. Sélectionnez un format depuis le bouton **{{t:common.actions.export}}** : **{{t:common.exportCSV}}** ou **{{t:common.exportJSON}}**.
 
-![Exportation de la file d'attente](/assets/images/UserGuideEng/88_queue_export.png)
+![Exportation de la file d'attente](/assets/images/user-guide/88_queue_export.png)
 *(Figure 88 : Liste de la file d'attente - Options d'exportation)*
 
 > **Astuce** : L'option "{{t:queue.filters.onlyStale}}" aide à trouver les tâches qui sont en cours de traitement depuis longtemps. Exportez régulièrement l'historique de la file d'attente pour analyser les tendances d'exécution des tâches.
@@ -928,25 +928,25 @@ La section Audit conserve les enregistrements de toutes les opérations effectu�
 
 1. Cliquez sur l'onglet **{{t:common.navigation.audit}}** depuis le menu de gauche.
 
-![Liste d'audit](/assets/images/UserGuideEng/89_audit_list.png)
+![Liste d'audit](/assets/images/user-guide/89_audit_list.png)
 *(Figure 89 : Page Audit - enregistrement détaillé de toutes les opérations système)*
 
 2. Filtrez les enregistrements d'audit :
-   - **Date Range** : Filtrez pour une période spécifique
-   - **Entity Type** : Filtrez par Request, Machine, Queue, etc.
-   - **Search** : Effectuez une recherche textuelle
+   - **Plage de dates** : Filtrez pour une période spécifique
+   - **Type d'entité** : Filtrez par Requête, Machine, File d'attente, etc.
+   - **Recherche** : Effectuez une recherche textuelle
 
 3. Consultez les informations pour chaque enregistrement :
-   - **Timestamp** : Date et heure de l'opération
-   - **Action** : Type d'opération (Create, Edit, Delete, etc.)
-   - **Entity Type** : Type d'objet affecté
-   - **Entity Name** : Identifiant d'objet spécifique
-   - **User** : Utilisateur ayant effectué l'opération
-   - **Details** : Informations supplémentaires sur l'opération
+   - **Horodatage** : Date et heure de l'opération
+   - **Action** : Type d'opération (Créer, Modifier, Supprimer, etc.)
+   - **Type d'entité** : Type d'objet affecté
+   - **Nom de l'entité** : Identifiant d'objet spécifique
+   - **Utilisateur** : Utilisateur ayant effectué l'opération
+   - **Détails** : Informations supplémentaires sur l'opération
 
 4. Sélectionnez un format depuis le bouton **{{t:common.actions.export}}** : **{{t:common.exportCSV}}** ou **{{t:common.exportJSON}}**.
 
-![Exportation d'audit](/assets/images/UserGuideEng/90_audit_export.png)
+![Exportation d'audit](/assets/images/user-guide/90_audit_export.png)
 *(Figure 90 : Exportation d'enregistrement d'audit - options CSV et JSON)*
 
 > **Astuce** : L'enregistrement d'audit est essentiel pour suivre toute l'activité du système à des fins de sécurité et de conformité. Exportez régulièrement l'enregistrement d'audit et stockez-le dans un emplacement sécurisé.

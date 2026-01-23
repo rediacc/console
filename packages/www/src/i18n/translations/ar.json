@@ -8,7 +8,8 @@
       "resetZoom": "إعادة ضبط التكبير",
       "statusMessage": "رسالة الحالة",
       "zoomIn": "تكبير",
-      "zoomOut": "تصغير"
+      "zoomOut": "تصغير",
+      "clickToEnlarge": "انقر لتكبير الصورة"
     },
     "buttons": {
       "close": "إغلاق",
@@ -277,7 +278,8 @@
       "tableOfContents": "في هذه الصفحة",
       "title": "التوثيق",
       "welcome": "مرحبا بكم في وثائق Rediacc",
-      "welcomeDescription": "Rediacc هو نظام قوي لتنفيذ المهام الموزعة. سواء كنت بدأت للتو أو تتطلع إلى إتقان الميزات المتقدمة، ستجد كل ما تحتاجه هنا."
+      "welcomeDescription": "Rediacc هو نظام قوي لتنفيذ المهام الموزعة. سواء كنت بدأت للتو أو تتطلع إلى إتقان الميزات المتقدمة، ستجد كل ما تحتاجه هنا.",
+      "searchPlaceholder": "Search docs..."
     },
     "downloads": {
       "meta": {
@@ -842,7 +844,7 @@
             "rpo": "مخصص (أقرب إلى الصفر)",
             "rto": "15-60 دقيقة (مخصص)"
           },
-          "pro": {
+          "professional": {
             "activeJobs": "5 نشطة",
             "auditLogs": "30 يوما",
             "cpuCore": "100 النوى",
@@ -882,7 +884,7 @@
             "secondary": "اتصل بالمبيعات",
             "subtext": "اتفاقية مستوى الخدمة المخصصة · دعم مخصص"
           },
-          "pro": {
+          "professional": {
             "guarantee": "ضمان استرداد الأموال لمدة 14 يومًا",
             "primary": "ابدأ",
             "secondary": "اتصل بالمبيعات"
@@ -1495,7 +1497,33 @@
         "title": "تعرف على فريقنا"
       },
       "values": {
-        "title": "قيمنا"
+        "title": "قيمنا",
+        "items": {
+          "simplicity": {
+            "title": "Simplicity First",
+            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+          },
+          "security": {
+            "title": "Security by Design",
+            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+          },
+          "success": {
+            "title": "Customer Success",
+            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          },
+          "innovation": {
+            "title": "Continuous Innovation",
+            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+          },
+          "global": {
+            "title": "Global Thinking",
+            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          },
+          "transparency": {
+            "title": "Transparency",
+            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
+          }
+        }
       }
     }
   },

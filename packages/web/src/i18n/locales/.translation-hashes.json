@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3371
+    "keyCount": 3379
   },
   "hashes": {
     "auth.endpointSelector.addCustom": "c27ca9dd",
@@ -1198,6 +1198,8 @@
     "functions.selectFunctionToConfigure": "1287df72",
     "functions.sourceRepository": "2c6eb1f6",
     "functions.validationError": "9944520f",
+    "machines.actions.add": "1b605851",
+    "machines.actions.runOnServer": "f2b138b1",
     "machines.addSystemFunction": "5890268a",
     "machines.addToQueue": "40b5ffc9",
     "machines.advanced": "45f80a27",
@@ -1279,7 +1281,9 @@
     "machines.form.title.edit": "0d070566",
     "machines.form.title.vault": "122e4189",
     "machines.form.vaultConfig": "07939a66",
-    "machines.functions": "c15dafaf",
+    "machines.functions.hello": "f7d18982",
+    "machines.functions.setup": "e4dc7934",
+    "machines.functions.title": "c15dafaf",
     "machines.goToMachinesPage": "d832fcee",
     "machines.gridView": "13a3541d",
     "machines.groupBy": "d87d216e",
@@ -1294,6 +1298,10 @@
     "machines.heading": "08b8efbb",
     "machines.hoursAgo": "355b4864",
     "machines.hoursAgo_plural": "d5aa11b4",
+    "machines.info.cpu": "2c2712a4",
+    "machines.info.hostname": "1c27a247",
+    "machines.info.systemTime": "23747c44",
+    "machines.info.uptime": "5a839f71",
     "machines.itemCount": "e819db2f",
     "machines.justNow": "2cb41d43",
     "machines.lastUpdated": "02ebcbe7",

@@ -39,16 +39,22 @@ const imageProps = {
   format,
   quality: 85,
 };
+
+// Generate unique ID for this image instance for secure event handling
+const imageId = `img-${Math.random().toString(36).substr(2, 9)}`;
 ---
 
 {clickable ? (
-  <Image
-    {...imageProps}
-    onclick={`openImageModal('${src.src}', '${alt}')`}
-    role="button"
-    tabindex="0"
-    onkeydown="(e)=>{if(e.key==='Enter'||e.key===' '){this.click()}}"
-  />
+  <button
+    type="button"
+    class="image-button"
+    id={imageId}
+    data-image-src={src.src}
+    data-image-alt={alt}
+    aria-label={`View larger version of ${alt}`}
+  >
+    <Image {...imageProps} />
+  </button>
 ) : (
   <Image {...imageProps} />
 )}
@@ -61,17 +67,43 @@ const imageProps = {
 
 .clickable-image {
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    opacity var(--transition-duration-base) ease,
+    box-shadow var(--transition-duration-base) ease;
 }
 
 .clickable-image:hover {
-  transform: scale(1.02);
-  opacity: 0.9;
+  opacity: 0.85;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.clickable-image:focus {
-  outline: 2px solid var(--primary-color);
+.clickable-image:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 </style>
+
+{clickable && (
+  <script define:vars={{ imageId }}>
+    // Secure event handler using data attributes (no XSS risk)
+    const image = document.getElementById(imageId);
+    if (image) {
+      const handleImageClick = () => {
+        const src = image.getAttribute('data-image-src');
+        const alt = image.getAttribute('data-image-alt');
+        if (src && alt && typeof openImageModal === 'function') {
+          openImageModal(src, alt);
+        }
+      };
+
+      image.addEventListener('click', handleImageClick);
+      image.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleImageClick();
+        }
+      });
+    }
+  </script>
+)}

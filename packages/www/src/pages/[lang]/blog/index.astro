@@ -165,7 +165,9 @@ const categories = Object.keys(postsByCategory).sort();
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       padding: 1.5rem;
       border-radius: 8px;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition:
+        transform var(--transition-duration-base),
+        box-shadow var(--transition-duration-base);
     }
 
     .featured-card:hover {
@@ -233,7 +235,9 @@ const categories = Object.keys(postsByCategory).sort();
       background-color: #f9f9f9;
       border-radius: 8px;
       border-left: 4px solid #0066cc;
-      transition: background-color 0.2s, box-shadow 0.2s;
+      transition:
+        background-color var(--transition-duration-base),
+        box-shadow var(--transition-duration-base);
     }
 
     .post-item:hover {
@@ -292,7 +296,9 @@ const categories = Object.keys(postsByCategory).sort();
       text-decoration: none;
       font-size: 0.75rem;
       border: 1px solid #0066cc;
-      transition: background-color 0.2s, color 0.2s;
+      transition:
+        background-color var(--transition-duration-base),
+        color var(--transition-duration-base);
     }
 
     .tag:hover {
