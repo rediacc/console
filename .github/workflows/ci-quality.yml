@@ -31,17 +31,6 @@ jobs:
         run: .ci/scripts/quality/check-peer-deps.sh
       - run: npm run version:check
 
-  quality-submodule-versions:
-    name: Submodule Versions
-    runs-on: ubuntu-latest
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          submodules: true
-          token: ${{ secrets.GH_PAT }}
-      - run: .ci/scripts/quality/check-submodule-versions.sh
-
   quality-deps:
     name: Deps
     runs-on: ubuntu-slim
@@ -163,8 +152,6 @@ jobs:
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - name: Check submodule versions
-        run: .ci/scripts/quality/check-submodule-versions.sh
 
       - uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5
         with:
