@@ -145,7 +145,7 @@ export function getAppDataPath(): string {
  * Gets the Electron app data directory
  */
 export function getElectronAppDataPath(): string {
-  return join(getAppDataPath(), 'Rediacc Console');
+  return join(getAppDataPath(), 'Rediacc Desktop');
 }
 
 /**
@@ -156,11 +156,11 @@ export function getLogsPath(): string {
 
   switch (platform) {
     case 'windows':
-      return join(process.env.APPDATA ?? '', 'Rediacc Console', 'logs');
+      return join(process.env.APPDATA ?? '', 'Rediacc Desktop', 'logs');
     case 'macos':
-      return join(process.env.HOME ?? '', 'Library', 'Logs', 'Rediacc Console');
+      return join(process.env.HOME ?? '', 'Library', 'Logs', 'Rediacc Desktop');
     case 'linux':
     default:
-      return join(process.env.HOME ?? '', '.local', 'share', 'rediacc-console', 'logs');
+      return join(process.env.HOME ?? '', '.local', 'share', 'rediacc-desktop', 'logs');
   }
 }

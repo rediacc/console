@@ -106,8 +106,8 @@ electronTest.describe('Electron IPC Tests @electron', () => {
     }));
 
     // In development mode, app.getName() returns "Electron"
-    // In production/packaged mode, it returns "Rediacc Console"
-    expect(['Electron', 'Rediacc Console']).toContain(appInfo.name);
+    // In production/packaged mode, it returns "Rediacc Desktop"
+    expect(['Electron', 'Rediacc Desktop']).toContain(appInfo.name);
     expect(appInfo.version).toMatch(/^\d+\.\d+\.\d+/);
     // In development/test mode, isPackaged should be false
     expect(appInfo.isPackaged).toBe(false);

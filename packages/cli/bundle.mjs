@@ -8,8 +8,7 @@ await esbuild.build({
   outfile: 'dist/cli-bundle.cjs',
   format: 'cjs',
   // Note: shebang comes from src/index.ts - no banner needed
-  // Keep native/problematic packages external
-  external: ['inquirer'],
+  external: [],
 });
 
 console.log('✓ CLI bundled to dist/cli-bundle.cjs');
