@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc Console CLI - Интерфейс командной строки для операций Rediacc"
+    "description": "Rediacc CLI - Интерфейс командной строки для операций Rediacc"
   },
   "commands": {
     "audit": {

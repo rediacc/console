@@ -1,5 +1,5 @@
 #!/bin/bash
-# Post-removal script for Rediacc Console
+# Post-removal script for Rediacc Desktop
 
 # Update desktop database
 if command -v update-desktop-database &> /dev/null; then

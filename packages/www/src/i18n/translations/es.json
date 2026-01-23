@@ -290,14 +290,18 @@
     },
     "downloads": {
       "meta": {
-        "title": "Downloads | Rediacc Console Desktop Application",
-        "description": "Download the Rediacc Console desktop application for Windows, macOS, and Linux. Get the latest release with built-in auto-update functionality.",
-        "keywords": "Rediacc download, desktop application, Windows app, macOS app, Linux app, download console"
+        "title": "Downloads | Rediacc",
+        "description": "Download Rediacc Desktop and CLI for Windows, macOS, and Linux.",
+        "keywords": "Rediacc download, desktop application, CLI, Windows app, macOS app, Linux app"
       },
       "hero": {
         "title": "Downloads",
-        "subtitle": "Rediacc Console",
+        "subtitle": "Rediacc Desktop & CLI",
         "released": "Released"
+      },
+      "sections": {
+        "desktop": "Desktop Application",
+        "cli": "Command Line Interface (CLI)"
       },
       "platforms": {
         "windows": "Windows",
@@ -318,17 +322,22 @@
       "actions": {
         "download": "Download"
       },
+      "cli": {
+        "description": "Lightweight command-line tool for automation and scripting.",
+        "binary": "Binary"
+      },
       "noReleases": "No releases available at this time. Please check back later.",
       "autoUpdate": {
         "title": "Auto-Update Information",
-        "description": "The Rediacc Console desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
+        "description": "The Rediacc Desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
       },
       "installation": {
         "title": "Installation Instructions",
         "windows": "Windows: Run the .exe installer and follow the setup wizard. The application will be installed to your Program Files directory.",
-        "macos": "macOS: Open the .dmg file and drag Rediacc Console to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
+        "macos": "macOS: Open the .dmg file and drag Rediacc Desktop to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
         "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
-        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager."
+        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager.",
+        "cli": "CLI: Download the binary for your platform, make it executable (chmod +x on Linux/macOS), and place it in your PATH."
       },
       "requirements": {
         "title": "System Requirements",

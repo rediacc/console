@@ -39,14 +39,14 @@ export function isProtocolSupported(): boolean {
  */
 const ELECTRON_APP_PATHS: Record<string, () => string[]> = {
   windows: () => [
-    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Rediacc Console', 'Rediacc Console.exe'),
-    join(process.env.PROGRAMFILES ?? '', 'Rediacc Console', 'Rediacc Console.exe'),
+    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Rediacc Desktop', 'Rediacc Desktop.exe'),
+    join(process.env.PROGRAMFILES ?? '', 'Rediacc Desktop', 'Rediacc Desktop.exe'),
   ],
-  macos: () => ['/Applications/Rediacc Console.app/Contents/MacOS/Rediacc Console'],
+  macos: () => ['/Applications/Rediacc Desktop.app/Contents/MacOS/Rediacc Desktop'],
   linux: () => [
-    '/usr/bin/rediacc-console',
-    '/opt/rediacc-console/rediacc-console',
-    join(getHomePath(), '.local', 'bin', 'rediacc-console'),
+    '/usr/bin/rediacc-desktop',
+    '/opt/rediacc-desktop/rediacc-desktop',
+    join(getHomePath(), '.local', 'bin', 'rediacc-desktop'),
   ],
 };
 
@@ -132,7 +132,7 @@ export class WindowsProtocolHandler {
     if (exePath) {
       return `"${exePath}" --protocol "%1"`;
     }
-    throw new ProtocolHandlerError('Could not locate Rediacc Console executable');
+    throw new ProtocolHandlerError('Could not locate Rediacc Desktop executable');
   }
 
   /**
@@ -270,7 +270,7 @@ export class LinuxProtocolHandler {
     if (exePath) {
       return `${exePath} --protocol %u`;
     }
-    throw new ProtocolHandlerError('Could not locate Rediacc Console executable');
+    throw new ProtocolHandlerError('Could not locate Rediacc Desktop executable');
   }
 
   /**
@@ -284,10 +284,10 @@ export class LinuxProtocolHandler {
     const command = this.getProtocolCommand();
 
     const desktopEntry = `[Desktop Entry]
-Name=Rediacc Console
+Name=Rediacc Desktop
 Comment=Handle rediacc:// protocol URLs
 Exec=${command}
-Icon=rediacc-console
+Icon=rediacc-desktop
 Terminal=false
 Type=Application
 Categories=Development;
@@ -361,7 +361,7 @@ export class MacOSProtocolHandler {
    * We check if the app bundle exists and has the protocol handler
    */
   isRegistered(): boolean {
-    const appPath = '/Applications/Rediacc Console.app';
+    const appPath = '/Applications/Rediacc Desktop.app';
     return existsSync(appPath);
   }
 
@@ -373,25 +373,25 @@ export class MacOSProtocolHandler {
   register(_force = false): boolean {
     if (!this.isRegistered()) {
       throw new ProtocolHandlerError(
-        'Rediacc Console is not installed. Please install the app first.'
+        'Rediacc Desktop is not installed. Please install the app first.'
       );
     }
 
     try {
       // Use lsregister to register the app as handler
       execSync(
-        `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -u "/Applications/Rediacc Console.app"`,
+        `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -u "/Applications/Rediacc Desktop.app"`,
         { stdio: 'pipe', timeout: 30000 }
       );
       execSync(
-        `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister "/Applications/Rediacc Console.app"`,
+        `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister "/Applications/Rediacc Desktop.app"`,
         { stdio: 'pipe', timeout: 30000 }
       );
 
       // Use duti if available to set default handler
       try {
         execSync('which duti', { stdio: 'pipe' });
-        execSync(`duti -s com.rediacc.console rediacc`, { stdio: 'pipe', timeout: 10000 });
+        execSync(`duti -s com.rediacc.desktop rediacc`, { stdio: 'pipe', timeout: 10000 });
       } catch {
         // duti not available, rely on lsregister
       }
@@ -409,7 +409,7 @@ export class MacOSProtocolHandler {
   unregister(): boolean {
     try {
       execSync(
-        `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -u "/Applications/Rediacc Console.app"`,
+        `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -u "/Applications/Rediacc Desktop.app"`,
         { stdio: 'pipe', timeout: 30000 }
       );
       return true;

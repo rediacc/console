@@ -22,7 +22,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     icon: join(__dirname, '../../resources/icon.png'),
-    title: 'Rediacc Console',
+    title: 'Rediacc Desktop',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
@@ -92,7 +92,7 @@ function createWindow(): void {
 // App lifecycle
 void app.whenReady().then(() => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.rediacc.console');
+  electronApp.setAppUserModelId('com.rediacc.desktop');
 
   // Watch for shortcuts in development
   app.on('browser-window-created', (_, window) => {
