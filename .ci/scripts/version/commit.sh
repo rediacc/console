@@ -192,23 +192,43 @@ Automatically incremented by CI."
 
     # Push if requested
     if [[ "$PUSH" == "true" ]]; then
-        local push_target
-        if [[ -n "${GITHUB_HEAD_REF:-}" ]]; then
-            push_target="HEAD:${GITHUB_HEAD_REF}"
-        elif [[ -n "${GITHUB_REF_NAME:-}" ]]; then
-            push_target="HEAD:${GITHUB_REF_NAME}"
-        elif [[ -n "${CI_COMMIT_REF_NAME:-}" ]]; then
-            push_target="HEAD:${CI_COMMIT_REF_NAME}"
-        else
-            push_target="HEAD"
-        fi
+        local branch="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-main}}"
 
         if [[ "$DRY_RUN" == "true" ]]; then
-            log_info "[DRY-RUN] Would push to origin $push_target"
+            log_info "[DRY-RUN] Would push to origin HEAD:$branch"
         else
-            log_step "Pushing to origin..."
-            git push origin "$push_target"
-            log_info "Pushed version commit"
+            # Pull latest changes before pushing to handle concurrent CD runs.
+            # If another run already pushed a version bump, rebase will either:
+            # - Drop our commit (identical change already applied) → push is no-op
+            # - Rebase cleanly on top → push succeeds
+            log_step "Syncing with origin/$branch before push..."
+            if ! git pull --rebase origin "$branch" 2>&1; then
+                # Rebase conflict — abort and check if version already bumped
+                git rebase --abort 2>/dev/null || true
+                log_warn "Rebase conflict detected, checking remote state..."
+                git fetch origin "$branch"
+                local remote_version
+                remote_version=$(git show "origin/$branch:package.json" | jq -r '.version')
+                if [[ -n "$VERSION" && "$remote_version" == "$VERSION" ]]; then
+                    log_info "Version $VERSION already exists on remote, resetting to origin/$branch"
+                    git reset --hard "origin/$branch"
+                    return 0
+                fi
+                log_error "Rebase failed and version mismatch (expected=$VERSION, remote=$remote_version)"
+                exit 1
+            fi
+
+            # After rebase, check if we still have something to push
+            local local_sha remote_sha
+            local_sha=$(git rev-parse HEAD)
+            remote_sha=$(git rev-parse "origin/$branch")
+            if [[ "$local_sha" == "$remote_sha" ]]; then
+                log_info "Version already up-to-date on remote, nothing to push"
+            else
+                log_step "Pushing to origin..."
+                git push origin "HEAD:$branch"
+                log_info "Pushed version commit"
+            fi
         fi
     fi
 
