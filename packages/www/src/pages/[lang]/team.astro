@@ -16,12 +16,12 @@ const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
 
 const values = [
-  { key: 'simplicity', title: 'Simplicity First', description: 'Complex problems don\'t require complex solutions. We obsess over making powerful features simple to use.' },
-  { key: 'security', title: 'Security by Design', description: 'Security isn\'t an afterthought—it\'s built into every line of code, every feature, every decision we make.' },
-  { key: 'success', title: 'Customer Success', description: 'Your success is our success. We\'re not happy unless you\'re achieving extraordinary results with our platform.' },
-  { key: 'innovation', title: 'Continuous Innovation', description: 'The tech world never stops evolving, and neither do we. We\'re always pushing boundaries and exploring new possibilities.' },
-  { key: 'global', title: 'Global Thinking', description: 'Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations.' },
-  { key: 'transparency', title: 'Transparency', description: 'Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print.' }
+  { key: 'simplicity', title: t('pages.team.values.items.simplicity.title'), description: t('pages.team.values.items.simplicity.description') },
+  { key: 'security', title: t('pages.team.values.items.security.title'), description: t('pages.team.values.items.security.description') },
+  { key: 'success', title: t('pages.team.values.items.success.title'), description: t('pages.team.values.items.success.description') },
+  { key: 'innovation', title: t('pages.team.values.items.innovation.title'), description: t('pages.team.values.items.innovation.description') },
+  { key: 'global', title: t('pages.team.values.items.global.title'), description: t('pages.team.values.items.global.description') },
+  { key: 'transparency', title: t('pages.team.values.items.transparency.title'), description: t('pages.team.values.items.transparency.description') }
 ];
 
 const teamMembers = [
@@ -103,8 +103,11 @@ const teamMembers = [
               <div class="member-image">
                 <img
                   src={member.image}
-                  alt={member.name}
+                  alt={`${member.name}, ${member.role}`}
+                  width="150"
+                  height="150"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
               <h3>{member.name}</h3>

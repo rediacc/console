@@ -6,14 +6,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
   color: white;
   padding: var(--section-padding);
   text-align: center;
 }
 
 .downloads-hero-content {
-  max-width: 800px;
+  max-width: var(--container-md);
   margin: 0 auto;
   width: 100%;
 }
@@ -23,29 +23,29 @@
   font-weight: bold;
   margin-bottom: var(--space-4);
   color: white;
-  line-height: 1.15;
+  line-height: var(--leading-tight);
 }
 
 .downloads-hero .hero-subtitle {
   font-size: clamp(18px, 1.5vw, 22px);
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, var(--opacity-90));
   margin-bottom: var(--space-2);
-  line-height: 1.5;
+  line-height: var(--leading-normal);
 }
 
 .downloads-hero .hero-release-date {
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, var(--opacity-70));
 }
 
 /* Section Backgrounds */
 .section-light {
-  background: #f8f9fa;
+  background: var(--color-bg-light);
   color: var(--color-text);
 }
 
 .section-dark {
-  background: #1a1a1a;
+  background: var(--color-bg-dark);
   color: white;
 }
 
@@ -58,15 +58,17 @@
 .platform-section {
   background: white;
   border: 2px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   padding: var(--space-8);
   margin-bottom: var(--space-6);
-  transition: all 0.3s ease;
+  transition:
+    border-color var(--transition-duration-slow) ease,
+    box-shadow var(--transition-duration-slow) ease;
 }
 
 .platform-section.recommended {
-  border-color: var(--color-primary, #667eea);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(85, 107, 47, var(--opacity-10));
 }
 
 .platform-header {
@@ -93,13 +95,13 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4);
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-duration-base) ease;
 }
 
 .download-item:hover {
-  background: #e9ecef;
+  background: var(--color-hover);
 }
 
 .download-info {
@@ -145,7 +147,7 @@
   text-align: center;
   padding: var(--space-12);
   background: white;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
 }
 
@@ -167,11 +169,11 @@
 }
 
 .auto-update-description {
-  max-width: 800px;
+  max-width: var(--container-md);
   margin: 0 auto;
   font-size: var(--font-size-base);
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.9);
+  line-height: var(--leading-relaxed);
+  color: rgba(255, 255, 255, var(--opacity-90));
 }
 
 /* Installation Instructions */
@@ -189,15 +191,17 @@
 .installation-details {
   background: white;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: var(--space-4);
   margin-bottom: var(--space-3);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    border-color var(--transition-duration-base) ease,
+    background-color var(--transition-duration-base) ease;
 }
 
 .installation-details:hover {
-  border-color: var(--color-primary, #667eea);
+  border-color: var(--color-brand-primary);
 }
 
 .installation-details summary {
@@ -210,14 +214,21 @@
   align-items: center;
 }
 
+.installation-details summary:focus-visible {
+  outline: 3px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 .installation-details summary::-webkit-details-marker {
   display: none;
 }
 
 .installation-details summary::after {
   content: '▼';
-  font-size: 12px;
-  transition: transform 0.2s ease;
+  font-size: var(--font-size-xs);
+  transition: transform var(--transition-duration-base) ease;
+  will-change: transform;
 }
 
 .installation-details[open] summary::after {
@@ -229,7 +240,7 @@
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
   color: var(--color-text-secondary);
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
 }
 
 /* System Requirements */
@@ -248,14 +259,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--space-6);
-  max-width: 1200px;
+  max-width: var(--container-xl);
   margin: 0 auto;
 }
 
 .requirement-card {
   background: white;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: var(--space-6);
   text-align: center;
 }
@@ -269,11 +280,12 @@
 .requirement-card p {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
+  /* 768px - respects user font size */
   .download-item {
     flex-direction: column;
     gap: var(--space-3);

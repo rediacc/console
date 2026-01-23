@@ -4,8 +4,8 @@
  * This function determines the correct base path for React Router
  * based on the current URL, supporting:
  * - Local dev: http://localhost:7322/console/ -> basename: "/console/"
- * - Production: https://www.rediacc.com/console/ -> basename: "/console/"
- * - Versioned: https://www.rediacc.com/console/versions/v1.2.3/ -> basename: "/versions/v1.2.3/"
+ * - Production root: https://console.rediacc.com/ -> basename: "/"
+ * - Versioned: https://console.rediacc.com/versions/v1.2.3/ -> basename: "/versions/v1.2.3/"
  */
 export function getBasePath(): string {
   const pathname = window.location.pathname;

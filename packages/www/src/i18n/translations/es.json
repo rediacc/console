@@ -8,7 +8,8 @@
       "resetZoom": "Restablecer zoom",
       "statusMessage": "Mensaje de estado",
       "zoomIn": "Dar un golpe de zoom",
-      "zoomOut": "alejar"
+      "zoomOut": "alejar",
+      "clickToEnlarge": "Haga clic para ampliar la imagen"
     },
     "buttons": {
       "close": "Cerrar",
@@ -40,7 +41,13 @@
       "skipToFooter": "Saltar al pie de página",
       "skipToMainContent": "Saltar al contenido principal",
       "skipToNavigation": "Saltar a navegación"
-    }
+    },
+    "copied": "¡Copiado!",
+    "copyLink": "Copiar enlace a esta sección",
+    "section": "sección",
+    "realStory": "Historia Real",
+    "theProblem": "El Problema",
+    "contentNotAvailable": "Este contenido no está disponible en {{language}}. Mostrando versión en inglés."
   },
   "earlyAccess": {
     "benefits": [
@@ -161,6 +168,7 @@
     "login": "Acceso",
     "search": "Buscar",
     "selectLanguage": "Seleccionar idioma",
+    "languageSelectionMenu": "Menú de selección de idioma",
     "solutions": {
       "dataSecurity": "Seguridad de datos",
       "developmentEnvironments": "Entornos de desarrollo",
@@ -277,7 +285,8 @@
       "tableOfContents": "En esta página",
       "title": "Documentación",
       "welcome": "Bienvenido a la documentación de Rediacc",
-      "welcomeDescription": "Rediacc es un potente sistema distribuido de ejecución de tareas. Ya sea que esté comenzando o esté buscando dominar funciones avanzadas, aquí encontrará todo lo que necesita."
+      "welcomeDescription": "Rediacc es un potente sistema distribuido de ejecución de tareas. Ya sea que esté comenzando o esté buscando dominar funciones avanzadas, aquí encontrará todo lo que necesita.",
+      "searchPlaceholder": "Search docs..."
     },
     "downloads": {
       "meta": {
@@ -842,7 +851,7 @@
             "rpo": "Personalizado (casi cero)",
             "rto": "15-60 minutos (personalizado)"
           },
-          "pro": {
+          "professional": {
             "activeJobs": "5 activas",
             "auditLogs": "30 dias",
             "cpuCore": "100 núcleos",
@@ -882,7 +891,7 @@
             "secondary": "Contacto Ventas",
             "subtext": "SLA personalizado · Soporte dedicado"
           },
-          "pro": {
+          "professional": {
             "guarantee": "Garantía de devolución de dinero de 14 días",
             "primary": "Empezar",
             "secondary": "Contacto Ventas"
@@ -1495,7 +1504,33 @@
         "title": "Conozca a nuestro equipo"
       },
       "values": {
-        "title": "Nuestras Valores"
+        "title": "Nuestras Valores",
+        "items": {
+          "simplicity": {
+            "title": "Simplicity First",
+            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+          },
+          "security": {
+            "title": "Security by Design",
+            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+          },
+          "success": {
+            "title": "Customer Success",
+            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          },
+          "innovation": {
+            "title": "Continuous Innovation",
+            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+          },
+          "global": {
+            "title": "Global Thinking",
+            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          },
+          "transparency": {
+            "title": "Transparency",
+            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
+          }
+        }
       }
     }
   },

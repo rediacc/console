@@ -1,7 +1,7 @@
 /**
  * Language Cookie Utilities
  *
- * Shared cookie management for language selection across www.rediacc.com
+ * Shared cookie management for language selection across www.rediacc.com and console.rediacc.com
  */
 
 const LANGUAGE_COOKIE_NAME = 'rediacc_lang';

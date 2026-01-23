@@ -89,31 +89,31 @@ const lastIndex = items.length - 1;
 }
 
 .breadcrumb-link {
-  color: var(--text-secondary, #666);
+  color: var(--color-text-secondary);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color var(--transition-duration-base) ease;
 }
 
 .breadcrumb-link:hover,
 .breadcrumb-link:focus {
-  color: var(--primary-color, #007bff);
+  color: var(--color-brand-primary);
   text-decoration: underline;
 }
 
 .breadcrumb-link:focus {
-  outline: 2px solid var(--primary-color, #007bff);
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .breadcrumb-text,
 .breadcrumb-current .breadcrumb-text {
-  color: var(--text-primary, #333);
+  color: var(--color-text);
   font-weight: 500;
 }
 
 .breadcrumb-separator {
-  color: var(--text-muted, #999);
+  color: var(--color-text-secondary);
   font-weight: normal;
   user-select: none;
 }

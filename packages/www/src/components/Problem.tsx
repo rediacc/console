@@ -29,16 +29,22 @@ const Problem: React.FC = () => {
               <div className="problem-scenario">
                 <h3>{t('problem.reality.title')}</h3>
                 <div className="scenario-illustration">
-                  <img
-                    src="/assets/images/problem.svg"
-                    alt={t('problem.reality.imageAlt')}
-                    className="scenario-image clickable-image"
-                    loading="lazy"
-                    decoding="async"
+                  <button
+                    type="button"
+                    className="image-button"
                     onClick={() =>
                       openImageModal('/assets/images/problem.svg', t('problem.reality.imageAlt'))
                     }
-                  />
+                    aria-label={t('common.aria.clickToEnlarge')}
+                  >
+                    <img
+                      src="/assets/images/problem.svg"
+                      alt={t('problem.reality.imageAlt')}
+                      className="scenario-image clickable-image"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
                 </div>
               </div>
             </div>
@@ -46,16 +52,22 @@ const Problem: React.FC = () => {
               <div className="solution-scenario">
                 <h3>{t('problem.solution.title')}</h3>
                 <div className="scenario-illustration">
-                  <img
-                    src="/assets/images/solution.svg"
-                    alt={t('problem.solution.imageAlt')}
-                    className="scenario-image clickable-image"
-                    loading="lazy"
-                    decoding="async"
+                  <button
+                    type="button"
+                    className="image-button"
                     onClick={() =>
                       openImageModal('/assets/images/solution.svg', t('problem.solution.imageAlt'))
                     }
-                  />
+                    aria-label={t('common.aria.clickToEnlarge')}
+                  >
+                    <img
+                      src="/assets/images/solution.svg"
+                      alt={t('problem.solution.imageAlt')}
+                      className="scenario-image clickable-image"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
                 </div>
               </div>
             </div>

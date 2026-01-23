@@ -77,7 +77,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
     <meta name="keywords" content={finalKeywords}>
     <meta name="author" content={t('layout.meta.author')}>
     <meta name="robots" content={robots}>
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#556b2f">
 
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -198,7 +198,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
         position: absolute;
         top: -100px;
         left: 0;
-        z-index: 9999;
+        z-index: var(--z-max);
       }
 
       .skip-nav-link {
@@ -277,7 +277,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
         left: 0;
         right: 0;
         background-color: var(--color-bg-alt);
-        z-index: 100;
+        z-index: var(--z-modal);
       }
 
       .nav-container {

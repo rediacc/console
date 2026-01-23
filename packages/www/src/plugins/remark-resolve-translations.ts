@@ -16,7 +16,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { visit } from 'unist-util-visit';
-import type { Root, Text } from 'mdast';
+import type { Root, Strong, Text } from 'mdast';
+
+interface RemarkFile {
+  data: Record<string, unknown>;
+  value?: string;
+  path?: string;
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -142,11 +148,26 @@ export interface RemarkResolveTranslationsOptions {
 export function remarkResolveTranslations(options: RemarkResolveTranslationsOptions = {}) {
   const defaultLang = options.defaultLanguage ?? DEFAULT_LANGUAGE;
 
-  return function transformer(tree: Root, file: { value?: string; path?: string }) {
+  return function transformer(tree: Root, file: RemarkFile) {
     // Extract language from file content (frontmatter)
     let language = defaultLang;
-    if (file.value && typeof file.value === 'string') {
+
+    // Try multiple methods to get the language
+    // Method 1: From file.data.astro.frontmatter (Astro content collections)
+    const astroData = file.data.astro as { frontmatter?: { language?: string } } | undefined;
+    if (astroData?.frontmatter?.language) {
+      language = astroData.frontmatter.language;
+    }
+    // Method 2: From raw file content (fallback)
+    else if (file.value && typeof file.value === 'string') {
       language = extractLanguageFromContent(file.value);
+    }
+    // Method 3: From file path (e.g., /docs/tr/web-application.md)
+    else if (file.path) {
+      const pathMatch = /\/docs\/([a-z]{2})\//.exec(file.path);
+      if (pathMatch) {
+        language = pathMatch[1];
+      }
     }
 
     // Visit all text nodes and replace translation keys
@@ -163,6 +184,16 @@ export function remarkResolveTranslations(options: RemarkResolveTranslationsOpti
       if (TRANSLATION_KEY_PATTERN.test(node.value)) {
         TRANSLATION_KEY_PATTERN.lastIndex = 0;
         node.value = replaceTranslationKeys(node.value, language, file.path);
+      }
+    });
+
+    // Also check strong/emphasis nodes (for cases like **{{t:key}}**)
+    visit(tree, 'strong', (node: Strong) => {
+      for (const child of node.children) {
+        if (child.type === 'text' && TRANSLATION_KEY_PATTERN.test(child.value)) {
+          TRANSLATION_KEY_PATTERN.lastIndex = 0;
+          child.value = replaceTranslationKeys(child.value, language, file.path);
+        }
       }
     });
   };

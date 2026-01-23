@@ -1,7 +1,7 @@
 /**
  * Custom i18next Cookie Detector
  *
- * Manages language preference in a shared cookie across www.rediacc.com
+ * Manages language preference in a shared cookie across www.rediacc.com and console.rediacc.com
  */
 
 import type { CustomDetector } from 'i18next-browser-languagedetector';

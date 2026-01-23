@@ -8,7 +8,8 @@
       "resetZoom": "Zoom zurücksetzen",
       "statusMessage": "Statusmeldung",
       "zoomIn": "Vergrößern",
-      "zoomOut": "Herauszoomen"
+      "zoomOut": "Herauszoomen",
+      "clickToEnlarge": "Klicken Sie zum Vergrößern des Bildes"
     },
     "buttons": {
       "close": "Schließen",
@@ -277,7 +278,8 @@
       "tableOfContents": "Auf dieser Seite",
       "title": "Dokumentation",
       "welcome": "Willkommen bei der Rediacc-Dokumentation",
-      "welcomeDescription": "Rediacc ist ein leistungsstarkes System zur verteilten Aufgabenausführung. Egal, ob Sie gerade erst anfangen oder erweiterte Funktionen beherrschen möchten, hier finden Sie alles, was Sie brauchen."
+      "welcomeDescription": "Rediacc ist ein leistungsstarkes System zur verteilten Aufgabenausführung. Egal, ob Sie gerade erst anfangen oder erweiterte Funktionen beherrschen möchten, hier finden Sie alles, was Sie brauchen.",
+      "searchPlaceholder": "Search docs..."
     },
     "downloads": {
       "meta": {
@@ -842,7 +844,7 @@
             "rpo": "Benutzerdefiniert (nahe Null)",
             "rto": "15–60 Minuten (benutzerdefiniert)"
           },
-          "pro": {
+          "professional": {
             "activeJobs": "5 aktiv",
             "auditLogs": "30 Tage",
             "cpuCore": "100 Kerne",
@@ -882,7 +884,7 @@
             "secondary": "Kontaktieren Sie den Vertrieb",
             "subtext": "Benutzerdefiniertes SLA · Dedizierter Support"
           },
-          "pro": {
+          "professional": {
             "guarantee": "14-tägige Geld-zurück-Garantie",
             "primary": "Legen Sie los",
             "secondary": "Kontaktieren Sie den Vertrieb"
@@ -1495,7 +1497,33 @@
         "title": "Lernen Sie unser Team kennen"
       },
       "values": {
-        "title": "Unsere Werte"
+        "title": "Unsere Werte",
+        "items": {
+          "simplicity": {
+            "title": "Simplicity First",
+            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+          },
+          "security": {
+            "title": "Security by Design",
+            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+          },
+          "success": {
+            "title": "Customer Success",
+            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          },
+          "innovation": {
+            "title": "Continuous Innovation",
+            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+          },
+          "global": {
+            "title": "Global Thinking",
+            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          },
+          "transparency": {
+            "title": "Transparency",
+            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
+          }
+        }
       }
     }
   },

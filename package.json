@@ -52,6 +52,7 @@
     "format:imports": "biome check --write packages/",
     "generate:i18n-types": "tsx scripts/generate-translation-types.ts",
     "i18n:check-hashes": "tsx scripts/check-translation-hashes.ts",
+    "i18n:coverage": "tsx scripts/i18n-coverage-report.ts",
     "i18n:generate-hashes": "tsx scripts/generate-translation-hashes.ts",
     "i18n:sync": "tsx scripts/sync-translations.ts",
     "i18n:update-hashes": "tsx scripts/generate-translation-hashes.ts",

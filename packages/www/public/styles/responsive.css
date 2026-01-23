@@ -1,5 +1,13 @@
 /* Responsive Styles - Mobile First */
 
+/*
+ * Mobile Touch Target Guidelines:
+ * - Minimum 44x44px for all interactive elements (WCAG 2.1 Level AAA)
+ * - Preferred 48x48px for optimal thumb accessibility
+ * - Adequate spacing between touch targets (minimum 8px)
+ * - Use padding to expand clickable area without affecting visual size
+ */
+
 /* Mobile adjustments */
 @media (max-width: 48rem) {
   .hero-title {
@@ -29,7 +37,7 @@
   }
 
   .solution-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
 
   .solution-description {
@@ -95,7 +103,8 @@
 }
 
 /* Image modal responsive */
-@media (max-width: 700px) {
+@media (max-width: 48rem) {
+  /* 768px - standard mobile breakpoint */
   .image-modal-content {
     width: 100%;
     max-height: 70vh;
@@ -121,7 +130,9 @@
   .sidebar-overlay,
   .footer-social,
   .hamburger-btn,
-  .search-btn {
+  .search-btn,
+  .search-modal,
+  .image-modal {
     display: none !important;
   }
 
@@ -140,6 +151,55 @@
 
   .solution-card {
     break-inside: avoid;
+  }
+
+  /* Display URLs for external links */
+  a[href^='http']:not(.btn):not(.hero-cta-primary)::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.875rem;
+    color: #666;
+    word-break: break-all;
+  }
+
+  /* Don't print URLs for internal links */
+  a[href^='#']::after,
+  a[href^='/']::after {
+    content: '';
+  }
+
+  /* Optimize images for print */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Better page breaks */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    page-break-after: avoid;
+  }
+
+  ul,
+  ol,
+  dl {
+    page-break-before: avoid;
+  }
+
+  /* Expand collapsed sections for print */
+  details {
+    display: block !important;
+  }
+
+  details summary {
+    display: none;
+  }
+
+  details[open] > *:not(summary) {
+    display: block !important;
   }
 }
 

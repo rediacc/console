@@ -2,6 +2,22 @@
   "addSystemFunction": "添加系统功能到队列",
   "addToQueue": "添加到队列",
   "advanced": "高级",
+  "functions": {
+    "title": "功能",
+    "setup": "设置",
+    "hello": "你好"
+  },
+  "info": {
+    "hostname": "主机名",
+    "uptime": "运行时间",
+    "cpu": "处理器",
+    "systemTime": "系统时间"
+  },
+  "actions": {
+    "add": "添加机器",
+    "runOnServer": "在服务器上运行"
+  },
+  "noVaultData": "无可用保险库数据",
   "allMachinesConnected": "所有 {{count}} 台机器连接成功",
   "assignedDate": "分配日期",
   "assignmentStatus": {
@@ -90,7 +106,6 @@
     },
     "vaultConfig": "保险库配置 (JSON)"
   },
-  "functions": "功能",
   "goToMachinesPage": "机器页面",
   "gridView": "存储库",
   "groupBy": "分组依据",
@@ -124,7 +139,6 @@
   "noAvailableMachinesForClone": "没有可用于克隆分配的机器",
   "noMachinesFound": "未找到机器",
   "noMachinesWithClusters": "所选机器均未分配到集群",
-  "noVaultData": "没有可用的保险库数据",
   "pending": "待处理",
   "placeholders": {
     "selectMachine": "选择机器"

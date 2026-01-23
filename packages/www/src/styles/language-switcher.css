@@ -9,36 +9,45 @@
 .language-trigger {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  color: #666;
-  font-size: 0.875rem;
+  border: 1px solid rgba(0, 0, 0, var(--opacity-10));
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--transition-duration-base) ease,
+    border-color var(--transition-duration-base) ease;
   font-family: inherit;
 }
 
 .language-trigger:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.2);
-  color: #333;
+  background-color: var(--color-hover);
+  border-color: rgba(0, 0, 0, var(--opacity-20));
+  color: var(--color-text);
 }
 
 .language-trigger:active {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, var(--opacity-10));
+  transform: scale(0.98);
+}
+
+.language-trigger:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
 }
 
 .language-flag {
   font-size: 1rem;
-  line-height: 1;
+  line-height: var(--leading-tight);
 }
 
 .language-chevron {
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-duration-base) ease;
+  will-change: transform;
 }
 
 .language-chevron.open {
@@ -47,12 +56,12 @@
 
 .language-menu {
   position: absolute;
-  background-color: white;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background-color: var(--color-bg-alt);
+  border: 1px solid rgba(0, 0, 0, var(--opacity-10));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
-  z-index: 1000;
+  z-index: var(--z-popover);
   min-width: 150px;
 }
 
@@ -60,63 +69,74 @@
 .language-menu.top {
   top: 100%;
   right: 0;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
 /* Bottom positioned menu (for footer) */
 .language-menu.bottom {
   bottom: 100%;
   right: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .language-option {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   width: 100%;
   background: transparent;
   border: none;
-  color: #666;
+  color: var(--color-text-secondary);
   text-align: left;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--transition-duration-fast) ease;
   font-family: inherit;
 }
 
 .language-option:hover {
-  background-color: #f8f8f8;
+  background-color: var(--color-hover);
 }
 
 .language-option.active {
-  background-color: #f0f0f0;
-  color: #0066cc;
+  background-color: var(--color-hover);
+  color: var(--color-brand-primary);
   font-weight: 600;
+}
+
+.language-option:active {
+  background-color: rgba(0, 0, 0, var(--opacity-10));
+  transform: scale(0.98);
+}
+
+.language-option:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
 }
 
 .language-option .flag {
   font-size: 1rem;
-  line-height: 1;
+  line-height: var(--leading-tight);
 }
 
 .language-option .checkmark {
   margin-left: auto;
-  color: #0066cc;
-  font-weight: 700;
+  stroke: var(--color-brand-primary);
+  flex-shrink: 0;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
+  /* 768px - respects user font size */
   .language-trigger {
     padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 
   .language-option {
     padding: 0.6rem 0.8rem;
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 
   .language-menu {

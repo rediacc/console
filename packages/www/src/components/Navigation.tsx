@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import LanguageMenu from './LanguageMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
@@ -29,18 +29,19 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   // Get console URL (use origin from server-side if provided)
   const consoleUrl = getConsoleUrl(origin);
 
-  // Handle scroll to show/hide navigation (only on solutions page)
+  // Handle scroll to show/hide navigation (only on solutions page) - memoized for performance
+  const handleScroll = useCallback(() => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    setIsVisible(scrollTop > 0);
+  }, []);
+
   useEffect(() => {
     const isOnSolutionsPage = window.location.pathname.includes('/solutions');
     if (isOnSolutionsPage) {
-      const handleScroll = () => {
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        setIsVisible(scrollTop > 0);
-      };
       window.addEventListener('scroll', handleScroll, { passive: true });
       return () => window.removeEventListener('scroll', handleScroll);
     }
-  }, []);
+  }, [handleScroll]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);

@@ -24,6 +24,8 @@ const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.prop
         src={imageSrc}
         alt={imageAlt}
         class="solution-image"
+        width="1100"
+        height="618"
         loading="lazy"
         decoding="async"
       />
@@ -37,12 +39,12 @@ const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.prop
   }
 
   .solution-image-section.light {
-    background-color: #f7f7f8;
+    background-color: var(--color-bg);
   }
 
   .solution-image-section.dark {
-    background-color: #1a1a1a;
-    color: #ffffff;
+    background-color: var(--color-bg-dark);
+    color: var(--color-bg-alt);
   }
 
   .solution-image-header {
@@ -69,9 +71,9 @@ const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.prop
   .solution-image-container {
     margin: 0 auto;
     max-width: 1100px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, var(--opacity-10));
   }
 
   .solution-image {

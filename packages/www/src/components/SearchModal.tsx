@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Fuse from 'fuse.js';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
@@ -23,17 +23,23 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [results, setResults] = useState<SearchItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [fuse, setFuse] = useState<Fuse<SearchItem> | null>(null);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Load search index once
   useEffect(() => {
     const loadSearchData = async () => {
       try {
+        setHasError(false);
         const response = await fetch('/search-index.json');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch search index: ${response.status}`);
+        }
         const data: SearchItem[] = await response.json();
 
         // Initialize Fuse.js with the data
@@ -46,7 +52,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
         });
         setFuse(fuseInstance);
       } catch (error) {
-        console.error('Failed to load search index:', error);
+        setHasError(true);
+        // Log error in development mode only
+        if (import.meta.env.DEV) {
+          console.error('Failed to load search index:', error);
+        }
       }
     };
 
@@ -118,6 +128,41 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     }
   }, [selectedIndex]);
 
+  // Focus trap - keep focus within modal
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+
+    const modal = modalRef.current;
+    const focusableElements = modal.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+
+    if (focusableElements.length === 0) return;
+
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else if (document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    modal.addEventListener('keydown', handleTabKey);
+
+    return () => {
+      modal.removeEventListener('keydown', handleTabKey);
+    };
+  }, [isOpen]);
+
   // Handle backdrop click
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -125,15 +170,18 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  // Group results by category
-  const groupedResults: Record<string, SearchItem[]> = {};
-  for (const item of results) {
-    if (Object.hasOwn(groupedResults, item.category)) {
-      groupedResults[item.category].push(item);
-    } else {
-      groupedResults[item.category] = [item];
+  // Group results by category - memoized to prevent re-computation on every render
+  const groupedResults = useMemo(() => {
+    const grouped: Record<string, SearchItem[]> = {};
+    for (const item of results) {
+      if (Object.hasOwn(grouped, item.category)) {
+        grouped[item.category].push(item);
+      } else {
+        grouped[item.category] = [item];
+      }
     }
-  }
+    return grouped;
+  }, [results]);
 
   // Highlight matching text with proper escaping
   const highlightMatch = (text: string, query: string): React.ReactNode => {
@@ -147,9 +195,9 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
       return parts.map((part, i) => {
         if (part.toLowerCase() === query.toLowerCase()) {
-          return <mark key={i}>{part}</mark>;
+          return <mark key={`mark-${i}-${part}`}>{part}</mark>;
         }
-        return <span key={i}>{part}</span>;
+        return <span key={`span-${i}-${part}`}>{part}</span>;
       });
     } catch {
       return text;
@@ -160,7 +208,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="search-modal-backdrop" onClick={handleBackdropClick}>
-      <div className="search-modal-content">
+      <div className="search-modal-content" ref={modalRef}>
         <div className="search-modal-header">
           <div className="search-modal-input-wrapper">
             <input
@@ -172,6 +220,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
               onChange={(e) => handleSearch(e.target.value)}
               onKeyDown={handleKeyDown}
               aria-label={t('navigation.search')}
+              role="combobox"
+              aria-controls="search-results"
+              aria-autocomplete="list"
+              aria-expanded={results.length > 0}
+              aria-activedescendant={
+                selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined
+              }
             />
             <svg
               className="search-modal-icon"
@@ -192,11 +247,31 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        <div className="search-modal-results" ref={resultsContainerRef}>
-          {isLoading && <div className="search-modal-loading">{t('common.search.searching')}</div>}
+        <div
+          id="search-results"
+          className="search-modal-results"
+          ref={resultsContainerRef}
+          role="listbox"
+          aria-label="Search results"
+        >
+          {hasError && (
+            <div className="search-modal-error" role="alert" aria-live="assertive">
+              <h3>Search Unavailable</h3>
+              <p>
+                Unable to load search index. Please try refreshing the page or contact support if
+                the issue persists.
+              </p>
+            </div>
+          )}
 
-          {!isLoading && query.trim() && results.length === 0 && (
-            <div className="search-modal-no-results">
+          {isLoading && !hasError && (
+            <div className="search-modal-loading" role="status" aria-live="polite">
+              {t('common.search.searching')}
+            </div>
+          )}
+
+          {!isLoading && !hasError && query.trim() && results.length === 0 && (
+            <div className="search-modal-no-results" role="status" aria-live="polite">
               <h3>
                 {t('common.search.noResults')} for &quot;{query}&quot;
               </h3>
@@ -212,7 +287,14 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
             </div>
           )}
 
+          {!isLoading && !hasError && results.length > 0 && (
+            <div className="sr-only" role="status" aria-live="polite">
+              {results.length} {results.length === 1 ? 'result' : 'results'} found
+            </div>
+          )}
+
           {!isLoading &&
+            !hasError &&
             Object.entries(groupedResults).map(([category, categoryResults]) => (
               <div key={category} className="search-modal-category">
                 <h4 className="search-modal-category-title">{category}</h4>
@@ -225,11 +307,21 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
                     return (
                       <li
+                        id={`search-result-${overallIndex}`}
                         key={result.id}
                         className={`search-modal-result-item ${
                           selectedIndex === overallIndex ? 'selected' : ''
                         }`}
+                        role="option"
+                        aria-selected={selectedIndex === overallIndex}
                         onClick={() => navigateToResult(result)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            navigateToResult(result);
+                          }
+                        }}
+                        tabIndex={-1}
                       >
                         <div className="search-modal-result-title">
                           {highlightMatch(result.content, query)}

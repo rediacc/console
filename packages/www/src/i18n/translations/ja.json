@@ -8,7 +8,8 @@
       "resetZoom": "ズームをリセットする",
       "statusMessage": "ステータスメッセージ",
       "zoomIn": "ズームイン",
-      "zoomOut": "ズームアウト"
+      "zoomOut": "ズームアウト",
+      "clickToEnlarge": "クリックして画像を拡大"
     },
     "buttons": {
       "close": "閉じる",
@@ -277,7 +278,8 @@
       "tableOfContents": "このページでは",
       "title": "ドキュメント",
       "welcome": "Rediacc ドキュメントへようこそ",
-      "welcomeDescription": "Rediacc は、強力な分散タスク実行システムです。 始めたばかりの場合でも、高度な機能をマスターしたい場合でも、必要なものはすべてここで見つかります。"
+      "welcomeDescription": "Rediacc は、強力な分散タスク実行システムです。 始めたばかりの場合でも、高度な機能をマスターしたい場合でも、必要なものはすべてここで見つかります。",
+      "searchPlaceholder": "Search docs..."
     },
     "downloads": {
       "meta": {
@@ -844,7 +846,7 @@
             "rpo": "カスタム (ほぼゼロ)",
             "rto": "15～60分（カスタム）"
           },
-          "pro": {
+          "professional": {
             "activeJobs": "5 アクティブ",
             "auditLogs": "30日",
             "cpuCore": "100コア",
@@ -884,7 +886,7 @@
             "secondary": "営業担当者へのお問い合わせ",
             "subtext": "カスタムSLA・専用サポート"
           },
-          "pro": {
+          "professional": {
             "guarantee": "14日間の返金保証",
             "primary": "始めましょう",
             "secondary": "営業担当者へのお問い合わせ"
@@ -1497,7 +1499,33 @@
         "title": "私たちのチームのご紹介"
       },
       "values": {
-        "title": "私たちの価値観"
+        "title": "私たちの価値観",
+        "items": {
+          "simplicity": {
+            "title": "Simplicity First",
+            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+          },
+          "security": {
+            "title": "Security by Design",
+            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+          },
+          "success": {
+            "title": "Customer Success",
+            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          },
+          "innovation": {
+            "title": "Continuous Innovation",
+            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+          },
+          "global": {
+            "title": "Global Thinking",
+            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          },
+          "transparency": {
+            "title": "Transparency",
+            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
+          }
+        }
       }
     }
   },

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { getLanguageName, getLanguageFlag } from '../i18n/language-utils';
+import { getLanguageFlag, getLanguageName } from '../i18n/language-utils';
+import { useTranslation } from '../i18n/react';
 import { setLanguageCookie } from '../utils/language-cookie';
 import type { Language } from '../i18n/types';
 import '../styles/language-switcher.css';
+import '../styles/language-switcher-inline.css';
 
 interface LanguageSwitcherProps {
   currentLang: Language;
@@ -16,6 +18,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   showFallbackNotice = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation(currentLang);
 
   // Handler to set language cookie when switching languages
   const handleLanguageSelect = (lang: Language) => {
@@ -44,8 +47,9 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
           <span>
-            Este contenido no está disponible en {getLanguageName(currentLang).toLowerCase()}.
-            Mostrando versión en inglés.
+            {t('common.contentNotAvailable', {
+              language: getLanguageName(currentLang).toLowerCase(),
+            })}
           </span>
         </div>
       )}
@@ -55,7 +59,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           type="button"
           className="language-trigger"
           onClick={() => setIsOpen(!isOpen)}
-          aria-label="Select language"
+          aria-label={t('navigation.selectLanguage')}
           aria-expanded={isOpen}
         >
           <span className="language-flag">{getLanguageFlag(currentLang)}</span>
@@ -74,7 +78,11 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         </button>
 
         {isOpen && (
-          <div className="language-menu top">
+          <div
+            className="language-menu top"
+            role="menu"
+            aria-label={t('navigation.languageSelectionMenu')}
+          >
             {availableLanguages.map(({ lang, url }) => (
               <a
                 key={lang}
@@ -84,50 +92,25 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
               >
                 <span className="flag">{getLanguageFlag(lang)}</span>
                 <span className="name">{getLanguageName(lang)}</span>
-                {lang === currentLang && <span className="checkmark">✓</span>}
+                {lang === currentLang && (
+                  <svg
+                    className="checkmark"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
               </a>
             ))}
           </div>
         )}
       </div>
-
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .language-switcher {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .translation-notice {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          background-color: #fff3cd;
-          border: 1px solid #ffc107;
-          border-radius: 6px;
-          color: #856404;
-          font-size: 0.875rem;
-          line-height: 1.5;
-        }
-
-        .translation-notice svg {
-          flex-shrink: 0;
-          margin-top: 0.125rem;
-        }
-
-        @media (max-width: 768px) {
-          .translation-notice {
-            font-size: 0.8rem;
-            padding: 0.6rem 0.75rem;
-          }
-        }
-      `,
-        }}
-      />
     </div>
   );
 };
