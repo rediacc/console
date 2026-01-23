@@ -58,6 +58,8 @@ jobs:
       plugins_exists: ${{ steps.init.outputs.plugins_exists }}
       web_tag: ${{ steps.init.outputs.web_tag }}
       web_exists: ${{ steps.init.outputs.web_exists }}
+      cli_tag: ${{ steps.init.outputs.cli_tag }}
+      cli_exists: ${{ steps.init.outputs.cli_exists }}
       image_tag: ${{ steps.init.outputs.image_tag }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -315,6 +317,8 @@ jobs:
       plugins_exists: ${{ needs.initialize.outputs.plugins_exists }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       web_exists: ${{ needs.initialize.outputs.web_exists }}
+      cli_tag: ${{ needs.initialize.outputs.cli_tag }}
+      cli_exists: ${{ needs.initialize.outputs.cli_exists }}
     secrets: inherit
 
   build-desktop:
