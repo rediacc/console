@@ -2,12 +2,7 @@ name: Console CI
 
 on:
   pull_request:
-    branches:
-      - main
     types: [opened, synchronize, reopened, edited]
-  push:
-    branches:
-      - main
   schedule:
     - cron: '0 3 * * *'  # Nightly at 3:00 UTC
   workflow_dispatch:
@@ -346,77 +341,3 @@ jobs:
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
     secrets: inherit
 
-  # ============================================================================
-  # COLUMN 5: DEPLOY/RELEASE
-  # Jobs: deploy (reusable workflow)
-  # Dependencies: tests, build-docker, build-desktop (needs all builds for release artifacts)
-  # ============================================================================
-  deploy:
-    name: Deploy
-    needs: [initialize, build-docker, build-desktop, tests]
-    uses: ./.github/workflows/ci-deploy.yml
-    with:
-      next_version: ${{ needs.initialize.outputs.next_version }}
-      api_tag: ${{ needs.initialize.outputs.api_tag }}
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
-      plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
-    secrets: inherit
-
-  # ============================================================================
-  # COLUMN 6: SUMMARY
-  # Jobs: summary
-  # Dependencies: All jobs
-  # ============================================================================
-  summary:
-    name: Summary
-    runs-on: ubuntu-slim
-    needs: [initialize, quality, build-docker, build-desktop, tests, deploy]
-    if: always() && (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))) && needs.initialize.result != 'skipped' && needs.initialize.outputs.is_bot != 'true'
-    steps:
-      - name: Check job results
-        run: |
-          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Column 1: Initialize" >> $GITHUB_STEP_SUMMARY
-          echo "- Initialize: ${{ needs.initialize.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Column 2: Quality" >> $GITHUB_STEP_SUMMARY
-          echo "- Quality: ${{ needs.quality.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Column 3: Build & Docker" >> $GITHUB_STEP_SUMMARY
-          echo "- Build (Docker): ${{ needs.build-docker.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Build (Desktop): ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Column 4: Tests + Infra" >> $GITHUB_STEP_SUMMARY
-          echo "- Tests + Infra: ${{ needs.tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Column 5: Deploy/Release" >> $GITHUB_STEP_SUMMARY
-          echo "- Deploy: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
-
-          FAILED=false
-
-          # Check required jobs (must succeed)
-          for result in "${{ needs.quality.result }}" "${{ needs.build-docker.result }}" "${{ needs.build-desktop.result }}" "${{ needs.tests.result }}"; do
-            [ "$result" != "success" ] && FAILED=true
-          done
-
-          # Check conditional jobs separately (skipped is acceptable, failure is not)
-          for result in "${{ needs.deploy.result }}"; do
-            if [ "$result" = "failure" ]; then
-              FAILED=true
-            fi
-          done
-
-          if [ "$FAILED" = "true" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          else
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**All CI Checks Passed**" >> $GITHUB_STEP_SUMMARY
-          fi
