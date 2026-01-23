@@ -40,7 +40,6 @@
     "@opentelemetry/sdk-trace-web": "^2.5.0",
     "@playwright/test": "^1.56.1",
     "@rediacc/shared": "*",
-    "@tanstack/react-query": "^5.90.20",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/runner": "^4.0.18",
     "@vitest/ui": "^4.0.18",
