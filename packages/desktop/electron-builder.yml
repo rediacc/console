@@ -48,7 +48,9 @@ nsis:
 # macOS Configuration
 # Note: arch is controlled by CI via --arch flag, not hardcoded here
 mac:
-  target: dmg
+  target:
+    - dmg
+    - zip
   artifactName: rediacc-console-${version}-mac-${arch}.${ext}
   icon: resources/icon.png
   category: public.app-category.developer-tools
