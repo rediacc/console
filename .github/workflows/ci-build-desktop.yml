@@ -45,6 +45,10 @@ jobs:
             timeout: 60
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -68,6 +72,13 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: build-desktop-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}
-          path: dist/desktop/
+          path: |
+            dist/desktop/*.exe
+            dist/desktop/*.dmg
+            dist/desktop/*.deb
+            dist/desktop/*.AppImage
+            dist/desktop/*.blockmap
+            dist/desktop/*.yml
+            dist/desktop/*.yaml
           retention-days: 3
           if-no-files-found: error
