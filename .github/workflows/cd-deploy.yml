@@ -15,6 +15,12 @@ on:
       plugins_tag:
         required: true
         type: string
+      web_tag:
+        required: true
+        type: string
+      cli_tag:
+        required: true
+        type: string
     secrets:
       GH_PAT:
         required: false
@@ -53,6 +59,8 @@ jobs:
           API_TAG="${{ inputs.api_tag }}"
           BRIDGE_TAG="${{ inputs.bridge_tag }}"
           PLUGINS_TAG="${{ inputs.plugins_tag }}"
+          WEB_TAG="${{ inputs.web_tag }}"
+          CLI_TAG="${{ inputs.cli_tag }}"
           VERSION="${{ steps.version.outputs.version }}"
           PUSH_LATEST=""
 
@@ -66,6 +74,8 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image bridge --from "$BRIDGE_TAG" --to "$VERSION" $PUSH_LATEST
           .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$PLUGINS_TAG" --to "$VERSION" $PUSH_LATEST
           .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$PLUGINS_TAG" --to "$VERSION" $PUSH_LATEST
+          .ci/scripts/docker/retag-image.sh --image web --from "$WEB_TAG" --to "$VERSION" $PUSH_LATEST
+          .ci/scripts/docker/retag-image.sh --image cli --from "$CLI_TAG" --to "$VERSION" $PUSH_LATEST
 
       - name: Version bump and commit
         id: bump
@@ -96,6 +106,8 @@ jobs:
           echo "- ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/plugin-terminal:${{ inputs.plugins_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/plugin-browser:${{ inputs.plugins_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/web:${{ inputs.web_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
 
   deploy-release:
     name: Release
@@ -116,13 +128,24 @@ jobs:
           path: dist/desktop/
           merge-multiple: true
 
+      - name: Download CLI executables
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: build-cli-executables-${{ github.sha }}
+          path: dist/cli/
+
+      - name: Clean up debug artifacts
+        run: rm -f dist/desktop/builder-debug.yml
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.deploy-publish.outputs.version || inputs.next_version }}
           name: v${{ needs.deploy-publish.outputs.version || inputs.next_version }}
           target_commitish: ${{ needs.deploy-publish.outputs.release_sha || github.sha }}
-          files: dist/desktop/**/*
+          files: |
+            dist/desktop/**/*
+            dist/cli/**/*
           draft: false
           prerelease: false
           generate_release_notes: true
