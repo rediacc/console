@@ -66,6 +66,11 @@ export function setupAutoUpdater(): void {
     }
   }
 
+  // Set platform-specific channel for consistent yml naming
+  if (process.platform === 'win32' && !updateConfig?.channel) {
+    autoUpdater.channel = 'latest-win';
+  }
+
   // Configure update settings
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;

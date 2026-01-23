@@ -50,3 +50,8 @@ Rediaccfile text eol=lf
 *.deb binary
 *.qcow2 binary
 *.img binary
+
+# Exclude source code from GitHub release archives
+# The auto-generated "Source code" zip/tar.gz will contain only LICENSE
+* export-ignore
+LICENSE -export-ignore

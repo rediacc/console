@@ -90,6 +90,10 @@ case "$PLATFORM" in
         ;;
     win)
         (cd "$DESKTOP_DIR" && npm run dist:win -- --$ARCH)
+        # Rename for consistent platform-suffixed naming
+        if [[ -f "dist/desktop/latest.yml" ]]; then
+            mv dist/desktop/latest.yml dist/desktop/latest-win.yml
+        fi
         ;;
 esac
 
