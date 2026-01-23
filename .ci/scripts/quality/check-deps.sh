@@ -39,7 +39,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]] || [[ -z "${GITHUB_HEAD_REF:
 fi
 
 # Check for recent autofix commits to prevent loops (specific to deps)
-RECENT_AUTOFIX=$(git log --oneline -5 --author="github-actions\[bot\]" --grep="auto-upgrade minor/patch dependencies" 2>/dev/null | head -1 || true)
+RECENT_AUTOFIX=$(git log --oneline -5 --author="github-actions\[bot\]" --grep="auto-upgrade dependencies" 2>/dev/null | head -1 || true)
 if [[ -n "$RECENT_AUTOFIX" ]]; then
     log_error "Recent deps autofix commit detected, cannot auto-fix again: $RECENT_AUTOFIX"
     log_error "Please manually fix dependency issues"
@@ -48,18 +48,17 @@ fi
 
 # Phase 3: Attempt fix
 log_step "Attempting auto-fix..."
-npx tsx "$REPO_ROOT/scripts/check-deps.ts" --upgrade || true
-
-# Phase 4: Verify fix
-log_step "Verifying fix..."
-if ! npx tsx "$REPO_ROOT/scripts/check-deps.ts"; then
-    log_error "Dependencies still outdated after fix (may need manual review)"
+if ! npx tsx "$REPO_ROOT/scripts/check-deps.ts" --upgrade; then
+    log_error "Auto-upgrade failed (npm install error)"
     exit 1
 fi
 
-# Phase 5: Commit if changes
-if git diff --quiet package.json package-lock.json 2>/dev/null; then
-    log_info "Fix verified, no commit needed"
+# Phase 4: Commit if changes were made
+# Check all package files that might have changed
+if git diff --quiet package.json package-lock.json packages/*/package.json 2>/dev/null; then
+    # No changes - upgrade completed without modifying files
+    # This can happen if all outdated packages are in the blocklist
+    log_info "No upgradable dependencies found (all may be blocked)"
     exit 0
 fi
 
@@ -68,7 +67,7 @@ git config user.name "github-actions[bot]"
 git config user.email "github-actions[bot]@users.noreply.github.com"
 git add package.json package-lock.json packages/*/package.json
 git commit -m "$(cat <<'EOF'
-chore(deps): auto-upgrade minor/patch dependencies
+chore(deps): auto-upgrade dependencies
 
 Automatically upgraded by CI.
 EOF

@@ -1,7 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { FullConfig } from '@playwright/test';
-import { CEPH_HEALTH_RETRY_MS, CEPH_HEALTH_TIMEOUT_MS, DEFAULT_DATASTORE_PATH } from '../constants';
+import {
+  CEPH_HEALTH_RETRY_MS,
+  CEPH_HEALTH_TIMEOUT_MS,
+  DEFAULT_DATASTORE_PATH,
+  RENET_SETUP_TIMEOUT_MS,
+} from '../constants';
 import { getOpsManager } from '../utils/bridge/OpsManager';
 import { InfrastructureManager } from '../utils/infrastructure/InfrastructureManager';
 
@@ -61,22 +66,29 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
 }
 
 /**
- * Run renet setup on all worker VMs
+ * Run renet setup on ALL VMs (bridge + workers)
+ * This installs Docker and other dependencies on fresh base images.
  */
-async function setupWorkerVMs(opsManager: ReturnType<typeof getOpsManager>) {
-  // eslint-disable-next-line no-console
-  console.log('');
-  // eslint-disable-next-line no-console
-  console.log('Step 2b: Running renet setup on all worker VMs...');
+async function setupAllVMs(opsManager: ReturnType<typeof getOpsManager>) {
+  console.warn('');
+  console.warn('Step 3: Running renet setup on ALL VMs (bridge + workers)...');
+
+  // Get all VM IPs (bridge + workers)
+  const bridgeIp = opsManager.getBridgeVMIp();
   const workerIps = opsManager.getWorkerVMIps();
-  for (const ip of workerIps) {
-    const result = await opsManager.executeOnVM(ip, 'sudo renet setup');
+  const allVmIps = [bridgeIp, ...workerIps];
+
+  for (const ip of allVmIps) {
+    const vmType = ip === bridgeIp ? 'bridge' : 'worker';
+    console.warn(`  Setting up ${vmType} VM at ${ip}...`);
+    const result = await opsManager.executeOnVM(ip, 'sudo renet setup', RENET_SETUP_TIMEOUT_MS);
     if (result.code === 0) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ Setup completed on ${ip}`);
+      console.warn(`  ✓ Setup completed on ${ip} (${vmType})`);
     } else {
-      // Error output is expected for console.error
-      console.error(`  ✗ Setup failed on ${ip}: ${result.stderr}`);
+      // Fail fast - subsequent steps depend on setup being successful (Docker installed)
+      throw new Error(
+        `Setup failed on ${ip} (${vmType}): exit code ${result.code}\nstderr: ${result.stderr}\nstdout: ${result.stdout}`
+      );
     }
   }
 }
@@ -88,10 +100,8 @@ async function verifyVMsWithRetry(
   opsManager: ReturnType<typeof getOpsManager>,
   infra: InfrastructureManager
 ) {
-  // eslint-disable-next-line no-console
-  console.log('');
-  // eslint-disable-next-line no-console
-  console.log('Step 3: Verifying all VMs are ready...');
+  console.warn('');
+  console.warn('Step 4: Verifying all VMs are ready...');
   try {
     await opsManager.verifyAllVMsReady();
   } catch (err) {
@@ -118,12 +128,12 @@ async function initializeDatastoresIfNeeded(
 ) {
   if (workerIps.length > 0) {
     console.warn('');
-    console.warn('Step 5: Initializing datastores on all worker VMs...');
+    console.warn('Step 7: Initializing datastores on all worker VMs...');
     await opsManager.initializeAllDatastores('10G', DEFAULT_DATASTORE_PATH);
     console.warn('  ✓ All datastores initialized');
   } else {
     console.warn('');
-    console.warn('Step 5: Skipping datastore initialization (Ceph-only mode, no workers)');
+    console.warn('Step 7: Skipping datastore initialization (Ceph-only mode, no workers)');
   }
 }
 
@@ -133,12 +143,12 @@ async function initializeDatastoresIfNeeded(
 async function deployCRIUIfNeeded(infra: InfrastructureManager, workerIps: string[]) {
   if (workerIps.length > 0) {
     console.warn('');
-    console.warn('Step 6: Deploying CRIU to all worker VMs...');
+    console.warn('Step 8: Deploying CRIU to all worker VMs...');
     await infra.deployCRIUToAllVMs();
     console.warn('  ✓ CRIU deployed to all worker VMs');
   } else {
     console.warn('');
-    console.warn('Step 6: Skipping CRIU deployment (Ceph-only mode, no workers)');
+    console.warn('Step 8: Skipping CRIU deployment (Ceph-only mode, no workers)');
   }
 }
 
@@ -147,7 +157,7 @@ async function deployCRIUIfNeeded(infra: InfrastructureManager, workerIps: strin
  */
 async function startRustFSStorage(opsManager: ReturnType<typeof getOpsManager>) {
   console.warn('');
-  console.warn('Step 4: Starting RustFS S3 storage...');
+  console.warn('Step 5: Starting RustFS S3 storage...');
   const rustfsResult = await opsManager.startRustFS();
   if (!rustfsResult.success) {
     throw new Error(`RustFS failed to start: ${rustfsResult.message}`);
@@ -166,7 +176,7 @@ async function configureRustFSWorkersIfNeeded(
     return;
   }
   console.warn('');
-  console.warn('Step 4b: Configuring workers for RustFS access...');
+  console.warn('Step 6: Configuring workers for RustFS access...');
   const configResult = await opsManager.configureRustFSWorkers();
   if (configResult.success) {
     console.warn(`  ✓ ${configResult.message}`);
@@ -228,8 +238,13 @@ function writeSetupErrorLog(error: unknown) {
  *
  * Setup sequence:
  * 1. Soft reset VMs (ops up --force --parallel) - includes Ceph provisioning if enabled
- * 2. Deploy renet to all VMs
- * 3. Verify all VMs are ready (bridge + workers + ceph)
+ * 2. Deploy renet binary to all VMs
+ * 3. Run renet setup on ALL VMs (bridge + workers) to install Docker and dependencies
+ * 4. Verify all VMs are ready (bridge + workers + ceph)
+ * 5. Start RustFS S3 storage on bridge VM
+ * 6. Configure rclone on workers for RustFS access
+ * 7. Initialize datastores on worker VMs
+ * 8. Deploy CRIU to worker VMs
  *
  * RENET BINARY:
  * The renet binary must be available before running tests. In CI, it's pre-extracted
@@ -280,29 +295,24 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     // eslint-disable-next-line no-console
     console.log('  ✓ Renet deployed to all VMs');
 
-    // Step 2b: Run renet setup on all worker VMs to create universal user (rediacc)
-    // This is required for multi-machine operations (push/pull) that use sudo -u rediacc
-    const workerIps = opsManager.getWorkerVMIps();
-    if (workerIps.length > 0) {
-      await setupWorkerVMs(opsManager);
-    } else {
-      console.warn('');
-      console.warn('Step 2b: Skipping worker setup (Ceph-only mode, no workers)');
-    }
+    // Step 3: Run renet setup on ALL VMs (bridge + workers) to install Docker and dependencies
+    // This is required for fresh base images that don't have Docker pre-installed
+    await setupAllVMs(opsManager);
 
-    // Step 3: Verify all VMs are ready
+    // Step 4: Verify all VMs are ready
     await verifyVMsWithRetry(opsManager, infra);
 
-    // Step 4: Start RustFS S3 storage on bridge VM (mandatory for storage tests)
+    // Step 5: Start RustFS S3 storage on bridge VM (mandatory for storage tests)
     await startRustFSStorage(opsManager);
 
-    // Step 4b: Configure rclone on workers for RustFS access (if workers exist)
+    // Step 6: Configure rclone on workers for RustFS access (if workers exist)
+    const workerIps = opsManager.getWorkerVMIps();
     await configureRustFSWorkersIfNeeded(opsManager, workerIps);
 
-    // Step 5: Initialize datastores on all worker VMs
+    // Step 7: Initialize datastores on all worker VMs
     await initializeDatastoresIfNeeded(opsManager, workerIps);
 
-    // Step 6: Deploy CRIU to all worker VMs
+    // Step 8: Deploy CRIU to all worker VMs
     await deployCRIUIfNeeded(infra, workerIps);
 
     /* eslint-disable no-console */

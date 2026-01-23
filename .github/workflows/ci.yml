@@ -65,7 +65,7 @@ jobs:
       web_exists: ${{ steps.init.outputs.web_exists }}
       image_tag: ${{ steps.init.outputs.image_tag }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -183,7 +183,7 @@ jobs:
           plugins_tag=${{ steps.init.outputs.plugins_tag }}
           web_tag=${{ steps.init.outputs.web_tag }}
           EOF
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         if: steps.init.outputs.is_bot != 'true'
         with:
           name: ci-tags-${{ github.sha }}
@@ -303,13 +303,13 @@ jobs:
 
   # ============================================================================
   # COLUMN 3: BUILD & DOCKER
-  # Jobs: build (reusable workflow)
+  # Jobs: build-docker, build-desktop (parallel reusable workflows)
   # Dependencies: quality
   # ============================================================================
-  build:
-    name: Build
+  build-docker:
+    name: Build (Docker)
     needs: [initialize, quality]
-    uses: ./.github/workflows/ci-build.yml
+    uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
@@ -322,14 +322,22 @@ jobs:
       web_exists: ${{ needs.initialize.outputs.web_exists }}
     secrets: inherit
 
+  build-desktop:
+    name: Build (Desktop)
+    needs: [initialize, quality]
+    uses: ./.github/workflows/ci-build-desktop.yml
+    with:
+      next_version: ${{ needs.initialize.outputs.next_version }}
+    secrets: inherit
+
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
   # Jobs: tests (reusable workflow)
-  # Dependencies: build
+  # Dependencies: build-docker (tests can start without waiting for desktop builds)
   # ============================================================================
   tests:
     name: Tests + Infra
-    needs: [initialize, build]
+    needs: [initialize, build-docker]
     uses: ./.github/workflows/ci-tests.yml
     with:
       api_tag: ${{ needs.initialize.outputs.api_tag }}
@@ -341,11 +349,11 @@ jobs:
   # ============================================================================
   # COLUMN 5: DEPLOY/RELEASE
   # Jobs: deploy (reusable workflow)
-  # Dependencies: tests
+  # Dependencies: tests, build-docker, build-desktop (needs all builds for release artifacts)
   # ============================================================================
   deploy:
     name: Deploy
-    needs: [initialize, build, tests]
+    needs: [initialize, build-docker, build-desktop, tests]
     uses: ./.github/workflows/ci-deploy.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -362,7 +370,7 @@ jobs:
   summary:
     name: Summary
     runs-on: ubuntu-slim
-    needs: [initialize, quality, build, tests, deploy]
+    needs: [initialize, quality, build-docker, build-desktop, tests, deploy]
     if: always() && (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))) && needs.initialize.result != 'skipped' && needs.initialize.outputs.is_bot != 'true'
     steps:
       - name: Check job results
@@ -379,7 +387,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### Column 3: Build & Docker" >> $GITHUB_STEP_SUMMARY
-          echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build (Docker): ${{ needs.build-docker.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build (Desktop): ${{ needs.build-desktop.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### Column 4: Tests + Infra" >> $GITHUB_STEP_SUMMARY
@@ -392,7 +401,7 @@ jobs:
           FAILED=false
 
           # Check required jobs (must succeed)
-          for result in "${{ needs.quality.result }}" "${{ needs.build.result }}" "${{ needs.tests.result }}"; do
+          for result in "${{ needs.quality.result }}" "${{ needs.build-docker.result }}" "${{ needs.build-desktop.result }}" "${{ needs.tests.result }}"; do
             [ "$result" != "success" ] && FAILED=true
           done
 

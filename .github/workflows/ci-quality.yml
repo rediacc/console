@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check-npmrc.sh
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
           token: ${{ secrets.GH_PAT }}
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref }}
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -128,14 +128,14 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/security/audit.sh
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         if: always()
         with:
           name: quality-security-${{ github.sha }}
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - run: .ci/scripts/security/shellcheck.sh
       - run: .ci/scripts/security/check-commands.sh
 
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
           token: ${{ secrets.GH_PAT }}
@@ -166,7 +166,7 @@ jobs:
       - name: Check submodule versions
         run: .ci/scripts/quality/check-submodule-versions.sh
 
-      - uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852  # v4
+      - uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5
         with:
           dotnet-version: 9.0.x
 
@@ -182,14 +182,14 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
           token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref }}
 
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
         with:
           go-version: '1.24'
           cache: true
