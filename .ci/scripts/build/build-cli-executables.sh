@@ -135,13 +135,13 @@ if [[ "$PLATFORM" == "mac" ]]; then
 fi
 
 # Step 5: Strip debug symbols (before injection to avoid corrupting SEA section)
-log_step "Stripping debug symbols..."
+# Note: macOS strip is incompatible with Node.js binaries (__LINKEDIT segment issues)
+# so we only strip on Linux where it works reliably.
 if [[ "$PLATFORM" == "linux" ]]; then
+    log_step "Stripping debug symbols..."
     strip --strip-all "$OUTPUT_DIR/$BINARY_NAME"
-elif [[ "$PLATFORM" == "mac" ]]; then
-    strip -x "$OUTPUT_DIR/$BINARY_NAME"
+    log_info "Stripped binary: $(wc -c < "$OUTPUT_DIR/$BINARY_NAME") bytes"
 fi
-log_info "Stripped binary: $(wc -c < "$OUTPUT_DIR/$BINARY_NAME") bytes"
 
 # Step 6: Inject SEA blob
 log_step "Injecting SEA blob into binary..."
