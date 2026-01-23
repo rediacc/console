@@ -151,6 +151,17 @@ NEXT_VERSION=$(.ci/scripts/version/bump.sh --auto --dry-run | tail -n 1)
 write_output "next_version" "$NEXT_VERSION"
 log_info "Next version: $NEXT_VERSION"
 
+# On push-to-main, append version to submodule tags to invalidate PR cache.
+# PR builds don't embed version, merge builds do — different tags ensure cache miss and rebuild.
+if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
+    API_TAG="${API_TAG}-${NEXT_VERSION}"
+    BRIDGE_TAG="${BRIDGE_TAG}-${NEXT_VERSION}"
+    write_output "api_tag" "$API_TAG"
+    write_output "bridge_tag" "$BRIDGE_TAG"
+    write_output "image_tag" "$BRIDGE_TAG"
+    log_info "Push event: versioned tags - API: $API_TAG, Bridge: $BRIDGE_TAG"
+fi
+
 # =============================================================================
 # Step 6: Check if images exist in registry (requires Docker)
 # =============================================================================
