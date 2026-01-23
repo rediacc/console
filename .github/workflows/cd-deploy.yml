@@ -3,24 +3,37 @@ name: Console CD - Deploy
 on:
   workflow_call:
     inputs:
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+      is_bot:
+        required: false
+        type: string
+        default: 'false'
       next_version:
         required: true
         type: string
       api_tag:
-        required: true
+        required: false
         type: string
+        default: ''
       bridge_tag:
-        required: true
+        required: false
         type: string
+        default: ''
       plugins_tag:
-        required: true
+        required: false
         type: string
+        default: ''
       web_tag:
-        required: true
+        required: false
         type: string
+        default: ''
       cli_tag:
-        required: true
+        required: false
         type: string
+        default: ''
     secrets:
       GH_PAT:
         required: false
@@ -32,14 +45,13 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       release_sha: ${{ steps.release.outputs.sha }}
-    # Only run on main branch push.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: inputs.is_bot != 'true' && (inputs.dry_run || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           fetch-depth: 0
           submodules: true
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_PAT || github.token }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -49,6 +61,7 @@ jobs:
           echo "version=${{ inputs.next_version }}" >> $GITHUB_OUTPUT
 
       - uses: docker/login-action@v3
+        if: ${{ !inputs.dry_run }}
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -56,64 +69,73 @@ jobs:
 
       - name: Re-tag images to semantic version
         run: |
-          API_TAG="${{ inputs.api_tag }}"
-          BRIDGE_TAG="${{ inputs.bridge_tag }}"
-          PLUGINS_TAG="${{ inputs.plugins_tag }}"
-          WEB_TAG="${{ inputs.web_tag }}"
-          CLI_TAG="${{ inputs.cli_tag }}"
           VERSION="${{ steps.version.outputs.version }}"
           PUSH_LATEST=""
+          DRY_RUN_FLAG=""
 
-          # Push :latest only on main branch
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${{ inputs.dry_run }}" != "true" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             PUSH_LATEST="--push-latest"
           fi
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
 
-          # Re-tag each image with its specific commit hash tag
-          .ci/scripts/docker/retag-image.sh --image api --from "$API_TAG" --to "$VERSION" $PUSH_LATEST
-          .ci/scripts/docker/retag-image.sh --image bridge --from "$BRIDGE_TAG" --to "$VERSION" $PUSH_LATEST
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$PLUGINS_TAG" --to "$VERSION" $PUSH_LATEST
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$PLUGINS_TAG" --to "$VERSION" $PUSH_LATEST
-          .ci/scripts/docker/retag-image.sh --image web --from "$WEB_TAG" --to "$VERSION" $PUSH_LATEST
-          .ci/scripts/docker/retag-image.sh --image cli --from "$CLI_TAG" --to "$VERSION" $PUSH_LATEST
+          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag || 'dryrun-test' }}" --to "$VERSION" $PUSH_LATEST $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag || 'dryrun-test' }}" --to "$VERSION" $PUSH_LATEST $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag || 'dryrun-test' }}" --to "$VERSION" $PUSH_LATEST $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag || 'dryrun-test' }}" --to "$VERSION" $PUSH_LATEST $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag || 'dryrun-test' }}" --to "$VERSION" $PUSH_LATEST $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag || 'dryrun-test' }}" --to "$VERSION" $PUSH_LATEST $DRY_RUN_FLAG
 
-      - name: Version bump and commit
-        id: bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Version bump
         run: |
-          .ci/scripts/version/bump.sh --version ${{ steps.version.outputs.version }}
-          .ci/scripts/version/commit.sh --version ${{ steps.version.outputs.version }} --push
+          DRY_RUN_FLAG=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+          .ci/scripts/version/bump.sh --version ${{ steps.version.outputs.version }} $DRY_RUN_FLAG
+
+      - name: Version commit
+        if: ${{ !inputs.dry_run && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: .ci/scripts/version/commit.sh --version ${{ steps.version.outputs.version }} --push
         env:
           GITHUB_HEAD_REF: main
 
       - name: Bump submodule versions
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump-submodules.sh --version ${{ steps.version.outputs.version }}
+        run: |
+          DRY_RUN_FLAG=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+          .ci/scripts/version/bump-submodules.sh --version ${{ steps.version.outputs.version }} $DRY_RUN_FLAG
         env:
           GITHUB_PAT: ${{ secrets.GH_PAT }}
 
       - name: Capture release SHA
         id: release
+        if: ${{ !inputs.dry_run }}
         run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
       - name: Summary
         run: |
-          echo "## Docker Publishing Complete" >> $GITHUB_STEP_SUMMARY
+          MODE="${{ inputs.dry_run == true && '(DRY-RUN) ' || '' }}"
+          echo "## ${MODE}Deploy Publishing Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Images re-tagged (using commit hash caching):**" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/api:${{ inputs.api_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/plugin-terminal:${{ inputs.plugins_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/plugin-browser:${{ inputs.plugins_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/web:${{ inputs.web_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/api:${{ inputs.api_tag || 'dryrun-test' }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag || 'dryrun-test' }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/plugin-terminal:${{ inputs.plugins_tag || 'dryrun-test' }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/plugin-browser:${{ inputs.plugins_tag || 'dryrun-test' }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/web:${{ inputs.web_tag || 'dryrun-test' }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag || 'dryrun-test' }} → :${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
 
   deploy-release:
     name: Release
     runs-on: ubuntu-slim
     needs: [deploy-publish]
-    if: needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !inputs.dry_run && needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: write
     steps:
@@ -154,7 +176,7 @@ jobs:
     name: Pages
     runs-on: ubuntu-slim
     needs: [deploy-publish]
-    if: needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !inputs.dry_run && needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

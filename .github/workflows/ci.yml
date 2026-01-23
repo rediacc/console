@@ -330,6 +330,27 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # COLUMN 3B: DEPLOY DRY-RUN
+  # Jobs: deploy-dryrun (reusable workflow)
+  # Dependencies: build-docker
+  # ============================================================================
+  deploy-dryrun:
+    name: Deploy Dry-Run
+    needs: [initialize, build-docker]
+    if: needs.initialize.outputs.is_bot != 'true'
+    uses: ./.github/workflows/cd-deploy.yml
+    with:
+      dry_run: true
+      is_bot: ${{ needs.initialize.outputs.is_bot }}
+      next_version: ${{ needs.initialize.outputs.next_version }}
+      api_tag: ${{ needs.initialize.outputs.api_tag }}
+      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
+      plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
+      web_tag: ${{ needs.initialize.outputs.web_tag }}
+      cli_tag: ${{ needs.initialize.outputs.cli_tag }}
+    secrets: inherit
+
+  # ============================================================================
   # COLUMN 4: TESTS + INFRA
   # Jobs: tests (reusable workflow)
   # Dependencies: build-docker (tests can start without waiting for desktop builds)
