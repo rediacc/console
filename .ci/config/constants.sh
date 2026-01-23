@@ -111,22 +111,26 @@ readonly PUBLISH_BOT_EMAIL="github-actions[bot]@users.noreply.github.com"
 readonly PUBLISH_IMAGES=("api" "bridge" "plugin-terminal" "plugin-browser" "web")
 
 # Dockerfiles (relative to CONSOLE_ROOT_DIR)
-declare -A DOCKERFILES=(
-    ["api"]="private/middleware/Dockerfile"
-    ["bridge"]="private/renet/Dockerfile"
-    ["plugin-terminal"]="packages/plugins/terminal/Dockerfile"
-    ["plugin-browser"]="packages/plugins/browser/Dockerfile"
-    ["web"]="Dockerfile"
-)
+# Associative arrays require bash 4+; skip on older bash (e.g. macOS system bash 3.2).
+# These are only used by Docker build scripts which run on Linux.
+if ((BASH_VERSINFO[0] >= 4)); then
+    declare -A DOCKERFILES=(
+        ["api"]="private/middleware/Dockerfile"
+        ["bridge"]="private/renet/Dockerfile"
+        ["plugin-terminal"]="packages/plugins/terminal/Dockerfile"
+        ["plugin-browser"]="packages/plugins/browser/Dockerfile"
+        ["web"]="Dockerfile"
+    )
 
-# Build contexts (relative to CONSOLE_ROOT_DIR)
-declare -A BUILD_CONTEXTS=(
-    ["api"]="private/middleware"
-    ["bridge"]="private/renet"
-    ["plugin-terminal"]="packages/plugins/terminal"
-    ["plugin-browser"]="packages/plugins/browser"
-    ["web"]="."
-)
+    # Build contexts (relative to CONSOLE_ROOT_DIR)
+    declare -A BUILD_CONTEXTS=(
+        ["api"]="private/middleware"
+        ["bridge"]="private/renet"
+        ["plugin-terminal"]="packages/plugins/terminal"
+        ["plugin-browser"]="packages/plugins/browser"
+        ["web"]="."
+    )
+fi
 
 # Version files to update (relative to CONSOLE_ROOT_DIR)
 readonly VERSION_FILES_JSON=(
