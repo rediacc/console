@@ -272,7 +272,7 @@ export class BridgeTestRunner {
     }
 
     // Two-hop SSH command: Host → Bridge → Target
-    // Uses identity file from OPS_HOME/staging/.ssh/id_rsa if available
+    // Uses identity file from {RENET_DATA_DIR}/staging/.ssh/id_rsa if available
     // Always use user@host format for consistency
     const sshCmd = `ssh ${sshOpts} ${user}@${this.bridgeVM} "ssh ${sshOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
 

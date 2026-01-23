@@ -1,0 +1,16 @@
+# Packages blocked from auto-upgrade (require manual migration)
+#
+# Format: package-name # reason
+# These packages will NOT be upgraded automatically.
+# To upgrade, remove from this list and run: npm run check:deps -- --upgrade
+#
+# Example:
+# some-package # Reason for blocking
+
+# Ant Design ecosystem - v6.x is a major CSS/component rewrite
+antd # v6.x requires CSS-in-JS removal, component API changes, extensive migration
+@ant-design/icons # Must match antd major version
+@ant-design/pro-components # React 19 compatibility issues
+
+# Electron - v40.x has native module compatibility issues (cpu-features, nan)
+electron # v40.x breaks native module rebuild with nan library errors

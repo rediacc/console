@@ -75,3 +75,10 @@ export const VM_RENET_INSTALL_PATH = '/usr/bin/renet';
  */
 export const CEPH_HEALTH_TIMEOUT_MS = 1200000;
 export const CEPH_HEALTH_RETRY_MS = 15000;
+
+/**
+ * Timeout for renet setup command on VMs.
+ * Installing Docker from scratch on base images takes 2-4 minutes depending on distro.
+ * Set to 5 minutes to be safe across all distros (Fedora, openSUSE, Ubuntu, Debian).
+ */
+export const RENET_SETUP_TIMEOUT_MS = 300000;

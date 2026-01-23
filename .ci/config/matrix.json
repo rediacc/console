@@ -102,6 +102,14 @@
     "runner": "ubuntu-slim"
   },
 
+  "bridge": {
+    "timeout": 45,
+    "os_images": [
+      {"name": "ubuntu-24.04", "runner": "ubuntu-latest"},
+      {"name": "debian-12", "runner": "ubuntu-latest"}
+    ]
+  },
+
   "completion_signals": {
     "cli": ["Linux", "Windows", "macOS"],
     "e2e_browsers": ["chromium", "firefox", "webkit", "msedge"],
@@ -114,7 +122,8 @@
       "electron-macos-arm64",
       "electron-windows-x64",
       "electron-windows-arm64"
-    ]
+    ],
+    "bridge_workers": ["ubuntu-24.04", "debian-12"]
   },
 
   "timeouts": {

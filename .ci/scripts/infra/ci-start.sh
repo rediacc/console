@@ -24,6 +24,16 @@ echo "Starting Rediacc CI services..."
 source "$SCRIPT_DIR/ci-env.sh"
 
 # =============================================================================
+# VERIFY SQLCMD AVAILABILITY
+# =============================================================================
+# go-sqlcmd should be installed via .ci/scripts/private/run-middleware.sh or install-sqlcmd.sh
+if ! command -v sqlcmd &>/dev/null; then
+    echo "ERROR: sqlcmd (go-sqlcmd) not found in PATH"
+    echo "Install with: sudo $CONSOLE_ROOT/private/middleware/scripts/install-sqlcmd.sh"
+    exit 1
+fi
+
+# =============================================================================
 # PREPARE MSSQL DIRECTORY
 # =============================================================================
 # SQL Server 2022+ runs as non-root user (UID 10001)
@@ -56,16 +66,17 @@ docker compose -f docker-compose.yml up -d
 # =============================================================================
 echo "Waiting for services to be ready..."
 
-# Wait for SQL Server
+# Wait for SQL Server (using external go-sqlcmd connection)
 wait_for_sql() {
     local timeout=120
     local elapsed=0
     local interval=2
+    local sql_port="${SQL_PORT:-1433}"
 
-    echo "  Waiting for SQL Server..."
+    echo "  Waiting for SQL Server (via go-sqlcmd on port $sql_port)..."
     while [[ $elapsed -lt $timeout ]]; do
-        if docker exec rediacc-sql /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -C &>/dev/null; then
+        if SQLCMDPASSWORD="$MSSQL_SA_PASSWORD" sqlcmd \
+            -S "localhost,$sql_port" -U sa -Q "SELECT 1" -C &>/dev/null; then
             echo "  SQL Server is ready"
             return 0
         fi
