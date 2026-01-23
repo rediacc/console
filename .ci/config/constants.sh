@@ -108,7 +108,7 @@ readonly PUBLISH_BOT_NAME="github-actions[bot]"
 readonly PUBLISH_BOT_EMAIL="github-actions[bot]@users.noreply.github.com"
 
 # Docker images to publish
-readonly PUBLISH_IMAGES=("api" "bridge" "plugin-terminal" "plugin-browser" "web")
+readonly PUBLISH_IMAGES=("api" "bridge" "plugin-terminal" "plugin-browser" "web" "cli")
 
 # Dockerfiles (relative to CONSOLE_ROOT_DIR)
 # Associative arrays require bash 4+; skip on older bash (e.g. macOS system bash 3.2).
@@ -120,6 +120,7 @@ if ((BASH_VERSINFO[0] >= 4)); then
         ["plugin-terminal"]="packages/plugins/terminal/Dockerfile"
         ["plugin-browser"]="packages/plugins/browser/Dockerfile"
         ["web"]="Dockerfile"
+        ["cli"]="packages/cli/Dockerfile"
     )
 
     # Build contexts (relative to CONSOLE_ROOT_DIR)
@@ -129,6 +130,7 @@ if ((BASH_VERSINFO[0] >= 4)); then
         ["plugin-terminal"]="packages/plugins/terminal"
         ["plugin-browser"]="packages/plugins/browser"
         ["web"]="."
+        ["cli"]="."
     )
 fi
 

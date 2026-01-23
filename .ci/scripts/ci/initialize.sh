@@ -132,16 +132,20 @@ BRIDGE_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
 PLUGINS_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 
+CLI_TAG="$WEB_TAG"  # Same console commit hash
+
 write_output "api_tag" "$API_TAG"
 write_output "bridge_tag" "$BRIDGE_TAG"
 write_output "plugins_tag" "$PLUGINS_TAG"
 write_output "web_tag" "$WEB_TAG"
+write_output "cli_tag" "$CLI_TAG"
 write_output "image_tag" "$BRIDGE_TAG"
 
 log_info "API tag: $API_TAG (middleware commit)"
 log_info "Bridge tag: $BRIDGE_TAG (renet commit)"
 log_info "Plugins tag: $PLUGINS_TAG (console commit)"
 log_info "Web tag: $WEB_TAG (console commit)"
+log_info "CLI tag: $CLI_TAG (console commit)"
 
 # =============================================================================
 # Step 5: Calculate next version
@@ -186,15 +190,18 @@ API_EXISTS=$(check_image "api" "$API_TAG")
 BRIDGE_EXISTS=$(check_image "bridge" "$BRIDGE_TAG")
 PLUGINS_EXISTS=$(check_image "plugin-terminal" "$PLUGINS_TAG")
 WEB_EXISTS=$(check_image "web" "$WEB_TAG")
+CLI_EXISTS=$(check_image "cli" "$CLI_TAG")
 
 write_output "api_exists" "$API_EXISTS"
 write_output "bridge_exists" "$BRIDGE_EXISTS"
 write_output "plugins_exists" "$PLUGINS_EXISTS"
 write_output "web_exists" "$WEB_EXISTS"
+write_output "cli_exists" "$CLI_EXISTS"
 
 log_info "api:$API_TAG exists=$API_EXISTS"
 log_info "bridge:$BRIDGE_TAG exists=$BRIDGE_EXISTS"
 log_info "plugins:$PLUGINS_TAG exists=$PLUGINS_EXISTS"
 log_info "web:$WEB_TAG exists=$WEB_EXISTS"
+log_info "cli:$CLI_TAG exists=$CLI_EXISTS"
 
 log_info "Initialization complete"
