@@ -270,8 +270,8 @@ jobs:
                 return;
               }
 
-              if (run.status === 'completed' && elapsed >= minRuntime) {
-                console.log(`Workflow completed - exiting watchdog (after ${elapsedSec}s)`);
+              if (inProgress === 0 && queued === 0 && elapsed >= minRuntime) {
+                console.log(`All jobs finished - exiting watchdog (after ${elapsedSec}s)`);
                 return;
               }
 
