@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc Console CLI - Command line interface for Rediacc operations"
+    "description": "Rediacc CLI - Command line interface for Rediacc operations"
   },
   "commands": {
     "auth": {

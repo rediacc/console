@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc Console CLI - Rediacc işlemleri için komut satırı arayüzü"
+    "description": "Rediacc CLI - Rediacc işlemleri için komut satırı arayüzü"
   },
   "commands": {
     "audit": {

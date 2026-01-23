@@ -27,23 +27,32 @@ interface DownloadFile {
   name: string;
 }
 
+interface CLIFile {
+  platform: 'windows' | 'macos' | 'linux';
+  arch: 'x64' | 'arm64';
+  url: string;
+  size: string;
+  name: string;
+}
+
 interface ReleaseData {
   version: string;
   publishedAt: string;
-  files: DownloadFile[];
+  desktopFiles: DownloadFile[];
+  cliFiles: CLIFile[];
 }
 
 // Helper functions for file parsing
 function detectPlatform(filename: string): 'windows' | 'macos' | 'linux' {
   if (filename.includes('-win-')) return 'windows';
   if (filename.includes('-mac-')) return 'macos';
-  if (filename.includes('-linux-')) return 'linux';
+  if (filename.includes('-linux')) return 'linux';
   return 'linux';
 }
 
 function detectArch(filename: string): 'x64' | 'arm64' | 'armv7l' {
-  if (filename.includes('-arm64.')) return 'arm64';
-  if (filename.includes('-armv7l.')) return 'armv7l';
+  if (filename.includes('-arm64')) return 'arm64';
+  if (filename.includes('-armv7l')) return 'armv7l';
   return 'x64';
 }
 
@@ -53,6 +62,17 @@ function detectType(filename: string): 'exe' | 'dmg' | 'AppImage' | 'deb' {
   if (filename.endsWith('.AppImage')) return 'AppImage';
   if (filename.endsWith('.deb')) return 'deb';
   return 'AppImage';
+}
+
+function detectCLIPlatform(filename: string): 'windows' | 'macos' | 'linux' {
+  if (filename.includes('-win-')) return 'windows';
+  if (filename.includes('-mac-')) return 'macos';
+  return 'linux';
+}
+
+function detectCLIArch(filename: string): 'x64' | 'arm64' {
+  if (filename.includes('-arm64')) return 'arm64';
+  return 'x64';
 }
 
 function formatBytes(bytes: number): string {
@@ -70,12 +90,25 @@ try {
   if (response.ok) {
     const release = await response.json();
 
-    const files: DownloadFile[] = release.assets
-      .filter((asset: any) => asset.name.startsWith('rediacc-console-'))
+    const desktopFiles: DownloadFile[] = release.assets
+      .filter((asset: any) =>
+        asset.name.startsWith('rediacc-desktop-') &&
+        /\.(exe|dmg|AppImage|deb)$/.test(asset.name)
+      )
       .map((asset: any) => ({
         platform: detectPlatform(asset.name),
         arch: detectArch(asset.name),
         type: detectType(asset.name),
+        url: asset.browser_download_url,
+        size: formatBytes(asset.size),
+        name: asset.name
+      }));
+
+    const cliFiles: CLIFile[] = release.assets
+      .filter((asset: any) => asset.name.startsWith('rdc-'))
+      .map((asset: any) => ({
+        platform: detectCLIPlatform(asset.name),
+        arch: detectCLIArch(asset.name),
         url: asset.browser_download_url,
         size: formatBytes(asset.size),
         name: asset.name
@@ -88,7 +121,8 @@ try {
         month: 'long',
         day: 'numeric'
       }),
-      files
+      desktopFiles,
+      cliFiles
     };
   }
 } catch (error) {
@@ -97,11 +131,16 @@ try {
   }
 }
 
-// Group files by platform
-const windowsFiles = releaseData?.files.filter(f => f.platform === 'windows') || [];
-const macosFiles = releaseData?.files.filter(f => f.platform === 'macos') || [];
-const linuxAppImages = releaseData?.files.filter(f => f.platform === 'linux' && f.type === 'AppImage') || [];
-const linuxDebs = releaseData?.files.filter(f => f.platform === 'linux' && f.type === 'deb') || [];
+// Group desktop files by platform
+const windowsFiles = releaseData?.desktopFiles.filter(f => f.platform === 'windows') || [];
+const macosFiles = releaseData?.desktopFiles.filter(f => f.platform === 'macos') || [];
+const linuxAppImages = releaseData?.desktopFiles.filter(f => f.platform === 'linux' && f.type === 'AppImage') || [];
+const linuxDebs = releaseData?.desktopFiles.filter(f => f.platform === 'linux' && f.type === 'deb') || [];
+
+// Group CLI files by platform
+const cliWindows = releaseData?.cliFiles.filter(f => f.platform === 'windows') || [];
+const cliMacos = releaseData?.cliFiles.filter(f => f.platform === 'macos') || [];
+const cliLinux = releaseData?.cliFiles.filter(f => f.platform === 'linux') || [];
 ---
 
 <BaseLayout
@@ -133,6 +172,8 @@ const linuxDebs = releaseData?.files.filter(f => f.platform === 'linux' && f.typ
       <div class="container">
         {releaseData ? (
           <>
+            <h2 class="section-heading">{t('pages.downloads.sections.desktop')}</h2>
+
             <!-- Windows Section -->
             <div class="platform-section" data-platform="windows">
               <div class="platform-header">
@@ -221,6 +262,79 @@ const linuxDebs = releaseData?.files.filter(f => f.platform === 'linux' && f.typ
                 </div>
               )}
             </div>
+
+            <!-- CLI Section -->
+            {(cliWindows.length > 0 || cliMacos.length > 0 || cliLinux.length > 0) && (
+              <>
+                <h2 class="section-heading cli-section-heading">{t('pages.downloads.sections.cli')}</h2>
+                <p class="cli-description">{t('pages.downloads.cli.description')}</p>
+
+                {cliWindows.length > 0 && (
+                  <div class="platform-section cli-section" data-platform="windows">
+                    <div class="platform-header">
+                      <h2>{t('pages.downloads.platforms.windows')}</h2>
+                    </div>
+                    <div class="download-list">
+                      {cliWindows.map(file => (
+                        <div class="download-item">
+                          <div class="download-info">
+                            <span class="download-arch">{file.arch === 'arm64' ? 'ARM64' : 'x64 (64-bit)'}</span>
+                            <span class="download-size">{file.size}</span>
+                          </div>
+                          <a href={file.url} class="btn btn-primary download-button">
+                            {t('pages.downloads.actions.download')} {file.name}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {cliMacos.length > 0 && (
+                  <div class="platform-section cli-section" data-platform="macos">
+                    <div class="platform-header">
+                      <h2>{t('pages.downloads.platforms.macos')}</h2>
+                    </div>
+                    <div class="download-list">
+                      {cliMacos.map(file => (
+                        <div class="download-item">
+                          <div class="download-info">
+                            <span class="download-arch">
+                              {file.arch === 'arm64' ? 'Apple Silicon (ARM64)' : 'Intel (x64)'}
+                            </span>
+                            <span class="download-size">{file.size}</span>
+                          </div>
+                          <a href={file.url} class="btn btn-primary download-button">
+                            {t('pages.downloads.actions.download')} {file.name}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {cliLinux.length > 0 && (
+                  <div class="platform-section cli-section" data-platform="linux">
+                    <div class="platform-header">
+                      <h2>{t('pages.downloads.platforms.linux')}</h2>
+                    </div>
+                    <div class="download-list">
+                      {cliLinux.map(file => (
+                        <div class="download-item">
+                          <div class="download-info">
+                            <span class="download-arch">{file.arch === 'arm64' ? 'ARM64' : 'x64 (64-bit)'}</span>
+                            <span class="download-size">{file.size}</span>
+                          </div>
+                          <a href={file.url} class="btn btn-primary download-button">
+                            {t('pages.downloads.actions.download')} {file.name}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </>
         ) : (
           <div class="no-releases">
@@ -261,6 +375,11 @@ const linuxDebs = releaseData?.files.filter(f => f.platform === 'linux' && f.typ
         <details class="installation-details">
           <summary>{t('pages.downloads.platforms.linux')} - DEB</summary>
           <p>{t('pages.downloads.installation.linux_deb')}</p>
+        </details>
+
+        <details class="installation-details">
+          <summary>{t('pages.downloads.sections.cli')}</summary>
+          <p>{t('pages.downloads.installation.cli')}</p>
         </details>
       </div>
     </section>
@@ -308,10 +427,10 @@ const linuxDebs = releaseData?.files.filter(f => f.platform === 'linux' && f.typ
                      : userAgent.includes('mac') ? 'macos'
                      : 'linux';
 
-      const platformSection = document.querySelector(`[data-platform="${platform}"]`);
-      if (platformSection) {
-        platformSection.classList.add('recommended');
-      }
+      const platformSections = document.querySelectorAll(`[data-platform="${platform}"]`);
+      platformSections.forEach(section => {
+        section.classList.add('recommended');
+      });
     });
   </script>
 </BaseLayout>

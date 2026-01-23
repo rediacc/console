@@ -80,6 +80,18 @@
     ]
   },
 
+  "cli-executables": {
+    "timeout": 15,
+    "platforms": [
+      {"os": "ubuntu-latest", "platform": "linux", "arch": "x64"},
+      {"os": "ubuntu-24.04-arm", "platform": "linux", "arch": "arm64"},
+      {"os": "macos-latest", "platform": "mac", "arch": "arm64"},
+      {"os": "macos-15-intel", "platform": "mac", "arch": "x64"},
+      {"os": "windows-latest", "platform": "win", "arch": "x64"},
+      {"os": "windows-11-arm", "platform": "win", "arch": "arm64"}
+    ]
+  },
+
   "vscode": {
     "timeout": 15,
     "platforms": ["ubuntu-latest", "macos-latest", "windows-latest"]

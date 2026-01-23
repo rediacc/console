@@ -1,5 +1,5 @@
 #!/bin/bash
-# Post-installation script for Rediacc Console
+# Post-installation script for Rediacc Desktop
 
 # Update desktop database
 if command -v update-desktop-database &> /dev/null; then

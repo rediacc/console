@@ -54,6 +54,25 @@
   padding: var(--section-padding);
 }
 
+/* Section Headings */
+.section-heading {
+  font-size: var(--font-size-2xl);
+  font-weight: bold;
+  margin-bottom: var(--space-6);
+  color: var(--color-text);
+}
+
+.cli-section-heading {
+  margin-top: var(--space-12);
+}
+
+.cli-description {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+  line-height: var(--leading-relaxed);
+}
+
 /* Platform Section */
 .platform-section {
   background: white;

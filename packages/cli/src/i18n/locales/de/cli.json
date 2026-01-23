@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc Console CLI - Befehlszeilenschnittstelle für Rediacc-Operationen"
+    "description": "Rediacc CLI - Befehlszeilenschnittstelle für Rediacc-Operationen"
   },
   "commands": {
     "audit": {

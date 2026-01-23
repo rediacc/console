@@ -1,5 +1,5 @@
-appId: com.rediacc.console
-productName: Rediacc Console
+appId: com.rediacc.desktop
+productName: Rediacc Desktop
 copyright: Copyright © 2024 Rediacc
 
 # Skip native module rebuild on Windows (uses prebuilds instead)
@@ -25,7 +25,7 @@ asarUnpack:
 # Note: arch is controlled by CI via --arch flag, not hardcoded here
 win:
   target: nsis
-  artifactName: rediacc-console-${version}-win-${arch}.${ext}
+  artifactName: rediacc-desktop-${version}-win-${arch}.${ext}
   icon: resources/icon.ico
   # Bundle MSYS2 binaries for rsync/SSH functionality
   extraResources:
@@ -41,7 +41,7 @@ nsis:
   deleteAppDataOnUninstall: false
   createDesktopShortcut: always
   createStartMenuShortcut: true
-  shortcutName: Rediacc Console
+  shortcutName: Rediacc Desktop
   installerIcon: resources/icon.ico
   uninstallerIcon: resources/icon.ico
 
@@ -51,7 +51,7 @@ mac:
   target:
     - dmg
     - zip
-  artifactName: rediacc-console-${version}-mac-${arch}.${ext}
+  artifactName: rediacc-desktop-${version}-mac-${arch}.${ext}
   icon: resources/icon.png
   category: public.app-category.developer-tools
   entitlementsInherit: resources/entitlements.mac.plist
@@ -78,11 +78,11 @@ linux:
   target:
     - AppImage
     - deb
-  artifactName: rediacc-console-${version}-linux-${arch}.${ext}
+  artifactName: rediacc-desktop-${version}-linux-${arch}.${ext}
   icon: resources/icon.png
   category: Development
   maintainer: Rediacc <support@rediacc.com>
-  synopsis: Rediacc Console Desktop Application
+  synopsis: Rediacc Desktop Application
   description: Desktop application for managing Rediacc infrastructure
 
 deb:
@@ -99,7 +99,7 @@ deb:
   afterRemove: scripts/postrm.sh
 
 appImage:
-  artifactName: rediacc-console-${version}-linux.${ext}
+  artifactName: rediacc-desktop-${version}-linux.${ext}
 
 # Publish Configuration
 publish:
