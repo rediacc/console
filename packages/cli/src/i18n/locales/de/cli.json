@@ -779,6 +779,20 @@
         }
       }
     },
+    "update": {
+      "description": "CLI-Updates prüfen und anwenden",
+      "force": "Update erzwingen, auch wenn bereits aktuell",
+      "checkOnly": "Nur auf Updates prüfen, ohne herunterzuladen",
+      "notSEA": "Update nicht möglich: Keine gepackte Binärdatei. Erst mit SEA bauen.",
+      "available": "Update verfügbar: v{{version}} (aktuell: v{{current}})",
+      "releaseNotes": "Versionshinweise: {{url}}",
+      "upToDate": "Bereits aktuell (v{{version}})",
+      "checking": "Suche nach Updates...",
+      "downloading": "Lade v{{version}} herunter...",
+      "progress": "Herunterladen... {{percent}}%",
+      "success": "Aktualisiert von v{{from}} auf v{{to}}",
+      "failed": "Update fehlgeschlagen: {{error}}"
+    },
     "term": {
       "description": "SSH-Terminal-Zugriff auf Machines und Repositories",
       "connecting": "Verbindung zu {{machine}} wird hergestellt...",

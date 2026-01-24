@@ -779,6 +779,20 @@
         }
       }
     },
+    "update": {
+      "description": "CLI güncellemelerini kontrol et ve uygula",
+      "force": "Güncel olsa bile güncellemeyi zorla",
+      "checkOnly": "Sadece güncellemeleri kontrol et, indirme",
+      "notSEA": "Güncellenemiyor: paketlenmiş ikili dosya olarak çalışmıyor. Önce SEA ile derleyin.",
+      "available": "Güncelleme mevcut: v{{version}} (mevcut: v{{current}})",
+      "releaseNotes": "Sürüm notları: {{url}}",
+      "upToDate": "Zaten güncel (v{{version}})",
+      "checking": "Güncellemeler kontrol ediliyor...",
+      "downloading": "v{{version}} indiriliyor...",
+      "progress": "İndiriliyor... {{percent}}%",
+      "success": "v{{from}} sürümünden v{{to}} sürümüne güncellendi",
+      "failed": "Güncelleme başarısız: {{error}}"
+    },
     "term": {
       "description": "Makinelere ve depolara SSH terminal erişimi",
       "connecting": "{{machine}} adresine bağlanılıyor...",

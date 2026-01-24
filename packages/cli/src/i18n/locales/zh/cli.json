@@ -779,6 +779,20 @@
         }
       }
     },
+    "update": {
+      "description": "检查并应用CLI更新",
+      "force": "即使已是最新也强制更新",
+      "checkOnly": "仅检查更新，不下载",
+      "notSEA": "无法更新：未作为打包二进制文件运行。请先使用SEA构建。",
+      "available": "有可用更新: v{{version}} (当前: v{{current}})",
+      "releaseNotes": "发行说明: {{url}}",
+      "upToDate": "已是最新版本 (v{{version}})",
+      "checking": "正在检查更新...",
+      "downloading": "正在下载 v{{version}}...",
+      "progress": "正在下载... {{percent}}%",
+      "success": "已从 v{{from}} 更新到 v{{to}}",
+      "failed": "更新失败: {{error}}"
+    },
     "term": {
       "description": "SSH 终端访问机器和仓库",
       "connecting": "正在连接到 {{machine}}...",

@@ -779,6 +779,20 @@
         }
       }
     },
+    "update": {
+      "description": "CLIのアップデートを確認して適用",
+      "force": "最新でも強制的にアップデート",
+      "checkOnly": "ダウンロードせずにアップデートの確認のみ",
+      "notSEA": "アップデートできません：パッケージバイナリとして実行されていません。先にSEAでビルドしてください。",
+      "available": "アップデート利用可能: v{{version}} (現在: v{{current}})",
+      "releaseNotes": "リリースノート: {{url}}",
+      "upToDate": "最新です (v{{version}})",
+      "checking": "アップデートを確認中...",
+      "downloading": "v{{version}}をダウンロード中...",
+      "progress": "ダウンロード中... {{percent}}%",
+      "success": "v{{from}}からv{{to}}にアップデートしました",
+      "failed": "アップデート失敗: {{error}}"
+    },
     "term": {
       "description": "マシンとリポジトリへの SSH ターミナルアクセス",
       "connecting": "{{machine}} に接続中です...",

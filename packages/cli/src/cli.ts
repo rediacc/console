@@ -16,6 +16,7 @@ import { registerStorageCommands } from './commands/storage.js';
 import { registerSyncCommands } from './commands/sync.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
+import { registerUpdateCommand } from './commands/update.js';
 import { registerUserCommands } from './commands/user.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
@@ -136,6 +137,7 @@ registerTermCommands(cli);
 registerSyncCommands(cli);
 registerProtocolCommands(cli);
 registerVSCodeCommands(cli);
+registerUpdateCommand(cli);
 registerShortcuts(cli);
 
 // Provide a clear error for unsupported subcommands

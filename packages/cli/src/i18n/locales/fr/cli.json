@@ -779,6 +779,20 @@
         }
       }
     },
+    "update": {
+      "description": "Vérifier et appliquer les mises à jour du CLI",
+      "force": "Forcer la mise à jour même si déjà à jour",
+      "checkOnly": "Vérifier les mises à jour sans télécharger",
+      "notSEA": "Mise à jour impossible : pas un binaire empaqueté. Compilez avec SEA d'abord.",
+      "available": "Mise à jour disponible : v{{version}} (actuel : v{{current}})",
+      "releaseNotes": "Notes de version : {{url}}",
+      "upToDate": "Déjà à jour (v{{version}})",
+      "checking": "Recherche de mises à jour...",
+      "downloading": "Téléchargement de v{{version}}...",
+      "progress": "Téléchargement... {{percent}}%",
+      "success": "Mis à jour de v{{from}} vers v{{to}}",
+      "failed": "Échec de la mise à jour : {{error}}"
+    },
     "term": {
       "description": "Accès terminal SSH aux machines et dépôts",
       "connecting": "Connexion à {{machine}} en cours...",

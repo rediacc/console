@@ -177,6 +177,13 @@ jobs:
             exit 1
           fi
 
+      - name: Generate CLI manifest
+        run: |
+          .ci/scripts/build/generate-cli-manifest.sh \
+            --version ${{ needs.deploy-publish.outputs.version || inputs.next_version }} \
+            --input dist/cli/ \
+            --output dist/cli/manifest.json
+
       - name: Create Release
         if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@v2
@@ -231,6 +238,20 @@ jobs:
         with:
           name: build-json-${{ github.sha }}
           path: packages/json/dist/
+
+      - name: Download CLI checksums for manifest
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          pattern: build-cli-*-${{ github.sha }}
+          path: dist/cli-artifacts/
+          merge-multiple: true
+
+      - name: Generate CLI manifest for Pages
+        run: |
+          .ci/scripts/build/generate-cli-manifest.sh \
+            --version ${{ needs.deploy-publish.outputs.version || inputs.next_version }} \
+            --input dist/cli-artifacts/ \
+            --output dist/cli-manifest/manifest.json
 
       - name: Assemble pages package
         run: .ci/scripts/build/build-pages.sh --output dist
