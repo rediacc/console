@@ -21,13 +21,14 @@ ROOT_NM="$REPO_ROOT/node_modules"
 LOCAL_NM="$DESKTOP_DIR/node_modules"
 
 # Read externals from the single source of truth
-EXTERNALS_JSON="$DESKTOP_DIR/externals.json"
-require_file "$EXTERNALS_JSON"
+# Note: use relative path in node -e to avoid Git Bash path issues on Windows
+# (Unix paths like /d/a/... are misinterpreted by Node.js as drive-relative)
+require_file "$DESKTOP_DIR/externals.json"
 EXTERNALS=()
 while IFS= read -r mod; do
     [[ -n "$mod" ]] && EXTERNALS+=("$mod")
-done <<< "$(node -e "
-  const cfg = JSON.parse(require('fs').readFileSync('$EXTERNALS_JSON', 'utf8'));
+done <<< "$(cd "$DESKTOP_DIR" && node -e "
+  const cfg = JSON.parse(require('fs').readFileSync('./externals.json', 'utf8'));
   cfg.externals.forEach(m => console.log(m));
 ")"
 
@@ -64,8 +65,8 @@ copy_module_tree() {
     local pkg_json="$LOCAL_NM/$mod/package.json"
     if [[ -f "$pkg_json" ]]; then
         local deps
-        deps=$(node -e "
-          const pkg = JSON.parse(require('fs').readFileSync('$pkg_json', 'utf8'));
+        deps=$(cd "$LOCAL_NM/$mod" && node -e "
+          const pkg = JSON.parse(require('fs').readFileSync('./package.json', 'utf8'));
           Object.keys(pkg.dependencies || {}).forEach(d => console.log(d));
         " || true)
         for dep in $deps; do

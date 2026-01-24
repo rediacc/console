@@ -16,13 +16,14 @@ REPO_ROOT="$(get_repo_root)"
 DESKTOP_DIR="$REPO_ROOT/packages/desktop"
 
 # Read externals from the single source of truth
-EXTERNALS_JSON="$DESKTOP_DIR/externals.json"
-require_file "$EXTERNALS_JSON"
+# Note: use relative path in node -e to avoid Git Bash path issues on Windows
+# (Unix paths like /d/a/... are misinterpreted by Node.js as drive-relative)
+require_file "$DESKTOP_DIR/externals.json"
 REQUIRED_EXTERNALS=()
 while IFS= read -r mod; do
     [[ -n "$mod" ]] && REQUIRED_EXTERNALS+=("$mod")
-done <<< "$(node -e "
-  const cfg = JSON.parse(require('fs').readFileSync('$EXTERNALS_JSON', 'utf8'));
+done <<< "$(cd "$DESKTOP_DIR" && node -e "
+  const cfg = JSON.parse(require('fs').readFileSync('./externals.json', 'utf8'));
   cfg.externals.forEach(m => console.log(m));
 ")"
 
