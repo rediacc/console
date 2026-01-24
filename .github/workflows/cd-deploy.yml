@@ -148,7 +148,6 @@ jobs:
           pattern: build-desktop-*
           path: dist/desktop/
           merge-multiple: true
-        continue-on-error: ${{ inputs.dry_run }}
 
       - name: Download CLI executables
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
@@ -156,7 +155,6 @@ jobs:
           pattern: build-cli-*-${{ github.sha }}
           path: dist/cli/
           merge-multiple: true
-        continue-on-error: ${{ inputs.dry_run }}
 
       - name: Clean up debug artifacts
         run: rm -f dist/desktop/builder-debug.yml
@@ -170,6 +168,14 @@ jobs:
           echo "- Desktop artifacts: $DESKTOP_COUNT files" >> $GITHUB_STEP_SUMMARY
           echo "- CLI artifacts: $CLI_COUNT files" >> $GITHUB_STEP_SUMMARY
           echo "- Version: v${{ needs.deploy-publish.outputs.version || inputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "$DESKTOP_COUNT" -eq 0 ]]; then
+            echo "::error::No desktop artifacts found"
+            exit 1
+          fi
+          if [[ "$CLI_COUNT" -eq 0 ]]; then
+            echo "::error::No CLI artifacts found"
+            exit 1
+          fi
 
       - name: Create Release
         if: ${{ !inputs.dry_run }}

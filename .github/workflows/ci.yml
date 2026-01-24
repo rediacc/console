@@ -344,7 +344,7 @@ jobs:
   # ============================================================================
   deploy-dryrun:
     name: Deploy Dry-Run
-    needs: [initialize, build-docker]
+    needs: [initialize, build-docker, build-desktop, build-cli]
     if: needs.initialize.outputs.is_bot != 'true'
     uses: ./.github/workflows/cd-deploy.yml
     with:
