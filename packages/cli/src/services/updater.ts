@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import { get as httpGet } from 'node:http';
 import { get as httpsGet } from 'node:https';
 import { dirname, join } from 'node:path';
-import type { UpdateManifest } from '../types/index.js';
+import { type UpdateManifest } from '../types/index.js';
 import {
   acquireUpdateLock,
   cleanupOldBinary,
@@ -35,15 +35,30 @@ export interface UpdateResult {
   error?: string;
 }
 
+interface GitHubRelease {
+  tag_name: string;
+  html_url: string;
+  published_at: string;
+  assets: { name: string; browser_download_url: string }[];
+}
+
 /**
- * Fetch raw text from a URL with a timeout.
+ * Select the appropriate HTTP getter for the URL scheme.
  */
-function fetchText(url: string, timeoutMs: number): Promise<string> {
+function getHttpGetter(url: string) {
+  return url.startsWith('https://') ? httpsGet : httpGet;
+}
+
+/**
+ * Make an HTTP request and collect response body as a Buffer.
+ * Handles redirects, status codes, and timeouts.
+ */
+function httpRequestBuffer(url: string, timeoutMs: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const getter = url.startsWith('https://') ? httpsGet : httpGet;
+    const getter = getHttpGetter(url);
     const req = getter(url, { headers: { 'User-Agent': `rdc/${VERSION}` } }, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        fetchText(res.headers.location, timeoutMs).then(resolve, reject);
+        httpRequestBuffer(res.headers.location, timeoutMs).then(resolve, reject);
         return;
       }
 
@@ -54,7 +69,7 @@ function fetchText(url: string, timeoutMs: number): Promise<string> {
 
       const chunks: Buffer[] = [];
       res.on('data', (chunk: Buffer) => chunks.push(chunk));
-      res.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
       res.on('error', reject);
     });
 
@@ -67,41 +82,19 @@ function fetchText(url: string, timeoutMs: number): Promise<string> {
 }
 
 /**
+ * Fetch raw text from a URL with a timeout.
+ */
+async function fetchText(url: string, timeoutMs: number): Promise<string> {
+  const buffer = await httpRequestBuffer(url, timeoutMs);
+  return buffer.toString('utf-8');
+}
+
+/**
  * Fetch JSON from a URL with a timeout.
  */
-function fetchJson<T>(url: string, timeoutMs: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const getter = url.startsWith('https://') ? httpsGet : httpGet;
-    const req = getter(url, { headers: { 'User-Agent': `rdc/${VERSION}` } }, (res) => {
-      // Follow redirects
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        fetchJson<T>(res.headers.location, timeoutMs).then(resolve, reject);
-        return;
-      }
-
-      if (res.statusCode !== 200) {
-        reject(new Error(`HTTP ${res.statusCode}`));
-        return;
-      }
-
-      const chunks: Buffer[] = [];
-      res.on('data', (chunk: Buffer) => chunks.push(chunk));
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(Buffer.concat(chunks).toString('utf-8')));
-        } catch (e) {
-          reject(new Error('Invalid JSON response'));
-        }
-      });
-      res.on('error', reject);
-    });
-
-    req.on('error', reject);
-    req.setTimeout(timeoutMs, () => {
-      req.destroy();
-      reject(new Error('Request timeout'));
-    });
-  });
+async function fetchJson<T>(url: string, timeoutMs: number): Promise<T> {
+  const text = await fetchText(url, timeoutMs);
+  return JSON.parse(text) as T;
 }
 
 /**
@@ -113,9 +106,8 @@ function downloadFile(
   onProgress?: (downloaded: number, total: number) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const getter = url.startsWith('https://') ? httpsGet : httpGet;
+    const getter = getHttpGetter(url);
     const req = getter(url, { headers: { 'User-Agent': `rdc/${VERSION}` } }, (res) => {
-      // Follow redirects
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         downloadFile(res.headers.location, destPath, onProgress).then(resolve, reject);
         return;
@@ -126,7 +118,8 @@ function downloadFile(
         return;
       }
 
-      const total = parseInt(res.headers['content-length'] ?? '0', 10);
+      const contentLength = res.headers['content-length'];
+      const total = contentLength ? Number.parseInt(contentLength, 10) : 0;
       let downloaded = 0;
 
       const writeStream = fs.open(destPath, 'w', 0o755).then(async (fh) => {
@@ -182,6 +175,70 @@ export function compareVersions(a: string, b: string): number {
 }
 
 /**
+ * Parse a GitHub release response into an UpdateManifest.
+ */
+async function parseGitHubRelease(
+  release: GitHubRelease,
+  timeoutMs: number
+): Promise<UpdateManifest> {
+  const version = release.tag_name.replace(/^v/, '');
+  const manifest: UpdateManifest = {
+    version,
+    releaseDate: release.published_at,
+    releaseNotesUrl: release.html_url,
+    binaries: {},
+  };
+
+  // Build a map of checksum asset URLs keyed by binary name
+  const checksumAssets = new Map<string, string>();
+  for (const asset of release.assets) {
+    if (asset.name.endsWith('.sha256')) {
+      const baseName = asset.name.replace('.sha256', '');
+      checksumAssets.set(baseName, asset.browser_download_url);
+    }
+  }
+
+  const binaryPattern = /^rdc-(linux|mac|win)-(x64|arm64)(\.exe)?$/;
+
+  // Find CLI binaries and fetch their checksums
+  for (const asset of release.assets) {
+    const match = binaryPattern.exec(asset.name);
+    if (!match) continue;
+
+    const key = `${match[1]}-${match[2]}` as keyof UpdateManifest['binaries'];
+    const sha256 = await fetchChecksumForAsset(asset.name, checksumAssets, timeoutMs);
+
+    manifest.binaries[key] = {
+      url: asset.browser_download_url,
+      sha256,
+    };
+  }
+
+  return manifest;
+}
+
+/**
+ * Fetch the SHA256 checksum for a given binary asset.
+ */
+async function fetchChecksumForAsset(
+  assetName: string,
+  checksumAssets: Map<string, string>,
+  timeoutMs: number
+): Promise<string> {
+  const checksumUrl = checksumAssets.get(assetName);
+  if (!checksumUrl) return '';
+
+  try {
+    const content = await fetchText(checksumUrl, timeoutMs);
+    // Format: "hash  filename" or just "hash"
+    return content.trim().split(/\s+/)[0] ?? '';
+  } catch {
+    // If checksum can't be fetched, leave empty (update will be refused)
+    return '';
+  }
+}
+
+/**
  * Fetch the update manifest (Pages primary, GitHub API fallback).
  */
 async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<UpdateManifest> {
@@ -189,58 +246,8 @@ async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<Upda
     return await fetchJson<UpdateManifest>(MANIFEST_URL, timeoutMs);
   } catch {
     // Fallback: GitHub Releases API
-    const release = await fetchJson<{
-      tag_name: string;
-      html_url: string;
-      published_at: string;
-      assets: Array<{ name: string; browser_download_url: string }>;
-    }>(GITHUB_API_FALLBACK, timeoutMs);
-
-    // Build manifest from release data
-    const version = release.tag_name.replace(/^v/, '');
-    const manifest: UpdateManifest = {
-      version,
-      releaseDate: release.published_at,
-      releaseNotesUrl: release.html_url,
-      binaries: {},
-    };
-
-    // Build a map of checksum asset URLs keyed by binary name
-    const checksumAssets = new Map<string, string>();
-    for (const asset of release.assets) {
-      if (asset.name.endsWith('.sha256')) {
-        const baseName = asset.name.replace('.sha256', '');
-        checksumAssets.set(baseName, asset.browser_download_url);
-      }
-    }
-
-    // Find CLI binaries and fetch their checksums
-    for (const asset of release.assets) {
-      const match = asset.name.match(/^rdc-(linux|mac|win)-(x64|arm64)(\.exe)?$/);
-      if (match) {
-        const key = `${match[1]}-${match[2]}` as keyof UpdateManifest['binaries'];
-        let sha256 = '';
-
-        // Fetch the .sha256 file content for this binary
-        const checksumUrl = checksumAssets.get(asset.name);
-        if (checksumUrl) {
-          try {
-            const content = await fetchText(checksumUrl, timeoutMs);
-            // Format: "hash  filename" or just "hash"
-            sha256 = content.trim().split(/\s+/)[0] ?? '';
-          } catch {
-            // If checksum can't be fetched, leave empty (update will be refused)
-          }
-        }
-
-        manifest.binaries[key] = {
-          url: asset.browser_download_url,
-          sha256,
-        };
-      }
-    }
-
-    return manifest;
+    const release = await fetchJson<GitHubRelease>(GITHUB_API_FALLBACK, timeoutMs);
+    return parseGitHubRelease(release, timeoutMs);
   }
 }
 
@@ -271,6 +278,50 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
 }
 
 /**
+ * Download, verify checksum, and atomically replace the current binary.
+ */
+async function downloadVerifyAndReplace(
+  binaryUrl: string,
+  expectedSha256: string,
+  onProgress?: (downloaded: number, total: number) => void
+): Promise<void> {
+  const execPath = process.execPath;
+  const execDir = dirname(execPath);
+  const tempPath = join(execDir, `.rdc-update-${Date.now()}.tmp`);
+
+  try {
+    await downloadFile(binaryUrl, tempPath, onProgress);
+
+    // Verify SHA256 checksum
+    const actualHash = await computeSha256(tempPath);
+    if (actualHash !== expectedSha256) {
+      throw new Error('update.errors.checksumMismatch');
+    }
+
+    // Self-replace: rename current -> .old, rename new -> current
+    const oldPath = getOldBinaryPath();
+    await fs.unlink(oldPath).catch(() => {});
+    await fs.rename(execPath, oldPath);
+    await fs.rename(tempPath, execPath);
+
+    // Set executable permission (no-op on Windows)
+    if (process.platform !== 'win32') {
+      await fs.chmod(execPath, 0o755);
+    }
+  } catch (err) {
+    await fs.unlink(tempPath).catch(() => {});
+    throw err;
+  }
+}
+
+/**
+ * Create an error UpdateResult.
+ */
+function errorResult(error: string, toVersion: string = VERSION): UpdateResult {
+  return { success: false, fromVersion: VERSION, toVersion, error };
+}
+
+/**
  * Perform the self-update.
  */
 export async function performUpdate(
@@ -278,38 +329,15 @@ export async function performUpdate(
 ): Promise<UpdateResult> {
   const { force = false, onProgress } = options;
 
-  if (!isSEA()) {
-    return {
-      success: false,
-      fromVersion: VERSION,
-      toVersion: VERSION,
-      error: 'update.errors.notSEA',
-    };
-  }
+  if (!isSEA()) return errorResult('update.errors.notSEA');
 
   const platformKey = getPlatformKey();
-  if (!platformKey) {
-    return {
-      success: false,
-      fromVersion: VERSION,
-      toVersion: VERSION,
-      error: 'update.errors.unsupportedPlatform',
-    };
-  }
+  if (!platformKey) return errorResult('update.errors.unsupportedPlatform');
 
-  // Acquire lock
   const locked = await acquireUpdateLock();
-  if (!locked) {
-    return {
-      success: false,
-      fromVersion: VERSION,
-      toVersion: VERSION,
-      error: 'update.errors.lockFailed',
-    };
-  }
+  if (!locked) return errorResult('update.errors.lockFailed');
 
   try {
-    // Fetch manifest with longer timeout for explicit update
     const manifest = await fetchManifest(10_000);
 
     if (!force && compareVersions(VERSION, manifest.version) >= 0) {
@@ -322,79 +350,15 @@ export async function performUpdate(
     }
 
     const binaryInfo = manifest.binaries[platformKey];
-    if (!binaryInfo) {
-      return {
-        success: false,
-        fromVersion: VERSION,
-        toVersion: manifest.version,
-        error: 'update.errors.noBinary',
-      };
-    }
+    if (!binaryInfo) return errorResult('update.errors.noBinary', manifest.version);
+    if (!binaryInfo.sha256) return errorResult('update.errors.noChecksum', manifest.version);
 
-    // Download to temp file in same directory as current binary
-    const execPath = process.execPath;
-    const execDir = dirname(execPath);
-    const tempPath = join(execDir, `.rdc-update-${Date.now()}.tmp`);
+    await downloadVerifyAndReplace(binaryInfo.url, binaryInfo.sha256, onProgress);
 
-    try {
-      await downloadFile(binaryInfo.url, tempPath, onProgress);
-
-      // Verify SHA256 checksum (required for security)
-      if (!binaryInfo.sha256) {
-        await fs.unlink(tempPath).catch(() => {});
-        return {
-          success: false,
-          fromVersion: VERSION,
-          toVersion: manifest.version,
-          error: 'update.errors.noChecksum',
-        };
-      }
-
-      const actualHash = await computeSha256(tempPath);
-      if (actualHash !== binaryInfo.sha256) {
-        await fs.unlink(tempPath).catch(() => {});
-        return {
-          success: false,
-          fromVersion: VERSION,
-          toVersion: manifest.version,
-          error: 'update.errors.checksumMismatch',
-        };
-      }
-
-      // Self-replace: rename current -> .old, rename new -> current
-      const oldPath = getOldBinaryPath();
-
-      // Remove any existing old binary first
-      await fs.unlink(oldPath).catch(() => {});
-
-      // Rename current binary to .old
-      await fs.rename(execPath, oldPath);
-
-      // Rename downloaded binary to current path
-      await fs.rename(tempPath, execPath);
-
-      // Set executable permission (no-op on Windows)
-      if (process.platform !== 'win32') {
-        await fs.chmod(execPath, 0o755);
-      }
-
-      return {
-        success: true,
-        fromVersion: VERSION,
-        toVersion: manifest.version,
-      };
-    } catch (err) {
-      // Clean up temp file on error
-      await fs.unlink(tempPath).catch(() => {});
-      throw err;
-    }
+    return { success: true, fromVersion: VERSION, toVersion: manifest.version };
   } catch (err) {
-    return {
-      success: false,
-      fromVersion: VERSION,
-      toVersion: VERSION,
-      error: err instanceof Error ? err.message : 'update.errors.unknown',
-    };
+    const message = err instanceof Error ? err.message : 'update.errors.unknown';
+    return errorResult(message);
   } finally {
     await releaseUpdateLock();
   }

@@ -66,9 +66,9 @@ function createMockResponse(
       handlers.set(event, list);
       return res;
     },
-    [Symbol.asyncIterator]: async function* () {
+    async *[Symbol.asyncIterator]() {
       const chunk = typeof body === 'string' ? Buffer.from(body) : body;
-      yield chunk;
+      yield await Promise.resolve(chunk);
     },
   };
   setTimeout(() => {

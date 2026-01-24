@@ -44,8 +44,14 @@ export function isUpdateDisabled(): boolean {
  * Get the platform key for the current system.
  */
 export function getPlatformKey(): PlatformKey | null {
-  const arch = process.arch === 'x64' ? 'x64' : process.arch === 'arm64' ? 'arm64' : null;
-  if (!arch) return null;
+  let arch: 'x64' | 'arm64' | null;
+  if (process.arch === 'x64') {
+    arch = 'x64';
+  } else if (process.arch === 'arm64') {
+    arch = 'arm64';
+  } else {
+    return null;
+  }
 
   switch (process.platform) {
     case 'linux':
@@ -96,8 +102,8 @@ export async function acquireUpdateLock(): Promise<boolean> {
     // Check for existing lock
     const existing = await fs.readFile(UPDATE_LOCK_FILE, 'utf-8').catch(() => null);
     if (existing) {
-      const pid = parseInt(existing.trim(), 10);
-      if (!isNaN(pid) && isProcessAlive(pid)) {
+      const pid = Number.parseInt(existing.trim(), 10);
+      if (!Number.isNaN(pid) && isProcessAlive(pid)) {
         return false; // Another update is in progress
       }
       // Stale lock - remove it
