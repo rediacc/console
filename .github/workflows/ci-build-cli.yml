@@ -14,7 +14,7 @@ jobs:
   build-cli-executables:
     name: CLI (${{ matrix.platform }}-${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.timeout }}
     strategy:
       fail-fast: true
       matrix:
@@ -22,21 +22,27 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
+            timeout: 15
           - os: ubuntu-24.04-arm
             platform: linux
             arch: arm64
+            timeout: 15
           - os: macos-latest
             platform: mac
             arch: arm64
+            timeout: 15
           - os: macos-15-intel
             platform: mac
             arch: x64
+            timeout: 15
           - os: windows-latest
             platform: win
             arch: x64
+            timeout: 20
           - os: windows-11-arm
             platform: win
             arch: arm64
+            timeout: 30
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
