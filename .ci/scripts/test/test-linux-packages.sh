@@ -178,14 +178,6 @@ phase4_validate_apt_metadata() {
         return 0
     fi
 
-    # Build real metadata
-    GPG_PRIVATE_KEY="" \
-    "$SCRIPT_DIR/../build/build-pkg-repo.sh" \
-        --version "$TEST_VERSION" \
-        --local-pkgs "$TEST_DIR/packages" \
-        --output "$TEST_DIR/repo" \
-        --dry-run
-
     # For real metadata validation, we need GPG — build with temp key
     local repo_out="$TEST_DIR/repo-real"
     mkdir -p "$repo_out"
@@ -205,8 +197,8 @@ phase4_validate_apt_metadata() {
         --local-pkgs "$TEST_DIR/packages" \
         --output "$repo_out"
 
-    rm -rf "$gnupg_tmp"
     unset GNUPGHOME GPG_PRIVATE_KEY
+    rm -rf "$gnupg_tmp"
 
     # Validate APT structure
     local release_file="$repo_out/apt/dists/stable/Release"

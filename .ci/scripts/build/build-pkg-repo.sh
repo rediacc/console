@@ -140,7 +140,7 @@ if command -v gh &>/dev/null && [[ -n "${GH_TOKEN:-}" ]]; then
     # Get non-draft, non-prerelease releases
     RELEASE_TAGS=$(gh api "repos/${PKG_RELEASE_REPO}/releases" \
         --jq '[.[] | select(.draft == false and .prerelease == false)] | .[:'$MAX_VERSIONS'] | .[].tag_name' \
-        2>/dev/null || true)
+        2>/dev/null)
 
     while IFS= read -r tag; do
         [[ -z "$tag" ]] && continue
