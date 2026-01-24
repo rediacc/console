@@ -739,7 +739,7 @@ export default tseslint.config(
       // Unit test files (__tests__ convention)
       'packages/web/src/**/__tests__/**/*.{ts,tsx}',
       'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
-      'packages/cli/src/__tests__/**/*.ts',
+      'packages/cli/src/**/__tests__/**/*.ts',
     ],
     ignores: [
       // Has legitimate waitForTimeout for exponential backoff retry logic
