@@ -144,9 +144,9 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   useEffect(() => {
     if (isOpen) {
       const idx = initialIndex >= 0 ? initialIndex : 0;
-      setActiveIndex(idx);
-      // Delay focus to allow render
+      // Defer state update to avoid cascading renders
       requestAnimationFrame(() => {
+        setActiveIndex(idx);
         menuItemsRef.current[idx]?.focus();
       });
     }

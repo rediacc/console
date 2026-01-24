@@ -42,13 +42,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   useEffect(() => {
-    setCurrentPath(window.location.pathname);
+    requestAnimationFrame(() => {
+      setCurrentPath(window.location.pathname);
+    });
   }, []);
 
   const isActive = (href: string) => {
     if (!currentPath) return false;
-    const normalizedHref = href.endsWith('/') ? href : href + '/';
-    const normalizedPath = currentPath.endsWith('/') ? currentPath : currentPath + '/';
+    const normalizedHref = href.endsWith('/') ? href : `${href}/`;
+    const normalizedPath = currentPath.endsWith('/') ? currentPath : `${currentPath}/`;
     return normalizedPath === normalizedHref;
   };
 
@@ -84,15 +86,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         const focusableElements = sidebarRef.current.querySelectorAll<HTMLElement>(
           'a[href], button, [tabindex]:not([tabindex="-1"])'
         );
+        if (focusableElements.length === 0) return;
         const firstEl = focusableElements[0];
         const lastEl = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey && document.activeElement === firstEl) {
           e.preventDefault();
-          lastEl?.focus();
+          lastEl.focus();
         } else if (!e.shiftKey && document.activeElement === lastEl) {
           e.preventDefault();
-          firstEl?.focus();
+          firstEl.focus();
         }
       }
     };

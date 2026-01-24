@@ -1,8 +1,8 @@
 import React from 'react';
+import LanguageMenu from './LanguageMenu';
 import { getLanguageName } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-import LanguageMenu from './LanguageMenu';
 import '../styles/language-switcher-inline.css';
 
 interface LanguageSwitcherProps {
