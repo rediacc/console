@@ -168,3 +168,21 @@ export interface IStorageProvider {
 }
 
 export type { ICryptoProvider } from '@rediacc/shared/encryption';
+
+// ============================================================================
+// Auto-Update Types
+// ============================================================================
+
+import type { PlatformKey } from '../utils/platform.js';
+
+export interface BinaryInfo {
+  url: string;
+  sha256: string;
+}
+
+export interface UpdateManifest {
+  version: string;
+  releaseDate: string;
+  releaseNotesUrl: string;
+  binaries: Partial<Record<PlatformKey, BinaryInfo>>;
+}

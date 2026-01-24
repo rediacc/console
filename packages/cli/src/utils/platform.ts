@@ -1,38 +1,8 @@
-import { access, mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { promises as fs } from 'node:fs';
+import { homedir } from 'node:os';
+import { basename, dirname, join } from 'node:path';
 
-const FALLBACK_TEMP_DIR = '/tmp';
-
-const LOCK_FILE = path.join(
-  process.env.HOME ?? process.env.USERPROFILE ?? FALLBACK_TEMP_DIR,
-  '.rediacc',
-  'update.lock'
-);
-
-/**
- * Returns true if the current process is running as a Single Executable Application (SEA).
- * SEA binaries are named `rdc`, `rdc.exe`, or `rdc-<platform>-<arch>`.
- */
-export function isSEA(): boolean {
-  const base = path.basename(process.execPath).toLowerCase();
-  return base.startsWith('rdc') && !base.startsWith('node');
-}
-
-/**
- * Returns true if auto-update should be disabled.
- * Disabled in CI, when env var is set, or when running from dev paths.
- */
-export function isUpdateDisabled(): boolean {
-  if (process.env.RDC_DISABLE_AUTOUPDATE === '1') return true;
-  if (process.env.CI === 'true') return true;
-
-  const execPath = process.execPath.replaceAll('\\', '/');
-  if (execPath.includes('/node_modules/')) return true;
-  if (execPath.includes('/dist/')) return true;
-  if (execPath.includes('/build/')) return true;
-
-  return false;
-}
+const UPDATE_LOCK_FILE = join(homedir(), '.rediacc', 'update.lock');
 
 export type PlatformKey =
   | 'linux-x64'
@@ -43,16 +13,47 @@ export type PlatformKey =
   | 'win-arm64';
 
 /**
- * Returns the platform key for the current OS/arch combination.
- * Returns null if the platform is unsupported.
+ * Detect if running as a Node.js Single Executable Application (SEA).
+ * SEA binaries have the executable basename starting with 'rdc'.
+ */
+export function isSEA(): boolean {
+  const execName = basename(process.execPath)
+    .toLowerCase()
+    .replace(/\.exe$/, '');
+  return execName.startsWith('rdc');
+}
+
+/**
+ * Check if auto-update should be disabled based on environment.
+ */
+export function isUpdateDisabled(): boolean {
+  // Explicit opt-out
+  if (process.env.RDC_DISABLE_AUTOUPDATE === '1') return true;
+
+  // CI environments
+  if (process.env.CI === 'true') return true;
+
+  // Binary in build/dist/node_modules path
+  const execDir = dirname(process.execPath);
+  if (/[/\\](node_modules|dist|build)[/\\]?/i.test(execDir)) return true;
+
+  return false;
+}
+
+/**
+ * Get the platform key for the current system.
  */
 export function getPlatformKey(): PlatformKey | null {
-  const platform = process.platform;
-  const arch = process.arch;
+  let arch: 'x64' | 'arm64' | null;
+  if (process.arch === 'x64') {
+    arch = 'x64';
+  } else if (process.arch === 'arm64') {
+    arch = 'arm64';
+  } else {
+    return null;
+  }
 
-  if (arch !== 'x64' && arch !== 'arm64') return null;
-
-  switch (platform) {
+  switch (process.platform) {
     case 'linux':
       return `linux-${arch}` as PlatformKey;
     case 'darwin':
@@ -65,61 +66,71 @@ export function getPlatformKey(): PlatformKey | null {
 }
 
 /**
- * Returns the path for the old binary during self-replacement.
- * On Windows, strips `.exe` and adds `.old.exe`.
- * On other platforms, appends `.old`.
+ * Get the path to the old binary that may exist after a previous update.
  */
-export function getOldBinaryPath(execPath: string): string {
-  if (process.platform === 'win32') {
-    const withoutExt = execPath.replace(/\.exe$/i, '');
-    return `${withoutExt}.old.exe`;
-  }
-  return `${execPath}.old`;
+export function getOldBinaryPath(): string {
+  const execPath = process.execPath;
+  const ext = process.platform === 'win32' ? '.exe' : '';
+  const base = execPath.replace(/\.exe$/, '');
+  return `${base}.old${ext}`;
 }
 
 /**
- * Attempts to acquire the update lock file.
- * Returns true if the lock was acquired, false if another update is in progress.
+ * Clean up old binary from a previous update (best-effort, never throws).
+ */
+export async function cleanupOldBinary(): Promise<void> {
+  try {
+    const oldPath = getOldBinaryPath();
+    await fs.unlink(oldPath);
+  } catch {
+    // Ignore errors - file may not exist or may still be locked
+  }
+}
+
+/**
+ * Acquire the update lock file. Returns true if lock was acquired.
+ * Uses PID-based stale lock detection.
  */
 export async function acquireUpdateLock(): Promise<boolean> {
   try {
-    const content = await readFile(LOCK_FILE, 'utf-8').catch(() => null);
-    if (content) {
-      const pid = Number.parseInt(content.trim(), 10);
-      if (!Number.isNaN(pid) && isProcessAlive(pid)) {
-        return false;
-      }
-      // Stale lock - remove and proceed
-    }
+    await fs.mkdir(dirname(UPDATE_LOCK_FILE), { recursive: true });
   } catch {
-    // No lock file exists
+    // Directory may already exist
   }
 
-  const lockDir = path.dirname(LOCK_FILE);
-  await mkdir(lockDir, { recursive: true });
-  await writeFile(LOCK_FILE, String(process.pid), 'utf-8');
-  return true;
+  try {
+    // Check for existing lock
+    const existing = await fs.readFile(UPDATE_LOCK_FILE, 'utf-8').catch(() => null);
+    if (existing) {
+      const pid = Number.parseInt(existing.trim(), 10);
+      if (!Number.isNaN(pid) && isProcessAlive(pid)) {
+        return false; // Another update is in progress
+      }
+      // Stale lock - remove it
+    }
+
+    // Write our PID
+    await fs.writeFile(UPDATE_LOCK_FILE, process.pid.toString(), { mode: 0o600 });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Releases the update lock file.
+ * Release the update lock file.
  */
 export async function releaseUpdateLock(): Promise<void> {
-  await unlink(LOCK_FILE).catch(() => {});
-}
-
-/**
- * Removes the old binary left over from a previous update.
- */
-export async function cleanupOldBinary(oldPath: string): Promise<void> {
   try {
-    await access(oldPath);
-    await rm(oldPath);
+    await fs.unlink(UPDATE_LOCK_FILE);
   } catch {
-    // File doesn't exist, nothing to clean
+    // Ignore - may already be cleaned up
   }
 }
 
+/**
+ * Check if a process with the given PID is alive.
+ */
 function isProcessAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);

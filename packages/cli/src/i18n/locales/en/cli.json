@@ -779,6 +779,21 @@
         "description": "Retry a failed task (shortcut for: queue retry)"
       }
     },
+    "update": {
+      "description": "Check for and apply CLI updates",
+      "force": "Force update even if already up-to-date",
+      "checkOnly": "Only check for updates without downloading",
+      "notSEA": "Cannot update: not running as a packaged binary. Build with SEA first.",
+      "available": "Update available: v{{version}} (current: v{{current}})",
+      "releaseNotes": "Release notes: {{url}}",
+      "upToDate": "Already up to date (v{{version}})",
+      "checking": "Checking for updates...",
+      "downloading": "Downloading v{{version}}...",
+      "progress": "Downloading... {{percent}}%",
+      "success": "Updated from v{{from}} to v{{to}}",
+      "failed": "Update failed: {{error}}",
+      "unknownError": "Unknown error"
+    },
     "term": {
       "description": "SSH terminal access to machines and repositories",
       "connecting": "Connecting to {{machine}}...",
