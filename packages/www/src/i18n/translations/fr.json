@@ -159,6 +159,7 @@
     "docs": "Documents",
     "downloads": "Downloads",
     "home": "Accueil",
+    "install": "Installer",
     "login": "Se connecter",
     "search": "Recherche",
     "selectLanguage": "Sélectionnez la langue",
@@ -352,6 +353,44 @@
         "keywords": "automatisation de l'infrastructure, environnements de développement, reprise après sinistre, automatisation DevOps, pipeline CI/CD, infrastructure cloud, opérations de développement, Model Context Protocol, infrastructure sécurisée pour l'IA",
         "title": "Rediacc - Plateforme d'automatisation des infrastructures"
       }
+    },
+    "install": {
+      "meta": {
+        "title": "Installer | Rediacc CLI",
+        "description": "Installez la CLI Rediacc sur Linux, macOS ou Windows via APT, DNF, npm ou téléchargement direct.",
+        "keywords": "installer rediacc, apt install, dnf install, npm install, installation CLI"
+      },
+      "hero": {
+        "title": "Installer Rediacc CLI",
+        "subtitle": "Choisissez votre méthode d'installation préférée"
+      },
+      "methods": {
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Pour Debian, Ubuntu et dérivés"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Pour Fedora, RHEL, CentOS, Rocky Linux"
+        },
+        "npm": {
+          "title": "npm",
+          "description": "Pour les environnements Node.js"
+        },
+        "binary": {
+          "title": "Téléchargement direct",
+          "description": "Binaire autonome, aucun gestionnaire de paquets requis"
+        }
+      },
+      "verify": {
+        "title": "Vérifier l'installation"
+      },
+      "architectures": {
+        "title": "Architectures prises en charge",
+        "method": "Méthode"
+      },
+      "copy": "Copier",
+      "copied": "Copié !"
     },
     "notFound": {
       "actions": {

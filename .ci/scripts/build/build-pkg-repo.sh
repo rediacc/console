@@ -93,7 +93,9 @@ log_step "Phase 1: GPG setup"
 
 GNUPGHOME_TMP="$(mktemp -d)"
 export GNUPGHOME="$GNUPGHOME_TMP"
-trap "rm -rf '$GNUPGHOME_TMP'" EXIT
+CLEANUP_DIRS=("$GNUPGHOME_TMP")
+cleanup() { rm -rf "${CLEANUP_DIRS[@]}"; }
+trap cleanup EXIT
 
 GPG_OPTS=(--batch --yes --no-tty)
 if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
@@ -165,8 +167,7 @@ fi
 log_step "Phase 3: Downloading historical packages"
 
 DOWNLOAD_DIR="$(mktemp -d)"
-# Update trap to clean up both temp dirs
-trap "rm -rf '$GNUPGHOME_TMP' '$DOWNLOAD_DIR'" EXIT
+CLEANUP_DIRS+=("$DOWNLOAD_DIR")
 
 for ver in "${VERSIONS[@]}"; do
     log_info "Downloading packages for v$ver..."
@@ -207,7 +208,7 @@ DISTS_DIR="$APT_DIR/dists/stable"
 # Use a temp working directory for package files (metadata generation only)
 APT_WORK_DIR="$(mktemp -d)"
 APT_POOL_DIR="$APT_WORK_DIR/pool/main/r/${PKG_NAME}"
-trap "rm -rf '$GNUPGHOME_TMP' '$DOWNLOAD_DIR' '$APT_WORK_DIR'" EXIT
+CLEANUP_DIRS+=("$APT_WORK_DIR")
 
 mkdir -p "$APT_POOL_DIR"
 mkdir -p "$DISTS_DIR/main/binary-amd64"
@@ -288,7 +289,7 @@ RPM_DIR="$OUTPUT_DIR/rpm"
 # Use a temp working directory for package files (metadata generation only)
 RPM_WORK_DIR="$(mktemp -d)"
 RPM_WORK_PKG_DIR="$RPM_WORK_DIR/packages"
-trap "rm -rf '$GNUPGHOME_TMP' '$DOWNLOAD_DIR' '$APT_WORK_DIR' '$RPM_WORK_DIR'" EXIT
+CLEANUP_DIRS+=("$RPM_WORK_DIR")
 
 mkdir -p "$RPM_WORK_PKG_DIR"
 

@@ -159,6 +159,7 @@
     "docs": "ドキュメント",
     "downloads": "Downloads",
     "home": "ホーム",
+    "install": "インストール",
     "login": "ログイン",
     "search": "検索",
     "selectLanguage": "言語を選択してください",
@@ -352,6 +353,44 @@
         "keywords": "インフラストラクチャ自動化、開発環境、災害復旧、DevOps 自動化、CI/CD パイプライン、クラウド インフラストラクチャ、開発運用、モデル コンテキスト プロトコル、AI セーフ インフラストラクチャ",
         "title": "Rediacc - インフラストラクチャ自動化プラットフォーム"
       }
+    },
+    "install": {
+      "meta": {
+        "title": "インストール | Rediacc CLI",
+        "description": "APT、DNF、npm、または直接ダウンロードを使用して、Linux、macOS、またはWindowsにRediacc CLIをインストールします。",
+        "keywords": "rediaccインストール, apt install, dnf install, npm install, CLIインストール"
+      },
+      "hero": {
+        "title": "Rediacc CLIをインストール",
+        "subtitle": "お好みのインストール方法を選択してください"
+      },
+      "methods": {
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Debian、Ubuntu、およびその派生向け"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Fedora、RHEL、CentOS、Rocky Linux向け"
+        },
+        "npm": {
+          "title": "npm",
+          "description": "Node.js環境向け"
+        },
+        "binary": {
+          "title": "直接ダウンロード",
+          "description": "スタンドアロンバイナリ、パッケージマネージャー不要"
+        }
+      },
+      "verify": {
+        "title": "インストールを確認"
+      },
+      "architectures": {
+        "title": "対応アーキテクチャ",
+        "method": "方法"
+      },
+      "copy": "コピー",
+      "copied": "コピーしました！"
     },
     "notFound": {
       "actions": {

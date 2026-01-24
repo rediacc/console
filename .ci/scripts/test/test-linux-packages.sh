@@ -22,7 +22,8 @@ FAILED_TESTS=()
 
 # Temp directory for all test artifacts
 TEST_DIR="$(mktemp -d)"
-trap "rm -rf '$TEST_DIR'" EXIT
+cleanup() { rm -rf "$TEST_DIR"; }
+trap cleanup EXIT
 
 TEST_VERSION="99.0.0-test"
 DOCKER_NETWORK=""
@@ -36,10 +37,10 @@ run_test() {
     log_step "TEST: $name"
     if "$@"; then
         log_info "PASS: $name"
-        ((PASS++))
+        ((PASS++)) || true
     else
         log_error "FAIL: $name"
-        ((FAIL++))
+        ((FAIL++)) || true
         FAILED_TESTS+=("$name")
     fi
 }

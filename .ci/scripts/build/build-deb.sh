@@ -105,7 +105,8 @@ require_cmd dpkg-deb
 
 # Create staging directory
 STAGING_DIR="$(mktemp -d)"
-trap "rm -rf '$STAGING_DIR'" EXIT
+cleanup() { rm -rf "$STAGING_DIR"; }
+trap cleanup EXIT
 
 # Create directory structure
 mkdir -p "$STAGING_DIR/DEBIAN"

@@ -105,7 +105,8 @@ require_cmd rpmbuild
 
 # Create rpmbuild tree in temp directory
 RPMBUILD_DIR="$(mktemp -d)"
-trap "rm -rf '$RPMBUILD_DIR'" EXIT
+cleanup() { rm -rf "$RPMBUILD_DIR"; }
+trap cleanup EXIT
 
 mkdir -p "$RPMBUILD_DIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
