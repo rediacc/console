@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/bridge-tests",
-  "version": "0.4.43",
+  "version": "0.4.44",
   "private": true,
   "type": "commonjs",
   "scripts": {
