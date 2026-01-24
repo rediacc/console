@@ -145,7 +145,7 @@ function displayFieldError(fieldGroup, errorElement, field, errorMessage) {
   field.setAttribute('aria-invalid', 'true');
   // Link error message to field for screen readers
   if (!errorElement.id) {
-    errorElement.id = field.id ? field.id + '-error' : 'error-' + Date.now();
+    errorElement.id = field.id ? field.id + '-error' : 'error-' + crypto.randomUUID();
   }
   field.setAttribute('aria-describedby', errorElement.id);
   errorElement.setAttribute('role', 'alert');
