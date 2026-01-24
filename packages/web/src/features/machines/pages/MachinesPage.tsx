@@ -288,7 +288,8 @@ const MachinesPage: React.FC = () => {
     handleResourceSelection(null);
   };
 
-  const selectedResource = selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine;
+  const selectedResource =
+    selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine;
 
   const renderPanelContent = () => {
     if (!selectedResource) return null;
@@ -378,11 +379,23 @@ const MachinesPage: React.FC = () => {
         </Flex>
 
         {isMobile ? (
-          <Modal open={!!selectedResource} onCancel={handlePanelClose} footer={null} width="100%" centered>
+          <Modal
+            open={!!selectedResource}
+            onCancel={handlePanelClose}
+            footer={null}
+            width="100%"
+            centered
+          >
             {renderPanelContent()}
           </Modal>
         ) : (
-          <Drawer open={!!selectedResource} onClose={handlePanelClose} width={panelWidth} placement="right" mask>
+          <Drawer
+            open={!!selectedResource}
+            onClose={handlePanelClose}
+            width={panelWidth}
+            placement="right"
+            mask
+          >
             {renderPanelContent()}
           </Drawer>
         )}
