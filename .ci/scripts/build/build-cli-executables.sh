@@ -145,8 +145,19 @@ fi
 
 # Step 6: Inject SEA blob
 log_step "Injecting SEA blob into binary..."
-npx postject "$OUTPUT_DIR/$BINARY_NAME" NODE_SEA_BLOB "$CLI_DIR/dist/sea-prep.blob" \
+POSTJECT_ARGS=(
+    "$OUTPUT_DIR/$BINARY_NAME"
+    NODE_SEA_BLOB
+    "$CLI_DIR/dist/sea-prep.blob"
     --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+)
+# macOS requires --macho-segment-name for proper code signing coverage.
+# Without it, the injected blob segment isn't covered by the ad-hoc signature,
+# causing SIGSEGV on ARM64 where code signing is mandatory.
+if [[ "$PLATFORM" == "mac" ]]; then
+    POSTJECT_ARGS+=(--macho-segment-name NODE_SEA)
+fi
+npx postject "${POSTJECT_ARGS[@]}"
 
 # Step 7: Re-sign (macOS only)
 if [[ "$PLATFORM" == "mac" ]]; then
