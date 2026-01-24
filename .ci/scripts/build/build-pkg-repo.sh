@@ -80,6 +80,11 @@ fi
 
 require_dir "$LOCAL_PKGS"
 
+# Resolve to absolute paths (script uses cd to temp dirs for metadata generation)
+LOCAL_PKGS="$(cd "$LOCAL_PKGS" && pwd)"
+mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
+
 log_step "Building package repositories"
 log_info "  Version: $VERSION"
 log_info "  Local packages: $LOCAL_PKGS"
