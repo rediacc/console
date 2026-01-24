@@ -329,6 +329,14 @@ jobs:
       next_version: ${{ needs.initialize.outputs.next_version }}
     secrets: inherit
 
+  build-cli:
+    name: Build (CLI)
+    needs: [initialize, quality]
+    uses: ./.github/workflows/ci-build-cli.yml
+    with:
+      next_version: ${{ needs.initialize.outputs.next_version }}
+    secrets: inherit
+
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
   # Jobs: deploy-dryrun (reusable workflow)
