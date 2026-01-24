@@ -70,8 +70,8 @@ retag_image() {
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Verifying source image: $src"
-        if ! docker buildx imagetools inspect "$src" > /dev/null 2>&1; then
-            log_error "[DRY-RUN] Source image NOT found: $src"
+        if ! docker buildx imagetools inspect "$src" > /dev/null; then
+            log_error "[DRY-RUN] Failed to inspect source image: $src"
             return 1
         fi
         log_info "[DRY-RUN] Verified source exists, would re-tag to: $dst"
