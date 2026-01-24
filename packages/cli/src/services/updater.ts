@@ -1,9 +1,8 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
-import { get as httpsGet } from 'node:https';
 import { get as httpGet } from 'node:http';
+import { get as httpsGet } from 'node:https';
 import { dirname, join } from 'node:path';
-import { VERSION } from '../version.js';
 import type { UpdateManifest } from '../types/index.js';
 import {
   acquireUpdateLock,
@@ -14,6 +13,7 @@ import {
   isUpdateDisabled,
   releaseUpdateLock,
 } from '../utils/platform.js';
+import { VERSION } from '../version.js';
 
 const MANIFEST_URL = 'https://www.rediacc.com/cli/manifest.json';
 const GITHUB_API_FALLBACK = 'https://api.github.com/repos/rediacc/console/releases/latest';
@@ -189,10 +189,12 @@ async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<Upda
     return await fetchJson<UpdateManifest>(MANIFEST_URL, timeoutMs);
   } catch {
     // Fallback: GitHub Releases API
-    const release = await fetchJson<{ tag_name: string; html_url: string; published_at: string; assets: Array<{ name: string; browser_download_url: string }> }>(
-      GITHUB_API_FALLBACK,
-      timeoutMs
-    );
+    const release = await fetchJson<{
+      tag_name: string;
+      html_url: string;
+      published_at: string;
+      assets: Array<{ name: string; browser_download_url: string }>;
+    }>(GITHUB_API_FALLBACK, timeoutMs);
 
     // Build manifest from release data
     const version = release.tag_name.replace(/^v/, '');

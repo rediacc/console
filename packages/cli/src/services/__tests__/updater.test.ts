@@ -6,12 +6,7 @@ import {
   isUpdateDisabled,
   releaseUpdateLock,
 } from '../../utils/platform.js';
-import {
-  checkForUpdate,
-  compareVersions,
-  performUpdate,
-  startupUpdateCheck,
-} from '../updater.js';
+import { checkForUpdate, compareVersions, performUpdate, startupUpdateCheck } from '../updater.js';
 
 vi.mock('../../utils/platform.js', () => ({
   isSEA: vi.fn(),
@@ -56,7 +51,11 @@ vi.mock('node:crypto', () => ({
 type EventHandler = (...args: unknown[]) => void;
 
 /** Create a mock HTTP response that emits data/end events asynchronously */
-function createMockResponse(statusCode: number, body: string | Buffer, headers: Record<string, string> = {}) {
+function createMockResponse(
+  statusCode: number,
+  body: string | Buffer,
+  headers: Record<string, string> = {}
+) {
   const handlers = new Map<string, EventHandler[]>();
   const res = {
     statusCode,
@@ -183,11 +182,13 @@ describe('services/updater', () => {
         },
       };
 
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        const res = createMockResponse(200, JSON.stringify(manifest));
-        callback(res);
-        return createMockRequest();
-      });
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          const res = createMockResponse(200, JSON.stringify(manifest));
+          callback(res);
+          return createMockRequest();
+        }
+      );
 
       const result = await checkForUpdate();
 
@@ -204,11 +205,13 @@ describe('services/updater', () => {
         binaries: {},
       };
 
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        const res = createMockResponse(200, JSON.stringify(manifest));
-        callback(res);
-        return createMockRequest();
-      });
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          const res = createMockResponse(200, JSON.stringify(manifest));
+          callback(res);
+          return createMockRequest();
+        }
+      );
 
       const result = await checkForUpdate();
 
@@ -271,11 +274,13 @@ describe('services/updater', () => {
         binaries: {},
       };
 
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        const res = createMockResponse(200, JSON.stringify(manifest));
-        callback(res);
-        return createMockRequest();
-      });
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          const res = createMockResponse(200, JSON.stringify(manifest));
+          callback(res);
+          return createMockRequest();
+        }
+      );
 
       await performUpdate();
 
@@ -292,11 +297,13 @@ describe('services/updater', () => {
         },
       };
 
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        const res = createMockResponse(200, JSON.stringify(manifest));
-        callback(res);
-        return createMockRequest();
-      });
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          const res = createMockResponse(200, JSON.stringify(manifest));
+          callback(res);
+          return createMockRequest();
+        }
+      );
 
       const result = await performUpdate();
 
@@ -315,11 +322,13 @@ describe('services/updater', () => {
         },
       };
 
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        const res = createMockResponse(200, JSON.stringify(manifest));
-        callback(res);
-        return createMockRequest();
-      });
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          const res = createMockResponse(200, JSON.stringify(manifest));
+          callback(res);
+          return createMockRequest();
+        }
+      );
 
       const result = await performUpdate({ force: true });
 
@@ -341,15 +350,21 @@ describe('services/updater', () => {
       };
 
       let callCount = 0;
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        callCount++;
-        if (callCount === 1) {
-          callback(createMockResponse(200, JSON.stringify(manifest)));
-        } else {
-          callback(createMockResponse(200, binaryContent, { 'content-length': String(binaryContent.length) }));
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          callCount++;
+          if (callCount === 1) {
+            callback(createMockResponse(200, JSON.stringify(manifest)));
+          } else {
+            callback(
+              createMockResponse(200, binaryContent, {
+                'content-length': String(binaryContent.length),
+              })
+            );
+          }
+          return createMockRequest();
         }
-        return createMockRequest();
-      });
+      );
 
       // Mock file handle for download
       const mockFileHandle = {
@@ -360,9 +375,14 @@ describe('services/updater', () => {
       mockFs.readFile.mockResolvedValue(binaryContent);
 
       const { createHash } = await import('node:crypto');
-      const mockHashObj = { update: vi.fn(), digest: vi.fn().mockReturnValue('actual_different_hash') };
+      const mockHashObj = {
+        update: vi.fn(),
+        digest: vi.fn().mockReturnValue('actual_different_hash'),
+      };
       mockHashObj.update.mockReturnValue(mockHashObj);
-      vi.mocked(createHash).mockReturnValue(mockHashObj as unknown as ReturnType<typeof createHash>);
+      vi.mocked(createHash).mockReturnValue(
+        mockHashObj as unknown as ReturnType<typeof createHash>
+      );
 
       const result = await performUpdate({ force: true });
 
@@ -405,18 +425,18 @@ describe('services/updater', () => {
         binaries: {},
       };
 
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        callback(createMockResponse(200, JSON.stringify(manifest)));
-        return createMockRequest();
-      });
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          callback(createMockResponse(200, JSON.stringify(manifest)));
+          return createMockRequest();
+        }
+      );
 
       const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
       await startupUpdateCheck();
 
-      expect(stderrSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Update available: v0.5.0')
-      );
+      expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('Update available: v0.5.0'));
       stderrSpy.mockRestore();
     });
 
@@ -428,10 +448,12 @@ describe('services/updater', () => {
         binaries: {},
       };
 
-      mockHttpsGet.mockImplementation((_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-        callback(createMockResponse(200, JSON.stringify(manifest)));
-        return createMockRequest();
-      });
+      mockHttpsGet.mockImplementation(
+        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
+          callback(createMockResponse(200, JSON.stringify(manifest)));
+          return createMockRequest();
+        }
+      );
 
       const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 

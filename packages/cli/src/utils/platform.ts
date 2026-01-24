@@ -4,14 +4,22 @@ import { basename, dirname, join } from 'node:path';
 
 const UPDATE_LOCK_FILE = join(homedir(), '.rediacc', 'update.lock');
 
-export type PlatformKey = 'linux-x64' | 'linux-arm64' | 'mac-x64' | 'mac-arm64' | 'win-x64' | 'win-arm64';
+export type PlatformKey =
+  | 'linux-x64'
+  | 'linux-arm64'
+  | 'mac-x64'
+  | 'mac-arm64'
+  | 'win-x64'
+  | 'win-arm64';
 
 /**
  * Detect if running as a Node.js Single Executable Application (SEA).
  * SEA binaries have the executable basename starting with 'rdc'.
  */
 export function isSEA(): boolean {
-  const execName = basename(process.execPath).toLowerCase().replace(/\.exe$/, '');
+  const execName = basename(process.execPath)
+    .toLowerCase()
+    .replace(/\.exe$/, '');
   return execName.startsWith('rdc');
 }
 

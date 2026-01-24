@@ -181,7 +181,10 @@ describe('utils/platform', () => {
     });
 
     it('returns path.old.exe on Windows', () => {
-      Object.defineProperty(process, 'execPath', { value: 'C:\\Program Files\\rdc.exe', writable: true });
+      Object.defineProperty(process, 'execPath', {
+        value: 'C:\\Program Files\\rdc.exe',
+        writable: true,
+      });
       Object.defineProperty(process, 'platform', { value: 'win32' });
       expect(getOldBinaryPath()).toBe('C:\\Program Files\\rdc.old.exe');
     });
@@ -233,10 +236,9 @@ describe('utils/platform', () => {
 
       await acquireUpdateLock();
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith(
-        expect.stringContaining('.rediacc'),
-        { recursive: true }
-      );
+      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.rediacc'), {
+        recursive: true,
+      });
     });
 
     it('returns false when lock exists with alive PID', async () => {
