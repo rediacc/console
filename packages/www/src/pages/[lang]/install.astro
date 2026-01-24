@@ -1,0 +1,209 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import '../../styles/install-page.css';
+
+export async function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+
+const REPO_URL = 'https://www.rediacc.com';
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.install.meta.title')}
+  description={t('pages.install.meta.description')}
+  keywords={t('pages.install.meta.keywords')}
+  ogType="website"
+  structuredDataType="organization"
+>
+  <article class="install-page" data-copied={t('pages.install.copied')}>
+    <!-- Hero Section -->
+    <section class="install-hero section-dark">
+      <div class="install-hero-content">
+        <h1>{t('pages.install.hero.title')}</h1>
+        <p class="hero-subtitle">{t('pages.install.hero.subtitle')}</p>
+      </div>
+    </section>
+
+    <!-- Installation Methods -->
+    <section class="install-methods section-light">
+      <div class="container">
+
+        <!-- APT (Debian/Ubuntu) -->
+        <div class="method-card" id="apt">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.apt.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.apt.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="apt">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-apt">{`curl -fsSL ${REPO_URL}/apt/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
+echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${REPO_URL}/apt stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
+sudo apt-get update && sudo apt-get install rediacc-cli`}</code></pre>
+          </div>
+        </div>
+
+        <!-- DNF (Fedora/RHEL) -->
+        <div class="method-card" id="dnf">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.dnf.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.dnf.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="dnf">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-dnf">{`sudo curl -fsSL ${REPO_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
+sudo dnf install rediacc-cli`}</code></pre>
+          </div>
+        </div>
+
+        <!-- npm -->
+        <div class="method-card" id="npm">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.npm.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.npm.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="npm">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-npm">npm install -g @rediacc/cli</code></pre>
+          </div>
+        </div>
+
+        <!-- Direct Binary Download -->
+        <div class="method-card" id="binary">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.binary.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.binary.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="binary">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-binary">{`# Linux x64
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-x64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/
+
+# Linux ARM64
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-arm64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-arm64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/
+
+# macOS (Intel)
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-x64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/`}</code></pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Verify Installation -->
+    <section class="verify-section section-dark">
+      <div class="container">
+        <h2>{t('pages.install.verify.title')}</h2>
+        <div class="code-block code-block-dark">
+          <div class="code-header">
+            <span>bash</span>
+            <button class="copy-btn" data-copy="verify">{t('pages.install.copy')}</button>
+          </div>
+          <pre><code id="code-verify">rdc --version</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture Support -->
+    <section class="arch-section section-light">
+      <div class="container">
+        <h2>{t('pages.install.architectures.title')}</h2>
+        <div class="arch-table-wrapper">
+          <table class="arch-table">
+            <thead>
+              <tr>
+                <th>{t('pages.install.architectures.method')}</th>
+                <th>x86_64 / amd64</th>
+                <th>ARM64 / aarch64</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>APT (.deb)</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>DNF (.rpm)</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>npm</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>{t('pages.install.methods.binary.title')}</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </article>
+
+  <!-- Copy-to-clipboard script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const buttons = document.querySelectorAll<HTMLButtonElement>('.copy-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const target = btn.getAttribute('data-copy');
+          if (!target) return;
+          const codeEl = document.getElementById(`code-${target}`);
+          if (!codeEl) return;
+
+          try {
+            await navigator.clipboard.writeText(codeEl.textContent || '');
+            const original = btn.textContent;
+            btn.textContent = btn.closest('.install-page')?.getAttribute('data-copied') || 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = original;
+              btn.classList.remove('copied');
+            }, 2000);
+          } catch {
+            // Fallback: select text
+            const range = document.createRange();
+            range.selectNodeContents(codeEl);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          }
+        });
+      });
+    });
+  </script>
+</BaseLayout>

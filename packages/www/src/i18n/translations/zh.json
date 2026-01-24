@@ -154,6 +154,7 @@
     "docs": "文档",
     "downloads": "Downloads",
     "home": "首页",
+    "install": "安装",
     "login": "登录",
     "search": "搜索",
     "selectLanguage": "选择语言",
@@ -347,6 +348,44 @@
         "keywords": "基础设施自动化、开发环境、灾难恢复、DevOps 自动化、CI/CD 管道、云基础设施、开发运营、模型上下文协议、AI 安全基础设施",
         "title": "Rediacc - 基础设施自动化平台"
       }
+    },
+    "install": {
+      "meta": {
+        "title": "安装 | Rediacc CLI",
+        "description": "通过APT、DNF、npm或直接下载在Linux、macOS或Windows上安装Rediacc CLI。",
+        "keywords": "安装rediacc, apt install, dnf install, npm install, CLI安装"
+      },
+      "hero": {
+        "title": "安装 Rediacc CLI",
+        "subtitle": "选择您首选的安装方式"
+      },
+      "methods": {
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "适用于Debian、Ubuntu及其衍生版"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "适用于Fedora、RHEL、CentOS、Rocky Linux"
+        },
+        "npm": {
+          "title": "npm",
+          "description": "适用于Node.js环境"
+        },
+        "binary": {
+          "title": "直接下载",
+          "description": "独立二进制文件，无需包管理器"
+        }
+      },
+      "verify": {
+        "title": "验证安装"
+      },
+      "architectures": {
+        "title": "支持的架构",
+        "method": "方法"
+      },
+      "copy": "复制",
+      "copied": "已复制！"
     },
     "notFound": {
       "actions": {

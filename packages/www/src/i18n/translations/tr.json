@@ -159,6 +159,7 @@
     "docs": "Dokümanlar",
     "downloads": "Downloads",
     "home": "Ana Sayfa",
+    "install": "Yükle",
     "login": "Giriş",
     "search": "Ara",
     "selectLanguage": "Dil seçin",
@@ -352,6 +353,44 @@
         "keywords": "altyapı otomasyonu, geliştirme ortamları, olağanüstü durum kurtarma, DevOps otomasyonu, CI/CD hattı, bulut altyapısı, geliştirme işlemleri, Model Bağlam Protokolü, yapay zeka güvenli altyapı",
         "title": "Rediacc - Altyapı Otomasyon Platformu"
       }
+    },
+    "install": {
+      "meta": {
+        "title": "Yükle | Rediacc CLI",
+        "description": "Rediacc CLI'yi Linux, macOS veya Windows'a APT, DNF, npm veya doğrudan indirme yoluyla yükleyin.",
+        "keywords": "rediacc yükle, apt install, dnf install, npm install, CLI kurulumu"
+      },
+      "hero": {
+        "title": "Rediacc CLI Yükle",
+        "subtitle": "Tercih ettiğiniz kurulum yöntemini seçin"
+      },
+      "methods": {
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Debian, Ubuntu ve türevleri için"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Fedora, RHEL, CentOS, Rocky Linux için"
+        },
+        "npm": {
+          "title": "npm",
+          "description": "Node.js ortamları için"
+        },
+        "binary": {
+          "title": "Doğrudan İndirme",
+          "description": "Bağımsız ikili dosya, paket yöneticisi gerektirmez"
+        }
+      },
+      "verify": {
+        "title": "Kurulumu Doğrula"
+      },
+      "architectures": {
+        "title": "Desteklenen Mimariler",
+        "method": "Yöntem"
+      },
+      "copy": "Kopyala",
+      "copied": "Kopyalandı!"
     },
     "notFound": {
       "actions": {

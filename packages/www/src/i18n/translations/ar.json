@@ -159,6 +159,7 @@
     "docs": "المستندات",
     "downloads": "Downloads",
     "home": "الرئيسية",
+    "install": "تثبيت",
     "login": "تسجيل الدخول",
     "search": "يبحث",
     "selectLanguage": "اختر اللغة",
@@ -352,6 +353,44 @@
         "keywords": "أتمتة البنية التحتية، بيئات التطوير، التعافي من الكوارث، أتمتة DevOps، خط أنابيب CI/CD، البنية التحتية السحابية، عمليات التطوير، بروتوكول السياق النموذجي، البنية التحتية الآمنة للذكاء الاصطناعي",
         "title": "Rediacc - منصة أتمتة البنية التحتية"
       }
+    },
+    "install": {
+      "meta": {
+        "title": "تثبيت | Rediacc CLI",
+        "description": "قم بتثبيت Rediacc CLI على Linux أو macOS أو Windows عبر APT أو DNF أو npm أو التنزيل المباشر.",
+        "keywords": "تثبيت rediacc, apt install, dnf install, npm install, تثبيت CLI"
+      },
+      "hero": {
+        "title": "تثبيت Rediacc CLI",
+        "subtitle": "اختر طريقة التثبيت المفضلة لديك"
+      },
+      "methods": {
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "لـ Debian و Ubuntu والمشتقات"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "لـ Fedora و RHEL و CentOS و Rocky Linux"
+        },
+        "npm": {
+          "title": "npm",
+          "description": "لبيئات Node.js"
+        },
+        "binary": {
+          "title": "تنزيل مباشر",
+          "description": "ملف ثنائي مستقل، لا حاجة لمدير حزم"
+        }
+      },
+      "verify": {
+        "title": "التحقق من التثبيت"
+      },
+      "architectures": {
+        "title": "المعماريات المدعومة",
+        "method": "الطريقة"
+      },
+      "copy": "نسخ",
+      "copied": "تم النسخ!"
     },
     "notFound": {
       "actions": {

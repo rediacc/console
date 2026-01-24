@@ -159,6 +159,7 @@
     "docs": "Документы",
     "downloads": "Downloads",
     "home": "Главная",
+    "install": "Установить",
     "login": "Авторизоваться",
     "search": "Поиск",
     "selectLanguage": "Выберите язык",
@@ -352,6 +353,44 @@
         "keywords": "автоматизация инфраструктуры, среды разработки, аварийное восстановление, автоматизация DevOps, конвейер CI/CD, облачная инфраструктура, операции разработки, протокол контекста модели, безопасная для искусственного интеллекта инфраструктура",
         "title": "Rediacc — Платформа автоматизации инфраструктуры"
       }
+    },
+    "install": {
+      "meta": {
+        "title": "Установка | Rediacc CLI",
+        "description": "Установите Rediacc CLI на Linux, macOS или Windows через APT, DNF, npm или прямую загрузку.",
+        "keywords": "установить rediacc, apt install, dnf install, npm install, установка CLI"
+      },
+      "hero": {
+        "title": "Установить Rediacc CLI",
+        "subtitle": "Выберите предпочтительный способ установки"
+      },
+      "methods": {
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "Для Debian, Ubuntu и производных"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "Для Fedora, RHEL, CentOS, Rocky Linux"
+        },
+        "npm": {
+          "title": "npm",
+          "description": "Для сред Node.js"
+        },
+        "binary": {
+          "title": "Прямая загрузка",
+          "description": "Автономный бинарный файл, менеджер пакетов не требуется"
+        }
+      },
+      "verify": {
+        "title": "Проверить установку"
+      },
+      "architectures": {
+        "title": "Поддерживаемые архитектуры",
+        "method": "Метод"
+      },
+      "copy": "Копировать",
+      "copied": "Скопировано!"
     },
     "notFound": {
       "actions": {
