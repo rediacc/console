@@ -136,7 +136,7 @@ const technicalCards = allPlans.map(plan => ({
       <div class="container">
         <div class="pricing-overview">
           <div class="pricing-overview-copy">
-            <h3>{t('pages.pricing.strategy.heading')}</h3>
+            <h2>{t('pages.pricing.strategy.heading')}</h2>
             <p>{t('pages.pricing.strategy.copy')}</p>
           </div>
           <ul class="pricing-distribution">
@@ -156,13 +156,13 @@ const technicalCards = allPlans.map(plan => ({
         <div class="trust-section">
           <div class="trust-badges">
             <div class="trust-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
               </svg>
               <span>{t('pages.pricing.trust.items.0')}</span>
             </div>
             <div class="trust-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
               <span>{t('pages.pricing.trust.items.1')}</span>
@@ -211,10 +211,10 @@ const technicalCards = allPlans.map(plan => ({
         <!-- Enterprise CTA -->
         <div class="enterprise-cta">
           <div class="enterprise-content">
-            <h3>{t('pages.pricing.enterpriseCta.heading')}</h3>
+            <h2>{t('pages.pricing.enterpriseCta.heading')}</h2>
             <p>{t('pages.pricing.enterpriseCta.description')}</p>
           </div>
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large">
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t('pages.pricing.enterpriseCta.button')} (${t('common.aria.opensInNewTab')})`}>
             {t('pages.pricing.enterpriseCta.button')}
           </a>
         </div>
@@ -226,14 +226,14 @@ const technicalCards = allPlans.map(plan => ({
       <div class="container">
         <div class="technical-summary">
           <div class="technical-summary-header">
-            <h3>{t('pages.pricing.technicalSummary.heading')}</h3>
+            <h2>{t('pages.pricing.technicalSummary.heading')}</h2>
             <p>{t('pages.pricing.technicalSummary.description')}</p>
           </div>
 
           <div class="technical-grid">
             {technicalCards.map(card => (
               <div class="technical-card">
-                <h4>{card.name}</h4>
+                <h3>{card.name}</h3>
                 <dl class="technical-metrics">
                   {card.metrics.map(metric => (
                     <div class="technical-metric">
@@ -259,10 +259,10 @@ const technicalCards = allPlans.map(plan => ({
         <h2>{t('pages.pricing.finalCta.heading')}</h2>
         <p>{t('pages.pricing.finalCta.description')}</p>
         <div class="cta-actions">
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large">
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t('pages.pricing.finalCta.buttons.startFree')} (${t('common.aria.opensInNewTab')})`}>
             {t('pages.pricing.finalCta.buttons.startFree')}
           </a>
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-large">
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-large" aria-label={`${t('pages.pricing.finalCta.buttons.talkToSales')} (${t('common.aria.opensInNewTab')})`}>
             {t('pages.pricing.finalCta.buttons.talkToSales')}
           </a>
         </div>

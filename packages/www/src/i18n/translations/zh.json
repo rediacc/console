@@ -9,7 +9,8 @@
       "statusMessage": "状态信息",
       "zoomIn": "放大",
       "zoomOut": "缩小",
-      "clickToEnlarge": "点击放大图片"
+      "clickToEnlarge": "点击放大图片",
+      "opensInNewTab": "在新标签页中打开"
     },
     "buttons": {
       "close": "关闭",

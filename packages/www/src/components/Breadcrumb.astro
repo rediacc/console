@@ -68,8 +68,8 @@ const lastIndex = items.length - 1;
 
 <style>
 .breadcrumb {
-  margin-bottom: var(--space-4, 1rem);
-  font-size: var(--font-size-sm, 0.875rem);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
 }
 
 .breadcrumb-list {
@@ -79,13 +79,13 @@ const lastIndex = items.length - 1;
   list-style: none;
   margin: 0;
   padding: 0;
-  gap: var(--space-2, 0.5rem);
+  gap: var(--space-2);
 }
 
 .breadcrumb-item {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 0.5rem);
+  gap: var(--space-2);
 }
 
 .breadcrumb-link {
@@ -94,13 +94,14 @@ const lastIndex = items.length - 1;
   transition: color var(--transition-duration-base) ease;
 }
 
-.breadcrumb-link:hover,
-.breadcrumb-link:focus {
+.breadcrumb-link:hover {
   color: var(--color-brand-primary);
   text-decoration: underline;
 }
 
-.breadcrumb-link:focus {
+.breadcrumb-link:focus-visible {
+  color: var(--color-brand-primary);
+  text-decoration: underline;
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
@@ -109,7 +110,7 @@ const lastIndex = items.length - 1;
 .breadcrumb-text,
 .breadcrumb-current .breadcrumb-text {
   color: var(--color-text);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .breadcrumb-separator {
@@ -119,17 +120,17 @@ const lastIndex = items.length - 1;
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
   .breadcrumb {
-    font-size: var(--font-size-xs, 0.75rem);
+    font-size: var(--font-size-xs);
   }
 
   .breadcrumb-list {
-    gap: var(--space-1, 0.25rem);
+    gap: var(--space-1);
   }
 
   .breadcrumb-item {
-    gap: var(--space-1, 0.25rem);
+    gap: var(--space-1);
   }
 }
 </style>

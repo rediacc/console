@@ -60,6 +60,21 @@ const imageId = `img-${Math.random().toString(36).substr(2, 9)}`;
 )}
 
 <style>
+.image-button {
+  display: block;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.image-button:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
 .optimized-image {
   max-width: 100%;
   height: auto;
@@ -73,8 +88,8 @@ const imageId = `img-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 .clickable-image:hover {
-  opacity: 0.85;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: var(--opacity-85);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, var(--opacity-15));
 }
 
 .clickable-image:focus-visible {

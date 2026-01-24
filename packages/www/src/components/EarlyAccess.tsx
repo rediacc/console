@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { CONTACT_EMAIL } from '../config/constants';
 import { useTranslation } from '../i18n/react';
 
@@ -6,6 +6,24 @@ const EarlyAccess: React.FC = () => {
   const { t, ta, to } = useTranslation();
   const benefits = ta('earlyAccess.benefits');
   const formFields = to('earlyAccess.form.fields');
+
+  const handleInvalid = useCallback((e: React.InvalidEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    e.currentTarget.setAttribute('aria-invalid', 'true');
+    const errorEl = document.getElementById(`${e.currentTarget.id}-error`);
+    if (errorEl) {
+      errorEl.textContent = e.currentTarget.validationMessage;
+    }
+  }, []);
+
+  const handleInput = useCallback((e: React.FormEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (e.currentTarget.validity.valid) {
+      e.currentTarget.setAttribute('aria-invalid', 'false');
+      const errorEl = document.getElementById(`${e.currentTarget.id}-error`);
+      if (errorEl) {
+        errorEl.textContent = '';
+      }
+    }
+  }, []);
 
   return (
     <section className="early-access" id="early-access">
@@ -30,22 +48,18 @@ const EarlyAccess: React.FC = () => {
             >
               <div className="form-group">
                 <label htmlFor="name" className="form-label">
-                  {formFields.name.label}
-                </label>
+                  {formFields.name.label}                </label>
                 <input
                   type="text"
                   id="name"
                   name="name"
                   className="form-input"
                   required
+                  aria-required="true"
                   aria-describedby="name-error"
                   aria-invalid="false"
-                  onInvalid={(e) => e.currentTarget.setAttribute('aria-invalid', 'true')}
-                  onInput={(e) => {
-                    if (e.currentTarget.validity.valid) {
-                      e.currentTarget.setAttribute('aria-invalid', 'false');
-                    }
-                  }}
+                  onInvalid={handleInvalid}
+                  onInput={handleInput}
                   autoComplete={formFields.name.autoComplete}
                   suppressHydrationWarning
                 />
@@ -54,22 +68,18 @@ const EarlyAccess: React.FC = () => {
 
               <div className="form-group">
                 <label htmlFor="email" className="form-label">
-                  {formFields.email.label}
-                </label>
+                  {formFields.email.label}                </label>
                 <input
                   type="email"
                   id="email"
                   name="email"
                   className="form-input"
                   required
+                  aria-required="true"
                   aria-describedby="email-error"
                   aria-invalid="false"
-                  onInvalid={(e) => e.currentTarget.setAttribute('aria-invalid', 'true')}
-                  onInput={(e) => {
-                    if (e.currentTarget.validity.valid) {
-                      e.currentTarget.setAttribute('aria-invalid', 'false');
-                    }
-                  }}
+                  onInvalid={handleInvalid}
+                  onInput={handleInput}
                   autoComplete={formFields.email.autoComplete}
                   suppressHydrationWarning
                 />
@@ -78,15 +88,17 @@ const EarlyAccess: React.FC = () => {
 
               <div className="form-group">
                 <label htmlFor="organization" className="form-label">
-                  {formFields.organization.label}
-                </label>
+                  {formFields.organization.label}                </label>
                 <input
                   type="text"
                   id="organization"
                   name="organization"
                   className="form-input"
                   required
+                  aria-required="true"
                   aria-describedby="organization-error"
+                  onInvalid={handleInvalid}
+                  onInput={handleInput}
                   autoComplete={formFields.organization.autoComplete}
                   suppressHydrationWarning
                 />
@@ -114,14 +126,17 @@ const EarlyAccess: React.FC = () => {
 
               <div className="form-group">
                 <label htmlFor="use-case" className="form-label">
-                  {formFields.useCase.label}
-                </label>
+                  {formFields.useCase.label}                </label>
                 <select
                   id="use-case"
                   name="use-case"
                   className="form-select"
                   required
+                  aria-required="true"
                   aria-describedby="use-case-error"
+                  aria-invalid="false"
+                  onInvalid={handleInvalid}
+                  onChange={handleInput}
                 >
                   <option value="">{formFields.useCase.options.placeholder}</option>
                   <option value="development-acceleration">

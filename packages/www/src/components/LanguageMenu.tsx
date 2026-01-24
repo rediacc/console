@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { getLanguageFlag, getLanguageName, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { setLanguageCookie } from '../utils/language-cookie';
 import type { Language } from '../i18n/types';
@@ -45,9 +45,11 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   icon,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuItemsRef = useRef<(HTMLButtonElement | HTMLAnchorElement | null)[]>([]);
 
   // Normalize languages to Language[] format
   const languageList: Language[] = languages.map((lang) =>
@@ -85,15 +87,50 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
     }
   }, [isOpen, handleClickOutside]);
 
+  // Compute initial active index based on current language
+  const initialIndex = useMemo(
+    () => languageList.indexOf(currentLang),
+    [languageList, currentLang]
+  );
+
   // Handle keyboard navigation - memoized for performance
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen) {
-        setIsOpen(false);
-        triggerRef.current?.focus();
+      if (!isOpen) return;
+
+      switch (event.key) {
+        case 'Escape':
+          setIsOpen(false);
+          setActiveIndex(-1);
+          triggerRef.current?.focus();
+          break;
+        case 'ArrowDown': {
+          event.preventDefault();
+          const nextIndex = activeIndex < languageList.length - 1 ? activeIndex + 1 : 0;
+          setActiveIndex(nextIndex);
+          menuItemsRef.current[nextIndex]?.focus();
+          break;
+        }
+        case 'ArrowUp': {
+          event.preventDefault();
+          const prevIndex = activeIndex > 0 ? activeIndex - 1 : languageList.length - 1;
+          setActiveIndex(prevIndex);
+          menuItemsRef.current[prevIndex]?.focus();
+          break;
+        }
+        case 'Home':
+          event.preventDefault();
+          setActiveIndex(0);
+          menuItemsRef.current[0]?.focus();
+          break;
+        case 'End':
+          event.preventDefault();
+          setActiveIndex(languageList.length - 1);
+          menuItemsRef.current[languageList.length - 1]?.focus();
+          break;
       }
     },
-    [isOpen]
+    [isOpen, activeIndex, languageList.length]
   );
 
   useEffect(() => {
@@ -102,6 +139,18 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
   }, [isOpen, handleKeyDown]);
+
+  // Focus the current language item when menu opens
+  useEffect(() => {
+    if (isOpen) {
+      const idx = initialIndex >= 0 ? initialIndex : 0;
+      setActiveIndex(idx);
+      // Delay focus to allow render
+      requestAnimationFrame(() => {
+        menuItemsRef.current[idx]?.focus();
+      });
+    }
+  }, [isOpen, initialIndex]);
 
   // Handle pending navigation
   useEffect(() => {
@@ -193,13 +242,16 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   // Render menu items
   const renderMenuItems = () => {
     if (navigationMode === 'link') {
-      return languageList.map((lang) => (
+      return languageList.map((lang, index) => (
         <a
           key={lang}
+          ref={(el) => { menuItemsRef.current[index] = el; }}
           href={getLanguageUrl(lang)}
           className={`language-option ${lang === currentLang ? 'active' : ''}`}
           onClick={() => handleLanguageSelect(lang)}
           role="menuitem"
+          tabIndex={index === activeIndex ? 0 : -1}
+          aria-current={lang === currentLang ? 'true' : undefined}
         >
           <span className="flag">{getLanguageFlag(lang)}</span>
           <span className="name">{getLanguageName(lang)}</span>
@@ -224,13 +276,16 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
     }
 
     // Button mode
-    return languageList.map((lang) => (
+    return languageList.map((lang, index) => (
       <button
         type="button"
         key={lang}
+        ref={(el) => { menuItemsRef.current[index] = el; }}
         className={`language-option ${lang === currentLang ? 'active' : ''}`}
         onClick={() => handleLanguageSelect(lang)}
         role="menuitem"
+        tabIndex={index === activeIndex ? 0 : -1}
+        aria-current={lang === currentLang ? 'true' : undefined}
       >
         <span className="flag">{getLanguageFlag(lang)}</span>
         <span className="name">{getLanguageName(lang)}</span>
@@ -259,7 +314,7 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
       {renderTrigger()}
 
       {isOpen && (
-        <div className={`language-menu ${position}`} role="menu">
+        <div className={`language-menu ${position}`} role="menu" aria-label={ariaLabel}>
           {renderMenuItems()}
         </div>
       )}

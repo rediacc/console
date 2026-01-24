@@ -129,6 +129,8 @@ function validateField(field) {
     fieldGroup.classList.remove('error');
     errorElement.textContent = '';
     field.setAttribute('aria-invalid', 'false');
+    field.removeAttribute('aria-describedby');
+    errorElement.removeAttribute('role');
   } else {
     displayFieldError(fieldGroup, errorElement, field, validationResult.errorMessage);
   }
@@ -141,6 +143,12 @@ function displayFieldError(fieldGroup, errorElement, field, errorMessage) {
   fieldGroup.classList.add('error');
   errorElement.textContent = errorMessage;
   field.setAttribute('aria-invalid', 'true');
+  // Link error message to field for screen readers
+  if (!errorElement.id) {
+    errorElement.id = field.id ? field.id + '-error' : 'error-' + Date.now();
+  }
+  field.setAttribute('aria-describedby', errorElement.id);
+  errorElement.setAttribute('role', 'alert');
 }
 
 // Clear field error on input
@@ -152,6 +160,8 @@ function clearFieldError(field) {
     fieldGroup.classList.remove('error');
     errorElement.textContent = '';
     field.setAttribute('aria-invalid', 'false');
+    field.removeAttribute('aria-describedby');
+    errorElement.removeAttribute('role');
   }
 }
 
@@ -453,6 +463,7 @@ const imageGallery = [
 ];
 
 let currentImageIndex = 0;
+let imageModalTrigger = null;
 
 function handleImageModalKeydown(modal, e) {
   if (modal.getAttribute('aria-hidden') !== 'false') return;
@@ -466,6 +477,29 @@ function handleImageModalKeydown(modal, e) {
     '-': zoomOut,
     0: resetZoom,
   };
+
+  // Focus trap: cycle Tab within modal
+  if (e.key === 'Tab') {
+    const focusableEls = modal.querySelectorAll(
+      'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusableEls.length === 0) return;
+    const first = focusableEls[0];
+    const last = focusableEls[focusableEls.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    return;
+  }
 
   const action = keyActions[e.key];
   if (action) {
@@ -533,6 +567,9 @@ function initImageModal() {
 // Open image modal
 // Note: This function is called from React components and Astro templates via window.openImageModal
 function openImageModal(imageSrc, _imageAlt) {
+  // Store trigger for focus restoration
+  imageModalTrigger = document.activeElement;
+
   // Find the index of the clicked image
   currentImageIndex = imageGallery.findIndex((img) => img.src === imageSrc);
   if (currentImageIndex === -1) currentImageIndex = 0; // Fallback to first image
@@ -550,7 +587,7 @@ function openImageModal(imageSrc, _imageAlt) {
     if (closeButton) {
       closeButton.focus();
     }
-  }, 300);
+  }, 100);
 }
 
 // Expose to global scope for use in HTML onclick and React components
@@ -607,6 +644,12 @@ function closeImageModal() {
 
   // Restore body scroll
   document.body.style.overflow = '';
+
+  // Restore focus to trigger element
+  if (imageModalTrigger && typeof imageModalTrigger.focus === 'function') {
+    imageModalTrigger.focus();
+    imageModalTrigger = null;
+  }
 }
 
 // Zoom functions

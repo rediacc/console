@@ -3,25 +3,15 @@
 /* Backdrop */
 .search-modal-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgba(0, 0, 0, var(--opacity-40));
+  backdrop-filter: blur(1px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   z-index: var(--z-toast);
   padding: var(--space-3) var(--space-2);
-  animation: fadeIn 0.15s ease-in-out;
-}
-
-/* Backdrop filter with fallback for unsupported browsers */
-@supports (backdrop-filter: blur(1px)) {
-  .search-modal-backdrop {
-    backdrop-filter: blur(1px);
-    background-color: rgba(0, 0, 0, 0.4);
-  }
+  animation: fadeIn var(--transition-duration-fast) ease-in-out;
 }
 
 @keyframes fadeIn {
@@ -38,17 +28,17 @@
   background: var(--color-bg-alt);
   border-radius: var(--radius-md);
   box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    0 20px 25px -5px rgba(0, 0, 0, var(--opacity-10)),
+    0 10px 10px -5px rgba(0, 0, 0, var(--opacity-05));
   width: 100%;
-  max-width: 600px;
+  max-width: var(--container-xs);
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   margin-top: var(--space-3);
   border: 1px solid var(--color-border);
-  animation: slideUp 0.2s ease-out;
+  animation: slideUp var(--transition-duration-base) ease-out;
 }
 
 @keyframes slideUp {
@@ -76,21 +66,56 @@
 
 .search-modal-icon {
   position: absolute;
-  right: var(--space-3);
+  inset-inline-end: var(--space-3);
   color: var(--color-text-secondary);
   pointer-events: none;
 }
 
+.search-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  transition:
+    background-color var(--transition-duration-base),
+    border-color var(--transition-duration-base);
+}
+
+.search-modal-close:hover {
+  background-color: var(--color-hover);
+  border-color: var(--color-text-secondary);
+}
+
+.search-modal-close:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.search-modal-close kbd {
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
 .search-modal-input {
   flex: 1;
-  padding: var(--space-3) var(--space-7) var(--space-3) var(--space-3);
+  padding-block: var(--space-3);
+  padding-inline: var(--space-3) var(--space-7);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);
   font-family: inherit;
   background: var(--color-bg-alt);
   color: var(--color-text);
-  min-height: 48px;
+  min-height: var(--touch-target-preferred);
   transition:
     border-color var(--transition-duration-base),
     box-shadow var(--transition-duration-base);
@@ -111,6 +136,9 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
   padding: var(--space-3) 0;
 }
 
@@ -149,7 +177,7 @@
 .search-modal-error h3 {
   margin: 0 0 var(--space-3) 0;
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .search-modal-error p {
@@ -167,12 +195,12 @@
 .search-modal-no-results h3 {
   margin: 0 0 var(--space-3) 0;
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
 .search-modal-suggestions {
-  text-align: left;
+  text-align: start;
   display: inline-block;
 }
 
@@ -198,7 +226,7 @@
 .search-modal-suggestions li::before {
   content: '•';
   position: absolute;
-  left: var(--space-2);
+  inset-inline-start: var(--space-2);
 }
 
 /* Category */
@@ -210,7 +238,7 @@
 .search-modal-category-title {
   margin: var(--space-3) var(--space-4) var(--space-2) var(--space-4);
   font-size: var(--font-size-xs);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-secondary);
@@ -228,8 +256,8 @@
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
   transition: background-color var(--transition-duration-fast);
-  border-left: 2px solid transparent;
-  min-height: 48px;
+  border-inline-start: 2px solid transparent;
+  min-height: var(--touch-target-preferred);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -247,7 +275,7 @@
 
 .search-modal-result-item.selected {
   background-color: var(--color-hover);
-  border-left-color: var(--color-brand-primary);
+  border-inline-start-color: var(--color-brand-primary);
 }
 
 .search-modal-result-item:active {
@@ -257,7 +285,7 @@
 
 .search-modal-result-title {
   font-size: var(--font-size-base);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
   margin: 0 0 var(--space-1) 0;
   line-height: var(--leading-normal);
@@ -267,7 +295,7 @@
   background-color: rgba(0, 0, 0, var(--opacity-10));
   border-radius: var(--radius-sm);
   padding: 0 var(--space-1);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .search-modal-result-excerpt {
@@ -281,11 +309,11 @@
   background-color: rgba(0, 0, 0, var(--opacity-10));
   border-radius: var(--radius-sm);
   padding: 0 var(--space-1);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 640px) {
+@media (max-width: 40rem) {
   .search-modal-backdrop {
     padding: var(--space-2) var(--space-1);
     align-items: flex-start;
@@ -304,11 +332,12 @@
   .search-modal-input {
     font-size: var(--font-size-lg);
     min-height: 56px;
-    padding: var(--space-3) var(--space-7) var(--space-3) var(--space-3);
+    padding-block: var(--space-3);
+    padding-inline: var(--space-3) var(--space-7);
   }
 
   .search-modal-icon {
-    right: var(--space-3);
+    inset-inline-end: var(--space-3);
   }
 
   .search-modal-result-item {
@@ -336,5 +365,24 @@
   .search-modal-loading,
   .search-modal-no-results {
     padding: var(--space-5) var(--space-3);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .search-modal-backdrop {
+    animation: none;
+  }
+
+  .search-modal-content {
+    animation: none;
+  }
+
+  .search-modal-result-item {
+    transition: none;
+  }
+
+  .search-modal-result-item:active {
+    transform: none;
   }
 }

@@ -41,7 +41,7 @@ const { t, ta } = createTranslator(lang);
           <span class="price-amount">{pkg.price}</span>
         </div>
         <div class="turnaround-time">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/>
             <polyline points="12 6 12 12 16 14"/>
           </svg>
@@ -54,7 +54,7 @@ const { t, ta } = createTranslator(lang);
         <ul>
           {benefits.map((benefit) => (
             <li>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
               <span>{benefit}</span>
@@ -67,7 +67,8 @@ const { t, ta } = createTranslator(lang);
         <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
            target="_blank"
            rel="noopener noreferrer"
-           class={`btn ${pkg.isPopular ? 'btn-primary' : 'btn-secondary'} btn-full-width`}>
+           class={`btn ${pkg.isPopular ? 'btn-primary' : 'btn-secondary'} btn-full-width`}
+           aria-label={`${t('pages.pricing.ui.getStarted')} (${t('common.aria.opensInNewTab')})`}>
           {t('pages.pricing.ui.getStarted')}
         </a>
       </div>

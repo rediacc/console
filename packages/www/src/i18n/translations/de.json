@@ -9,7 +9,8 @@
       "statusMessage": "Statusmeldung",
       "zoomIn": "Vergrößern",
       "zoomOut": "Herauszoomen",
-      "clickToEnlarge": "Klicken Sie zum Vergrößern des Bildes"
+      "clickToEnlarge": "Klicken Sie zum Vergrößern des Bildes",
+      "opensInNewTab": "öffnet in neuem Tab"
     },
     "buttons": {
       "close": "Schließen",

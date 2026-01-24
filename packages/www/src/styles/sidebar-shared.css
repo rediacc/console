@@ -6,17 +6,14 @@
 :root {
   /* Sidebar Dimensions */
   --sidebar-width: 250px;
-  --nav-height: 3.5rem;
-  --spacing: 2rem;
+  --sidebar-top-offset: var(--space-8);
 
   /* Sidebar Colors - Using design system variables */
   --sidebar-bg: var(--color-bg);
   --sidebar-border: var(--color-border);
   --sidebar-accent: var(--color-text);
 
-  /* Text Colors - Using design system variables */
-  --text-primary: var(--color-text);
-  --text-secondary: var(--color-text-secondary);
+  /* Text Colors */
   --text-hover: var(--color-text);
 
   /* Link States - Using design system variables */
@@ -47,10 +44,11 @@
 
 .sidebar-base {
   position: sticky;
-  top: calc(var(--nav-height) + var(--spacing));
+  top: calc(var(--nav-height) + var(--sidebar-top-offset));
   height: fit-content;
-  max-height: calc(100vh - var(--nav-height) - (var(--spacing) * 2));
+  max-height: calc(100vh - var(--nav-height) - (var(--sidebar-top-offset) * 2));
   overflow-y: auto;
+  overscroll-behavior: contain;
 
   /* Scrollbar styling for consistency */
   scrollbar-width: thin;
@@ -71,7 +69,7 @@
 }
 
 .sidebar-base::-webkit-scrollbar-thumb:hover {
-  background-color: var(--text-secondary);
+  background-color: var(--color-text-secondary);
 }
 
 /* ============================================================================
@@ -88,7 +86,7 @@
 
 .sidebar-nav-with-accent {
   border: none;
-  border-left: var(--border-width-accent) solid var(--sidebar-accent);
+  border-inline-start: var(--border-width-accent) solid var(--sidebar-accent);
 }
 
 /* ============================================================================
@@ -98,9 +96,9 @@
 
 .sidebar-title {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   margin: 0 0 var(--space-4) 0;
   letter-spacing: var(--tracking-wide);
 }
@@ -126,8 +124,10 @@
    ============================================================================ */
 
 .sidebar-link {
-  display: block;
+  display: flex;
+  align-items: center;
   padding: var(--link-padding);
+  min-height: var(--touch-target-min);
   color: var(--link-color);
   text-decoration: none;
   border-radius: var(--radius-sm);
@@ -146,7 +146,7 @@
 .sidebar-link.active {
   background-color: var(--link-active-bg);
   color: var(--link-active-color);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   text-decoration: none;
 }
 
@@ -171,10 +171,11 @@
   align-items: center;
   width: 100%;
   padding: var(--space-2) 0;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
   text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
   background: none;
   border: none;
   cursor: pointer;
@@ -196,10 +197,9 @@
   display: inline-flex;
   align-items: center;
   font-size: var(--font-size-xs);
-  margin-left: var(--space-2);
+  margin-inline-start: var(--space-2);
   flex-shrink: 0;
   transition: transform var(--transition-speed);
-  will-change: transform;
 }
 
 .category-header[aria-expanded='false'] .category-chevron {
@@ -216,9 +216,7 @@
   padding: 0;
   margin: 0;
   max-height: 9999px;
-  transition:
-    max-height var(--transition-speed),
-    overflow var(--transition-speed);
+  transition: max-height var(--transition-speed);
 }
 
 /* When parent category item is collapsed, hide the list */

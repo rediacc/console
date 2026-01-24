@@ -34,8 +34,10 @@
       "zoomOut": "Zoom out",
       "resetZoom": "Reset zoom",
       "closeImageModal": "Close image modal",
+      "imageViewer": "Image viewer",
       "statusMessage": "Status message",
-      "clickToEnlarge": "Click to enlarge image"
+      "clickToEnlarge": "Click to enlarge image",
+      "opensInNewTab": "opens in new tab"
     },
     "skipNavigation": {
       "skipToMainContent": "Skip to main content",
@@ -60,6 +62,7 @@
     "selectLanguage": "Select language",
     "languageSelectionMenu": "Language selection menu",
     "login": "Log in",
+    "footerNavigation": "Site navigation",
     "solutions": {
       "disasterRecovery": "Disaster Recovery",
       "threatResponse": "Threat Response",
