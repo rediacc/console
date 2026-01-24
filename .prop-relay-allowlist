@@ -1,0 +1,14 @@
+# Prop Relay Allowlist
+# Components listed here are excluded from the prop-relay check.
+# Format: path/relative/to/packages/web/src/ # reason
+#
+# Example:
+# components/common/buttons/DangerButton.tsx # Design system button variant
+
+# VaultEditor section components - intentional form section decomposition
+components/common/VaultEditor/sections/VaultEditorOptionalFields.tsx # Form section
+components/common/VaultEditor/sections/VaultEditorProviderFields.tsx # Form section
+components/common/VaultEditor/sections/VaultEditorRequiredFields.tsx # Form section
+
+# LanguageLink - thin wrapper around Link with locale prefix
+features/auth/components/LanguageLink/index.tsx # Locale-aware link wrapper

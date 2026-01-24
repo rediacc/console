@@ -18,7 +18,6 @@ export * from './ResourceListView';
 export * from './SandboxWarning';
 export * from './SizedModal';
 export * from './Skeleton';
-export * from './SplitResourceView';
 export * from './TeamSelector';
 export * from './TelemetryProvider';
 export * from './TemplatePreviewModal';

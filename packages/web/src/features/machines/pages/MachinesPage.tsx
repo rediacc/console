@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Empty, Flex, Modal, Tooltip } from 'antd';
+import { Button, Card, Drawer, Empty, Flex, Grid, Modal, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -10,9 +10,14 @@ import {
 } from '@/api/api-hooks.generated';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
-import { type ContainerData, SplitResourceView } from '@/components/common/SplitResourceView';
 import TeamSelector from '@/components/common/TeamSelector';
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal';
+import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
+import { MachineTable } from '@/components/resources/internal/MachineTable';
+import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
+import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
+import type { ContainerData } from '@/features/resources/shared/types';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
 import ConnectivityTestModal from '@/features/machines/components/ConnectivityTestModal';
 import { useDialogState, useQueueTraceModal, useUnifiedModal } from '@/hooks';
 import { useQueueAction } from '@/hooks/useQueueAction';
@@ -52,8 +57,11 @@ const MachinesPage: React.FC = () => {
     useState<GetTeamRepositories_ResultSet1 | null>(null);
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] =
     useState<ContainerData | null>(null);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
-  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
+  const [, setRefreshKeys] = useState<Record<string, number>>({});
+
+  const panelWidth = usePanelWidth();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   // Modal state management with new hooks
   const {
@@ -106,12 +114,7 @@ const MachinesPage: React.FC = () => {
     if (machine) {
       setSelectedRepositoryFromMachine(null);
       setSelectedContainerFromMachine(null);
-      setIsPanelCollapsed(false);
     }
-  };
-
-  const handleTogglePanelCollapse = () => {
-    setIsPanelCollapsed((prev) => !prev);
   };
 
   const handleDeleteMachine = useCallback(
@@ -270,17 +273,54 @@ const MachinesPage: React.FC = () => {
       handleMachineSelect(null);
       setSelectedRepositoryFromMachine(resource);
       setSelectedContainerFromMachine(null);
-      setIsPanelCollapsed(false);
     } else if (resource && 'id' in resource && 'state' in resource) {
       handleMachineSelect(null);
       setSelectedRepositoryFromMachine(null);
       setSelectedContainerFromMachine(resource);
-      setIsPanelCollapsed(false);
     } else {
       handleMachineSelect(null);
       setSelectedRepositoryFromMachine(null);
       setSelectedContainerFromMachine(null);
     }
+  };
+
+  const handlePanelClose = () => {
+    handleResourceSelection(null);
+  };
+
+  const selectedResource = selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine;
+
+  const renderPanelContent = () => {
+    if (!selectedResource) return null;
+
+    if ('machineName' in selectedResource) {
+      return (
+        <MachineVaultStatusPanel
+          machine={selectedResource as Machine}
+          visible
+          onClose={handlePanelClose}
+          splitView
+        />
+      );
+    }
+    if ('repositoryName' in selectedResource) {
+      return (
+        <RepositoryDetailPanel
+          repository={selectedResource as GetTeamRepositories_ResultSet1}
+          visible
+          onClose={handlePanelClose}
+          splitView
+        />
+      );
+    }
+    return (
+      <ContainerDetailPanel
+        container={selectedResource as ContainerData}
+        visible
+        onClose={handlePanelClose}
+        splitView
+      />
+    );
   };
 
   const handleRefreshMachines = () => {
@@ -302,9 +342,6 @@ const MachinesPage: React.FC = () => {
 
   const modalExistingData = unifiedModalState.data ?? currentResource ?? undefined;
 
-  // Note: This page uses SplitResourceView instead of ResourceListView
-  // to support the side panel detail view. This is intentional.
-
   const renderContent = () => {
     if (!selectedTeam) {
       return (
@@ -313,43 +350,43 @@ const MachinesPage: React.FC = () => {
     }
 
     return (
-      <SplitResourceView
-        type="machine"
-        teamFilter={[selectedTeam]}
-        showFilters
-        showActions
-        onCreateMachine={() => openUnifiedModal('create')}
-        onEditMachine={(machine) =>
-          openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
-        }
-        onVaultMachine={(machine) =>
-          openUnifiedModal('vault', machine as Machine & Record<string, unknown>)
-        }
-        onFunctionsMachine={(machine, functionName) => {
-          // WARNING: Do not change this pattern!
-          // - Specific functions (functionName defined): Queue directly with defaults, NO modal
-          // - "Advanced" (functionName undefined): Open modal with function list
-          // This split behavior is intentional - users expect quick actions for specific
-          // functions and full configuration only when clicking "Advanced".
-          if (functionName) {
-            void handleDirectFunctionQueue(machine, functionName);
-          } else {
-            openUnifiedModal('create', machine as Machine & Record<string, unknown>);
-          }
-        }}
-        onDeleteMachine={handleDeleteMachine}
-        enabled
-        refreshKeys={refreshKeys}
-        onQueueItemCreated={(taskId, machineName) => {
-          openQueueTrace(taskId, machineName);
-        }}
-        selectedResource={
-          selectedMachine ?? selectedRepositoryFromMachine ?? selectedContainerFromMachine
-        }
-        onResourceSelect={handleResourceSelection}
-        isPanelCollapsed={isPanelCollapsed}
-        onTogglePanelCollapse={handleTogglePanelCollapse}
-      />
+      <Flex className="h-full w-full relative overflow-hidden">
+        <Flex className="w-full h-full overflow-auto">
+          <MachineTable
+            teamFilter={[selectedTeam]}
+            showActions
+            onEditMachine={(machine) =>
+              openUnifiedModal('edit', machine as Machine & Record<string, unknown>)
+            }
+            onFunctionsMachine={(machine, functionName) => {
+              // WARNING: Do not change this pattern!
+              // - Specific functions (functionName defined): Queue directly with defaults, NO modal
+              // - "Advanced" (functionName undefined): Open modal with function list
+              // This split behavior is intentional - users expect quick actions for specific
+              // functions and full configuration only when clicking "Advanced".
+              if (functionName) {
+                void handleDirectFunctionQueue(machine, functionName);
+              } else {
+                openUnifiedModal('create', machine as Machine & Record<string, unknown>);
+              }
+            }}
+            onDeleteMachine={handleDeleteMachine}
+            onQueueItemCreated={(taskId, machineName) => openQueueTrace(taskId, machineName)}
+            onRowClick={(machine) => handleResourceSelection(machine)}
+            selectedMachine={selectedMachine}
+          />
+        </Flex>
+
+        {isMobile ? (
+          <Modal open={!!selectedResource} onCancel={handlePanelClose} footer={null} width="100%" centered>
+            {renderPanelContent()}
+          </Modal>
+        ) : (
+          <Drawer open={!!selectedResource} onClose={handlePanelClose} width={panelWidth} placement="right" mask>
+            {renderPanelContent()}
+          </Drawer>
+        )}
+      </Flex>
     );
   };
 

@@ -32,6 +32,7 @@
     "check:i18n:untranslated": "tsx scripts/check-docs-untranslated-text.ts",
     "check:i18n:www-only": "tsx scripts/check-www-only-translations.ts",
     "check:lint": "eslint . --max-warnings 0",
+    "check:prop-relay": "tsx scripts/check-prop-relay.ts",
     "check:test": "npm run test:run -w @rediacc/web",
     "check:types": "tsc -b packages/shared packages/shared-desktop packages/cli packages/desktop packages/e2e && npm run typecheck -w @rediacc/web",
     "check:unused": "knip --treat-config-hints-as-errors",
