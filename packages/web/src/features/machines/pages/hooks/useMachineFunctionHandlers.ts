@@ -19,7 +19,6 @@ interface UseMachineFunctionHandlersProps {
   ) => Promise<QueueActionResult>;
   closeUnifiedModal: () => void;
   openQueueTrace: (taskId: string, machineName: string) => void;
-  setRefreshKeys: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   t: TypedTFunction;
 }
 
@@ -79,7 +78,6 @@ export function useMachineFunctionHandlers({
   executeDynamic,
   closeUnifiedModal,
   openQueueTrace,
-  setRefreshKeys,
   t,
 }: UseMachineFunctionHandlersProps) {
   const handleMachineFunctionSelected = useCallback(
@@ -172,16 +170,11 @@ export function useMachineFunctionHandlers({
       try {
         const result = await executeDynamic(functionName, queuePayload);
         handleQueueResult(result, machine.machineName ?? '', openQueueTrace, t);
-
-        setRefreshKeys((prev) => ({
-          ...prev,
-          [machine.machineName ?? '']: Date.now(),
-        }));
       } catch {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'));
       }
     },
-    [executeDynamic, openQueueTrace, setRefreshKeys, t, teams]
+    [executeDynamic, openQueueTrace, t, teams]
   );
 
   return {

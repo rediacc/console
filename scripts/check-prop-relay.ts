@@ -67,7 +67,7 @@ interface ForwardingInfo {
 
 // ─── Phase 1: Discovery ─────────────────────────────────────────────────────
 
-function findTsxFiles(dir: string): string[] {
+function findFiles(dir: string, extensions: string[]): string[] {
   const results: string[] = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
@@ -76,25 +76,8 @@ function findTsxFiles(dir: string): string[] {
       if (entry.name === 'node_modules' || entry.name === '__tests__' || entry.name === '__mocks__') {
         continue;
       }
-      results.push(...findTsxFiles(fullPath));
-    } else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')) {
-      results.push(fullPath);
-    }
-  }
-  return results;
-}
-
-function findTsFiles(dir: string): string[] {
-  const results: string[] = [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === '__tests__' || entry.name === '__mocks__') {
-        continue;
-      }
-      results.push(...findTsFiles(fullPath));
-    } else if ((entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) && !entry.name.includes('.test.')) {
+      results.push(...findFiles(fullPath, extensions));
+    } else if (extensions.some((ext) => entry.name.endsWith(ext)) && !entry.name.includes('.test.')) {
       results.push(fullPath);
     }
   }
@@ -239,8 +222,12 @@ function parsePropsFromAST(content: string, propsTypeName: string): string[] {
 
     visitNode(ast as unknown as Record<string, unknown>);
     return propNames;
-  } catch {
-    // Fallback: regex-based extraction for the interface/type
+  } catch (error) {
+    if (verbose) {
+      console.warn(
+        `${YELLOW}AST parsing failed for ${propsTypeName}, falling back to regex. Error: ${(error as Error).message}${NC}`,
+      );
+    }
     return parsePropsWithRegex(content, propsTypeName);
   }
 }
@@ -559,7 +546,7 @@ function detectForwarding(component: ComponentInfo): {
   if (forwardedByName.size > 0) {
     const localCount = component.propCount - forwardedByName.size;
     // Find which component receives these props
-    const jsxComponentPattern = /<(\w+)\s+[^>]*(?:\b(?:${[...forwardedByName].join('|')})=\{)/;
+    const jsxComponentPattern = new RegExp(`<(\\w+)\\s+[^>]*(?:\\b(?:${[...forwardedByName].join('|')})=\\{)`);
     const jsxMatch = jsxComponentPattern.exec(bodyContent);
     return {
       forwardedCount: forwardedByName.size,
@@ -592,13 +579,13 @@ function run(): void {
   console.log('Checking for prop relay anti-patterns...\n');
 
   // Phase 1: Discovery
-  const tsxFiles = findTsxFiles(WEB_SRC);
+  const tsxFiles = findFiles(WEB_SRC, ['.tsx']);
   const components = discoverComponents(tsxFiles);
 
   console.log(`Scanned ${tsxFiles.length} .tsx component files`);
 
   // Phase 2: Import Graph
-  const allFiles = findTsFiles(WEB_SRC);
+  const allFiles = findFiles(WEB_SRC, ['.ts', '.tsx']);
   const importGraph = buildImportGraph(allFiles, components);
 
   console.log(`Built import graph: ${components.length} component exports tracked\n`);

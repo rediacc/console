@@ -16,10 +16,10 @@ import { ContainerDetailPanel } from '@/components/resources/internal/ContainerD
 import { MachineTable } from '@/components/resources/internal/MachineTable';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';
 import { RepositoryDetailPanel } from '@/components/resources/internal/RepositoryDetailPanel';
-import type { ContainerData } from '@/features/resources/shared/types';
-import { usePanelWidth } from '@/hooks/usePanelWidth';
 import ConnectivityTestModal from '@/features/machines/components/ConnectivityTestModal';
+import type { ContainerData } from '@/features/resources/shared/types';
 import { useDialogState, useQueueTraceModal, useUnifiedModal } from '@/hooks';
+import { usePanelWidth } from '@/hooks/usePanelWidth';
 import { useQueueAction } from '@/hooks/useQueueAction';
 import { useTeamSelection } from '@/hooks/useTeamSelection';
 import { type Machine } from '@/types';
@@ -57,7 +57,6 @@ const MachinesPage: React.FC = () => {
     useState<GetTeamRepositories_ResultSet1 | null>(null);
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] =
     useState<ContainerData | null>(null);
-  const [, setRefreshKeys] = useState<Record<string, number>>({});
 
   const panelWidth = usePanelWidth();
   const screens = Grid.useBreakpoint();
@@ -98,7 +97,6 @@ const MachinesPage: React.FC = () => {
     executeDynamic,
     closeUnifiedModal,
     openQueueTrace: (taskId, machineName) => openQueueTrace(taskId, machineName),
-    setRefreshKeys,
     t,
   });
 
@@ -297,7 +295,7 @@ const MachinesPage: React.FC = () => {
     if ('machineName' in selectedResource) {
       return (
         <MachineVaultStatusPanel
-          machine={selectedResource as Machine}
+          machine={selectedResource}
           visible
           onClose={handlePanelClose}
           splitView
@@ -307,7 +305,7 @@ const MachinesPage: React.FC = () => {
     if ('repositoryName' in selectedResource) {
       return (
         <RepositoryDetailPanel
-          repository={selectedResource as GetTeamRepositories_ResultSet1}
+          repository={selectedResource}
           visible
           onClose={handlePanelClose}
           splitView
@@ -316,7 +314,7 @@ const MachinesPage: React.FC = () => {
     }
     return (
       <ContainerDetailPanel
-        container={selectedResource as ContainerData}
+        container={selectedResource}
         visible
         onClose={handlePanelClose}
         splitView
@@ -326,10 +324,6 @@ const MachinesPage: React.FC = () => {
 
   const handleRefreshMachines = () => {
     void refetchMachines();
-    setRefreshKeys((prev) => ({
-      ...prev,
-      _global: Date.now(),
-    }));
   };
 
   const isSubmitting = [
@@ -380,6 +374,7 @@ const MachinesPage: React.FC = () => {
 
         {isMobile ? (
           <Modal
+            data-testid="machines-detail-modal"
             open={!!selectedResource}
             onCancel={handlePanelClose}
             footer={null}
@@ -390,6 +385,7 @@ const MachinesPage: React.FC = () => {
           </Modal>
         ) : (
           <Drawer
+            data-testid="machines-detail-drawer"
             open={!!selectedResource}
             onClose={handlePanelClose}
             width={panelWidth}
@@ -485,14 +481,7 @@ const MachinesPage: React.FC = () => {
         taskId={queueTraceState.taskId}
         open={queueTraceState.open}
         onCancel={() => {
-          const machineName = queueTraceState.machineName;
           closeQueueTrace();
-          if (machineName) {
-            setRefreshKeys((prev) => ({
-              ...prev,
-              [machineName]: Date.now(),
-            }));
-          }
           void refetchMachines();
         }}
       />
