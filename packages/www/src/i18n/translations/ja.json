@@ -9,7 +9,8 @@
       "statusMessage": "ステータスメッセージ",
       "zoomIn": "ズームイン",
       "zoomOut": "ズームアウト",
-      "clickToEnlarge": "クリックして画像を拡大"
+      "clickToEnlarge": "クリックして画像を拡大",
+      "opensInNewTab": "新しいタブで開きます"
     },
     "buttons": {
       "close": "閉じる",

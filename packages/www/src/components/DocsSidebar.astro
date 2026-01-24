@@ -108,6 +108,7 @@ const categoryStates = categories.map(category => {
                     <a
                       href={`/${currentLang}/docs/${docSlug}`}
                       class={`sidebar-link doc-link ${isActive ? 'active' : ''}`}
+                      aria-current={isActive ? 'page' : undefined}
                     >
                       {doc.data.title}
                     </a>
@@ -134,45 +135,45 @@ const categoryStates = categories.map(category => {
 
   /* Search Input Container */
   .sidebar-search-container {
-    margin: 0 0 1rem 0;
-    padding-bottom: 1rem;
+    margin: 0 0 var(--space-4) 0;
+    padding-bottom: var(--space-4);
     border-bottom: 1px solid var(--sidebar-border);
   }
 
   .sidebar-search-input {
     width: 100%;
-    padding: 0.5rem 0.75rem;
+    padding: var(--space-2) var(--space-3);
     border: 1px solid var(--sidebar-border);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-sm);
     font-family: inherit;
     background-color: var(--color-bg-alt);
-    color: var(--text-primary);
+    color: var(--color-text);
     transition: border-color var(--transition-speed);
   }
 
-  .sidebar-search-input:focus {
-    outline: none;
+  .sidebar-search-input:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 1px;
     border-color: var(--sidebar-accent);
-    box-shadow: 0 0 0 2px rgba(26, 26, 26, var(--opacity-10));
   }
 
   .sidebar-search-input::placeholder {
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
 
   /* Add extra margin to category items for spacing */
   .category-item {
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-6);
   }
 
   /* Highlight search matches */
   .doc-link.search-match {
-    background-color: rgba(26, 26, 26, 0.05);
+    background-color: rgba(26, 26, 26, var(--opacity-05));
   }
 
   /* Responsive Design */
-  @media (max-width: 768px) {
+  @media (max-width: 48rem) {
     .docs-sidebar {
       position: static;
       max-height: none;

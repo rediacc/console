@@ -5,13 +5,13 @@
 
 /* Hero Section */
 .ps-hero {
-  min-height: 100vh;
+  min-height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--gradient-dark);
   color: white;
-  padding: var(--section-padding);
+  padding: var(--space-24) var(--space-6);
   text-align: center;
 }
 
@@ -22,15 +22,15 @@
 }
 
 .ps-hero h1 {
-  font-size: clamp(42px, 4.2vw, 64px);
-  font-weight: bold;
+  font-size: clamp(2.625rem, 4.2vw, 4rem);
+  font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-6);
   color: white;
   line-height: var(--leading-tight);
 }
 
 .ps-hero .hero-subtitle {
-  font-size: clamp(20px, 1.7vw, 24px);
+  font-size: clamp(1.25rem, 1.7vw, 1.5rem);
   color: rgba(255, 255, 255, var(--opacity-90));
   max-width: var(--container-xs);
   margin: 0 auto var(--space-6);
@@ -47,7 +47,7 @@
   border-radius: var(--radius-2xl);
   color: var(--color-accent-green);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .ps-hero .hero-badge svg {
@@ -57,11 +57,11 @@
 
 /* Value Proposition Section */
 .ps-value {
-  min-height: 100vh;
+  min-height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--section-padding);
+  padding: var(--space-24) var(--space-6);
 }
 
 .value-content {
@@ -72,10 +72,10 @@
 }
 
 .value-content h2 {
-  font-size: clamp(36px, 3.8vw, 48px);
+  font-size: clamp(2.25rem, 3.8vw, 3rem);
   margin-bottom: var(--space-6);
   color: var(--color-text);
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
 }
 
 .value-description {
@@ -84,8 +84,7 @@
   margin-bottom: var(--space-10);
   line-height: var(--leading-loose);
   max-width: var(--container-md);
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline: auto;
 }
 
 .value-stats {
@@ -100,13 +99,24 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  background: white;
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--box-shadow);
   font-size: var(--font-size-base);
   color: var(--color-text);
   line-height: var(--leading-normal);
+  transition: box-shadow var(--transition-duration-base) ease;
+}
+
+.value-stat:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.value-stat:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-md);
 }
 
 .value-stat svg {
@@ -123,19 +133,18 @@
   text-align: center;
   margin-bottom: var(--space-12);
   max-width: var(--container-md);
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline: auto;
 }
 
 .ps-packages-header h2 {
-  font-size: clamp(32px, 3.5vw, 48px);
+  font-size: clamp(2rem, 3.5vw, 3rem);
   margin-bottom: var(--space-4);
   color: white;
 }
 
 .packages-subtitle {
   font-size: var(--font-size-xl);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
 }
 
 /* Access Matrix Section */
@@ -152,13 +161,13 @@
 }
 
 .ps-access-section .ps-access-intro h2 {
-  font-size: clamp(32px, 3.5vw, 44px);
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
   margin-bottom: var(--space-4);
   color: var(--color-text);
 }
 
 .ps-access-section .ps-access-row {
-  background: white;
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   box-shadow: var(--box-shadow);
 }
@@ -190,8 +199,8 @@
 }
 
 .ps-details h2 {
-  font-size: clamp(28px, 3vw, 40px);
-  font-weight: 600;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: var(--font-weight-semibold);
   color: white;
   margin-bottom: var(--space-6);
   text-align: center;
@@ -199,7 +208,7 @@
 
 .ps-details h3 {
   font-size: var(--font-size-xl);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: white;
 }
 
@@ -215,7 +224,7 @@
 }
 
 .cta-content h2 {
-  font-size: clamp(32px, 3.5vw, 44px);
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
   margin-bottom: var(--space-4);
   color: var(--color-text);
 }
@@ -240,7 +249,7 @@
 /* Benefit Statistics */
 .benefit-stat {
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, var(--opacity-90));
+  color: var(--text-muted);
   margin-bottom: var(--space-3);
   text-align: center;
 }
@@ -258,11 +267,11 @@
   }
 
   .ps-hero h1 {
-    font-size: clamp(32px, 8vw, 42px);
+    font-size: clamp(2rem, 8vw, 2.625rem);
   }
 
   .ps-hero .hero-subtitle {
-    font-size: clamp(16px, 4vw, 20px);
+    font-size: clamp(1rem, 4vw, 1.25rem);
   }
 
   .ps-hero .hero-badge {
@@ -276,7 +285,7 @@
   }
 
   .value-content h2 {
-    font-size: clamp(32px, 8vw, 40px);
+    font-size: clamp(2rem, 8vw, 2.5rem);
   }
 
   .value-stats {

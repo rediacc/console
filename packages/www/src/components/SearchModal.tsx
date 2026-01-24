@@ -111,11 +111,17 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  // Focus input when modal opens
+  // Focus input and lock body scroll when modal opens
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen) {
+      inputRef.current?.focus();
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
 
   // Scroll selected item into view
@@ -208,7 +214,14 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="search-modal-backdrop" onClick={handleBackdropClick}>
-      <div className="search-modal-content" ref={modalRef}>
+      <div
+        id="search-modal"
+        className="search-modal-content"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('navigation.search')}
+      >
         <div className="search-modal-header">
           <div className="search-modal-input-wrapper">
             <input
@@ -228,6 +241,14 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
                 selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined
               }
             />
+            <button
+              className="search-modal-close"
+              onClick={onClose}
+              aria-label="Close search"
+              type="button"
+            >
+              <kbd>Esc</kbd>
+            </button>
             <svg
               className="search-modal-icon"
               width="20"

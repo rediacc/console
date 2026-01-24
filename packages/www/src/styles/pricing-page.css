@@ -1,5 +1,18 @@
 /* Pricing Page Styles */
 
+/* Pricing-page scoped variables for dark section text */
+.section-dark,
+.pricing-hero,
+.ps-teaser-section {
+  --text-muted: rgba(255, 255, 255, var(--opacity-80));
+  --text-subtle: rgba(255, 255, 255, var(--opacity-65));
+  --border-subtle: rgba(255, 255, 255, var(--opacity-10));
+  --border-hover: rgba(255, 255, 255, var(--opacity-20));
+  --bg-card: rgba(0, 0, 0, var(--opacity-45));
+  --bg-card-hover: rgba(255, 255, 255, var(--opacity-05));
+  --accent-glow: rgba(127, 160, 63, var(--opacity-20));
+}
+
 /* Button Overrides for Dark Sections */
 .section-dark .btn-secondary {
   color: white;
@@ -20,7 +33,7 @@
 
 /* Hero Section - Dark Gradient */
 .pricing-hero {
-  min-height: var(--section-min-height, 100vh);
+  min-height: var(--section-min-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,15 +60,15 @@
 }
 
 .pricing-hero h1 {
-  font-size: clamp(28px, 4.2vw, 64px);
-  font-weight: bold;
+  font-size: clamp(1.75rem, 4.2vw, 4rem);
+  font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-6);
   color: white;
   line-height: var(--leading-tight);
 }
 
 .pricing-hero .hero-subtitle {
-  font-size: clamp(16px, 1.7vw, 24px);
+  font-size: clamp(1rem, 1.7vw, 1.5rem);
   color: rgba(255, 255, 255, var(--opacity-90));
   max-width: var(--container-xs);
   margin: 0 auto;
@@ -82,7 +95,7 @@
 .pricing-overview {
   display: grid;
   gap: var(--space-6);
-  background: white;
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: var(--space-8);
@@ -91,7 +104,7 @@
   box-shadow: var(--box-shadow);
 }
 
-.pricing-overview-copy h3 {
+.pricing-overview-copy h2 {
   margin-bottom: var(--space-3);
   font-size: var(--font-size-xl);
   color: var(--color-text);
@@ -173,7 +186,7 @@
   text-align: center;
 }
 
-.technical-summary-header h3 {
+.technical-summary-header h2 {
   font-size: var(--font-size-2xl);
   margin-bottom: var(--space-3);
   color: var(--color-text);
@@ -199,14 +212,14 @@
 }
 
 .technical-card {
-  background: white;
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--box-border-radius);
   padding: var(--box-padding);
   box-shadow: var(--box-shadow);
 }
 
-.technical-card h4 {
+.technical-card h3 {
   margin-bottom: var(--space-4);
   font-size: var(--font-size-lg);
   color: var(--color-text);
@@ -244,11 +257,12 @@
   font-size: var(--font-size-base);
   color: var(--color-text);
   font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Professional Services Teaser Section */
 .ps-teaser-section {
-  min-height: var(--section-min-height, 100vh);
+  min-height: var(--section-min-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,19 +277,18 @@
 }
 
 .ps-teaser-content h2 {
-  font-size: clamp(36px, 3.8vw, 48px);
+  font-size: clamp(2.25rem, 3.8vw, 3rem);
   margin-bottom: var(--space-6);
   color: white;
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
 }
 
 .ps-teaser-subtitle {
   font-size: var(--font-size-lg);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   margin-bottom: var(--space-12);
   max-width: var(--container-sm);
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline: auto;
 }
 
 .ps-teaser-packages {
@@ -312,13 +325,25 @@
     transform var(--transition-duration-base),
     border-color var(--transition-duration-base),
     background var(--transition-duration-base);
-  will-change: transform;
 }
 
-.ps-teaser-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, var(--opacity-20));
-  background: rgba(255, 255, 255, var(--opacity-05));
+@media (hover: hover) {
+  .ps-teaser-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+  }
+
+  .ps-teaser-card.popular:hover {
+    border-color: rgba(127, 160, 63, var(--opacity-70));
+    background: rgba(127, 160, 63, var(--opacity-08));
+  }
+}
+
+.ps-teaser-card:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-color: var(--border-hover);
 }
 
 .ps-teaser-card.popular {
@@ -326,9 +351,9 @@
   background: rgba(127, 160, 63, var(--opacity-05));
 }
 
-.ps-teaser-card.popular:hover {
-  border-color: rgba(127, 160, 63, var(--opacity-70));
-  background: rgba(127, 160, 63, var(--opacity-08));
+.ps-teaser-card.popular:focus-visible {
+  outline: 2px solid var(--color-accent-green);
+  outline-offset: 2px;
 }
 
 .ps-teaser-card .popular-badge {
@@ -354,8 +379,9 @@
 
 .teaser-price {
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, var(--opacity-65));
+  color: var(--text-subtle);
   font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
   margin: 0;
 }
 
@@ -379,7 +405,7 @@
   max-width: var(--container-md);
   margin: 0 auto var(--space-8);
   text-align: center;
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
 }
 
 .ps-access-intro h3 {
@@ -396,7 +422,7 @@
 }
 
 .ps-access-row {
-  background: rgba(0, 0, 0, var(--opacity-45));
+  background: var(--bg-card);
   border: 1px solid rgba(127, 160, 63, var(--opacity-25));
   border-radius: var(--box-border-radius);
   padding: calc(var(--box-padding) - var(--space-2));
@@ -437,7 +463,7 @@
 }
 
 .ps-access-column li {
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   font-size: var(--font-size-sm);
   line-height: var(--leading-relaxed);
 }
@@ -462,7 +488,7 @@
 /* Pricing Card */
 .pricing-card {
   position: relative;
-  background: white;
+  background: var(--color-bg-alt);
   --badge-color: var(--color-border);
   --badge-text-color: var(--color-text);
   --badge-border-width: 1px;
@@ -473,14 +499,25 @@
     transform var(--transition-duration-base),
     box-shadow var(--transition-duration-base);
   box-shadow: var(--box-shadow);
-  will-change: transform;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.pricing-card:hover {
-  transform: translateY(-4px);
+@media (hover: hover) {
+  .pricing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .pricing-card.popular:hover {
+    transform: translateY(-6px);
+  }
+}
+
+.pricing-card:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
   box-shadow: var(--shadow-lg);
 }
 
@@ -504,8 +541,9 @@
   --badge-border-width: 2px;
 }
 
-.pricing-card.popular:hover {
-  transform: translateY(-6px);
+.pricing-card.popular:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
 }
 
 .popular-badge {
@@ -600,7 +638,8 @@
 .price {
   display: inline;
   font-size: var(--font-size-4xl);
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
   color: var(--color-text);
 }
 
@@ -721,13 +760,13 @@
   gap: var(--space-6);
   margin-top: var(--space-12);
   padding: var(--box-padding);
-  background: white;
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--box-border-radius);
   box-shadow: var(--box-shadow);
 }
 
-.enterprise-content h3 {
+.enterprise-content h2 {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-2);
   color: var(--color-text);
@@ -749,13 +788,13 @@
 }
 
 .services-header h2 {
-  font-size: clamp(32px, 3.5vw, 48px);
+  font-size: clamp(2rem, 3.5vw, 3rem);
   margin-bottom: var(--space-4);
 }
 
 .services-subtitle {
   font-size: var(--font-size-xl);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   margin-bottom: var(--space-6);
 }
 
@@ -780,7 +819,7 @@
   max-width: var(--container-md);
   margin: 0 auto;
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
 }
 
 /* Service Package Cards */
@@ -795,7 +834,7 @@
 .service-package-card {
   position: relative;
   background: var(--gradient-dark-alt);
-  border: 1px solid rgba(255, 255, 255, var(--opacity-10));
+  border: 1px solid var(--border-subtle);
   border-radius: var(--box-border-radius);
   padding: var(--box-padding);
   transition:
@@ -805,13 +844,20 @@
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  will-change: transform;
 }
 
-.service-package-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, var(--opacity-40));
-  border-color: rgba(255, 255, 255, var(--opacity-20));
+@media (hover: hover) {
+  .service-package-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, var(--opacity-40));
+    border-color: var(--border-hover);
+  }
+}
+
+.service-package-card:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-color: var(--border-hover);
 }
 
 .service-package-card.popular {
@@ -846,7 +892,7 @@
 
 .package-header h3 {
   font-size: var(--font-size-2xl);
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
   color: white;
   margin-bottom: var(--space-2);
 }
@@ -871,14 +917,15 @@
 .price-from {
   display: block;
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   margin-bottom: var(--space-1);
 }
 
 .price-amount {
   display: block;
   font-size: var(--font-size-4xl);
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
   color: var(--color-accent-green);
 }
 
@@ -888,7 +935,7 @@
   justify-content: center;
   gap: var(--space-2);
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
 }
 
 .package-benefits {
@@ -915,7 +962,7 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-2) 0;
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   font-size: var(--font-size-sm);
   line-height: var(--leading-relaxed);
 }
@@ -930,6 +977,7 @@
   margin-top: auto;
 }
 
+/* .btn-full-width extends .btn-full from main.css */
 .btn-full-width {
   width: 100%;
   text-align: center;
@@ -954,7 +1002,7 @@
 
 .factors-intro {
   text-align: center;
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   margin-bottom: var(--space-6);
   font-size: var(--font-size-base);
 }
@@ -992,7 +1040,7 @@
 .factors-note {
   text-align: center;
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   padding: var(--space-4);
   background: rgba(0, 0, 0, var(--opacity-20));
   border-radius: var(--radius-md);
@@ -1020,12 +1068,12 @@
 }
 
 .service-type-item {
-  background: rgba(255, 255, 255, var(--opacity-05));
-  border: 1px solid rgba(255, 255, 255, var(--opacity-10));
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-3);
   overflow: hidden;
-  transition: background var(--transition-duration-base);
+  transition: background-color var(--transition-duration-base);
 }
 
 .service-type-item:hover {
@@ -1067,9 +1115,8 @@
 
 .expand-icon {
   flex-shrink: 0;
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   transition: transform var(--transition-duration-base);
-  will-change: transform;
 }
 
 .service-type-item[open] .expand-icon {
@@ -1117,7 +1164,7 @@
 
 .service-detail-item p {
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   margin: 0;
   line-height: var(--leading-normal);
 }
@@ -1137,14 +1184,14 @@
 }
 
 .services-benefits p {
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   margin-bottom: var(--space-3);
   font-size: var(--font-size-sm);
 }
 
 .services-benefits ul {
   margin: var(--space-4) 0 0 var(--space-6);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   font-size: var(--font-size-sm);
 }
 
@@ -1182,8 +1229,8 @@
 }
 
 .retainer-card {
-  background: rgba(0, 0, 0, var(--opacity-45));
-  border: 1px solid rgba(255, 255, 255, var(--opacity-10));
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: var(--space-6);
   text-align: center;
@@ -1215,7 +1262,7 @@
 
 .retainer-card li {
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   line-height: var(--leading-relaxed);
 }
 
@@ -1243,7 +1290,7 @@
 }
 
 .implementation-card {
-  background: rgba(0, 0, 0, var(--opacity-45));
+  background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, var(--opacity-08));
   border-radius: var(--radius-xl);
   padding: var(--space-6);
@@ -1283,7 +1330,7 @@
 
 .services-cta p {
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, var(--opacity-80));
+  color: var(--text-muted);
   margin-bottom: var(--space-6);
 }
 
@@ -1293,7 +1340,7 @@
 }
 
 .faq-section h2 {
-  font-size: clamp(32px, 3.5vw, 48px);
+  font-size: clamp(2rem, 3.5vw, 3rem);
   margin-bottom: var(--space-12);
   text-align: center;
   color: var(--color-text);
@@ -1307,7 +1354,7 @@
 }
 
 .faq-item {
-  background: white;
+  background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--box-border-radius);
   padding: var(--space-6);
@@ -1320,6 +1367,22 @@
   color: var(--color-text);
   font-size: var(--font-size-lg);
   list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.faq-item summary::after {
+  content: '+';
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.faq-item[open] summary::after {
+  content: '−';
 }
 
 .faq-item summary:focus-visible {
@@ -1345,7 +1408,7 @@
 }
 
 .pricing-cta h2 {
-  font-size: clamp(32px, 3.5vw, 48px);
+  font-size: clamp(2rem, 3.5vw, 3rem);
   margin-bottom: var(--space-4);
   color: white;
 }
@@ -1381,7 +1444,7 @@
   justify-content: space-between;
   padding: var(--space-6);
   background: rgba(127, 160, 63, var(--opacity-10));
-  transition: background var(--transition-duration-base);
+  transition: background-color var(--transition-duration-base);
   user-select: none;
 }
 
@@ -1416,8 +1479,7 @@
   flex-shrink: 0;
   color: rgba(127, 160, 63, var(--opacity-90));
   transition: transform var(--transition-duration-slow) ease;
-  will-change: transform;
-  margin-left: var(--space-4);
+  margin-inline-start: var(--space-4);
 }
 
 .ps-advanced-details[open] summary .expand-icon {
@@ -1454,11 +1516,11 @@
   }
 
   .pricing-hero h1 {
-    font-size: clamp(32px, 8vw, 42px);
+    font-size: clamp(2rem, 8vw, 2.625rem);
   }
 
   .pricing-hero .hero-subtitle {
-    font-size: clamp(16px, 4vw, 20px);
+    font-size: clamp(1rem, 4vw, 1.25rem);
   }
 
   .pricing-grid {
@@ -1501,7 +1563,7 @@
 
   .ps-advanced-details summary .expand-icon {
     align-self: flex-end;
-    margin-left: 0;
+    margin-inline-start: 0;
   }
 
   .ps-advanced-content {
@@ -1514,7 +1576,7 @@
   }
 
   .ps-teaser-content h2 {
-    font-size: clamp(32px, 8vw, 40px);
+    font-size: clamp(2rem, 8vw, 2.5rem);
   }
 
   .ps-teaser-packages {
@@ -1525,5 +1587,15 @@
 
   .ps-teaser-card {
     padding: var(--space-5) var(--space-4);
+  }
+}
+
+/* Reduced motion: remove hover transforms */
+@media (prefers-reduced-motion: reduce) {
+  .ps-teaser-card:hover,
+  .pricing-card:hover,
+  .pricing-card.popular:hover,
+  .service-package-card:hover {
+    transform: none;
   }
 }

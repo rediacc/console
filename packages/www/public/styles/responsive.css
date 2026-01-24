@@ -11,7 +11,7 @@
 /* Mobile adjustments */
 @media (max-width: 48rem) {
   .hero-title {
-    font-size: 2.5rem;
+    font-size: var(--font-size-3xl);
   }
 
   .hero-subtitle {
@@ -24,7 +24,7 @@
   }
 
   .section-title {
-    font-size: 2rem;
+    font-size: var(--font-size-2xl);
   }
 
   .section-subtitle {
@@ -32,12 +32,12 @@
   }
 
   .solution-card {
-    min-height: 70vh;
-    padding: var(--space-16);
+    min-height: auto;
+    padding: var(--space-8);
   }
 
   .solution-title {
-    font-size: 1.5rem;
+    font-size: var(--font-size-xl);
   }
 
   .solution-description {
@@ -76,6 +76,13 @@
   }
 }
 
+/* Large tablets (900px and up) */
+@media (min-width: 56.25rem) {
+  .footer-columns {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* Desktop (1024px and up) */
 @media (min-width: 64rem) {
   .footer-columns {
@@ -98,7 +105,7 @@
   }
 
   .solution-title {
-    font-size: 3.5rem;
+    font-size: 1.75rem;
   }
 }
 
@@ -115,9 +122,9 @@
   }
 
   .image-modal-close {
-    width: 2rem;
-    height: 2rem;
-    font-size: 1.25rem;
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    font-size: var(--font-size-xl);
   }
 }
 
@@ -141,12 +148,21 @@
     color: black;
   }
 
+  /* Prevent short line fragments across page breaks */
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
   .hero {
     margin-top: 0;
+    background: white !important;
+    color: black !important;
   }
 
   .section-title {
-    page-break-after: avoid;
+    break-after: avoid;
   }
 
   .solution-card {
@@ -156,8 +172,8 @@
   /* Display URLs for external links */
   a[href^='http']:not(.btn):not(.hero-cta-primary)::after {
     content: ' (' attr(href) ')';
-    font-size: 0.875rem;
-    color: #666;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
     word-break: break-all;
   }
 
@@ -170,7 +186,7 @@
   /* Optimize images for print */
   img {
     max-width: 100% !important;
-    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   /* Better page breaks */
@@ -180,13 +196,27 @@
   h4,
   h5,
   h6 {
-    page-break-after: avoid;
+    break-after: avoid;
   }
 
   ul,
   ol,
   dl {
-    page-break-before: avoid;
+    break-before: avoid;
+  }
+
+  /* Hide docs sidebars and simplify layout for print */
+  .docs-sidebar,
+  .toc-sidebar {
+    display: none !important;
+  }
+
+  .docs-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .article-container {
+    grid-template-columns: 1fr !important;
   }
 
   /* Expand collapsed sections for print */
@@ -203,27 +233,9 @@
   }
 }
 
-/* Reduced motion - Accessibility Feature */
+/* Reduced motion - Disable View Transitions animations */
+/* (Core reduced-motion rules for transitions/animations are in main.css) */
 @media (prefers-reduced-motion: reduce) {
-  /* !important is intentionally used here for accessibility.
-       These styles MUST override all animations and transitions to respect
-       user preferences for reduced motion, which is critical for users with
-       vestibular disorders or motion sensitivity */
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .sidebar {
-    transition: none;
-  }
-
-  .sidebar-overlay {
-    transition: none;
-  }
-
-  /* Disable View Transitions animations */
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none !important;

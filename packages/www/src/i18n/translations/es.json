@@ -9,7 +9,8 @@
       "statusMessage": "Mensaje de estado",
       "zoomIn": "Dar un golpe de zoom",
       "zoomOut": "alejar",
-      "clickToEnlarge": "Haga clic para ampliar la imagen"
+      "clickToEnlarge": "Haga clic para ampliar la imagen",
+      "opensInNewTab": "se abre en una nueva pestaña"
     },
     "buttons": {
       "close": "Cerrar",

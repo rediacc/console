@@ -70,7 +70,10 @@ const interest = Astro.url.searchParams.get('interest') || '';
             method="POST"
             action={`mailto:${CONTACT_EMAIL}?subject=Contact%20Form%20Submission`}
             enctype="text/plain"
+            aria-label={t('pages.contact.form.ariaLabel') || t('pages.contact.meta.title')}
           >
+            <fieldset class="contact-fieldset">
+              <legend class="sr-only">{t('pages.contact.form.legend') || t('pages.contact.meta.title')}</legend>
             <div class="form-group">
               <label for="contact-name" class="form-label">{t('pages.contact.form.fields.name.label')}</label>
               <input
@@ -124,6 +127,7 @@ const interest = Astro.url.searchParams.get('interest') || '';
             <button type="submit" class="btn btn-primary btn-full">
               {t('pages.contact.form.submit')}
             </button>
+            </fieldset>
           </form>
         </div>
       </div>
@@ -132,6 +136,12 @@ const interest = Astro.url.searchParams.get('interest') || '';
 </BaseLayout>
 
 <style>
+.contact-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
 .contact-content {
   padding: var(--space-20) 0;
 }
@@ -144,14 +154,14 @@ const interest = Astro.url.searchParams.get('interest') || '';
 }
 
 .contact-info h2 {
-  color: var(--primary-color);
+  color: var(--color-brand-primary);
   margin-bottom: var(--space-4);
   font-size: var(--font-size-2xl);
 }
 
 .contact-info p {
-  color: var(--text-secondary);
-  line-height: 1.6;
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
   margin-bottom: var(--space-8);
 }
 
@@ -163,25 +173,25 @@ const interest = Astro.url.searchParams.get('interest') || '';
 
 .contact-method {
   padding: var(--space-4);
-  background: var(--background-alt);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
 .contact-method h3 {
-  color: var(--primary-color);
+  color: var(--color-brand-primary);
   margin-bottom: var(--space-2);
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .contact-method p {
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
 .contact-method a {
-  color: var(--primary-color);
+  color: var(--color-brand-primary);
   text-decoration: none;
 }
 
@@ -189,11 +199,17 @@ const interest = Astro.url.searchParams.get('interest') || '';
   text-decoration: underline;
 }
 
+.contact-method a:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 .contact-form-section {
-  background: var(--background-alt);
+  background: var(--color-bg-alt);
   padding: var(--space-8);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
 .contact-form {
@@ -202,7 +218,7 @@ const interest = Astro.url.searchParams.get('interest') || '';
   gap: var(--space-4);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
   .contact-grid {
     grid-template-columns: 1fr;
     gap: var(--space-8);

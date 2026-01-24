@@ -39,7 +39,7 @@ const { t } = createTranslator(lang);
   </div>
 
   <!-- Image Modal -->
-  <div class="image-modal" id="image-modal" role="dialog" aria-hidden="true" aria-modal="true">
+  <div class="image-modal" id="image-modal" role="dialog" aria-hidden="true" aria-modal="true" aria-label={t('common.aria.imageViewer')}>
     <div class="image-modal-content" id="image-modal-content">
       <button class="image-modal-close" id="image-modal-close-btn" aria-label={t('common.aria.closeImageModal')}>&times;</button>
       <button class="nav-btn nav-prev" id="image-modal-prev-btn" aria-label={t('common.aria.previousImage')}>‹</button>

@@ -9,7 +9,8 @@
       "statusMessage": "رسالة الحالة",
       "zoomIn": "تكبير",
       "zoomOut": "تصغير",
-      "clickToEnlarge": "انقر لتكبير الصورة"
+      "clickToEnlarge": "انقر لتكبير الصورة",
+      "opensInNewTab": "يفتح في علامة تبويب جديدة"
     },
     "buttons": {
       "close": "إغلاق",

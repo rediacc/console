@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import type { Language } from '../i18n/types';
 import { EXTERNAL_LINKS } from '../config/constants';
+import { createTranslator } from '../i18n/utils';
 
 export interface Props {
   title: string;
@@ -20,9 +21,10 @@ const {
   buttonHref,
   imageSrc,
   imageAlt,
-  lang: _lang, // Passed by parents but not currently used in implementation
+  lang,
 } = Astro.props;
 
+const { t } = createTranslator(lang || 'en');
 const ctaLink = buttonHref || EXTERNAL_LINKS.SCHEDULE_CONSULTATION;
 ---
 
@@ -40,7 +42,7 @@ const ctaLink = buttonHref || EXTERNAL_LINKS.SCHEDULE_CONSULTATION;
       <div class="cta-content">
         <h2 class="cta-title">{title}</h2>
         <p class="cta-subtitle">{subtitle}</p>
-        <a href={ctaLink} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large">
+        <a href={ctaLink} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${buttonText} (${t('common.aria.opensInNewTab')})`}>
           {buttonText}
         </a>
       </div>
