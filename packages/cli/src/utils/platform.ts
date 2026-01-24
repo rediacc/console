@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const FALLBACK_TEMP_DIR = '/tmp';
@@ -82,17 +82,12 @@ export function getOldBinaryPath(execPath: string): string {
  * Returns true if the lock was acquired, false if another update is in progress.
  */
 export async function acquireUpdateLock(): Promise<boolean> {
-  try {
-    const content = await readFile(LOCK_FILE, 'utf-8').catch(() => null);
-    if (content) {
-      const pid = Number.parseInt(content.trim(), 10);
-      if (!Number.isNaN(pid) && isProcessAlive(pid)) {
-        return false;
-      }
-      // Stale lock - remove and proceed
+  const content = await readFile(LOCK_FILE, 'utf-8').catch(() => null);
+  if (content) {
+    const pid = Number.parseInt(content.trim(), 10);
+    if (!Number.isNaN(pid) && isProcessAlive(pid)) {
+      return false;
     }
-  } catch {
-    // No lock file exists
   }
 
   const lockDir = path.dirname(LOCK_FILE);
@@ -112,12 +107,7 @@ export async function releaseUpdateLock(): Promise<void> {
  * Removes the old binary left over from a previous update.
  */
 export async function cleanupOldBinary(oldPath: string): Promise<void> {
-  try {
-    await access(oldPath);
-    await rm(oldPath);
-  } catch {
-    // File doesn't exist, nothing to clean
-  }
+  await rm(oldPath, { force: true });
 }
 
 function isProcessAlive(pid: number): boolean {

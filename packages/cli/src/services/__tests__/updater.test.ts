@@ -46,7 +46,7 @@ vi.mock('node:crypto', () => ({
 type EventHandler = (...args: unknown[]) => void;
 
 /** Create a mock HTTP response that emits data asynchronously */
-function createMockResponse(statusCode: number, body: string) {
+function createMockResponse(statusCode: number, body: string | Buffer) {
   const handlers = new Map<string, EventHandler[]>();
   const res = {
     statusCode,
@@ -60,35 +60,10 @@ function createMockResponse(statusCode: number, body: string) {
     resume: vi.fn(),
   };
   setTimeout(() => {
+    const chunk = typeof body === 'string' ? Buffer.from(body) : body;
     const dataHandlers = handlers.get('data');
     if (dataHandlers) {
-      for (const h of dataHandlers) h(Buffer.from(body));
-    }
-    const endHandlers = handlers.get('end');
-    if (endHandlers) {
-      for (const h of endHandlers) h();
-    }
-  }, 0);
-  return res;
-}
-
-function createMockBinaryResponse(statusCode: number, data: Buffer) {
-  const handlers = new Map<string, EventHandler[]>();
-  const res = {
-    statusCode,
-    headers: {},
-    on(event: string, handler: EventHandler) {
-      const list = handlers.get(event) ?? [];
-      list.push(handler);
-      handlers.set(event, list);
-      return res;
-    },
-    resume: vi.fn(),
-  };
-  setTimeout(() => {
-    const dataHandlers = handlers.get('data');
-    if (dataHandlers) {
-      for (const h of dataHandlers) h(data);
+      for (const h of dataHandlers) h(chunk);
     }
     const endHandlers = handlers.get('end');
     if (endHandlers) {
@@ -99,7 +74,7 @@ function createMockBinaryResponse(statusCode: number, data: Buffer) {
 }
 
 function createMockRequest() {
-  return { on: vi.fn().mockReturnThis(), destroy: vi.fn() };
+  return { on: vi.fn().mockReturnThis(), destroy: vi.fn(), setTimeout: vi.fn() };
 }
 
 function createErrorRequest() {
@@ -306,7 +281,7 @@ describe('services/updater', () => {
           const res = createMockResponse(200, JSON.stringify(manifest));
           (callback as (res: unknown) => void)(res);
         } else {
-          const res = createMockBinaryResponse(200, binaryContent);
+          const res = createMockResponse(200, binaryContent);
           (callback as (res: unknown) => void)(res);
         }
         return createMockRequest() as unknown as ReturnType<typeof https.get>;

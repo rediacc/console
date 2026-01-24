@@ -167,6 +167,11 @@ async function downloadBinary(url: string): Promise<Buffer | null> {
       res.on('end', () => resolve(Buffer.concat(chunks)));
     });
 
+    req.setTimeout(30_000);
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
     req.on('error', () => resolve(null));
   });
 }

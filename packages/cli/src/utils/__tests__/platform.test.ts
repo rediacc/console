@@ -1,4 +1,4 @@
-import { access, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import { readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   acquireUpdateLock,
@@ -11,10 +11,9 @@ import {
 } from '../platform.js';
 
 vi.mock('node:fs/promises', () => ({
-  access: vi.fn(),
   mkdir: vi.fn().mockResolvedValue(undefined),
   readFile: vi.fn(),
-  rm: vi.fn(),
+  rm: vi.fn().mockResolvedValue(undefined),
   unlink: vi.fn(),
   writeFile: vi.fn(),
 }));
@@ -234,17 +233,16 @@ describe('utils/platform', () => {
   });
 
   describe('cleanupOldBinary()', () => {
-    it('removes old binary if it exists', async () => {
-      vi.mocked(access).mockResolvedValue();
+    it('removes old binary with force flag', async () => {
       vi.mocked(rm).mockResolvedValue();
 
       await cleanupOldBinary('/usr/local/bin/rdc.old');
 
-      expect(rm).toHaveBeenCalledWith('/usr/local/bin/rdc.old');
+      expect(rm).toHaveBeenCalledWith('/usr/local/bin/rdc.old', { force: true });
     });
 
     it('does not throw if file does not exist', async () => {
-      vi.mocked(access).mockRejectedValue(new Error('ENOENT'));
+      vi.mocked(rm).mockResolvedValue();
 
       await expect(cleanupOldBinary('/usr/local/bin/rdc.old')).resolves.toBeUndefined();
     });
