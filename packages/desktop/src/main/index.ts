@@ -4,7 +4,15 @@ import { app, BrowserWindow, session, shell } from 'electron';
 import { cleanupIpcHandlers, registerIpcHandlers } from './ipc';
 import { setupProtocolHandler } from './protocol';
 import { setupAutoUpdater } from './updater/autoUpdater';
+import { runWarmup } from './warmup';
 import { WindowManager } from './windowManager';
+
+// Warmup check: validate externalized modules are loadable.
+// Runs before app lifecycle so Electron doesn't create a window.
+if (process.argv.includes('--warmup')) {
+  const code = runWarmup();
+  process.exit(code);
+}
 
 let mainWindow: BrowserWindow | null = null;
 const windowManager = new WindowManager();

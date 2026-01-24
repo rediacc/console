@@ -14,9 +14,15 @@
     "strictNullChecks": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "types": ["node"]
   },
-  "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "electron.vite.config.ts"],
+  "include": [
+    "src/main/**/*.ts",
+    "src/preload/**/*.ts",
+    "electron.vite.config.ts",
+    "externals.json"
+  ],
   "references": [{ "path": "../shared-desktop" }]
 }
