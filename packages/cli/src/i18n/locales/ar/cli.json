@@ -779,6 +779,21 @@
         }
       }
     },
+    "update": {
+      "description": "التحقق من تحديثات CLI وتطبيقها",
+      "force": "فرض التحديث حتى لو كان محدثاً",
+      "checkOnly": "التحقق من التحديثات فقط دون التنزيل",
+      "notSEA": "لا يمكن التحديث: لا يعمل كملف ثنائي مجمّع. قم بالبناء باستخدام SEA أولاً.",
+      "available": "تحديث متوفر: v{{version}} (الحالي: v{{current}})",
+      "releaseNotes": "ملاحظات الإصدار: {{url}}",
+      "upToDate": "محدث بالفعل (v{{version}})",
+      "checking": "جارٍ البحث عن تحديثات...",
+      "downloading": "جارٍ تنزيل v{{version}}...",
+      "progress": "جارٍ التنزيل... {{percent}}%",
+      "success": "تم التحديث من v{{from}} إلى v{{to}}",
+      "failed": "فشل التحديث: {{error}}",
+      "unknownError": "خطأ غير معروف"
+    },
     "term": {
       "description": "وصول طرفية SSH إلى الآلات والمستودعات",
       "connecting": "جاري الاتصال بـ {{machine}}...",

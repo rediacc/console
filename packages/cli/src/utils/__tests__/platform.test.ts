@@ -1,4 +1,3 @@
-import { access, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   acquireUpdateLock,
@@ -10,13 +9,19 @@ import {
   releaseUpdateLock,
 } from '../platform.js';
 
-vi.mock('node:fs/promises', () => ({
-  access: vi.fn(),
+const mockFs = vi.hoisted(() => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
   readFile: vi.fn(),
-  rm: vi.fn(),
-  unlink: vi.fn(),
-  writeFile: vi.fn(),
+  unlink: vi.fn().mockResolvedValue(undefined),
+  writeFile: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('node:fs', () => ({
+  promises: mockFs,
+}));
+
+vi.mock('node:os', () => ({
+  homedir: () => '/home/testuser',
 }));
 
 describe('utils/platform', () => {
@@ -65,7 +70,7 @@ describe('utils/platform', () => {
 
     it('returns false when basename is node.exe', () => {
       Object.defineProperty(process, 'execPath', {
-        value: '/c/Program Files/node.exe',
+        value: 'C:\\Program Files\\node.exe',
         writable: true,
       });
       expect(isSEA()).toBe(false);
@@ -89,7 +94,7 @@ describe('utils/platform', () => {
       expect(isUpdateDisabled()).toBe(true);
     });
 
-    it('returns true when execPath contains /node_modules/', () => {
+    it('returns true when execPath is in node_modules', () => {
       Object.defineProperty(process, 'execPath', {
         value: '/home/user/project/node_modules/.bin/rdc',
         writable: true,
@@ -97,7 +102,7 @@ describe('utils/platform', () => {
       expect(isUpdateDisabled()).toBe(true);
     });
 
-    it('returns true when execPath contains /dist/', () => {
+    it('returns true when execPath is in dist', () => {
       Object.defineProperty(process, 'execPath', {
         value: '/home/user/project/dist/rdc',
         writable: true,
@@ -105,7 +110,7 @@ describe('utils/platform', () => {
       expect(isUpdateDisabled()).toBe(true);
     });
 
-    it('returns true when execPath contains /build/', () => {
+    it('returns true when execPath is in build', () => {
       Object.defineProperty(process, 'execPath', {
         value: '/home/user/project/build/rdc',
         writable: true,
@@ -113,7 +118,7 @@ describe('utils/platform', () => {
       expect(isUpdateDisabled()).toBe(true);
     });
 
-    it('returns false when none of the above conditions apply', () => {
+    it('returns false when none of the conditions apply', () => {
       expect(isUpdateDisabled()).toBe(false);
     });
   });
@@ -160,53 +165,85 @@ describe('utils/platform', () => {
       Object.defineProperty(process, 'arch', { value: 'ia32' });
       expect(getPlatformKey()).toBeNull();
     });
+
+    it('returns null on unsupported platform (freebsd)', () => {
+      Object.defineProperty(process, 'platform', { value: 'freebsd' });
+      Object.defineProperty(process, 'arch', { value: 'x64' });
+      expect(getPlatformKey()).toBeNull();
+    });
   });
 
   describe('getOldBinaryPath()', () => {
     it('returns path.old on Linux/macOS', () => {
+      Object.defineProperty(process, 'execPath', { value: '/usr/local/bin/rdc', writable: true });
       Object.defineProperty(process, 'platform', { value: 'linux' });
-      expect(getOldBinaryPath('/usr/local/bin/rdc')).toBe('/usr/local/bin/rdc.old');
+      expect(getOldBinaryPath()).toBe('/usr/local/bin/rdc.old');
     });
 
     it('returns path.old.exe on Windows', () => {
+      Object.defineProperty(process, 'execPath', {
+        value: 'C:\\Program Files\\rdc.exe',
+        writable: true,
+      });
       Object.defineProperty(process, 'platform', { value: 'win32' });
-      const winPath = 'C:\\Program Files\\rdc.exe';
-      const expected = 'C:\\Program Files\\rdc.old.exe';
-      expect(getOldBinaryPath(winPath)).toBe(expected);
+      expect(getOldBinaryPath()).toBe('C:\\Program Files\\rdc.old.exe');
+    });
+  });
+
+  describe('cleanupOldBinary()', () => {
+    it('unlinks the old binary path', async () => {
+      Object.defineProperty(process, 'execPath', { value: '/usr/local/bin/rdc', writable: true });
+      Object.defineProperty(process, 'platform', { value: 'linux' });
+      mockFs.unlink.mockResolvedValue(undefined);
+
+      await cleanupOldBinary();
+
+      expect(mockFs.unlink).toHaveBeenCalledWith('/usr/local/bin/rdc.old');
+    });
+
+    it('does not throw if file does not exist', async () => {
+      Object.defineProperty(process, 'execPath', { value: '/usr/local/bin/rdc', writable: true });
+      Object.defineProperty(process, 'platform', { value: 'linux' });
+      mockFs.unlink.mockRejectedValue(new Error('ENOENT'));
+
+      await expect(cleanupOldBinary()).resolves.toBeUndefined();
     });
   });
 
   describe('acquireUpdateLock() / releaseUpdateLock()', () => {
     beforeEach(() => {
-      vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
-      vi.mocked(writeFile).mockResolvedValue();
-      vi.mocked(unlink).mockResolvedValue();
+      mockFs.readFile.mockRejectedValue(new Error('ENOENT'));
+      mockFs.writeFile.mockResolvedValue(undefined);
+      mockFs.mkdir.mockResolvedValue(undefined);
+      mockFs.unlink.mockResolvedValue(undefined);
     });
 
     it('acquires lock when no lock exists and returns true', async () => {
-      vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
+      mockFs.readFile.mockResolvedValue(null);
 
       const result = await acquireUpdateLock();
 
       expect(result).toBe(true);
-      expect(writeFile).toHaveBeenCalledWith(
+      expect(mockFs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('update.lock'),
-        String(process.pid),
-        'utf-8'
+        process.pid.toString(),
+        { mode: 0o600 }
       );
     });
 
-    it('writes PID to lock file', async () => {
-      vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
+    it('creates lock directory recursively', async () => {
+      mockFs.readFile.mockResolvedValue(null);
 
       await acquireUpdateLock();
 
-      expect(writeFile).toHaveBeenCalledWith(expect.any(String), String(process.pid), 'utf-8');
+      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.rediacc'), {
+        recursive: true,
+      });
     });
 
     it('returns false when lock exists with alive PID', async () => {
       const alivePid = process.pid;
-      vi.mocked(readFile).mockResolvedValue(String(alivePid));
+      mockFs.readFile.mockResolvedValue(String(alivePid));
       const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
 
       const result = await acquireUpdateLock();
@@ -215,42 +252,38 @@ describe('utils/platform', () => {
       killSpy.mockRestore();
     });
 
-    it('acquires lock when lock exists with dead PID (stale lock)', async () => {
-      vi.mocked(readFile).mockResolvedValue('99999999');
-      const killSpy = vi.spyOn(process, 'kill').mockImplementation(throwEsrch);
+    it('acquires lock when existing lock has dead PID (stale)', async () => {
+      mockFs.readFile.mockResolvedValue('99999999');
+      const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
+        throw new Error('ESRCH');
+      });
 
       const result = await acquireUpdateLock();
 
       expect(result).toBe(true);
-      expect(writeFile).toHaveBeenCalled();
+      expect(mockFs.writeFile).toHaveBeenCalled();
       killSpy.mockRestore();
+    });
+
+    it('returns false when writeFile fails', async () => {
+      mockFs.readFile.mockResolvedValue(null);
+      mockFs.writeFile.mockRejectedValue(new Error('EACCES'));
+
+      const result = await acquireUpdateLock();
+
+      expect(result).toBe(false);
     });
 
     it('releaseUpdateLock removes the lock file', async () => {
       await releaseUpdateLock();
 
-      expect(unlink).toHaveBeenCalledWith(expect.stringContaining('update.lock'));
-    });
-  });
-
-  describe('cleanupOldBinary()', () => {
-    it('removes old binary if it exists', async () => {
-      vi.mocked(access).mockResolvedValue();
-      vi.mocked(rm).mockResolvedValue();
-
-      await cleanupOldBinary('/usr/local/bin/rdc.old');
-
-      expect(rm).toHaveBeenCalledWith('/usr/local/bin/rdc.old');
+      expect(mockFs.unlink).toHaveBeenCalledWith(expect.stringContaining('update.lock'));
     });
 
-    it('does not throw if file does not exist', async () => {
-      vi.mocked(access).mockRejectedValue(new Error('ENOENT'));
+    it('releaseUpdateLock does not throw on ENOENT', async () => {
+      mockFs.unlink.mockRejectedValue(new Error('ENOENT'));
 
-      await expect(cleanupOldBinary('/usr/local/bin/rdc.old')).resolves.toBeUndefined();
+      await expect(releaseUpdateLock()).resolves.toBeUndefined();
     });
   });
 });
-
-function throwEsrch(): never {
-  throw new Error('ESRCH');
-}

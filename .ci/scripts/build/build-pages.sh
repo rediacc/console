@@ -67,6 +67,14 @@ mkdir -p "$OUTPUT_DIR/json"
 cp -r packages/json/dist/* "$OUTPUT_DIR/json/"
 log_info "Copied json to $OUTPUT_DIR/json/"
 
+# Copy CLI manifest to /cli/ subpath (if generated)
+if [[ -f "dist/cli-manifest/manifest.json" ]]; then
+    log_step "Copying CLI manifest to /cli/..."
+    mkdir -p "$OUTPUT_DIR/cli"
+    cp dist/cli-manifest/manifest.json "$OUTPUT_DIR/cli/manifest.json"
+    log_info "Copied CLI manifest to $OUTPUT_DIR/cli/"
+fi
+
 # Add CNAME for custom domain
 log_step "Adding CNAME..."
 echo "www.rediacc.com" > "$OUTPUT_DIR/CNAME"
@@ -80,3 +88,4 @@ log_info "Pages package ready at $OUTPUT_DIR/"
 log_info "  - Root:     www.rediacc.com (marketing site)"
 log_info "  - /console: www.rediacc.com/console/ (web app)"
 log_info "  - /json:    www.rediacc.com/json/ (template catalog)"
+log_info "  - /cli:     www.rediacc.com/cli/ (CLI update manifest)"

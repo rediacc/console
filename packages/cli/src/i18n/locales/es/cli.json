@@ -779,6 +779,21 @@
         }
       }
     },
+    "update": {
+      "description": "Verificar y aplicar actualizaciones del CLI",
+      "force": "Forzar actualización aunque esté al día",
+      "checkOnly": "Solo verificar actualizaciones sin descargar",
+      "notSEA": "No se puede actualizar: no se ejecuta como binario empaquetado. Compile con SEA primero.",
+      "available": "Actualización disponible: v{{version}} (actual: v{{current}})",
+      "releaseNotes": "Notas de la versión: {{url}}",
+      "upToDate": "Ya está actualizado (v{{version}})",
+      "checking": "Buscando actualizaciones...",
+      "downloading": "Descargando v{{version}}...",
+      "progress": "Descargando... {{percent}}%",
+      "success": "Actualizado de v{{from}} a v{{to}}",
+      "failed": "Actualización fallida: {{error}}",
+      "unknownError": "Error desconocido"
+    },
     "term": {
       "description": "Acceso a terminal SSH a máquinas y repositorios",
       "connecting": "Conectando a {{machine}}...",
