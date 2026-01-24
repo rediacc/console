@@ -18,10 +18,13 @@ DESKTOP_DIR="$REPO_ROOT/packages/desktop"
 # Read externals from the single source of truth
 EXTERNALS_JSON="$DESKTOP_DIR/externals.json"
 require_file "$EXTERNALS_JSON"
-readarray -t REQUIRED_EXTERNALS < <(node -e "
+REQUIRED_EXTERNALS=()
+while IFS= read -r mod; do
+    [[ -n "$mod" ]] && REQUIRED_EXTERNALS+=("$mod")
+done <<< "$(node -e "
   const cfg = JSON.parse(require('fs').readFileSync('$EXTERNALS_JSON', 'utf8'));
   cfg.externals.forEach(m => console.log(m));
-")
+")"
 
 log_step "Verifying desktop build (warmup)..."
 
