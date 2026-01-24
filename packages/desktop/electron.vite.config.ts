@@ -21,7 +21,11 @@ export default defineConfig({
         '@rediacc/shared-desktop': resolve(__dirname, '../shared-desktop/src'),
       },
     },
-    // SSR externalization - only externalize native/electron modules
+    // SSR externalization - only externalize native/electron modules.
+    // IMPORTANT: When modifying this list, also update:
+    //   - packages/desktop/src/main/warmup.ts (REQUIRED_EXTERNALS)
+    //   - .ci/scripts/build/resolve-desktop-externals.sh (EXTERNALS)
+    //   - .ci/scripts/build/verify-desktop.sh (REQUIRED_EXTERNALS)
     ssr: {
       external: ['electron', 'electron-updater', 'ssh2', 'node-pty', 'cpu-features'],
       // Bundle all other packages including workspace packages

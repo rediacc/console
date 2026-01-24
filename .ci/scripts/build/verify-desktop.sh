@@ -43,11 +43,11 @@ if [[ "$CI_OS" == "windows" ]]; then
       const output = { success: failed.length === 0, results };
       process.stdout.write(JSON.stringify(output, null, 2) + '\n');
       process.exit(failed.length === 0 ? 0 : 1);
-    " "$MODS_JSON" 2>/dev/null)
+    " "$MODS_JSON")
     EXIT_CODE=$?
 else
     # On Linux/macOS: run Electron with --warmup flag
-    OUTPUT=$(cd "$DESKTOP_DIR" && npx electron out/main/index.js --warmup --no-sandbox 2>/dev/null)
+    OUTPUT=$(cd "$DESKTOP_DIR" && npx electron out/main/index.js --warmup --no-sandbox)
     EXIT_CODE=$?
 fi
 

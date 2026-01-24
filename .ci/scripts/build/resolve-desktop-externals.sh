@@ -61,7 +61,7 @@ copy_module_tree() {
         deps=$(node -e "
           const pkg = JSON.parse(require('fs').readFileSync('$pkg_json', 'utf8'));
           Object.keys(pkg.dependencies || {}).forEach(d => console.log(d));
-        " 2>/dev/null || true)
+        " || true)
         for dep in $deps; do
             # Only copy if not already nested inside the module itself
             if [[ ! -d "$LOCAL_NM/$mod/node_modules/$dep" ]]; then
