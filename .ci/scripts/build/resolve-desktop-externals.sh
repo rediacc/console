@@ -8,9 +8,8 @@
 #
 # Usage: resolve-desktop-externals.sh
 #
-# The externals list is derived from electron.vite.config.ts ssr.external,
-# excluding 'electron' (provided by Electron itself) and 'cpu-features'
-# (optional, ssh2 works without it).
+# The externals list is sourced from packages/desktop/externals.json
+# (single source of truth for all externalized module consumers).
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,9 +20,13 @@ DESKTOP_DIR="$REPO_ROOT/packages/desktop"
 ROOT_NM="$REPO_ROOT/node_modules"
 LOCAL_NM="$DESKTOP_DIR/node_modules"
 
-# Externals from electron.vite.config.ts ssr.external
-# (excluding 'electron' which is handled by electron-builder)
-EXTERNALS=("ssh2" "node-pty" "electron-updater")
+# Read externals from the single source of truth
+EXTERNALS_JSON="$DESKTOP_DIR/externals.json"
+require_file "$EXTERNALS_JSON"
+readarray -t EXTERNALS < <(node -e "
+  const cfg = JSON.parse(require('fs').readFileSync('$EXTERNALS_JSON', 'utf8'));
+  cfg.externals.forEach(m => console.log(m));
+")
 
 log_step "Resolving externalized modules for packaging..."
 mkdir -p "$LOCAL_NM"

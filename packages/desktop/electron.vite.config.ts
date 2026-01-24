@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
+
+// Single source of truth for externalized modules (see externals.json)
+const externalsConfig = JSON.parse(readFileSync(resolve(__dirname, 'externals.json'), 'utf8'));
+const ssrExternal: string[] = [
+  ...externalsConfig.managed,
+  ...externalsConfig.externals,
+  ...externalsConfig.optional,
+];
 
 export default defineConfig({
   main: {
@@ -22,12 +31,9 @@ export default defineConfig({
       },
     },
     // SSR externalization - only externalize native/electron modules.
-    // IMPORTANT: When modifying this list, also update:
-    //   - packages/desktop/src/main/warmup.ts (REQUIRED_EXTERNALS)
-    //   - .ci/scripts/build/resolve-desktop-externals.sh (EXTERNALS)
-    //   - .ci/scripts/build/verify-desktop.sh (REQUIRED_EXTERNALS)
+    // List sourced from externals.json (single source of truth).
     ssr: {
-      external: ['electron', 'electron-updater', 'ssh2', 'node-pty', 'cpu-features'],
+      external: ssrExternal,
       // Bundle all other packages including workspace packages
       noExternal: true,
     },

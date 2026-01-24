@@ -15,8 +15,13 @@ source "$SCRIPT_DIR/../lib/common.sh"
 REPO_ROOT="$(get_repo_root)"
 DESKTOP_DIR="$REPO_ROOT/packages/desktop"
 
-# Externals that must be resolvable (keep in sync with warmup.ts)
-REQUIRED_EXTERNALS=("ssh2" "node-pty" "electron-updater")
+# Read externals from the single source of truth
+EXTERNALS_JSON="$DESKTOP_DIR/externals.json"
+require_file "$EXTERNALS_JSON"
+readarray -t REQUIRED_EXTERNALS < <(node -e "
+  const cfg = JSON.parse(require('fs').readFileSync('$EXTERNALS_JSON', 'utf8'));
+  cfg.externals.forEach(m => console.log(m));
+")
 
 log_step "Verifying desktop build (warmup)..."
 

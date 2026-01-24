@@ -4,16 +4,16 @@
  * Attempts to load all externalized native modules and reports pass/fail.
  * Used by CI to verify the packaged desktop app contains all required modules.
  *
- * The REQUIRED_EXTERNALS list must stay in sync with electron.vite.config.ts
- * ssr.external (excluding 'electron' which is provided by Electron itself,
- * and 'cpu-features' which is optional).
+ * The externals list is sourced from externals.json (single source of truth).
  */
 
 import { createRequire } from 'node:module';
+import externalsConfig from '../../externals.json';
 
-// Externals that must be resolvable at runtime.
-// Keep in sync with electron.vite.config.ts ssr.external
-const REQUIRED_EXTERNALS = ['ssh2', 'node-pty', 'electron-updater'] as const;
+// Externals that must be resolvable at runtime (from externals.json).
+// 'managed' (electron) is excluded since it's provided by Electron itself.
+// 'optional' (cpu-features) is excluded since ssh2 works without it.
+const REQUIRED_EXTERNALS = externalsConfig.externals;
 
 export function runWarmup(): number {
   const results: { module: string; status: 'ok' | 'fail'; error?: string }[] = [];
