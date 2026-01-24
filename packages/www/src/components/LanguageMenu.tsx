@@ -245,7 +245,9 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
       return languageList.map((lang, index) => (
         <a
           key={lang}
-          ref={(el) => { menuItemsRef.current[index] = el; }}
+          ref={(el) => {
+            menuItemsRef.current[index] = el;
+          }}
           href={getLanguageUrl(lang)}
           className={`language-option ${lang === currentLang ? 'active' : ''}`}
           onClick={() => handleLanguageSelect(lang)}
@@ -280,7 +282,9 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
       <button
         type="button"
         key={lang}
-        ref={(el) => { menuItemsRef.current[index] = el; }}
+        ref={(el) => {
+          menuItemsRef.current[index] = el;
+        }}
         className={`language-option ${lang === currentLang ? 'active' : ''}`}
         onClick={() => handleLanguageSelect(lang)}
         role="menuitem"

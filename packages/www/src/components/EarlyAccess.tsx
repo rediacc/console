@@ -7,23 +7,29 @@ const EarlyAccess: React.FC = () => {
   const benefits = ta('earlyAccess.benefits');
   const formFields = to('earlyAccess.form.fields');
 
-  const handleInvalid = useCallback((e: React.InvalidEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    e.currentTarget.setAttribute('aria-invalid', 'true');
-    const errorEl = document.getElementById(`${e.currentTarget.id}-error`);
-    if (errorEl) {
-      errorEl.textContent = e.currentTarget.validationMessage;
-    }
-  }, []);
-
-  const handleInput = useCallback((e: React.FormEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    if (e.currentTarget.validity.valid) {
-      e.currentTarget.setAttribute('aria-invalid', 'false');
+  const handleInvalid = useCallback(
+    (e: React.InvalidEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      e.currentTarget.setAttribute('aria-invalid', 'true');
       const errorEl = document.getElementById(`${e.currentTarget.id}-error`);
       if (errorEl) {
-        errorEl.textContent = '';
+        errorEl.textContent = e.currentTarget.validationMessage;
       }
-    }
-  }, []);
+    },
+    []
+  );
+
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      if (e.currentTarget.validity.valid) {
+        e.currentTarget.setAttribute('aria-invalid', 'false');
+        const errorEl = document.getElementById(`${e.currentTarget.id}-error`);
+        if (errorEl) {
+          errorEl.textContent = '';
+        }
+      }
+    },
+    []
+  );
 
   return (
     <section className="early-access" id="early-access">
@@ -48,7 +54,8 @@ const EarlyAccess: React.FC = () => {
             >
               <div className="form-group">
                 <label htmlFor="name" className="form-label">
-                  {formFields.name.label}                </label>
+                  {formFields.name.label}{' '}
+                </label>
                 <input
                   type="text"
                   id="name"
@@ -68,7 +75,8 @@ const EarlyAccess: React.FC = () => {
 
               <div className="form-group">
                 <label htmlFor="email" className="form-label">
-                  {formFields.email.label}                </label>
+                  {formFields.email.label}{' '}
+                </label>
                 <input
                   type="email"
                   id="email"
@@ -88,7 +96,8 @@ const EarlyAccess: React.FC = () => {
 
               <div className="form-group">
                 <label htmlFor="organization" className="form-label">
-                  {formFields.organization.label}                </label>
+                  {formFields.organization.label}{' '}
+                </label>
                 <input
                   type="text"
                   id="organization"
@@ -126,7 +135,8 @@ const EarlyAccess: React.FC = () => {
 
               <div className="form-group">
                 <label htmlFor="use-case" className="form-label">
-                  {formFields.useCase.label}                </label>
+                  {formFields.useCase.label}{' '}
+                </label>
                 <select
                   id="use-case"
                   name="use-case"

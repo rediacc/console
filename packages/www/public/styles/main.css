@@ -92,7 +92,7 @@
   --box-shadow: 0 4px 20px rgba(0, 0, 0, var(--opacity-10));
 
   /* Touch Targets - WCAG 2.1 AA/AAA compliance */
-  --touch-target-min: 44px;       /* WCAG AAA minimum */
+  --touch-target-min: 44px; /* WCAG AAA minimum */
   --touch-target-preferred: 48px; /* Optimal thumb accessibility */
 
   /* Grid Patterns */
@@ -536,7 +536,7 @@ main {
 }
 
 /* External links: announce new tab to screen readers */
-a[target="_blank"]::after {
+a[target='_blank']::after {
   content: ' (opens in new tab)';
   position: absolute;
   width: 1px;
@@ -822,11 +822,11 @@ a[target="_blank"]::after {
 }
 
 /* RTL: sidebar slides from the inline-end (right) side */
-[dir="rtl"] .sidebar {
+[dir='rtl'] .sidebar {
   transform: translateX(100%);
 }
 
-[dir="rtl"] .sidebar-open {
+[dir='rtl'] .sidebar-open {
   transform: translateX(0);
 }
 
@@ -851,7 +851,7 @@ a[target="_blank"]::after {
 }
 
 .sidebar-link.active,
-.sidebar-link[aria-current="page"] {
+.sidebar-link[aria-current='page'] {
   color: var(--color-brand-primary);
   font-weight: var(--font-weight-semibold);
 }
@@ -1584,16 +1584,16 @@ a[target="_blank"]::after {
 }
 
 /* aria-invalid styling for all form fields */
-.form-input[aria-invalid="true"],
-.form-select[aria-invalid="true"],
-.form-textarea[aria-invalid="true"] {
+.form-input[aria-invalid='true'],
+.form-select[aria-invalid='true'],
+.form-textarea[aria-invalid='true'] {
   border-color: var(--color-error);
   border-width: 2px;
 }
 
-.form-input[aria-invalid="true"]:focus-visible,
-.form-select[aria-invalid="true"]:focus-visible,
-.form-textarea[aria-invalid="true"]:focus-visible {
+.form-input[aria-invalid='true']:focus-visible,
+.form-select[aria-invalid='true']:focus-visible,
+.form-textarea[aria-invalid='true']:focus-visible {
   outline-color: var(--color-error);
   box-shadow: 0 0 0 3px rgba(196, 30, 58, var(--opacity-10));
 }
