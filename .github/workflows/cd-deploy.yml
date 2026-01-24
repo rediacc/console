@@ -61,7 +61,6 @@ jobs:
           echo "version=${{ inputs.next_version }}" >> $GITHUB_OUTPUT
 
       - uses: docker/login-action@v3
-        if: ${{ !inputs.dry_run }}
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -135,7 +134,7 @@ jobs:
     name: Release
     runs-on: ubuntu-slim
     needs: [deploy-publish]
-    if: ${{ !inputs.dry_run && needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.deploy-publish.result == 'success' && (inputs.dry_run || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     permissions:
       contents: write
     steps:
@@ -160,7 +159,26 @@ jobs:
       - name: Clean up debug artifacts
         run: rm -f dist/desktop/builder-debug.yml
 
+      - name: Validate release assets
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "## (DRY-RUN) Release Validation" >> $GITHUB_STEP_SUMMARY
+          DESKTOP_COUNT=$(find dist/desktop -type f 2>/dev/null | wc -l)
+          CLI_COUNT=$(find dist/cli -type f 2>/dev/null | wc -l)
+          echo "- Desktop artifacts: $DESKTOP_COUNT files" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI artifacts: $CLI_COUNT files" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: v${{ needs.deploy-publish.outputs.version || inputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "$DESKTOP_COUNT" -eq 0 ]]; then
+            echo "::error::No desktop artifacts found"
+            exit 1
+          fi
+          if [[ "$CLI_COUNT" -eq 0 ]]; then
+            echo "::error::No CLI artifacts found"
+            exit 1
+          fi
+
       - name: Create Release
+        if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.deploy-publish.outputs.version || inputs.next_version }}
@@ -177,9 +195,9 @@ jobs:
     name: Pages
     runs-on: ubuntu-slim
     needs: [deploy-publish]
-    if: ${{ !inputs.dry_run && needs.deploy-publish.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.deploy-publish.result == 'success' && (inputs.dry_run || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     environment:
-      name: github-pages
+      name: ${{ !inputs.dry_run && 'github-pages' || '' }}
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -217,11 +235,24 @@ jobs:
       - name: Assemble pages package
         run: .ci/scripts/build/build-pages.sh --output dist
 
+      - name: Validate pages build
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "## (DRY-RUN) Pages Build Validation" >> $GITHUB_STEP_SUMMARY
+          if [[ ! -d "dist" ]] || [[ -z "$(ls -A dist/)" ]]; then
+            echo "::error::Pages dist directory is empty"
+            exit 1
+          fi
+          echo "- Total size: $(du -sh dist/ | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- Files: $(find dist -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+
       - name: Upload Pages artifact
+        if: ${{ !inputs.dry_run }}
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b  # v4
         with:
           path: dist/
 
       - name: Deploy to GitHub Pages
+        if: ${{ !inputs.dry_run }}
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
