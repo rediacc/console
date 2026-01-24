@@ -66,10 +66,13 @@ const isHomePage = Astro.url.pathname === '/' || Astro.url.pathname === `/${curr
 
 // Get path without language prefix for generating alternate language links
 const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
+
+// Determine text direction based on language
+const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 ---
 
 <!DOCTYPE html>
-<html lang={currentLang}>
+<html lang={currentLang} dir={dir}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -197,30 +200,31 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
       .skip-nav {
         position: absolute;
         top: -100px;
-        left: 0;
+        inset-inline-start: 0;
         z-index: var(--z-max);
       }
 
       .skip-nav-link {
         position: absolute;
         top: -100px;
-        left: 6px;
+        inset-inline-start: var(--space-2);
         background: var(--color-text);
         color: var(--color-bg-alt);
-        padding: 8px 16px;
+        padding: var(--space-2) var(--space-4);
         text-decoration: none;
-        font-size: 14px;
-        border-radius: 0 0 4px 4px;
-        transition: top 0.3s ease;
+        font-size: var(--font-size-sm);
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+        transition: top var(--transition-duration-slow) ease;
         border: 2px solid var(--color-bg-alt);
       }
 
       .skip-nav-link:focus {
         top: 0;
-        outline: none;
+        outline: 3px solid var(--color-brand-primary);
+        outline-offset: 2px;
       }
 
-      .skip-nav-link:hover:focus {
+      .skip-nav-link:focus:hover {
         background: var(--color-text-secondary);
       }
     </style>
@@ -232,7 +236,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
         --color-bg: #F7F7F8;
         --color-bg-alt: #FFFFFF;
         --color-text: #1A1A1A;
-        --color-text-secondary: #6E6E73;
+        --color-text-secondary: #5E5E63;
         --color-border: #D2D2D7;
         --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
         --font-size-base: 1rem;
@@ -255,7 +259,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
       body {
         font-family: var(--font-family);
         font-size: var(--font-size-base);
-        line-height: 1.6;
+        line-height: var(--leading-relaxed);
         color: var(--color-text);
         background-color: var(--color-bg-alt);
         -webkit-font-smoothing: antialiased;
@@ -274,8 +278,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
       .nav {
         position: fixed;
         top: 0;
-        left: 0;
-        right: 0;
+        inset-inline: 0;
         background-color: var(--color-bg-alt);
         z-index: var(--z-modal);
       }
@@ -307,7 +310,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
       }
 
       .hero-container {
-        max-width: 800px;
+        max-width: var(--container-md);
         margin: 0 auto;
         padding: 0 var(--space-4);
         text-align: center;
@@ -315,7 +318,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
 
       .hero-title {
         font-size: var(--font-size-4xl);
-        font-weight: 600;
+        font-weight: var(--font-weight-semibold);
         line-height: 1.1;
         color: var(--color-text);
         margin-bottom: var(--space-6);
@@ -340,6 +343,7 @@ const pathWithoutLang = getPathWithoutLanguage(Astro.url.pathname);
     </main>
     <Footer client:visible />
     <script src="/scripts/main.js" is:inline></script>
+    <script src="/scripts/image-modal.js" is:inline></script>
     <script src="/scripts/search-hotkey.js" is:inline></script>
 </body>
 </html>

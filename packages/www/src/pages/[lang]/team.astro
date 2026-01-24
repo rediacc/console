@@ -118,9 +118,9 @@ const teamMembers = [
                   target="_blank"
                   rel="noopener noreferrer"
                   class="member-linkedin"
-                  aria-label={`LinkedIn profile of ${member.name}`}
+                  aria-label={`LinkedIn profile of ${member.name} (${t('common.aria.opensInNewTab')})`}
                 >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
                     <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                   </svg>
                 </a>
@@ -197,7 +197,7 @@ const teamMembers = [
         <h2>{t('pages.team.cta.title')}</h2>
         <p>{t('pages.team.cta.subtitle')}</p>
         <div class="cta-actions">
-          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label={`${t('pages.team.cta.buttons.contact')} (${t('common.aria.opensInNewTab')})`}>
             {t('pages.team.cta.buttons.contact')}
           </a>
           <a href={`/${lang}/`} class="btn btn-secondary">
@@ -211,49 +211,49 @@ const teamMembers = [
 
 <style>
 .team-page {
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 /* Hero Section */
 .team-hero {
   padding: var(--space-20) 0 var(--space-12);
-  background: var(--background-alt);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
   text-align: center;
 }
 
 .team-hero h1 {
   font-size: var(--font-size-4xl);
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-6);
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .hero-subtitle {
   font-size: var(--font-size-xl);
-  color: var(--text-secondary);
-  max-width: 800px;
+  color: var(--color-text-secondary);
+  max-width: var(--container-md);
   margin: 0 auto;
 }
 
 /* Team Section */
 .team-section {
   padding: var(--space-16) 0;
-  background: var(--background-primary);
+  background: var(--color-bg);
 }
 
 .team-section h2 {
   font-size: var(--font-size-3xl);
   margin-bottom: var(--space-12);
   text-align: center;
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: var(--space-12);
-  max-width: 1000px;
+  max-width: var(--container-lg);
   margin: 0 auto;
 }
 
@@ -264,11 +264,11 @@ const teamMembers = [
 .member-image {
   width: 150px;
   height: 150px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   margin: 0 auto var(--space-4);
   overflow: hidden;
-  border: 4px solid var(--primary-light);
-  background: var(--background-alt);
+  border: 4px solid var(--color-brand-light, #8fa);
+  background: var(--color-bg-alt);
 }
 
 .member-image img {
@@ -279,33 +279,42 @@ const teamMembers = [
 
 .team-member h3 {
   margin-bottom: var(--space-2);
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .member-role {
-  color: var(--primary-color);
+  color: var(--color-brand-primary);
   margin-bottom: var(--space-4);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .member-linkedin {
   display: inline-flex;
-  color: var(--primary-color);
-  transition: color 0.2s;
+  align-items: center;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  color: var(--color-brand-primary);
+  transition: color var(--transition-duration-base) ease;
 }
 
 .member-linkedin:hover {
-  color: var(--primary-dark);
+  color: var(--color-brand-dark);
+}
+
+.member-linkedin:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 /* Mission Section */
 .mission-section {
   padding: var(--space-16) 0;
-  background: var(--background-alt);
+  background: var(--color-bg-alt);
 }
 
 .mission-content {
-  max-width: 800px;
+  max-width: var(--container-md);
   margin: 0 auto;
   text-align: center;
 }
@@ -313,68 +322,68 @@ const teamMembers = [
 .mission-section h2 {
   font-size: var(--font-size-3xl);
   margin-bottom: var(--space-8);
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .mission-text {
   font-size: var(--font-size-xl);
-  line-height: 1.8;
+  line-height: var(--leading-loose);
   margin-bottom: var(--space-8);
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .mission-belief {
   font-size: var(--font-size-lg);
-  line-height: 1.8;
-  color: var(--text-secondary);
+  line-height: var(--leading-loose);
+  color: var(--color-text-secondary);
 }
 
 /* Values Section */
 .values-section {
   padding: var(--space-16) 0;
-  background: var(--background-primary);
+  background: var(--color-bg);
 }
 
 .values-section h2 {
   font-size: var(--font-size-3xl);
   margin-bottom: var(--space-12);
   text-align: center;
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .values-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--space-8);
-  max-width: 1200px;
+  max-width: var(--container-xl);
   margin: 0 auto;
 }
 
 .value-card {
   padding: var(--space-6);
-  background: var(--background-alt);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
 .value-card h3 {
   margin-bottom: var(--space-4);
-  color: var(--primary-color);
+  color: var(--color-brand-primary);
 }
 
 .value-card p {
-  color: var(--text-secondary);
-  line-height: 1.6;
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
 }
 
 /* Story Section */
 .story-section {
   padding: var(--space-16) 0;
-  background: var(--background-alt);
+  background: var(--color-bg-alt);
 }
 
 .story-content {
-  max-width: 800px;
+  max-width: var(--container-md);
   margin: 0 auto;
 }
 
@@ -382,7 +391,7 @@ const teamMembers = [
   font-size: var(--font-size-3xl);
   margin-bottom: var(--space-8);
   text-align: center;
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .story-chapter {
@@ -392,44 +401,44 @@ const teamMembers = [
 .story-chapter h3 {
   margin-bottom: var(--space-4);
   margin-top: var(--space-8);
-  color: var(--primary-color);
+  color: var(--color-brand-primary);
   font-size: var(--font-size-xl);
 }
 
 .story-chapter p {
   margin-bottom: var(--space-6);
-  line-height: 1.8;
+  line-height: var(--leading-loose);
   font-size: var(--font-size-lg);
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .story-quote {
-  border-left: 4px solid var(--primary-color);
-  padding-left: var(--space-6);
+  border-inline-start: 4px solid var(--color-brand-primary);
+  padding-inline-start: var(--space-6);
   margin: var(--space-8) 0;
   font-style: italic;
   font-size: var(--font-size-xl);
-  color: var(--primary-color);
+  color: var(--color-brand-primary);
 }
 
 /* CTA Section */
 .team-cta {
   padding: var(--space-16) 0;
-  background: var(--background-primary);
+  background: var(--color-bg);
   text-align: center;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border);
 }
 
 .team-cta h2 {
   font-size: var(--font-size-3xl);
   margin-bottom: var(--space-6);
-  color: var(--text-primary);
+  color: var(--color-text);
 }
 
 .team-cta p {
   font-size: var(--font-size-xl);
   margin-bottom: var(--space-8);
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .cta-actions {
@@ -440,7 +449,8 @@ const teamMembers = [
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
+  /* 768px - respects user font size */
   .team-hero h1 {
     font-size: var(--font-size-3xl);
   }

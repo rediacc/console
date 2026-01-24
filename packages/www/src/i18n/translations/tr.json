@@ -9,7 +9,8 @@
       "statusMessage": "Durum mesajı",
       "zoomIn": "Yakınlaştır",
       "zoomOut": "Uzaklaştır",
-      "clickToEnlarge": "Resmi büyütmek için tıklayın"
+      "clickToEnlarge": "Resmi büyütmek için tıklayın",
+      "opensInNewTab": "yeni sekmede açılır"
     },
     "buttons": {
       "close": "Kapat",

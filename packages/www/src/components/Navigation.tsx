@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import LanguageMenu from './LanguageMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
@@ -15,33 +15,36 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const currentLang = useLanguage();
-  const [isVisible, setIsVisible] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const isOnSolutionsPage = window.location.pathname.includes('/solutions');
-    if (isOnSolutionsPage) {
-      const scrollTop = window.scrollY;
-      return scrollTop > 0;
-    }
-    return true;
-  });
+  const [isVisible, setIsVisible] = useState(true);
   const { t } = useTranslation(currentLang);
 
   // Get console URL (use origin from server-side if provided)
   const consoleUrl = getConsoleUrl(origin);
 
-  // Handle scroll to show/hide navigation (only on solutions page) - memoized for performance
-  const handleScroll = useCallback(() => {
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    setIsVisible(scrollTop > 0);
-  }, []);
-
+  // Handle scroll to show/hide navigation on solutions pages:
+  // Hide when scrolling down past threshold, show when scrolling up
   useEffect(() => {
     const isOnSolutionsPage = window.location.pathname.includes('/solutions');
-    if (isOnSolutionsPage) {
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      return () => window.removeEventListener('scroll', handleScroll);
-    }
-  }, [handleScroll]);
+    if (!isOnSolutionsPage) return;
+
+    let lastScrollTop = window.scrollY;
+    const scrollThreshold = 80;
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      if (scrollTop < scrollThreshold) {
+        setIsVisible(true);
+      } else if (scrollTop > lastScrollTop) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      lastScrollTop = scrollTop;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -88,6 +91,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             onClick={toggleSidebar}
             aria-label={t('navigation.toggleMenu')}
             aria-expanded={isSidebarOpen}
+            aria-controls="navigation-sidebar"
           >
             <span className="hamburger-icon" />
           </button>
@@ -108,6 +112,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               className="search-btn"
               onClick={openSearch}
               aria-label={t('navigation.search')}
+              aria-expanded={isSearchOpen}
+              aria-controls="search-modal"
             >
               <svg
                 width="20"
@@ -133,7 +139,13 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               navigationMode="button"
               ariaLabel={t('navigation.selectLanguage')}
             />
-            <a href={consoleUrl} className="login-btn" target="_blank" rel="noopener noreferrer">
+            <a
+              href={consoleUrl}
+              className="login-btn"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${t('navigation.login')} (${t('common.aria.opensInNewTab')})`}
+            >
               {t('navigation.login')}
             </a>
           </div>

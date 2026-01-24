@@ -35,7 +35,7 @@ const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.prop
 
 <style>
   .solution-image-section {
-    padding: 4rem 0;
+    padding: var(--space-16) 0;
   }
 
   .solution-image-section.light {
@@ -49,23 +49,23 @@ const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.prop
 
   .solution-image-header {
     text-align: center;
-    margin-bottom: 2rem;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    margin-bottom: var(--space-8);
+    max-width: var(--container-md);
+    margin-inline: auto;
   }
 
   .solution-image-title {
-    font-size: 2rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-4);
     color: inherit;
   }
 
   .solution-image-description {
-    font-size: 1.125rem;
+    font-size: var(--font-size-lg);
     color: inherit;
-    opacity: 0.9;
+    opacity: var(--opacity-90);
+    line-height: var(--leading-relaxed);
   }
 
   .solution-image-container {
@@ -74,6 +74,8 @@ const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.prop
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0, 0, 0, var(--opacity-10));
+    aspect-ratio: 1100 / 618;
+    background-color: var(--color-bg);
   }
 
   .solution-image {
@@ -82,17 +84,17 @@ const { imageSrc, imageAlt, title, description, variant = 'light' } = Astro.prop
     display: block;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 48rem) {
     .solution-image-section {
-      padding: 3rem 0;
+      padding: var(--space-12) 0;
     }
 
     .solution-image-title {
-      font-size: 1.5rem;
+      font-size: var(--font-size-2xl);
     }
 
     .solution-image-description {
-      font-size: 1rem;
+      font-size: var(--font-size-base);
     }
   }
 </style>

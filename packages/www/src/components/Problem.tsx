@@ -43,6 +43,8 @@ const Problem: React.FC = () => {
                       className="scenario-image clickable-image"
                       loading="lazy"
                       decoding="async"
+                      width="400"
+                      height="400"
                     />
                   </button>
                 </div>
@@ -66,6 +68,8 @@ const Problem: React.FC = () => {
                       className="scenario-image clickable-image"
                       loading="lazy"
                       decoding="async"
+                      width="400"
+                      height="400"
                     />
                   </button>
                 </div>
