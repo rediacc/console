@@ -159,17 +159,18 @@ log_step "Verifying executable..."
 BINARY_SIZE=$(wc -c < "$OUTPUT_DIR/$BINARY_NAME")
 log_info "Binary size: $((BINARY_SIZE / 1024 / 1024))MB ($BINARY_SIZE bytes)"
 
-# Quick smoke test (skip on cross-platform CI where binary may not run)
+# Warmup test (skip on cross-platform CI where binary may not run)
 if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] && \
    [[ "$ARCH" == "$(detect_arch)" ]]; then
-    log_step "Running smoke test..."
-    if "$OUTPUT_DIR/$BINARY_NAME" --version; then
-        log_info "Smoke test passed"
+    log_step "Running warmup test..."
+    if "$OUTPUT_DIR/$BINARY_NAME" --warmup; then
+        log_info "Warmup test passed"
     else
-        log_warn "Smoke test failed (exit code: $?) - binary may still be valid"
+        log_error "Warmup test failed"
+        exit 1
     fi
 else
-    log_info "Skipping smoke test (cross-platform build)"
+    log_info "Skipping warmup test (cross-platform build)"
 fi
 
 log_info "CLI SEA build complete: $OUTPUT_DIR/$BINARY_NAME"

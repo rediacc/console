@@ -1,0 +1,6 @@
+{
+  "$comment": "Externalized native modules for the desktop Electron build. This is the single source of truth - consumed by electron.vite.config.ts, warmup.ts, and CI scripts.",
+  "externals": ["ssh2", "node-pty", "electron-updater"],
+  "optional": ["cpu-features"],
+  "managed": ["electron"]
+}

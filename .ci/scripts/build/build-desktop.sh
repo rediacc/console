@@ -71,8 +71,14 @@ if [[ ! -f "$DESKTOP_DIR/out/main/index.js" ]] || [[ ! -f "$DESKTOP_DIR/out/prel
     (cd "$DESKTOP_DIR" && npm run build)
 fi
 
-# Windows-specific: Bundle MSYS2
+# Windows-specific: Ensure externalized modules are available locally.
+# On Windows, --ignore-scripts skips the postinstall hook (install-app-deps),
+# so hoisted modules aren't linked into the desktop package's node_modules/.
+# electron-builder needs them there to include in the packaged app.
 if [[ "$PLATFORM" == "win" ]]; then
+    # Resolve externalized modules and their transitive dependencies
+    "$SCRIPT_DIR/resolve-desktop-externals.sh"
+
     log_step "Bundling MSYS2 for Windows..."
     (cd "$DESKTOP_DIR" && npm run bundle:msys2) || log_warn "MSYS2 bundling skipped"
 fi

@@ -7,6 +7,12 @@ import { telemetryService } from './services/telemetry.js';
 import { handleError } from './utils/errors.js';
 
 async function main() {
+  // Warmup check: validate bundle coherence before full CLI initialization.
+  if (process.argv.includes('--warmup')) {
+    const { runWarmup } = await import('./warmup.js');
+    process.exit(runWarmup());
+  }
+
   try {
     // Connect auth service's master password getter to API client
     apiClient.setMasterPasswordGetter(() => authService.requireMasterPassword());
