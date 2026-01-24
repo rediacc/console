@@ -118,6 +118,7 @@ for PLATFORM in linux mac win; do
 done
 
 # Write pretty-printed manifest
+mkdir -p "$(dirname "$OUTPUT_PATH")"
 echo "$MANIFEST" | jq . > "$OUTPUT_PATH"
 
 log_info "Manifest generated: $OUTPUT_PATH"
