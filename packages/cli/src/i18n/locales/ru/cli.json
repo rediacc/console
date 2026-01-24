@@ -791,7 +791,8 @@
       "downloading": "Загрузка v{{version}}...",
       "progress": "Загрузка... {{percent}}%",
       "success": "Обновлено с v{{from}} до v{{to}}",
-      "failed": "Ошибка обновления: {{error}}"
+      "failed": "Ошибка обновления: {{error}}",
+      "unknownError": "Неизвестная ошибка"
     },
     "term": {
       "description": "SSH терминал доступ к машинам и репозиториям",

@@ -791,7 +791,8 @@
       "downloading": "Téléchargement de v{{version}}...",
       "progress": "Téléchargement... {{percent}}%",
       "success": "Mis à jour de v{{from}} vers v{{to}}",
-      "failed": "Échec de la mise à jour : {{error}}"
+      "failed": "Échec de la mise à jour : {{error}}",
+      "unknownError": "Erreur inconnue"
     },
     "term": {
       "description": "Accès terminal SSH aux machines et dépôts",

@@ -791,7 +791,8 @@
       "downloading": "Downloading v{{version}}...",
       "progress": "Downloading... {{percent}}%",
       "success": "Updated from v{{from}} to v{{to}}",
-      "failed": "Update failed: {{error}}"
+      "failed": "Update failed: {{error}}",
+      "unknownError": "Unknown error"
     },
     "term": {
       "description": "SSH terminal access to machines and repositories",

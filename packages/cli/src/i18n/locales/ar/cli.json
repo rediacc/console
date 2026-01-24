@@ -791,7 +791,8 @@
       "downloading": "جارٍ تنزيل v{{version}}...",
       "progress": "جارٍ التنزيل... {{percent}}%",
       "success": "تم التحديث من v{{from}} إلى v{{to}}",
-      "failed": "فشل التحديث: {{error}}"
+      "failed": "فشل التحديث: {{error}}",
+      "unknownError": "خطأ غير معروف"
     },
     "term": {
       "description": "وصول طرفية SSH إلى الآلات والمستودعات",

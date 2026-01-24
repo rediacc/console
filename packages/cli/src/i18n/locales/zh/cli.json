@@ -791,7 +791,8 @@
       "downloading": "正在下载 v{{version}}...",
       "progress": "正在下载... {{percent}}%",
       "success": "已从 v{{from}} 更新到 v{{to}}",
-      "failed": "更新失败: {{error}}"
+      "failed": "更新失败: {{error}}",
+      "unknownError": "未知错误"
     },
     "term": {
       "description": "SSH 终端访问机器和仓库",

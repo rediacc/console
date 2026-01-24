@@ -791,7 +791,8 @@
       "downloading": "Descargando v{{version}}...",
       "progress": "Descargando... {{percent}}%",
       "success": "Actualizado de v{{from}} a v{{to}}",
-      "failed": "Actualización fallida: {{error}}"
+      "failed": "Actualización fallida: {{error}}",
+      "unknownError": "Error desconocido"
     },
     "term": {
       "description": "Acceso a terminal SSH a máquinas y repositorios",

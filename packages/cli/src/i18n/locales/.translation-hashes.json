@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 808
+    "keyCount": 809
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -511,6 +511,7 @@
     "commands.update.progress": "e8dbdb34",
     "commands.update.releaseNotes": "ebefa464",
     "commands.update.success": "95aaffc9",
+    "commands.update.unknownError": "04fcf757",
     "commands.update.upToDate": "d74455ca",
     "commands.user.activate.activating": "ecd20ea4",
     "commands.user.activate.description": "c2e4d303",

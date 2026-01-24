@@ -791,7 +791,8 @@
       "downloading": "v{{version}} indiriliyor...",
       "progress": "İndiriliyor... {{percent}}%",
       "success": "v{{from}} sürümünden v{{to}} sürümüne güncellendi",
-      "failed": "Güncelleme başarısız: {{error}}"
+      "failed": "Güncelleme başarısız: {{error}}",
+      "unknownError": "Bilinmeyen hata"
     },
     "term": {
       "description": "Makinelere ve depolara SSH terminal erişimi",

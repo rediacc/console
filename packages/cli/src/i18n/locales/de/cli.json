@@ -791,7 +791,8 @@
       "downloading": "Lade v{{version}} herunter...",
       "progress": "Herunterladen... {{percent}}%",
       "success": "Aktualisiert von v{{from}} auf v{{to}}",
-      "failed": "Update fehlgeschlagen: {{error}}"
+      "failed": "Update fehlgeschlagen: {{error}}",
+      "unknownError": "Unbekannter Fehler"
     },
     "term": {
       "description": "SSH-Terminal-Zugriff auf Machines und Repositories",

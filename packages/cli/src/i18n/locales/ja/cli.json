@@ -791,7 +791,8 @@
       "downloading": "v{{version}}をダウンロード中...",
       "progress": "ダウンロード中... {{percent}}%",
       "success": "v{{from}}からv{{to}}にアップデートしました",
-      "failed": "アップデート失敗: {{error}}"
+      "failed": "アップデート失敗: {{error}}",
+      "unknownError": "不明なエラー"
     },
     "term": {
       "description": "マシンとリポジトリへの SSH ターミナルアクセス",
