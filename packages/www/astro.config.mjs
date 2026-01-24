@@ -2,6 +2,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
+import { version } from './package.json' with { type: 'json' };
 
 import react from '@astrojs/react';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
@@ -126,6 +127,11 @@ export default defineConfig({
   output: 'static',
   build: {
     assets: 'assets'
+  },
+  vite: {
+    define: {
+      __APP_VERSION__: JSON.stringify(version)
+    }
   },
   markdown: {
     remarkPlugins: [

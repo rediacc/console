@@ -1474,6 +1474,13 @@ main {
   color: var(--color-text-secondary);
 }
 
+.footer-version {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
 .footer-bottom-right {
   display: flex;
   gap: var(--space-4);

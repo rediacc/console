@@ -1,3 +1,5 @@
+declare const __APP_VERSION__: string;
+
 import React from 'react';
 import LanguageMenu from './LanguageMenu';
 import { useLanguage } from '../hooks/useLanguage';
@@ -113,6 +115,7 @@ const Footer: React.FC = () => {
               </a>
             </div>
             <p className="footer-copyright">Rediacc &copy; 2023-{currentYear}</p>
+            <p className="footer-version">v{__APP_VERSION__}</p>
           </div>
           <div className="footer-bottom-right">
             <LanguageMenu
