@@ -97,23 +97,18 @@ CLEANUP_DIRS=("$GNUPGHOME_TMP")
 cleanup() { rm -rf "${CLEANUP_DIRS[@]}"; }
 trap cleanup EXIT
 
-GPG_OPTS=(--batch --yes --no-tty)
+GPG_OPTS=(--batch --yes --no-tty --pinentry-mode loopback)
 if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
-    GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE" --pinentry-mode loopback)
+    GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE")
 fi
 
-if [[ -n "${GPG_PRIVATE_KEY:-}" ]]; then
-    echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
-    log_info "GPG private key imported"
-else
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_warn "[DRY-RUN] No GPG_PRIVATE_KEY set, generating temporary key"
-        gpg "${GPG_OPTS[@]}" --quick-generate-key "Rediacc CI <ci@rediacc.com>" rsa2048 sign 1d 2>/dev/null
-    else
-        log_error "GPG_PRIVATE_KEY environment variable is required"
-        exit 1
-    fi
+if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
+    log_error "GPG_PRIVATE_KEY environment variable is required"
+    exit 1
 fi
+
+echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
+log_info "GPG private key imported"
 
 # Get the key ID for signing
 GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)

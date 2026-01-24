@@ -194,7 +194,7 @@ phase4_validate_apt_metadata() {
     local gnupg_tmp
     gnupg_tmp="$(mktemp -d)"
     export GNUPGHOME="$gnupg_tmp"
-    gpg --batch --yes --no-tty --quick-generate-key "Test <test@test.com>" rsa2048 sign 1d 2>/dev/null
+    gpg --batch --yes --no-tty --pinentry-mode loopback --passphrase '' --quick-generate-key "Test <test@test.com>" rsa2048 sign 1d 2>/dev/null
     local key_id
     key_id=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
     GPG_PRIVATE_KEY=$(gpg --armor --export-secret-keys "$key_id" 2>/dev/null)
