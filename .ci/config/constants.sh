@@ -152,6 +152,20 @@ readonly VERSION_FILE_GO="private/renet/cmd/renet/version.go"
 readonly VERSION_FILE_CSPROJ="private/middleware/middleware.csproj"
 
 # =============================================================================
+# PACKAGE REPOSITORY CONFIGURATION
+# =============================================================================
+readonly PKG_NAME="rediacc-cli"
+readonly PKG_BINARY_NAME="rdc"
+readonly PKG_INSTALL_PATH="/usr/local/bin/rdc"
+readonly PKG_MAINTAINER="Rediacc <info@rediacc.com>"
+readonly PKG_DESCRIPTION="Rediacc CLI - automation and scripting tool"
+readonly PKG_HOMEPAGE="https://www.rediacc.com"
+readonly PKG_SECTION="utils"
+readonly PKG_PRIORITY="optional"
+readonly PKG_MAX_VERSIONS=3
+readonly PKG_RELEASE_REPO="rediacc/console"
+
+# =============================================================================
 # SQL CONFIGURATION
 # =============================================================================
 readonly SQL_SA_USER="sa"

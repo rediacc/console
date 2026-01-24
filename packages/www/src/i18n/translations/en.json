@@ -55,6 +55,7 @@
     "docs": "Docs",
     "contact": "Contact",
     "downloads": "Downloads",
+    "install": "Install",
     "toggleMenu": "Toggle menu",
     "search": "Search",
     "selectLanguage": "Select language",
@@ -1029,6 +1030,44 @@
         "ramTitle": "Memory",
         "ram": "2 GB RAM minimum, 4 GB recommended"
       }
+    },
+    "install": {
+      "meta": {
+        "title": "Install | Rediacc CLI",
+        "description": "Install the Rediacc CLI on Linux, macOS, or Windows via APT, DNF, npm, or direct download.",
+        "keywords": "install rediacc, apt install, dnf install, npm install, CLI installation"
+      },
+      "hero": {
+        "title": "Install Rediacc CLI",
+        "subtitle": "Choose your preferred installation method"
+      },
+      "methods": {
+        "apt": {
+          "title": "APT (Debian / Ubuntu)",
+          "description": "For Debian, Ubuntu, and derivatives"
+        },
+        "dnf": {
+          "title": "DNF (Fedora / RHEL)",
+          "description": "For Fedora, RHEL, CentOS, Rocky Linux"
+        },
+        "npm": {
+          "title": "npm",
+          "description": "For Node.js environments"
+        },
+        "binary": {
+          "title": "Direct Download",
+          "description": "Standalone binary, no package manager needed"
+        }
+      },
+      "verify": {
+        "title": "Verify Installation"
+      },
+      "architectures": {
+        "title": "Supported Architectures",
+        "method": "Method"
+      },
+      "copy": "Copy",
+      "copied": "Copied!"
     },
     "notFound": {
       "meta": {
