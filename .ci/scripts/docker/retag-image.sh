@@ -69,8 +69,13 @@ retag_image() {
     log_step "Re-tagging $name: $FROM_TAG -> $TO_TAG"
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] docker buildx imagetools create -t $dst $src"
-        [[ "$PUSH_LATEST" == "true" ]] && log_info "[DRY-RUN] docker buildx imagetools create -t $dst_latest $src"
+        log_info "[DRY-RUN] Verifying source image: $src"
+        if ! docker buildx imagetools inspect "$src" > /dev/null; then
+            log_error "[DRY-RUN] Failed to inspect source image: $src"
+            return 1
+        fi
+        log_info "[DRY-RUN] Verified source exists, would re-tag to: $dst"
+        [[ "$PUSH_LATEST" == "true" ]] && log_info "[DRY-RUN] Would also tag: $dst_latest"
         return 0
     fi
 
