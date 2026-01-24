@@ -36,6 +36,37 @@ export interface UpdateResult {
 }
 
 /**
+ * Fetch raw text from a URL with a timeout.
+ */
+function fetchText(url: string, timeoutMs: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const getter = url.startsWith('https://') ? httpsGet : httpGet;
+    const req = getter(url, { headers: { 'User-Agent': `rdc/${VERSION}` } }, (res) => {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        fetchText(res.headers.location, timeoutMs).then(resolve, reject);
+        return;
+      }
+
+      if (res.statusCode !== 200) {
+        reject(new Error(`HTTP ${res.statusCode}`));
+        return;
+      }
+
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk: Buffer) => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+      res.on('error', reject);
+    });
+
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+  });
+}
+
+/**
  * Fetch JSON from a URL with a timeout.
  */
 function fetchJson<T>(url: string, timeoutMs: number): Promise<T> {
@@ -172,23 +203,37 @@ async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<Upda
       binaries: {},
     };
 
-    // Parse assets to find CLI binaries and their checksums
-    const checksums = new Map<string, string>();
+    // Build a map of checksum asset URLs keyed by binary name
+    const checksumAssets = new Map<string, string>();
     for (const asset of release.assets) {
       if (asset.name.endsWith('.sha256')) {
-        // Will need to download checksum content - skip for now, use empty
         const baseName = asset.name.replace('.sha256', '');
-        checksums.set(baseName, '');
+        checksumAssets.set(baseName, asset.browser_download_url);
       }
     }
 
+    // Find CLI binaries and fetch their checksums
     for (const asset of release.assets) {
       const match = asset.name.match(/^rdc-(linux|mac|win)-(x64|arm64)(\.exe)?$/);
       if (match) {
         const key = `${match[1]}-${match[2]}` as keyof UpdateManifest['binaries'];
+        let sha256 = '';
+
+        // Fetch the .sha256 file content for this binary
+        const checksumUrl = checksumAssets.get(asset.name);
+        if (checksumUrl) {
+          try {
+            const content = await fetchText(checksumUrl, timeoutMs);
+            // Format: "hash  filename" or just "hash"
+            sha256 = content.trim().split(/\s+/)[0] ?? '';
+          } catch {
+            // If checksum can't be fetched, leave empty (update will be refused)
+          }
+        }
+
         manifest.binaries[key] = {
           url: asset.browser_download_url,
-          sha256: checksums.get(asset.name) ?? '',
+          sha256,
         };
       }
     }
@@ -292,18 +337,26 @@ export async function performUpdate(
     try {
       await downloadFile(binaryInfo.url, tempPath, onProgress);
 
-      // Verify SHA256 if provided
-      if (binaryInfo.sha256) {
-        const actualHash = await computeSha256(tempPath);
-        if (actualHash !== binaryInfo.sha256) {
-          await fs.unlink(tempPath).catch(() => {});
-          return {
-            success: false,
-            fromVersion: VERSION,
-            toVersion: manifest.version,
-            error: 'update.errors.checksumMismatch',
-          };
-        }
+      // Verify SHA256 checksum (required for security)
+      if (!binaryInfo.sha256) {
+        await fs.unlink(tempPath).catch(() => {});
+        return {
+          success: false,
+          fromVersion: VERSION,
+          toVersion: manifest.version,
+          error: 'update.errors.noChecksum',
+        };
+      }
+
+      const actualHash = await computeSha256(tempPath);
+      if (actualHash !== binaryInfo.sha256) {
+        await fs.unlink(tempPath).catch(() => {});
+        return {
+          success: false,
+          fromVersion: VERSION,
+          toVersion: manifest.version,
+          error: 'update.errors.checksumMismatch',
+        };
       }
 
       // Self-replace: rename current -> .old, rename new -> current

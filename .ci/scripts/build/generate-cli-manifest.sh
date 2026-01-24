@@ -71,9 +71,18 @@ log_step "Generating CLI manifest v$VERSION"
 log_info "  Input: $INPUT_DIR"
 log_info "  Output: $OUTPUT_PATH"
 
-# Build binaries JSON object
-BINARIES="{"
-FIRST=true
+# Require jq for reliable JSON construction
+if ! command -v jq &>/dev/null; then
+    log_error "jq is required for manifest generation"
+    exit 1
+fi
+
+# Build manifest using jq for safe JSON construction
+MANIFEST=$(jq -n \
+    --arg version "$VERSION" \
+    --arg releaseDate "$RELEASE_DATE" \
+    --arg releaseNotesUrl "$RELEASE_URL" \
+    '{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, binaries: {}}')
 
 for PLATFORM in linux mac win; do
     for ARCH in x64 arm64; do
@@ -96,32 +105,19 @@ for PLATFORM in linux mac win; do
         fi
 
         URL="$DOWNLOAD_BASE/$BINARY_NAME"
+        KEY="${PLATFORM}-${ARCH}"
 
-        if [[ "$FIRST" != "true" ]]; then
-            BINARIES+=","
-        fi
-        FIRST=false
+        MANIFEST=$(echo "$MANIFEST" | jq \
+            --arg key "$KEY" \
+            --arg url "$URL" \
+            --arg sha256 "$SHA256" \
+            '.binaries[$key] = {url: $url, sha256: $sha256}')
 
-        BINARIES+="\"${PLATFORM}-${ARCH}\":{\"url\":\"$URL\",\"sha256\":\"$SHA256\"}"
-        log_info "  Added $PLATFORM-$ARCH: ${SHA256:0:16}..."
+        log_info "  Added $KEY: ${SHA256:0:16}..."
     done
 done
 
-BINARIES+="}"
-
-# Write manifest
-cat > "$OUTPUT_PATH" <<EOF
-{
-  "version": "$VERSION",
-  "releaseDate": "$RELEASE_DATE",
-  "releaseNotesUrl": "$RELEASE_URL",
-  "binaries": $BINARIES
-}
-EOF
-
-# Pretty-print if jq is available
-if command -v jq &>/dev/null; then
-    jq . "$OUTPUT_PATH" > "${OUTPUT_PATH}.tmp" && mv "${OUTPUT_PATH}.tmp" "$OUTPUT_PATH"
-fi
+# Write pretty-printed manifest
+echo "$MANIFEST" | jq . > "$OUTPUT_PATH"
 
 log_info "Manifest generated: $OUTPUT_PATH"
