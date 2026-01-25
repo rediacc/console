@@ -31,6 +31,9 @@ TAG_REPOS=("console" "renet" "middleware")
 # GHCR packages to clean (under ghcr.io/rediacc/elite/*)
 GHCR_PACKAGES=("api" "bridge" "web" "plugin-terminal" "plugin-browser" "cli")
 
+# Repos to clean deployments from
+DEPLOYMENT_REPOS=("console")
+
 # Release repo
 RELEASE_REPO="rediacc/console"
 
@@ -290,6 +293,69 @@ cleanup_packages() {
 }
 
 # =============================================================================
+# PHASE 4: GITHUB DEPLOYMENTS
+# =============================================================================
+
+cleanup_deployments() {
+    log_step "Phase 4: Cleaning up GitHub deployments"
+
+    for repo in "${DEPLOYMENT_REPOS[@]}"; do
+        local full_repo="$GITHUB_ORG/$repo"
+        log_step "  Processing deployments for $full_repo"
+
+        # Fetch all deployments, sorted newest first
+        local deployments
+        deployments="$(gh api "repos/$full_repo/deployments?per_page=100" \
+            --paginate \
+            --jq '[.[] | {id: .id, environment: .environment, created_at: .created_at}]' \
+            2>/dev/null || echo "[]")"
+
+        # Flatten paginated results and sort by date (newest first)
+        deployments="$(echo "$deployments" | jq -s 'flatten | sort_by(.created_at) | reverse')"
+
+        local total
+        total="$(echo "$deployments" | jq 'length')"
+        log_debug "  Found $total deployments"
+
+        local deleted=0
+        local index=0
+
+        while IFS= read -r deployment; do
+            local dep_id environment created_at
+            dep_id="$(echo "$deployment" | jq -r '.id')"
+            environment="$(echo "$deployment" | jq -r '.environment')"
+            created_at="$(echo "$deployment" | jq -r '.created_at')"
+
+            if should_retain "$created_at" "$index"; then
+                log_debug "  Keeping deployment: $dep_id ($environment)"
+            else
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    log_warn "  [DRY-RUN] Would delete deployment: $dep_id ($environment, created: $created_at)"
+                else
+                    # Must set deployment to inactive before deletion
+                    if gh api "repos/$full_repo/deployments/$dep_id/statuses" \
+                        -X POST -f state=inactive >/dev/null 2>&1 && \
+                       retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/deployments/$dep_id" 2>/dev/null; then
+                        log_debug "  Deleted deployment: $dep_id ($environment)"
+                        deleted=$((deleted + 1))
+                    else
+                        log_warn "  Failed to delete deployment: $dep_id"
+                    fi
+                fi
+            fi
+
+            index=$((index + 1))
+        done < <(echo "$deployments" | jq -c '.[]')
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_info "  Deployments ($full_repo): would delete $deleted of $total"
+        else
+            log_info "  Deployments ($full_repo): deleted $deleted of $total"
+        fi
+    done
+}
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -305,6 +371,8 @@ echo ""
 cleanup_tags
 echo ""
 cleanup_packages
+echo ""
+cleanup_deployments
 
 echo ""
 log_info "Housekeeping complete"
