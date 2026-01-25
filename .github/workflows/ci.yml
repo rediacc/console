@@ -3,6 +3,8 @@ name: Console CI
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+  merge_group:
+    types: [checks_requested]
   schedule:
     - cron: '0 3 * * *'  # Nightly at 3:00 UTC
   workflow_dispatch:

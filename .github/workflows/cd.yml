@@ -13,10 +13,10 @@ permissions:
   id-token: write
   packages: write  # For GHCR push
 
-# Cancel in-progress runs when a new push to main occurs
+# Queue new releases instead of cancelling in-progress ones
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # ============================================================================
@@ -105,11 +105,11 @@ jobs:
   deploy-dryrun:
     name: Deploy Dry-Run
     needs: [initialize, build-docker, build-desktop, build-cli]
-    uses: ./.github/workflows/cd-deploy.yml
+    uses: ./.github/workflows/cd-deploy-stage.yml
     with:
       dry_run: true
-      is_bot: ${{ needs.initialize.outputs.is_bot }}
       next_version: ${{ needs.initialize.outputs.next_version }}
+      staging_tag: dryrun-${{ github.sha }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
@@ -118,18 +118,32 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # DEPLOY
+  # DEPLOY - PHASE 1 (STAGE)
   # ============================================================================
-  deploy:
-    name: Deploy
-    needs: [initialize, deploy-dryrun]
-    uses: ./.github/workflows/cd-deploy.yml
+  deploy-stage:
+    name: Deploy (Stage)
+    needs: [initialize, build-docker, build-desktop, build-cli, deploy-dryrun]
+    if: needs.deploy-dryrun.result == 'success'
+    uses: ./.github/workflows/cd-deploy-stage.yml
     with:
-      dry_run: false
       next_version: ${{ needs.initialize.outputs.next_version }}
+      staging_tag: staging-${{ github.sha }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       cli_tag: ${{ needs.initialize.outputs.cli_tag }}
+    secrets: inherit
+
+  # ============================================================================
+  # DEPLOY - PHASE 2 (COMMIT)
+  # ============================================================================
+  deploy-commit:
+    name: Deploy (Commit)
+    needs: [initialize, deploy-stage]
+    if: needs.deploy-stage.result == 'success'
+    uses: ./.github/workflows/cd-deploy-commit.yml
+    with:
+      next_version: ${{ needs.initialize.outputs.next_version }}
+      staging_tag: staging-${{ github.sha }}
     secrets: inherit

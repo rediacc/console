@@ -1,0 +1,399 @@
+name: Console CD - Deploy (Stage)
+
+# Phase 1 of two-phase deployment: Stage all artifacts for validation
+# - Retag Docker images to staging-<sha>
+# - Build Pages artifact
+# - Prepare release assets
+# - Validate everything before committing
+# If any job fails, cleanup-on-failure removes staging artifacts
+
+on:
+  workflow_call:
+    inputs:
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+        description: 'Run in dry-run mode (validate without making changes)'
+      next_version:
+        required: true
+        type: string
+      staging_tag:
+        required: true
+        type: string
+        description: 'Staging tag (e.g., staging-abc123...)'
+      api_tag:
+        required: false
+        type: string
+        default: ''
+      bridge_tag:
+        required: false
+        type: string
+        default: ''
+      plugins_tag:
+        required: false
+        type: string
+        default: ''
+      web_tag:
+        required: false
+        type: string
+        default: ''
+      cli_tag:
+        required: false
+        type: string
+        default: ''
+    outputs:
+      staging_complete:
+        description: 'Whether staging completed successfully'
+        value: ${{ jobs.stage-validate.outputs.staging_complete }}
+    secrets:
+      GH_PAT:
+        required: false
+      GPG_PRIVATE_KEY:
+        required: false
+      GPG_PASSPHRASE:
+        required: false
+
+jobs:
+  # ===========================================================================
+  # STAGE DOCKER - Retag CI images to staging tag (highest failure risk)
+  # ===========================================================================
+  stage-docker:
+    name: Stage Docker Images
+    runs-on: ubuntu-latest
+    if: inputs.dry_run || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Retag images to staging
+        run: |
+          STAGING_TAG="${{ inputs.staging_tag }}"
+          DRY_RUN_FLAG=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+
+      - name: Summary
+        run: |
+          MODE="${{ inputs.dry_run == true && '(DRY-RUN) ' || '' }}"
+          echo "## ${MODE}Stage Docker Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Staging Tag:** ${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Images staged:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/api:${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/bridge:${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/plugin-terminal:${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/plugin-browser:${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/web:${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/cli:${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # STAGE PAGES - Build Pages artifact (medium failure risk, parallel)
+  # ===========================================================================
+  stage-pages:
+    name: Stage Pages
+    runs-on: ubuntu-slim
+    if: inputs.dry_run || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: .ci/scripts/setup/install-deps.sh
+
+      - name: Build packages
+        run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build web for Pages (with /console/ base path)
+        run: .ci/scripts/build/build-web.sh --type RELEASE
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /console/
+
+      - name: Download www build
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: build-www-${{ github.sha }}
+          path: packages/www/dist/
+
+      - name: Download json build
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: build-json-${{ github.sha }}
+          path: packages/json/dist/
+
+      - name: Download CLI checksums for manifest
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          pattern: build-cli-*-${{ github.sha }}
+          path: dist/cli-artifacts/
+          merge-multiple: true
+
+      - name: Generate CLI manifest for Pages
+        run: |
+          .ci/scripts/build/generate-cli-manifest.sh \
+            --version ${{ inputs.next_version }} \
+            --input dist/cli-artifacts/ \
+            --output dist/cli-manifest/manifest.json
+
+      - name: Assemble pages package
+        run: .ci/scripts/build/build-pages.sh --output dist
+
+      - name: Download CLI executables
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          pattern: build-cli-linux-*-${{ github.sha }}
+          path: dist/cli/
+          merge-multiple: true
+
+      - name: Install repo build tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c rpm gnupg
+
+      - name: Build package repositories
+        run: |
+          VERSION="${{ inputs.next_version }}"
+          DRY_RUN_FLAG=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          # Build current version packages
+          mkdir -p dist/current-pkgs
+          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch amd64 --output dist/current-pkgs $DRY_RUN_FLAG
+          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch arm64 --output dist/current-pkgs $DRY_RUN_FLAG
+          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch x86_64 --output dist/current-pkgs $DRY_RUN_FLAG
+          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch aarch64 --output dist/current-pkgs $DRY_RUN_FLAG
+
+          # Build full repos (downloads last 3 versions from releases + adds current)
+          .ci/scripts/build/build-pkg-repo.sh \
+            --version "$VERSION" \
+            --local-pkgs dist/current-pkgs \
+            --output dist \
+            --max-versions 3 \
+            $DRY_RUN_FLAG
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Validate pages build
+        run: |
+          if [[ ! -d "dist" ]] || [[ -z "$(ls -A dist/)" ]]; then
+            echo "::error::Pages dist directory is empty"
+            exit 1
+          fi
+          MODE="${{ inputs.dry_run == true && '(DRY-RUN) ' || '' }}"
+          echo "## ${MODE}Stage Pages Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- Total size: $(du -sh dist/ | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- Files: $(find dist -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- APT metadata: $(find dist/apt/dists -type f 2>/dev/null | wc -l) files" >> $GITHUB_STEP_SUMMARY
+          echo "- RPM metadata: $(find dist/rpm/repodata -type f 2>/dev/null | wc -l) files" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload staging pages artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: staging-pages-${{ github.sha }}
+          path: dist/
+          retention-days: 1
+
+  # ===========================================================================
+  # STAGE RELEASE - Prepare release assets (low failure risk, parallel)
+  # ===========================================================================
+  stage-release:
+    name: Stage Release Assets
+    runs-on: ubuntu-slim
+    if: inputs.dry_run || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          pattern: build-desktop-*
+          path: dist/desktop/
+          merge-multiple: true
+
+      - name: Download CLI executables
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          pattern: build-cli-*-${{ github.sha }}
+          path: dist/cli/
+          merge-multiple: true
+
+      - name: Install packaging tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq rpm dpkg-dev
+
+      - name: Build Linux packages
+        run: |
+          VERSION="${{ inputs.next_version }}"
+          DRY_RUN_FLAG=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+          mkdir -p dist/packages
+          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch amd64 --output dist/packages $DRY_RUN_FLAG
+          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch arm64 --output dist/packages $DRY_RUN_FLAG
+          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch x86_64 --output dist/packages $DRY_RUN_FLAG
+          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch aarch64 --output dist/packages $DRY_RUN_FLAG
+
+      - name: Clean up debug artifacts
+        run: rm -f dist/desktop/builder-debug.yml
+
+      - name: Generate CLI manifest
+        run: |
+          .ci/scripts/build/generate-cli-manifest.sh \
+            --version ${{ inputs.next_version }} \
+            --input dist/cli/ \
+            --output dist/cli/manifest.json
+
+      - name: Validate release assets
+        run: |
+          DESKTOP_COUNT=$(find dist/desktop -type f 2>/dev/null | wc -l)
+          CLI_COUNT=$(find dist/cli -type f 2>/dev/null | wc -l)
+          PKG_COUNT=$(find dist/packages -type f 2>/dev/null | wc -l)
+
+          MODE="${{ inputs.dry_run == true && '(DRY-RUN) ' || '' }}"
+          echo "## ${MODE}Stage Release Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- Desktop artifacts: $DESKTOP_COUNT files" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI artifacts: $CLI_COUNT files" >> $GITHUB_STEP_SUMMARY
+          echo "- Package artifacts: $PKG_COUNT files" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: v${{ inputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "$DESKTOP_COUNT" -eq 0 ]]; then
+            echo "::error::No desktop artifacts found"
+            exit 1
+          fi
+          if [[ "$CLI_COUNT" -eq 0 ]]; then
+            echo "::error::No CLI artifacts found"
+            exit 1
+          fi
+
+      - name: Upload staging release artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: staging-release-${{ github.sha }}
+          path: |
+            dist/desktop/
+            dist/cli/
+            dist/packages/
+          retention-days: 1
+
+  # ===========================================================================
+  # STAGE VALIDATE - Final validation gate (depends on all staging jobs)
+  # ===========================================================================
+  stage-validate:
+    name: Validate Staging
+    runs-on: ubuntu-slim
+    needs: [stage-docker, stage-pages, stage-release]
+    if: |
+      always() &&
+      (inputs.dry_run || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+    outputs:
+      staging_complete: ${{ steps.validate.outputs.staging_complete }}
+    steps:
+      - name: Check staging results
+        id: validate
+        run: |
+          MODE="${{ inputs.dry_run == true && '(DRY-RUN) ' || '' }}"
+          echo "## ${MODE}Staging Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          DOCKER_RESULT="${{ needs.stage-docker.result }}"
+          PAGES_RESULT="${{ needs.stage-pages.result }}"
+          RELEASE_RESULT="${{ needs.stage-release.result }}"
+
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| stage-docker | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| stage-pages | $PAGES_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| stage-release | $RELEASE_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "$DOCKER_RESULT" == "success" ]] && \
+             [[ "$PAGES_RESULT" == "success" ]] && \
+             [[ "$RELEASE_RESULT" == "success" ]]; then
+            echo ""
+            echo "staging_complete=true" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo "**Status:** All staging validation passed. Dry-run complete." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Status:** All staging jobs completed successfully. Ready for Phase 2 (Commit)." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "staging_complete=false" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** Staging failed. Cleanup will be triggered." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  # ===========================================================================
+  # CLEANUP ON FAILURE - Remove staging artifacts if any staging job fails
+  # ===========================================================================
+  cleanup-on-failure:
+    name: Cleanup Staging (on failure)
+    runs-on: ubuntu-latest
+    needs: [stage-docker, stage-pages, stage-release, stage-validate]
+    if: |
+      always() &&
+      !inputs.dry_run &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.stage-docker.result == 'failure' ||
+       needs.stage-pages.result == 'failure' ||
+       needs.stage-release.result == 'failure' ||
+       needs.stage-validate.result == 'failure')
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Cleanup staging Docker tags
+        run: |
+          STAGING_TAG="${{ inputs.staging_tag }}"
+          echo "## Cleanup Staging Tags" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Staging tag to cleanup:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        continue-on-error: true
+
+      - name: Cleanup summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cleanup Status:** Attempted to remove staging artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Staging failed jobs:" >> $GITHUB_STEP_SUMMARY
+          [[ "${{ needs.stage-docker.result }}" == "failure" ]] && echo "- stage-docker" >> $GITHUB_STEP_SUMMARY
+          [[ "${{ needs.stage-pages.result }}" == "failure" ]] && echo "- stage-pages" >> $GITHUB_STEP_SUMMARY
+          [[ "${{ needs.stage-release.result }}" == "failure" ]] && echo "- stage-release" >> $GITHUB_STEP_SUMMARY
+          [[ "${{ needs.stage-validate.result }}" == "failure" ]] && echo "- stage-validate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
