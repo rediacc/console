@@ -223,6 +223,26 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
+  deploy-homebrew:
+    name: Homebrew
+    runs-on: ubuntu-latest
+    needs: [deploy-publish, deploy-release]
+    if: ${{ !inputs.dry_run && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          fetch-depth: 0
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+      - name: Update Homebrew formula
+        run: |
+          .ci/scripts/release/update-homebrew-tap.sh \
+            --version ${{ needs.deploy-publish.outputs.version }} \
+            --push
+        env:
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+
   deploy-pages:
     name: Pages
     runs-on: ubuntu-slim
