@@ -1,0 +1,3 @@
+# Protect CI/CD workflows - only admin can approve changes
+/.github/ @mfbayraktar
+/.ci/ @mfbayraktar
