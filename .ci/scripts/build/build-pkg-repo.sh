@@ -242,6 +242,7 @@ else
         echo "Label: Rediacc CLI Repository"
         echo "Suite: stable"
         echo "Codename: stable"
+        echo "Date: $(date -Ru)"
         echo "Architectures: amd64 arm64"
         echo "Components: main"
         echo "Description: Rediacc CLI package repository"
