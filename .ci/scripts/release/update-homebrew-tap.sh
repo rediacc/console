@@ -171,7 +171,7 @@ update_formula() {
     /on_macos do/ { in_macos = 1; in_linux = 0 }
     /on_linux do/ { in_linux = 1; in_macos = 0 }
     /if Hardware::CPU.arm\?/ { in_arm = 1 }
-    /else/ { in_arm = 0 }
+    /^[[:space:]]*else/ { in_arm = 0 }
     /sha256/ {
         if (in_macos && in_arm && !mac_arm_done) {
             gsub(/sha256 "[^"]*"/, "sha256 \"" mac_arm64 "\"")
@@ -221,17 +221,19 @@ update_submodule_pointer() {
         return 0
     fi
 
-    cd "$REPO_ROOT"
-    git add private/homebrew-tap
+    (
+        cd "$REPO_ROOT"
+        git add private/homebrew-tap
 
-    if git diff --cached --quiet; then
-        log_info "No submodule pointer changes"
-    else
-        git -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
-            commit -m "chore(release): update homebrew-tap to $VERSION [skip ci]"
-        git push origin HEAD
-        log_info "Pushed submodule pointer update"
-    fi
+        if git diff --cached --quiet; then
+            log_info "No submodule pointer changes"
+        else
+            git -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
+                commit -m "chore(release): update homebrew-tap to $VERSION [skip ci]"
+            git push origin HEAD:main
+            log_info "Pushed submodule pointer update"
+        fi
+    )
 }
 
 # Main execution

@@ -9,3 +9,4 @@
 [submodule "private/homebrew-tap"]
 	path = private/homebrew-tap
 	url = https://github.com/rediacc/homebrew-tap.git
+	branch = main
