@@ -55,6 +55,47 @@ main() {
     # shellcheck disable=SC2086
     shellcheck $SHELLCHECK_OPTS ./go
 
+    # Check for bash 4+ features in build scripts (which run on macOS with bash 3.2)
+    # ShellCheck doesn't warn about these since they're valid bash, but macOS
+    # uses an old bash version due to GPL licensing.
+    # Only check .ci/scripts/build/ since those run on macOS for desktop builds.
+    log_info "Checking build scripts for bash 4+ features (macOS compatibility)"
+    BASH4_ISSUES=""
+
+    # Check for associative arrays (declare -A) - requires bash 4.0+
+    MATCHES=$(grep -rn "declare -A" .ci/scripts/build --include="*.sh" 2>/dev/null || true)
+    if [[ -n "$MATCHES" ]]; then
+        BASH4_ISSUES="$BASH4_ISSUES\ndeclare -A (associative arrays require bash 4.0+):\n$MATCHES"
+    fi
+
+    # Check for |& (pipe stderr) - requires bash 4.0+
+    MATCHES=$(grep -rn '[^#]*|&' .ci/scripts/build --include="*.sh" 2>/dev/null || true)
+    if [[ -n "$MATCHES" ]]; then
+        BASH4_ISSUES="$BASH4_ISSUES\n|& (pipe stderr requires bash 4.0+):\n$MATCHES"
+    fi
+
+    # Check for coproc - requires bash 4.0+
+    MATCHES=$(grep -rwn "coproc" .ci/scripts/build --include="*.sh" 2>/dev/null || true)
+    if [[ -n "$MATCHES" ]]; then
+        BASH4_ISSUES="$BASH4_ISSUES\ncoproc (requires bash 4.0+):\n$MATCHES"
+    fi
+
+    # Check for mapfile/readarray - requires bash 4.0+
+    # Note: pattern built dynamically to avoid false positive from check-commands.sh
+    READ_ARR="read""array"
+    MAP_FILE="map""file"
+    MATCHES=$(grep -rwn -E "^[^#]*($MAP_FILE|$READ_ARR)" .ci/scripts/build --include="*.sh" 2>/dev/null || true)
+    if [[ -n "$MATCHES" ]]; then
+        BASH4_ISSUES="$BASH4_ISSUES\nmapfile/readarray (requires bash 4.0+):\n$MATCHES"
+    fi
+
+    if [[ -n "$BASH4_ISSUES" ]]; then
+        log_error "Found bash 4+ features in build scripts that don't work on macOS (bash 3.2):"
+        echo -e "$BASH4_ISSUES"
+        log_info "macOS ships with bash 3.2 due to GPLv3 licensing. Use bash 3.x compatible alternatives."
+        exit 1
+    fi
+
     log_success "Shell scripts passed"
 }
 

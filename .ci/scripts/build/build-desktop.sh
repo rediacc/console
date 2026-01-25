@@ -71,14 +71,13 @@ if [[ ! -f "$DESKTOP_DIR/out/main/index.js" ]] || [[ ! -f "$DESKTOP_DIR/out/prel
     (cd "$DESKTOP_DIR" && npm run build)
 fi
 
-# Windows-specific: Ensure externalized modules are available locally.
-# On Windows, --ignore-scripts skips the postinstall hook (install-app-deps),
-# so hoisted modules aren't linked into the desktop package's node_modules/.
-# electron-builder needs them there to include in the packaged app.
-if [[ "$PLATFORM" == "win" ]]; then
-    # Resolve externalized modules and their transitive dependencies
-    "$SCRIPT_DIR/resolve-desktop-externals.sh"
+# Resolve externalized modules for all platforms.
+# npm workspaces hoist dependencies to the monorepo root, but electron-builder
+# needs them in the desktop package's node_modules/ to include in the app.
+"$SCRIPT_DIR/resolve-desktop-externals.sh"
 
+# Windows-specific: bundle MSYS2 for rsync/SSH functionality
+if [[ "$PLATFORM" == "win" ]]; then
     log_step "Bundling MSYS2 for Windows..."
     (cd "$DESKTOP_DIR" && npm run bundle:msys2) || log_warn "MSYS2 bundling skipped"
 fi
