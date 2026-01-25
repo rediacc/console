@@ -164,20 +164,3 @@ export function getOpsManager(): OpsManager {
   opsManagerInstance ??= new OpsManager(loadConfigFromEnv());
   return opsManagerInstance;
 }
-
-/**
- * Create an OpsManager using environment variables for configuration.
- *
- * @throws Error if required environment variables are missing
- */
-export function createOpsManagerFromEnv(): OpsManager {
-  return new OpsManager(loadConfigFromEnv());
-}
-
-/**
- * Reset the singleton OpsManager instance.
- * Useful for testing or when configuration changes.
- */
-export function resetOpsManager(): void {
-  opsManagerInstance = null;
-}

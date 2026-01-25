@@ -3,9 +3,4 @@
  *
  * Re-exports from @rediacc/provisioning for backward compatibility.
  */
-export {
-  getRenetBinaryPath,
-  getRenetRoot,
-  getMonorepoRoot,
-  setMonorepoRoot,
-} from '@rediacc/provisioning/renet';
+export { getRenetBinaryPath } from '@rediacc/provisioning/renet';
