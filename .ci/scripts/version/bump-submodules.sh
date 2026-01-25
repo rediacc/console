@@ -2,13 +2,14 @@
 # Bump versions inside private submodules and update pointers in console repo.
 #
 # Usage:
-#   bump-submodules.sh --version X.Y.Z [--tag | --no-tag] [--dry-run]
+#   bump-submodules.sh --version X.Y.Z [--tag | --no-tag] [--stage-only] [--dry-run]
 #
 # Options:
-#   --version   Required version to apply to submodules
-#   --tag       Create and push tag vX.Y.Z in submodule repos (default)
-#   --no-tag    Skip tag creation
-#   --dry-run   Show actions without committing/pushing
+#   --version    Required version to apply to submodules
+#   --tag        Create and push tag vX.Y.Z in submodule repos (default)
+#   --no-tag     Skip tag creation
+#   --stage-only Stage submodule pointers in main repo but skip commit/push
+#   --dry-run    Show actions without committing/pushing
 #
 # Notes:
 #   - Commits include [skip ci] to avoid submodule CI.
@@ -22,6 +23,7 @@ source "$SCRIPT_DIR/../../config/constants.sh"
 
 VERSION=""
 TAG=true
+STAGE_ONLY=false
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
@@ -38,12 +40,16 @@ while [[ $# -gt 0 ]]; do
             TAG=false
             shift
             ;;
+        --stage-only)
+            STAGE_ONLY=true
+            shift
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
             ;;
         -h|--help)
-            echo "Usage: $0 --version X.Y.Z [--tag | --no-tag] [--dry-run]"
+            echo "Usage: $0 --version X.Y.Z [--tag | --no-tag] [--stage-only] [--dry-run]"
             exit 0
             ;;
         *)
@@ -162,6 +168,8 @@ else
     git add private/middleware private/renet
     if git diff --cached --quiet; then
         log_info "No submodule pointer changes to commit"
+    elif [[ "$STAGE_ONLY" == "true" ]]; then
+        log_info "Submodule pointers staged (--stage-only mode, skipping commit)"
     else
         git -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
             commit -m "chore(release): bump submodule versions to $VERSION [skip ci]"
