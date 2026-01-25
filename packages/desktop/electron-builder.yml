@@ -11,15 +11,24 @@ directories:
   output: ../../dist/desktop
 
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.*'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
-  - '!{dev-app-update.yml}'
+  # Include built output and config files
+  - out/**
+  - package.json
+  - externals.json
+  # Include external modules copied by resolve-desktop-externals.sh
+  # (not in package.json dependencies - they're externalized for build)
+  # Use from/to mapping to preserve directory structure
+  - from: node_modules
+    to: node_modules
+    filter:
+      - "**/*"
 
 asarUnpack:
   - resources/**
+  # Native modules must be unpacked for their bindings to work
+  - node_modules/ssh2/**
+  - node_modules/cpu-features/**
+  - node_modules/node-pty/**
 
 # Windows Configuration
 # Note: arch is controlled by CI via --arch flag, not hardcoded here

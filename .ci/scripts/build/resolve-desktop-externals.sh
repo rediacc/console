@@ -35,15 +35,27 @@ done <<< "$(cd "$DESKTOP_DIR" && node -e "
 log_step "Resolving externalized modules for packaging..."
 mkdir -p "$LOCAL_NM"
 
-# Track copied modules to avoid duplicates
-declare -A COPIED_MODULES
+# Track copied modules to avoid duplicates (bash 3.x compatible - no associative arrays)
+COPIED_MODULES=""
+COPIED_COUNT=0
+
+# Check if a module has been copied (bash 3.x compatible)
+is_copied() {
+    echo "$COPIED_MODULES" | grep -qw "$1"
+}
+
+# Mark a module as copied
+mark_copied() {
+    COPIED_MODULES="$COPIED_MODULES $1"
+    COPIED_COUNT=$((COPIED_COUNT + 1))
+}
 
 # Recursively copy a module and its production dependencies
 copy_module_tree() {
     local mod="$1"
 
     # Skip if already processed
-    if [[ -n "${COPIED_MODULES[$mod]:-}" ]]; then
+    if is_copied "$mod"; then
         return
     fi
 
@@ -53,12 +65,12 @@ copy_module_tree() {
     fi
 
     if [[ -d "$LOCAL_NM/$mod" ]]; then
-        COPIED_MODULES[$mod]=1
+        mark_copied "$mod"
         return  # Already exists
     fi
 
     cp -r "$ROOT_NM/$mod" "$LOCAL_NM/$mod"
-    COPIED_MODULES[$mod]=1
+    mark_copied "$mod"
     log_info "  Copied: $mod"
 
     # Resolve production dependencies recursively
@@ -82,4 +94,4 @@ for mod in "${EXTERNALS[@]}"; do
     copy_module_tree "$mod"
 done
 
-log_info "External module resolution complete (${#COPIED_MODULES[@]} modules copied)"
+log_info "External module resolution complete ($COPIED_COUNT modules copied)"
