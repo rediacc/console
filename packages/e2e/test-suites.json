@@ -1,30 +1,36 @@
 {
   "suites": {
-    "ci": ["tests/auth/register.test.ts", "tests/auth/login.test.ts"],
-    "auth": ["tests/auth/register.test.ts", "tests/auth/login.test.ts"],
-    "resources": [
-      "tests/resources/machine-creation.test.ts",
-      "tests/resources/machine-detail.test.ts",
-      "tests/resources/machine-trace.test.ts",
-      "tests/resources/machine-delete.test.ts"
+    "ci": [
+      "tests/01-auth/01-01-registration.test.ts",
+      "tests/01-auth/01-02-login.test.ts"
     ],
-    "team": [
-      "tests/team/001-temp-team-create.test.ts",
-      "tests/team/002-temp-team-edit.test.ts",
-      "tests/team/003-temp-team-trace.test.ts",
-      "tests/team/004-temp-team-delete.test.ts"
+    "auth": [
+      "tests/01-auth/01-01-registration.test.ts",
+      "tests/01-auth/01-02-login.test.ts"
     ],
-    "user": [
-      "tests/user/001-user-create.test.ts",
-      "tests/user/002-user-active-deactive.test.ts",
-      "tests/user/003-user-add-to-team.test.ts",
-      "tests/user/004-user-trace.test.ts"
+    "organization": [
+      "tests/02-organization/**/*.test.ts"
+    ],
+    "users": [
+      "tests/02-organization/01-users/**/*.test.ts"
+    ],
+    "teams": [
+      "tests/02-organization/02-teams/**/*.test.ts"
+    ],
+    "access": [
+      "tests/02-organization/03-access/**/*.test.ts"
+    ],
+    "machines": [
+      "tests/03-machines/**/*.test.ts"
+    ],
+    "settings": [
+      "tests/06-settings/**/*.test.ts"
     ],
     "full-e2e": [
-      "tests/auth/register.test.ts",
-      "tests/auth/login.test.ts",
-      "tests/user/001-user-create.test.ts",
-      "tests/team/001-temp-team-create.test.ts"
+      "tests/01-auth/01-01-registration.test.ts",
+      "tests/01-auth/01-02-login.test.ts",
+      "tests/02-organization/01-users/02-01-01-user-create.test.ts",
+      "tests/02-organization/02-teams/02-02-01-team-create.test.ts"
     ]
   }
 }
