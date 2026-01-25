@@ -165,6 +165,10 @@ readonly PKG_PRIORITY="optional"
 readonly PKG_MAX_VERSIONS=3
 readonly PKG_RELEASE_REPO="rediacc/console"
 
+# Homebrew tap configuration
+readonly HOMEBREW_TAP_REPO="rediacc/homebrew-tap"
+readonly HOMEBREW_FORMULA_PATH="Formula/rediacc-cli.rb"
+
 # =============================================================================
 # SQL CONFIGURATION
 # =============================================================================

@@ -6,3 +6,6 @@
 	path = private/renet
 	url = https://github.com/rediacc/renet.git
 	branch = main
+[submodule "private/homebrew-tap"]
+	path = private/homebrew-tap
+	url = https://github.com/rediacc/homebrew-tap.git
