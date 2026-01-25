@@ -141,11 +141,10 @@ stage_files() {
         ((staged++)) || true
     fi
 
-    # Stage submodule pointers if requested (already staged by bump-submodules.sh --stage-only)
+    # Count staged submodule pointers (staged by bump-submodules.sh --stage-only)
     if [[ "$INCLUDE_SUBMODULES" == "true" ]]; then
         for submodule in private/middleware private/renet; do
-            local submodule_path="$CONSOLE_ROOT_DIR/$submodule"
-            if [[ -d "$submodule_path" ]] && ! git diff --cached --quiet "$submodule_path" 2>/dev/null; then
+            if ! git diff --cached --quiet -- "$submodule" 2>/dev/null; then
                 log_info "Including staged submodule: $submodule" >&2
                 ((staged++)) || true
             fi
@@ -190,8 +189,18 @@ main() {
 
     local submodule_note=""
     if [[ "$INCLUDE_SUBMODULES" == "true" ]]; then
-        submodule_note="
+        # Only add note if submodules were actually staged
+        local has_staged_submodules=false
+        for submodule in private/middleware private/renet; do
+            if ! git diff --cached --quiet -- "$submodule" 2>/dev/null; then
+                has_staged_submodules=true
+                break
+            fi
+        done
+        if [[ "$has_staged_submodules" == "true" ]]; then
+            submodule_note="
 Includes submodule pointer updates."
+        fi
     fi
 
     if [[ -n "$VERSION" ]]; then
