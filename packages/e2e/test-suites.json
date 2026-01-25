@@ -1,31 +1,13 @@
 {
   "suites": {
-    "ci": [
-      "tests/01-auth/01-01-registration.test.ts",
-      "tests/01-auth/01-02-login.test.ts"
-    ],
-    "auth": [
-      "tests/01-auth/01-01-registration.test.ts",
-      "tests/01-auth/01-02-login.test.ts"
-    ],
-    "organization": [
-      "tests/02-organization/**/*.test.ts"
-    ],
-    "users": [
-      "tests/02-organization/01-users/**/*.test.ts"
-    ],
-    "teams": [
-      "tests/02-organization/02-teams/**/*.test.ts"
-    ],
-    "access": [
-      "tests/02-organization/03-access/**/*.test.ts"
-    ],
-    "machines": [
-      "tests/03-machines/**/*.test.ts"
-    ],
-    "settings": [
-      "tests/06-settings/**/*.test.ts"
-    ],
+    "ci": ["tests/01-auth/01-01-registration.test.ts", "tests/01-auth/01-02-login.test.ts"],
+    "auth": ["tests/01-auth/01-01-registration.test.ts", "tests/01-auth/01-02-login.test.ts"],
+    "organization": ["tests/02-organization/**/*.test.ts"],
+    "users": ["tests/02-organization/01-users/**/*.test.ts"],
+    "teams": ["tests/02-organization/02-teams/**/*.test.ts"],
+    "access": ["tests/02-organization/03-access/**/*.test.ts"],
+    "machines": ["tests/03-machines/**/*.test.ts"],
+    "settings": ["tests/06-settings/**/*.test.ts"],
     "full-e2e": [
       "tests/01-auth/01-01-registration.test.ts",
       "tests/01-auth/01-02-login.test.ts",
