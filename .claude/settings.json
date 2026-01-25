@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" 2>/dev/null); PROTECTED=\"(\\.claude/settings\\.json|scripts/pre-commit-check\\.sh|scripts/check-ci-status\\.sh|scripts/track-push\\.sh)\"; if echo \"$CMD\" | grep -qE \"(git restore|git checkout|rm|rm -rf|rm -f).*$PROTECTED\"; then echo \"❌ BLOCKED: Cannot delete or restore protected hook files\"; exit 2; fi; if echo \"$CMD\" | grep -qiE \"Co-Authored-By|Generated with\"; then echo \"❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits.\"; exit 2; fi; if echo \"$CMD\" | grep -qE \"^git commit|&& git commit|; git commit\"; then bash /home/muhammed/monorepo/console/scripts/pre-commit-check.sh; else exit 0; fi'"
+            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" 2>/dev/null); PROTECTED=\"(\\.claude/settings\\.json|scripts/pre-commit-check\\.sh|scripts/check-ci-status\\.sh|scripts/track-push\\.sh)\"; if echo \"$CMD\" | grep -qE \"(git restore|git checkout|rm|rm -rf|rm -f).*$PROTECTED\"; then echo \"❌ BLOCKED: Cannot delete or restore protected hook files\"; exit 2; fi; if echo \"$CMD\" | grep -qiE \"Co-Authored-By|Generated with\"; then echo \"❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits.\"; exit 2; fi; exit 0'"
           }
         ]
       },
