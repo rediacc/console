@@ -242,7 +242,7 @@ else
         echo "Label: Rediacc CLI Repository"
         echo "Suite: stable"
         echo "Codename: stable"
-        echo "Date: $(date -Ru)"
+        echo "Date: $(if [ -n "$SOURCE_DATE_EPOCH" ]; then date -u -d "@$SOURCE_DATE_EPOCH" -R; else date -Ru; fi)"
         echo "Architectures: amd64 arm64"
         echo "Components: main"
         echo "Description: Rediacc CLI package repository"
