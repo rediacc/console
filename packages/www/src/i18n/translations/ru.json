@@ -378,6 +378,10 @@
           "title": "npm",
           "description": "Для сред Node.js"
         },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "Для пользователей macOS и Linux с Homebrew"
+        },
         "binary": {
           "title": "Прямая загрузка",
           "description": "Автономный бинарный файл, менеджер пакетов не требуется"

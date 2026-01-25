@@ -378,6 +378,10 @@
           "title": "npm",
           "description": "Node.js ortamları için"
         },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "Homebrew kullanan macOS ve Linux kullanıcıları için"
+        },
         "binary": {
           "title": "Doğrudan İndirme",
           "description": "Bağımsız ikili dosya, paket yöneticisi gerektirmez"

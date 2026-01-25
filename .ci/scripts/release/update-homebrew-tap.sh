@@ -1,0 +1,263 @@
+#!/bin/bash
+# Update Homebrew tap formula with new version and SHA256 checksums.
+#
+# Usage:
+#   update-homebrew-tap.sh --version X.Y.Z [--push] [--dry-run]
+#
+# Options:
+#   --version    Required version to apply to formula
+#   --push       Commit and push changes to homebrew-tap repo
+#   --dry-run    Show actions without making changes
+#
+# Notes:
+#   - Downloads SHA256 checksums from GitHub release
+#   - Updates Formula/rediacc-cli.rb with new version and checksums
+#   - Commits include [skip ci] to avoid triggering CI on homebrew-tap
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/common.sh"
+source "$SCRIPT_DIR/../../config/constants.sh"
+
+VERSION=""
+PUSH=false
+DRY_RUN=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --version)
+            VERSION="$2"
+            shift 2
+            ;;
+        --push)
+            PUSH=true
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 --version X.Y.Z [--push] [--dry-run]"
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+if [[ -z "$VERSION" ]]; then
+    log_error "--version is required"
+    exit 1
+fi
+
+REPO_ROOT="$(get_repo_root)"
+TAP_DIR="$REPO_ROOT/private/homebrew-tap"
+FORMULA_FILE="$TAP_DIR/$HOMEBREW_FORMULA_PATH"
+
+# Ensure authenticated access for pushes in CI
+if [[ -n "${GITHUB_PAT:-}" ]]; then
+    git config --global url."https://${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
+fi
+
+sed_in_place() {
+    local expr="$1"
+    local file="$2"
+    if [[ "$(detect_os)" == "macos" ]]; then
+        sed -i '' -E "$expr" "$file"
+    else
+        sed -i -E "$expr" "$file"
+    fi
+}
+
+sync_to_origin_main() {
+    local dir="$1"
+    git -C "$dir" fetch origin main >/dev/null 2>&1 || true
+    local origin
+    origin="$(git -C "$dir" rev-parse origin/main)"
+    if [[ "$DRY_RUN" != "true" ]]; then
+        git -C "$dir" checkout -B main "$origin" --force >/dev/null 2>&1
+    fi
+    log_info "Synced $dir to origin/main ($origin)"
+}
+
+download_checksums() {
+    local tmpdir="$1"
+    log_step "Downloading SHA256 checksums from release v$VERSION..."
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would download checksums for v$VERSION"
+        return 0
+    fi
+
+    gh release download "v$VERSION" \
+        --repo "$PKG_RELEASE_REPO" \
+        --pattern "rdc-*.sha256" \
+        --dir "$tmpdir" \
+        --clobber
+
+    # Verify we got all required checksums
+    local required_files=("rdc-mac-arm64.sha256" "rdc-mac-x64.sha256" "rdc-linux-arm64.sha256" "rdc-linux-x64.sha256")
+    for file in "${required_files[@]}"; do
+        if [[ ! -f "$tmpdir/$file" ]]; then
+            log_error "Missing checksum file: $file"
+            exit 1
+        fi
+    done
+
+    log_info "Downloaded all checksum files"
+}
+
+extract_checksum() {
+    local file="$1"
+    # Format is: <hash>  <filename>
+    awk '{print $1}' "$file"
+}
+
+update_formula() {
+    local tmpdir="$1"
+
+    log_step "Updating formula with version $VERSION..."
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would update formula to version $VERSION"
+        return 0
+    fi
+
+    # Extract checksums
+    local mac_arm64_sha
+    local mac_x64_sha
+    local linux_arm64_sha
+    local linux_x64_sha
+
+    mac_arm64_sha=$(extract_checksum "$tmpdir/rdc-mac-arm64.sha256")
+    mac_x64_sha=$(extract_checksum "$tmpdir/rdc-mac-x64.sha256")
+    linux_arm64_sha=$(extract_checksum "$tmpdir/rdc-linux-arm64.sha256")
+    linux_x64_sha=$(extract_checksum "$tmpdir/rdc-linux-x64.sha256")
+
+    log_info "Checksums extracted:"
+    log_info "  mac-arm64:   $mac_arm64_sha"
+    log_info "  mac-x64:     $mac_x64_sha"
+    log_info "  linux-arm64: $linux_arm64_sha"
+    log_info "  linux-x64:   $linux_x64_sha"
+
+    # Update version
+    sed_in_place "s/version \"[^\"]*\"/version \"$VERSION\"/" "$FORMULA_FILE"
+
+    # Update SHA256 checksums
+    # The formula has a specific structure where each platform block has its own sha256
+    # We need to update them in order: mac-arm64, mac-x64, linux-arm64, linux-x64
+
+    # Use a temporary file to handle multi-line replacements
+    local tmpfile
+    tmpfile=$(mktemp)
+
+    awk -v mac_arm64="$mac_arm64_sha" \
+        -v mac_x64="$mac_x64_sha" \
+        -v linux_arm64="$linux_arm64_sha" \
+        -v linux_x64="$linux_x64_sha" '
+    BEGIN {
+        in_macos = 0
+        in_linux = 0
+        in_arm = 0
+        mac_arm_done = 0
+        mac_x64_done = 0
+        linux_arm_done = 0
+        linux_x64_done = 0
+    }
+    /on_macos do/ { in_macos = 1; in_linux = 0 }
+    /on_linux do/ { in_linux = 1; in_macos = 0 }
+    /if Hardware::CPU.arm\?/ { in_arm = 1 }
+    /^[[:space:]]*else/ { in_arm = 0 }
+    /sha256/ {
+        if (in_macos && in_arm && !mac_arm_done) {
+            gsub(/sha256 "[^"]*"/, "sha256 \"" mac_arm64 "\"")
+            mac_arm_done = 1
+        } else if (in_macos && !in_arm && !mac_x64_done) {
+            gsub(/sha256 "[^"]*"/, "sha256 \"" mac_x64 "\"")
+            mac_x64_done = 1
+        } else if (in_linux && in_arm && !linux_arm_done) {
+            gsub(/sha256 "[^"]*"/, "sha256 \"" linux_arm64 "\"")
+            linux_arm_done = 1
+        } else if (in_linux && !in_arm && !linux_x64_done) {
+            gsub(/sha256 "[^"]*"/, "sha256 \"" linux_x64 "\"")
+            linux_x64_done = 1
+        }
+    }
+    { print }
+    ' "$FORMULA_FILE" > "$tmpfile"
+
+    mv "$tmpfile" "$FORMULA_FILE"
+
+    log_info "Formula updated successfully"
+}
+
+commit_and_push() {
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would commit and push formula update"
+        return 0
+    fi
+
+    if git -C "$TAP_DIR" diff --quiet "$HOMEBREW_FORMULA_PATH"; then
+        log_info "Formula already at version $VERSION"
+        return 0
+    fi
+
+    git -C "$TAP_DIR" add "$HOMEBREW_FORMULA_PATH"
+    git -C "$TAP_DIR" -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
+        commit -m "chore(release): bump rediacc-cli to $VERSION [skip ci]"
+    log_info "Committed formula update"
+
+    git -C "$TAP_DIR" push origin HEAD:main
+    log_info "Pushed to homebrew-tap"
+}
+
+update_submodule_pointer() {
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would update submodule pointer"
+        return 0
+    fi
+
+    (
+        cd "$REPO_ROOT"
+        git add private/homebrew-tap
+
+        if git diff --cached --quiet; then
+            log_info "No submodule pointer changes"
+        else
+            git -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
+                commit -m "chore(release): update homebrew-tap to $VERSION [skip ci]"
+            git push origin HEAD:main
+            log_info "Pushed submodule pointer update"
+        fi
+    )
+}
+
+# Main execution
+log_step "Updating Homebrew tap for version $VERSION..."
+
+require_file "$FORMULA_FILE"
+
+# Create temp directory for checksums
+CHECKSUM_DIR=$(mktemp -d)
+trap 'rm -rf "$CHECKSUM_DIR"' EXIT
+
+# Sync submodule to origin/main
+sync_to_origin_main "$TAP_DIR"
+
+# Download checksums from release
+download_checksums "$CHECKSUM_DIR"
+
+# Update the formula
+update_formula "$CHECKSUM_DIR"
+
+# Commit and push if requested
+if [[ "$PUSH" == "true" ]]; then
+    commit_and_push
+    update_submodule_pointer
+fi
+
+log_info "Homebrew tap update complete"

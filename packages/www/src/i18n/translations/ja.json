@@ -378,6 +378,10 @@
           "title": "npm",
           "description": "Node.js環境向け"
         },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "HomebrewをインストールしたmacOSおよびLinuxユーザー向け"
+        },
         "binary": {
           "title": "直接ダウンロード",
           "description": "スタンドアロンバイナリ、パッケージマネージャー不要"

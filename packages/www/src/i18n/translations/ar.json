@@ -378,6 +378,10 @@
           "title": "npm",
           "description": "لبيئات Node.js"
         },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "لمستخدمي macOS وLinux مع Homebrew"
+        },
         "binary": {
           "title": "تنزيل مباشر",
           "description": "ملف ثنائي مستقل، لا حاجة لمدير حزم"
