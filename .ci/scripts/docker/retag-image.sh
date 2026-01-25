@@ -7,12 +7,13 @@
 #   retag-image.sh --all --from 20260120-104603 --to 0.5.0 [--push-latest]
 #
 # Options:
-#   --image NAME     Re-tag specific image (api, bridge, plugin-terminal, plugin-browser)
-#   --all            Re-tag all images
-#   --from TAG       Source CI tag (e.g., 20260120-104603)
-#   --to VERSION     Target semantic version (e.g., 0.5.0)
-#   --push-latest    Also push :latest tag
-#   --dry-run        Preview without executing
+#   --image NAME       Re-tag specific image (api, bridge, plugin-terminal, plugin-browser)
+#   --all              Re-tag all images
+#   --from TAG         Source CI tag (e.g., 20260120-104603)
+#   --to VERSION       Target semantic version (e.g., 0.5.0)
+#   --push-latest      Also push :latest tag
+#   --skip-if-exists   Skip retagging if destination already exists (idempotent retries)
+#   --dry-run          Preview without executing
 
 set -euo pipefail
 
@@ -25,6 +26,7 @@ RETAG_ALL=false
 FROM_TAG=""
 TO_TAG=""
 PUSH_LATEST=false
+SKIP_IF_EXISTS=false
 DRY_RUN="${DRY_RUN:-false}"
 
 # Parse arguments
@@ -35,6 +37,7 @@ while [[ $# -gt 0 ]]; do
         --from) FROM_TAG="$2"; shift 2 ;;
         --to) TO_TAG="$2"; shift 2 ;;
         --push-latest) PUSH_LATEST=true; shift ;;
+        --skip-if-exists) SKIP_IF_EXISTS=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         -h|--help)
             echo "Usage: $0 --image NAME --from CI_TAG --to VERSION [--push-latest]"
@@ -45,8 +48,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --all            Re-tag all images"
             echo "  --from TAG       Source CI tag"
             echo "  --to VERSION     Target semantic version"
-            echo "  --push-latest    Also push :latest tag"
-            echo "  --dry-run        Preview without executing"
+            echo "  --push-latest      Also push :latest tag"
+            echo "  --skip-if-exists   Skip if destination exists (idempotent)"
+            echo "  --dry-run          Preview without executing"
             echo ""
             echo "Available images: ${PUBLISH_IMAGES[*]}"
             exit 0
@@ -67,6 +71,14 @@ retag_image() {
     local dst_latest="${PUBLISH_DOCKER_REGISTRY}/${name}:latest"
 
     log_step "Re-tagging $name: $FROM_TAG -> $TO_TAG"
+
+    # Skip if destination exists (for idempotent retries in Phase 2)
+    if [[ "$SKIP_IF_EXISTS" == "true" ]]; then
+        if docker buildx imagetools inspect "$dst" &>/dev/null; then
+            log_info "Destination exists, skipping: $dst"
+            return 0
+        fi
+    fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Verifying source image: $src"
