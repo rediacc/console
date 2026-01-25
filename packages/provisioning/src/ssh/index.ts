@@ -1,8 +1,11 @@
-/**
- * SSH configuration for bridge tests.
- *
- * Re-exports from @rediacc/provisioning for backward compatibility.
- */
+export {
+  SSHExecutor,
+  getSSHExecutor,
+  createSSHExecutor,
+  type SSHConfig,
+  type SSHResult,
+} from './SSHExecutor';
+
 export {
   SSH_DEFAULTS,
   getSSHOptions,
@@ -12,4 +15,4 @@ export {
   getRenetDataDir,
   setRenetDataDir,
   type SSHConfigOptions,
-} from '@rediacc/provisioning/ssh';
+} from './sshConfig';

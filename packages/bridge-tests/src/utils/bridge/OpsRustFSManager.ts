@@ -1,4 +1,4 @@
-import type { OpsVMExecutor } from './OpsVMExecutor';
+import type { OpsVMExecutor } from '@rediacc/provisioning/ops';
 
 /**
  * OpsRustFSManager - Manages RustFS S3-compatible storage operations
