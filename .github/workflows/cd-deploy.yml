@@ -299,12 +299,22 @@ jobs:
             DRY_RUN_FLAG="--dry-run"
           fi
 
-          # Build current version packages
+          # Download current version packages from GitHub Release (ensures metadata matches release assets)
           mkdir -p dist/current-pkgs
-          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch amd64 --output dist/current-pkgs $DRY_RUN_FLAG
-          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch arm64 --output dist/current-pkgs $DRY_RUN_FLAG
-          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch x86_64 --output dist/current-pkgs $DRY_RUN_FLAG
-          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch aarch64 --output dist/current-pkgs $DRY_RUN_FLAG
+          if [[ "${{ inputs.dry_run }}" != "true" ]]; then
+            echo "Downloading packages from GitHub Release v$VERSION..."
+            gh release download "v$VERSION" --pattern "*.deb" --pattern "*.rpm" --dir dist/current-pkgs --clobber || true
+            # Filter to only CLI packages (exclude desktop packages)
+            find dist/current-pkgs -name "rediacc-desktop-*" -delete 2>/dev/null || true
+            echo "Downloaded packages:"
+            ls -la dist/current-pkgs/
+          else
+            # For dry-run, build packages locally for validation
+            .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch amd64 --output dist/current-pkgs $DRY_RUN_FLAG
+            .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch arm64 --output dist/current-pkgs $DRY_RUN_FLAG
+            .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch x86_64 --output dist/current-pkgs $DRY_RUN_FLAG
+            .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch aarch64 --output dist/current-pkgs $DRY_RUN_FLAG
+          fi
 
           # Build full repos (downloads last 3 versions from releases + adds current)
           .ci/scripts/build/build-pkg-repo.sh \
