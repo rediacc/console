@@ -243,7 +243,7 @@ require_file "$FORMULA_FILE"
 
 # Create temp directory for checksums
 CHECKSUM_DIR=$(mktemp -d)
-trap "rm -rf $CHECKSUM_DIR" EXIT
+trap 'rm -rf "$CHECKSUM_DIR"' EXIT
 
 # Sync submodule to origin/main
 sync_to_origin_main "$TAP_DIR"
