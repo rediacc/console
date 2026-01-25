@@ -87,6 +87,21 @@ sudo dnf install rediacc-cli`}</code></pre>
           </div>
         </div>
 
+        <!-- Homebrew (macOS / Linux) -->
+        <div class="method-card" id="homebrew">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.homebrew.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.homebrew.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="homebrew">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-homebrew">brew install rediacc/tap/rediacc-cli</code></pre>
+          </div>
+        </div>
+
         <!-- Direct Binary Download -->
         <div class="method-card" id="binary">
           <div class="method-header">
@@ -159,6 +174,11 @@ chmod +x rdc && sudo mv rdc /usr/local/bin/`}</code></pre>
               </tr>
               <tr>
                 <td>npm</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>Homebrew</td>
                 <td class="supported">&#10003;</td>
                 <td class="supported">&#10003;</td>
               </tr>

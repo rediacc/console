@@ -373,6 +373,10 @@
           "title": "npm",
           "description": "适用于Node.js环境"
         },
+        "homebrew": {
+          "title": "Homebrew (macOS / Linux)",
+          "description": "适用于使用 Homebrew 的 macOS 和 Linux 用户"
+        },
         "binary": {
           "title": "直接下载",
           "description": "独立二进制文件，无需包管理器"
