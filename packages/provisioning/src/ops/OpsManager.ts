@@ -1,7 +1,7 @@
-import type { VMNetworkConfig, ProvisioningConfig, CommandResult } from '../types';
 import { OpsCommandRunner } from './OpsCommandRunner';
 import { OpsVMExecutor } from './OpsVMExecutor';
 import { OpsVMLifecycle } from './OpsVMLifecycle';
+import type { VMNetworkConfig, ProvisioningConfig, CommandResult } from '../types';
 
 /**
  * OpsManager - Manages VMs via renet ops commands
@@ -249,11 +249,7 @@ export class OpsManager {
   /**
    * Execute a command on a remote VM via SSH
    */
-  async executeOnVM(
-    ip: string,
-    command: string,
-    timeoutMs = 60000
-  ): Promise<CommandResult> {
+  async executeOnVM(ip: string, command: string, timeoutMs = 60000): Promise<CommandResult> {
     return this.vmExecutor.executeOnVM(ip, command, timeoutMs);
   }
 

@@ -1,6 +1,6 @@
-import type { VMNetworkConfig, ProvisioningConfig } from './types';
-import { getRenetBinaryPath, getRenetRoot } from './renet';
 import { OpsManager } from './ops';
+import { getRenetBinaryPath, getRenetRoot } from './renet';
+import type { VMNetworkConfig, ProvisioningConfig } from './types';
 
 /**
  * Load VM network configuration from environment variables.

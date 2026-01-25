@@ -82,7 +82,7 @@ export class RenetResolver {
   // === Private helpers ===
 
   private getEnvPath(): string | null {
-    return process.env.RENET_BINARY_PATH || null;
+    return process.env.RENET_BINARY_PATH ?? null;
   }
 
   private getSourceDir(): string | null {
@@ -117,14 +117,14 @@ export class RenetResolver {
     const needsBuild = this.needsBuild();
 
     if (needsBuild) {
-      console.log('  Building renet from source...');
+      console.warn('  Building renet from source...');
       try {
         await execAsync('./go dev', { cwd: sourceDir, timeout: 120000 });
-        console.log('  ✓ Renet built successfully');
+        console.warn('  ✓ Renet built successfully');
       } catch (err) {
         const error = err as { stderr?: string; message?: string };
         throw new Error(
-          `Renet build failed: ${error.stderr || error.message}\n` +
+          `Renet build failed: ${error.stderr ?? error.message}\n` +
             `Try manually: cd renet && ./go dev`
         );
       }

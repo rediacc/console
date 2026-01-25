@@ -65,7 +65,7 @@ export function getRenetDataDir(): string {
   }
 
   // Default: ~/.renet
-  return path.join(process.env.HOME || '', '.renet');
+  return path.join(process.env.HOME ?? '', '.renet');
 }
 
 /**

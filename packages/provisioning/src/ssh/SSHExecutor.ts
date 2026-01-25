@@ -312,12 +312,11 @@ export class SSHExecutor {
         stderr?: string;
         code?: number;
         killed?: boolean;
-        message?: string;
       };
 
       const stdout = err.stdout ?? '';
       const stderrPrefix = err.killed ? `Command timed out after ${timeout}ms\n` : '';
-      const stderrContent = err.stderr || err.message || 'Unknown error';
+      const stderrContent = err.stderr ?? err.message;
       const stderr = stderrPrefix + stderrContent;
       const code = err.killed ? 124 : (err.code ?? 1);
 

@@ -1,7 +1,5 @@
 {
-  "references": [
-    { "path": "../provisioning" }
-  ],
+  "references": [{ "path": "../provisioning" }],
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",

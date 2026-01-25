@@ -1,4 +1,3 @@
-import { DEFAULT_DATASTORE_PATH } from '../../constants';
 import {
   OpsManager as BaseOpsManager,
   loadConfigFromEnv,
@@ -7,6 +6,7 @@ import {
 } from '@rediacc/provisioning';
 import { OpsCephManager } from './OpsCephManager';
 import { OpsRustFSManager } from './OpsRustFSManager';
+import { DEFAULT_DATASTORE_PATH } from '../../constants';
 
 /**
  * Re-export VMNetworkConfig for backward compatibility
