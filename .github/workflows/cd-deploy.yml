@@ -98,21 +98,25 @@ jobs:
           fi
           .ci/scripts/version/bump.sh --version ${{ steps.version.outputs.version }} $DRY_RUN_FLAG
 
-      - name: Version commit
-        if: ${{ !inputs.dry_run && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: .ci/scripts/version/commit.sh --version ${{ steps.version.outputs.version }} --push
-        env:
-          GITHUB_HEAD_REF: main
-
       - name: Bump submodule versions
         run: |
           DRY_RUN_FLAG=""
+          STAGE_ONLY_FLAG=""
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             DRY_RUN_FLAG="--dry-run"
+          else
+            # Stage submodule pointers without committing; commit.sh will include them
+            STAGE_ONLY_FLAG="--stage-only"
           fi
-          .ci/scripts/version/bump-submodules.sh --version ${{ steps.version.outputs.version }} $DRY_RUN_FLAG
+          .ci/scripts/version/bump-submodules.sh --version ${{ steps.version.outputs.version }} $STAGE_ONLY_FLAG $DRY_RUN_FLAG
         env:
           GITHUB_PAT: ${{ secrets.GH_PAT }}
+
+      - name: Version commit
+        if: ${{ !inputs.dry_run && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: .ci/scripts/version/commit.sh --version ${{ steps.version.outputs.version }} --push --include-submodules
+        env:
+          GITHUB_HEAD_REF: main
 
       - name: Capture release SHA
         id: release

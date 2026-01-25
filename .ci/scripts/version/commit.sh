@@ -7,6 +7,7 @@
 #   commit.sh --version 0.4.30    # Include version in commit message
 #   commit.sh --push              # Commit and push
 #   commit.sh --no-skip-ci        # Commit without [skip ci]
+#   commit.sh --include-submodules # Include staged submodule pointers in commit
 #
 # Environment variables:
 #   GITHUB_HEAD_REF - PR branch name (for push target)
@@ -26,6 +27,7 @@ DRY_RUN="${DRY_RUN:-false}"
 VERSION=""
 PUSH=false
 SKIP_CI=true
+INCLUDE_SUBMODULES=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -46,20 +48,25 @@ while [[ $# -gt 0 ]]; do
             SKIP_CI=false
             shift
             ;;
+        --include-submodules)
+            INCLUDE_SUBMODULES=true
+            shift
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
             ;;
         -h|--help)
-            echo "Usage: $0 [--version X.Y.Z] [--push] [--dry-run]"
+            echo "Usage: $0 [--version X.Y.Z] [--push] [--include-submodules] [--dry-run]"
             echo ""
             echo "Options:"
-            echo "  --version     Include version in commit message"
-            echo "  --push        Push after committing"
-            echo "  --skip-ci     Include [skip ci] in commit message (default)"
-            echo "  --no-skip-ci  Do not include [skip ci] in commit message"
-            echo "  --dry-run     Preview without committing"
-            echo "  -h, --help    Show this help"
+            echo "  --version            Include version in commit message"
+            echo "  --push               Push after committing"
+            echo "  --skip-ci            Include [skip ci] in commit message (default)"
+            echo "  --no-skip-ci         Do not include [skip ci] in commit message"
+            echo "  --include-submodules Include staged submodule pointers in commit"
+            echo "  --dry-run            Preview without committing"
+            echo "  -h, --help           Show this help"
             exit 0
             ;;
         *)
@@ -134,6 +141,17 @@ stage_files() {
         ((staged++)) || true
     fi
 
+    # Stage submodule pointers if requested (already staged by bump-submodules.sh --stage-only)
+    if [[ "$INCLUDE_SUBMODULES" == "true" ]]; then
+        for submodule in private/middleware private/renet; do
+            local submodule_path="$CONSOLE_ROOT_DIR/$submodule"
+            if [[ -d "$submodule_path" ]] && ! git diff --cached --quiet "$submodule_path" 2>/dev/null; then
+                log_info "Including staged submodule: $submodule" >&2
+                ((staged++)) || true
+            fi
+        done
+    fi
+
     echo "$staged"
 }
 
@@ -170,14 +188,20 @@ main() {
         skip_ci_suffix=" [skip ci]"
     fi
 
+    local submodule_note=""
+    if [[ "$INCLUDE_SUBMODULES" == "true" ]]; then
+        submodule_note="
+Includes submodule pointer updates."
+    fi
+
     if [[ -n "$VERSION" ]]; then
         commit_msg="chore(release): bump version to $VERSION${skip_ci_suffix}
 
-Automatically incremented by CI."
+Automatically incremented by CI.${submodule_note}"
     else
         commit_msg="chore(release): bump version${skip_ci_suffix}
 
-Automatically incremented by CI."
+Automatically incremented by CI.${submodule_note}"
     fi
 
     # Commit
