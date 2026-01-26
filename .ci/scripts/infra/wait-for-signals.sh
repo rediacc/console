@@ -189,10 +189,12 @@ has_failures() {
 # Wait for failed signals to be updated to success (from retried jobs)
 wait_for_retry_success() {
     local retry_timeout=$TIMEOUT  # Use same 2-hour timeout
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
 
     while [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]; do
-        local now=$(date +%s)
+        local now
+        now=$(date +%s)
         local elapsed=$((now - start_time))
 
         if [[ $elapsed -ge $retry_timeout ]]; then
@@ -213,9 +215,11 @@ wait_for_retry_success() {
             esac
 
             # Re-download and check status
-            local temp_dir=$(mktemp -d)
+            local temp_dir
+            temp_dir=$(mktemp -d)
             if gh run download "$GITHUB_RUN_ID" --name "$artifact_name" --dir "$temp_dir" 2>/dev/null; then
-                local status=$(cat "$temp_dir/complete.txt" 2>/dev/null || echo "unknown")
+                local status
+                status=$(cat "$temp_dir/complete.txt" 2>/dev/null || echo "unknown")
                 if [[ "$status" == "success" ]]; then
                     log_info "Signal $signal now reports SUCCESS (retry succeeded)"
                 else
