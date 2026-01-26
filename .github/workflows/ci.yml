@@ -452,11 +452,12 @@ jobs:
               );
 
               const completed = otherJobs.filter(j => j.status === 'completed').length;
-              const failed = otherJobs.filter(j => j.conclusion === 'failure');
+              // Count both 'failure' and 'cancelled' as failed (cancelled often means strategy cancelled due to another failure)
+              const failed = otherJobs.filter(j => j.conclusion === 'failure' || j.conclusion === 'cancelled');
               const inProgress = otherJobs.filter(j => j.status === 'in_progress').length;
               const queued = otherJobs.filter(j => j.status === 'queued').length;
 
-              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued, ${failed.length} failed`);
+              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued, ${failed.length} failed/cancelled`);
 
               if (failed.length > 0) {
                 console.log('');
