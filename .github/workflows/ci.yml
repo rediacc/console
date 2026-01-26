@@ -342,17 +342,17 @@ jobs:
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
   # Jobs: deploy-dryrun (reusable workflow)
-  # Dependencies: build-docker
+  # Dependencies: build-docker, build-desktop, build-cli
   # ============================================================================
   deploy-dryrun:
     name: Deploy Dry-Run
     needs: [initialize, build-docker, build-desktop, build-cli]
     if: needs.initialize.outputs.is_bot != 'true'
-    uses: ./.github/workflows/cd-deploy.yml
+    uses: ./.github/workflows/cd-dryrun.yml
     with:
       dry_run: true
-      is_bot: ${{ needs.initialize.outputs.is_bot }}
       next_version: ${{ needs.initialize.outputs.next_version }}
+      staging_tag: dryrun-${{ github.sha }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}

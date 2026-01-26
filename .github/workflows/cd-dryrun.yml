@@ -1,0 +1,276 @@
+name: CD - Dry Run (Reusable)
+
+# Reusable workflow for dry-run validation
+# Used by both ci.yml (PR validation) and cd-v2.yml (deploy validation)
+# - Downloads all build artifacts
+# - Builds Linux packages (DEB/RPM) ONCE
+# - Generates CLI manifest ONCE
+# - Builds Pages bundle (www + apt/rpm metadata)
+# - Stages Docker images
+# - Validates all artifacts
+# - Uploads staging artifacts (when !dry_run)
+
+on:
+  workflow_call:
+    inputs:
+      dry_run:
+        required: false
+        type: boolean
+        default: true
+      next_version:
+        required: true
+        type: string
+      staging_tag:
+        required: true
+        type: string
+      api_tag:
+        required: true
+        type: string
+      bridge_tag:
+        required: true
+        type: string
+      plugins_tag:
+        required: true
+        type: string
+      web_tag:
+        required: true
+        type: string
+      cli_tag:
+        required: true
+        type: string
+    outputs:
+      validation_passed:
+        description: 'Whether all validation passed'
+        value: ${{ jobs.dry-run.outputs.passed }}
+    secrets:
+      GH_PAT:
+        required: true
+      GPG_PRIVATE_KEY:
+        required: false
+      GPG_PASSPHRASE:
+        required: false
+
+jobs:
+  dry-run:
+    name: Dry-Run Validation
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.validate.outputs.passed }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # -----------------------------------------------------------------------
+      # Step 1: Download all build artifacts
+      # -----------------------------------------------------------------------
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          pattern: build-desktop-*
+          path: dist/desktop/
+          merge-multiple: true
+
+      - name: Download CLI executables
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          pattern: build-cli-*-${{ github.sha }}
+          path: dist/cli/
+          merge-multiple: true
+
+      - name: Download www build
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: build-www-${{ github.sha }}
+          path: packages/www/dist/
+
+      - name: Download json build
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: build-json-${{ github.sha }}
+          path: packages/json/dist/
+
+      # -----------------------------------------------------------------------
+      # Step 2: Build Linux packages (DEB/RPM) - ONCE
+      # -----------------------------------------------------------------------
+      - name: Install packaging tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c rpm gnupg
+
+      - name: Build Linux packages
+        run: |
+          VERSION="${{ inputs.next_version }}"
+          mkdir -p dist/packages
+          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch amd64 --output dist/packages
+          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch arm64 --output dist/packages
+          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch x86_64 --output dist/packages
+          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch aarch64 --output dist/packages
+
+      # -----------------------------------------------------------------------
+      # Step 3: Generate CLI manifest - ONCE
+      # -----------------------------------------------------------------------
+      - name: Generate CLI manifest
+        run: |
+          .ci/scripts/build/generate-cli-manifest.sh \
+            --version ${{ inputs.next_version }} \
+            --input dist/cli/ \
+            --output dist/cli/manifest.json
+
+      # -----------------------------------------------------------------------
+      # Step 4: Build Pages bundle (www + apt/rpm metadata)
+      # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: .ci/scripts/setup/install-deps.sh
+
+      - name: Build packages
+        run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build web for Pages (with /console/ base path)
+        run: .ci/scripts/build/build-web.sh --type RELEASE
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /console/
+
+      - name: Assemble pages package
+        run: .ci/scripts/build/build-pages.sh --output dist/pages
+
+      - name: Copy CLI manifest to pages
+        run: |
+          mkdir -p dist/pages/cli
+          cp dist/cli/manifest.json dist/pages/cli/
+
+      - name: Build package repositories
+        run: |
+          VERSION="${{ inputs.next_version }}"
+
+          # Build repos using the packages we just built
+          .ci/scripts/build/build-pkg-repo.sh \
+            --version "$VERSION" \
+            --local-pkgs dist/packages \
+            --output dist/pages \
+            --max-versions 3
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      # -----------------------------------------------------------------------
+      # Step 5: Stage Docker images (dry-run validates existence)
+      # -----------------------------------------------------------------------
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Stage Docker images
+        run: |
+          STAGING_TAG="${{ inputs.staging_tag }}"
+          DRY_RUN_FLAG=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$STAGING_TAG" $DRY_RUN_FLAG
+
+      # -----------------------------------------------------------------------
+      # Step 6: Clean up debug artifacts
+      # -----------------------------------------------------------------------
+      - name: Clean up debug artifacts
+        run: rm -f dist/desktop/builder-debug.yml
+
+      # -----------------------------------------------------------------------
+      # Step 7: Validate all artifacts
+      # -----------------------------------------------------------------------
+      - name: Validate artifacts
+        id: validate
+        run: |
+          MODE="${{ inputs.dry_run == true && '(DRY-RUN) ' || '' }}"
+          echo "## ${MODE}Dry-Run Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          DESKTOP_COUNT=$(find dist/desktop -type f 2>/dev/null | wc -l)
+          CLI_COUNT=$(find dist/cli -type f 2>/dev/null | wc -l)
+          PKG_COUNT=$(find dist/packages -type f 2>/dev/null | wc -l)
+          PAGES_SIZE=$(du -sh dist/pages/ 2>/dev/null | cut -f1 || echo "N/A")
+          APT_FILES=$(find dist/pages/apt/dists -type f 2>/dev/null | wc -l)
+          RPM_FILES=$(find dist/pages/rpm/repodata -type f 2>/dev/null | wc -l)
+
+          echo "| Artifact | Count/Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Desktop artifacts | $DESKTOP_COUNT files |" >> $GITHUB_STEP_SUMMARY
+          echo "| CLI artifacts | $CLI_COUNT files |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux packages | $PKG_COUNT files |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pages bundle | $PAGES_SIZE |" >> $GITHUB_STEP_SUMMARY
+          echo "| APT metadata | $APT_FILES files |" >> $GITHUB_STEP_SUMMARY
+          echo "| RPM metadata | $RPM_FILES files |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ inputs.next_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Staging Tag:** ${{ inputs.staging_tag }}" >> $GITHUB_STEP_SUMMARY
+
+          FAILED=false
+
+          if [[ "$DESKTOP_COUNT" -eq 0 ]]; then
+            echo "::error::No desktop artifacts found"
+            FAILED=true
+          fi
+          if [[ "$CLI_COUNT" -eq 0 ]]; then
+            echo "::error::No CLI artifacts found"
+            FAILED=true
+          fi
+          if [[ "$PKG_COUNT" -eq 0 ]]; then
+            echo "::error::No Linux packages found"
+            FAILED=true
+          fi
+          if [[ "$APT_FILES" -eq 0 ]]; then
+            echo "::error::No APT metadata files found"
+            FAILED=true
+          fi
+          if [[ "$RPM_FILES" -eq 0 ]]; then
+            echo "::error::No RPM metadata files found"
+            FAILED=true
+          fi
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** Validation FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "**Status:** All validation passed. Dry-run complete." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** All validation passed. Ready for publish." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "passed=true" >> $GITHUB_OUTPUT
+
+      # -----------------------------------------------------------------------
+      # Upload staging artifacts for publish job (only when !dry_run)
+      # -----------------------------------------------------------------------
+      - name: Upload staging release artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: staging-release-${{ github.sha }}
+          path: |
+            dist/desktop/
+            dist/cli/
+            dist/packages/
+          retention-days: 1
+
+      - name: Upload staging pages artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: staging-pages-${{ github.sha }}
+          path: dist/pages/
+          retention-days: 1
