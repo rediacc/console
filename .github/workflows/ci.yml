@@ -409,31 +409,26 @@ jobs:
           echo "All CI jobs passed successfully!"
 
   # ============================================================================
-  # RERUN TESTS ON FAILURE - Auto-retry flaky jobs (max 3 attempts)
-  # Runs 3 sequential 10-minute windows after cancel-watchdog completes,
-  # monitoring for failures and triggering reruns as needed.
+  # RERUN WATCHDOG - Auto-retry flaky jobs (max 3 attempts)
+  # Monitors for job failures after cancel-watchdog completes and triggers
+  # reruns as needed. Runs for up to 10 minutes like cancel-watchdog.
   # ============================================================================
-  rerun-tests-on-failure:
-    name: Rerun on Failure (${{ matrix.window }}/3)
+  rerun-watchdog:
+    name: Rerun Watchdog
     runs-on: ubuntu-slim
     needs: [cancel-watchdog]
-    if: always() && !cancelled() && fromJSON(github.run_attempt) < 3
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        window: [1, 2, 3]
+    if: needs.cancel-watchdog.result == 'success' && fromJSON(github.run_attempt) < 3
     steps:
       - name: Monitor for failures and trigger rerun
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
         with:
           script: |
             const pollInterval = 10000; // 10 seconds
-            const maxRuntime = 600000;  // 10 minutes max per window
+            const maxRuntime = 600000;  // 10 minutes max
+            const minRuntime = 120000;  // 2 minutes minimum before allowing workflow-complete exit
             const startTime = Date.now();
-            const window = ${{ matrix.window }};
 
-            console.log(`Retry monitor window ${window}/3 started (attempt ${{ github.run_attempt }}/3)`);
+            console.log(`Rerun watchdog started (attempt ${{ github.run_attempt }}/3)`);
 
             while (Date.now() - startTime < maxRuntime) {
               const elapsed = Date.now() - startTime;
@@ -445,19 +440,17 @@ jobs:
                 run_id: context.runId
               });
 
-              // Filter out retry monitor jobs and watchdog
+              // Filter out watchdog jobs
               const otherJobs = jobs.jobs.filter(j =>
-                !j.name.includes('Rerun on Failure') &&
                 !j.name.includes('Watchdog')
               );
 
               const completed = otherJobs.filter(j => j.status === 'completed').length;
-              // Count both 'failure' and 'cancelled' as failed (cancelled often means strategy cancelled due to another failure)
-              const failed = otherJobs.filter(j => j.conclusion === 'failure' || j.conclusion === 'cancelled');
+              const failed = otherJobs.filter(j => j.conclusion === 'failure');
               const inProgress = otherJobs.filter(j => j.status === 'in_progress').length;
               const queued = otherJobs.filter(j => j.status === 'queued').length;
 
-              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued, ${failed.length} failed/cancelled`);
+              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued, ${failed.length} failed`);
 
               if (failed.length > 0) {
                 console.log('');
@@ -468,7 +461,7 @@ jobs:
                 });
                 console.log('='.repeat(70));
 
-                // Trigger rerun - use head branch for PRs, or default branch for push
+                // Trigger rerun via workflow dispatch
                 const ref = context.payload.pull_request?.head?.ref || context.ref.replace('refs/heads/', '');
                 console.log(`Dispatching rerun-failed.yml on ref: ${ref}`);
 
@@ -486,8 +479,8 @@ jobs:
                 return;
               }
 
-              // If all jobs completed successfully, exit
-              if (inProgress === 0 && queued === 0) {
+              // If all jobs completed successfully, exit (but wait minimum time first)
+              if (inProgress === 0 && queued === 0 && elapsed >= minRuntime) {
                 console.log('All jobs completed - no failures detected');
                 return;
               }
@@ -495,5 +488,5 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
 
-            console.log(`Window ${window}/3 completed - passing to next window`);
+            console.log('Rerun watchdog window completed');
 
