@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { TeamPageIDS } from '../../pages/team/TeamPageIDS';
-import { NavigationHelper } from '../../src/helpers/NavigationHelper';
+import { NavigationHelper } from '@/helpers/NavigationHelper';
+import { TeamPageIDS } from '@/pages/team/TeamPageIDS';
 
 const escapeRegex = (value: string): string => value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

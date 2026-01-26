@@ -17,6 +17,7 @@ import { noRawApiCalls } from './eslint-rules/no-raw-api-calls.js';
 import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-translation-props.js';
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
 import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-defaults.js';
+import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
 export default tseslint.config(
@@ -118,6 +119,7 @@ export default tseslint.config(
           'no-duplicate-translation-props': noDuplicateTranslationProps,
           'prefer-const-arrays': preferConstArrays,
           'no-hardcoded-nullish-defaults': noHardcodedNullishDefaults,
+          'e2e-test-naming-convention': e2eTestNamingConvention,
         },
       },
     },
@@ -803,6 +805,19 @@ export default tseslint.config(
           message: 'describe.skip() is not allowed in unit tests. Fix the tests.',
         },
       ],
+    },
+  },
+
+  // =============================================================
+  // E2E TEST FILE NAMING CONVENTION
+  // =============================================================
+  // Enforce doc-aligned naming pattern: {XX}-{YY}[-{ZZ}]-{feature-name}[.negative].test.ts
+  {
+    files: ['packages/e2e/tests/**/*.test.ts'],
+    rules: {
+      'custom/e2e-test-naming-convention': ['error', {
+        excludeDirs: ['helpers', 'setup', 'electron'],
+      }],
     },
   },
 
