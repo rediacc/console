@@ -106,6 +106,9 @@ jobs:
           .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch arm64 --output dist/packages
           .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch x86_64 --output dist/packages
           .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch aarch64 --output dist/packages
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
       # Step 3: Generate CLI manifest - ONCE

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build .rpm package from CLI binary
+# Build .rpm package from CLI binary with GPG signing
 # Usage:
 #   build-rpm.sh --binary PATH --version VER --arch {x86_64|aarch64} [--output DIR] [--dry-run]
 #
@@ -9,6 +9,10 @@
 #   --arch ARCH     Target architecture: x86_64, aarch64
 #   --output DIR    Output directory (default: dist/packages)
 #   --dry-run       Preview without building
+#
+# Environment:
+#   GPG_PRIVATE_KEY   GPG private key for signing (base64 or armored)
+#   GPG_PASSPHRASE    GPG key passphrase (optional)
 
 set -euo pipefail
 
@@ -105,7 +109,8 @@ require_cmd rpmbuild
 
 # Create rpmbuild tree in temp directory
 RPMBUILD_DIR="$(mktemp -d)"
-cleanup() { rm -rf "$RPMBUILD_DIR"; }
+CLEANUP_DIRS=("$RPMBUILD_DIR")
+cleanup() { rm -rf "${CLEANUP_DIRS[@]}"; }
 trap cleanup EXIT
 
 mkdir -p "$RPMBUILD_DIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
@@ -153,3 +158,54 @@ fi
 
 PACKAGE_SIZE=$(wc -c < "$OUTPUT_DIR/$RPM_FILE")
 log_info "Package built: $RPM_FILE ($((PACKAGE_SIZE / 1024))KB)"
+
+# =============================================================================
+# GPG Signing (if GPG_PRIVATE_KEY is provided)
+# =============================================================================
+if [[ -n "${GPG_PRIVATE_KEY:-}" ]]; then
+    log_step "Signing RPM package..."
+
+    # Setup temporary GPG home
+    GNUPGHOME_TMP="$(mktemp -d)"
+    export GNUPGHOME="$GNUPGHOME_TMP"
+
+    # Add to cleanup
+    CLEANUP_DIRS+=("$GNUPGHOME_TMP")
+
+    # GPG options for non-interactive use
+    GPG_OPTS=(--batch --yes --no-tty --pinentry-mode loopback)
+    if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
+        GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE")
+    fi
+
+    # Import the GPG key
+    echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
+    log_info "GPG private key imported"
+
+    # Get the key ID
+    GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
+    log_info "Using GPG key: $GPG_KEY_ID"
+
+    # Create RPM macros for signing
+    mkdir -p ~/.rpmmacros.d 2>/dev/null || true
+    cat > "$HOME/.rpmmacros" <<MACROS
+%_signature gpg
+%_gpg_path $GNUPGHOME
+%_gpg_name $GPG_KEY_ID
+%__gpg /usr/bin/gpg
+%__gpg_sign_cmd %{__gpg} gpg --batch --no-verbose --no-armor --pinentry-mode loopback ${GPG_PASSPHRASE:+--passphrase "$GPG_PASSPHRASE"} -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}
+MACROS
+
+    # Sign the RPM
+    rpm --addsign "$OUTPUT_DIR/$RPM_FILE"
+    log_info "RPM package signed successfully"
+
+    # Verify signature
+    if rpm -K "$OUTPUT_DIR/$RPM_FILE" | grep -q "digests signatures OK"; then
+        log_info "Signature verification passed"
+    else
+        log_warn "Signature verification returned unexpected result (package may still be valid)"
+    fi
+else
+    log_warn "GPG_PRIVATE_KEY not set, skipping RPM signing"
+fi
