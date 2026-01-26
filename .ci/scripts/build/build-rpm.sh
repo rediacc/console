@@ -178,26 +178,42 @@ if [[ -n "${GPG_PRIVATE_KEY:-}" ]]; then
         GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE")
     fi
 
-    # Import the GPG key
-    echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
+    # Import the GPG key with error handling
+    if ! echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import; then
+        log_error "Failed to import GPG key. Is GPG_PRIVATE_KEY valid?"
+        exit 1
+    fi
     log_info "GPG private key imported"
 
-    # Get the key ID
-    GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
+    # Get the key ID (use --list-secret-keys for imported private key)
+    GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec' | head -1 | cut -d: -f5)
+    if [[ -z "$GPG_KEY_ID" ]]; then
+        log_error "Could not determine GPG key ID from imported key."
+        exit 1
+    fi
     log_info "Using GPG key: $GPG_KEY_ID"
 
-    # Create RPM macros for signing
-    mkdir -p ~/.rpmmacros.d 2>/dev/null || true
+    # Build passphrase option for GPG sign command (uses file descriptor to avoid plaintext in file)
+    passphrase_opt=""
+    if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
+        passphrase_opt="--passphrase-file /proc/self/fd/3"
+    fi
+
+    # Create RPM macros for signing (passphrase passed via fd, not written to file)
     cat > "$HOME/.rpmmacros" <<MACROS
 %_signature gpg
 %_gpg_path $GNUPGHOME
 %_gpg_name $GPG_KEY_ID
 %__gpg /usr/bin/gpg
-%__gpg_sign_cmd %{__gpg} gpg --batch --no-verbose --no-armor --pinentry-mode loopback ${GPG_PASSPHRASE:+--passphrase "$GPG_PASSPHRASE"} -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}
+%__gpg_sign_cmd %{__gpg} gpg --batch --no-verbose --no-armor --pinentry-mode loopback ${passphrase_opt} -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}
 MACROS
 
-    # Sign the RPM
-    rpm --addsign "$OUTPUT_DIR/$RPM_FILE"
+    # Sign the RPM (pass passphrase via file descriptor 3 if set)
+    if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
+        rpm --addsign "$OUTPUT_DIR/$RPM_FILE" 3<<<"$GPG_PASSPHRASE"
+    else
+        rpm --addsign "$OUTPUT_DIR/$RPM_FILE"
+    fi
     log_info "RPM package signed successfully"
 
     # Verify signature
