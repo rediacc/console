@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
+import { getBaseSlug } from '../utils/slug';
 import '../styles/sidebar-shared.css';
 
 interface Props {
@@ -22,12 +23,6 @@ const docs = allDocs
     if (categorySort !== 0) return categorySort;
     return (a.data.order ?? 999) - (b.data.order ?? 999);
   });
-
-// Extract base slug helper function (removes language prefix)
-const getBaseSlug = (slug: string) => {
-  const parts = slug.split('/');
-  return parts.length > 1 ? parts[parts.length - 1] : slug;
-};
 
 // Group docs by category
 const docsByCategory = docs.reduce((acc, doc) => {

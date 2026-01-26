@@ -3,26 +3,12 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import DocsSidebar from '../../../components/DocsSidebar.astro';
 import { createTranslator } from '../../../i18n/utils';
-import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
-// DEFAULT_LANGUAGE is not used in this file
+import { getLanguagePaths } from '../../../i18n/language-utils';
 import type { Language } from '../../../i18n/types';
+import { getBaseSlug } from '../../../utils/slug';
 import '../../../styles/sidebar-shared.css';
 
-export async function getStaticPaths() {
-  const _allDocs = await getCollection('docs');
-
-  const paths = [];
-
-  // Generate paths for each supported language
-  for (const lang of SUPPORTED_LANGUAGES) {
-    paths.push({
-      params: { lang },
-      props: { lang },
-    });
-  }
-
-  return paths;
-}
+export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.props as { lang: Language };
 const { t } = createTranslator(lang);
@@ -38,12 +24,6 @@ const docs = allDocs
     if (categorySort !== 0) return categorySort;
     return (a.data.order ?? 999) - (b.data.order ?? 999);
   });
-
-// Extract base slug helper function (removes language prefix)
-const getBaseSlug = (slug: string) => {
-  const parts = slug.split('/');
-  return parts.length > 1 ? parts[parts.length - 1] : slug;
-};
 
 // Group docs by category
 const docsByCategory = docs.reduce((acc, doc) => {
