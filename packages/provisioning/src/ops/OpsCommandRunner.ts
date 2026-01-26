@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process';
+import type { CommandResult } from '../types';
 
 /**
  * OpsCommandRunner - Executes renet ops commands
  *
- * Extracted from OpsManager to reduce file size.
  * Handles command execution with proper output streaming and timeout handling.
  */
 export class OpsCommandRunner {
@@ -19,7 +19,7 @@ export class OpsCommandRunner {
     subcommands: string[],
     args: string[] = [],
     timeoutMs = 300000
-  ): Promise<{ stdout: string; stderr: string; code: number }> {
+  ): Promise<CommandResult> {
     return this.runWithEnv(subcommands, args, {}, timeoutMs);
   }
 
@@ -31,7 +31,7 @@ export class OpsCommandRunner {
     args: string[] = [],
     extraEnv: Record<string, string> = {},
     timeoutMs = 300000
-  ): Promise<{ stdout: string; stderr: string; code: number }> {
+  ): Promise<CommandResult> {
     return new Promise((resolve) => {
       const allArgs = ['ops', ...subcommands, ...args];
       const fullCommand = `${this.renetBin} ${allArgs.join(' ')}`.trim();

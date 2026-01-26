@@ -51,6 +51,7 @@
     "@opentelemetry/sdk-node": "^0.211.0",
     "@opentelemetry/sdk-trace-web": "^2.5.0",
     "@playwright/test": "^1.56.1",
+    "@rediacc/provisioning": "*",
     "@rediacc/shared": "*",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/runner": "^4.0.18",

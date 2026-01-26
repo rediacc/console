@@ -15,6 +15,10 @@ on:
       e2e_browsers:
         required: true
         type: string
+      provision_vms:
+        required: false
+        type: boolean
+        default: false
     secrets:
       GH_PAT:
         required: false
@@ -27,8 +31,83 @@ env:
   E2E_BROWSERS: ${{ inputs.e2e_browsers }}
 
 jobs:
+  # ============================================================================
+  # BUILD VM DISK IMAGE: Pre-build VM image with renet setup
+  # Builds a custom VM image with Docker, CRIU, and packages pre-installed.
+  # This reduces disk space usage in infra-backend by avoiding on-the-fly builds.
+  # ============================================================================
+  build-disk-image:
+    name: Build VM Disk Image
+    runs-on: ubuntu-latest
+    if: inputs.provision_vms
+    timeout-minutes: 30
+    outputs:
+      image-name: ${{ steps.build.outputs.image-name }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Build VM Image
+        id: build
+        run: |
+          .ci/scripts/image/build-vm-image.sh --output "$RUNNER_TEMP/vm-image"
+          IMAGE_PATH=$(ls $RUNNER_TEMP/vm-image/*.img | head -1)
+          IMAGE_NAME=$(basename "$IMAGE_PATH")
+          echo "image-name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Built image: $IMAGE_NAME ($(du -h "$IMAGE_PATH" | cut -f1))"
+
+      - name: Upload VM Image Artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: vm-disk-image
+          path: ${{ runner.temp }}/vm-image/*.img
+          retention-days: 1
+          compression-level: 0  # Already compressed qcow2
+
+  # ============================================================================
+  # GATEWAY JOB: Wait for tunnel-url artifact
+  # Lightweight job that waits for infra-backend to upload the tunnel URL.
+  # Test jobs depend on this instead of polling independently, saving runner minutes.
+  # NOTE: No 'needs: [infra-backend]' - allows infra-backend to continue in background.
+  # ============================================================================
+  wait-for-tunnel:
+    name: Wait for Tunnel
+    needs: [build-disk-image]
+    if: always() && (needs.build-disk-image.result == 'success' || needs.build-disk-image.result == 'skipped')
+    runs-on: ubuntu-slim
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+      - name: Wait for tunnel-url artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: .ci/scripts/tunnel/wait-for-artifact.sh --run-id ${{ github.run_id }}
+
   infra-backend:
     name: Infra - Backend
+    needs: [build-disk-image]
+    # Run if: (a) build succeeded when provision_vms=true, or (b) provision_vms=false (skipped build)
+    if: always() && (needs.build-disk-image.result == 'success' || needs.build-disk-image.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -113,10 +192,49 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      # Note: VM provisioning removed - standard GHA runners don't support KVM,
-      # and the renet bridge image doesn't have embedded ops assets (CRIU, rsync).
-      # VM-based tests (test-bridge-workers, test-bridge-ceph) need self-hosted runners
-      # or a separate renet-ops image with embedded assets.
+      # VM Provisioning (conditional - only when provision_vms is true and KVM is available)
+      # Download pre-built VM image (built in build-disk-image job)
+      - name: Download VM Image Artifact
+        if: inputs.provision_vms
+        uses: actions/download-artifact@v4
+        with:
+          name: vm-disk-image
+          path: ${{ runner.temp }}/vm-image
+
+      - name: Check KVM Availability
+        id: kvm-check
+        if: inputs.provision_vms
+        run: |
+          if [ -e /dev/kvm ]; then
+            echo "kvm_available=true" >> $GITHUB_OUTPUT
+            echo "KVM is available"
+          else
+            echo "kvm_available=false" >> $GITHUB_OUTPUT
+            echo "KVM is NOT available - VM provisioning will be skipped"
+          fi
+
+      - name: Extract renet binary
+        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+
+      - name: Setup KVM Host
+        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
+        run: sudo /tmp/renet ops host setup
+
+      - name: Create Bridge Test Environment
+        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
+        run: .ci/scripts/env/create-bridge-env.sh --output ${{ runner.temp }}/bridge.env
+
+      - name: Provision VMs
+        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
+        env:
+          # Use pre-built image from build-disk-image job
+          REDIACC_OPS_DISKS_PATH: ${{ runner.temp }}/vm-image
+          VM_NET_BASE: '192.168.111'
+          VM_NET_OFFSET: '0'
+          VM_BRIDGE: '1'
+          VM_WORKERS: '11 12'
+        run: sudo -E /tmp/renet ops up --force --parallel
 
       - name: Upload Tunnel URL
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
@@ -125,6 +243,21 @@ jobs:
           name: tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
           retention-days: 3
+
+      # Free disk space before long-running signal wait
+      # Docker images, build cache, and npm cache consume most space
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          # Remove Docker build cache and dangling images (keep running containers)
+          docker system prune -f 2>/dev/null || true
+          # Clear npm cache (builds are complete)
+          npm cache clean --force 2>/dev/null || true
+          # Remove extracted renet binary (VM provisioning is done)
+          rm -f /tmp/renet 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
 
       - name: Wait for Completion Signals
         run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200
@@ -219,6 +352,7 @@ jobs:
 
   test-cli:
     name: CLI (${{ matrix.platform }})
+    needs: [wait-for-tunnel]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -280,6 +414,7 @@ jobs:
 
   test-e2e:
     name: E2E
+    needs: [wait-for-tunnel]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -324,6 +459,7 @@ jobs:
 
   test-e2e-electron:
     name: E2E Electron (${{ matrix.project }})
+    needs: [wait-for-tunnel]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:

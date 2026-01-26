@@ -1,0 +1,46 @@
+{
+  "name": "@rediacc/provisioning",
+  "version": "0.4.49",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./ssh": {
+      "types": "./dist/ssh/index.d.ts",
+      "default": "./dist/ssh/index.js"
+    },
+    "./renet": {
+      "types": "./dist/renet/index.d.ts",
+      "default": "./dist/renet/index.js"
+    },
+    "./ops": {
+      "types": "./dist/ops/index.d.ts",
+      "default": "./dist/ops/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts"
+}

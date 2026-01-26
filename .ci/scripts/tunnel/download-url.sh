@@ -15,7 +15,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Simple argument parsing (portable, no bash 4+ features)
 RUN_ID=""
 ARTIFACT_NAME="tunnel-url"
-MAX_WAIT="1500"
+MAX_WAIT="120"  # Gateway job guarantees artifact exists; this is a safety buffer
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

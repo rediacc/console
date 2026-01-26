@@ -374,6 +374,7 @@ jobs:
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
+      provision_vms: true
     secrets: inherit
 
   # ============================================================================

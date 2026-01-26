@@ -1,10 +1,9 @@
-import { getSSHExecutor, SSHExecutor } from '../ssh';
-import { SSH_DEFAULTS } from '../sshConfig';
+import { SSHExecutor, getSSHExecutor, SSH_DEFAULTS, type SSHConfigOptions } from '../ssh';
+import type { CommandResult } from '../types';
 
 /**
  * OpsVMExecutor - Handles SSH command execution on VMs
  *
- * Extracted from OpsManager to reduce file size.
  * Provides methods for:
  * - SSH connectivity checks
  * - Command execution on individual VMs
@@ -18,8 +17,13 @@ import { SSH_DEFAULTS } from '../sshConfig';
 export class OpsVMExecutor {
   private readonly sshExecutor: SSHExecutor;
 
-  constructor() {
-    this.sshExecutor = getSSHExecutor();
+  /**
+   * Create an OpsVMExecutor.
+   *
+   * @param sshExecutor - Optional SSHExecutor instance. If not provided, uses the default singleton.
+   */
+  constructor(sshExecutor?: SSHExecutor) {
+    this.sshExecutor = sshExecutor ?? getSSHExecutor();
   }
 
   /**
@@ -53,7 +57,7 @@ export class OpsVMExecutor {
     ip: string,
     command: string,
     timeoutMs: number = SSH_DEFAULTS.EXEC_TIMEOUT
-  ): Promise<{ stdout: string; stderr: string; code: number }> {
+  ): Promise<CommandResult> {
     const result = await this.sshExecutor.execute(ip, command, {
       connectTimeout: 5,
       quiet: true,
@@ -73,8 +77,8 @@ export class OpsVMExecutor {
     ips: string[],
     command: string,
     timeoutMs: number = SSH_DEFAULTS.EXEC_TIMEOUT
-  ): Promise<Map<string, { stdout: string; stderr: string; code: number }>> {
-    const results = new Map<string, { stdout: string; stderr: string; code: number }>();
+  ): Promise<Map<string, CommandResult>> {
+    const results = new Map<string, CommandResult>();
 
     const promises = ips.map(async (ip) => {
       const result = await this.executeOnVM(ip, command, timeoutMs);
@@ -117,4 +121,12 @@ export class OpsVMExecutor {
   getSSHExecutor(): SSHExecutor {
     return this.sshExecutor;
   }
+}
+
+/**
+ * Create an OpsVMExecutor with custom SSH configuration.
+ */
+export function createOpsVMExecutor(sshConfigOptions?: SSHConfigOptions): OpsVMExecutor {
+  const sshExecutor = new SSHExecutor(sshConfigOptions);
+  return new OpsVMExecutor(sshExecutor);
 }

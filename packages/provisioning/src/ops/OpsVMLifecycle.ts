@@ -4,7 +4,6 @@ import type { OpsVMExecutor } from './OpsVMExecutor';
 /**
  * OpsVMLifecycle - Manages VM lifecycle operations
  *
- * Extracted from OpsManager to reduce file size.
  * Handles starting, stopping, resetting, and waiting for VMs.
  */
 export class OpsVMLifecycle {
