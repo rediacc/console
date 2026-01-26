@@ -38,17 +38,6 @@
   color: rgba(255, 255, 255, var(--opacity-70));
 }
 
-/* Section Backgrounds */
-.section-light {
-  background: var(--color-bg-light);
-  color: var(--color-text);
-}
-
-.section-dark {
-  background: var(--color-bg-dark);
-  color: white;
-}
-
 /* Downloads Content Section */
 .downloads-content {
   padding: var(--section-padding);

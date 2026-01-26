@@ -32,17 +32,6 @@
   line-height: var(--leading-normal);
 }
 
-/* Section Backgrounds */
-.install-page .section-light {
-  background: var(--color-bg-light);
-  color: var(--color-text);
-}
-
-.install-page .section-dark {
-  background: var(--color-bg-dark);
-  color: white;
-}
-
 /* Installation Methods Section */
 .install-methods {
   padding: var(--section-padding);

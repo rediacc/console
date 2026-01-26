@@ -75,17 +75,6 @@
   line-height: var(--leading-normal);
 }
 
-/* Section Backgrounds - Alternating Pattern */
-.section-light {
-  background: var(--color-bg-light);
-  color: var(--color-text);
-}
-
-.section-dark {
-  background: var(--color-bg-dark);
-  color: white;
-}
-
 /* Pricing Content Section */
 .pricing-content {
   padding: var(--section-padding);

@@ -892,6 +892,17 @@ a[target='_blank']::after {
   color: white;
 }
 
+/* Section Background Utilities */
+.section-light {
+  background: var(--color-bg-light);
+  color: var(--color-text);
+}
+
+.section-dark {
+  background: var(--color-bg-dark);
+  color: white;
+}
+
 .hero-container {
   max-width: 900px;
   margin: 0 auto;
