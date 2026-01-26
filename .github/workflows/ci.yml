@@ -409,10 +409,10 @@ jobs:
           echo "All CI jobs passed successfully!"
 
   # ============================================================================
-  # RERUN E2E ON FAILURE - Auto-retry flaky E2E tests (max 3 attempts)
+  # RERUN TESTS ON FAILURE - Auto-retry flaky tests (max 3 attempts)
   # ============================================================================
-  rerun-e2e-on-failure:
-    name: Rerun E2E on Failure
+  rerun-tests-on-failure:
+    name: Rerun Tests on Failure
     runs-on: ubuntu-latest
     needs: [tests]
     if: failure() && fromJSON(github.run_attempt) < 3
@@ -422,7 +422,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "E2E tests failed on attempt ${{ github.run_attempt }}/3"
+          echo "Tests failed on attempt ${{ github.run_attempt }}/3"
           echo "Triggering rerun of failed jobs..."
           gh workflow run rerun-failed.yml -F run_id=${{ github.run_id }}
 
