@@ -35,7 +35,7 @@ const docsByCategory = docs.reduce((acc, doc) => {
 const categories = Object.keys(docsByCategory).sort();
 
 // Get current doc slug for active state
-const currentSlug = currentUrl.split('/').pop();
+const currentSlug = getBaseSlug(currentUrl);
 
 // Get translator
 const { t } = createTranslator(currentLang);
