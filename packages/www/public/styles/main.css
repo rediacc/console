@@ -1656,12 +1656,6 @@ a[target='_blank']::after {
   gap: var(--space-4);
 }
 
-.footer-locale,
-.footer-region {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
 /* ===== UTILITY CLASSES ===== */
 .clickable-image {
   cursor: pointer;
@@ -1899,44 +1893,6 @@ a[target='_blank']::after {
    Utility Classes
    ========================================================================== */
 
-/* Gradient Utilities */
-.gradient-dark {
-  background: var(--gradient-dark);
-}
-
-.gradient-dark-alt {
-  background: var(--gradient-dark-alt);
-}
-
-.gradient-primary {
-  background: linear-gradient(
-    135deg,
-    var(--color-brand-primary) 0%,
-    var(--color-brand-secondary) 100%
-  );
-}
-
-.gradient-primary-hover {
-  background: linear-gradient(
-    135deg,
-    var(--color-brand-secondary) 0%,
-    var(--color-brand-dark) 100%
-  );
-}
-
-/* Grid Utilities */
-.grid-2-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--grid-gap);
-}
-
-.grid-2-col-lg {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--grid-gap-lg);
-}
-
 @media (min-width: 64rem) {
   /* 1024px - respects user font size */
   .hero-title {
@@ -1995,12 +1951,6 @@ a[target='_blank']::after {
 
 @media (max-width: 60.5rem) {
   /* 968px - respects user font size */
-  .grid-2-col,
-  .grid-2-col-lg {
-    grid-template-columns: 1fr;
-    gap: var(--space-8);
-  }
-
   .solutions-grid {
     grid-template-columns: 1fr;
     gap: var(--space-16);
