@@ -1462,10 +1462,6 @@ a[target='_blank']::after {
   resize: vertical;
 }
 
-.form-submit {
-  align-self: flex-start;
-}
-
 /* Form Error Styles - Visible error indication */
 .form-error {
   display: none;
@@ -1499,44 +1495,14 @@ a[target='_blank']::after {
   box-shadow: 0 0 0 3px rgba(196, 30, 58, var(--opacity-10));
 }
 
-/* Form Success Styles - Positive validation feedback */
-.form-success {
-  display: none;
-  color: var(--color-success);
-  font-size: var(--font-size-sm);
-  margin-top: var(--space-1);
-  font-weight: var(--font-weight-medium);
-}
-
-.form-success:not(:empty) {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-}
-
-.form-success::before {
-  content: '✓';
-  flex-shrink: 0;
-  font-size: var(--font-size-base);
-  color: var(--color-success);
-}
-
-.form-input:valid:not(:placeholder-shown),
-.form-input.success {
+.form-input:valid:not(:placeholder-shown) {
   border-color: var(--color-success);
   border-width: 2px;
 }
 
-.form-input:valid:not(:placeholder-shown):focus-visible,
-.form-input.success:focus-visible {
+.form-input:valid:not(:placeholder-shown):focus-visible {
   outline-color: var(--color-success);
   box-shadow: 0 0 0 3px var(--color-success-light);
-}
-
-/* Required field indicator */
-.form-required {
-  color: var(--color-error);
-  font-weight: var(--font-weight-bold);
 }
 
 /* aria-invalid styling for all form fields */
