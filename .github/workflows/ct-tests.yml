@@ -179,6 +179,21 @@ jobs:
           path: ${{ runner.temp }}/tunnel-url.txt
           retention-days: 3
 
+      # Free disk space before long-running signal wait
+      # Docker images, build cache, and npm cache consume most space
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          # Remove Docker build cache and dangling images (keep running containers)
+          docker system prune -f 2>/dev/null || true
+          # Clear npm cache (builds are complete)
+          npm cache clean --force 2>/dev/null || true
+          # Remove extracted renet binary (VM provisioning is done)
+          rm -f /tmp/renet 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
+
       - name: Wait for Completion Signals
         run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200
         env:
