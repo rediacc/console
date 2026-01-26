@@ -412,6 +412,8 @@ jobs:
   # RERUN WATCHDOG - Auto-retry flaky jobs (max 3 attempts)
   # Monitors for job failures after cancel-watchdog completes and triggers
   # reruns as needed. Runs for up to 10 minutes like cancel-watchdog.
+  # NOTE: Reruns may fail if dependent infrastructure (e.g., Cloudflare tunnel)
+  # is no longer available. In such cases, a fresh run is needed.
   # ============================================================================
   rerun-watchdog:
     name: Rerun Watchdog
