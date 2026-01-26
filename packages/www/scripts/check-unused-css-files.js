@@ -190,7 +190,9 @@ function main() {
   }
 
   console.log(colors.bold('='.repeat(60)));
-  console.log(`${colors.red(`${unusedFiles.length} unused CSS file${unusedFiles.length === 1 ? '' : 's'}`)} found`);
+  console.log(
+    `${colors.red(`${unusedFiles.length} unused CSS file${unusedFiles.length === 1 ? '' : 's'}`)} found`
+  );
   console.log(colors.dim('These CSS files are not imported or referenced in any source file.'));
   console.log(colors.dim('Consider removing them or adding imports if they are needed.'));
   console.log(colors.bold('='.repeat(60)) + '\n');

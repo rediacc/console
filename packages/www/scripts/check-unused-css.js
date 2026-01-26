@@ -16,10 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
 // CSS directories to scan
-const CSS_DIRS = [
-  path.join(ROOT_DIR, 'public', 'styles'),
-  path.join(ROOT_DIR, 'src', 'styles'),
-];
+const CSS_DIRS = [path.join(ROOT_DIR, 'public', 'styles'), path.join(ROOT_DIR, 'src', 'styles')];
 
 // Source file patterns to search for class usage
 const SOURCE_EXTENSIONS = ['.astro', '.tsx', '.ts', '.js'];
@@ -152,7 +149,9 @@ function findClassUsage(className, sourceFiles) {
     // Template literals and string concatenation
     new RegExp(`["'\`]${escapeRegex(className)}["'\`]`),
     // classList methods
-    new RegExp(`classList\\.(add|remove|toggle|contains)\\([^)]*["'\`]${escapeRegex(className)}["'\`]`),
+    new RegExp(
+      `classList\\.(add|remove|toggle|contains)\\([^)]*["'\`]${escapeRegex(className)}["'\`]`
+    ),
     // Direct string references (for dynamic classes)
     new RegExp(`\\b${escapeRegex(className)}\\b`),
   ];
@@ -182,7 +181,9 @@ function escapeRegex(string) {
  */
 function main() {
   console.log(colors.dim('Checking for unused CSS classes...'));
-  console.log(colors.dim(`CSS directories: ${CSS_DIRS.map((d) => path.relative(ROOT_DIR, d)).join(', ')}`));
+  console.log(
+    colors.dim(`CSS directories: ${CSS_DIRS.map((d) => path.relative(ROOT_DIR, d)).join(', ')}`)
+  );
 
   // Collect all CSS classes
   const allClasses = [];
@@ -263,7 +264,9 @@ function main() {
   }
 
   console.log(colors.bold('='.repeat(60)));
-  console.log(`${colors.red(`${unusedClasses.length} unused CSS class${unusedClasses.length === 1 ? '' : 'es'}`)} found`);
+  console.log(
+    `${colors.red(`${unusedClasses.length} unused CSS class${unusedClasses.length === 1 ? '' : 'es'}`)} found`
+  );
   console.log(colors.dim('Note: Some classes may be used dynamically and are whitelisted.'));
   console.log(colors.dim('Edit DYNAMIC_CLASS_PATTERNS in this script to add more patterns.'));
   console.log(colors.bold('='.repeat(60)) + '\n');
