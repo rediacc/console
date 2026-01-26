@@ -3,17 +3,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PricingCard from '../../components/PricingCard.astro';
 import FAQSection from '../../components/FAQSection.astro';
 import { createTranslator } from '../../i18n/utils';
-import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
 import '../../styles/pricing-page.css';
 
-export async function getStaticPaths() {
-  return SUPPORTED_LANGUAGES.map((lang) => ({
-    params: { lang },
-    props: { lang },
-  }));
-}
+export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t, ta, to } = createTranslator(lang);

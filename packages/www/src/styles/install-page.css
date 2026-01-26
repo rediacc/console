@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
+  background: var(--gradient-dark);
   color: white;
   padding: var(--section-padding);
   text-align: center;
@@ -30,17 +30,6 @@
   font-size: clamp(18px, 1.5vw, 22px);
   color: rgba(255, 255, 255, var(--opacity-90));
   line-height: var(--leading-normal);
-}
-
-/* Section Backgrounds */
-.install-page .section-light {
-  background: var(--color-bg-light);
-  color: var(--color-text);
-}
-
-.install-page .section-dark {
-  background: var(--color-bg-dark);
-  color: white;
 }
 
 /* Installation Methods Section */

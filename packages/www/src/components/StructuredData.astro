@@ -1,5 +1,5 @@
 ---
-import { CONTACT_EMAIL } from '../config/constants';
+import { CONTACT_EMAIL, SITE_URL } from '../config/constants';
 
 export interface Props {
   type?: 'organization' | 'website' | 'service' | 'breadcrumb' | 'sitenavigation' | 'blogposting';
@@ -8,7 +8,7 @@ export interface Props {
 
 const { type = 'organization', data = {} } = Astro.props;
 
-const baseUrl = 'https://www.rediacc.com';
+const baseUrl = SITE_URL;
 
 const getStructuredData = (type: string, customData: any = {}) => {
   const commonData = {

@@ -6,6 +6,7 @@ import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { generateTOCFromHtml } from '../utils/sidebar-behavior';
 import '../styles/sidebar-shared.css';
+import '../styles/article-content.css';
 
 interface Props {
   frontmatter: {
@@ -72,7 +73,7 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
           )}
         </header>
 
-        <div class="article-body">
+        <div class="article-content">
           <slot />
         </div>
       </article>
@@ -105,7 +106,7 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
         const container = document.querySelector('.toc-sidebar');
         if (!container) return; // No TOC sidebar on this page
 
-        const headings = document.querySelectorAll('.article-body h2, .article-body h3, .article-body h4');
+        const headings = document.querySelectorAll('.article-content h2, .article-content h3, .article-content h4');
         if (headings.length === 0) return; // No headings to track
 
         const observer = new IntersectionObserver((entries) => {
@@ -228,7 +229,7 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
       margin: var(--space-4) 0;
     }
 
-    .article-body {
+    .article-content {
       line-height: var(--leading-loose);
     }
 
@@ -237,118 +238,13 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
       /* All base styles inherited from sidebar-base */
     }
 
-    /* Article Content Styles */
-    .article-body :global(h2),
-    .article-body :global(h3),
-    .article-body :global(h4),
-    .article-body :global(h5),
-    .article-body :global(h6) {
-      margin: var(--space-8) 0 var(--space-4) 0;
-      scroll-margin-top: calc(var(--nav-height) + var(--space-8));
-    }
-
-    .article-body :global(h2) {
-      font-size: var(--font-size-2xl);
-      border-bottom: 2px solid var(--color-border);
-      padding-bottom: var(--space-2);
-    }
-
-    .article-body :global(h3) {
-      font-size: var(--font-size-xl);
-    }
-
-    .article-body :global(p) {
-      margin: var(--space-4) 0;
-      line-height: var(--leading-loose);
-    }
-
-    .article-body :global(code) {
-      background-color: var(--color-bg-light);
-      padding: var(--space-1) var(--space-2);
-      border-radius: var(--radius-sm);
-      font-family: var(--font-family-mono);
-      font-size: 0.9em;
-    }
-
-    .article-body :global(pre) {
-      background-color: var(--color-bg-light);
-      padding: var(--space-4);
-      border-radius: var(--radius-md);
-      overflow-x: auto;
-      margin: var(--space-4) 0;
-      tab-size: 4;
-      scrollbar-width: thin;
-      scrollbar-color: var(--color-border) transparent;
-    }
-
-    .article-body :global(pre code) {
-      background-color: transparent;
-      padding: 0;
-    }
-
-    .article-body :global(blockquote) {
-      border-inline-start: 4px solid var(--color-text);
-      padding-inline-start: var(--space-4);
-      margin: var(--space-4) 0;
-      color: var(--color-text-secondary);
-      font-style: italic;
-    }
-
-    .article-body :global(ul),
-    .article-body :global(ol) {
-      margin: var(--space-4) 0;
-      padding-inline-start: var(--space-8);
-    }
-
-    .article-body :global(li) {
-      margin: var(--space-2) 0;
-      line-height: var(--leading-loose);
-    }
-
-    .article-body :global(table) {
-      display: block;
-      overflow-x: auto;
-      border-collapse: collapse;
-      margin: var(--space-4) 0;
-      scrollbar-width: thin;
-      scrollbar-color: var(--color-border) transparent;
-    }
-
-    .article-body :global(th),
-    .article-body :global(td) {
-      border: 1px solid var(--color-border);
-      padding: var(--space-3);
-      text-align: start;
-    }
-
-    .article-body :global(th) {
-      background-color: var(--color-bg-light);
-      font-weight: var(--font-weight-semibold);
-    }
-
-    .article-body :global(a) {
-      color: var(--color-brand-primary);
-      text-decoration: none;
-      transition: color var(--transition-duration-base) ease;
-    }
-
-    .article-body :global(a:hover) {
-      text-decoration: underline;
-    }
-
-    .article-body :global(a:focus-visible) {
-      outline: 2px solid var(--color-brand-primary);
-      outline-offset: 2px;
-      border-radius: var(--radius-sm);
-    }
-
-    /* Image and caption container paragraphs */
-    .article-body :global(p:has(img)) {
+    /* Image and caption styles (docs-specific) */
+    .article-content :global(p:has(img)) {
       text-align: center;
       margin: var(--space-6) 0 var(--space-8) 0;
     }
 
-    .article-body :global(img) {
+    .article-content :global(img) {
       max-width: 100%;
       height: auto;
       border-radius: var(--radius-md);
@@ -357,7 +253,7 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
     }
 
     /* Figure captions - em elements that follow images in the same paragraph */
-    .article-body :global(p:has(img) em) {
+    .article-content :global(p:has(img) em) {
       display: block;
       font-size: var(--font-size-sm);
       color: var(--color-text-secondary);

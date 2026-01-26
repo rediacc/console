@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
+import { getBaseSlug } from '../utils/slug';
 import '../styles/sidebar-shared.css';
 
 interface Props {
@@ -23,12 +24,6 @@ const docs = allDocs
     return (a.data.order ?? 999) - (b.data.order ?? 999);
   });
 
-// Extract base slug helper function (removes language prefix)
-const getBaseSlug = (slug: string) => {
-  const parts = slug.split('/');
-  return parts.length > 1 ? parts[parts.length - 1] : slug;
-};
-
 // Group docs by category
 const docsByCategory = docs.reduce((acc, doc) => {
   const category = doc.data.category || 'Other';
@@ -40,7 +35,7 @@ const docsByCategory = docs.reduce((acc, doc) => {
 const categories = Object.keys(docsByCategory).sort();
 
 // Get current doc slug for active state
-const currentSlug = currentUrl.split('/').pop();
+const currentSlug = getBaseSlug(currentUrl);
 
 // Get translator
 const { t } = createTranslator(currentLang);
@@ -217,8 +212,6 @@ const categoryStates = categories.map(category => {
 
         const button = item.querySelector('.category-header');
         const category = item.dataset.category;
-        const _itemCount = parseInt(item.dataset.itemCount, 10);
-        const _isActive = item.dataset.isActive === 'true';
 
         if (!button) return;
 

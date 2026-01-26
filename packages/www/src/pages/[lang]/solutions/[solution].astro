@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProblemSolutionSection from '../../../components/ProblemSolutionSection';
+import SolutionHero from '../../../components/SolutionHero.astro';
+import SolutionImage from '../../../components/SolutionImage.astro';
+import SolutionCTA from '../../../components/SolutionCTA.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+import { EXTERNAL_LINKS } from '../../../config/constants';
+import { SOLUTIONS, SOLUTION_SLUGS, type SolutionSlug } from '../../../config/solutions';
+import ctaImage from '../../../assets/images/rediacc_resources_repos.png';
+import '../../../styles/solution-page.css';
+
+export async function getStaticPaths() {
+  const paths = [];
+  for (const lang of SUPPORTED_LANGUAGES) {
+    for (const solution of SOLUTION_SLUGS) {
+      paths.push({ params: { lang, solution }, props: { lang, solution } });
+    }
+  }
+  return paths;
+}
+
+const { lang, solution } = Astro.params as { lang: Language; solution: SolutionSlug };
+const config = SOLUTIONS[solution];
+const { t, to } = createTranslator(lang);
+
+const content = to(`pages.solutions.${config.contentKey}`);
+const metaPath = `pages.solutions.${config.contentKey}.meta`;
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${metaPath}.title`)}
+  description={t(`${metaPath}.description`)}
+  keywords={t(`${metaPath}.keywords`)}
+  ogType="website"
+>
+  <SolutionHero
+    title={content.hero.title}
+    subtitle={content.hero.subtitle}
+    heroImage={config.heroImage}
+    heroImageAlt={config.heroImageAlt}
+  />
+
+  {config.problemKeys.map((problemKey, index) => (
+    <ProblemSolutionSection
+      client:visible
+      number={index + 1}
+      title={content.problems[problemKey].title}
+      subtitle={content.problems[problemKey].subtitle}
+      problem={{
+        description: content.problems[problemKey].problem.description,
+        story: content.problems[problemKey].problem.story,
+        additionalPoints: content.problems[problemKey].problem.additionalPoints
+      }}
+      solution={{
+        title: content.problems[problemKey].solution.title,
+        description: content.problems[problemKey].solution.description,
+        benefits: content.problems[problemKey].solution.benefits
+      }}
+      variant={index % 2 === 0 ? 'light' : 'dark'}
+      cta={{
+        text: content.cta.button,
+        href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
+      }}
+      pageSlug={solution}
+    />
+  ))}
+
+  <SolutionImage
+    imageSrc={config.bottomImage}
+    imageAlt={config.bottomImageAlt}
+    variant={config.bottomImageVariant}
+  />
+
+  <SolutionCTA
+    title={content.cta.title}
+    subtitle={content.cta.subtitle}
+    buttonText={content.cta.button}
+    buttonHref={config.hasButtonHref ? `/${lang}/contact?interest=${solution}` : undefined}
+    imageSrc={ctaImage}
+    imageAlt={config.ctaImageAlt}
+    lang={lang}
+  />
+</BaseLayout>

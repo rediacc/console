@@ -92,15 +92,10 @@
       ],
       "project": ["src/**/*.{ts,tsx,astro}", "scripts/**/*.js"],
       "ignore": [
-        "public/scripts/**/*.js",
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",
         "scripts/generate-translation-hashes.js",
-        "src/components/EarlyAccess.tsx",
-        "src/components/GetInTouch.tsx",
-        "src/components/OptimizedImage.astro",
-        "src/components/Problem.tsx",
-        "src/components/VideoPlayer.tsx"
+        "src/components/Problem.tsx"
       ]
     }
   },

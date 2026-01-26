@@ -3,30 +3,21 @@ import { getCollection } from 'astro:content';
 import ContentLayout from '../../../layouts/ContentLayout.astro';
 import StructuredData from '../../../components/StructuredData.astro';
 import { DEFAULT_LANGUAGE } from '../../../i18n/language-utils';
-// SUPPORTED_LANGUAGES is not used in this file
 import type { Language } from '../../../i18n/types';
+import { getBaseSlug } from '../../../utils/slug';
+import { SITE_URL } from '../../../config/constants';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  const allPosts = await getCollection('blog');
-
   const paths = [];
 
-  // Generate paths for each post in each language
   for (const post of posts) {
     const lang = (post.data.language || DEFAULT_LANGUAGE) as Language;
-
-    // Extract just the slug without language prefix (e.g., "es/post-slug" -> "post-slug")
-    const slugParts = post.slug.split('/');
-    const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : post.slug;
+    const baseSlug = getBaseSlug(post.slug);
 
     // Find all translations of this post (match by base slug)
-    const translations = allPosts
-      .filter((p) => {
-        const pSlugParts = p.slug.split('/');
-        const pBaseSlug = pSlugParts.length > 1 ? pSlugParts[pSlugParts.length - 1] : p.slug;
-        return pBaseSlug === baseSlug;
-      })
+    const translations = posts
+      .filter((p) => getBaseSlug(p.slug) === baseSlug)
       .map((p) => ({
         lang: (p.data.language || DEFAULT_LANGUAGE) as Language,
         url: `/${p.data.language || DEFAULT_LANGUAGE}/blog/${baseSlug}`,
@@ -34,25 +25,22 @@ export async function getStaticPaths() {
 
     paths.push({
       params: { lang, slug: baseSlug },
-      props: { post, allPosts, translations },
+      props: { post, translations },
     });
   }
 
   return paths;
 }
 
-const { post, allPosts: _allPosts, translations } = Astro.props as {
+const { post, translations } = Astro.props as {
   post: any;
-  allPosts: any[];
   translations: Array<{ lang: Language; url: string }>;
 };
 
 const { Content } = await post.render();
 const currentLang = (post.data.language || DEFAULT_LANGUAGE) as Language;
 
-// Extract base slug without language prefix (e.g., "en/getting-started" -> "getting-started")
-const slugParts = post.slug.split('/');
-const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : post.slug;
+const baseSlug = getBaseSlug(post.slug);
 
 // Check if this is a fallback (English content shown for Spanish request)
 const isFallback = Astro.params.lang !== currentLang;
@@ -64,7 +52,6 @@ const isFallback = Astro.params.lang !== currentLang;
   currentLang={Astro.params.lang as Language}
   availableLanguages={translations}
   showFallbackNotice={isFallback}
-  collection="blog"
 >
   <Fragment slot="head">
     <StructuredData
@@ -76,7 +63,7 @@ const isFallback = Astro.params.lang !== currentLang;
         publishedDate: post.data.publishedDate.toISOString(),
         updatedDate: post.data.updatedDate?.toISOString(),
         image: post.data.image,
-        url: `https://www.rediacc.com/${Astro.params.lang}/blog/${baseSlug}`,
+        url: `${SITE_URL}/${Astro.params.lang}/blog/${baseSlug}`,
         language: currentLang,
         tags: post.data.tags,
         category: post.data.category
