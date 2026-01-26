@@ -36,6 +36,17 @@ const interest = Astro.url.searchParams.get('interest') || '';
     }
   }}
 >
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+        <h1 class="hero-title">{t('pages.contact.hero.title')}</h1>
+        <p class="hero-subtitle">
+          {t('pages.contact.hero.subtitle')}
+        </p>
+      </div>
+    </div>
+  </section>
+
   <section id="contact" class="contact-content">
     <div class="container">
       <div class="contact-grid">
@@ -95,6 +106,8 @@ const interest = Astro.url.searchParams.get('interest') || '';
                 name="email"
                 class="form-input"
                 autocomplete="email"
+                pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                title="Please enter a valid email address"
                 placeholder=" "
                 required
               />
