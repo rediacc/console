@@ -91,3 +91,14 @@ export function getLanguagePaths() {
     props: { lang },
   }));
 }
+
+/**
+ * Get locale string for Open Graph and hreflang
+ */
+export function getLocale(lang: Language): string {
+  const locales: Record<Language, string> = {
+    en: 'en_US', de: 'de_DE', es: 'es_ES', fr: 'fr_FR', ja: 'ja_JP',
+    ar: 'ar_SA', ru: 'ru_RU', tr: 'tr_TR', zh: 'zh_CN',
+  };
+  return locales[lang];
+}

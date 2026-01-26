@@ -3,7 +3,7 @@ import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
-import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
+import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale } from '../i18n/language-utils';
 import type { Language } from '../i18n/types';
 // ViewTransitions is now built-in in Astro 5+ via meta tag
 
@@ -40,19 +40,6 @@ const {
 // Detect language from URL or use provided lang prop
 const currentLang = lang || getLanguageFromPath(Astro.url.pathname);
 const { t } = createTranslator(currentLang);
-
-// Locale mapping for Open Graph and hreflang
-const LOCALE_MAPPING: Record<Language, string> = {
-  en: 'en_US',
-  de: 'de_DE',
-  es: 'es_ES',
-  fr: 'fr_FR',
-  ja: 'ja_JP',
-  ar: 'ar_SA',
-  ru: 'ru_RU',
-  tr: 'tr_TR',
-  zh: 'zh_CN'
-};
 
 // Set descriptions with fallback to defaults
 const finalDescription = description || t('layout.meta.defaultDescription');
@@ -97,7 +84,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <meta property="og:image:height" content="630">
     <meta property="og:url" content={canonicalURL}>
     <meta property="og:site_name" content={t('layout.meta.siteName')}>
-    <meta property="og:locale" content={LOCALE_MAPPING[currentLang]}>
+    <meta property="og:locale" content={getLocale(currentLang)}>
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
