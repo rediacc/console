@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   padding: max(var(--space-16), 8vh) var(--space-6);
-  background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
+  background: var(--gradient-dark);
   color: white;
 }
 
