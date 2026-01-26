@@ -1342,78 +1342,6 @@
   flex-wrap: wrap;
 }
 
-/* Professional Services Advanced Details (Collapsible) */
-.ps-advanced-details {
-  margin-top: var(--space-12);
-  background: rgba(0, 0, 0, var(--opacity-30));
-  border: 1px solid rgba(127, 160, 63, var(--opacity-30));
-  border-radius: var(--box-border-radius);
-  padding: 0;
-  overflow: hidden;
-}
-
-.ps-advanced-details summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-6);
-  background: rgba(127, 160, 63, var(--opacity-10));
-  transition: background-color var(--transition-duration-base);
-  user-select: none;
-}
-
-.ps-advanced-details summary:hover {
-  background: rgba(127, 160, 63, var(--opacity-15));
-}
-
-.ps-advanced-details summary:focus-visible {
-  outline: 3px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
-.ps-advanced-details summary::-webkit-details-marker {
-  display: none;
-}
-
-.summary-content h3 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  color: white;
-  margin: 0 0 var(--space-2) 0;
-}
-
-.summary-content .summary-description {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
-  color: rgba(255, 255, 255, var(--opacity-85));
-  display: block;
-}
-
-.ps-advanced-details summary .expand-icon {
-  flex-shrink: 0;
-  color: rgba(127, 160, 63, var(--opacity-90));
-  transition: transform var(--transition-duration-slow) ease;
-  margin-inline-start: var(--space-4);
-}
-
-.ps-advanced-details[open] summary .expand-icon {
-  transform: rotate(180deg);
-}
-
-.ps-advanced-details[open] summary {
-  border-bottom: 1px solid rgba(127, 160, 63, var(--opacity-30));
-}
-
-.ps-advanced-content {
-  padding: var(--space-8) var(--space-6);
-}
-
-.ps-advanced-content > * + * {
-  margin-top: var(--space-12);
-}
-
 /* Technical Details Section */
 .technical-details {
   padding: var(--section-padding);
@@ -1465,25 +1393,9 @@
     grid-template-columns: 1fr;
   }
 
-  .services-section,
   .faq-section,
   .pricing-cta {
     padding: var(--space-16) var(--space-4);
-  }
-
-  .ps-advanced-details summary {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-3);
-  }
-
-  .ps-advanced-details summary .expand-icon {
-    align-self: flex-end;
-    margin-inline-start: 0;
-  }
-
-  .ps-advanced-content {
-    padding: var(--space-6) var(--space-4);
   }
 
   .ps-teaser-section {
