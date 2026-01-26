@@ -41,8 +41,8 @@ VM_RAM="${VM_RAM:-4096}"
 VM_CPU="${VM_CPU:-2}"
 VM_NET="${VM_NET:-default}"
 
-# Build directory for temporary files
-BUILD_DIR="${RUNNER_TEMP:-/tmp}/rediacc-image-build-$$"
+# Build directory for temporary files (use /tmp for libvirt-qemu access)
+BUILD_DIR="/tmp/rediacc-image-build-$$"
 
 # Require renet binary
 require_cmd "$RENET_BINARY" "renet binary not found at $RENET_BINARY"
