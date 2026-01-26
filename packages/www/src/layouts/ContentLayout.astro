@@ -7,6 +7,7 @@ import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { generateTOCFromMarkdown } from '../utils/sidebar-behavior';
 import '../styles/sidebar-shared.css';
+import '../styles/article-content.css';
 
 interface Props {
   frontmatter: {
@@ -260,110 +261,6 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
     .article-content {
       min-width: 0;
       overflow-wrap: break-word;
-    }
-
-    .article-content h2,
-    .article-content h3,
-    .article-content h4,
-    .article-content h5,
-    .article-content h6 {
-      margin: var(--space-8) 0 var(--space-4) 0;
-      scroll-margin-top: calc(var(--nav-height) + var(--space-8));
-    }
-
-    .article-content h2 {
-      font-size: var(--font-size-2xl);
-      border-bottom: 2px solid var(--color-border);
-      padding-bottom: var(--space-2);
-    }
-
-    .article-content h3 {
-      font-size: var(--font-size-xl);
-    }
-
-    .article-content p {
-      margin: var(--space-4) 0;
-      line-height: var(--leading-loose);
-    }
-
-    .article-content code {
-      background-color: var(--color-bg-light);
-      padding: var(--space-1) var(--space-2);
-      border-radius: var(--radius-sm);
-      font-family: var(--font-family-mono);
-      font-size: 0.9em;
-    }
-
-    .article-content pre {
-      background-color: var(--color-bg-light);
-      padding: var(--space-4);
-      border-radius: var(--radius-md);
-      overflow-x: auto;
-      margin: var(--space-4) 0;
-      tab-size: 4;
-      scrollbar-width: thin;
-      scrollbar-color: var(--color-border) transparent;
-    }
-
-    .article-content pre code {
-      background-color: transparent;
-      padding: 0;
-    }
-
-    .article-content blockquote {
-      border-inline-start: 4px solid var(--color-text);
-      padding-inline-start: var(--space-4);
-      margin: var(--space-4) 0;
-      color: var(--color-text-secondary);
-      font-style: italic;
-    }
-
-    .article-content ul,
-    .article-content ol {
-      margin: var(--space-4) 0;
-      padding-inline-start: var(--space-8);
-    }
-
-    .article-content li {
-      margin: var(--space-2) 0;
-      line-height: var(--leading-loose);
-    }
-
-    .article-content table {
-      display: block;
-      overflow-x: auto;
-      border-collapse: collapse;
-      margin: var(--space-4) 0;
-      scrollbar-width: thin;
-      scrollbar-color: var(--color-border) transparent;
-    }
-
-    .article-content th,
-    .article-content td {
-      border: 1px solid var(--color-border);
-      padding: var(--space-3);
-      text-align: start;
-    }
-
-    .article-content th {
-      background-color: var(--color-bg-light);
-      font-weight: var(--font-weight-semibold);
-    }
-
-    .article-content a {
-      color: var(--color-brand-primary);
-      text-decoration: none;
-      transition: color var(--transition-duration-base) ease;
-    }
-
-    .article-content a:hover {
-      text-decoration: underline;
-    }
-
-    .article-content a:focus-visible {
-      outline: 2px solid var(--color-brand-primary);
-      outline-offset: 2px;
-      border-radius: var(--radius-sm);
     }
 
     @media (max-width: 48rem) {
