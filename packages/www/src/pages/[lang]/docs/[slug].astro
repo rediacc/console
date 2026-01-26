@@ -7,18 +7,14 @@ import { getBaseSlug } from '../../../utils/slug';
 
 export async function getStaticPaths() {
   const docs = await getCollection('docs');
-  const allDocs = await getCollection('docs');
-
   const paths = [];
 
-  // Generate paths for each doc in each language
   for (const doc of docs) {
     const lang = (doc.data.language || DEFAULT_LANGUAGE) as Language;
-
     const baseSlug = getBaseSlug(doc.slug);
 
     // Find all translations of this doc (match by base slug)
-    const translations = allDocs
+    const translations = docs
       .filter((d) => getBaseSlug(d.slug) === baseSlug)
       .map((d) => ({
         lang: (d.data.language || DEFAULT_LANGUAGE) as Language,
@@ -27,16 +23,15 @@ export async function getStaticPaths() {
 
     paths.push({
       params: { lang, slug: baseSlug },
-      props: { doc, allDocs, translations },
+      props: { doc, translations },
     });
   }
 
   return paths;
 }
 
-const { doc, allDocs: _allDocs, translations } = Astro.props as {
+const { doc, translations } = Astro.props as {
   doc: any;
-  allDocs: any[];
   translations: Array<{ lang: Language; url: string }>;
 };
 

@@ -9,18 +9,14 @@ import { SITE_URL } from '../../../config/constants';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  const allPosts = await getCollection('blog');
-
   const paths = [];
 
-  // Generate paths for each post in each language
   for (const post of posts) {
     const lang = (post.data.language || DEFAULT_LANGUAGE) as Language;
-
     const baseSlug = getBaseSlug(post.slug);
 
     // Find all translations of this post (match by base slug)
-    const translations = allPosts
+    const translations = posts
       .filter((p) => getBaseSlug(p.slug) === baseSlug)
       .map((p) => ({
         lang: (p.data.language || DEFAULT_LANGUAGE) as Language,
@@ -29,16 +25,15 @@ export async function getStaticPaths() {
 
     paths.push({
       params: { lang, slug: baseSlug },
-      props: { post, allPosts, translations },
+      props: { post, translations },
     });
   }
 
   return paths;
 }
 
-const { post, allPosts: _allPosts, translations } = Astro.props as {
+const { post, translations } = Astro.props as {
   post: any;
-  allPosts: any[];
   translations: Array<{ lang: Language; url: string }>;
 };
 
@@ -57,7 +52,6 @@ const isFallback = Astro.params.lang !== currentLang;
   currentLang={Astro.params.lang as Language}
   availableLanguages={translations}
   showFallbackNotice={isFallback}
-  collection="blog"
 >
   <Fragment slot="head">
     <StructuredData
