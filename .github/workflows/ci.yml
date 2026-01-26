@@ -409,20 +409,87 @@ jobs:
           echo "All CI jobs passed successfully!"
 
   # ============================================================================
-  # RERUN TESTS ON FAILURE - Auto-retry flaky tests (max 3 attempts)
+  # RERUN TESTS ON FAILURE - Auto-retry flaky jobs (max 3 attempts)
+  # Runs 3 sequential 10-minute windows after cancel-watchdog completes,
+  # monitoring for failures and triggering reruns as needed.
   # ============================================================================
   rerun-tests-on-failure:
-    name: Rerun Tests on Failure
-    runs-on: ubuntu-latest
-    needs: [tests]
-    if: failure() && fromJSON(github.run_attempt) < 3
+    name: Rerun on Failure (${{ matrix.window }}/3)
+    runs-on: ubuntu-slim
+    needs: [cancel-watchdog]
+    if: always() && !cancelled() && fromJSON(github.run_attempt) < 3
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        window: [1, 2, 3]
     steps:
-      - name: Trigger rerun of failed jobs
-        env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "Tests failed on attempt ${{ github.run_attempt }}/3"
-          echo "Triggering rerun of failed jobs..."
-          gh workflow run rerun-failed.yml -F run_id=${{ github.run_id }}
+      - name: Monitor for failures and trigger rerun
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        with:
+          script: |
+            const pollInterval = 10000; // 10 seconds
+            const maxRuntime = 600000;  // 10 minutes max per window
+            const startTime = Date.now();
+            const window = ${{ matrix.window }};
+
+            console.log(`Retry monitor window ${window}/3 started (attempt ${{ github.run_attempt }}/3)`);
+
+            while (Date.now() - startTime < maxRuntime) {
+              const elapsed = Date.now() - startTime;
+              const elapsedSec = Math.round(elapsed / 1000);
+
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId
+              });
+
+              // Filter out retry monitor jobs and watchdog
+              const otherJobs = jobs.jobs.filter(j =>
+                !j.name.includes('Rerun on Failure') &&
+                !j.name.includes('Watchdog')
+              );
+
+              const completed = otherJobs.filter(j => j.status === 'completed').length;
+              const failed = otherJobs.filter(j => j.conclusion === 'failure');
+              const inProgress = otherJobs.filter(j => j.status === 'in_progress').length;
+              const queued = otherJobs.filter(j => j.status === 'queued').length;
+
+              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued, ${failed.length} failed`);
+
+              if (failed.length > 0) {
+                console.log('');
+                console.log('='.repeat(70));
+                console.log('FAILURE DETECTED - Triggering rerun of failed jobs');
+                failed.forEach(job => {
+                  console.log(`  - ${job.name}`);
+                });
+                console.log('='.repeat(70));
+
+                // Trigger rerun using gh CLI via workflow
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: 'rerun-failed.yml',
+                  ref: context.ref,
+                  inputs: {
+                    run_id: String(context.runId)
+                  }
+                });
+
+                console.log('Rerun triggered successfully');
+                return;
+              }
+
+              // If all jobs completed successfully, exit
+              if (inProgress === 0 && queued === 0) {
+                console.log('All jobs completed - no failures detected');
+                return;
+              }
+
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+
+            console.log(`Window ${window}/3 completed - passing to next window`);
 
