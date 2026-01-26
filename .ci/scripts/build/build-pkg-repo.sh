@@ -237,12 +237,20 @@ else
 
     # Generate Release file
     log_info "Generating Release file..."
+
+    # Compute date outside the block to avoid shell expansion issues
+    if [[ -n "${SOURCE_DATE_EPOCH:-}" ]]; then
+        RELEASE_DATE=$(date -u -d "@$SOURCE_DATE_EPOCH" -R 2>/dev/null || date -Ru)
+    else
+        RELEASE_DATE=$(date -Ru)
+    fi
+
     {
         echo "Origin: Rediacc"
         echo "Label: Rediacc CLI Repository"
         echo "Suite: stable"
         echo "Codename: stable"
-        echo "Date: $(if [ -n "$SOURCE_DATE_EPOCH" ]; then date -u -d "@$SOURCE_DATE_EPOCH" -R; else date -Ru; fi)"
+        echo "Date: $RELEASE_DATE"
         echo "Architectures: amd64 arm64"
         echo "Components: main"
         echo "Description: Rediacc CLI package repository"
