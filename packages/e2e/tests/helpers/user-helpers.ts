@@ -1,9 +1,9 @@
 import { expect, type Page } from '@playwright/test';
-import { LoginPage } from '../../pages/auth/LoginPage';
-import { UserPageIDs } from '../../pages/user/UserPageIDs';
-import { NavigationHelper } from '../../src/helpers/NavigationHelper';
-import { loadGlobalState } from '../../src/setup/global-state';
-import { TestDataManager, type CreatedUser } from '../../src/utils/data/TestDataManager';
+import { NavigationHelper } from '@/helpers/NavigationHelper';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { UserPageIDs } from '@/pages/user/UserPageIDs';
+import { loadGlobalState } from '@/setup/global-state';
+import { TestDataManager, type CreatedUser } from '@/utils/data/TestDataManager';
 
 /* eslint-disable sonarjs/cognitive-complexity -- Complex user creation flow with multiple fallback strategies */
 export async function createUserViaUI(

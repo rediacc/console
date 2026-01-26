@@ -1,6 +1,6 @@
-import { electronTest, expect, isElectronProject } from '../../src/electron/ElectronFixture';
+import { electronTest, expect, isElectronProject } from '@/electron/ElectronFixture';
 // Import types to augment Window with electronAPI
-import '../../src/electron/types';
+import '@/electron/types';
 
 /**
  * Electron-specific tests for IPC and native functionality.
