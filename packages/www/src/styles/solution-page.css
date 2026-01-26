@@ -280,16 +280,6 @@
   margin-inline: auto;
 }
 
-.subtitle-attribution {
-  display: block;
-  font-size: 0.75em;
-  color: var(--color-text-secondary); /* Changed from #999 for WCAG AA contrast (5.74:1 ratio) */
-  font-weight: var(--font-weight-normal);
-  text-align: end;
-  margin-top: var(--space-2);
-  white-space: nowrap;
-}
-
 .story-box-featured {
   background: var(--color-hover);
   border-inline-start: 4px solid var(--color-brand-primary);
@@ -310,11 +300,6 @@
 
 .problem-solution-section.dark .section-subtitle {
   color: rgba(255, 255, 255, var(--opacity-80));
-}
-
-.problem-solution-section.dark .subtitle-attribution {
-  color: rgba(255, 255, 255, var(--opacity-80));
-  text-align: end;
 }
 
 .problem-solution-grid {
@@ -405,30 +390,6 @@
 
 .problem-solution-section.dark .story-text {
   color: rgba(255, 193, 7, var(--opacity-90));
-}
-
-.story-text .citation {
-  font-size: 0.75em;
-  font-style: normal;
-  text-decoration: none;
-  color: var(--color-brand-secondary);
-  vertical-align: super;
-  margin-inline-start: var(--space-1);
-  font-weight: var(--font-weight-semibold);
-}
-
-.problem-solution-section.dark .story-text .citation {
-  color: var(--color-brand-primary);
-}
-
-.story-text .citation:hover {
-  text-decoration: underline;
-}
-
-.story-text .citation:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
 }
 
 .additional-points {
@@ -602,13 +563,6 @@
   .section-subtitle {
     white-space: normal;
     max-width: var(--container-xs);
-  }
-
-  .subtitle-attribution {
-    display: block;
-    width: 100%;
-    margin-top: var(--space-2);
-    text-align: end;
   }
 
   .hero-title,
