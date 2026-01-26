@@ -39,13 +39,17 @@ RENET_BINARY="${RENET_BINARY:-/tmp/renet}"
 # VM configuration (matches renet defaults)
 VM_RAM="${VM_RAM:-4096}"
 VM_CPU="${VM_CPU:-2}"
-VM_NET="${VM_NET:-renet11}"
+VM_NET="${VM_NET:-default}"
 
 # Build directory for temporary files
 BUILD_DIR="${RUNNER_TEMP:-/tmp}/rediacc-image-build-$$"
 
 # Require renet binary
 require_cmd "$RENET_BINARY" "renet binary not found at $RENET_BINARY"
+
+# Ensure default network is active (created by libvirt installation)
+log_info "Ensuring libvirt default network is active..."
+sudo virsh net-start default 2>/dev/null || true
 
 log_step "Building VM image with renet setup"
 log_info "Base image: $BASE_IMAGE_NAME"
