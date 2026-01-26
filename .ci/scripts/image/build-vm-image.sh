@@ -147,9 +147,6 @@ chpasswd:
 
 ssh_pwauth: true
 
-runcmd:
-  - mkdir -p /tmp/renet
-  - chmod 755 /tmp/renet
 EOF
 
 cat > "$META_DATA" << EOF
