@@ -32,6 +32,56 @@ env:
 
 jobs:
   # ============================================================================
+  # BUILD VM DISK IMAGE: Pre-build VM image with renet setup
+  # Builds a custom VM image with Docker, CRIU, and packages pre-installed.
+  # This reduces disk space usage in infra-backend by avoiding on-the-fly builds.
+  # ============================================================================
+  build-disk-image:
+    name: Build VM Disk Image
+    runs-on: ubuntu-latest
+    if: inputs.provision_vms
+    timeout-minutes: 30
+    outputs:
+      image-name: ${{ steps.build.outputs.image-name }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+
+      - name: Build VM Image
+        id: build
+        run: |
+          .ci/scripts/image/build-vm-image.sh --output "$RUNNER_TEMP/vm-image"
+          IMAGE_PATH=$(ls $RUNNER_TEMP/vm-image/*.img | head -1)
+          IMAGE_NAME=$(basename "$IMAGE_PATH")
+          echo "image-name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Built image: $IMAGE_NAME ($(du -h "$IMAGE_PATH" | cut -f1))"
+
+      - name: Upload VM Image Artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: vm-disk-image
+          path: ${{ runner.temp }}/vm-image/*.img
+          retention-days: 1
+          compression-level: 0  # Already compressed qcow2
+
+  # ============================================================================
   # GATEWAY JOB: Wait for tunnel-url artifact
   # Lightweight job that waits for infra-backend to upload the tunnel URL.
   # Test jobs depend on this instead of polling independently, saving runner minutes.
@@ -53,6 +103,9 @@ jobs:
 
   infra-backend:
     name: Infra - Backend
+    needs: [build-disk-image]
+    # Run if: (a) build succeeded when provision_vms=true, or (b) provision_vms=false (skipped build)
+    if: always() && (needs.build-disk-image.result == 'success' || needs.build-disk-image.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -138,6 +191,14 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
 
       # VM Provisioning (conditional - only when provision_vms is true and KVM is available)
+      # Download pre-built VM image (built in build-disk-image job)
+      - name: Download VM Image Artifact
+        if: inputs.provision_vms
+        uses: actions/download-artifact@v4
+        with:
+          name: vm-disk-image
+          path: ${{ runner.temp }}/vm-image
+
       - name: Check KVM Availability
         id: kvm-check
         if: inputs.provision_vms
@@ -165,6 +226,8 @@ jobs:
       - name: Provision VMs
         if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
         env:
+          # Use pre-built image from build-disk-image job
+          REDIACC_OPS_DISKS_PATH: ${{ runner.temp }}/vm-image
           VM_NET_BASE: '192.168.111'
           VM_NET_OFFSET: '0'
           VM_BRIDGE: '1'
