@@ -1,16 +1,6 @@
-import type { Language } from './types';
+import { LANGUAGES, type Language } from './types';
 
-export const SUPPORTED_LANGUAGES: Language[] = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-] as const;
+export const SUPPORTED_LANGUAGES = LANGUAGES;
 export const DEFAULT_LANGUAGE: Language = 'en';
 
 /**

@@ -1,4 +1,5 @@
 import { defineCollection, z } from 'astro:content';
+import { LANGUAGES } from '../i18n/types';
 
 const blogCollection = defineCollection({
   type: 'content',
@@ -12,7 +13,7 @@ const blogCollection = defineCollection({
     tags: z.array(z.string()),
     featured: z.boolean().default(false),
     image: z.string().optional(),
-    language: z.enum(['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh']).default('en'),
+    language: z.enum(LANGUAGES).default('en'),
   }),
 });
 
@@ -24,7 +25,7 @@ const docsCollection = defineCollection({
     category: z.string(),
     order: z.number().optional(),
     toc: z.boolean().default(true),
-    language: z.enum(['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh']).default('en'),
+    language: z.enum(LANGUAGES).default('en'),
   }),
 });
 
