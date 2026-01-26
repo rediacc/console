@@ -3,8 +3,8 @@ import { getCollection } from 'astro:content';
 import ContentLayout from '../../../layouts/ContentLayout.astro';
 import StructuredData from '../../../components/StructuredData.astro';
 import { DEFAULT_LANGUAGE } from '../../../i18n/language-utils';
-// SUPPORTED_LANGUAGES is not used in this file
 import type { Language } from '../../../i18n/types';
+import { getBaseSlug } from '../../../utils/slug';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -16,17 +16,11 @@ export async function getStaticPaths() {
   for (const post of posts) {
     const lang = (post.data.language || DEFAULT_LANGUAGE) as Language;
 
-    // Extract just the slug without language prefix (e.g., "es/post-slug" -> "post-slug")
-    const slugParts = post.slug.split('/');
-    const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : post.slug;
+    const baseSlug = getBaseSlug(post.slug);
 
     // Find all translations of this post (match by base slug)
     const translations = allPosts
-      .filter((p) => {
-        const pSlugParts = p.slug.split('/');
-        const pBaseSlug = pSlugParts.length > 1 ? pSlugParts[pSlugParts.length - 1] : p.slug;
-        return pBaseSlug === baseSlug;
-      })
+      .filter((p) => getBaseSlug(p.slug) === baseSlug)
       .map((p) => ({
         lang: (p.data.language || DEFAULT_LANGUAGE) as Language,
         url: `/${p.data.language || DEFAULT_LANGUAGE}/blog/${baseSlug}`,
@@ -50,9 +44,7 @@ const { post, allPosts: _allPosts, translations } = Astro.props as {
 const { Content } = await post.render();
 const currentLang = (post.data.language || DEFAULT_LANGUAGE) as Language;
 
-// Extract base slug without language prefix (e.g., "en/getting-started" -> "getting-started")
-const slugParts = post.slug.split('/');
-const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : post.slug;
+const baseSlug = getBaseSlug(post.slug);
 
 // Check if this is a fallback (English content shown for Spanish request)
 const isFallback = Astro.params.lang !== currentLang;

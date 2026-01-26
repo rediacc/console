@@ -2,8 +2,8 @@
 import { getCollection } from 'astro:content';
 import DocsLayout from '../../../layouts/DocsLayout.astro';
 import { DEFAULT_LANGUAGE } from '../../../i18n/language-utils';
-// SUPPORTED_LANGUAGES is not used in this file
 import type { Language } from '../../../i18n/types';
+import { getBaseSlug } from '../../../utils/slug';
 
 export async function getStaticPaths() {
   const docs = await getCollection('docs');
@@ -15,17 +15,11 @@ export async function getStaticPaths() {
   for (const doc of docs) {
     const lang = (doc.data.language || DEFAULT_LANGUAGE) as Language;
 
-    // Extract just the slug without language prefix (e.g., "es/cli-ref" -> "cli-ref")
-    const slugParts = doc.slug.split('/');
-    const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : doc.slug;
+    const baseSlug = getBaseSlug(doc.slug);
 
     // Find all translations of this doc (match by base slug)
     const translations = allDocs
-      .filter((d) => {
-        const dSlugParts = d.slug.split('/');
-        const dBaseSlug = dSlugParts.length > 1 ? dSlugParts[dSlugParts.length - 1] : d.slug;
-        return dBaseSlug === baseSlug;
-      })
+      .filter((d) => getBaseSlug(d.slug) === baseSlug)
       .map((d) => ({
         lang: (d.data.language || DEFAULT_LANGUAGE) as Language,
         url: `/${d.data.language || DEFAULT_LANGUAGE}/docs/${baseSlug}`,
@@ -49,9 +43,7 @@ const { doc, allDocs: _allDocs, translations } = Astro.props as {
 const { Content } = await doc.render();
 const currentLang = (doc.data.language || DEFAULT_LANGUAGE) as Language;
 
-// Extract base slug without language prefix (e.g., "en/queue-system" -> "queue-system")
-const slugParts = doc.slug.split('/');
-const baseSlug = slugParts.length > 1 ? slugParts[slugParts.length - 1] : doc.slug;
+const baseSlug = getBaseSlug(doc.slug);
 
 // Check if this is a fallback (English content shown for Spanish request)
 const isFallback = Astro.params.lang !== currentLang;
