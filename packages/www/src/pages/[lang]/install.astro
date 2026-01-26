@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
+import { SITE_URL } from '../../config/constants';
 import '../../styles/install-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -10,7 +11,7 @@ export const getStaticPaths = getLanguagePaths;
 const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
 
-const REPO_URL = 'https://www.rediacc.com';
+const REPO_URL = SITE_URL;
 ---
 
 <BaseLayout

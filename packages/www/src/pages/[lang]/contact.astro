@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import GetInTouch from '../../components/GetInTouch.astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
-import { CONTACT_EMAIL } from '../../config/constants';
+import { CONTACT_EMAIL, SITE_URL } from '../../config/constants';
 import type { Language } from '../../i18n/types';
 
 export const getStaticPaths = getLanguagePaths;
@@ -27,7 +27,7 @@ const interest = Astro.url.searchParams.get('interest') || '';
       '@type': 'ContactPoint',
       contactType: 'Customer Service',
       email: CONTACT_EMAIL,
-      url: 'https://www.rediacc.com/contact'
+      url: `${SITE_URL}/contact`
     }
   }}
 >

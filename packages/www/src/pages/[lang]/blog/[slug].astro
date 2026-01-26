@@ -5,6 +5,7 @@ import StructuredData from '../../../components/StructuredData.astro';
 import { DEFAULT_LANGUAGE } from '../../../i18n/language-utils';
 import type { Language } from '../../../i18n/types';
 import { getBaseSlug } from '../../../utils/slug';
+import { SITE_URL } from '../../../config/constants';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -68,7 +69,7 @@ const isFallback = Astro.params.lang !== currentLang;
         publishedDate: post.data.publishedDate.toISOString(),
         updatedDate: post.data.updatedDate?.toISOString(),
         image: post.data.image,
-        url: `https://www.rediacc.com/${Astro.params.lang}/blog/${baseSlug}`,
+        url: `${SITE_URL}/${Astro.params.lang}/blog/${baseSlug}`,
         language: currentLang,
         tags: post.data.tags,
         category: post.data.category
