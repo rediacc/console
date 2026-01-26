@@ -2,16 +2,11 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import GetInTouch from '../../components/GetInTouch.astro';
 import { createTranslator } from '../../i18n/utils';
-import { SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
 import { CONTACT_EMAIL } from '../../config/constants';
 import type { Language } from '../../i18n/types';
 
-export async function getStaticPaths() {
-  return SUPPORTED_LANGUAGES.map((lang) => ({
-    params: { lang },
-    props: { lang },
-  }));
-}
+export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);

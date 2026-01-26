@@ -81,3 +81,13 @@ export function getLanguageFlag(lang: Language): string {
   };
   return flags[lang];
 }
+
+/**
+ * Generate static paths for language-prefixed pages (used in Astro getStaticPaths)
+ */
+export function getLanguagePaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
