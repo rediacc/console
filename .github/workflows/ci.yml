@@ -468,12 +468,15 @@ jobs:
                 });
                 console.log('='.repeat(70));
 
-                // Trigger rerun using gh CLI via workflow
+                // Trigger rerun - use head branch for PRs, or default branch for push
+                const ref = context.payload.pull_request?.head?.ref || context.ref.replace('refs/heads/', '');
+                console.log(`Dispatching rerun-failed.yml on ref: ${ref}`);
+
                 await github.rest.actions.createWorkflowDispatch({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   workflow_id: 'rerun-failed.yml',
-                  ref: context.ref,
+                  ref: ref,
                   inputs: {
                     run_id: String(context.runId)
                   }
