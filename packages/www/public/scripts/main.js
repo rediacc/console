@@ -8,9 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSmoothScrolling();
   initFormValidation();
   initMessageOverlay();
-
-  // Add loading states
-  document.body.classList.add('loaded');
+  initScrollHighlighting();
 });
 
 // Smooth scrolling for navigation links
@@ -333,100 +331,4 @@ function initScrollHighlighting() {
   }, 100);
 
   window.addEventListener('scroll', highlightNavigation);
-}
-
-// Initialize scroll highlighting
-document.addEventListener('DOMContentLoaded', () => {
-  initScrollHighlighting();
-});
-
-// Form enhancement for better UX
-function initFormEnhancements() {
-  const form = document.querySelector('.form');
-  if (!form) return; // Skip if no form exists on the page
-
-  // Auto-format phone numbers (if added later)
-  const phoneInputs = form.querySelectorAll('input[type="tel"]');
-  phoneInputs.forEach((input) => {
-    input.addEventListener('input', (e) => {
-      // Remove all non-digits
-      let value = e.target.value.replaceAll(/\D/g, '');
-
-      // Format as (XXX) XXX-XXXX
-      if (value.length >= 6) {
-        value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
-      } else if (value.length >= 3) {
-        value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
-      }
-
-      e.target.value = value;
-    });
-  });
-
-  // Note: Character counter removed to prevent React hydration mismatch
-  // If needed in future, implement it in React component instead
-}
-
-// Initialize form enhancements
-document.addEventListener('DOMContentLoaded', () => {
-  initFormEnhancements();
-});
-
-// Accessibility improvements
-function initAccessibilityFeatures() {
-  // Skip to main content link
-  const skipLink = document.createElement('a');
-  skipLink.href = '#hero';
-  skipLink.textContent = 'Skip to main content';
-  skipLink.className = 'sr-only';
-  skipLink.addEventListener('focus', function () {
-    this.classList.remove('sr-only');
-  });
-  skipLink.addEventListener('blur', function () {
-    this.classList.add('sr-only');
-  });
-
-  document.body.insertBefore(skipLink, document.body.firstChild);
-
-  // Announce form errors to screen readers
-  const form = document.querySelector('.form');
-  if (form) {
-    const errorAnnouncer = document.createElement('div');
-    errorAnnouncer.setAttribute('aria-live', 'polite');
-    errorAnnouncer.setAttribute('aria-atomic', 'true');
-    errorAnnouncer.className = 'sr-only';
-    errorAnnouncer.id = 'error-announcer';
-
-    form.appendChild(errorAnnouncer);
-  }
-}
-
-// Initialize accessibility features
-document.addEventListener('DOMContentLoaded', () => {
-  initAccessibilityFeatures();
-});
-
-// Progressive enhancement check
-if ('IntersectionObserver' in window) {
-  // Add fade-in animations for elements coming into view
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px',
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('fade-in');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // Observe sections for animation
-  // Note: Removed .early-access-text to prevent React hydration mismatch
-  document.addEventListener('DOMContentLoaded', () => {
-    const animatedElements = document.querySelectorAll('.solution-card, .timeline-item');
-    animatedElements.forEach((el) => observer.observe(el));
-  });
 }

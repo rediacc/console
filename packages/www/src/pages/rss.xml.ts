@@ -1,6 +1,7 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import { SITE_URL } from '../config/constants';
+import { getBaseSlug } from '../utils/slug';
 import type { APIContext } from 'astro';
 
 export async function GET(context: APIContext) {
@@ -15,17 +16,14 @@ export async function GET(context: APIContext) {
     title: 'Rediacc Blog',
     description: 'Infrastructure automation, disaster recovery, and system portability insights',
     site: context.site ?? SITE_URL,
-    items: englishPosts.map((post) => {
-      const slug = post.slug.split('/').pop() ?? post.slug;
-      return {
-        title: post.data.title,
-        description: post.data.description,
-        link: `/en/blog/${slug}`,
-        pubDate: post.data.publishedDate,
-        author: post.data.author,
-        categories: [...post.data.tags, post.data.category],
-      };
-    }),
+    items: englishPosts.map((post) => ({
+      title: post.data.title,
+      description: post.data.description,
+      link: `/en/blog/${getBaseSlug(post.slug)}`,
+      pubDate: post.data.publishedDate,
+      author: post.data.author,
+      categories: [...post.data.tags, post.data.category],
+    })),
     customData: '<language>en</language>',
     stylesheet: false,
   });

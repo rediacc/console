@@ -1,16 +1,6 @@
-import type { Language } from './types';
+import { LANGUAGES, type Language } from './types';
 
-export const SUPPORTED_LANGUAGES: Language[] = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-] as const;
+export const SUPPORTED_LANGUAGES = LANGUAGES;
 export const DEFAULT_LANGUAGE: Language = 'en';
 
 /**
@@ -80,4 +70,32 @@ export function getLanguageFlag(lang: Language): string {
     zh: '🇨🇳',
   };
   return flags[lang];
+}
+
+/**
+ * Generate static paths for language-prefixed pages (used in Astro getStaticPaths)
+ */
+export function getLanguagePaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+/**
+ * Get locale string for Open Graph and hreflang
+ */
+export function getLocale(lang: Language): string {
+  const locales: Record<Language, string> = {
+    en: 'en_US',
+    de: 'de_DE',
+    es: 'es_ES',
+    fr: 'fr_FR',
+    ja: 'ja_JP',
+    ar: 'ar_SA',
+    ru: 'ru_RU',
+    tr: 'tr_TR',
+    zh: 'zh_CN',
+  };
+  return locales[lang];
 }

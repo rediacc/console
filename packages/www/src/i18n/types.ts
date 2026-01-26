@@ -13,6 +13,7 @@ export type PathValue<T, P extends string> = P extends `${infer K}.${infer R}`
     ? T[P]
     : unknown;
 
-export type Language = 'en' | 'de' | 'es' | 'fr' | 'ja' | 'ar' | 'ru' | 'tr' | 'zh';
+export const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
+export type Language = (typeof LANGUAGES)[number];
 
 export type InterpolationParams = Record<string, string | number>;

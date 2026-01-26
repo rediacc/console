@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
-import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
+import { SITE_URL } from '../config/constants';
 
 const { t } = createTranslator();
 
@@ -14,19 +14,11 @@ const breadcrumbItems = [
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  'name': '404 - Page Not Found',
-  'description': 'The requested page could not be found on this website.',
-  'url': 'https://www.rediacc.com/404',
-  'mainEntity': {
-    '@type': 'Thing',
-    'name': 'Page Not Found Error',
-    'description': 'HTTP 404 error indicating the requested resource was not found'
-  },
-  'isPartOf': {
-    '@type': 'WebSite',
-    'name': 'Rediacc - Infrastructure Automation Platform',
-    'url': 'https://www.rediacc.com'
-  }
+  name: '404 - Page Not Found',
+  description: 'The requested page could not be found on this website.',
+  url: `${SITE_URL}/404`,
+  mainEntity: { '@type': 'Thing', name: 'Page Not Found Error', description: 'HTTP 404 error indicating the requested resource was not found' },
+  isPartOf: { '@type': 'WebSite', name: 'Rediacc - Infrastructure Automation Platform', url: SITE_URL }
 };
 ---
 
@@ -37,7 +29,7 @@ const structuredData = {
   ogType="website"
   structuredDataType="organization"
   robots="noindex, nofollow, noarchive, nosnippet"
-  canonical="https://www.rediacc.com/404"
+  canonical={`${SITE_URL}/404`}
 >
   <Fragment slot="head">
     <!-- Custom structured data for 404 page -->
@@ -74,7 +66,6 @@ const structuredData = {
               <li>Go back to the <a href="/">{t('pages.notFound.suggestions.links.homepage')}</a></li>
               <li>Learn about our <a href="/#solutions">{t('pages.notFound.suggestions.links.solutions')}</a></li>
               <li>Get in touch through our <a href="/contact">{t('pages.notFound.suggestions.links.contact')}</a></li>
-              <li>Request <a href="/#early-access">{t('pages.notFound.suggestions.links.earlyAccess')}</a> to our platform</li>
             </ul>
           </div>
 

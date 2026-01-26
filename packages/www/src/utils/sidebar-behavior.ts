@@ -7,6 +7,8 @@
  * - Active state tracking
  */
 
+import { stringToSlug } from './slug';
+
 /**
  * Represents a heading for table of contents
  */
@@ -63,7 +65,7 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
     }
 
     // Generate ID from title
-    const id = generateHeadingId(title);
+    const id = stringToSlug(title);
 
     headings.push({ level, title, id });
     match = headingRegex.exec(htmlContent);
@@ -108,33 +110,11 @@ export function generateTOCFromMarkdown(
     const title = match[2];
 
     // Generate ID from title
-    const id = generateHeadingId(title);
+    const id = stringToSlug(title);
 
     headings.push({ level, title, id });
     match = headingRegex.exec(markdownContent);
   }
 
   return headings;
-}
-
-/**
- * Generate a URL-friendly ID from a heading title
- *
- * Converts heading text to a valid HTML id attribute:
- * - Converts to lowercase
- * - Removes special characters
- * - Replaces spaces with hyphens
- *
- * @param title - The heading title
- * @returns A URL-friendly ID
- *
- * @example
- * generateHeadingId('My Heading Title') // => 'my-heading-title'
- * generateHeadingId('API Reference') // => 'api-reference'
- */
-function generateHeadingId(title: string): string {
-  return title
-    .toLowerCase()
-    .replaceAll(/[^\w\s-]/g, '') // Remove special characters
-    .replaceAll(/\s+/g, '-'); // Replace spaces with hyphens
 }
