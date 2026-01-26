@@ -376,3 +376,34 @@ jobs:
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
     secrets: inherit
 
+  # ============================================================================
+  # CI COMPLETE - Gate for merge queue
+  # This job only succeeds if ALL CI jobs pass
+  # ============================================================================
+  ci-complete:
+    name: CI Complete
+    runs-on: ubuntu-slim
+    needs: [initialize, quality, build-docker, build-desktop, build-cli, deploy-dryrun, tests]
+    if: always() && !cancelled()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.initialize.result }}" != "success" ]] || \
+             [[ "${{ needs.quality.result }}" != "success" ]] || \
+             [[ "${{ needs.build-docker.result }}" != "success" ]] || \
+             [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
+             [[ "${{ needs.build-cli.result }}" != "success" ]] || \
+             [[ "${{ needs.deploy-dryrun.result }}" != "success" ]] || \
+             [[ "${{ needs.tests.result }}" != "success" ]]; then
+            echo "One or more jobs failed:"
+            echo "  initialize: ${{ needs.initialize.result }}"
+            echo "  quality: ${{ needs.quality.result }}"
+            echo "  build-docker: ${{ needs.build-docker.result }}"
+            echo "  build-desktop: ${{ needs.build-desktop.result }}"
+            echo "  build-cli: ${{ needs.build-cli.result }}"
+            echo "  deploy-dryrun: ${{ needs.deploy-dryrun.result }}"
+            echo "  tests: ${{ needs.tests.result }}"
+            exit 1
+          fi
+          echo "All CI jobs passed successfully!"
+
