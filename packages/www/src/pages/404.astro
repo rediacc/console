@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
-import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
+import { SITE_URL } from '../config/constants';
 
 const { t } = createTranslator();
 
@@ -14,19 +14,11 @@ const breadcrumbItems = [
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  'name': '404 - Page Not Found',
-  'description': 'The requested page could not be found on this website.',
-  'url': 'https://www.rediacc.com/404',
-  'mainEntity': {
-    '@type': 'Thing',
-    'name': 'Page Not Found Error',
-    'description': 'HTTP 404 error indicating the requested resource was not found'
-  },
-  'isPartOf': {
-    '@type': 'WebSite',
-    'name': 'Rediacc - Infrastructure Automation Platform',
-    'url': 'https://www.rediacc.com'
-  }
+  name: '404 - Page Not Found',
+  description: 'The requested page could not be found on this website.',
+  url: `${SITE_URL}/404`,
+  mainEntity: { '@type': 'Thing', name: 'Page Not Found Error', description: 'HTTP 404 error indicating the requested resource was not found' },
+  isPartOf: { '@type': 'WebSite', name: 'Rediacc - Infrastructure Automation Platform', url: SITE_URL }
 };
 ---
 
