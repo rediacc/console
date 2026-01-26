@@ -108,6 +108,10 @@ cp "$BASE_IMAGE_PATH" "$WORK_IMAGE"
 qemu-img resize "$WORK_IMAGE" +4G
 log_info "Working image resized to $(qemu-img info "$WORK_IMAGE" | grep 'virtual size' | awk '{print $3}')"
 
+# Make build directory accessible to libvirt-qemu user
+chmod 755 "$BUILD_DIR"
+chmod 666 "$WORK_IMAGE"
+
 # =============================================================================
 # STEP 3: Generate SSH key for build
 # =============================================================================
@@ -155,6 +159,7 @@ EOF
 
 # Create seed ISO for cloud-init
 cloud-localds "$SEED_ISO" "$USER_DATA" "$META_DATA"
+chmod 644 "$SEED_ISO"
 log_info "Cloud-init ISO created"
 
 # =============================================================================
