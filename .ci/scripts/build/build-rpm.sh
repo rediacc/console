@@ -128,6 +128,12 @@ License:        Proprietary
 URL:            ${PKG_HOMEPAGE}
 AutoReqProv:    no
 
+# Disable automatic stripping - the SEA binary is pre-stripped during build
+# and further stripping corrupts the injected Node.js blob
+%global __os_install_post %{nil}
+%define __strip /bin/true
+%define debug_package %{nil}
+
 %description
 ${PKG_DESCRIPTION}
 
