@@ -474,8 +474,7 @@ a[target='_blank']:not(
 }
 
 /* Social links and footer links get larger external icon */
-.footer-social-link[target='_blank']::after,
-.social-link[target='_blank']::after {
+.footer-social-link[target='_blank']::after {
   width: 1em;
   height: 1em;
   margin-inline-start: 0.5em;
