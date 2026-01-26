@@ -903,12 +903,6 @@
   margin-top: auto;
 }
 
-/* .btn-full-width extends .btn-full from main.css */
-.btn-full-width {
-  width: 100%;
-  text-align: center;
-}
-
 /* Pricing Factors Section */
 .pricing-factors {
   background: rgba(127, 160, 63, var(--opacity-10));
