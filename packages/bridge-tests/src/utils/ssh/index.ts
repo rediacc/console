@@ -1,1 +1,1 @@
-export { SSHExecutor, getSSHExecutor } from './SSHExecutor';
+export { SSHExecutor, getSSHExecutor, type SSHConfig, type SSHResult } from './SSHExecutor';
