@@ -366,6 +366,10 @@
         "subtitle": "Choisissez votre méthode d'installation préférée"
       },
       "methods": {
+        "quick": {
+          "title": "Installation rapide",
+          "description": "Recommand\u00e9 - installation automatique avec gestion des versions"
+        },
         "apt": {
           "title": "APT (Debian / Ubuntu)",
           "description": "Pour Debian, Ubuntu et dérivés"
@@ -374,10 +378,6 @@
           "title": "DNF (Fedora / RHEL)",
           "description": "Pour Fedora, RHEL, CentOS, Rocky Linux"
         },
-        "npm": {
-          "title": "npm",
-          "description": "Pour les environnements Node.js"
-        },
         "homebrew": {
           "title": "Homebrew (macOS / Linux)",
           "description": "Pour les utilisateurs macOS et Linux avec Homebrew"
@@ -385,6 +385,10 @@
         "binary": {
           "title": "Téléchargement direct",
           "description": "Binaire autonome, aucun gestionnaire de paquets requis"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Pour les environnements conteneurisés"
         }
       },
       "verify": {
@@ -392,7 +396,8 @@
       },
       "architectures": {
         "title": "Architectures prises en charge",
-        "method": "Méthode"
+        "method": "Méthode",
+        "platform": "Plateforme"
       },
       "copy": "Copier",
       "copied": "Copié !"

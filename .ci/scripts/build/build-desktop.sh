@@ -87,14 +87,14 @@ log_step "Creating distribution package..."
 
 case "$PLATFORM" in
     linux)
-        (cd "$DESKTOP_DIR" && npm run dist:linux -- --$ARCH)
+        (cd "$DESKTOP_DIR" && npm run dist:linux -- --$ARCH --publish never)
         ;;
     mac)
         export CSC_IDENTITY_AUTO_DISCOVERY=false  # Skip code signing in CI
-        (cd "$DESKTOP_DIR" && npm run dist:mac -- --$ARCH)
+        (cd "$DESKTOP_DIR" && npm run dist:mac -- --$ARCH --publish never)
         ;;
     win)
-        (cd "$DESKTOP_DIR" && npm run dist:win -- --$ARCH)
+        (cd "$DESKTOP_DIR" && npm run dist:win -- --$ARCH --publish never)
         # Rename for consistent platform-suffixed naming
         if [[ -f "dist/desktop/latest.yml" ]]; then
             mv dist/desktop/latest.yml dist/desktop/latest-win.yml

@@ -35,6 +35,7 @@
     "@vitest/utils": "^4.0.18",
     "electron-updater": "^6.6.2",
     "node-pty": "^1.1.0",
+    "react-i18next": "^16.5.4",
     "ssh2": "^1.17.0",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.3.6"
@@ -43,7 +44,7 @@
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
-    "@electron/rebuild": "^4.0.2",
+    "@electron/rebuild": "^4.0.3",
     "@types/node": "^22.10.2",
     "@types/ssh2": "^1.15.5",
     "@vitejs/plugin-react": "^5.1.2",
