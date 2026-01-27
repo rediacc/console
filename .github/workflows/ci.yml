@@ -29,6 +29,7 @@ permissions:
 
 # Cancel in-progress runs when a new run is triggered for the same branch/PR
 # Use 'no-cancel-push' PR label to disable (see .github/labels.yml)
+# Note: Cross-PR queueing is handled by the 'queue' job below
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'no-cancel-push') }}
@@ -41,14 +42,36 @@ env:
 
 jobs:
   # ============================================================================
+  # QUEUE: Wait for other CI runs to complete (global serialization)
+  # This ensures only one CI runs at a time across all PRs to avoid
+  # exhausting the 20 parallel runner limit on the free tier.
+  # Same-PR cancellation is handled by the concurrency group above.
+  # ============================================================================
+  queue:
+    name: Queue
+    runs-on: ubuntu-slim
+    if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+      - name: Wait for other CI runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: .ci/scripts/ci/wait-for-queue.sh --timeout 7200 --poll-interval 30
+
+  # ============================================================================
   # COLUMN 1: INITIALIZE
   # Jobs: initialize, cancel-watchdog
-  # Dependencies: None
+  # Dependencies: queue
   # ============================================================================
   initialize:
     name: Initialize
+    needs: [queue]
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
-    if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
+    if: always() && needs.queue.result == 'success'
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
@@ -194,14 +217,23 @@ jobs:
     runs-on: ubuntu-slim
     if: always() && (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')))
     steps:
-      - name: Monitor jobs and cancel on failure
+      - name: Monitor Quality + Build jobs for quick failures
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
         with:
           script: |
-            const pollInterval = 10000; // 10 seconds
-            const maxRuntime = 600000;  // 10 minutes max
-            const minRuntime = 120000;  // 2 minutes minimum before allowing workflow-complete exit
+            const pollInterval = 10000;  // 10 seconds
+            const maxRuntime = 300000;   // 5 minutes (quick-fail window)
+            const minRuntime = 30000;    // 30 seconds minimum before allowing exit
             const startTime = Date.now();
+
+            // Job prefixes for quick-fail monitoring (Quality + Build only, NOT tests)
+            const quickFailPrefixes = [
+              'Quality',
+              'Build (Docker)',
+              'Build (Desktop)',
+              'Build (CLI)',
+              'Deploy Dry-Run'
+            ];
 
             // Check for skip-cancellation label
             let skipCancellationOnFailure = false;
@@ -213,17 +245,12 @@ jobs:
               }
             }
 
-            console.log('Watchdog started - monitoring for job failures...');
+            console.log('Cancel Watchdog started - monitoring Quality + Build jobs for quick failures...');
+            console.log(`Quick-fail window: ${maxRuntime / 60000} minutes`);
 
             while (Date.now() - startTime < maxRuntime) {
               const elapsed = Date.now() - startTime;
               const elapsedSec = Math.round(elapsed / 1000);
-
-              const { data: run } = await github.rest.actions.getWorkflowRun({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: context.runId
-              });
 
               const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
                 owner: context.repo.owner,
@@ -231,24 +258,32 @@ jobs:
                 run_id: context.runId
               });
 
-              const otherJobs = jobs.jobs.filter(j => !j.name.includes('Watchdog'));
-              const completed = otherJobs.filter(j => j.status === 'completed').length;
-              const inProgress = otherJobs.filter(j => j.status === 'in_progress').length;
-              const queued = otherJobs.filter(j => j.status === 'queued').length;
+              // Filter to only quick-fail jobs (Quality + Build, not tests)
+              const quickJobs = jobs.jobs.filter(j =>
+                !j.name.includes('Watchdog') &&
+                j.name !== 'Queue' &&
+                j.name !== 'Initialize' &&
+                j.name !== 'CI Complete' &&
+                quickFailPrefixes.some(prefix => j.name.startsWith(prefix))
+              );
 
-              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued (workflow: ${run.status})`);
+              const completed = quickJobs.filter(j => j.status === 'completed');
+              const inProgress = quickJobs.filter(j => j.status === 'in_progress');
+              const queued = quickJobs.filter(j => j.status === 'queued');
+              const failed = quickJobs.filter(j => j.conclusion === 'failure');
+
+              console.log(`[${elapsedSec}s] Quick jobs: ${completed.length} done, ${inProgress.length} running, ${queued.length} queued`);
 
               // Check if workflow was externally cancelled (e.g., by concurrency or manual cancellation)
-              const cancelledJobs = otherJobs.filter(job => job.conclusion === 'cancelled');
-              const completedJobs = otherJobs.filter(job => job.status === 'completed');
-              if (cancelledJobs.length > 0 && cancelledJobs.length >= completedJobs.length / 2) {
-                console.log(`Workflow externally cancelled (${cancelledJobs.length}/${completedJobs.length} jobs cancelled) - exiting watchdog`);
+              const cancelledJobs = quickJobs.filter(job => job.conclusion === 'cancelled');
+              if (cancelledJobs.length > 0 && cancelledJobs.length >= completed.length / 2) {
+                console.log(`Workflow externally cancelled (${cancelledJobs.length}/${completed.length} jobs cancelled) - exiting watchdog`);
                 return;
               }
 
-              const failedJob = otherJobs.find(job => job.conclusion === 'failure');
-
-              if (failedJob) {
+              // Check for failures in quick-fail jobs
+              if (failed.length > 0) {
+                const failedJob = failed[0];
                 const failureMsg = `Job failed: "${failedJob.name}"`;
                 console.log('');
                 console.log('='.repeat(70));
@@ -274,16 +309,19 @@ jobs:
                 return;
               }
 
-              if (inProgress === 0 && queued === 0 && elapsed >= minRuntime) {
-                console.log(`All jobs finished - exiting watchdog (after ${elapsedSec}s)`);
+              // Exit if all quick jobs completed successfully
+              if (inProgress.length === 0 && queued.length === 0 && elapsed >= minRuntime) {
+                console.log(`All Quality + Build jobs completed - exiting watchdog (after ${elapsedSec}s)`);
                 return;
               }
 
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
 
-            console.log('Watchdog completed - no failures detected in 10 minutes');
-            core.info('All monitored jobs healthy during watch period');
+            // Quick-fail window closed - exit without error
+            console.log('Quick-fail window (5 min) closed - Cancel Watchdog exiting');
+            console.log('Long-running tests will be handled by Rerun Watchdog if they fail');
+            core.info('Cancel Watchdog completed - quick-fail monitoring done');
 
   # ============================================================================
   # COLUMN 2: QUALITY
@@ -410,31 +448,31 @@ jobs:
 
   # ============================================================================
   # RERUN WATCHDOG - Auto-retry flaky jobs (max 3 attempts)
-  # Monitors for job failures after cancel-watchdog completes and triggers
-  # reruns as needed. Runs for up to 10 minutes like cancel-watchdog.
+  # Waits for ALL jobs to complete before triggering rerun. This ensures we
+  # catch all flaky failures (including long-running tests up to 2h).
   # NOTE: Reruns may fail if dependent infrastructure (e.g., Cloudflare tunnel)
   # is no longer available. In such cases, a fresh run is needed.
   # ============================================================================
   rerun-watchdog:
     name: Rerun Watchdog
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     needs: [cancel-watchdog]
     if: needs.cancel-watchdog.result == 'success' && fromJSON(github.run_attempt) < 3
     steps:
-      - name: Monitor for failures and trigger rerun
+      - name: Wait for all jobs and trigger rerun on failures
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
         with:
           script: |
-            const pollInterval = 10000; // 10 seconds
-            const maxRuntime = 600000;  // 10 minutes max
-            const minRuntime = 120000;  // 2 minutes minimum before allowing workflow-complete exit
+            const pollInterval = 30000;    // 30 seconds (reduced API calls)
+            const maxRuntime = 10800000;   // 3 hours max (safety limit)
             const startTime = Date.now();
 
-            console.log(`Rerun watchdog started (attempt ${{ github.run_attempt }}/3)`);
+            console.log(`Rerun Watchdog started (attempt ${{ github.run_attempt }}/3)`);
+            console.log('Monitoring until all jobs complete...');
 
             while (Date.now() - startTime < maxRuntime) {
               const elapsed = Date.now() - startTime;
-              const elapsedSec = Math.round(elapsed / 1000);
+              const elapsedMin = Math.round(elapsed / 60000);
 
               const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
                 owner: context.repo.owner,
@@ -442,53 +480,58 @@ jobs:
                 run_id: context.runId
               });
 
-              // Filter out watchdog jobs
+              // Filter out watchdog and infrastructure jobs
               const otherJobs = jobs.jobs.filter(j =>
-                !j.name.includes('Watchdog')
+                !j.name.includes('Watchdog') &&
+                j.name !== 'Queue' &&
+                j.name !== 'CI Complete'
               );
 
-              const completed = otherJobs.filter(j => j.status === 'completed').length;
+              const completed = otherJobs.filter(j => j.status === 'completed');
+              const inProgress = otherJobs.filter(j => j.status === 'in_progress');
+              const queued = otherJobs.filter(j => j.status === 'queued');
               const failed = otherJobs.filter(j => j.conclusion === 'failure');
-              const inProgress = otherJobs.filter(j => j.status === 'in_progress').length;
-              const queued = otherJobs.filter(j => j.status === 'queued').length;
 
-              console.log(`[${elapsedSec}s] Jobs: ${completed} done, ${inProgress} running, ${queued} queued, ${failed.length} failed`);
+              console.log(`[${elapsedMin}m] Jobs: ${completed.length}/${otherJobs.length} done, ${failed.length} failed`);
 
-              if (failed.length > 0) {
-                console.log('');
-                console.log('='.repeat(70));
-                console.log('FAILURE DETECTED - Triggering rerun of failed jobs');
-                failed.forEach(job => {
-                  console.log(`  - ${job.name}`);
-                });
-                console.log('='.repeat(70));
+              // Wait for ALL jobs to complete before taking action
+              if (inProgress.length === 0 && queued.length === 0) {
+                if (failed.length > 0) {
+                  console.log('');
+                  console.log('='.repeat(70));
+                  console.log(`ALL JOBS COMPLETED - ${failed.length} failure(s) detected:`);
+                  failed.forEach(job => {
+                    console.log(`  - ${job.name}`);
+                  });
+                  console.log('Triggering rerun of failed jobs...');
+                  console.log('='.repeat(70));
 
-                // Trigger rerun via workflow dispatch
-                const ref = context.payload.pull_request?.head?.ref || context.ref.replace('refs/heads/', '');
-                console.log(`Dispatching rerun-failed.yml on ref: ${ref}`);
+                  // Trigger rerun via workflow dispatch
+                  const ref = context.payload.pull_request?.head?.ref || context.ref.replace('refs/heads/', '');
+                  console.log(`Dispatching rerun-failed.yml on ref: ${ref}`);
 
-                await github.rest.actions.createWorkflowDispatch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: 'rerun-failed.yml',
-                  ref: ref,
-                  inputs: {
-                    run_id: String(context.runId)
-                  }
-                });
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: 'rerun-failed.yml',
+                    ref: ref,
+                    inputs: {
+                      run_id: String(context.runId)
+                    }
+                  });
 
-                console.log('Rerun triggered successfully');
-                return;
-              }
-
-              // If all jobs completed successfully, exit (but wait minimum time first)
-              if (inProgress === 0 && queued === 0 && elapsed >= minRuntime) {
-                console.log('All jobs completed - no failures detected');
-                return;
+                  console.log('Rerun triggered successfully');
+                  return;
+                } else {
+                  console.log('All jobs completed successfully - no rerun needed');
+                  return;
+                }
               }
 
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
 
-            console.log('Rerun watchdog window completed');
+            // Safety timeout reached
+            console.log('WARNING: Rerun Watchdog reached 3-hour limit');
+            core.warning('Watchdog timeout - some jobs may still be running');
 
