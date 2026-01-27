@@ -62,6 +62,11 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Get git repository root (works with worktrees)
+get_git_root() {
+    git rev-parse --show-toplevel 2>/dev/null || pwd
+}
+
 # Get PR number from current branch
 get_pr_number() {
     gh pr view --json number -q '.number' 2>/dev/null || echo ""
@@ -109,8 +114,27 @@ get_failed_logs() {
     gh run view "$run_id" --log-failed 2>&1 | tail -500
 }
 
+# Run claude from git root directory
+run_claude() {
+    local prompt="$1"
+    local session_arg="$2"
+
+    # Run claude from git root so it has access to the full codebase
+    (
+        cd "$GIT_ROOT"
+        if [[ -n "$session_arg" ]]; then
+            claude -p "$prompt" --resume "$session_arg" --output-format json --allowedTools "$ALLOWED_TOOLS" 2>&1
+        else
+            claude -p "$prompt" --output-format json --allowedTools "$ALLOWED_TOOLS" 2>&1
+        fi
+    )
+}
+
 # Main function
 main() {
+    # Detect git root first (works with worktrees)
+    GIT_ROOT=$(get_git_root)
+
     local pr_number
     pr_number=$(get_pr_number)
 
@@ -125,6 +149,7 @@ main() {
     echo "  PR Babysitter - Monitoring PR #$pr_number"
     echo "=========================================="
     echo ""
+    log_info "Git root: $GIT_ROOT"
     log_info "Max iterations: $MAX_ITERATIONS"
     log_info "Poll interval: ${POLL_INTERVAL}s"
     log_info "Max rerun wait: ${MAX_RERUN_WAIT}s"
@@ -205,9 +230,10 @@ After fixing, stage the changes and create a commit with a descriptive message."
         local result
         if [[ -n "$session_id" ]]; then
             log_info "Resuming previous session for context..."
-            result=$(claude -p "$prompt" --resume "$session_id" --output-format json --allowedTools "$ALLOWED_TOOLS" 2>&1) || true
+            result=$(run_claude "$prompt" "$session_id") || true
         else
-            result=$(claude -p "$prompt" --output-format json --allowedTools "$ALLOWED_TOOLS" 2>&1) || true
+            log_info "Starting new session..."
+            result=$(run_claude "$prompt" "") || true
         fi
 
         # Capture session ID for context persistence
