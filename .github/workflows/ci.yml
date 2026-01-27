@@ -42,36 +42,14 @@ env:
 
 jobs:
   # ============================================================================
-  # QUEUE: Wait for other CI runs to complete (global serialization)
-  # This ensures only one CI runs at a time across all PRs to avoid
-  # exhausting the 20 parallel runner limit on the free tier.
-  # Same-PR cancellation is handled by the concurrency group above.
-  # ============================================================================
-  queue:
-    name: Queue
-    runs-on: ubuntu-slim
-    if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
-      - name: Wait for other CI runs
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/ci/wait-for-queue.sh --timeout 7200 --poll-interval 30
-
-  # ============================================================================
   # COLUMN 1: INITIALIZE
   # Jobs: initialize, cancel-watchdog
-  # Dependencies: queue
+  # No dependencies - starts immediately for fast feedback on Quality checks
   # ============================================================================
   initialize:
     name: Initialize
-    needs: [queue]
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
-    if: always() && needs.queue.result == 'success'
+    if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
@@ -219,10 +197,11 @@ jobs:
             const minRuntime = 30000;    // 30 seconds minimum before allowing exit
             const startTime = Date.now();
 
-            // Job prefixes for quick-fail monitoring (Quality + Review Gate + Build only, NOT tests)
+            // Job prefixes for quick-fail monitoring (Quality + Review Gate + Queue + Build only, NOT tests)
             const quickFailPrefixes = [
               'Quality',
               'Review Gate',
+              'Queue',
               'Build (Docker)',
               'Build (Desktop)',
               'Build (CLI)',
@@ -368,14 +347,36 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
   # ============================================================================
+  # QUEUE: Wait for other CI runs to complete (global serialization)
+  # Positioned AFTER Quality + Review Gate so fast checks run in parallel.
+  # Only heavy Build/Test jobs wait in queue.
+  # Same-PR cancellation is handled by the concurrency group above.
+  # ============================================================================
+  queue:
+    name: Queue
+    needs: [initialize, quality, review-gate]
+    runs-on: ubuntu-slim
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+      - name: Wait for other CI runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: .ci/scripts/ci/wait-for-queue.sh --timeout 7200 --poll-interval 30
+
+  # ============================================================================
   # COLUMN 3: BUILD & DOCKER
   # Jobs: build-docker, build-desktop (parallel reusable workflows)
-  # Dependencies: quality, review-gate (for PRs)
+  # Dependencies: queue (which includes quality + review-gate)
   # ============================================================================
   build-docker:
     name: Build (Docker)
-    needs: [initialize, quality, review-gate]
-    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    needs: [initialize, queue]
+    if: always() && needs.initialize.result == 'success' && needs.queue.result == 'success'
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -393,8 +394,8 @@ jobs:
 
   build-desktop:
     name: Build (Desktop)
-    needs: [initialize, quality, review-gate]
-    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    needs: [initialize, queue]
+    if: always() && needs.initialize.result == 'success' && needs.queue.result == 'success'
     uses: ./.github/workflows/ci-build-desktop.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -402,8 +403,8 @@ jobs:
 
   build-cli:
     name: Build (CLI)
-    needs: [initialize, quality, review-gate]
-    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    needs: [initialize, queue]
+    if: always() && needs.initialize.result == 'success' && needs.queue.result == 'success'
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -454,12 +455,12 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests]
+    needs: [initialize, quality, review-gate, queue, build-docker, build-desktop, build-cli, deploy-dryrun, tests]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
         run: |
-          # review-gate can be skipped for non-PR events or bots
+          # review-gate and queue can be skipped for non-PR events or bots
           REVIEW_GATE_OK="false"
           if [[ "${{ needs.review-gate.result }}" == "success" ]] || [[ "${{ needs.review-gate.result }}" == "skipped" ]]; then
             REVIEW_GATE_OK="true"
@@ -468,6 +469,7 @@ jobs:
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
              [[ "${{ needs.quality.result }}" != "success" ]] || \
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
+             [[ "${{ needs.queue.result }}" != "success" ]] || \
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
@@ -477,6 +479,7 @@ jobs:
             echo "  initialize: ${{ needs.initialize.result }}"
             echo "  quality: ${{ needs.quality.result }}"
             echo "  review-gate: ${{ needs.review-gate.result }}"
+            echo "  queue: ${{ needs.queue.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
@@ -496,8 +499,9 @@ jobs:
   rerun-watchdog:
     name: Rerun Watchdog
     runs-on: ubuntu-latest
-    needs: [cancel-watchdog]
-    if: needs.cancel-watchdog.result == 'success' && fromJSON(github.run_attempt) < 3
+    needs: [cancel-watchdog, queue]
+    # Only start after Queue passes - no point monitoring if quality checks failed
+    if: always() && needs.cancel-watchdog.result == 'success' && needs.queue.result == 'success' && fromJSON(github.run_attempt) < 3
     steps:
       - name: Wait for all jobs and trigger rerun on failures
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
