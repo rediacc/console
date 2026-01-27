@@ -81,7 +81,6 @@ while true; do
         --jq --arg current_id "$CURRENT_RUN_ID" --arg current_created "$CURRENT_RUN_CREATED" \
         '[.workflow_runs[] | select(.id != ($current_id | tonumber) and .created_at < $current_created) | {id: .id, run_number: .run_number, branch: .head_branch, created_at: .created_at}]' \
         2>"$API_ERROR_FILE") || {
-        local api_err
         api_err=$(<"$API_ERROR_FILE")
         rm -f "$API_ERROR_FILE"
         # Log warning but continue with empty array to avoid blocking CI
