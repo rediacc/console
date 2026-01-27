@@ -41,7 +41,7 @@ if echo "$LABELS" | grep -q "$SKIP_LABEL"; then
 fi
 
 # Get PR details
-PR_DATA=$(gh pr view "$PR_NUMBER" --json commits,updatedAt,body,title 2>/dev/null || echo "{}")
+PR_DATA=$(gh pr view "$PR_NUMBER" --json commits,createdAt,body,title 2>/dev/null || echo "{}")
 
 if [[ "$PR_DATA" == "{}" ]]; then
     log_error "Could not fetch PR data"
@@ -67,41 +67,35 @@ if [[ -z "$LATEST_COMMIT_TIME" ]]; then
     exit 0
 fi
 
-# Get PR description update time
-# Note: GitHub doesn't track description edit time separately
-# We use the PR's updatedAt, but filter for body changes via events
-# As a fallback, we check if updatedAt is recent enough
-
-PR_UPDATED_AT=$(echo "$PR_DATA" | jq -r '.updatedAt')
+# Get PR creation time
+# Note: GitHub's updatedAt changes on ANY activity (comments, labels, etc.)
+# so we use createdAt as the baseline for when description was written.
+# If user updates description, they should add 'description-current' label.
+PR_CREATED_AT=$(echo "$PR_DATA" | jq -r '.createdAt')
 
 # Convert to epoch for comparison
 COMMIT_EPOCH=$(date -d "$LATEST_COMMIT_TIME" +%s 2>/dev/null || \
                date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LATEST_COMMIT_TIME" +%s 2>/dev/null || echo "0")
-PR_EPOCH=$(date -d "$PR_UPDATED_AT" +%s 2>/dev/null || \
-           date -j -f "%Y-%m-%dT%H:%M:%SZ" "$PR_UPDATED_AT" +%s 2>/dev/null || echo "0")
+PR_EPOCH=$(date -d "$PR_CREATED_AT" +%s 2>/dev/null || \
+           date -j -f "%Y-%m-%dT%H:%M:%SZ" "$PR_CREATED_AT" +%s 2>/dev/null || echo "0")
 
 if [[ "$COMMIT_EPOCH" == "0" ]] || [[ "$PR_EPOCH" == "0" ]]; then
     log_warn "Could not parse timestamps - skipping check"
     exit 0
 fi
 
-# Calculate age
+# Calculate how much newer the latest commit is vs PR creation
 AGE_SECONDS=$((COMMIT_EPOCH - PR_EPOCH))
 AGE_MINUTES=$((AGE_SECONDS / 60))
 THRESHOLD_SECONDS=$((STALE_THRESHOLD_MINUTES * 60))
 
 log_info "Latest commit: $LATEST_COMMIT_TIME"
-log_info "PR last updated: $PR_UPDATED_AT"
+log_info "PR created: $PR_CREATED_AT"
+log_info "Time since PR creation: ${AGE_MINUTES}m"
 
-# If PR was updated AFTER the latest commit, it's fresh
-if [[ "$PR_EPOCH" -ge "$COMMIT_EPOCH" ]]; then
-    log_info "PR was updated after latest commit - description is current"
-    exit 0
-fi
-
-# Check if the gap is within threshold
+# If latest commit is within threshold of PR creation, description is likely still accurate
 if [[ "$AGE_SECONDS" -lt "$THRESHOLD_SECONDS" ]]; then
-    log_info "Description is within ${STALE_THRESHOLD_MINUTES}m threshold (${AGE_MINUTES}m old)"
+    log_info "Latest commit is within ${STALE_THRESHOLD_MINUTES}m of PR creation - OK"
     exit 0
 fi
 
