@@ -194,6 +194,15 @@ readonly COLOR_CYAN='\033[0;36m'
 readonly COLOR_NC='\033[0m'
 
 # =============================================================================
+# DESKTOP ENVIRONMENT
+# =============================================================================
+readonly DESKTOP_DISPLAY_NUM="${DESKTOP_DISPLAY:-99}"
+readonly DESKTOP_VNC_PORT="${DESKTOP_VNC_PORT:-5999}"
+readonly DESKTOP_NOVNC_PORT="${DESKTOP_NOVNC_PORT:-6080}"
+readonly DESKTOP_GATEWAY_PORT="${DESKTOP_GATEWAY_PORT:-8080}"
+readonly DESKTOP_RESOLUTION="${DESKTOP_RESOLUTION:-1600x900}"
+
+# =============================================================================
 # TIMEOUTS
 # =============================================================================
 readonly TIMEOUT_DOCKER_PULL=300      # 5 minutes

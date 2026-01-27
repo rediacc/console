@@ -191,3 +191,27 @@ jobs:
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
+
+  quality-review-comments:
+    name: Review Comments
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Check for unreplied review comments
+        run: .ci/scripts/quality/check-review-comments.sh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+  quality-attribution:
+    name: Attribution
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Check for Claude attribution
+        run: .ci/scripts/quality/check-claude-attribution.sh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}

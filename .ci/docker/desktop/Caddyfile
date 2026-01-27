@@ -1,0 +1,31 @@
+# Caddy reverse proxy configuration for desktop access
+#
+# Architecture:
+#   /desktop/*  → noVNC web interface (static files)
+#   /vnc        → WebSocket connection to VNC (websockify)
+#   /*          → nginx web container
+#
+# Caddy listens on port 8080 to avoid conflict with nginx on port 80
+
+:8080 {
+    # Redirect /desktop to noVNC with auto-connect enabled
+    redir /desktop /desktop/vnc.html?path=vnc&autoconnect=true permanent
+
+    # VNC WebSocket endpoint - websockify handles WebSocket upgrade at any path
+    handle /vnc {
+        reverse_proxy localhost:6080 {
+            header_up Host localhost:6080
+            header_up X-Forwarded-For {remote_host}
+        }
+    }
+
+    # Desktop/VNC static files - proxy to noVNC web server
+    handle_path /desktop/* {
+        reverse_proxy localhost:6080
+    }
+
+    # Everything else goes to nginx
+    handle {
+        reverse_proxy localhost:80
+    }
+}
