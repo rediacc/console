@@ -84,8 +84,9 @@ log_info "Timeout: ${TIMEOUT}s, Poll interval: ${POLL_INTERVAL}s"
 # Function to check if Gemini has reviewed
 check_gemini_review() {
     # Check PR reviews first (Gemini posts reviews, not just comments)
+    # Use --paginate to get all reviews (default only returns first page)
     local gemini_review
-    gemini_review=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
+    gemini_review=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --paginate \
         --jq "[.[] | select(.user.login == \"${GEMINI_BOT}\")] | last" 2>/dev/null || echo "null")
 
     if [[ "$gemini_review" != "null" ]] && [[ -n "$gemini_review" ]]; then
@@ -115,7 +116,7 @@ check_gemini_review() {
 
     # Also check issue comments (fallback for older review style)
     local gemini_comments
-    gemini_comments=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+    gemini_comments=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
         --jq "[.[] | select(.user.login == \"${GEMINI_BOT}\")] | last" 2>/dev/null || echo "null")
 
     if [[ "$gemini_comments" != "null" ]] && [[ -n "$gemini_comments" ]]; then
