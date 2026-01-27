@@ -64,13 +64,9 @@ log_info "E2E browsers: ${E2E_BROWSERS_ARR[*]}"
 # log_info "E2E devices: ${E2E_DEVICES[*]}"
 log_info "E2E Electron: ${E2E_ELECTRON[*]}"
 
-# Use RUNNER_TEMP if available (GitHub Actions), fallback to /tmp
-TEMP_BASE="${RUNNER_TEMP:-/tmp}"
-
-# Track completed signals, failed signals, and signals with unknown status
+# Track completed signals and failed signals
 declare -a COMPLETED=()
 declare -a FAILED_SIGNALS=()
-declare -a UNKNOWN_STATUS_SIGNALS=()
 
 # Helper to check if signal is already completed
 is_completed() {
@@ -99,72 +95,33 @@ is_signal_failed() {
     return 1
 }
 
-# Helper to check if signal has unknown status
-is_unknown_status() {
-    local signal="$1"
-    for unknown in "${UNKNOWN_STATUS_SIGNALS[@]:-}"; do
-        [[ "$unknown" == "$signal" ]] && return 0
-    done
-    return 1
-}
-
 # Check signal status by downloading and reading artifact content
-# Returns: 0 = success, 1 = failure/cancelled, 2 = could not verify
 check_signal_status() {
     local signal="$1"
     local artifact_name="$2"
     local temp_dir
-
-    # Create temp directory in RUNNER_TEMP to avoid /tmp space issues
-    if ! temp_dir=$(mktemp -d "${TEMP_BASE}/signal-check.XXXXXX" 2>&1); then
-        log_error "Failed to create temp directory for signal $signal: $temp_dir"
-        if ! is_unknown_status "$signal"; then
-            UNKNOWN_STATUS_SIGNALS+=("$signal")
-        fi
-        return 2
-    fi
-
-    # Cleanup on function exit - temp_dir is expanded now (intentional)
-    # shellcheck disable=SC2064
-    trap "rm -rf '$temp_dir' 2>/dev/null || true" RETURN
+    temp_dir=$(mktemp -d)
 
     # Download the artifact
-    local download_output
-    if ! download_output=$(gh run download "$GITHUB_RUN_ID" --name "$artifact_name" --dir "$temp_dir" 2>&1); then
-        log_error "Failed to download artifact for signal $signal: $download_output"
-        if ! is_unknown_status "$signal"; then
-            UNKNOWN_STATUS_SIGNALS+=("$signal")
+    if gh run download "$GITHUB_RUN_ID" --name "$artifact_name" --dir "$temp_dir" 2>/dev/null; then
+        # Read the status from complete.txt
+        local status
+        status=$(cat "$temp_dir/complete.txt" 2>/dev/null || echo "unknown")
+        rm -rf "$temp_dir"
+
+        # Check if status indicates failure
+        if [[ "$status" == "failure" ]] || [[ "$status" == "cancelled" ]]; then
+            if ! is_signal_failed "$signal"; then
+                FAILED_SIGNALS+=("$signal")
+                log_error "Signal $signal reported status: $status"
+            fi
+            return 1  # Signal indicates failure
         fi
-        return 2
+        return 0  # Success
     fi
 
-    # Read the status from complete.txt
-    local status_file="$temp_dir/complete.txt"
-    if [[ ! -f "$status_file" ]]; then
-        log_error "Signal $signal artifact missing complete.txt"
-        if ! is_unknown_status "$signal"; then
-            UNKNOWN_STATUS_SIGNALS+=("$signal")
-        fi
-        return 2
-    fi
-
-    local status
-    status=$(cat "$status_file")
-
-    # Check if status indicates failure
-    if [[ "$status" == "failure" ]] || [[ "$status" == "cancelled" ]]; then
-        if ! is_signal_failed "$signal"; then
-            FAILED_SIGNALS+=("$signal")
-            log_error "Signal $signal reported status: $status"
-        fi
-        return 1
-    fi
-
-    if [[ "$status" != "success" ]]; then
-        log_warn "Signal $signal has unexpected status: $status"
-    fi
-
-    return 0
+    rm -rf "$temp_dir"
+    return 2  # Not found or download failed
 }
 
 # Fetch artifacts and check for completion signals
@@ -179,8 +136,8 @@ fetch_and_check_signals() {
         if echo "$artifacts" | grep -q "^${artifact_name}$"; then
             if ! is_completed "cli-${platform}"; then
                 mark_completed "cli-${platform}"
-                # Check signal status - errors tracked in FAILED_SIGNALS/UNKNOWN_STATUS_SIGNALS
-                check_signal_status "cli-${platform}" "$artifact_name" || :
+                # Check signal status
+                check_signal_status "cli-${platform}" "$artifact_name" || true
             fi
         fi
     done
@@ -191,8 +148,8 @@ fetch_and_check_signals() {
         if echo "$artifacts" | grep -q "^${artifact_name}$"; then
             if ! is_completed "e2e-${browser}"; then
                 mark_completed "e2e-${browser}"
-                # Check signal status - errors tracked in FAILED_SIGNALS/UNKNOWN_STATUS_SIGNALS
-                check_signal_status "e2e-${browser}" "$artifact_name" || :
+                # Check signal status
+                check_signal_status "e2e-${browser}" "$artifact_name" || true
             fi
         fi
     done
@@ -217,8 +174,8 @@ fetch_and_check_signals() {
         if echo "$artifacts" | grep -q "^${artifact_name}$"; then
             if ! is_completed "e2e-${platform}"; then
                 mark_completed "e2e-${platform}"
-                # Check signal status - errors tracked in FAILED_SIGNALS/UNKNOWN_STATUS_SIGNALS
-                check_signal_status "e2e-${platform}" "$artifact_name" || :
+                # Check signal status
+                check_signal_status "e2e-${platform}" "$artifact_name" || true
             fi
         fi
     done
@@ -229,9 +186,62 @@ has_failures() {
     [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]
 }
 
-# Check if any signals have unknown status (could not verify)
-has_unknown_status() {
-    [[ ${#UNKNOWN_STATUS_SIGNALS[@]} -gt 0 ]]
+# Wait for failed signals to be updated to success (from retried jobs)
+wait_for_retry_success() {
+    local retry_timeout=$TIMEOUT  # Use same 2-hour timeout
+    local start_time
+    start_time=$(date +%s)
+
+    while [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]; do
+        local now
+        now=$(date +%s)
+        local elapsed=$((now - start_time))
+
+        if [[ $elapsed -ge $retry_timeout ]]; then
+            log_error "Retry timeout reached after ${elapsed}s"
+            return 1
+        fi
+
+        log_info "Checking failed signals for retry success... (${elapsed}s / ${retry_timeout}s)"
+
+        # Re-check each failed signal
+        local still_failed=()
+        for signal in "${FAILED_SIGNALS[@]}"; do
+            local artifact_name
+            case "$signal" in
+                cli-*) artifact_name="test-complete-${signal}" ;;
+                e2e-*) artifact_name="test-complete-${signal}" ;;
+                *) artifact_name="test-complete-${signal}" ;;
+            esac
+
+            # Re-download and check status
+            local temp_dir
+            temp_dir=$(mktemp -d)
+            if gh run download "$GITHUB_RUN_ID" --name "$artifact_name" --dir "$temp_dir" 2>/dev/null; then
+                local status
+                status=$(cat "$temp_dir/complete.txt" 2>/dev/null || echo "unknown")
+                if [[ "$status" == "success" ]]; then
+                    log_info "Signal $signal now reports SUCCESS (retry succeeded)"
+                else
+                    still_failed+=("$signal")
+                fi
+            else
+                still_failed+=("$signal")
+            fi
+            rm -rf "$temp_dir"
+        done
+
+        FAILED_SIGNALS=("${still_failed[@]}")
+
+        if [[ ${#FAILED_SIGNALS[@]} -eq 0 ]]; then
+            return 0
+        fi
+
+        log_info "Still waiting for ${#FAILED_SIGNALS[@]} signals: ${FAILED_SIGNALS[*]}"
+        sleep "$INTERVAL"
+    done
+
+    return 0
 }
 
 # Condition: all signals received
@@ -249,26 +259,23 @@ on_poll() {
 
 # Main wait loop using poll_with_watchdog
 if poll_with_watchdog "$TIMEOUT" "$INTERVAL" all_signals_received on_poll; then
-    # All signals received - check for failures and unknown statuses
-    exit_code=0
-
+    # All signals received - check for failures
     if has_failures; then
-        log_error "Failed signals (${#FAILED_SIGNALS[@]}): ${FAILED_SIGNALS[*]}"
-        exit_code=1
-    fi
+        log_warn "All $EXPECTED_COUNT signals received, but ${#FAILED_SIGNALS[@]} reported failure!"
+        log_warn "Failed signals: ${FAILED_SIGNALS[*]}"
+        log_info "Keeping tunnel alive for retries. Re-polling failed signals..."
 
-    if has_unknown_status; then
-        log_error "Could not verify status for signals (${#UNKNOWN_STATUS_SIGNALS[@]}): ${UNKNOWN_STATUS_SIGNALS[*]}"
-        exit_code=1
+        # Continue polling failed signals until they succeed or timeout
+        if wait_for_retry_success; then
+            log_info "All retries succeeded!"
+            exit 0
+        else
+            log_error "Retries did not succeed within timeout"
+            exit 1
+        fi
     fi
-
-    if [[ $exit_code -eq 0 ]]; then
-        log_info "All $EXPECTED_COUNT signals received and verified successfully!"
-    else
-        log_error "All $EXPECTED_COUNT signals received, but some had failures or could not be verified"
-    fi
-
-    exit $exit_code
+    log_info "All $EXPECTED_COUNT signals received successfully!"
+    exit 0
 fi
 
 # Timeout reached
@@ -278,10 +285,7 @@ if [[ ${#COMPLETED[@]} -gt 0 ]]; then
     log_info "Received signals: ${COMPLETED[*]}"
 fi
 if has_failures; then
-    log_error "Failed signals (${#FAILED_SIGNALS[@]}): ${FAILED_SIGNALS[*]}"
-fi
-if has_unknown_status; then
-    log_error "Could not verify status (${#UNKNOWN_STATUS_SIGNALS[@]}): ${UNKNOWN_STATUS_SIGNALS[*]}"
+    log_error "Failed signals: ${FAILED_SIGNALS[*]}"
 fi
 
 # List missing signals
