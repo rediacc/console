@@ -61,28 +61,27 @@ fi
 SHORT_SHA="${LATEST_SHA:0:7}"
 log_info "Latest commit: $SHORT_SHA"
 
-# Check if Gemini already reviewed this commit
-# Gemini's review comments typically include the commit SHA
-log_step "Checking for existing Gemini review..."
+# Check if we already triggered a review for this commit
+# Look for our marker comment: <!-- triggered by CI for commit {SHA} -->
+log_step "Checking for existing review trigger..."
 
-GEMINI_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-    --jq '[.[] | select(.user.login == "gemini-code-assist[bot]")] | length' 2>/dev/null || echo "0")
+TRIGGER_MARKER="triggered by CI for commit ${SHORT_SHA}"
+ALL_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+    --jq '.[].body' 2>/dev/null || echo "")
 
-if [[ "$GEMINI_COMMENTS" -gt 0 ]]; then
-    # Check if the latest Gemini comment mentions the current commit
-    LATEST_GEMINI_BODY=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-        --jq '[.[] | select(.user.login == "gemini-code-assist[bot]")] | last | .body // ""' 2>/dev/null || echo "")
-
-    if echo "$LATEST_GEMINI_BODY" | grep -qi "$SHORT_SHA"; then
-        log_info "Gemini already reviewed commit $SHORT_SHA"
-        exit 0
-    fi
+if echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
+    log_info "Review already triggered for commit $SHORT_SHA"
+    exit 0
 fi
 
 # Trigger Gemini review
 log_step "Triggering Gemini review for commit $SHORT_SHA..."
 
-if gh pr comment "$PR_NUMBER" --body "/gemini review"; then
+COMMENT_BODY="/gemini review
+
+<!-- triggered by CI for commit ${SHORT_SHA} -->"
+
+if gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"; then
     log_info "Gemini review triggered successfully"
     echo ""
     echo "Gemini Code Assist will post a review shortly."
