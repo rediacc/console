@@ -1,0 +1,33 @@
+name: Rerun Failed Jobs
+
+# Triggered by other workflows to rerun their failed jobs
+# Limits: max 3 attempts per workflow run
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'The workflow run ID to rerun'
+        required: true
+        type: string
+
+jobs:
+  rerun:
+    name: Rerun Failed Jobs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for workflow to complete
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Waiting for run ${{ inputs.run_id }} to complete..."
+          gh run watch ${{ inputs.run_id }} > /dev/null 2>&1 || true
+
+      - name: Rerun failed jobs
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Rerunning failed jobs for run ${{ inputs.run_id }}..."
+          gh run rerun ${{ inputs.run_id }} --failed
