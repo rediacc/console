@@ -114,11 +114,11 @@ LABEL com.rediacc.base-image="${NGINX_IMAGE}"
 # - coreutils: For sha256sum
 RUN apk add --no-cache coreutils
 
-# Copy www (public website) to root
-COPY --from=cli-builder /app/packages/www/dist /usr/share/nginx/html
+# Copy built web files from cli-builder
+COPY --from=cli-builder /app/packages/web/dist /usr/share/nginx/html
 
-# Copy web (console app) to /console/ subdirectory
-COPY --from=cli-builder /app/packages/web/dist /usr/share/nginx/html/console
+# Copy JSON configuration files from www build
+COPY --from=cli-builder /app/packages/www/dist/json /usr/share/nginx/html/json
 
 # Copy CLI npm packages
 COPY --from=cli-builder /app/dist/npm /usr/share/nginx/html/npm
