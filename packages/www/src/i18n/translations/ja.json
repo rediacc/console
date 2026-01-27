@@ -366,6 +366,10 @@
         "subtitle": "お好みのインストール方法を選択してください"
       },
       "methods": {
+        "quick": {
+          "title": "クイックインストール",
+          "description": "推奨 - バージョン管理付き自動インストール"
+        },
         "apt": {
           "title": "APT (Debian / Ubuntu)",
           "description": "Debian、Ubuntu、およびその派生向け"
@@ -374,10 +378,6 @@
           "title": "DNF (Fedora / RHEL)",
           "description": "Fedora、RHEL、CentOS、Rocky Linux向け"
         },
-        "npm": {
-          "title": "npm",
-          "description": "Node.js環境向け"
-        },
         "homebrew": {
           "title": "Homebrew (macOS / Linux)",
           "description": "HomebrewをインストールしたmacOSおよびLinuxユーザー向け"
@@ -385,6 +385,10 @@
         "binary": {
           "title": "直接ダウンロード",
           "description": "スタンドアロンバイナリ、パッケージマネージャー不要"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "コンテナ環境向け"
         }
       },
       "verify": {
@@ -392,7 +396,8 @@
       },
       "architectures": {
         "title": "対応アーキテクチャ",
-        "method": "方法"
+        "method": "方法",
+        "platform": "プラットフォーム"
       },
       "copy": "コピー",
       "copied": "コピーしました！"

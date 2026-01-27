@@ -361,6 +361,10 @@
         "subtitle": "选择您首选的安装方式"
       },
       "methods": {
+        "quick": {
+          "title": "快速安装",
+          "description": "推荐 - 自动安装并支持版本管理"
+        },
         "apt": {
           "title": "APT (Debian / Ubuntu)",
           "description": "适用于Debian、Ubuntu及其衍生版"
@@ -369,10 +373,6 @@
           "title": "DNF (Fedora / RHEL)",
           "description": "适用于Fedora、RHEL、CentOS、Rocky Linux"
         },
-        "npm": {
-          "title": "npm",
-          "description": "适用于Node.js环境"
-        },
         "homebrew": {
           "title": "Homebrew (macOS / Linux)",
           "description": "适用于使用 Homebrew 的 macOS 和 Linux 用户"
@@ -380,6 +380,10 @@
         "binary": {
           "title": "直接下载",
           "description": "独立二进制文件，无需包管理器"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "适用于容器环境"
         }
       },
       "verify": {
@@ -387,7 +391,8 @@
       },
       "architectures": {
         "title": "支持的架构",
-        "method": "方法"
+        "method": "方法",
+        "platform": "平台"
       },
       "copy": "复制",
       "copied": "已复制！"

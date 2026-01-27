@@ -366,6 +366,10 @@
         "subtitle": "Tercih ettiğiniz kurulum yöntemini seçin"
       },
       "methods": {
+        "quick": {
+          "title": "Hızlı Kurulum",
+          "description": "Önerilen - sürüm yönetimi ile otomatik kurulum"
+        },
         "apt": {
           "title": "APT (Debian / Ubuntu)",
           "description": "Debian, Ubuntu ve türevleri için"
@@ -374,10 +378,6 @@
           "title": "DNF (Fedora / RHEL)",
           "description": "Fedora, RHEL, CentOS, Rocky Linux için"
         },
-        "npm": {
-          "title": "npm",
-          "description": "Node.js ortamları için"
-        },
         "homebrew": {
           "title": "Homebrew (macOS / Linux)",
           "description": "Homebrew kullanan macOS ve Linux kullanıcıları için"
@@ -385,6 +385,10 @@
         "binary": {
           "title": "Doğrudan İndirme",
           "description": "Bağımsız ikili dosya, paket yöneticisi gerektirmez"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Konteyner ortamları için"
         }
       },
       "verify": {
@@ -392,7 +396,8 @@
       },
       "architectures": {
         "title": "Desteklenen Mimariler",
-        "method": "Yöntem"
+        "method": "Yöntem",
+        "platform": "Platform"
       },
       "copy": "Kopyala",
       "copied": "Kopyalandı!"

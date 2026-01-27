@@ -35,6 +35,87 @@ const REPO_URL = SITE_URL;
     <section class="install-methods section-light">
       <div class="container">
 
+        <!-- Quick Install (One-liner) -->
+        <div class="method-card method-card-featured" id="quick">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.quick.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.quick.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="quick-unix">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-quick-unix">{`# Linux / macOS
+curl -fsSL https://www.rediacc.com/install.sh | bash`}</code></pre>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>powershell</span>
+              <button class="copy-btn" data-copy="quick-win">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-quick-win">{`# Windows (PowerShell)
+irm https://www.rediacc.com/install.ps1 | iex`}</code></pre>
+          </div>
+        </div>
+
+        <!-- Direct Binary Download -->
+        <div class="method-card" id="binary">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.binary.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.binary.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="binary">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-binary">{`# Linux x64
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-x64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/
+
+# Linux ARM64
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-arm64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-arm64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/
+
+# macOS (Intel)
+curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-x64 -o rdc
+chmod +x rdc && sudo mv rdc /usr/local/bin/
+
+# Windows x64 (PowerShell)
+Invoke-WebRequest -Uri https://github.com/rediacc/console/releases/latest/download/rdc-win-x64.exe -OutFile rdc.exe
+
+# Windows ARM64 (PowerShell)
+Invoke-WebRequest -Uri https://github.com/rediacc/console/releases/latest/download/rdc-win-arm64.exe -OutFile rdc.exe`}</code></pre>
+          </div>
+        </div>
+
+        <!-- Docker -->
+        <div class="method-card" id="docker">
+          <div class="method-header">
+            <h2>{t('pages.install.methods.docker.title')}</h2>
+            <p class="method-description">{t('pages.install.methods.docker.description')}</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header">
+              <span>bash</span>
+              <button class="copy-btn" data-copy="docker">{t('pages.install.copy')}</button>
+            </div>
+            <pre><code id="code-docker">{`# Pull the image
+docker pull ghcr.io/rediacc/elite/cli:latest
+
+# Run a command
+docker run --rm ghcr.io/rediacc/elite/cli:latest --version
+
+# Create an alias for convenience
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:latest'`}</code></pre>
+          </div>
+        </div>
+
         <!-- APT (Debian/Ubuntu) -->
         <div class="method-card" id="apt">
           <div class="method-header">
@@ -68,21 +149,6 @@ sudo dnf install rediacc-cli`}</code></pre>
           </div>
         </div>
 
-        <!-- npm -->
-        <div class="method-card" id="npm">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.npm.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.npm.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="npm">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-npm">npm install -g @rediacc/cli</code></pre>
-          </div>
-        </div>
-
         <!-- Homebrew (macOS / Linux) -->
         <div class="method-card" id="homebrew">
           <div class="method-header">
@@ -95,35 +161,6 @@ sudo dnf install rediacc-cli`}</code></pre>
               <button class="copy-btn" data-copy="homebrew">{t('pages.install.copy')}</button>
             </div>
             <pre><code id="code-homebrew">brew install rediacc/tap/rediacc-cli</code></pre>
-          </div>
-        </div>
-
-        <!-- Direct Binary Download -->
-        <div class="method-card" id="binary">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.binary.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.binary.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="binary">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-binary">{`# Linux x64
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-x64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/
-
-# Linux ARM64
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-arm64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/
-
-# macOS (Apple Silicon)
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-arm64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/
-
-# macOS (Intel)
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-x64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/`}</code></pre>
           </div>
         </div>
 
@@ -153,33 +190,65 @@ chmod +x rdc && sudo mv rdc /usr/local/bin/`}</code></pre>
             <thead>
               <tr>
                 <th>{t('pages.install.architectures.method')}</th>
+                <th>{t('pages.install.architectures.platform')}</th>
                 <th>x86_64 / amd64</th>
                 <th>ARM64 / aarch64</th>
               </tr>
             </thead>
             <tbody>
               <tr>
+                <td rowspan="3">{t('pages.install.methods.quick.title')}</td>
+                <td>Linux</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>macOS</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>Windows</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td rowspan="3">{t('pages.install.methods.binary.title')}</td>
+                <td>Linux</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>macOS</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
+                <td>Windows</td>
+                <td class="supported">&#10003;</td>
+                <td class="supported">&#10003;</td>
+              </tr>
+              <tr>
                 <td>APT (.deb)</td>
+                <td>Linux</td>
                 <td class="supported">&#10003;</td>
                 <td class="supported">&#10003;</td>
               </tr>
               <tr>
                 <td>DNF (.rpm)</td>
-                <td class="supported">&#10003;</td>
-                <td class="supported">&#10003;</td>
-              </tr>
-              <tr>
-                <td>npm</td>
+                <td>Linux</td>
                 <td class="supported">&#10003;</td>
                 <td class="supported">&#10003;</td>
               </tr>
               <tr>
                 <td>Homebrew</td>
+                <td>macOS / Linux</td>
                 <td class="supported">&#10003;</td>
                 <td class="supported">&#10003;</td>
               </tr>
               <tr>
-                <td>{t('pages.install.methods.binary.title')}</td>
+                <td>Docker</td>
+                <td>Linux / macOS / Windows</td>
                 <td class="supported">&#10003;</td>
                 <td class="supported">&#10003;</td>
               </tr>

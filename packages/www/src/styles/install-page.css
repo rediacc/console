@@ -58,6 +58,32 @@
   border-color: var(--color-brand-primary);
 }
 
+/* Featured method card (Quick Install) */
+.method-card-featured {
+  border: 2px solid var(--color-brand-primary);
+  background: linear-gradient(135deg, rgba(var(--color-brand-primary-rgb, 59, 130, 246), 0.03) 0%, white 100%);
+  position: relative;
+}
+
+.method-card-featured::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--color-brand-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.method-card-featured .method-header h2 {
+  color: var(--color-brand-primary);
+}
+
+.method-card-featured .code-block + .code-block {
+  margin-top: var(--space-4);
+}
+
 .method-header {
   margin-bottom: var(--space-6);
 }
