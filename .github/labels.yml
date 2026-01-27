@@ -6,3 +6,7 @@
 - name: no-cancel-failure
   color: "FEF2C0"
   description: "Prevents watchdog from canceling workflow on job failure"
+
+- name: no-gemini-review
+  color: "FEF2C0"
+  description: "Skips automatic Gemini Code Assist review triggers"

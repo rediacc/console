@@ -121,7 +121,8 @@
     "unist-util-visit",
     "zod",
     "astro-seo",
-    "glob"
+    "glob",
+    "react-i18next"
   ],
   "ignoreBinaries": ["rimraf"]
 }

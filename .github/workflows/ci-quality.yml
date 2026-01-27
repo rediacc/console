@@ -14,6 +14,27 @@ on:
         required: false
 
 jobs:
+  quality-branch:
+    name: Branch
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GH_PAT }}
+      - name: Check branch status and auto-rebase if needed
+        run: .ci/scripts/quality/check-branch.sh
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+
+  # NOTE: Gemini Review is now triggered by review-gate job in ci.yml
+  # after all quality jobs pass, to avoid triggering reviews on code
+  # that has lint/type errors
+
   quality-versions:
     name: Versions
     runs-on: ubuntu-slim
@@ -204,6 +225,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
 
+  # NOTE: Resolved Threads check is now in review-gate job in ci.yml
+  # It runs AFTER Gemini posts its review, so we can check if threads are resolved
+
   quality-attribution:
     name: Attribution
     runs-on: ubuntu-slim
@@ -215,3 +239,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+
+  quality-pr-description:
+    name: PR Description
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Check PR description freshness
+        run: .ci/scripts/quality/check-pr-description.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}

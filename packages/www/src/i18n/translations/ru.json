@@ -366,6 +366,10 @@
         "subtitle": "Выберите предпочтительный способ установки"
       },
       "methods": {
+        "quick": {
+          "title": "Быстрая установка",
+          "description": "Рекомендуется - автоматическая установка с управлением версиями"
+        },
         "apt": {
           "title": "APT (Debian / Ubuntu)",
           "description": "Для Debian, Ubuntu и производных"
@@ -374,10 +378,6 @@
           "title": "DNF (Fedora / RHEL)",
           "description": "Для Fedora, RHEL, CentOS, Rocky Linux"
         },
-        "npm": {
-          "title": "npm",
-          "description": "Для сред Node.js"
-        },
         "homebrew": {
           "title": "Homebrew (macOS / Linux)",
           "description": "Для пользователей macOS и Linux с Homebrew"
@@ -385,6 +385,10 @@
         "binary": {
           "title": "Прямая загрузка",
           "description": "Автономный бинарный файл, менеджер пакетов не требуется"
+        },
+        "docker": {
+          "title": "Docker",
+          "description": "Для контейнерных сред"
         }
       },
       "verify": {
@@ -392,7 +396,8 @@
       },
       "architectures": {
         "title": "Поддерживаемые архитектуры",
-        "method": "Метод"
+        "method": "Метод",
+        "platform": "Платформа"
       },
       "copy": "Копировать",
       "copied": "Скопировано!"

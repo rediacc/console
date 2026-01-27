@@ -322,6 +322,18 @@ jobs:
           echo "- ghcr.io/rediacc/elite/cli:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
+  # VALIDATE INSTALL METHODS - Test all documented installation methods
+  # ============================================================================
+  validate-install-methods:
+    name: Validate Install Methods
+    needs: [init, publish]
+    if: success() && !inputs.dry_run
+    uses: ./.github/workflows/ct-install-methods.yml
+    with:
+      version: ${{ needs.init.outputs.next_version }}
+    secrets: inherit
+
+  # ============================================================================
   # CLEANUP ON FAILURE - Remove staging artifacts if dry-run or publish fails
   # ============================================================================
   cleanup-on-failure:

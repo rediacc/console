@@ -9,7 +9,9 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": {},
+  "dependencies": {
+    "react-i18next": "^16.5.4"
+  },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "rimraf": "^6.1.2",

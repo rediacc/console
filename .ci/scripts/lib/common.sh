@@ -372,6 +372,19 @@ parse_args() {
 }
 
 # =============================================================================
+# SHARED CONSTANTS
+# =============================================================================
+# Define constants here to avoid duplication across scripts.
+# The shellcheck.sh linter will catch if these are redefined elsewhere.
+
+# Maximum number of Gemini review triggers per PR
+# This limit prevents excessive API usage on PRs with many iterations.
+# Value chosen based on typical PR lifecycle: initial review (1) +
+# ~5 rounds of feedback + ~5 additional edge cases = 11 reviews max.
+# Exceeding this suggests the PR should be split or closed.
+MAX_GEMINI_REVIEWS=11
+
+# =============================================================================
 # INITIALIZATION
 # =============================================================================
 
