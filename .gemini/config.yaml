@@ -2,6 +2,10 @@
 # https://developers.google.com/gemini-code-assist/docs/customize-github-code-reviews
 
 code_review:
+  # Limit comments per review to prevent review fatigue
+  # -1 = unlimited (default), we set to 10 to focus on most important issues
+  max_review_comments: 10
+
   # Comment severity threshold (low, medium, high, critical)
   # Only comments at or above this level will be posted
   comment_severity_threshold: medium
