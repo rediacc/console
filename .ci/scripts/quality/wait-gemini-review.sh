@@ -73,8 +73,11 @@ if ! echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
     if [[ "$COMMIT_COUNT" -le 1 ]]; then
         log_info "First commit - Gemini auto-reviews on PR open, checking for existing review..."
     else
-        log_warn "No review trigger found for commit $SHORT_SHA - may have been skipped"
-        log_info "Checking for existing Gemini review anyway..."
+        # No trigger for this commit - likely skipped due to unresolved threads
+        # Don't wait for a review that will never come
+        log_info "No review trigger for commit $SHORT_SHA - trigger was likely skipped"
+        log_info "Skipping wait (unresolved threads or other skip condition)"
+        exit 0
     fi
 fi
 
