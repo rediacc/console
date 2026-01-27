@@ -150,14 +150,14 @@ run_claude() {
     (
         cd "$GIT_ROOT"
         if [[ -n "$session_arg" ]]; then
-            claude -p "$prompt" --resume "$session_arg" --output-format stream-json $SKIP_PERMISSIONS 2>&1
+            claude -p "$prompt" --resume "$session_arg" --output-format stream-json --verbose $SKIP_PERMISSIONS 2>&1
         else
-            claude -p "$prompt" --output-format stream-json $SKIP_PERMISSIONS 2>&1
+            claude -p "$prompt" --output-format stream-json --verbose $SKIP_PERMISSIONS 2>&1
         fi
     ) | tee "$output_file"
 
-    # Extract final JSON result (last line with session_id)
-    tail -1 "$output_file"
+    # Extract session_id from the result line (type=result has session_id)
+    grep '"type":"result"' "$output_file" | tail -1
     rm -f "$output_file"
 }
 
@@ -225,7 +225,7 @@ has_uncommitted_changes() {
 # Check if local branch is ahead of remote
 has_unpushed_commits() {
     local ahead
-    ahead=$(git rev-list --count @{upstream}..HEAD 2>/dev/null || echo "0")
+    ahead=$(git rev-list --count "@{upstream}..HEAD" 2>/dev/null || echo "0")
     [[ "$ahead" -gt 0 ]]
 }
 
