@@ -44,7 +44,7 @@
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
-    "@electron/rebuild": "^4.0.2",
+    "@electron/rebuild": "^4.0.3",
     "@types/node": "^22.10.2",
     "@types/ssh2": "^1.15.5",
     "@vitejs/plugin-react": "^5.1.2",
