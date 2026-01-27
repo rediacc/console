@@ -10,6 +10,7 @@
 # - Gemini already reviewed the latest commit
 # - Maximum review triggers reached (see MAX_GEMINI_REVIEWS in common.sh)
 # - Unresolved review threads exist (must address previous comments first)
+# - Changed LOC since last review is less than MIN_LOC_FOR_REVIEW (100 lines)
 #
 # Usage:
 #   .ci/scripts/quality/trigger-gemini-review.sh
@@ -99,6 +100,51 @@ if [[ "$REVIEW_COUNT" -ge "$MAX_GEMINI_REVIEWS" ]]; then
 fi
 
 log_info "Review triggers: $REVIEW_COUNT/$MAX_GEMINI_REVIEWS"
+
+# Check if there are enough changes since the last review to warrant a new one
+# Skip if changed LOC (added + removed) is less than 100 lines
+MIN_LOC_FOR_REVIEW="${MIN_LOC_FOR_REVIEW:-100}"
+
+log_step "Checking LOC changes since last review..."
+
+# Get all comments with their body to find the last trigger
+COMMENTS_WITH_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+    --jq '[.[] | select(.body | contains("triggered by CI for commit")) | .body]' 2>/dev/null || echo "[]")
+
+# Extract the SHA from the last trigger comment
+LAST_REVIEWED_SHA=$(echo "$COMMENTS_WITH_SHA" | jq -r 'last | capture("triggered by CI for commit (?<sha>[a-f0-9]+)") | .sha // empty' 2>/dev/null || echo "")
+
+if [[ -n "$LAST_REVIEWED_SHA" ]]; then
+    # Calculate diff between last reviewed commit and current HEAD
+    # Use git diff --shortstat to get a summary
+    DIFF_STAT=$(git diff --shortstat "${LAST_REVIEWED_SHA}..HEAD" 2>/dev/null || echo "")
+
+    if [[ -n "$DIFF_STAT" ]]; then
+        # Extract insertions and deletions from shortstat output
+        # Format: " X files changed, Y insertions(+), Z deletions(-)"
+        INSERTIONS=$(echo "$DIFF_STAT" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo "0")
+        DELETIONS=$(echo "$DIFF_STAT" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo "0")
+        TOTAL_LOC=$((${INSERTIONS:-0} + ${DELETIONS:-0}))
+
+        log_info "Changes since last review ($LAST_REVIEWED_SHA): +${INSERTIONS:-0}/-${DELETIONS:-0} = $TOTAL_LOC lines"
+
+        if [[ "$TOTAL_LOC" -lt "$MIN_LOC_FOR_REVIEW" ]]; then
+            log_info "Changed LOC ($TOTAL_LOC) < minimum threshold ($MIN_LOC_FOR_REVIEW)"
+            log_info "Skipping review trigger - not enough changes since last review"
+            echo ""
+            echo "------------------------------------------------------------"
+            echo "Skipping Gemini review: only $TOTAL_LOC lines changed."
+            echo "Minimum threshold is $MIN_LOC_FOR_REVIEW lines."
+            echo "------------------------------------------------------------"
+            exit 0
+        fi
+    else
+        log_info "No diff found or empty commit - skipping review trigger"
+        exit 0
+    fi
+else
+    log_info "No previous review trigger found - this will be the first triggered review"
+fi
 
 # Check for unresolved review threads before triggering new review
 # Don't ask Gemini to review again until previous comments are addressed
