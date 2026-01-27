@@ -83,42 +83,61 @@ log_info "Timeout: ${TIMEOUT}s, Poll interval: ${POLL_INTERVAL}s"
 
 # Function to check if Gemini has reviewed
 check_gemini_review() {
-    # Get all comments from Gemini bot
+    # Check PR reviews first (Gemini posts reviews, not just comments)
+    local gemini_review
+    gemini_review=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
+        --jq "[.[] | select(.user.login == \"${GEMINI_BOT}\")] | last" 2>/dev/null || echo "null")
+
+    if [[ "$gemini_review" != "null" ]] && [[ -n "$gemini_review" ]]; then
+        local review_body review_time
+        review_body=$(echo "$gemini_review" | jq -r '.body // ""')
+        review_time=$(echo "$gemini_review" | jq -r '.submitted_at // ""')
+
+        # Check if review mentions the current commit SHA
+        if echo "$review_body" | grep -qi "$SHORT_SHA"; then
+            log_info "Found Gemini review for commit $SHORT_SHA"
+            return 0
+        fi
+
+        # Check if review was posted recently (within last 10 minutes)
+        if [[ -n "$review_time" ]]; then
+            local review_epoch now_epoch age
+            review_epoch=$(date -d "$review_time" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$review_time" +%s 2>/dev/null || echo "0")
+            now_epoch=$(date +%s)
+            age=$((now_epoch - review_epoch))
+
+            if [[ $age -lt 600 ]]; then
+                log_info "Found recent Gemini review (${age}s ago)"
+                return 0
+            fi
+        fi
+    fi
+
+    # Also check issue comments (fallback for older review style)
     local gemini_comments
     gemini_comments=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
         --jq "[.[] | select(.user.login == \"${GEMINI_BOT}\")] | last" 2>/dev/null || echo "null")
 
-    if [[ "$gemini_comments" == "null" ]] || [[ -z "$gemini_comments" ]]; then
-        return 1
-    fi
+    if [[ "$gemini_comments" != "null" ]] && [[ -n "$gemini_comments" ]]; then
+        local comment_body comment_time
+        comment_body=$(echo "$gemini_comments" | jq -r '.body // ""')
 
-    # Check if the comment mentions the current commit SHA
-    # Gemini includes the commit SHA in its review summary
-    local comment_body
-    comment_body=$(echo "$gemini_comments" | jq -r '.body // ""')
-
-    if echo "$comment_body" | grep -qi "$SHORT_SHA"; then
-        log_info "Found Gemini review for commit $SHORT_SHA"
-        return 0
-    fi
-
-    # Also check if the review was posted recently (within last 5 minutes of this script starting)
-    # This handles cases where Gemini's review format changes
-    local comment_time
-    comment_time=$(echo "$gemini_comments" | jq -r '.created_at // ""')
-
-    if [[ -n "$comment_time" ]]; then
-        # Parse ISO 8601 timestamp
-        local comment_epoch
-        comment_epoch=$(date -d "$comment_time" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$comment_time" +%s 2>/dev/null || echo "0")
-        local now_epoch
-        now_epoch=$(date +%s)
-        local age=$((now_epoch - comment_epoch))
-
-        # If Gemini posted within the last 10 minutes, assume it's for this commit
-        if [[ $age -lt 600 ]]; then
-            log_info "Found recent Gemini review (${age}s ago)"
+        if echo "$comment_body" | grep -qi "$SHORT_SHA"; then
+            log_info "Found Gemini comment for commit $SHORT_SHA"
             return 0
+        fi
+
+        comment_time=$(echo "$gemini_comments" | jq -r '.created_at // ""')
+        if [[ -n "$comment_time" ]]; then
+            local comment_epoch now_epoch age
+            comment_epoch=$(date -d "$comment_time" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$comment_time" +%s 2>/dev/null || echo "0")
+            now_epoch=$(date +%s)
+            age=$((now_epoch - comment_epoch))
+
+            if [[ $age -lt 600 ]]; then
+                log_info "Found recent Gemini comment (${age}s ago)"
+                return 0
+            fi
         fi
     fi
 
