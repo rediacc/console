@@ -4,10 +4,12 @@
 # This script polls PR comments until Gemini's review is found or times out.
 # It ensures CI doesn't pass before Gemini has a chance to review the code.
 #
+# For first commits, Gemini auto-reviews when the PR is opened.
+# For subsequent commits, trigger-gemini-review.sh triggers the review.
+# This script waits for Gemini's response in both cases.
+#
 # Skips if:
 # - PR has 'no-gemini-review' label
-# - First commit on PR (Gemini auto-reviews)
-# - PR is from a bot
 #
 # Usage:
 #   .ci/scripts/quality/wait-gemini-review.sh
@@ -38,13 +40,6 @@ log_step "Waiting for Gemini Code Assist review..."
 LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
 if echo "$LABELS" | grep -q "no-gemini-review"; then
     log_info "Skipping Gemini wait (no-gemini-review label present)"
-    exit 0
-fi
-
-# Check commit count - skip if first commit (Gemini reviews automatically)
-COMMIT_COUNT=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits | length' 2>/dev/null || echo "0")
-if [[ "$COMMIT_COUNT" -le 1 ]]; then
-    log_info "First commit - Gemini will review automatically (no wait needed)"
     exit 0
 fi
 

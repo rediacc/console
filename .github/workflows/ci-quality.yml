@@ -31,20 +31,9 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
 
-  quality-gemini-review:
-    name: Gemini Review
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
-      - name: Trigger Gemini Code Assist review
-        run: .ci/scripts/quality/trigger-gemini-review.sh
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+  # NOTE: Gemini Review is now triggered by review-gate job in ci.yml
+  # after all quality jobs pass, to avoid triggering reviews on code
+  # that has lint/type errors
 
   quality-versions:
     name: Versions
@@ -236,20 +225,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
 
-  quality-resolved-threads:
-    name: Resolved Threads
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
-      - name: Check all review threads are resolved
-        run: .ci/scripts/quality/check-resolved-threads.sh
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+  # NOTE: Resolved Threads check is now in review-gate job in ci.yml
+  # It runs AFTER Gemini posts its review, so we can check if threads are resolved
 
   quality-attribution:
     name: Attribution

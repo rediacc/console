@@ -333,9 +333,11 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # REVIEW GATE: Wait for Gemini review and check resolved threads
+  # REVIEW GATE: Trigger Gemini review, wait for it, check resolved threads
   # Dependencies: [initialize, quality]
   # Must pass before Build jobs can start
+  #
+  # Flow: Quality passes → Trigger Gemini → Wait for response → Check threads
   # ============================================================================
   review-gate:
     name: Review Gate
@@ -346,6 +348,12 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           sparse-checkout: .ci/scripts
+      - name: Trigger Gemini review
+        run: .ci/scripts/quality/trigger-gemini-review.sh
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Wait for Gemini review
         run: .ci/scripts/quality/wait-gemini-review.sh
         env:
