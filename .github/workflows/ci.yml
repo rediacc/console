@@ -140,15 +140,7 @@ jobs:
               warnings.push(`Many files changed (${fileCount} files). Consider breaking it into smaller PRs.`);
             }
 
-            // Check mergeable state
-            const { data: prData } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number,
-            });
-            if (prData.mergeable_state === 'dirty') {
-              errors.push('PR has merge conflicts. Please resolve them.');
-            }
+            // Note: Merge conflicts and rebase checks are handled by Quality / Branch job
 
             // Write summary
             let summary = `## PR Validation\n\n`;
@@ -214,8 +206,9 @@ jobs:
 
   cancel-watchdog:
     name: Cancel Watchdog
+    needs: [initialize]
     runs-on: ubuntu-slim
-    if: always() && (github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')))
+    if: always() && needs.initialize.result == 'success'
     steps:
       - name: Monitor Quality + Build jobs for quick failures
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
@@ -488,14 +481,21 @@ jobs:
               );
 
               const completed = otherJobs.filter(j => j.status === 'completed');
-              const inProgress = otherJobs.filter(j => j.status === 'in_progress');
-              const queued = otherJobs.filter(j => j.status === 'queued');
+              const notCompleted = otherJobs.filter(j => j.status !== 'completed');
               const failed = otherJobs.filter(j => j.conclusion === 'failure');
 
-              console.log(`[${elapsedMin}m] Jobs: ${completed.length}/${otherJobs.length} done, ${failed.length} failed`);
+              // Log status breakdown for debugging
+              const statusCounts = {};
+              notCompleted.forEach(j => {
+                statusCounts[j.status] = (statusCounts[j.status] || 0) + 1;
+              });
+              const statusStr = Object.entries(statusCounts).map(([k, v]) => `${v} ${k}`).join(', ') || 'none';
 
-              // Wait for ALL jobs to complete before taking action
-              if (inProgress.length === 0 && queued.length === 0) {
+              console.log(`[${elapsedMin}m] Jobs: ${completed.length}/${otherJobs.length} done, ${failed.length} failed, pending: ${statusStr}`);
+
+              // Wait for ALL jobs to complete (status === 'completed')
+              // This catches all non-complete states: queued, in_progress, waiting, pending
+              if (notCompleted.length === 0) {
                 if (failed.length > 0) {
                   console.log('');
                   console.log('='.repeat(70));

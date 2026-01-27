@@ -1,0 +1,55 @@
+# Gemini Code Assist Configuration
+# https://developers.google.com/gemini-code-assist/docs/customize-github-code-reviews
+
+code_review:
+  # Comment severity threshold (low, medium, high, critical)
+  # Only comments at or above this level will be posted
+  comment_severity_threshold: medium
+
+  # Focus areas for review
+  focus_areas:
+    - security
+    - performance
+    - best_practices
+    - error_handling
+    - type_safety
+
+  # File patterns to ignore during review
+  ignore_patterns:
+    # Lock files
+    - "**/*.lock"
+    - "**/package-lock.json"
+    - "**/pnpm-lock.yaml"
+    - "**/yarn.lock"
+
+    # Build outputs
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/out/**"
+    - "**/.next/**"
+
+    # Dependencies
+    - "**/node_modules/**"
+    - "**/vendor/**"
+
+    # Minified/generated files
+    - "**/*.min.js"
+    - "**/*.min.css"
+    - "**/*.generated.*"
+    - "**/*.d.ts"
+
+    # Assets
+    - "**/*.png"
+    - "**/*.jpg"
+    - "**/*.jpeg"
+    - "**/*.gif"
+    - "**/*.svg"
+    - "**/*.ico"
+    - "**/*.woff"
+    - "**/*.woff2"
+    - "**/*.ttf"
+    - "**/*.eot"
+
+    # CI artifacts
+    - "**/coverage/**"
+    - "**/.nyc_output/**"
