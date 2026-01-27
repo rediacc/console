@@ -54,6 +54,10 @@ echo ""
 # Check 2: Can we rebase without conflicts?
 log_step "Checking if auto-rebase is possible..."
 
+# Configure git identity BEFORE rebase (required for rebase to work)
+git config user.name "github-actions[bot]"
+git config user.email "github-actions[bot]@users.noreply.github.com"
+
 # Try rebase - verbose output helps diagnose issues if it fails
 ORIGINAL_HEAD=$(git rev-parse HEAD)
 if ! git rebase "origin/${BASE_BRANCH}" 2>&1; then
@@ -80,10 +84,7 @@ if [[ -z "$HEAD_BRANCH" ]]; then
     exit 1
 fi
 
-# Configure git for the push
 log_step "Pushing rebased branch..."
-git config user.name "github-actions[bot]"
-git config user.email "github-actions[bot]@users.noreply.github.com"
 
 # Push with force-with-lease for safety
 if ! git push origin "HEAD:${HEAD_BRANCH}" --force-with-lease; then
