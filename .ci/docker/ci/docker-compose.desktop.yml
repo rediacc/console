@@ -1,0 +1,15 @@
+# Docker Compose override for desktop environment
+# Adds Caddy gateway to route between noVNC and web services
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.desktop.yml up -d gateway
+
+services:
+  gateway:
+    image: caddy:alpine
+    container_name: rediacc-gateway
+    network_mode: host
+    volumes:
+      - ../desktop/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - web
