@@ -61,18 +61,30 @@ fi
 SHORT_SHA="${LATEST_SHA:0:7}"
 log_info "Latest commit: $SHORT_SHA"
 
-# Check if we already triggered a review for this commit
-# Look for our marker comment: <!-- triggered by CI for commit {SHA} -->
-log_step "Checking for existing review trigger..."
+# Check for existing review triggers
+# - Skip if we already triggered a review for this specific commit
+# - Skip if we've reached the maximum number of review triggers (3)
+log_step "Checking for existing review triggers..."
 
-TRIGGER_MARKER="triggered by CI for commit ${SHORT_SHA}"
 ALL_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
     --jq '.[].body' 2>/dev/null || echo "")
 
+# Check if this specific commit was already reviewed
+TRIGGER_MARKER="triggered by CI for commit ${SHORT_SHA}"
 if echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
     log_info "Review already triggered for commit $SHORT_SHA"
     exit 0
 fi
+
+# Limit to maximum 3 review triggers per PR to avoid spam
+MAX_REVIEWS=3
+REVIEW_COUNT=$(echo "$ALL_COMMENTS" | grep -c "triggered by CI for commit" || echo "0")
+if [[ "$REVIEW_COUNT" -ge "$MAX_REVIEWS" ]]; then
+    log_info "Maximum review triggers reached ($MAX_REVIEWS) - skipping"
+    exit 0
+fi
+
+log_info "Review triggers: $REVIEW_COUNT/$MAX_REVIEWS"
 
 # Trigger Gemini review
 log_step "Triggering Gemini review for commit $SHORT_SHA..."
