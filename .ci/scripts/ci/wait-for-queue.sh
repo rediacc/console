@@ -53,8 +53,8 @@ CURRENT_RUN_ID="$GITHUB_RUN_ID"
 log_info "Fetching info for run #${CURRENT_RUN_ID}..."
 API_RESPONSE=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CURRENT_RUN_ID}" 2>&1) || {
     log_warn "API call failed: $API_RESPONSE"
-    log_warn "Proceeding without queue check"
-    exit 0
+    log_error "Failed to perform queue check - cannot guarantee serialization"
+    exit 1
 }
 
 CURRENT_RUN_CREATED=$(echo "$API_RESPONSE" | jq -r '.created_at // empty')

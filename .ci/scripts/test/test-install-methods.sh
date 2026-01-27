@@ -111,9 +111,16 @@ run_test() {
         return 0
     fi
 
-    if "$@"; then
+    local exit_code=0
+    "$@" || exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
         log_info "PASS: $name"
         ((PASS++)) || true
+    elif [[ $exit_code -eq 77 ]]; then
+        # Exit code 77 = skip (GNU Automake convention)
+        log_warn "SKIP: $name - prerequisites not met"
+        ((SKIP++)) || true
     else
         log_error "FAIL: $name"
         ((FAIL++)) || true
@@ -189,9 +196,9 @@ test_binary_download() {
         fi
 
         # Check if we're on Windows (where powershell.exe is available)
+        # Return special exit code 77 to indicate "skip" (convention from GNU Automake)
         if ! command -v powershell.exe &>/dev/null; then
-            log_warn "Skipping Windows binary test: powershell.exe not available (requires Windows host)"
-            return 0
+            return 77
         fi
 
         test_script="
