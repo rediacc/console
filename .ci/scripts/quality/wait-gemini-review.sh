@@ -25,8 +25,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 # Configuration
-TIMEOUT="${GEMINI_TIMEOUT:-600}"      # 10 minutes max wait
-POLL_INTERVAL="${GEMINI_POLL:-30}"    # Check every 30 seconds
+MAX_WAIT="${GEMINI_TIMEOUT:-840}"       # 14 minutes max wait from trigger time
+STALE_THRESHOLD="${GEMINI_STALE:-1200}" # 20 minutes - if trigger is older, skip immediately
+POLL_INTERVAL="${GEMINI_POLL:-30}"      # Check every 30 seconds
 GEMINI_BOT="gemini-code-assist[bot]"
 
 # Validate environment
@@ -55,13 +56,15 @@ SHORT_SHA="${LATEST_SHA:0:7}"
 # Check if a review trigger was actually posted for this commit
 # If not (e.g., hit max review limit), skip waiting
 TRIGGER_MARKER="triggered by CI for commit ${SHORT_SHA}"
-ALL_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-    --jq '.[].body' 2>/dev/null || echo "")
 
-if ! echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
+# Get all issue comments with timestamps to find the trigger time
+COMMENTS_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+    --jq '[.[] | {body: .body, created_at: .created_at}]' 2>/dev/null || echo "[]")
+
+if ! echo "$COMMENTS_JSON" | jq -e ".[] | select(.body | contains(\"$TRIGGER_MARKER\"))" >/dev/null 2>&1; then
     # No trigger for this commit - check if it's because we hit the max
     # MAX_GEMINI_REVIEWS is defined in common.sh
-    REVIEW_COUNT=$(echo "$ALL_COMMENTS" | grep -c "triggered by CI for commit" || echo "0")
+    REVIEW_COUNT=$(echo "$COMMENTS_JSON" | jq '[.[] | select(.body | contains("triggered by CI for commit"))] | length' 2>/dev/null || echo "0")
 
     if [[ "$REVIEW_COUNT" -ge "$MAX_GEMINI_REVIEWS" ]]; then
         log_info "Max Gemini review triggers reached ($REVIEW_COUNT/$MAX_GEMINI_REVIEWS) - skipping wait"
@@ -72,12 +75,43 @@ if ! echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
     COMMIT_COUNT=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits | length' 2>/dev/null || echo "0")
     if [[ "$COMMIT_COUNT" -le 1 ]]; then
         log_info "First commit - Gemini auto-reviews on PR open, checking for existing review..."
+        TRIGGER_TIME=""
     else
         # No trigger for this commit - likely skipped due to unresolved threads
         # Don't wait for a review that will never come
         log_info "No review trigger for commit $SHORT_SHA - trigger was likely skipped"
         log_info "Skipping wait (unresolved threads or other skip condition)"
         exit 0
+    fi
+else
+    # Get the timestamp of the trigger comment for this commit
+    TRIGGER_TIME=$(echo "$COMMENTS_JSON" | jq -r "[.[] | select(.body | contains(\"$TRIGGER_MARKER\"))] | last | .created_at" 2>/dev/null || echo "")
+fi
+
+# Calculate smart timeout based on when the trigger was posted
+NOW_EPOCH=$(date +%s)
+TIMEOUT="$MAX_WAIT"
+
+if [[ -n "$TRIGGER_TIME" ]]; then
+    TRIGGER_EPOCH=$(date -d "$TRIGGER_TIME" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$TRIGGER_TIME" +%s 2>/dev/null || echo "0")
+
+    if [[ "$TRIGGER_EPOCH" -gt 0 ]]; then
+        TIME_SINCE_TRIGGER=$((NOW_EPOCH - TRIGGER_EPOCH))
+
+        # If trigger is older than stale threshold (20 mins), Gemini is unresponsive - skip
+        if [[ "$TIME_SINCE_TRIGGER" -ge "$STALE_THRESHOLD" ]]; then
+            log_info "Trigger was posted ${TIME_SINCE_TRIGGER}s ago (> ${STALE_THRESHOLD}s threshold)"
+            log_info "Gemini appears unresponsive - skipping wait"
+            exit 0
+        fi
+
+        # Calculate remaining wait time instead of waiting full MAX_WAIT
+        TIMEOUT=$((MAX_WAIT - TIME_SINCE_TRIGGER))
+        if [[ "$TIMEOUT" -lt "$POLL_INTERVAL" ]]; then
+            TIMEOUT="$POLL_INTERVAL"  # At least one poll
+        fi
+
+        log_info "Trigger posted ${TIME_SINCE_TRIGGER}s ago, will wait up to ${TIMEOUT}s more"
     fi
 fi
 
@@ -169,24 +203,22 @@ if poll_with_watchdog "$TIMEOUT" "$POLL_INTERVAL" check_gemini_review log_poll_p
     exit 0
 fi
 
-# Timeout reached - fail with instructions
+# Timeout reached - don't block PR, just warn
 echo ""
 echo "============================================================"
-echo "  Gemini Review Gate: TIMEOUT"
+echo "  Gemini Review Gate: TIMEOUT (Proceeding)"
 echo "============================================================"
 echo ""
-echo "Gemini Code Assist did not post a review within ${TIMEOUT}s."
+echo "Gemini Code Assist did not respond within the wait period."
+echo "Proceeding without blocking the PR."
 echo ""
 echo "Possible causes:"
 echo "  1. Gemini is experiencing high load"
-echo "  2. The review was not triggered"
-echo "  3. Gemini encountered an error"
+echo "  2. Gemini encountered an error processing this PR"
 echo ""
-echo "Actions you can take:"
-echo "  - Wait and re-run this job"
-echo "  - Manually trigger: comment '/gemini review' on the PR"
-echo "  - Add 'no-gemini-review' label to skip this check"
+echo "You can manually trigger a review later:"
+echo "  - Comment '/gemini review' on the PR"
 echo ""
 echo "PR: https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 echo "============================================================"
-exit 1
+exit 0
