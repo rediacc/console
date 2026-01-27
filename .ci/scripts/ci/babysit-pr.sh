@@ -36,7 +36,13 @@ IMPORTANT GUIDELINES:
 - Ensure the fix is production-ready and maintainable
 - If the issue requires architectural changes, implement them properly
 - Do NOT disable tests, skip checks, or add ignore directives unless absolutely necessary
+- Do NOT add flags like --ignore-scripts, --no-verify, --force, or similar bypasses
 - If you previously attempted a fix that didn't work, analyze WHY and try a different approach
+
+TRANSIENT ERRORS (network timeouts, rate limits, download failures):
+- These are NOT code bugs - do NOT modify code to 'fix' them
+- Simply report: 'This is a transient infrastructure error. Please re-run the CI pipeline.'
+- Exit without making any changes
 
 "
 
