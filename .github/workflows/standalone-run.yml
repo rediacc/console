@@ -1,0 +1,329 @@
+name: Standalone Run
+run-name: "${{ inputs.run-name || 'Manual Service Run' }}"
+
+# Standalone workflow to run backend services for a specified duration
+# Supports optional desktop environment (noVNC) for browser-based access
+on:
+  workflow_dispatch:
+    inputs:
+      run-name:
+        description: 'Custom name for this run'
+        type: string
+        default: 'Manual Service Run'
+      duration:
+        description: 'Duration (minutes)'
+        type: choice
+        default: '30'
+        options:
+          - '5'
+          - '10'
+          - '15'
+          - '30'
+          - '45'
+          - '60'
+          - '90'
+          - '120'
+          - '180'
+          - '240'
+          - '300'
+      version:
+        description: 'Docker image version tag'
+        type: string
+        default: 'latest'
+      ci-mode:
+        description: 'Enable CI/TEST mode'
+        type: boolean
+        default: true
+      enable-desktop:
+        description: 'Enable desktop environment (noVNC)'
+        type: boolean
+        default: false
+      desktop-environment:
+        description: 'Desktop environment'
+        type: choice
+        default: 'xfce'
+        options:
+          - 'xfce'
+          - 'gnome'
+          - 'mate'
+      desktop-resolution:
+        description: 'Desktop resolution'
+        type: choice
+        default: '1600x900'
+        options:
+          - '1024x768'
+          - '1280x720'
+          - '1366x768'
+          - '1600x900'
+          - '1920x1080'
+          - '2560x1440'
+      enable-debug:
+        description: 'Enable tmate SSH debugging'
+        type: boolean
+        default: false
+
+# Cancel in-progress runs when a new run is triggered
+# workflow_dispatch uses run_id so each manual run is independent
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  run-services:
+    name: Run Console Services
+    runs-on: ubuntu-latest
+    timeout-minutes: 420  # 7 hours max
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set Image Tags
+        run: |
+          VERSION="${{ inputs.version || 'latest' }}"
+          echo "TAG=${VERSION}" >> $GITHUB_ENV
+          echo "API_TAG=${VERSION}" >> $GITHUB_ENV
+          echo "WEB_TAG=${VERSION}" >> $GITHUB_ENV
+          echo "BRIDGE_TAG=${VERSION}" >> $GITHUB_ENV
+
+          echo "Image version: ${VERSION}"
+
+      - name: Pre-pull Docker Images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          TAG: ${{ env.TAG }}
+        run: .ci/scripts/infra/ci-pull-images.sh
+
+      - name: Install sqlcmd
+        run: |
+          echo "Installing go-sqlcmd..."
+          curl -fsSL https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.0/sqlcmd-linux-amd64.tar.bz2 | \
+            sudo tar -xjf - -C /usr/local/bin sqlcmd
+          sqlcmd --version
+
+      - name: Create Debug Session
+        if: inputs.enable-debug
+        id: tmate
+        uses: rediacc/action-tmate@v1
+        with:
+          timeout: 60
+
+      # SECURITY NOTE: tmate debug session is started BEFORE services
+      # This ensures no GITHUB_TOKEN is present in the environment when debug access is available
+      # All required images have been pre-pulled, so no authentication is needed from this point forward
+
+      - name: Start Backend Services
+        id: backend
+        uses: ./.github/actions/start-backend
+        with:
+          keep-alive: 'true'
+          ci-mode: ${{ inputs.ci-mode && 'true' || 'false' }}
+        env:
+          TAG: ${{ env.TAG }}
+          CI_MODE: ${{ inputs.ci-mode && 'true' || 'false' }}
+
+      - name: Setup Desktop Environment
+        if: inputs.enable-desktop
+        id: desktop
+        env:
+          DESKTOP_ENVIRONMENT: ${{ inputs.desktop-environment }}
+          DESKTOP_RESOLUTION: ${{ inputs.desktop-resolution }}
+        run: |
+          chmod +x .ci/scripts/infra/ci-desktop.sh
+          .ci/scripts/infra/ci-desktop.sh --keep-running
+
+      - name: Start Caddy Gateway
+        if: inputs.enable-desktop
+        run: |
+          echo "Starting Caddy gateway for desktop routing..."
+          cd .ci/docker/ci
+          docker compose -f docker-compose.yml -f docker-compose.desktop.yml up -d gateway
+
+          # Wait for gateway to be ready
+          timeout 30 bash -c 'until curl -sf http://localhost:8080/health > /dev/null 2>&1; do sleep 1; done' || {
+            echo "Gateway health check timed out, checking status..."
+            docker logs rediacc-gateway --tail 20 || true
+          }
+          echo "Caddy gateway started"
+
+      - name: Create Cloudflare Tunnel
+        id: tunnel
+        uses: rediacc/action-cloudflare-tunnel@v1
+        with:
+          # When desktop is enabled, route through Caddy gateway on port 8080
+          url: ${{ inputs.enable-desktop && 'http://localhost:8080' || 'http://localhost' }}
+          timeout: 30
+
+      - name: Verify Tunnel
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          echo "Verifying tunnel connectivity..."
+
+          # Wait for tunnel to be accessible
+          timeout 60 bash -c "until curl -sf '${TUNNEL_URL}/health' > /dev/null 2>&1; do sleep 2; done" || {
+            echo "WARNING: Tunnel health check failed, but continuing..."
+          }
+
+          echo "Tunnel verified: ${TUNNEL_URL}"
+
+      - name: Display Access Information
+        run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
+          DURATION_MIN="${{ inputs.duration }}"
+
+          echo ""
+          echo "================================================================"
+          echo "  Rediacc Console Services Ready"
+          echo "================================================================"
+          echo ""
+          echo "DOCKER IMAGE VERSION: ${{ env.TAG }}"
+          echo "DURATION: ${DURATION_MIN} minutes"
+          echo ""
+          echo "WEB ACCESS:"
+          echo "  Tunnel URL: ${TUNNEL_URL}"
+
+          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
+            echo "  Desktop:    ${TUNNEL_URL}/desktop"
+            echo ""
+            echo "DESKTOP:"
+            echo "  Environment: ${{ inputs.desktop-environment }}"
+            echo "  Resolution:  ${{ inputs.desktop-resolution }}"
+          fi
+
+          echo ""
+          echo "LOCAL ACCESS:"
+          echo "  Web UI:  http://localhost"
+          echo "  API:     http://localhost/api"
+
+          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
+            echo "  Desktop: http://localhost:6080/vnc.html"
+            echo "  Gateway: http://localhost:8080"
+          fi
+
+          if [ "${{ inputs.enable-debug }}" == "true" ]; then
+            echo ""
+            echo "DEBUG ACCESS:"
+            echo "  SSH:     ${{ steps.tmate.outputs.ssh-connection }}"
+            echo "  Web:     ${{ steps.tmate.outputs.web-url }}"
+          fi
+
+          echo ""
+          echo "================================================================"
+
+      - name: Keep Services Alive
+        run: |
+          DURATION_MIN="${{ inputs.duration }}"
+          DURATION_SEC=$((DURATION_MIN * 60))
+          END_TIME=$(($(date +%s) + DURATION_SEC))
+          CHECK_INTERVAL=300  # Check every 5 minutes
+
+          echo ""
+          echo "Keeping services alive for ${DURATION_MIN} minutes..."
+          echo "  Start time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "  End time:   $(date -d @${END_TIME} '+%Y-%m-%d %H:%M:%S')"
+          echo ""
+
+          while [ $(date +%s) -lt ${END_TIME} ]; do
+            REMAINING=$(( (END_TIME - $(date +%s)) / 60 ))
+
+            # Run health check
+            if curl -sf http://localhost/health > /dev/null 2>&1; then
+              echo "${REMAINING} min remaining - services healthy"
+            else
+              echo "${REMAINING} min remaining - WARNING: health check failed"
+              echo ""
+              echo "Container Status:"
+              docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
+              echo ""
+            fi
+
+            # Calculate next check or remaining time
+            TIME_LEFT=$((END_TIME - $(date +%s)))
+            if [ ${TIME_LEFT} -lt ${CHECK_INTERVAL} ]; then
+              SLEEP_TIME=${TIME_LEFT}
+            else
+              SLEEP_TIME=${CHECK_INTERVAL}
+            fi
+
+            if [ ${SLEEP_TIME} -gt 0 ]; then
+              sleep ${SLEEP_TIME}
+            fi
+          done
+
+          echo ""
+          echo "================================================================"
+          echo "Duration completed at $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "================================================================"
+
+      - name: Final Service Status
+        if: always()
+        run: |
+          echo ""
+          echo "Final Container Status:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
+          echo ""
+          echo "Recent API Logs (last 30 lines):"
+          docker logs rediacc-api --tail=30 2>&1 || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo ""
+          echo "Cleaning up..."
+
+          # Stop tmate session if enabled
+          if [ "${{ inputs.enable-debug }}" == "true" ]; then
+            TMATE_PID="${{ steps.tmate.outputs.session-pid }}"
+            if [ -n "$TMATE_PID" ] && ps -p $TMATE_PID > /dev/null 2>&1; then
+              echo "Stopping tmate session (PID: $TMATE_PID)..."
+              kill $TMATE_PID || true
+            fi
+          fi
+
+          # Stop cloudflared tunnel
+          TUNNEL_PID="${{ steps.tunnel.outputs.tunnel-pid }}"
+          if [ -n "$TUNNEL_PID" ] && ps -p $TUNNEL_PID > /dev/null 2>&1; then
+            echo "Stopping Cloudflare Tunnel (PID: $TUNNEL_PID)..."
+            kill $TUNNEL_PID || true
+          fi
+
+          # Cleanup desktop processes
+          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
+            echo "Stopping desktop environment..."
+            .ci/scripts/infra/ci-desktop-cleanup.sh || true
+          fi
+
+          # Stop Docker services
+          echo "Stopping Docker services..."
+          cd .ci/docker/ci
+
+          # Stop gateway if running
+          if docker ps --format "{{.Names}}" | grep -q "^rediacc-gateway$"; then
+            docker compose -f docker-compose.yml -f docker-compose.desktop.yml down gateway || true
+          fi
+
+          # Stop all backend services
+          docker compose down --volumes --remove-orphans || true
+
+          # Cleanup mssql directory
+          sudo rm -rf mssql || rm -rf mssql || true
+
+          echo "Cleanup complete"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "================================================================"
+          echo "  Run Summary"
+          echo "================================================================"
+          echo "  Duration: ${{ inputs.duration }} minutes"
+          echo "  Status:   ${{ job.status }}"
+          echo "  Version:  ${{ env.TAG }}"
+          echo "  Desktop:  ${{ inputs.enable-desktop && 'enabled' || 'disabled' }}"
+          echo "  Debug:    ${{ inputs.enable-debug && 'enabled' || 'disabled' }}"
+          echo "  End time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "================================================================"
