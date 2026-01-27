@@ -60,11 +60,11 @@ ALL_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" 
 
 if ! echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
     # No trigger for this commit - check if it's because we hit the max
-    MAX_REVIEWS=3
+    # MAX_GEMINI_REVIEWS is defined in common.sh
     REVIEW_COUNT=$(echo "$ALL_COMMENTS" | grep -c "triggered by CI for commit" || echo "0")
 
-    if [[ "$REVIEW_COUNT" -ge "$MAX_REVIEWS" ]]; then
-        log_info "Max Gemini review triggers reached ($REVIEW_COUNT/$MAX_REVIEWS) - skipping wait"
+    if [[ "$REVIEW_COUNT" -ge "$MAX_GEMINI_REVIEWS" ]]; then
+        log_info "Max Gemini review triggers reached ($REVIEW_COUNT/$MAX_GEMINI_REVIEWS) - skipping wait"
         exit 0
     fi
 

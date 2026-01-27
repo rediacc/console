@@ -8,6 +8,8 @@
 # - This is the first commit (Gemini reviews automatically)
 # - PR has 'no-gemini-review' label
 # - Gemini already reviewed the latest commit
+# - Maximum review triggers reached (see MAX_GEMINI_REVIEWS in common.sh)
+# - Unresolved review threads exist (must address previous comments first)
 #
 # Usage:
 #   .ci/scripts/quality/trigger-gemini-review.sh
@@ -76,15 +78,63 @@ if echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
     exit 0
 fi
 
-# Limit to maximum 3 review triggers per PR to avoid spam
-MAX_REVIEWS=3
+# Limit review triggers per PR to avoid spam (constant defined in common.sh)
 REVIEW_COUNT=$(echo "$ALL_COMMENTS" | grep -c "triggered by CI for commit" || echo "0")
-if [[ "$REVIEW_COUNT" -ge "$MAX_REVIEWS" ]]; then
-    log_info "Maximum review triggers reached ($MAX_REVIEWS) - skipping"
+if [[ "$REVIEW_COUNT" -ge "$MAX_GEMINI_REVIEWS" ]]; then
+    log_info "Maximum review triggers reached ($MAX_GEMINI_REVIEWS) - skipping"
     exit 0
 fi
 
-log_info "Review triggers: $REVIEW_COUNT/$MAX_REVIEWS"
+log_info "Review triggers: $REVIEW_COUNT/$MAX_GEMINI_REVIEWS"
+
+# Check for unresolved review threads before triggering new review
+# Don't ask Gemini to review again until previous comments are addressed
+log_step "Checking for unresolved review threads..."
+
+OWNER="${GITHUB_REPOSITORY%%/*}"
+REPO="${GITHUB_REPOSITORY##*/}"
+
+THREAD_QUERY='
+query($owner: String!, $repo: String!, $pr: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      reviewThreads(first: 100) {
+        nodes {
+          isResolved
+          isOutdated
+        }
+      }
+    }
+  }
+}'
+
+THREAD_RESULT=$(gh api graphql \
+    -f query="$THREAD_QUERY" \
+    -f owner="$OWNER" \
+    -f repo="$REPO" \
+    -F pr="$PR_NUMBER" 2>/dev/null || echo '{}')
+
+# Count unresolved threads (excluding outdated ones)
+UNRESOLVED_COUNT=$(echo "$THREAD_RESULT" | jq '[
+    .data.repository.pullRequest.reviewThreads.nodes[]
+    | select(.isResolved == false and .isOutdated == false)
+] | length' 2>/dev/null || echo "0")
+
+if [[ "$UNRESOLVED_COUNT" -gt 0 ]]; then
+    log_info "Found $UNRESOLVED_COUNT unresolved review thread(s)"
+    log_info "Skipping new review until previous comments are addressed"
+    echo ""
+    echo "------------------------------------------------------------"
+    echo "Previous review comments must be resolved before requesting"
+    echo "a new Gemini review. Please:"
+    echo "  1. Address the feedback in unresolved threads"
+    echo "  2. Resolve each thread in the GitHub UI"
+    echo "  3. Push a new commit to trigger another review"
+    echo "------------------------------------------------------------"
+    exit 0
+fi
+
+log_info "No unresolved threads - proceeding with review trigger"
 
 # Trigger Gemini review
 log_step "Triggering Gemini review for commit $SHORT_SHA..."

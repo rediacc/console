@@ -372,6 +372,15 @@ parse_args() {
 }
 
 # =============================================================================
+# SHARED CONSTANTS
+# =============================================================================
+# Define constants here to avoid duplication across scripts.
+# The shellcheck.sh linter will catch if these are redefined elsewhere.
+
+# Maximum number of Gemini review triggers per PR
+MAX_GEMINI_REVIEWS=11
+
+# =============================================================================
 # INITIALIZATION
 # =============================================================================
 
