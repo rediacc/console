@@ -49,11 +49,18 @@ log_step "Checking for other in-progress CI runs..."
 START_TIME=$(date +%s)
 CURRENT_RUN_ID="$GITHUB_RUN_ID"
 
-# Get current run's created_at timestamp
-CURRENT_RUN_CREATED=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CURRENT_RUN_ID}" --jq '.created_at' 2>/dev/null || echo "")
+# Get current run's created_at timestamp with explicit error handling
+log_info "Fetching info for run #${CURRENT_RUN_ID}..."
+API_RESPONSE=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CURRENT_RUN_ID}" 2>&1) || {
+    log_warn "API call failed: $API_RESPONSE"
+    log_warn "Proceeding without queue check"
+    exit 0
+}
+
+CURRENT_RUN_CREATED=$(echo "$API_RESPONSE" | jq -r '.created_at // empty')
 
 if [[ -z "$CURRENT_RUN_CREATED" ]]; then
-    log_warn "Could not fetch current run info - proceeding without queue"
+    log_warn "Could not parse run info from API response - proceeding without queue"
     exit 0
 fi
 

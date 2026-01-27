@@ -54,12 +54,12 @@ echo ""
 # Check 2: Can we rebase without conflicts?
 log_step "Checking if auto-rebase is possible..."
 
-# Try rebase in detached HEAD to test for conflicts
+# Try rebase - verbose output helps diagnose issues if it fails
 ORIGINAL_HEAD=$(git rev-parse HEAD)
-if ! git rebase "origin/${BASE_BRANCH}" --quiet 2>/dev/null; then
+if ! git rebase "origin/${BASE_BRANCH}" 2>&1; then
     # Rebase failed - conflicts detected
     git rebase --abort 2>/dev/null || true
-    git checkout "${ORIGINAL_HEAD}" --quiet 2>/dev/null || true
+    git checkout "${ORIGINAL_HEAD}" 2>/dev/null || true
 
     log_error "Cannot auto-rebase: merge conflicts detected"
     echo ""

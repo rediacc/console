@@ -160,8 +160,8 @@ verify_version() {
     local expected="$2"
 
     if [[ "$expected" == "latest" ]]; then
-        # Just check that we got some version output
-        [[ -n "$output" ]] && echo "$output" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'
+        # Check that we got some version output - handles v prefix and pre-release suffixes
+        [[ -n "$output" ]] && echo "$output" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'
     else
         echo "$output" | grep -q "$expected"
     fi
@@ -182,16 +182,23 @@ test_binary_download() {
 
     local test_script
     if [[ "$platform" == "win" ]]; then
-        # Windows test (PowerShell)
+        # Windows test requires PowerShell - only available on Windows
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_info "[DRY-RUN] Would download and test Windows binary"
+            return 0
+        fi
+
+        # Check if we're on Windows (where powershell.exe is available)
+        if ! command -v powershell.exe &>/dev/null; then
+            log_warn "Skipping Windows binary test: powershell.exe not available (requires Windows host)"
+            return 0
+        fi
+
         test_script="
             \$ErrorActionPreference = 'Stop'
             Invoke-WebRequest -Uri '$url' -OutFile '$binary_name'
             .\\$binary_name --version
         "
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log_info "[DRY-RUN] Would run PowerShell: $test_script"
-            return 0
-        fi
         powershell.exe -Command "$test_script"
     else
         # Linux/macOS test

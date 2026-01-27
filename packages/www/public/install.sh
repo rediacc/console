@@ -1,11 +1,18 @@
 #!/bin/bash
 # Rediacc CLI Installer
-# Usage: curl -fsSL https://www.rediacc.com/install.sh | bash
+#
+# Quick install (downloads and runs this script):
+#   curl -fsSL https://www.rediacc.com/install.sh | bash
+#
+# Safer alternative (download first, inspect, then run):
+#   curl -fsSL https://www.rediacc.com/install.sh -o install.sh
+#   less install.sh  # inspect the script
+#   bash install.sh
 
 set -euo pipefail
 
-# Configuration
-REPO="rediacc/console"
+# Configuration (can be overridden via environment variables)
+REPO="${REDIACC_REPO:-rediacc/console}"
 INSTALL_DIR="${HOME}/.local/bin"
 VERSIONS_DIR="${HOME}/.local/share/rediacc/versions"
 MAX_VERSIONS=5
@@ -104,8 +111,14 @@ main() {
 
   # Get latest version from GitHub API
   echo "Fetching latest version..."
-  RELEASE_INFO=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest") || error "Failed to fetch release information"
-  VERSION=$(echo "$RELEASE_INFO" | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+  RELEASE_INFO=$(curl -fsSL -A "Rediacc-Installer/1.0" "https://api.github.com/repos/$REPO/releases/latest") || error "Failed to fetch release information"
+
+  # Extract version - use jq if available, otherwise fall back to grep/sed
+  if command -v jq &> /dev/null; then
+    VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name | ltrimstr("v")')
+  else
+    VERSION=$(echo "$RELEASE_INFO" | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/')
+  fi
 
   if [[ -z "$VERSION" ]]; then
     error "Could not determine latest version"
@@ -123,14 +136,14 @@ main() {
   # Download binary
   echo "Downloading rdc v$VERSION..."
   TEMP_FILE=$(mktemp)
-  curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_FILE" || {
+  curl -fsSL -A "Rediacc-Installer/1.0" "$DOWNLOAD_URL" -o "$TEMP_FILE" || {
     rm -f "$TEMP_FILE"
     error "Failed to download binary from $DOWNLOAD_URL"
   }
 
   # Download and verify checksum
   echo "Verifying checksum..."
-  EXPECTED_SHA=$(curl -fsSL "$CHECKSUM_URL" | awk '{print $1}') || {
+  EXPECTED_SHA=$(curl -fsSL -A "Rediacc-Installer/1.0" "$CHECKSUM_URL" | awk '{print $1}') || {
     rm -f "$TEMP_FILE"
     error "Failed to download checksum from $CHECKSUM_URL"
   }

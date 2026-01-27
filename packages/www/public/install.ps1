@@ -1,10 +1,18 @@
 # Rediacc CLI Installer for Windows
-# Usage: irm https://www.rediacc.com/install.ps1 | iex
+#
+# Quick install (downloads and runs this script):
+#   irm https://www.rediacc.com/install.ps1 | iex
+#
+# Safer alternative (download first, inspect, then run):
+#   Invoke-WebRequest -Uri https://www.rediacc.com/install.ps1 -OutFile install.ps1
+#   Get-Content install.ps1  # inspect the script
+#   .\install.ps1
 
 $ErrorActionPreference = "Stop"
 
-# Configuration
-$Repo = "rediacc/console"
+# Configuration (can be overridden via environment variables)
+$Repo = if ($env:REDIACC_REPO) { $env:REDIACC_REPO } else { "rediacc/console" }
+$UserAgent = "Rediacc-Installer/1.0"
 $InstallDir = "$env:LOCALAPPDATA\rediacc\bin"
 $VersionsDir = "$env:LOCALAPPDATA\rediacc\versions"
 $MaxVersions = 5
@@ -39,12 +47,14 @@ function Install-RDC {
     # Get latest version from GitHub API
     Write-Host "Fetching latest version..."
     try {
-        $Release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest"
+        $Headers = @{"User-Agent" = $UserAgent}
+        $Release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest" -Headers $Headers
     }
     catch {
         throw "Failed to fetch release information: $_"
     }
 
+    # Extract version - handles both "v1.2.3" and "1.2.3" formats
     $Version = $Release.tag_name -replace '^v', ''
     if (-not $Version) {
         throw "Could not determine latest version"
@@ -62,8 +72,9 @@ function Install-RDC {
     # Download binary
     Write-Host "Downloading rdc v$Version..."
     $TempFile = [System.IO.Path]::GetTempFileName()
+    $Headers = @{"User-Agent" = $UserAgent}
     try {
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $TempFile -UseBasicParsing
+        Invoke-WebRequest -Uri $DownloadUrl -OutFile $TempFile -UseBasicParsing -Headers $Headers
     }
     catch {
         Remove-Item -Path $TempFile -Force -ErrorAction SilentlyContinue
@@ -73,7 +84,7 @@ function Install-RDC {
     # Download and verify checksum
     Write-Host "Verifying checksum..."
     try {
-        $ChecksumContent = (Invoke-WebRequest -Uri $ChecksumUrl -UseBasicParsing).Content
+        $ChecksumContent = (Invoke-WebRequest -Uri $ChecksumUrl -UseBasicParsing -Headers $Headers).Content
         $ExpectedSha = ($ChecksumContent -split '\s+')[0].ToLower()
     }
     catch {

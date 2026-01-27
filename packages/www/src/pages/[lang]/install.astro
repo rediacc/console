@@ -86,11 +86,13 @@ chmod +x rdc && sudo mv rdc /usr/local/bin/
 curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-x64 -o rdc
 chmod +x rdc && sudo mv rdc /usr/local/bin/
 
-# Windows x64 (PowerShell)
+# Windows x64 (PowerShell) - downloads to current directory
 Invoke-WebRequest -Uri https://github.com/rediacc/console/releases/latest/download/rdc-win-x64.exe -OutFile rdc.exe
+# Then move to a directory in your PATH, e.g.: Move-Item rdc.exe $env:LOCALAPPDATA\\rediacc\\bin\\
 
-# Windows ARM64 (PowerShell)
-Invoke-WebRequest -Uri https://github.com/rediacc/console/releases/latest/download/rdc-win-arm64.exe -OutFile rdc.exe`}</code></pre>
+# Windows ARM64 (PowerShell) - downloads to current directory
+Invoke-WebRequest -Uri https://github.com/rediacc/console/releases/latest/download/rdc-win-arm64.exe -OutFile rdc.exe
+# Then move to a directory in your PATH, e.g.: Move-Item rdc.exe $env:LOCALAPPDATA\\rediacc\\bin\\`}</code></pre>
           </div>
         </div>
 
