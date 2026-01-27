@@ -26,6 +26,8 @@ MAX_RERUN_WAIT="${MAX_RERUN_WAIT:-300}"  # 5 min max wait for Rerun Watchdog
 SESSION_FILE="${SESSION_FILE:-/tmp/babysit-session-$$}"
 # Skip permission prompts - the AI is trusted for CI fixes
 SKIP_PERMISSIONS="--dangerously-skip-permissions"
+# Use Opus model explicitly for better instruction following
+MODEL="--model opus"
 
 # Enterprise-grade prompt prefix
 PROMPT_PREFIX="You are fixing CI failures for an enterprise software project.
@@ -156,9 +158,9 @@ run_claude() {
     (
         cd "$GIT_ROOT"
         if [[ -n "$session_arg" ]]; then
-            claude -p "$prompt" --resume "$session_arg" --output-format stream-json --verbose $SKIP_PERMISSIONS 2>&1
+            claude -p "$prompt" --resume "$session_arg" --output-format stream-json --verbose $MODEL $SKIP_PERMISSIONS 2>&1
         else
-            claude -p "$prompt" --output-format stream-json --verbose $SKIP_PERMISSIONS 2>&1
+            claude -p "$prompt" --output-format stream-json --verbose $MODEL $SKIP_PERMISSIONS 2>&1
         fi
     ) | tee "$output_file"
 
