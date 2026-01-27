@@ -51,6 +51,33 @@ if [[ -z "$LATEST_SHA" ]]; then
 fi
 
 SHORT_SHA="${LATEST_SHA:0:7}"
+
+# Check if a review trigger was actually posted for this commit
+# If not (e.g., hit max review limit), skip waiting
+TRIGGER_MARKER="triggered by CI for commit ${SHORT_SHA}"
+ALL_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+    --jq '.[].body' 2>/dev/null || echo "")
+
+if ! echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
+    # No trigger for this commit - check if it's because we hit the max
+    MAX_REVIEWS=3
+    REVIEW_COUNT=$(echo "$ALL_COMMENTS" | grep -c "triggered by CI for commit" || echo "0")
+
+    if [[ "$REVIEW_COUNT" -ge "$MAX_REVIEWS" ]]; then
+        log_info "Max Gemini review triggers reached ($REVIEW_COUNT/$MAX_REVIEWS) - skipping wait"
+        exit 0
+    fi
+
+    # First commit case - Gemini reviews automatically on PR open
+    COMMIT_COUNT=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits | length' 2>/dev/null || echo "0")
+    if [[ "$COMMIT_COUNT" -le 1 ]]; then
+        log_info "First commit - Gemini auto-reviews on PR open, checking for existing review..."
+    else
+        log_warn "No review trigger found for commit $SHORT_SHA - may have been skipped"
+        log_info "Checking for existing Gemini review anyway..."
+    fi
+fi
+
 log_info "Waiting for Gemini review on commit $SHORT_SHA..."
 log_info "Timeout: ${TIMEOUT}s, Poll interval: ${POLL_INTERVAL}s"
 
