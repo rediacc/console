@@ -236,6 +236,21 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
 
+  quality-resolved-threads:
+    name: Resolved Threads
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+      - name: Check all review threads are resolved
+        run: .ci/scripts/quality/check-resolved-threads.sh
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
   quality-attribution:
     name: Attribution
     runs-on: ubuntu-slim

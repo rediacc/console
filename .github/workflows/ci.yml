@@ -219,9 +219,10 @@ jobs:
             const minRuntime = 30000;    // 30 seconds minimum before allowing exit
             const startTime = Date.now();
 
-            // Job prefixes for quick-fail monitoring (Quality + Build only, NOT tests)
+            // Job prefixes for quick-fail monitoring (Quality + Review Gate + Build only, NOT tests)
             const quickFailPrefixes = [
               'Quality',
+              'Review Gate',
               'Build (Docker)',
               'Build (Desktop)',
               'Build (CLI)',
@@ -332,13 +333,41 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # REVIEW GATE: Wait for Gemini review and check resolved threads
+  # Dependencies: [initialize, quality]
+  # Must pass before Build jobs can start
+  # ============================================================================
+  review-gate:
+    name: Review Gate
+    needs: [initialize, quality]
+    runs-on: ubuntu-slim
+    if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+      - name: Wait for Gemini review
+        run: .ci/scripts/quality/wait-gemini-review.sh
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+      - name: Check resolved threads
+        run: .ci/scripts/quality/check-resolved-threads.sh
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+  # ============================================================================
   # COLUMN 3: BUILD & DOCKER
   # Jobs: build-docker, build-desktop (parallel reusable workflows)
-  # Dependencies: quality
+  # Dependencies: quality, review-gate (for PRs)
   # ============================================================================
   build-docker:
     name: Build (Docker)
-    needs: [initialize, quality]
+    needs: [initialize, quality, review-gate]
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -356,7 +385,8 @@ jobs:
 
   build-desktop:
     name: Build (Desktop)
-    needs: [initialize, quality]
+    needs: [initialize, quality, review-gate]
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-desktop.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -364,7 +394,8 @@ jobs:
 
   build-cli:
     name: Build (CLI)
-    needs: [initialize, quality]
+    needs: [initialize, quality, review-gate]
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -415,13 +446,20 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, build-docker, build-desktop, build-cli, deploy-dryrun, tests]
+    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
         run: |
+          # review-gate can be skipped for non-PR events or bots
+          REVIEW_GATE_OK="false"
+          if [[ "${{ needs.review-gate.result }}" == "success" ]] || [[ "${{ needs.review-gate.result }}" == "skipped" ]]; then
+            REVIEW_GATE_OK="true"
+          fi
+
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
              [[ "${{ needs.quality.result }}" != "success" ]] || \
+             [[ "$REVIEW_GATE_OK" != "true" ]] || \
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
@@ -430,6 +468,7 @@ jobs:
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
             echo "  quality: ${{ needs.quality.result }}"
+            echo "  review-gate: ${{ needs.review-gate.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
