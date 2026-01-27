@@ -75,10 +75,20 @@ while true; do
     fi
 
     # Get in-progress runs for the same workflow
+    # Note: We capture stderr separately to detect API errors vs empty results
+    API_ERROR_FILE=$(mktemp)
     OLDER_RUNS=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW}/runs?status=in_progress&per_page=10" \
         --jq --arg current_id "$CURRENT_RUN_ID" --arg current_created "$CURRENT_RUN_CREATED" \
         '[.workflow_runs[] | select(.id != ($current_id | tonumber) and .created_at < $current_created) | {id: .id, run_number: .run_number, branch: .head_branch, created_at: .created_at}]' \
-        2>/dev/null || echo "[]")
+        2>"$API_ERROR_FILE") || {
+        local api_err
+        api_err=$(<"$API_ERROR_FILE")
+        rm -f "$API_ERROR_FILE"
+        # Log warning but continue with empty array to avoid blocking CI
+        log_warn "API call to fetch older runs failed: $api_err"
+        OLDER_RUNS="[]"
+    }
+    rm -f "$API_ERROR_FILE"
 
     OLDER_COUNT=$(echo "$OLDER_RUNS" | jq 'length')
 

@@ -164,9 +164,23 @@ main() {
   ln -sf "$VERSIONS_DIR/$VERSION/rdc" "$INSTALL_DIR/rdc"
 
   # Cleanup old versions (keep last MAX_VERSIONS)
+  # Version directories use semver naming (e.g., "0.4.59"). We sort them by
+  # version number (newest first) and delete the oldest ones beyond MAX_VERSIONS.
   if [[ -d "$VERSIONS_DIR" ]]; then
-    # shellcheck disable=SC2012
-    ls -1dt "$VERSIONS_DIR"/*/ 2>/dev/null | tail -n +$((MAX_VERSIONS + 1)) | xargs -r rm -rf 2>/dev/null || true
+    local version_count=0
+    # Use find + sort for cross-platform (Linux/macOS) version sorting
+    # -t. -k1,1nr -k2,2nr -k3,3nr sorts by major.minor.patch descending
+    while IFS= read -r dir; do
+      [[ -z "$dir" ]] && continue
+      version_count=$((version_count + 1))
+      if [[ $version_count -gt $MAX_VERSIONS ]]; then
+        rm -rf "$dir" 2>/dev/null || true
+      fi
+    done < <(find "$VERSIONS_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while read -r d; do
+      basename "$d"
+    done | sort -t. -k1,1nr -k2,2nr -k3,3nr | while read -r v; do
+      echo "$VERSIONS_DIR/$v"
+    done)
   fi
 
   # Success message
