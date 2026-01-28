@@ -123,7 +123,7 @@
 
   /* Primary/Accent Colors */
   --color-primary: #556b2f; /* Primary accent color */
-  --color-accent-green: #7fa03f; /* Accent green for highlights */
+  --color-accent-neutral: #fff; /* Neutral accent for highlights */
 
   /* Success/Validation Colors */
   --color-success: #28a745;
@@ -211,7 +211,7 @@
   /* Gradients */
   --gradient-dark: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
   --gradient-dark-alt: linear-gradient(135deg, var(--color-bg-darker) 0%, #1f1f1f 100%);
-  --gradient-dark-green: linear-gradient(135deg, var(--color-bg-darker) 0%, #232823 100%);
+  --gradient-dark-neutral: linear-gradient(135deg, #1f1f1f 0%, #000 100%);
 }
 
 /* Fallback for browsers without dvh support */
