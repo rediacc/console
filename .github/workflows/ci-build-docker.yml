@@ -198,6 +198,7 @@ jobs:
   build-cli-docker-amd64:
     name: CLI Docker (amd64)
     runs-on: ubuntu-latest
+    needs: [build-cli]  # Wait for version bump
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -226,6 +227,7 @@ jobs:
   build-cli-docker-arm64:
     name: CLI Docker (arm64)
     runs-on: ubuntu-24.04-arm
+    needs: [build-cli]  # Wait for version bump
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
