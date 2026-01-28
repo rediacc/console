@@ -331,7 +331,7 @@
 }
 
 .ps-teaser-card.popular:focus-visible {
-  outline: 2px solid var(--color-accent-green);
+  outline: 2px solid var(--color-accent-neutral);
   outline-offset: 2px;
 }
 
@@ -340,8 +340,8 @@
   top: calc(-1 * var(--space-2));
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-accent-green);
-  color: white;
+  background: var(--color-accent-neutral);
+  color: var(--color-bg-dark);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-lg);
   font-size: var(--font-size-xs);
@@ -585,8 +585,8 @@
 
 .savings-badge {
   display: inline-block;
-  background: var(--color-accent-green);
-  color: white;
+  background: var(--color-accent-neutral);
+  color: var(--color-bg-dark);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-lg);
   font-size: var(--font-size-xs);
@@ -673,7 +673,7 @@
 .post-cta-section .guarantee-badge {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-accent-green);
+  color: var(--color-accent-neutral);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }
@@ -787,9 +787,9 @@
 }
 
 .service-package-card.popular {
-  border-color: var(--color-accent-green);
+  border-color: var(--color-accent-neutral);
   border-width: 2px;
-  background: var(--gradient-dark-green);
+  background: var(--gradient-dark-neutral);
 }
 
 .service-package-card .popular-badge {
@@ -797,8 +797,8 @@
   top: calc(-1 * var(--space-3));
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-accent-green);
-  color: white;
+  background: var(--color-accent-neutral);
+  color: var(--color-bg-dark);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-lg);
   font-size: var(--font-size-sm);
@@ -808,7 +808,7 @@
 .package-icon {
   text-align: center;
   margin-bottom: var(--space-4);
-  color: var(--color-accent-green);
+  color: var(--color-accent-neutral);
 }
 
 .package-header {
@@ -852,7 +852,7 @@
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
-  color: var(--color-accent-green);
+  color: var(--color-accent-neutral);
 }
 
 .turnaround-time {
@@ -896,7 +896,7 @@
 .package-benefits li svg {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--color-accent-green);
+  color: var(--color-accent-neutral);
 }
 
 .package-action {
@@ -939,7 +939,7 @@
 }
 
 .factor-icon {
-  color: var(--color-accent-green);
+  color: var(--color-accent-neutral);
   margin-bottom: var(--space-3);
 }
 
@@ -1024,7 +1024,7 @@
 
 .service-type-icon {
   flex-shrink: 0;
-  color: var(--color-accent-green);
+  color: var(--color-accent-neutral);
   display: flex;
   align-items: center;
 }
@@ -1074,7 +1074,7 @@
 
 .detail-badge.priority {
   background: rgba(127, 160, 63, var(--opacity-20));
-  color: var(--color-accent-green);
+  color: var(--color-accent-neutral);
 }
 
 .detail-badge.emergency {
