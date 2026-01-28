@@ -139,6 +139,96 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # RERUN WATCHDOG - Auto-retry flaky build/dry-run jobs (max 3 attempts)
+  # Only monitors Build and Dry-Run jobs. Publish is NOT retried (not idempotent).
+  # ============================================================================
+  rerun-watchdog:
+    name: Rerun Watchdog
+    runs-on: ubuntu-latest
+    needs: [init]
+    if: always() && needs.init.result == 'success' && fromJSON(github.run_attempt) < 3
+    steps:
+      - name: Wait for build/dry-run jobs and trigger rerun on failures
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        with:
+          script: |
+            const pollInterval = 30000;    // 30 seconds
+            const maxRuntime = 7200000;    // 2 hours max (builds + dry-run)
+            const startTime = Date.now();
+
+            console.log(`Rerun Watchdog started (attempt ${{ github.run_attempt }}/3)`);
+            console.log('Monitoring Build and Dry-Run jobs only...');
+
+            while (Date.now() - startTime < maxRuntime) {
+              const elapsed = Date.now() - startTime;
+              const elapsedMin = Math.round(elapsed / 60000);
+
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId
+              });
+
+              // Only monitor Build and Dry-Run jobs (not Publish, Validate, Cleanup)
+              const monitoredJobs = jobs.jobs.filter(j =>
+                j.name.startsWith('Build (') || j.name === 'Dry-Run'
+              );
+
+              const completed = monitoredJobs.filter(j => j.status === 'completed');
+              const notCompleted = monitoredJobs.filter(j => j.status !== 'completed');
+              const failed = monitoredJobs.filter(j => j.conclusion === 'failure');
+
+              // Log status breakdown
+              const statusCounts = {};
+              notCompleted.forEach(j => {
+                statusCounts[j.status] = (statusCounts[j.status] || 0) + 1;
+              });
+              const statusStr = Object.entries(statusCounts).map(([k, v]) => `${v} ${k}`).join(', ') || 'none';
+
+              console.log(`[${elapsedMin}m] Jobs: ${completed.length}/${monitoredJobs.length} done, ${failed.length} failed, pending: ${statusStr}`);
+
+              // Wait for monitored jobs to complete
+              if (notCompleted.length === 0) {
+                if (failed.length > 0) {
+                  console.log('');
+                  console.log('='.repeat(70));
+                  console.log(`BUILD/DRY-RUN COMPLETED - ${failed.length} failure(s) detected:`);
+                  failed.forEach(job => {
+                    console.log(`  - ${job.name}`);
+                  });
+                  console.log('Triggering rerun of failed jobs...');
+                  console.log('='.repeat(70));
+
+                  // Trigger rerun via workflow dispatch
+                  const ref = context.ref.replace('refs/heads/', '');
+                  console.log(`Dispatching rerun-failed.yml on ref: ${ref}`);
+
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: 'rerun-failed.yml',
+                    ref: ref,
+                    inputs: {
+                      run_id: String(context.runId)
+                    }
+                  });
+
+                  console.log('Rerun triggered successfully');
+                  return;
+                } else {
+                  console.log('All monitored jobs completed successfully - no rerun needed');
+                  return;
+                }
+              }
+
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+
+            // Safety timeout reached
+            console.log('WARNING: Rerun Watchdog reached 2-hour limit');
+            core.warning('Watchdog timeout - some jobs may still be running');
+
+  # ============================================================================
   # JOB 2: PUBLISH
   # Actually publish to GitHub Release, Docker, Pages
   # Only runs if dry-run succeeds AND not in dry_run mode
