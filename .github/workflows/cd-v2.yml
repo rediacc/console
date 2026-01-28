@@ -248,6 +248,18 @@ jobs:
           generate_release_notes: true
 
       # -----------------------------------------------------------------------
+      # Step 3.5: Update Homebrew formula
+      # -----------------------------------------------------------------------
+      - name: Update Homebrew formula
+        run: |
+          .ci/scripts/release/update-homebrew-tap.sh \
+            --version ${{ needs.init.outputs.next_version }} \
+            --push
+        env:
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+
+      # -----------------------------------------------------------------------
       # Step 4: Download packages from Release for metadata (ensures exact match)
       # -----------------------------------------------------------------------
       - name: Download packages from Release
