@@ -228,10 +228,12 @@ update_submodule_pointer() {
         if git diff --cached --quiet; then
             log_info "No submodule pointer changes"
         else
+            # Amend the previous version commit to include homebrew-tap update
+            # This consolidates two commits into one
             git -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
-                commit -m "chore(release): update homebrew-tap to $VERSION [skip ci]"
-            git push origin HEAD:main
-            log_info "Pushed submodule pointer update"
+                commit --amend --no-edit
+            git push --force-with-lease origin HEAD:main
+            log_info "Amended version commit with homebrew-tap update"
         fi
     )
 }
