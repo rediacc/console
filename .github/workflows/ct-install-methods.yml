@@ -2,6 +2,14 @@ name: Console CT - Install Methods
 
 # Reusable workflow to test all documented installation methods
 # Called after successful release to validate published artifacts
+#
+# Consolidated by runner type to minimize job overhead:
+# - Linux x64: Binary, Docker, APT, DNF, Quick Install, Linuxbrew
+# - Linux arm64: Binary, Docker, Quick Install
+# - macOS ARM64: Binary, Homebrew
+# - macOS x64: Binary, Homebrew
+# - Windows x64: Binary
+# - Windows arm64: Binary
 
 on:
   workflow_call:
@@ -16,61 +24,12 @@ on:
 
 jobs:
   # ===========================================================================
-  # Binary Download Tests (Native runners for each platform/arch)
+  # Linux x64: Binary, Docker, APT, DNF, Quick Install, Linuxbrew
   # ===========================================================================
-  test-install-binary:
-    name: Binary (${{ matrix.platform }}-${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
-          - os: ubuntu-24.04-arm
-            platform: linux
-            arch: arm64
-          - os: macos-latest
-            platform: mac
-            arch: arm64
-          - os: macos-15-intel
-            platform: mac
-            arch: x64
-          - os: windows-latest
-            platform: win
-            arch: x64
-          - os: windows-11-arm
-            platform: win
-            arch: arm64
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Test Binary Download
-        shell: bash
-        run: |
-          .ci/scripts/test/test-install-methods.sh \
-            --method binary \
-            --version ${{ inputs.version }} \
-            --platform ${{ matrix.platform }} \
-            --arch ${{ matrix.arch }}
-
-  # ===========================================================================
-  # Docker Tests (Linux only)
-  # ===========================================================================
-  test-install-docker:
-    name: Docker (${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            arch: x64
-          - os: ubuntu-24.04-arm
-            arch: arm64
+  test-linux-x64:
+    name: Linux (x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -81,28 +40,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GH_PAT || github.token }}
 
-      - name: Test Docker Pull and Run
+      - name: Test Binary Download
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform linux \
+            --arch x64
+
+      - name: Test Docker
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method docker \
             --version ${{ inputs.version }}
-
-  # ===========================================================================
-  # APT Tests (Docker containers on Linux)
-  # ===========================================================================
-  test-install-apt:
-    name: APT (${{ matrix.distro }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        distro:
-          - ubuntu:22.04
-          - ubuntu:24.04
-          - debian:12
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
       - name: Test APT Installation
         run: |
@@ -110,77 +60,60 @@ jobs:
             --method apt \
             --version ${{ inputs.version }}
 
-  # ===========================================================================
-  # DNF Tests (Docker containers on Linux)
-  # ===========================================================================
-  test-install-dnf:
-    name: DNF (${{ matrix.distro }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        distro:
-          - fedora:40
-          - rockylinux:9
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
       - name: Test DNF Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method dnf \
             --version ${{ inputs.version }}
 
-  # ===========================================================================
-  # Homebrew Tests (Native macOS + Linuxbrew)
-  # ===========================================================================
-  test-install-homebrew:
-    name: Homebrew (${{ matrix.label }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            label: macOS ARM64
-          - os: macos-15-intel
-            label: macOS x64
-          - os: ubuntu-latest
-            label: Linuxbrew
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Test Quick Install
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method quick \
+            --version ${{ inputs.version }}
 
-      - name: Install Homebrew (Linux)
-        if: runner.os == 'Linux'
+      - name: Install Homebrew (Linuxbrew)
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
 
-      - name: Test Homebrew Installation
+      - name: Test Homebrew (Linuxbrew)
         run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           .ci/scripts/test/test-install-methods.sh \
             --method homebrew \
             --version ${{ inputs.version }}
 
   # ===========================================================================
-  # Quick Install Tests (install.sh)
+  # Linux arm64: Binary, Docker, Quick Install
   # ===========================================================================
-  test-install-quick:
-    name: Quick Install (${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            arch: x64
-          - os: ubuntu-24.04-arm
-            arch: arm64
+  test-linux-arm64:
+    name: Linux (arm64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Test Binary Download
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform linux \
+            --arch arm64
+
+      - name: Test Docker
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method docker \
+            --version ${{ inputs.version }}
 
       - name: Test Quick Install
         run: |
@@ -189,18 +122,104 @@ jobs:
             --version ${{ inputs.version }}
 
   # ===========================================================================
+  # macOS ARM64: Binary, Homebrew
+  # ===========================================================================
+  test-macos-arm64:
+    name: macOS (ARM64)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Test Binary Download
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform mac \
+            --arch arm64
+
+      - name: Test Homebrew Installation
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method homebrew \
+            --version ${{ inputs.version }}
+
+  # ===========================================================================
+  # macOS x64: Binary, Homebrew
+  # ===========================================================================
+  test-macos-x64:
+    name: macOS (x64)
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Test Binary Download
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform mac \
+            --arch x64
+
+      - name: Test Homebrew Installation
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method homebrew \
+            --version ${{ inputs.version }}
+
+  # ===========================================================================
+  # Windows x64: Binary
+  # ===========================================================================
+  test-windows-x64:
+    name: Windows (x64)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Test Binary Download
+        shell: bash
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform win \
+            --arch x64
+
+  # ===========================================================================
+  # Windows arm64: Binary
+  # ===========================================================================
+  test-windows-arm64:
+    name: Windows (arm64)
+    runs-on: windows-11-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Test Binary Download
+        shell: bash
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method binary \
+            --version ${{ inputs.version }} \
+            --platform win \
+            --arch arm64
+
+  # ===========================================================================
   # Gate Job - All tests must pass
   # ===========================================================================
   install-methods-complete:
     name: Install Methods Complete
     runs-on: ubuntu-slim
     needs:
-      - test-install-binary
-      - test-install-docker
-      - test-install-apt
-      - test-install-dnf
-      - test-install-homebrew
-      - test-install-quick
+      - test-linux-x64
+      - test-linux-arm64
+      - test-macos-arm64
+      - test-macos-x64
+      - test-windows-x64
+      - test-windows-arm64
     if: always() && !cancelled()
     steps:
       - name: Check all tests passed
@@ -209,30 +228,30 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Check each job result
-          binary_result="${{ needs.test-install-binary.result }}"
-          docker_result="${{ needs.test-install-docker.result }}"
-          apt_result="${{ needs.test-install-apt.result }}"
-          dnf_result="${{ needs.test-install-dnf.result }}"
-          homebrew_result="${{ needs.test-install-homebrew.result }}"
-          quick_result="${{ needs.test-install-quick.result }}"
+          linux_x64="${{ needs.test-linux-x64.result }}"
+          linux_arm64="${{ needs.test-linux-arm64.result }}"
+          macos_arm64="${{ needs.test-macos-arm64.result }}"
+          macos_x64="${{ needs.test-macos-x64.result }}"
+          windows_x64="${{ needs.test-windows-x64.result }}"
+          windows_arm64="${{ needs.test-windows-arm64.result }}"
 
-          echo "| Method | Result |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Binary Download | $binary_result |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker | $docker_result |" >> $GITHUB_STEP_SUMMARY
-          echo "| APT | $apt_result |" >> $GITHUB_STEP_SUMMARY
-          echo "| DNF | $dnf_result |" >> $GITHUB_STEP_SUMMARY
-          echo "| Homebrew | $homebrew_result |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quick Install | $quick_result |" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux x64 (Binary, Docker, APT, DNF, Quick, Linuxbrew) | $linux_x64 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux arm64 (Binary, Docker, Quick) | $linux_arm64 |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS ARM64 (Binary, Homebrew) | $macos_arm64 |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS x64 (Binary, Homebrew) | $macos_x64 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows x64 (Binary) | $windows_x64 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows arm64 (Binary) | $windows_arm64 |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any test failed
-          if [[ "$binary_result" != "success" ]] || \
-             [[ "$docker_result" != "success" ]] || \
-             [[ "$apt_result" != "success" ]] || \
-             [[ "$dnf_result" != "success" ]] || \
-             [[ "$homebrew_result" != "success" ]] || \
-             [[ "$quick_result" != "success" ]]; then
+          if [[ "$linux_x64" != "success" ]] || \
+             [[ "$linux_arm64" != "success" ]] || \
+             [[ "$macos_arm64" != "success" ]] || \
+             [[ "$macos_x64" != "success" ]] || \
+             [[ "$windows_x64" != "success" ]] || \
+             [[ "$windows_arm64" != "success" ]]; then
             echo "**Status:** Some installation method tests failed" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
