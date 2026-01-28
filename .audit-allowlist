@@ -12,6 +12,10 @@
 # Same electron-builder dependency chain, tar@8+ has breaking ESM changes
 1112329
 
+# tar <=7.5.3 hardlink path traversal (GHSA-34x7-hfp2-rc4v)
+# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
+1112659
+
 # lodash <=4.17.21 prototype pollution in _.unset and _.omit (GHSA-xxjr-mmjv-4gpg)
 # In yaml-language-server dependency chain via vscode extensions, can't upgrade
 1112453

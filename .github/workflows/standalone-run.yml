@@ -3,7 +3,55 @@ run-name: "${{ inputs.run-name || 'Manual Service Run' }}"
 
 # Standalone workflow to run backend services for a specified duration
 # Supports optional desktop environment (noVNC) for browser-based access
+# Can be triggered manually (workflow_dispatch) or called from CI (workflow_call)
 on:
+  workflow_call:
+    inputs:
+      run-name:
+        type: string
+        default: 'CI Validation'
+      duration:
+        type: string
+        default: '5'
+      version:
+        description: 'Docker image version tag (required for workflow_call)'
+        type: string
+        required: true
+      api-tag:
+        description: 'API image tag (overrides version for API)'
+        type: string
+        default: ''
+      web-tag:
+        description: 'Web image tag (overrides version for Web)'
+        type: string
+        default: ''
+      bridge-tag:
+        description: 'Bridge image tag (overrides version for Bridge)'
+        type: string
+        default: ''
+      ci-mode:
+        type: boolean
+        default: true
+      enable-desktop:
+        type: boolean
+        default: false
+      desktop-environment:
+        type: string
+        default: 'xfce'
+      desktop-resolution:
+        type: string
+        default: '1600x900'
+      enable-debug:
+        type: boolean
+        default: false
+      vm-os:
+        description: 'VM OS (none = disabled)'
+        type: string
+        default: 'none'
+      vm-os-list:
+        description: 'JSON array of VM OS variants for matrix runs (overrides vm-os)'
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       run-name:
@@ -27,9 +75,9 @@ on:
           - '240'
           - '300'
       version:
-        description: 'Docker image version tag'
+        description: 'Docker image version tag (leave empty to auto-derive from branch/tag)'
         type: string
-        default: 'latest'
+        default: ''
       ci-mode:
         description: 'Enable CI/TEST mode'
         type: boolean
@@ -61,18 +109,32 @@ on:
         description: 'Enable tmate SSH debugging'
         type: boolean
         default: false
+      vm-os:
+        description: 'VM OS (none = disabled, or select OS)'
+        type: choice
+        default: 'none'
+        options:
+          - 'none'
+          - 'ubuntu-24.04'
+          - 'debian-12'
+          # TODO: Add fedora-43 and opensuse-15.6 once cloud-init compatibility is resolved
 
 # Cancel in-progress runs when a new run is triggered
-# workflow_dispatch uses run_id so each manual run is independent
+# Each run (workflow_dispatch or workflow_call) gets its own concurrency group via run_id
 concurrency:
   group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
   run-services:
-    name: Run Console Services
+    name: ${{ matrix.vm-os != 'none' && matrix.vm-os || 'Services' }}
     runs-on: ubuntu-latest
     timeout-minutes: 420  # 7 hours max
+    strategy:
+      fail-fast: false
+      matrix:
+        # When vm-os-list is provided (CI), use it as matrix; otherwise wrap single vm-os input
+        vm-os: ${{ fromJSON(inputs.vm-os-list || format('["%s"]', inputs.vm-os || 'none')) }}
 
     steps:
       - name: Checkout Repository
@@ -80,13 +142,23 @@ jobs:
 
       - name: Set Image Tags
         run: |
-          VERSION="${{ inputs.version || 'latest' }}"
-          echo "TAG=${VERSION}" >> $GITHUB_ENV
-          echo "API_TAG=${VERSION}" >> $GITHUB_ENV
-          echo "WEB_TAG=${VERSION}" >> $GITHUB_ENV
-          echo "BRIDGE_TAG=${VERSION}" >> $GITHUB_ENV
+          # Use reusable script to derive/validate base image tag
+          # --version: explicit override (empty = auto-derive)
+          # --env-file: exports TAG, API_TAG, WEB_TAG, BRIDGE_TAG to GITHUB_ENV
+          .ci/scripts/ci/derive-image-tag.sh \
+            ${{ inputs.version && format('--version "{0}"', inputs.version) || '' }} \
+            --env-file
 
-          echo "Image version: ${VERSION}"
+          # Override individual tags if provided (CI passes separate tags)
+          if [[ -n "${{ inputs.api-tag }}" ]]; then
+            echo "API_TAG=${{ inputs.api-tag }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.web-tag }}" ]]; then
+            echo "WEB_TAG=${{ inputs.web-tag }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.bridge-tag }}" ]]; then
+            echo "BRIDGE_TAG=${{ inputs.bridge-tag }}" >> $GITHUB_ENV
+          fi
 
       - name: Pre-pull Docker Images
         env:
@@ -122,6 +194,38 @@ jobs:
         env:
           TAG: ${{ env.TAG }}
           CI_MODE: ${{ inputs.ci-mode && 'true' || 'false' }}
+
+      # VM Provisioning (optional - builds image on-demand since no pre-built artifact)
+      - name: Pull Bridge Image for VM Provisioning
+        if: matrix.vm-os != 'none'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "ghcr.io/rediacc/elite/bridge:${{ env.TAG }}" --quiet
+
+      - name: Provision VMs
+        id: vms
+        if: matrix.vm-os != 'none'
+        uses: ./.github/actions/provision-vms
+        with:
+          bridge-tag: ${{ env.TAG }}
+          vm-os: ${{ matrix.vm-os }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Display VM Information
+        if: matrix.vm-os != 'none' && steps.vms.outputs.kvm-available == 'true'
+        run: |
+          echo ""
+          echo "================================================================"
+          echo "  VMs Provisioned (${{ matrix.vm-os }})"
+          echo "================================================================"
+          echo "  OS:       ${{ matrix.vm-os }}"
+          echo "  Bridge:   ${{ steps.vms.outputs.bridge-ip }}"
+          echo "  Workers:  ${{ steps.vms.outputs.worker-ips }}"
+          echo "================================================================"
+          echo ""
 
       - name: Setup Desktop Environment
         if: inputs.enable-desktop
@@ -206,6 +310,13 @@ jobs:
             echo "DEBUG ACCESS:"
             echo "  SSH:     ${{ steps.tmate.outputs.ssh-connection }}"
             echo "  Web:     ${{ steps.tmate.outputs.web-url }}"
+          fi
+
+          if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
+            echo ""
+            echo "VMs (${{ matrix.vm-os }}):"
+            echo "  Bridge:  ${{ steps.vms.outputs.bridge-ip }}"
+            echo "  Workers: ${{ steps.vms.outputs.worker-ips }}"
           fi
 
           echo ""
@@ -294,6 +405,12 @@ jobs:
             .ci/scripts/infra/ci-desktop-cleanup.sh || true
           fi
 
+          # Stop VMs if enabled
+          if [ "${{ matrix.vm-os }}" != "none" ]; then
+            echo "Stopping VMs..."
+            sudo /tmp/renet ops down || true
+          fi
+
           # Stop Docker services
           echo "Stopping Docker services..."
           cd .ci/docker/ci
@@ -322,6 +439,7 @@ jobs:
           echo "  Status:   ${{ job.status }}"
           echo "  Version:  ${{ env.TAG }}"
           echo "  Desktop:  ${{ inputs.enable-desktop && 'enabled' || 'disabled' }}"
+          echo "  VMs:      ${{ matrix.vm-os != 'none' && matrix.vm-os || 'disabled' }}"
           echo "  Debug:    ${{ inputs.enable-debug && 'enabled' || 'disabled' }}"
           echo "  End time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "================================================================"

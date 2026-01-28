@@ -55,7 +55,7 @@ fi
 echo "→ Running auto-fixes (format, lint, i18n)..."
 if ! npm run fix:all > /dev/null 2>&1; then
     echo "⚠️  Some issues could not be auto-fixed"
-    echo "   Run: ./go fix all"
+    echo "   Run: ./run.sh fix all"
 fi
 
 # 2. Check if translation files were modified - MUST regenerate hashes
@@ -93,15 +93,15 @@ if ! npm run quality > /dev/null 2>&1; then
     echo "❌ Quality checks failed!"
     echo ""
     echo "   To see detailed errors, run:"
-    echo "     ./go quality all      # Run all quality checks"
+    echo "     ./run.sh quality all      # Run all quality checks"
     echo ""
     echo "   To fix issues automatically:"
-    echo "     ./go fix all          # Auto-fix formatting, lint, etc."
+    echo "     ./run.sh fix all          # Auto-fix formatting, lint, etc."
     echo ""
     echo "   To run specific checks:"
-    echo "     ./go quality lint     # ESLint + Knip"
-    echo "     ./go quality format   # Code formatting"
-    echo "     ./go quality types    # TypeScript types"
+    echo "     ./run.sh quality lint     # ESLint + Knip"
+    echo "     ./run.sh quality format   # Code formatting"
+    echo "     ./run.sh quality types    # TypeScript types"
     echo ""
     exit 2
 fi
