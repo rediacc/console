@@ -356,7 +356,8 @@ jobs:
     name: Queue
     needs: [initialize, quality, review-gate]
     runs-on: ubuntu-slim
-    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    # Skip queue for merge_group - GitHub's merge queue already serializes
+    if: always() && github.event_name == 'pull_request' && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -376,7 +377,7 @@ jobs:
   build-docker:
     name: Build (Docker)
     needs: [initialize, queue]
-    if: always() && needs.initialize.result == 'success' && needs.queue.result == 'success'
+    if: always() && needs.initialize.result == 'success' && (needs.queue.result == 'success' || needs.queue.result == 'skipped')
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -395,7 +396,7 @@ jobs:
   build-desktop:
     name: Build (Desktop)
     needs: [initialize, queue]
-    if: always() && needs.initialize.result == 'success' && needs.queue.result == 'success'
+    if: always() && needs.initialize.result == 'success' && (needs.queue.result == 'success' || needs.queue.result == 'skipped')
     uses: ./.github/workflows/ci-build-desktop.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -404,7 +405,7 @@ jobs:
   build-cli:
     name: Build (CLI)
     needs: [initialize, queue]
-    if: always() && needs.initialize.result == 'success' && needs.queue.result == 'success'
+    if: always() && needs.initialize.result == 'success' && (needs.queue.result == 'success' || needs.queue.result == 'skipped')
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
