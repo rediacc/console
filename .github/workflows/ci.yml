@@ -505,86 +505,15 @@ jobs:
     # Only start after Queue passes - no point monitoring if quality checks failed
     if: always() && needs.cancel-watchdog.result == 'success' && needs.queue.result == 'success' && fromJSON(github.run_attempt) < 3
     steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
       - name: Wait for all jobs and trigger rerun on failures
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
-        with:
-          script: |
-            const pollInterval = 30000;    // 30 seconds (reduced API calls)
-            const maxRuntime = 10800000;   // 3 hours max (safety limit)
-            const startTime = Date.now();
-
-            console.log(`Rerun Watchdog started (attempt ${{ github.run_attempt }}/3)`);
-            console.log('Monitoring until all jobs complete...');
-
-            while (Date.now() - startTime < maxRuntime) {
-              const elapsed = Date.now() - startTime;
-              const elapsedMin = Math.round(elapsed / 60000);
-
-              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: context.runId
-              });
-
-              // Filter out watchdog and infrastructure jobs
-              const otherJobs = jobs.jobs.filter(j =>
-                !j.name.includes('Watchdog') &&
-                j.name !== 'Queue' &&
-                j.name !== 'CI Complete'
-              );
-
-              const completed = otherJobs.filter(j => j.status === 'completed');
-              const notCompleted = otherJobs.filter(j => j.status !== 'completed');
-              const failed = otherJobs.filter(j => j.conclusion === 'failure');
-
-              // Log status breakdown for debugging
-              const statusCounts = {};
-              notCompleted.forEach(j => {
-                statusCounts[j.status] = (statusCounts[j.status] || 0) + 1;
-              });
-              const statusStr = Object.entries(statusCounts).map(([k, v]) => `${v} ${k}`).join(', ') || 'none';
-
-              console.log(`[${elapsedMin}m] Jobs: ${completed.length}/${otherJobs.length} done, ${failed.length} failed, pending: ${statusStr}`);
-
-              // Wait for ALL jobs to complete (status === 'completed')
-              // This catches all non-complete states: queued, in_progress, waiting, pending
-              if (notCompleted.length === 0) {
-                if (failed.length > 0) {
-                  console.log('');
-                  console.log('='.repeat(70));
-                  console.log(`ALL JOBS COMPLETED - ${failed.length} failure(s) detected:`);
-                  failed.forEach(job => {
-                    console.log(`  - ${job.name}`);
-                  });
-                  console.log('Triggering rerun of failed jobs...');
-                  console.log('='.repeat(70));
-
-                  // Trigger rerun via workflow dispatch
-                  const ref = context.payload.pull_request?.head?.ref || context.ref.replace('refs/heads/', '');
-                  console.log(`Dispatching rerun-failed.yml on ref: ${ref}`);
-
-                  await github.rest.actions.createWorkflowDispatch({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    workflow_id: 'rerun-failed.yml',
-                    ref: ref,
-                    inputs: {
-                      run_id: String(context.runId)
-                    }
-                  });
-
-                  console.log('Rerun triggered successfully');
-                  return;
-                } else {
-                  console.log('All jobs completed successfully - no rerun needed');
-                  return;
-                }
-              }
-
-              await new Promise(resolve => setTimeout(resolve, pollInterval));
-            }
-
-            // Safety timeout reached
-            console.log('WARNING: Rerun Watchdog reached 3-hour limit');
-            core.warning('Watchdog timeout - some jobs may still be running');
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .ci/scripts/ci/rerun-watchdog.sh \
+            --timeout 180 \
+            --exclude "*Watchdog*" \
+            --exclude "Queue" \
+            --exclude "CI Complete"
 
