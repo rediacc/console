@@ -120,14 +120,14 @@ while true; do
 
   # Check timeout
   if [[ $ELAPSED -ge $TIMEOUT_SEC ]]; then
-    log_warning "Watchdog reached ${TIMEOUT_MIN}m timeout - some jobs may still be running"
+    log_warn "Watchdog reached ${TIMEOUT_MIN}m timeout - some jobs may still be running"
     exit 0
   fi
 
   # Get job statuses
   JOBS_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=100" \
     --jq '.jobs[] | {name: .name, status: .status, conclusion: .conclusion}' 2>/dev/null) || {
-    log_warning "Failed to fetch jobs, retrying..."
+    log_warn "Failed to fetch jobs, retrying..."
     sleep "$POLL_INTERVAL"
     continue
   }
@@ -151,12 +151,12 @@ while true; do
       continue
     fi
 
-    ((TOTAL++))
+    TOTAL=$((TOTAL + 1))
 
     if [[ "$status" == "completed" ]]; then
-      ((COMPLETED++))
+      COMPLETED=$((COMPLETED + 1))
       if [[ "$conclusion" == "failure" ]]; then
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
         FAILED_NAMES+=("$name")
       fi
     else
@@ -164,17 +164,12 @@ while true; do
     fi
   done <<< "$JOBS_JSON"
 
-  # Count pending statuses
-  PENDING_STR=""
-  if [[ ${#PENDING_STATUSES[@]} -gt 0 ]]; then
-    declare -A STATUS_COUNTS
-    for s in "${PENDING_STATUSES[@]}"; do
-      STATUS_COUNTS[$s]=$((${STATUS_COUNTS[$s]:-0} + 1))
-    done
-    for s in "${!STATUS_COUNTS[@]}"; do
-      PENDING_STR+="${STATUS_COUNTS[$s]} $s, "
-    done
-    PENDING_STR="${PENDING_STR%, }"
+  # Count pending statuses (simple approach without associative arrays)
+  PENDING_COUNT=$((TOTAL - COMPLETED))
+  if [[ $PENDING_COUNT -gt 0 ]]; then
+    # Get unique statuses
+    PENDING_STR=$(printf '%s\n' "${PENDING_STATUSES[@]}" | sort | uniq -c | awk '{print $1" "$2}' | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
+    [[ -z "$PENDING_STR" ]] && PENDING_STR="$PENDING_COUNT pending"
   else
     PENDING_STR="none"
   fi
