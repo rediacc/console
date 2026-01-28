@@ -418,7 +418,7 @@ jobs:
   deploy-dryrun:
     name: Deploy Dry-Run
     needs: [initialize, build-docker, build-desktop, build-cli]
-    if: needs.initialize.outputs.is_bot != 'true'
+    if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success'
     uses: ./.github/workflows/cd-dryrun.yml
     with:
       dry_run: true
@@ -439,6 +439,7 @@ jobs:
   tests:
     name: Tests + Infra
     needs: [initialize, build-docker]
+    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
       api_tag: ${{ needs.initialize.outputs.api_tag }}
