@@ -45,13 +45,13 @@
   background: rgba(127, 160, 63, var(--opacity-15));
   border: 1px solid rgba(127, 160, 63, var(--opacity-30));
   border-radius: var(--radius-2xl);
-  color: var(--color-accent-green);
+  color: #fff;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
 }
 
 .ps-hero .hero-badge svg {
-  color: var(--color-accent-green);
+  color: #fff;
   flex-shrink: 0;
 }
 
