@@ -117,7 +117,8 @@ main() {
   if command -v jq &> /dev/null; then
     VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name | ltrimstr("v")')
   else
-    VERSION=$(echo "$RELEASE_INFO" | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/')
+    # Use grep -o to extract just the tag_name field (works with minified JSON)
+    VERSION=$(echo "$RELEASE_INFO" | grep -o '"tag_name":"[^"]*"' | sed -E 's/"tag_name":"v?([^"]+)"/\1/')
   fi
 
   if [[ -z "$VERSION" ]]; then
