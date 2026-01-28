@@ -46,8 +46,6 @@ jobs:
             arch: arm64
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
 
       - name: Test Binary Download
         shell: bash
@@ -75,8 +73,6 @@ jobs:
             arch: arm64
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -107,8 +103,6 @@ jobs:
           - debian:12
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
 
       - name: Test APT Installation
         run: |
@@ -131,8 +125,6 @@ jobs:
           - rockylinux:9
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
 
       - name: Test DNF Installation
         run: |
@@ -159,8 +151,6 @@ jobs:
             label: Linuxbrew
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
 
       - name: Install Homebrew (Linux)
         if: runner.os == 'Linux'
@@ -191,8 +181,6 @@ jobs:
             arch: arm64
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
 
       - name: Test Quick Install
         run: |
