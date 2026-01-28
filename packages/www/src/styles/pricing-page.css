@@ -331,7 +331,7 @@
 }
 
 .ps-teaser-card.popular:focus-visible {
-  outline: 2px solid var(--color-accent-green);
+  outline: 2px solid #fff;
   outline-offset: 2px;
 }
 
@@ -340,8 +340,8 @@
   top: calc(-1 * var(--space-2));
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-accent-green);
-  color: white;
+  background: #fff;
+  color: var(--color-text);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-lg);
   font-size: var(--font-size-xs);
@@ -585,7 +585,7 @@
 
 .savings-badge {
   display: inline-block;
-  background: var(--color-accent-green);
+  background: var(--color-text);
   color: white;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-lg);
@@ -673,7 +673,7 @@
 .post-cta-section .guarantee-badge {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-accent-green);
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }
@@ -787,9 +787,11 @@
 }
 
 .service-package-card.popular {
-  border-color: var(--color-accent-green);
+  border-color: #fff;
   border-width: 2px;
-  background: var(--gradient-dark-green);
+  background: #fff;
+  color: var(--color-text);
+  --text-muted: rgba(0, 0, 0, var(--opacity-65));
 }
 
 .service-package-card .popular-badge {
@@ -797,8 +799,8 @@
   top: calc(-1 * var(--space-3));
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-accent-green);
-  color: white;
+  background: #fff;
+  color: var(--color-text);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-lg);
   font-size: var(--font-size-sm);
@@ -808,7 +810,7 @@
 .package-icon {
   text-align: center;
   margin-bottom: var(--space-4);
-  color: var(--color-accent-green);
+  color: #fff;
 }
 
 .package-header {
@@ -852,7 +854,7 @@
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
-  color: var(--color-accent-green);
+  color: #fff;
 }
 
 .turnaround-time {
@@ -896,7 +898,22 @@
 .package-benefits li svg {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--color-accent-green);
+  color: #fff;
+}
+
+.service-package-card.popular .package-icon,
+.service-package-card.popular .price-amount,
+.service-package-card.popular .package-benefits li svg {
+  color: var(--color-text);
+}
+
+.service-package-card.popular .package-header h3,
+.service-package-card.popular .package-benefits h4 {
+  color: var(--color-text);
+}
+
+.service-package-card.popular .package-description {
+  color: var(--color-text-secondary);
 }
 
 .package-action {
@@ -939,7 +956,7 @@
 }
 
 .factor-icon {
-  color: var(--color-accent-green);
+  color: #fff;
   margin-bottom: var(--space-3);
 }
 
@@ -1024,7 +1041,7 @@
 
 .service-type-icon {
   flex-shrink: 0;
-  color: var(--color-accent-green);
+  color: #fff;
   display: flex;
   align-items: center;
 }
@@ -1074,7 +1091,7 @@
 
 .detail-badge.priority {
   background: rgba(127, 160, 63, var(--opacity-20));
-  color: var(--color-accent-green);
+  color: #fff;
 }
 
 .detail-badge.emergency {
