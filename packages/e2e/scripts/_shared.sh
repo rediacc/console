@@ -59,7 +59,7 @@ check_dependencies() {
 get_run_id() {
     if [ ! -f "$RUN_ID_FILE" ]; then
         log_error "No active Elite environment found"
-        log_error "Run './go trigger' to start an environment"
+        log_error "Run './run.sh trigger' to start an environment"
         return 1
     fi
     cat "$RUN_ID_FILE"

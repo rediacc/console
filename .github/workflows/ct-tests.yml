@@ -192,7 +192,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      # VM Provisioning (conditional - only when provision_vms is true and KVM is available)
+      # VM Provisioning (conditional - only when provision_vms is true)
       # Download pre-built VM image (built in build-disk-image job)
       - name: Download VM Image Artifact
         if: inputs.provision_vms
@@ -201,40 +201,14 @@ jobs:
           name: vm-disk-image
           path: ${{ runner.temp }}/vm-image
 
-      - name: Check KVM Availability
-        id: kvm-check
-        if: inputs.provision_vms
-        run: |
-          if [ -e /dev/kvm ]; then
-            echo "kvm_available=true" >> $GITHUB_OUTPUT
-            echo "KVM is available"
-          else
-            echo "kvm_available=false" >> $GITHUB_OUTPUT
-            echo "KVM is NOT available - VM provisioning will be skipped"
-          fi
-
-      - name: Extract renet binary
-        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
-        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
-
-      - name: Setup KVM Host
-        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
-        run: sudo /tmp/renet ops host setup
-
-      - name: Create Bridge Test Environment
-        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
-        run: .ci/scripts/env/create-bridge-env.sh --output ${{ runner.temp }}/bridge.env
-
       - name: Provision VMs
-        if: inputs.provision_vms && steps.kvm-check.outputs.kvm_available == 'true'
-        env:
-          # Use pre-built image from build-disk-image job
-          REDIACC_OPS_DISKS_PATH: ${{ runner.temp }}/vm-image
-          VM_NET_BASE: '192.168.111'
-          VM_NET_OFFSET: '0'
-          VM_BRIDGE: '1'
-          VM_WORKERS: '11 12'
-        run: sudo -E /tmp/renet ops up --force --parallel
+        id: vms
+        if: inputs.provision_vms
+        uses: ./.github/actions/provision-vms
+        with:
+          bridge-tag: ${{ inputs.bridge_tag }}
+          vm-image-path: ${{ runner.temp }}/vm-image
+          bridge-env-output: ${{ runner.temp }}/bridge.env
 
       - name: Upload Tunnel URL
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt

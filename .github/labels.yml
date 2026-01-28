@@ -1,7 +1,7 @@
 # CI Control Labels
 - name: no-cancel-push
   color: "FEF2C0"
-  description: "Prevents new pushes from canceling previous CI runs"
+  description: "Prevents watchdog from force-cancelling older same-PR runs"
 
 - name: no-cancel-failure
   color: "FEF2C0"

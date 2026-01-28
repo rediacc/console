@@ -74,7 +74,7 @@ log_warn "Stale types detected: ${STALE[*]}"
 # Phase 2: Check if fixable context
 if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]] || [[ -z "${GITHUB_HEAD_REF:-}" ]]; then
     log_error "Cannot auto-fix outside PR context"
-    log_error "Run: ./go deploy prep"
+    log_error "Run: ./run.sh deploy prep"
     exit 1
 fi
 
@@ -82,7 +82,7 @@ fi
 RECENT_AUTOFIX=$(git log --oneline -5 --author="github-actions\[bot\]" --grep="auto-regenerate renet bridge types" 2>/dev/null | head -1 || true)
 if [[ -n "$RECENT_AUTOFIX" ]]; then
     log_error "Recent renet types autofix commit detected, cannot auto-fix again: $RECENT_AUTOFIX"
-    log_error "Please manually regenerate types with: ./go deploy prep"
+    log_error "Please manually regenerate types with: ./run.sh deploy prep"
     exit 1
 fi
 

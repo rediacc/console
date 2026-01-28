@@ -83,6 +83,7 @@ matches_pattern() {
   local patterns=("$@")
 
   for pattern in "${patterns[@]}"; do
+    # shellcheck disable=SC2053 # Intentional glob matching
     if [[ "$name" == $pattern ]]; then
       return 0
     fi

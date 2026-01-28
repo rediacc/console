@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shell script compatibility check using ShellCheck
-# Used by both ./go quality shell and CI
+# Used by both ./run.sh quality shell and CI
 #
 # Checks all shell scripts for cross-platform compatibility issues
 #
@@ -50,10 +50,10 @@ main() {
     # shellcheck disable=SC2086
     find .ci -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
 
-    # Check the main go script
-    log_info "Checking ./go"
+    # Check the main run.sh script
+    log_info "Checking ./run.sh"
     # shellcheck disable=SC2086
-    shellcheck $SHELLCHECK_OPTS ./go
+    shellcheck $SHELLCHECK_OPTS ./run.sh
 
     # Check for bash 4+ features in build scripts (which run on macOS with bash 3.2)
     # ShellCheck doesn't warn about these since they're valid bash, but macOS

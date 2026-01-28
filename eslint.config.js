@@ -54,6 +54,8 @@ export default tseslint.config(
       'packages/bridge-tests/reports/**',
       // Ignore private submodules (they have their own linting)
       'private/**',
+      // Ignore CI scripts (shell scripts linted by shellcheck, JS scripts are github-script glue)
+      '.ci/**',
     ]
   },
   

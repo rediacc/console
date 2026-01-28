@@ -1,6 +1,6 @@
 #!/bin/bash
 # Security audit with allowlist support
-# Used by both ./go quality audit and CI
+# Used by both ./run.sh quality audit and CI
 
 set -euo pipefail
 

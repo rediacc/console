@@ -1,5 +1,5 @@
 #!/bin/bash
-# Local development utilities for console ./go script
+# Local development utilities for console ./run.sh script
 # This file bridges console development with CI infrastructure
 #
 # Usage: source "$ROOT_DIR/.ci/lib/local-common.sh"

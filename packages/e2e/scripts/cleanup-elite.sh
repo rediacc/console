@@ -76,4 +76,4 @@ log_success "Cleanup complete!"
 print_separator
 echo ""
 log_info "Elite environment has been cleaned up"
-log_info "Run './go trigger' to start a new environment"
+log_info "Run './run.sh trigger' to start a new environment"

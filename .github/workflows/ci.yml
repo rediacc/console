@@ -27,13 +27,6 @@ permissions:
   id-token: write
   packages: write  # For GHCR push
 
-# Cancel in-progress runs when a new run is triggered for the same branch/PR
-# Use 'no-cancel-push' PR label to disable (see .github/labels.yml)
-# Note: Cross-PR queueing is handled by the 'queue' job below
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'no-cancel-push') }}
-
 # E2E Browser Configuration
 # Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.
 # To permanently enable all browsers, change the fallback value below.
@@ -72,79 +65,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
         with:
-          script: |
-            const pr = context.payload.pull_request;
-            const errors = [];
-            const warnings = [];
-
-            // Check PR title format (Conventional Commits)
-            const titlePattern = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .+/;
-            if (!titlePattern.test(pr.title)) {
-              errors.push(
-                'PR title must follow Conventional Commits format:\n' +
-                'type(scope): description\n\n' +
-                'Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert\n' +
-                'Example: feat(ui): add dark mode toggle'
-              );
-            }
-
-            // Check PR description length
-            const body = pr.body || '';
-            if (body.length < 20) {
-              errors.push('PR description is too short. Please provide a detailed description.');
-            }
-
-            // Check for linked issues (warning only)
-            const issuePattern = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|ref|refs)\s+#\d+/i;
-            if (!issuePattern.test(body)) {
-              warnings.push('PR does not reference any issues. Consider linking related issues.');
-            }
-
-            // Check PR size
-            const { data: files } = await github.rest.pulls.listFiles({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number,
-            });
-            const additions = files.reduce((sum, file) => sum + file.additions, 0);
-            const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
-            const totalChanges = additions + deletions;
-            const fileCount = files.length;
-
-            if (totalChanges > 1000) {
-              warnings.push(`Large PR detected (${totalChanges} lines changed). Consider breaking it into smaller PRs.`);
-            }
-            if (fileCount > 30) {
-              warnings.push(`Many files changed (${fileCount} files). Consider breaking it into smaller PRs.`);
-            }
-
-            // Note: Merge conflicts and rebase checks are handled by Quality / Branch job
-
-            // Write summary
-            let summary = `## PR Validation\n\n`;
-            summary += `- **Files changed:** ${fileCount}\n`;
-            summary += `- **Lines added:** ${additions}\n`;
-            summary += `- **Lines deleted:** ${deletions}\n`;
-            summary += `- **Total changes:** ${totalChanges}\n\n`;
-
-            if (warnings.length > 0) {
-              summary += `### Warnings\n`;
-              warnings.forEach(w => {
-                core.warning(w);
-                summary += `- ⚠️ ${w}\n`;
-              });
-              summary += '\n';
-            }
-
-            if (errors.length > 0) {
-              summary += `### Errors\n`;
-              errors.forEach(e => summary += `- ❌ ${e}\n`);
-              core.summary.addRaw(summary).write();
-              core.setFailed(errors.join('\n\n'));
-            } else {
-              summary += `✅ All PR checks passed\n`;
-              core.summary.addRaw(summary).write();
-            }
+          script: return await require('./.ci/scripts/ci/validate-pr.cjs')({github, context, core})
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
@@ -185,116 +106,27 @@ jobs:
   cancel-watchdog:
     name: Cancel Watchdog
     needs: [initialize]
-    runs-on: ubuntu-slim
-    if: always() && needs.initialize.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180  # 3 hours max
+    # Use !cancelled() so force-cancel from newer runs can stop this job
+    if: ${{ !cancelled() && needs.initialize.result == 'success' }}
     steps:
-      - name: Monitor Quality + Build jobs for quick failures
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Cancel older runs
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-cancel-push')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: .ci/scripts/ci/cancel-older-runs.sh --timeout 300 --poll-interval 15
+
+      - name: Monitor all jobs and cancel on failure
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
         with:
-          script: |
-            const pollInterval = 10000;  // 10 seconds
-            const maxRuntime = 300000;   // 5 minutes (quick-fail window)
-            const minRuntime = 30000;    // 30 seconds minimum before allowing exit
-            const startTime = Date.now();
-
-            // Job prefixes for quick-fail monitoring (Quality + Review Gate + Queue + Build only, NOT tests)
-            const quickFailPrefixes = [
-              'Quality',
-              'Review Gate',
-              'Queue',
-              'Build (Docker)',
-              'Build (Desktop)',
-              'Build (CLI)',
-              'Deploy Dry-Run'
-            ];
-
-            // Check for skip-cancellation label
-            let skipCancellationOnFailure = false;
-            if (context.payload.pull_request) {
-              const labels = context.payload.pull_request.labels.map(l => l.name);
-              skipCancellationOnFailure = labels.includes('no-cancel-failure');
-              if (skipCancellationOnFailure) {
-                console.log('Label "no-cancel-failure" detected - will not cancel on job failures');
-              }
-            }
-
-            console.log('Cancel Watchdog started - monitoring Quality + Build jobs for quick failures...');
-            console.log(`Quick-fail window: ${maxRuntime / 60000} minutes`);
-
-            while (Date.now() - startTime < maxRuntime) {
-              const elapsed = Date.now() - startTime;
-              const elapsedSec = Math.round(elapsed / 1000);
-
-              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: context.runId
-              });
-
-              // Filter to only quick-fail jobs (Quality + Build, not tests)
-              const quickJobs = jobs.jobs.filter(j =>
-                !j.name.includes('Watchdog') &&
-                j.name !== 'Queue' &&
-                j.name !== 'Initialize' &&
-                j.name !== 'CI Complete' &&
-                quickFailPrefixes.some(prefix => j.name.startsWith(prefix))
-              );
-
-              const completed = quickJobs.filter(j => j.status === 'completed');
-              const inProgress = quickJobs.filter(j => j.status === 'in_progress');
-              const queued = quickJobs.filter(j => j.status === 'queued');
-              const failed = quickJobs.filter(j => j.conclusion === 'failure');
-
-              console.log(`[${elapsedSec}s] Quick jobs: ${completed.length} done, ${inProgress.length} running, ${queued.length} queued`);
-
-              // Check if workflow was externally cancelled (e.g., by concurrency or manual cancellation)
-              const cancelledJobs = quickJobs.filter(job => job.conclusion === 'cancelled');
-              if (cancelledJobs.length > 0 && cancelledJobs.length >= completed.length / 2) {
-                console.log(`Workflow externally cancelled (${cancelledJobs.length}/${completed.length} jobs cancelled) - exiting watchdog`);
-                return;
-              }
-
-              // Check for failures in quick-fail jobs
-              if (failed.length > 0) {
-                const failedJob = failed[0];
-                const failureMsg = `Job failed: "${failedJob.name}"`;
-                console.log('');
-                console.log('='.repeat(70));
-                console.log(failureMsg);
-                console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/job/${failedJob.id}`);
-                console.log('='.repeat(70));
-
-                if (skipCancellationOnFailure) {
-                  console.log('');
-                  console.log('NOTICE: Skipping workflow cancellation due to "no-cancel-failure" label');
-                  console.log('Workflow will continue running despite this failure.');
-                  core.setFailed(failureMsg + ' (cancellation skipped due to label)');
-                  return;
-                }
-
-                await github.rest.actions.cancelWorkflowRun({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  run_id: context.runId
-                });
-
-                core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
-                return;
-              }
-
-              // Exit if all quick jobs completed successfully
-              if (inProgress.length === 0 && queued.length === 0 && elapsed >= minRuntime) {
-                console.log(`All Quality + Build jobs completed - exiting watchdog (after ${elapsedSec}s)`);
-                return;
-              }
-
-              await new Promise(resolve => setTimeout(resolve, pollInterval));
-            }
-
-            // Quick-fail window closed - exit without error
-            console.log('Quick-fail window (5 min) closed - Cancel Watchdog exiting');
-            console.log('Long-running tests will be handled by Rerun Watchdog if they fail');
-            core.info('Cancel Watchdog completed - quick-fail monitoring done');
+          script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
   # ============================================================================
   # COLUMN 2: QUALITY
@@ -347,37 +179,14 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
   # ============================================================================
-  # QUEUE: Wait for other CI runs to complete (global serialization)
-  # Positioned AFTER Quality + Review Gate so fast checks run in parallel.
-  # Only heavy Build/Test jobs wait in queue.
-  # Same-PR cancellation is handled by the concurrency group above.
-  # ============================================================================
-  queue:
-    name: Queue
-    needs: [initialize, quality, review-gate]
-    runs-on: ubuntu-slim
-    # Skip queue for merge_group - GitHub's merge queue already serializes
-    if: always() && github.event_name == 'pull_request' && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          sparse-checkout: .ci/scripts
-      - name: Wait for other CI runs
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/ci/wait-for-queue.sh --timeout 7200 --poll-interval 30
-
-  # ============================================================================
   # COLUMN 3: BUILD & DOCKER
-  # Jobs: build-docker, build-desktop (parallel reusable workflows)
-  # Dependencies: queue (which includes quality + review-gate)
+  # Jobs: build-docker, build-desktop, build-cli (parallel reusable workflows)
+  # Dependencies: quality + review-gate
   # ============================================================================
   build-docker:
     name: Build (Docker)
-    needs: [initialize, queue]
-    if: always() && needs.initialize.result == 'success' && (needs.queue.result == 'success' || needs.queue.result == 'skipped')
+    needs: [initialize, quality, review-gate]
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -395,8 +204,8 @@ jobs:
 
   build-desktop:
     name: Build (Desktop)
-    needs: [initialize, queue]
-    if: always() && needs.initialize.result == 'success' && (needs.queue.result == 'success' || needs.queue.result == 'skipped')
+    needs: [initialize, quality, review-gate]
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-desktop.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -404,8 +213,8 @@ jobs:
 
   build-cli:
     name: Build (CLI)
-    needs: [initialize, queue]
-    if: always() && needs.initialize.result == 'success' && (needs.queue.result == 'success' || needs.queue.result == 'skipped')
+    needs: [initialize, quality, review-gate]
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -451,18 +260,39 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # COLUMN 4B: STANDALONE RUN TEST
+  # Validates the standalone-run workflow works correctly with all VM OS variants
+  # Dependencies: build-docker (needs Docker images)
+  # ============================================================================
+  standalone-run-test:
+    name: Standalone Run
+    needs: [initialize, build-docker]
+    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    uses: ./.github/workflows/standalone-run.yml
+    with:
+      run-name: 'CI Validation'
+      duration: '5'
+      version: ${{ needs.initialize.outputs.bridge_tag }}
+      api-tag: ${{ needs.initialize.outputs.api_tag }}
+      web-tag: ${{ needs.initialize.outputs.web_tag }}
+      bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}
+      ci-mode: true
+      vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
+    secrets: inherit
+
+  # ============================================================================
   # CI COMPLETE - Gate for merge queue
   # This job only succeeds if ALL CI jobs pass
   # ============================================================================
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, queue, build-docker, build-desktop, build-cli, deploy-dryrun, tests]
+    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
         run: |
-          # review-gate and queue can be skipped for non-PR events or bots
+          # review-gate can be skipped for non-PR events or bots
           REVIEW_GATE_OK="false"
           if [[ "${{ needs.review-gate.result }}" == "success" ]] || [[ "${{ needs.review-gate.result }}" == "skipped" ]]; then
             REVIEW_GATE_OK="true"
@@ -471,49 +301,24 @@ jobs:
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
              [[ "${{ needs.quality.result }}" != "success" ]] || \
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
-             [[ "${{ needs.queue.result }}" != "success" ]] || \
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
              [[ "${{ needs.deploy-dryrun.result }}" != "success" ]] || \
-             [[ "${{ needs.tests.result }}" != "success" ]]; then
+             [[ "${{ needs.tests.result }}" != "success" ]] || \
+             [[ "${{ needs.standalone-run-test.result }}" != "success" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
             echo "  quality: ${{ needs.quality.result }}"
             echo "  review-gate: ${{ needs.review-gate.result }}"
-            echo "  queue: ${{ needs.queue.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
             echo "  deploy-dryrun: ${{ needs.deploy-dryrun.result }}"
             echo "  tests: ${{ needs.tests.result }}"
+            echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
             exit 1
           fi
           echo "All CI jobs passed successfully!"
 
-  # ============================================================================
-  # RERUN WATCHDOG - Auto-retry flaky jobs (max 3 attempts)
-  # Waits for ALL jobs to complete before triggering rerun. This ensures we
-  # catch all flaky failures (including long-running tests up to 2h).
-  # NOTE: Reruns may fail if dependent infrastructure (e.g., Cloudflare tunnel)
-  # is no longer available. In such cases, a fresh run is needed.
-  # ============================================================================
-  rerun-watchdog:
-    name: Rerun Watchdog
-    runs-on: ubuntu-latest
-    needs: [cancel-watchdog, queue]
-    # Only start after Queue passes - no point monitoring if quality checks failed
-    if: always() && needs.cancel-watchdog.result == 'success' && needs.queue.result == 'success' && fromJSON(github.run_attempt) < 3
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Wait for all jobs and trigger rerun on failures
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          .ci/scripts/ci/rerun-watchdog.sh \
-            --timeout 180 \
-            --exclude "*Watchdog*" \
-            --exclude "Queue" \
-            --exclude "CI Complete"
 
