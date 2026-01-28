@@ -106,7 +106,7 @@ backend_health() {
     done
 
     log_error "Backend health check timed out after ${timeout}s"
-    log_info "Check logs with: ./go backend logs"
+    log_info "Check logs with: ./run.sh backend logs"
     return 1
 }
 
@@ -234,7 +234,7 @@ backend_reset() {
     docker volume ls -q | grep -E "^(rediacc|ci)" | xargs -r docker volume rm 2>/dev/null || true
 
     log_info "Backend reset complete"
-    log_info "Start fresh with: ./go backend start"
+    log_info "Start fresh with: ./run.sh backend start"
 }
 
 # =============================================================================

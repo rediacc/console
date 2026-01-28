@@ -150,7 +150,7 @@ log_warn "Stale generated files detected: ${STALE[*]}"
 # Check if fixable context (PR only)
 if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]] || [[ -z "${GITHUB_HEAD_REF:-}" ]]; then
     log_error "Cannot auto-fix outside PR context"
-    log_error "Run './go deploy prep' to regenerate all files, or:"
+    log_error "Run './run.sh deploy prep' to regenerate all files, or:"
     log_error "  dotnet run -- --generate-procedures"
     log_error "  dotnet run -- --generate-types"
     log_error "  dotnet run -- --generate-hooks"
@@ -161,7 +161,7 @@ fi
 RECENT_AUTOFIX=$(git log --oneline -5 --author="github-actions\[bot\]" --grep="auto-regenerate middleware API types" 2>/dev/null | head -1 || true)
 if [[ -n "$RECENT_AUTOFIX" ]]; then
     log_error "Recent API types autofix commit detected, cannot auto-fix again: $RECENT_AUTOFIX"
-    log_error "Please manually regenerate with: ./go deploy prep"
+    log_error "Please manually regenerate with: ./run.sh deploy prep"
     exit 1
 fi
 

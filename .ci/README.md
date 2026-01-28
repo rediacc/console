@@ -10,9 +10,10 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   └── matrix.json         # Matrix configurations (browsers, platforms, etc.)
 ├── scripts/
 │   ├── lib/
-│   │   └── common.sh       # Shared utilities (OS detection, logging)
+│   │   └── common.sh        # Shared utilities (OS detection, logging)
 │   ├── ci/
-│   │   └── generate-tag.sh # Generate time-based CI tag (YYYYMMDD-HHMMSS)
+│   │   ├── generate-tag.sh  # Generate time-based CI tag (YYYYMMDD-HHMMSS)
+│   │   └── derive-image-tag.sh # Derive Docker image tag from branch/tag
 │   ├── version/
 │   │   ├── bump.sh            # Semantic version bump (patch/minor/major)
 │   │   ├── commit.sh          # Commit/push version changes (CI-safe)

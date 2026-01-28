@@ -1,9 +1,9 @@
 #!/bin/bash
 # Build custom VM image with renet setup pre-applied
-# Usage: build-vm-image.sh [--output <path>] [--base-image <url>]
+# Usage: build-vm-image.sh [--output <path>] [--os <os-name>] [--base-image <url>]
 #
 # This script builds a VM image by:
-# 1. Downloading a base Ubuntu cloud image
+# 1. Downloading a base cloud image for the selected OS
 # 2. Booting a temporary VM with cloud-init
 # 3. Running renet setup inside the VM (installs Docker, CRIU, packages)
 # 4. Shutting down and compacting the image
@@ -18,10 +18,12 @@
 #
 # Options:
 #   --output      Output directory for the image (default: $RUNNER_TEMP/vm-image)
-#   --base-image  Base image URL (default: Ubuntu 24.04 minimal cloud image)
+#   --os          OS name: ubuntu-24.04, debian-12, fedora-43, opensuse-15.6 (default: ubuntu-24.04)
+#   --base-image  Base image URL (overrides --os)
 #
-# Example:
+# Examples:
 #   .ci/scripts/image/build-vm-image.sh --output /tmp/vm-image
+#   .ci/scripts/image/build-vm-image.sh --os debian-12 --output /tmp/vm-image
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,10 +32,37 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Parse arguments
 parse_args "$@"
 
+# OS image configuration
+# Maps OS name to (image URL, virt-install os-variant)
+declare -A OS_IMAGES=(
+  ["ubuntu-24.04"]="https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img"
+  ["debian-12"]="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+  ["fedora-43"]="https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+  ["opensuse-15.6"]="https://download.opensuse.org/distribution/leap/15.6/appliances/openSUSE-Leap-15.6-Minimal-VM.x86_64-Cloud.qcow2"
+)
+
+declare -A OS_VARIANTS=(
+  ["ubuntu-24.04"]="ubuntu24.04"
+  ["debian-12"]="debian12"
+  ["fedora-43"]="fedora-unknown"
+  ["opensuse-15.6"]="opensuse15.5"
+)
+
 # Configuration
 OUTPUT_DIR="${ARG_OUTPUT:-${RUNNER_TEMP:-/tmp}/vm-image}"
-BASE_IMAGE_URL="${ARG_BASE_IMAGE:-https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img}"
+OS_NAME="${ARG_OS:-ubuntu-24.04}"
+
+# Validate OS name
+if [[ -z "${OS_IMAGES[$OS_NAME]:-}" ]]; then
+  log_error "Unknown OS: $OS_NAME"
+  log_error "Supported: ${!OS_IMAGES[*]}"
+  exit 1
+fi
+
+# Use explicit base-image if provided, otherwise use OS mapping
+BASE_IMAGE_URL="${ARG_BASE_IMAGE:-${OS_IMAGES[$OS_NAME]}}"
 BASE_IMAGE_NAME="$(basename "$BASE_IMAGE_URL")"
+OS_VARIANT="${OS_VARIANTS[$OS_NAME]}"
 RENET_BINARY="${RENET_BINARY:-/tmp/renet}"
 
 # VM configuration (matches renet defaults)
@@ -52,7 +81,9 @@ log_info "Ensuring libvirt default network is active..."
 sudo virsh net-start default 2>/dev/null || true
 
 log_step "Building VM image with renet setup"
+log_info "OS: $OS_NAME"
 log_info "Base image: $BASE_IMAGE_NAME"
+log_info "OS variant: $OS_VARIANT"
 log_info "Output dir: $OUTPUT_DIR"
 log_info "Build dir: $BUILD_DIR"
 
@@ -167,9 +198,6 @@ log_step "Step 5/8: Booting build VM..."
 VM_NAME="renet-image-builder-$$"
 MAC_ADDR="52:54:00:$(openssl rand -hex 3 | sed 's/\(..\)/\1:/g; s/:$//')"
 
-# Extract OS variant for virt-install
-OS_VARIANT="ubuntu24.04"
-
 # Start VM
 sudo virt-install \
     --name "$VM_NAME" \
@@ -234,9 +262,13 @@ ssh $SSH_OPTS "builder@$VM_IP" "sudo /tmp/renet setup --auto" 2>&1 | tee "$BUILD
 
 log_info "renet setup completed successfully"
 
-# Clean up inside VM
+# Clean up inside VM (use package manager appropriate for the OS)
 log_info "Cleaning up VM..."
-ssh $SSH_OPTS "builder@$VM_IP" "sudo rm -f /tmp/renet && sudo apt-get clean && sudo rm -rf /var/cache/apt/archives/*"
+ssh $SSH_OPTS "builder@$VM_IP" "sudo rm -f /tmp/renet && \
+  if command -v apt-get &>/dev/null; then sudo apt-get clean && sudo rm -rf /var/cache/apt/archives/*; \
+  elif command -v dnf &>/dev/null; then sudo dnf clean all; \
+  elif command -v zypper &>/dev/null; then sudo zypper clean --all; \
+  fi"
 
 # =============================================================================
 # STEP 7: Shutdown VM
