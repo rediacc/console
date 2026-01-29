@@ -134,7 +134,7 @@ jobs:
       fail-fast: false
       matrix:
         # When vm-os-list is provided (CI), use it as matrix; otherwise wrap single vm-os input
-        vm-os: ${{ fromJSON(inputs.vm-os-list || format('["%s"]', inputs.vm-os || 'none')) }}
+        vm-os: ${{ fromJSON(inputs.vm-os-list || format('["{0}"]', inputs.vm-os || 'none')) }}
 
     steps:
       - name: Checkout Repository
