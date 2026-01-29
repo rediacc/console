@@ -48,7 +48,9 @@
     "section": "sección",
     "realStory": "Historia Real",
     "theProblem": "El Problema",
-    "contentNotAvailable": "Este contenido no está disponible en {{language}}. Mostrando versión en inglés."
+    "contentNotAvailable": "Este contenido no está disponible en {{language}}. Mostrando versión en inglés.",
+    "exploreSolutions": "Explorar otras soluciones",
+    "platformPreview": "Vista previa de la plataforma"
   },
   "earlyAccess": {
     "benefits": [
@@ -143,6 +145,23 @@
       "learnMore": "Más información",
       "seeDetails": "Ver todos los detalles"
     },
+    "install": {
+      "ariaLabel": "Comando de instalación",
+      "tabsLabel": "Seleccionar sistema operativo",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "Copiar al portapapeles",
+      "copied": "¡Copiado!",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "más →"
+      }
+    },
     "subtitle": "Sobrevive a las interrupciones en la nube. Implemente en cualquier lugar. Conmutación por error rápida.",
     "title": "Infraestructura que",
     "titleHighlight": "Sobrevive. Cada vez."
@@ -172,6 +191,7 @@
     "selectLanguage": "Seleccionar idioma",
     "languageSelectionMenu": "Menú de selección de idioma",
     "solutions": {
+      "title": "Soluciones",
       "dataSecurity": "Seguridad de datos",
       "developmentEnvironments": "Entornos de desarrollo",
       "disasterRecovery": "Recuperación ante desastres",

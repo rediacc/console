@@ -1169,5 +1169,116 @@
     "success": "✓ 成功",
     "unknown": "未知",
     "inProgress": "进行中"
+  },
+  "docs": {
+    "frontmatter": {
+      "title": "CLI 应用程序",
+      "description": "使用 Rediacc 命令行界面进行平台管理的完整指南",
+      "category": "核心概念"
+    },
+    "pageTitle": "Rediacc CLI 参考",
+    "overview": {
+      "heading": "概述",
+      "text": "**Rediacc CLI**（`rdc`）是一个用于管理 Rediacc 平台所有方面的命令行界面 — 身份验证、基础设施、仓库、队列、存储等。"
+    },
+    "installation": {
+      "heading": "安装",
+      "text": "从 [Rediacc 发布页面](https://www.rediacc.com) 下载适用于您平台的最新二进制文件，或通过包管理器安装："
+    },
+    "globalOptions": {
+      "heading": "全局选项",
+      "intro": "每个命令都支持以下全局标志："
+    },
+    "tableHeaders": {
+      "flag": "标志",
+      "description": "描述",
+      "error": "错误",
+      "meaning": "含义"
+    },
+    "admonitions": {
+      "tip": "提示",
+      "warning": "警告",
+      "note": "注意"
+    },
+    "sectionTitles": {
+      "auth": "身份验证",
+      "context": "上下文管理",
+      "organization": "组织管理",
+      "user": "用户管理",
+      "team": "团队管理",
+      "permission": "权限管理",
+      "region": "区域管理",
+      "bridge": "桥接管理",
+      "machine": "机器管理",
+      "repository": "仓库管理",
+      "storage": "存储管理",
+      "queue": "队列操作",
+      "sync": "文件同步",
+      "vscode": "VS Code 集成",
+      "term": "SSH 终端访问",
+      "ceph": "Ceph 存储管理",
+      "audit": "审计与合规",
+      "protocol": "协议处理器",
+      "shortcuts": "快捷命令（快捷方式）",
+      "update": "CLI 更新"
+    },
+    "errors": {
+      "heading": "常见错误消息",
+      "intro": "当出现问题时，CLI 会提供清晰的错误消息：",
+      "meanings": {
+        "authRequired": "您需要先登录",
+        "noActiveContext": "未选择上下文 — 创建或切换到一个上下文",
+        "permissionDenied": "您的帐户缺少所需的权限",
+        "machineRequired": "使用 `--machine` 指定机器或设置上下文默认值",
+        "teamRequired": "使用 `--team` 指定团队或设置上下文默认值",
+        "regionRequired": "使用 `--region` 指定区域或设置上下文默认值"
+      }
+    },
+    "outputFormats": {
+      "heading": "输出格式",
+      "text": "所有列表/获取命令通过 `--output` 支持多种输出格式：",
+      "closing": "这使得将 Rediacc CLI 集成到脚本、CI/CD 管道和自动化工作流中变得容易。"
+    },
+    "supplements": {
+      "auth": {
+        "tip": "您的身份验证令牌存储在本地上下文中。使用 `--save-as` 将凭据存储在命名上下文下，以便用于多个环境。",
+        "register": {
+          "afterDescription": "注册后，请检查您的电子邮件以获取激活码。"
+        }
+      },
+      "context": {
+        "afterDescription": "上下文存储连接详情（API URL、凭据、默认团队/区域/机器），以便您可以快速在环境之间切换。",
+        "set": {
+          "tip": "设置默认值意味着您不需要在每个命令中传递 `--team`、`--region` 或 `--machine`。"
+        },
+        "createLocal": {
+          "afterDescription": "在本地模式下，您可以直接添加机器："
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "启用维护模式时，非管理员用户无法登录。"
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "health 命令输出系统指标、容器状态、服务稳定性和存储信息 — 适用于 CI/CD 管道检查。"
+        },
+        "testConnection": {
+          "tip": "使用 `--save-known-hosts` 在测试成功后自动将主机密钥持久化到机器保险库中。"
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "提升 fork 会将其从父（grand）仓库中分离出来，使其独立。"
+        }
+      },
+      "queue": {
+        "afterDescription": "队列系统是 Rediacc 任务执行的核心。每个操作（部署、备份、脚本执行）都通过队列运行。",
+        "trace": {
+          "tip": "使用 `--watch` 实时跟踪任务直到完成。"
+        }
+      }
+    }
   }
 }

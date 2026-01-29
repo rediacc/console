@@ -6,10 +6,12 @@
   "scripts": {
     "build": "astro build",
     "dev": "astro dev",
+    "generate:cli-docs": "node scripts/generate-cli-docs.js",
     "lint:all": "npm run lint:css && npm run lint:css-files",
     "lint:css": "node scripts/check-unused-css.js",
     "lint:css-files": "node scripts/check-unused-css-files.js",
     "preview": "astro preview",
+    "validate:cli-docs": "node scripts/validate-cli-docs.js",
     "validate:content": "node scripts/validate-content.js",
     "validate:content:strict": "node scripts/validate-content.js --strict"
   },

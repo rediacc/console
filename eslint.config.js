@@ -684,6 +684,8 @@ export default tseslint.config(
           '\\.(json|xml|txt|log|pem|key|crt)$',
           // Allow CLI-specific patterns
           '^rdc\\s',  // CLI commands like "rdc login"
+          // Allow true cross-language cognates (same spelling in multiple European languages)
+          '^(Installation|Description|Note|Error)$',
         ],
       }],
       // Ensure translations have same {{placeholders}} as English

@@ -9,6 +9,8 @@ export interface Props {
   subtitle: string;
   buttonText: string;
   buttonHref?: string;
+  secondaryText?: string;
+  secondaryHref?: string;
   imageSrc: ImageMetadata;
   imageAlt: string;
   lang?: Language;
@@ -19,6 +21,8 @@ const {
   subtitle,
   buttonText,
   buttonHref,
+  secondaryText,
+  secondaryHref,
   imageSrc,
   imageAlt,
   lang,
@@ -42,9 +46,19 @@ const ctaLink = buttonHref || EXTERNAL_LINKS.SCHEDULE_CONSULTATION;
       <div class="cta-content">
         <h2 class="cta-title">{title}</h2>
         <p class="cta-subtitle">{subtitle}</p>
-        <a href={ctaLink} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${buttonText} (${t('common.aria.opensInNewTab')})`}>
-          {buttonText}
-        </a>
+        <div class="cta-actions">
+          <a href={ctaLink} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${buttonText} (${t('common.aria.opensInNewTab')})`}>
+            {buttonText}
+          </a>
+          {secondaryText && secondaryHref && (
+            <a href={secondaryHref} class="cta-secondary-link">
+              {secondaryText}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </a>
+          )}
+        </div>
       </div>
     </div>
   </div>

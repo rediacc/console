@@ -42,7 +42,9 @@
       "skipToFooter": "Alt bilgiye atla",
       "skipToMainContent": "Ana içeriğe atla",
       "skipToNavigation": "Navigasyona atla"
-    }
+    },
+    "exploreSolutions": "Diğer Çözümleri Keşfedin",
+    "platformPreview": "Platform Önizleme"
   },
   "earlyAccess": {
     "benefits": [
@@ -137,6 +139,23 @@
       "learnMore": "Daha Fazla Bilgi",
       "seeDetails": "Tüm ayrıntıları görün"
     },
+    "install": {
+      "ariaLabel": "Kurulum komutu",
+      "tabsLabel": "İşletim sistemi seçin",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "Panoya kopyala",
+      "copied": "Kopyalandı!",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "daha fazla →"
+      }
+    },
     "subtitle": "Bulut kesintilerinden kurtulun. Her yere dağıtın. Hızlı yük devretme.",
     "title": "Altyapı",
     "titleHighlight": "Hayatta Kalır. Her Zaman."
@@ -165,6 +184,7 @@
     "search": "Ara",
     "selectLanguage": "Dil seçin",
     "solutions": {
+      "title": "Çözümler",
       "dataSecurity": "Veri Güvenliği",
       "developmentEnvironments": "Geliştirme Ortamları",
       "disasterRecovery": "Felaket Kurtarma",

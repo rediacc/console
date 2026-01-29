@@ -1,0 +1,173 @@
+<svg width="1100" height="618" viewBox="0 0 1100 618" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="2" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1100" height="618" fill="#f5f5f5"/>
+
+  <!-- Decorative circles -->
+  <circle cx="80" cy="570" r="60" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="1020" cy="580" r="50" fill="#e0e0e0" opacity="0.3"/>
+
+  <!-- Dashboard container -->
+  <g filter="url(#drop-shadow)">
+    <rect x="60" y="30" width="980" height="540" rx="18" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+    <!-- Header bar -->
+    <rect x="60" y="30" width="980" height="55" rx="18" fill="#2d2d2d"/>
+    <rect x="60" y="67" width="980" height="18" fill="#2d2d2d"/>
+    <!-- Header dots -->
+    <circle cx="95" cy="57" r="6" fill="#3d3d3d"/>
+    <circle cx="116" cy="57" r="6" fill="#3d3d3d"/>
+    <circle cx="137" cy="57" r="6" fill="#3d3d3d"/>
+  </g>
+
+  <!-- Column separators -->
+  <line x1="387" y1="105" x2="387" y2="545" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="713" y1="105" x2="713" y2="545" stroke="#e0e0e0" stroke-width="1.5"/>
+
+  <!-- Column 1: Migration -->
+  <g transform="translate(90, 105)">
+    <text x="148" y="30" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Migration</text>
+
+    <!-- Progress ring -->
+    <circle cx="148" cy="150" r="65" fill="none" stroke="#e0e0e0" stroke-width="10"/>
+    <circle cx="148" cy="150" r="65" fill="none" stroke="#556b2f" stroke-width="10" stroke-linecap="round"
+      stroke-dasharray="408.4" stroke-dashoffset="0" transform="rotate(-90 148 150)"/>
+    <text x="148" y="155" text-anchor="middle" fill="#556b2f" font-family="Arial, sans-serif" font-size="30" font-weight="bold">100%</text>
+    <text x="148" y="175" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="12">Complete</text>
+
+    <!-- Status bar -->
+    <rect x="30" y="255" width="237" height="10" rx="5" fill="#e0e0e0"/>
+    <rect x="30" y="255" width="237" height="10" rx="5" fill="#556b2f"/>
+
+    <!-- Status rows -->
+    <g transform="translate(30, 290)">
+      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
+      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Schema verified</text>
+    </g>
+    <g transform="translate(30, 320)">
+      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
+      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Data integrity check</text>
+    </g>
+    <g transform="translate(30, 350)">
+      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
+      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Encryption active</text>
+    </g>
+    <g transform="translate(30, 380)">
+      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
+      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Zero downtime</text>
+    </g>
+  </g>
+
+  <!-- Column 2: Audit Trail -->
+  <g transform="translate(410, 105)">
+    <text x="151" y="30" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Audit Trail</text>
+
+    <!-- Log entries -->
+    <g transform="translate(20, 60)">
+      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
+      <rect x="24" y="2" width="120" height="8" rx="4" fill="#e0e0e0"/>
+      <rect x="155" y="2" width="80" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
+      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:01</text>
+    </g>
+    <g transform="translate(20, 110)">
+      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
+      <rect x="24" y="2" width="140" height="8" rx="4" fill="#e0e0e0"/>
+      <rect x="175" y="2" width="60" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
+      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:04</text>
+    </g>
+    <g transform="translate(20, 160)">
+      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
+      <rect x="24" y="2" width="100" height="8" rx="4" fill="#e0e0e0"/>
+      <rect x="135" y="2" width="90" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
+      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:08</text>
+    </g>
+    <g transform="translate(20, 210)">
+      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
+      <rect x="24" y="2" width="130" height="8" rx="4" fill="#e0e0e0"/>
+      <rect x="165" y="2" width="70" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
+      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:12</text>
+    </g>
+    <g transform="translate(20, 260)">
+      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
+      <rect x="24" y="2" width="110" height="8" rx="4" fill="#e0e0e0"/>
+      <rect x="145" y="2" width="85" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
+      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:15</text>
+    </g>
+    <g transform="translate(20, 310)">
+      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
+      <rect x="24" y="2" width="145" height="8" rx="4" fill="#e0e0e0"/>
+      <rect x="180" y="2" width="55" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
+      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:19</text>
+    </g>
+
+    <!-- Vertical timeline line -->
+    <line x1="28" y1="76" x2="28" y2="326" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/>
+  </g>
+
+  <!-- Column 3: Security -->
+  <g transform="translate(736, 105)">
+    <text x="151" y="30" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Security</text>
+
+    <!-- Lock grid: 2 rows × 3 columns -->
+    <!-- Row 1 -->
+    <g transform="translate(20, 60)">
+      <!-- Lock 1 -->
+      <g transform="translate(0, 0)">
+        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
+        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">SOC 2</text>
+      </g>
+      <!-- Lock 2 -->
+      <g transform="translate(95, 0)">
+        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
+        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">ISO 27001</text>
+      </g>
+      <!-- Lock 3 -->
+      <g transform="translate(190, 0)">
+        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
+        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">GDPR</text>
+      </g>
+    </g>
+
+    <!-- Row 2 -->
+    <g transform="translate(20, 205)">
+      <!-- Lock 4 -->
+      <g transform="translate(0, 0)">
+        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
+        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">AES-256</text>
+      </g>
+      <!-- Lock 5 -->
+      <g transform="translate(95, 0)">
+        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
+        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">TLS 1.3</text>
+      </g>
+      <!-- Lock 6 -->
+      <g transform="translate(190, 0)">
+        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
+        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
+        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">RBAC</text>
+      </g>
+    </g>
+  </g>
+</svg>

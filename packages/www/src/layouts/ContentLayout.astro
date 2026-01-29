@@ -1,6 +1,5 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import LanguageSwitcher from '../components/LanguageSwitcher';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
@@ -78,15 +77,6 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
       <Breadcrumb items={breadcrumbItems} />
     )}
     <header class="article-header">
-      {currentLang && availableLanguages.length > 0 && (
-        <LanguageSwitcher
-          client:visible
-          currentLang={currentLang}
-          availableLanguages={availableLanguages}
-          showFallbackNotice={showFallbackNotice}
-        />
-      )}
-
       <div class="article-meta">
         {isBlogPost && frontmatter.author && (
           <span class="meta-item">

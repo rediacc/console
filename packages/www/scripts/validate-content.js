@@ -27,7 +27,7 @@ const COLLECTIONS = ['blog', 'docs'];
 
 // English-only paths (permanently excluded - no translations needed)
 const EXCLUSIONS = {
-  docs: ['cli/'], // CLI API reference is technical docs, English-only by design
+  docs: ['cli/'], // CLI API reference docs are English-only
 };
 
 // Required frontmatter fields per collection (must match Astro content schema)
@@ -412,7 +412,7 @@ Rules:
   invalid-array-field    Array fields must be non-empty (e.g., tags)
 
 Exclusions:
-  - docs/en/cli/  (CLI API reference, English-only by design)
+  - docs/en/cli/              (CLI API reference, English-only by design)
 `);
     process.exit(0);
   }
