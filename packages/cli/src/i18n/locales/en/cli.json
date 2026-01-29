@@ -260,6 +260,43 @@
         }
       }
     },
+    "doctor": {
+      "description": "Diagnose CLI environment and renet integration",
+      "title": "Rediacc CLI Doctor",
+      "sections": {
+        "environment": "Environment",
+        "renet": "Renet",
+        "configuration": "Configuration",
+        "authentication": "Authentication"
+      },
+      "checks": {
+        "nodeVersion": "Node.js",
+        "cliVersion": "CLI version",
+        "seaMode": "SEA mode",
+        "goInstalled": "Go",
+        "dockerAvailable": "Docker",
+        "renetBinary": "Binary",
+        "renetVersion": "Version",
+        "renetCriu": "Embedded CRIU",
+        "renetRsync": "Embedded rsync",
+        "activeContext": "Active context",
+        "contextMode": "Context mode",
+        "authStatus": "Status"
+      },
+      "status": {
+        "ok": "OK",
+        "warn": "WARN",
+        "fail": "FAIL"
+      },
+      "allPassed": "All checks passed",
+      "hasWarnings": "{{count}} warning(s)",
+      "hasErrors": "{{count}} error(s)",
+      "notInstalled": "not installed",
+      "notConfigured": "not configured",
+      "notAuthenticated": "not authenticated",
+      "devMode": "no (dev mode)",
+      "seaActive": "yes (Single Executable Application)"
+    },
     "context": {
       "description": "Manage CLI contexts",
       "list": {

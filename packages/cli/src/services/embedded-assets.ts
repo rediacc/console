@@ -21,18 +21,23 @@ export interface RenetMetadata {
 
 /** SEA module interface for type safety */
 interface SEAModule {
+  isSea(): boolean;
   getAsset(key: string): ArrayBuffer;
 }
 
 /**
  * Try to load the node:sea module for SEA asset access
  * Returns null if not running as SEA
+ *
+ * Note: On Node.js 22+, `require('node:sea')` succeeds and `sea.getAsset`
+ * exists as a function even outside SEA context. We must use `sea.isSea()`
+ * to reliably detect whether we're actually running inside a SEA binary.
  */
 function tryLoadSEA(): SEAModule | null {
   try {
     const require = createRequire(import.meta.url);
     const sea = require('node:sea') as SEAModule;
-    if (typeof sea.getAsset === 'function') {
+    if (typeof sea.isSea === 'function' && sea.isSea()) {
       return sea;
     }
     return null;

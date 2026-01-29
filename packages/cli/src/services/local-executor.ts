@@ -195,7 +195,7 @@ class LocalExecutorService {
         user: opts.machine.user,
         port: opts.machine.port ?? DEFAULTS.SSH.PORT,
         datastore: opts.machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-        known_hosts: '',
+        known_hosts: opts.sshKnownHosts,
       },
       params: opts.params,
       extra_machines: {},

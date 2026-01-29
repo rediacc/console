@@ -633,6 +633,76 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
+  test-cli-local:
+    name: CLI Local E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+
+      # Renet setup (same pattern as test-bridge-workers)
+      - name: Pull Renet Docker Image
+        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "$RENET_DOCKER_IMAGE" --quiet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_ACTOR: ${{ github.actor }}
+      - name: Extract renet binary
+        run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+      - name: Add renet to PATH
+        run: sudo cp /tmp/renet /usr/local/bin/renet && sudo chmod +x /usr/local/bin/renet
+
+      # VM provisioning
+      - name: Setup KVM Host
+        run: sudo /tmp/renet ops host setup
+      - name: Generate SSH keypair
+        run: |
+          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
+          # Also create id_rsa symlink (tests may reference it)
+          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
+          cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
+      - name: Provision VM
+        run: sudo -E /tmp/renet ops up --force --parallel
+        env:
+          VM_WORKERS: '11'
+          VM_CEPH_NODES: ''
+          VM_BRIDGE: '1'
+      - name: Wait for VM SSH readiness
+        run: |
+          for i in {1..30}; do
+            if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@192.168.111.11 echo ready 2>/dev/null; then
+              echo "VM is SSH-ready"
+              exit 0
+            fi
+            echo "Waiting for VM SSH... ($i/30)"
+            sleep 5
+          done
+          echo "VM SSH not ready after 150s"
+          exit 1
+
+      # Run tests
+      - name: Create CLI local E2E env
+        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env
+      - name: Run CLI local E2E tests
+        run: .ci/scripts/test/run-cli-local.sh
+
+      # Artifacts
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: always()
+        with:
+          name: test-cli-local-${{ github.sha }}
+          path: packages/cli/tests/reports/
+          retention-days: 3
+          if-no-files-found: ignore
+
   test-renet:
     name: Renet
     runs-on: ubuntu-latest
