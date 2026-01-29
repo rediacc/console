@@ -682,8 +682,8 @@ export default tseslint.config(
           '^\\d{2,5}$',
           // Allow file extensions and technical suffixes
           '\\.(json|xml|txt|log|pem|key|crt)$',
-          // Allow known brand/product names that are identical across languages
-          '^(Docker|Renet|Go|Node\\.js)$',
+          // Allow known brand/product names and international words identical across languages
+          '^(Docker|Renet|Go|Node\\.js|Status|Version|Machines|Configuration)$',
           // Allow CLI-specific patterns
           '^rdc\\s',  // CLI commands like "rdc login"
           // Allow true cross-language cognates (same spelling in multiple European languages)
