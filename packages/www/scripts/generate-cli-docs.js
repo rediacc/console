@@ -56,6 +56,29 @@ const COMMAND_ORDER = [
   'update',
 ];
 
+// Validate COMMAND_ORDER against actual command groups in cli.json
+function validateCommandOrder(commands) {
+  const allGroups = new Set(Object.keys(commands));
+  const orderedGroups = new Set(COMMAND_ORDER);
+
+  for (const group of allGroups) {
+    if (!orderedGroups.has(group)) {
+      throw new Error(
+        `Command group "${group}" exists in cli.json but is missing from COMMAND_ORDER in generate-cli-docs.js. ` +
+          `Add it to COMMAND_ORDER to include it in the generated documentation.`
+      );
+    }
+  }
+
+  for (const group of orderedGroups) {
+    if (!allGroups.has(group)) {
+      console.warn(
+        `Warning: Command group "${group}" is in COMMAND_ORDER but not found in cli.json commands.`
+      );
+    }
+  }
+}
+
 // Convert camelCase to kebab-case for CLI command syntax
 function toKebab(str) {
   return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
@@ -176,6 +199,7 @@ export function generate(lang, cliJsonEn) {
   const docs = langCliJson.docs;
 
   const commands = cliJsonEn.commands;
+  validateCommandOrder(commands);
   const errors = cliJsonEn.errors;
   const docsSupplements = cliJsonEn.docs.supplements;
   const lines = [];
