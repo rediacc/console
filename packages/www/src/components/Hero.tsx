@@ -1,8 +1,8 @@
 import React from 'react';
+import InstallWidget from './InstallWidget';
 import { EXTERNAL_LINKS, getConsoleUrl } from '../config/constants';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-import InstallWidget from './InstallWidget';
 
 interface HeroProps {
   lang?: Language;

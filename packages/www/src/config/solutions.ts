@@ -1,5 +1,4 @@
 // Solution page configuration - maps slug to translation key and assets
-import type { ImageMetadata } from 'astro';
 import dsAuditTrail from '../assets/images/illustrations/data-security-auditTrail.svg';
 import dsBottom from '../assets/images/illustrations/data-security-bottom.svg';
 import dsHero from '../assets/images/illustrations/data-security-hero.svg';
@@ -28,6 +27,7 @@ import trHero from '../assets/images/illustrations/threat-response-hero.svg';
 import trBlackBox from '../assets/images/illustrations/threat-response-infrastructureBlackBox.svg';
 import trOsVuln from '../assets/images/illustrations/threat-response-osVulnerability.svg';
 import trRansomware from '../assets/images/illustrations/threat-response-ransomwareBackups.svg';
+import type { ImageMetadata } from 'astro';
 
 interface SectionImage {
   src: string;
@@ -193,4 +193,4 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
 };
 
 export type SolutionSlug = keyof typeof SOLUTIONS;
-export const SOLUTION_SLUGS = Object.keys(SOLUTIONS) as SolutionSlug[];
+export const SOLUTION_SLUGS = Object.keys(SOLUTIONS);

@@ -1190,7 +1190,7 @@
       "intro": "Todos los comandos admiten estos flags globales:"
     },
     "tableHeaders": {
-      "flag": "Flag",
+      "flag": "Opción",
       "description": "Descripción",
       "error": "Error",
       "meaning": "Significado"

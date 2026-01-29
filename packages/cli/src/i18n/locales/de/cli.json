@@ -1190,7 +1190,7 @@
       "intro": "Jeder Befehl unterstützt diese globalen Flags:"
     },
     "tableHeaders": {
-      "flag": "Flag",
+      "flag": "Option",
       "description": "Beschreibung",
       "error": "Fehler",
       "meaning": "Bedeutung"
@@ -1214,7 +1214,7 @@
       "storage": "Speicherverwaltung",
       "queue": "Warteschlangenoperationen",
       "sync": "Dateisynchronisation",
-      "vscode": "VS Code Integration",
+      "vscode": "VS Code-Integration",
       "term": "SSH-Terminalzugang",
       "ceph": "Ceph-Speicherverwaltung",
       "audit": "Audit und Compliance",

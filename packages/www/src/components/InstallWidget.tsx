@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 
@@ -33,14 +33,34 @@ const WindowsIcon = () => (
 );
 
 const CopyIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </svg>
 );
 
 const CheckIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
@@ -53,15 +73,15 @@ const TABS: { key: Platform; icon: React.FC }[] = [
 
 const InstallWidget: React.FC<InstallWidgetProps> = ({ lang = 'en' }) => {
   const { t } = useTranslation(lang);
-  const [activePlatform, setActivePlatform] = useState<Platform>('linux');
+  const [activePlatform, setActivePlatform] = useState<Platform>(() => {
+    if (typeof window === 'undefined') return 'linux';
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('win')) return 'windows';
+    if (ua.includes('mac')) return 'macos';
+    return 'linux';
+  });
   const [copied, setCopied] = useState(false);
   const codeRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes('win')) setActivePlatform('windows');
-    else if (ua.includes('mac')) setActivePlatform('macos');
-  }, []);
 
   const handleCopy = async () => {
     try {
@@ -80,18 +100,11 @@ const InstallWidget: React.FC<InstallWidgetProps> = ({ lang = 'en' }) => {
   };
 
   return (
-    <div
-      className="install-widget"
-      role="region"
-      aria-label={t('hero.install.ariaLabel')}
-    >
-      <div
-        className="install-tabs"
-        role="tablist"
-        aria-label={t('hero.install.tabsLabel')}
-      >
+    <div className="install-widget" role="region" aria-label={t('hero.install.ariaLabel')}>
+      <div className="install-tabs" role="tablist" aria-label={t('hero.install.tabsLabel')}>
         {TABS.map(({ key, icon: Icon }) => (
           <button
+            type="button"
             key={key}
             role="tab"
             aria-selected={activePlatform === key}
@@ -99,9 +112,7 @@ const InstallWidget: React.FC<InstallWidgetProps> = ({ lang = 'en' }) => {
             onClick={() => setActivePlatform(key)}
           >
             <Icon />
-            <span className="install-tab-label">
-              {t(`hero.install.tabs.${key}`)}
-            </span>
+            <span className="install-tab-label">{t(`hero.install.tabs.${key}`)}</span>
           </button>
         ))}
       </div>
@@ -110,6 +121,7 @@ const InstallWidget: React.FC<InstallWidgetProps> = ({ lang = 'en' }) => {
           $ {INSTALL_COMMANDS[activePlatform]}
         </code>
         <button
+          type="button"
           className={`install-copy-btn${copied ? ' install-copy-btn--copied' : ''}`}
           onClick={handleCopy}
           aria-label={copied ? t('hero.install.copied') : t('hero.install.copy')}

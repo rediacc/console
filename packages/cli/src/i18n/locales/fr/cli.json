@@ -1190,7 +1190,7 @@
       "intro": "Chaque commande prend en charge ces flags globaux :"
     },
     "tableHeaders": {
-      "flag": "Flag",
+      "flag": "Option",
       "description": "Description",
       "error": "Erreur",
       "meaning": "Signification"
