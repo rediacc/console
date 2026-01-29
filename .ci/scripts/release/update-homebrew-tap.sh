@@ -141,7 +141,7 @@ calculate_local_checksums() {
 
     for name in "${names[@]}"; do
         local found
-        found=$(find "$dir" -name "${name}*" -type f | head -1)
+        found=$(find "$dir" -name "${name}*" ! -name "*.sha256" -type f | head -1)
         if [[ -z "$found" ]]; then
             log_error "Missing local binary matching ${name}* in $dir"
             exit 1
