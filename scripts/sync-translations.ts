@@ -11,8 +11,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOCALES_DIR = path.join(__dirname, '../packages/web/src/i18n/locales');
 const SOURCE_LANG = 'en';
+
+interface LocaleConfig {
+  name: string;
+  dir: string;
+}
+
+const LOCALE_CONFIGS: LocaleConfig[] = [
+  {
+    name: 'web',
+    dir: path.join(__dirname, '../packages/web/src/i18n/locales'),
+  },
+  {
+    name: 'cli',
+    dir: path.join(__dirname, '../packages/cli/src/i18n/locales'),
+  },
+];
 
 type TranslationValue = string | TranslationObject;
 type TranslationObject = Record<string, TranslationValue>;
@@ -121,28 +136,31 @@ function countKeys(obj: TranslationObject): number {
   return count;
 }
 
-async function main(): Promise<void> {
-  console.log('Translation Sync Script\n');
-  console.log(`Source language: ${SOURCE_LANG}`);
-  console.log(`Locales directory: ${LOCALES_DIR}\n`);
+function syncLocaleDir(config: LocaleConfig): { added: number; removed: number } {
+  const { name, dir } = config;
+  const englishDir = path.join(dir, SOURCE_LANG);
+
+  if (!fs.existsSync(englishDir)) {
+    console.log(`\nSkipping ${name}: English directory not found at ${englishDir}`);
+    return { added: 0, removed: 0 };
+  }
 
   // Get all language directories
   const languages = fs
-    .readdirSync(LOCALES_DIR, { withFileTypes: true })
+    .readdirSync(dir, { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name !== SOURCE_LANG)
     .map((d) => d.name);
 
-  console.log(`Target languages: ${languages.join(', ')}\n`);
+  console.log(`\n[${name}] Locales directory: ${dir}`);
+  console.log(`[${name}] Target languages: ${languages.join(', ')}`);
 
   // Get all English locale files
-  const englishDir = path.join(LOCALES_DIR, SOURCE_LANG);
   const namespaces = fs
     .readdirSync(englishDir)
     .filter((f) => f.endsWith('.json'))
     .map((f) => f.replace('.json', ''));
 
-  console.log(`Namespaces: ${namespaces.join(', ')}\n`);
-  console.log('\u2500'.repeat(60));
+  console.log(`[${name}] Namespaces: ${namespaces.join(', ')}`);
 
   let totalAdded = 0;
   let totalRemoved = 0;
@@ -155,7 +173,7 @@ async function main(): Promise<void> {
     console.log(`\n${namespace}.json (${englishKeyCount} keys in English)`);
 
     for (const lang of languages) {
-      const langDir = path.join(LOCALES_DIR, lang);
+      const langDir = path.join(dir, lang);
       const langFile = path.join(langDir, `${namespace}.json`);
 
       let langContent: TranslationObject = {};
@@ -187,6 +205,23 @@ async function main(): Promise<void> {
         totalRemoved += removed;
       }
     }
+  }
+
+  return { added: totalAdded, removed: totalRemoved };
+}
+
+async function main(): Promise<void> {
+  console.log('Translation Sync Script\n');
+  console.log(`Source language: ${SOURCE_LANG}`);
+  console.log('\u2500'.repeat(60));
+
+  let totalAdded = 0;
+  let totalRemoved = 0;
+
+  for (const config of LOCALE_CONFIGS) {
+    const result = syncLocaleDir(config);
+    totalAdded += result.added;
+    totalRemoved += result.removed;
   }
 
   console.log('\n' + '\u2500'.repeat(60));

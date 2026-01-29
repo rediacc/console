@@ -1,23 +1,11 @@
 {
-  "addSystemFunction": "システム関数をキューに追加",
-  "addToQueue": "キューに追加",
-  "advanced": "高度な設定",
-  "functions": {
-    "title": "機能",
-    "setup": "セットアップ",
-    "hello": "こんにちは"
-  },
-  "info": {
-    "hostname": "ホスト名",
-    "uptime": "稼働時間",
-    "cpu": "CPU",
-    "systemTime": "システム時刻"
-  },
   "actions": {
     "add": "マシンを追加",
     "runOnServer": "サーバーで実行"
   },
-  "noVaultData": "ボールトデータがありません",
+  "addSystemFunction": "システム関数をキューに追加",
+  "addToQueue": "キューに追加",
+  "advanced": "高度な設定",
   "allMachinesConnected": "すべての {{count}} 台のマシンが正常に接続されました",
   "assignedDate": "割り当てられた日付",
   "assignmentStatus": {
@@ -106,6 +94,11 @@
     },
     "vaultConfig": "ボールト構成 (JSON)"
   },
+  "functions": {
+    "hello": "こんにちは",
+    "setup": "セットアップ",
+    "title": "機能"
+  },
   "goToMachinesPage": "マシンページ",
   "gridView": "リポジトリ",
   "groupBy": "グループ化",
@@ -120,6 +113,12 @@
   "heading": "機械",
   "hoursAgo": "{{count}} 時間前",
   "hoursAgo_plural": "{{count}} 時間前",
+  "info": {
+    "cpu": "CPU",
+    "hostname": "ホスト名",
+    "systemTime": "システム時刻",
+    "uptime": "稼働時間"
+  },
   "itemCount": "アイテム | アイテム",
   "justNow": "ちょうど今",
   "lastUpdated": "最終更新日",
@@ -139,6 +138,7 @@
   "noAvailableMachinesForClone": "クローンの割り当てに利用可能なマシンがありません",
   "noMachinesFound": "マシンが見つかりません",
   "noMachinesWithClusters": "選択したマシンはどれもクラスターに割り当てられていません",
+  "noVaultData": "ボールトデータがありません",
   "pending": "保留中",
   "placeholders": {
     "selectMachine": "マシンを選択してください"

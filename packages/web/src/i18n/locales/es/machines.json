@@ -1,23 +1,11 @@
 {
-  "addSystemFunction": "Agregar función del sistema a la cola",
-  "addToQueue": "Agregar a la cola",
-  "advanced": "Avanzado",
-  "functions": {
-    "title": "Funciones",
-    "setup": "Configuración",
-    "hello": "Hola"
-  },
-  "info": {
-    "hostname": "Nombre del host",
-    "uptime": "Tiempo de actividad",
-    "cpu": "CPU",
-    "systemTime": "Hora del sistema"
-  },
   "actions": {
     "add": "Agregar máquina",
     "runOnServer": "Ejecutar en el servidor"
   },
-  "noVaultData": "No hay datos de bóveda disponibles",
+  "addSystemFunction": "Agregar función del sistema a la cola",
+  "addToQueue": "Agregar a la cola",
+  "advanced": "Avanzado",
   "allMachinesConnected": "Todas las {{count}} máquinas están conectadas correctamente",
   "assignedDate": "Fecha asignada",
   "assignmentStatus": {
@@ -106,6 +94,11 @@
     },
     "vaultConfig": "Configuración de bóveda (JSON)"
   },
+  "functions": {
+    "hello": "Hola",
+    "setup": "Configuración",
+    "title": "Funciones"
+  },
   "goToMachinesPage": "pagina de maquinas",
   "gridView": "Repositorio",
   "groupBy": "Agrupar por",
@@ -120,6 +113,12 @@
   "heading": "maquinas",
   "hoursAgo": "Hace {{count}} hora",
   "hoursAgo_plural": "Hace {{count}} horas",
+  "info": {
+    "cpu": "CPU",
+    "hostname": "Nombre del host",
+    "systemTime": "Hora del sistema",
+    "uptime": "Tiempo de actividad"
+  },
   "itemCount": "artículo | elementos",
   "justNow": "En este momento",
   "lastUpdated": "Última actualización",
@@ -139,6 +138,7 @@
   "noAvailableMachinesForClone": "No hay máquinas disponibles para la asignación de clones",
   "noMachinesFound": "No se encontraron máquinas",
   "noMachinesWithClusters": "Ninguna de las máquinas seleccionadas está asignada a un clúster",
+  "noVaultData": "No hay datos de bóveda disponibles",
   "pending": "Pendiente",
   "placeholders": {
     "selectMachine": "Seleccione una máquina"
