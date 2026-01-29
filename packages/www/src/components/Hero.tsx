@@ -2,6 +2,7 @@ import React from 'react';
 import { EXTERNAL_LINKS, getConsoleUrl } from '../config/constants';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
+import InstallWidget from './InstallWidget';
 
 interface HeroProps {
   lang?: Language;
@@ -23,6 +24,7 @@ const Hero: React.FC<HeroProps> = ({ lang = 'en', origin }) => {
             <span className="hero-highlight">{t('hero.titleHighlight')}</span>
           </h1>
           <p className="hero-subtitle">{t('hero.subtitle')}</p>
+          <InstallWidget lang={lang} />
           <div className="hero-cta">
             <div className="hero-cta-primary">
               <div className="hero-badge">

@@ -1,0 +1,135 @@
+---
+import type { Language } from '../i18n/types';
+import { createTranslator } from '../i18n/utils';
+import { SOLUTIONS, SOLUTION_SLUGS, type SolutionSlug } from '../config/solutions';
+
+export interface Props {
+  currentSolution: SolutionSlug;
+  lang: Language;
+}
+
+const { currentSolution, lang } = Astro.props;
+const { t, to } = createTranslator(lang);
+
+const otherSolutions = SOLUTION_SLUGS.filter((slug) => slug !== currentSolution).map((slug) => {
+  const config = SOLUTIONS[slug];
+  const content = to(`pages.solutions.${config.contentKey}`);
+  return {
+    slug,
+    name: t(`navigation.solutions.${config.contentKey}`),
+    subtitle: content.hero.subtitle,
+    href: `/${lang}/solutions/${slug}`,
+  };
+});
+---
+
+<section class="related-solutions">
+  <div class="container">
+    <h2 class="related-solutions-title">{t('common.exploreSolutions')}</h2>
+    <div class="related-solutions-grid">
+      {otherSolutions.map((sol) => (
+        <a href={sol.href} class="related-solution-card">
+          <h3 class="related-solution-name">{sol.name}</h3>
+          <p class="related-solution-subtitle">{sol.subtitle}</p>
+          <span class="related-solution-arrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .related-solutions {
+    padding: var(--space-20) var(--space-6);
+    background: var(--color-bg-light);
+  }
+
+  .related-solutions-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    margin-bottom: var(--space-12);
+    color: var(--color-text-primary);
+  }
+
+  .related-solutions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-6);
+    max-width: var(--section-max-width);
+    margin: 0 auto;
+  }
+
+  .related-solution-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-8);
+    background: var(--color-bg-alt);
+    border-radius: var(--box-border-radius);
+    box-shadow: var(--box-shadow);
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--color-border);
+    transition: border-color var(--transition-duration-base) ease,
+                box-shadow var(--transition-duration-base) ease;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .related-solution-card:hover {
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, var(--opacity-10));
+  }
+
+  .related-solution-card:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+
+  .related-solution-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    margin: 0 0 var(--space-3) 0;
+    color: var(--color-text-primary);
+  }
+
+  .related-solution-subtitle {
+    font-size: var(--font-size-base);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-secondary);
+    margin: 0;
+    flex: 1;
+  }
+
+  .related-solution-arrow {
+    display: flex;
+    align-items: center;
+    margin-top: var(--space-4);
+    color: var(--color-brand-primary);
+  }
+
+  @media (max-width: 64rem) {
+    .related-solutions-grid {
+      grid-template-columns: 1fr;
+      max-width: var(--container-md);
+    }
+
+    .related-solutions-title {
+      font-size: var(--font-size-2xl);
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .related-solutions {
+      padding: var(--space-16) var(--space-5);
+    }
+
+    .related-solution-card {
+      padding: var(--space-6);
+    }
+  }
+</style>

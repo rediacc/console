@@ -118,6 +118,10 @@ const ALLOWED_IDENTICAL = new Set([
   'Memory',
   'Status',
   // International words (same or very similar across languages)
+  'Installation',
+  'Description',
+  'Error',
+  'VS Code Integration',
   'System',
   'Region',
   'Version',

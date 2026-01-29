@@ -42,7 +42,9 @@
       "skipToFooter": "Перейти к нижнему колонтитулу",
       "skipToMainContent": "Перейти к основному содержанию",
       "skipToNavigation": "Перейти к навигации"
-    }
+    },
+    "exploreSolutions": "Другие решения",
+    "platformPreview": "Обзор платформы"
   },
   "earlyAccess": {
     "benefits": [
@@ -137,6 +139,23 @@
       "learnMore": "Узнать больше",
       "seeDetails": "Посмотреть полную информацию"
     },
+    "install": {
+      "ariaLabel": "Команда установки",
+      "tabsLabel": "Выберите операционную систему",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "Копировать в буфер обмена",
+      "copied": "Скопировано!",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "ещё →"
+      }
+    },
     "subtitle": "Выживите при сбоях в работе облака. Развертывание где угодно. Быстрое переключение при сбоях.",
     "title": "Инфраструктура, которая",
     "titleHighlight": "Выживает. Каждый раз."
@@ -165,6 +184,7 @@
     "search": "Поиск",
     "selectLanguage": "Выберите язык",
     "solutions": {
+      "title": "Решения",
       "dataSecurity": "Безопасность данных",
       "developmentEnvironments": "Среды разработки",
       "disasterRecovery": "Аварийное восстановление",

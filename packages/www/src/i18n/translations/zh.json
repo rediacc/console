@@ -42,7 +42,9 @@
       "skipToFooter": "跳至页脚",
       "skipToMainContent": "跳至主要内容",
       "skipToNavigation": "跳至导航"
-    }
+    },
+    "exploreSolutions": "探索其他解决方案",
+    "platformPreview": "平台预览"
   },
   "earlyAccess": {
     "benefits": ["直接与我们的团队合作", "塑造产品", "优先支持", "抢先体验新功能"],
@@ -132,6 +134,23 @@
       "learnMore": "了解更多",
       "seeDetails": "查看完整详细信息"
     },
+    "install": {
+      "ariaLabel": "安装命令",
+      "tabsLabel": "选择操作系统",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "复制到剪贴板",
+      "copied": "已复制！",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "更多 →"
+      }
+    },
     "subtitle": "避免云中断。 部署在任何地方。 快速故障转移。",
     "title": "基础设施",
     "titleHighlight": "幸存下来。 每次。"
@@ -160,6 +179,7 @@
     "search": "搜索",
     "selectLanguage": "选择语言",
     "solutions": {
+      "title": "解决方案",
       "dataSecurity": "数据安全",
       "developmentEnvironments": "开发环境",
       "disasterRecovery": "灾难恢复",

@@ -31,6 +31,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Configuration
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
 const WEB_LOCALES = path.join(__dirname, '../packages/web/src/i18n/locales');
+const CLI_LOCALES = path.join(__dirname, '../packages/cli/src/i18n/locales');
 const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'] as const;
 const KEY_PATTERN = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
 
@@ -70,38 +71,43 @@ function resolveKeyPath(
 }
 
 /**
- * CHECK 1: Validate each key exists in web locales (all 9 languages)
+ * CHECK 1: Validate each key exists in locales (web + CLI, all 9 languages)
+ *
+ * Searches web locales first, then CLI locales as fallback.
+ * Both web and CLI locales exist for all 9 languages.
  */
-function validateKeyInWebLocales(
+function validateKeyInLocales(
   namespace: string,
   keyPath: string,
   lang: Language
 ): string | null {
-  const filePath = path.join(WEB_LOCALES, lang, `${namespace}.json`);
+  const paths = [
+    path.join(WEB_LOCALES, lang, `${namespace}.json`),
+    path.join(CLI_LOCALES, lang, `${namespace}.json`),
+  ];
 
-  if (!fs.existsSync(filePath)) {
-    return `Namespace '${namespace}' not found for ${lang}`;
+  for (const localePath of paths) {
+    if (!fs.existsSync(localePath)) continue;
+    try {
+      const translations = JSON.parse(
+        fs.readFileSync(localePath, 'utf-8')
+      ) as Record<string, unknown>;
+      const value = resolveKeyPath(translations, keyPath);
+
+      if (value === undefined) continue;
+
+      if (typeof value !== 'string') {
+        return `Key '${namespace}.${keyPath}' in ${lang} is not a string (got ${typeof value})`;
+      }
+
+      return null; // found and valid
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      return `Failed to parse ${localePath}: ${message}`;
+    }
   }
 
-  try {
-    const translations = JSON.parse(
-      fs.readFileSync(filePath, 'utf-8')
-    ) as Record<string, unknown>;
-    const value = resolveKeyPath(translations, keyPath);
-
-    if (value === undefined) {
-      return `Key '${namespace}.${keyPath}' not found in ${lang}`;
-    }
-
-    if (typeof value !== 'string') {
-      return `Key '${namespace}.${keyPath}' in ${lang} is not a string (got ${typeof value})`;
-    }
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    return `Failed to parse ${filePath}: ${message}`;
-  }
-
-  return null;
+  return `Key '${namespace}.${keyPath}' not found in ${lang} (checked web + CLI locales)`;
 }
 
 /**
@@ -307,9 +313,8 @@ function main(): void {
       const [namespace, ...parts] = key.split('.');
       const keyPath = parts.join('.');
 
-      // Validate key exists in all languages
       for (const lang of LANGUAGES) {
-        const error = validateKeyInWebLocales(namespace, keyPath, lang);
+        const error = validateKeyInLocales(namespace, keyPath, lang);
         if (error) {
           errors.push(`${relPath}: ${error}`);
         }

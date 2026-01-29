@@ -1169,5 +1169,116 @@
     "success": "✓ Succès",
     "unknown": "Inconnu",
     "inProgress": "En cours"
+  },
+  "docs": {
+    "frontmatter": {
+      "title": "Application CLI",
+      "description": "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme",
+      "category": "Concepts Fondamentaux"
+    },
+    "pageTitle": "Référence CLI Rediacc",
+    "overview": {
+      "heading": "Aperçu",
+      "text": "La **CLI Rediacc** (`rdc`) est une interface en ligne de commande pour gérer tous les aspects de la plateforme Rediacc — authentification, infrastructure, dépôts, files d'attente, stockage et plus encore."
+    },
+    "installation": {
+      "heading": "Installation",
+      "text": "Téléchargez le dernier binaire pour votre plateforme depuis la [page des versions Rediacc](https://www.rediacc.com) ou installez via votre gestionnaire de paquets :"
+    },
+    "globalOptions": {
+      "heading": "Options Globales",
+      "intro": "Chaque commande prend en charge ces flags globaux :"
+    },
+    "tableHeaders": {
+      "flag": "Flag",
+      "description": "Description",
+      "error": "Erreur",
+      "meaning": "Signification"
+    },
+    "admonitions": {
+      "tip": "Astuce",
+      "warning": "Avertissement",
+      "note": "Note"
+    },
+    "sectionTitles": {
+      "auth": "Authentification",
+      "context": "Gestion des Contextes",
+      "organization": "Gestion de l'Organisation",
+      "user": "Gestion des Utilisateurs",
+      "team": "Gestion des Équipes",
+      "permission": "Gestion des Permissions",
+      "region": "Gestion des Régions",
+      "bridge": "Gestion des Bridges",
+      "machine": "Gestion des Machines",
+      "repository": "Gestion des Dépôts",
+      "storage": "Gestion du Stockage",
+      "queue": "Opérations de File d'Attente",
+      "sync": "Synchronisation de Fichiers",
+      "vscode": "Intégration VS Code",
+      "term": "Accès Terminal SSH",
+      "ceph": "Gestion du Stockage Ceph",
+      "audit": "Audit et Conformité",
+      "protocol": "Gestionnaire de Protocole",
+      "shortcuts": "Commandes Rapides (Raccourcis)",
+      "update": "Mises à jour CLI"
+    },
+    "errors": {
+      "heading": "Messages d'Erreur Courants",
+      "intro": "Lorsque quelque chose ne va pas, la CLI fournit des messages d'erreur clairs :",
+      "meanings": {
+        "authRequired": "Vous devez d'abord vous connecter",
+        "noActiveContext": "Aucun contexte sélectionné — créez-en un ou basculez vers un existant",
+        "permissionDenied": "Votre compte ne dispose pas des permissions requises",
+        "machineRequired": "Spécifiez une machine avec `--machine` ou définissez un défaut de contexte",
+        "teamRequired": "Spécifiez une équipe avec `--team` ou définissez un défaut de contexte",
+        "regionRequired": "Spécifiez une région avec `--region` ou définissez un défaut de contexte"
+      }
+    },
+    "outputFormats": {
+      "heading": "Formats de Sortie",
+      "text": "Toutes les commandes list/get prennent en charge plusieurs formats de sortie via `--output` :",
+      "closing": "Cela facilite l'intégration de la CLI Rediacc dans les scripts, les pipelines CI/CD et les workflows d'automatisation."
+    },
+    "supplements": {
+      "auth": {
+        "tip": "Votre jeton d'authentification est stocké localement dans votre contexte. Utilisez `--save-as` pour stocker les identifiants sous un contexte nommé pour plusieurs environnements.",
+        "register": {
+          "afterDescription": "Après l'inscription, vérifiez votre e-mail pour le code d'activation."
+        }
+      },
+      "context": {
+        "afterDescription": "Les contextes stockent les détails de connexion (URL API, identifiants, équipe/région/machine par défaut) pour que vous puissiez basculer rapidement entre les environnements.",
+        "set": {
+          "tip": "Définir des valeurs par défaut signifie que vous n'avez pas besoin de passer `--team`, `--region` ou `--machine` à chaque commande."
+        },
+        "createLocal": {
+          "afterDescription": "En mode local, vous pouvez ajouter des machines directement :"
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "Lorsque le mode maintenance est activé, les utilisateurs non-administrateurs ne peuvent pas se connecter."
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "La commande health affiche les métriques système, l'état des conteneurs, la stabilité des services et les informations de stockage — utile pour les vérifications de pipeline CI/CD."
+        },
+        "testConnection": {
+          "tip": "Utilisez `--save-known-hosts` pour persister automatiquement la clé de l'hôte dans le vault de la machine après un test réussi."
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "Promouvoir un fork le sépare de son dépôt parent (grand), le rendant indépendant."
+        }
+      },
+      "queue": {
+        "afterDescription": "Le système de files d'attente est au cœur de l'exécution des tâches Rediacc. Chaque opération (déploiement, sauvegarde, exécution de scripts) passe par la file d'attente.",
+        "trace": {
+          "tip": "Utilisez `--watch` pour suivre la tâche en temps réel jusqu'à son achèvement."
+        }
+      }
+    }
   }
 }

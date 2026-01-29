@@ -25,7 +25,7 @@ export const EXTERNAL_LINKS = {
    * Update this URL when changing scheduling platforms
    */
   SCHEDULE_CONSULTATION:
-    'https://outlook.office.com/owa/calendar/RediaccConsultationServices@rediacc.com/bookings/?ismsaljsauthenabled',
+    'https://cloud.rediacc.io/apps/calendar/appointment/kqpjP6qdYT63',
 } as const;
 
 /**

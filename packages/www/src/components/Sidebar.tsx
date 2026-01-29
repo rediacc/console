@@ -12,39 +12,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation(currentLang);
   const sidebarRef = useRef<HTMLElement>(null);
   const [currentPath, setCurrentPath] = useState('');
+  const [isSolutionsExpanded, setIsSolutionsExpanded] = useState(false);
 
-  const navItems = [
+  const topNavItems = [
     { href: `/${currentLang}/`, label: t('navigation.home') },
-    {
-      href: `/${currentLang}/solutions/disaster-recovery`,
-      label: t('navigation.solutions.disasterRecovery'),
-    },
-    {
-      href: `/${currentLang}/solutions/threat-response`,
-      label: t('navigation.solutions.threatResponse'),
-    },
-    {
-      href: `/${currentLang}/solutions/data-security`,
-      label: t('navigation.solutions.dataSecurity'),
-    },
-    {
-      href: `/${currentLang}/solutions/system-portability`,
-      label: t('navigation.solutions.systemPortability'),
-    },
-    {
-      href: `/${currentLang}/solutions/development-environments`,
-      label: t('navigation.solutions.developmentEnvironments'),
-    },
+  ];
+
+  const solutionItems = [
+    { href: `/${currentLang}/solutions/disaster-recovery`, label: t('navigation.solutions.disasterRecovery') },
+    { href: `/${currentLang}/solutions/threat-response`, label: t('navigation.solutions.threatResponse') },
+    { href: `/${currentLang}/solutions/data-security`, label: t('navigation.solutions.dataSecurity') },
+    { href: `/${currentLang}/solutions/system-portability`, label: t('navigation.solutions.systemPortability') },
+    { href: `/${currentLang}/solutions/development-environments`, label: t('navigation.solutions.developmentEnvironments') },
+  ];
+
+  const bottomNavItems = [
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
     { href: `/${currentLang}/docs`, label: t('navigation.docs') },
-    { href: `/${currentLang}/downloads`, label: t('navigation.downloads') },
-    { href: `/${currentLang}/install`, label: t('navigation.install') },
     { href: `/${currentLang}/contact`, label: t('navigation.contact') },
   ];
 
   useEffect(() => {
     requestAnimationFrame(() => {
-      setCurrentPath(window.location.pathname);
+      const path = window.location.pathname;
+      setCurrentPath(path);
+      if (path.includes('/solutions/')) {
+        setIsSolutionsExpanded(true);
+      }
     });
   }, []);
 
@@ -54,6 +48,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const normalizedPath = currentPath.endsWith('/') ? currentPath : `${currentPath}/`;
     return normalizedPath === normalizedHref;
   };
+
+  const activeSolutionHref = solutionItems.find((item) => isActive(item.href))?.href;
+
+  const toggleSolutions = () => setIsSolutionsExpanded((prev) => !prev);
 
   useEffect(() => {
     if (isOpen) {
@@ -127,21 +125,81 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         aria-hidden={!isOpen}
       >
         <nav className="sidebar-nav">
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                className={`sidebar-link${active ? ' active' : ''}`}
-                onClick={handleLinkClick}
-                tabIndex={isOpen ? 0 : -1}
-                aria-current={active ? 'page' : undefined}
+          {/* Home */}
+          {topNavItems.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`sidebar-link${isActive(item.href) ? ' active' : ''}`}
+              onClick={handleLinkClick}
+              tabIndex={isOpen ? 0 : -1}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          ))}
+
+          {/* Solutions Accordion */}
+          <div className="sidebar-solutions-group">
+            <button
+              type="button"
+              className={`sidebar-solutions-toggle${activeSolutionHref ? ' has-active-child' : ''}`}
+              onClick={toggleSolutions}
+              aria-expanded={isSolutionsExpanded}
+              aria-controls="sidebar-solutions-list"
+              tabIndex={isOpen ? 0 : -1}
+            >
+              <span>{t('navigation.solutions.title')}</span>
+              <svg
+                className={`sidebar-solutions-chevron${isSolutionsExpanded ? ' expanded' : ''}`}
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
               >
-                {item.label}
-              </a>
-            );
-          })}
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            <ul
+              id="sidebar-solutions-list"
+              className={`sidebar-solutions-list${isSolutionsExpanded ? ' expanded' : ''}`}
+              role="list"
+            >
+              {solutionItems.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <li key={item.href}>
+                    <a
+                      href={item.href}
+                      className={`sidebar-link sidebar-sublink${active ? ' active' : ''}`}
+                      onClick={handleLinkClick}
+                      tabIndex={isOpen && isSolutionsExpanded ? 0 : -1}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Blog, Docs, Contact */}
+          {bottomNavItems.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`sidebar-link${isActive(item.href) ? ' active' : ''}`}
+              onClick={handleLinkClick}
+              tabIndex={isOpen ? 0 : -1}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          ))}
         </nav>
       </aside>
     </>
