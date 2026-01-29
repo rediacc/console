@@ -10,6 +10,9 @@ on:
       GH_PAT:
         required: false
 
+# Note: Renet binaries are built by ci-build-renet.yml and downloaded as artifact
+# This workflow depends on build-renet completing first (configured in ci.yml)
+
 jobs:
   build-cli-executables:
     name: CLI (${{ matrix.platform }}-${{ matrix.arch }})
@@ -45,6 +48,13 @@ jobs:
             timeout: 30
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      # Download full renet binaries (with embedded CRIU/rsync) from unified build
+      - name: Download renet binaries
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
 
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

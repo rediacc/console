@@ -1,13 +1,13 @@
 #!/bin/bash
-# Force-cancel older CI runs on the same branch after their Quality checks complete
+# Force-cancel older CI runs on the same branch immediately
 # This replaces the concurrency group (which uses slow normal-cancel) and the Queue gate
 # (which serialized across all PRs unnecessarily).
 #
 # Usage: cancel-older-runs.sh [--timeout <seconds>] [--poll-interval <seconds>] [--workflow <name>]
 #
 # Options:
-#   --timeout        Maximum wait time in seconds (default: 300 = 5 minutes)
-#   --poll-interval  Polling interval in seconds (default: 15)
+#   --timeout        Maximum wait time in seconds (default: 60)
+#   --poll-interval  Polling interval in seconds (default: 10)
 #   --workflow       Workflow filename to check (default: ci.yml)
 #
 # Environment:
@@ -17,12 +17,11 @@
 #
 # Behavior:
 #   1. Finds in-progress CI runs on the same branch that started before this run
-#   2. Waits for their Quality checks to complete (Quality is cheap, let it finish)
-#   3. Force-cancels them once Quality is done (they're now in expensive build/test phase)
-#   4. Exits when all older runs are cancelled or timeout is reached
+#   2. Force-cancels them immediately
+#   3. Verifies cancellation, retries if needed
 #
 # Example:
-#   .ci/scripts/ci/cancel-older-runs.sh --timeout 300 --poll-interval 15
+#   .ci/scripts/ci/cancel-older-runs.sh --timeout 60 --poll-interval 10
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,8 +30,8 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Parse arguments
 parse_args "$@"
 
-TIMEOUT="${ARG_TIMEOUT:-300}"
-POLL_INTERVAL="${ARG_POLL_INTERVAL:-15}"
+TIMEOUT="${ARG_TIMEOUT:-60}"
+POLL_INTERVAL="${ARG_POLL_INTERVAL:-10}"
 WORKFLOW="${ARG_WORKFLOW:-ci.yml}"
 
 # Validate environment
@@ -84,23 +83,7 @@ force_cancel_run() {
     fi
 }
 
-# Check if Quality is done for a given run
-check_quality_done() {
-    local run_id="$1"
-    local jobs_json
-
-    jobs_json=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=30" 2>/dev/null) || return 1
-
-    # Quality is a reusable workflow, sub-jobs appear as "Quality / Lint", "Quality / Test", etc.
-    local quality_total quality_completed
-    quality_total=$(echo "$jobs_json" | jq '[.jobs[] | select(.name | startswith("Quality"))] | length')
-    quality_completed=$(echo "$jobs_json" | jq '[.jobs[] | select(.name | startswith("Quality")) | select(.status == "completed")] | length')
-
-    # Quality is done when all sub-jobs exist and are completed
-    [[ "$quality_total" -gt 0 ]] && [[ "$quality_total" -eq "$quality_completed" ]]
-}
-
-# Main polling loop
+# Main loop: find and cancel older runs, retry until all are gone
 START_TIME=$(date +%s)
 
 while true; do
@@ -127,28 +110,15 @@ while true; do
         exit 0
     fi
 
-    ELAPSED_MIN=$((ELAPSED / 60))
-    log_info "Found ${OLDER_COUNT} older run(s) (${ELAPSED_MIN}m elapsed)"
+    log_info "Found ${OLDER_COUNT} older run(s) - force-cancelling..."
 
-    # Check each older run
-    ALL_HANDLED=true
+    # Force-cancel each older run immediately
     for row in $(echo "$OLDER_RUNS" | jq -c '.[]'); do
         RUN_ID=$(echo "$row" | jq -r '.id')
         RUN_NUMBER=$(echo "$row" | jq -r '.run_number')
-
-        if check_quality_done "$RUN_ID"; then
-            log_step "Run #${RUN_NUMBER}: Quality completed - force-cancelling..."
-            force_cancel_run "$RUN_ID" "$RUN_NUMBER"
-        else
-            log_info "Run #${RUN_NUMBER}: still in Quality - skipping"
-            ALL_HANDLED=false
-        fi
+        force_cancel_run "$RUN_ID" "$RUN_NUMBER"
     done
 
-    if [[ "$ALL_HANDLED" == "true" ]]; then
-        log_info "All older runs handled"
-        exit 0
-    fi
-
+    # Wait and re-check to confirm cancellation took effect
     sleep "$POLL_INTERVAL"
 done

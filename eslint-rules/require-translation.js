@@ -101,6 +101,8 @@ const splitKey = (key) => {
 const isNotTranslationKey = (key) => {
   // Shared namespace keys - validated in packages/shared/src/i18n/locales/
   if (key.startsWith('shared:')) return true;
+  // Node.js built-in module specifiers (e.g., node:fs, node:path, node:sea)
+  if (key.startsWith('node:')) return true;
   // Commander event names (e.g., command:*)
   if (key === 'command:*') return true;
   // URLs (http, https, or any protocol like rediacc://)

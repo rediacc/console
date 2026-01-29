@@ -3,5 +3,10 @@
   "output": "dist/sea-prep.blob",
   "disableExperimentalSEAWarning": true,
   "useSnapshot": false,
-  "useCodeCache": true
+  "useCodeCache": false,
+  "assets": {
+    "renet-linux-amd64": "dist/assets/renet-linux-amd64",
+    "renet-linux-arm64": "dist/assets/renet-linux-arm64",
+    "renet-metadata.json": "dist/assets/renet-metadata.json"
+  }
 }
