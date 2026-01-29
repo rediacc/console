@@ -84,9 +84,22 @@ jobs:
   # ============================================================================
   # BUILD (parallel reusable workflows)
   # ============================================================================
+
+  # Unified renet build - produces full binaries with embedded CRIU/rsync
+  # Used by BOTH CLI (SEA embedding) and Docker (bridge images)
+  build-renet:
+    name: Build (Renet)
+    needs: [init]
+    uses: ./.github/workflows/ci-build-renet.yml
+    with:
+      next_version: ${{ needs.init.outputs.next_version }}
+      skip_build: ${{ needs.init.outputs.bridge_exists == 'true' }}
+      bridge_tag: ${{ needs.init.outputs.bridge_tag }}
+    secrets: inherit
+
   build-docker:
     name: Build (Docker)
-    needs: [init]
+    needs: [init, build-renet]
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.init.outputs.next_version }}
@@ -112,7 +125,7 @@ jobs:
 
   build-cli:
     name: Build (CLI)
-    needs: [init]
+    needs: [init, build-renet]
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.init.outputs.next_version }}
@@ -205,29 +218,14 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image cli --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
-      # Step 2: Bump version & commit (includes all submodules)
+      # Step 2: Bump version & commit
       # -----------------------------------------------------------------------
-      - name: Download staging release artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
-        with:
-          name: staging-release-${{ github.sha }}
-          path: dist/
-
       - name: Version bump
         run: .ci/scripts/version/bump.sh --version ${{ needs.init.outputs.next_version }}
 
       - name: Bump submodule versions
         run: |
           .ci/scripts/version/bump-submodules.sh --version ${{ needs.init.outputs.next_version }} --stage-only
-        env:
-          GITHUB_PAT: ${{ secrets.GH_PAT }}
-
-      - name: Update Homebrew formula
-        run: |
-          .ci/scripts/release/update-homebrew-tap.sh \
-            --version ${{ needs.init.outputs.next_version }} \
-            --local-checksums dist/cli \
-            --stage-only
         env:
           GITHUB_PAT: ${{ secrets.GH_PAT }}
 
@@ -242,6 +240,12 @@ jobs:
       # -----------------------------------------------------------------------
       # Step 3: Create GitHub Release (upload packages + binaries)
       # -----------------------------------------------------------------------
+      - name: Download staging release artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: staging-release-${{ github.sha }}
+          path: dist/
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -255,6 +259,18 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+
+      # -----------------------------------------------------------------------
+      # Step 3.5: Update Homebrew formula
+      # -----------------------------------------------------------------------
+      - name: Update Homebrew formula
+        run: |
+          .ci/scripts/release/update-homebrew-tap.sh \
+            --version ${{ needs.init.outputs.next_version }} \
+            --push
+        env:
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
 
       # -----------------------------------------------------------------------
       # Step 4: Download packages from Release for metadata (ensures exact match)

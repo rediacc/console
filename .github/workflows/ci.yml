@@ -121,7 +121,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/ci/cancel-older-runs.sh --timeout 300 --poll-interval 15
+        run: .ci/scripts/ci/cancel-older-runs.sh --timeout 60 --poll-interval 10
 
       - name: Monitor all jobs and cancel on failure
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
@@ -180,12 +180,26 @@ jobs:
 
   # ============================================================================
   # COLUMN 3: BUILD & DOCKER
-  # Jobs: build-docker, build-desktop, build-cli (parallel reusable workflows)
-  # Dependencies: quality + review-gate
+  # Jobs: build-renet (unified), build-docker, build-desktop (parallel reusable workflows)
+  # Dependencies: quality + review-gate -> build-renet -> build-docker, build-cli
   # ============================================================================
+
+  # Unified renet build - produces full binaries with embedded CRIU/rsync
+  # Used by BOTH CLI (SEA embedding) and Docker (bridge images)
+  build-renet:
+    name: Build (Renet)
+    needs: [initialize, quality, review-gate]
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    uses: ./.github/workflows/ci-build-renet.yml
+    with:
+      next_version: ${{ needs.initialize.outputs.next_version }}
+      skip_build: ${{ needs.initialize.outputs.bridge_exists == 'true' }}
+      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
+    secrets: inherit
+
   build-docker:
     name: Build (Docker)
-    needs: [initialize, quality, review-gate]
+    needs: [initialize, quality, review-gate, build-renet]
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-docker.yml
     with:
@@ -213,7 +227,7 @@ jobs:
 
   build-cli:
     name: Build (CLI)
-    needs: [initialize, quality, review-gate]
+    needs: [initialize, quality, review-gate, build-renet]
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-cli.yml
     with:

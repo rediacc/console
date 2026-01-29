@@ -27,7 +27,8 @@ echo "Checking for Claude attribution in PR #${PR_NUMBER}..."
 
 # Pattern to match Claude attribution (case-insensitive)
 # Matches: Co-Authored-By: Claude, Generated with Claude, etc.
-CLAUDE_PATTERN="(Co-Authored-By.*Claude|Generated with.*Claude|Claude Code|Claude Opus|Claude Sonnet|noreply@anthropic\.com)"
+# Note: We specifically match attribution markers, not general mentions of Claude as a tool
+CLAUDE_PATTERN="(Co-Authored-By[[:space:]]*:[[:space:]]*Claude|Generated with[[:space:]]+\[?Claude|🤖[[:space:]]*Generated|noreply@anthropic\.com)"
 
 # Check PR description
 echo "  Checking PR description..."

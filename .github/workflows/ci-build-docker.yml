@@ -124,7 +124,7 @@ jobs:
   build-plugins:
     name: Plugins & Docker
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - name: Apply version bump
@@ -431,73 +431,16 @@ jobs:
             --tag "${{ inputs.api_tag }}"
 
   # ============================================================
-  # RENET/BRIDGE: Native Binary Builds (no QEMU emulation)
+  # RENET/BRIDGE: Docker Images
+  # Note: Renet binaries (with embedded CRIU/rsync) are built by ci-build-renet.yml
+  # This workflow downloads the unified artifact and builds Docker images only
   # ============================================================
 
-  # Build native binaries (CRIU, rsync) on separate runners to avoid QEMU
-  # Note: renet Go binaries are built in build-renet-docker after all assets available
-  build-renet-native-amd64:
-    name: Renet Binaries (amd64)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: inputs.bridge_exists != 'true'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          submodules: true
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Restore native binary cache
-        id: cache-binaries
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7  # v5
-        with:
-          path: binaries/
-          key: native-binaries-amd64-${{ hashFiles('.ci/scripts/docker/build-native-binaries.sh') }}
-
-      - name: Build native binaries (amd64 host)
-        if: steps.cache-binaries.outputs.cache-hit != 'true'
-        run: .ci/scripts/docker/build-native-binaries.sh --output ./binaries --cross-rsync
-
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
-        with:
-          name: renet-binaries-amd64
-          path: binaries/
-          retention-days: 1
-
-  build-renet-native-arm64:
-    name: Renet Binaries (arm64)
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
-    if: inputs.bridge_exists != 'true'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-        with:
-          submodules: true
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Restore native binary cache
-        id: cache-binaries
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7  # v5
-        with:
-          path: binaries/
-          key: native-binaries-arm64-${{ hashFiles('.ci/scripts/docker/build-native-binaries.sh') }}
-
-      - name: Build CRIU arm64 natively
-        if: steps.cache-binaries.outputs.cache-hit != 'true'
-        run: .ci/scripts/docker/build-native-binaries.sh --output ./binaries --criu-only
-
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
-        with:
-          name: renet-binaries-arm64
-          path: binaries/
-          retention-days: 1
-
-  # Build renet Go binaries with embedded assets and Docker images
+  # Build Docker images from unified renet binaries
   build-renet-docker:
     name: Renet Docker
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    needs: [build-renet-native-amd64, build-renet-native-arm64]
+    timeout-minutes: 15
     if: inputs.bridge_exists != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -505,45 +448,27 @@ jobs:
           submodules: true
           token: ${{ secrets.GH_PAT }}
 
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
-        with:
-          go-version: '1.24'
-          cache: true
-          cache-dependency-path: private/renet/go.sum
-
+      # Download full renet binaries (with embedded CRIU/rsync) from unified build
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         with:
-          name: renet-binaries-amd64
+          name: renet-binaries-${{ github.sha }}
+          path: binaries/
+
+      # Download native CRIU/rsync binaries (also from unified build)
+      # These are copied to /opt/ in Docker image for remote machine distribution
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: native-amd64-${{ github.sha }}
           path: binaries/
 
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         with:
-          name: renet-binaries-arm64
+          name: native-arm64-${{ github.sha }}
           path: binaries/
           merge-multiple: true
 
       - name: List binaries
         run: ls -la binaries/
-
-      # Embed assets into Go binary by placing compressed binaries in pkg/embed/assets/
-      - name: Prepare embedded assets for Go build
-        run: |
-          mkdir -p private/renet/pkg/embed/assets
-          gzip -c binaries/criu-linux-amd64 > private/renet/pkg/embed/assets/criu-linux-amd64.gz
-          gzip -c binaries/criu-linux-arm64 > private/renet/pkg/embed/assets/criu-linux-arm64.gz
-          gzip -c binaries/rsync-linux-amd64 > private/renet/pkg/embed/assets/rsync-linux-amd64.gz
-          gzip -c binaries/rsync-linux-arm64 > private/renet/pkg/embed/assets/rsync-linux-arm64.gz
-          ls -la private/renet/pkg/embed/assets/
-
-      - name: Build renet Go binaries with embedded assets
-        run: |
-          cd private/renet
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.Version=${{ inputs.next_version }}" -o ../../binaries/renet-linux-amd64 ./cmd/renet
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.Version=${{ inputs.next_version }}" -o ../../binaries/renet-linux-arm64 ./cmd/renet
 
       - uses: docker/setup-buildx-action@v3
 
