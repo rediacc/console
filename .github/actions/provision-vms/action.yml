@@ -52,6 +52,12 @@ outputs:
   vm-image-path:
     description: 'Path to VM image used'
     value: ${{ steps.image.outputs.vm_image_path }}
+  machine-user:
+    description: 'Username for VM SSH access'
+    value: ${{ steps.provision.outputs.machine_user }}
+  machine-password:
+    description: 'Password for VM SSH access'
+    value: ${{ steps.provision.outputs.machine_password }}
 
 runs:
   using: 'composite'
@@ -146,6 +152,9 @@ runs:
         echo "  Workers: $VM_WORKERS"
         echo "  Disk path: $REDIACC_OPS_DISKS_PATH"
 
+        # Generate VM password if not already set (used by cloud-init via VM_PASSWORD env var)
+        export VM_PASSWORD="${VM_PASSWORD:-$(head -c 100 /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 14)}"
+
         # Run VM provisioning
         sudo -E /tmp/renet ops up --force --parallel
 
@@ -156,6 +165,10 @@ runs:
         # Build worker IPs list (comma-separated, with offset)
         WORKER_IPS=$(for ID in $VM_WORKERS; do echo "${VM_NET_BASE}.$((ID + VM_NET_OFFSET))"; done | paste -sd, -)
         echo "worker_ips=$WORKER_IPS" >> $GITHUB_OUTPUT
+
+        # Output VM credentials for display in CI
+        echo "machine_user=$USER" >> $GITHUB_OUTPUT
+        echo "machine_password=$VM_PASSWORD" >> $GITHUB_OUTPUT
 
         echo ""
         echo "VMs provisioned successfully!"

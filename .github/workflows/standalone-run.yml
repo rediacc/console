@@ -214,19 +214,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Display VM Information
-        if: matrix.vm-os != 'none' && steps.vms.outputs.kvm-available == 'true'
-        run: |
-          echo ""
-          echo "================================================================"
-          echo "  VMs Provisioned (${{ matrix.vm-os }})"
-          echo "================================================================"
-          echo "  OS:       ${{ matrix.vm-os }}"
-          echo "  Bridge:   ${{ steps.vms.outputs.bridge-ip }}"
-          echo "  Workers:  ${{ steps.vms.outputs.worker-ips }}"
-          echo "================================================================"
-          echo ""
-
       - name: Setup Desktop Environment
         if: inputs.enable-desktop
         id: desktop
@@ -271,68 +258,89 @@ jobs:
 
           echo "Tunnel verified: ${TUNNEL_URL}"
 
-      - name: Display Access Information
+      - name: Display Access Information and Keep Services Alive
         run: |
+          # Display Access Information
           TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
           DURATION_MIN="${{ inputs.duration }}"
 
           echo ""
-          echo "================================================================"
-          echo "  Rediacc Console Services Ready"
-          echo "================================================================"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🌍 ACCESS INFORMATION"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
-          echo "DOCKER IMAGE VERSION: ${{ env.TAG }}"
-          echo "DURATION: ${DURATION_MIN} minutes"
+          echo "📦 DOCKER IMAGE VERSION: ${{ env.TAG }}"
+          echo "⏱️  DURATION: ${DURATION_MIN} minutes"
           echo ""
-          echo "WEB ACCESS:"
-          echo "  Tunnel URL: ${TUNNEL_URL}"
-
+          echo "🌐 WEB ACCESS:"
+          echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
           if [ "${{ inputs.enable-desktop }}" == "true" ]; then
-            echo "  Desktop:    ${TUNNEL_URL}/desktop"
-            echo ""
-            echo "DESKTOP:"
-            echo "  Environment: ${{ inputs.desktop-environment }}"
-            echo "  Resolution:  ${{ inputs.desktop-resolution }}"
+            echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
+            echo "   • Environment: ${{ inputs.desktop-environment }}"
+            echo "   • Resolution: ${{ inputs.desktop-resolution }}"
           fi
-
           echo ""
-          echo "LOCAL ACCESS:"
-          echo "  Web UI:  http://localhost"
-          echo "  API:     http://localhost/api"
 
-          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
-            echo "  Desktop: http://localhost:6080/vnc.html"
-            echo "  Gateway: http://localhost:8080"
-          fi
-
-          if [ "${{ inputs.enable-debug }}" == "true" ]; then
-            echo ""
-            echo "DEBUG ACCESS:"
-            echo "  SSH:     ${{ steps.tmate.outputs.ssh-connection }}"
-            echo "  Web:     ${{ steps.tmate.outputs.web-url }}"
-          fi
-
+          # Display VM infrastructure details if enabled
           if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
+            echo "🖥️  VM INFRASTRUCTURE:"
+            echo "   • Provider: KVM"
+            echo "   • OS: ${{ matrix.vm-os }}"
+            echo "   • Bridge IP: ${{ steps.vms.outputs.bridge-ip }}"
+            echo "   • Worker IPs: ${{ steps.vms.outputs.worker-ips }}"
             echo ""
-            echo "VMs (${{ matrix.vm-os }}):"
-            echo "  Bridge:  ${{ steps.vms.outputs.bridge-ip }}"
-            echo "  Workers: ${{ steps.vms.outputs.worker-ips }}"
+            echo "📍 VM SERVICE URLS:"
+            echo "   • API: http://${{ steps.vms.outputs.bridge-ip }}"
+            echo "   • Web UI: http://${{ steps.vms.outputs.bridge-ip }}"
+            echo "   • Registry: ${{ steps.vms.outputs.bridge-ip }}:5000"
+            echo ""
+            echo "🔐 VM CREDENTIALS:"
+            echo "   • Username: ${{ steps.vms.outputs.machine-user }}"
+            echo "   • Password: ${{ steps.vms.outputs.machine-password }}"
+            echo ""
+            echo "🔑 SSH ACCESS TO VMS:"
+            echo "   • Bridge:  ssh ${{ steps.vms.outputs.machine-user }}@${{ steps.vms.outputs.bridge-ip }}"
+
+            # Parse and display worker IPs
+            IFS=',' read -ra WORKER_ARRAY <<< "${{ steps.vms.outputs.worker-ips }}"
+            for i in "${!WORKER_ARRAY[@]}"; do
+              echo "   • Worker $((i+1)): ssh ${{ steps.vms.outputs.machine-user }}@${WORKER_ARRAY[$i]}"
+            done
+            echo ""
           fi
 
+          echo "🐳 LOCAL SERVICES:"
+          echo "   • Web UI:  http://localhost"
+          echo "   • API:     http://localhost/api"
+          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
+            echo "   • Desktop: http://localhost:6080/vnc.html"
+            echo "   • Gateway: http://localhost:8080"
+          fi
           echo ""
-          echo "================================================================"
 
-      - name: Keep Services Alive
-        run: |
-          DURATION_MIN="${{ inputs.duration }}"
+          echo "🗄️  DATABASE:"
+          echo "   • SQL Server: ${{ env.CONNECTION_STRING }}"
+          echo ""
+
+          # Display debug access if enabled
+          if [ "${{ inputs.enable-debug }}" == "true" ]; then
+            echo "🔧 DEBUG ACCESS:"
+            echo "   • SSH: ${{ steps.tmate.outputs.ssh-connection }}"
+            echo "   • Web: ${{ steps.tmate.outputs.web-url }}"
+            echo ""
+          fi
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          # Keep Services Alive
           DURATION_SEC=$((DURATION_MIN * 60))
           END_TIME=$(($(date +%s) + DURATION_SEC))
           CHECK_INTERVAL=300  # Check every 5 minutes
 
-          echo ""
-          echo "Keeping services alive for ${DURATION_MIN} minutes..."
-          echo "  Start time: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "  End time:   $(date -d @${END_TIME} '+%Y-%m-%d %H:%M:%S')"
+          echo "⏳ Keeping services alive for ${DURATION_MIN} minutes..."
+          echo "   Start time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "   End time:   $(date -d @${END_TIME} '+%Y-%m-%d %H:%M:%S')"
           echo ""
 
           while [ $(date +%s) -lt ${END_TIME} ]; do
@@ -340,11 +348,11 @@ jobs:
 
             # Run health check
             if curl -sf http://localhost/health > /dev/null 2>&1; then
-              echo "${REMAINING} min remaining - services healthy"
+              echo "⏱️  ${REMAINING} minutes remaining - services healthy"
             else
-              echo "${REMAINING} min remaining - WARNING: health check failed"
+              echo "⏱️  ${REMAINING} minutes remaining - ⚠️  health check failed"
               echo ""
-              echo "Container Status:"
+              echo "📋 Container Status:"
               docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
               echo ""
             fi
@@ -363,9 +371,9 @@ jobs:
           done
 
           echo ""
-          echo "================================================================"
-          echo "Duration completed at $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "================================================================"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "⏰ Duration completed at $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
       - name: Final Service Status
         if: always()
