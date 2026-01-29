@@ -49,7 +49,9 @@
     "section": "section",
     "realStory": "Real Story",
     "theProblem": "The Problem",
-    "contentNotAvailable": "This content is not available in {{language}}. Showing English version."
+    "contentNotAvailable": "This content is not available in {{language}}. Showing English version.",
+    "exploreSolutions": "Explore Other Solutions",
+    "platformPreview": "Platform Preview"
   },
   "navigation": {
     "home": "Home",
@@ -65,6 +67,7 @@
     "login": "Log in",
     "footerNavigation": "Site navigation",
     "solutions": {
+      "title": "Solutions",
       "disasterRecovery": "Disaster Recovery",
       "threatResponse": "Threat Response",
       "dataSecurity": "Data Security",
@@ -116,6 +119,23 @@
       "freeBadge": "FREE FOREVER • No credit card",
       "benefits": "10 CPU cores • Unlimited teams • $0",
       "seeDetails": "See full details"
+    },
+    "install": {
+      "ariaLabel": "Install command",
+      "tabsLabel": "Select operating system",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "Copy to clipboard",
+      "copied": "Copied!",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "more →"
+      }
     }
   },
   "problem": {

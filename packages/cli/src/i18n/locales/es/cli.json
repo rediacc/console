@@ -1169,5 +1169,116 @@
     "success": "✓ Éxito",
     "unknown": "Desconocido",
     "inProgress": "En Progreso"
+  },
+  "docs": {
+    "frontmatter": {
+      "title": "Aplicación CLI",
+      "description": "Guía completa para usar la interfaz de línea de comandos de Rediacc para la gestión de la plataforma",
+      "category": "Conceptos Básicos"
+    },
+    "pageTitle": "Referencia de la CLI de Rediacc",
+    "overview": {
+      "heading": "Descripción general",
+      "text": "La **CLI de Rediacc** (`rdc`) es una interfaz de línea de comandos para gestionar todos los aspectos de la plataforma Rediacc — autenticación, infraestructura, repositorios, colas, almacenamiento y más."
+    },
+    "installation": {
+      "heading": "Instalación",
+      "text": "Descargue el último binario para su plataforma desde la [página de versiones de Rediacc](https://www.rediacc.com) o instale a través de su gestor de paquetes:"
+    },
+    "globalOptions": {
+      "heading": "Opciones Globales",
+      "intro": "Todos los comandos admiten estos flags globales:"
+    },
+    "tableHeaders": {
+      "flag": "Opción",
+      "description": "Descripción",
+      "error": "Error",
+      "meaning": "Significado"
+    },
+    "admonitions": {
+      "tip": "Consejo",
+      "warning": "Advertencia",
+      "note": "Nota"
+    },
+    "sectionTitles": {
+      "auth": "Autenticación",
+      "context": "Gestión de Contexto",
+      "organization": "Gestión de Organización",
+      "user": "Gestión de Usuarios",
+      "team": "Gestión de Equipos",
+      "permission": "Gestión de Permisos",
+      "region": "Gestión de Regiones",
+      "bridge": "Gestión de Bridge",
+      "machine": "Gestión de Máquinas",
+      "repository": "Gestión de Repositorios",
+      "storage": "Gestión de Almacenamiento",
+      "queue": "Operaciones de Cola",
+      "sync": "Sincronización de Archivos",
+      "vscode": "Integración con VS Code",
+      "term": "Acceso Terminal SSH",
+      "ceph": "Gestión de Almacenamiento Ceph",
+      "audit": "Auditoría y Cumplimiento",
+      "protocol": "Manejador de Protocolo",
+      "shortcuts": "Comandos Rápidos (Atajos)",
+      "update": "Actualizaciones de CLI"
+    },
+    "errors": {
+      "heading": "Mensajes de Error Comunes",
+      "intro": "Cuando algo sale mal, la CLI proporciona mensajes de error claros:",
+      "meanings": {
+        "authRequired": "Necesita iniciar sesión primero",
+        "noActiveContext": "No hay contexto seleccionado — cree o cambie a uno",
+        "permissionDenied": "Su cuenta no tiene los permisos requeridos",
+        "machineRequired": "Especifique una máquina con `--machine` o establezca un valor predeterminado de contexto",
+        "teamRequired": "Especifique un equipo con `--team` o establezca un valor predeterminado de contexto",
+        "regionRequired": "Especifique una región con `--region` o establezca un valor predeterminado de contexto"
+      }
+    },
+    "outputFormats": {
+      "heading": "Formatos de Salida",
+      "text": "Todos los comandos de listado/obtención admiten múltiples formatos de salida a través de `--output`:",
+      "closing": "Esto facilita la integración de la CLI de Rediacc en scripts, pipelines CI/CD y flujos de trabajo de automatización."
+    },
+    "supplements": {
+      "auth": {
+        "tip": "Su token de autenticación se almacena localmente en su contexto. Use `--save-as` para almacenar credenciales bajo un contexto con nombre para múltiples entornos.",
+        "register": {
+          "afterDescription": "Después del registro, revise su correo electrónico para obtener el código de activación."
+        }
+      },
+      "context": {
+        "afterDescription": "Los contextos almacenan detalles de conexión (URL de API, credenciales, equipo/región/máquina predeterminados) para que pueda cambiar entre entornos rápidamente.",
+        "set": {
+          "tip": "Establecer valores predeterminados significa que no necesita pasar `--team`, `--region` o `--machine` con cada comando."
+        },
+        "createLocal": {
+          "afterDescription": "En modo local puede agregar máquinas directamente:"
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "Cuando el modo de mantenimiento está habilitado, los usuarios no administradores no pueden iniciar sesión."
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "El comando health muestra métricas del sistema, estado de contenedores, estabilidad de servicios e información de almacenamiento — útil para verificaciones de pipelines CI/CD."
+        },
+        "testConnection": {
+          "tip": "Use `--save-known-hosts` para persistir automáticamente la clave del host en el vault de la máquina después de una prueba exitosa."
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "Promover un fork lo separa de su repositorio padre (grand), haciéndolo independiente."
+        }
+      },
+      "queue": {
+        "afterDescription": "El sistema de colas es el corazón de la ejecución de tareas de Rediacc. Cada operación (despliegue, respaldo, ejecución de scripts) pasa por la cola.",
+        "trace": {
+          "tip": "Use `--watch` para seguir la tarea en tiempo real hasta que se complete."
+        }
+      }
+    }
   }
 }

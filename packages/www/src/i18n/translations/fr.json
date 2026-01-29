@@ -42,7 +42,9 @@
       "skipToFooter": "Passer au pied de page",
       "skipToMainContent": "Passer au contenu principal",
       "skipToNavigation": "Passer à la navigation"
-    }
+    },
+    "exploreSolutions": "Découvrir d'autres solutions",
+    "platformPreview": "Aperçu de la plateforme"
   },
   "earlyAccess": {
     "benefits": [
@@ -137,6 +139,23 @@
       "learnMore": "En savoir plus",
       "seeDetails": "Voir tous les détails"
     },
+    "install": {
+      "ariaLabel": "Commande d'installation",
+      "tabsLabel": "Sélectionner le système d'exploitation",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "Copier dans le presse-papiers",
+      "copied": "Copié !",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "plus →"
+      }
+    },
     "subtitle": "Survivez aux pannes de cloud. Déployez n'importe où. Basculez rapidement.",
     "title": "Infrastructure qui",
     "titleHighlight": "Survit. À chaque fois."
@@ -165,6 +184,7 @@
     "search": "Recherche",
     "selectLanguage": "Sélectionnez la langue",
     "solutions": {
+      "title": "Solutions",
       "dataSecurity": "Sécurité des données",
       "developmentEnvironments": "Environnements de développement",
       "disasterRecovery": "Reprise après sinistre",

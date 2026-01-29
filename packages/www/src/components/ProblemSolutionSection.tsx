@@ -17,6 +17,11 @@ interface ProblemSolutionSectionProps {
     benefits: string[];
   };
   variant?: 'light' | 'dark';
+  layout?: 'default' | 'reversed';
+  illustration?: {
+    src: string;
+    alt: string;
+  };
   cta?: {
     text: string;
     href: string;
@@ -101,6 +106,8 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
   problem,
   solution,
   variant = 'light',
+  layout = 'default',
+  illustration,
   cta,
   pageSlug,
 }) => {
@@ -151,14 +158,27 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
             <p className="section-subtitle" dangerouslySetInnerHTML={{ __html: subtitle }} />
           )}
 
-          {problem.story && (
-            <div className="story-box-featured">
-              <div className="story-label">{t('common.realStory')}:</div>
-              <p className="story-text" dangerouslySetInnerHTML={{ __html: problem.story }} />
+          {illustration ? (
+            <div className="section-illustration">
+              <img
+                src={illustration.src}
+                alt={illustration.alt}
+                loading="lazy"
+                decoding="async"
+                width="800"
+                height="450"
+              />
+            </div>
+          ) : (
+            <div
+              className="section-illustration section-illustration-placeholder"
+              aria-hidden="true"
+            >
+              <div className="placeholder-content" />
             </div>
           )}
 
-          <div className="problem-solution-grid">
+          <div className={`problem-solution-grid layout-${layout}`}>
             {/* Problem Side */}
             <div className="problem-box">
               <div className="box-header">
@@ -172,6 +192,12 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
                     <li key={`point-${index}-${point.substring(0, 20)}`}>{point}</li>
                   ))}
                 </ul>
+              )}
+              {problem.story && (
+                <div className="story-box-featured">
+                  <div className="story-label">{t('common.realStory')}:</div>
+                  <p className="story-text" dangerouslySetInnerHTML={{ __html: problem.story }} />
+                </div>
               )}
             </div>
 

@@ -1,13 +1,18 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
 import ProblemSolutionSection from '../../../components/ProblemSolutionSection';
 import SolutionHero from '../../../components/SolutionHero.astro';
 import SolutionImage from '../../../components/SolutionImage.astro';
 import SolutionCTA from '../../../components/SolutionCTA.astro';
+import SolutionTableOfContents from '../../../components/SolutionTableOfContents.astro';
+import RelatedSolutions from '../../../components/RelatedSolutions.astro';
+import StructuredData from '../../../components/StructuredData.astro';
 import { createTranslator } from '../../../i18n/utils';
+import { generateSectionAnchorId } from '../../../utils/slug';
 import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
 import type { Language } from '../../../i18n/types';
-import { EXTERNAL_LINKS } from '../../../config/constants';
+import { EXTERNAL_LINKS, SITE_URL } from '../../../config/constants';
 import { SOLUTIONS, SOLUTION_SLUGS, type SolutionSlug } from '../../../config/solutions';
 import ctaImage from '../../../assets/images/rediacc_resources_repos.png';
 import '../../../styles/solution-page.css';
@@ -28,6 +33,22 @@ const { t, to } = createTranslator(lang);
 
 const content = to(`pages.solutions.${config.contentKey}`);
 const metaPath = `pages.solutions.${config.contentKey}.meta`;
+
+const solutionName = t(`common.solutions.${config.contentKey}`);
+const breadcrumbItems = [
+  { name: t('navigation.home'), url: `/${lang}/` },
+  { name: t('footer.productLinks.solutions'), url: `/${lang}/#solutions` },
+  { name: solutionName, url: `/${lang}/solutions/${solution}` },
+];
+
+const heroCtaHref = config.hasButtonHref
+  ? `/${lang}/contact?interest=${solution}`
+  : EXTERNAL_LINKS.SCHEDULE_CONSULTATION;
+
+const tocItems = config.problemKeys.map((problemKey, index) => ({
+  label: content.problems[problemKey].title,
+  anchorId: generateSectionAnchorId(solution, index + 1, content.problems[problemKey].title),
+}));
 ---
 
 <BaseLayout
@@ -42,7 +63,19 @@ const metaPath = `pages.solutions.${config.contentKey}.meta`;
     subtitle={content.hero.subtitle}
     heroImage={config.heroImage}
     heroImageAlt={config.heroImageAlt}
-  />
+    ctaText={content.cta.button}
+    ctaHref={heroCtaHref}
+    secondaryCtaText={t('common.buttons.learnMore')}
+    secondaryCtaHref={`#${tocItems[0]?.anchorId}`}
+  >
+    <Breadcrumb
+      slot="breadcrumb"
+      items={breadcrumbItems}
+      class="solution-breadcrumb"
+    />
+  </SolutionHero>
+
+  <SolutionTableOfContents items={tocItems} />
 
   {config.problemKeys.map((problemKey, index) => (
     <ProblemSolutionSection
@@ -61,10 +94,8 @@ const metaPath = `pages.solutions.${config.contentKey}.meta`;
         benefits: content.problems[problemKey].solution.benefits
       }}
       variant={index % 2 === 0 ? 'light' : 'dark'}
-      cta={{
-        text: content.cta.button,
-        href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION
-      }}
+      layout={index % 2 === 1 ? 'reversed' : 'default'}
+      illustration={config.sectionImages?.[problemKey]}
       pageSlug={solution}
     />
   ))}
@@ -72,16 +103,31 @@ const metaPath = `pages.solutions.${config.contentKey}.meta`;
   <SolutionImage
     imageSrc={config.bottomImage}
     imageAlt={config.bottomImageAlt}
+    title={t('common.platformPreview')}
     variant={config.bottomImageVariant}
   />
+
+  <RelatedSolutions currentSolution={solution} lang={lang} />
 
   <SolutionCTA
     title={content.cta.title}
     subtitle={content.cta.subtitle}
     buttonText={content.cta.button}
-    buttonHref={config.hasButtonHref ? `/${lang}/contact?interest=${solution}` : undefined}
+    buttonHref={`/${lang}/contact?interest=${solution}`}
+    secondaryText={t('pages.docs.title')}
+    secondaryHref={`/${lang}/docs`}
     imageSrc={ctaImage}
     imageAlt={config.ctaImageAlt}
     lang={lang}
+  />
+
+  <StructuredData
+    type="service"
+    data={{
+      name: solutionName,
+      description: t(`${metaPath}.description`),
+      serviceType: solutionName,
+      url: `${SITE_URL}/${lang}/solutions/${solution}`,
+    }}
   />
 </BaseLayout>

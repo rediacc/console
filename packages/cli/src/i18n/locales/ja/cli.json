@@ -1169,5 +1169,116 @@
     "success": "✓ 成功",
     "unknown": "不明",
     "inProgress": "処理中"
+  },
+  "docs": {
+    "frontmatter": {
+      "title": "CLIアプリケーション",
+      "description": "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド",
+      "category": "基本コンセプト"
+    },
+    "pageTitle": "Rediacc CLIリファレンス",
+    "overview": {
+      "heading": "概要",
+      "text": "**Rediacc CLI**（`rdc`）は、Rediaccプラットフォームのすべての側面を管理するためのコマンドラインインターフェースです — 認証、インフラストラクチャ、リポジトリ、キュー、ストレージなど。"
+    },
+    "installation": {
+      "heading": "インストール",
+      "text": "[Rediaccリリースページ](https://www.rediacc.com)からプラットフォーム用の最新バイナリをダウンロードするか、パッケージマネージャーでインストールしてください："
+    },
+    "globalOptions": {
+      "heading": "グローバルオプション",
+      "intro": "すべてのコマンドはこれらのグローバルフラグをサポートしています："
+    },
+    "tableHeaders": {
+      "flag": "フラグ",
+      "description": "説明",
+      "error": "エラー",
+      "meaning": "意味"
+    },
+    "admonitions": {
+      "tip": "ヒント",
+      "warning": "警告",
+      "note": "注意"
+    },
+    "sectionTitles": {
+      "auth": "認証",
+      "context": "コンテキスト管理",
+      "organization": "組織管理",
+      "user": "ユーザー管理",
+      "team": "チーム管理",
+      "permission": "権限管理",
+      "region": "リージョン管理",
+      "bridge": "ブリッジ管理",
+      "machine": "マシン管理",
+      "repository": "リポジトリ管理",
+      "storage": "ストレージ管理",
+      "queue": "キュー操作",
+      "sync": "ファイル同期",
+      "vscode": "VS Code統合",
+      "term": "SSHターミナルアクセス",
+      "ceph": "Cephストレージ管理",
+      "audit": "監査とコンプライアンス",
+      "protocol": "プロトコルハンドラー",
+      "shortcuts": "クイックコマンド（ショートカット）",
+      "update": "CLIアップデート"
+    },
+    "errors": {
+      "heading": "一般的なエラーメッセージ",
+      "intro": "問題が発生した場合、CLIは明確なエラーメッセージを提供します：",
+      "meanings": {
+        "authRequired": "最初にログインする必要があります",
+        "noActiveContext": "コンテキストが選択されていません — 作成するか切り替えてください",
+        "permissionDenied": "アカウントに必要な権限がありません",
+        "machineRequired": "`--machine`でマシンを指定するか、コンテキストのデフォルトを設定してください",
+        "teamRequired": "`--team`でチームを指定するか、コンテキストのデフォルトを設定してください",
+        "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください"
+      }
+    },
+    "outputFormats": {
+      "heading": "出力形式",
+      "text": "すべてのlist/getコマンドは`--output`を通じて複数の出力形式をサポートしています：",
+      "closing": "これにより、Rediacc CLIをスクリプト、CI/CDパイプライン、自動化ワークフローに簡単に統合できます。"
+    },
+    "supplements": {
+      "auth": {
+        "tip": "認証トークンはコンテキストにローカルに保存されます。`--save-as`を使用して、複数の環境用に名前付きコンテキストに資格情報を保存できます。",
+        "register": {
+          "afterDescription": "登録後、アクティベーションコードのメールを確認してください。"
+        }
+      },
+      "context": {
+        "afterDescription": "コンテキストは接続詳細（API URL、資格情報、デフォルトのチーム/リージョン/マシン）を保存し、環境間をすばやく切り替えられるようにします。",
+        "set": {
+          "tip": "デフォルト値を設定すると、毎回のコマンドで`--team`、`--region`、`--machine`を渡す必要がなくなります。"
+        },
+        "createLocal": {
+          "afterDescription": "ローカルモードではマシンを直接追加できます："
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "メンテナンスモードが有効な場合、管理者以外のユーザーはログインできません。"
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します — CI/CDパイプラインチェックに便利です。"
+        },
+        "testConnection": {
+          "tip": "テスト成功後にホストキーをマシンvaultに自動的に永続化するには、`--save-known-hosts`を使用してください。"
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "フォークをプロモートすると、親（グランド）リポジトリから分離され、独立したものになります。"
+        }
+      },
+      "queue": {
+        "afterDescription": "キューシステムはRediaccのタスク実行の中核です。すべての操作（デプロイ、バックアップ、スクリプト実行）はキューを通じて実行されます。",
+        "trace": {
+          "tip": "タスクが完了するまでリアルタイムで追跡するには、`--watch`を使用してください。"
+        }
+      }
+    }
   }
 }

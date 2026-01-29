@@ -42,7 +42,9 @@
       "skipToFooter": "フッターにスキップ",
       "skipToMainContent": "メインコンテンツにスキップ",
       "skipToNavigation": "ナビゲーションにスキップ"
-    }
+    },
+    "exploreSolutions": "他のソリューションを探す",
+    "platformPreview": "プラットフォームプレビュー"
   },
   "earlyAccess": {
     "benefits": [
@@ -137,6 +139,23 @@
       "learnMore": "もっと詳しく知る",
       "seeDetails": "詳細を見る"
     },
+    "install": {
+      "ariaLabel": "インストールコマンド",
+      "tabsLabel": "オペレーティングシステムを選択",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "クリップボードにコピー",
+      "copied": "コピーしました！",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "その他 →"
+      }
+    },
     "subtitle": "クラウドの停止を生き延びます。 どこにでも導入可能。 迅速にフェイルオーバーします。",
     "title": "インフラストラクチャ",
     "titleHighlight": "生き残る。 毎回。"
@@ -165,6 +184,7 @@
     "search": "検索",
     "selectLanguage": "言語を選択してください",
     "solutions": {
+      "title": "ソリューション",
       "dataSecurity": "データセキュリティ",
       "developmentEnvironments": "開発環境",
       "disasterRecovery": "災害復旧",

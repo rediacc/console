@@ -29,6 +29,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Path to web locales (relative to this plugin at packages/www/src/plugins/)
 const WEB_LOCALES_PATH = path.resolve(__dirname, '../../../web/src/i18n/locales');
 
+// Path to CLI locales (for resolving CLI translation keys)
+const CLI_LOCALES_PATH = path.resolve(__dirname, '../../../cli/src/i18n/locales');
+
 // Default language when not specified
 const DEFAULT_LANGUAGE = 'en';
 
@@ -48,21 +51,26 @@ function loadTranslationFile(namespace: string, lang: string): Record<string, un
     return translationCache.get(cacheKey) ?? null;
   }
 
-  const filePath = path.join(WEB_LOCALES_PATH, lang, `${namespace}.json`);
+  // Try web locales first, then CLI locales
+  const paths = [
+    path.join(WEB_LOCALES_PATH, lang, `${namespace}.json`),
+    path.join(CLI_LOCALES_PATH, lang, `${namespace}.json`),
+  ];
 
-  if (!fs.existsSync(filePath)) {
-    return null;
+  for (const filePath of paths) {
+    if (fs.existsSync(filePath)) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const translations = JSON.parse(content) as Record<string, unknown>;
+        translationCache.set(cacheKey, translations);
+        return translations;
+      } catch {
+        console.error(`Failed to load translation file: ${filePath}`);
+      }
+    }
   }
 
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const translations = JSON.parse(content) as Record<string, unknown>;
-    translationCache.set(cacheKey, translations);
-    return translations;
-  } catch {
-    console.error(`Failed to load translation file: ${filePath}`);
-    return null;
-  }
+  return null;
 }
 
 /**

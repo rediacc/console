@@ -1169,5 +1169,116 @@
     "success": "✓ Success",
     "unknown": "Unknown",
     "inProgress": "In Progress"
+  },
+  "docs": {
+    "frontmatter": {
+      "title": "CLI Application",
+      "description": "Complete guide to using the Rediacc command-line interface for platform management",
+      "category": "Core Concepts"
+    },
+    "pageTitle": "Rediacc CLI Reference",
+    "overview": {
+      "heading": "Overview",
+      "text": "The **Rediacc CLI** (`rdc`) is a command-line interface for managing all aspects of the Rediacc platform — authentication, infrastructure, repositories, queues, storage, and more."
+    },
+    "installation": {
+      "heading": "Installation",
+      "text": "Download the latest binary for your platform from the [Rediacc releases page](https://www.rediacc.com) or install via your package manager:"
+    },
+    "globalOptions": {
+      "heading": "Global Options",
+      "intro": "Every command supports these global flags:"
+    },
+    "tableHeaders": {
+      "flag": "Flag",
+      "description": "Description",
+      "error": "Error",
+      "meaning": "Meaning"
+    },
+    "admonitions": {
+      "tip": "Tip",
+      "warning": "Warning",
+      "note": "Note"
+    },
+    "sectionTitles": {
+      "auth": "Authentication",
+      "context": "Context Management",
+      "organization": "Organization Management",
+      "user": "User Management",
+      "team": "Team Management",
+      "permission": "Permission Management",
+      "region": "Region Management",
+      "bridge": "Bridge Management",
+      "machine": "Machine Management",
+      "repository": "Repository Management",
+      "storage": "Storage Management",
+      "queue": "Queue Operations",
+      "sync": "File Synchronization",
+      "vscode": "VS Code Integration",
+      "term": "SSH Terminal Access",
+      "ceph": "Ceph Storage Management",
+      "audit": "Audit and Compliance",
+      "protocol": "Protocol Handler",
+      "shortcuts": "Quick Commands (Shortcuts)",
+      "update": "CLI Updates"
+    },
+    "errors": {
+      "heading": "Common Error Messages",
+      "intro": "When something goes wrong, the CLI provides clear error messages:",
+      "meanings": {
+        "authRequired": "You need to log in first",
+        "noActiveContext": "No context is selected — create or switch to one",
+        "permissionDenied": "Your account lacks the required permissions",
+        "machineRequired": "Specify a machine with `--machine` or set a context default",
+        "teamRequired": "Specify a team with `--team` or set a context default",
+        "regionRequired": "Specify a region with `--region` or set a context default"
+      }
+    },
+    "outputFormats": {
+      "heading": "Output Formats",
+      "text": "All list/get commands support multiple output formats via `--output`:",
+      "closing": "This makes it easy to integrate Rediacc CLI into scripts, CI/CD pipelines, and automation workflows."
+    },
+    "supplements": {
+      "auth": {
+        "tip": "Your authentication token is stored locally in your context. Use `--save-as` to store credentials under a named context for multiple environments.",
+        "register": {
+          "afterDescription": "After registration, check your email for the activation code."
+        }
+      },
+      "context": {
+        "afterDescription": "Contexts store connection details (API URL, credentials, default team/region/machine) so you can switch between environments quickly.",
+        "set": {
+          "tip": "Setting defaults means you don't need to pass `--team`, `--region`, or `--machine` with every command."
+        },
+        "createLocal": {
+          "afterDescription": "In local mode you can add machines directly:"
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "When maintenance mode is enabled, non-admin users cannot log in."
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "The health command outputs system metrics, container status, service stability, and storage information — useful for CI/CD pipeline checks."
+        },
+        "testConnection": {
+          "tip": "Use `--save-known-hosts` to automatically persist the host key to the machine vault after a successful test."
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "Promoting a fork separates it from its grand (parent) repository, making it independent."
+        }
+      },
+      "queue": {
+        "afterDescription": "The queue system is at the heart of Rediacc's task execution. Every operation (deploy, backup, script execution) runs through the queue.",
+        "trace": {
+          "tip": "Use `--watch` to follow the task in real-time until it completes."
+        }
+      }
+    }
   }
 }

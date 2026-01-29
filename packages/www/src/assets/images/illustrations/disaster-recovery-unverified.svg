@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d2d2d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="450" fill="#f5f5f5"/>
+  
+  <!-- Connection lines -->
+  <line x1="220" y1="225" x2="300" y2="225" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="8,4"/>
+  <line x1="500" y1="225" x2="580" y2="225" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="8,4"/>
+  
+  <!-- Server 1 -->
+  <g transform="translate(100, 150)" filter="url(#shadow)">
+    <!-- Server body -->
+    <rect x="0" y="0" width="120" height="150" rx="8" fill="url(#serverGrad)"/>
+    <!-- Server top highlight -->
+    <rect x="0" y="0" width="120" height="8" rx="8" fill="#3d3d3d"/>
+    <rect x="0" y="0" width="120" height="6" rx="6" fill="#3d3d3d"/>
+    <!-- Drive bays -->
+    <rect x="15" y="30" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <rect x="15" y="50" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <rect x="15" y="70" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <!-- Status lights -->
+    <circle cx="25" cy="36" r="3" fill="#556b2f" opacity="0.5"/>
+    <circle cx="25" cy="56" r="3" fill="#556b2f" opacity="0.3"/>
+    <circle cx="25" cy="76" r="3" fill="#556b2f" opacity="0.5"/>
+    <!-- Ports -->
+    <rect x="15" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="45" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="75" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="15" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="45" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="75" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+  </g>
+  
+  <!-- Warning Triangle for Server 1 -->
+  <g transform="translate(130, 80)">
+    <polygon points="30,0 60,52 0,52" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="2"/>
+    <polygon points="30,8 54,48 6,48" fill="#f5f5f5"/>
+    <line x1="30" y1="18" x2="30" y2="32" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="30" cy="40" r="2.5" fill="#1a1a1a"/>
+  </g>
+  
+  <!-- Server 2 -->
+  <g transform="translate(340, 150)" filter="url(#shadow)">
+    <!-- Server body -->
+    <rect x="0" y="0" width="120" height="150" rx="8" fill="url(#serverGrad)"/>
+    <!-- Server top highlight -->
+    <rect x="0" y="0" width="120" height="8" rx="8" fill="#3d3d3d"/>
+    <rect x="0" y="0" width="120" height="6" rx="6" fill="#3d3d3d"/>
+    <!-- Drive bays -->
+    <rect x="15" y="30" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <rect x="15" y="50" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <rect x="15" y="70" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <!-- Status lights -->
+    <circle cx="25" cy="36" r="3" fill="#556b2f" opacity="0.3"/>
+    <circle cx="25" cy="56" r="3" fill="#556b2f" opacity="0.5"/>
+    <circle cx="25" cy="76" r="3" fill="#556b2f" opacity="0.3"/>
+    <!-- Ports -->
+    <rect x="15" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="45" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="75" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="15" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="45" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="75" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+  </g>
+  
+  <!-- Warning Triangle for Server 2 -->
+  <g transform="translate(370, 80)">
+    <polygon points="30,0 60,52 0,52" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="2"/>
+    <polygon points="30,8 54,48 6,48" fill="#f5f5f5"/>
+    <line x1="30" y1="18" x2="30" y2="32" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="30" cy="40" r="2.5" fill="#1a1a1a"/>
+  </g>
+  
+  <!-- Server 3 -->
+  <g transform="translate(580, 150)" filter="url(#shadow)">
+    <!-- Server body -->
+    <rect x="0" y="0" width="120" height="150" rx="8" fill="url(#serverGrad)"/>
+    <!-- Server top highlight -->
+    <rect x="0" y="0" width="120" height="8" rx="8" fill="#3d3d3d"/>
+    <rect x="0" y="0" width="120" height="6" rx="6" fill="#3d3d3d"/>
+    <!-- Drive bays -->
+    <rect x="15" y="30" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <rect x="15" y="50" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <rect x="15" y="70" width="90" height="12" rx="2" fill="#1a1a1a"/>
+    <!-- Status lights -->
+    <circle cx="25" cy="36" r="3" fill="#556b2f"/>
+    <circle cx="25" cy="56" r="3" fill="#556b2f"/>
+    <circle cx="25" cy="76" r="3" fill="#556b2f"/>
+    <!-- Ports -->
+    <rect x="15" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="45" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="75" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="15" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="45" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+    <rect x="75" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+  </g>
+  
+  <!-- Shield with Checkmark for Server 3 -->
+  <g transform="translate(610, 75)">
+    <!-- Shield outline -->
+    <path d="M30 5 L55 15 L55 35 C55 50 30 70 30 70 C30 70 5 50 5 35 L5 15 Z" fill="#556b2f" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- Inner shield -->
+    <path d="M30 12 L48 19 L48 34 C48 46 30 62 30 62 C30 62 12 46 12 34 L12 19 Z" fill="#f5f5f5"/>
+    <!-- Checkmark -->
+    <polyline points="18,32 26,42 42,22" fill="none" stroke="#556b2f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Subtle decorative elements -->
+  <circle cx="160" cy="320" r="40" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="640" cy="380" r="60" fill="#e0e0e0" opacity="0.2"/>
+  <circle cx="400" cy="400" r="30" fill="#556b2f" opacity="0.1"/>
+</svg>

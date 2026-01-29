@@ -42,7 +42,9 @@
       "skipToFooter": "انتقل إلى التذييل",
       "skipToMainContent": "انتقل إلى المحتوى الرئيسي",
       "skipToNavigation": "انتقل إلى الملاحة"
-    }
+    },
+    "exploreSolutions": "استكشف حلولاً أخرى",
+    "platformPreview": "معاينة المنصة"
   },
   "earlyAccess": {
     "benefits": [
@@ -137,6 +139,23 @@
       "learnMore": "اعرف المزيد",
       "seeDetails": "انظر التفاصيل الكاملة"
     },
+    "install": {
+      "ariaLabel": "أمر التثبيت",
+      "tabsLabel": "اختر نظام التشغيل",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "نسخ إلى الحافظة",
+      "copied": "تم النسخ!",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "المزيد →"
+      }
+    },
     "subtitle": "البقاء على قيد الحياة انقطاع السحابة. نشر في أي مكان. فشل بسرعة.",
     "title": "البنية التحتية ذلك",
     "titleHighlight": "ينجو. في كل مرة."
@@ -165,6 +184,7 @@
     "search": "يبحث",
     "selectLanguage": "اختر اللغة",
     "solutions": {
+      "title": "الحلول",
       "dataSecurity": "أمن البيانات",
       "developmentEnvironments": "بيئات التطوير",
       "disasterRecovery": "التعافي من الكوارث",

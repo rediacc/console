@@ -1169,5 +1169,116 @@
     "success": "✓ Başarılı",
     "unknown": "Bilinmeyen",
     "inProgress": "Devam Ediyor"
+  },
+  "docs": {
+    "frontmatter": {
+      "title": "CLI Uygulaması",
+      "description": "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi",
+      "category": "Temel Kavramlar"
+    },
+    "pageTitle": "Rediacc CLI Referansı",
+    "overview": {
+      "heading": "Genel Bakış",
+      "text": "**Rediacc CLI** (`rdc`), Rediacc platformunun tüm yönlerini yönetmek için bir komut satırı arayüzüdür — kimlik doğrulama, altyapı, depolar, kuyruklar, depolama ve daha fazlası."
+    },
+    "installation": {
+      "heading": "Kurulum",
+      "text": "Platformunuz için en son ikili dosyayı [Rediacc sürümler sayfasından](https://www.rediacc.com) indirin veya paket yöneticiniz aracılığıyla kurun:"
+    },
+    "globalOptions": {
+      "heading": "Genel Seçenekler",
+      "intro": "Her komut bu genel bayrakları destekler:"
+    },
+    "tableHeaders": {
+      "flag": "Bayrak",
+      "description": "Açıklama",
+      "error": "Hata",
+      "meaning": "Anlam"
+    },
+    "admonitions": {
+      "tip": "İpucu",
+      "warning": "Uyarı",
+      "note": "Not"
+    },
+    "sectionTitles": {
+      "auth": "Kimlik Doğrulama",
+      "context": "Bağlam Yönetimi",
+      "organization": "Organizasyon Yönetimi",
+      "user": "Kullanıcı Yönetimi",
+      "team": "Takım Yönetimi",
+      "permission": "İzin Yönetimi",
+      "region": "Bölge Yönetimi",
+      "bridge": "Bridge Yönetimi",
+      "machine": "Makine Yönetimi",
+      "repository": "Depo Yönetimi",
+      "storage": "Depolama Yönetimi",
+      "queue": "Kuyruk İşlemleri",
+      "sync": "Dosya Senkronizasyonu",
+      "vscode": "VS Code Entegrasyonu",
+      "term": "SSH Terminal Erişimi",
+      "ceph": "Ceph Depolama Yönetimi",
+      "audit": "Denetim ve Uyumluluk",
+      "protocol": "Protokol İşleyici",
+      "shortcuts": "Hızlı Komutlar (Kısayollar)",
+      "update": "CLI Güncellemeleri"
+    },
+    "errors": {
+      "heading": "Yaygın Hata Mesajları",
+      "intro": "Bir şeyler ters gittiğinde, CLI net hata mesajları sağlar:",
+      "meanings": {
+        "authRequired": "Önce giriş yapmanız gerekiyor",
+        "noActiveContext": "Bağlam seçilmedi — bir tane oluşturun veya birine geçin",
+        "permissionDenied": "Hesabınız gerekli izinlere sahip değil",
+        "machineRequired": "`--machine` ile bir makine belirtin veya bağlam varsayılanı ayarlayın",
+        "teamRequired": "`--team` ile bir takım belirtin veya bağlam varsayılanı ayarlayın",
+        "regionRequired": "`--region` ile bir bölge belirtin veya bağlam varsayılanı ayarlayın"
+      }
+    },
+    "outputFormats": {
+      "heading": "Çıktı Formatları",
+      "text": "Tüm listeleme/alma komutları `--output` aracılığıyla birden fazla çıktı formatını destekler:",
+      "closing": "Bu, Rediacc CLI'yi betiklere, CI/CD hatlarına ve otomasyon iş akışlarına entegre etmeyi kolaylaştırır."
+    },
+    "supplements": {
+      "auth": {
+        "tip": "Kimlik doğrulama jetonunuz bağlamınızda yerel olarak saklanır. Birden fazla ortam için kimlik bilgilerini adlandırılmış bir bağlam altında saklamak üzere `--save-as` kullanın.",
+        "register": {
+          "afterDescription": "Kayıt sonrasında aktivasyon kodu için e-postanızı kontrol edin."
+        }
+      },
+      "context": {
+        "afterDescription": "Bağlamlar, ortamlar arasında hızlıca geçiş yapabilmeniz için bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/makine) saklar.",
+        "set": {
+          "tip": "Varsayılan değerleri ayarlamak, her komutta `--team`, `--region` veya `--machine` belirtmenize gerek kalmadığı anlamına gelir."
+        },
+        "createLocal": {
+          "afterDescription": "Yerel modda makineleri doğrudan ekleyebilirsiniz:"
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "Bakım modu etkinleştirildiğinde, yönetici olmayan kullanıcılar giriş yapamaz."
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "Health komutu sistem metriklerini, konteyner durumunu, servis kararlılığını ve depolama bilgilerini çıktılar — CI/CD hattı kontrolleri için kullanışlıdır."
+        },
+        "testConnection": {
+          "tip": "Başarılı bir testten sonra ana bilgisayar anahtarını makine kasasına otomatik olarak kaydetmek için `--save-known-hosts` kullanın."
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "Bir fork'u yükseltmek, onu üst (ana) deposundan ayırarak bağımsız hale getirir."
+        }
+      },
+      "queue": {
+        "afterDescription": "Kuyruk sistemi, Rediacc görev yürütmesinin merkezindedir. Her işlem (dağıtım, yedekleme, betik yürütme) kuyruk üzerinden çalışır.",
+        "trace": {
+          "tip": "Görevi tamamlanana kadar gerçek zamanlı olarak takip etmek için `--watch` kullanın."
+        }
+      }
+    }
   }
 }

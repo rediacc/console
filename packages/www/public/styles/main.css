@@ -855,6 +855,100 @@ a[target='_blank']::after {
   font-weight: var(--font-weight-semibold);
 }
 
+/* ===== SIDEBAR SOLUTIONS ACCORDION ===== */
+.sidebar-solutions-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-solutions-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-normal);
+  font-family: inherit;
+  line-height: var(--leading-normal);
+  text-align: start;
+  transition: color var(--transition-duration-base);
+}
+
+.sidebar-solutions-toggle:hover {
+  color: var(--color-brand-primary);
+}
+
+.sidebar-solutions-toggle:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-solutions-toggle.has-active-child {
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.sidebar-solutions-chevron {
+  flex-shrink: 0;
+  margin-inline-start: var(--space-2);
+  transition: transform var(--transition-duration-base) ease;
+  transform: rotate(-90deg);
+}
+
+.sidebar-solutions-chevron.expanded {
+  transform: rotate(0deg);
+}
+
+[dir='rtl'] .sidebar-solutions-chevron {
+  transform: rotate(90deg);
+}
+[dir='rtl'] .sidebar-solutions-chevron.expanded {
+  transform: rotate(0deg);
+}
+
+.sidebar-solutions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height var(--transition-duration-slow) ease,
+    opacity var(--transition-duration-base) ease;
+}
+
+.sidebar-solutions-list.expanded {
+  max-height: 500px;
+  opacity: 1;
+}
+
+.sidebar-sublink {
+  margin-inline-start: var(--space-4);
+  font-size: var(--font-size-base) !important;
+  padding-block: var(--space-1);
+}
+
+.sidebar-solutions-list li:first-child .sidebar-sublink {
+  margin-top: var(--space-4);
+}
+.sidebar-solutions-list li + li .sidebar-sublink {
+  margin-top: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-solutions-chevron,
+  .sidebar-solutions-list {
+    transition: none;
+  }
+}
+
 /* Shift content when sidebar opens */
 /* REMOVED: margin-left transition causes expensive layout reflow */
 /* Sidebar now overlays content instead of pushing it */
@@ -1036,6 +1130,207 @@ a[target='_blank']::after {
   .hero-cta-note {
     font-size: var(--font-size-xs);
     max-width: 280px;
+  }
+}
+
+/* ===== INSTALL WIDGET ===== */
+.install-widget {
+  max-width: 600px;
+  margin: 0 auto var(--space-10);
+  width: 100%;
+}
+
+.install-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  padding: var(--space-1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: none;
+}
+
+.install-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color var(--transition-duration-base) ease,
+    background-color var(--transition-duration-base) ease;
+}
+
+.install-tab:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.install-tab--active {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.install-tab:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.install-tab svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.install-command {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  overflow: hidden;
+}
+
+.install-code {
+  flex: 1;
+  font-family: var(
+    --font-mono,
+    'SFMono-Regular',
+    'Consolas',
+    'Liberation Mono',
+    'Menlo',
+    monospace
+  );
+  font-size: var(--font-size-sm);
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.install-code::-webkit-scrollbar {
+  height: 4px;
+}
+
+.install-code::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.install-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition:
+    color var(--transition-duration-base) ease,
+    background-color var(--transition-duration-base) ease,
+    border-color var(--transition-duration-base) ease;
+}
+
+.install-copy-btn:hover {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.install-copy-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.install-copy-btn--copied {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.install-copy-btn--copied:hover {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.install-alt-methods {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.install-alt-methods a {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: color var(--transition-duration-base) ease;
+}
+
+.install-alt-methods a:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.install-alt-methods a:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.install-alt-sep {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Install widget responsive: tablet */
+@media (max-width: 48rem) {
+  .install-widget {
+    max-width: 100%;
+  }
+
+  .install-tab {
+    font-size: var(--font-size-xs);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .install-code {
+    font-size: 13px;
+  }
+}
+
+/* Install widget responsive: small mobile */
+@media (max-width: 23.4375rem) {
+  .install-tab-label {
+    display: none;
+  }
+
+  .install-tab {
+    padding: var(--space-2);
+  }
+
+  .install-code {
+    font-size: 12px;
+  }
+
+  .install-alt-methods {
+    flex-wrap: wrap;
   }
 }
 

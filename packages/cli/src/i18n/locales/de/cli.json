@@ -1169,5 +1169,116 @@
     "success": "✓ Erfolg",
     "unknown": "Unbekannt",
     "inProgress": "In Bearbeitung"
+  },
+  "docs": {
+    "frontmatter": {
+      "title": "CLI-Anwendung",
+      "description": "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung",
+      "category": "Kernkonzepte"
+    },
+    "pageTitle": "Rediacc CLI-Referenz",
+    "overview": {
+      "heading": "Überblick",
+      "text": "Die **Rediacc CLI** (`rdc`) ist eine Befehlszeilenschnittstelle zur Verwaltung aller Aspekte der Rediacc-Plattform — Authentifizierung, Infrastruktur, Repositories, Warteschlangen, Speicher und mehr."
+    },
+    "installation": {
+      "heading": "Installation",
+      "text": "Laden Sie die neueste Version für Ihre Plattform von der [Rediacc-Releases-Seite](https://www.rediacc.com) herunter oder installieren Sie über Ihren Paketmanager:"
+    },
+    "globalOptions": {
+      "heading": "Globale Optionen",
+      "intro": "Jeder Befehl unterstützt diese globalen Flags:"
+    },
+    "tableHeaders": {
+      "flag": "Option",
+      "description": "Beschreibung",
+      "error": "Fehler",
+      "meaning": "Bedeutung"
+    },
+    "admonitions": {
+      "tip": "Tipp",
+      "warning": "Warnung",
+      "note": "Hinweis"
+    },
+    "sectionTitles": {
+      "auth": "Authentifizierung",
+      "context": "Kontextverwaltung",
+      "organization": "Organisationsverwaltung",
+      "user": "Benutzerverwaltung",
+      "team": "Teamverwaltung",
+      "permission": "Berechtigungsverwaltung",
+      "region": "Regionsverwaltung",
+      "bridge": "Bridge-Verwaltung",
+      "machine": "Maschinenverwaltung",
+      "repository": "Repository-Verwaltung",
+      "storage": "Speicherverwaltung",
+      "queue": "Warteschlangenoperationen",
+      "sync": "Dateisynchronisation",
+      "vscode": "VS Code-Integration",
+      "term": "SSH-Terminalzugang",
+      "ceph": "Ceph-Speicherverwaltung",
+      "audit": "Audit und Compliance",
+      "protocol": "Protokoll-Handler",
+      "shortcuts": "Schnellbefehle (Shortcuts)",
+      "update": "CLI-Updates"
+    },
+    "errors": {
+      "heading": "Häufige Fehlermeldungen",
+      "intro": "Wenn etwas schiefgeht, liefert die CLI klare Fehlermeldungen:",
+      "meanings": {
+        "authRequired": "Sie müssen sich zuerst anmelden",
+        "noActiveContext": "Kein Kontext ausgewählt — erstellen oder wechseln Sie zu einem",
+        "permissionDenied": "Ihr Konto verfügt nicht über die erforderlichen Berechtigungen",
+        "machineRequired": "Geben Sie eine Maschine mit `--machine` an oder setzen Sie einen Kontextstandard",
+        "teamRequired": "Geben Sie ein Team mit `--team` an oder setzen Sie einen Kontextstandard",
+        "regionRequired": "Geben Sie eine Region mit `--region` an oder setzen Sie einen Kontextstandard"
+      }
+    },
+    "outputFormats": {
+      "heading": "Ausgabeformate",
+      "text": "Alle List/Get-Befehle unterstützen mehrere Ausgabeformate über `--output`:",
+      "closing": "Dies erleichtert die Integration der Rediacc CLI in Skripte, CI/CD-Pipelines und Automatisierungsworkflows."
+    },
+    "supplements": {
+      "auth": {
+        "tip": "Ihr Authentifizierungstoken wird lokal in Ihrem Kontext gespeichert. Verwenden Sie `--save-as`, um Anmeldedaten unter einem benannten Kontext für mehrere Umgebungen zu speichern.",
+        "register": {
+          "afterDescription": "Überprüfen Sie nach der Registrierung Ihre E-Mail auf den Aktivierungscode."
+        }
+      },
+      "context": {
+        "afterDescription": "Kontexte speichern Verbindungsdetails (API-URL, Anmeldedaten, Standard-Team/Region/Maschine), damit Sie schnell zwischen Umgebungen wechseln können.",
+        "set": {
+          "tip": "Das Setzen von Standardwerten bedeutet, dass Sie `--team`, `--region` oder `--machine` nicht bei jedem Befehl angeben müssen."
+        },
+        "createLocal": {
+          "afterDescription": "Im lokalen Modus können Sie Maschinen direkt hinzufügen:"
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "Wenn der Wartungsmodus aktiviert ist, können sich Nicht-Admin-Benutzer nicht anmelden."
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "Der Health-Befehl gibt Systemmetriken, Container-Status, Dienststabilität und Speicherinformationen aus — nützlich für CI/CD-Pipeline-Prüfungen."
+        },
+        "testConnection": {
+          "tip": "Verwenden Sie `--save-known-hosts`, um den Host-Schlüssel nach einem erfolgreichen Test automatisch im Maschinen-Vault zu speichern."
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "Das Heraufstufen eines Forks trennt ihn von seinem übergeordneten (Parent) Repository und macht ihn unabhängig."
+        }
+      },
+      "queue": {
+        "afterDescription": "Das Warteschlangensystem ist das Herzstück der Rediacc-Aufgabenausführung. Jede Operation (Deployment, Backup, Skriptausführung) läuft über die Warteschlange.",
+        "trace": {
+          "tip": "Verwenden Sie `--watch`, um die Aufgabe in Echtzeit zu verfolgen, bis sie abgeschlossen ist."
+        }
+      }
+    }
   }
 }

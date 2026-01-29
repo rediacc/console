@@ -34,10 +34,13 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
       const scrollTop = window.scrollY;
       if (scrollTop < scrollThreshold) {
         setIsVisible(true);
+        document.documentElement.style.setProperty('--nav-offset', 'var(--nav-height)');
       } else if (scrollTop > lastScrollTop) {
         setIsVisible(false);
+        document.documentElement.style.setProperty('--nav-offset', '0px');
       } else {
         setIsVisible(true);
+        document.documentElement.style.setProperty('--nav-offset', 'var(--nav-height)');
       }
       lastScrollTop = scrollTop;
     };

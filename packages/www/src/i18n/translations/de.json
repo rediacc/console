@@ -42,7 +42,9 @@
       "skipToFooter": "Zur Fußzeile springen",
       "skipToMainContent": "Zum Hauptinhalt springen",
       "skipToNavigation": "Zur Navigation springen"
-    }
+    },
+    "exploreSolutions": "Weitere Lösungen entdecken",
+    "platformPreview": "Plattformvorschau"
   },
   "earlyAccess": {
     "benefits": [
@@ -137,6 +139,23 @@
       "learnMore": "Mehr erfahren",
       "seeDetails": "Sehen Sie sich alle Details an"
     },
+    "install": {
+      "ariaLabel": "Installationsbefehl",
+      "tabsLabel": "Betriebssystem auswählen",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "copy": "In die Zwischenablage kopieren",
+      "copied": "Kopiert!",
+      "alt": {
+        "brew": "brew",
+        "apt": "apt",
+        "docker": "docker",
+        "more": "mehr →"
+      }
+    },
     "subtitle": "Überstehen Sie Cloud-Ausfälle. Überall einsetzbar. Schnelles Failover.",
     "title": "Infrastruktur Das",
     "titleHighlight": "Überlebt. Jedes Mal."
@@ -165,6 +184,7 @@
     "search": "Suchen",
     "selectLanguage": "Sprache auswählen",
     "solutions": {
+      "title": "Lösungen",
       "dataSecurity": "Datensicherheit",
       "developmentEnvironments": "Entwicklungsumgebungen",
       "disasterRecovery": "Notfallwiederherstellung",
