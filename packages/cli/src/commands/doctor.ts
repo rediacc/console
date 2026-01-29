@@ -293,7 +293,9 @@ async function checkConfiguration(): Promise<CheckSection> {
         name: 'SSH key',
         value: sshKeyPath ?? t('commands.doctor.notConfigured'),
         status: sshKeyPath ? 'fail' : 'warn',
-        hint: sshKeyPath ? `SSH key not found at: ${sshKeyPath}` : 'Configure SSH with: rdc context set-ssh',
+        hint: sshKeyPath
+          ? `SSH key not found at: ${sshKeyPath}`
+          : 'Configure SSH with: rdc context set-ssh',
       });
     }
   }
