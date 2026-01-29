@@ -680,6 +680,10 @@ jobs:
           for i in {1..30}; do
             if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@192.168.111.11 echo ready 2>/dev/null; then
               echo "VM is SSH-ready"
+              # Add ALL host key types so Go's crypto/ssh finds a match
+              # regardless of which algorithm it negotiates
+              ssh-keyscan 192.168.111.11 >> ~/.ssh/known_hosts 2>/dev/null
+              echo "Host keys added via ssh-keyscan"
               exit 0
             fi
             echo "Waiting for VM SSH... ($i/30)"
