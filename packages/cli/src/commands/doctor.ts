@@ -306,14 +306,16 @@ function formatSection(section: CheckSection): string {
   const lines: string[] = [];
   lines.push(`  ${chalk.bold(section.title)}`);
 
+  const nameWidth = Math.max(16, ...section.checks.map((c) => c.name.length + 2));
+
   for (const check of section.checks) {
-    const name = check.name.padEnd(16);
+    const name = check.name.padEnd(nameWidth);
     const valueWidth = Math.max(38, check.value.length + 2);
     const value = check.value.padEnd(valueWidth);
     const status = STATUS_ICONS[check.status];
     lines.push(`    ${name}${value}${status}`);
     if (check.hint) {
-      lines.push(`    ${' '.repeat(16)}${chalk.dim(check.hint)}`);
+      lines.push(`    ${' '.repeat(nameWidth)}${chalk.dim(check.hint)}`);
     }
   }
 

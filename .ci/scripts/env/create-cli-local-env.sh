@@ -9,7 +9,7 @@
 #   --vm-net-base   VM network base (default: 192.168.111)
 #   --vm-workers    Worker VM IDs, space-separated (default: "11")
 #   --ssh-user      SSH user (default: root)
-#   --ssh-key       Path to SSH private key (default: ~/.ssh/id_ed25519)
+#   --ssh-key       Path to SSH private key (default: $HOME/.ssh/id_ed25519)
 #
 # Example:
 #   .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env
@@ -26,7 +26,7 @@ OUTPUT="${ARG_OUTPUT:-}"
 VM_NET_BASE="${ARG_VM_NET_BASE:-192.168.111}"
 VM_WORKERS="${ARG_VM_WORKERS:-11}"
 SSH_USER="${ARG_SSH_USER:-root}"
-SSH_KEY="${ARG_SSH_KEY:-~/.ssh/id_ed25519}"
+SSH_KEY="${ARG_SSH_KEY:-$HOME/.ssh/id_ed25519}"
 
 # Validate required arguments
 if [[ -z "$OUTPUT" ]]; then
