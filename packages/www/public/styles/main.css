@@ -879,7 +879,9 @@ a[target='_blank']::after {
   transition: color var(--transition-duration-base);
 }
 
-.sidebar-solutions-toggle:hover { color: var(--color-brand-primary); }
+.sidebar-solutions-toggle:hover {
+  color: var(--color-brand-primary);
+}
 
 .sidebar-solutions-toggle:focus-visible {
   outline: 2px solid var(--color-brand-primary);
@@ -899,10 +901,16 @@ a[target='_blank']::after {
   transform: rotate(-90deg);
 }
 
-.sidebar-solutions-chevron.expanded { transform: rotate(0deg); }
+.sidebar-solutions-chevron.expanded {
+  transform: rotate(0deg);
+}
 
-[dir='rtl'] .sidebar-solutions-chevron { transform: rotate(90deg); }
-[dir='rtl'] .sidebar-solutions-chevron.expanded { transform: rotate(0deg); }
+[dir='rtl'] .sidebar-solutions-chevron {
+  transform: rotate(90deg);
+}
+[dir='rtl'] .sidebar-solutions-chevron.expanded {
+  transform: rotate(0deg);
+}
 
 .sidebar-solutions-list {
   list-style: none;
@@ -927,12 +935,18 @@ a[target='_blank']::after {
   padding-block: var(--space-1);
 }
 
-.sidebar-solutions-list li:first-child .sidebar-sublink { margin-top: var(--space-4); }
-.sidebar-solutions-list li + li .sidebar-sublink { margin-top: var(--space-3); }
+.sidebar-solutions-list li:first-child .sidebar-sublink {
+  margin-top: var(--space-4);
+}
+.sidebar-solutions-list li + li .sidebar-sublink {
+  margin-top: var(--space-3);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar-solutions-chevron,
-  .sidebar-solutions-list { transition: none; }
+  .sidebar-solutions-list {
+    transition: none;
+  }
 }
 
 /* Shift content when sidebar opens */
@@ -1144,7 +1158,7 @@ a[target='_blank']::after {
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.60);
+  color: rgba(255, 255, 255, 0.6);
   font-size: var(--font-size-sm);
   font-family: inherit;
   cursor: pointer;
@@ -1164,7 +1178,7 @@ a[target='_blank']::after {
 }
 
 .install-tab:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.80);
+  outline: 2px solid rgba(255, 255, 255, 0.8);
   outline-offset: -2px;
   border-radius: var(--radius-sm);
 }
@@ -1179,7 +1193,7 @@ a[target='_blank']::after {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: var(--space-3) var(--space-4);
@@ -1188,13 +1202,20 @@ a[target='_blank']::after {
 
 .install-code {
   flex: 1;
-  font-family: var(--font-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace);
+  font-family: var(
+    --font-mono,
+    'SFMono-Regular',
+    'Consolas',
+    'Liberation Mono',
+    'Menlo',
+    monospace
+  );
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(255, 255, 255, 0.9);
   white-space: nowrap;
   overflow-x: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.20) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1203,7 +1224,7 @@ a[target='_blank']::after {
 }
 
 .install-code::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
 }
 
@@ -1214,10 +1235,10 @@ a[target='_blank']::after {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.70);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   transition:
     color var(--transition-duration-base) ease,
@@ -1232,7 +1253,7 @@ a[target='_blank']::after {
 }
 
 .install-copy-btn:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.80);
+  outline: 2px solid rgba(255, 255, 255, 0.8);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -1259,23 +1280,23 @@ a[target='_blank']::after {
 }
 
 .install-alt-methods a {
-  color: rgba(255, 255, 255, 0.60);
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
   transition: color var(--transition-duration-base) ease;
 }
 
 .install-alt-methods a:hover {
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .install-alt-methods a:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.80);
+  outline: 2px solid rgba(255, 255, 255, 0.8);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
 .install-alt-sep {
-  color: rgba(255, 255, 255, 0.30);
+  color: rgba(255, 255, 255, 0.3);
 }
 
 /* Install widget responsive: tablet */

@@ -1,35 +1,33 @@
 // Solution page configuration - maps slug to translation key and assets
 import type { ImageMetadata } from 'astro';
-
-// Hero & bottom images (SVGs from src/assets/images/illustrations)
-import drHero from '../assets/images/illustrations/disaster-recovery-hero.svg';
-import drBottom from '../assets/images/illustrations/disaster-recovery-bottom.svg';
-import trHero from '../assets/images/illustrations/threat-response-hero.svg';
-import trBottom from '../assets/images/illustrations/threat-response-bottom.svg';
-import dsHero from '../assets/images/illustrations/data-security-hero.svg';
-import dsBottom from '../assets/images/illustrations/data-security-bottom.svg';
-import spHero from '../assets/images/illustrations/system-portability-hero.svg';
-import spBottom from '../assets/images/illustrations/system-portability-bottom.svg';
-import deHero from '../assets/images/illustrations/development-environments-hero.svg';
-import deBottom from '../assets/images/illustrations/development-environments-bottom.svg';
-
-// Section illustrations (SVGs from src/assets)
-import drUnverified from '../assets/images/illustrations/disaster-recovery-unverified.svg';
-import drLimitedHistory from '../assets/images/illustrations/disaster-recovery-limitedHistory.svg';
-import drSlowBackups from '../assets/images/illustrations/disaster-recovery-slowBackups.svg';
-import trRansomware from '../assets/images/illustrations/threat-response-ransomwareBackups.svg';
-import trOsVuln from '../assets/images/illustrations/threat-response-osVulnerability.svg';
-import trBlackBox from '../assets/images/illustrations/threat-response-infrastructureBlackBox.svg';
-import dsPhysicalTheft from '../assets/images/illustrations/data-security-physicalTheft.svg';
 import dsAuditTrail from '../assets/images/illustrations/data-security-auditTrail.svg';
+import dsBottom from '../assets/images/illustrations/data-security-bottom.svg';
+import dsHero from '../assets/images/illustrations/data-security-hero.svg';
 import dsMigration from '../assets/images/illustrations/data-security-migrationExposure.svg';
-import spVendorLock from '../assets/images/illustrations/system-portability-vendorLockIn.svg';
-import spTestSwitch from '../assets/images/illustrations/system-portability-testingVendorSwitch.svg';
-import spDeployment from '../assets/images/illustrations/system-portability-deployment.svg';
-import deProvDelay from '../assets/images/illustrations/dev-env-provisioningDelays.svg';
+import dsPhysicalTheft from '../assets/images/illustrations/data-security-physicalTheft.svg';
+import deCicd from '../assets/images/illustrations/dev-env-cicdComplexity.svg';
 import deEnvDrift from '../assets/images/illustrations/dev-env-environmentDrift.svg';
 import deInfraCosts from '../assets/images/illustrations/dev-env-infrastructureCosts.svg';
-import deCicd from '../assets/images/illustrations/dev-env-cicdComplexity.svg';
+import deProvDelay from '../assets/images/illustrations/dev-env-provisioningDelays.svg';
+import deBottom from '../assets/images/illustrations/development-environments-bottom.svg';
+import deHero from '../assets/images/illustrations/development-environments-hero.svg';
+import drBottom from '../assets/images/illustrations/disaster-recovery-bottom.svg';
+// Hero & bottom images (SVGs from src/assets/images/illustrations)
+import drHero from '../assets/images/illustrations/disaster-recovery-hero.svg';
+import drLimitedHistory from '../assets/images/illustrations/disaster-recovery-limitedHistory.svg';
+import drSlowBackups from '../assets/images/illustrations/disaster-recovery-slowBackups.svg';
+// Section illustrations (SVGs from src/assets)
+import drUnverified from '../assets/images/illustrations/disaster-recovery-unverified.svg';
+import spBottom from '../assets/images/illustrations/system-portability-bottom.svg';
+import spDeployment from '../assets/images/illustrations/system-portability-deployment.svg';
+import spHero from '../assets/images/illustrations/system-portability-hero.svg';
+import spTestSwitch from '../assets/images/illustrations/system-portability-testingVendorSwitch.svg';
+import spVendorLock from '../assets/images/illustrations/system-portability-vendorLockIn.svg';
+import trBottom from '../assets/images/illustrations/threat-response-bottom.svg';
+import trHero from '../assets/images/illustrations/threat-response-hero.svg';
+import trBlackBox from '../assets/images/illustrations/threat-response-infrastructureBlackBox.svg';
+import trOsVuln from '../assets/images/illustrations/threat-response-osVulnerability.svg';
+import trRansomware from '../assets/images/illustrations/threat-response-ransomwareBackups.svg';
 
 interface SectionImage {
   src: string;
@@ -67,10 +65,22 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
     ctaImageAlt: 'Rediacc development environment resources',
     hasButtonHref: true,
     sectionImages: {
-      provisioningDelays: { src: deProvDelay.src, alt: 'Hourglass waiting versus instant server cloning' },
-      environmentDrift: { src: deEnvDrift.src, alt: 'Mismatched staging versus identical synced environments' },
-      infrastructureCosts: { src: deInfraCosts.src, alt: 'Always-on server costs versus ephemeral on-demand savings' },
-      cicdComplexity: { src: deCicd.src, alt: 'Tangled CI/CD pipeline versus clean organized pipeline' },
+      provisioningDelays: {
+        src: deProvDelay.src,
+        alt: 'Hourglass waiting versus instant server cloning',
+      },
+      environmentDrift: {
+        src: deEnvDrift.src,
+        alt: 'Mismatched staging versus identical synced environments',
+      },
+      infrastructureCosts: {
+        src: deInfraCosts.src,
+        alt: 'Always-on server costs versus ephemeral on-demand savings',
+      },
+      cicdComplexity: {
+        src: deCicd.src,
+        alt: 'Tangled CI/CD pipeline versus clean organized pipeline',
+      },
     },
   },
   'disaster-recovery': {
@@ -85,9 +95,18 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
     ctaImageAlt: 'Rediacc backup resources and repositories',
     hasButtonHref: true,
     sectionImages: {
-      unverified: { src: drUnverified.src, alt: 'Three servers with warning triangles and verification shield' },
-      limitedHistory: { src: drLimitedHistory.src, alt: 'Backup timeline showing fading old snapshots with limited retention' },
-      slowBackups: { src: drSlowBackups.src, alt: 'Slow winding recovery path versus fast direct recovery' },
+      unverified: {
+        src: drUnverified.src,
+        alt: 'Three servers with warning triangles and verification shield',
+      },
+      limitedHistory: {
+        src: drLimitedHistory.src,
+        alt: 'Backup timeline showing fading old snapshots with limited retention',
+      },
+      slowBackups: {
+        src: drSlowBackups.src,
+        alt: 'Slow winding recovery path versus fast direct recovery',
+      },
     },
   },
   'threat-response': {
@@ -103,9 +122,18 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
     ctaImageAlt: 'Rediacc threat response infrastructure',
     hasButtonHref: true,
     sectionImages: {
-      ransomwareBackups: { src: trRansomware.src, alt: 'Vault protecting backup files from ransomware attacks' },
-      osVulnerability: { src: trOsVuln.src, alt: 'Server tested in sandbox with bugs blocked outside' },
-      infrastructureBlackBox: { src: trBlackBox.src, alt: 'Opaque black box versus transparent monitored server' },
+      ransomwareBackups: {
+        src: trRansomware.src,
+        alt: 'Vault protecting backup files from ransomware attacks',
+      },
+      osVulnerability: {
+        src: trOsVuln.src,
+        alt: 'Server tested in sandbox with bugs blocked outside',
+      },
+      infrastructureBlackBox: {
+        src: trBlackBox.src,
+        alt: 'Opaque black box versus transparent monitored server',
+      },
     },
   },
   'data-security': {
@@ -121,9 +149,18 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
     ctaImageAlt: 'Rediacc data security and compliance',
     hasButtonHref: true,
     sectionImages: {
-      physicalTheft: { src: dsPhysicalTheft.src, alt: 'Unencrypted exposed drive versus encrypted locked drive' },
-      auditTrail: { src: dsAuditTrail.src, alt: 'Audit log with gaps versus complete timestamped audit trail' },
-      migrationExposure: { src: dsMigration.src, alt: 'Exposed data migration versus encrypted tunnel migration' },
+      physicalTheft: {
+        src: dsPhysicalTheft.src,
+        alt: 'Unencrypted exposed drive versus encrypted locked drive',
+      },
+      auditTrail: {
+        src: dsAuditTrail.src,
+        alt: 'Audit log with gaps versus complete timestamped audit trail',
+      },
+      migrationExposure: {
+        src: dsMigration.src,
+        alt: 'Exposed data migration versus encrypted tunnel migration',
+      },
     },
   },
   'system-portability': {
@@ -139,9 +176,18 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
     ctaImageAlt: 'Rediacc portable system repositories',
     hasButtonHref: true,
     sectionImages: {
-      vendorLockIn: { src: spVendorLock.src, alt: 'Server trapped in vendor cage versus free multi-cloud access' },
-      testingVendorSwitch: { src: spTestSwitch.src, alt: 'Failover test bridge between two cloud platforms' },
-      deployment: { src: spDeployment.src, alt: 'Broken deployment gears versus clean working deployment' },
+      vendorLockIn: {
+        src: spVendorLock.src,
+        alt: 'Server trapped in vendor cage versus free multi-cloud access',
+      },
+      testingVendorSwitch: {
+        src: spTestSwitch.src,
+        alt: 'Failover test bridge between two cloud platforms',
+      },
+      deployment: {
+        src: spDeployment.src,
+        alt: 'Broken deployment gears versus clean working deployment',
+      },
     },
   },
 };
