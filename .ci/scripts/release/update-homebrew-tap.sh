@@ -2,17 +2,22 @@
 # Update Homebrew tap formula with new version and SHA256 checksums.
 #
 # Usage:
-#   update-homebrew-tap.sh --version X.Y.Z [--push] [--dry-run]
+#   update-homebrew-tap.sh --version X.Y.Z [--push | --stage-only] [--local-checksums <dir>] [--dry-run]
 #
 # Options:
-#   --version    Required version to apply to formula
-#   --push       Commit and push changes to homebrew-tap repo
-#   --dry-run    Show actions without making changes
+#   --version              Required version to apply to formula
+#   --push                 Commit and push changes to homebrew-tap repo, then
+#                          update submodule pointer with a separate commit + normal push
+#   --stage-only           Commit inside homebrew-tap, then stage the submodule
+#                          pointer in the parent repo (for inclusion in the version commit)
+#   --local-checksums DIR  Compute SHA256 from local binaries in DIR instead of
+#                          downloading .sha256 files from the GitHub Release
+#   --dry-run              Show actions without making changes
 #
 # Notes:
-#   - Downloads SHA256 checksums from GitHub release
 #   - Updates Formula/rediacc-cli.rb with new version and checksums
 #   - Commits include [skip ci] to avoid triggering CI on homebrew-tap
+#   - --stage-only is designed for use before the version commit (see commit.sh)
 
 set -euo pipefail
 
@@ -22,6 +27,8 @@ source "$SCRIPT_DIR/../../config/constants.sh"
 
 VERSION=""
 PUSH=false
+STAGE_ONLY=false
+LOCAL_CHECKSUMS_DIR=""
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
@@ -34,12 +41,20 @@ while [[ $# -gt 0 ]]; do
             PUSH=true
             shift
             ;;
+        --stage-only)
+            STAGE_ONLY=true
+            shift
+            ;;
+        --local-checksums)
+            LOCAL_CHECKSUMS_DIR="$2"
+            shift 2
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
             ;;
         -h|--help)
-            echo "Usage: $0 --version X.Y.Z [--push] [--dry-run]"
+            echo "Usage: $0 --version X.Y.Z [--push | --stage-only] [--local-checksums <dir>] [--dry-run]"
             exit 0
             ;;
         *)
@@ -109,6 +124,40 @@ download_checksums() {
     done
 
     log_info "Downloaded all checksum files"
+}
+
+calculate_local_checksums() {
+    local dir="$1"
+    local outdir="$2"
+
+    log_step "Computing SHA256 checksums from local binaries in $dir..."
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would compute checksums from $dir"
+        return 0
+    fi
+
+    local -A binary_map=(
+        ["rdc-mac-arm64"]="rdc-darwin-arm64"
+        ["rdc-mac-x64"]="rdc-darwin-x64"
+        ["rdc-linux-arm64"]="rdc-linux-arm64"
+        ["rdc-linux-x64"]="rdc-linux-x64"
+    )
+
+    for name in "${!binary_map[@]}"; do
+        local pattern="${binary_map[$name]}"
+        # Find the binary (may have .tar.gz or other extension)
+        local found
+        found=$(find "$dir" -name "${pattern}*" -type f | head -1)
+        if [[ -z "$found" ]]; then
+            log_error "Missing local binary matching ${pattern}* in $dir"
+            exit 1
+        fi
+        sha256sum "$found" > "$outdir/${name}.sha256"
+        log_info "  ${name}: $(awk '{print $1}' "$outdir/${name}.sha256")"
+    done
+
+    log_info "Computed all checksums from local binaries"
 }
 
 extract_checksum() {
@@ -215,6 +264,19 @@ commit_and_push() {
     log_info "Pushed to homebrew-tap"
 }
 
+stage_submodule_pointer() {
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would stage submodule pointer for private/homebrew-tap"
+        return 0
+    fi
+
+    (
+        cd "$REPO_ROOT"
+        git add private/homebrew-tap
+        log_info "Staged private/homebrew-tap submodule pointer in parent repo"
+    )
+}
+
 update_submodule_pointer() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would update submodule pointer"
@@ -228,12 +290,10 @@ update_submodule_pointer() {
         if git diff --cached --quiet; then
             log_info "No submodule pointer changes"
         else
-            # Amend the previous version commit to include homebrew-tap update
-            # This consolidates two commits into one
             git -c user.name="$PUBLISH_BOT_NAME" -c user.email="$PUBLISH_BOT_EMAIL" \
-                commit --amend --no-edit
-            git push --force-with-lease origin HEAD:main
-            log_info "Amended version commit with homebrew-tap update"
+                commit -m "chore(release): update homebrew-tap submodule pointer [skip ci]"
+            git push origin HEAD:main
+            log_info "Committed and pushed homebrew-tap submodule pointer update"
         fi
     )
 }
@@ -250,14 +310,21 @@ trap 'rm -rf "$CHECKSUM_DIR"' EXIT
 # Sync submodule to origin/main
 sync_to_origin_main "$TAP_DIR"
 
-# Download checksums from release
-download_checksums "$CHECKSUM_DIR"
+# Obtain checksums — either from local binaries or GitHub Release
+if [[ -n "$LOCAL_CHECKSUMS_DIR" ]]; then
+    calculate_local_checksums "$LOCAL_CHECKSUMS_DIR" "$CHECKSUM_DIR"
+else
+    download_checksums "$CHECKSUM_DIR"
+fi
 
 # Update the formula
 update_formula "$CHECKSUM_DIR"
 
-# Commit and push if requested
-if [[ "$PUSH" == "true" ]]; then
+# Commit and optionally push / stage
+if [[ "$STAGE_ONLY" == "true" ]]; then
+    commit_and_push          # commits inside the homebrew-tap submodule
+    stage_submodule_pointer  # stages the pointer in the parent repo
+elif [[ "$PUSH" == "true" ]]; then
     commit_and_push
     update_submodule_pointer
 fi

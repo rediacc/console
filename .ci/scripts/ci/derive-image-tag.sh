@@ -4,7 +4,7 @@
 # Logic:
 #   1. If explicit version provided via --version → use it
 #   2. If running from a Git tag (GITHUB_REF_TYPE=tag) → use tag name
-#   3. If running from a branch → use 'latest'
+#   3. If running from a branch → use version from package.json (fallback: 'latest')
 #
 # Usage:
 #   derive-image-tag.sh                           # Auto-derive to stdout
@@ -55,7 +55,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Auto-derivation (when --version not provided):"
             echo "  - Git tag (e.g., v1.2.3)  → uses tag name"
-            echo "  - Branch (e.g., main)     → uses 'latest'"
+            echo "  - Branch (e.g., main)     → uses version from package.json"
             echo ""
             echo "Examples:"
             echo "  $0                              # Auto-derive, output to stdout"
@@ -82,9 +82,17 @@ elif [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
     log_info "Auto-derived from tag: $TAG" >&2
 else
     # Running from a branch (or local/unknown)
-    TAG="latest"
+    # Resolve the actual version from package.json instead of literal "latest"
+    # so CI guards (docker-pull-ghcr.sh) don't reject the tag
+    REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
     BRANCH="${GITHUB_REF_NAME:-local}"
-    log_info "Auto-derived from branch ($BRANCH): $TAG" >&2
+    if [[ -f "$REPO_ROOT/package.json" ]] && command -v jq &>/dev/null; then
+        TAG=$(jq -r '.version' "$REPO_ROOT/package.json")
+        log_info "Auto-derived from package.json ($BRANCH): $TAG" >&2
+    else
+        TAG="latest"
+        log_warn "Could not read package.json version, falling back to: $TAG" >&2
+    fi
 fi
 
 # Validate tag format (alphanumeric, dots, hyphens, underscores)
