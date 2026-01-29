@@ -7,7 +7,10 @@
  */
 
 import * as crypto from 'node:crypto';
+import * as fs from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 /** Supported Linux architectures for renet */
 export type LinuxArch = 'amd64' | 'arm64';
@@ -142,4 +145,38 @@ export function getEmbeddedMetadata(): RenetMetadata {
  */
 export function computeSha256(data: Buffer): string {
   return crypto.createHash('sha256').update(data).digest('hex');
+}
+
+/** Cached local path for extracted renet binary (per-process) */
+let cachedLocalPath: string | null = null;
+
+/**
+ * Extract the embedded renet binary to a local temp file for SEA-mode local spawning.
+ * Cached per-process; validates the cached path still exists before reuse.
+ *
+ * @returns Absolute path to the locally extracted renet binary
+ * @throws Error if not running as SEA or extraction fails
+ */
+export async function extractRenetToLocal(): Promise<string> {
+  if (cachedLocalPath) {
+    try {
+      await fs.access(cachedLocalPath);
+      return cachedLocalPath;
+    } catch {
+      cachedLocalPath = null;
+    }
+  }
+
+  const arch: LinuxArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
+  const binary = getEmbeddedRenetBinary(arch);
+
+  const dir = path.join(os.tmpdir(), '.rdc-local');
+  await fs.mkdir(dir, { recursive: true });
+
+  const localPath = path.join(dir, 'renet');
+  await fs.writeFile(localPath, binary);
+  await fs.chmod(localPath, 0o755);
+
+  cachedLocalPath = localPath;
+  return localPath;
 }
