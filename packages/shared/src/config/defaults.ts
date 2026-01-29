@@ -285,6 +285,9 @@ export const PROCESS_DEFAULTS = {
 
   /** Default shell for bash execution */
   SHELL: '/bin/bash',
+
+  /** Default error message for renet provisioning failure */
+  RENET_PROVISION_ERROR: 'Failed to provision renet',
 } as const;
 
 /**

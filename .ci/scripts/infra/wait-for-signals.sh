@@ -29,6 +29,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
+# Ensure clean exit on cancellation (GitHub Actions sends SIGINT on force-cancel)
+trap 'log_warn "Caught termination signal, exiting..."; exit 1' INT TERM
+
 # Parse arguments
 parse_args "$@"
 
@@ -186,67 +189,13 @@ has_failures() {
     [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]
 }
 
-# Wait for failed signals to be updated to success (from retried jobs)
-wait_for_retry_success() {
-    local retry_timeout=$TIMEOUT  # Use same 2-hour timeout
-    local start_time
-    start_time=$(date +%s)
-
-    while [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]; do
-        local now
-        now=$(date +%s)
-        local elapsed=$((now - start_time))
-
-        if [[ $elapsed -ge $retry_timeout ]]; then
-            log_error "Retry timeout reached after ${elapsed}s"
-            return 1
-        fi
-
-        log_info "Checking failed signals for retry success... (${elapsed}s / ${retry_timeout}s)"
-
-        # Re-check each failed signal
-        local still_failed=()
-        for signal in "${FAILED_SIGNALS[@]}"; do
-            local artifact_name
-            case "$signal" in
-                cli-*) artifact_name="test-complete-${signal}" ;;
-                e2e-*) artifact_name="test-complete-${signal}" ;;
-                *) artifact_name="test-complete-${signal}" ;;
-            esac
-
-            # Re-download and check status
-            local temp_dir
-            temp_dir=$(mktemp -d)
-            if gh run download "$GITHUB_RUN_ID" --name "$artifact_name" --dir "$temp_dir" 2>/dev/null; then
-                local status
-                status=$(cat "$temp_dir/complete.txt" 2>/dev/null || echo "unknown")
-                if [[ "$status" == "success" ]]; then
-                    log_info "Signal $signal now reports SUCCESS (retry succeeded)"
-                else
-                    still_failed+=("$signal")
-                fi
-            else
-                still_failed+=("$signal")
-            fi
-            rm -rf "$temp_dir"
-        done
-
-        FAILED_SIGNALS=("${still_failed[@]}")
-
-        if [[ ${#FAILED_SIGNALS[@]} -eq 0 ]]; then
-            return 0
-        fi
-
-        log_info "Still waiting for ${#FAILED_SIGNALS[@]} signals: ${FAILED_SIGNALS[*]}"
-        sleep "$INTERVAL"
-    done
-
-    return 0
-}
-
-# Condition: all signals received
+# Condition: all signals received OR any failure detected
 all_signals_received() {
     fetch_and_check_signals
+    # Exit immediately on any failure - don't wait for remaining signals
+    if has_failures; then
+        return 0
+    fi
     [[ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ]]
 }
 
@@ -259,20 +208,11 @@ on_poll() {
 
 # Main wait loop using poll_with_watchdog
 if poll_with_watchdog "$TIMEOUT" "$INTERVAL" all_signals_received on_poll; then
-    # All signals received - check for failures
+    # Check for failures (exits early on first failure detection)
     if has_failures; then
-        log_warn "All $EXPECTED_COUNT signals received, but ${#FAILED_SIGNALS[@]} reported failure!"
-        log_warn "Failed signals: ${FAILED_SIGNALS[*]}"
-        log_info "Keeping tunnel alive for retries. Re-polling failed signals..."
-
-        # Continue polling failed signals until they succeed or timeout
-        if wait_for_retry_success; then
-            log_info "All retries succeeded!"
-            exit 0
-        else
-            log_error "Retries did not succeed within timeout"
-            exit 1
-        fi
+        log_error "${#FAILED_SIGNALS[@]} signal(s) reported failure: ${FAILED_SIGNALS[*]}"
+        log_error "Exiting immediately — failed tests detected."
+        exit 1
     fi
     log_info "All $EXPECTED_COUNT signals received successfully!"
     exit 0

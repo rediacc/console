@@ -116,6 +116,10 @@ node bundle.mjs
 require_file "$CLI_DIR/dist/cli-bundle.cjs"
 log_info "Bundle created: $(wc -c < dist/cli-bundle.cjs) bytes"
 
+# Step 1.5: Prepare embedded assets (renet binaries)
+log_step "Preparing embedded renet assets..."
+"$SCRIPT_DIR/prepare-cli-assets.sh"
+
 # Step 2: Generate SEA blob
 log_step "Generating SEA blob..."
 node --experimental-sea-config sea-config.json

@@ -9,9 +9,11 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import { contextService } from './context.js';
+import { isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
+import { renetProvisioner } from './renet-provisioner.js';
 import type { LocalMachineConfig } from '../types/index.js';
 
 /** Options for local execution */
@@ -48,6 +50,60 @@ interface LocalExecuteResult {
  */
 class LocalExecutorService {
   /**
+   * Log debug message if debug mode is enabled.
+   */
+  private logDebug(options: Pick<LocalExecuteOptions, 'debug'>, message: string): void {
+    if (options.debug) {
+      outputService.info(message);
+    }
+  }
+
+  /**
+   * Read SSH public key, returning empty string on failure.
+   */
+  private async readOptionalSSHKey(keyPath: string | undefined): Promise<string> {
+    if (!keyPath) {
+      return '';
+    }
+    return this.readSSHKey(keyPath).catch(() => '');
+  }
+
+  /**
+   * Provision renet binary to remote machine if running as SEA.
+   * Returns the remote path to use for execution.
+   */
+  private async provisionRenetIfNeeded(
+    config: { renetPath: string },
+    machine: LocalMachineConfig,
+    sshPrivateKey: string,
+    options: Pick<LocalExecuteOptions, 'debug'>
+  ): Promise<string> {
+    if (!isSEA()) {
+      return config.renetPath;
+    }
+
+    const provisionResult = await renetProvisioner.provision({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+
+    if (!provisionResult.success) {
+      throw new Error(provisionResult.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
+    }
+
+    if (provisionResult.action === 'uploaded') {
+      this.logDebug(
+        options,
+        `[local] Provisioned renet (${provisionResult.arch}) to ${machine.ip}`
+      );
+    }
+
+    return provisionResult.remotePath;
+  }
+
+  /**
    * Execute a function on a machine in local mode.
    * Spawns renet execute subprocess with vault JSON.
    */
@@ -59,15 +115,14 @@ class LocalExecutorService {
       const config = await contextService.getLocalConfig();
       const machine = await contextService.getLocalMachine(options.machineName);
 
-      if (options.debug) {
-        outputService.info(`[local] Executing '${options.functionName}' on ${options.machineName}`);
-      }
+      this.logDebug(
+        options,
+        `[local] Executing '${options.functionName}' on ${options.machineName}`
+      );
 
       // Read SSH keys
       const sshPrivateKey = await this.readSSHKey(config.ssh.privateKeyPath);
-      const sshPublicKey = config.ssh.publicKeyPath
-        ? await this.readSSHKey(config.ssh.publicKeyPath).catch(() => '')
-        : '';
+      const sshPublicKey = await this.readOptionalSSHKey(config.ssh.publicKeyPath);
 
       // Read known_hosts from system (fallback to empty if not found)
       const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
@@ -84,8 +139,11 @@ class LocalExecutorService {
         params: options.params ?? {},
       });
 
+      // Provision renet to remote if running as SEA
+      const renetPath = await this.provisionRenetIfNeeded(config, machine, sshPrivateKey, options);
+
       // Spawn renet execute
-      const result = await this.spawnRenet(config.renetPath, vault, options);
+      const result = await this.spawnRenet(renetPath, vault, options);
 
       return {
         success: result.exitCode === 0,
