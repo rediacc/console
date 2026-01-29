@@ -152,27 +152,6 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # RERUN WATCHDOG - Auto-retry flaky build/dry-run jobs (max 3 attempts)
-  # Only monitors Build and Dry-Run jobs. Publish is NOT retried (not idempotent).
-  # ============================================================================
-  rerun-watchdog:
-    name: Rerun Watchdog
-    runs-on: ubuntu-latest
-    needs: [init]
-    if: always() && needs.init.result == 'success' && fromJSON(github.run_attempt) < 3
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - name: Wait for build/dry-run jobs and trigger rerun on failures
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          .ci/scripts/ci/rerun-watchdog.sh \
-            --timeout 120 \
-            --monitor "Build (*" \
-            --monitor "Dry-Run"
-
-  # ============================================================================
   # JOB 2: PUBLISH
   # Actually publish to GitHub Release, Docker, Pages
   # Only runs if dry-run succeeds AND not in dry_run mode
