@@ -72,10 +72,19 @@ if ! echo "$COMMENTS_JSON" | jq -e ".[] | select(.body | contains(\"$TRIGGER_MAR
     fi
 
     # First commit case - Gemini reviews automatically on PR open
+    # But on force-push (1 commit, existing reviews), trigger-gemini-review.sh handles it
     COMMIT_COUNT=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits | length' 2>/dev/null || echo "0")
-    if [[ "$COMMIT_COUNT" -le 1 ]]; then
-        log_info "First commit - Gemini auto-reviews on PR open, checking for existing review..."
+    EXISTING_GEMINI_REVIEWS=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --paginate \
+        --jq "[.[] | select(.user.login == \"${GEMINI_BOT}\")] | length" 2>/dev/null || echo "0")
+    if [[ "$COMMIT_COUNT" -le 1 ]] && [[ "$EXISTING_GEMINI_REVIEWS" -eq 0 ]]; then
+        log_info "First commit on new PR - Gemini auto-reviews on PR open, checking for existing review..."
         TRIGGER_TIME=""
+    elif [[ "$COMMIT_COUNT" -le 1 ]] && [[ "$EXISTING_GEMINI_REVIEWS" -gt 0 ]]; then
+        # Force-pushed PR - trigger script should have posted a trigger comment
+        # If it didn't (e.g., skipped conditions), don't wait
+        log_info "Force-pushed PR (1 commit, $EXISTING_GEMINI_REVIEWS existing reviews) but no trigger found"
+        log_info "Skipping wait - trigger was likely skipped"
+        exit 0
     else
         # No trigger for this commit - likely skipped due to unresolved threads
         # Don't wait for a review that will never come

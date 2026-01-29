@@ -394,6 +394,51 @@ export class SFTPClient {
   }
 
   /**
+   * Execute a command on the remote machine via SSH
+   *
+   * @param command - Command to execute
+   * @returns Command output (stdout)
+   * @throws Error if command fails or returns non-zero exit code
+   */
+  async exec(command: string): Promise<string> {
+    if (!this.connected) {
+      throw new Error('SFTP client is not connected');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.ssh.exec(command, (err, channel) => {
+        if (err) {
+          reject(new Error(`Failed to execute command: ${err.message}`));
+          return;
+        }
+
+        let stdout = '';
+        let stderr = '';
+
+        channel.on('data', (data: Buffer) => {
+          stdout += data.toString();
+        });
+
+        channel.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+        });
+
+        channel.on('close', (code: number) => {
+          if (code === 0) {
+            resolve(stdout);
+          } else {
+            reject(new Error(`Command exited with code ${code}: ${stderr || stdout}`));
+          }
+        });
+
+        channel.on('error', (channelErr: Error) => {
+          reject(new Error(`Channel error: ${channelErr.message}`));
+        });
+      });
+    });
+  }
+
+  /**
    * Close the SFTP session and SSH connection
    */
   close(): void {

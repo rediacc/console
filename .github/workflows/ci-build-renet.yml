@@ -1,0 +1,166 @@
+name: Console CI - Build (Renet)
+
+on:
+  workflow_call:
+    inputs:
+      next_version:
+        required: true
+        type: string
+      skip_build:
+        description: 'Skip build if renet already exists in registry'
+        required: false
+        type: boolean
+        default: false
+      bridge_tag:
+        description: 'Existing bridge tag to extract renet from (when skip_build=true)'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      artifact_name:
+        description: 'Name of the renet binaries artifact'
+        value: ${{ jobs.build-renet.outputs.artifact_name || jobs.extract-renet.outputs.artifact_name }}
+    secrets:
+      GH_PAT:
+        required: false
+
+jobs:
+  # Build native CRIU/rsync binaries (amd64) - cached
+  build-native-amd64:
+    name: Native (amd64)
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_build }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Restore native binary cache
+        id: cache
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7  # v5
+        with:
+          path: binaries/
+          key: native-amd64-${{ hashFiles('.ci/scripts/docker/build-native-binaries.sh') }}
+
+      - name: Build native binaries
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: .ci/scripts/docker/build-native-binaries.sh --output ./binaries --cross-rsync
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: native-amd64-${{ github.sha }}
+          path: binaries/
+          retention-days: 1
+
+  # Build native CRIU binary (arm64) - requires native runner
+  build-native-arm64:
+    name: Native (arm64)
+    runs-on: ubuntu-24.04-arm
+    if: ${{ !inputs.skip_build }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Restore native binary cache
+        id: cache
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7  # v5
+        with:
+          path: binaries/
+          key: native-arm64-${{ hashFiles('.ci/scripts/docker/build-native-binaries.sh') }}
+
+      - name: Build CRIU arm64
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: .ci/scripts/docker/build-native-binaries.sh --output ./binaries --criu-only
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: native-arm64-${{ github.sha }}
+          path: binaries/
+          retention-days: 1
+
+  # Build full renet binaries with embedded CRIU/rsync
+  # These binaries are used by BOTH CLI and Docker
+  build-renet:
+    name: Renet (Full)
+    runs-on: ubuntu-latest
+    needs: [build-native-amd64, build-native-arm64]
+    if: ${{ !inputs.skip_build }}
+    timeout-minutes: 15
+    outputs:
+      artifact_name: renet-binaries-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: native-amd64-${{ github.sha }}
+          path: binaries/
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: native-arm64-${{ github.sha }}
+          path: binaries/
+          merge-multiple: true
+
+      - name: List native binaries
+        run: ls -la binaries/
+
+      - name: Build full renet with embedded assets (release)
+        run: |
+          .ci/scripts/build/build-renet.sh \
+            --version "${{ inputs.next_version }}" \
+            --assets-dir ./binaries \
+            --output ./private/bin
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: |
+            private/bin/renet-linux-*
+            private/bin/checksums.sha256
+          retention-days: 1
+          if-no-files-found: error
+
+  # Extract renet binaries from existing bridge image when build is skipped
+  # This ensures CLI always has access to renet binaries, even when using cached images
+  extract-renet:
+    name: Renet (cached)
+    runs-on: ubuntu-latest
+    if: ${{ inputs.skip_build && inputs.bridge_tag != '' }}
+    outputs:
+      artifact_name: renet-binaries-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+      - name: Extract renet binaries from existing bridge image
+        run: .ci/scripts/build/extract-renet-from-image.sh --tag "${{ inputs.bridge_tag }}" --output ./private/bin
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: |
+            private/bin/renet-linux-*
+            private/bin/checksums.sha256
+          retention-days: 1
+          if-no-files-found: error

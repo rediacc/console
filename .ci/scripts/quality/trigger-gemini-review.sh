@@ -58,11 +58,20 @@ if echo "$LABELS" | grep -q "no-gemini-review"; then
     exit 0
 fi
 
-# Check commit count - skip if first commit (Gemini reviews automatically)
+# Check commit count - skip if first commit (Gemini reviews automatically on PR open)
+# However, force-pushed PRs may have 1 commit but already have reviews from Gemini.
+# In that case, Gemini won't auto-review the new SHA, so we must trigger explicitly.
 COMMIT_COUNT=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits | length' 2>/dev/null || echo "0")
 if [[ "$COMMIT_COUNT" -le 1 ]]; then
-    log_info "First commit - Gemini will review automatically"
-    exit 0
+    # Check if Gemini has already reviewed this PR (indicates force-push, not a new PR)
+    GEMINI_BOT="gemini-code-assist[bot]"
+    EXISTING_REVIEWS=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --paginate \
+        --jq "[.[] | select(.user.login == \"${GEMINI_BOT}\")] | length" 2>/dev/null || echo "0")
+    if [[ "$EXISTING_REVIEWS" -eq 0 ]]; then
+        log_info "First commit on new PR - Gemini will review automatically"
+        exit 0
+    fi
+    log_info "Force-pushed PR detected (1 commit but $EXISTING_REVIEWS existing Gemini reviews) - triggering review"
 fi
 
 log_info "PR has $COMMIT_COUNT commits"
