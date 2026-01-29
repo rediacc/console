@@ -281,6 +281,8 @@
         "renetRsync": "Embedded rsync",
         "activeContext": "Active context",
         "contextMode": "Context mode",
+        "machines": "Machines",
+        "sshKey": "SSH key",
         "authStatus": "Status"
       },
       "status": {

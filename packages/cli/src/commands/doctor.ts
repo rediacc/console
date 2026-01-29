@@ -275,7 +275,7 @@ async function checkConfiguration(): Promise<CheckSection> {
   if (mode === 'local') {
     const machineCount = context?.machines ? Object.keys(context.machines).length : 0;
     checks.push({
-      name: 'Machines',
+      name: t('commands.doctor.checks.machines'),
       value: `${machineCount} configured`,
       status: machineCount > 0 ? 'ok' : 'warn',
       hint: machineCount === 0 ? 'Add machines with: rdc context add-machine' : undefined,
@@ -284,13 +284,13 @@ async function checkConfiguration(): Promise<CheckSection> {
     const sshKeyPath = context?.ssh?.privateKeyPath;
     if (sshKeyPath && existsSync(sshKeyPath)) {
       checks.push({
-        name: 'SSH key',
+        name: t('commands.doctor.checks.sshKey'),
         value: sshKeyPath,
         status: 'ok',
       });
     } else {
       checks.push({
-        name: 'SSH key',
+        name: t('commands.doctor.checks.sshKey'),
         value: sshKeyPath ?? t('commands.doctor.notConfigured'),
         status: sshKeyPath ? 'fail' : 'warn',
         hint: sshKeyPath
