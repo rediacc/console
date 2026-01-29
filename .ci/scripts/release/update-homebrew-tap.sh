@@ -137,20 +137,13 @@ calculate_local_checksums() {
         return 0
     fi
 
-    local -A binary_map=(
-        ["rdc-mac-arm64"]="rdc-darwin-arm64"
-        ["rdc-mac-x64"]="rdc-darwin-x64"
-        ["rdc-linux-arm64"]="rdc-linux-arm64"
-        ["rdc-linux-x64"]="rdc-linux-x64"
-    )
+    local names=("rdc-mac-arm64" "rdc-mac-x64" "rdc-linux-arm64" "rdc-linux-x64")
 
-    for name in "${!binary_map[@]}"; do
-        local pattern="${binary_map[$name]}"
-        # Find the binary (may have .tar.gz or other extension)
+    for name in "${names[@]}"; do
         local found
-        found=$(find "$dir" -name "${pattern}*" -type f | head -1)
+        found=$(find "$dir" -name "${name}*" -type f | head -1)
         if [[ -z "$found" ]]; then
-            log_error "Missing local binary matching ${pattern}* in $dir"
+            log_error "Missing local binary matching ${name}* in $dir"
             exit 1
         fi
         sha256sum "$found" > "$outdir/${name}.sha256"
