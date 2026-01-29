@@ -278,7 +278,11 @@ export function generate(lang, cliJsonEn) {
         lines.push('');
 
         // after_description supplement
-        const subGroupAfter = emitSupplement(docsSupplements, `${group}.${subKey}`, 'afterDescription');
+        const subGroupAfter = emitSupplement(
+          docsSupplements,
+          `${group}.${subKey}`,
+          'afterDescription'
+        );
         if (subGroupAfter) {
           lines.push(subGroupAfter.trim());
           lines.push('');
@@ -449,13 +453,16 @@ export function generate(lang, cliJsonEn) {
 }
 
 // When run as a script (not imported), write all languages to disk
-const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+const isMainModule =
+  process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMainModule) {
   const cliJsonEn = JSON.parse(fs.readFileSync(getCliJsonPath('en'), 'utf-8'));
 
   for (const lang of LANGUAGES) {
     const content = generate(lang, cliJsonEn);
     fs.writeFileSync(getOutputPath(lang), content, 'utf-8');
-    console.log(`\x1b[32m✓\x1b[0m Generated ${lang}/cli-application.md (${content.split('\n').length} lines)`);
+    console.log(
+      `\x1b[32m✓\x1b[0m Generated ${lang}/cli-application.md (${content.split('\n').length} lines)`
+    );
   }
 }

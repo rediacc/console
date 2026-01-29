@@ -94,7 +94,7 @@ function walkSupplementPaths(obj, prefix = '') {
 
 async function main() {
   console.log(colors.bold('CLI Documentation Validation'));
-  console.log('=' .repeat(60) + '\n');
+  console.log('='.repeat(60) + '\n');
 
   const errors = [];
 
@@ -192,7 +192,9 @@ async function main() {
   }
 
   for (const [rule, ruleErrors] of Object.entries(grouped)) {
-    console.log(colors.red(`\n[${rule}] (${ruleErrors.length} error${ruleErrors.length === 1 ? '' : 's'})`));
+    console.log(
+      colors.red(`\n[${rule}] (${ruleErrors.length} error${ruleErrors.length === 1 ? '' : 's'})`)
+    );
     console.log(colors.dim('-'.repeat(40)));
     for (const err of ruleErrors) {
       console.log(colors.red(`  ✗ ${err.message}`));
@@ -203,7 +205,10 @@ async function main() {
   }
 
   console.log(
-    '\n' + colors.red(`✗ CLI documentation validation FAILED (${errors.length} error${errors.length === 1 ? '' : 's'})\n`)
+    '\n' +
+      colors.red(
+        `✗ CLI documentation validation FAILED (${errors.length} error${errors.length === 1 ? '' : 's'})\n`
+      )
   );
   process.exit(1);
 }
