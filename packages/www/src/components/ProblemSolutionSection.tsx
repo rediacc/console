@@ -170,7 +170,10 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
               />
             </div>
           ) : (
-            <div className="section-illustration section-illustration-placeholder" aria-hidden="true">
+            <div
+              className="section-illustration section-illustration-placeholder"
+              aria-hidden="true"
+            >
               <div className="placeholder-content" />
             </div>
           )}

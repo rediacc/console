@@ -14,16 +14,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [currentPath, setCurrentPath] = useState('');
   const [isSolutionsExpanded, setIsSolutionsExpanded] = useState(false);
 
-  const topNavItems = [
-    { href: `/${currentLang}/`, label: t('navigation.home') },
-  ];
+  const topNavItems = [{ href: `/${currentLang}/`, label: t('navigation.home') }];
 
   const solutionItems = [
-    { href: `/${currentLang}/solutions/disaster-recovery`, label: t('navigation.solutions.disasterRecovery') },
-    { href: `/${currentLang}/solutions/threat-response`, label: t('navigation.solutions.threatResponse') },
-    { href: `/${currentLang}/solutions/data-security`, label: t('navigation.solutions.dataSecurity') },
-    { href: `/${currentLang}/solutions/system-portability`, label: t('navigation.solutions.systemPortability') },
-    { href: `/${currentLang}/solutions/development-environments`, label: t('navigation.solutions.developmentEnvironments') },
+    {
+      href: `/${currentLang}/solutions/disaster-recovery`,
+      label: t('navigation.solutions.disasterRecovery'),
+    },
+    {
+      href: `/${currentLang}/solutions/threat-response`,
+      label: t('navigation.solutions.threatResponse'),
+    },
+    {
+      href: `/${currentLang}/solutions/data-security`,
+      label: t('navigation.solutions.dataSecurity'),
+    },
+    {
+      href: `/${currentLang}/solutions/system-portability`,
+      label: t('navigation.solutions.systemPortability'),
+    },
+    {
+      href: `/${currentLang}/solutions/development-environments`,
+      label: t('navigation.solutions.developmentEnvironments'),
+    },
   ];
 
   const bottomNavItems = [
