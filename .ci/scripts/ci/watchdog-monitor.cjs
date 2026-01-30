@@ -34,12 +34,16 @@ module.exports = async ({ github, context, core }) => {
   // Helper: dispatch rerun-failed.yml to retry failed jobs
   async function dispatchRerun() {
     try {
-      console.log(`Dispatching ${RERUN_WORKFLOW} for run ${context.runId}...`);
+      // The ref selects which branch's copy of the workflow file to run — it does
+      // NOT affect the retried jobs (gh run rerun uses the original run's branch/SHA).
+      // Use the PR head branch when available, otherwise fall back to the run's head branch.
+      const ref = context.payload.pull_request?.head.ref || context.payload.workflow_run?.head_branch || 'main';
+      console.log(`Dispatching ${RERUN_WORKFLOW} on ref '${ref}' for run ${context.runId}...`);
       await github.rest.actions.createWorkflowDispatch({
         owner: context.repo.owner,
         repo: context.repo.repo,
         workflow_id: RERUN_WORKFLOW,
-        ref: 'main',
+        ref,
         inputs: { run_id: String(context.runId) }
       });
       console.log(`Successfully dispatched ${RERUN_WORKFLOW}`);
