@@ -5,6 +5,11 @@
   "commands": {
     "audit": {
       "description": "审计日志命令",
+      "history": {
+        "description": "查看实体历史",
+        "fetching": "正在获取实体历史...",
+        "success": "历史已获取"
+      },
       "list": {
         "description": "列出审计日志条目",
         "fetching": "正在获取审计日志..."
@@ -18,14 +23,15 @@
         "description": "跟踪实体的审计历史",
         "fetching": "正在获取实体审计跟踪...",
         "success": "审计跟踪已获取"
-      },
-      "history": {
-        "description": "查看实体历史",
-        "fetching": "正在获取实体历史...",
-        "success": "历史已获取"
       }
     },
     "auth": {
+      "activate": {
+        "activated": "账户已激活",
+        "activating": "正在激活账户...",
+        "description": "使用验证码激活账户",
+        "success": "账户已激活！现在可以使用以下命令登录：rdc login"
+      },
       "description": "身份验证命令",
       "login": {
         "authenticating": "正在身份验证...",
@@ -43,11 +49,6 @@
         "shortcut": "清除存储的凭证（快捷方式：auth logout）",
         "success": "登出成功"
       },
-      "status": {
-        "description": "检查当前身份验证状态",
-        "authenticated": "以以下身份认证：{{email}}",
-        "notAuthenticated": "未认证。运行：rdc login"
-      },
       "register": {
         "description": "注册新组织和用户账户",
         "nextStep": "然后运行：rdc auth activate -e <email> -p <password> --code <code>",
@@ -55,11 +56,10 @@
         "submitted": "注册已提交",
         "success": "注册成功！请检查您的电子邮件以获取激活代码。"
       },
-      "activate": {
-        "activated": "账户已激活",
-        "activating": "正在激活账户...",
-        "description": "使用验证码激活账户",
-        "success": "账户已激活！现在可以使用以下命令登录：rdc login"
+      "status": {
+        "authenticated": "以以下身份认证：{{email}}",
+        "description": "检查当前身份验证状态",
+        "notAuthenticated": "未认证。运行：rdc login"
       },
       "tfa": {
         "description": "双因素认证管理",
@@ -117,24 +117,57 @@
       }
     },
     "ceph": {
-      "description": "Ceph 分布式存储管理",
+      "clone": {
+        "assign": {
+          "assigning": "正在将机器分配给克隆 \"{{name}}\"...",
+          "description": "将机器分配给克隆",
+          "success": "机器已分配给克隆 \"{{name}}\""
+        },
+        "create": {
+          "creating": "正在创建 RBD 克隆 \"{{name}}\"...",
+          "description": "从快照创建新的 RBD 克隆",
+          "success": "RBD 克隆 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "confirm": "确定要删除 RBD 克隆 \"{{name}}\"？",
+          "deleting": "正在删除 RBD 克隆 \"{{name}}\"...",
+          "description": "删除 RBD 克隆",
+          "success": "RBD 克隆 \"{{name}}\" 已删除"
+        },
+        "description": "Ceph RBD 克隆管理",
+        "list": {
+          "description": "列出 RBD 克隆",
+          "fetching": "正在获取 RBD 克隆...",
+          "success": "克隆已获取"
+        },
+        "machines": {
+          "description": "列出分配给克隆的机器",
+          "fetching": "正在获取克隆机器...",
+          "success": "克隆机器已获取"
+        },
+        "unassign": {
+          "description": "从克隆移除机器",
+          "success": "已从克隆 \"{{name}}\" 移除机器",
+          "unassigning": "正在从克隆 \"{{name}}\" 移除机器..."
+        }
+      },
       "cluster": {
+        "create": {
+          "creating": "正在创建 Ceph 集群 \"{{name}}\"...",
+          "description": "创建新的 Ceph 集群",
+          "success": "Ceph 集群 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "confirm": "确定要删除 Ceph 集群 \"{{name}}\"？",
+          "deleting": "正在删除 Ceph 集群 \"{{name}}\"...",
+          "description": "删除 Ceph 集群",
+          "success": "Ceph 集群 \"{{name}}\" 已删除"
+        },
         "description": "Ceph 集群管理",
         "list": {
           "description": "列出 Ceph 集群",
           "fetching": "正在获取 Ceph 集群...",
           "success": "集群已获取"
-        },
-        "create": {
-          "description": "创建新的 Ceph 集群",
-          "creating": "正在创建 Ceph 集群 \"{{name}}\"...",
-          "success": "Ceph 集群 \"{{name}}\" 已创建"
-        },
-        "delete": {
-          "description": "删除 Ceph 集群",
-          "confirm": "确定要删除 Ceph 集群 \"{{name}}\"？",
-          "deleting": "正在删除 Ceph 集群 \"{{name}}\"...",
-          "success": "Ceph 集群 \"{{name}}\" 已删除"
         },
         "machines": {
           "description": "列出 Ceph 集群中的机器",
@@ -150,28 +183,48 @@
           },
           "update": {
             "description": "更新集群保险库数据",
-            "updating": "正在更新 \"{{name}}\" 的集群保险库...",
-            "success": "\"{{name}}\" 的集群保险库已更新"
+            "success": "\"{{name}}\" 的集群保险库已更新",
+            "updating": "正在更新 \"{{name}}\" 的集群保险库..."
           }
         }
       },
+      "description": "Ceph 分布式存储管理",
+      "image": {
+        "create": {
+          "creating": "正在创建 RBD 镜像 \"{{name}}\"...",
+          "description": "创建新的 RBD 镜像",
+          "success": "RBD 镜像 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "confirm": "确定要删除 RBD 镜像 \"{{name}}\"？",
+          "deleting": "正在删除 RBD 镜像 \"{{name}}\"...",
+          "description": "删除 RBD 镜像",
+          "success": "RBD 镜像 \"{{name}}\" 已删除"
+        },
+        "description": "Ceph RBD 镜像管理",
+        "list": {
+          "description": "列出 RBD 镜像",
+          "fetching": "正在获取 RBD 镜像...",
+          "success": "镜像已获取"
+        }
+      },
       "pool": {
+        "create": {
+          "creating": "正在创建 Ceph 存储池 \"{{name}}\"...",
+          "description": "创建新的 Ceph 存储池",
+          "success": "Ceph 存储池 \"{{name}}\" 已创建"
+        },
+        "delete": {
+          "confirm": "确定要删除 Ceph 存储池 \"{{name}}\"？",
+          "deleting": "正在删除 Ceph 存储池 \"{{name}}\"...",
+          "description": "删除 Ceph 存储池",
+          "success": "Ceph 存储池 \"{{name}}\" 已删除"
+        },
         "description": "Ceph 存储池管理",
         "list": {
           "description": "列出 Ceph 存储池",
           "fetching": "正在获取 Ceph 存储池...",
           "success": "存储池已获取"
-        },
-        "create": {
-          "description": "创建新的 Ceph 存储池",
-          "creating": "正在创建 Ceph 存储池 \"{{name}}\"...",
-          "success": "Ceph 存储池 \"{{name}}\" 已创建"
-        },
-        "delete": {
-          "description": "删除 Ceph 存储池",
-          "confirm": "确定要删除 Ceph 存储池 \"{{name}}\"？",
-          "deleting": "正在删除 Ceph 存储池 \"{{name}}\"...",
-          "success": "Ceph 存储池 \"{{name}}\" 已删除"
         },
         "vault": {
           "description": "Ceph 存储池保险库管理",
@@ -182,280 +235,278 @@
           },
           "update": {
             "description": "更新存储池保险库数据",
-            "updating": "正在更新 \"{{name}}\" 的存储池保险库...",
-            "success": "\"{{name}}\" 的存储池保险库已更新"
+            "success": "\"{{name}}\" 的存储池保险库已更新",
+            "updating": "正在更新 \"{{name}}\" 的存储池保险库..."
           }
         }
       },
-      "image": {
-        "description": "Ceph RBD 镜像管理",
-        "list": {
-          "description": "列出 RBD 镜像",
-          "fetching": "正在获取 RBD 镜像...",
-          "success": "镜像已获取"
-        },
+      "snapshot": {
         "create": {
-          "description": "创建新的 RBD 镜像",
-          "creating": "正在创建 RBD 镜像 \"{{name}}\"...",
-          "success": "RBD 镜像 \"{{name}}\" 已创建"
+          "creating": "正在创建 RBD 快照 \"{{name}}\"...",
+          "description": "创建新的 RBD 快照",
+          "success": "RBD 快照 \"{{name}}\" 已创建"
         },
         "delete": {
-          "description": "删除 RBD 镜像",
-          "confirm": "确定要删除 RBD 镜像 \"{{name}}\"？",
-          "deleting": "正在删除 RBD 镜像 \"{{name}}\"...",
-          "success": "RBD 镜像 \"{{name}}\" 已删除"
-        }
-      },
-      "snapshot": {
+          "confirm": "确定要删除 RBD 快照 \"{{name}}\"？",
+          "deleting": "正在删除 RBD 快照 \"{{name}}\"...",
+          "description": "删除 RBD 快照",
+          "success": "RBD 快照 \"{{name}}\" 已删除"
+        },
         "description": "Ceph RBD 快照管理",
         "list": {
           "description": "列出 RBD 快照",
           "fetching": "正在获取 RBD 快照...",
           "success": "快照已获取"
-        },
-        "create": {
-          "description": "创建新的 RBD 快照",
-          "creating": "正在创建 RBD 快照 \"{{name}}\"...",
-          "success": "RBD 快照 \"{{name}}\" 已创建"
-        },
-        "delete": {
-          "description": "删除 RBD 快照",
-          "confirm": "确定要删除 RBD 快照 \"{{name}}\"？",
-          "deleting": "正在删除 RBD 快照 \"{{name}}\"...",
-          "success": "RBD 快照 \"{{name}}\" 已删除"
-        }
-      },
-      "clone": {
-        "description": "Ceph RBD 克隆管理",
-        "list": {
-          "description": "列出 RBD 克隆",
-          "fetching": "正在获取 RBD 克隆...",
-          "success": "克隆已获取"
-        },
-        "create": {
-          "description": "从快照创建新的 RBD 克隆",
-          "creating": "正在创建 RBD 克隆 \"{{name}}\"...",
-          "success": "RBD 克隆 \"{{name}}\" 已创建"
-        },
-        "delete": {
-          "description": "删除 RBD 克隆",
-          "confirm": "确定要删除 RBD 克隆 \"{{name}}\"？",
-          "deleting": "正在删除 RBD 克隆 \"{{name}}\"...",
-          "success": "RBD 克隆 \"{{name}}\" 已删除"
-        },
-        "machines": {
-          "description": "列出分配给克隆的机器",
-          "fetching": "正在获取克隆机器...",
-          "success": "克隆机器已获取"
-        },
-        "assign": {
-          "description": "将机器分配给克隆",
-          "assigning": "正在将机器分配给克隆 \"{{name}}\"...",
-          "success": "机器已分配给克隆 \"{{name}}\""
-        },
-        "unassign": {
-          "description": "从克隆移除机器",
-          "unassigning": "正在从克隆 \"{{name}}\" 移除机器...",
-          "success": "已从克隆 \"{{name}}\" 移除机器"
         }
       }
     },
     "context": {
-      "description": "管理命令行界面上下文",
-      "list": {
-        "description": "列出所有上下文",
-        "noContexts": "未配置任何上下文"
+      "addMachine": {
+        "description": "将机器添加到当前本地上下文",
+        "success": "机器 \"{{name}}\" 已添加（{{user}}@{{ip}}）"
       },
-      "show": {
-        "description": "显示当前上下文详情",
-        "noContext": "没有活跃的上下文"
-      },
-      "use": {
-        "description": "切换到不同的上下文",
-        "switched": "已切换到上下文 \"{{name}}\""
+      "clear": {
+        "allCleared": "已清除所有默认值",
+        "description": "清除默认值（全部或特定键）",
+        "keyCleared": "已清除 \"{{key}}\""
       },
       "create": {
         "description": "创建新上下文",
         "success": "上下文 \"{{name}}\" 已创建"
       },
-      "delete": {
-        "description": "删除上下文",
-        "success": "上下文 \"{{name}}\" 已删除",
-        "confirm": "确定要删除上下文 \"{{name}}\" 吗？"
-      },
-      "rename": {
-        "description": "重命名上下文",
-        "success": "上下文已从 \"{{oldName}}\" 重命名为 \"{{newName}}\""
+      "createLocal": {
+        "description": "为无中间件操作创建新的本地上下文",
+        "nextStep": "使用以下命令添加机器：rdc context add-machine <name> --ip <ip> --user <user>",
+        "success": "本地上下文 \"{{name}}\" 已创建"
       },
       "current": {
         "description": "显示当前上下文名称",
         "noContext": "没有活跃的上下文"
       },
+      "delete": {
+        "confirm": "确定要删除上下文 \"{{name}}\" 吗？",
+        "description": "删除上下文",
+        "success": "上下文 \"{{name}}\" 已删除"
+      },
+      "description": "管理命令行界面上下文",
+      "list": {
+        "description": "列出所有上下文",
+        "noContexts": "未配置任何上下文"
+      },
+      "machines": {
+        "description": "列出当前本地上下文中的机器",
+        "noMachines": "未配置任何机器。使用以下命令添加：rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "removeMachine": {
+        "description": "从当前本地上下文中移除机器",
+        "success": "机器 \"{{name}}\" 已移除"
+      },
+      "rename": {
+        "description": "重命名上下文",
+        "success": "上下文已从 \"{{oldName}}\" 重命名为 \"{{newName}}\""
+      },
       "set": {
         "description": "设置默认值（团队、区域、网桥、机器）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
-      },
-      "unset": {
-        "description": "移除上下文默认值",
-        "success": "已从当前上下文中移除 {{key}}"
-      },
-      "clear": {
-        "description": "清除默认值（全部或特定键）",
-        "keyCleared": "已清除 \"{{key}}\"",
-        "allCleared": "已清除所有默认值"
       },
       "setLanguage": {
         "description": "设置首选语言",
         "success": "语言已设置为 \"{{code}}\"",
         "unsupported": "不支持的语言。支持的语言：{{languages}}"
       },
-      "createLocal": {
-        "description": "为无中间件操作创建新的本地上下文",
-        "success": "本地上下文 \"{{name}}\" 已创建",
-        "nextStep": "使用以下命令添加机器：rdc context add-machine <name> --ip <ip> --user <user>"
-      },
-      "addMachine": {
-        "description": "将机器添加到当前本地上下文",
-        "success": "机器 \"{{name}}\" 已添加（{{user}}@{{ip}}）"
-      },
-      "removeMachine": {
-        "description": "从当前本地上下文中移除机器",
-        "success": "机器 \"{{name}}\" 已移除"
-      },
-      "machines": {
-        "description": "列出当前本地上下文中的机器",
-        "noMachines": "未配置任何机器。使用以下命令添加：rdc context add-machine <name> --ip <ip> --user <user>"
+      "setRenet": {
+        "description": "设置本地模式下的 renet 二进制文件路径",
+        "success": "Renet 路径已设置为：{{path}}"
       },
       "setSsh": {
         "description": "更新当前本地上下文的 SSH 配置",
         "success": "SSH 配置已更新"
       },
-      "setRenet": {
-        "description": "设置本地模式下的 renet 二进制文件路径",
-        "success": "Renet 路径已设置为：{{path}}"
+      "show": {
+        "description": "显示当前上下文详情",
+        "noContext": "没有活跃的上下文"
+      },
+      "unset": {
+        "description": "移除上下文默认值",
+        "success": "已从当前上下文中移除 {{key}}"
+      },
+      "use": {
+        "description": "切换到不同的上下文",
+        "switched": "已切换到上下文 \"{{name}}\""
       }
     },
+    "doctor": {
+      "allPassed": "所有检查均通过",
+      "checks": {
+        "activeContext": "活动上下文",
+        "authStatus": "Status",
+        "cliVersion": "CLI版本",
+        "contextMode": "上下文模式",
+        "dockerAvailable": "Docker",
+        "goInstalled": "Go",
+        "machines": "Machines",
+        "nodeVersion": "Node.js",
+        "renetBinary": "二进制文件",
+        "renetCriu": "内置CRIU",
+        "renetRsync": "内置rsync",
+        "renetVersion": "Version",
+        "seaMode": "SEA模式",
+        "sshKey": "SSH密钥"
+      },
+      "description": "诊断CLI环境和renet集成",
+      "devMode": "否（开发模式）",
+      "hasErrors": "{{count}}个错误",
+      "hasWarnings": "{{count}}个警告",
+      "notAuthenticated": "未认证",
+      "notConfigured": "未配置",
+      "notInstalled": "未安装",
+      "seaActive": "是（单一可执行应用程序）",
+      "sections": {
+        "authentication": "身份验证",
+        "configuration": "Configuration",
+        "environment": "环境",
+        "renet": "Renet"
+      },
+      "status": {
+        "fail": "失败",
+        "ok": "OK",
+        "warn": "警告"
+      },
+      "title": "Rediacc CLI 诊断工具"
+    },
     "machine": {
+      "containers": {
+        "allHealthy": "所有容器都健康",
+        "description": "列出机器上的 Docker 容器",
+        "fetched": "容器已获取",
+        "fetching": "正在获取容器...",
+        "healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
+        "noContainers": "此机器上未找到容器",
+        "unhealthyFound": "找到 {{count}} 个不健康的容器"
+      },
+      "create": {
+        "creating": "正在创建机器...",
+        "description": "创建新机器",
+        "success": "机器 \"{{name}}\" 已创建"
+      },
+      "delete": {
+        "confirm": "确定要删除机器 \"{{name}}\" 吗？",
+        "deleting": "正在删除机器...",
+        "description": "删除机器",
+        "success": "机器 \"{{name}}\" 已删除"
+      },
       "description": "机器管理",
+      "health": {
+        "containersSection": "\n容器：",
+        "containersSummary": "  {{running}}/{{total}} 正在运行（{{healthy}} 健康，{{unhealthy}} 不健康）",
+        "description": "检查 CI/CD 流水线的机器健康状况",
+        "exitCode": "\n退出代码：{{code}}",
+        "fetched": "健康数据已获取",
+        "fetching": "正在获取机器健康状况...",
+        "header": "\n{{name}} 的健康检查：",
+        "issuesSection": "\n问题：",
+        "noData": "机器无状态数据可用",
+        "repositoriesSection": "\n仓库：",
+        "repositoriesSummary": "  {{mounted}}/{{total}} 已挂载（{{docker}} 使用 Docker）",
+        "servicesSection": "\n服务：",
+        "servicesSummary": "  {{active}}/{{total}} 活动（{{failed}} 失败）",
+        "statusCritical": "✗ 状态：严重",
+        "statusError": "✗ 状态：错误",
+        "statusHealthy": "✓ 状态：健康",
+        "statusWarning": "⚠ 状态：警告",
+        "storageSection": "\n存储：",
+        "storageSmart": "  SMART：{{healthy}} 健康，{{failing}} 故障",
+        "storageTemp": "  最高温度：{{temp}}°C",
+        "systemDatastore": "  数据存储：{{percent}}",
+        "systemDisk": "  磁盘：{{percent}}",
+        "systemMemory": "  内存：{{percent}}",
+        "systemSection": "\n系统：",
+        "systemUptime": "  运行时间：{{uptime}}"
+      },
       "list": {
         "description": "列出机器",
         "fetching": "正在获取机器..."
       },
-      "create": {
-        "description": "创建新机器",
-        "creating": "正在创建机器...",
-        "success": "机器 \"{{name}}\" 已创建"
+      "repos": {
+        "description": "列出机器上已部署的仓库",
+        "fetched": "机器已获取",
+        "fetching": "正在获取机器...",
+        "noRepos": "此机器上未部署任何仓库"
       },
-      "delete": {
-        "description": "删除机器",
-        "deleting": "正在删除机器...",
-        "success": "机器 \"{{name}}\" 已删除",
-        "confirm": "确定要删除机器 \"{{name}}\" 吗？"
+      "services": {
+        "allStable": "所有服务都稳定",
+        "description": "列出机器上的 systemd 服务",
+        "fetched": "服务已获取",
+        "fetching": "正在获取服务...",
+        "noServices": "此机器上未找到 rediacc 服务",
+        "stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",
+        "unstableFound": "找到 {{count}} 个不稳定的服务"
+      },
+      "testConnection": {
+        "authMethod": "  认证方法：{{method}}",
+        "created": "任务已创建",
+        "creating": "正在创建 SSH 测试任务...",
+        "description": "测试到机器的 SSH 连接并捕获主机密钥",
+        "error": "错误：{{error}}",
+        "knownHosts": "  主机条目：{{entry}}",
+        "message": "  消息：{{message}}",
+        "publicKeyDeployed": "  公钥已部署：{{status}}",
+        "rawOutput": "原始输出：",
+        "results": "SSH 测试结果：",
+        "saved": "主机条目已保存到机器保险箱",
+        "saving": "正在将 known_hosts 保存到机器 \"{{machine}}\" 保险箱...",
+        "sshKeyConfigured": "  SSH 密钥已配置：{{status}}",
+        "statusResult": "  状态：{{status}}",
+        "taskId": "任务 ID：{{taskId}}",
+        "testing": "正在测试与 {{user}}@{{ip}}:{{port}} 的 SSH 连接...",
+        "testResult": "SSH 测试 {{result}}",
+        "timeout": "等待结果超时",
+        "timeoutMessage": "测试连接超时。检查队列跟踪以获取详细信息。",
+        "waiting": "正在等待 SSH 测试结果...",
+        "waitingTime": "正在等待 SSH 测试结果...（{{seconds}}s）"
       },
       "update": {
         "description": "更新机器配置",
-        "updating": "正在更新机器...",
-        "success": "机器 \"{{name}}\" 已更新"
-      },
-      "health": {
-        "description": "检查 CI/CD 流水线的机器健康状况",
-        "fetching": "正在获取机器健康状况...",
-        "fetched": "健康数据已获取",
-        "header": "\n{{name}} 的健康检查：",
-        "statusHealthy": "✓ 状态：健康",
-        "statusWarning": "⚠ 状态：警告",
-        "statusError": "✗ 状态：错误",
-        "statusCritical": "✗ 状态：严重",
-        "noData": "机器无状态数据可用",
-        "systemSection": "\n系统：",
-        "systemUptime": "  运行时间：{{uptime}}",
-        "systemMemory": "  内存：{{percent}}",
-        "systemDisk": "  磁盘：{{percent}}",
-        "systemDatastore": "  数据存储：{{percent}}",
-        "containersSection": "\n容器：",
-        "containersSummary": "  {{running}}/{{total}} 正在运行（{{healthy}} 健康，{{unhealthy}} 不健康）",
-        "servicesSection": "\n服务：",
-        "servicesSummary": "  {{active}}/{{total}} 活动（{{failed}} 失败）",
-        "storageSection": "\n存储：",
-        "storageSmart": "  SMART：{{healthy}} 健康，{{failing}} 故障",
-        "storageTemp": "  最高温度：{{temp}}°C",
-        "repositoriesSection": "\n仓库：",
-        "repositoriesSummary": "  {{mounted}}/{{total}} 已挂载（{{docker}} 使用 Docker）",
-        "issuesSection": "\n问题：",
-        "exitCode": "\n退出代码：{{code}}"
-      },
-      "containers": {
-        "description": "列出机器上的 Docker 容器",
-        "fetching": "正在获取容器...",
-        "fetched": "容器已获取",
-        "noContainers": "此机器上未找到容器",
-        "healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
-        "allHealthy": "所有容器都健康",
-        "unhealthyFound": "找到 {{count}} 个不健康的容器"
-      },
-      "services": {
-        "description": "列出机器上的 systemd 服务",
-        "fetching": "正在获取服务...",
-        "fetched": "服务已获取",
-        "noServices": "此机器上未找到 rediacc 服务",
-        "stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",
-        "allStable": "所有服务都稳定",
-        "unstableFound": "找到 {{count}} 个不稳定的服务"
+        "success": "机器 \"{{name}}\" 已更新",
+        "updating": "正在更新机器..."
       },
       "vaultStatus": {
+        "deployedRepos": "\n已部署的仓库：",
         "description": "显示机器的已解析保险箱状态",
-        "fetching": "正在获取机器...",
+        "dockerRunning": "  Docker 运行中：{{count}}",
         "fetched": "机器已获取",
+        "fetching": "正在获取机器...",
         "header": "\n{{name}} 的保险箱状态：",
+        "mounted": "  已挂载：{{count}}",
+        "repoDocker": "    Docker：{{status}}",
+        "repoMounted": "    已挂载：{{mounted}}",
         "status": "  状态：{{status}}",
-        "systemSection": "\n系统：",
-        "systemUptime": "  运行时间：{{uptime}}",
+        "systemDatastore": "  数据存储：{{used}} / {{total}}（{{percent}}）",
+        "systemDisk": "  磁盘：{{used}} / {{total}}（{{percent}}）",
         "systemHostname": "  主机名：{{hostname}}",
         "systemMemory": "  内存：{{used}} / {{total}}（{{percent}}）",
-        "systemDisk": "  磁盘：{{used}} / {{total}}（{{percent}}）",
-        "systemDatastore": "  数据存储：{{used}} / {{total}}（{{percent}}）",
-        "totalRepos": "  总仓库数：{{count}}",
-        "mounted": "  已挂载：{{count}}",
-        "dockerRunning": "  Docker 运行中：{{count}}",
-        "deployedRepos": "\n已部署的仓库：",
-        "repoMounted": "    已挂载：{{mounted}}",
-        "repoDocker": "    Docker：{{status}}"
-      },
-      "repos": {
-        "description": "列出机器上已部署的仓库",
-        "fetching": "正在获取机器...",
-        "fetched": "机器已获取",
-        "noRepos": "此机器上未部署任何仓库"
-      },
-      "testConnection": {
-        "description": "测试到机器的 SSH 连接并捕获主机密钥",
-        "testing": "正在测试与 {{user}}@{{ip}}:{{port}} 的 SSH 连接...",
-        "creating": "正在创建 SSH 测试任务...",
-        "created": "任务已创建",
-        "taskId": "任务 ID：{{taskId}}",
-        "waiting": "正在等待 SSH 测试结果...",
-        "waitingTime": "正在等待 SSH 测试结果...（{{seconds}}s）",
-        "testResult": "SSH 测试 {{result}}",
-        "rawOutput": "原始输出：",
-        "error": "错误：{{error}}",
-        "timeout": "等待结果超时",
-        "timeoutMessage": "测试连接超时。检查队列跟踪以获取详细信息。",
-        "results": "SSH 测试结果：",
-        "statusResult": "  状态：{{status}}",
-        "authMethod": "  认证方法：{{method}}",
-        "sshKeyConfigured": "  SSH 密钥已配置：{{status}}",
-        "publicKeyDeployed": "  公钥已部署：{{status}}",
-        "knownHosts": "  主机条目：{{entry}}",
-        "message": "  消息：{{message}}",
-        "saving": "正在将 known_hosts 保存到机器 \"{{machine}}\" 保险箱...",
-        "saved": "主机条目已保存到机器保险箱"
+        "systemSection": "\n系统：",
+        "systemUptime": "  运行时间：{{uptime}}",
+        "totalRepos": "  总仓库数：{{count}}"
       }
     },
     "organization": {
+      "dashboard": {
+        "description": "获取组织仪表板数据",
+        "fetching": "正在获取仪表板...",
+        "success": "仪表板已获取"
+      },
       "description": "组织管理命令",
-      "list": {
-        "description": "列出组织",
-        "fetching": "正在获取组织..."
+      "export": {
+        "description": "导出组织数据",
+        "exported": "已导出至 {{path}}",
+        "exporting": "正在导出组织数据...",
+        "success": "导出完成"
+      },
+      "import": {
+        "description": "导入组织数据",
+        "importing": "正在导入组织数据...",
+        "success": "导入完成"
       },
       "info": {
         "description": "获取组织信息",
@@ -463,10 +514,16 @@
         "notFound": "未找到组织信息",
         "success": "组织信息已获取"
       },
-      "dashboard": {
-        "description": "获取组织仪表板数据",
-        "fetching": "正在获取仪表板...",
-        "success": "仪表板已获取"
+      "list": {
+        "description": "列出组织",
+        "fetching": "正在获取组织..."
+      },
+      "maintenance": {
+        "description": "启用或禁用维护模式（阻止非管理员登录）",
+        "disabled": "维护模式已禁用",
+        "disabling": "正在禁用维护模式...",
+        "enabled": "维护模式已启用",
+        "enabling": "正在启用维护模式..."
       },
       "vault": {
         "description": "组织保险箱管理",
@@ -486,42 +543,19 @@
           "success": "组织保险箱已更新",
           "updating": "正在更新组织保险箱..."
         }
-      },
-      "export": {
-        "description": "导出组织数据",
-        "exported": "已导出至 {{path}}",
-        "exporting": "正在导出组织数据...",
-        "success": "导出完成"
-      },
-      "import": {
-        "description": "导入组织数据",
-        "importing": "正在导入组织数据...",
-        "success": "导入完成"
-      },
-      "maintenance": {
-        "description": "启用或禁用维护模式（阻止非管理员登录）",
-        "disabled": "维护模式已禁用",
-        "disabling": "正在禁用维护模式...",
-        "enabled": "维护模式已启用",
-        "enabling": "正在启用维护模式..."
       }
     },
     "permission": {
-      "description": "权限管理命令",
-      "list": {
-        "description": "列出权限",
-        "fetching": "正在获取权限..."
+      "add": {
+        "adding": "正在将权限 \"{{permission}}\" 添加到组 \"{{group}}\"...",
+        "description": "向组添加权限",
+        "success": "权限已添加"
       },
+      "description": "权限管理命令",
       "group": {
-        "description": "权限组管理",
-        "list": {
-          "description": "列出所有权限组",
-          "fetching": "正在获取权限组...",
-          "success": "权限组已获取"
-        },
         "create": {
-          "description": "创建新权限组",
           "creating": "正在创建权限组 \"{{name}}\"...",
+          "description": "创建新权限组",
           "success": "权限组 \"{{name}}\" 已创建"
         },
         "delete": {
@@ -530,16 +564,21 @@
           "description": "删除权限组",
           "success": "权限组 \"{{name}}\" 已删除"
         },
+        "description": "权限组管理",
+        "list": {
+          "description": "列出所有权限组",
+          "fetching": "正在获取权限组...",
+          "success": "权限组已获取"
+        },
         "show": {
           "description": "显示权限组详情",
           "fetching": "正在获取权限组详情...",
           "success": "详情已获取"
         }
       },
-      "add": {
-        "adding": "正在将权限 \"{{permission}}\" 添加到组 \"{{group}}\"...",
-        "description": "向组添加权限",
-        "success": "权限已添加"
+      "list": {
+        "description": "列出权限",
+        "fetching": "正在获取权限..."
       },
       "remove": {
         "description": "从组中移除权限",
@@ -548,73 +587,79 @@
       }
     },
     "protocol": {
-      "description": "管理 {{scheme}}:// 协议处理程序注册和 URL 处理",
-      "register": {
-        "description": "在系统上注册协议处理程序",
-        "systemWide": "正在系统范围内注册协议处理程序...",
-        "adminRequired": "注意：这可能需要管理员/root 权限。",
-        "currentUser": "正在为当前用户注册协议处理程序...",
-        "registering": "正在注册协议处理程序...",
-        "success": "\n已成功注册 {{scheme}}:// 协议处理程序。",
-        "exampleUrls": "\n现在可以打开以下 URL 形式的链接："
-      },
-      "unregister": {
-        "description": "从系统中注销协议处理程序",
-        "unregistering": "正在注销协议处理程序...",
-        "success": "\n已成功注销 {{scheme}}:// 协议处理程序。"
-      },
-      "status": {
-        "description": "显示协议处理程序注册状态",
-        "title": "\n协议处理程序状态",
-        "platform": "平台：",
-        "supported": "支持：",
-        "registered": "已注册：",
-        "userRegistration": "用户注册：",
-        "systemRegistration": "系统注册：",
-        "handlerCommand": "处理程序命令：",
-        "error": "\n错误：{{error}}",
-        "registerHint": "\n要注册协议处理程序，请运行："
-      },
-      "open": {
-        "description": "打开 {{scheme}}:// URL 并执行操作",
-        "parsedUrl": "\n已解析的协议 URL：",
-        "token": "令牌：",
-        "team": "团队：",
-        "machine": "机器：",
-        "repository": "仓库：",
-        "action": "操作：",
-        "params": "参数：",
-        "cliCommand": "\n等效的命令行界面命令：",
-        "executing": "\n正在执行操作...\n"
-      },
       "build": {
         "description": "从组件构建 {{scheme}}:// URL"
       },
-      "parse": {
-        "description": "解析 {{scheme}}:// URL 并显示组件",
+      "description": "管理 {{scheme}}:// 协议处理程序注册和 URL 处理",
+      "open": {
+        "action": "操作：",
+        "cliCommand": "\n等效的命令行界面命令：",
+        "description": "打开 {{scheme}}:// URL 并执行操作",
+        "executing": "\n正在执行操作...\n",
+        "machine": "机器：",
+        "params": "参数：",
         "parsedUrl": "\n已解析的协议 URL：",
-        "cliCommand": "\n命令行界面命令："
+        "repository": "仓库：",
+        "team": "团队：",
+        "token": "令牌："
+      },
+      "parse": {
+        "cliCommand": "\n命令行界面命令：",
+        "description": "解析 {{scheme}}:// URL 并显示组件",
+        "parsedUrl": "\n已解析的协议 URL："
+      },
+      "register": {
+        "adminRequired": "注意：这可能需要管理员/root 权限。",
+        "currentUser": "正在为当前用户注册协议处理程序...",
+        "description": "在系统上注册协议处理程序",
+        "exampleUrls": "\n现在可以打开以下 URL 形式的链接：",
+        "registering": "正在注册协议处理程序...",
+        "success": "\n已成功注册 {{scheme}}:// 协议处理程序。",
+        "systemWide": "正在系统范围内注册协议处理程序..."
+      },
+      "status": {
+        "description": "显示协议处理程序注册状态",
+        "error": "\n错误：{{error}}",
+        "handlerCommand": "处理程序命令：",
+        "platform": "平台：",
+        "registered": "已注册：",
+        "registerHint": "\n要注册协议处理程序，请运行：",
+        "supported": "支持：",
+        "systemRegistration": "系统注册：",
+        "title": "\n协议处理程序状态",
+        "userRegistration": "用户注册："
+      },
+      "unregister": {
+        "description": "从系统中注销协议处理程序",
+        "success": "\n已成功注销 {{scheme}}:// 协议处理程序。",
+        "unregistering": "正在注销协议处理程序..."
       }
     },
     "queue": {
+      "cancel": {
+        "cancelling": "正在取消任务 {{taskId}}...",
+        "description": "取消队列项",
+        "success": "任务已取消"
+      },
+      "create": {
+        "buildingVault": "正在构建队列保险箱...",
+        "creating": "正在为函数 '{{function}}' 创建队列项...",
+        "description": "创建队列项",
+        "success": "队列项已创建",
+        "taskId": "任务 ID：{{taskId}}",
+        "vaultBuilt": "队列保险箱已构建"
+      },
+      "delete": {
+        "confirm": "确定要删除任务 {{taskId}} 吗？",
+        "deleting": "正在删除任务 {{taskId}}...",
+        "description": "删除队列项",
+        "success": "任务已删除"
+      },
       "description": "队列管理",
       "list": {
         "description": "列出队列项",
         "fetching": "正在获取队列项...",
         "success": "队列项已获取"
-      },
-      "create": {
-        "description": "创建队列项",
-        "buildingVault": "正在构建队列保险箱...",
-        "vaultBuilt": "队列保险箱已构建",
-        "creating": "正在为函数 '{{function}}' 创建队列项...",
-        "success": "队列项已创建",
-        "taskId": "任务 ID：{{taskId}}"
-      },
-      "cancel": {
-        "description": "取消队列项",
-        "cancelling": "正在取消任务 {{taskId}}...",
-        "success": "任务已取消"
       },
       "retry": {
         "description": "重试失败的队列项",
@@ -622,20 +667,14 @@
         "success": "任务已排队重试"
       },
       "trace": {
-        "description": "跟踪队列项执行",
-        "fetching": "正在获取队列跟踪...",
-        "fetched": "队列跟踪已获取",
-        "watching": "正在监视任务进度...",
         "age": "年龄",
-        "finalStatus": "最终状态：{{status}}",
+        "description": "跟踪队列项执行",
         "errorDetails": "错误详情：",
-        "noTrace": "没有可用的跟踪信息"
-      },
-      "delete": {
-        "description": "删除队列项",
-        "confirm": "确定要删除任务 {{taskId}} 吗？",
-        "deleting": "正在删除任务 {{taskId}}...",
-        "success": "任务已删除"
+        "fetched": "队列跟踪已获取",
+        "fetching": "正在获取队列跟踪...",
+        "finalStatus": "最终状态：{{status}}",
+        "noTrace": "没有可用的跟踪信息",
+        "watching": "正在监视任务进度..."
       }
     },
     "region": {
@@ -646,57 +685,63 @@
       }
     },
     "repository": {
+      "create": {
+        "creating": "正在创建仓库 \"{{name}}:{{tag}}\"...",
+        "description": "创建新仓库",
+        "success": "仓库 \"{{name}}:{{tag}}\" 已创建"
+      },
+      "delete": {
+        "checkingRelationships": "正在检查仓库关系...",
+        "confirm": "删除仓库 \"{{name}}:{{tag}}\" 吗？无法撤销此操作。",
+        "deleting": "正在删除仓库 \"{{name}}:{{tag}}\"...",
+        "description": "删除仓库",
+        "grandRepoWarning": "这是一个主仓库（凭证）。删除它不可逆转。",
+        "relationshipsChecked": "仓库关系已检查",
+        "success": "仓库 \"{{name}}:{{tag}}\" 已删除"
+      },
       "description": "仓库管理命令",
       "list": {
         "description": "列出仓库",
         "fetching": "正在获取仓库...",
         "success": "仓库已获取"
       },
-      "create": {
-        "description": "创建新仓库",
-        "creating": "正在创建仓库 \"{{name}}:{{tag}}\"...",
-        "success": "仓库 \"{{name}}:{{tag}}\" 已创建"
+      "promote": {
+        "checkingRelationships": "正在检查仓库关系...",
+        "confirmPromote": "\n继续提升？",
+        "description": "将分叉提升为主状态",
+        "promoting": "正在提升仓库 \"{{name}}:{{tag}}\"...",
+        "relationshipsChecked": "仓库关系已检查",
+        "separateInfo": "\n这将把 \"{{name}}\" 与主仓库 \"{{grandName}}\" 分离",
+        "siblingsInfo": "\n{{count}} 个兄弟克隆将保持与原始主仓库的链接：",
+        "success": "仓库 \"{{name}}:{{tag}}\" 已提升为主状态"
       },
       "rename": {
         "description": "重命名仓库",
         "renaming": "正在将仓库 \"{{oldName}}\" 重命名为 \"{{newName}}\"...",
         "success": "仓库已重命名为 \"{{name}}\""
       },
-      "delete": {
-        "description": "删除仓库",
-        "checkingRelationships": "正在检查仓库关系...",
-        "relationshipsChecked": "仓库关系已检查",
-        "grandRepoWarning": "这是一个主仓库（凭证）。删除它不可逆转。",
-        "confirm": "删除仓库 \"{{name}}:{{tag}}\" 吗？无法撤销此操作。",
-        "deleting": "正在删除仓库 \"{{name}}:{{tag}}\"...",
-        "success": "仓库 \"{{name}}:{{tag}}\" 已删除"
-      },
-      "promote": {
-        "description": "将分叉提升为主状态",
-        "checkingRelationships": "正在检查仓库关系...",
-        "relationshipsChecked": "仓库关系已检查",
-        "separateInfo": "\n这将把 \"{{name}}\" 与主仓库 \"{{grandName}}\" 分离",
-        "siblingsInfo": "\n{{count}} 个兄弟克隆将保持与原始主仓库的链接：",
-        "confirmPromote": "\n继续提升？",
-        "promoting": "正在提升仓库 \"{{name}}:{{tag}}\"...",
-        "success": "仓库 \"{{name}}:{{tag}}\" 已提升为主状态"
-      },
       "vault": {
         "description": "仓库保险箱管理",
         "get": {
           "description": "获取仓库保险箱数据",
           "fetching": "正在获取仓库保险箱...",
-          "success": "保险箱已获取",
-          "notFound": "未找到仓库保险箱"
+          "notFound": "未找到仓库保险箱",
+          "success": "保险箱已获取"
         },
         "update": {
           "description": "更新仓库保险箱数据",
-          "updating": "正在更新仓库保险箱...",
-          "success": "仓库保险箱已更新"
+          "success": "仓库保险箱已更新",
+          "updating": "正在更新仓库保险箱..."
         }
       }
     },
     "shortcuts": {
+      "cancel": {
+        "description": "取消任务（快捷方式：queue cancel）"
+      },
+      "retry": {
+        "description": "重试失败的任务（快捷方式：queue retry）"
+      },
       "run": {
         "completedLocal": "[本地] 在 {{duration}}ms 内完成",
         "description": "运行函数（快捷方式：queue create）",
@@ -706,12 +751,6 @@
       },
       "trace": {
         "description": "跟踪任务（快捷方式：queue trace）"
-      },
-      "cancel": {
-        "description": "取消任务（快捷方式：queue cancel）"
-      },
-      "retry": {
-        "description": "重试失败的任务（快捷方式：queue retry）"
       }
     },
     "storage": {
@@ -722,55 +761,55 @@
       }
     },
     "sync": {
-      "description": "使用 rsync 与仓库进行文件同步",
-      "fetchingDetails": "正在获取连接详情...",
-      "previewingChanges": "\n正在预览更改...\n",
-      "noChanges": "没有要同步的更改。",
       "cancelled": "同步已取消。",
+      "description": "使用 rsync 与仓库进行文件同步",
+      "download": {
+        "completed": "下载完成：{{count}} 个文件已传输",
+        "description": "从仓库下载文件",
+        "failed": "下载失败",
+        "progress": "下载中：{{percentage}}% - {{file}}（{{speed}}）",
+        "starting": "正在开始下载..."
+      },
       "dryRunHeader": "\n试运行 - 显示将传输的内容：\n",
-      "totalSize": "总大小：{{size}}",
       "duration": "持续时间：{{seconds}}s",
       "errors": "错误：",
-      "upload": {
-        "description": "将文件上传到仓库",
-        "starting": "正在开始上传...",
-        "progress": "上传中：{{percentage}}% - {{file}}（{{speed}}）",
-        "completed": "上传完成：{{count}} 个文件已传输",
-        "failed": "上传失败"
-      },
-      "download": {
-        "description": "从仓库下载文件",
-        "starting": "正在开始下载...",
-        "progress": "下载中：{{percentage}}% - {{file}}（{{speed}}）",
-        "completed": "下载完成：{{count}} 个文件已传输",
-        "failed": "下载失败"
-      },
+      "fetchingDetails": "正在获取连接详情...",
+      "noChanges": "没有要同步的更改。",
+      "previewingChanges": "\n正在预览更改...\n",
       "status": {
         "description": "检查同步状态并比较本地/远程文件"
+      },
+      "totalSize": "总大小：{{size}}",
+      "upload": {
+        "completed": "上传完成：{{count}} 个文件已传输",
+        "description": "将文件上传到仓库",
+        "failed": "上传失败",
+        "progress": "上传中：{{percentage}}% - {{file}}（{{speed}}）",
+        "starting": "正在开始上传..."
       }
     },
     "team": {
+      "create": {
+        "creating": "正在创建团队...",
+        "description": "创建团队",
+        "success": "团队 \"{{name}}\" 已创建"
+      },
       "description": "团队管理",
       "list": {
         "description": "列出团队",
         "fetching": "正在获取团队..."
       },
-      "create": {
-        "description": "创建团队",
-        "creating": "正在创建团队...",
-        "success": "团队 \"{{name}}\" 已创建"
-      },
       "member": {
+        "add": {
+          "adding": "正在将 {{email}} 添加到团队 \"{{team}}\"...",
+          "description": "将用户添加到团队",
+          "success": "用户已添加到团队 \"{{team}}\""
+        },
         "description": "团队成员管理",
         "list": {
           "description": "列出团队成员",
           "fetching": "正在获取团队成员...",
           "success": "成员已获取"
-        },
-        "add": {
-          "description": "将用户添加到团队",
-          "adding": "正在将 {{email}} 添加到团队 \"{{team}}\"...",
-          "success": "用户已添加到团队 \"{{team}}\""
         },
         "remove": {
           "description": "从团队中移除用户",
@@ -779,56 +818,69 @@
         }
       }
     },
-    "update": {
-      "description": "检查并应用CLI更新",
-      "force": "即使已是最新也强制更新",
-      "checkOnly": "仅检查更新，不下载",
-      "notSEA": "无法更新：未作为打包二进制文件运行。请先使用SEA构建。",
-      "available": "有可用更新: v{{version}} (当前: v{{current}})",
-      "releaseNotes": "发行说明: {{url}}",
-      "upToDate": "已是最新版本 (v{{version}})",
-      "checking": "正在检查更新...",
-      "downloading": "正在下载 v{{version}}...",
-      "progress": "正在下载... {{percent}}%",
-      "success": "已从 v{{from}} 更新到 v{{to}}",
-      "failed": "更新失败: {{error}}",
-      "unknownError": "未知错误"
-    },
     "term": {
-      "description": "SSH 终端访问机器和仓库",
-      "connecting": "正在连接到 {{machine}}...",
       "connect": {
         "description": "通过 SSH 连接到机器或仓库"
       },
+      "connecting": "正在连接到 {{machine}}...",
       "connectingTo": "正在连接到 {{title}}...",
+      "description": "SSH 终端访问机器和仓库",
       "fetchingDetails": "正在获取连接详情...",
-      "launchSuccess": "终端已成功启动。",
       "launchingTerminal": "正在启动 {{type}} 终端...",
+      "launchSuccess": "终端已成功启动。",
       "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
     },
+    "update": {
+      "available": "有可用更新: v{{version}} (当前: v{{current}})",
+      "checking": "正在检查更新...",
+      "checkOnly": "仅检查更新，不下载",
+      "description": "检查并应用CLI更新",
+      "downloading": "正在下载 v{{version}}...",
+      "failed": "更新失败: {{error}}",
+      "force": "即使已是最新也强制更新",
+      "notSEA": "无法更新：未作为打包二进制文件运行。请先使用SEA构建。",
+      "progress": "正在下载... {{percent}}%",
+      "releaseNotes": "发行说明: {{url}}",
+      "success": "已从 v{{from}} 更新到 v{{to}}",
+      "unknownError": "未知错误",
+      "upToDate": "已是最新版本 (v{{version}})"
+    },
     "user": {
+      "activate": {
+        "activating": "正在激活用户 \"{{email}}\"...",
+        "description": "激活用户账户",
+        "success": "用户已激活"
+      },
+      "create": {
+        "activationCode": "激活码：{{code}}",
+        "creating": "正在创建用户 \"{{email}}\"...",
+        "description": "创建新用户",
+        "success": "用户已创建"
+      },
+      "deactivate": {
+        "confirm": "停用用户 \"{{email}}\" 吗？",
+        "deactivating": "正在停用用户 \"{{email}}\"...",
+        "description": "停用用户账户",
+        "success": "用户已停用"
+      },
       "description": "用户管理命令",
+      "exists": {
+        "description": "检查用户是否存在",
+        "exists": "用户 \"{{email}}\" 存在",
+        "notExists": "用户 \"{{email}}\" 不存在"
+      },
       "list": {
         "description": "列出所有用户",
         "fetching": "正在获取用户...",
         "success": "用户已获取"
       },
-      "create": {
-        "description": "创建新用户",
-        "creating": "正在创建用户 \"{{email}}\"...",
-        "success": "用户已创建",
-        "activationCode": "激活码：{{code}}"
-      },
-      "activate": {
-        "description": "激活用户账户",
-        "activating": "正在激活用户 \"{{email}}\"...",
-        "success": "用户已激活"
-      },
-      "deactivate": {
-        "description": "停用用户账户",
-        "confirm": "停用用户 \"{{email}}\" 吗？",
-        "deactivating": "正在停用用户 \"{{email}}\"...",
-        "success": "用户已停用"
+      "permission": {
+        "assign": {
+          "assigning": "正在为用户 \"{{email}}\" 分配 \"{{group}}\"...",
+          "description": "为用户分配权限组",
+          "success": "权限已分配"
+        },
+        "description": "用户权限管理"
       },
       "reactivate": {
         "description": "重新激活已停用的用户账户",
@@ -837,23 +889,18 @@
       },
       "updateEmail": {
         "description": "更改用户的电子邮件地址",
-        "updating": "正在更新 \"{{email}}\" 的电子邮件...",
-        "success": "电子邮件已更新为 \"{{email}}\""
-      },
-      "updatePassword": {
-        "description": "更改您的密码",
-        "updating": "正在更新密码...",
-        "success": "密码已更新"
+        "success": "电子邮件已更新为 \"{{email}}\"",
+        "updating": "正在更新 \"{{email}}\" 的电子邮件..."
       },
       "updateLanguage": {
         "description": "设置当前用户的首选语言",
-        "updating": "正在更新语言偏好...",
-        "success": "语言已更新为 \"{{language}}\""
+        "success": "语言已更新为 \"{{language}}\"",
+        "updating": "正在更新语言偏好..."
       },
-      "exists": {
-        "description": "检查用户是否存在",
-        "exists": "用户 \"{{email}}\" 存在",
-        "notExists": "用户 \"{{email}}\" 不存在"
+      "updatePassword": {
+        "description": "更改您的密码",
+        "success": "密码已更新",
+        "updating": "正在更新密码..."
       },
       "vault": {
         "description": "用户保险箱管理",
@@ -864,126 +911,240 @@
         },
         "update": {
           "description": "更新当前用户保险箱数据",
-          "updating": "正在更新用户保险箱...",
-          "success": "用户保险箱已更新"
-        }
-      },
-      "permission": {
-        "description": "用户权限管理",
-        "assign": {
-          "description": "为用户分配权限组",
-          "assigning": "正在为用户 \"{{email}}\" 分配 \"{{group}}\"...",
-          "success": "权限已分配"
+          "success": "用户保险箱已更新",
+          "updating": "正在更新用户保险箱..."
         }
       }
     },
     "vscode": {
-      "description": "VS Code 远程 SSH 集成",
+      "check": {
+        "activeConnections": "活跃连接：{{count}}",
+        "configuration": "\n配置：",
+        "configured": "  已配置：{{status}}",
+        "description": "检查 VS Code 安装和配置",
+        "installation": "安装：",
+        "installed": "已安装",
+        "missingSettings": "  缺失的设置：",
+        "no": "否",
+        "notDetected": "未检测到",
+        "remoteSSH": "  远程 SSH 扩展：{{status}}",
+        "settingsPath": "  设置路径：{{path}}",
+        "sshConfig": "\nSSH 配置：{{path}}",
+        "title": "VS Code 设置检查\n",
+        "variant": "  变体：Insiders",
+        "version": "  版本：{{version}}",
+        "vscodeFound": "  VS Code：{{path}}",
+        "vscodeNotFound": "  VS Code：未找到",
+        "yes": "是"
+      },
+      "cleanup": {
+        "cleaned": "已清除：{{connection}}",
+        "cleanedAll": "已清除 {{count}} 个 VS Code SSH 连接。",
+        "description": "移除 VS Code SSH 配置",
+        "removedKeys": "已移除所有保存的 SSH 密钥。"
+      },
       "connect": {
+        "configuringSSH": "正在配置 SSH...",
+        "configuringVSCode": "正在配置 VS Code 设置...",
         "description": "在 VS Code 中连接到机器或仓库",
         "detecting": "正在检测 VS Code...",
         "extensionWarning": "警告：可能未安装远程 SSH 扩展。\n从以下地址安装：https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "正在获取连接详情...",
-        "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接...",
+        "opening": "正在打开 VS Code：{{connection}} → {{path}}",
         "persistingKey": "正在保存 SSH 密钥...",
-        "configuringSSH": "正在配置 SSH...",
-        "configuringVSCode": "正在配置 VS Code 设置...",
         "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
         "settingUpEnv": "正在设置远程环境...",
-        "opening": "正在打开 VS Code：{{connection}} → {{path}}",
-        "success": "VS Code 已成功启动。"
+        "success": "VS Code 已成功启动。",
+        "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
       },
+      "description": "VS Code 远程 SSH 集成",
       "list": {
-        "description": "列出已配置的 VS Code SSH 连接",
-        "noConnections": "未配置任何 VS Code SSH 连接。",
         "configFile": "\n配置文件：{{path}}",
+        "description": "列出已配置的 VS Code SSH 连接",
         "header": "已配置的 VS Code SSH 连接：\n",
         "keyPersisted": "（密钥已保存）",
+        "noConnections": "未配置任何 VS Code SSH 连接。",
         "total": "\n总计：{{count}} 个连接"
-      },
-      "cleanup": {
-        "description": "移除 VS Code SSH 配置",
-        "cleanedAll": "已清除 {{count}} 个 VS Code SSH 连接。",
-        "removedKeys": "已移除所有保存的 SSH 密钥。",
-        "cleaned": "已清除：{{connection}}"
-      },
-      "check": {
-        "description": "检查 VS Code 安装和配置",
-        "title": "VS Code 设置检查\n",
-        "installation": "安装：",
-        "vscodeFound": "  VS Code：{{path}}",
-        "version": "  版本：{{version}}",
-        "variant": "  变体：Insiders",
-        "vscodeNotFound": "  VS Code：未找到",
-        "remoteSSH": "  远程 SSH 扩展：{{status}}",
-        "installed": "已安装",
-        "notDetected": "未检测到",
-        "configuration": "\n配置：",
-        "settingsPath": "  设置路径：{{path}}",
-        "configured": "  已配置：{{status}}",
-        "yes": "是",
-        "no": "否",
-        "missingSettings": "  缺失的设置：",
-        "sshConfig": "\nSSH 配置：{{path}}",
-        "activeConnections": "活跃连接：{{count}}"
       }
+    }
+  },
+  "common": {
+    "completed": "已完成",
+    "failed": "失败",
+    "inProgress": "进行中",
+    "no": "否",
+    "running": "运行中",
+    "stopped": "已停止",
+    "success": "✓ 成功",
+    "unknown": "未知",
+    "yes": "是"
+  },
+  "docs": {
+    "admonitions": {
+      "note": "注意",
+      "tip": "提示",
+      "warning": "警告"
+    },
+    "errors": {
+      "heading": "常见错误消息",
+      "intro": "当出现问题时，CLI 会提供清晰的错误消息：",
+      "meanings": {
+        "authRequired": "您需要先登录",
+        "machineRequired": "使用 `--machine` 指定机器或设置上下文默认值",
+        "noActiveContext": "未选择上下文 — 创建或切换到一个上下文",
+        "permissionDenied": "您的帐户缺少所需的权限",
+        "regionRequired": "使用 `--region` 指定区域或设置上下文默认值",
+        "teamRequired": "使用 `--team` 指定团队或设置上下文默认值"
+      }
+    },
+    "frontmatter": {
+      "category": "核心概念",
+      "description": "使用 Rediacc 命令行界面进行平台管理的完整指南",
+      "title": "CLI 应用程序"
+    },
+    "globalOptions": {
+      "heading": "全局选项",
+      "intro": "每个命令都支持以下全局标志："
+    },
+    "installation": {
+      "heading": "安装",
+      "text": "从 [Rediacc 发布页面](https://www.rediacc.com) 下载适用于您平台的最新二进制文件，或通过包管理器安装："
+    },
+    "outputFormats": {
+      "closing": "这使得将 Rediacc CLI 集成到脚本、CI/CD 管道和自动化工作流中变得容易。",
+      "heading": "输出格式",
+      "text": "所有列表/获取命令通过 `--output` 支持多种输出格式："
+    },
+    "overview": {
+      "heading": "概述",
+      "text": "**Rediacc CLI**（`rdc`）是一个用于管理 Rediacc 平台所有方面的命令行界面 — 身份验证、基础设施、仓库、队列、存储等。"
+    },
+    "pageTitle": "Rediacc CLI 参考",
+    "sectionTitles": {
+      "audit": "审计与合规",
+      "auth": "身份验证",
+      "bridge": "桥接管理",
+      "ceph": "Ceph 存储管理",
+      "context": "上下文管理",
+      "doctor": "系统诊断",
+      "machine": "机器管理",
+      "organization": "组织管理",
+      "permission": "权限管理",
+      "protocol": "协议处理器",
+      "queue": "队列操作",
+      "region": "区域管理",
+      "repository": "仓库管理",
+      "shortcuts": "快捷命令（快捷方式）",
+      "storage": "存储管理",
+      "sync": "文件同步",
+      "team": "团队管理",
+      "term": "SSH 终端访问",
+      "update": "CLI 更新",
+      "user": "用户管理",
+      "vscode": "VS Code 集成"
+    },
+    "supplements": {
+      "auth": {
+        "register": {
+          "afterDescription": "注册后，请检查您的电子邮件以获取激活码。"
+        },
+        "tip": "您的身份验证令牌存储在本地上下文中。使用 `--save-as` 将凭据存储在命名上下文下，以便用于多个环境。"
+      },
+      "context": {
+        "afterDescription": "上下文存储连接详情（API URL、凭据、默认团队/区域/机器），以便您可以快速在环境之间切换。",
+        "createLocal": {
+          "afterDescription": "在本地模式下，您可以直接添加机器："
+        },
+        "set": {
+          "tip": "设置默认值意味着您不需要在每个命令中传递 `--team`、`--region` 或 `--machine`。"
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "health 命令输出系统指标、容器状态、服务稳定性和存储信息 — 适用于 CI/CD 管道检查。"
+        },
+        "testConnection": {
+          "tip": "使用 `--save-known-hosts` 在测试成功后自动将主机密钥持久化到机器保险库中。"
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "启用维护模式时，非管理员用户无法登录。"
+        }
+      },
+      "queue": {
+        "afterDescription": "队列系统是 Rediacc 任务执行的核心。每个操作（部署、备份、脚本执行）都通过队列运行。",
+        "trace": {
+          "tip": "使用 `--watch` 实时跟踪任务直到完成。"
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "提升 fork 会将其从父（grand）仓库中分离出来，使其独立。"
+        }
+      }
+    },
+    "tableHeaders": {
+      "description": "描述",
+      "error": "错误",
+      "flag": "标志",
+      "meaning": "含义"
     }
   },
   "errors": {
     "activationFailed": "激活失败",
-    "tfaVerificationFailed": "TFA验证失败",
+    "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc login",
     "bridgeRequired": "需要网桥名称。使用 --bridge 或设置上下文。",
+    "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
+    "cannotPromote": "无法提升：{{reason}}",
+    "clusterNotFound": "Ceph 集群 \"{{name}}\" 未找到",
     "contextNotFound": "上下文 \"{{name}}\" 未找到",
+    "failedCreateQueueItem": "无法创建队列项",
+    "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
     "invalidCredentials": "凭证无效",
     "invalidEmail": "请输入有效的电子邮件",
-    "invalidMasterPassword": "保险箱加密的主密码无效",
     "invalidExpiration": "令牌过期时间必须在 1 到 720 小时之间",
-    "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
     "invalidFunctionParams": "函数 \"{{function}}\" 的参数无效：{{errors}}",
+    "invalidHost": "无效的 IP 地址或主机名：\"{{host}}\"。必须是有效的 IPv4、IPv6 或主机名。",
     "invalidJsonFile": "提供的文件不包含有效的 JSON。",
     "invalidJsonVault": "无效的 JSON 保险箱数据。",
     "invalidKey": "无效的密钥。有效的密钥：{{keys}}",
+    "invalidMasterPassword": "保险箱加密的主密码无效",
+    "invalidPort": "无效的端口号：\"{{port}}\"。必须在 1 到 65535 之间。",
+    "invalidPriorityMax": "无效的优先级-最大值。必须在 1 到 5 之间。",
+    "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine 或设置上下文。",
     "machineRequiredLocal": "需要机器名称。使用 --machine 或使用以下命令设置默认值：rdc context set machine <name>",
-    "invalidHost": "无效的 IP 地址或主机名：\"{{host}}\"。必须是有效的 IPv4、IPv6 或主机名。",
-    "invalidPort": "无效的端口号：\"{{port}}\"。必须在 1 到 65535 之间。",
-    "failedCreateQueueItem": "无法创建队列项",
-    "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
-    "invalidPriorityMax": "无效的优先级-最大值。必须在 1 到 5 之间。",
-    "passwordsMismatch": "密码不匹配",
-    "repositoryNotFound": "仓库 \"{{name}}:{{tag}}\" 未找到",
-    "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
-    "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
-    "cannotPromote": "无法提升：{{reason}}",
-    "clusterNotFound": "Ceph 集群 \"{{name}}\" 未找到",
-    "poolNotFound": "Ceph 池 \"{{name}}\" 未找到",
-    "protocol": {
-      "notSupported": "{{platform}} 上不支持协议注册",
-      "invalidUrl": "无效的协议 URL：{{error}}",
-      "commandExitCode": "命令退出代码 {{code}}",
-      "tokenRequired": "需要令牌。使用 --token <token>",
-      "teamRequired": "需要团队名称。使用 --team <name>",
-      "machineRequired": "需要机器名称。使用 --machine <name>",
-      "invalidAction": "无效的操作 '{{action}}'。必须是以下之一：{{validActions}}",
-      "parseFailed": "无法解析 URL：{{error}}"
-    },
     "networkError": "网络错误：{{message}}",
     "noActiveContext": "没有活跃的上下文。请先创建或选择上下文。",
     "notAuthenticated": "未认证。运行：rdc login",
+    "passwordsMismatch": "密码不匹配",
     "permissionDenied": "权限被拒绝",
+    "poolNotFound": "Ceph 池 \"{{name}}\" 未找到",
+    "protocol": {
+      "commandExitCode": "命令退出代码 {{code}}",
+      "invalidAction": "无效的操作 '{{action}}'。必须是以下之一：{{validActions}}",
+      "invalidUrl": "无效的协议 URL：{{error}}",
+      "machineRequired": "需要机器名称。使用 --machine <name>",
+      "notSupported": "{{platform}} 上不支持协议注册",
+      "parseFailed": "无法解析 URL：{{error}}",
+      "teamRequired": "需要团队名称。使用 --team <name>",
+      "tokenRequired": "需要令牌。使用 --token <token>"
+    },
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",
-    "resourceNotFound": "{{resource}} 未找到",
+    "repositoryNotFound": "仓库 \"{{name}}:{{tag}}\" 未找到",
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
+    "resourceNotFound": "{{resource}} 未找到",
     "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
     "sync": {
-      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
-      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "localPathNotFound": "本地路径不存在：{{path}}",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
-      "localPathNotFound": "本地路径不存在：{{path}}"
+      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥"
     },
     "teamRequired": "需要团队名称。使用 --team 或设置上下文。",
     "term": {
@@ -999,6 +1160,14 @@
       "sshCode255": "SSH 连接失败 - 可能的原因：\n    - 身份验证失败（检查 SSH 密钥权限）\n    - 主机密钥验证失败\n    - 网络连接断开\n    - 远程 SSH 服务未运行",
       "sshExitCode": "SSH 退出代码 {{code}}"
     },
+    "tfaVerificationFailed": "TFA验证失败",
+    "tokenExpired": "令牌已过期。请重新登录。",
+    "unexpectedError": "意外错误：{{message}}",
+    "unknownCommand": "未知命令 \"{{command}}\"。可用命令：{{available}}。",
+    "unknownSubcommand": "未知子命令 \"{{command}}\"。可用的 {{parent}} 子命令：{{available}}。",
+    "validationError": "验证错误：{{message}}",
+    "vaultDataRequired": "需要保险箱数据。使用 --vault <json> 或通过 stdin 管道传输 JSON。",
+    "vaultVersionRequired": "需要保险箱版本。使用 --vault-version <n>。",
     "vscode": {
       "cleanupRequired": "指定 --all 以移除所有连接或指定 --connection <name> 以移除特定连接。",
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
@@ -1006,53 +1175,91 @@
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
-    },
-    "tokenExpired": "令牌已过期。请重新登录。",
-    "unexpectedError": "意外错误：{{message}}",
-    "validationError": "验证错误：{{message}}",
-    "vaultDataRequired": "需要保险箱数据。使用 --vault <json> 或通过 stdin 管道传输 JSON。",
-    "vaultVersionRequired": "需要保险箱版本。使用 --vault-version <n>。",
-    "unknownCommand": "未知命令 \"{{command}}\"。可用命令：{{available}}。",
-    "unknownSubcommand": "未知子命令 \"{{command}}\"。可用的 {{parent}} 子命令：{{available}}。"
+    }
   },
   "options": {
     "activationCode": "来自电子邮件的激活码",
     "apiUrl": "API 网址",
     "bridge": "网桥名称",
+    "cleanupAll": "移除所有 rediacc SSH 配置",
     "cluster": "Ceph 集群名称",
     "command": "执行命令而不是交互式 shell",
+    "confirmPasswordNonInteractive": "确认密码（非交互式模式）",
+    "confirmSync": "预览更改并在同步前请求确认",
+    "connectionName": "移除特定连接",
     "container": "连接到特定 Docker 容器",
     "containerAction": "容器操作：terminal、logs、stats、exec",
     "context": "为此命令使用特定上下文",
     "datastore": "机器上的数据存储路径",
+    "debug": "启用调试输出（本地模式）",
+    "dryRun": "显示将传输的内容而不实际同步",
     "email": "电子邮件地址",
-    "external": "强制在外部终端窗口中启动",
-    "follow": "跟踪日志输出",
-    "image": "RBD 镜像名称",
-    "pool": "Ceph 池名称",
-    "snapshot": "RBD 快照名称",
-    "vaultContent": "保险箱内容为 JSON 字符串",
-    "machineNames": "机器名称（逗号分隔）",
     "endpoint": "API 端点 URL",
+    "excludePatterns": "从同步中排除的模式",
     "expires": "过期时间（小时数，1-720）",
+    "external": "强制在外部终端窗口中启动",
+    "filterStatus": "按状态过滤",
+    "folder": "远程文件夹路径以打开",
+    "follow": "跟踪日志输出",
     "force": "跳过确认提示",
+    "functionName": "要执行的函数名称",
+    "image": "RBD 镜像名称",
+    "importMode": "导入模式（merge 或 replace）",
+    "insiders": "使用 VS Code Insiders 设置",
     "lang": "语言覆盖（{{languages}}）",
     "limit": "最大结果数",
+    "localPath": "本地目录路径（默认：当前目录）",
     "logLines": "显示的日志行数（默认：50）",
     "machine": "机器名称",
+    "machineForVault": "机器名称（用于测试后更新保险箱）",
     "machineIp": "机器 IP 地址或主机名",
+    "machineNames": "机器名称（逗号分隔）",
     "machineShorthand": "机器名称（--machine 的简写）",
+    "masterPassword": "保险箱加密的主密码",
+    "mirrorDownload": "镜像模式 - 删除远程不存在的本地文件",
+    "mirrorUpload": "镜像模式 - 删除本地不存在的远程文件",
+    "newPasswordNonInteractive": "新密码（非交互式模式）",
+    "newWindow": "在新 VS Code 窗口中打开",
     "organization": "组织名称",
     "output": "输出格式（table|json|yaml|csv）",
+    "outputFormat": "输出格式（json）",
+    "outputPath": "保存输出文件的路径",
+    "param": "函数参数",
+    "parentRepository": "父仓库（用于分叉）",
+    "parentRepositoryTag": "父仓库标签",
     "password": "密码（用于非交互式登录）",
-    "masterPassword": "保险箱加密的主密码",
+    "pollInterval": "轮询间隔（毫秒）",
+    "pool": "Ceph 池名称",
+    "priority": "优先级（1=最高）",
+    "priorityMax": "最大优先级（1-5）",
+    "priorityMin": "最小优先级（1-5）",
+    "protocolAction": "操作（{{actions}}）",
+    "protocolForce": "强制重新注册即使已注册",
+    "protocolParams": "附加参数",
+    "protocolSystem": "系统范围内注册（需要管理员权限）",
+    "protocolSystemUnregister": "注销系统范围的注册（需要管理员权限）",
+    "protocolToken": "身份验证令牌",
+    "rawVault": "原始保险箱 JSON（用于脚本/CI）",
     "region": "区域名称",
+    "remotePath": "仓库内的远程子目录路径",
     "renetPath": "renet 二进制文件的路径（默认：PATH 中的 renet）",
     "repository": "仓库名称（连接到仓库环境）",
     "repositoryShorthand": "仓库名称（--repository 的简写）",
+    "repositoryTag": "仓库标签",
     "saveAs": "将凭证保存到命名上下文",
+    "saveKnownHosts": "测试成功后将 known_hosts 保存到机器保险箱",
+    "searchInField": "在 {{field}} 中搜索",
+    "searchQueue": "在任务 ID、团队、机器、网桥中搜索",
+    "searchRepos": "按名称过滤仓库",
     "sessionName": "会话名称",
+    "skipEnvSetup": "跳过远程环境设置",
+    "snapshot": "RBD 快照名称",
+    "sortByField": "按字段排序",
+    "sortDesc": "按降序排序",
+    "sortDescending": "降序排序",
+    "sortField": "按字段排序",
     "sshKey": "SSH 私钥路径（例如：~/.ssh/id_rsa）",
+    "sshPassword": "用于初始身份验证的 SSH 密码",
     "sshPort": "SSH 端口",
     "sshPrivateKey": "SSH 私钥路径",
     "sshPublicKey": "SSH 公钥路径",
@@ -1062,81 +1269,36 @@
     "team": "团队名称",
     "tfaCode": "用于验证的当前双因素认证代码",
     "tokenName": "令牌名称",
+    "urlOnly": "打印 VS Code URI 而不是启动",
+    "userPassword": "新用户的密码",
+    "vaultContent": "保险箱内容为 JSON 字符串",
+    "vaultJson": "保险箱内容为 JSON 字符串",
+    "vaultJsonMachine": "机器保险箱数据为 JSON 字符串",
+    "vaultVersion": "用于乐观锁定的当前保险箱版本",
+    "verifyChecksum": "同步后使用校验和验证文件",
     "watch": "监视更改",
     "watchUpdates": "监视更新",
-    "yes": "跳过确认提示",
-    "priority": "优先级（1=最高）",
-    "param": "函数参数",
-    "debug": "启用调试输出（本地模式）",
-    "pollInterval": "轮询间隔（毫秒）",
-    "folder": "远程文件夹路径以打开",
-    "urlOnly": "打印 VS Code URI 而不是启动",
-    "newWindow": "在新 VS Code 窗口中打开",
-    "skipEnvSetup": "跳过远程环境设置",
-    "insiders": "使用 VS Code Insiders 设置",
-    "cleanupAll": "移除所有 rediacc SSH 配置",
-    "connectionName": "移除特定连接",
-    "vaultJson": "保险箱内容为 JSON 字符串",
-    "vaultVersion": "用于乐观锁定的当前保险箱版本",
-    "outputPath": "保存输出文件的路径",
-    "importMode": "导入模式（merge 或 replace）",
-    "vaultJsonMachine": "机器保险箱数据为 JSON 字符串",
-    "searchInField": "在 {{field}} 中搜索",
-    "searchRepos": "按名称过滤仓库",
-    "sortByField": "按字段排序",
-    "sortDescending": "降序排序",
-    "sshPassword": "用于初始身份验证的 SSH 密码",
-    "machineForVault": "机器名称（用于测试后更新保险箱）",
-    "saveKnownHosts": "测试成功后将 known_hosts 保存到机器保险箱",
-    "localPath": "本地目录路径（默认：当前目录）",
-    "remotePath": "仓库内的远程子目录路径",
-    "mirrorUpload": "镜像模式 - 删除本地不存在的远程文件",
-    "mirrorDownload": "镜像模式 - 删除远程不存在的本地文件",
-    "verifyChecksum": "同步后使用校验和验证文件",
-    "confirmSync": "预览更改并在同步前请求确认",
-    "excludePatterns": "从同步中排除的模式",
-    "dryRun": "显示将传输的内容而不实际同步",
-    "filterStatus": "按状态过滤",
-    "priorityMin": "最小优先级（1-5）",
-    "priorityMax": "最大优先级（1-5）",
-    "searchQueue": "在任务 ID、团队、机器、网桥中搜索",
-    "sortField": "按字段排序",
-    "sortDesc": "按降序排序",
-    "functionName": "要执行的函数名称",
-    "rawVault": "原始保险箱 JSON（用于脚本/CI）",
-    "userPassword": "新用户的密码",
-    "newPasswordNonInteractive": "新密码（非交互式模式）",
-    "confirmPasswordNonInteractive": "确认密码（非交互式模式）",
-    "repositoryTag": "仓库标签",
-    "parentRepository": "父仓库（用于分叉）",
-    "parentRepositoryTag": "父仓库标签",
-    "protocolSystem": "系统范围内注册（需要管理员权限）",
-    "protocolForce": "强制重新注册即使已注册",
-    "protocolSystemUnregister": "注销系统范围的注册（需要管理员权限）",
-    "outputFormat": "输出格式（json）",
-    "protocolToken": "身份验证令牌",
-    "protocolAction": "操作（{{actions}}）",
-    "protocolParams": "附加参数"
+    "yes": "跳过确认提示"
   },
   "prompts": {
     "apiUrl": "API URL：",
     "cancelled": "已取消",
     "confirm": "确定吗？",
     "confirmDelete": "确定要删除此项吗？",
+    "confirmNewPassword": "确认新密码：",
+    "confirmPassword": "确认密码：",
     "email": "电子邮件：",
     "enterValue": "输入 {{field}}：",
+    "masterPassword": "请输入您的主密码：",
+    "masterPasswordForVault": "请输入保险箱加密的主密码：",
+    "newPassword": "新密码：",
     "password": "密码：",
+    "passwordForUser": "新用户的密码：",
     "selectOption": "选择选项：",
+    "setPassword": "为用户设置密码：",
     "sshPassword": "SSH 密码（如果使用密钥认证，则留空）：",
     "syncConfirm": "\n继续同步吗？[y/N/d(etails)]",
-    "syncConfirmHelp": "请输入 y（是）、n（否）或 d（详情）",
-    "passwordForUser": "新用户的密码：",
-    "confirmPassword": "确认密码：",
-    "setPassword": "为用户设置密码：",
-    "newPassword": "新密码：",
-    "confirmNewPassword": "确认新密码：",
-    "masterPassword": "请输入您的主密码：",
-    "masterPasswordForVault": "请输入保险箱加密的主密码："
+    "syncConfirmHelp": "请输入 y（是）、n（否）或 d（详情）"
   },
   "spinners": {
     "connecting": "正在连接...",
@@ -1158,127 +1320,5 @@
   },
   "table": {
     "noData": "没有要显示的数据"
-  },
-  "common": {
-    "yes": "是",
-    "no": "否",
-    "running": "运行中",
-    "stopped": "已停止",
-    "completed": "已完成",
-    "failed": "失败",
-    "success": "✓ 成功",
-    "unknown": "未知",
-    "inProgress": "进行中"
-  },
-  "docs": {
-    "frontmatter": {
-      "title": "CLI 应用程序",
-      "description": "使用 Rediacc 命令行界面进行平台管理的完整指南",
-      "category": "核心概念"
-    },
-    "pageTitle": "Rediacc CLI 参考",
-    "overview": {
-      "heading": "概述",
-      "text": "**Rediacc CLI**（`rdc`）是一个用于管理 Rediacc 平台所有方面的命令行界面 — 身份验证、基础设施、仓库、队列、存储等。"
-    },
-    "installation": {
-      "heading": "安装",
-      "text": "从 [Rediacc 发布页面](https://www.rediacc.com) 下载适用于您平台的最新二进制文件，或通过包管理器安装："
-    },
-    "globalOptions": {
-      "heading": "全局选项",
-      "intro": "每个命令都支持以下全局标志："
-    },
-    "tableHeaders": {
-      "flag": "标志",
-      "description": "描述",
-      "error": "错误",
-      "meaning": "含义"
-    },
-    "admonitions": {
-      "tip": "提示",
-      "warning": "警告",
-      "note": "注意"
-    },
-    "sectionTitles": {
-      "auth": "身份验证",
-      "context": "上下文管理",
-      "organization": "组织管理",
-      "user": "用户管理",
-      "team": "团队管理",
-      "permission": "权限管理",
-      "region": "区域管理",
-      "bridge": "桥接管理",
-      "machine": "机器管理",
-      "repository": "仓库管理",
-      "storage": "存储管理",
-      "queue": "队列操作",
-      "sync": "文件同步",
-      "vscode": "VS Code 集成",
-      "term": "SSH 终端访问",
-      "ceph": "Ceph 存储管理",
-      "audit": "审计与合规",
-      "protocol": "协议处理器",
-      "shortcuts": "快捷命令（快捷方式）",
-      "update": "CLI 更新"
-    },
-    "errors": {
-      "heading": "常见错误消息",
-      "intro": "当出现问题时，CLI 会提供清晰的错误消息：",
-      "meanings": {
-        "authRequired": "您需要先登录",
-        "noActiveContext": "未选择上下文 — 创建或切换到一个上下文",
-        "permissionDenied": "您的帐户缺少所需的权限",
-        "machineRequired": "使用 `--machine` 指定机器或设置上下文默认值",
-        "teamRequired": "使用 `--team` 指定团队或设置上下文默认值",
-        "regionRequired": "使用 `--region` 指定区域或设置上下文默认值"
-      }
-    },
-    "outputFormats": {
-      "heading": "输出格式",
-      "text": "所有列表/获取命令通过 `--output` 支持多种输出格式：",
-      "closing": "这使得将 Rediacc CLI 集成到脚本、CI/CD 管道和自动化工作流中变得容易。"
-    },
-    "supplements": {
-      "auth": {
-        "tip": "您的身份验证令牌存储在本地上下文中。使用 `--save-as` 将凭据存储在命名上下文下，以便用于多个环境。",
-        "register": {
-          "afterDescription": "注册后，请检查您的电子邮件以获取激活码。"
-        }
-      },
-      "context": {
-        "afterDescription": "上下文存储连接详情（API URL、凭据、默认团队/区域/机器），以便您可以快速在环境之间切换。",
-        "set": {
-          "tip": "设置默认值意味着您不需要在每个命令中传递 `--team`、`--region` 或 `--machine`。"
-        },
-        "createLocal": {
-          "afterDescription": "在本地模式下，您可以直接添加机器："
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "启用维护模式时，非管理员用户无法登录。"
-        }
-      },
-      "machine": {
-        "health": {
-          "afterDescription": "health 命令输出系统指标、容器状态、服务稳定性和存储信息 — 适用于 CI/CD 管道检查。"
-        },
-        "testConnection": {
-          "tip": "使用 `--save-known-hosts` 在测试成功后自动将主机密钥持久化到机器保险库中。"
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "提升 fork 会将其从父（grand）仓库中分离出来，使其独立。"
-        }
-      },
-      "queue": {
-        "afterDescription": "队列系统是 Rediacc 任务执行的核心。每个操作（部署、备份、脚本执行）都通过队列运行。",
-        "trace": {
-          "tip": "使用 `--watch` 实时跟踪任务直到完成。"
-        }
-      }
-    }
   }
 }

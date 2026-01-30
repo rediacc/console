@@ -1,23 +1,11 @@
 {
-  "addSystemFunction": "Ajouter une fonction système à la file d'attente",
-  "addToQueue": "Ajouter à la file d'attente",
-  "advanced": "Avancé",
-  "functions": {
-    "title": "Fonctions",
-    "setup": "Configuration",
-    "hello": "Bonjour"
-  },
-  "info": {
-    "hostname": "Nom d'hôte",
-    "uptime": "Temps de fonctionnement",
-    "cpu": "CPU",
-    "systemTime": "Heure système"
-  },
   "actions": {
     "add": "Ajouter une machine",
     "runOnServer": "Exécuter sur le serveur"
   },
-  "noVaultData": "Aucune donnée de coffre disponible",
+  "addSystemFunction": "Ajouter une fonction système à la file d'attente",
+  "addToQueue": "Ajouter à la file d'attente",
+  "advanced": "Avancé",
   "allMachinesConnected": "Toutes les {{count}} machines sont connectées avec succès",
   "assignedDate": "Date d'affectation",
   "assignmentStatus": {
@@ -106,6 +94,11 @@
     },
     "vaultConfig": "Configuration du coffre-fort (JSON)"
   },
+  "functions": {
+    "hello": "Bonjour",
+    "setup": "Configuration",
+    "title": "Fonctions"
+  },
   "goToMachinesPage": "Page Machines",
   "gridView": "Dépôt",
   "groupBy": "Regrouper par",
@@ -120,6 +113,12 @@
   "heading": "Machines de traitement",
   "hoursAgo": "il y a {{count}} heure",
   "hoursAgo_plural": "Il y a {{count}} heures",
+  "info": {
+    "cpu": "CPU",
+    "hostname": "Nom d'hôte",
+    "systemTime": "Heure système",
+    "uptime": "Temps de fonctionnement"
+  },
   "itemCount": "article | articles",
   "justNow": "Tout à l' heure",
   "lastUpdated": "Dernière mise à jour",
@@ -139,6 +138,7 @@
   "noAvailableMachinesForClone": "Aucune machine disponible pour l'attribution de clone",
   "noMachinesFound": "Aucune machine trouvée",
   "noMachinesWithClusters": "Aucune des machines sélectionnées n'est affectée à un cluster",
+  "noVaultData": "Aucune donnée de coffre disponible",
   "pending": "En attente",
   "placeholders": {
     "selectMachine": "Sélectionnez une machine"

@@ -70,6 +70,17 @@ check_docker() {
     fi
 }
 
+# Check if Go is installed (required for renet build)
+check_go_installed() {
+    if ! command -v go &>/dev/null; then
+        log_error "Go is not installed (required for building renet)"
+        log_info "Install Go from: https://go.dev/dl/"
+        exit 1
+    fi
+
+    log_debug "Go version: $(go version)"
+}
+
 # Load environment file
 load_env() {
     local env_file="$1"
@@ -118,6 +129,43 @@ ensure_packages_built() {
     else
         log_debug "Shared packages are up-to-date"
     fi
+}
+
+# Ensure renet binary is built and up-to-date
+# Builds from Go source with embedded assets (CRIU, rsync)
+# Only rebuilds when Go sources are newer than the binary
+ensure_renet_built() {
+    local renet_dir="$ROOT_DIR/private/renet"
+    local renet_bin="$renet_dir/bin/renet"
+
+    # Check if binary exists and sources haven't changed
+    if [[ -f "$renet_bin" ]]; then
+        local newer_files
+        newer_files=$(find "$renet_dir" \
+            \( -name "*.go" -o -name "go.mod" -o -name "go.sum" \) \
+            -newer "$renet_bin" -type f 2>/dev/null | head -1)
+
+        if [[ -z "$newer_files" ]]; then
+            log_debug "Renet binary is up-to-date"
+            return 0
+        fi
+
+        log_step "Renet sources changed, rebuilding..."
+    else
+        log_step "Building renet (first time, requires Docker for asset extraction)..."
+    fi
+
+    check_go_installed
+
+    # Build renet using the Go build script (handles embed_assets automatically)
+    (cd "$renet_dir" && ./go dev)
+
+    if [[ ! -f "$renet_bin" ]]; then
+        log_error "Renet build failed: binary not found at $renet_bin"
+        exit 1
+    fi
+
+    log_info "Renet built successfully"
 }
 
 # =============================================================================
@@ -236,6 +284,32 @@ dev() {
 
     # Start dev server
     PORT="$PORT_CONSOLE_DEV" npm run dev
+}
+
+# Run CLI in development mode with renet available
+cli() {
+    check_node_version
+
+    log_step "Preparing CLI development environment"
+
+    # Ensure npm dependencies are installed
+    ensure_deps
+
+    # Ensure shared packages are built
+    ensure_packages_built
+
+    # Ensure renet is built and up-to-date
+    ensure_renet_built
+
+    # Add renet binary directory to PATH so CLI can find it
+    local renet_bin_dir="$ROOT_DIR/private/renet/bin"
+    export PATH="$renet_bin_dir:$PATH"
+
+    log_info "Renet available at: $renet_bin_dir/renet"
+    log_step "Starting CLI (dev mode)"
+
+    # Run CLI via tsx, passing through all arguments
+    npx tsx "$ROOT_DIR/packages/cli/src/index.ts" "$@"
 }
 
 # Sandbox mode (no backend required) - preserved from original
@@ -427,6 +501,20 @@ build_packages() {
     "$ROOT_DIR/.ci/scripts/setup/build-packages.sh"
 }
 
+build_renet() {
+    check_go_installed
+    log_step "Building renet binary"
+    local renet_dir="$ROOT_DIR/private/renet"
+    (cd "$renet_dir" && ./go dev)
+
+    if [[ ! -f "$renet_dir/bin/renet" ]]; then
+        log_error "Renet build failed"
+        exit 1
+    fi
+
+    log_info "Renet built: private/renet/bin/renet"
+}
+
 build_all() {
     check_node_version
     log_step "Building all components"
@@ -603,6 +691,7 @@ BACKEND COMMANDS:
 
 DEVELOPMENT COMMANDS:
   dev                 Start development server (auto-starts backend if needed)
+  cli [args...]       Run CLI in dev mode (auto-builds renet with embeddings)
   sandbox             Start in sandbox mode (no backend required)
   worktree <cmd>      Manage git worktrees (create, prune, list)
   setup               Interactive setup wizard
@@ -623,6 +712,7 @@ TEST COMMANDS:
 BUILD COMMANDS:
   build web           Build web application
   build cli           Build CLI application
+  build renet         Build renet binary (Go, with embedded assets)
   build desktop       Build desktop application
   build packages      Build shared packages
   build all           Build everything
@@ -652,11 +742,13 @@ MAINTENANCE:
 
 QUICK START:
   ./run.sh setup          # One-time setup (chooses backend mode)
-  ./run.sh dev            # Start development
+  ./run.sh dev            # Start web development
+  ./run.sh cli auth login # Run CLI command in dev mode
 
 REQUIREMENTS:
   Node.js v${NODE_VERSION_REQUIRED}.x (https://nodejs.org/)
-  Docker (for backend)
+  Go (for CLI/renet development)
+  Docker (for backend, and first-time renet asset extraction)
 
 ENVIRONMENT:
   GITHUB_TOKEN        GitHub personal access token (for ghcr.io auth)
@@ -692,6 +784,7 @@ main() {
 
         # Development
         dev) dev ;;
+        cli) shift; cli "$@" ;;
         sandbox) shift; sandbox "$@" ;;
         worktree) shift; "$ROOT_DIR/scripts/dev/worktree.sh" "$@" ;;
         setup) setup ;;
@@ -720,13 +813,14 @@ main() {
             case "${1:-}" in
                 web) build_web ;;
                 cli) build_cli ;;
+                renet) build_renet ;;
                 desktop) build_desktop ;;
                 packages) build_packages ;;
                 all|"") build_all ;;
                 *)
                     log_error "Unknown build command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh build [web|cli|desktop|packages|all]"
+                    echo "Usage: ./run.sh build [web|cli|renet|desktop|packages|all]"
                     exit 1
                     ;;
             esac

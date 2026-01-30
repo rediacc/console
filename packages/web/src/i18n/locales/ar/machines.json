@@ -1,23 +1,11 @@
 {
-  "addSystemFunction": "إضافة وظيفة النظام إلى قائمة الانتظار",
-  "addToQueue": "إضافة إلى قائمة الانتظار",
-  "advanced": "متقدم",
-  "functions": {
-    "title": "الوظائف",
-    "setup": "الإعداد",
-    "hello": "مرحبا"
-  },
-  "info": {
-    "hostname": "اسم المضيف",
-    "uptime": "وقت التشغيل",
-    "cpu": "المعالج",
-    "systemTime": "وقت النظام"
-  },
   "actions": {
     "add": "إضافة جهاز",
     "runOnServer": "تشغيل على الخادم"
   },
-  "noVaultData": "لا توجد بيانات خزنة متاحة",
+  "addSystemFunction": "إضافة وظيفة النظام إلى قائمة الانتظار",
+  "addToQueue": "إضافة إلى قائمة الانتظار",
+  "advanced": "متقدم",
   "allMachinesConnected": "تم توصيل كافة الأجهزة {{count}} بنجاح",
   "assignedDate": "تاريخ التعيين",
   "assignmentStatus": {
@@ -106,6 +94,11 @@
     },
     "vaultConfig": "تكوين المخزن (JSON)"
   },
+  "functions": {
+    "hello": "مرحبا",
+    "setup": "الإعداد",
+    "title": "الوظائف"
+  },
   "goToMachinesPage": "صفحة الآلات",
   "gridView": "مستودع",
   "groupBy": "تجميع حسب",
@@ -120,6 +113,12 @@
   "heading": "الماكينات",
   "hoursAgo": "{{count}} قبل ساعة",
   "hoursAgo_plural": "قبل {{count}} ساعات",
+  "info": {
+    "cpu": "المعالج",
+    "hostname": "اسم المضيف",
+    "systemTime": "وقت النظام",
+    "uptime": "وقت التشغيل"
+  },
   "itemCount": "البند | أغراض",
   "justNow": "الآن",
   "lastUpdated": "آخر تحديث",
@@ -139,6 +138,7 @@
   "noAvailableMachinesForClone": "لا توجد آلات متاحة لتعيين النسخ",
   "noMachinesFound": "لم يتم العثور على أي آلات",
   "noMachinesWithClusters": "لم يتم تعيين أي من الأجهزة المحددة لمجموعة",
+  "noVaultData": "لا توجد بيانات خزنة متاحة",
   "pending": "قيد الانتظار",
   "placeholders": {
     "selectMachine": "اختر آلة"

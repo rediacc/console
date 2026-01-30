@@ -187,17 +187,71 @@ if [[ -f "$OUTPUT_DIR/${BINARY_NAME}.sha256" ]]; then
     log_info "Checksum: $(cat "$OUTPUT_DIR/${BINARY_NAME}.sha256")"
 fi
 
-# Quick smoke test (skip on cross-platform CI where binary may not run)
+# Quick smoke tests (skip on cross-platform CI where binary may not run)
 if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] && \
    [[ "$ARCH" == "$(detect_arch)" ]]; then
-    log_step "Running smoke test..."
+
+    # Test 1: --version
+    log_step "Running smoke test: --version"
     if "$OUTPUT_DIR/$BINARY_NAME" --version; then
-        log_info "Smoke test passed"
+        log_info "Smoke test (--version) passed"
     else
-        log_warn "Smoke test failed (exit code: $?) - binary may still be valid"
+        log_error "Smoke test (--version) failed (exit code: $?)"
+        exit 1
+    fi
+
+    # Test 2: doctor --output json
+    log_step "Running smoke test: doctor --output json"
+    DOCTOR_OUTPUT=""
+    DOCTOR_EXIT=0
+    DOCTOR_OUTPUT=$("$OUTPUT_DIR/$BINARY_NAME" doctor --output json 2>/dev/null) || DOCTOR_EXIT=$?
+
+    if [[ $DOCTOR_EXIT -le 2 ]] && [[ -n "$DOCTOR_OUTPUT" ]]; then
+        log_info "Doctor exited with code $DOCTOR_EXIT (expected in CI without auth/renet)"
+
+        # Validate JSON
+        if echo "$DOCTOR_OUTPUT" | jq empty 2>/dev/null; then
+            log_info "Doctor JSON output is valid"
+
+            # Validate key checks
+            SEA_MODE=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "SEA mode") | .value')
+            CLI_VERSION=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "CLI version") | .value')
+            NODE_STATUS=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "Node.js") | .status')
+
+            if [[ "$SEA_MODE" == *"yes"* ]]; then
+                log_info "SEA mode: $SEA_MODE"
+            else
+                log_error "SEA mode check failed: '$SEA_MODE'"
+                exit 1
+            fi
+
+            if [[ -n "$CLI_VERSION" ]] && [[ "$CLI_VERSION" != "null" ]]; then
+                log_info "CLI version: $CLI_VERSION"
+            else
+                log_error "CLI version check failed: '$CLI_VERSION'"
+                exit 1
+            fi
+
+            if [[ "$NODE_STATUS" == "ok" ]]; then
+                log_info "Node.js status: $NODE_STATUS"
+            else
+                log_error "Node.js check failed: status='$NODE_STATUS'"
+                exit 1
+            fi
+
+            log_info "Smoke test (doctor) passed"
+        else
+            log_error "Doctor output is not valid JSON"
+            echo "$DOCTOR_OUTPUT"
+            exit 1
+        fi
+    else
+        log_error "Doctor command failed unexpectedly (exit code: $DOCTOR_EXIT)"
+        [[ -n "$DOCTOR_OUTPUT" ]] && echo "$DOCTOR_OUTPUT"
+        exit 1
     fi
 else
-    log_info "Skipping smoke test (cross-platform build)"
+    log_info "Skipping smoke tests (cross-platform build)"
 fi
 
 log_info "CLI SEA build complete: $OUTPUT_DIR/$BINARY_NAME"

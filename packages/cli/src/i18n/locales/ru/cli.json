@@ -5,6 +5,11 @@
   "commands": {
     "audit": {
       "description": "Команды журнала аудита",
+      "history": {
+        "description": "Просмотреть историю объекта",
+        "fetching": "Получение истории объекта...",
+        "success": "История получена"
+      },
       "list": {
         "description": "Список записей журнала аудита",
         "fetching": "Получение журналов аудита..."
@@ -18,14 +23,15 @@
         "description": "Отследить историю аудита объекта",
         "fetching": "Получение трассировки аудита объекта...",
         "success": "Трассировка аудита получена"
-      },
-      "history": {
-        "description": "Просмотреть историю объекта",
-        "fetching": "Получение истории объекта...",
-        "success": "История получена"
       }
     },
     "auth": {
+      "activate": {
+        "activated": "Учетная запись активирована",
+        "activating": "Активация учетной записи...",
+        "description": "Активировать учетную запись с кодом проверки",
+        "success": "Учетная запись активирована! Теперь вы можете войти с помощью: rdc login"
+      },
       "description": "Команды аутентификации",
       "login": {
         "authenticating": "Аутентификация...",
@@ -43,11 +49,6 @@
         "shortcut": "Очистить сохраненные учетные данные (ярлык для: auth logout)",
         "success": "Выход выполнен успешно"
       },
-      "status": {
-        "description": "Проверить статус текущей аутентификации",
-        "authenticated": "Аутентифицирован как: {{email}}",
-        "notAuthenticated": "Не аутентифицирован. Выполните: rdc login"
-      },
       "register": {
         "description": "Зарегистрировать новую организацию и учетную запись пользователя",
         "nextStep": "Затем выполните: rdc auth activate -e <email> -p <password> --code <code>",
@@ -55,11 +56,10 @@
         "submitted": "Регистрация отправлена",
         "success": "Регистрация успешна! Проверьте электронную почту для получения кода активации."
       },
-      "activate": {
-        "activated": "Учетная запись активирована",
-        "activating": "Активация учетной записи...",
-        "description": "Активировать учетную запись с кодом проверки",
-        "success": "Учетная запись активирована! Теперь вы можете войти с помощью: rdc login"
+      "status": {
+        "authenticated": "Аутентифицирован как: {{email}}",
+        "description": "Проверить статус текущей аутентификации",
+        "notAuthenticated": "Не аутентифицирован. Выполните: rdc login"
       },
       "tfa": {
         "description": "Управление двухфакторной аутентификацией",
@@ -117,24 +117,57 @@
       }
     },
     "ceph": {
-      "description": "Управление распределённым хранилищем Ceph",
+      "clone": {
+        "assign": {
+          "assigning": "Назначение машин клону \"{{name}}\"...",
+          "description": "Назначить машины клону",
+          "success": "Машины назначены клону \"{{name}}\""
+        },
+        "create": {
+          "creating": "Создание клона RBD \"{{name}}\"...",
+          "description": "Создать новый клон RBD из снимка",
+          "success": "Клон RBD \"{{name}}\" создан"
+        },
+        "delete": {
+          "confirm": "Удалить клон RBD \"{{name}}\"?",
+          "deleting": "Удаление клона RBD \"{{name}}\"...",
+          "description": "Удалить клон RBD",
+          "success": "Клон RBD \"{{name}}\" удалён"
+        },
+        "description": "Управление клонами RBD Ceph",
+        "list": {
+          "description": "Показать список клонов RBD",
+          "fetching": "Получение клонов RBD...",
+          "success": "Клоны получены"
+        },
+        "machines": {
+          "description": "Показать список машин, назначенных клону",
+          "fetching": "Получение машин клона...",
+          "success": "Машины клона получены"
+        },
+        "unassign": {
+          "description": "Удалить машины из клона",
+          "success": "Машины удалены из клона \"{{name}}\"",
+          "unassigning": "Удаление машин из клона \"{{name}}\"..."
+        }
+      },
       "cluster": {
+        "create": {
+          "creating": "Создание кластера Ceph \"{{name}}\"...",
+          "description": "Создать новый кластер Ceph",
+          "success": "Кластер Ceph \"{{name}}\" создан"
+        },
+        "delete": {
+          "confirm": "Удалить кластер Ceph \"{{name}}\"?",
+          "deleting": "Удаление кластера Ceph \"{{name}}\"...",
+          "description": "Удалить кластер Ceph",
+          "success": "Кластер Ceph \"{{name}}\" удалён"
+        },
         "description": "Управление кластерами Ceph",
         "list": {
           "description": "Показать список кластеров Ceph",
           "fetching": "Получение кластеров Ceph...",
           "success": "Кластеры получены"
-        },
-        "create": {
-          "description": "Создать новый кластер Ceph",
-          "creating": "Создание кластера Ceph \"{{name}}\"...",
-          "success": "Кластер Ceph \"{{name}}\" создан"
-        },
-        "delete": {
-          "description": "Удалить кластер Ceph",
-          "confirm": "Удалить кластер Ceph \"{{name}}\"?",
-          "deleting": "Удаление кластера Ceph \"{{name}}\"...",
-          "success": "Кластер Ceph \"{{name}}\" удалён"
         },
         "machines": {
           "description": "Показать список машин в кластере Ceph",
@@ -150,28 +183,48 @@
           },
           "update": {
             "description": "Обновить данные хранилища кластера",
-            "updating": "Обновление хранилища кластера для \"{{name}}\"...",
-            "success": "Хранилище кластера для \"{{name}}\" обновлено"
+            "success": "Хранилище кластера для \"{{name}}\" обновлено",
+            "updating": "Обновление хранилища кластера для \"{{name}}\"..."
           }
         }
       },
+      "description": "Управление распределённым хранилищем Ceph",
+      "image": {
+        "create": {
+          "creating": "Создание образа RBD \"{{name}}\"...",
+          "description": "Создать новый образ RBD",
+          "success": "Образ RBD \"{{name}}\" создан"
+        },
+        "delete": {
+          "confirm": "Удалить образ RBD \"{{name}}\"?",
+          "deleting": "Удаление образа RBD \"{{name}}\"...",
+          "description": "Удалить образ RBD",
+          "success": "Образ RBD \"{{name}}\" удалён"
+        },
+        "description": "Управление образами RBD Ceph",
+        "list": {
+          "description": "Показать список образов RBD",
+          "fetching": "Получение образов RBD...",
+          "success": "Образы получены"
+        }
+      },
       "pool": {
+        "create": {
+          "creating": "Создание пула Ceph \"{{name}}\"...",
+          "description": "Создать новый пул Ceph",
+          "success": "Пул Ceph \"{{name}}\" создан"
+        },
+        "delete": {
+          "confirm": "Удалить пул Ceph \"{{name}}\"?",
+          "deleting": "Удаление пула Ceph \"{{name}}\"...",
+          "description": "Удалить пул Ceph",
+          "success": "Пул Ceph \"{{name}}\" удалён"
+        },
         "description": "Управление пулами Ceph",
         "list": {
           "description": "Показать список пулов Ceph",
           "fetching": "Получение пулов Ceph...",
           "success": "Пулы получены"
-        },
-        "create": {
-          "description": "Создать новый пул Ceph",
-          "creating": "Создание пула Ceph \"{{name}}\"...",
-          "success": "Пул Ceph \"{{name}}\" создан"
-        },
-        "delete": {
-          "description": "Удалить пул Ceph",
-          "confirm": "Удалить пул Ceph \"{{name}}\"?",
-          "deleting": "Удаление пула Ceph \"{{name}}\"...",
-          "success": "Пул Ceph \"{{name}}\" удалён"
         },
         "vault": {
           "description": "Управление хранилищем пула Ceph",
@@ -182,280 +235,278 @@
           },
           "update": {
             "description": "Обновить данные хранилища пула",
-            "updating": "Обновление хранилища пула для \"{{name}}\"...",
-            "success": "Хранилище пула для \"{{name}}\" обновлено"
+            "success": "Хранилище пула для \"{{name}}\" обновлено",
+            "updating": "Обновление хранилища пула для \"{{name}}\"..."
           }
         }
       },
-      "image": {
-        "description": "Управление образами RBD Ceph",
-        "list": {
-          "description": "Показать список образов RBD",
-          "fetching": "Получение образов RBD...",
-          "success": "Образы получены"
-        },
+      "snapshot": {
         "create": {
-          "description": "Создать новый образ RBD",
-          "creating": "Создание образа RBD \"{{name}}\"...",
-          "success": "Образ RBD \"{{name}}\" создан"
+          "creating": "Создание снимка RBD \"{{name}}\"...",
+          "description": "Создать новый снимок RBD",
+          "success": "Снимок RBD \"{{name}}\" создан"
         },
         "delete": {
-          "description": "Удалить образ RBD",
-          "confirm": "Удалить образ RBD \"{{name}}\"?",
-          "deleting": "Удаление образа RBD \"{{name}}\"...",
-          "success": "Образ RBD \"{{name}}\" удалён"
-        }
-      },
-      "snapshot": {
+          "confirm": "Удалить снимок RBD \"{{name}}\"?",
+          "deleting": "Удаление снимка RBD \"{{name}}\"...",
+          "description": "Удалить снимок RBD",
+          "success": "Снимок RBD \"{{name}}\" удалён"
+        },
         "description": "Управление снимками RBD Ceph",
         "list": {
           "description": "Показать список снимков RBD",
           "fetching": "Получение снимков RBD...",
           "success": "Снимки получены"
-        },
-        "create": {
-          "description": "Создать новый снимок RBD",
-          "creating": "Создание снимка RBD \"{{name}}\"...",
-          "success": "Снимок RBD \"{{name}}\" создан"
-        },
-        "delete": {
-          "description": "Удалить снимок RBD",
-          "confirm": "Удалить снимок RBD \"{{name}}\"?",
-          "deleting": "Удаление снимка RBD \"{{name}}\"...",
-          "success": "Снимок RBD \"{{name}}\" удалён"
-        }
-      },
-      "clone": {
-        "description": "Управление клонами RBD Ceph",
-        "list": {
-          "description": "Показать список клонов RBD",
-          "fetching": "Получение клонов RBD...",
-          "success": "Клоны получены"
-        },
-        "create": {
-          "description": "Создать новый клон RBD из снимка",
-          "creating": "Создание клона RBD \"{{name}}\"...",
-          "success": "Клон RBD \"{{name}}\" создан"
-        },
-        "delete": {
-          "description": "Удалить клон RBD",
-          "confirm": "Удалить клон RBD \"{{name}}\"?",
-          "deleting": "Удаление клона RBD \"{{name}}\"...",
-          "success": "Клон RBD \"{{name}}\" удалён"
-        },
-        "machines": {
-          "description": "Показать список машин, назначенных клону",
-          "fetching": "Получение машин клона...",
-          "success": "Машины клона получены"
-        },
-        "assign": {
-          "description": "Назначить машины клону",
-          "assigning": "Назначение машин клону \"{{name}}\"...",
-          "success": "Машины назначены клону \"{{name}}\""
-        },
-        "unassign": {
-          "description": "Удалить машины из клона",
-          "unassigning": "Удаление машин из клона \"{{name}}\"...",
-          "success": "Машины удалены из клона \"{{name}}\""
         }
       }
     },
     "context": {
-      "description": "Управление контекстами CLI",
-      "list": {
-        "description": "Список всех контекстов",
-        "noContexts": "Контексты не настроены"
+      "addMachine": {
+        "description": "Добавить машину в текущий локальный контекст",
+        "success": "Машина \"{{name}}\" добавлена ({{user}}@{{ip}})"
       },
-      "show": {
-        "description": "Показать детали текущего контекста",
-        "noContext": "Нет активного контекста"
-      },
-      "use": {
-        "description": "Переключиться на другой контекст",
-        "switched": "Переключено на контекст \"{{name}}\""
+      "clear": {
+        "allCleared": "Очищены все значения по умолчанию",
+        "description": "Очистить значения по умолчанию (все или определенный ключ)",
+        "keyCleared": "Очищено \"{{key}}\""
       },
       "create": {
         "description": "Создать новый контекст",
         "success": "Контекст \"{{name}}\" создан"
       },
-      "delete": {
-        "description": "Удалить контекст",
-        "success": "Контекст \"{{name}}\" удален",
-        "confirm": "Вы уверены, что хотите удалить контекст \"{{name}}\"?"
-      },
-      "rename": {
-        "description": "Переименовать контекст",
-        "success": "Контекст переименован с \"{{oldName}}\" на \"{{newName}}\""
+      "createLocal": {
+        "description": "Создать новый локальный контекст для работы без middleware",
+        "nextStep": "Добавьте машины с помощью: rdc context add-machine <name> --ip <ip> --user <user>",
+        "success": "Локальный контекст \"{{name}}\" создан"
       },
       "current": {
         "description": "Показать имя текущего контекста",
         "noContext": "Нет активного контекста"
       },
+      "delete": {
+        "confirm": "Вы уверены, что хотите удалить контекст \"{{name}}\"?",
+        "description": "Удалить контекст",
+        "success": "Контекст \"{{name}}\" удален"
+      },
+      "description": "Управление контекстами CLI",
+      "list": {
+        "description": "Список всех контекстов",
+        "noContexts": "Контексты не настроены"
+      },
+      "machines": {
+        "description": "Список машин в текущем локальном контексте",
+        "noMachines": "Машины не настроены. Добавьте одну с помощью: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "removeMachine": {
+        "description": "Удалить машину из текущего локального контекста",
+        "success": "Машина \"{{name}}\" удалена"
+      },
+      "rename": {
+        "description": "Переименовать контекст",
+        "success": "Контекст переименован с \"{{oldName}}\" на \"{{newName}}\""
+      },
       "set": {
         "description": "Установить значение по умолчанию (team, region, bridge, machine)",
         "success": "Установлено \"{{key}}\" в \"{{value}}\""
-      },
-      "unset": {
-        "description": "Удалить значение контекста по умолчанию",
-        "success": "Удалено {{key}} из текущего контекста"
-      },
-      "clear": {
-        "description": "Очистить значения по умолчанию (все или определенный ключ)",
-        "keyCleared": "Очищено \"{{key}}\"",
-        "allCleared": "Очищены все значения по умолчанию"
       },
       "setLanguage": {
         "description": "Установить предпочитаемый язык",
         "success": "Язык установлен на \"{{code}}\"",
         "unsupported": "Неподдерживаемый язык. Поддерживаемые: {{languages}}"
       },
-      "createLocal": {
-        "description": "Создать новый локальный контекст для работы без middleware",
-        "success": "Локальный контекст \"{{name}}\" создан",
-        "nextStep": "Добавьте машины с помощью: rdc context add-machine <name> --ip <ip> --user <user>"
-      },
-      "addMachine": {
-        "description": "Добавить машину в текущий локальный контекст",
-        "success": "Машина \"{{name}}\" добавлена ({{user}}@{{ip}})"
-      },
-      "removeMachine": {
-        "description": "Удалить машину из текущего локального контекста",
-        "success": "Машина \"{{name}}\" удалена"
-      },
-      "machines": {
-        "description": "Список машин в текущем локальном контексте",
-        "noMachines": "Машины не настроены. Добавьте одну с помощью: rdc context add-machine <name> --ip <ip> --user <user>"
+      "setRenet": {
+        "description": "Установить путь к двоичному файлу renet для локального режима",
+        "success": "Путь Renet установлен на: {{path}}"
       },
       "setSsh": {
         "description": "Обновить конфигурацию SSH для текущего локального контекста",
         "success": "Конфигурация SSH обновлена"
       },
-      "setRenet": {
-        "description": "Установить путь к двоичному файлу renet для локального режима",
-        "success": "Путь Renet установлен на: {{path}}"
+      "show": {
+        "description": "Показать детали текущего контекста",
+        "noContext": "Нет активного контекста"
+      },
+      "unset": {
+        "description": "Удалить значение контекста по умолчанию",
+        "success": "Удалено {{key}} из текущего контекста"
+      },
+      "use": {
+        "description": "Переключиться на другой контекст",
+        "switched": "Переключено на контекст \"{{name}}\""
       }
     },
+    "doctor": {
+      "allPassed": "Все проверки пройдены",
+      "checks": {
+        "activeContext": "Активный контекст",
+        "authStatus": "Status",
+        "cliVersion": "Версия CLI",
+        "contextMode": "Режим контекста",
+        "dockerAvailable": "Docker",
+        "goInstalled": "Go",
+        "machines": "Machines",
+        "nodeVersion": "Node.js",
+        "renetBinary": "Бинарный файл",
+        "renetCriu": "Встроенный CRIU",
+        "renetRsync": "Встроенный rsync",
+        "renetVersion": "Version",
+        "seaMode": "Режим SEA",
+        "sshKey": "SSH-ключ"
+      },
+      "description": "Диагностика среды CLI и интеграции renet",
+      "devMode": "нет (режим разработки)",
+      "hasErrors": "{{count}} ошибка(ок)",
+      "hasWarnings": "{{count}} предупреждение(й)",
+      "notAuthenticated": "не аутентифицирован",
+      "notConfigured": "не настроен",
+      "notInstalled": "не установлен",
+      "seaActive": "да (Single Executable Application)",
+      "sections": {
+        "authentication": "Аутентификация",
+        "configuration": "Configuration",
+        "environment": "Среда",
+        "renet": "Renet"
+      },
+      "status": {
+        "fail": "ОШИБКА",
+        "ok": "OK",
+        "warn": "ПРЕДУПРЕЖДЕНИЕ"
+      },
+      "title": "Диагностика Rediacc CLI"
+    },
     "machine": {
+      "containers": {
+        "allHealthy": "Все контейнеры здоровы",
+        "description": "Список Docker-контейнеров на машине",
+        "fetched": "Контейнеры получены",
+        "fetching": "Получение контейнеров...",
+        "healthCheck": "Режим проверки состояния - завершается с кодом 2 при наличии нездоровых",
+        "noContainers": "На этой машине контейнеры не найдены",
+        "unhealthyFound": "Найдено {{count}} нездоровых контейнера(ов)"
+      },
+      "create": {
+        "creating": "Создание машины...",
+        "description": "Создать новую машину",
+        "success": "Машина \"{{name}}\" создана"
+      },
+      "delete": {
+        "confirm": "Вы уверены, что хотите удалить машину \"{{name}}\"?",
+        "deleting": "Удаление машины...",
+        "description": "Удалить машину",
+        "success": "Машина \"{{name}}\" удалена"
+      },
       "description": "Управление машиной",
+      "health": {
+        "containersSection": "\nКонтейнеры:",
+        "containersSummary": "  {{running}}/{{total}} работает ({{healthy}} здоровых, {{unhealthy}} нездоровых)",
+        "description": "Проверить состояние машины для CI/CD пайплайнов",
+        "exitCode": "\nКод завершения: {{code}}",
+        "fetched": "Данные о состоянии получены",
+        "fetching": "Получение состояния машины...",
+        "header": "\nПроверка состояния для {{name}}:",
+        "issuesSection": "\nПроблемы:",
+        "noData": "Нет данных о статусе для машины",
+        "repositoriesSection": "\nРепозитории:",
+        "repositoriesSummary": "  {{mounted}}/{{total}} смонтировано ({{docker}} с Docker)",
+        "servicesSection": "\nСервисы:",
+        "servicesSummary": "  {{active}}/{{total}} активных ({{failed}} сбойных)",
+        "statusCritical": "✗ Статус: КРИТИЧЕСКИЙ",
+        "statusError": "✗ Статус: ОШИБКА",
+        "statusHealthy": "✓ Статус: ЗДОРОВ",
+        "statusWarning": "⚠ Статус: ПРЕДУПРЕЖДЕНИЕ",
+        "storageSection": "\nХранилище:",
+        "storageSmart": "  SMART: {{healthy}} здоровых, {{failing}} сбойных",
+        "storageTemp": "  Макс. температура: {{temp}}°C",
+        "systemDatastore": "  Хранилище данных: {{percent}}",
+        "systemDisk": "  Диск: {{percent}}",
+        "systemMemory": "  Память: {{percent}}",
+        "systemSection": "\nСистема:",
+        "systemUptime": "  Время работы: {{uptime}}"
+      },
       "list": {
         "description": "Список машин",
         "fetching": "Получение машин..."
       },
-      "create": {
-        "description": "Создать новую машину",
-        "creating": "Создание машины...",
-        "success": "Машина \"{{name}}\" создана"
+      "repos": {
+        "description": "Список развернутых репозиториев на машине",
+        "fetched": "Машина получена",
+        "fetching": "Получение машины...",
+        "noRepos": "На этой машине нет развернутых репозиториев"
       },
-      "delete": {
-        "description": "Удалить машину",
-        "deleting": "Удаление машины...",
-        "success": "Машина \"{{name}}\" удалена",
-        "confirm": "Вы уверены, что хотите удалить машину \"{{name}}\"?"
+      "services": {
+        "allStable": "Все сервисы стабильны",
+        "description": "Список systemd-сервисов на машине",
+        "fetched": "Сервисы получены",
+        "fetching": "Получение сервисов...",
+        "noServices": "На этой машине не найдено rediacc-сервисов",
+        "stabilityCheck": "Режим проверки стабильности - завершается с кодом 2 при наличии сбойных/перезапускающихся",
+        "unstableFound": "Найдено {{count}} нестабильных сервиса(ов)"
+      },
+      "testConnection": {
+        "authMethod": "  Метод аутентификации: {{method}}",
+        "created": "Задача создана",
+        "creating": "Создание задачи тестирования SSH...",
+        "description": "Тестировать SSH-соединение с машиной и захватить ключ хоста",
+        "error": "Ошибка: {{error}}",
+        "knownHosts": "  Запись хоста: {{entry}}",
+        "message": "  Сообщение: {{message}}",
+        "publicKeyDeployed": "  Открытый ключ развернут: {{status}}",
+        "rawOutput": "Необработанный вывод:",
+        "results": "Результаты теста SSH:",
+        "saved": "Запись хоста сохранена в хранилище машины",
+        "saving": "Сохранение known_hosts в хранилище машины \"{{machine}}\"...",
+        "sshKeyConfigured": "  SSH ключ настроен: {{status}}",
+        "statusResult": "  Статус: {{status}}",
+        "taskId": "ID задачи: {{taskId}}",
+        "testing": "Тестирование SSH-соединения с {{user}}@{{ip}}:{{port}}...",
+        "testResult": "SSH тест {{result}}",
+        "timeout": "Время ожидания истекло",
+        "timeoutMessage": "Время ожидания подключения истекло. Проверьте детали трассировки очереди.",
+        "waiting": "Ожидание результата теста SSH...",
+        "waitingTime": "Ожидание результата теста SSH... ({{seconds}}s)"
       },
       "update": {
         "description": "Обновить конфигурацию машины",
-        "updating": "Обновление машины...",
-        "success": "Машина \"{{name}}\" обновлена"
-      },
-      "health": {
-        "description": "Проверить состояние машины для CI/CD пайплайнов",
-        "fetching": "Получение состояния машины...",
-        "fetched": "Данные о состоянии получены",
-        "header": "\nПроверка состояния для {{name}}:",
-        "statusHealthy": "✓ Статус: ЗДОРОВ",
-        "statusWarning": "⚠ Статус: ПРЕДУПРЕЖДЕНИЕ",
-        "statusError": "✗ Статус: ОШИБКА",
-        "statusCritical": "✗ Статус: КРИТИЧЕСКИЙ",
-        "noData": "Нет данных о статусе для машины",
-        "systemSection": "\nСистема:",
-        "systemUptime": "  Время работы: {{uptime}}",
-        "systemMemory": "  Память: {{percent}}",
-        "systemDisk": "  Диск: {{percent}}",
-        "systemDatastore": "  Хранилище данных: {{percent}}",
-        "containersSection": "\nКонтейнеры:",
-        "containersSummary": "  {{running}}/{{total}} работает ({{healthy}} здоровых, {{unhealthy}} нездоровых)",
-        "servicesSection": "\nСервисы:",
-        "servicesSummary": "  {{active}}/{{total}} активных ({{failed}} сбойных)",
-        "storageSection": "\nХранилище:",
-        "storageSmart": "  SMART: {{healthy}} здоровых, {{failing}} сбойных",
-        "storageTemp": "  Макс. температура: {{temp}}°C",
-        "repositoriesSection": "\nРепозитории:",
-        "repositoriesSummary": "  {{mounted}}/{{total}} смонтировано ({{docker}} с Docker)",
-        "issuesSection": "\nПроблемы:",
-        "exitCode": "\nКод завершения: {{code}}"
-      },
-      "containers": {
-        "description": "Список Docker-контейнеров на машине",
-        "fetching": "Получение контейнеров...",
-        "fetched": "Контейнеры получены",
-        "noContainers": "На этой машине контейнеры не найдены",
-        "healthCheck": "Режим проверки состояния - завершается с кодом 2 при наличии нездоровых",
-        "allHealthy": "Все контейнеры здоровы",
-        "unhealthyFound": "Найдено {{count}} нездоровых контейнера(ов)"
-      },
-      "services": {
-        "description": "Список systemd-сервисов на машине",
-        "fetching": "Получение сервисов...",
-        "fetched": "Сервисы получены",
-        "noServices": "На этой машине не найдено rediacc-сервисов",
-        "stabilityCheck": "Режим проверки стабильности - завершается с кодом 2 при наличии сбойных/перезапускающихся",
-        "allStable": "Все сервисы стабильны",
-        "unstableFound": "Найдено {{count}} нестабильных сервиса(ов)"
+        "success": "Машина \"{{name}}\" обновлена",
+        "updating": "Обновление машины..."
       },
       "vaultStatus": {
+        "deployedRepos": "\nРазвернутые репозитории:",
         "description": "Показать статус разобранного хранилища для машины",
-        "fetching": "Получение машины...",
+        "dockerRunning": "  Docker работает: {{count}}",
         "fetched": "Машина получена",
+        "fetching": "Получение машины...",
         "header": "\nСтатус хранилища для {{name}}:",
+        "mounted": "  Смонтировано: {{count}}",
+        "repoDocker": "    Docker: {{status}}",
+        "repoMounted": "    Смонтировано: {{mounted}}",
         "status": "  Статус: {{status}}",
-        "systemSection": "\nСистема:",
-        "systemUptime": "  Время работы: {{uptime}}",
+        "systemDatastore": "  Хранилище данных: {{used}} / {{total}} ({{percent}})",
+        "systemDisk": "  Диск: {{used}} / {{total}} ({{percent}})",
         "systemHostname": "  Имя хоста: {{hostname}}",
         "systemMemory": "  Память: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  Диск: {{used}} / {{total}} ({{percent}})",
-        "systemDatastore": "  Хранилище данных: {{used}} / {{total}} ({{percent}})",
-        "totalRepos": "  Всего репозиториев: {{count}}",
-        "mounted": "  Смонтировано: {{count}}",
-        "dockerRunning": "  Docker работает: {{count}}",
-        "deployedRepos": "\nРазвернутые репозитории:",
-        "repoMounted": "    Смонтировано: {{mounted}}",
-        "repoDocker": "    Docker: {{status}}"
-      },
-      "repos": {
-        "description": "Список развернутых репозиториев на машине",
-        "fetching": "Получение машины...",
-        "fetched": "Машина получена",
-        "noRepos": "На этой машине нет развернутых репозиториев"
-      },
-      "testConnection": {
-        "description": "Тестировать SSH-соединение с машиной и захватить ключ хоста",
-        "testing": "Тестирование SSH-соединения с {{user}}@{{ip}}:{{port}}...",
-        "creating": "Создание задачи тестирования SSH...",
-        "created": "Задача создана",
-        "taskId": "ID задачи: {{taskId}}",
-        "waiting": "Ожидание результата теста SSH...",
-        "waitingTime": "Ожидание результата теста SSH... ({{seconds}}s)",
-        "testResult": "SSH тест {{result}}",
-        "rawOutput": "Необработанный вывод:",
-        "error": "Ошибка: {{error}}",
-        "timeout": "Время ожидания истекло",
-        "timeoutMessage": "Время ожидания подключения истекло. Проверьте детали трассировки очереди.",
-        "results": "Результаты теста SSH:",
-        "statusResult": "  Статус: {{status}}",
-        "authMethod": "  Метод аутентификации: {{method}}",
-        "sshKeyConfigured": "  SSH ключ настроен: {{status}}",
-        "publicKeyDeployed": "  Открытый ключ развернут: {{status}}",
-        "knownHosts": "  Запись хоста: {{entry}}",
-        "message": "  Сообщение: {{message}}",
-        "saving": "Сохранение known_hosts в хранилище машины \"{{machine}}\"...",
-        "saved": "Запись хоста сохранена в хранилище машины"
+        "systemSection": "\nСистема:",
+        "systemUptime": "  Время работы: {{uptime}}",
+        "totalRepos": "  Всего репозиториев: {{count}}"
       }
     },
     "organization": {
+      "dashboard": {
+        "description": "Получить данные панели управления организации",
+        "fetching": "Получение панели управления...",
+        "success": "Панель управления получена"
+      },
       "description": "Команды управления организацией",
-      "list": {
-        "description": "Список организаций",
-        "fetching": "Получение организаций..."
+      "export": {
+        "description": "Экспортировать данные организации",
+        "exported": "Экспортировано в {{path}}",
+        "exporting": "Экспорт данных организации...",
+        "success": "Экспорт завершен"
+      },
+      "import": {
+        "description": "Импортировать данные организации",
+        "importing": "Импорт данных организации...",
+        "success": "Импорт завершен"
       },
       "info": {
         "description": "Получить информацию об организации",
@@ -463,10 +514,16 @@
         "notFound": "Информация об организации не найдена",
         "success": "Информация об организации получена"
       },
-      "dashboard": {
-        "description": "Получить данные панели управления организации",
-        "fetching": "Получение панели управления...",
-        "success": "Панель управления получена"
+      "list": {
+        "description": "Список организаций",
+        "fetching": "Получение организаций..."
+      },
+      "maintenance": {
+        "description": "Включить или отключить режим обслуживания (блокирует входы не-администраторов)",
+        "disabled": "Режим обслуживания отключен",
+        "disabling": "Отключение режима обслуживания...",
+        "enabled": "Режим обслуживания включен",
+        "enabling": "Включение режима обслуживания..."
       },
       "vault": {
         "description": "Управление хранилищем организации",
@@ -486,42 +543,19 @@
           "success": "Хранилище организации обновлено",
           "updating": "Обновление хранилища организации..."
         }
-      },
-      "export": {
-        "description": "Экспортировать данные организации",
-        "exported": "Экспортировано в {{path}}",
-        "exporting": "Экспорт данных организации...",
-        "success": "Экспорт завершен"
-      },
-      "import": {
-        "description": "Импортировать данные организации",
-        "importing": "Импорт данных организации...",
-        "success": "Импорт завершен"
-      },
-      "maintenance": {
-        "description": "Включить или отключить режим обслуживания (блокирует входы не-администраторов)",
-        "disabled": "Режим обслуживания отключен",
-        "disabling": "Отключение режима обслуживания...",
-        "enabled": "Режим обслуживания включен",
-        "enabling": "Включение режима обслуживания..."
       }
     },
     "permission": {
-      "description": "Команды управления разрешениями",
-      "list": {
-        "description": "Список разрешений",
-        "fetching": "Получение разрешений..."
+      "add": {
+        "adding": "Добавление разрешения \"{{permission}}\" в группу \"{{group}}\"...",
+        "description": "Добавить разрешение в группу",
+        "success": "Разрешение добавлено"
       },
+      "description": "Команды управления разрешениями",
       "group": {
-        "description": "Управление группой разрешений",
-        "list": {
-          "description": "Список всех групп разрешений",
-          "fetching": "Получение групп разрешений...",
-          "success": "Группы разрешений получены"
-        },
         "create": {
-          "description": "Создать новую группу разрешений",
           "creating": "Создание группы разрешений \"{{name}}\"...",
+          "description": "Создать новую группу разрешений",
           "success": "Группа разрешений \"{{name}}\" создана"
         },
         "delete": {
@@ -530,16 +564,21 @@
           "description": "Удалить группу разрешений",
           "success": "Группа разрешений \"{{name}}\" удалена"
         },
+        "description": "Управление группой разрешений",
+        "list": {
+          "description": "Список всех групп разрешений",
+          "fetching": "Получение групп разрешений...",
+          "success": "Группы разрешений получены"
+        },
         "show": {
           "description": "Показать детали группы разрешений",
           "fetching": "Получение деталей группы разрешений...",
           "success": "Детали получены"
         }
       },
-      "add": {
-        "adding": "Добавление разрешения \"{{permission}}\" в группу \"{{group}}\"...",
-        "description": "Добавить разрешение в группу",
-        "success": "Разрешение добавлено"
+      "list": {
+        "description": "Список разрешений",
+        "fetching": "Получение разрешений..."
       },
       "remove": {
         "description": "Удалить разрешение из группы",
@@ -548,73 +587,79 @@
       }
     },
     "protocol": {
-      "description": "Управление регистрацией обработчика протокола {{scheme}}:// и обработкой URL",
-      "register": {
-        "description": "Зарегистрировать обработчик протокола в системе",
-        "systemWide": "Регистрация обработчика протокола в масштабе системы...",
-        "adminRequired": "Примечание: Это может потребовать привилегий администратора/root.",
-        "currentUser": "Регистрация обработчика протокола для текущего пользователя...",
-        "registering": "Регистрация обработчика протокола...",
-        "success": "\nОбработчик протокола {{scheme}}:// успешно зарегистрирован.",
-        "exampleUrls": "\nТеперь вы можете открывать URL-адреса вроде:"
-      },
-      "unregister": {
-        "description": "Отменить регистрацию обработчика протокола из системы",
-        "unregistering": "Отмена регистрации обработчика протокола...",
-        "success": "\nОбработчик протокола {{scheme}}:// успешно не зарегистрирован."
-      },
-      "status": {
-        "description": "Показать статус регистрации обработчика протокола",
-        "title": "\nСтатус обработчика протокола",
-        "platform": "Платформа:",
-        "supported": "Поддерживается:",
-        "registered": "Зарегистрирован:",
-        "userRegistration": "Регистрация пользователя:",
-        "systemRegistration": "Регистрация системы:",
-        "handlerCommand": "Команда обработчика:",
-        "error": "\nОшибка: {{error}}",
-        "registerHint": "\nДля регистрации обработчика протокола выполните:"
-      },
-      "open": {
-        "description": "Открыть {{scheme}}:// URL и выполнить действие",
-        "parsedUrl": "\nРазобранный URL протокола:",
-        "token": "Токен:",
-        "team": "Команда:",
-        "machine": "Машина:",
-        "repository": "Репозиторий:",
-        "action": "Действие:",
-        "params": "Параметры:",
-        "cliCommand": "\nЭквивалентная команда CLI:",
-        "executing": "\nВыполнение действия...\n"
-      },
       "build": {
         "description": "Построить {{scheme}}:// URL из компонентов"
       },
-      "parse": {
-        "description": "Разобрать {{scheme}}:// URL и показать компоненты",
+      "description": "Управление регистрацией обработчика протокола {{scheme}}:// и обработкой URL",
+      "open": {
+        "action": "Действие:",
+        "cliCommand": "\nЭквивалентная команда CLI:",
+        "description": "Открыть {{scheme}}:// URL и выполнить действие",
+        "executing": "\nВыполнение действия...\n",
+        "machine": "Машина:",
+        "params": "Параметры:",
         "parsedUrl": "\nРазобранный URL протокола:",
-        "cliCommand": "\nКоманда CLI:"
+        "repository": "Репозиторий:",
+        "team": "Команда:",
+        "token": "Токен:"
+      },
+      "parse": {
+        "cliCommand": "\nКоманда CLI:",
+        "description": "Разобрать {{scheme}}:// URL и показать компоненты",
+        "parsedUrl": "\nРазобранный URL протокола:"
+      },
+      "register": {
+        "adminRequired": "Примечание: Это может потребовать привилегий администратора/root.",
+        "currentUser": "Регистрация обработчика протокола для текущего пользователя...",
+        "description": "Зарегистрировать обработчик протокола в системе",
+        "exampleUrls": "\nТеперь вы можете открывать URL-адреса вроде:",
+        "registering": "Регистрация обработчика протокола...",
+        "success": "\nОбработчик протокола {{scheme}}:// успешно зарегистрирован.",
+        "systemWide": "Регистрация обработчика протокола в масштабе системы..."
+      },
+      "status": {
+        "description": "Показать статус регистрации обработчика протокола",
+        "error": "\nОшибка: {{error}}",
+        "handlerCommand": "Команда обработчика:",
+        "platform": "Платформа:",
+        "registered": "Зарегистрирован:",
+        "registerHint": "\nДля регистрации обработчика протокола выполните:",
+        "supported": "Поддерживается:",
+        "systemRegistration": "Регистрация системы:",
+        "title": "\nСтатус обработчика протокола",
+        "userRegistration": "Регистрация пользователя:"
+      },
+      "unregister": {
+        "description": "Отменить регистрацию обработчика протокола из системы",
+        "success": "\nОбработчик протокола {{scheme}}:// успешно не зарегистрирован.",
+        "unregistering": "Отмена регистрации обработчика протокола..."
       }
     },
     "queue": {
+      "cancel": {
+        "cancelling": "Отмена задачи {{taskId}}...",
+        "description": "Отменить элемент очереди",
+        "success": "Задача отменена"
+      },
+      "create": {
+        "buildingVault": "Построение хранилища очереди...",
+        "creating": "Создание элемента очереди для функции '{{function}}'...",
+        "description": "Создать элемент очереди",
+        "success": "Элемент очереди создан",
+        "taskId": "ID задачи: {{taskId}}",
+        "vaultBuilt": "Хранилище очереди построено"
+      },
+      "delete": {
+        "confirm": "Вы уверены, что хотите удалить задачу {{taskId}}?",
+        "deleting": "Удаление задачи {{taskId}}...",
+        "description": "Удалить элемент очереди",
+        "success": "Задача удалена"
+      },
       "description": "Управление очередью",
       "list": {
         "description": "Список элементов очереди",
         "fetching": "Получение элементов очереди...",
         "success": "Элементы очереди получены"
-      },
-      "create": {
-        "description": "Создать элемент очереди",
-        "buildingVault": "Построение хранилища очереди...",
-        "vaultBuilt": "Хранилище очереди построено",
-        "creating": "Создание элемента очереди для функции '{{function}}'...",
-        "success": "Элемент очереди создан",
-        "taskId": "ID задачи: {{taskId}}"
-      },
-      "cancel": {
-        "description": "Отменить элемент очереди",
-        "cancelling": "Отмена задачи {{taskId}}...",
-        "success": "Задача отменена"
       },
       "retry": {
         "description": "Повторить неудачный элемент очереди",
@@ -622,20 +667,14 @@
         "success": "Задача поставлена в очередь для повтора"
       },
       "trace": {
-        "description": "Трассировка выполнения элемента очереди",
-        "fetching": "Получение трассировки очереди...",
-        "fetched": "Трассировка очереди получена",
-        "watching": "Наблюдение за ходом выполнения задачи...",
         "age": "Возраст",
-        "finalStatus": "Окончательный статус: {{status}}",
+        "description": "Трассировка выполнения элемента очереди",
         "errorDetails": "Детали ошибки:",
-        "noTrace": "Информация о трассировке недоступна"
-      },
-      "delete": {
-        "description": "Удалить элемент очереди",
-        "confirm": "Вы уверены, что хотите удалить задачу {{taskId}}?",
-        "deleting": "Удаление задачи {{taskId}}...",
-        "success": "Задача удалена"
+        "fetched": "Трассировка очереди получена",
+        "fetching": "Получение трассировки очереди...",
+        "finalStatus": "Окончательный статус: {{status}}",
+        "noTrace": "Информация о трассировке недоступна",
+        "watching": "Наблюдение за ходом выполнения задачи..."
       }
     },
     "region": {
@@ -646,57 +685,63 @@
       }
     },
     "repository": {
+      "create": {
+        "creating": "Создание репозитория \"{{name}}:{{tag}}\"...",
+        "description": "Создать новый репозиторий",
+        "success": "Репозиторий \"{{name}}:{{tag}}\" создан"
+      },
+      "delete": {
+        "checkingRelationships": "Проверка отношений репозитория...",
+        "confirm": "Удалить репозиторий \"{{name}}:{{tag}}\"? Это невозможно отменить.",
+        "deleting": "Удаление репозитория \"{{name}}:{{tag}}\"...",
+        "description": "Удалить репозиторий",
+        "grandRepoWarning": "Это главный репозиторий (учетные данные). Удаление необратимо.",
+        "relationshipsChecked": "Отношения репозитория проверены",
+        "success": "Репозиторий \"{{name}}:{{tag}}\" удален"
+      },
       "description": "Команды управления репозиторием",
       "list": {
         "description": "Список репозиториев",
         "fetching": "Получение репозиториев...",
         "success": "Репозитории получены"
       },
-      "create": {
-        "description": "Создать новый репозиторий",
-        "creating": "Создание репозитория \"{{name}}:{{tag}}\"...",
-        "success": "Репозиторий \"{{name}}:{{tag}}\" создан"
+      "promote": {
+        "checkingRelationships": "Проверка отношений репозитория...",
+        "confirmPromote": "\nПродолжить повышение?",
+        "description": "Повысить уровень форка до главного статуса",
+        "promoting": "Повышение уровня репозитория \"{{name}}:{{tag}}\"...",
+        "relationshipsChecked": "Отношения репозитория проверены",
+        "separateInfo": "\nЭто разделит \"{{name}}\" от главного репозитория \"{{grandName}}\"",
+        "siblingsInfo": "\n{{count}} клонов-братьев останется связано с исходным главным репозиторием:",
+        "success": "Репозиторий \"{{name}}:{{tag}}\" повышен до главного статуса"
       },
       "rename": {
         "description": "Переименовать репозиторий",
         "renaming": "Переименование репозитория \"{{oldName}}\" в \"{{newName}}\"...",
         "success": "Репозиторий переименован на \"{{name}}\""
       },
-      "delete": {
-        "description": "Удалить репозиторий",
-        "checkingRelationships": "Проверка отношений репозитория...",
-        "relationshipsChecked": "Отношения репозитория проверены",
-        "grandRepoWarning": "Это главный репозиторий (учетные данные). Удаление необратимо.",
-        "confirm": "Удалить репозиторий \"{{name}}:{{tag}}\"? Это невозможно отменить.",
-        "deleting": "Удаление репозитория \"{{name}}:{{tag}}\"...",
-        "success": "Репозиторий \"{{name}}:{{tag}}\" удален"
-      },
-      "promote": {
-        "description": "Повысить уровень форка до главного статуса",
-        "checkingRelationships": "Проверка отношений репозитория...",
-        "relationshipsChecked": "Отношения репозитория проверены",
-        "separateInfo": "\nЭто разделит \"{{name}}\" от главного репозитория \"{{grandName}}\"",
-        "siblingsInfo": "\n{{count}} клонов-братьев останется связано с исходным главным репозиторием:",
-        "confirmPromote": "\nПродолжить повышение?",
-        "promoting": "Повышение уровня репозитория \"{{name}}:{{tag}}\"...",
-        "success": "Репозиторий \"{{name}}:{{tag}}\" повышен до главного статуса"
-      },
       "vault": {
         "description": "Управление хранилищем репозитория",
         "get": {
           "description": "Получить данные хранилища репозитория",
           "fetching": "Получение хранилища репозитория...",
-          "success": "Хранилище получено",
-          "notFound": "Хранилище репозитория не найдено"
+          "notFound": "Хранилище репозитория не найдено",
+          "success": "Хранилище получено"
         },
         "update": {
           "description": "Обновить данные хранилища репозитория",
-          "updating": "Обновление хранилища репозитория...",
-          "success": "Хранилище репозитория обновлено"
+          "success": "Хранилище репозитория обновлено",
+          "updating": "Обновление хранилища репозитория..."
         }
       }
     },
     "shortcuts": {
+      "cancel": {
+        "description": "Отменить задачу (ярлык для: queue cancel)"
+      },
+      "retry": {
+        "description": "Повторить неудачную задачу (ярлык для: queue retry)"
+      },
       "run": {
         "completedLocal": "[локально] Завершено за {{duration}}ms",
         "description": "Запустить функцию (ярлык для: queue create)",
@@ -706,12 +751,6 @@
       },
       "trace": {
         "description": "Трассировка задачи (ярлык для: queue trace)"
-      },
-      "cancel": {
-        "description": "Отменить задачу (ярлык для: queue cancel)"
-      },
-      "retry": {
-        "description": "Повторить неудачную задачу (ярлык для: queue retry)"
       }
     },
     "storage": {
@@ -722,55 +761,55 @@
       }
     },
     "sync": {
-      "description": "Синхронизация файлов с репозиториями с помощью rsync",
-      "fetchingDetails": "Получение деталей подключения...",
-      "previewingChanges": "\nПредпросмотр изменений...\n",
-      "noChanges": "Нет изменений для синхронизации.",
       "cancelled": "Синхронизация отменена.",
+      "description": "Синхронизация файлов с репозиториями с помощью rsync",
+      "download": {
+        "completed": "Загрузка завершена: получено {{count}} файлов",
+        "description": "Загрузить файлы из репозитория",
+        "failed": "Загрузка не удалась",
+        "progress": "Загрузка: {{percentage}}% - {{file}} ({{speed}})",
+        "starting": "Начало загрузки..."
+      },
       "dryRunHeader": "\nПробный запуск - показано, что будет передано:\n",
-      "totalSize": "Общий размер: {{size}}",
       "duration": "Продолжительность: {{seconds}}s",
       "errors": "Ошибки:",
-      "upload": {
-        "description": "Загрузить файлы в репозиторий",
-        "starting": "Начало загрузки...",
-        "progress": "Загрузка: {{percentage}}% - {{file}} ({{speed}})",
-        "completed": "Загрузка завершена: передано {{count}} файлов",
-        "failed": "Загрузка не удалась"
-      },
-      "download": {
-        "description": "Загрузить файлы из репозитория",
-        "starting": "Начало загрузки...",
-        "progress": "Загрузка: {{percentage}}% - {{file}} ({{speed}})",
-        "completed": "Загрузка завершена: получено {{count}} файлов",
-        "failed": "Загрузка не удалась"
-      },
+      "fetchingDetails": "Получение деталей подключения...",
+      "noChanges": "Нет изменений для синхронизации.",
+      "previewingChanges": "\nПредпросмотр изменений...\n",
       "status": {
         "description": "Проверить статус синхронизации и сравнить локальные/удаленные файлы"
+      },
+      "totalSize": "Общий размер: {{size}}",
+      "upload": {
+        "completed": "Загрузка завершена: передано {{count}} файлов",
+        "description": "Загрузить файлы в репозиторий",
+        "failed": "Загрузка не удалась",
+        "progress": "Загрузка: {{percentage}}% - {{file}} ({{speed}})",
+        "starting": "Начало загрузки..."
       }
     },
     "team": {
+      "create": {
+        "creating": "Создание команды...",
+        "description": "Создать команду",
+        "success": "Команда \"{{name}}\" создана"
+      },
       "description": "Управление командой",
       "list": {
         "description": "Список команд",
         "fetching": "Получение команд..."
       },
-      "create": {
-        "description": "Создать команду",
-        "creating": "Создание команды...",
-        "success": "Команда \"{{name}}\" создана"
-      },
       "member": {
+        "add": {
+          "adding": "Добавление {{email}} в команду \"{{team}}\"...",
+          "description": "Добавить пользователя в команду",
+          "success": "Пользователь добавлен в команду \"{{team}}\""
+        },
         "description": "Управление членством в команде",
         "list": {
           "description": "Список членов команды",
           "fetching": "Получение членов команды...",
           "success": "Члены получены"
-        },
-        "add": {
-          "description": "Добавить пользователя в команду",
-          "adding": "Добавление {{email}} в команду \"{{team}}\"...",
-          "success": "Пользователь добавлен в команду \"{{team}}\""
         },
         "remove": {
           "description": "Удалить пользователя из команды",
@@ -779,56 +818,69 @@
         }
       }
     },
-    "update": {
-      "description": "Проверить и применить обновления CLI",
-      "force": "Принудительное обновление, даже если уже актуально",
-      "checkOnly": "Только проверить обновления без загрузки",
-      "notSEA": "Невозможно обновить: не запущен как упакованный бинарник. Сначала соберите с SEA.",
-      "available": "Доступно обновление: v{{version}} (текущая: v{{current}})",
-      "releaseNotes": "Примечания к выпуску: {{url}}",
-      "upToDate": "Уже актуально (v{{version}})",
-      "checking": "Проверка обновлений...",
-      "downloading": "Загрузка v{{version}}...",
-      "progress": "Загрузка... {{percent}}%",
-      "success": "Обновлено с v{{from}} до v{{to}}",
-      "failed": "Ошибка обновления: {{error}}",
-      "unknownError": "Неизвестная ошибка"
-    },
     "term": {
-      "description": "SSH терминал доступ к машинам и репозиториям",
-      "connecting": "Подключение к {{machine}}...",
       "connect": {
         "description": "Подключиться к машине или репозиторию через SSH"
       },
+      "connecting": "Подключение к {{machine}}...",
       "connectingTo": "Подключение к {{title}}...",
+      "description": "SSH терминал доступ к машинам и репозиториям",
       "fetchingDetails": "Получение деталей подключения...",
-      "launchSuccess": "Терминал успешно запущен.",
       "launchingTerminal": "Запуск {{type}} терминала...",
+      "launchSuccess": "Терминал успешно запущен.",
       "testingConnectivity": "Тестирование подключения к {{host}}:{{port}}..."
     },
+    "update": {
+      "available": "Доступно обновление: v{{version}} (текущая: v{{current}})",
+      "checking": "Проверка обновлений...",
+      "checkOnly": "Только проверить обновления без загрузки",
+      "description": "Проверить и применить обновления CLI",
+      "downloading": "Загрузка v{{version}}...",
+      "failed": "Ошибка обновления: {{error}}",
+      "force": "Принудительное обновление, даже если уже актуально",
+      "notSEA": "Невозможно обновить: не запущен как упакованный бинарник. Сначала соберите с SEA.",
+      "progress": "Загрузка... {{percent}}%",
+      "releaseNotes": "Примечания к выпуску: {{url}}",
+      "success": "Обновлено с v{{from}} до v{{to}}",
+      "unknownError": "Неизвестная ошибка",
+      "upToDate": "Уже актуально (v{{version}})"
+    },
     "user": {
+      "activate": {
+        "activating": "Активация пользователя \"{{email}}\"...",
+        "description": "Активировать учетную запись пользователя",
+        "success": "Пользователь активирован"
+      },
+      "create": {
+        "activationCode": "Код активации: {{code}}",
+        "creating": "Создание пользователя \"{{email}}\"...",
+        "description": "Создать нового пользователя",
+        "success": "Пользователь создан"
+      },
+      "deactivate": {
+        "confirm": "Деактивировать пользователя \"{{email}}\"?",
+        "deactivating": "Деактивация пользователя \"{{email}}\"...",
+        "description": "Деактивировать учетную запись пользователя",
+        "success": "Пользователь деактивирован"
+      },
       "description": "Команды управления пользователем",
+      "exists": {
+        "description": "Проверить, существует ли пользователь",
+        "exists": "Пользователь \"{{email}}\" существует",
+        "notExists": "Пользователь \"{{email}}\" не существует"
+      },
       "list": {
         "description": "Список всех пользователей",
         "fetching": "Получение пользователей...",
         "success": "Пользователи получены"
       },
-      "create": {
-        "description": "Создать нового пользователя",
-        "creating": "Создание пользователя \"{{email}}\"...",
-        "success": "Пользователь создан",
-        "activationCode": "Код активации: {{code}}"
-      },
-      "activate": {
-        "description": "Активировать учетную запись пользователя",
-        "activating": "Активация пользователя \"{{email}}\"...",
-        "success": "Пользователь активирован"
-      },
-      "deactivate": {
-        "description": "Деактивировать учетную запись пользователя",
-        "confirm": "Деактивировать пользователя \"{{email}}\"?",
-        "deactivating": "Деактивация пользователя \"{{email}}\"...",
-        "success": "Пользователь деактивирован"
+      "permission": {
+        "assign": {
+          "assigning": "Назначение \"{{group}}\" пользователю \"{{email}}\"...",
+          "description": "Назначить группу разрешений пользователю",
+          "success": "Разрешение назначено"
+        },
+        "description": "Управление разрешениями пользователя"
       },
       "reactivate": {
         "description": "Переактивировать деактивированную учетную запись пользователя",
@@ -837,23 +889,18 @@
       },
       "updateEmail": {
         "description": "Изменить адрес электронной почты пользователя",
-        "updating": "Обновление электронной почты для \"{{email}}\"...",
-        "success": "Электронная почта обновлена на \"{{email}}\""
-      },
-      "updatePassword": {
-        "description": "Изменить пароль",
-        "updating": "Обновление пароля...",
-        "success": "Пароль обновлен"
+        "success": "Электронная почта обновлена на \"{{email}}\"",
+        "updating": "Обновление электронной почты для \"{{email}}\"..."
       },
       "updateLanguage": {
         "description": "Установить предпочитаемый язык текущего пользователя",
-        "updating": "Обновление предпочтения языка...",
-        "success": "Язык обновлен на \"{{language}}\""
+        "success": "Язык обновлен на \"{{language}}\"",
+        "updating": "Обновление предпочтения языка..."
       },
-      "exists": {
-        "description": "Проверить, существует ли пользователь",
-        "exists": "Пользователь \"{{email}}\" существует",
-        "notExists": "Пользователь \"{{email}}\" не существует"
+      "updatePassword": {
+        "description": "Изменить пароль",
+        "success": "Пароль обновлен",
+        "updating": "Обновление пароля..."
       },
       "vault": {
         "description": "Управление хранилищем пользователя",
@@ -864,126 +911,240 @@
         },
         "update": {
           "description": "Обновить данные хранилища текущего пользователя",
-          "updating": "Обновление хранилища пользователя...",
-          "success": "Хранилище пользователя обновлено"
-        }
-      },
-      "permission": {
-        "description": "Управление разрешениями пользователя",
-        "assign": {
-          "description": "Назначить группу разрешений пользователю",
-          "assigning": "Назначение \"{{group}}\" пользователю \"{{email}}\"...",
-          "success": "Разрешение назначено"
+          "success": "Хранилище пользователя обновлено",
+          "updating": "Обновление хранилища пользователя..."
         }
       }
     },
     "vscode": {
-      "description": "VS Code Remote SSH интеграция",
+      "check": {
+        "activeConnections": "Активные соединения: {{count}}",
+        "configuration": "\nКонфигурация:",
+        "configured": "  Настроено: {{status}}",
+        "description": "Проверить установку и конфигурацию VS Code",
+        "installation": "Установка:",
+        "installed": "Установлено",
+        "missingSettings": "  Отсутствующие параметры:",
+        "no": "Нет",
+        "notDetected": "Не обнаружено",
+        "remoteSSH": "  Расширение Remote SSH: {{status}}",
+        "settingsPath": "  Путь к параметрам: {{path}}",
+        "sshConfig": "\nКонфигурация SSH: {{path}}",
+        "title": "Проверка настройки VS Code\n",
+        "variant": "  Вариант: Insiders",
+        "version": "  Версия: {{version}}",
+        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeNotFound": "  VS Code: Не найден",
+        "yes": "Да"
+      },
+      "cleanup": {
+        "cleaned": "Очищено: {{connection}}",
+        "cleanedAll": "Очищено {{count}} SSH-соединений VS Code.",
+        "description": "Удалить конфигурации SSH VS Code",
+        "removedKeys": "Удалены все сохраненные SSH ключи."
+      },
       "connect": {
+        "configuringSSH": "Настройка SSH...",
+        "configuringVSCode": "Настройка параметров VS Code...",
         "description": "Подключиться к машине или репозиторию в VS Code",
         "detecting": "Обнаружение VS Code...",
         "extensionWarning": "Предупреждение: Расширение Remote SSH может быть не установлено.\nУстановите из: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "Получение деталей подключения...",
-        "testingConnectivity": "Тестирование подключения к {{host}}:{{port}}...",
+        "opening": "Открытие VS Code: {{connection}} → {{path}}",
         "persistingKey": "Сохранение SSH ключа...",
-        "configuringSSH": "Настройка SSH...",
-        "configuringVSCode": "Настройка параметров VS Code...",
         "settingsWarning": "Предупреждение: Не удалось настроить параметры VS Code: {{error}}",
         "settingUpEnv": "Настройка удаленной среды...",
-        "opening": "Открытие VS Code: {{connection}} → {{path}}",
-        "success": "VS Code успешно запущен."
+        "success": "VS Code успешно запущен.",
+        "testingConnectivity": "Тестирование подключения к {{host}}:{{port}}..."
       },
+      "description": "VS Code Remote SSH интеграция",
       "list": {
-        "description": "Список настроенных SSH-соединений VS Code",
-        "noConnections": "Нет настроенных SSH-соединений VS Code.",
         "configFile": "\nФайл конфигурации: {{path}}",
+        "description": "Список настроенных SSH-соединений VS Code",
         "header": "Настроенные SSH-соединения VS Code:\n",
         "keyPersisted": " (ключ сохранен)",
+        "noConnections": "Нет настроенных SSH-соединений VS Code.",
         "total": "\nВсего: {{count}} соединений"
-      },
-      "cleanup": {
-        "description": "Удалить конфигурации SSH VS Code",
-        "cleanedAll": "Очищено {{count}} SSH-соединений VS Code.",
-        "removedKeys": "Удалены все сохраненные SSH ключи.",
-        "cleaned": "Очищено: {{connection}}"
-      },
-      "check": {
-        "description": "Проверить установку и конфигурацию VS Code",
-        "title": "Проверка настройки VS Code\n",
-        "installation": "Установка:",
-        "vscodeFound": "  VS Code: {{path}}",
-        "version": "  Версия: {{version}}",
-        "variant": "  Вариант: Insiders",
-        "vscodeNotFound": "  VS Code: Не найден",
-        "remoteSSH": "  Расширение Remote SSH: {{status}}",
-        "installed": "Установлено",
-        "notDetected": "Не обнаружено",
-        "configuration": "\nКонфигурация:",
-        "settingsPath": "  Путь к параметрам: {{path}}",
-        "configured": "  Настроено: {{status}}",
-        "yes": "Да",
-        "no": "Нет",
-        "missingSettings": "  Отсутствующие параметры:",
-        "sshConfig": "\nКонфигурация SSH: {{path}}",
-        "activeConnections": "Активные соединения: {{count}}"
       }
+    }
+  },
+  "common": {
+    "completed": "Завершено",
+    "failed": "Ошибка",
+    "inProgress": "В процессе",
+    "no": "Нет",
+    "running": "Работает",
+    "stopped": "Остановлено",
+    "success": "✓ Успешно",
+    "unknown": "Неизвестно",
+    "yes": "Да"
+  },
+  "docs": {
+    "admonitions": {
+      "note": "Примечание",
+      "tip": "Совет",
+      "warning": "Предупреждение"
+    },
+    "errors": {
+      "heading": "Распространённые сообщения об ошибках",
+      "intro": "Когда что-то идёт не так, CLI предоставляет понятные сообщения об ошибках:",
+      "meanings": {
+        "authRequired": "Сначала необходимо войти в систему",
+        "machineRequired": "Укажите машину с помощью `--machine` или задайте значение по умолчанию в контексте",
+        "noActiveContext": "Контекст не выбран — создайте или переключитесь на один из них",
+        "permissionDenied": "У вашей учётной записи нет необходимых прав",
+        "regionRequired": "Укажите регион с помощью `--region` или задайте значение по умолчанию в контексте",
+        "teamRequired": "Укажите команду с помощью `--team` или задайте значение по умолчанию в контексте"
+      }
+    },
+    "frontmatter": {
+      "category": "Основные концепции",
+      "description": "Полное руководство по использованию интерфейса командной строки Rediacc для управления платформой",
+      "title": "CLI-приложение"
+    },
+    "globalOptions": {
+      "heading": "Глобальные параметры",
+      "intro": "Каждая команда поддерживает эти глобальные флаги:"
+    },
+    "installation": {
+      "heading": "Установка",
+      "text": "Загрузите последний бинарный файл для вашей платформы со [страницы релизов Rediacc](https://www.rediacc.com) или установите через ваш менеджер пакетов:"
+    },
+    "outputFormats": {
+      "closing": "Это упрощает интеграцию CLI Rediacc в скрипты, CI/CD-конвейеры и рабочие процессы автоматизации.",
+      "heading": "Форматы вывода",
+      "text": "Все команды list/get поддерживают несколько форматов вывода через `--output`:"
+    },
+    "overview": {
+      "heading": "Обзор",
+      "text": "**Rediacc CLI** (`rdc`) — это интерфейс командной строки для управления всеми аспектами платформы Rediacc — аутентификацией, инфраструктурой, репозиториями, очередями, хранилищем и многим другим."
+    },
+    "pageTitle": "Справочник CLI Rediacc",
+    "sectionTitles": {
+      "audit": "Аудит и соответствие",
+      "auth": "Аутентификация",
+      "bridge": "Управление мостами",
+      "ceph": "Управление хранилищем Ceph",
+      "context": "Управление контекстами",
+      "doctor": "Диагностика системы",
+      "machine": "Управление машинами",
+      "organization": "Управление организацией",
+      "permission": "Управление правами",
+      "protocol": "Обработчик протокола",
+      "queue": "Операции с очередями",
+      "region": "Управление регионами",
+      "repository": "Управление репозиториями",
+      "shortcuts": "Быстрые команды (ярлыки)",
+      "storage": "Управление хранилищем",
+      "sync": "Синхронизация файлов",
+      "team": "Управление командами",
+      "term": "Доступ к SSH-терминалу",
+      "update": "Обновления CLI",
+      "user": "Управление пользователями",
+      "vscode": "Интеграция с VS Code"
+    },
+    "supplements": {
+      "auth": {
+        "register": {
+          "afterDescription": "После регистрации проверьте электронную почту на наличие кода активации."
+        },
+        "tip": "Ваш токен аутентификации хранится локально в вашем контексте. Используйте `--save-as` для сохранения учётных данных под именованным контекстом для нескольких сред."
+      },
+      "context": {
+        "afterDescription": "Контексты хранят данные подключения (URL API, учётные данные, команда/регион/машина по умолчанию), чтобы вы могли быстро переключаться между средами.",
+        "createLocal": {
+          "afterDescription": "В локальном режиме вы можете добавлять машины напрямую:"
+        },
+        "set": {
+          "tip": "Установка значений по умолчанию означает, что вам не нужно передавать `--team`, `--region` или `--machine` с каждой командой."
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "Команда health выводит системные метрики, статус контейнеров, стабильность сервисов и информацию о хранилище — полезно для проверок CI/CD-конвейеров."
+        },
+        "testConnection": {
+          "tip": "Используйте `--save-known-hosts` для автоматического сохранения ключа хоста в хранилище машины после успешного теста."
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "Когда режим обслуживания включён, пользователи без прав администратора не могут войти в систему."
+        }
+      },
+      "queue": {
+        "afterDescription": "Система очередей — это ядро выполнения задач Rediacc. Каждая операция (развёртывание, резервное копирование, выполнение скриптов) проходит через очередь.",
+        "trace": {
+          "tip": "Используйте `--watch` для отслеживания задачи в реальном времени до её завершения."
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "Продвижение форка отделяет его от родительского (grand) репозитория, делая его независимым."
+        }
+      }
+    },
+    "tableHeaders": {
+      "description": "Описание",
+      "error": "Ошибка",
+      "flag": "Флаг",
+      "meaning": "Значение"
     }
   },
   "errors": {
     "activationFailed": "Активация не удалась",
-    "tfaVerificationFailed": "Проверка TFA не удалась",
+    "affectedChildClones": ". Затронутые дочерние клоны: {{clones}}. Сначала удалите или повысьте уровень дочерних клонов.",
     "authFailed": "Аутентификация не удалась",
     "authRequired": "Требуется аутентификация. Выполните: rdc login",
     "bridgeRequired": "Требуется имя моста. Используйте --bridge или установите контекст.",
+    "cannotDeleteGrandRepo": "Невозможно удалить главный репозиторий: {{reason}}",
+    "cannotPromote": "Невозможно повысить уровень: {{reason}}",
+    "clusterNotFound": "Кластер Ceph \"{{name}}\" не найден",
     "contextNotFound": "Контекст \"{{name}}\" не найден",
+    "failedCreateQueueItem": "Ошибка при создании элемента очереди",
+    "invalidAction": "Неверное действие \"{{action}}\". Используйте \"{{valid}}\".",
     "invalidCredentials": "Неверные учетные данные",
     "invalidEmail": "Пожалуйста, введите корректный адрес электронной почты",
-    "invalidMasterPassword": "Неверный мастер-пароль для шифрования хранилища",
     "invalidExpiration": "Истечение токена должно быть от 1 до 720 часов",
-    "invalidAction": "Неверное действие \"{{action}}\". Используйте \"{{valid}}\".",
     "invalidFunctionParams": "Неверные параметры для функции \"{{function}}\": {{errors}}",
+    "invalidHost": "Неверный IP-адрес или имя хоста: \"{{host}}\". Должен быть корректный IPv4, IPv6 или имя хоста.",
     "invalidJsonFile": "Предоставленный файл не содержит корректный JSON.",
     "invalidJsonVault": "Неверные данные JSON хранилища.",
     "invalidKey": "Неверный ключ. Допустимые ключи: {{keys}}",
+    "invalidMasterPassword": "Неверный мастер-пароль для шифрования хранилища",
+    "invalidPort": "Неверный номер порта: \"{{port}}\". Должен быть от 1 до 65535.",
+    "invalidPriorityMax": "Неверное значение priority-max. Должно быть от 1 до 5.",
+    "invalidPriorityMin": "Неверное значение priority-min. Должно быть от 1 до 5.",
     "machineNotFound": "Машина \"{{name}}\" не найдена",
     "machineRequired": "Требуется имя машины. Используйте --machine или установите контекст.",
     "machineRequiredLocal": "Требуется имя машины. Используйте --machine или установите значение по умолчанию с помощью: rdc context set machine <name>",
-    "invalidHost": "Неверный IP-адрес или имя хоста: \"{{host}}\". Должен быть корректный IPv4, IPv6 или имя хоста.",
-    "invalidPort": "Неверный номер порта: \"{{port}}\". Должен быть от 1 до 65535.",
-    "failedCreateQueueItem": "Ошибка при создании элемента очереди",
-    "invalidPriorityMin": "Неверное значение priority-min. Должно быть от 1 до 5.",
-    "invalidPriorityMax": "Неверное значение priority-max. Должно быть от 1 до 5.",
-    "passwordsMismatch": "Пароли не совпадают",
-    "repositoryNotFound": "Репозиторий \"{{name}}:{{tag}}\" не найден",
-    "cannotDeleteGrandRepo": "Невозможно удалить главный репозиторий: {{reason}}",
-    "affectedChildClones": ". Затронутые дочерние клоны: {{clones}}. Сначала удалите или повысьте уровень дочерних клонов.",
-    "cannotPromote": "Невозможно повысить уровень: {{reason}}",
-    "clusterNotFound": "Кластер Ceph \"{{name}}\" не найден",
-    "poolNotFound": "Пул Ceph \"{{name}}\" не найден",
-    "protocol": {
-      "notSupported": "Регистрация протокола не поддерживается на {{platform}}",
-      "invalidUrl": "Неверный URL протокола: {{error}}",
-      "commandExitCode": "Команда завершилась с кодом {{code}}",
-      "tokenRequired": "Требуется токен. Используйте --token <token>",
-      "teamRequired": "Требуется имя команды. Используйте --team <name>",
-      "machineRequired": "Требуется имя машины. Используйте --machine <name>",
-      "invalidAction": "Неверное действие '{{action}}'. Должно быть одним из: {{validActions}}",
-      "parseFailed": "Ошибка при разборе URL: {{error}}"
-    },
     "networkError": "Ошибка сети: {{message}}",
     "noActiveContext": "Нет активного контекста. Сначала создайте или выберите контекст.",
     "notAuthenticated": "Не аутентифицирован. Выполните: rdc login",
+    "passwordsMismatch": "Пароли не совпадают",
     "permissionDenied": "Доступ запрещен",
+    "poolNotFound": "Пул Ceph \"{{name}}\" не найден",
+    "protocol": {
+      "commandExitCode": "Команда завершилась с кодом {{code}}",
+      "invalidAction": "Неверное действие '{{action}}'. Должно быть одним из: {{validActions}}",
+      "invalidUrl": "Неверный URL протокола: {{error}}",
+      "machineRequired": "Требуется имя машины. Используйте --machine <name>",
+      "notSupported": "Регистрация протокола не поддерживается на {{platform}}",
+      "parseFailed": "Ошибка при разборе URL: {{error}}",
+      "teamRequired": "Требуется имя команды. Используйте --team <name>",
+      "tokenRequired": "Требуется токен. Используйте --token <token>"
+    },
     "regionRequired": "Требуется имя региона. Используйте --region или установите контекст.",
     "registrationFailed": "Регистрация не удалась",
-    "resourceNotFound": "{{resource}} не найден",
+    "repositoryNotFound": "Репозиторий \"{{name}}:{{tag}}\" не найден",
     "repositoryRequired": "Требуется имя репозитория. Используйте --repository <name>.",
+    "resourceNotFound": "{{resource}} не найден",
     "sshKeyNotFound": "SSH ключ не найден: {{path}}",
     "sync": {
-      "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
-      "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа",
+      "localPathNotFound": "Локальный путь не существует: {{path}}",
       "noHostKey": "Машина '{{machine}}' не имеет настроенного ключа хоста в хранилище",
-      "localPathNotFound": "Локальный путь не существует: {{path}}"
+      "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
+      "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа"
     },
     "teamRequired": "Требуется имя команды. Используйте --team или установите контекст.",
     "term": {
@@ -999,6 +1160,14 @@
       "sshCode255": "Ошибка подключения SSH - возможные причины:\n    - Ошибка аутентификации (проверьте разрешения SSH ключа)\n    - Не удалось проверить ключ хоста\n    - Соединение сети разорвано\n    - Удаленная служба SSH не работает",
       "sshExitCode": "SSH завершился с кодом {{code}}"
     },
+    "tfaVerificationFailed": "Проверка TFA не удалась",
+    "tokenExpired": "Токен истек. Пожалуйста, войдите снова.",
+    "unexpectedError": "Неожиданная ошибка: {{message}}",
+    "unknownCommand": "Неизвестная команда \"{{command}}\". Доступные команды: {{available}}.",
+    "unknownSubcommand": "Неизвестная подкоманда \"{{command}}\". Доступные подкоманды {{parent}}: {{available}}.",
+    "validationError": "Ошибка валидации: {{message}}",
+    "vaultDataRequired": "Требуются данные хранилища. Используйте --vault <json> или подайте JSON через stdin.",
+    "vaultVersionRequired": "Требуется версия хранилища. Используйте --vault-version <n>.",
     "vscode": {
       "cleanupRequired": "Укажите --all для удаления всех соединений или --connection <name> для конкретного.",
       "connectivityFailed": "Не удалось достичь {{host}}:{{port}}. {{error}}\n\nОтладка:\n  - Проверьте, что машина включена и подключена к сети\n  - Убедитесь, что IP-адрес правильно указан в хранилище машины\n  - Убедитесь, что порт {{port}} не блокируется брандмауэром\n  - Попробуйте пинговать машину: ping {{host}}",
@@ -1006,53 +1175,91 @@
       "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
       "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа",
       "notFound": "VS Code не найден.\n\nПожалуйста, установите из: https://code.visualstudio.com/\nИли установите переменную окружения REDIACC_VSCODE_PATH."
-    },
-    "tokenExpired": "Токен истек. Пожалуйста, войдите снова.",
-    "unexpectedError": "Неожиданная ошибка: {{message}}",
-    "validationError": "Ошибка валидации: {{message}}",
-    "vaultDataRequired": "Требуются данные хранилища. Используйте --vault <json> или подайте JSON через stdin.",
-    "vaultVersionRequired": "Требуется версия хранилища. Используйте --vault-version <n>.",
-    "unknownCommand": "Неизвестная команда \"{{command}}\". Доступные команды: {{available}}.",
-    "unknownSubcommand": "Неизвестная подкоманда \"{{command}}\". Доступные подкоманды {{parent}}: {{available}}."
+    }
   },
   "options": {
     "activationCode": "Код активации из электронного письма",
     "apiUrl": "URL API",
     "bridge": "Имя моста",
+    "cleanupAll": "Удалить все конфигурации rediacc SSH",
     "cluster": "Имя кластера Ceph",
     "command": "Выполнить команду вместо интерактивной оболочки",
+    "confirmPasswordNonInteractive": "Подтвердите пароль (режим без интеракции)",
+    "confirmSync": "Предпросмотр изменений и запрос подтверждения перед синхронизацией",
+    "connectionName": "Удалить определенное соединение",
     "container": "Подключиться к определенному контейнеру Docker",
     "containerAction": "Действие контейнера: terminal, logs, stats, exec",
     "context": "Использовать определенный контекст для этой команды",
     "datastore": "Путь хранилища данных на машине",
+    "debug": "Включить отладочный вывод (локальный режим)",
+    "dryRun": "Показать, что будет передано, без фактической синхронизации",
     "email": "Адрес электронной почты",
-    "external": "Открыть в отдельном окне терминала",
-    "follow": "Следить за выводом логов",
-    "image": "Имя RBD образа",
-    "pool": "Имя пула Ceph",
-    "snapshot": "Имя RBD снимка",
-    "vaultContent": "Содержимое хранилища в виде строки JSON",
-    "machineNames": "Имена машин (через запятую)",
     "endpoint": "URL конечной точки API",
+    "excludePatterns": "Шаблоны для исключения из синхронизации",
     "expires": "Истечение в часах (1-720)",
+    "external": "Открыть в отдельном окне терминала",
+    "filterStatus": "Фильтровать по статусу",
+    "folder": "Путь удаленной папки для открытия",
+    "follow": "Следить за выводом логов",
     "force": "Пропустить подсказки подтверждения",
+    "functionName": "Имя функции для выполнения",
+    "image": "Имя RBD образа",
+    "importMode": "Режим импорта (merge или replace)",
+    "insiders": "Использовать параметры VS Code Insiders",
     "lang": "Переопределение языка ({{languages}})",
     "limit": "Максимальное количество результатов",
+    "localPath": "Путь к локальной директории (по умолчанию: текущая директория)",
     "logLines": "Количество строк логов для показа (по умолчанию: 50)",
     "machine": "Имя машины",
+    "machineForVault": "Имя машины (для обновления хранилища после теста)",
     "machineIp": "IP-адрес или имя хоста машины",
+    "machineNames": "Имена машин (через запятую)",
     "machineShorthand": "Имя машины (сокращение для --machine)",
+    "masterPassword": "Мастер-пароль для шифрования хранилища",
+    "mirrorDownload": "Режим зеркала - удалить локальные файлы, отсутствующие на удаленной машине",
+    "mirrorUpload": "Режим зеркала - удалить удаленные файлы, отсутствующие локально",
+    "newPasswordNonInteractive": "Новый пароль (режим без интеракции)",
+    "newWindow": "Открыть в новом окне VS Code",
     "organization": "Имя организации",
     "output": "Формат вывода (table|json|yaml|csv)",
+    "outputFormat": "Формат вывода (json)",
+    "outputPath": "Путь для сохранения выходного файла",
+    "param": "Параметры функции",
+    "parentRepository": "Родительский репозиторий (для форков)",
+    "parentRepositoryTag": "Тег родительского репозитория",
     "password": "Пароль (для не интерактивного входа)",
-    "masterPassword": "Мастер-пароль для шифрования хранилища",
+    "pollInterval": "Интервал опроса в миллисекундах",
+    "pool": "Имя пула Ceph",
+    "priority": "Приоритет (1=наивысший)",
+    "priorityMax": "Максимальный приоритет (1-5)",
+    "priorityMin": "Минимальный приоритет (1-5)",
+    "protocolAction": "Действие ({{actions}})",
+    "protocolForce": "Принудительно переживистрировать даже если уже зарегистрирован",
+    "protocolParams": "Дополнительные параметры",
+    "protocolSystem": "Зарегистрировать в масштабе системы (требуются привилегии администратора)",
+    "protocolSystemUnregister": "Отменить регистрацию системной регистрации (требуются привилегии администратора)",
+    "protocolToken": "Токен аутентификации",
+    "rawVault": "Необработанный JSON хранилища (для скриптов/CI)",
     "region": "Имя региона",
+    "remotePath": "Путь к удаленной поддиректории в репозитории",
     "renetPath": "Путь к двоичному файлу renet (по умолчанию: renet в PATH)",
     "repository": "Имя репозитория (подключается к среде репозитория)",
     "repositoryShorthand": "Имя репозитория (сокращение для --repository)",
+    "repositoryTag": "Тег репозитория",
     "saveAs": "Сохранить учетные данные в именованный контекст",
+    "saveKnownHosts": "Сохранить known_hosts в хранилище машины после успешного теста",
+    "searchInField": "Поиск в {{field}}",
+    "searchQueue": "Поиск по ID задачи, команде, машине, мосту",
+    "searchRepos": "Фильтровать репозитории по имени",
     "sessionName": "Имя сеанса",
+    "skipEnvSetup": "Пропустить настройку удаленной среды",
+    "snapshot": "Имя RBD снимка",
+    "sortByField": "Сортировать по полю",
+    "sortDesc": "Сортировка в обратном порядке",
+    "sortDescending": "Сортировка по убыванию",
+    "sortField": "Сортировать по полю",
     "sshKey": "Путь к SSH приватному ключу (например, ~/.ssh/id_rsa)",
+    "sshPassword": "Пароль SSH для начальной аутентификации",
     "sshPort": "Порт SSH",
     "sshPrivateKey": "Путь к SSH приватному ключу",
     "sshPublicKey": "Путь к SSH открытому ключу",
@@ -1062,81 +1269,36 @@
     "team": "Имя команды",
     "tfaCode": "Текущий код двухфакторной аутентификации для проверки",
     "tokenName": "Имя токена",
+    "urlOnly": "Вывести URI VS Code вместо запуска",
+    "userPassword": "Пароль для нового пользователя",
+    "vaultContent": "Содержимое хранилища в виде строки JSON",
+    "vaultJson": "Содержимое хранилища в виде строки JSON",
+    "vaultJsonMachine": "Данные хранилища машины в виде строки JSON",
+    "vaultVersion": "Текущая версия хранилища для оптимистичной блокировки",
+    "verifyChecksum": "Проверить файлы с помощью контрольных сумм после синхронизации",
     "watch": "Следить за изменениями",
     "watchUpdates": "Следить за обновлениями",
-    "yes": "Пропустить подсказку подтверждения",
-    "priority": "Приоритет (1=наивысший)",
-    "param": "Параметры функции",
-    "debug": "Включить отладочный вывод (локальный режим)",
-    "pollInterval": "Интервал опроса в миллисекундах",
-    "folder": "Путь удаленной папки для открытия",
-    "urlOnly": "Вывести URI VS Code вместо запуска",
-    "newWindow": "Открыть в новом окне VS Code",
-    "skipEnvSetup": "Пропустить настройку удаленной среды",
-    "insiders": "Использовать параметры VS Code Insiders",
-    "cleanupAll": "Удалить все конфигурации rediacc SSH",
-    "connectionName": "Удалить определенное соединение",
-    "vaultJson": "Содержимое хранилища в виде строки JSON",
-    "vaultVersion": "Текущая версия хранилища для оптимистичной блокировки",
-    "outputPath": "Путь для сохранения выходного файла",
-    "importMode": "Режим импорта (merge или replace)",
-    "vaultJsonMachine": "Данные хранилища машины в виде строки JSON",
-    "searchInField": "Поиск в {{field}}",
-    "searchRepos": "Фильтровать репозитории по имени",
-    "sortByField": "Сортировать по полю",
-    "sortDescending": "Сортировка по убыванию",
-    "sshPassword": "Пароль SSH для начальной аутентификации",
-    "machineForVault": "Имя машины (для обновления хранилища после теста)",
-    "saveKnownHosts": "Сохранить known_hosts в хранилище машины после успешного теста",
-    "localPath": "Путь к локальной директории (по умолчанию: текущая директория)",
-    "remotePath": "Путь к удаленной поддиректории в репозитории",
-    "mirrorUpload": "Режим зеркала - удалить удаленные файлы, отсутствующие локально",
-    "mirrorDownload": "Режим зеркала - удалить локальные файлы, отсутствующие на удаленной машине",
-    "verifyChecksum": "Проверить файлы с помощью контрольных сумм после синхронизации",
-    "confirmSync": "Предпросмотр изменений и запрос подтверждения перед синхронизацией",
-    "excludePatterns": "Шаблоны для исключения из синхронизации",
-    "dryRun": "Показать, что будет передано, без фактической синхронизации",
-    "filterStatus": "Фильтровать по статусу",
-    "priorityMin": "Минимальный приоритет (1-5)",
-    "priorityMax": "Максимальный приоритет (1-5)",
-    "searchQueue": "Поиск по ID задачи, команде, машине, мосту",
-    "sortField": "Сортировать по полю",
-    "sortDesc": "Сортировка в обратном порядке",
-    "functionName": "Имя функции для выполнения",
-    "rawVault": "Необработанный JSON хранилища (для скриптов/CI)",
-    "userPassword": "Пароль для нового пользователя",
-    "newPasswordNonInteractive": "Новый пароль (режим без интеракции)",
-    "confirmPasswordNonInteractive": "Подтвердите пароль (режим без интеракции)",
-    "repositoryTag": "Тег репозитория",
-    "parentRepository": "Родительский репозиторий (для форков)",
-    "parentRepositoryTag": "Тег родительского репозитория",
-    "protocolSystem": "Зарегистрировать в масштабе системы (требуются привилегии администратора)",
-    "protocolForce": "Принудительно переживистрировать даже если уже зарегистрирован",
-    "protocolSystemUnregister": "Отменить регистрацию системной регистрации (требуются привилегии администратора)",
-    "outputFormat": "Формат вывода (json)",
-    "protocolToken": "Токен аутентификации",
-    "protocolAction": "Действие ({{actions}})",
-    "protocolParams": "Дополнительные параметры"
+    "yes": "Пропустить подсказку подтверждения"
   },
   "prompts": {
     "apiUrl": "URL API:",
     "cancelled": "Отменено",
     "confirm": "Вы уверены?",
     "confirmDelete": "Вы уверены, что хотите удалить это?",
+    "confirmNewPassword": "Подтвердите новый пароль:",
+    "confirmPassword": "Подтвердите пароль:",
     "email": "Электронная почта:",
     "enterValue": "Введите {{field}}:",
+    "masterPassword": "Введите ваш мастер-пароль:",
+    "masterPasswordForVault": "Введите мастер-пароль для шифрования хранилища:",
+    "newPassword": "Новый пароль:",
     "password": "Пароль:",
+    "passwordForUser": "Пароль для нового пользователя:",
     "selectOption": "Выберите вариант:",
+    "setPassword": "Установите пароль для пользователя:",
     "sshPassword": "Пароль SSH (оставьте пустым, если используется проверка ключом): ",
     "syncConfirm": "\nПродолжить синхронизацию? [y/N/d(etails)] ",
-    "syncConfirmHelp": "Пожалуйста, введите y (yes), n (no) или d (details)",
-    "passwordForUser": "Пароль для нового пользователя:",
-    "confirmPassword": "Подтвердите пароль:",
-    "setPassword": "Установите пароль для пользователя:",
-    "newPassword": "Новый пароль:",
-    "confirmNewPassword": "Подтвердите новый пароль:",
-    "masterPassword": "Введите ваш мастер-пароль:",
-    "masterPasswordForVault": "Введите мастер-пароль для шифрования хранилища:"
+    "syncConfirmHelp": "Пожалуйста, введите y (yes), n (no) или d (details)"
   },
   "spinners": {
     "connecting": "Подключение...",
@@ -1158,127 +1320,5 @@
   },
   "table": {
     "noData": "Нет данных для отображения"
-  },
-  "common": {
-    "yes": "Да",
-    "no": "Нет",
-    "running": "Работает",
-    "stopped": "Остановлено",
-    "completed": "Завершено",
-    "failed": "Ошибка",
-    "success": "✓ Успешно",
-    "unknown": "Неизвестно",
-    "inProgress": "В процессе"
-  },
-  "docs": {
-    "frontmatter": {
-      "title": "CLI-приложение",
-      "description": "Полное руководство по использованию интерфейса командной строки Rediacc для управления платформой",
-      "category": "Основные концепции"
-    },
-    "pageTitle": "Справочник CLI Rediacc",
-    "overview": {
-      "heading": "Обзор",
-      "text": "**Rediacc CLI** (`rdc`) — это интерфейс командной строки для управления всеми аспектами платформы Rediacc — аутентификацией, инфраструктурой, репозиториями, очередями, хранилищем и многим другим."
-    },
-    "installation": {
-      "heading": "Установка",
-      "text": "Загрузите последний бинарный файл для вашей платформы со [страницы релизов Rediacc](https://www.rediacc.com) или установите через ваш менеджер пакетов:"
-    },
-    "globalOptions": {
-      "heading": "Глобальные параметры",
-      "intro": "Каждая команда поддерживает эти глобальные флаги:"
-    },
-    "tableHeaders": {
-      "flag": "Флаг",
-      "description": "Описание",
-      "error": "Ошибка",
-      "meaning": "Значение"
-    },
-    "admonitions": {
-      "tip": "Совет",
-      "warning": "Предупреждение",
-      "note": "Примечание"
-    },
-    "sectionTitles": {
-      "auth": "Аутентификация",
-      "context": "Управление контекстами",
-      "organization": "Управление организацией",
-      "user": "Управление пользователями",
-      "team": "Управление командами",
-      "permission": "Управление правами",
-      "region": "Управление регионами",
-      "bridge": "Управление мостами",
-      "machine": "Управление машинами",
-      "repository": "Управление репозиториями",
-      "storage": "Управление хранилищем",
-      "queue": "Операции с очередями",
-      "sync": "Синхронизация файлов",
-      "vscode": "Интеграция с VS Code",
-      "term": "Доступ к SSH-терминалу",
-      "ceph": "Управление хранилищем Ceph",
-      "audit": "Аудит и соответствие",
-      "protocol": "Обработчик протокола",
-      "shortcuts": "Быстрые команды (ярлыки)",
-      "update": "Обновления CLI"
-    },
-    "errors": {
-      "heading": "Распространённые сообщения об ошибках",
-      "intro": "Когда что-то идёт не так, CLI предоставляет понятные сообщения об ошибках:",
-      "meanings": {
-        "authRequired": "Сначала необходимо войти в систему",
-        "noActiveContext": "Контекст не выбран — создайте или переключитесь на один из них",
-        "permissionDenied": "У вашей учётной записи нет необходимых прав",
-        "machineRequired": "Укажите машину с помощью `--machine` или задайте значение по умолчанию в контексте",
-        "teamRequired": "Укажите команду с помощью `--team` или задайте значение по умолчанию в контексте",
-        "regionRequired": "Укажите регион с помощью `--region` или задайте значение по умолчанию в контексте"
-      }
-    },
-    "outputFormats": {
-      "heading": "Форматы вывода",
-      "text": "Все команды list/get поддерживают несколько форматов вывода через `--output`:",
-      "closing": "Это упрощает интеграцию CLI Rediacc в скрипты, CI/CD-конвейеры и рабочие процессы автоматизации."
-    },
-    "supplements": {
-      "auth": {
-        "tip": "Ваш токен аутентификации хранится локально в вашем контексте. Используйте `--save-as` для сохранения учётных данных под именованным контекстом для нескольких сред.",
-        "register": {
-          "afterDescription": "После регистрации проверьте электронную почту на наличие кода активации."
-        }
-      },
-      "context": {
-        "afterDescription": "Контексты хранят данные подключения (URL API, учётные данные, команда/регион/машина по умолчанию), чтобы вы могли быстро переключаться между средами.",
-        "set": {
-          "tip": "Установка значений по умолчанию означает, что вам не нужно передавать `--team`, `--region` или `--machine` с каждой командой."
-        },
-        "createLocal": {
-          "afterDescription": "В локальном режиме вы можете добавлять машины напрямую:"
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "Когда режим обслуживания включён, пользователи без прав администратора не могут войти в систему."
-        }
-      },
-      "machine": {
-        "health": {
-          "afterDescription": "Команда health выводит системные метрики, статус контейнеров, стабильность сервисов и информацию о хранилище — полезно для проверок CI/CD-конвейеров."
-        },
-        "testConnection": {
-          "tip": "Используйте `--save-known-hosts` для автоматического сохранения ключа хоста в хранилище машины после успешного теста."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "Продвижение форка отделяет его от родительского (grand) репозитория, делая его независимым."
-        }
-      },
-      "queue": {
-        "afterDescription": "Система очередей — это ядро выполнения задач Rediacc. Каждая операция (развёртывание, резервное копирование, выполнение скриптов) проходит через очередь.",
-        "trace": {
-          "tip": "Используйте `--watch` для отслеживания задачи в реальном времени до её завершения."
-        }
-      }
-    }
   }
 }

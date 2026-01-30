@@ -33,6 +33,8 @@ const ALLOWED_IDENTICAL = new Set([
   // Brand names
   'Rediacc',
   'Rediaccfile',
+  'Renet',
+  'Node.js',
   'GitHub',
   'Docker',
   'Kubernetes',

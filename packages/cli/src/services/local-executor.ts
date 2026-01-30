@@ -5,13 +5,13 @@
  * without going through middleware API. Used in "local mode" contexts.
  */
 
-import { type ChildProcess, spawn } from 'node:child_process';
+import { type ChildProcess, execSync, spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import { contextService } from './context.js';
-import { isSEA } from './embedded-assets.js';
+import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
 import type { LocalMachineConfig } from '../types/index.js';
@@ -69,38 +69,53 @@ class LocalExecutorService {
   }
 
   /**
-   * Provision renet binary to remote machine if running as SEA.
-   * Returns the remote path to use for execution.
+   * Get the local path to the renet binary for spawning.
+   * In dev mode, uses the configured renetPath. In SEA mode, extracts the
+   * embedded binary to a local temp file.
    */
-  private async provisionRenetIfNeeded(
+  private async getLocalRenetPath(config: { renetPath: string }): Promise<string> {
+    if (!isSEA()) {
+      return config.renetPath;
+    }
+    return extractRenetToLocal();
+  }
+
+  /**
+   * Provision renet binary to the remote machine.
+   * Ensures /usr/bin/renet exists on the remote with the correct version.
+   * Works in both SEA mode (embedded binary) and dev mode (local file).
+   */
+  private async provisionRenetToRemote(
     config: { renetPath: string },
     machine: LocalMachineConfig,
     sshPrivateKey: string,
     options: Pick<LocalExecuteOptions, 'debug'>
-  ): Promise<string> {
+  ): Promise<void> {
+    // Resolve bare command name to absolute path for file reading
+    let localBinaryPath: string | undefined;
     if (!isSEA()) {
-      return config.renetPath;
+      localBinaryPath = config.renetPath.startsWith('/')
+        ? config.renetPath
+        : execSync(`which ${config.renetPath}`, { encoding: 'utf-8' }).trim();
     }
 
-    const provisionResult = await renetProvisioner.provision({
-      host: machine.ip,
-      port: machine.port ?? DEFAULTS.SSH.PORT,
-      username: machine.user,
-      privateKey: sshPrivateKey,
-    });
+    const result = await renetProvisioner.provision(
+      {
+        host: machine.ip,
+        port: machine.port ?? DEFAULTS.SSH.PORT,
+        username: machine.user,
+        privateKey: sshPrivateKey,
+      },
+      { localBinaryPath }
+    );
 
-    if (!provisionResult.success) {
-      throw new Error(provisionResult.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
+    if (!result.success) {
+      throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
     }
 
-    if (provisionResult.action === 'uploaded') {
-      this.logDebug(
-        options,
-        `[local] Provisioned renet (${provisionResult.arch}) to ${machine.ip}`
-      );
+    if (result.action === 'uploaded') {
+      this.logDebug(options, `[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
     }
-
-    return provisionResult.remotePath;
   }
 
   /**
@@ -139,10 +154,13 @@ class LocalExecutorService {
         params: options.params ?? {},
       });
 
-      // Provision renet to remote if running as SEA
-      const renetPath = await this.provisionRenetIfNeeded(config, machine, sshPrivateKey, options);
+      // Get local renet path (dev: from config, SEA: extract to temp)
+      const renetPath = await this.getLocalRenetPath(config);
 
-      // Spawn renet execute
+      // Provision renet to remote machine (/usr/bin/renet)
+      await this.provisionRenetToRemote(config, machine, sshPrivateKey, options);
+
+      // Spawn renet execute locally
       const result = await this.spawnRenet(renetPath, vault, options);
 
       return {
@@ -195,7 +213,7 @@ class LocalExecutorService {
         user: opts.machine.user,
         port: opts.machine.port ?? DEFAULTS.SSH.PORT,
         datastore: opts.machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-        known_hosts: '',
+        known_hosts: opts.sshKnownHosts,
       },
       params: opts.params,
       extra_machines: {},
