@@ -54,6 +54,7 @@ const COMMAND_ORDER = [
   'protocol',
   'shortcuts',
   'update',
+  'doctor',
 ];
 
 // Validate COMMAND_ORDER against actual command groups in cli.json

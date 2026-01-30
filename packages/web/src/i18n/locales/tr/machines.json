@@ -1,22 +1,11 @@
 {
-  "advanced": "Gelişmiş",
-  "functions": {
-    "title": "Fonksiyonlar",
-    "setup": "Kurulum",
-    "hello": "Merhaba"
-  },
-  "info": {
-    "hostname": "Ana Bilgisayar Adı",
-    "uptime": "Çalışma Süresi",
-    "cpu": "İşlemci",
-    "systemTime": "Sistem Saati"
-  },
   "actions": {
     "add": "Makine Ekle",
     "runOnServer": "Sunucuda Çalıştır"
   },
   "addSystemFunction": "Kuyruğa Sistem İşlevi Ekleme",
   "addToQueue": "Kuyruğa Ekle",
+  "advanced": "Gelişmiş",
   "allMachinesConnected": "Tüm {{count}} makineleri başarıyla bağlandı",
   "assignedDate": "Atanma Tarihi",
   "assignmentStatus": {
@@ -105,7 +94,11 @@
     },
     "vaultConfig": "Kasa Yapılandırması (JSON)"
   },
-  "noVaultData": "Kasa verisi mevcut değil",
+  "functions": {
+    "hello": "Merhaba",
+    "setup": "Kurulum",
+    "title": "Fonksiyonlar"
+  },
   "goToMachinesPage": "Makineler sayfası",
   "gridView": "Depo",
   "groupBy": "Grup tarafından",
@@ -120,6 +113,12 @@
   "heading": "Makineler",
   "hoursAgo": "{{count}} saat önce",
   "hoursAgo_plural": "{{count}} saat önce",
+  "info": {
+    "cpu": "İşlemci",
+    "hostname": "Ana Bilgisayar Adı",
+    "systemTime": "Sistem Saati",
+    "uptime": "Çalışma Süresi"
+  },
   "itemCount": "öğe | öğeler",
   "justNow": "Hemen şimdi",
   "lastUpdated": "Son Güncelleme",
@@ -139,6 +138,7 @@
   "noAvailableMachinesForClone": "Klon ataması için kullanılabilir makine yok",
   "noMachinesFound": "Makine bulunamadı",
   "noMachinesWithClusters": "Seçilen makinelerin hiçbiri bir kümeye atanmamış",
+  "noVaultData": "Kasa verisi mevcut değil",
   "pending": "Beklemede",
   "placeholders": {
     "selectMachine": "Bir makine seçin"

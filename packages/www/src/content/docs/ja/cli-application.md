@@ -1316,6 +1316,12 @@ rdc retry
 
 ---
 
+## 21. {{t:cli.docs.sectionTitles.doctor}}
+
+{{t:cli.commands.doctor.description}}
+
+---
+
 ## {{t:cli.docs.errors.heading}}
 
 {{t:cli.docs.errors.intro}}

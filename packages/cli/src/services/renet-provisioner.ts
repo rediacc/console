@@ -3,20 +3,21 @@
  *
  * Provisions the appropriate renet binary to remote Linux machines
  * before execution. Handles architecture detection, verification, and caching.
+ *
+ * Installs renet to /usr/bin/renet (canonical path) so that `sudo renet`
+ * works without PATH issues. Uses a staging upload to /tmp then sudo cp.
  */
 
+import * as fs from 'node:fs/promises';
 import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
-import {
-  isSEA,
-  getEmbeddedRenetBinary,
-  getEmbeddedMetadata,
-  computeSha256,
-  type LinuxArch,
-} from './embedded-assets.js';
+import { isSEA, getEmbeddedRenetBinary, computeSha256, type LinuxArch } from './embedded-assets.js';
 
-/** Default remote path for provisioned renet binary */
-const DEFAULT_REMOTE_PATH = '/tmp/.rdc/renet';
+/** Canonical install path on remote machines */
+const REMOTE_INSTALL_PATH = '/usr/bin/renet';
+
+/** Staging path for SFTP upload (no sudo needed for /tmp) */
+const STAGING_PATH = '/tmp/.rdc-staging-renet';
 
 /** Cache TTL in milliseconds (1 hour) */
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -25,10 +26,8 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 export interface ProvisionResult {
   /** Whether provisioning succeeded */
   success: boolean;
-  /** Action taken: uploaded new binary, verified existing, skipped (not SEA), or failed */
-  action: 'uploaded' | 'verified' | 'skipped' | 'failed';
-  /** Remote path where renet is available */
-  remotePath: string;
+  /** Action taken: uploaded new binary, verified existing, or failed */
+  action: 'uploaded' | 'verified' | 'failed';
   /** Detected architecture (undefined if detection failed) */
   arch?: LinuxArch;
   /** Error message if failed */
@@ -44,12 +43,14 @@ interface CacheEntry {
 /**
  * Service for provisioning renet binaries to remote Linux machines.
  *
- * When running as SEA, extracts the appropriate architecture binary
- * from embedded assets and uploads via SFTP. Uses a verification flow:
- * 1. Check if remote binary exists
- * 2. Compare size with expected
- * 3. Compare SHA256 hash with expected
- * 4. Upload only if verification fails
+ * Works in both SEA and dev modes:
+ * - SEA mode: extracts binary from embedded assets
+ * - Dev mode: reads binary from a local file path
+ *
+ * Installation flow:
+ * 1. Compute SHA256 of local binary
+ * 2. Check remote /usr/bin/renet via sha256sum
+ * 3. If mismatch: SFTP upload to staging path, sudo cp to /usr/bin/renet
  *
  * Maintains an in-memory cache to avoid redundant checks within TTL.
  */
@@ -57,21 +58,19 @@ class RenetProvisionerService {
   private readonly cache = new Map<string, CacheEntry>();
 
   /**
-   * Provision renet to a remote Linux machine
+   * Provision renet to a remote Linux machine.
    *
    * @param config - SFTP connection configuration
-   * @param remotePath - Remote path for the binary (default: /tmp/.rdc/renet)
+   * @param options - Optional provisioning options
+   * @param options.localBinaryPath - Dev mode: read binary from this local file
    * @returns Provision result with action taken
    */
   async provision(
     config: SFTPClientConfig,
-    remotePath = DEFAULT_REMOTE_PATH
-  ): Promise<ProvisionResult> {
-    // Not running as SEA - use local renet path
-    if (!isSEA()) {
-      return { success: true, action: 'skipped', remotePath: 'renet', arch: 'amd64' };
+    options?: {
+      localBinaryPath?: string;
     }
-
+  ): Promise<ProvisionResult> {
     const sftp = new SFTPClient(config);
 
     try {
@@ -79,43 +78,59 @@ class RenetProvisionerService {
 
       // Detect remote architecture
       const arch = await this.detectArch(sftp);
-      const metadata = getEmbeddedMetadata().binaries[arch];
+
+      // Get binary data from the appropriate source
+      const binary = await this.getBinary(arch, options?.localBinaryPath);
+      const localHash = computeSha256(binary);
 
       // Check in-memory cache
       const cacheKey = `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`;
       const cached = this.cache.get(cacheKey);
-      if (cached?.hash === metadata.sha256 && Date.now() - cached.provisionedAt < CACHE_TTL_MS) {
-        return { success: true, action: 'skipped', remotePath, arch };
+      if (cached?.hash === localHash && Date.now() - cached.provisionedAt < CACHE_TTL_MS) {
+        return { success: true, action: 'verified', arch };
       }
 
-      // Verify remote binary
-      const needsUpload = await this.needsUpload(sftp, remotePath, metadata);
+      // Check remote binary via sha256sum
+      const needsInstall = await this.needsInstall(sftp, localHash);
 
-      if (!needsUpload) {
-        this.cache.set(cacheKey, { hash: metadata.sha256, provisionedAt: Date.now() });
-        return { success: true, action: 'verified', remotePath, arch };
+      if (!needsInstall) {
+        this.cache.set(cacheKey, { hash: localHash, provisionedAt: Date.now() });
+        return { success: true, action: 'verified', arch };
       }
 
-      // Extract and upload binary
-      const binary = getEmbeddedRenetBinary(arch);
-      const parentDir = remotePath.substring(0, remotePath.lastIndexOf('/'));
-      await sftp.mkdirRecursive(parentDir);
-      await sftp.writeFile(remotePath, binary);
-      await sftp.chmod(remotePath, 0o755);
+      // Stage and install: SFTP upload to /tmp, then sudo cp to /usr/bin/renet
+      await sftp.writeFile(STAGING_PATH, binary);
+      await sftp.exec(
+        `sudo cp ${STAGING_PATH} ${REMOTE_INSTALL_PATH} && sudo chmod 755 ${REMOTE_INSTALL_PATH} && rm -f ${STAGING_PATH}`
+      );
 
-      this.cache.set(cacheKey, { hash: metadata.sha256, provisionedAt: Date.now() });
-      return { success: true, action: 'uploaded', remotePath, arch };
+      this.cache.set(cacheKey, { hash: localHash, provisionedAt: Date.now() });
+      return { success: true, action: 'uploaded', arch };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
         action: 'failed',
-        remotePath,
         error: `Failed to provision renet: ${errorMessage}`,
       };
     } finally {
       sftp.close();
     }
+  }
+
+  /**
+   * Get the binary data from either embedded assets or a local file.
+   */
+  private async getBinary(arch: LinuxArch, localBinaryPath?: string): Promise<Buffer> {
+    if (isSEA()) {
+      return getEmbeddedRenetBinary(arch);
+    }
+
+    if (localBinaryPath) {
+      return fs.readFile(localBinaryPath);
+    }
+
+    throw new Error('Cannot provision renet: not running as SEA and no localBinaryPath provided');
   }
 
   /**
@@ -142,8 +157,8 @@ class RenetProvisionerService {
       // - /lib/aarch64-linux-gnu: Debian/Ubuntu multiarch
       // - /lib64/ld-linux-aarch64.so.1: RHEL/CentOS/Fedora ARM64 dynamic linker
       const arm64Paths = ['/lib/aarch64-linux-gnu', '/lib64/ld-linux-aarch64.so.1'];
-      for (const path of arm64Paths) {
-        if (await sftp.exists(path)) {
+      for (const p of arm64Paths) {
+        if (await sftp.exists(p)) {
           return 'arm64';
         }
       }
@@ -152,31 +167,17 @@ class RenetProvisionerService {
   }
 
   /**
-   * Check if the remote binary needs to be uploaded.
-   * Verifies existence, size, and SHA256 hash.
+   * Check if the remote binary needs to be installed.
+   * Uses sha256sum on the remote to compare with expected hash.
    */
-  private async needsUpload(
-    sftp: SFTPClient,
-    path: string,
-    expected: { size: number; sha256: string }
-  ): Promise<boolean> {
+  private async needsInstall(sftp: SFTPClient, expectedHash: string): Promise<boolean> {
     try {
-      // Check existence
-      if (!(await sftp.exists(path))) {
-        return true;
-      }
-
-      // Check size first (fast check)
-      const stat = await sftp.stat(path);
-      if (stat.size !== expected.size) {
-        return true;
-      }
-
-      // Verify SHA256 hash (slow but thorough)
-      const content = await sftp.readFile(path);
-      return computeSha256(content) !== expected.sha256;
+      const output = await sftp.exec(`sha256sum ${REMOTE_INSTALL_PATH}`);
+      // sha256sum output format: "<hash>  <path>"
+      const remoteHash = output.trim().split(/\s+/)[0];
+      return remoteHash !== expectedHash;
     } catch {
-      // Any error means we need to upload
+      // Binary doesn't exist or sha256sum failed — needs install
       return true;
     }
   }

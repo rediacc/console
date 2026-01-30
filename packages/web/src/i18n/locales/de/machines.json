@@ -1,23 +1,11 @@
 {
-  "addSystemFunction": "Systemfunktion zur Warteschlange hinzufügen",
-  "addToQueue": "Zur Warteschlange hinzufügen",
-  "advanced": "Erweitert",
-  "functions": {
-    "title": "Funktionen",
-    "setup": "Einrichten",
-    "hello": "Hallo"
-  },
-  "info": {
-    "hostname": "Hostname",
-    "uptime": "Betriebszeit",
-    "cpu": "CPU",
-    "systemTime": "Systemzeit"
-  },
   "actions": {
     "add": "Maschine hinzufügen",
     "runOnServer": "Auf Server ausführen"
   },
-  "noVaultData": "Keine Vault-Daten verfügbar",
+  "addSystemFunction": "Systemfunktion zur Warteschlange hinzufügen",
+  "addToQueue": "Zur Warteschlange hinzufügen",
+  "advanced": "Erweitert",
   "allMachinesConnected": "Alle {{count}} Maschinen wurden erfolgreich verbunden",
   "assignedDate": "Zuweisungsdatum",
   "assignmentStatus": {
@@ -106,6 +94,11 @@
     },
     "vaultConfig": "Vault-Konfiguration (JSON)"
   },
+  "functions": {
+    "hello": "Hallo",
+    "setup": "Einrichten",
+    "title": "Funktionen"
+  },
   "goToMachinesPage": "Maschinenseite",
   "gridView": "Netzansicht",
   "groupBy": "Gruppieren nach",
@@ -120,6 +113,12 @@
   "heading": "Maschinen",
   "hoursAgo": "Vor {{count}} Stunde",
   "hoursAgo_plural": "Vor {{count}} Stunden",
+  "info": {
+    "cpu": "CPU",
+    "hostname": "Hostname",
+    "systemTime": "Systemzeit",
+    "uptime": "Betriebszeit"
+  },
   "itemCount": "Artikel | Artikel",
   "justNow": "Soeben",
   "lastUpdated": "Zuletzt aktualisiert",
@@ -139,6 +138,7 @@
   "noAvailableMachinesForClone": "Keine verfügbaren Maschinen für die Klonzuweisung",
   "noMachinesFound": "Keine Maschinen gefunden",
   "noMachinesWithClusters": "Keine der ausgewählten Maschinen ist einem Cluster zugeordnet",
+  "noVaultData": "Keine Vault-Daten verfügbar",
   "pending": "Ausstehend",
   "placeholders": {
     "selectMachine": "Wählen Sie eine Maschine aus"

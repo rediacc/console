@@ -62,12 +62,10 @@ test.describe('E2E Local Execution @cli @e2e', () => {
         timeout: 300000,
       });
 
-      console.warn('Ping output:', result.stdout);
-      if (!result.success) {
-        console.warn('Ping stderr:', result.stderr);
-      }
-
-      expect(result.success).toBe(true);
+      expect(
+        result.success,
+        `Ping failed (exit ${result.exitCode}).\nstdout: ${result.stdout}\nstderr: ${result.stderr}`
+      ).toBe(true);
     });
 
     test('should show execution duration', async () => {
