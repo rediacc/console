@@ -1,7 +1,7 @@
 name: Rerun Failed Jobs
 
-# Triggered by other workflows to rerun their failed jobs
-# Limits: max 3 attempts per workflow run
+# Triggered by the CI watchdog to rerun failed jobs after force-cancellation.
+# Safety: checks run_attempt to prevent infinite retry loops (max 2 attempts).
 
 on:
   workflow_dispatch:
@@ -15,19 +15,48 @@ jobs:
   rerun:
     name: Rerun Failed Jobs
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Wait for workflow to complete
+      - name: Validate and check attempt
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Waiting for run ${{ inputs.run_id }} to complete..."
-          gh run watch ${{ inputs.run_id }} > /dev/null 2>&1 || true
+          echo "::group::Fetching run details"
+          echo "Run ID: ${{ inputs.run_id }}"
+
+          ATTEMPT=$(gh api "repos/${GH_REPO}/actions/runs/${{ inputs.run_id }}" --jq '.run_attempt')
+          echo "Current run attempt: ${ATTEMPT}"
+          echo "::endgroup::"
+
+          MAX_ATTEMPTS=2
+          if [ "${ATTEMPT}" -ge "${MAX_ATTEMPTS}" ]; then
+            echo "::warning::Run attempt ${ATTEMPT} >= max ${MAX_ATTEMPTS} - skipping rerun (defense-in-depth)"
+            echo "SKIP_RERUN=true" >> "$GITHUB_ENV"
+          else
+            echo "Run attempt ${ATTEMPT} < max ${MAX_ATTEMPTS} - rerun is allowed"
+            echo "SKIP_RERUN=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Wait for workflow to complete
+        if: env.SKIP_RERUN != 'true'
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "::group::Waiting for run ${{ inputs.run_id }} to complete"
+          gh run watch ${{ inputs.run_id }} --exit-status > /dev/null 2>&1 || true
+          echo "::endgroup::"
+          echo "Run ${{ inputs.run_id }} has completed"
 
       - name: Rerun failed jobs
+        if: env.SKIP_RERUN != 'true'
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          echo "::group::Rerunning failed jobs"
           echo "Rerunning failed jobs for run ${{ inputs.run_id }}..."
           gh run rerun ${{ inputs.run_id }} --failed
+          echo "::endgroup::"
+          echo "Successfully triggered rerun of failed jobs"
