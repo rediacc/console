@@ -84,6 +84,28 @@ jobs:
           fi
 
   # ============================================================================
+  # CD WATCHDOG - monitors jobs, auto-retries transient build failures
+  # ============================================================================
+  cd-watchdog:
+    name: CD Watchdog
+    needs: [init]
+    runs-on: ubuntu-latest
+    timeout-minutes: 240  # 4 hours (CD builds take longer than CI)
+    if: ${{ !cancelled() && needs.init.result == 'success' }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Monitor jobs and auto-retry on failure
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        env:
+          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CD Watchdog'
+          WATCHDOG_NO_RETRY_PATTERNS: 'Publish,Validate Install Methods,Cleanup'
+        with:
+          script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
+
+  # ============================================================================
   # BUILD (parallel reusable workflows)
   # ============================================================================
 
