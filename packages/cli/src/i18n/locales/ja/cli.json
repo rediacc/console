@@ -5,6 +5,11 @@
   "commands": {
     "audit": {
       "description": "監査ログコマンド",
+      "history": {
+        "description": "エンティティ履歴を表示する",
+        "fetching": "エンティティ履歴を取得中です...",
+        "success": "履歴が取得されました"
+      },
       "list": {
         "description": "監査ログエントリをリスト表示する",
         "fetching": "監査ログを取得中です..."
@@ -18,14 +23,15 @@
         "description": "エンティティの監査履歴をトレースする",
         "fetching": "エンティティの監査トレースを取得中です...",
         "success": "監査トレースが取得されました"
-      },
-      "history": {
-        "description": "エンティティ履歴を表示する",
-        "fetching": "エンティティ履歴を取得中です...",
-        "success": "履歴が取得されました"
       }
     },
     "auth": {
+      "activate": {
+        "activated": "アカウントが有効化されました",
+        "activating": "アカウント有効化中です...",
+        "description": "認証コードを使用してアカウントを有効化する",
+        "success": "アカウントが有効化されました！次のコマンドでログインできます: rdc login"
+      },
       "description": "認証コマンド",
       "login": {
         "authenticating": "認証中です...",
@@ -43,11 +49,6 @@
         "shortcut": "保存された認証情報を削除する (短縮形: auth logout)",
         "success": "ログアウトに成功しました"
       },
-      "status": {
-        "description": "現在の認証ステータスを確認する",
-        "authenticated": "認証済み: {{email}}",
-        "notAuthenticated": "認証されていません。実行してください: rdc login"
-      },
       "register": {
         "description": "新しい組織とユーザーアカウントを登録する",
         "nextStep": "次に実行してください: rdc auth activate -e <email> -p <password> --code <code>",
@@ -55,11 +56,10 @@
         "submitted": "登録が送信されました",
         "success": "登録に成功しました！メールで認証コードをご確認ください。"
       },
-      "activate": {
-        "activated": "アカウントが有効化されました",
-        "activating": "アカウント有効化中です...",
-        "description": "認証コードを使用してアカウントを有効化する",
-        "success": "アカウントが有効化されました！次のコマンドでログインできます: rdc login"
+      "status": {
+        "authenticated": "認証済み: {{email}}",
+        "description": "現在の認証ステータスを確認する",
+        "notAuthenticated": "認証されていません。実行してください: rdc login"
       },
       "tfa": {
         "description": "二段階認証管理",
@@ -117,24 +117,57 @@
       }
     },
     "ceph": {
-      "description": "Ceph 分散ストレージ管理",
+      "clone": {
+        "assign": {
+          "assigning": "クローン \"{{name}}\" にマシンを割り当て中...",
+          "description": "クローンにマシンを割り当てる",
+          "success": "クローン \"{{name}}\" にマシンを割り当てました"
+        },
+        "create": {
+          "creating": "RBD クローン \"{{name}}\" を作成中...",
+          "description": "スナップショットから新しい RBD クローンを作成する",
+          "success": "RBD クローン \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "confirm": "RBD クローン \"{{name}}\" を削除しますか？",
+          "deleting": "RBD クローン \"{{name}}\" を削除中...",
+          "description": "RBD クローンを削除する",
+          "success": "RBD クローン \"{{name}}\" を削除しました"
+        },
+        "description": "Ceph RBD クローン管理",
+        "list": {
+          "description": "RBD クローンを一覧表示する",
+          "fetching": "RBD クローンを取得中...",
+          "success": "クローンを取得しました"
+        },
+        "machines": {
+          "description": "クローンに割り当てられたマシンを一覧表示する",
+          "fetching": "クローンのマシンを取得中...",
+          "success": "クローンのマシンを取得しました"
+        },
+        "unassign": {
+          "description": "クローンからマシンを削除する",
+          "success": "クローン \"{{name}}\" からマシンを削除しました",
+          "unassigning": "クローン \"{{name}}\" からマシンを削除中..."
+        }
+      },
       "cluster": {
+        "create": {
+          "creating": "Ceph クラスター \"{{name}}\" を作成中...",
+          "description": "新しい Ceph クラスターを作成する",
+          "success": "Ceph クラスター \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "confirm": "Ceph クラスター \"{{name}}\" を削除しますか？",
+          "deleting": "Ceph クラスター \"{{name}}\" を削除中...",
+          "description": "Ceph クラスターを削除する",
+          "success": "Ceph クラスター \"{{name}}\" を削除しました"
+        },
         "description": "Ceph クラスター管理",
         "list": {
           "description": "Ceph クラスターを一覧表示する",
           "fetching": "Ceph クラスターを取得中...",
           "success": "クラスターを取得しました"
-        },
-        "create": {
-          "description": "新しい Ceph クラスターを作成する",
-          "creating": "Ceph クラスター \"{{name}}\" を作成中...",
-          "success": "Ceph クラスター \"{{name}}\" を作成しました"
-        },
-        "delete": {
-          "description": "Ceph クラスターを削除する",
-          "confirm": "Ceph クラスター \"{{name}}\" を削除しますか？",
-          "deleting": "Ceph クラスター \"{{name}}\" を削除中...",
-          "success": "Ceph クラスター \"{{name}}\" を削除しました"
         },
         "machines": {
           "description": "Ceph クラスター内のマシンを一覧表示する",
@@ -150,28 +183,48 @@
           },
           "update": {
             "description": "クラスター Vault データを更新する",
-            "updating": "\"{{name}}\" のクラスター Vault を更新中...",
-            "success": "\"{{name}}\" のクラスター Vault を更新しました"
+            "success": "\"{{name}}\" のクラスター Vault を更新しました",
+            "updating": "\"{{name}}\" のクラスター Vault を更新中..."
           }
         }
       },
+      "description": "Ceph 分散ストレージ管理",
+      "image": {
+        "create": {
+          "creating": "RBD イメージ \"{{name}}\" を作成中...",
+          "description": "新しい RBD イメージを作成する",
+          "success": "RBD イメージ \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "confirm": "RBD イメージ \"{{name}}\" を削除しますか？",
+          "deleting": "RBD イメージ \"{{name}}\" を削除中...",
+          "description": "RBD イメージを削除する",
+          "success": "RBD イメージ \"{{name}}\" を削除しました"
+        },
+        "description": "Ceph RBD イメージ管理",
+        "list": {
+          "description": "RBD イメージを一覧表示する",
+          "fetching": "RBD イメージを取得中...",
+          "success": "イメージを取得しました"
+        }
+      },
       "pool": {
+        "create": {
+          "creating": "Ceph プール \"{{name}}\" を作成中...",
+          "description": "新しい Ceph プールを作成する",
+          "success": "Ceph プール \"{{name}}\" を作成しました"
+        },
+        "delete": {
+          "confirm": "Ceph プール \"{{name}}\" を削除しますか？",
+          "deleting": "Ceph プール \"{{name}}\" を削除中...",
+          "description": "Ceph プールを削除する",
+          "success": "Ceph プール \"{{name}}\" を削除しました"
+        },
         "description": "Ceph プール管理",
         "list": {
           "description": "Ceph プールを一覧表示する",
           "fetching": "Ceph プールを取得中...",
           "success": "プールを取得しました"
-        },
-        "create": {
-          "description": "新しい Ceph プールを作成する",
-          "creating": "Ceph プール \"{{name}}\" を作成中...",
-          "success": "Ceph プール \"{{name}}\" を作成しました"
-        },
-        "delete": {
-          "description": "Ceph プールを削除する",
-          "confirm": "Ceph プール \"{{name}}\" を削除しますか？",
-          "deleting": "Ceph プール \"{{name}}\" を削除中...",
-          "success": "Ceph プール \"{{name}}\" を削除しました"
         },
         "vault": {
           "description": "Ceph プール Vault 管理",
@@ -182,280 +235,278 @@
           },
           "update": {
             "description": "プール Vault データを更新する",
-            "updating": "\"{{name}}\" のプール Vault を更新中...",
-            "success": "\"{{name}}\" のプール Vault を更新しました"
+            "success": "\"{{name}}\" のプール Vault を更新しました",
+            "updating": "\"{{name}}\" のプール Vault を更新中..."
           }
         }
       },
-      "image": {
-        "description": "Ceph RBD イメージ管理",
-        "list": {
-          "description": "RBD イメージを一覧表示する",
-          "fetching": "RBD イメージを取得中...",
-          "success": "イメージを取得しました"
-        },
+      "snapshot": {
         "create": {
-          "description": "新しい RBD イメージを作成する",
-          "creating": "RBD イメージ \"{{name}}\" を作成中...",
-          "success": "RBD イメージ \"{{name}}\" を作成しました"
+          "creating": "RBD スナップショット \"{{name}}\" を作成中...",
+          "description": "新しい RBD スナップショットを作成する",
+          "success": "RBD スナップショット \"{{name}}\" を作成しました"
         },
         "delete": {
-          "description": "RBD イメージを削除する",
-          "confirm": "RBD イメージ \"{{name}}\" を削除しますか？",
-          "deleting": "RBD イメージ \"{{name}}\" を削除中...",
-          "success": "RBD イメージ \"{{name}}\" を削除しました"
-        }
-      },
-      "snapshot": {
+          "confirm": "RBD スナップショット \"{{name}}\" を削除しますか？",
+          "deleting": "RBD スナップショット \"{{name}}\" を削除中...",
+          "description": "RBD スナップショットを削除する",
+          "success": "RBD スナップショット \"{{name}}\" を削除しました"
+        },
         "description": "Ceph RBD スナップショット管理",
         "list": {
           "description": "RBD スナップショットを一覧表示する",
           "fetching": "RBD スナップショットを取得中...",
           "success": "スナップショットを取得しました"
-        },
-        "create": {
-          "description": "新しい RBD スナップショットを作成する",
-          "creating": "RBD スナップショット \"{{name}}\" を作成中...",
-          "success": "RBD スナップショット \"{{name}}\" を作成しました"
-        },
-        "delete": {
-          "description": "RBD スナップショットを削除する",
-          "confirm": "RBD スナップショット \"{{name}}\" を削除しますか？",
-          "deleting": "RBD スナップショット \"{{name}}\" を削除中...",
-          "success": "RBD スナップショット \"{{name}}\" を削除しました"
-        }
-      },
-      "clone": {
-        "description": "Ceph RBD クローン管理",
-        "list": {
-          "description": "RBD クローンを一覧表示する",
-          "fetching": "RBD クローンを取得中...",
-          "success": "クローンを取得しました"
-        },
-        "create": {
-          "description": "スナップショットから新しい RBD クローンを作成する",
-          "creating": "RBD クローン \"{{name}}\" を作成中...",
-          "success": "RBD クローン \"{{name}}\" を作成しました"
-        },
-        "delete": {
-          "description": "RBD クローンを削除する",
-          "confirm": "RBD クローン \"{{name}}\" を削除しますか？",
-          "deleting": "RBD クローン \"{{name}}\" を削除中...",
-          "success": "RBD クローン \"{{name}}\" を削除しました"
-        },
-        "machines": {
-          "description": "クローンに割り当てられたマシンを一覧表示する",
-          "fetching": "クローンのマシンを取得中...",
-          "success": "クローンのマシンを取得しました"
-        },
-        "assign": {
-          "description": "クローンにマシンを割り当てる",
-          "assigning": "クローン \"{{name}}\" にマシンを割り当て中...",
-          "success": "クローン \"{{name}}\" にマシンを割り当てました"
-        },
-        "unassign": {
-          "description": "クローンからマシンを削除する",
-          "unassigning": "クローン \"{{name}}\" からマシンを削除中...",
-          "success": "クローン \"{{name}}\" からマシンを削除しました"
         }
       }
     },
     "context": {
-      "description": "CLI コンテキストを管理する",
-      "list": {
-        "description": "すべてのコンテキストをリスト表示する",
-        "noContexts": "コンテキストが設定されていません"
+      "addMachine": {
+        "description": "現在のローカルコンテキストにマシンを追加する",
+        "success": "マシン \"{{name}}\" が追加されました ({{user}}@{{ip}})"
       },
-      "show": {
-        "description": "現在のコンテキストの詳細を表示する",
-        "noContext": "アクティブなコンテキストがありません"
-      },
-      "use": {
-        "description": "別のコンテキストに切り替える",
-        "switched": "コンテキスト \"{{name}}\" に切り替えました"
+      "clear": {
+        "allCleared": "すべてのデフォルトをクリアしました",
+        "description": "デフォルトをクリアする (すべて、または特定のキー)",
+        "keyCleared": "\"{{key}}\" をクリアしました"
       },
       "create": {
         "description": "新しいコンテキストを作成する",
         "success": "コンテキスト \"{{name}}\" が作成されました"
       },
-      "delete": {
-        "description": "コンテキストを削除する",
-        "success": "コンテキスト \"{{name}}\" が削除されました",
-        "confirm": "コンテキスト \"{{name}}\" を削除してもよろしいですか？"
-      },
-      "rename": {
-        "description": "コンテキストの名前を変更する",
-        "success": "コンテキスト \"{{oldName}}\" を \"{{newName}}\" に名前変更しました"
+      "createLocal": {
+        "description": "ミドルウェアなしで操作するための新しいローカルコンテキストを作成する",
+        "nextStep": "マシンを追加: rdc context add-machine <name> --ip <ip> --user <user>",
+        "success": "ローカルコンテキスト \"{{name}}\" が作成されました"
       },
       "current": {
         "description": "現在のコンテキスト名を表示する",
         "noContext": "アクティブなコンテキストがありません"
       },
+      "delete": {
+        "confirm": "コンテキスト \"{{name}}\" を削除してもよろしいですか？",
+        "description": "コンテキストを削除する",
+        "success": "コンテキスト \"{{name}}\" が削除されました"
+      },
+      "description": "CLI コンテキストを管理する",
+      "list": {
+        "description": "すべてのコンテキストをリスト表示する",
+        "noContexts": "コンテキストが設定されていません"
+      },
+      "machines": {
+        "description": "現在のローカルコンテキストのマシンをリスト表示する",
+        "noMachines": "設定されたマシンがありません。追加: rdc context add-machine <name> --ip <ip> --user <user>"
+      },
+      "removeMachine": {
+        "description": "現在のローカルコンテキストからマシンを削除する",
+        "success": "マシン \"{{name}}\" が削除されました"
+      },
+      "rename": {
+        "description": "コンテキストの名前を変更する",
+        "success": "コンテキスト \"{{oldName}}\" を \"{{newName}}\" に名前変更しました"
+      },
       "set": {
         "description": "デフォルト値を設定する (team, region, bridge, machine)",
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
-      },
-      "unset": {
-        "description": "コンテキストのデフォルト値を削除する",
-        "success": "現在のコンテキストから {{key}} を削除しました"
-      },
-      "clear": {
-        "description": "デフォルトをクリアする (すべて、または特定のキー)",
-        "keyCleared": "\"{{key}}\" をクリアしました",
-        "allCleared": "すべてのデフォルトをクリアしました"
       },
       "setLanguage": {
         "description": "優先言語を設定する",
         "success": "言語を \"{{code}}\" に設定しました",
         "unsupported": "サポートされていない言語です。サポート対象: {{languages}}"
       },
-      "createLocal": {
-        "description": "ミドルウェアなしで操作するための新しいローカルコンテキストを作成する",
-        "success": "ローカルコンテキスト \"{{name}}\" が作成されました",
-        "nextStep": "マシンを追加: rdc context add-machine <name> --ip <ip> --user <user>"
-      },
-      "addMachine": {
-        "description": "現在のローカルコンテキストにマシンを追加する",
-        "success": "マシン \"{{name}}\" が追加されました ({{user}}@{{ip}})"
-      },
-      "removeMachine": {
-        "description": "現在のローカルコンテキストからマシンを削除する",
-        "success": "マシン \"{{name}}\" が削除されました"
-      },
-      "machines": {
-        "description": "現在のローカルコンテキストのマシンをリスト表示する",
-        "noMachines": "設定されたマシンがありません。追加: rdc context add-machine <name> --ip <ip> --user <user>"
+      "setRenet": {
+        "description": "ローカルモード用の renet バイナリへのパスを設定する",
+        "success": "Renet パスが設定されました: {{path}}"
       },
       "setSsh": {
         "description": "現在のローカルコンテキストの SSH 設定を更新する",
         "success": "SSH 設定が更新されました"
       },
-      "setRenet": {
-        "description": "ローカルモード用の renet バイナリへのパスを設定する",
-        "success": "Renet パスが設定されました: {{path}}"
+      "show": {
+        "description": "現在のコンテキストの詳細を表示する",
+        "noContext": "アクティブなコンテキストがありません"
+      },
+      "unset": {
+        "description": "コンテキストのデフォルト値を削除する",
+        "success": "現在のコンテキストから {{key}} を削除しました"
+      },
+      "use": {
+        "description": "別のコンテキストに切り替える",
+        "switched": "コンテキスト \"{{name}}\" に切り替えました"
       }
     },
+    "doctor": {
+      "allPassed": "すべてのチェックに合格しました",
+      "checks": {
+        "activeContext": "アクティブコンテキスト",
+        "authStatus": "Status",
+        "cliVersion": "CLIバージョン",
+        "contextMode": "コンテキストモード",
+        "dockerAvailable": "Docker",
+        "goInstalled": "Go",
+        "machines": "Machines",
+        "nodeVersion": "Node.js",
+        "renetBinary": "バイナリ",
+        "renetCriu": "組み込みCRIU",
+        "renetRsync": "組み込みrsync",
+        "renetVersion": "Version",
+        "seaMode": "SEAモード",
+        "sshKey": "SSHキー"
+      },
+      "description": "CLI環境とrenet統合を診断",
+      "devMode": "いいえ（開発モード）",
+      "hasErrors": "{{count}}件のエラー",
+      "hasWarnings": "{{count}}件の警告",
+      "notAuthenticated": "未認証",
+      "notConfigured": "未設定",
+      "notInstalled": "未インストール",
+      "seaActive": "はい（単一実行可能アプリケーション）",
+      "sections": {
+        "authentication": "認証",
+        "configuration": "Configuration",
+        "environment": "環境",
+        "renet": "Renet"
+      },
+      "status": {
+        "fail": "失敗",
+        "ok": "OK",
+        "warn": "警告"
+      },
+      "title": "Rediacc CLI 診断ツール"
+    },
     "machine": {
+      "containers": {
+        "allHealthy": "すべてのコンテナが健全です",
+        "description": "マシン上のDockerコンテナをリスト表示する",
+        "fetched": "コンテナが取得されました",
+        "fetching": "コンテナを取得中です...",
+        "healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
+        "noContainers": "このマシンにコンテナが見つかりません",
+        "unhealthyFound": "{{count}} 個の不健全なコンテナが見つかりました"
+      },
+      "create": {
+        "creating": "マシンを作成中です...",
+        "description": "新しいマシンを作成する",
+        "success": "マシン \"{{name}}\" が作成されました"
+      },
+      "delete": {
+        "confirm": "マシン \"{{name}}\" を削除してもよろしいですか？",
+        "deleting": "マシンを削除中です...",
+        "description": "マシンを削除する",
+        "success": "マシン \"{{name}}\" が削除されました"
+      },
       "description": "マシン管理",
+      "health": {
+        "containersSection": "\nコンテナ:",
+        "containersSummary": "  {{running}}/{{total}} 実行中 ({{healthy}} 健全, {{unhealthy}} 不健全)",
+        "description": "CI/CDパイプライン用のマシン健全性を確認する",
+        "exitCode": "\n終了コード: {{code}}",
+        "fetched": "健全性データが取得されました",
+        "fetching": "マシンの健全性を取得中です...",
+        "header": "\n{{name}}の健全性チェック:",
+        "issuesSection": "\n問題:",
+        "noData": "マシンのステータスデータがありません",
+        "repositoriesSection": "\nリポジトリ:",
+        "repositoriesSummary": "  {{mounted}}/{{total}} マウント済み ({{docker}} Docker使用)",
+        "servicesSection": "\nサービス:",
+        "servicesSummary": "  {{active}}/{{total}} アクティブ ({{failed}} 失敗)",
+        "statusCritical": "✗ ステータス: クリティカル",
+        "statusError": "✗ ステータス: エラー",
+        "statusHealthy": "✓ ステータス: 健全",
+        "statusWarning": "⚠ ステータス: 警告",
+        "storageSection": "\nストレージ:",
+        "storageSmart": "  SMART: {{healthy}} 健全, {{failing}} 故障中",
+        "storageTemp": "  最大温度: {{temp}}°C",
+        "systemDatastore": "  データストア: {{percent}}",
+        "systemDisk": "  ディスク: {{percent}}",
+        "systemMemory": "  メモリ: {{percent}}",
+        "systemSection": "\nシステム:",
+        "systemUptime": "  稼働時間: {{uptime}}"
+      },
       "list": {
         "description": "マシンをリスト表示する",
         "fetching": "マシンを取得中です..."
       },
-      "create": {
-        "description": "新しいマシンを作成する",
-        "creating": "マシンを作成中です...",
-        "success": "マシン \"{{name}}\" が作成されました"
+      "repos": {
+        "description": "マシンにデプロイされたリポジトリをリスト表示する",
+        "fetched": "マシンが取得されました",
+        "fetching": "マシンを取得中です...",
+        "noRepos": "このマシンにデプロイされたリポジトリはありません"
       },
-      "delete": {
-        "description": "マシンを削除する",
-        "deleting": "マシンを削除中です...",
-        "success": "マシン \"{{name}}\" が削除されました",
-        "confirm": "マシン \"{{name}}\" を削除してもよろしいですか？"
+      "services": {
+        "allStable": "すべてのサービスが安定しています",
+        "description": "マシン上のsystemdサービスをリスト表示する",
+        "fetched": "サービスが取得されました",
+        "fetching": "サービスを取得中です...",
+        "noServices": "このマシンにrediacサービスが見つかりません",
+        "stabilityCheck": "安定性チェックモード - 失敗/再起動中のものがある場合はコード2で終了します",
+        "unstableFound": "{{count}} 個の不安定なサービスが見つかりました"
+      },
+      "testConnection": {
+        "authMethod": "  認証方法: {{method}}",
+        "created": "タスクが作成されました",
+        "creating": "SSH テストタスクを作成中です...",
+        "description": "マシンへの SSH 接続をテストしてホストキーをキャプチャする",
+        "error": "エラー: {{error}}",
+        "knownHosts": "  ホストエントリ: {{entry}}",
+        "message": "  メッセージ: {{message}}",
+        "publicKeyDeployed": "  公開キーがデプロイされました: {{status}}",
+        "rawOutput": "未加工出力:",
+        "results": "SSH テスト結果:",
+        "saved": "ホストエントリがマシンボルトに保存されました",
+        "saving": "ホストエントリをマシン \"{{machine}}\" のボルトに保存中です...",
+        "sshKeyConfigured": "  SSH キー設定済み: {{status}}",
+        "statusResult": "  ステータス: {{status}}",
+        "taskId": "タスク ID: {{taskId}}",
+        "testing": "SSH 接続をテスト中です {{user}}@{{ip}}:{{port}}...",
+        "testResult": "SSH テスト {{result}}",
+        "timeout": "結果の待機がタイムアウトしました",
+        "timeoutMessage": "接続テストがタイムアウトしました。キューのトレースで詳細を確認してください。",
+        "waiting": "SSH テスト結果を待機中です...",
+        "waitingTime": "SSH テスト結果を待機中です... ({{seconds}}s)"
       },
       "update": {
         "description": "マシン設定を更新する",
-        "updating": "マシンを更新中です...",
-        "success": "マシン \"{{name}}\" が更新されました"
-      },
-      "health": {
-        "description": "CI/CDパイプライン用のマシン健全性を確認する",
-        "fetching": "マシンの健全性を取得中です...",
-        "fetched": "健全性データが取得されました",
-        "header": "\n{{name}}の健全性チェック:",
-        "statusHealthy": "✓ ステータス: 健全",
-        "statusWarning": "⚠ ステータス: 警告",
-        "statusError": "✗ ステータス: エラー",
-        "statusCritical": "✗ ステータス: クリティカル",
-        "noData": "マシンのステータスデータがありません",
-        "systemSection": "\nシステム:",
-        "systemUptime": "  稼働時間: {{uptime}}",
-        "systemMemory": "  メモリ: {{percent}}",
-        "systemDisk": "  ディスク: {{percent}}",
-        "systemDatastore": "  データストア: {{percent}}",
-        "containersSection": "\nコンテナ:",
-        "containersSummary": "  {{running}}/{{total}} 実行中 ({{healthy}} 健全, {{unhealthy}} 不健全)",
-        "servicesSection": "\nサービス:",
-        "servicesSummary": "  {{active}}/{{total}} アクティブ ({{failed}} 失敗)",
-        "storageSection": "\nストレージ:",
-        "storageSmart": "  SMART: {{healthy}} 健全, {{failing}} 故障中",
-        "storageTemp": "  最大温度: {{temp}}°C",
-        "repositoriesSection": "\nリポジトリ:",
-        "repositoriesSummary": "  {{mounted}}/{{total}} マウント済み ({{docker}} Docker使用)",
-        "issuesSection": "\n問題:",
-        "exitCode": "\n終了コード: {{code}}"
-      },
-      "containers": {
-        "description": "マシン上のDockerコンテナをリスト表示する",
-        "fetching": "コンテナを取得中です...",
-        "fetched": "コンテナが取得されました",
-        "noContainers": "このマシンにコンテナが見つかりません",
-        "healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
-        "allHealthy": "すべてのコンテナが健全です",
-        "unhealthyFound": "{{count}} 個の不健全なコンテナが見つかりました"
-      },
-      "services": {
-        "description": "マシン上のsystemdサービスをリスト表示する",
-        "fetching": "サービスを取得中です...",
-        "fetched": "サービスが取得されました",
-        "noServices": "このマシンにrediacサービスが見つかりません",
-        "stabilityCheck": "安定性チェックモード - 失敗/再起動中のものがある場合はコード2で終了します",
-        "allStable": "すべてのサービスが安定しています",
-        "unstableFound": "{{count}} 個の不安定なサービスが見つかりました"
+        "success": "マシン \"{{name}}\" が更新されました",
+        "updating": "マシンを更新中です..."
       },
       "vaultStatus": {
+        "deployedRepos": "\nデプロイされたリポジトリ:",
         "description": "マシンの解析されたボルトステータスを表示する",
-        "fetching": "マシンを取得中です...",
+        "dockerRunning": "  Docker 実行中: {{count}}",
         "fetched": "マシンが取得されました",
+        "fetching": "マシンを取得中です...",
         "header": "\n{{name}} のボルトステータス:",
+        "mounted": "  マウント済み: {{count}}",
+        "repoDocker": "    Docker: {{status}}",
+        "repoMounted": "    マウント済み: {{mounted}}",
         "status": "  ステータス: {{status}}",
-        "systemSection": "\nシステム:",
-        "systemUptime": "  稼働時間: {{uptime}}",
+        "systemDatastore": "  データストア: {{used}} / {{total}} ({{percent}})",
+        "systemDisk": "  ディスク: {{used}} / {{total}} ({{percent}})",
         "systemHostname": "  ホスト名: {{hostname}}",
         "systemMemory": "  メモリ: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  ディスク: {{used}} / {{total}} ({{percent}})",
-        "systemDatastore": "  データストア: {{used}} / {{total}} ({{percent}})",
-        "totalRepos": "  総リポジトリ数: {{count}}",
-        "mounted": "  マウント済み: {{count}}",
-        "dockerRunning": "  Docker 実行中: {{count}}",
-        "deployedRepos": "\nデプロイされたリポジトリ:",
-        "repoMounted": "    マウント済み: {{mounted}}",
-        "repoDocker": "    Docker: {{status}}"
-      },
-      "repos": {
-        "description": "マシンにデプロイされたリポジトリをリスト表示する",
-        "fetching": "マシンを取得中です...",
-        "fetched": "マシンが取得されました",
-        "noRepos": "このマシンにデプロイされたリポジトリはありません"
-      },
-      "testConnection": {
-        "description": "マシンへの SSH 接続をテストしてホストキーをキャプチャする",
-        "testing": "SSH 接続をテスト中です {{user}}@{{ip}}:{{port}}...",
-        "creating": "SSH テストタスクを作成中です...",
-        "created": "タスクが作成されました",
-        "taskId": "タスク ID: {{taskId}}",
-        "waiting": "SSH テスト結果を待機中です...",
-        "waitingTime": "SSH テスト結果を待機中です... ({{seconds}}s)",
-        "testResult": "SSH テスト {{result}}",
-        "rawOutput": "未加工出力:",
-        "error": "エラー: {{error}}",
-        "timeout": "結果の待機がタイムアウトしました",
-        "timeoutMessage": "接続テストがタイムアウトしました。キューのトレースで詳細を確認してください。",
-        "results": "SSH テスト結果:",
-        "statusResult": "  ステータス: {{status}}",
-        "authMethod": "  認証方法: {{method}}",
-        "sshKeyConfigured": "  SSH キー設定済み: {{status}}",
-        "publicKeyDeployed": "  公開キーがデプロイされました: {{status}}",
-        "knownHosts": "  ホストエントリ: {{entry}}",
-        "message": "  メッセージ: {{message}}",
-        "saving": "ホストエントリをマシン \"{{machine}}\" のボルトに保存中です...",
-        "saved": "ホストエントリがマシンボルトに保存されました"
+        "systemSection": "\nシステム:",
+        "systemUptime": "  稼働時間: {{uptime}}",
+        "totalRepos": "  総リポジトリ数: {{count}}"
       }
     },
     "organization": {
+      "dashboard": {
+        "description": "組織ダッシュボードデータを取得する",
+        "fetching": "ダッシュボードを取得中です...",
+        "success": "ダッシュボードが取得されました"
+      },
       "description": "組織管理コマンド",
-      "list": {
-        "description": "組織をリスト表示する",
-        "fetching": "組織を取得中です..."
+      "export": {
+        "description": "組織データをエクスポートする",
+        "exported": "{{path}} にエクスポートされました",
+        "exporting": "組織データをエクスポート中です...",
+        "success": "エクスポートが完了しました"
+      },
+      "import": {
+        "description": "組織データをインポートする",
+        "importing": "組織データをインポート中です...",
+        "success": "インポートが完了しました"
       },
       "info": {
         "description": "組織情報を取得する",
@@ -463,10 +514,16 @@
         "notFound": "組織情報が見つかりません",
         "success": "組織情報が取得されました"
       },
-      "dashboard": {
-        "description": "組織ダッシュボードデータを取得する",
-        "fetching": "ダッシュボードを取得中です...",
-        "success": "ダッシュボードが取得されました"
+      "list": {
+        "description": "組織をリスト表示する",
+        "fetching": "組織を取得中です..."
+      },
+      "maintenance": {
+        "description": "メンテナンスモードを有効化または無効化する (管理者以外のログインをブロック)",
+        "disabled": "メンテナンスモードが無効化されました",
+        "disabling": "メンテナンスモードを無効化中です...",
+        "enabled": "メンテナンスモードが有効化されました",
+        "enabling": "メンテナンスモードを有効化中です..."
       },
       "vault": {
         "description": "組織ボルト管理",
@@ -486,42 +543,19 @@
           "success": "組織ボルトが更新されました",
           "updating": "組織ボルトを更新中です..."
         }
-      },
-      "export": {
-        "description": "組織データをエクスポートする",
-        "exported": "{{path}} にエクスポートされました",
-        "exporting": "組織データをエクスポート中です...",
-        "success": "エクスポートが完了しました"
-      },
-      "import": {
-        "description": "組織データをインポートする",
-        "importing": "組織データをインポート中です...",
-        "success": "インポートが完了しました"
-      },
-      "maintenance": {
-        "description": "メンテナンスモードを有効化または無効化する (管理者以外のログインをブロック)",
-        "disabled": "メンテナンスモードが無効化されました",
-        "disabling": "メンテナンスモードを無効化中です...",
-        "enabled": "メンテナンスモードが有効化されました",
-        "enabling": "メンテナンスモードを有効化中です..."
       }
     },
     "permission": {
-      "description": "権限管理コマンド",
-      "list": {
-        "description": "権限をリスト表示する",
-        "fetching": "権限を取得中です..."
+      "add": {
+        "adding": "権限 \"{{permission}}\" をグループ \"{{group}}\" に追加中です...",
+        "description": "グループに権限を追加する",
+        "success": "権限が追加されました"
       },
+      "description": "権限管理コマンド",
       "group": {
-        "description": "権限グループ管理",
-        "list": {
-          "description": "すべての権限グループをリスト表示する",
-          "fetching": "権限グループを取得中です...",
-          "success": "権限グループが取得されました"
-        },
         "create": {
-          "description": "新しい権限グループを作成する",
           "creating": "権限グループ \"{{name}}\" を作成中です...",
+          "description": "新しい権限グループを作成する",
           "success": "権限グループ \"{{name}}\" が作成されました"
         },
         "delete": {
@@ -530,16 +564,21 @@
           "description": "権限グループを削除する",
           "success": "権限グループ \"{{name}}\" が削除されました"
         },
+        "description": "権限グループ管理",
+        "list": {
+          "description": "すべての権限グループをリスト表示する",
+          "fetching": "権限グループを取得中です...",
+          "success": "権限グループが取得されました"
+        },
         "show": {
           "description": "権限グループの詳細を表示する",
           "fetching": "権限グループの詳細を取得中です...",
           "success": "詳細が取得されました"
         }
       },
-      "add": {
-        "adding": "権限 \"{{permission}}\" をグループ \"{{group}}\" に追加中です...",
-        "description": "グループに権限を追加する",
-        "success": "権限が追加されました"
+      "list": {
+        "description": "権限をリスト表示する",
+        "fetching": "権限を取得中です..."
       },
       "remove": {
         "description": "グループから権限を削除する",
@@ -548,73 +587,79 @@
       }
     },
     "protocol": {
-      "description": "{{scheme}}:// プロトコルハンドラーの登録と URL 処理を管理する",
-      "register": {
-        "description": "システムにプロトコルハンドラーを登録する",
-        "systemWide": "プロトコルハンドラーをシステム全体に登録中です...",
-        "adminRequired": "注: これは管理者/root の権限が必要な場合があります。",
-        "currentUser": "現在のユーザーのプロトコルハンドラーを登録中です...",
-        "registering": "プロトコルハンドラーを登録中です...",
-        "success": "\n{{scheme}}:// プロトコルハンドラーが正常に登録されました。",
-        "exampleUrls": "\n次のような URL を開くことができるようになります:"
-      },
-      "unregister": {
-        "description": "システムからプロトコルハンドラーの登録を解除する",
-        "unregistering": "プロトコルハンドラーの登録を解除中です...",
-        "success": "\n{{scheme}}:// プロトコルハンドラーの登録が正常に解除されました。"
-      },
-      "status": {
-        "description": "プロトコルハンドラーの登録ステータスを表示する",
-        "title": "\nプロトコルハンドラーのステータス",
-        "platform": "プラットフォーム:",
-        "supported": "サポート対象:",
-        "registered": "登録済み:",
-        "userRegistration": "ユーザー登録:",
-        "systemRegistration": "システム登録:",
-        "handlerCommand": "ハンドラーコマンド:",
-        "error": "\nエラー: {{error}}",
-        "registerHint": "\nプロトコルハンドラーを登録するには、次を実行してください:"
-      },
-      "open": {
-        "description": "{{scheme}}:// URL を開いてアクションを実行する",
-        "parsedUrl": "\n解析されたプロトコル URL:",
-        "token": "トークン:",
-        "team": "チーム:",
-        "machine": "マシン:",
-        "repository": "リポジトリ:",
-        "action": "アクション:",
-        "params": "パラメータ:",
-        "cliCommand": "\n同等の CLI コマンド:",
-        "executing": "\nアクション実行中です...\n"
-      },
       "build": {
         "description": "コンポーネントから {{scheme}}:// URL をビルドする"
       },
-      "parse": {
-        "description": "{{scheme}}:// URL を解析してコンポーネントを表示する",
+      "description": "{{scheme}}:// プロトコルハンドラーの登録と URL 処理を管理する",
+      "open": {
+        "action": "アクション:",
+        "cliCommand": "\n同等の CLI コマンド:",
+        "description": "{{scheme}}:// URL を開いてアクションを実行する",
+        "executing": "\nアクション実行中です...\n",
+        "machine": "マシン:",
+        "params": "パラメータ:",
         "parsedUrl": "\n解析されたプロトコル URL:",
-        "cliCommand": "\nCLI コマンド:"
+        "repository": "リポジトリ:",
+        "team": "チーム:",
+        "token": "トークン:"
+      },
+      "parse": {
+        "cliCommand": "\nCLI コマンド:",
+        "description": "{{scheme}}:// URL を解析してコンポーネントを表示する",
+        "parsedUrl": "\n解析されたプロトコル URL:"
+      },
+      "register": {
+        "adminRequired": "注: これは管理者/root の権限が必要な場合があります。",
+        "currentUser": "現在のユーザーのプロトコルハンドラーを登録中です...",
+        "description": "システムにプロトコルハンドラーを登録する",
+        "exampleUrls": "\n次のような URL を開くことができるようになります:",
+        "registering": "プロトコルハンドラーを登録中です...",
+        "success": "\n{{scheme}}:// プロトコルハンドラーが正常に登録されました。",
+        "systemWide": "プロトコルハンドラーをシステム全体に登録中です..."
+      },
+      "status": {
+        "description": "プロトコルハンドラーの登録ステータスを表示する",
+        "error": "\nエラー: {{error}}",
+        "handlerCommand": "ハンドラーコマンド:",
+        "platform": "プラットフォーム:",
+        "registered": "登録済み:",
+        "registerHint": "\nプロトコルハンドラーを登録するには、次を実行してください:",
+        "supported": "サポート対象:",
+        "systemRegistration": "システム登録:",
+        "title": "\nプロトコルハンドラーのステータス",
+        "userRegistration": "ユーザー登録:"
+      },
+      "unregister": {
+        "description": "システムからプロトコルハンドラーの登録を解除する",
+        "success": "\n{{scheme}}:// プロトコルハンドラーの登録が正常に解除されました。",
+        "unregistering": "プロトコルハンドラーの登録を解除中です..."
       }
     },
     "queue": {
+      "cancel": {
+        "cancelling": "タスク {{taskId}} をキャンセル中です...",
+        "description": "キュー項目をキャンセルする",
+        "success": "タスクがキャンセルされました"
+      },
+      "create": {
+        "buildingVault": "キューボルトをビルド中です...",
+        "creating": "関数 '{{function}}' のキュー項目を作成中です...",
+        "description": "キュー項目を作成する",
+        "success": "キュー項目が作成されました",
+        "taskId": "タスク ID: {{taskId}}",
+        "vaultBuilt": "キューボルトがビルドされました"
+      },
+      "delete": {
+        "confirm": "タスク {{taskId}} を削除してもよろしいですか？",
+        "deleting": "タスク {{taskId}} を削除中です...",
+        "description": "キュー項目を削除する",
+        "success": "タスクが削除されました"
+      },
       "description": "キュー管理",
       "list": {
         "description": "キュー項目をリスト表示する",
         "fetching": "キュー項目を取得中です...",
         "success": "キュー項目が取得されました"
-      },
-      "create": {
-        "description": "キュー項目を作成する",
-        "buildingVault": "キューボルトをビルド中です...",
-        "vaultBuilt": "キューボルトがビルドされました",
-        "creating": "関数 '{{function}}' のキュー項目を作成中です...",
-        "success": "キュー項目が作成されました",
-        "taskId": "タスク ID: {{taskId}}"
-      },
-      "cancel": {
-        "description": "キュー項目をキャンセルする",
-        "cancelling": "タスク {{taskId}} をキャンセル中です...",
-        "success": "タスクがキャンセルされました"
       },
       "retry": {
         "description": "失敗したキュー項目を再試行する",
@@ -622,20 +667,14 @@
         "success": "タスクが再試行のためキューに登録されました"
       },
       "trace": {
-        "description": "キュー項目の実行をトレースする",
-        "fetching": "キューのトレースを取得中です...",
-        "fetched": "キューのトレースが取得されました",
-        "watching": "タスクの進行状況を監視中です...",
         "age": "経過時間",
-        "finalStatus": "最終ステータス: {{status}}",
+        "description": "キュー項目の実行をトレースする",
         "errorDetails": "エラーの詳細:",
-        "noTrace": "トレース情報がありません"
-      },
-      "delete": {
-        "description": "キュー項目を削除する",
-        "confirm": "タスク {{taskId}} を削除してもよろしいですか？",
-        "deleting": "タスク {{taskId}} を削除中です...",
-        "success": "タスクが削除されました"
+        "fetched": "キューのトレースが取得されました",
+        "fetching": "キューのトレースを取得中です...",
+        "finalStatus": "最終ステータス: {{status}}",
+        "noTrace": "トレース情報がありません",
+        "watching": "タスクの進行状況を監視中です..."
       }
     },
     "region": {
@@ -646,57 +685,63 @@
       }
     },
     "repository": {
+      "create": {
+        "creating": "リポジトリ \"{{name}}:{{tag}}\" を作成中です...",
+        "description": "新しいリポジトリを作成する",
+        "success": "リポジトリ \"{{name}}:{{tag}}\" が作成されました"
+      },
+      "delete": {
+        "checkingRelationships": "リポジトリの関係を確認中です...",
+        "confirm": "リポジトリ \"{{name}}:{{tag}}\" を削除しますか？ この操作は取り消せません。",
+        "deleting": "リポジトリ \"{{name}}:{{tag}}\" を削除中です...",
+        "description": "リポジトリを削除する",
+        "grandRepoWarning": "これはグランドリポジトリ (認証情報) です。削除は取り消せません。",
+        "relationshipsChecked": "リポジトリの関係が確認されました",
+        "success": "リポジトリ \"{{name}}:{{tag}}\" が削除されました"
+      },
       "description": "リポジトリ管理コマンド",
       "list": {
         "description": "リポジトリをリスト表示する",
         "fetching": "リポジトリを取得中です...",
         "success": "リポジトリが取得されました"
       },
-      "create": {
-        "description": "新しいリポジトリを作成する",
-        "creating": "リポジトリ \"{{name}}:{{tag}}\" を作成中です...",
-        "success": "リポジトリ \"{{name}}:{{tag}}\" が作成されました"
+      "promote": {
+        "checkingRelationships": "リポジトリの関係を確認中です...",
+        "confirmPromote": "\n昇格を続行しますか？",
+        "description": "フォークをグランドステータスに昇格させる",
+        "promoting": "リポジトリ \"{{name}}:{{tag}}\" を昇格中です...",
+        "relationshipsChecked": "リポジトリの関係が確認されました",
+        "separateInfo": "\nこれにより \"{{name}}\" がグランドリポジトリ \"{{grandName}}\" から分離されます",
+        "siblingsInfo": "\n{{count}} 個の兄弟クローンは元のグランドにリンクされたままになります:",
+        "success": "リポジトリ \"{{name}}:{{tag}}\" がグランドステータスに昇格されました"
       },
       "rename": {
         "description": "リポジトリの名前を変更する",
         "renaming": "リポジトリ \"{{oldName}}\" を \"{{newName}}\" に名前変更中です...",
         "success": "リポジトリ \"{{name}}\" に名前変更されました"
       },
-      "delete": {
-        "description": "リポジトリを削除する",
-        "checkingRelationships": "リポジトリの関係を確認中です...",
-        "relationshipsChecked": "リポジトリの関係が確認されました",
-        "grandRepoWarning": "これはグランドリポジトリ (認証情報) です。削除は取り消せません。",
-        "confirm": "リポジトリ \"{{name}}:{{tag}}\" を削除しますか？ この操作は取り消せません。",
-        "deleting": "リポジトリ \"{{name}}:{{tag}}\" を削除中です...",
-        "success": "リポジトリ \"{{name}}:{{tag}}\" が削除されました"
-      },
-      "promote": {
-        "description": "フォークをグランドステータスに昇格させる",
-        "checkingRelationships": "リポジトリの関係を確認中です...",
-        "relationshipsChecked": "リポジトリの関係が確認されました",
-        "separateInfo": "\nこれにより \"{{name}}\" がグランドリポジトリ \"{{grandName}}\" から分離されます",
-        "siblingsInfo": "\n{{count}} 個の兄弟クローンは元のグランドにリンクされたままになります:",
-        "confirmPromote": "\n昇格を続行しますか？",
-        "promoting": "リポジトリ \"{{name}}:{{tag}}\" を昇格中です...",
-        "success": "リポジトリ \"{{name}}:{{tag}}\" がグランドステータスに昇格されました"
-      },
       "vault": {
         "description": "リポジトリボルト管理",
         "get": {
           "description": "リポジトリボルトデータを取得する",
           "fetching": "リポジトリボルトを取得中です...",
-          "success": "ボルトが取得されました",
-          "notFound": "リポジトリボルトが見つかりません"
+          "notFound": "リポジトリボルトが見つかりません",
+          "success": "ボルトが取得されました"
         },
         "update": {
           "description": "リポジトリボルトデータを更新する",
-          "updating": "リポジトリボルトを更新中です...",
-          "success": "リポジトリボルトが更新されました"
+          "success": "リポジトリボルトが更新されました",
+          "updating": "リポジトリボルトを更新中です..."
         }
       }
     },
     "shortcuts": {
+      "cancel": {
+        "description": "タスクをキャンセルする (短縮形: queue cancel)"
+      },
+      "retry": {
+        "description": "失敗したタスクを再試行する (短縮形: queue retry)"
+      },
       "run": {
         "completedLocal": "[ローカル] {{duration}}ms で完了しました",
         "description": "関数を実行する (短縮形: queue create)",
@@ -706,12 +751,6 @@
       },
       "trace": {
         "description": "タスクをトレースする (短縮形: queue trace)"
-      },
-      "cancel": {
-        "description": "タスクをキャンセルする (短縮形: queue cancel)"
-      },
-      "retry": {
-        "description": "失敗したタスクを再試行する (短縮形: queue retry)"
       }
     },
     "storage": {
@@ -722,55 +761,55 @@
       }
     },
     "sync": {
-      "description": "rsync を使用したリポジトリとのファイル同期",
-      "fetchingDetails": "接続詳細を取得中です...",
-      "previewingChanges": "\n変更をプレビュー中です...\n",
-      "noChanges": "同期する変更がありません。",
       "cancelled": "同期がキャンセルされました。",
+      "description": "rsync を使用したリポジトリとのファイル同期",
+      "download": {
+        "completed": "ダウンロード完了: {{count}} ファイルが転送されました",
+        "description": "リポジトリからファイルをダウンロードする",
+        "failed": "ダウンロードに失敗しました",
+        "progress": "ダウンロード中: {{percentage}}% - {{file}} ({{speed}})",
+        "starting": "ダウンロード開始中です..."
+      },
       "dryRunHeader": "\nドライラン - 転送されるファイルを表示:\n",
-      "totalSize": "合計サイズ: {{size}}",
       "duration": "期間: {{seconds}}s",
       "errors": "エラー:",
-      "upload": {
-        "description": "リポジトリにファイルをアップロードする",
-        "starting": "アップロード開始中です...",
-        "progress": "アップロード中: {{percentage}}% - {{file}} ({{speed}})",
-        "completed": "アップロード完了: {{count}} ファイルが転送されました",
-        "failed": "アップロードに失敗しました"
-      },
-      "download": {
-        "description": "リポジトリからファイルをダウンロードする",
-        "starting": "ダウンロード開始中です...",
-        "progress": "ダウンロード中: {{percentage}}% - {{file}} ({{speed}})",
-        "completed": "ダウンロード完了: {{count}} ファイルが転送されました",
-        "failed": "ダウンロードに失敗しました"
-      },
+      "fetchingDetails": "接続詳細を取得中です...",
+      "noChanges": "同期する変更がありません。",
+      "previewingChanges": "\n変更をプレビュー中です...\n",
       "status": {
         "description": "同期ステータスを確認して、ローカル/リモートファイルを比較する"
+      },
+      "totalSize": "合計サイズ: {{size}}",
+      "upload": {
+        "completed": "アップロード完了: {{count}} ファイルが転送されました",
+        "description": "リポジトリにファイルをアップロードする",
+        "failed": "アップロードに失敗しました",
+        "progress": "アップロード中: {{percentage}}% - {{file}} ({{speed}})",
+        "starting": "アップロード開始中です..."
       }
     },
     "team": {
+      "create": {
+        "creating": "チームを作成中です...",
+        "description": "チームを作成する",
+        "success": "チーム \"{{name}}\" が作成されました"
+      },
       "description": "チーム管理",
       "list": {
         "description": "チームをリスト表示する",
         "fetching": "チームを取得中です..."
       },
-      "create": {
-        "description": "チームを作成する",
-        "creating": "チームを作成中です...",
-        "success": "チーム \"{{name}}\" が作成されました"
-      },
       "member": {
+        "add": {
+          "adding": "{{email}} をチーム \"{{team}}\" に追加中です...",
+          "description": "チームにユーザーを追加する",
+          "success": "ユーザーがチーム \"{{team}}\" に追加されました"
+        },
         "description": "チームメンバーシップ管理",
         "list": {
           "description": "チームメンバーをリスト表示する",
           "fetching": "チームメンバーを取得中です...",
           "success": "メンバーが取得されました"
-        },
-        "add": {
-          "description": "チームにユーザーを追加する",
-          "adding": "{{email}} をチーム \"{{team}}\" に追加中です...",
-          "success": "ユーザーがチーム \"{{team}}\" に追加されました"
         },
         "remove": {
           "description": "チームからユーザーを削除する",
@@ -779,56 +818,69 @@
         }
       }
     },
-    "update": {
-      "description": "CLIのアップデートを確認して適用",
-      "force": "最新でも強制的にアップデート",
-      "checkOnly": "ダウンロードせずにアップデートの確認のみ",
-      "notSEA": "アップデートできません：パッケージバイナリとして実行されていません。先にSEAでビルドしてください。",
-      "available": "アップデート利用可能: v{{version}} (現在: v{{current}})",
-      "releaseNotes": "リリースノート: {{url}}",
-      "upToDate": "最新です (v{{version}})",
-      "checking": "アップデートを確認中...",
-      "downloading": "v{{version}}をダウンロード中...",
-      "progress": "ダウンロード中... {{percent}}%",
-      "success": "v{{from}}からv{{to}}にアップデートしました",
-      "failed": "アップデート失敗: {{error}}",
-      "unknownError": "不明なエラー"
-    },
     "term": {
-      "description": "マシンとリポジトリへの SSH ターミナルアクセス",
-      "connecting": "{{machine}} に接続中です...",
       "connect": {
         "description": "マシンまたはリポジトリに SSH 経由で接続する"
       },
+      "connecting": "{{machine}} に接続中です...",
       "connectingTo": "{{title}} に接続中です...",
+      "description": "マシンとリポジトリへの SSH ターミナルアクセス",
       "fetchingDetails": "接続詳細を取得中です...",
-      "launchSuccess": "ターミナルが正常に起動されました。",
       "launchingTerminal": "{{type}} ターミナルを起動中です...",
+      "launchSuccess": "ターミナルが正常に起動されました。",
       "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
     },
+    "update": {
+      "available": "アップデート利用可能: v{{version}} (現在: v{{current}})",
+      "checking": "アップデートを確認中...",
+      "checkOnly": "ダウンロードせずにアップデートの確認のみ",
+      "description": "CLIのアップデートを確認して適用",
+      "downloading": "v{{version}}をダウンロード中...",
+      "failed": "アップデート失敗: {{error}}",
+      "force": "最新でも強制的にアップデート",
+      "notSEA": "アップデートできません：パッケージバイナリとして実行されていません。先にSEAでビルドしてください。",
+      "progress": "ダウンロード中... {{percent}}%",
+      "releaseNotes": "リリースノート: {{url}}",
+      "success": "v{{from}}からv{{to}}にアップデートしました",
+      "unknownError": "不明なエラー",
+      "upToDate": "最新です (v{{version}})"
+    },
     "user": {
+      "activate": {
+        "activating": "ユーザー \"{{email}}\" を有効化中です...",
+        "description": "ユーザーアカウントを有効化する",
+        "success": "ユーザーが有効化されました"
+      },
+      "create": {
+        "activationCode": "認証コード: {{code}}",
+        "creating": "ユーザー \"{{email}}\" を作成中です...",
+        "description": "新しいユーザーを作成する",
+        "success": "ユーザーが作成されました"
+      },
+      "deactivate": {
+        "confirm": "ユーザー \"{{email}}\" を無効化しますか？",
+        "deactivating": "ユーザー \"{{email}}\" を無効化中です...",
+        "description": "ユーザーアカウントを無効化する",
+        "success": "ユーザーが無効化されました"
+      },
       "description": "ユーザー管理コマンド",
+      "exists": {
+        "description": "ユーザーが存在するかどうかを確認する",
+        "exists": "ユーザー \"{{email}}\" が存在します",
+        "notExists": "ユーザー \"{{email}}\" は存在しません"
+      },
       "list": {
         "description": "すべてのユーザーをリスト表示する",
         "fetching": "ユーザーを取得中です...",
         "success": "ユーザーが取得されました"
       },
-      "create": {
-        "description": "新しいユーザーを作成する",
-        "creating": "ユーザー \"{{email}}\" を作成中です...",
-        "success": "ユーザーが作成されました",
-        "activationCode": "認証コード: {{code}}"
-      },
-      "activate": {
-        "description": "ユーザーアカウントを有効化する",
-        "activating": "ユーザー \"{{email}}\" を有効化中です...",
-        "success": "ユーザーが有効化されました"
-      },
-      "deactivate": {
-        "description": "ユーザーアカウントを無効化する",
-        "confirm": "ユーザー \"{{email}}\" を無効化しますか？",
-        "deactivating": "ユーザー \"{{email}}\" を無効化中です...",
-        "success": "ユーザーが無効化されました"
+      "permission": {
+        "assign": {
+          "assigning": "\"{{group}}\" をユーザー \"{{email}}\" に割り当て中です...",
+          "description": "権限グループをユーザーに割り当てる",
+          "success": "権限が割り当てられました"
+        },
+        "description": "ユーザー権限管理"
       },
       "reactivate": {
         "description": "無効化されたユーザーアカウントを再度有効化する",
@@ -837,23 +889,18 @@
       },
       "updateEmail": {
         "description": "ユーザーのメールアドレスを変更する",
-        "updating": "\"{{email}}\" のメールアドレスを更新中です...",
-        "success": "メールアドレスが \"{{email}}\" に更新されました"
-      },
-      "updatePassword": {
-        "description": "パスワードを変更する",
-        "updating": "パスワードを更新中です...",
-        "success": "パスワードが更新されました"
+        "success": "メールアドレスが \"{{email}}\" に更新されました",
+        "updating": "\"{{email}}\" のメールアドレスを更新中です..."
       },
       "updateLanguage": {
         "description": "現在のユーザーの優先言語を設定する",
-        "updating": "言語設定を更新中です...",
-        "success": "言語が \"{{language}}\" に更新されました"
+        "success": "言語が \"{{language}}\" に更新されました",
+        "updating": "言語設定を更新中です..."
       },
-      "exists": {
-        "description": "ユーザーが存在するかどうかを確認する",
-        "exists": "ユーザー \"{{email}}\" が存在します",
-        "notExists": "ユーザー \"{{email}}\" は存在しません"
+      "updatePassword": {
+        "description": "パスワードを変更する",
+        "success": "パスワードが更新されました",
+        "updating": "パスワードを更新中です..."
       },
       "vault": {
         "description": "ユーザーボルト管理",
@@ -864,126 +911,240 @@
         },
         "update": {
           "description": "現在のユーザーボルトデータを更新する",
-          "updating": "ユーザーボルトを更新中です...",
-          "success": "ユーザーボルトが更新されました"
-        }
-      },
-      "permission": {
-        "description": "ユーザー権限管理",
-        "assign": {
-          "description": "権限グループをユーザーに割り当てる",
-          "assigning": "\"{{group}}\" をユーザー \"{{email}}\" に割り当て中です...",
-          "success": "権限が割り当てられました"
+          "success": "ユーザーボルトが更新されました",
+          "updating": "ユーザーボルトを更新中です..."
         }
       }
     },
     "vscode": {
-      "description": "VS Code リモート SSH 統合",
+      "check": {
+        "activeConnections": "アクティブな接続: {{count}}",
+        "configuration": "\n設定:",
+        "configured": "  設定済み: {{status}}",
+        "description": "VS Code のインストールと設定を確認する",
+        "installation": "インストール:",
+        "installed": "インストール済み",
+        "missingSettings": "  不足している設定:",
+        "no": "いいえ",
+        "notDetected": "検出されません",
+        "remoteSSH": "  Remote SSH 拡張機能: {{status}}",
+        "settingsPath": "  設定パス: {{path}}",
+        "sshConfig": "\nSSH 設定: {{path}}",
+        "title": "VS Code セットアップ確認\n",
+        "variant": "  バリアント: Insiders",
+        "version": "  バージョン: {{version}}",
+        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeNotFound": "  VS Code: 見つかりません",
+        "yes": "はい"
+      },
+      "cleanup": {
+        "cleaned": "クリーンアップ: {{connection}}",
+        "cleanedAll": "{{count}} 個の VS Code SSH 接続をクリーンアップしました。",
+        "description": "VS Code SSH 設定を削除する",
+        "removedKeys": "すべての永続化された SSH キーを削除しました。"
+      },
       "connect": {
+        "configuringSSH": "SSH を設定中です...",
+        "configuringVSCode": "VS Code 設定を設定中です...",
         "description": "VS Code でマシンまたはリポジトリに接続する",
         "detecting": "VS Code を検出中です...",
         "extensionWarning": "警告: Remote SSH 拡張機能がインストールされていない可能性があります。\nインストール: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "接続詳細を取得中です...",
-        "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です...",
+        "opening": "VS Code を開いています: {{connection}} → {{path}}",
         "persistingKey": "SSH キーを永続化中です...",
-        "configuringSSH": "SSH を設定中です...",
-        "configuringVSCode": "VS Code 設定を設定中です...",
         "settingsWarning": "警告: VS Code 設定を設定できませんでした: {{error}}",
         "settingUpEnv": "リモート環境をセットアップ中です...",
-        "opening": "VS Code を開いています: {{connection}} → {{path}}",
-        "success": "VS Code が正常に起動されました。"
+        "success": "VS Code が正常に起動されました。",
+        "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
       },
+      "description": "VS Code リモート SSH 統合",
       "list": {
-        "description": "設定済みの VS Code SSH 接続をリスト表示する",
-        "noConnections": "VS Code SSH 接続が設定されていません。",
         "configFile": "\n設定ファイル: {{path}}",
+        "description": "設定済みの VS Code SSH 接続をリスト表示する",
         "header": "設定済みの VS Code SSH 接続:\n",
         "keyPersisted": " (キー永続化済み)",
+        "noConnections": "VS Code SSH 接続が設定されていません。",
         "total": "\n合計: {{count}} 個の接続"
-      },
-      "cleanup": {
-        "description": "VS Code SSH 設定を削除する",
-        "cleanedAll": "{{count}} 個の VS Code SSH 接続をクリーンアップしました。",
-        "removedKeys": "すべての永続化された SSH キーを削除しました。",
-        "cleaned": "クリーンアップ: {{connection}}"
-      },
-      "check": {
-        "description": "VS Code のインストールと設定を確認する",
-        "title": "VS Code セットアップ確認\n",
-        "installation": "インストール:",
-        "vscodeFound": "  VS Code: {{path}}",
-        "version": "  バージョン: {{version}}",
-        "variant": "  バリアント: Insiders",
-        "vscodeNotFound": "  VS Code: 見つかりません",
-        "remoteSSH": "  Remote SSH 拡張機能: {{status}}",
-        "installed": "インストール済み",
-        "notDetected": "検出されません",
-        "configuration": "\n設定:",
-        "settingsPath": "  設定パス: {{path}}",
-        "configured": "  設定済み: {{status}}",
-        "yes": "はい",
-        "no": "いいえ",
-        "missingSettings": "  不足している設定:",
-        "sshConfig": "\nSSH 設定: {{path}}",
-        "activeConnections": "アクティブな接続: {{count}}"
       }
+    }
+  },
+  "common": {
+    "completed": "完了",
+    "failed": "失敗",
+    "inProgress": "処理中",
+    "no": "いいえ",
+    "running": "実行中",
+    "stopped": "停止",
+    "success": "✓ 成功",
+    "unknown": "不明",
+    "yes": "はい"
+  },
+  "docs": {
+    "admonitions": {
+      "note": "注意",
+      "tip": "ヒント",
+      "warning": "警告"
+    },
+    "errors": {
+      "heading": "一般的なエラーメッセージ",
+      "intro": "問題が発生した場合、CLIは明確なエラーメッセージを提供します：",
+      "meanings": {
+        "authRequired": "最初にログインする必要があります",
+        "machineRequired": "`--machine`でマシンを指定するか、コンテキストのデフォルトを設定してください",
+        "noActiveContext": "コンテキストが選択されていません — 作成するか切り替えてください",
+        "permissionDenied": "アカウントに必要な権限がありません",
+        "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください",
+        "teamRequired": "`--team`でチームを指定するか、コンテキストのデフォルトを設定してください"
+      }
+    },
+    "frontmatter": {
+      "category": "基本コンセプト",
+      "description": "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド",
+      "title": "CLIアプリケーション"
+    },
+    "globalOptions": {
+      "heading": "グローバルオプション",
+      "intro": "すべてのコマンドはこれらのグローバルフラグをサポートしています："
+    },
+    "installation": {
+      "heading": "インストール",
+      "text": "[Rediaccリリースページ](https://www.rediacc.com)からプラットフォーム用の最新バイナリをダウンロードするか、パッケージマネージャーでインストールしてください："
+    },
+    "outputFormats": {
+      "closing": "これにより、Rediacc CLIをスクリプト、CI/CDパイプライン、自動化ワークフローに簡単に統合できます。",
+      "heading": "出力形式",
+      "text": "すべてのlist/getコマンドは`--output`を通じて複数の出力形式をサポートしています："
+    },
+    "overview": {
+      "heading": "概要",
+      "text": "**Rediacc CLI**（`rdc`）は、Rediaccプラットフォームのすべての側面を管理するためのコマンドラインインターフェースです — 認証、インフラストラクチャ、リポジトリ、キュー、ストレージなど。"
+    },
+    "pageTitle": "Rediacc CLIリファレンス",
+    "sectionTitles": {
+      "audit": "監査とコンプライアンス",
+      "auth": "認証",
+      "bridge": "ブリッジ管理",
+      "ceph": "Cephストレージ管理",
+      "context": "コンテキスト管理",
+      "doctor": "システム診断",
+      "machine": "マシン管理",
+      "organization": "組織管理",
+      "permission": "権限管理",
+      "protocol": "プロトコルハンドラー",
+      "queue": "キュー操作",
+      "region": "リージョン管理",
+      "repository": "リポジトリ管理",
+      "shortcuts": "クイックコマンド（ショートカット）",
+      "storage": "ストレージ管理",
+      "sync": "ファイル同期",
+      "team": "チーム管理",
+      "term": "SSHターミナルアクセス",
+      "update": "CLIアップデート",
+      "user": "ユーザー管理",
+      "vscode": "VS Code統合"
+    },
+    "supplements": {
+      "auth": {
+        "register": {
+          "afterDescription": "登録後、アクティベーションコードのメールを確認してください。"
+        },
+        "tip": "認証トークンはコンテキストにローカルに保存されます。`--save-as`を使用して、複数の環境用に名前付きコンテキストに資格情報を保存できます。"
+      },
+      "context": {
+        "afterDescription": "コンテキストは接続詳細（API URL、資格情報、デフォルトのチーム/リージョン/マシン）を保存し、環境間をすばやく切り替えられるようにします。",
+        "createLocal": {
+          "afterDescription": "ローカルモードではマシンを直接追加できます："
+        },
+        "set": {
+          "tip": "デフォルト値を設定すると、毎回のコマンドで`--team`、`--region`、`--machine`を渡す必要がなくなります。"
+        }
+      },
+      "machine": {
+        "health": {
+          "afterDescription": "healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します — CI/CDパイプラインチェックに便利です。"
+        },
+        "testConnection": {
+          "tip": "テスト成功後にホストキーをマシンvaultに自動的に永続化するには、`--save-known-hosts`を使用してください。"
+        }
+      },
+      "organization": {
+        "maintenance": {
+          "warning": "メンテナンスモードが有効な場合、管理者以外のユーザーはログインできません。"
+        }
+      },
+      "queue": {
+        "afterDescription": "キューシステムはRediaccのタスク実行の中核です。すべての操作（デプロイ、バックアップ、スクリプト実行）はキューを通じて実行されます。",
+        "trace": {
+          "tip": "タスクが完了するまでリアルタイムで追跡するには、`--watch`を使用してください。"
+        }
+      },
+      "repository": {
+        "promote": {
+          "note": "フォークをプロモートすると、親（グランド）リポジトリから分離され、独立したものになります。"
+        }
+      }
+    },
+    "tableHeaders": {
+      "description": "説明",
+      "error": "エラー",
+      "flag": "フラグ",
+      "meaning": "意味"
     }
   },
   "errors": {
     "activationFailed": "認証に失敗しました",
-    "tfaVerificationFailed": "TFA認証に失敗しました",
+    "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "authFailed": "認証に失敗しました",
     "authRequired": "認証が必要です。実行してください: rdc login",
     "bridgeRequired": "ブリッジ名が必要です。--bridge を使用するか、コンテキストを設定してください。",
+    "cannotDeleteGrandRepo": "グランドリポジトリを削除できません: {{reason}}",
+    "cannotPromote": "昇格できません: {{reason}}",
+    "clusterNotFound": "Ceph クラスター \"{{name}}\" が見つかりません",
     "contextNotFound": "コンテキスト \"{{name}}\" が見つかりません",
+    "failedCreateQueueItem": "キュー項目の作成に失敗しました",
+    "invalidAction": "無効なアクション \"{{action}}\"。\"{{valid}}\" を使用してください。",
     "invalidCredentials": "認証情報が無効です",
     "invalidEmail": "有効なメールアドレスを入力してください",
-    "invalidMasterPassword": "ボルト暗号化のマスターパスワードが無効です",
     "invalidExpiration": "トークン有効期限は 1 時間から 720 時間の間である必要があります",
-    "invalidAction": "無効なアクション \"{{action}}\"。\"{{valid}}\" を使用してください。",
     "invalidFunctionParams": "関数 \"{{function}}\" のパラメータが無効です: {{errors}}",
+    "invalidHost": "無効な IP アドレスまたはホスト名: \"{{host}}\"。有効な IPv4、IPv6、またはホスト名である必要があります。",
     "invalidJsonFile": "提供されたファイルに有効な JSON が含まれていません。",
     "invalidJsonVault": "無効な JSON ボルトデータです。",
     "invalidKey": "無効なキーです。有効なキー: {{keys}}",
+    "invalidMasterPassword": "ボルト暗号化のマスターパスワードが無効です",
+    "invalidPort": "無効なポート番号: \"{{port}}\"。1 から 65535 の間である必要があります。",
+    "invalidPriorityMax": "無効な priority-max 値です。1 から 5 の間である必要があります。",
+    "invalidPriorityMin": "無効な priority-min 値です。1 から 5 の間である必要があります。",
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine を使用するか、コンテキストを設定してください。",
     "machineRequiredLocal": "マシン名が必要です。--machine を使用するか、次のコマンドでデフォルトを設定してください: rdc context set machine <name>",
-    "invalidHost": "無効な IP アドレスまたはホスト名: \"{{host}}\"。有効な IPv4、IPv6、またはホスト名である必要があります。",
-    "invalidPort": "無効なポート番号: \"{{port}}\"。1 から 65535 の間である必要があります。",
-    "failedCreateQueueItem": "キュー項目の作成に失敗しました",
-    "invalidPriorityMin": "無効な priority-min 値です。1 から 5 の間である必要があります。",
-    "invalidPriorityMax": "無効な priority-max 値です。1 から 5 の間である必要があります。",
-    "passwordsMismatch": "パスワードが一致しません",
-    "repositoryNotFound": "リポジトリ \"{{name}}:{{tag}}\" が見つかりません",
-    "cannotDeleteGrandRepo": "グランドリポジトリを削除できません: {{reason}}",
-    "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
-    "cannotPromote": "昇格できません: {{reason}}",
-    "clusterNotFound": "Ceph クラスター \"{{name}}\" が見つかりません",
-    "poolNotFound": "Ceph プール \"{{name}}\" が見つかりません",
-    "protocol": {
-      "notSupported": "{{platform}} ではプロトコル登録がサポートされていません",
-      "invalidUrl": "無効なプロトコル URL: {{error}}",
-      "commandExitCode": "コマンドが終了コード {{code}} で終了しました",
-      "tokenRequired": "トークンが必要です。--token <token> を使用してください",
-      "teamRequired": "チーム名が必要です。--team <name> を使用してください",
-      "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
-      "invalidAction": "無効なアクション '{{action}}'。次のいずれかである必要があります: {{validActions}}",
-      "parseFailed": "URL の解析に失敗しました: {{error}}"
-    },
     "networkError": "ネットワークエラー: {{message}}",
     "noActiveContext": "アクティブなコンテキストがありません。最初にコンテキストを作成または選択してください。",
     "notAuthenticated": "認証されていません。実行してください: rdc login",
+    "passwordsMismatch": "パスワードが一致しません",
     "permissionDenied": "権限がありません",
+    "poolNotFound": "Ceph プール \"{{name}}\" が見つかりません",
+    "protocol": {
+      "commandExitCode": "コマンドが終了コード {{code}} で終了しました",
+      "invalidAction": "無効なアクション '{{action}}'。次のいずれかである必要があります: {{validActions}}",
+      "invalidUrl": "無効なプロトコル URL: {{error}}",
+      "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
+      "notSupported": "{{platform}} ではプロトコル登録がサポートされていません",
+      "parseFailed": "URL の解析に失敗しました: {{error}}",
+      "teamRequired": "チーム名が必要です。--team <name> を使用してください",
+      "tokenRequired": "トークンが必要です。--token <token> を使用してください"
+    },
     "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
     "registrationFailed": "登録に失敗しました",
-    "resourceNotFound": "{{resource}} が見つかりません",
+    "repositoryNotFound": "リポジトリ \"{{name}}:{{tag}}\" が見つかりません",
     "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
+    "resourceNotFound": "{{resource}} が見つかりません",
     "sshKeyNotFound": "SSH キーが見つかりません: {{path}}",
     "sync": {
-      "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
-      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
+      "localPathNotFound": "ローカルパスが存在しません: {{path}}",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
-      "localPathNotFound": "ローカルパスが存在しません: {{path}}"
+      "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
+      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません"
     },
     "teamRequired": "チーム名が必要です。--team を使用するか、コンテキストを設定してください。",
     "term": {
@@ -999,6 +1160,14 @@
       "sshCode255": "SSH 接続に失敗しました - 考えられる原因:\n    - 認証に失敗しました (SSH キーの権限を確認してください)\n    - ホストキーの検証に失敗しました\n    - ネットワーク接続が切断されました\n    - リモート SSH サービスが実行されていません",
       "sshExitCode": "SSH が終了コード {{code}} で終了しました"
     },
+    "tfaVerificationFailed": "TFA認証に失敗しました",
+    "tokenExpired": "トークンが期限切れです。もう一度ログインしてください。",
+    "unexpectedError": "予期しないエラー: {{message}}",
+    "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
+    "unknownSubcommand": "不明なサブコマンド \"{{command}}\" です。利用可能な {{parent}} サブコマンド: {{available}}",
+    "validationError": "検証エラー: {{message}}",
+    "vaultDataRequired": "ボルトデータが必要です。--vault <json> を使用するか、stdin 経由で JSON をパイプしてください。",
+    "vaultVersionRequired": "ボルトバージョンが必要です。--vault-version <n> を使用してください。",
     "vscode": {
       "cleanupRequired": "すべての接続を削除するには --all を指定するか、特定の接続には --connection <name> を指定してください。",
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
@@ -1006,53 +1175,91 @@
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。"
-    },
-    "tokenExpired": "トークンが期限切れです。もう一度ログインしてください。",
-    "unexpectedError": "予期しないエラー: {{message}}",
-    "validationError": "検証エラー: {{message}}",
-    "vaultDataRequired": "ボルトデータが必要です。--vault <json> を使用するか、stdin 経由で JSON をパイプしてください。",
-    "vaultVersionRequired": "ボルトバージョンが必要です。--vault-version <n> を使用してください。",
-    "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
-    "unknownSubcommand": "不明なサブコマンド \"{{command}}\" です。利用可能な {{parent}} サブコマンド: {{available}}"
+    }
   },
   "options": {
     "activationCode": "メールからの認証コード",
     "apiUrl": "API の URL",
     "bridge": "ブリッジ名",
+    "cleanupAll": "すべての rediacc SSH 設定を削除する",
     "cluster": "Ceph クラスター名",
     "command": "インタラクティブシェルの代わりにコマンドを実行する",
+    "confirmPasswordNonInteractive": "パスワード確認 (非対話型モード)",
+    "confirmSync": "同期前に変更をプレビューして確認を要求する",
+    "connectionName": "特定の接続を削除する",
     "container": "特定の Docker コンテナに接続する",
     "containerAction": "コンテナアクション: terminal, logs, stats, exec",
     "context": "このコマンドで使用する特定のコンテキスト",
     "datastore": "マシン上のデータストアパス",
+    "debug": "デバッグ出力を有効化 (ローカルモード)",
+    "dryRun": "実際に同期せずに転送されるものを表示する",
     "email": "メールアドレス",
-    "external": "外部ターミナルウィンドウで起動を強制する",
-    "follow": "ログ出力をフォローする",
-    "image": "RBD イメージ名",
-    "pool": "Ceph プール名",
-    "snapshot": "RBD スナップショット名",
-    "vaultContent": "JSON 文字列としてのボルトコンテンツ",
-    "machineNames": "マシン名 (カンマ区切り)",
     "endpoint": "API エンドポイント URL",
+    "excludePatterns": "同期から除外するパターン",
     "expires": "有効期限 (時間単位: 1-720)",
+    "external": "外部ターミナルウィンドウで起動を強制する",
+    "filterStatus": "ステータスでフィルター",
+    "folder": "リモートフォルダーパス",
+    "follow": "ログ出力をフォローする",
     "force": "確認プロンプトをスキップする",
+    "functionName": "実行する関数名",
+    "image": "RBD イメージ名",
+    "importMode": "インポートモード (merge または replace)",
+    "insiders": "VS Code Insiders 設定を使用する",
     "lang": "言語オーバーライド ({{languages}})",
     "limit": "結果の最大数",
+    "localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
     "logLines": "表示するログ行数 (デフォルト: 50)",
     "machine": "マシン名",
+    "machineForVault": "マシン名 (テスト後にボルトを更新)",
     "machineIp": "マシン IP アドレスまたはホスト名",
+    "machineNames": "マシン名 (カンマ区切り)",
     "machineShorthand": "マシン名 (--machine の短縮形)",
+    "masterPassword": "ボルト暗号化のマスターパスワード",
+    "mirrorDownload": "ミラーモード - リモートに存在しないローカルファイルを削除",
+    "mirrorUpload": "ミラーモード - ローカルに存在しないリモートファイルを削除",
+    "newPasswordNonInteractive": "新しいパスワード (非対話型モード)",
+    "newWindow": "新しい VS Code ウィンドウで開く",
     "organization": "組織名",
     "output": "出力形式 (table|json|yaml|csv)",
+    "outputFormat": "出力形式 (json)",
+    "outputPath": "出力ファイルを保存するパス",
+    "param": "関数パラメータ",
+    "parentRepository": "親リポジトリ (フォーク用)",
+    "parentRepositoryTag": "親リポジトリタグ",
     "password": "パスワード (非対話型ログイン用)",
-    "masterPassword": "ボルト暗号化のマスターパスワード",
+    "pollInterval": "ポーリング間隔 (ミリ秒単位)",
+    "pool": "Ceph プール名",
+    "priority": "優先度 (1=最高)",
+    "priorityMax": "最大優先度 (1-5)",
+    "priorityMin": "最小優先度 (1-5)",
+    "protocolAction": "アクション ({{actions}})",
+    "protocolForce": "既に登録されている場合でも再登録を強制する",
+    "protocolParams": "追加パラメータ",
+    "protocolSystem": "システム全体に登録する (管理者権限が必要)",
+    "protocolSystemUnregister": "システム全体の登録を解除する (管理者権限が必要)",
+    "protocolToken": "認証トークン",
+    "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",
     "region": "リージョン名",
+    "remotePath": "リポジトリ内のリモートサブディレクトリパス",
     "renetPath": "renet バイナリへのパス (デフォルト: PATH の renet)",
     "repository": "リポジトリ名 (リポジトリ環境に接続)",
     "repositoryShorthand": "リポジトリ名 (--repository の短縮形)",
+    "repositoryTag": "リポジトリタグ",
     "saveAs": "認証情報を名前付きコンテキストに保存する",
+    "saveKnownHosts": "テスト成功後にマシンボルトに known_hosts を保存する",
+    "searchInField": "{{field}}で検索",
+    "searchQueue": "タスク ID、チーム、マシン、ブリッジで検索",
+    "searchRepos": "リポジトリ名でフィルター",
     "sessionName": "セッション名",
+    "skipEnvSetup": "リモート環境セットアップをスキップする",
+    "snapshot": "RBD スナップショット名",
+    "sortByField": "フィールドで並び替え",
+    "sortDesc": "降順でソート",
+    "sortDescending": "降順で並び替え",
+    "sortField": "フィールドでソート",
     "sshKey": "SSH 秘密鍵へのパス (例: ~/.ssh/id_rsa)",
+    "sshPassword": "初期認証用の SSH パスワード",
     "sshPort": "SSH ポート",
     "sshPrivateKey": "SSH 秘密鍵へのパス",
     "sshPublicKey": "SSH 公開鍵へのパス",
@@ -1062,81 +1269,36 @@
     "team": "チーム名",
     "tfaCode": "検証用の現在の TFA コード",
     "tokenName": "トークン名",
+    "urlOnly": "VS Code URI を印刷して起動しない",
+    "userPassword": "新しいユーザーのパスワード",
+    "vaultContent": "JSON 文字列としてのボルトコンテンツ",
+    "vaultJson": "JSON 文字列としてのボルトコンテンツ",
+    "vaultJsonMachine": "JSON 文字列としてのマシンボルトデータ",
+    "vaultVersion": "楽観的ロック用の現在のボルトバージョン",
+    "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "watch": "変更を監視する",
     "watchUpdates": "更新を監視する",
-    "yes": "確認プロンプトをスキップする",
-    "priority": "優先度 (1=最高)",
-    "param": "関数パラメータ",
-    "debug": "デバッグ出力を有効化 (ローカルモード)",
-    "pollInterval": "ポーリング間隔 (ミリ秒単位)",
-    "folder": "リモートフォルダーパス",
-    "urlOnly": "VS Code URI を印刷して起動しない",
-    "newWindow": "新しい VS Code ウィンドウで開く",
-    "skipEnvSetup": "リモート環境セットアップをスキップする",
-    "insiders": "VS Code Insiders 設定を使用する",
-    "cleanupAll": "すべての rediacc SSH 設定を削除する",
-    "connectionName": "特定の接続を削除する",
-    "vaultJson": "JSON 文字列としてのボルトコンテンツ",
-    "vaultVersion": "楽観的ロック用の現在のボルトバージョン",
-    "outputPath": "出力ファイルを保存するパス",
-    "importMode": "インポートモード (merge または replace)",
-    "vaultJsonMachine": "JSON 文字列としてのマシンボルトデータ",
-    "searchInField": "{{field}}で検索",
-    "searchRepos": "リポジトリ名でフィルター",
-    "sortByField": "フィールドで並び替え",
-    "sortDescending": "降順で並び替え",
-    "sshPassword": "初期認証用の SSH パスワード",
-    "machineForVault": "マシン名 (テスト後にボルトを更新)",
-    "saveKnownHosts": "テスト成功後にマシンボルトに known_hosts を保存する",
-    "localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
-    "remotePath": "リポジトリ内のリモートサブディレクトリパス",
-    "mirrorUpload": "ミラーモード - ローカルに存在しないリモートファイルを削除",
-    "mirrorDownload": "ミラーモード - リモートに存在しないローカルファイルを削除",
-    "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
-    "confirmSync": "同期前に変更をプレビューして確認を要求する",
-    "excludePatterns": "同期から除外するパターン",
-    "dryRun": "実際に同期せずに転送されるものを表示する",
-    "filterStatus": "ステータスでフィルター",
-    "priorityMin": "最小優先度 (1-5)",
-    "priorityMax": "最大優先度 (1-5)",
-    "searchQueue": "タスク ID、チーム、マシン、ブリッジで検索",
-    "sortField": "フィールドでソート",
-    "sortDesc": "降順でソート",
-    "functionName": "実行する関数名",
-    "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",
-    "userPassword": "新しいユーザーのパスワード",
-    "newPasswordNonInteractive": "新しいパスワード (非対話型モード)",
-    "confirmPasswordNonInteractive": "パスワード確認 (非対話型モード)",
-    "repositoryTag": "リポジトリタグ",
-    "parentRepository": "親リポジトリ (フォーク用)",
-    "parentRepositoryTag": "親リポジトリタグ",
-    "protocolSystem": "システム全体に登録する (管理者権限が必要)",
-    "protocolForce": "既に登録されている場合でも再登録を強制する",
-    "protocolSystemUnregister": "システム全体の登録を解除する (管理者権限が必要)",
-    "outputFormat": "出力形式 (json)",
-    "protocolToken": "認証トークン",
-    "protocolAction": "アクション ({{actions}})",
-    "protocolParams": "追加パラメータ"
+    "yes": "確認プロンプトをスキップする"
   },
   "prompts": {
     "apiUrl": "API URL (エンドポイント):",
     "cancelled": "キャンセルされました",
     "confirm": "よろしいですか？",
     "confirmDelete": "削除してもよろしいですか？",
+    "confirmNewPassword": "新しいパスワード確認:",
+    "confirmPassword": "パスワード確認:",
     "email": "メールアドレス:",
     "enterValue": "{{field}} を入力してください:",
+    "masterPassword": "マスターパスワードを入力してください:",
+    "masterPasswordForVault": "ボルト暗号化のマスターパスワードを入力してください:",
+    "newPassword": "新しいパスワード:",
     "password": "パスワード:",
+    "passwordForUser": "新しいユーザーのパスワード:",
     "selectOption": "オプションを選択してください:",
+    "setPassword": "ユーザーのパスワードを設定:",
     "sshPassword": "SSH パスワード (鍵認証を使用する場合は空のままにしてください): ",
     "syncConfirm": "\n同期を続行しますか？ [y/N/d(etails)] ",
-    "syncConfirmHelp": "y (はい)、n (いいえ)、d (詳細) を入力してください",
-    "passwordForUser": "新しいユーザーのパスワード:",
-    "confirmPassword": "パスワード確認:",
-    "setPassword": "ユーザーのパスワードを設定:",
-    "newPassword": "新しいパスワード:",
-    "confirmNewPassword": "新しいパスワード確認:",
-    "masterPassword": "マスターパスワードを入力してください:",
-    "masterPasswordForVault": "ボルト暗号化のマスターパスワードを入力してください:"
+    "syncConfirmHelp": "y (はい)、n (いいえ)、d (詳細) を入力してください"
   },
   "spinners": {
     "connecting": "接続中です...",
@@ -1158,127 +1320,5 @@
   },
   "table": {
     "noData": "表示するデータがありません"
-  },
-  "common": {
-    "yes": "はい",
-    "no": "いいえ",
-    "running": "実行中",
-    "stopped": "停止",
-    "completed": "完了",
-    "failed": "失敗",
-    "success": "✓ 成功",
-    "unknown": "不明",
-    "inProgress": "処理中"
-  },
-  "docs": {
-    "frontmatter": {
-      "title": "CLIアプリケーション",
-      "description": "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド",
-      "category": "基本コンセプト"
-    },
-    "pageTitle": "Rediacc CLIリファレンス",
-    "overview": {
-      "heading": "概要",
-      "text": "**Rediacc CLI**（`rdc`）は、Rediaccプラットフォームのすべての側面を管理するためのコマンドラインインターフェースです — 認証、インフラストラクチャ、リポジトリ、キュー、ストレージなど。"
-    },
-    "installation": {
-      "heading": "インストール",
-      "text": "[Rediaccリリースページ](https://www.rediacc.com)からプラットフォーム用の最新バイナリをダウンロードするか、パッケージマネージャーでインストールしてください："
-    },
-    "globalOptions": {
-      "heading": "グローバルオプション",
-      "intro": "すべてのコマンドはこれらのグローバルフラグをサポートしています："
-    },
-    "tableHeaders": {
-      "flag": "フラグ",
-      "description": "説明",
-      "error": "エラー",
-      "meaning": "意味"
-    },
-    "admonitions": {
-      "tip": "ヒント",
-      "warning": "警告",
-      "note": "注意"
-    },
-    "sectionTitles": {
-      "auth": "認証",
-      "context": "コンテキスト管理",
-      "organization": "組織管理",
-      "user": "ユーザー管理",
-      "team": "チーム管理",
-      "permission": "権限管理",
-      "region": "リージョン管理",
-      "bridge": "ブリッジ管理",
-      "machine": "マシン管理",
-      "repository": "リポジトリ管理",
-      "storage": "ストレージ管理",
-      "queue": "キュー操作",
-      "sync": "ファイル同期",
-      "vscode": "VS Code統合",
-      "term": "SSHターミナルアクセス",
-      "ceph": "Cephストレージ管理",
-      "audit": "監査とコンプライアンス",
-      "protocol": "プロトコルハンドラー",
-      "shortcuts": "クイックコマンド（ショートカット）",
-      "update": "CLIアップデート"
-    },
-    "errors": {
-      "heading": "一般的なエラーメッセージ",
-      "intro": "問題が発生した場合、CLIは明確なエラーメッセージを提供します：",
-      "meanings": {
-        "authRequired": "最初にログインする必要があります",
-        "noActiveContext": "コンテキストが選択されていません — 作成するか切り替えてください",
-        "permissionDenied": "アカウントに必要な権限がありません",
-        "machineRequired": "`--machine`でマシンを指定するか、コンテキストのデフォルトを設定してください",
-        "teamRequired": "`--team`でチームを指定するか、コンテキストのデフォルトを設定してください",
-        "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください"
-      }
-    },
-    "outputFormats": {
-      "heading": "出力形式",
-      "text": "すべてのlist/getコマンドは`--output`を通じて複数の出力形式をサポートしています：",
-      "closing": "これにより、Rediacc CLIをスクリプト、CI/CDパイプライン、自動化ワークフローに簡単に統合できます。"
-    },
-    "supplements": {
-      "auth": {
-        "tip": "認証トークンはコンテキストにローカルに保存されます。`--save-as`を使用して、複数の環境用に名前付きコンテキストに資格情報を保存できます。",
-        "register": {
-          "afterDescription": "登録後、アクティベーションコードのメールを確認してください。"
-        }
-      },
-      "context": {
-        "afterDescription": "コンテキストは接続詳細（API URL、資格情報、デフォルトのチーム/リージョン/マシン）を保存し、環境間をすばやく切り替えられるようにします。",
-        "set": {
-          "tip": "デフォルト値を設定すると、毎回のコマンドで`--team`、`--region`、`--machine`を渡す必要がなくなります。"
-        },
-        "createLocal": {
-          "afterDescription": "ローカルモードではマシンを直接追加できます："
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "メンテナンスモードが有効な場合、管理者以外のユーザーはログインできません。"
-        }
-      },
-      "machine": {
-        "health": {
-          "afterDescription": "healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します — CI/CDパイプラインチェックに便利です。"
-        },
-        "testConnection": {
-          "tip": "テスト成功後にホストキーをマシンvaultに自動的に永続化するには、`--save-known-hosts`を使用してください。"
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "フォークをプロモートすると、親（グランド）リポジトリから分離され、独立したものになります。"
-        }
-      },
-      "queue": {
-        "afterDescription": "キューシステムはRediaccのタスク実行の中核です。すべての操作（デプロイ、バックアップ、スクリプト実行）はキューを通じて実行されます。",
-        "trace": {
-          "tip": "タスクが完了するまでリアルタイムで追跡するには、`--watch`を使用してください。"
-        }
-      }
-    }
   }
 }

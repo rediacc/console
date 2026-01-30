@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 899
+    "keyCount": 900
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -664,6 +664,7 @@
     "docs.sectionTitles.bridge": "5b1a766a",
     "docs.sectionTitles.ceph": "378229aa",
     "docs.sectionTitles.context": "f954476f",
+    "docs.sectionTitles.doctor": "5d24fa7d",
     "docs.sectionTitles.machine": "002a903b",
     "docs.sectionTitles.organization": "c277aedd",
     "docs.sectionTitles.permission": "fa27cf2f",

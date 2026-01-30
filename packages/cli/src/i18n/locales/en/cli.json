@@ -1259,7 +1259,8 @@
       "audit": "Audit and Compliance",
       "protocol": "Protocol Handler",
       "shortcuts": "Quick Commands (Shortcuts)",
-      "update": "CLI Updates"
+      "update": "CLI Updates",
+      "doctor": "System Diagnostics"
     },
     "errors": {
       "heading": "Common Error Messages",
