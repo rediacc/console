@@ -18,7 +18,7 @@ on:
           - 'chromium-only'
           - 'all-browsers'
 
-# Required for cancel-watchdog to cancel workflow on job failures,
+# Required for CI watchdog to cancel/retry workflow on job failures,
 # GitHub Pages deployment, autofix commits, and Docker publishing
 permissions:
   actions: write
@@ -36,7 +36,7 @@ env:
 jobs:
   # ============================================================================
   # COLUMN 1: INITIALIZE
-  # Jobs: initialize, cancel-watchdog
+  # Jobs: initialize, ci-watchdog
   # No dependencies - starts immediately for fast feedback on Quality checks
   # ============================================================================
   initialize:
@@ -104,7 +104,7 @@ jobs:
           retention-days: 1
 
   cancel-watchdog:
-    name: Cancel Watchdog
+    name: CI Watchdog
     needs: [initialize]
     runs-on: ubuntu-latest
     timeout-minutes: 180  # 3 hours max
