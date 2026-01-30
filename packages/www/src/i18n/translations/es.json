@@ -52,6 +52,48 @@
     "exploreSolutions": "Explorar otras soluciones",
     "platformPreview": "Vista previa de la plataforma"
   },
+  "testimonials": {
+    "title": "Lo que dicen los equipos",
+    "subtitle": "Cómo diferentes roles experimentan Rediacc",
+    "items": [
+      {
+        "role": "Desarrollador",
+        "quote": "Programaba en producción porque el sandbox tenía semanas de retraso. Ahora obtengo un clon nuevo en 60 segundos."
+      },
+      {
+        "role": "CTO",
+        "quote": "Escalamos de una base de datos a doce sin comprar nuevo hardware. Los clones de Rediacc comparten almacenamiento — solo pagamos por lo que cambia."
+      },
+      {
+        "role": "Ingeniero DevOps",
+        "quote": "No podíamos ejecutar CI con datos reales. Ahora cada pipeline obtiene su propio clon de producción, automáticamente."
+      },
+      {
+        "role": "Ingeniero de Sistemas",
+        "quote": "Las actualizaciones bloqueaban nuestros sistemas. Ahora probamos cada cambio primero en una copia exacta. Sin sorpresas."
+      },
+      {
+        "role": "Administrador de BD",
+        "quote": "Optimizar consultas en una copia obsoleta no tenía sentido. Ahora trabajo en un clon sincronizado — mismos datos, cero riesgo."
+      },
+      {
+        "role": "Gerente de TI",
+        "quote": "Los respaldos tardaban dos semanas y llenaban nuestro almacenamiento. Ahora respaldamos cada hora sin espacio adicional."
+      },
+      {
+        "role": "Ingeniero de Seguridad",
+        "quote": "No podíamos probar cifrado con datos reales. Ahora cada clon está cifrado por defecto. Auditoría aprobada."
+      },
+      {
+        "role": "Gerente de Recuperación ante Desastres",
+        "quote": "Nuestro plan de recuperación decía cuatro horas. La realidad fueron cuatro días. Ahora cambiamos a un clon en menos de un minuto."
+      },
+      {
+        "role": "Operador de Agente IA",
+        "quote": "Nuestro agente de IA borró accidentalmente una base de datos. Ahora solo puede tocar clones — la producción permanece segura."
+      }
+    ]
+  },
   "earlyAccess": {
     "benefits": [
       "Trabaja directamente con nuestro equipo",
@@ -140,7 +182,7 @@
     "cta": {
       "benefits": "10 núcleos de CPU • Equipos ilimitados • $0",
       "bookDemo": "Reservar demo",
-      "contactUs": "Comience gratis",
+      "contactUs": "Crear cuenta",
       "freeBadge": "GRATIS PARA SIEMPRE • Sin tarjeta de crédito",
       "learnMore": "Más información",
       "seeDetails": "Ver todos los detalles"
@@ -162,9 +204,9 @@
         "more": "más →"
       }
     },
-    "subtitle": "Sobrevive a las interrupciones en la nube. Implemente en cualquier lugar. Conmutación por error rápida.",
-    "title": "Infraestructura que",
-    "titleHighlight": "Sobrevive. Cada vez."
+    "subtitle": "Clones sin copia que comparten almacenamiento. Desarrollo, pruebas, respaldo y recuperación — todo desde una fuente.",
+    "title": "Una base de datos.",
+    "titleHighlight": " Copias infinitas."
   },
   "layout": {
     "meta": {
@@ -1623,6 +1665,9 @@
     },
     "subtitle": "Cuando los entornos de producción tienen terabytes de datos pero los entornos sandbox solo se sincronizan mensualmente, los equipos se enfrentan a decisiones imposibles que conducen a soluciones peligrosas.",
     "title": "La crisis del desajuste de velocidad"
+  },
+  "bridge": {
+    "text": "Por eso creamos Rediacc"
   },
   "solutions": {
     "items": [

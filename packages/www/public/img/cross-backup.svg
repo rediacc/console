@@ -1,0 +1,150 @@
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="500" fill="#f5f5f5"/>
+
+  <defs>
+    <!-- Server gradient -->
+    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <!-- Arrow markers -->
+    <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#556b2f"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#dc3545"/>
+    </marker>
+    <marker id="arrowMuted" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#999999"/>
+    </marker>
+  </defs>
+
+  <!-- ==================== LEFT SIDE: Problem ==================== -->
+
+  <!-- "Problem" badge (red/danger style) -->
+  <rect x="125" y="22" width="110" height="26" rx="13" fill="rgba(220,53,69,0.15)" stroke="#dc3545" stroke-width="1"/>
+  <text x="180" y="40" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#dc3545">Problem</text>
+
+  <!-- Main server (left) — with failure indicator -->
+  <g transform="translate(100, 70)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#dc3545"/>
+    <circle cx="15" cy="36" r="2" fill="#dc3545"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+  </g>
+  <text x="140" y="188" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Main Server</text>
+  <text x="140" y="202" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">20 TB</text>
+
+  <!-- Red X warning on main server -->
+  <g transform="translate(165, 68)">
+    <circle cx="0" cy="0" r="11" fill="#dc3545" opacity="0.9"/>
+    <line x1="-5" y1="-5" x2="5" y2="5" stroke="#f5f5f5" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="5" y1="-5" x2="-5" y2="5" stroke="#f5f5f5" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Broken connection line (dashed, faded) -->
+  <line x1="185" y1="130" x2="260" y2="130" stroke="#dc3545" stroke-width="1.5" stroke-dasharray="4,6" opacity="0.5"/>
+  <!-- Break symbol in the line -->
+  <text x="222" y="122" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#dc3545" opacity="0.7">~</text>
+  <line x1="270" y1="130" x2="310" y2="130" stroke="#999999" stroke-width="1.5" stroke-dasharray="4,6" opacity="0.4" marker-end="url(#arrowMuted)"/>
+
+  <!-- Remote backup server (left side) — faded/inactive -->
+  <g transform="translate(315, 80)" filter="url(#shadow)" opacity="0.5">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#999999"/>
+    <circle cx="15" cy="36" r="2" fill="#999999"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+  </g>
+  <text x="355" y="198" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#999999">Backup Server</text>
+
+  <!-- Last Backup label -->
+  <rect x="290" y="214" width="130" height="22" rx="4" fill="rgba(220,53,69,0.1)"/>
+  <text x="355" y="229" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#dc3545">Last Backup: 3 Weeks Ago</text>
+
+  <!-- Data loss label -->
+  <text x="200" y="260" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#dc3545">3 Weeks Data Loss</text>
+
+  <!-- ==================== VS Divider ==================== -->
+  <line x1="420" y1="30" x2="420" y2="410" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="6,4"/>
+  <rect x="406" y="135" width="28" height="22" rx="4" fill="#f5f5f5"/>
+  <text x="420" y="151" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#999999">VS</text>
+
+  <!-- ==================== RIGHT SIDE: Solution ==================== -->
+
+  <!-- "Solution" badge (green style) -->
+  <rect x="555" y="22" width="110" height="26" rx="13" fill="rgba(85,107,47,0.2)" stroke="#556b2f" stroke-width="1"/>
+  <text x="610" y="40" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#556b2f">Solution</text>
+
+  <!-- Main server (right) — active with green LEDs -->
+  <g transform="translate(480, 70)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="36" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+  </g>
+  <text x="520" y="188" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Main Server</text>
+  <text x="520" y="202" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">20 TB</text>
+
+  <!-- Solid sync connection line with arrows -->
+  <line x1="565" y1="115" x2="672" y2="115" stroke="#556b2f" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <line x1="672" y1="140" x2="565" y2="140" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arrowGreen)"/>
+
+  <!-- Sync label on connection -->
+  <rect x="590" y="95" width="55" height="16" rx="3" fill="rgba(85,107,47,0.15)"/>
+  <text x="617" y="106" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#556b2f">Hourly</text>
+
+  <!-- "Changed Data Only" label under connection -->
+  <text x="617" y="160" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Changed Data Only</text>
+
+  <!-- Remote backup server (right side) — active with green LEDs -->
+  <g transform="translate(680, 70)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="36" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+  </g>
+  <text x="720" y="188" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Backup Server</text>
+  <text x="720" y="202" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">Remote</text>
+
+  <!-- Hourly sync timing badge -->
+  <rect x="565" y="216" width="140" height="22" rx="4" fill="rgba(85,107,47,0.12)"/>
+  <text x="635" y="231" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#556b2f">Hourly Sync — 4 min</text>
+
+  <!-- Right side result label -->
+  <text x="620" y="260" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#556b2f">Max 1 Hour Data Loss</text>
+
+  <!-- ==================== Connecting visual: arc between the two sides ==================== -->
+  <path d="M 200 280 L 200 300 Q 200 310 210 310 L 610 310 Q 620 310 620 300 L 620 280" stroke="#e0e0e0" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+
+  <!-- ==================== Bottom Result Badge ==================== -->
+  <rect x="180" y="330" width="440" height="36" rx="18" fill="rgba(85,107,47,0.15)" stroke="#556b2f" stroke-width="1.5"/>
+  <text x="400" y="353" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#556b2f">2 Weeks → 4 Minutes  |  Recovery in 7 Minutes</text>
+
+  <!-- ==================== Decorative circles at bottom ==================== -->
+  <circle cx="50" cy="470" r="18" fill="#556b2f" opacity="0.06"/>
+  <circle cx="90" cy="480" r="12" fill="#556b2f" opacity="0.04"/>
+  <circle cx="130" cy="475" r="8" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="710" cy="465" r="20" fill="#556b2f" opacity="0.06"/>
+  <circle cx="750" cy="480" r="10" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="670" cy="485" r="7" fill="#556b2f" opacity="0.04"/>
+  <circle cx="400" cy="485" r="6" fill="#e0e0e0" opacity="0.2"/>
+  <circle cx="350" cy="475" r="10" fill="#556b2f" opacity="0.04"/>
+  <circle cx="450" cy="478" r="8" fill="#556b2f" opacity="0.05"/>
+</svg>

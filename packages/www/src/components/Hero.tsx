@@ -1,6 +1,6 @@
 import React from 'react';
 import InstallWidget from './InstallWidget';
-import { EXTERNAL_LINKS, getConsoleUrl } from '../config/constants';
+import { getConsoleUrl } from '../config/constants';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 
@@ -26,45 +26,13 @@ const Hero: React.FC<HeroProps> = ({ lang = 'en', origin }) => {
           <p className="hero-subtitle">{t('hero.subtitle')}</p>
           <InstallWidget lang={lang} />
           <div className="hero-cta">
-            <div className="hero-cta-primary">
-              <div className="hero-badge">
-                <svg
-                  className="badge-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                <span>{t('hero.cta.freeBadge')}</span>
-              </div>
-              <a
-                href={consoleUrl}
-                className="btn btn-primary"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t('hero.cta.contactUs')}
-              </a>
-              <p className="hero-cta-note">
-                {t('hero.cta.benefits')}
-                <br />
-                <a href={`/${lang}/pricing#plans`}>{t('hero.cta.seeDetails')} →</a>
-              </p>
-            </div>
             <a
-              href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+              href={consoleUrl}
+              className="btn btn-primary"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-secondary"
             >
-              {t('hero.cta.bookDemo')}
+              {t('hero.cta.contactUs')}
             </a>
           </div>
         </div>

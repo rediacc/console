@@ -221,6 +221,10 @@ const DevelopmentEnvironmentsIcon = (
   </svg>
 );
 
+interface WindowWithImageModal extends Window {
+  openImageModal?: (src: string, alt: string) => void;
+}
+
 interface SolutionsProps {
   lang?: Language;
 }
@@ -228,6 +232,13 @@ interface SolutionsProps {
 const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
   const { t, to } = useTranslation(lang);
   const solutionsData = to('solutions.items');
+
+  const openImageModal = (src: string, alt: string) => {
+    const win = window as WindowWithImageModal;
+    if (typeof window !== 'undefined' && win.openImageModal) {
+      win.openImageModal(src, alt);
+    }
+  };
 
   // Memoize solutions array to prevent re-creation on every render
   const solutions = React.useMemo(
@@ -295,6 +306,26 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
               number={solution.number}
             />
           ))}
+        </div>
+        <div className="solution-illustration">
+          <button
+            type="button"
+            className="image-button"
+            onClick={() =>
+              openImageModal('/assets/images/solution.svg', t('problem.solution.imageAlt'))
+            }
+            aria-label={t('common.aria.clickToEnlarge')}
+          >
+            <img
+              src="/assets/images/solution.svg"
+              alt={t('problem.solution.imageAlt')}
+              className="scenario-image clickable-image"
+              loading="lazy"
+              decoding="async"
+              width="1200"
+              height="675"
+            />
+          </button>
         </div>
       </div>
     </section>

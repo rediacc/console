@@ -46,6 +46,48 @@
     "exploreSolutions": "Weitere Lösungen entdecken",
     "platformPreview": "Plattformvorschau"
   },
+  "testimonials": {
+    "title": "Was Teams sagen",
+    "subtitle": "Wie verschiedene Rollen Rediacc erleben",
+    "items": [
+      {
+        "role": "Entwickler",
+        "quote": "Ich habe auf der Produktionsumgebung programmiert, weil die Sandbox veraltet war. Jetzt bekomme ich einen frischen Klon in 60 Sekunden."
+      },
+      {
+        "role": "CTO",
+        "quote": "Wir haben von einer Datenbank auf zwölf skaliert, ohne neue Hardware zu kaufen. Rediacc-Klone teilen sich den Speicher — wir zahlen nur für Änderungen."
+      },
+      {
+        "role": "DevOps-Ingenieur",
+        "quote": "Wir konnten CI nicht mit echten Daten ausführen. Jetzt bekommt jede Pipeline automatisch ihren eigenen Produktionsklon."
+      },
+      {
+        "role": "Systemingenieur",
+        "quote": "Upgrades haben unsere Systeme zum Absturz gebracht. Jetzt testen wir jede Änderung zuerst auf einer exakten Kopie. Keine Überraschungen."
+      },
+      {
+        "role": "Datenbankadministrator",
+        "quote": "Abfragen auf einer veralteten Kopie zu optimieren war sinnlos. Jetzt arbeite ich mit einem live-synchronisierten Klon — gleiche Daten, kein Risiko."
+      },
+      {
+        "role": "IT-Manager",
+        "quote": "Backups dauerten zwei Wochen und füllten unseren Speicher. Jetzt sichern wir stündlich ohne zusätzlichen Speicherplatz."
+      },
+      {
+        "role": "Sicherheitsingenieur",
+        "quote": "Wir konnten Verschlüsselung nicht mit echten Daten testen. Jetzt ist jeder Klon standardmäßig verschlüsselt. Audit bestanden."
+      },
+      {
+        "role": "Disaster-Recovery-Manager",
+        "quote": "Unser Wiederherstellungsplan sagte vier Stunden. Die Realität waren vier Tage. Jetzt wechseln wir in unter einer Minute auf einen Klon."
+      },
+      {
+        "role": "KI-Agent-Betreiber",
+        "quote": "Unser KI-Agent hat versehentlich eine Datenbank gelöscht. Jetzt kann er nur Klone berühren — die Produktion bleibt sicher."
+      }
+    ]
+  },
   "earlyAccess": {
     "benefits": [
       "Arbeiten Sie direkt mit unserem Team zusammen",
@@ -134,7 +176,7 @@
     "cta": {
       "benefits": "10 CPU-Kerne • Unbegrenzte Teams • 0 $",
       "bookDemo": "Demo buchen",
-      "contactUs": "Kostenlos starten",
+      "contactUs": "Konto erstellen",
       "freeBadge": "FÜR IMMER KOSTENLOS • Keine Kreditkarte",
       "learnMore": "Mehr erfahren",
       "seeDetails": "Sehen Sie sich alle Details an"
@@ -156,9 +198,9 @@
         "more": "mehr →"
       }
     },
-    "subtitle": "Überstehen Sie Cloud-Ausfälle. Überall einsetzbar. Schnelles Failover.",
-    "title": "Infrastruktur Das",
-    "titleHighlight": "Überlebt. Jedes Mal."
+    "subtitle": "Zero-Copy-Klone mit gemeinsamem Speicher. Entwicklung, Test, Backup und Recovery — alles aus einer Quelle.",
+    "title": "Eine Datenbank.",
+    "titleHighlight": " Unendliche Kopien."
   },
   "layout": {
     "meta": {
@@ -1616,6 +1658,9 @@
     },
     "subtitle": "Wenn Produktionsumgebungen über Terabytes an Daten verfügen, Sandbox-Umgebungen jedoch nur monatlich synchronisiert werden, stehen Teams vor unmöglichen Entscheidungen, die zu gefährlichen Problemumgehungen führen.",
     "title": "Die Speed-Mismatch-Krise"
+  },
+  "bridge": {
+    "text": "Deshalb haben wir Rediacc entwickelt"
   },
   "solutions": {
     "items": [

@@ -1010,6 +1010,10 @@
       "heading": "التثبيت",
       "text": "قم بتنزيل أحدث ملف تنفيذي لمنصتك من [صفحة إصدارات Rediacc](https://www.rediacc.com) أو قم بالتثبيت عبر مدير الحزم الخاص بك:"
     },
+    "optionLabels": {
+      "no": "لا",
+      "yes": "نعم"
+    },
     "outputFormats": {
       "closing": "هذا يسهّل دمج سطر أوامر Rediacc في البرامج النصية وخطوط أنابيب CI/CD وسير عمل الأتمتة.",
       "heading": "تنسيقات الإخراج",
@@ -1085,10 +1089,12 @@
       }
     },
     "tableHeaders": {
+      "default": "افتراضي",
       "description": "الوصف",
       "error": "الخطأ",
       "flag": "العلامة",
-      "meaning": "المعنى"
+      "meaning": "المعنى",
+      "required": "مطلوب"
     }
   },
   "errors": {

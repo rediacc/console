@@ -1,81 +1,291 @@
-<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
   <!-- Background -->
-  <rect width="800" height="500" fill="#f8f9fa" rx="10" ry="10"/>
-  
-  <!-- Title -->
-  <text x="400" y="40" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Rediacc Dynamic Resource Scaling</text>
-  
-  <!-- Timeline -->
-  <line x1="100" y1="100" x2="700" y2="100" stroke="#ced4da" stroke-width="2"/>
-  <text x="100" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">08:00</text>
-  <text x="400" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">13:00</text>
-  <text x="700" y="120" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">17:00</text>
-  
-  <!-- On-premise Environment -->
-  <rect x="50" y="150" width="700" height="130" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
-  <text x="400" y="170" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">On-premise Environment</text>
-  
-  <!-- On-premise Servers -->
-  <rect x="100" y="190" width="60" height="60" fill="#f1f3f5" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
-  <text x="130" y="225" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Server 1</text>
-  
-  <rect x="180" y="190" width="60" height="60" fill="#f1f3f5" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
-  <text x="210" y="225" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Server 2</text>
-  
-  <rect x="260" y="190" width="60" height="60" fill="#f1f3f5" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
-  <text x="290" y="225" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Server 3</text>
-  
-  <!-- Usage Indicator - High -->
-  <rect x="350" y="190" width="150" height="20" fill="#dc3545" rx="5" ry="5"/>
-  <text x="425" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="white">99% Usage (Day)</text>
-  
-  <!-- Usage Indicator - Low -->
-  <rect x="350" y="230" width="60" height="20" fill="#198754" rx="5" ry="5"/>
-  <text x="425" y="245" font-family="Arial" font-size="12" text-anchor="middle" fill="white">10% Usage (Night)</text>
-  
-  <!-- Cloud Environment -->
-  <rect x="50" y="320" width="700" height="150" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
-  <text x="400" y="340" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Cloud Environment</text>
-  
-  <!-- Cloud Scaling -->
-  <rect x="100" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="130" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 1</text>
-  
-  <rect x="180" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="210" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 2</text>
-  
-  <rect x="260" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="290" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 3</text>
-  
-  <rect x="340" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="370" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 4</text>
-  
-  <rect x="420" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="450" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 5</text>
-  
-  <rect x="500" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="530" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 6</text>
-  
-  <rect x="580" y="360" width="60" height="60" fill="#cfe2ff" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="610" y="395" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Cloud 7</text>
-  
-  <!-- Synchronization Arrows -->
-  <path d="M 200 250 L 200 320" stroke="#198754" stroke-width="2" fill="none" marker-end="url(#arrowhead1)"/>
-  <text x="220" y="290" font-family="Arial" font-size="10" text-anchor="middle" fill="#198754">9 min sync</text>
-  
-  <path d="M 550 360 L 550 280" stroke="#dc3545" stroke-width="2" fill="none" marker-end="url(#arrowhead2)"/>
-  <text x="580" y="290" font-family="Arial" font-size="10" text-anchor="middle" fill="#dc3545">Night Sync</text>
-  
+  <rect width="800" height="500" fill="#f5f5f5"/>
+
   <defs>
-    <marker id="arrowhead1" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#198754"/>
+    <!-- Server gradient -->
+    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <!-- Cloud instance gradient (lighter) -->
+    <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#cccccc"/>
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <!-- Arrow markers -->
+    <marker id="arrowDown" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#556b2f"/>
     </marker>
-    <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-      <polygon points="10 0, 0 3.5, 10 7" fill="#dc3545"/>
+    <marker id="arrowUp" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#999999"/>
     </marker>
   </defs>
-  
-  <!-- Results Box -->
-  <rect x="80" y="450" width="640" height="30" fill="#d9f2e6" rx="5" ry="5" stroke="#198754" stroke-width="1"/>
-  <text x="400" y="470" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#198754">AI Training Time: 8 hours → 1.5 hours | Cost Reduced by 60%</text>
-</svg> 
+
+  <!-- ============================================= -->
+  <!-- TIMELINE SECTION (top)                        -->
+  <!-- ============================================= -->
+  <line x1="80" y1="28" x2="720" y2="28" stroke="#e0e0e0" stroke-width="2"/>
+  <!-- Timeline dots -->
+  <circle cx="80" cy="28" r="5" fill="#556b2f"/>
+  <circle cx="400" cy="28" r="5" fill="#dc3545"/>
+  <circle cx="720" cy="28" r="5" fill="#556b2f"/>
+  <!-- Timeline labels -->
+  <text x="80" y="18" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1a1a1a" font-weight="bold">08:00</text>
+  <text x="400" y="18" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#dc3545" font-weight="bold">13:00</text>
+  <text x="720" y="18" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1a1a1a" font-weight="bold">17:00</text>
+  <!-- Timeline sub-labels -->
+  <text x="80" y="46" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">Start</text>
+  <text x="400" y="46" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">Peak Load</text>
+  <text x="720" y="46" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">End</text>
+  <!-- Usage bar under timeline -->
+  <rect x="80" y="52" rx="3" width="640" height="6" fill="#e0e0e0"/>
+  <rect x="80" y="52" rx="3" width="320" height="6" fill="#dc3545" opacity="0.7"/>
+  <rect x="400" y="52" rx="3" width="320" height="6" fill="#556b2f" opacity="0.5"/>
+
+  <!-- ============================================= -->
+  <!-- ON-PREMISE ENVIRONMENT (middle-left)          -->
+  <!-- ============================================= -->
+  <rect x="30" y="72" width="310" height="180" rx="8" fill="#e0e0e0" opacity="0.35"/>
+  <text x="185" y="90" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a1a1a">On-Premise Environment</text>
+
+  <!-- Server 1 -->
+  <g transform="translate(50, 100)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="10" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="24" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="38" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="14" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="28" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="42" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="42" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <!-- Blinking activity LEDs -->
+    <circle cx="65" cy="80" r="3" fill="#dc3545" opacity="0.9"/>
+    <circle cx="55" cy="80" r="3" fill="#dc3545" opacity="0.6"/>
+  </g>
+  <text x="90" y="215" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#3d3d3d">SRV-01</text>
+
+  <!-- Server 2 -->
+  <g transform="translate(145, 100)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="10" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="24" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="38" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="14" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="28" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="42" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="42" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <circle cx="65" cy="80" r="3" fill="#dc3545" opacity="0.9"/>
+    <circle cx="55" cy="80" r="3" fill="#dc3545" opacity="0.6"/>
+  </g>
+  <text x="185" y="215" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#3d3d3d">SRV-02</text>
+
+  <!-- Server 3 -->
+  <g transform="translate(240, 100)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="10" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="24" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="38" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="14" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="28" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="42" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="42" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <circle cx="65" cy="80" r="3" fill="#dc3545" opacity="0.9"/>
+    <circle cx="55" cy="80" r="3" fill="#dc3545" opacity="0.6"/>
+  </g>
+  <text x="280" y="215" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#3d3d3d">SRV-03</text>
+
+  <!-- High usage badge -->
+  <rect x="60" y="228" width="100" height="18" rx="9" fill="#dc3545"/>
+  <text x="110" y="240" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#ffffff" font-weight="bold">99% Usage</text>
+
+  <!-- ============================================= -->
+  <!-- SYNC ARROWS (between environments)            -->
+  <!-- ============================================= -->
+
+  <!-- Down arrow: 9 min sync (On-prem to Cloud) -->
+  <line x1="370" y1="130" x2="430" y2="130" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3"/>
+  <line x1="430" y1="130" x2="430" y2="170" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3"/>
+  <line x1="430" y1="170" x2="470" y2="170" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowDown)"/>
+  <!-- Arrow label -->
+  <rect x="380" y="108" width="72" height="18" rx="9" fill="#556b2f"/>
+  <text x="416" y="120" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#ffffff" font-weight="bold">9 min sync</text>
+
+  <!-- Up arrow: Night Sync (Cloud to On-prem) -->
+  <line x1="470" y1="230" x2="430" y2="230" stroke="#999999" stroke-width="2" stroke-dasharray="5,3"/>
+  <line x1="430" y1="230" x2="430" y2="200" stroke="#999999" stroke-width="2" stroke-dasharray="5,3"/>
+  <line x1="430" y1="200" x2="370" y2="200" stroke="#999999" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowUp)"/>
+  <!-- Arrow label -->
+  <rect x="379" y="235" width="78" height="18" rx="9" fill="#3d3d3d"/>
+  <text x="418" y="247" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#ffffff" font-weight="bold">Night Sync</text>
+
+  <!-- ============================================= -->
+  <!-- CLOUD ENVIRONMENT (right side)                -->
+  <!-- ============================================= -->
+  <rect x="460" y="72" width="320" height="340" rx="8" fill="#e0e0e0" opacity="0.25"/>
+  <text x="620" y="90" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Cloud Environment</text>
+  <!-- Cloud icon (stylized) -->
+  <text x="695" y="92" font-family="Arial, sans-serif" font-size="13" fill="#999999">&#9729;</text>
+
+  <!-- Cloud Instance Row 1: 4 instances -->
+  <!-- Cloud 1 -->
+  <g transform="translate(480, 100)" filter="url(#shadow)">
+    <rect width="60" height="75" rx="5" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <rect x="6" y="8" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="20" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="32" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <circle cx="12" cy="11" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="23" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="35" r="1.5" fill="#556b2f"/>
+    <rect x="6" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+    <rect x="19" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+  </g>
+  <text x="510" y="188" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">C-01</text>
+
+  <!-- Cloud 2 -->
+  <g transform="translate(555, 100)" filter="url(#shadow)">
+    <rect width="60" height="75" rx="5" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <rect x="6" y="8" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="20" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="32" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <circle cx="12" cy="11" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="23" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="35" r="1.5" fill="#556b2f"/>
+    <rect x="6" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+    <rect x="19" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+  </g>
+  <text x="585" y="188" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">C-02</text>
+
+  <!-- Cloud 3 -->
+  <g transform="translate(630, 100)" filter="url(#shadow)">
+    <rect width="60" height="75" rx="5" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <rect x="6" y="8" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="20" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="32" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <circle cx="12" cy="11" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="23" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="35" r="1.5" fill="#556b2f"/>
+    <rect x="6" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+    <rect x="19" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+  </g>
+  <text x="660" y="188" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">C-03</text>
+
+  <!-- Cloud 4 -->
+  <g transform="translate(705, 100)" filter="url(#shadow)">
+    <rect width="60" height="75" rx="5" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <rect x="6" y="8" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="20" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="32" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <circle cx="12" cy="11" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="23" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="35" r="1.5" fill="#556b2f"/>
+    <rect x="6" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+    <rect x="19" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+  </g>
+  <text x="735" y="188" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">C-04</text>
+
+  <!-- Cloud Instance Row 2: 3 instances -->
+  <!-- Cloud 5 -->
+  <g transform="translate(515, 200)" filter="url(#shadow)">
+    <rect width="60" height="75" rx="5" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <rect x="6" y="8" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="20" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="32" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <circle cx="12" cy="11" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="23" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="35" r="1.5" fill="#556b2f"/>
+    <rect x="6" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+    <rect x="19" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+  </g>
+  <text x="545" y="288" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">C-05</text>
+
+  <!-- Cloud 6 -->
+  <g transform="translate(590, 200)" filter="url(#shadow)">
+    <rect width="60" height="75" rx="5" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <rect x="6" y="8" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="20" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="32" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <circle cx="12" cy="11" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="23" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="35" r="1.5" fill="#556b2f"/>
+    <rect x="6" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+    <rect x="19" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+  </g>
+  <text x="620" y="288" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">C-06</text>
+
+  <!-- Cloud 7 -->
+  <g transform="translate(665, 200)" filter="url(#shadow)">
+    <rect width="60" height="75" rx="5" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <rect x="6" y="8" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="20" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <rect x="6" y="32" width="48" height="6" rx="2" fill="#e0e0e0"/>
+    <circle cx="12" cy="11" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="23" r="1.5" fill="#556b2f"/>
+    <circle cx="12" cy="35" r="1.5" fill="#556b2f"/>
+    <rect x="6" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+    <rect x="19" y="48" width="9" height="5" rx="1" fill="#cccccc"/>
+  </g>
+  <text x="695" y="288" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">C-07</text>
+
+  <!-- Scaled instances label -->
+  <text x="620" y="310" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#556b2f" font-weight="bold">7 Scaled Instances Active</text>
+
+  <!-- ============================================= -->
+  <!-- ON-PREMISE additional info (left bottom)      -->
+  <!-- ============================================= -->
+  <rect x="30" y="265" width="310" height="125" rx="8" fill="#e0e0e0" opacity="0.25"/>
+  <text x="185" y="283" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Daytime Schedule</text>
+
+  <!-- Day operation -->
+  <rect x="46" y="293" width="8" height="8" rx="2" fill="#dc3545"/>
+  <text x="62" y="301" font-family="Arial, sans-serif" font-size="10" fill="#3d3d3d">08:00-17:00: Clone to cloud, offload AI training</text>
+
+  <!-- Night operation -->
+  <rect x="46" y="313" width="8" height="8" rx="2" fill="#556b2f"/>
+  <text x="62" y="321" font-family="Arial, sans-serif" font-size="10" fill="#3d3d3d">17:00-08:00: Sync results back, release cloud</text>
+
+  <!-- Data volumes -->
+  <rect x="46" y="340" width="280" height="40" rx="5" fill="#ffffff" opacity="0.6"/>
+  <text x="186" y="356" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">Data Transfer Summary</text>
+  <text x="186" y="372" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">Outbound: 2.4 TB  |  Return: 180 GB compressed</text>
+
+  <!-- ============================================= -->
+  <!-- CLOUD cost info (right bottom)                -->
+  <!-- ============================================= -->
+  <rect x="460" y="325" width="320" height="80" rx="8" fill="#e0e0e0" opacity="0.25"/>
+  <text x="620" y="343" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Cloud Scaling Details</text>
+  <text x="620" y="362" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#3d3d3d">Auto-provisioned during office hours only</text>
+  <text x="620" y="378" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#3d3d3d">GPU instances scale 3x to 7x based on queue</text>
+  <text x="620" y="394" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#556b2f" font-weight="bold">Pay-per-use: active 9h/day average</text>
+
+  <!-- ============================================= -->
+  <!-- DECORATIVE CIRCLES (bottom)                   -->
+  <!-- ============================================= -->
+  <circle cx="50" cy="470" r="18" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="130" cy="485" r="12" fill="#e0e0e0" opacity="0.2"/>
+  <circle cx="90" cy="490" r="8" fill="#556b2f" opacity="0.1"/>
+  <circle cx="710" cy="475" r="15" fill="#e0e0e0" opacity="0.25"/>
+  <circle cx="760" cy="488" r="10" fill="#556b2f" opacity="0.1"/>
+  <circle cx="680" cy="492" r="6" fill="#e0e0e0" opacity="0.2"/>
+
+  <!-- ============================================= -->
+  <!-- RESULT BADGE (bottom)                         -->
+  <!-- ============================================= -->
+  <rect x="160" y="430" width="480" height="36" rx="18" fill="#556b2f" filter="url(#shadow)"/>
+  <text x="400" y="453" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">AI Training: 8h &#8594; 1.5h  |  60% Cost Reduction</text>
+
+  <!-- Accent dots on badge -->
+  <circle cx="175" cy="448" r="3" fill="#ffffff" opacity="0.3"/>
+  <circle cx="625" cy="448" r="3" fill="#ffffff" opacity="0.3"/>
+
+</svg>

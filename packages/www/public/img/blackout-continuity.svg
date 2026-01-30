@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <!-- Background -->
+  <rect width="800" height="500" fill="#f5f5f5"/>
+
+  <defs>
+    <!-- Server gradient -->
+    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <!-- Arrow marker -->
+    <marker id="arrowRight" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#dc3545"/>
+    </marker>
+  </defs>
+
+  <!-- ============================================= -->
+  <!-- LEFT SIDE: SPAIN DATA CENTER (OFFLINE)        -->
+  <!-- ============================================= -->
+  <rect x="30" y="30" width="310" height="300" rx="8" fill="#e0e0e0" opacity="0.35"/>
+  <text x="185" y="55" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#dc3545">Spain &#8212; Offline</text>
+
+  <!-- Blackout lightning bolt icon -->
+  <polygon points="175,65 165,82 172,82 162,100 180,78 173,78 182,65" fill="#dc3545" opacity="0.8"/>
+  <text x="200" y="87" font-family="Arial, sans-serif" font-size="10" fill="#dc3545" font-weight="bold">BLACKOUT</text>
+
+  <!-- Spain Server 1 (OFFLINE) -->
+  <g transform="translate(50, 110)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)" opacity="0.6"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#dc3545" opacity="0.3"/>
+    <circle cx="15" cy="36" r="2" fill="#dc3545" opacity="0.3"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <!-- Offline X indicator -->
+    <line x1="55" y1="75" x2="67" y2="87" stroke="#dc3545" stroke-width="2"/>
+    <line x1="67" y1="75" x2="55" y2="87" stroke="#dc3545" stroke-width="2"/>
+  </g>
+  <text x="90" y="225" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">ES-SRV-01</text>
+  <rect x="60" y="230" width="60" height="16" rx="8" fill="#dc3545"/>
+  <text x="90" y="241" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#ffffff" font-weight="bold">DOWN</text>
+
+  <!-- Spain Server 2 (OFFLINE) -->
+  <g transform="translate(155, 110)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)" opacity="0.6"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#dc3545" opacity="0.3"/>
+    <circle cx="15" cy="36" r="2" fill="#dc3545" opacity="0.3"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <!-- Offline X indicator -->
+    <line x1="55" y1="75" x2="67" y2="87" stroke="#dc3545" stroke-width="2"/>
+    <line x1="67" y1="75" x2="55" y2="87" stroke="#dc3545" stroke-width="2"/>
+  </g>
+  <text x="195" y="225" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">ES-SRV-02</text>
+  <rect x="165" y="230" width="60" height="16" rx="8" fill="#dc3545"/>
+  <text x="195" y="241" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#ffffff" font-weight="bold">DOWN</text>
+
+  <!-- Spain Server 3 (OFFLINE) -->
+  <g transform="translate(260, 110)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)" opacity="0.6"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#dc3545" opacity="0.3"/>
+    <circle cx="15" cy="36" r="2" fill="#dc3545" opacity="0.3"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <!-- Offline X indicator -->
+    <line x1="55" y1="75" x2="67" y2="87" stroke="#dc3545" stroke-width="2"/>
+    <line x1="67" y1="75" x2="55" y2="87" stroke="#dc3545" stroke-width="2"/>
+  </g>
+  <text x="300" y="225" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">ES-SRV-03</text>
+  <rect x="270" y="230" width="60" height="16" rx="8" fill="#dc3545"/>
+  <text x="300" y="241" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#ffffff" font-weight="bold">DOWN</text>
+
+  <!-- Power outage detail -->
+  <rect x="50" y="262" width="270" height="55" rx="5" fill="#ffffff" opacity="0.6"/>
+  <text x="185" y="280" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">Power Grid Failure Detected</text>
+  <text x="185" y="295" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">All 3 nodes unreachable &#8212; 0% capacity</text>
+  <text x="185" y="310" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#dc3545" font-weight="bold">Failover protocol initiated</text>
+
+  <!-- ============================================= -->
+  <!-- CENTER: FAILOVER CONNECTION                   -->
+  <!-- ============================================= -->
+
+  <!-- Dashed connection line (top path) -->
+  <line x1="345" y1="160" x2="455" y2="160" stroke="#dc3545" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowRight)"/>
+
+  <!-- Failover badge -->
+  <rect x="355" y="135" width="90" height="20" rx="10" fill="#dc3545"/>
+  <text x="400" y="149" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#ffffff" font-weight="bold">47s Failover</text>
+
+  <!-- Data mirror dashed line (lower path) -->
+  <line x1="345" y1="195" x2="455" y2="195" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+  <!-- Auto-Redirect badge -->
+  <rect x="349" y="200" width="102" height="20" rx="10" fill="#556b2f"/>
+  <text x="400" y="214" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#ffffff" font-weight="bold">Auto-Redirect</text>
+
+  <!-- ============================================= -->
+  <!-- RIGHT SIDE: US DATA CENTER (ACTIVE)           -->
+  <!-- ============================================= -->
+  <rect x="460" y="30" width="310" height="300" rx="8" fill="#e0e0e0" opacity="0.35"/>
+  <text x="615" y="55" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#556b2f">United States &#8212; Active</text>
+
+  <!-- Active indicator pulse -->
+  <circle cx="700" cy="50" r="5" fill="#556b2f" opacity="0.8"/>
+  <circle cx="700" cy="50" r="8" fill="none" stroke="#556b2f" stroke-width="1" opacity="0.4"/>
+  <circle cx="700" cy="50" r="12" fill="none" stroke="#556b2f" stroke-width="0.5" opacity="0.2"/>
+
+  <!-- Mirrored data note -->
+  <text x="615" y="75" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">Intercontinental Data Mirror</text>
+
+  <!-- US Server 1 (ACTIVE) -->
+  <g transform="translate(480, 90)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="36" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <!-- Active activity LEDs -->
+    <circle cx="65" cy="80" r="3" fill="#556b2f" opacity="0.9"/>
+    <circle cx="55" cy="80" r="3" fill="#556b2f" opacity="0.6"/>
+  </g>
+  <text x="520" y="205" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">US-SRV-01</text>
+  <rect x="490" y="210" width="60" height="16" rx="8" fill="#556b2f"/>
+  <text x="520" y="221" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#ffffff" font-weight="bold">ACTIVE</text>
+
+  <!-- US Server 2 (ACTIVE) -->
+  <g transform="translate(580, 90)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="36" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <!-- Active activity LEDs -->
+    <circle cx="65" cy="80" r="3" fill="#556b2f" opacity="0.9"/>
+    <circle cx="55" cy="80" r="3" fill="#556b2f" opacity="0.6"/>
+  </g>
+  <text x="620" y="205" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">US-SRV-02</text>
+  <rect x="590" y="210" width="60" height="16" rx="8" fill="#556b2f"/>
+  <text x="620" y="221" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#ffffff" font-weight="bold">ACTIVE</text>
+
+  <!-- US Server 3 (ACTIVE) -->
+  <g transform="translate(680, 90)" filter="url(#shadow)">
+    <rect width="80" height="100" rx="6" fill="url(#serverGrad)"/>
+    <rect x="8" y="18" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="8" y="32" width="64" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="15" cy="22" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="36" r="2" fill="#556b2f"/>
+    <rect x="8" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <rect x="25" y="60" width="12" height="6" rx="1" fill="#3d3d3d"/>
+    <!-- Active activity LEDs -->
+    <circle cx="65" cy="80" r="3" fill="#556b2f" opacity="0.9"/>
+    <circle cx="55" cy="80" r="3" fill="#556b2f" opacity="0.6"/>
+  </g>
+  <text x="720" y="205" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">US-SRV-03</text>
+  <rect x="690" y="210" width="60" height="16" rx="8" fill="#556b2f"/>
+  <text x="720" y="221" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#ffffff" font-weight="bold">ACTIVE</text>
+
+  <!-- Active capacity detail -->
+  <rect x="480" y="242" width="270" height="75" rx="5" fill="#ffffff" opacity="0.6"/>
+  <text x="615" y="260" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">Mirror Takeover Complete</text>
+  <text x="615" y="277" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">3 nodes serving full production traffic</text>
+  <text x="615" y="294" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#999999">Latency impact: +120ms (transatlantic)</text>
+  <text x="615" y="311" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#556b2f" font-weight="bold">All banking services operational</text>
+
+  <!-- ============================================= -->
+  <!-- TIMELINE BAR (below data centers)             -->
+  <!-- ============================================= -->
+  <line x1="80" y1="355" x2="720" y2="355" stroke="#e0e0e0" stroke-width="2"/>
+  <!-- Timeline dots -->
+  <circle cx="80" cy="355" r="5" fill="#556b2f"/>
+  <circle cx="300" cy="355" r="5" fill="#dc3545"/>
+  <circle cx="340" cy="355" r="5" fill="#556b2f"/>
+  <circle cx="720" cy="355" r="5" fill="#556b2f"/>
+  <!-- Danger zone highlight -->
+  <rect x="300" y="352" width="40" height="6" rx="3" fill="#dc3545" opacity="0.3"/>
+  <!-- Timeline labels -->
+  <text x="80" y="347" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">02:15</text>
+  <text x="300" y="347" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#dc3545" font-weight="bold">02:31</text>
+  <text x="340" y="347" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#556b2f" font-weight="bold">02:32</text>
+  <text x="720" y="347" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#1a1a1a" font-weight="bold">11:40</text>
+  <!-- Timeline sub-labels -->
+  <text x="80" y="375" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Normal Ops</text>
+  <text x="320" y="375" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Blackout &#8594; Failover</text>
+  <text x="720" y="375" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Power Restored</text>
+
+  <!-- ============================================= -->
+  <!-- RESULT BADGE (bottom)                         -->
+  <!-- ============================================= -->
+  <rect x="120" y="400" width="560" height="36" rx="18" fill="#556b2f" filter="url(#shadow)"/>
+  <text x="400" y="423" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">98% Service Availability  |  &#8364;370M Loss Prevented</text>
+
+  <!-- Accent dots on badge -->
+  <circle cx="137" cy="418" r="3" fill="#ffffff" opacity="0.3"/>
+  <circle cx="663" cy="418" r="3" fill="#ffffff" opacity="0.3"/>
+
+  <!-- ============================================= -->
+  <!-- DECORATIVE CIRCLES (bottom corners)           -->
+  <!-- ============================================= -->
+  <circle cx="50" cy="470" r="18" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="130" cy="485" r="12" fill="#e0e0e0" opacity="0.2"/>
+  <circle cx="90" cy="490" r="8" fill="#556b2f" opacity="0.1"/>
+  <circle cx="710" cy="475" r="15" fill="#e0e0e0" opacity="0.25"/>
+  <circle cx="760" cy="488" r="10" fill="#556b2f" opacity="0.1"/>
+  <circle cx="680" cy="492" r="6" fill="#e0e0e0" opacity="0.2"/>
+
+</svg>

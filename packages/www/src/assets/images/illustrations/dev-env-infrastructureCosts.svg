@@ -17,9 +17,9 @@
 
   <!-- LEFT: Always-on servers draining money -->
   <!-- 24/7 badge -->
-  <g transform="translate(140, 50)">
+  <g transform="translate(160, 50)">
     <rect width="80" height="30" rx="15" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="1.5"/>
-    <text x="40" y="20" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a" font-weight="600">24 / 7</text>
+    <text x="40" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#1a1a1a" font-weight="bold">24 / 7</text>
   </g>
 
   <!-- Server row (always on) -->
@@ -63,16 +63,16 @@
     <!-- Upward arrow (costs rising) -->
     <line x1="225" y1="100" x2="225" y2="20" stroke="#1a1a1a" stroke-width="2"/>
     <polygon points="225,15 220,25 230,25" fill="#1a1a1a"/>
-    <text x="240" y="60" font-family="system-ui, sans-serif" font-size="10" fill="#1a1a1a">$$$</text>
+    <text x="240" y="60" font-family="Arial, sans-serif" font-size="10" fill="#1a1a1a">$$$</text>
   </g>
 
-  <text x="200" y="385" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#e0e0e0">Always-On Waste</text>
+  <text x="200" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#999999">Always-On Waste</text>
 
   <!-- RIGHT: Ephemeral environments with savings -->
   <!-- Ephemeral badge -->
-  <g transform="translate(530, 50)">
+  <g transform="translate(540, 50)">
     <rect width="120" height="30" rx="15" fill="#556b2f" opacity="0.2" stroke="#556b2f" stroke-width="1.5"/>
-    <text x="60" y="20" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#556b2f" font-weight="600">On-Demand</text>
+    <text x="60" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#556b2f" font-weight="bold">On-Demand</text>
   </g>
 
   <!-- Server 1 (active) -->
@@ -112,10 +112,10 @@
     <!-- Flat arrow (costs stable) -->
     <line x1="225" y1="85" x2="245" y2="85" stroke="#556b2f" stroke-width="2"/>
     <polygon points="248,85 240,80 240,90" fill="#556b2f"/>
-    <text x="240" y="75" font-family="system-ui, sans-serif" font-size="10" fill="#556b2f">$</text>
+    <text x="240" y="75" font-family="Arial, sans-serif" font-size="10" fill="#556b2f">$</text>
   </g>
 
-  <text x="600" y="385" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#556b2f">Ephemeral Savings</text>
+  <text x="600" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#556b2f">Ephemeral Savings</text>
 
   <!-- Decorative elements -->
   <circle cx="70" cy="420" r="30" fill="#e0e0e0" opacity="0.3"/>

@@ -109,11 +109,11 @@
     }
   },
   "hero": {
-    "title": "Infrastructure That",
-    "titleHighlight": " Survives. Every Time.",
-    "subtitle": "Survive cloud outages. Deploy anywhere. Fail over fast.",
+    "title": "One Database.",
+    "titleHighlight": " Infinite Copies.",
+    "subtitle": "Zero-copy clones that share storage. Dev, test, backup, and recovery — all from one source.",
     "cta": {
-      "contactUs": "Start Free",
+      "contactUs": "Create Account",
       "learnMore": "Learn More",
       "bookDemo": "Book Demo",
       "freeBadge": "FREE FOREVER • No credit card",
@@ -149,6 +149,9 @@
       "title": "The Solution: Rediacc Platform",
       "imageAlt": "Rediacc platform solution diagram: automated infrastructure provisioning, instant production-like environment clones, streamlined developer workflows, and AI-safe operations with Model Context Protocol integration"
     }
+  },
+  "bridge": {
+    "text": "That's why we built Rediacc"
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
@@ -186,6 +189,48 @@
           "Production-identical clones",
           "Automatic Git integration"
         ]
+      }
+    ]
+  },
+  "testimonials": {
+    "title": "What Teams Say",
+    "subtitle": "How different roles experience Rediacc",
+    "items": [
+      {
+        "role": "Developer",
+        "quote": "I used to code on production because the sandbox was weeks behind. Now I get a fresh clone in 60 seconds."
+      },
+      {
+        "role": "CTO",
+        "quote": "We scaled from one database to twelve without buying new hardware. Rediacc clones share storage — we only pay for what changes."
+      },
+      {
+        "role": "DevOps Engineer",
+        "quote": "We couldn't run CI against real data. Now every pipeline gets its own production clone, automatically."
+      },
+      {
+        "role": "System Engineer",
+        "quote": "Upgrades crashed our systems. Now we test every change on an exact copy first. No surprises."
+      },
+      {
+        "role": "Database Admin",
+        "quote": "Optimizing queries on a stale copy was pointless. Now I work on a live-synced clone — same data, zero risk."
+      },
+      {
+        "role": "IT Manager",
+        "quote": "Backups took two weeks and filled our storage. Now we backup hourly with no extra disk space."
+      },
+      {
+        "role": "Security Engineer",
+        "quote": "We couldn't test encryption on real data. Now every clone is encrypted by default. Audit passed."
+      },
+      {
+        "role": "Disaster Recovery Manager",
+        "quote": "Our recovery plan said four hours. Reality was four days. Now we failover to a clone in under a minute."
+      },
+      {
+        "role": "AI Agent Operator",
+        "quote": "Our AI agent accidentally deleted a database. Now it can only touch clones — production stays safe."
       }
     ]
   },
