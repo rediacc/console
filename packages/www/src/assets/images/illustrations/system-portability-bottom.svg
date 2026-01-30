@@ -16,8 +16,8 @@
     .brand-stroke { stroke: #556b2f; }
     .light-gray-fill { fill: #e0e0e0; }
     .light-gray-stroke { stroke: #e0e0e0; }
-    .dark-gray-text { fill: #1a1a1a; font-family: sans-serif; font-size: 16px; font-weight: bold; }
-    .white-text { fill: #ffffff; font-family: sans-serif; font-size: 16px; font-weight: bold; }
+    .dark-gray-text { fill: #1a1a1a; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+    .white-text { fill: #ffffff; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
   </style>
 
   <rect class="bg" width="1100" height="618"/>

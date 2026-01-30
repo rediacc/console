@@ -1,12 +1,17 @@
 import React from 'react';
 import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
 
 interface WindowWithImageModal extends Window {
   openImageModal?: (src: string, alt: string) => void;
 }
 
-const Problem: React.FC = () => {
-  const { t } = useTranslation();
+interface ProblemProps {
+  lang?: Language;
+}
+
+const Problem: React.FC<ProblemProps> = ({ lang = 'en' }) => {
+  const { t } = useTranslation(lang);
 
   const openImageModal = (src: string, alt: string) => {
     // This function will be available from the global script
@@ -24,57 +29,25 @@ const Problem: React.FC = () => {
           <p className="section-subtitle">{t('problem.subtitle')}</p>
         </div>
         <div className="problem-content">
-          <div className="scenario-grid">
-            <div className="scenario-column">
-              <div className="problem-scenario">
-                <h3>{t('problem.reality.title')}</h3>
-                <div className="scenario-illustration">
-                  <button
-                    type="button"
-                    className="image-button"
-                    onClick={() =>
-                      openImageModal('/assets/images/problem.svg', t('problem.reality.imageAlt'))
-                    }
-                    aria-label={t('common.aria.clickToEnlarge')}
-                  >
-                    <img
-                      src="/assets/images/problem.svg"
-                      alt={t('problem.reality.imageAlt')}
-                      className="scenario-image clickable-image"
-                      loading="lazy"
-                      decoding="async"
-                      width="400"
-                      height="400"
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="scenario-column">
-              <div className="solution-scenario">
-                <h3>{t('problem.solution.title')}</h3>
-                <div className="scenario-illustration">
-                  <button
-                    type="button"
-                    className="image-button"
-                    onClick={() =>
-                      openImageModal('/assets/images/solution.svg', t('problem.solution.imageAlt'))
-                    }
-                    aria-label={t('common.aria.clickToEnlarge')}
-                  >
-                    <img
-                      src="/assets/images/solution.svg"
-                      alt={t('problem.solution.imageAlt')}
-                      className="scenario-image clickable-image"
-                      loading="lazy"
-                      decoding="async"
-                      width="400"
-                      height="400"
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="problem-illustration">
+            <button
+              type="button"
+              className="image-button"
+              onClick={() =>
+                openImageModal('/assets/images/problem.svg', t('problem.reality.imageAlt'))
+              }
+              aria-label={t('common.aria.clickToEnlarge')}
+            >
+              <img
+                src="/assets/images/problem.svg"
+                alt={t('problem.reality.imageAlt')}
+                className="scenario-image clickable-image"
+                loading="lazy"
+                decoding="async"
+                width="1200"
+                height="675"
+              />
+            </button>
           </div>
         </div>
       </div>

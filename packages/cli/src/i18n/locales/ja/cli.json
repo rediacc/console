@@ -1010,6 +1010,10 @@
       "heading": "インストール",
       "text": "[Rediaccリリースページ](https://www.rediacc.com)からプラットフォーム用の最新バイナリをダウンロードするか、パッケージマネージャーでインストールしてください："
     },
+    "optionLabels": {
+      "no": "いいえ",
+      "yes": "はい"
+    },
     "outputFormats": {
       "closing": "これにより、Rediacc CLIをスクリプト、CI/CDパイプライン、自動化ワークフローに簡単に統合できます。",
       "heading": "出力形式",
@@ -1085,10 +1089,12 @@
       }
     },
     "tableHeaders": {
+      "default": "デフォルト",
       "description": "説明",
       "error": "エラー",
       "flag": "フラグ",
-      "meaning": "意味"
+      "meaning": "意味",
+      "required": "必須"
     }
   },
   "errors": {

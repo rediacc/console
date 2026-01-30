@@ -181,6 +181,74 @@ function buildCommandSyntax(group, ...subParts) {
   return `rdc ${parts.join(' ')}`;
 }
 
+// ---------- Command tree enrichment ----------
+
+const COMMAND_TREE_PATH = path.resolve(__dirname, '../../cli/scripts/command-tree.json');
+let commandTreeLookup = {};
+try {
+  const tree = JSON.parse(fs.readFileSync(COMMAND_TREE_PATH, 'utf-8'));
+  commandTreeLookup = buildCommandLookup(tree);
+} catch {
+  /* graceful fallback — tables simply won't be emitted */
+}
+
+function buildCommandLookup(tree, prefix = '') {
+  const lookup = {};
+  const recurse = (node, p) => {
+    for (const sub of node.subcommands || []) {
+      const key = p ? `${p}.${sub.name}` : sub.name;
+      lookup[key] = sub;
+      recurse(sub, key);
+    }
+  };
+  recurse(tree, prefix);
+  return lookup;
+}
+
+function getCommandTreeKey(group, ...subKeys) {
+  return [group, ...subKeys].map(toKebab).join('.');
+}
+
+function buildEnrichedSyntax(group, ...subParts) {
+  const base = buildCommandSyntax(group, ...subParts);
+  const key = getCommandTreeKey(group, ...subParts);
+  const node = commandTreeLookup[key];
+  if (!node) return base;
+  let suffix = '';
+  for (const arg of node.arguments || []) {
+    if (arg.variadic) {
+      suffix += arg.required ? ` <${arg.name}...>` : ` [${arg.name}...]`;
+    } else {
+      suffix += arg.required ? ` <${arg.name}>` : ` [${arg.name}]`;
+    }
+  }
+  if (node.options && node.options.length > 0) suffix += ' [options]';
+  return base + suffix;
+}
+
+function emitOptionsTable(group, ...subParts) {
+  const key = getCommandTreeKey(group, ...subParts);
+  const node = commandTreeLookup[key];
+  if (!node || !node.options || node.options.length === 0) return [];
+  const tableLines = [];
+  tableLines.push('');
+  tableLines.push(
+    '| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |'
+  );
+  tableLines.push('|------|-------------|----------|---------|');
+  for (const opt of node.options) {
+    const flags = `\`${opt.flags}\``;
+    const desc = opt.descriptionKey ? `{{t:cli.${opt.descriptionKey}}}` : '\u2014';
+    const req = opt.mandatory
+      ? '{{t:cli.docs.optionLabels.yes}}'
+      : '{{t:cli.docs.optionLabels.no}}';
+    const def = opt.defaultValue != null ? `\`${opt.defaultValue}\`` : '-';
+    tableLines.push(`| ${flags} | ${desc} | ${req} | ${def} |`);
+  }
+  tableLines.push('');
+  return tableLines;
+}
+
 /**
  * YAML-safe quote: wraps value in double quotes, escaping inner double quotes
  */
@@ -291,6 +359,15 @@ export function generate(lang, cliJsonEn) {
     const subKeys = getSubCommandKeys(groupData);
     let subNum = 0;
 
+    // Standalone command (no sub-commands, e.g., update, doctor)
+    if (subKeys.length === 0) {
+      lines.push('```bash');
+      lines.push(buildEnrichedSyntax(group));
+      lines.push('```');
+      lines.push(...emitOptionsTable(group));
+      lines.push('');
+    }
+
     for (const subKey of subKeys) {
       const subData = groupData[subKey];
       subNum++;
@@ -333,8 +410,9 @@ export function generate(lang, cliJsonEn) {
               lines.push(`{{t:cli.commands.${commandPath}.description}}`);
               lines.push('');
               lines.push('```bash');
-              lines.push(buildCommandSyntax(group, subKey, nestedKey, l3Key));
+              lines.push(buildEnrichedSyntax(group, subKey, nestedKey, l3Key));
               lines.push('```');
+              lines.push(...emitOptionsTable(group, subKey, nestedKey, l3Key));
               lines.push('');
 
               // Supplements for deeply nested
@@ -361,8 +439,9 @@ export function generate(lang, cliJsonEn) {
             }
 
             lines.push('```bash');
-            lines.push(buildCommandSyntax(group, subKey, nestedKey));
+            lines.push(buildEnrichedSyntax(group, subKey, nestedKey));
             lines.push('```');
+            lines.push(...emitOptionsTable(group, subKey, nestedKey));
             lines.push('');
 
             // Supplements
@@ -390,26 +469,10 @@ export function generate(lang, cliJsonEn) {
         }
 
         lines.push('```bash');
-        lines.push(buildCommandSyntax(group, subKey));
+        lines.push(buildEnrichedSyntax(group, subKey));
         lines.push('```');
+        lines.push(...emitOptionsTable(group, subKey));
         lines.push('');
-
-        // Inline code examples (not translated — hardcoded)
-        if (group === 'auth' && subKey === 'login') {
-          lines.push('```');
-          lines.push('? Email: admin@example.com');
-          lines.push('? Password: ********');
-          lines.push('✓ Login successful! Saved to context "default"');
-          lines.push('```');
-          lines.push('');
-        }
-
-        if (group === 'auth' && subKey === 'activate') {
-          lines.push('```bash');
-          lines.push('rdc auth activate -e user@example.com -p yourpassword --code ABC123');
-          lines.push('```');
-          lines.push('');
-        }
 
         // Supplements
         const tipSup = emitSupplement(docsSupplements, commandPath, 'tip');

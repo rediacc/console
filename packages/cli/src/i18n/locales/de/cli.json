@@ -1010,6 +1010,10 @@
       "heading": "Installation",
       "text": "Laden Sie die neueste Version für Ihre Plattform von der [Rediacc-Releases-Seite](https://www.rediacc.com) herunter oder installieren Sie über Ihren Paketmanager:"
     },
+    "optionLabels": {
+      "no": "Nein",
+      "yes": "Ja"
+    },
     "outputFormats": {
       "closing": "Dies erleichtert die Integration der Rediacc CLI in Skripte, CI/CD-Pipelines und Automatisierungsworkflows.",
       "heading": "Ausgabeformate",
@@ -1085,10 +1089,12 @@
       }
     },
     "tableHeaders": {
+      "default": "Standard",
       "description": "Beschreibung",
       "error": "Fehler",
       "flag": "Option",
-      "meaning": "Bedeutung"
+      "meaning": "Bedeutung",
+      "required": "Erforderlich"
     }
   },
   "errors": {

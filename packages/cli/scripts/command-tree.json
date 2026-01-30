@@ -1,0 +1,3896 @@
+{
+  "name": "rdc",
+  "descriptionKey": null,
+  "options": [],
+  "arguments": [],
+  "subcommands": [
+    {
+      "name": "auth",
+      "descriptionKey": "commands.auth.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "login",
+          "descriptionKey": "commands.auth.login.description",
+          "options": [
+            {
+              "flags": "-e, --email <email>",
+              "descriptionKey": "options.email",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-p, --password <password>",
+              "descriptionKey": "options.password",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --master-password <password>",
+              "descriptionKey": "options.masterPassword",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-n, --name <name>",
+              "descriptionKey": "options.sessionName",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--endpoint <url>",
+              "descriptionKey": "options.endpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--save-as <context>",
+              "descriptionKey": "options.saveAs",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "logout",
+          "descriptionKey": "commands.auth.logout.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.auth.status.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "register",
+          "descriptionKey": "commands.auth.register.description",
+          "options": [
+            {
+              "flags": "--organization <name>",
+              "descriptionKey": "options.organization",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-e, --email <email>",
+              "descriptionKey": "options.email",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-p, --password <password>",
+              "descriptionKey": "options.password",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --master-password <password>",
+              "descriptionKey": "options.masterPassword",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--endpoint <url>",
+              "descriptionKey": "options.endpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--plan <plan>",
+              "descriptionKey": "options.subscriptionPlan",
+              "mandatory": false,
+              "defaultValue": "COMMUNITY"
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "activate",
+          "descriptionKey": "commands.auth.activate.description",
+          "options": [
+            {
+              "flags": "-e, --email <email>",
+              "descriptionKey": "options.email",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-p, --password <password>",
+              "descriptionKey": "options.password",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--code <code>",
+              "descriptionKey": "options.activationCode",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--endpoint <url>",
+              "descriptionKey": "options.endpoint",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "token",
+          "descriptionKey": "commands.auth.token.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.auth.token.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "fork",
+              "descriptionKey": "commands.auth.token.fork.description",
+              "options": [
+                {
+                  "flags": "-n, --name <name>",
+                  "descriptionKey": "options.tokenName",
+                  "mandatory": false,
+                  "defaultValue": "CLI Fork"
+                },
+                {
+                  "flags": "-e, --expires <hours>",
+                  "descriptionKey": "options.expires",
+                  "mandatory": false,
+                  "defaultValue": "24"
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "revoke",
+              "descriptionKey": "commands.auth.token.revoke.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "requestId",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "tfa",
+          "descriptionKey": "commands.auth.tfa.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "status",
+              "descriptionKey": "commands.auth.tfa.status.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "enable",
+              "descriptionKey": "commands.auth.tfa.enable.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "disable",
+              "descriptionKey": "commands.auth.tfa.disable.description",
+              "options": [
+                {
+                  "flags": "--code <code>",
+                  "descriptionKey": "options.tfaCode",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-y, --yes",
+                  "descriptionKey": "options.yes",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "team",
+      "descriptionKey": null,
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.team.list.description",
+          "options": [
+            {
+              "flags": "--search <text>",
+              "descriptionKey": "options.searchInField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--sort <field>",
+              "descriptionKey": "options.sortByField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--desc",
+              "descriptionKey": "options.sortDescending",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "rename",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [
+            {
+              "name": "oldName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": null,
+              "options": [],
+              "arguments": [
+                {
+                  "name": "teamName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "teamName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "member",
+          "descriptionKey": "commands.team.member.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.team.member.list.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "teamName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "add",
+              "descriptionKey": "commands.team.member.add.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "teamName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                },
+                {
+                  "name": "userEmail",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "remove",
+              "descriptionKey": "commands.team.member.remove.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "teamName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                },
+                {
+                  "name": "userEmail",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "machine",
+      "descriptionKey": null,
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.machine.list.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--search <text>",
+              "descriptionKey": "options.searchInField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--sort <field>",
+              "descriptionKey": "options.sortByField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--desc",
+              "descriptionKey": "options.sortDescending",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": "commands.machine.create.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-b, --bridge <name>",
+              "descriptionKey": "options.bridge",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--vault <json>",
+              "descriptionKey": "options.vaultJsonMachine",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "rename",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "oldName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": "commands.machine.delete.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "machineName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "machineName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "assign-bridge",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machineName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "bridgeName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault-status",
+          "descriptionKey": "commands.machine.vaultStatus.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "repos",
+          "descriptionKey": "commands.machine.repos.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--search <text>",
+              "descriptionKey": "options.searchRepos",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "health",
+          "descriptionKey": "commands.machine.health.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "containers",
+          "descriptionKey": "commands.machine.containers.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--health-check",
+              "descriptionKey": "commands.machine.containers.healthCheck",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "services",
+          "descriptionKey": "commands.machine.services.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--stability-check",
+              "descriptionKey": "commands.machine.services.stabilityCheck",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "test-connection",
+          "descriptionKey": "commands.machine.testConnection.description",
+          "options": [
+            {
+              "flags": "--ip <address>",
+              "descriptionKey": "options.machineIp",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--user <name>",
+              "descriptionKey": "options.sshUser",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-b, --bridge <name>",
+              "descriptionKey": "options.bridge",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--port <number>",
+              "descriptionKey": "options.sshPort",
+              "mandatory": false,
+              "defaultValue": "22"
+            },
+            {
+              "flags": "--password <pwd>",
+              "descriptionKey": "options.sshPassword",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--datastore <path>",
+              "descriptionKey": "options.datastore",
+              "mandatory": false,
+              "defaultValue": "/mnt/rediacc"
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machineForVault",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--save",
+              "descriptionKey": "options.saveKnownHosts",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "repository",
+      "descriptionKey": "commands.repository.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.repository.list.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": "commands.repository.create.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "options.repositoryTag",
+              "mandatory": false,
+              "defaultValue": "latest"
+            },
+            {
+              "flags": "--parent <name>",
+              "descriptionKey": "options.parentRepository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--parent-tag <tag>",
+              "descriptionKey": "options.parentRepositoryTag",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "rename",
+          "descriptionKey": "commands.repository.rename.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "options.repositoryTag",
+              "mandatory": false,
+              "defaultValue": "latest"
+            }
+          ],
+          "arguments": [
+            {
+              "name": "oldName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": "commands.repository.delete.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "options.repositoryTag",
+              "mandatory": false,
+              "defaultValue": "latest"
+            },
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "promote",
+          "descriptionKey": "commands.repository.promote.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "options.repositoryTag",
+              "mandatory": false,
+              "defaultValue": "latest"
+            },
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": "commands.repository.vault.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": "commands.repository.vault.get.description",
+              "options": [
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--tag <tag>",
+                  "descriptionKey": "options.repositoryTag",
+                  "mandatory": false,
+                  "defaultValue": "latest"
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "repositoryName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": "commands.repository.vault.update.description",
+              "options": [
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--tag <tag>",
+                  "descriptionKey": "options.repositoryTag",
+                  "mandatory": false,
+                  "defaultValue": "latest"
+                },
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "repositoryName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "storage",
+      "descriptionKey": null,
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--search <text>",
+              "descriptionKey": "options.searchInField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--sort <field>",
+              "descriptionKey": "options.sortByField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--desc",
+              "descriptionKey": "options.sortDescending",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "rename",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "oldName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "storageName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "storageName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "queue",
+      "descriptionKey": "commands.queue.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.queue.list.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--status <status>",
+              "descriptionKey": "options.filterStatus",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--priority-min <n>",
+              "descriptionKey": "options.priorityMin",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--priority-max <n>",
+              "descriptionKey": "options.priorityMax",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--search <text>",
+              "descriptionKey": "options.searchQueue",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--sort <field>",
+              "descriptionKey": "options.sortByField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--desc",
+              "descriptionKey": "options.sortDescending",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--limit <n>",
+              "descriptionKey": "options.limit",
+              "mandatory": false,
+              "defaultValue": "50"
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": "commands.queue.create.description",
+          "options": [
+            {
+              "flags": "-f, --function <name>",
+              "descriptionKey": "options.functionName",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-b, --bridge <name>",
+              "descriptionKey": "options.bridge",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-p, --priority <1-5>",
+              "descriptionKey": "options.priority",
+              "mandatory": false,
+              "defaultValue": "3"
+            },
+            {
+              "flags": "--param <key=value>",
+              "descriptionKey": "options.param",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--vault <json>",
+              "descriptionKey": "options.rawVault",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "trace",
+          "descriptionKey": "commands.queue.trace.description",
+          "options": [
+            {
+              "flags": "-w, --watch",
+              "descriptionKey": "options.watchUpdates",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--interval <ms>",
+              "descriptionKey": "options.pollInterval",
+              "mandatory": false,
+              "defaultValue": "2000"
+            }
+          ],
+          "arguments": [
+            {
+              "name": "taskId",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "cancel",
+          "descriptionKey": "commands.queue.cancel.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "taskId",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "retry",
+          "descriptionKey": "commands.queue.retry.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "taskId",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": "commands.queue.delete.description",
+          "options": [
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "taskId",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "region",
+      "descriptionKey": null,
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.region.list.description",
+          "options": [
+            {
+              "flags": "--search <text>",
+              "descriptionKey": "options.searchInField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--sort <field>",
+              "descriptionKey": "options.sortByField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--desc",
+              "descriptionKey": "options.sortDescending",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "rename",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [
+            {
+              "name": "oldName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": null,
+              "options": [],
+              "arguments": [
+                {
+                  "name": "regionName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "regionName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "bridge",
+      "descriptionKey": null,
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.bridge.list.description",
+          "options": [
+            {
+              "flags": "-r, --region <name>",
+              "descriptionKey": "options.region",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--search <text>",
+              "descriptionKey": "options.searchInField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--sort <field>",
+              "descriptionKey": "options.sortByField",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--desc",
+              "descriptionKey": "options.sortDescending",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-r, --region <name>",
+              "descriptionKey": "options.region",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "rename",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-r, --region <name>",
+              "descriptionKey": "options.region",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "oldName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "-r, --region <name>",
+              "descriptionKey": "options.region",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": null,
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "-r, --region <name>",
+                  "descriptionKey": "options.region",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "bridgeName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": null,
+              "options": [
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-r, --region <name>",
+                  "descriptionKey": "options.region",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "bridgeName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "reset-auth",
+          "descriptionKey": "commands.bridge.resetAuth.description",
+          "options": [
+            {
+              "flags": "-r, --region <name>",
+              "descriptionKey": "options.region",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "ceph",
+      "descriptionKey": "commands.ceph.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "cluster",
+          "descriptionKey": "commands.ceph.cluster.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.ceph.cluster.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "create",
+              "descriptionKey": "commands.ceph.cluster.create.description",
+              "options": [
+                {
+                  "flags": "--vault <content>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "delete",
+              "descriptionKey": "commands.ceph.cluster.delete.description",
+              "options": [
+                {
+                  "flags": "-f, --force",
+                  "descriptionKey": "options.force",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "machines",
+              "descriptionKey": "commands.ceph.cluster.machines.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "vault",
+              "descriptionKey": "commands.ceph.cluster.vault.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": [
+                {
+                  "name": "get",
+                  "descriptionKey": "commands.ceph.cluster.vault.get.description",
+                  "options": [],
+                  "arguments": [
+                    {
+                      "name": "name",
+                      "required": true,
+                      "variadic": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "subcommands": []
+                },
+                {
+                  "name": "update",
+                  "descriptionKey": "commands.ceph.cluster.vault.update.description",
+                  "options": [
+                    {
+                      "flags": "--vault <content>",
+                      "descriptionKey": "options.vaultContent",
+                      "mandatory": true,
+                      "defaultValue": null
+                    }
+                  ],
+                  "arguments": [
+                    {
+                      "name": "name",
+                      "required": true,
+                      "variadic": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "subcommands": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "pool",
+          "descriptionKey": "commands.ceph.pool.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.ceph.pool.list.description",
+              "options": [
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "options.cluster",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "create",
+              "descriptionKey": "commands.ceph.pool.create.description",
+              "options": [
+                {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "options.cluster",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault <content>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "delete",
+              "descriptionKey": "commands.ceph.pool.delete.description",
+              "options": [
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-f, --force",
+                  "descriptionKey": "options.force",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "vault",
+              "descriptionKey": "commands.ceph.pool.vault.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": [
+                {
+                  "name": "get",
+                  "descriptionKey": "commands.ceph.pool.vault.get.description",
+                  "options": [
+                    {
+                      "flags": "--team <name>",
+                      "descriptionKey": "options.team",
+                      "mandatory": true,
+                      "defaultValue": null
+                    }
+                  ],
+                  "arguments": [
+                    {
+                      "name": "name",
+                      "required": true,
+                      "variadic": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "subcommands": []
+                },
+                {
+                  "name": "update",
+                  "descriptionKey": "commands.ceph.pool.vault.update.description",
+                  "options": [
+                    {
+                      "flags": "--team <name>",
+                      "descriptionKey": "options.team",
+                      "mandatory": true,
+                      "defaultValue": null
+                    },
+                    {
+                      "flags": "--vault <content>",
+                      "descriptionKey": "options.vaultContent",
+                      "mandatory": true,
+                      "defaultValue": null
+                    }
+                  ],
+                  "arguments": [
+                    {
+                      "name": "name",
+                      "required": true,
+                      "variadic": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "subcommands": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "image",
+          "descriptionKey": "commands.ceph.image.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.ceph.image.list.description",
+              "options": [
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "create",
+              "descriptionKey": "commands.ceph.image.create.description",
+              "options": [
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault <content>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "delete",
+              "descriptionKey": "commands.ceph.image.delete.description",
+              "options": [
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-f, --force",
+                  "descriptionKey": "options.force",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "snapshot",
+          "descriptionKey": "commands.ceph.snapshot.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.ceph.snapshot.list.description",
+              "options": [
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "create",
+              "descriptionKey": "commands.ceph.snapshot.create.description",
+              "options": [
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault <content>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "delete",
+              "descriptionKey": "commands.ceph.snapshot.delete.description",
+              "options": [
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-f, --force",
+                  "descriptionKey": "options.force",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "clone",
+          "descriptionKey": "commands.ceph.clone.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.ceph.clone.list.description",
+              "options": [
+                {
+                  "flags": "--snapshot <name>",
+                  "descriptionKey": "options.snapshot",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "create",
+              "descriptionKey": "commands.ceph.clone.create.description",
+              "options": [
+                {
+                  "flags": "--snapshot <name>",
+                  "descriptionKey": "options.snapshot",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault <content>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "delete",
+              "descriptionKey": "commands.ceph.clone.delete.description",
+              "options": [
+                {
+                  "flags": "--snapshot <name>",
+                  "descriptionKey": "options.snapshot",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-f, --force",
+                  "descriptionKey": "options.force",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "machines",
+              "descriptionKey": "commands.ceph.clone.machines.description",
+              "options": [
+                {
+                  "flags": "--snapshot <name>",
+                  "descriptionKey": "options.snapshot",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "assign",
+              "descriptionKey": "commands.ceph.clone.assign.description",
+              "options": [
+                {
+                  "flags": "--snapshot <name>",
+                  "descriptionKey": "options.snapshot",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--machines <names>",
+                  "descriptionKey": "options.machineNames",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "unassign",
+              "descriptionKey": "commands.ceph.clone.unassign.description",
+              "options": [
+                {
+                  "flags": "--snapshot <name>",
+                  "descriptionKey": "options.snapshot",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--image <name>",
+                  "descriptionKey": "options.image",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <name>",
+                  "descriptionKey": "options.pool",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--machines <names>",
+                  "descriptionKey": "options.machineNames",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "organization",
+      "descriptionKey": "commands.organization.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "info",
+          "descriptionKey": "commands.organization.info.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "dashboard",
+          "descriptionKey": "commands.organization.dashboard.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": "commands.organization.vault.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": "commands.organization.vault.get.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "descriptionKey": "commands.organization.vault.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": "commands.organization.vault.update.description",
+              "options": [
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "export",
+          "descriptionKey": "commands.organization.export.description",
+          "options": [
+            {
+              "flags": "--path <path>",
+              "descriptionKey": "options.outputPath",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "import",
+          "descriptionKey": "commands.organization.import.description",
+          "options": [
+            {
+              "flags": "--mode <mode>",
+              "descriptionKey": "options.importMode",
+              "mandatory": false,
+              "defaultValue": "merge"
+            }
+          ],
+          "arguments": [
+            {
+              "name": "path",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "maintenance",
+          "descriptionKey": "commands.organization.maintenance.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "action",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "user",
+      "descriptionKey": "commands.user.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.user.list.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": "commands.user.create.description",
+          "options": [
+            {
+              "flags": "-p, --password <password>",
+              "descriptionKey": "options.userPassword",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "email",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "activate",
+          "descriptionKey": "commands.user.activate.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "email",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "activationCode",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "deactivate",
+          "descriptionKey": "commands.user.deactivate.description",
+          "options": [
+            {
+              "flags": "-f, --force",
+              "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "email",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "reactivate",
+          "descriptionKey": "commands.user.reactivate.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "email",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "update-email",
+          "descriptionKey": "commands.user.updateEmail.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "currentEmail",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newEmail",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "update-password",
+          "descriptionKey": "commands.user.updatePassword.description",
+          "options": [
+            {
+              "flags": "--password <password>",
+              "descriptionKey": "options.newPasswordNonInteractive",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--confirm <confirm>",
+              "descriptionKey": "options.confirmPasswordNonInteractive",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "update-language",
+          "descriptionKey": "commands.user.updateLanguage.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "language",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "exists",
+          "descriptionKey": "commands.user.exists.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "email",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "vault",
+          "descriptionKey": "commands.user.vault.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "get",
+              "descriptionKey": "commands.user.vault.get.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "update",
+              "descriptionKey": "commands.user.vault.update.description",
+              "options": [
+                {
+                  "flags": "--vault <json>",
+                  "descriptionKey": "options.vaultContent",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--vault-version <n>",
+                  "descriptionKey": "options.vaultVersion",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "permission",
+          "descriptionKey": "commands.user.permission.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "assign",
+              "descriptionKey": "commands.user.permission.assign.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "userEmail",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                },
+                {
+                  "name": "groupName",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "context",
+      "descriptionKey": "commands.context.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.context.list.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "create",
+          "descriptionKey": "commands.context.create.description",
+          "options": [
+            {
+              "flags": "-u, --api-url <url>",
+              "descriptionKey": "options.apiUrl",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": "commands.context.delete.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "rename",
+          "descriptionKey": "commands.context.rename.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "oldName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "newName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "current",
+          "descriptionKey": "commands.context.current.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "show",
+          "descriptionKey": "commands.context.show.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "set",
+          "descriptionKey": "commands.context.set.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "key",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "value",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "clear",
+          "descriptionKey": "commands.context.clear.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "key",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "create-local",
+          "descriptionKey": "commands.context.createLocal.description",
+          "options": [
+            {
+              "flags": "--ssh-key <path>",
+              "descriptionKey": "options.sshKey",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--renet-path <path>",
+              "descriptionKey": "options.renetPath",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "add-machine",
+          "descriptionKey": "commands.context.addMachine.description",
+          "options": [
+            {
+              "flags": "--ip <address>",
+              "descriptionKey": "options.machineIp",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--user <username>",
+              "descriptionKey": "options.sshUser",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--port <port>",
+              "descriptionKey": "options.sshPort",
+              "mandatory": false,
+              "defaultValue": "22"
+            },
+            {
+              "flags": "--datastore <path>",
+              "descriptionKey": "options.datastore",
+              "mandatory": false,
+              "defaultValue": "/mnt/rediacc"
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "remove-machine",
+          "descriptionKey": "commands.context.removeMachine.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "machines",
+          "descriptionKey": "commands.context.machines.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "set-ssh",
+          "descriptionKey": "commands.context.setSsh.description",
+          "options": [
+            {
+              "flags": "--private-key <path>",
+              "descriptionKey": "options.sshPrivateKey",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--public-key <path>",
+              "descriptionKey": "options.sshPublicKey",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "set-renet",
+          "descriptionKey": "commands.context.setRenet.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "path",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "doctor",
+      "descriptionKey": "commands.doctor.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "permission",
+      "descriptionKey": "commands.permission.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "group",
+          "descriptionKey": "commands.permission.group.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.permission.group.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "create",
+              "descriptionKey": "commands.permission.group.create.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "delete",
+              "descriptionKey": "commands.permission.group.delete.description",
+              "options": [
+                {
+                  "flags": "-f, --force",
+                  "descriptionKey": "options.force",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "show",
+              "descriptionKey": "commands.permission.group.show.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "add",
+          "descriptionKey": "commands.permission.add.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "groupName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "permission",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "remove",
+          "descriptionKey": "commands.permission.remove.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "groupName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "permission",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "audit",
+      "descriptionKey": "commands.audit.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "log",
+          "descriptionKey": "commands.audit.log.description",
+          "options": [
+            {
+              "flags": "--limit <n>",
+              "descriptionKey": "options.limit",
+              "mandatory": false,
+              "defaultValue": "100"
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "trace",
+          "descriptionKey": "commands.audit.trace.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "entityType",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "entityId",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "history",
+          "descriptionKey": "commands.audit.history.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "entityType",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "entityId",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "term",
+      "descriptionKey": "commands.term.description",
+      "options": [
+        {
+          "flags": "-t, --team <name>",
+          "descriptionKey": "options.team",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "-c, --command <cmd>",
+          "descriptionKey": "options.command",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--container <id>",
+          "descriptionKey": "options.container",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--container-action <action>",
+          "descriptionKey": "options.containerAction",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--log-lines <lines>",
+          "descriptionKey": "options.logLines",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--follow",
+          "descriptionKey": "options.follow",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--external",
+          "descriptionKey": "options.external",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "machine",
+          "required": false,
+          "variadic": false,
+          "defaultValue": null
+        },
+        {
+          "name": "repository",
+          "required": false,
+          "variadic": false,
+          "defaultValue": null
+        }
+      ],
+      "subcommands": [
+        {
+          "name": "connect",
+          "descriptionKey": "commands.term.connect.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "options.repository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-c, --command <cmd>",
+              "descriptionKey": "options.command",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--container <id>",
+              "descriptionKey": "options.container",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--container-action <action>",
+              "descriptionKey": "options.containerAction",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--log-lines <lines>",
+              "descriptionKey": "options.logLines",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--follow",
+              "descriptionKey": "options.follow",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--external",
+              "descriptionKey": "options.external",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "sync",
+      "descriptionKey": "commands.sync.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "upload",
+          "descriptionKey": "commands.sync.upload.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "options.repository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-l, --local <path>",
+              "descriptionKey": "options.localPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--remote <path>",
+              "descriptionKey": "options.remotePath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--mirror",
+              "descriptionKey": "options.mirrorUpload",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--verify",
+              "descriptionKey": "options.verifyChecksum",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--confirm",
+              "descriptionKey": "options.confirmSync",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--exclude <patterns...>",
+              "descriptionKey": "options.excludePatterns",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "download",
+          "descriptionKey": "commands.sync.download.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "options.repository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-l, --local <path>",
+              "descriptionKey": "options.localPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--remote <path>",
+              "descriptionKey": "options.remotePath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--mirror",
+              "descriptionKey": "options.mirrorDownload",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--verify",
+              "descriptionKey": "options.verifyChecksum",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--confirm",
+              "descriptionKey": "options.confirmSync",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--exclude <patterns...>",
+              "descriptionKey": "options.excludePatterns",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.sync.status.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "options.repository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-l, --local <path>",
+              "descriptionKey": "options.localPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--remote <path>",
+              "descriptionKey": "options.remotePath",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "protocol",
+      "descriptionKey": "commands.protocol.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "register",
+          "descriptionKey": "commands.protocol.register.description",
+          "options": [
+            {
+              "flags": "--system",
+              "descriptionKey": "options.protocolSystem",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "options.protocolForce",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "unregister",
+          "descriptionKey": "commands.protocol.unregister.description",
+          "options": [
+            {
+              "flags": "--system",
+              "descriptionKey": "options.protocolSystemUnregister",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.protocol.status.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "open",
+          "descriptionKey": "commands.protocol.open.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "url",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "build",
+          "descriptionKey": "commands.protocol.build.description",
+          "options": [
+            {
+              "flags": "--token <token>",
+              "descriptionKey": "options.protocolToken",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "options.repository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-a, --action <action>",
+              "descriptionKey": "options.protocolAction",
+              "mandatory": false,
+              "defaultValue": "desktop"
+            },
+            {
+              "flags": "-p, --params <key=value...>",
+              "descriptionKey": "options.protocolParams",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "parse",
+          "descriptionKey": "commands.protocol.parse.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "url",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "vscode",
+      "descriptionKey": "commands.vscode.description",
+      "options": [
+        {
+          "flags": "-t, --team <name>",
+          "descriptionKey": "options.team",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "-f, --folder <path>",
+          "descriptionKey": "options.folder",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--url-only",
+          "descriptionKey": "options.urlOnly",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "-n, --new-window",
+          "descriptionKey": "options.newWindow",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--skip-env-setup",
+          "descriptionKey": "options.skipEnvSetup",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--insiders",
+          "descriptionKey": "options.insiders",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "machine",
+          "required": false,
+          "variadic": false,
+          "defaultValue": null
+        },
+        {
+          "name": "repository",
+          "required": false,
+          "variadic": false,
+          "defaultValue": null
+        }
+      ],
+      "subcommands": [
+        {
+          "name": "connect",
+          "descriptionKey": "commands.vscode.connect.description",
+          "options": [
+            {
+              "flags": "-t, --team <name>",
+              "descriptionKey": "options.team",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "options.repository",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-f, --folder <path>",
+              "descriptionKey": "options.folder",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--url-only",
+              "descriptionKey": "options.urlOnly",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-n, --new-window",
+              "descriptionKey": "options.newWindow",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-env-setup",
+              "descriptionKey": "options.skipEnvSetup",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--insiders",
+              "descriptionKey": "options.insiders",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "descriptionKey": "commands.vscode.list.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "cleanup",
+          "descriptionKey": "commands.vscode.cleanup.description",
+          "options": [
+            {
+              "flags": "--all",
+              "descriptionKey": "options.cleanupAll",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-c, --connection <name>",
+              "descriptionKey": "options.connectionName",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "check",
+          "descriptionKey": "commands.vscode.check.description",
+          "options": [
+            {
+              "flags": "--insiders",
+              "descriptionKey": "options.insiders",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "update",
+      "descriptionKey": "commands.update.description",
+      "options": [
+        {
+          "flags": "--force",
+          "descriptionKey": "commands.update.force",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--check-only",
+          "descriptionKey": "commands.update.checkOnly",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    }
+  ]
+}

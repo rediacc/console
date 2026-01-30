@@ -1,49 +1,133 @@
-<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="800" height="400" fill="#f8f9fa" rx="10" ry="10"/>
-  
-  <!-- Title -->
-  <text x="400" y="40" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Rediacc Smart Backup Technology</text>
-  
-  <!-- Traditional Backup Section -->
-  <rect x="50" y="80" width="300" height="270" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
-  <text x="200" y="110" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Traditional Backup</text>
-  
-  <!-- Traditional Backup Illustration -->
-  <rect x="80" y="130" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
-  <text x="200" y="155" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Full Backup - Day 1</text>
-  
-  <rect x="80" y="180" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
-  <text x="200" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Full Backup - Day 2</text>
-  
-  <rect x="80" y="230" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
-  <text x="200" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Full Backup - Day 3</text>
-  
-  <text x="200" y="320" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#dc3545">300 TB Storage / Month</text>
-  
-  <!-- Rediacc Backup Section -->
-  <rect x="450" y="80" width="300" height="270" fill="#e9ecef" rx="10" ry="10" stroke="#ced4da" stroke-width="2"/>
-  <text x="600" y="110" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#333">Rediacc Backup</text>
-  
-  <!-- Rediacc Backup Illustration -->
-  <rect x="480" y="130" width="240" height="40" fill="#dee2e6" rx="5" ry="5" stroke="#adb5bd" stroke-width="1"/>
-  <text x="600" y="155" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">10 TB Initial Backup</text>
-  
-  <rect x="480" y="180" width="40" height="40" fill="#c5e8f7" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="500" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">100 GB</text>
-  <text x="600" y="205" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Only Changed Data - Day 2</text>
-  
-  <rect x="480" y="230" width="40" height="40" fill="#c5e8f7" rx="5" ry="5" stroke="#0d6efd" stroke-width="1"/>
-  <text x="500" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">100 GB</text>
-  <text x="600" y="255" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Only Changed Data - Day 3</text>
-  
-  <text x="600" y="320" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#198754">~3 TB Storage / Month</text>
-  
-  <!-- Arrow -->
-  <path d="M 370 200 L 430 200" stroke="#333" stroke-width="2" fill="none"/>
-  <polygon points="430,200 420,195 420,205" fill="#333"/>
-  
-  <!-- Legend -->
-  <rect x="300" y="360" width="200" height="20" fill="none" rx="0" ry="0"/>
-  <text x="400" y="375" font-family="Arial" font-size="12" font-weight="bold" text-anchor="middle" fill="#198754">99.99% Storage Cost Reduction</text>
-</svg> 
+  <rect width="800" height="400" fill="#f5f5f5"/>
+
+  <defs>
+    <!-- Server gradient -->
+    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- ==================== LEFT SIDE: Traditional ==================== -->
+
+  <!-- "Traditional" badge (muted style) -->
+  <rect x="120" y="22" width="110" height="26" rx="13" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="175" y="40" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Traditional</text>
+
+  <!-- Storage block 1 — Day 1 -->
+  <g transform="translate(70, 70)" filter="url(#shadow)">
+    <rect width="100" height="80" rx="6" fill="url(#serverGrad)"/>
+    <rect x="10" y="15" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="30" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="45" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="18" cy="19" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="34" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="49" r="2" fill="#556b2f"/>
+    <text x="50" y="70" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#e0e0e0">10 TB</text>
+  </g>
+  <text x="120" y="168" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#999999">Day 1</text>
+
+  <!-- Storage block 2 — Day 2 -->
+  <g transform="translate(185, 70)" filter="url(#shadow)">
+    <rect width="100" height="80" rx="6" fill="url(#serverGrad)"/>
+    <rect x="10" y="15" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="30" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="45" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="18" cy="19" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="34" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="49" r="2" fill="#556b2f"/>
+    <text x="50" y="70" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#e0e0e0">10 TB</text>
+  </g>
+  <text x="235" y="168" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#999999">Day 2</text>
+
+  <!-- Storage block 3 — Day 3 -->
+  <g transform="translate(300, 70)" filter="url(#shadow)">
+    <rect width="100" height="80" rx="6" fill="url(#serverGrad)"/>
+    <rect x="10" y="15" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="30" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="45" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="18" cy="19" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="34" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="49" r="2" fill="#556b2f"/>
+    <text x="50" y="70" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#e0e0e0">10 TB</text>
+  </g>
+  <text x="350" y="168" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#999999">Day 3</text>
+
+  <!-- Bracket / sum line under traditional blocks -->
+  <line x1="80" y1="185" x2="390" y2="185" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="235" y="210" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#dc3545">300 TB / Month</text>
+
+  <!-- ==================== VS Divider ==================== -->
+  <line x1="430" y1="30" x2="430" y2="340" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="6,4"/>
+  <rect x="416" y="120" width="28" height="22" rx="4" fill="#f5f5f5"/>
+  <text x="430" y="136" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#999999">VS</text>
+
+  <!-- ==================== RIGHT SIDE: Deduplicated ==================== -->
+
+  <!-- "Deduplicated" badge (green/solution style) -->
+  <rect x="545" y="22" width="120" height="26" rx="13" fill="rgba(85,107,47,0.2)" stroke="#556b2f" stroke-width="1"/>
+  <text x="605" y="40" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#556b2f">Deduplicated</text>
+
+  <!-- Storage block — Day 1 (full 10 TB, large) -->
+  <g transform="translate(475, 70)" filter="url(#shadow)">
+    <rect width="100" height="80" rx="6" fill="url(#serverGrad)"/>
+    <rect x="10" y="15" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="30" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <rect x="10" y="45" width="80" height="8" rx="2" fill="#1a1a1a"/>
+    <circle cx="18" cy="19" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="34" r="2" fill="#556b2f"/>
+    <circle cx="18" cy="49" r="2" fill="#556b2f"/>
+    <text x="50" y="70" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#e0e0e0">10 TB</text>
+  </g>
+  <text x="525" y="168" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#999999">Day 1</text>
+
+  <!-- Tiny block — Day 2 (100 GB, dramatically smaller) -->
+  <text x="619" y="125" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#999999">100 GB</text>
+  <g transform="translate(605, 130)" filter="url(#shadow)">
+    <rect width="28" height="20" rx="3" fill="url(#serverGrad)"/>
+    <rect x="4" y="5" width="20" height="3" rx="1" fill="#1a1a1a"/>
+    <rect x="4" y="11" width="20" height="3" rx="1" fill="#1a1a1a"/>
+    <circle cx="8" cy="7" r="1.2" fill="#556b2f"/>
+    <circle cx="8" cy="13" r="1.2" fill="#556b2f"/>
+  </g>
+  <text x="619" y="168" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#999999">Day 2</text>
+
+  <!-- Tiny block — Day 3 (100 GB, dramatically smaller) -->
+  <text x="674" y="125" font-family="Arial, sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#999999">100 GB</text>
+  <g transform="translate(660, 130)" filter="url(#shadow)">
+    <rect width="28" height="20" rx="3" fill="url(#serverGrad)"/>
+    <rect x="4" y="5" width="20" height="3" rx="1" fill="#1a1a1a"/>
+    <rect x="4" y="11" width="20" height="3" rx="1" fill="#1a1a1a"/>
+    <circle cx="8" cy="7" r="1.2" fill="#556b2f"/>
+    <circle cx="8" cy="13" r="1.2" fill="#556b2f"/>
+  </g>
+  <text x="674" y="168" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#999999">Day 3</text>
+
+  <!-- Bracket / sum line under deduplicated blocks -->
+  <line x1="480" y1="185" x2="700" y2="185" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="590" y="210" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#556b2f">~3 TB / Month</text>
+
+  <!-- ==================== Connecting visual: arrow from traditional to dedup ==================== -->
+  <path d="M 280 230 L 280 255 Q 280 265 290 265 L 540 265 Q 550 265 550 255 L 550 230" stroke="#e0e0e0" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+
+  <!-- ==================== Bottom Result Badge ==================== -->
+  <rect x="250" y="275" width="300" height="36" rx="18" fill="rgba(85,107,47,0.15)" stroke="#556b2f" stroke-width="1.5"/>
+  <text x="400" y="298" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#556b2f">99% Storage Cost Reduction</text>
+
+  <!-- ==================== Decorative circles at bottom ==================== -->
+  <circle cx="60" cy="370" r="18" fill="#556b2f" opacity="0.06"/>
+  <circle cx="100" cy="380" r="12" fill="#556b2f" opacity="0.04"/>
+  <circle cx="140" cy="375" r="8" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="700" cy="365" r="20" fill="#556b2f" opacity="0.06"/>
+  <circle cx="740" cy="380" r="10" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="660" cy="385" r="7" fill="#556b2f" opacity="0.04"/>
+  <circle cx="400" cy="385" r="6" fill="#e0e0e0" opacity="0.2"/>
+  <circle cx="350" cy="375" r="10" fill="#556b2f" opacity="0.04"/>
+  <circle cx="450" cy="378" r="8" fill="#556b2f" opacity="0.05"/>
+</svg>

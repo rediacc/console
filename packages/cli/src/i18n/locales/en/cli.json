@@ -1231,8 +1231,14 @@
     "tableHeaders": {
       "flag": "Flag",
       "description": "Description",
+      "required": "Required",
+      "default": "Default",
       "error": "Error",
       "meaning": "Meaning"
+    },
+    "optionLabels": {
+      "yes": "Yes",
+      "no": "No"
     },
     "admonitions": {
       "tip": "Tip",

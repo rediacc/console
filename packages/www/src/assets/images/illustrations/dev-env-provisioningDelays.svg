@@ -60,7 +60,7 @@
     <circle cx="56" cy="55" r="2" fill="#1a1a1a"/>
   </g>
 
-  <text x="200" y="400" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#e0e0e0">Waiting for Environment</text>
+  <text x="200" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#999999">Waiting for Environment</text>
 
   <!-- RIGHT: Instant cloning -->
   <!-- Source server -->
@@ -136,7 +136,7 @@
   <line x1="540" y1="180" x2="595" y2="270" stroke="#556b2f" stroke-width="2"/>
   <polygon points="597,273 592,264 600,266" fill="#556b2f"/>
 
-  <text x="600" y="400" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#556b2f">Instant Clones</text>
+  <text x="600" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#556b2f">Instant Clones</text>
 
   <!-- Decorative elements -->
   <circle cx="80" cy="420" r="30" fill="#e0e0e0" opacity="0.3"/>

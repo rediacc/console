@@ -1,0 +1,198 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <!-- Background -->
+  <rect width="800" height="500" fill="#f5f5f5"/>
+
+  <defs>
+    <!-- Server gradient -->
+    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <!-- Arrow marker -->
+    <marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#556b2f"/>
+    </marker>
+  </defs>
+
+  <!-- ============================================= -->
+  <!-- LEFT SIDE: Production Server                  -->
+  <!-- ============================================= -->
+
+  <!-- Production environment background -->
+  <rect x="20" y="20" width="170" height="310" rx="8" fill="#e0e0e0" opacity="0.25"/>
+  <text x="105" y="45" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Production</text>
+
+  <!-- Production server block (large, solid, active) -->
+  <g transform="translate(45, 58)" filter="url(#shadow)">
+    <rect width="120" height="150" rx="6" fill="url(#serverGrad)"/>
+    <!-- Drive bays -->
+    <rect x="12" y="20" width="96" height="10" rx="2" fill="#1a1a1a"/>
+    <rect x="12" y="38" width="96" height="10" rx="2" fill="#1a1a1a"/>
+    <rect x="12" y="56" width="96" height="10" rx="2" fill="#1a1a1a"/>
+    <rect x="12" y="74" width="96" height="10" rx="2" fill="#1a1a1a"/>
+    <!-- Active green LEDs -->
+    <circle cx="22" cy="25" r="3" fill="#556b2f"/>
+    <circle cx="22" cy="43" r="3" fill="#556b2f"/>
+    <circle cx="22" cy="61" r="3" fill="#556b2f"/>
+    <circle cx="22" cy="79" r="3" fill="#556b2f"/>
+    <!-- Ports at bottom -->
+    <rect x="12" y="100" width="18" height="9" rx="1" fill="#3d3d3d"/>
+    <rect x="36" y="100" width="18" height="9" rx="1" fill="#3d3d3d"/>
+    <rect x="60" y="100" width="18" height="9" rx="1" fill="#3d3d3d"/>
+    <!-- Status LEDs -->
+    <circle cx="100" cy="130" r="4" fill="#556b2f" opacity="0.9"/>
+    <circle cx="88" cy="130" r="4" fill="#556b2f" opacity="0.6"/>
+  </g>
+  <text x="105" y="228" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#3d3d3d" font-weight="bold">PROD-01</text>
+
+  <!-- DB label under production -->
+  <rect x="60" y="240" width="90" height="20" rx="4" fill="rgba(85,107,47,0.15)" stroke="#556b2f" stroke-width="1"/>
+  <text x="105" y="254" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#556b2f" font-weight="bold">8 TB Database</text>
+
+  <!-- Live status indicator -->
+  <rect x="60" y="270" width="90" height="18" rx="9" fill="#556b2f" opacity="0.15"/>
+  <circle cx="75" cy="279" r="3" fill="#556b2f"/>
+  <text x="115" y="283" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#556b2f" font-weight="bold">Live Traffic</text>
+
+  <!-- ============================================= -->
+  <!-- CENTER: Git-style Branching Arrows            -->
+  <!-- ============================================= -->
+
+  <!-- Main trunk line from production right edge to branch point -->
+  <line x1="195" y1="170" x2="290" y2="170" stroke="#556b2f" stroke-width="2.5"/>
+
+  <!-- Branch node (main commit dot) -->
+  <circle cx="290" cy="170" r="7" fill="#556b2f"/>
+  <circle cx="290" cy="170" r="3" fill="#f5f5f5"/>
+
+  <!-- Clone 1 at (430, 40), center-left = (430, 80) -->
+  <!-- Clone 2 at (430, 140), center-left = (430, 180) -->
+  <!-- Clone 3 at (430, 240), center-left = (430, 280) -->
+  <!-- Clone 4 at (430, 335), center-left = (430, 375) -->
+
+  <!-- Branch to Clone 1 (top) -->
+  <path d="M 290 170 C 340 170, 380 80, 430 80" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-dasharray="6,4" marker-end="url(#arrowGreen)"/>
+  <circle cx="360" cy="118" r="3" fill="#556b2f" opacity="0.5"/>
+
+  <!-- Branch to Clone 2 (middle-upper) -->
+  <path d="M 290 170 C 330 170, 390 180, 430 180" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-dasharray="6,4" marker-end="url(#arrowGreen)"/>
+  <circle cx="360" cy="176" r="3" fill="#556b2f" opacity="0.5"/>
+
+  <!-- Branch to Clone 3 (middle-lower) -->
+  <path d="M 290 170 C 340 170, 380 280, 430 280" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-dasharray="6,4" marker-end="url(#arrowGreen)"/>
+  <circle cx="358" cy="228" r="3" fill="#556b2f" opacity="0.5"/>
+
+  <!-- Branch to Clone 4 (bottom) -->
+  <path d="M 290 170 C 330 170, 370 375, 430 375" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-dasharray="6,4" marker-end="url(#arrowGreen)"/>
+  <circle cx="348" cy="285" r="3" fill="#556b2f" opacity="0.5"/>
+
+  <!-- "60s" badge on the branching area -->
+  <rect x="305" y="195" width="56" height="28" rx="14" fill="#556b2f" filter="url(#shadow)"/>
+  <text x="333" y="214" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#ffffff">60s</text>
+
+  <!-- Instant clone sub-label -->
+  <text x="333" y="238" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Instant Clone</text>
+
+  <!-- ============================================= -->
+  <!-- RIGHT SIDE: Ephemeral Clone Environments      -->
+  <!-- ============================================= -->
+
+  <!-- Ephemeral environments background -->
+  <rect x="415" y="20" width="370" height="395" rx="8" fill="#e0e0e0" opacity="0.15"/>
+  <text x="600" y="45" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a1a1a">Ephemeral Dev Environments</text>
+
+  <!-- ========== Clone 1 (y=55) ========== -->
+  <g transform="translate(435, 55)" filter="url(#shadow)">
+    <rect width="80" height="80" rx="6" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <rect x="8" y="14" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <rect x="8" y="28" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <circle cx="15" cy="18" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="32" r="2" fill="#556b2f"/>
+    <rect x="8" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <rect x="25" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <text x="40" y="72" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999" font-weight="bold">Clone 1</text>
+  </g>
+  <!-- Git branch label -->
+  <rect x="525" y="70" width="100" height="18" rx="4" fill="rgba(85,107,47,0.12)" stroke="#556b2f" stroke-width="1"/>
+  <text x="575" y="83" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#556b2f" font-weight="bold">feature/auth</text>
+  <text x="575" y="100" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Dev: Alice</text>
+
+  <!-- ========== Clone 2 (y=150) ========== -->
+  <g transform="translate(435, 150)" filter="url(#shadow)">
+    <rect width="80" height="80" rx="6" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <rect x="8" y="14" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <rect x="8" y="28" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <circle cx="15" cy="18" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="32" r="2" fill="#556b2f"/>
+    <rect x="8" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <rect x="25" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <text x="40" y="72" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999" font-weight="bold">Clone 2</text>
+  </g>
+  <rect x="525" y="165" width="110" height="18" rx="4" fill="rgba(85,107,47,0.12)" stroke="#556b2f" stroke-width="1"/>
+  <text x="580" y="178" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#556b2f" font-weight="bold">fix/payment-bug</text>
+  <text x="580" y="195" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Dev: Bob</text>
+
+  <!-- ========== Clone 3 (y=245) ========== -->
+  <g transform="translate(435, 245)" filter="url(#shadow)">
+    <rect width="80" height="80" rx="6" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <rect x="8" y="14" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <rect x="8" y="28" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <circle cx="15" cy="18" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="32" r="2" fill="#556b2f"/>
+    <rect x="8" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <rect x="25" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <text x="40" y="72" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999" font-weight="bold">Clone 3</text>
+  </g>
+  <rect x="525" y="260" width="106" height="18" rx="4" fill="rgba(85,107,47,0.12)" stroke="#556b2f" stroke-width="1"/>
+  <text x="578" y="273" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#556b2f" font-weight="bold">feat/dashboard</text>
+  <text x="578" y="290" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Dev: Carol</text>
+
+  <!-- ========== Clone 4 (y=340) ========== -->
+  <g transform="translate(435, 340)" filter="url(#shadow)">
+    <rect width="80" height="80" rx="6" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <rect x="8" y="14" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <rect x="8" y="28" width="64" height="8" rx="2" fill="#e0e0e0"/>
+    <circle cx="15" cy="18" r="2" fill="#556b2f"/>
+    <circle cx="15" cy="32" r="2" fill="#556b2f"/>
+    <rect x="8" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <rect x="25" y="50" width="12" height="6" rx="1" fill="#cccccc"/>
+    <text x="40" y="72" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999" font-weight="bold">Clone 4</text>
+  </g>
+  <rect x="525" y="355" width="100" height="18" rx="4" fill="rgba(85,107,47,0.12)" stroke="#556b2f" stroke-width="1"/>
+  <text x="575" y="368" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#556b2f" font-weight="bold">test/load-perf</text>
+  <text x="575" y="385" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">Dev: Dan</text>
+
+  <!-- ============================================= -->
+  <!-- Self-serve badge (right area, bottom)         -->
+  <!-- ============================================= -->
+  <rect x="660" y="395" width="110" height="20" rx="10" fill="rgba(85,107,47,0.15)" stroke="#556b2f" stroke-width="1"/>
+  <text x="715" y="409" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#556b2f" font-weight="bold">Self-Serve Portal</text>
+
+  <!-- No DevOps tickets label -->
+  <text x="715" y="425" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#999999">No DevOps Tickets</text>
+
+  <!-- ============================================= -->
+  <!-- BOTTOM RESULT BADGE                           -->
+  <!-- ============================================= -->
+  <rect x="120" y="445" width="560" height="36" rx="18" fill="#556b2f" filter="url(#shadow)"/>
+  <text x="400" y="468" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">60s Clone  |  40-70% Cost Reduction  |  Zero Drift</text>
+
+  <!-- Accent dots on badge -->
+  <circle cx="135" cy="463" r="3" fill="#ffffff" opacity="0.3"/>
+  <circle cx="665" cy="463" r="3" fill="#ffffff" opacity="0.3"/>
+
+  <!-- ============================================= -->
+  <!-- DECORATIVE CIRCLES (bottom corners)           -->
+  <!-- ============================================= -->
+  <circle cx="40" cy="485" r="18" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="85" cy="492" r="12" fill="#556b2f" opacity="0.1"/>
+  <circle cx="55" cy="496" r="7" fill="#e0e0e0" opacity="0.2"/>
+  <circle cx="750" cy="488" r="16" fill="#e0e0e0" opacity="0.25"/>
+  <circle cx="780" cy="496" r="10" fill="#556b2f" opacity="0.1"/>
+  <circle cx="720" cy="495" r="6" fill="#e0e0e0" opacity="0.2"/>
+
+</svg>

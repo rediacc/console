@@ -1010,6 +1010,10 @@
       "heading": "Kurulum",
       "text": "Platformunuz için en son ikili dosyayı [Rediacc sürümler sayfasından](https://www.rediacc.com) indirin veya paket yöneticiniz aracılığıyla kurun:"
     },
+    "optionLabels": {
+      "no": "Hayır",
+      "yes": "Evet"
+    },
     "outputFormats": {
       "closing": "Bu, Rediacc CLI'yi betiklere, CI/CD hatlarına ve otomasyon iş akışlarına entegre etmeyi kolaylaştırır.",
       "heading": "Çıktı Formatları",
@@ -1085,10 +1089,12 @@
       }
     },
     "tableHeaders": {
+      "default": "Varsayılan",
       "description": "Açıklama",
       "error": "Hata",
       "flag": "Bayrak",
-      "meaning": "Anlam"
+      "meaning": "Anlam",
+      "required": "Gerekli"
     }
   },
   "errors": {

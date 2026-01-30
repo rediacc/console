@@ -1010,6 +1010,10 @@
       "heading": "Instalación",
       "text": "Descargue el último binario para su plataforma desde la [página de versiones de Rediacc](https://www.rediacc.com) o instale a través de su gestor de paquetes:"
     },
+    "optionLabels": {
+      "no": "No",
+      "yes": "Sí"
+    },
     "outputFormats": {
       "closing": "Esto facilita la integración de la CLI de Rediacc en scripts, pipelines CI/CD y flujos de trabajo de automatización.",
       "heading": "Formatos de Salida",
@@ -1085,10 +1089,12 @@
       }
     },
     "tableHeaders": {
+      "default": "Predeterminado",
       "description": "Descripción",
       "error": "Error",
       "flag": "Opción",
-      "meaning": "Significado"
+      "meaning": "Significado",
+      "required": "Obligatorio"
     }
   },
   "errors": {

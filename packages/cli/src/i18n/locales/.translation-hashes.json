@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 900
+    "keyCount": 904
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -653,6 +653,8 @@
     "docs.globalOptions.intro": "5c812277",
     "docs.installation.heading": "048bb149",
     "docs.installation.text": "3e4a4249",
+    "docs.optionLabels.no": "f22e0cbd",
+    "docs.optionLabels.yes": "4daa7349",
     "docs.outputFormats.closing": "a09fc958",
     "docs.outputFormats.heading": "a317ffa2",
     "docs.outputFormats.text": "1097e858",
@@ -691,10 +693,12 @@
     "docs.supplements.queue.afterDescription": "d4cbe0e6",
     "docs.supplements.queue.trace.tip": "e194dc8f",
     "docs.supplements.repository.promote.note": "d776adcd",
+    "docs.tableHeaders.default": "2ce33943",
     "docs.tableHeaders.description": "eb78cff1",
     "docs.tableHeaders.error": "9c1c9375",
     "docs.tableHeaders.flag": "71c644a4",
     "docs.tableHeaders.meaning": "f08cc99e",
+    "docs.tableHeaders.required": "19edc75f",
     "errors.activationFailed": "c18de398",
     "errors.affectedChildClones": "52c6200a",
     "errors.authFailed": "5ae01acb",

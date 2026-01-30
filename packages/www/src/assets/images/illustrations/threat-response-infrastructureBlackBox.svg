@@ -21,10 +21,10 @@
     <rect width="160" height="200" rx="10" fill="#1a1a1a"/>
     <!-- No visible internals - just a black rectangle -->
     <!-- Question marks -->
-    <text x="80" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="36" fill="#3d3d3d" font-weight="700">?</text>
-    <text x="50" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" fill="#3d3d3d" font-weight="700">?</text>
-    <text x="115" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#3d3d3d" font-weight="700">?</text>
-    <text x="80" y="185" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#3d3d3d" font-weight="700">?</text>
+    <text x="80" y="90" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" fill="#888888" font-weight="bold">?</text>
+    <text x="50" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#888888" font-weight="bold">?</text>
+    <text x="115" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#888888" font-weight="bold">?</text>
+    <text x="80" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#888888" font-weight="bold">?</text>
   </g>
 
   <!-- Warning triangle -->
@@ -36,7 +36,7 @@
   </g>
 
   <!-- "No visibility" label -->
-  <text x="200" y="340" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#e0e0e0">No Visibility</text>
+  <text x="200" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#999999">No Visibility</text>
 
   <!-- RIGHT: Transparent monitored server -->
   <g transform="translate(520, 100)" filter="url(#shadow)">
@@ -88,7 +88,7 @@
   </g>
 
   <!-- "Full Visibility" label -->
-  <text x="600" y="340" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#556b2f">Full Visibility</text>
+  <text x="600" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#556b2f">Full Visibility</text>
 
   <!-- Decorative elements -->
   <circle cx="80" cy="380" r="35" fill="#e0e0e0" opacity="0.3"/>

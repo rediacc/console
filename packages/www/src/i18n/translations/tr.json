@@ -46,6 +46,48 @@
     "exploreSolutions": "Diğer Çözümleri Keşfedin",
     "platformPreview": "Platform Önizleme"
   },
+  "testimonials": {
+    "title": "Ekipler ne diyor",
+    "subtitle": "Farklı roller Rediacc'ı nasıl deneyimliyor",
+    "items": [
+      {
+        "role": "Geliştirici",
+        "quote": "Sandbox haftalarca geride kaldığı için üretimde kod yazıyordum. Artık 60 saniyede taze bir klon alıyorum."
+      },
+      {
+        "role": "CTO",
+        "quote": "Bir veritabanından on ikiye ölçeklendik, yeni donanım almadan. Rediacc klonları depolamayı paylaşıyor — sadece değişen kısım için ödüyoruz."
+      },
+      {
+        "role": "DevOps Mühendisi",
+        "quote": "Gerçek verilerle CI çalıştıramıyorduk. Artık her pipeline otomatik olarak kendi üretim klonunu alıyor."
+      },
+      {
+        "role": "Sistem Mühendisi",
+        "quote": "Güncellemeler sistemlerimizi çökertiyordu. Artık her değişikliği önce birebir kopya üzerinde test ediyoruz. Sürpriz yok."
+      },
+      {
+        "role": "Veritabanı Yöneticisi",
+        "quote": "Eski bir kopya üzerinde sorguları optimize etmek anlamsızdı. Artık canlı senkronize bir klonla çalışıyorum — aynı veri, sıfır risk."
+      },
+      {
+        "role": "BT Müdürü",
+        "quote": "Yedeklemeler iki hafta sürüyor ve depolamayı dolduruyordu. Artık ek disk alanı olmadan saatlik yedekleme yapıyoruz."
+      },
+      {
+        "role": "Güvenlik Mühendisi",
+        "quote": "Gerçek verilerle şifreleme test edemiyorduk. Artık her klon varsayılan olarak şifreli. Denetim geçildi."
+      },
+      {
+        "role": "Felaket Kurtarma Müdürü",
+        "quote": "Kurtarma planımız dört saat diyordu. Gerçek dört gündü. Artık bir dakikadan kısa sürede klona geçiş yapıyoruz."
+      },
+      {
+        "role": "Yapay Zeka Operatörü",
+        "quote": "Yapay zeka ajanımız yanlışlıkla bir veritabanını sildi. Artık sadece klonlara dokunabiliyor — üretim güvende kalıyor."
+      }
+    ]
+  },
   "earlyAccess": {
     "benefits": [
       "Ekibimizle doğrudan çalışın",
@@ -134,7 +176,7 @@
     "cta": {
       "benefits": "10 CPU çekirdeği • Sınırsız ekip • 0 ABD doları",
       "bookDemo": "Demo Talep Et",
-      "contactUs": "Ücretsiz Başlayın",
+      "contactUs": "Hesap Oluştur",
       "freeBadge": "SONSUZA DEK ÜCRETSİZ • Kredi kartı gerekmez",
       "learnMore": "Daha Fazla Bilgi",
       "seeDetails": "Tüm ayrıntıları görün"
@@ -156,9 +198,9 @@
         "more": "daha fazla →"
       }
     },
-    "subtitle": "Bulut kesintilerinden kurtulun. Her yere dağıtın. Hızlı yük devretme.",
-    "title": "Altyapı",
-    "titleHighlight": "Hayatta Kalır. Her Zaman."
+    "subtitle": "Depolamayı paylaşan sıfır kopya klonlar. Geliştirme, test, yedekleme ve kurtarma — tek kaynaktan.",
+    "title": "Bir Veritabanı.",
+    "titleHighlight": " Sonsuz Kopya."
   },
   "layout": {
     "meta": {
@@ -1616,6 +1658,9 @@
     },
     "subtitle": "Üretim ortamlarında terabaytlarca veri bulunurken korumalı alan ortamları yalnızca aylık olarak senkronize edildiğinde, ekipler tehlikeli geçici çözümlere yol açan imkansız seçimlerle karşı karşıya kalır.",
     "title": "Hız Uyuşmazlığı Krizi"
+  },
+  "bridge": {
+    "text": "Bu yüzden Rediacc'ı geliştirdik"
   },
   "solutions": {
     "items": [

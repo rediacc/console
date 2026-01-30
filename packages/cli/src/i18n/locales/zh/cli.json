@@ -1010,6 +1010,10 @@
       "heading": "安装",
       "text": "从 [Rediacc 发布页面](https://www.rediacc.com) 下载适用于您平台的最新二进制文件，或通过包管理器安装："
     },
+    "optionLabels": {
+      "no": "否",
+      "yes": "是"
+    },
     "outputFormats": {
       "closing": "这使得将 Rediacc CLI 集成到脚本、CI/CD 管道和自动化工作流中变得容易。",
       "heading": "输出格式",
@@ -1085,10 +1089,12 @@
       }
     },
     "tableHeaders": {
+      "default": "默认值",
       "description": "描述",
       "error": "错误",
       "flag": "标志",
-      "meaning": "含义"
+      "meaning": "含义",
+      "required": "必填"
     }
   },
   "errors": {
