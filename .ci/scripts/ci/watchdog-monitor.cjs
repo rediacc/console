@@ -1,10 +1,14 @@
-// CI Watchdog - monitors all CI jobs, auto-retries transient failures, and force-cancels on failure
+// Watchdog - monitors workflow jobs, auto-retries transient failures, and force-cancels on failure
 // Polls every 15 seconds, exits only when the workflow run completes or a failure is detected.
 //
 // Auto-retry: On first failure (attempt 1), dispatches rerun-failed.yml to retry failed jobs
 // before force-cancelling. On attempt 2+, force-cancels without retry.
 //
-// Labels:
+// Required env vars:
+//   WATCHDOG_EXCLUDE_PATTERNS   - Comma-separated job name patterns to exclude from monitoring
+//   WATCHDOG_NO_RETRY_PATTERNS  - Comma-separated job name patterns that should never auto-retry
+//
+// Labels (PR context only):
 //   no-cancel-failure  - Skip cancellation on job failure (workflow continues)
 //   no-auto-retry      - Skip auto-retry on failure (force-cancel immediately)
 //
@@ -25,11 +29,14 @@ module.exports = async ({ github, context, core }) => {
   const GRACE_POLLS = 3;     // 3 polls × 15s = 45 seconds grace period
   let allCompleteStreak = 0;
 
-  // Jobs to exclude from monitoring
-  const excludePatterns = ['Watchdog', 'CI Complete'];
+  // Jobs to exclude from monitoring (required env var)
+  if (!process.env.WATCHDOG_EXCLUDE_PATTERNS || !process.env.WATCHDOG_NO_RETRY_PATTERNS) {
+    throw new Error('WATCHDOG_EXCLUDE_PATTERNS and WATCHDOG_NO_RETRY_PATTERNS env vars are required');
+  }
+  const excludePatterns = process.env.WATCHDOG_EXCLUDE_PATTERNS.split(',').map(s => s.trim());
 
   // Jobs that should not trigger auto-retry (failures are never transient)
-  const noRetryPatterns = ['Quality', 'Review Gate'];
+  const noRetryPatterns = process.env.WATCHDOG_NO_RETRY_PATTERNS.split(',').map(s => s.trim());
 
   // Helper: dispatch rerun-failed.yml to retry failed jobs
   async function dispatchRerun() {
@@ -123,7 +130,9 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
-  console.log('CI Watchdog started - monitoring ALL jobs for failures...');
+  console.log('Watchdog started - monitoring jobs for failures...');
+  console.log(`Exclude patterns: ${excludePatterns.join(', ')}`);
+  console.log(`No-retry patterns: ${noRetryPatterns.join(', ')}`);
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
   while (Date.now() - startTime < maxRuntime) {
@@ -202,5 +211,5 @@ module.exports = async ({ github, context, core }) => {
 
   // Timeout reached
   console.log('Watchdog reached 3h timeout - exiting');
-  core.warning('CI Watchdog timeout reached');
+  core.warning('Watchdog timeout reached');
 };
