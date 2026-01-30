@@ -10,3 +10,12 @@
 - name: no-gemini-review
   color: "FEF2C0"
   description: "Skips automatic Gemini Code Assist review triggers"
+
+# Version Bump Labels
+- name: bump-major
+  color: "D93F0B"
+  description: "Triggers a major version bump (X+1.0.0) on merge to main"
+
+- name: bump-minor
+  color: "FBCA04"
+  description: "Triggers a minor version bump (X.Y+1.0) on merge to main"

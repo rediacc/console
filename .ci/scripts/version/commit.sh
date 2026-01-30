@@ -28,6 +28,7 @@ VERSION=""
 PUSH=false
 SKIP_CI=true
 INCLUDE_SUBMODULES=false
+BUMP_TYPE_LABEL=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -52,15 +53,32 @@ while [[ $# -gt 0 ]]; do
             INCLUDE_SUBMODULES=true
             shift
             ;;
+        --bump-type)
+            if [[ -z "${2:-}" ]]; then
+                log_error "--bump-type requires an argument"
+                exit 1
+            fi
+            case "$2" in
+                patch|minor|major)
+                    BUMP_TYPE_LABEL="$2"
+                    ;;
+                *)
+                    log_error "Invalid --bump-type: '$2'. Must be one of: patch, minor, major"
+                    exit 1
+                    ;;
+            esac
+            shift 2
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
             ;;
         -h|--help)
-            echo "Usage: $0 [--version X.Y.Z] [--push] [--include-submodules] [--dry-run]"
+            echo "Usage: $0 [--version X.Y.Z] [--bump-type TYPE] [--push] [--include-submodules] [--dry-run]"
             echo ""
             echo "Options:"
             echo "  --version            Include version in commit message"
+            echo "  --bump-type          Bump type (patch, minor, major) for commit message"
             echo "  --push               Push after committing"
             echo "  --skip-ci            Include [skip ci] in commit message (default)"
             echo "  --no-skip-ci         Do not include [skip ci] in commit message"
@@ -204,12 +222,17 @@ Includes submodule pointer updates."
         fi
     fi
 
+    local bump_label=""
+    if [[ -n "$BUMP_TYPE_LABEL" && "$BUMP_TYPE_LABEL" != "patch" ]]; then
+        bump_label=" $BUMP_TYPE_LABEL"
+    fi
+
     if [[ -n "$VERSION" ]]; then
-        commit_msg="chore(release): bump version to $VERSION${skip_ci_suffix}
+        commit_msg="chore(release): bump${bump_label} version to $VERSION${skip_ci_suffix}
 
 Automatically incremented by CI.${submodule_note}"
     else
-        commit_msg="chore(release): bump version${skip_ci_suffix}
+        commit_msg="chore(release): bump${bump_label} version${skip_ci_suffix}
 
 Automatically incremented by CI.${submodule_note}"
     fi
