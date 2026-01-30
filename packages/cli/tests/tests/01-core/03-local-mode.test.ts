@@ -288,7 +288,7 @@ test.describe('Local Context Commands @cli @core', () => {
   test.describe('context set-renet', () => {
     test('should update renet path', async () => {
       const result = await runner.run(
-        ['--context', testLocalContext, 'context', 'set-renet', '/usr/local/bin/renet'],
+        ['--context', testLocalContext, 'context', 'set-renet', '/usr/bin/renet'],
         { skipJsonParse: true }
       );
 
@@ -297,7 +297,7 @@ test.describe('Local Context Commands @cli @core', () => {
 
       // Verify in show
       const showResult = await runner.run(['--context', testLocalContext, 'context', 'show']);
-      expect((showResult.json as { renetPath: string }).renetPath).toBe('/usr/local/bin/renet');
+      expect((showResult.json as { renetPath: string }).renetPath).toBe('/usr/bin/renet');
     });
   });
 

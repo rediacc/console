@@ -59,7 +59,7 @@
     <rect x="155" y="35" width="40" height="20" rx="3" fill="#e0e0e0"/>
   </g>
 
-  <text x="200" y="370" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#e0e0e0">Unencrypted</text>
+  <text x="200" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#999999">Unencrypted</text>
 
   <!-- RIGHT: Encrypted hardware -->
   <g transform="translate(520, 110)" filter="url(#shadow)">
@@ -100,7 +100,7 @@
     <line x1="20" y1="35" x2="80" y2="-5" stroke="#556b2f" stroke-width="3" stroke-linecap="round"/>
   </g>
 
-  <text x="600" y="370" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#556b2f">Encrypted</text>
+  <text x="600" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#556b2f">Encrypted</text>
 
   <!-- Decorative elements -->
   <circle cx="80" cy="400" r="35" fill="#e0e0e0" opacity="0.3"/>

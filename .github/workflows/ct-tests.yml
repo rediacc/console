@@ -658,7 +658,7 @@ jobs:
       - name: Extract renet binary
         run: .ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
       - name: Add renet to PATH
-        run: sudo cp /tmp/renet /usr/local/bin/renet && sudo chmod +x /usr/local/bin/renet
+        run: sudo cp /tmp/renet /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # VM provisioning
       - name: Setup KVM Host

@@ -12,7 +12,7 @@
 #
 # Example:
 #   .ci/scripts/infra/extract-renet-binary.sh --image ghcr.io/rediacc/elite/bridge:latest
-#   .ci/scripts/infra/extract-renet-binary.sh --image myimage:latest --output /usr/local/bin/renet
+#   .ci/scripts/infra/extract-renet-binary.sh --image myimage:latest --output /usr/bin/renet
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,7 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Hero from '../../components/Hero';
+import Problem from '../../components/Problem';
 import Solutions from '../../components/Solutions';
+import Testimonials from '../../components/Testimonials';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
@@ -21,7 +23,18 @@ const { t } = createTranslator(lang);
   structuredDataType="organization"
 >
   <Hero client:idle lang={lang} origin={Astro.url.origin} />
+  <Problem client:visible lang={lang} />
+
+  <!-- Bridge: narrative transition from pain to solution -->
+  <div class="section-bridge" aria-hidden="true">
+    <p class="bridge-text">{t('bridge.text')}</p>
+    <svg class="bridge-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
   <Solutions client:visible lang={lang} />
+  <Testimonials client:visible lang={lang} />
 
   <!-- Success/Error Messages -->
   <div class="message-overlay" id="message-overlay" role="dialog" aria-hidden="true">
