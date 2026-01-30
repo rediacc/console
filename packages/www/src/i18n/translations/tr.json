@@ -50,15 +50,42 @@
     "title": "Ekipler ne diyor",
     "subtitle": "Farklı roller Rediacc'ı nasıl deneyimliyor",
     "items": [
-      { "role": "Geliştirici", "quote": "Sandbox haftalarca geride kaldığı için üretimde kod yazıyordum. Artık 60 saniyede taze bir klon alıyorum." },
-      { "role": "CTO", "quote": "Bir veritabanından on ikiye ölçeklendik, yeni donanım almadan. Rediacc klonları depolamayı paylaşıyor — sadece değişen kısım için ödüyoruz." },
-      { "role": "DevOps Mühendisi", "quote": "Gerçek verilerle CI çalıştıramıyorduk. Artık her pipeline otomatik olarak kendi üretim klonunu alıyor." },
-      { "role": "Sistem Mühendisi", "quote": "Güncellemeler sistemlerimizi çökertiyordu. Artık her değişikliği önce birebir kopya üzerinde test ediyoruz. Sürpriz yok." },
-      { "role": "Veritabanı Yöneticisi", "quote": "Eski bir kopya üzerinde sorguları optimize etmek anlamsızdı. Artık canlı senkronize bir klonla çalışıyorum — aynı veri, sıfır risk." },
-      { "role": "BT Müdürü", "quote": "Yedeklemeler iki hafta sürüyor ve depolamayı dolduruyordu. Artık ek disk alanı olmadan saatlik yedekleme yapıyoruz." },
-      { "role": "Güvenlik Mühendisi", "quote": "Gerçek verilerle şifreleme test edemiyorduk. Artık her klon varsayılan olarak şifreli. Denetim geçildi." },
-      { "role": "Felaket Kurtarma Müdürü", "quote": "Kurtarma planımız dört saat diyordu. Gerçek dört gündü. Artık bir dakikadan kısa sürede klona geçiş yapıyoruz." },
-      { "role": "Yapay Zeka Operatörü", "quote": "Yapay zeka ajanımız yanlışlıkla bir veritabanını sildi. Artık sadece klonlara dokunabiliyor — üretim güvende kalıyor." }
+      {
+        "role": "Geliştirici",
+        "quote": "Sandbox haftalarca geride kaldığı için üretimde kod yazıyordum. Artık 60 saniyede taze bir klon alıyorum."
+      },
+      {
+        "role": "CTO",
+        "quote": "Bir veritabanından on ikiye ölçeklendik, yeni donanım almadan. Rediacc klonları depolamayı paylaşıyor — sadece değişen kısım için ödüyoruz."
+      },
+      {
+        "role": "DevOps Mühendisi",
+        "quote": "Gerçek verilerle CI çalıştıramıyorduk. Artık her pipeline otomatik olarak kendi üretim klonunu alıyor."
+      },
+      {
+        "role": "Sistem Mühendisi",
+        "quote": "Güncellemeler sistemlerimizi çökertiyordu. Artık her değişikliği önce birebir kopya üzerinde test ediyoruz. Sürpriz yok."
+      },
+      {
+        "role": "Veritabanı Yöneticisi",
+        "quote": "Eski bir kopya üzerinde sorguları optimize etmek anlamsızdı. Artık canlı senkronize bir klonla çalışıyorum — aynı veri, sıfır risk."
+      },
+      {
+        "role": "BT Müdürü",
+        "quote": "Yedeklemeler iki hafta sürüyor ve depolamayı dolduruyordu. Artık ek disk alanı olmadan saatlik yedekleme yapıyoruz."
+      },
+      {
+        "role": "Güvenlik Mühendisi",
+        "quote": "Gerçek verilerle şifreleme test edemiyorduk. Artık her klon varsayılan olarak şifreli. Denetim geçildi."
+      },
+      {
+        "role": "Felaket Kurtarma Müdürü",
+        "quote": "Kurtarma planımız dört saat diyordu. Gerçek dört gündü. Artık bir dakikadan kısa sürede klona geçiş yapıyoruz."
+      },
+      {
+        "role": "Yapay Zeka Operatörü",
+        "quote": "Yapay zeka ajanımız yanlışlıkla bir veritabanını sildi. Artık sadece klonlara dokunabiliyor — üretim güvende kalıyor."
+      }
     ]
   },
   "earlyAccess": {

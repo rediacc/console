@@ -8,9 +8,9 @@ interface TestimonialsProps {
 
 const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en' }) => {
   const { t, to } = useTranslation(lang);
-  const items = to('testimonials.items') as Array<{ role: string; quote: string }>;
+  const items = to('testimonials.items') as { role: string; quote: string }[];
 
-  if (!items || items.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
     <section className="testimonials" id="testimonials">
@@ -22,9 +22,7 @@ const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en' }) => {
         <div className="testimonials-grid">
           {items.map((item, index) => (
             <div key={`testimonial-${index}`} className="testimonial-card">
-              <blockquote className="testimonial-quote">
-                &ldquo;{item.quote}&rdquo;
-              </blockquote>
+              <blockquote className="testimonial-quote">&ldquo;{item.quote}&rdquo;</blockquote>
               <div className="testimonial-author">
                 <div className="testimonial-avatar" aria-hidden="true">
                   {item.role.charAt(0)}

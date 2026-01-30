@@ -1050,7 +1050,6 @@ a[target='_blank']::after {
   justify-content: center;
 }
 
-
 /* ===== INSTALL WIDGET ===== */
 .install-widget {
   max-width: 600px;
@@ -1420,11 +1419,7 @@ a[target='_blank']::after {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-8) var(--space-4);
-  background: linear-gradient(
-    to bottom,
-    rgba(220, 53, 69, 0.03),
-    rgba(85, 107, 47, 0.03)
-  );
+  background: linear-gradient(to bottom, rgba(220, 53, 69, 0.03), rgba(85, 107, 47, 0.03));
 }
 
 .bridge-text {
@@ -1442,8 +1437,13 @@ a[target='_blank']::after {
 }
 
 @keyframes bridge-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(4px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2029,8 +2029,8 @@ a[target='_blank']::after {
   justify-content: center;
 }
 
-.message-overlay[aria-hidden="false"],
-.image-modal[aria-hidden="false"] {
+.message-overlay[aria-hidden='false'],
+.image-modal[aria-hidden='false'] {
   display: flex;
 }
 

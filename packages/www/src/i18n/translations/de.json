@@ -50,15 +50,42 @@
     "title": "Was Teams sagen",
     "subtitle": "Wie verschiedene Rollen Rediacc erleben",
     "items": [
-      { "role": "Entwickler", "quote": "Ich habe auf der Produktionsumgebung programmiert, weil die Sandbox veraltet war. Jetzt bekomme ich einen frischen Klon in 60 Sekunden." },
-      { "role": "CTO", "quote": "Wir haben von einer Datenbank auf zwölf skaliert, ohne neue Hardware zu kaufen. Rediacc-Klone teilen sich den Speicher — wir zahlen nur für Änderungen." },
-      { "role": "DevOps-Ingenieur", "quote": "Wir konnten CI nicht mit echten Daten ausführen. Jetzt bekommt jede Pipeline automatisch ihren eigenen Produktionsklon." },
-      { "role": "Systemingenieur", "quote": "Upgrades haben unsere Systeme zum Absturz gebracht. Jetzt testen wir jede Änderung zuerst auf einer exakten Kopie. Keine Überraschungen." },
-      { "role": "Datenbankadministrator", "quote": "Abfragen auf einer veralteten Kopie zu optimieren war sinnlos. Jetzt arbeite ich mit einem live-synchronisierten Klon — gleiche Daten, kein Risiko." },
-      { "role": "IT-Manager", "quote": "Backups dauerten zwei Wochen und füllten unseren Speicher. Jetzt sichern wir stündlich ohne zusätzlichen Speicherplatz." },
-      { "role": "Sicherheitsingenieur", "quote": "Wir konnten Verschlüsselung nicht mit echten Daten testen. Jetzt ist jeder Klon standardmäßig verschlüsselt. Audit bestanden." },
-      { "role": "Disaster-Recovery-Manager", "quote": "Unser Wiederherstellungsplan sagte vier Stunden. Die Realität waren vier Tage. Jetzt wechseln wir in unter einer Minute auf einen Klon." },
-      { "role": "KI-Agent-Betreiber", "quote": "Unser KI-Agent hat versehentlich eine Datenbank gelöscht. Jetzt kann er nur Klone berühren — die Produktion bleibt sicher." }
+      {
+        "role": "Entwickler",
+        "quote": "Ich habe auf der Produktionsumgebung programmiert, weil die Sandbox veraltet war. Jetzt bekomme ich einen frischen Klon in 60 Sekunden."
+      },
+      {
+        "role": "CTO",
+        "quote": "Wir haben von einer Datenbank auf zwölf skaliert, ohne neue Hardware zu kaufen. Rediacc-Klone teilen sich den Speicher — wir zahlen nur für Änderungen."
+      },
+      {
+        "role": "DevOps-Ingenieur",
+        "quote": "Wir konnten CI nicht mit echten Daten ausführen. Jetzt bekommt jede Pipeline automatisch ihren eigenen Produktionsklon."
+      },
+      {
+        "role": "Systemingenieur",
+        "quote": "Upgrades haben unsere Systeme zum Absturz gebracht. Jetzt testen wir jede Änderung zuerst auf einer exakten Kopie. Keine Überraschungen."
+      },
+      {
+        "role": "Datenbankadministrator",
+        "quote": "Abfragen auf einer veralteten Kopie zu optimieren war sinnlos. Jetzt arbeite ich mit einem live-synchronisierten Klon — gleiche Daten, kein Risiko."
+      },
+      {
+        "role": "IT-Manager",
+        "quote": "Backups dauerten zwei Wochen und füllten unseren Speicher. Jetzt sichern wir stündlich ohne zusätzlichen Speicherplatz."
+      },
+      {
+        "role": "Sicherheitsingenieur",
+        "quote": "Wir konnten Verschlüsselung nicht mit echten Daten testen. Jetzt ist jeder Klon standardmäßig verschlüsselt. Audit bestanden."
+      },
+      {
+        "role": "Disaster-Recovery-Manager",
+        "quote": "Unser Wiederherstellungsplan sagte vier Stunden. Die Realität waren vier Tage. Jetzt wechseln wir in unter einer Minute auf einen Klon."
+      },
+      {
+        "role": "KI-Agent-Betreiber",
+        "quote": "Unser KI-Agent hat versehentlich eine Datenbank gelöscht. Jetzt kann er nur Klone berühren — die Produktion bleibt sicher."
+      }
     ]
   },
   "earlyAccess": {

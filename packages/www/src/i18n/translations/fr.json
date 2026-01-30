@@ -50,15 +50,42 @@
     "title": "Ce que disent les équipes",
     "subtitle": "Comment différents rôles vivent Rediacc",
     "items": [
-      { "role": "Développeur", "quote": "Je codais en production parce que le bac à sable avait des semaines de retard. Maintenant j'obtiens un clone frais en 60 secondes." },
-      { "role": "CTO", "quote": "Nous sommes passés d'une base de données à douze sans acheter de nouveau matériel. Les clones Rediacc partagent le stockage — on ne paie que ce qui change." },
-      { "role": "Ingénieur DevOps", "quote": "On ne pouvait pas exécuter la CI avec des données réelles. Maintenant chaque pipeline a son propre clone de production, automatiquement." },
-      { "role": "Ingénieur Système", "quote": "Les mises à jour plantaient nos systèmes. Maintenant nous testons chaque changement d'abord sur une copie exacte. Aucune surprise." },
-      { "role": "Administrateur BD", "quote": "Optimiser des requêtes sur une copie obsolète était inutile. Maintenant je travaille sur un clone synchronisé — mêmes données, zéro risque." },
-      { "role": "Responsable IT", "quote": "Les sauvegardes prenaient deux semaines et remplissaient notre stockage. Maintenant on sauvegarde toutes les heures sans espace supplémentaire." },
-      { "role": "Ingénieur Sécurité", "quote": "On ne pouvait pas tester le chiffrement avec des données réelles. Maintenant chaque clone est chiffré par défaut. Audit réussi." },
-      { "role": "Responsable Reprise après Sinistre", "quote": "Notre plan de reprise disait quatre heures. La réalité était quatre jours. Maintenant on bascule sur un clone en moins d'une minute." },
-      { "role": "Opérateur Agent IA", "quote": "Notre agent IA a accidentellement supprimé une base de données. Maintenant il ne peut toucher que des clones — la production reste sûre." }
+      {
+        "role": "Développeur",
+        "quote": "Je codais en production parce que le bac à sable avait des semaines de retard. Maintenant j'obtiens un clone frais en 60 secondes."
+      },
+      {
+        "role": "CTO",
+        "quote": "Nous sommes passés d'une base de données à douze sans acheter de nouveau matériel. Les clones Rediacc partagent le stockage — on ne paie que ce qui change."
+      },
+      {
+        "role": "Ingénieur DevOps",
+        "quote": "On ne pouvait pas exécuter la CI avec des données réelles. Maintenant chaque pipeline a son propre clone de production, automatiquement."
+      },
+      {
+        "role": "Ingénieur Système",
+        "quote": "Les mises à jour plantaient nos systèmes. Maintenant nous testons chaque changement d'abord sur une copie exacte. Aucune surprise."
+      },
+      {
+        "role": "Administrateur BD",
+        "quote": "Optimiser des requêtes sur une copie obsolète était inutile. Maintenant je travaille sur un clone synchronisé — mêmes données, zéro risque."
+      },
+      {
+        "role": "Responsable IT",
+        "quote": "Les sauvegardes prenaient deux semaines et remplissaient notre stockage. Maintenant on sauvegarde toutes les heures sans espace supplémentaire."
+      },
+      {
+        "role": "Ingénieur Sécurité",
+        "quote": "On ne pouvait pas tester le chiffrement avec des données réelles. Maintenant chaque clone est chiffré par défaut. Audit réussi."
+      },
+      {
+        "role": "Responsable Reprise après Sinistre",
+        "quote": "Notre plan de reprise disait quatre heures. La réalité était quatre jours. Maintenant on bascule sur un clone en moins d'une minute."
+      },
+      {
+        "role": "Opérateur Agent IA",
+        "quote": "Notre agent IA a accidentellement supprimé une base de données. Maintenant il ne peut toucher que des clones — la production reste sûre."
+      }
     ]
   },
   "earlyAccess": {
