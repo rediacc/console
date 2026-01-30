@@ -36,8 +36,8 @@ module.exports = async ({ github, context, core }) => {
     try {
       // The ref selects which branch's copy of the workflow file to run — it does
       // NOT affect the retried jobs (gh run rerun uses the original run's branch/SHA).
-      // Use the PR head branch when available, otherwise fall back to the run's head branch.
-      const ref = context.payload.pull_request?.head.ref || context.payload.workflow_run?.head_branch || 'main';
+      // Use the PR head branch when available, otherwise fall back to the repo default branch.
+      const ref = context.payload.pull_request?.head.ref || context.payload.repository?.default_branch || 'main';
       console.log(`Dispatching ${RERUN_WORKFLOW} on ref '${ref}' for run ${context.runId}...`);
       await github.rest.actions.createWorkflowDispatch({
         owner: context.repo.owner,
