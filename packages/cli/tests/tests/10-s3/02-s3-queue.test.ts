@@ -15,16 +15,19 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
-import { generateS3ContextName, getS3TestEnv, hasS3TestEnv } from '../../src/utils/s3';
+import {
+  type S3TestEnv,
+  generateS3ContextName,
+  getS3TestEnv,
+  hasS3TestEnv,
+} from '../../src/utils/s3';
 
 // Defer env var access — calling getS3TestEnv() at module level crashes
 // Playwright's test discovery when S3_TEST_* vars aren't set.
 const s3Available = hasS3TestEnv();
-const s3Env = s3Available
+const s3Env: S3TestEnv = s3Available
   ? getS3TestEnv()
-  : ({ endpoint: '', accessKeyId: '', secretAccessKey: '', bucket: '' } as ReturnType<
-      typeof getS3TestEnv
-    >);
+  : { endpoint: '', accessKeyId: '', secretAccessKey: '', bucket: '' };
 const sshKeyPath = process.env.E2E_SSH_KEY ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
 
 /** Extract a UUID from CLI output text */
