@@ -3,7 +3,7 @@
 # Usage: select-tunnel.sh [--url <url>]... [--max-attempts <n>] [--interval <s>]
 #
 # Tests each URL's /health endpoint. Outputs the first responsive URL.
-# Retries the full list up to max-attempts times (default: 5).
+# Retries the full list up to max-attempts times (default: 10).
 #
 # Example:
 #   TUNNEL_URL=$(select-tunnel.sh \
@@ -16,7 +16,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 # Parse URLs (can't use parse_args for repeated --url flags)
 URLS=()
-MAX_ATTEMPTS=5
+MAX_ATTEMPTS=10
 INTERVAL=5
 
 while [[ $# -gt 0 ]]; do
@@ -79,7 +79,9 @@ log_error "No healthy tunnel found after $MAX_ATTEMPTS attempts" >&2
 log_error "Tested URLs:" >&2
 for url in "${VALID_URLS[@]}"; do
     log_error "  - $url" >&2
-    echo "=== Verbose: $url ===" >&2
-    curl -v --max-time 10 "${url%/}/health" 2>&1 | head -20 || true
+    echo "" >&2
+    echo "=== Verbose connection attempt: ${url%/}/health ===" >&2
+    curl -v --max-time 10 "${url%/}/health" 2>&1 | head -30 >&2 || true
+    echo "==================================" >&2
 done
 exit 1
