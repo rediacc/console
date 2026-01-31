@@ -26,7 +26,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 parse_args "$@"
 
 RUN_ID="${ARG_RUN_ID:-}"
-ARTIFACT_NAME="${ARG_ARTIFACT_NAME:-tunnel-url}"
+ARTIFACT_NAMES="${ARG_ARTIFACT_NAME:-tunnel-url,tunnel-url-pinggy}"
 TIMEOUT="${ARG_TIMEOUT:-1200}"
 INTERVAL="${ARG_INTERVAL:-15}"
 
@@ -43,17 +43,22 @@ require_var GITHUB_REPOSITORY
 # Require gh CLI
 require_cmd gh
 
-log_step "Waiting for artifact '$ARTIFACT_NAME' (run: $RUN_ID, timeout: ${TIMEOUT}s)..."
+log_step "Waiting for any artifact in '$ARTIFACT_NAMES' (run: $RUN_ID, timeout: ${TIMEOUT}s)..."
 
-# Check if artifact exists via GitHub API
+# Check if any artifact exists via GitHub API
+# Supports comma-separated names — returns 0 if ANY match is found
 artifact_exists() {
     local artifacts
     artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
         --jq '.artifacts[].name' 2>/dev/null || echo "")
 
-    if echo "$artifacts" | grep -q "^${ARTIFACT_NAME}$"; then
-        return 0
-    fi
+    IFS=',' read -ra NAMES <<< "$ARTIFACT_NAMES"
+    for name in "${NAMES[@]}"; do
+        name="$(echo "$name" | xargs)"  # trim whitespace
+        if echo "$artifacts" | grep -q "^${name}$"; then
+            return 0
+        fi
+    done
     return 1
 }
 
@@ -66,10 +71,10 @@ on_poll() {
 
 # Main wait loop
 if poll_with_watchdog "$TIMEOUT" "$INTERVAL" artifact_exists on_poll; then
-    log_info "Artifact '$ARTIFACT_NAME' is available!"
+    log_info "Tunnel artifact is available!"
     exit 0
 fi
 
 # Timeout reached
-log_error "Timeout: artifact '$ARTIFACT_NAME' not found after ${TIMEOUT}s"
+log_error "Timeout: none of '$ARTIFACT_NAMES' found after ${TIMEOUT}s"
 exit 1

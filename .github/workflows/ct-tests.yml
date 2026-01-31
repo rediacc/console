@@ -151,17 +151,42 @@ jobs:
           url: http://localhost
           timeout: 60
 
-      - name: Verify Tunnel
+      - name: Verify Cloudflare Tunnel
         run: |
           TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
           for i in {1..20}; do
             if curl -sf "$TUNNEL_URL/health"; then
-              echo "Tunnel verified"
+              echo "Cloudflare tunnel verified"
               exit 0
             fi
             sleep 3
           done
           exit 1
+
+      - name: Start Pinggy Tunnel
+        id: pinggy-tunnel
+        continue-on-error: true
+        run: |
+          PINGGY_URL=$(.ci/scripts/tunnel/start-pinggy.sh --port 80 --timeout 60) || true
+          echo "tunnel-url=${PINGGY_URL}" >> $GITHUB_OUTPUT
+          if [[ -n "${PINGGY_URL}" ]]; then
+            echo "Pinggy tunnel: $PINGGY_URL"
+          else
+            echo "Pinggy tunnel failed to start (non-fatal)"
+          fi
+
+      - name: Verify Pinggy Tunnel
+        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
+        continue-on-error: true
+        run: |
+          for i in {1..5}; do
+            if curl -sf --max-time 10 "${{ steps.pinggy-tunnel.outputs.tunnel-url }}/health"; then
+              echo "Pinggy tunnel verified"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Pinggy tunnel verification failed (non-fatal)"
 
       # Bridge tests
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -210,12 +235,24 @@ jobs:
           vm-image-path: ${{ runner.temp }}/vm-image
           bridge-env-output: ${{ runner.temp }}/bridge.env
 
-      - name: Upload Tunnel URL
+      - name: Upload Cloudflare Tunnel URL
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
+          retention-days: 3
+
+      - name: Upload Pinggy Tunnel URL
+        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
+        run: |
+          mkdir -p ${{ runner.temp }}/pinggy-artifact
+          echo "${{ steps.pinggy-tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
+        with:
+          name: tunnel-url-pinggy
+          path: ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
           retention-days: 3
 
       # Free disk space before long-running signal wait
@@ -354,16 +391,32 @@ jobs:
         shell: bash
       - run: .ci/scripts/build/build-cli.sh
         shell: bash
-      - name: Download Tunnel URL
-        id: tunnel
+      - name: Download Cloudflare Tunnel URL
+        id: cf-tunnel
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+      - name: Download Pinggy Tunnel URL
+        id: pinggy-tunnel
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+      - name: Select Working Tunnel
+        id: tunnel
+        shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/select-tunnel.sh \
+            --url "${{ steps.cf-tunnel.outputs.tunnel-url }}" \
+            --url "${{ steps.pinggy-tunnel.outputs.tunnel-url }}")
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/env/create-cli-env.sh --api-url "${{ steps.tunnel.outputs.tunnel-url }}/api" --email ${{ env.REDIACC_TEST_EMAIL }} --password ${{ env.REDIACC_TEST_PASSWORD }} --output packages/cli/tests/.env
         shell: bash
       - run: .ci/scripts/setup/install-vscode.sh
@@ -402,14 +455,29 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
       - name: Install Playwright Browsers
         run: .ci/scripts/setup/install-playwright.sh --browsers "chromium webkit ${{ env.E2E_BROWSERS }}"
-      - name: Download Tunnel URL
-        id: tunnel
+      - name: Download Cloudflare Tunnel URL
+        id: cf-tunnel
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+      - name: Download Pinggy Tunnel URL
+        id: pinggy-tunnel
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+      - name: Select Working Tunnel
+        id: tunnel
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/select-tunnel.sh \
+            --url "${{ steps.cf-tunnel.outputs.tunnel-url }}" \
+            --url "${{ steps.pinggy-tunnel.outputs.tunnel-url }}")
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
       - name: Run E2E Tests - Browser Only
         run: |
@@ -485,16 +553,32 @@ jobs:
         run: ${{ matrix.install }}
       - if: runner.os == 'Linux'
         run: .ci/scripts/setup/setup-display.sh
-      - name: Download Tunnel URL
-        id: tunnel
+      - name: Download Cloudflare Tunnel URL
+        id: cf-tunnel
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }})
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/tunnel/verify.sh --url ${{ steps.tunnel.outputs.tunnel-url }}
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+      - name: Download Pinggy Tunnel URL
+        id: pinggy-tunnel
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+      - name: Select Working Tunnel
+        id: tunnel
+        shell: bash
+        run: |
+          TUNNEL_URL=$(.ci/scripts/tunnel/select-tunnel.sh \
+            --url "${{ steps.cf-tunnel.outputs.tunnel-url }}" \
+            --url "${{ steps.pinggy-tunnel.outputs.tunnel-url }}")
+          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
         shell: bash
       - name: Run Electron E2E Tests
