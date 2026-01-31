@@ -13,6 +13,7 @@ import type {
   UpdateMachineVaultParams,
 } from '@rediacc/shared/types';
 import { t } from '../../i18n/index.js';
+import { getStateProvider } from '../../providers/index.js';
 import { typedApi } from '../../services/api.js';
 import {
   addAssignCommand,
@@ -29,18 +30,21 @@ export function registerCrudCommands(parentCommand: Command): Command {
     parentOption: 'team',
     operations: {
       list: async (params) => {
-        const response = await typedApi.GetTeamMachines({
-          teamName: params?.teamName as string | undefined,
-        });
-        return parseGetTeamMachines(response as never);
+        const provider = await getStateProvider();
+        return provider.machines.list({ teamName: params?.teamName as string });
       },
       create: async (payload) => {
-        const response = await typedApi.CreateMachine(payload as unknown as CreateMachineParams);
-        return parseCreateMachine(response as never);
+        const provider = await getStateProvider();
+        return provider.machines.create(payload as Record<string, unknown>);
       },
-      rename: (payload) =>
-        typedApi.UpdateMachineName(payload as unknown as UpdateMachineNameParams),
-      delete: (payload) => typedApi.DeleteMachine(payload as unknown as DeleteMachineParams),
+      rename: async (payload) => {
+        const provider = await getStateProvider();
+        return provider.machines.rename(payload as Record<string, unknown>);
+      },
+      delete: async (payload) => {
+        const provider = await getStateProvider();
+        return provider.machines.delete(payload as Record<string, unknown>);
+      },
     },
     createOptions: [
       { flags: '-b, --bridge <name>', description: t('options.bridge'), required: true },
@@ -53,16 +57,17 @@ export function registerCrudCommands(parentCommand: Command): Command {
       vaultContent: opts.vault,
     }),
     vaultConfig: {
-      fetch: async () => {
-        const response = await typedApi.GetOrganizationVaults({});
-        const vaults = parseGetOrganizationVaults(response as never);
-        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
+      fetch: async (params) => {
+        const provider = await getStateProvider();
+        return provider.machines.getVault(params) as Promise<never>;
       },
       vaultType: 'Machine',
     },
     vaultUpdateConfig: {
-      update: (payload) =>
-        typedApi.UpdateMachineVault(payload as unknown as UpdateMachineVaultParams),
+      update: async (payload) => {
+        const provider = await getStateProvider();
+        return provider.machines.updateVault(payload as Record<string, unknown>);
+      },
       vaultFieldName: 'vaultContent',
     },
   });
@@ -73,14 +78,12 @@ export function registerCrudCommands(parentCommand: Command): Command {
     nameField: 'machineName',
     parentOption: 'team',
     fetch: async (params) => {
-      const response = await typedApi.GetTeamMachines({
-        teamName: params.teamName as string | undefined,
-      });
-      return parseGetTeamMachines(response as never);
+      const provider = await getStateProvider();
+      return provider.machines.list({ teamName: params.teamName as string });
     },
   });
 
-  // Add assign-bridge command
+  // Add assign-bridge command (cloud-only — uses typedApi directly)
   addAssignCommand(machine, {
     resourceName: 'machine',
     nameField: 'machineName',

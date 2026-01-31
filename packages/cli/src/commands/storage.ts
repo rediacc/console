@@ -1,13 +1,5 @@
 import { Command } from 'commander';
-import { parseGetOrganizationVaults, parseGetTeamStorages } from '@rediacc/shared/api';
-import type {
-  CreateStorageParams,
-  DeleteStorageParams,
-  GetOrganizationVaults_ResultSet1,
-  UpdateStorageNameParams,
-  UpdateStorageVaultParams,
-} from '@rediacc/shared/types';
-import { typedApi } from '../services/api.js';
+import { getStateProvider } from '../providers/index.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 
 export function registerStorageCommands(program: Command): void {
@@ -18,17 +10,20 @@ export function registerStorageCommands(program: Command): void {
     parentOption: 'team',
     operations: {
       list: async (params) => {
-        const response = await typedApi.GetTeamStorages({ teamName: params?.teamName as string });
-        return parseGetTeamStorages(response as never);
+        const provider = await getStateProvider();
+        return provider.storage.list({ teamName: params?.teamName as string });
       },
       create: async (payload) => {
-        await typedApi.CreateStorage(payload as unknown as CreateStorageParams);
+        const provider = await getStateProvider();
+        return provider.storage.create(payload as Record<string, unknown>);
       },
       rename: async (payload) => {
-        await typedApi.UpdateStorageName(payload as unknown as UpdateStorageNameParams);
+        const provider = await getStateProvider();
+        return provider.storage.rename(payload as Record<string, unknown>);
       },
       delete: async (payload) => {
-        await typedApi.DeleteStorage(payload as unknown as DeleteStorageParams);
+        const provider = await getStateProvider();
+        return provider.storage.delete(payload as Record<string, unknown>);
       },
     },
     transformCreatePayload: (name, opts) => ({
@@ -36,16 +31,16 @@ export function registerStorageCommands(program: Command): void {
       teamName: opts.team,
     }),
     vaultConfig: {
-      fetch: async () => {
-        const response = await typedApi.GetOrganizationVaults({});
-        const vaults = parseGetOrganizationVaults(response as never);
-        return vaults as unknown as (GetOrganizationVaults_ResultSet1 & { vaultType?: string })[];
+      fetch: async (params) => {
+        const provider = await getStateProvider();
+        return provider.storage.getVault(params) as Promise<never>;
       },
       vaultType: 'Storage',
     },
     vaultUpdateConfig: {
       update: async (payload) => {
-        await typedApi.UpdateStorageVault(payload as unknown as UpdateStorageVaultParams);
+        const provider = await getStateProvider();
+        return provider.storage.updateVault(payload as Record<string, unknown>);
       },
       vaultFieldName: 'vaultContent',
     },

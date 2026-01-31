@@ -4,12 +4,13 @@ import * as path from 'node:path';
 import { Command } from 'commander';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
+import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { apiClient } from '../services/api.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { askText } from '../utils/prompt.js';
-import type { LocalMachineConfig, NamedContext, OutputFormat } from '../types/index.js';
+import { askPassword, askText } from '../utils/prompt.js';
+import type { LocalMachineConfig, NamedContext, OutputFormat, S3Config } from '../types/index.js';
 
 export function registerContextCommands(program: Command): void {
   const context = program.command('context').description(t('commands.context.description'));
@@ -32,10 +33,10 @@ export function registerContextCommands(program: Command): void {
         const displayData = contexts.map((ctx) => ({
           name: ctx.name,
           mode: ctx.mode ?? DEFAULTS.CONTEXT.MODE,
-          apiUrl: ctx.mode === 'local' ? '-' : ctx.apiUrl,
+          apiUrl: ctx.mode === 'local' ? '-' : ctx.mode === 's3' ? ctx.s3?.endpoint ?? '-' : ctx.apiUrl,
           userEmail: ctx.userEmail ?? '-',
           team: ctx.team ?? '-',
-          machines: ctx.mode === 'local' ? Object.keys(ctx.machines ?? {}).length.toString() : '-',
+          machines: ctx.mode === 'local' || ctx.mode === 's3' ? Object.keys(ctx.machines ?? {}).length.toString() : '-',
         }));
 
         outputService.print(displayData, format);
@@ -126,27 +127,42 @@ export function registerContextCommands(program: Command): void {
         }
 
         // Don't show sensitive fields
-        const isLocal = ctx.mode === 'local';
-        const display = isLocal
-          ? {
-              name: ctx.name,
-              mode: 'local',
-              sshKey: ctx.ssh?.privateKeyPath ?? '-',
-              renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
-              machines: Object.keys(ctx.machines ?? {}).length,
-              defaultMachine: ctx.machine ?? '-',
-            }
-          : {
-              name: ctx.name,
-              mode: 'cloud',
-              apiUrl: ctx.apiUrl,
-              userEmail: ctx.userEmail ?? '-',
-              team: ctx.team ?? '-',
-              region: ctx.region ?? '-',
-              bridge: ctx.bridge ?? '-',
-              machine: ctx.machine ?? '-',
-              authenticated: ctx.token ? 'yes' : 'no',
-            };
+        let display: Record<string, unknown>;
+        if (ctx.mode === 's3') {
+          display = {
+            name: ctx.name,
+            mode: 's3',
+            endpoint: ctx.s3?.endpoint ?? '-',
+            bucket: ctx.s3?.bucket ?? '-',
+            region: ctx.s3?.region ?? '-',
+            prefix: ctx.s3?.prefix ?? '-',
+            sshKey: ctx.ssh?.privateKeyPath ?? '-',
+            renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
+            machines: Object.keys(ctx.machines ?? {}).length,
+            defaultMachine: ctx.machine ?? '-',
+          };
+        } else if (ctx.mode === 'local') {
+          display = {
+            name: ctx.name,
+            mode: 'local',
+            sshKey: ctx.ssh?.privateKeyPath ?? '-',
+            renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
+            machines: Object.keys(ctx.machines ?? {}).length,
+            defaultMachine: ctx.machine ?? '-',
+          };
+        } else {
+          display = {
+            name: ctx.name,
+            mode: 'cloud',
+            apiUrl: ctx.apiUrl,
+            userEmail: ctx.userEmail ?? '-',
+            team: ctx.team ?? '-',
+            region: ctx.region ?? '-',
+            bridge: ctx.bridge ?? '-',
+            machine: ctx.machine ?? '-',
+            authenticated: ctx.token ? 'yes' : 'no',
+          };
+        }
 
         outputService.print(display, format);
       } catch (error) {
@@ -228,7 +244,124 @@ export function registerContextCommands(program: Command): void {
       }
     });
 
-  // context add-machine - Add a machine to local context
+  // ============================================================================
+  // S3 Mode Commands
+  // ============================================================================
+
+  // context create-s3 - Create a new S3 context
+  context
+    .command('create-s3 <name>')
+    .description('Create a new S3/R2 context for remote state with local execution')
+    .requiredOption('--endpoint <url>', 'S3 endpoint URL')
+    .requiredOption('--bucket <name>', 'S3 bucket name')
+    .requiredOption('--access-key-id <key>', 'S3 access key ID')
+    .requiredOption('--ssh-key <path>', 'Path to SSH private key')
+    .option('--secret-access-key <key>', 'S3 secret access key (prompts if not given)')
+    .option('--region <region>', 'S3 region', 'auto')
+    .option('--prefix <prefix>', 'Key prefix/namespace in bucket')
+    .option('--renet-path <path>', 'Path to renet binary')
+    .option('--master-password <password>', 'Master password for encryption (optional, leave empty to skip)')
+    .action(async (name, options) => {
+      try {
+        // Expand ~ in SSH key path
+        const sshKeyPath = options.sshKey.startsWith('~')
+          ? path.join(os.homedir(), options.sshKey.slice(1))
+          : options.sshKey;
+
+        // Verify SSH key exists
+        try {
+          await fs.access(sshKeyPath);
+        } catch {
+          throw new ValidationError(`SSH key not found: ${sshKeyPath}`);
+        }
+
+        // Prompt for secret access key if not provided
+        const secretAccessKey =
+          options.secretAccessKey ??
+          (await askPassword('S3 secret access key:'));
+
+        if (!secretAccessKey) {
+          throw new ValidationError('S3 secret access key is required');
+        }
+
+        // Prompt for master password (optional — leave empty to skip encryption)
+        const masterPassword =
+          options.masterPassword ??
+          (await askPassword('Master password for encryption (leave empty to skip):'));
+
+        let storedSecretAccessKey: string;
+        let encryptedMasterPassword: string | undefined;
+
+        if (masterPassword) {
+          storedSecretAccessKey = await nodeCryptoProvider.encrypt(secretAccessKey, masterPassword);
+          encryptedMasterPassword = await nodeCryptoProvider.encrypt(masterPassword, masterPassword);
+        } else {
+          storedSecretAccessKey = secretAccessKey;
+          encryptedMasterPassword = undefined;
+        }
+
+        // Verify S3 access before saving
+        outputService.info('Verifying S3 access...');
+        const { S3ClientService } = await import('../services/s3-client.js');
+        const testClient = new S3ClientService({
+          endpoint: options.endpoint,
+          bucket: options.bucket,
+          region: options.region,
+          accessKeyId: options.accessKeyId,
+          secretAccessKey,
+          prefix: options.prefix,
+        });
+        await testClient.verifyAccess();
+        outputService.success('S3 access verified');
+
+        // Initialize bucket with metadata
+        await testClient.putJson('_meta.json', {
+          schemaVersion: 1,
+          createdAt: new Date().toISOString(),
+          createdBy: 'rdc',
+        });
+
+        // Upload initial team vault with SSH keys
+        const { S3VaultService } = await import('../services/s3-vault.js');
+        const vaultService = new S3VaultService(testClient, masterPassword || null);
+
+        const sshPrivateKey = await fs.readFile(sshKeyPath, 'utf-8');
+        let sshPublicKey = '';
+        try {
+          sshPublicKey = await fs.readFile(`${sshKeyPath}.pub`, 'utf-8');
+        } catch {
+          // Public key is optional
+        }
+
+        await vaultService.setTeamVault({
+          SSH_PRIVATE_KEY: sshPrivateKey,
+          SSH_PUBLIC_KEY: sshPublicKey,
+        });
+
+        // Create the S3 config
+        const s3Config: S3Config = {
+          endpoint: options.endpoint,
+          bucket: options.bucket,
+          region: options.region,
+          accessKeyId: options.accessKeyId,
+          secretAccessKey: storedSecretAccessKey,
+          prefix: options.prefix,
+        };
+
+        // Save the context
+        await contextService.createS3(name, s3Config, options.sshKey, {
+          renetPath: options.renetPath,
+          masterPassword: encryptedMasterPassword,
+        });
+
+        outputService.success(`S3 context "${name}" created`);
+        outputService.info('Next: Add machines with "rdc context add-machine"');
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // context add-machine - Add a machine to local/s3 context
   context
     .command('add-machine <name>')
     .description(t('commands.context.addMachine.description'))

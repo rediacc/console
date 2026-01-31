@@ -119,6 +119,29 @@ cli
     commandContext.delete(commandName);
   });
 
+// Cloud-only command names — these are not available in s3/local mode
+const CLOUD_ONLY_COMMANDS = new Set([
+  'auth', 'bridge', 'team', 'region', 'organization',
+  'user', 'permission', 'audit', 'ceph',
+]);
+
+/**
+ * Add a preAction hook to cloud-only commands that checks the context mode.
+ * Throws a clear error if the user tries to run a cloud-only command in s3/local mode.
+ */
+function addCloudOnlyGuard(command: Command): void {
+  command.hook('preAction', async () => {
+    const context = await contextService.getCurrent();
+    const mode = context?.mode ?? 'cloud';
+    if (mode !== 'cloud') {
+      outputService.error(
+        `"${command.name()}" is only available in cloud mode. Current mode: ${mode}`
+      );
+      process.exit(1);
+    }
+  });
+}
+
 // Register all command groups
 registerAuthCommands(cli);
 registerTeamCommands(cli);
@@ -141,6 +164,13 @@ registerProtocolCommands(cli);
 registerVSCodeCommands(cli);
 registerUpdateCommand(cli);
 registerShortcuts(cli);
+
+// Apply cloud-only guards to the appropriate top-level commands
+for (const cmd of cli.commands) {
+  if (CLOUD_ONLY_COMMANDS.has(cmd.name())) {
+    addCloudOnlyGuard(cmd);
+  }
+}
 
 // Provide a clear error for unsupported subcommands
 cli.on('command:*', (operands) => {

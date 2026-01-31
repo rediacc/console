@@ -692,11 +692,32 @@ jobs:
           echo "VM SSH not ready after 150s"
           exit 1
 
+      # Start RustFS for S3 integration tests
+      - name: Start RustFS
+        run: .ci/scripts/infra/start-rustfs.sh --bucket rediacc-test
+        env:
+          RENET_BINARY_PATH: /usr/bin/renet
+
       # Run tests
       - name: Create CLI local E2E env
         run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env
+      - name: Append S3 test env
+        run: .ci/scripts/env/create-cli-s3-env.sh --output packages/cli/tests/.env
       - name: Run CLI local E2E tests
         run: .ci/scripts/test/run-cli-local.sh
+
+      - name: Run S3 integration tests (Vitest)
+        working-directory: packages/cli
+        run: npx vitest run --config vitest.s3.config.ts --reporter=verbose
+        env:
+          S3_TEST_ENDPOINT: http://192.168.111.1:9000
+          S3_TEST_ACCESS_KEY: rustfsadmin
+          S3_TEST_SECRET_KEY: rustfsadmin
+          S3_TEST_BUCKET: rediacc-test
+
+      - name: Run S3 CLI tests (Playwright)
+        working-directory: packages/cli
+        run: npx playwright test --config tests/playwright.config.ts --project=s3 --workers=1 --reporter=list
 
       # Artifacts
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6

@@ -23,6 +23,7 @@ import {
   unescapeLogOutput,
 } from '@rediacc/shared/utils';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
@@ -171,7 +172,10 @@ async function buildQueueVaultFromParams(
 }
 
 export async function createAction(options: CreateActionOptions): Promise<{ taskId?: string }> {
-  await authService.requireAuth();
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud') {
+    await authService.requireAuth();
+  }
   const opts = await contextService.applyDefaults(options);
 
   if (!opts.team) {
@@ -180,26 +184,25 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
 
   const queueVault = options.vault ?? (await buildQueueVaultFromParams(opts, options));
 
-  const apiResponse = await withSpinner(
+  const result = await withSpinner(
     t('commands.queue.create.creating', { function: options.function }),
     () =>
-      typedApi.CreateQueueItem({
+      provider.queue.create({
         teamName: opts.team as string,
         machineName: opts.machine as string,
         bridgeName: opts.bridge as string,
         vaultContent: queueVault,
         priority: Number.parseInt(options.priority, 10),
+        functionName: options.function,
       }),
     t('commands.queue.create.success')
   );
 
-  const response = parseCreateQueueItem(apiResponse as never);
-
-  if (response.taskId) {
-    outputService.success(t('commands.queue.create.taskId', { taskId: response.taskId }));
+  if (result.taskId) {
+    outputService.success(t('commands.queue.create.taskId', { taskId: result.taskId }));
   }
 
-  return { taskId: response.taskId ?? undefined };
+  return { taskId: result.taskId };
 }
 
 const TERMINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED'] as const;
@@ -295,7 +298,10 @@ export async function traceAction(
   options: TraceActionOptions,
   program: Command
 ): Promise<void> {
-  await authService.requireAuth();
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud') {
+    await authService.requireAuth();
+  }
 
   if (options.watch) {
     const interval = Number.parseInt(options.interval, 10);
@@ -306,21 +312,27 @@ export async function traceAction(
 }
 
 export async function cancelAction(taskId: string): Promise<void> {
-  await authService.requireAuth();
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud') {
+    await authService.requireAuth();
+  }
 
   await withSpinner(
     t('commands.queue.cancel.cancelling', { taskId }),
-    () => typedApi.CancelQueueItem({ taskId }),
+    () => provider.queue.cancel(taskId),
     t('commands.queue.cancel.success')
   );
 }
 
 export async function retryAction(taskId: string): Promise<void> {
-  await authService.requireAuth();
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud') {
+    await authService.requireAuth();
+  }
 
   await withSpinner(
     t('commands.queue.retry.retrying', { taskId }),
-    () => typedApi.RetryFailedQueueItem({ taskId }),
+    () => provider.queue.retry(taskId),
     t('commands.queue.retry.success')
   );
 }
@@ -420,7 +432,10 @@ export function registerQueueCommands(program: Command): void {
     .option('--limit <n>', t('options.limit'), '50')
     .action(async (options: QueueListOptions) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
 
         validatePriorityRange(options.priorityMin, 'errors.invalidPriorityMin');
         validatePriorityRange(options.priorityMax, 'errors.invalidPriorityMax');
@@ -431,18 +446,17 @@ export function registerQueueCommands(program: Command): void {
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const apiResponse = await withSpinner(
+        const rawItems = await withSpinner(
           t('commands.queue.list.fetching'),
           () =>
-            typedApi.GetTeamQueueItems({
+            provider.queue.list({
               teamName: opts.team as string,
               maxRecords: Number.parseInt(options.limit, 10),
             }),
           t('commands.queue.list.success')
         );
 
-        const response = parseGetTeamQueueItems(apiResponse as never);
-        const filteredItems = applyQueueFilters(response.items, options);
+        const filteredItems = applyQueueFilters(rawItems as unknown as GetTeamQueueItems_ResultSet1[], options);
         const sortedItems = sortQueueItems(filteredItems, options);
 
         const format = program.opts().output as OutputFormat;
@@ -530,7 +544,10 @@ export function registerQueueCommands(program: Command): void {
     .option('-f, --force', t('options.force'))
     .action(async (taskId, options) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
 
         if (!options.force) {
           const { askConfirm } = await import('../utils/prompt.js');
@@ -543,7 +560,7 @@ export function registerQueueCommands(program: Command): void {
 
         await withSpinner(
           t('commands.queue.delete.deleting', { taskId }),
-          () => typedApi.DeleteQueueItem({ taskId }),
+          () => provider.queue.delete(taskId),
           t('commands.queue.delete.success')
         );
       } catch (error) {
