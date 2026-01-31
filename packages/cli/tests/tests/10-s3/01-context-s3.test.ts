@@ -17,7 +17,11 @@ import { generateS3ContextName, getS3TestEnv, hasS3TestEnv } from '../../src/uti
 // Defer env var access — calling getS3TestEnv() at module level crashes
 // Playwright's test discovery when S3_TEST_* vars aren't set.
 const s3Available = hasS3TestEnv();
-const s3Env = s3Available ? getS3TestEnv() : ({ endpoint: '', accessKeyId: '', secretAccessKey: '', bucket: '' } as ReturnType<typeof getS3TestEnv>);
+const s3Env = s3Available
+  ? getS3TestEnv()
+  : ({ endpoint: '', accessKeyId: '', secretAccessKey: '', bucket: '' } as ReturnType<
+      typeof getS3TestEnv
+    >);
 const sshKeyPath = process.env.E2E_SSH_KEY ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
 
 // --- Encrypted mode (with master password) ---
