@@ -132,11 +132,10 @@ build_image() {
     # Build tags
     local tags=""
     if [[ -n "$CI_TAG" ]]; then
-        # CI mode: use CI tag only (no :latest to prevent race conditions)
+        # CI mode: use CI tag only (no :latest or :version to prevent race conditions)
+        # Per-architecture builds must not push the version tag — it would be single-arch
+        # and block the proper multi-arch manifest created by the publish step
         tags="--tag ${image_path}:${CI_TAG}"
-        if [[ -n "$VERSION" ]]; then
-            tags="$tags --tag ${image_path}:${VERSION}"
-        fi
     else
         # Local/default mode: use :latest
         tags="--tag ${image_path}:latest"

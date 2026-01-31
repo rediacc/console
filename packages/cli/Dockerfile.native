@@ -1,0 +1,24 @@
+# CI Dockerfile for CLI - uses pre-built bundle from CI
+# This Dockerfile avoids npm install/build inside Docker by accepting
+# the pre-built CLI bundle from CI. The JS bundle is platform-independent.
+#
+# Usage in CI:
+#   docker buildx build \
+#     --file packages/cli/Dockerfile.native \
+#     --platform linux/amd64 \
+#     --tag ghcr.io/rediacc/elite/cli:tag-amd64 \
+#     --push .
+#
+# Expected files in context (./bundle/):
+#   - bundle/cli-bundle.cjs
+#   - bundle/package.json
+
+ARG NODE_IMAGE=node:22-alpine
+FROM ${NODE_IMAGE}
+
+WORKDIR /app
+
+COPY ./bundle/cli-bundle.cjs /app/rdc.cjs
+COPY ./bundle/package.json /app/package.json
+
+ENTRYPOINT ["node", "/app/rdc.cjs"]

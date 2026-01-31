@@ -1,0 +1,101 @@
+# CI Dockerfile for web image - uses pre-built assets from CI
+# This Dockerfile avoids npm install/build inside Docker by accepting
+# pre-built web, www, and CLI npm assets from CI artifacts.
+# Renet binaries are cross-compiled (lightweight, no embedded CRIU/rsync).
+#
+# Usage in CI:
+#   docker buildx build \
+#     --file Dockerfile.native \
+#     --platform linux/amd64 \
+#     --build-arg VITE_APP_VERSION=0.4.75 \
+#     --tag ghcr.io/rediacc/elite/web:tag-amd64 \
+#     --push .
+#
+# Expected files in context:
+#   - web-assets/       (packages/web/dist from CI)
+#   - www-assets/       (packages/www/dist from CI)
+#   - cli-npm/          (CLI npm packages from CI)
+#   - private/renet/    (renet Go source, checked out via submodules)
+#   - .ci/docker/web/   (nginx config and entrypoint)
+
+# =============================================================================
+# Stage 1: Renet Builder (Go)
+# Cross-compile lightweight renet for linux/amd64 and linux/arm64
+# =============================================================================
+ARG GO_IMAGE=golang:1.24-alpine
+FROM ${GO_IMAGE} AS renet-builder
+
+ARG VITE_APP_VERSION=latest
+
+WORKDIR /build
+
+COPY private/renet/ .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
+    -o /renet-linux-amd64 \
+    ./cmd/renet
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+    -ldflags="-s -w -X main.version=${VITE_APP_VERSION}" \
+    -o /renet-linux-arm64 \
+    ./cmd/renet
+
+# =============================================================================
+# Stage 2: Runtime (Nginx)
+# Combine pre-built web, www, CLI npm, and renet into final image
+# =============================================================================
+FROM nginx:alpine
+
+# Install dependencies for entrypoint script
+# - coreutils: For sha256sum
+RUN apk add --no-cache coreutils
+
+# Copy www (public website) to root
+COPY ./www-assets/ /usr/share/nginx/html/
+
+# Copy web (console app) to /console/ subdirectory
+COPY ./web-assets/ /usr/share/nginx/html/console/
+
+# Copy CLI npm packages
+COPY ./cli-npm/ /usr/share/nginx/html/npm/
+
+# Copy renet binaries
+COPY --from=renet-builder /renet-linux-amd64 /usr/share/nginx/html/bin/renet-linux-amd64
+COPY --from=renet-builder /renet-linux-arm64 /usr/share/nginx/html/bin/renet-linux-arm64
+
+# Create latest copies for renet
+RUN cd /usr/share/nginx/html/bin && \
+    cp renet-linux-amd64 renet-linux-amd64-latest && \
+    cp renet-linux-arm64 renet-linux-arm64-latest
+
+# Copy nginx configuration
+COPY .ci/docker/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .ci/docker/web/nginx-https.conf /etc/nginx/nginx-https.conf
+
+# Copy entrypoint script
+COPY .ci/docker/web/entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Create directory for SSL certificates (mounted at runtime)
+RUN mkdir -p /etc/nginx/certs
+
+# Expose ports (HTTP and HTTPS)
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://localhost/health || exit 1
+
+# Labels
+ARG VITE_APP_VERSION=latest
+ARG REDIACC_BUILD_TYPE=RELEASE
+LABEL org.opencontainers.image.title="Rediacc Console" \
+      org.opencontainers.image.description="Web console for Rediacc system management" \
+      org.opencontainers.image.vendor="Rediacc" \
+      org.opencontainers.image.source="https://github.com/rediacc/console" \
+      org.opencontainers.image.version="${VITE_APP_VERSION}" \
+      com.rediacc.build-type="${REDIACC_BUILD_TYPE}"
+
+# Set entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
