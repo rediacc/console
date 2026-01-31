@@ -32,12 +32,9 @@ on:
       ci-mode:
         type: boolean
         default: true
-      enable-desktop:
-        type: boolean
-        default: false
       desktop-environment:
         type: string
-        default: 'xfce'
+        default: 'none'
       desktop-resolution:
         type: string
         default: '1600x900'
@@ -82,15 +79,12 @@ on:
         description: 'Enable CI/TEST mode'
         type: boolean
         default: true
-      enable-desktop:
-        description: 'Enable desktop environment (noVNC)'
-        type: boolean
-        default: false
       desktop-environment:
-        description: 'Desktop environment'
+        description: 'Desktop environment (none = disabled)'
         type: choice
-        default: 'xfce'
+        default: 'none'
         options:
+          - 'none'
           - 'xfce'
           - 'gnome'
           - 'mate'
@@ -215,7 +209,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Setup Desktop Environment
-        if: inputs.enable-desktop
+        if: inputs.desktop-environment != 'none'
         id: desktop
         env:
           DESKTOP_ENVIRONMENT: ${{ inputs.desktop-environment }}
@@ -225,7 +219,7 @@ jobs:
           .ci/scripts/infra/ci-desktop.sh --keep-running
 
       - name: Start Caddy Gateway
-        if: inputs.enable-desktop
+        if: inputs.desktop-environment != 'none'
         run: |
           echo "Starting Caddy gateway for desktop routing..."
           cd .ci/docker/ci
@@ -243,7 +237,7 @@ jobs:
         uses: rediacc/action-cloudflare-tunnel@v1
         with:
           # When desktop is enabled, route through Caddy gateway on port 8080
-          url: ${{ inputs.enable-desktop && 'http://localhost:8080' || 'http://localhost' }}
+          url: ${{ inputs.desktop-environment != 'none' && 'http://localhost:8080' || 'http://localhost' }}
           timeout: 30
 
       - name: Verify Tunnel
@@ -274,7 +268,7 @@ jobs:
           echo ""
           echo "🌐 WEB ACCESS:"
           echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
-          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
+          if [ "${{ inputs.desktop-environment }}" != "none" ]; then
             echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
             echo "   • Environment: ${{ inputs.desktop-environment }}"
             echo "   • Resolution: ${{ inputs.desktop-resolution }}"
@@ -312,7 +306,7 @@ jobs:
           echo "🐳 LOCAL SERVICES:"
           echo "   • Web UI:  http://localhost"
           echo "   • API:     http://localhost/api"
-          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
+          if [ "${{ inputs.desktop-environment }}" != "none" ]; then
             echo "   • Desktop: http://localhost:6080/vnc.html"
             echo "   • Gateway: http://localhost:8080"
           fi
@@ -408,7 +402,7 @@ jobs:
           fi
 
           # Cleanup desktop processes
-          if [ "${{ inputs.enable-desktop }}" == "true" ]; then
+          if [ "${{ inputs.desktop-environment }}" != "none" ]; then
             echo "Stopping desktop environment..."
             .ci/scripts/infra/ci-desktop-cleanup.sh || true
           fi
@@ -446,7 +440,7 @@ jobs:
           echo "  Duration: ${{ inputs.duration }} minutes"
           echo "  Status:   ${{ job.status }}"
           echo "  Version:  ${{ env.TAG }}"
-          echo "  Desktop:  ${{ inputs.enable-desktop && 'enabled' || 'disabled' }}"
+          echo "  Desktop:  ${{ inputs.desktop-environment != 'none' && 'enabled' || 'disabled' }}"
           echo "  VMs:      ${{ matrix.vm-os != 'none' && matrix.vm-os || 'disabled' }}"
           echo "  Debug:    ${{ inputs.enable-debug && 'enabled' || 'disabled' }}"
           echo "  End time: $(date '+%Y-%m-%d %H:%M:%S')"
