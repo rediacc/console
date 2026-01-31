@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerBridgeCommands } from './commands/bridge.js';
@@ -139,7 +140,7 @@ const CLOUD_ONLY_COMMANDS = new Set([
 function addCloudOnlyGuard(command: Command): void {
   command.hook('preAction', async () => {
     const context = await contextService.getCurrent();
-    const mode = context?.mode ?? 'cloud';
+    const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
     if (mode !== 'cloud') {
       outputService.error(
         `"${command.name()}" is only available in cloud mode. Current mode: ${mode}`

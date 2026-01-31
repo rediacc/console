@@ -15,15 +15,15 @@ export function registerStorageCommands(program: Command): void {
       },
       create: async (payload) => {
         const provider = await getStateProvider();
-        return provider.storage.create(payload as Record<string, unknown>);
+        return provider.storage.create(payload);
       },
       rename: async (payload) => {
         const provider = await getStateProvider();
-        return provider.storage.rename(payload as Record<string, unknown>);
+        return provider.storage.rename(payload);
       },
       delete: async (payload) => {
         const provider = await getStateProvider();
-        return provider.storage.delete(payload as Record<string, unknown>);
+        return provider.storage.delete(payload);
       },
     },
     transformCreatePayload: (name, opts) => ({
@@ -40,7 +40,7 @@ export function registerStorageCommands(program: Command): void {
     vaultUpdateConfig: {
       update: async (payload) => {
         const provider = await getStateProvider();
-        return provider.storage.updateVault(payload as Record<string, unknown>);
+        return provider.storage.updateVault(payload);
       },
       vaultFieldName: 'vaultContent',
     },

@@ -46,8 +46,8 @@ class LocalMachineProvider implements MachineProvider {
     return { success: true };
   }
 
-  async rename(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('machine rename');
+  rename(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('machine rename'));
   }
 
   async delete(params: Record<string, unknown>): Promise<MutationResult> {
@@ -55,112 +55,112 @@ class LocalMachineProvider implements MachineProvider {
     return { success: true };
   }
 
-  async getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
-    return [];
+  getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
+    return Promise.resolve([]);
   }
 
-  async updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('machine vault update');
+  updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('machine vault update'));
   }
 }
 
 class LocalQueueProvider implements QueueProvider {
-  async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    throw new UnsupportedOperationError('queue list');
+  list(_params: { teamName: string }): Promise<ResourceRecord[]> {
+    return Promise.reject(new UnsupportedOperationError('queue list'));
   }
 
-  async create(_params: Record<string, unknown>): Promise<{ taskId?: string }> {
-    throw new UnsupportedOperationError('queue create');
+  create(_params: Record<string, unknown>): Promise<{ taskId?: string }> {
+    return Promise.reject(new UnsupportedOperationError('queue create'));
   }
 
-  async trace(_taskId: string): Promise<ResourceRecord | null> {
-    throw new UnsupportedOperationError('queue trace');
+  trace(_taskId: string): Promise<ResourceRecord | null> {
+    return Promise.reject(new UnsupportedOperationError('queue trace'));
   }
 
-  async cancel(_taskId: string): Promise<void> {
-    throw new UnsupportedOperationError('queue cancel');
+  cancel(_taskId: string): Promise<void> {
+    return Promise.reject(new UnsupportedOperationError('queue cancel'));
   }
 
-  async retry(_taskId: string): Promise<void> {
-    throw new UnsupportedOperationError('queue retry');
+  retry(_taskId: string): Promise<void> {
+    return Promise.reject(new UnsupportedOperationError('queue retry'));
   }
 
-  async delete(_taskId: string): Promise<void> {
-    throw new UnsupportedOperationError('queue delete');
+  delete(_taskId: string): Promise<void> {
+    return Promise.reject(new UnsupportedOperationError('queue delete'));
   }
 }
 
 class LocalStorageProvider implements StorageProvider {
-  async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    throw new UnsupportedOperationError('storage list');
+  list(_params: { teamName: string }): Promise<ResourceRecord[]> {
+    return Promise.reject(new UnsupportedOperationError('storage list'));
   }
 
-  async create(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('storage create');
+  create(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('storage create'));
   }
 
-  async rename(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('storage rename');
+  rename(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('storage rename'));
   }
 
-  async delete(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('storage delete');
+  delete(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('storage delete'));
   }
 
-  async getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
-    throw new UnsupportedOperationError('storage vault');
+  getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
+    return Promise.reject(new UnsupportedOperationError('storage vault'));
   }
 
-  async updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('storage vault update');
+  updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('storage vault update'));
   }
 }
 
 class LocalRepositoryProvider implements RepositoryProvider {
-  async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    throw new UnsupportedOperationError('repository list');
+  list(_params: { teamName: string }): Promise<ResourceRecord[]> {
+    return Promise.reject(new UnsupportedOperationError('repository list'));
   }
 
-  async create(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('repository create');
+  create(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('repository create'));
   }
 
-  async rename(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('repository rename');
+  rename(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('repository rename'));
   }
 
-  async delete(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('repository delete');
+  delete(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('repository delete'));
   }
 
-  async getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
-    throw new UnsupportedOperationError('repository vault');
+  getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
+    return Promise.reject(new UnsupportedOperationError('repository vault'));
   }
 
-  async updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
-    throw new UnsupportedOperationError('repository vault update');
+  updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.reject(new UnsupportedOperationError('repository vault update'));
   }
 }
 
 class LocalVaultProvider implements VaultProvider {
-  async getTeamVault(_teamName: string): Promise<VaultData | null> {
-    return null;
+  getTeamVault(_teamName: string): Promise<VaultData | null> {
+    return Promise.resolve(null);
   }
 
-  async getMachineVault(_teamName: string, _machineName: string): Promise<VaultData | null> {
-    return null;
+  getMachineVault(_teamName: string, _machineName: string): Promise<VaultData | null> {
+    return Promise.resolve(null);
   }
 
-  async getOrganizationVault(): Promise<VaultData | null> {
-    return null;
+  getOrganizationVault(): Promise<VaultData | null> {
+    return Promise.resolve(null);
   }
 
-  async getConnectionVaults(
+  getConnectionVaults(
     _teamName: string,
     _machineName: string,
     _repositoryName?: string
   ): Promise<{ machineVault: VaultData; teamVault: VaultData; repositoryVault?: VaultData }> {
-    return { machineVault: {}, teamVault: {} };
+    return Promise.resolve({ machineVault: {}, teamVault: {} });
   }
 }
 

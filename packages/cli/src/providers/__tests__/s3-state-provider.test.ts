@@ -6,12 +6,12 @@ import type { S3ClientService } from '../../services/s3-client.js';
 // Mock the crypto provider for vault tests
 vi.mock('../../adapters/crypto.js', () => ({
   nodeCryptoProvider: {
-    encrypt: vi.fn().mockImplementation(async (data: string, _password: string) => {
-      return Buffer.from(`encrypted:${data}`).toString('base64');
+    encrypt: vi.fn().mockImplementation((data: string, _password: string) => {
+      return Promise.resolve(Buffer.from(`encrypted:${data}`).toString('base64'));
     }),
-    decrypt: vi.fn().mockImplementation(async (data: string, _password: string) => {
+    decrypt: vi.fn().mockImplementation((data: string, _password: string) => {
       const decoded = Buffer.from(data, 'base64').toString();
-      return decoded.replace('encrypted:', '');
+      return Promise.resolve(decoded.replace('encrypted:', ''));
     }),
   },
 }));
@@ -23,33 +23,37 @@ function createMockS3Client(): S3ClientService {
   const store = new Map<string, string>();
 
   return {
-    getJson: vi.fn().mockImplementation(async <T>(key: string): Promise<T | null> => {
+    getJson: vi.fn().mockImplementation(<T>(key: string): Promise<T | null> => {
       const content = store.get(key);
-      if (!content) return null;
-      return JSON.parse(content) as T;
+      if (!content) return Promise.resolve(null);
+      return Promise.resolve(JSON.parse(content) as T);
     }),
-    putJson: vi.fn().mockImplementation(async (key: string, data: unknown): Promise<void> => {
+    putJson: vi.fn().mockImplementation((key: string, data: unknown): Promise<void> => {
       store.set(key, JSON.stringify(data, null, 2));
+      return Promise.resolve();
     }),
-    getRaw: vi.fn().mockImplementation(async (key: string): Promise<string | null> => {
-      return store.get(key) ?? null;
+    getRaw: vi.fn().mockImplementation((key: string): Promise<string | null> => {
+      return Promise.resolve(store.get(key) ?? null);
     }),
-    putRaw: vi.fn().mockImplementation(async (key: string, content: string): Promise<void> => {
+    putRaw: vi.fn().mockImplementation((key: string, content: string): Promise<void> => {
       store.set(key, content);
+      return Promise.resolve();
     }),
-    deleteObject: vi.fn().mockImplementation(async (key: string): Promise<void> => {
+    deleteObject: vi.fn().mockImplementation((key: string): Promise<void> => {
       store.delete(key);
+      return Promise.resolve();
     }),
-    listKeys: vi.fn().mockImplementation(async (prefix: string): Promise<string[]> => {
-      return Array.from(store.keys()).filter((k) => k.startsWith(prefix));
+    listKeys: vi.fn().mockImplementation((prefix: string): Promise<string[]> => {
+      return Promise.resolve(Array.from(store.keys()).filter((k) => k.startsWith(prefix)));
     }),
     verifyAccess: vi.fn().mockResolvedValue(undefined),
-    moveObject: vi.fn().mockImplementation(async (from: string, to: string): Promise<void> => {
+    moveObject: vi.fn().mockImplementation((from: string, to: string): Promise<void> => {
       const content = store.get(from);
       if (content) {
         store.set(to, content);
         store.delete(from);
       }
+      return Promise.resolve();
     }),
   } as unknown as S3ClientService;
 }

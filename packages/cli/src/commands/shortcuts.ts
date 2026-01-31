@@ -1,16 +1,13 @@
 import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
-  getValidationErrors,
-  isBridgeFunction,
-  safeValidateFunctionParams,
-} from '@rediacc/shared/queue-vault';
-import {
   type CreateActionOptions,
   cancelAction,
   createAction,
+  parseParamOptions,
   retryAction,
   traceAction,
+  validateFunctionParams,
 } from './queue.js';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
@@ -19,51 +16,32 @@ import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
-/**
- * Run function in local mode (direct renet execution).
- */
-async function runLocalMode(
-  functionName: string,
-  options: { machine?: string; param?: string[]; debug?: boolean }
-): Promise<void> {
-  // Get default machine from context if not specified
-  const machineName = options.machine ?? (await contextService.getMachine());
+interface RunLocalOptions {
+  machine?: string;
+  param?: string[];
+  debug?: boolean;
+}
 
+/** Resolve machine name and parse+validate function params (shared by local and S3 modes). */
+async function resolveRunParams(
+  functionName: string,
+  options: RunLocalOptions
+): Promise<{ machineName: string; params: Record<string, unknown> }> {
+  const machineName = options.machine ?? (await contextService.getMachine());
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
+  const params: Record<string, unknown> = parseParamOptions(options.param);
+  validateFunctionParams(functionName, params);
+  return { machineName, params };
+}
 
-  // Parse parameters
-  const params: Record<string, unknown> = {};
-  for (const param of options.param ?? []) {
-    const [key, ...valueParts] = param.split('=');
-    params[key] = valueParts.join('=');
-  }
-
-  // Validate function parameters before execution (early error detection)
-  if (isBridgeFunction(functionName)) {
-    const validationResult = safeValidateFunctionParams(functionName, params);
-    if (!validationResult.success) {
-      throw new ValidationError(
-        t('errors.invalidFunctionParams', {
-          function: functionName,
-          errors: getValidationErrors(validationResult),
-        })
-      );
-    }
-  }
-
-  outputService.info(
-    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
-  );
-
-  const result = await localExecutorService.execute({
-    functionName,
-    machineName,
-    params,
-    debug: options.debug,
-  });
-
+function handleExecutionResult(result: {
+  success: boolean;
+  durationMs?: number;
+  error?: string;
+  exitCode?: number;
+}): void {
   if (result.success) {
     outputService.success(
       t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
@@ -74,43 +52,28 @@ async function runLocalMode(
   }
 }
 
+async function runLocalMode(functionName: string, options: RunLocalOptions): Promise<void> {
+  const { machineName, params } = await resolveRunParams(functionName, options);
+  outputService.info(
+    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
+  );
+  const result = await localExecutorService.execute({
+    functionName,
+    machineName,
+    params,
+    debug: options.debug,
+  });
+  handleExecutionResult(result);
+}
+
 /**
  * Run function in S3 mode (local renet execution + S3 state tracking).
- * Creates a queue item in S3 for tracking, executes via renet
- * (reusing localExecutorService), then cleans up the tracking record.
+ * Creates a queue item in S3 for tracking, executes via renet, then cleans up.
  */
-async function runS3Mode(
-  functionName: string,
-  options: { machine?: string; param?: string[]; debug?: boolean }
-): Promise<void> {
+async function runS3Mode(functionName: string, options: RunLocalOptions): Promise<void> {
   const provider = await getStateProvider();
-  const machineName = options.machine ?? (await contextService.getMachine());
+  const { machineName, params } = await resolveRunParams(functionName, options);
 
-  if (!machineName) {
-    throw new ValidationError(t('errors.machineRequiredLocal'));
-  }
-
-  // Parse parameters
-  const params: Record<string, unknown> = {};
-  for (const param of options.param ?? []) {
-    const [key, ...valueParts] = param.split('=');
-    params[key] = valueParts.join('=');
-  }
-
-  // Validate function parameters
-  if (isBridgeFunction(functionName)) {
-    const validationResult = safeValidateFunctionParams(functionName, params);
-    if (!validationResult.success) {
-      throw new ValidationError(
-        t('errors.invalidFunctionParams', {
-          function: functionName,
-          errors: getValidationErrors(validationResult),
-        })
-      );
-    }
-  }
-
-  // Create queue item in S3 for tracking
   const taskId = (
     await provider.queue.create({
       functionName,
@@ -125,12 +88,8 @@ async function runS3Mode(
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );
+  if (taskId) outputService.info(`Task ID: ${taskId}`);
 
-  if (taskId) {
-    outputService.info(`Task ID: ${taskId}`);
-  }
-
-  // Execute via renet (reuse localExecutorService — same SSH/vault/spawn logic)
   const result = await localExecutorService.execute({
     functionName,
     machineName,
@@ -138,23 +97,14 @@ async function runS3Mode(
     debug: options.debug,
   });
 
-  // Clean up S3 queue tracking record after execution
   if (taskId) {
     try {
       await provider.queue.delete(taskId);
     } catch {
-      // Queue tracking is best-effort
+      /* best-effort cleanup */
     }
   }
-
-  if (result.success) {
-    outputService.success(
-      t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
-    );
-  } else {
-    outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
-    process.exitCode = result.exitCode;
-  }
+  handleExecutionResult(result);
 }
 
 /**

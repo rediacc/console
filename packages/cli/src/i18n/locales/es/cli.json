@@ -279,6 +279,25 @@
         "nextStep": "Agregue máquinas con: rdc context add-machine <name> --ip <ip> --user <user>",
         "success": "Contexto local \"{{name}}\" creado"
       },
+      "createS3": {
+        "accessVerified": "Acceso S3 verificado",
+        "description": "Crear un nuevo contexto S3/R2 para estado remoto con ejecución local",
+        "errorSecretAccessKeyRequired": "La clave de acceso secreta de S3 es obligatoria",
+        "nextStep": "Siguiente: Agregue máquinas con \"rdc context add-machine\"",
+        "optionAccessKeyId": "ID de clave de acceso S3",
+        "optionBucket": "Nombre del bucket S3",
+        "optionEndpoint": "URL del endpoint S3",
+        "optionMasterPassword": "Contraseña maestra para cifrado (opcional, dejar vacío para omitir)",
+        "optionPrefix": "Prefijo de clave/espacio de nombres en el bucket",
+        "optionRegion": "Región S3",
+        "optionRenetPath": "Ruta al binario renet",
+        "optionSecretAccessKey": "Clave de acceso secreta S3 (se solicita si no se proporciona)",
+        "optionSshKey": "Ruta a la clave privada SSH",
+        "promptMasterPassword": "Contraseña maestra para cifrado (dejar vacío para omitir):",
+        "promptSecretAccessKey": "Clave de acceso secreta S3:",
+        "success": "Contexto S3 \"{{name}}\" creado",
+        "verifyingAccess": "Verificando acceso S3..."
+      },
       "current": {
         "description": "Mostrar nombre del contexto actual",
         "noContext": "Sin contexto activo"

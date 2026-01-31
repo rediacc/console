@@ -1,9 +1,5 @@
 import { Command } from 'commander';
-import {
-  parseCreateQueueItem,
-  parseGetQueueItemTrace,
-  parseGetTeamQueueItems,
-} from '@rediacc/shared/api';
+import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
   getValidationErrors,
@@ -42,33 +38,24 @@ import {
 import { startSpinner, stopSpinner, withSpinner } from '../utils/spinner.js';
 import type { OutputFormat } from '../types/index.js';
 
-// Exported action handlers for reuse in shortcuts
-
-/**
- * Helper function to format and print trace output
- * Reduces duplication between watch mode and single-fetch mode
- */
 function printTrace(trace: QueueTraceSummary, program: Command): void {
   const format = program.opts().output as OutputFormat;
-
   if (format === 'table') {
-    // Print task summary
-    const formattedTrace = {
-      taskId: trace.taskId,
-      status: formatStatus(trace.status ?? DEFAULTS.STATUS.UNKNOWN_UPPERCASE),
-      age: trace.ageInMinutes == null ? '-' : formatAge(trace.ageInMinutes),
-      priority: trace.priority ? formatPriority(trace.priority) : '-',
-      retries: trace.retryCount == null ? '-' : formatRetryCount(trace.retryCount),
-      progress: trace.progress ?? '-',
-    };
-    outputService.print(formattedTrace, format);
-
-    // Print structured console output if available
+    outputService.print(
+      {
+        taskId: trace.taskId,
+        status: formatStatus(trace.status ?? DEFAULTS.STATUS.UNKNOWN_UPPERCASE),
+        age: trace.ageInMinutes == null ? '-' : formatAge(trace.ageInMinutes),
+        priority: trace.priority ? formatPriority(trace.priority) : '-',
+        retries: trace.retryCount == null ? '-' : formatRetryCount(trace.retryCount),
+        progress: trace.progress ?? '-',
+      },
+      format
+    );
     if (trace.consoleOutput) {
-      outputService.info(''); // Empty line
+      outputService.info('');
       outputService.info(getLogHeader());
-      const parsedLogs = parseLogOutput(trace.consoleOutput);
-      outputService.info(formatLogOutput(parsedLogs));
+      outputService.info(formatLogOutput(parseLogOutput(trace.consoleOutput)));
     }
   } else {
     outputService.print(trace, format);
@@ -76,12 +63,9 @@ function printTrace(trace: QueueTraceSummary, program: Command): void {
 }
 
 function mapTraceToSummary(trace: QueueTrace): QueueTraceSummary | null {
-  const summary = trace.summary;
-  const details = trace.queueDetails;
-  if (!summary && !details) {
-    return null;
-  }
-
+  const { summary, queueDetails: details } = trace;
+  if (!summary && !details) return null;
+  const failureRaw = summary?.lastFailureReason ?? details?.lastFailureReason;
   return {
     taskId: summary?.taskId ?? details?.taskId ?? undefined,
     status: summary?.status ?? (details?.status as QueueTraceSummary['status']),
@@ -90,10 +74,7 @@ function mapTraceToSummary(trace: QueueTrace): QueueTraceSummary | null {
     progress: summary?.progress,
     consoleOutput: summary?.consoleOutput ? unescapeLogOutput(summary.consoleOutput) : undefined,
     errorMessage: summary?.errorMessage ? unescapeLogOutput(summary.errorMessage) : undefined,
-    lastFailureReason:
-      (summary?.lastFailureReason ?? details?.lastFailureReason)
-        ? unescapeLogOutput(summary?.lastFailureReason ?? details?.lastFailureReason ?? '')
-        : undefined,
+    lastFailureReason: failureRaw ? unescapeLogOutput(failureRaw) : undefined,
     priority: summary?.priority ?? details?.priority ?? undefined,
     retryCount: summary?.retryCount ?? details?.retryCount ?? undefined,
     ageInMinutes: summary?.ageInMinutes ?? details?.ageInMinutes ?? undefined,
@@ -123,7 +104,7 @@ export interface TraceActionOptions {
   interval: string;
 }
 
-function parseParamOptions(paramOptions: string[] | undefined): Record<string, string> {
+export function parseParamOptions(paramOptions: string[] | undefined): Record<string, string> {
   const params: Record<string, string> = {};
   for (const param of paramOptions ?? []) {
     const [key, ...valueParts] = param.split('=');
@@ -132,9 +113,11 @@ function parseParamOptions(paramOptions: string[] | undefined): Record<string, s
   return params;
 }
 
-function validateFunctionParams(functionName: string, params: Record<string, string>): void {
+export function validateFunctionParams(
+  functionName: string,
+  params: Record<string, unknown>
+): void {
   if (!isBridgeFunction(functionName)) return;
-
   const validationResult = safeValidateFunctionParams(functionName, params);
   if (!validationResult.success) {
     throw new ValidationError(
@@ -152,9 +135,7 @@ async function buildQueueVaultFromParams(
 ): Promise<string> {
   const params = parseParamOptions(options.param);
   validateFunctionParams(options.function, params);
-
   const language = await contextService.getLanguage();
-
   return withSpinner(
     t('commands.queue.create.buildingVault'),
     () =>
@@ -177,13 +158,10 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
     await authService.requireAuth();
   }
   const opts = await contextService.applyDefaults(options);
-
   if (!opts.team) {
     throw new ValidationError(t('errors.teamRequired'));
   }
-
   const queueVault = options.vault ?? (await buildQueueVaultFromParams(opts, options));
-
   const result = await withSpinner(
     t('commands.queue.create.creating', { function: options.function }),
     () =>
@@ -197,14 +175,11 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
       }),
     t('commands.queue.create.success')
   );
-
   if (result.taskId) {
     outputService.success(t('commands.queue.create.taskId', { taskId: result.taskId }));
   }
-
   return { taskId: result.taskId };
 }
-
 const TERMINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED'] as const;
 
 function buildSpinnerText(summary: QueueTraceSummary): string {
@@ -214,7 +189,6 @@ function buildSpinnerText(summary: QueueTraceSummary): string {
   const percentage = extractMostRecentProgress(summary.consoleOutput ?? '');
   const progressText =
     percentage === null ? (summary.progress ?? t('common.inProgress')) : `${percentage}%`;
-
   return `${statusText} | ${t('commands.queue.trace.age')}: ${ageText} | ${progressText}`;
 }
 
@@ -228,40 +202,25 @@ function displayFailureReason(summary: QueueTraceSummary): void {
     outputService.error(formatError(summary.lastFailureReason, true));
   }
 }
-
 function handleTerminalStatus(summary: QueueTraceSummary, program: Command): void {
   const status = summary.status?.toUpperCase() ?? DEFAULTS.STATUS.UNKNOWN_UPPERCASE;
   const success = status === 'COMPLETED';
-
   stopSpinner(success, t('commands.queue.trace.finalStatus', { status: formatStatus(status) }));
-
-  if (!success) {
-    displayFailureReason(summary);
-  }
-
+  if (!success) displayFailureReason(summary);
   printTrace(summary, program);
 }
-
-/**
- * Fetch trace summary using the state provider abstraction.
- * Works across cloud (API), S3, and local modes.
- */
 async function fetchTraceSummary(
   provider: import('../providers/types.js').IStateProvider,
   taskId: string
 ): Promise<QueueTraceSummary | null> {
   if (provider.mode === 'cloud') {
     const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
-    const trace = parseGetQueueItemTrace(apiResponse as never);
-    return mapTraceToSummary(trace);
+    return mapTraceToSummary(parseGetQueueItemTrace(apiResponse as never));
   }
-
-  // S3/local mode: use provider.queue.trace() which returns a flat record
   const item = await provider.queue.trace(taskId);
   if (!item) return null;
-
   return {
-    taskId: (item.taskId as string) ?? undefined,
+    taskId: item.taskId as string | undefined,
     status: item.status as QueueTraceSummary['status'],
     healthStatus: undefined,
     progress: undefined,
@@ -273,12 +232,12 @@ async function fetchTraceSummary(
     ageInMinutes: item.createdAt
       ? Math.round((Date.now() - new Date(item.createdAt as string).getTime()) / 60000)
       : undefined,
-    hasResponse: !!(item.consoleOutput || item.exitCode !== undefined),
-    teamName: (item.teamName as string) ?? undefined,
-    machineName: (item.machineName as string) ?? undefined,
-    bridgeName: (item.bridgeName as string) ?? undefined,
-    createdTime: (item.createdAt as string) ?? undefined,
-    updatedTime: (item.updatedAt as string) ?? undefined,
+    hasResponse: !!(item.consoleOutput ?? item.exitCode !== undefined),
+    teamName: item.teamName as string | undefined,
+    machineName: item.machineName as string | undefined,
+    bridgeName: item.bridgeName as string | undefined,
+    createdTime: item.createdAt as string | undefined,
+    updatedTime: item.updatedAt as string | undefined,
   };
 }
 
@@ -289,24 +248,17 @@ async function watchTraceLoop(
   program: Command
 ): Promise<void> {
   const spinner = startSpinner(t('commands.queue.trace.watching'));
-
   for (;;) {
     const summary = await fetchTraceSummary(provider, taskId);
-
     if (!summary) {
       await new Promise((resolve) => setTimeout(resolve, interval));
       continue;
     }
-
-    if (spinner) {
-      spinner.text = buildSpinnerText(summary);
-    }
-
+    if (spinner) spinner.text = buildSpinnerText(summary);
     if (isTerminalStatus(summary.status)) {
       handleTerminalStatus(summary, program);
       return;
     }
-
     await new Promise((resolve) => setTimeout(resolve, interval));
   }
 }
@@ -321,17 +273,14 @@ async function singleFetchTrace(
     () => fetchTraceSummary(provider, taskId),
     t('commands.queue.trace.fetched')
   );
-
   if (!summary) {
     outputService.info(t('commands.queue.trace.noTrace'));
     return;
   }
-
   if (summary.status === 'FAILED' && summary.lastFailureReason) {
     displayFailureReason(summary);
     outputService.info('');
   }
-
   printTrace(summary, program);
 }
 
@@ -341,13 +290,9 @@ export async function traceAction(
   program: Command
 ): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') {
-    await authService.requireAuth();
-  }
-
+  if (provider.mode === 'cloud') await authService.requireAuth();
   if (options.watch) {
-    const interval = Number.parseInt(options.interval, 10);
-    await watchTraceLoop(provider, taskId, interval, program);
+    await watchTraceLoop(provider, taskId, Number.parseInt(options.interval, 10), program);
   } else {
     await singleFetchTrace(provider, taskId, program);
   }
@@ -355,10 +300,7 @@ export async function traceAction(
 
 export async function cancelAction(taskId: string): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') {
-    await authService.requireAuth();
-  }
-
+  if (provider.mode === 'cloud') await authService.requireAuth();
   await withSpinner(
     t('commands.queue.cancel.cancelling', { taskId }),
     () => provider.queue.cancel(taskId),
@@ -368,25 +310,18 @@ export async function cancelAction(taskId: string): Promise<void> {
 
 export async function retryAction(taskId: string): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') {
-    await authService.requireAuth();
-  }
-
+  if (provider.mode === 'cloud') await authService.requireAuth();
   await withSpinner(
     t('commands.queue.retry.retrying', { taskId }),
     () => provider.queue.retry(taskId),
     t('commands.queue.retry.success')
   );
 }
-
 function validatePriorityRange(value: string | undefined, errorKey: string): void {
   if (value === undefined) return;
   const num = Number.parseInt(value, 10);
-  if (Number.isNaN(num) || num < 1 || num > 5) {
-    throw new ValidationError(t(errorKey));
-  }
+  if (Number.isNaN(num) || num < 1 || num > 5) throw new ValidationError(t(errorKey));
 }
-
 interface QueueListOptions {
   priorityMin?: string;
   priorityMax?: string;
@@ -403,29 +338,24 @@ function applyQueueFilters(
   options: QueueListOptions
 ): GetTeamQueueItems_ResultSet1[] {
   let filtered = items;
-
   if (options.status) {
     filtered = filtered.filter(
       (item) => item.status?.toLowerCase() === options.status!.toLowerCase()
     );
   }
-
   if (options.priorityMin !== undefined) {
     const min = Number.parseInt(options.priorityMin, 10);
     filtered = filtered.filter((item) => item.priority != null && item.priority >= min);
   }
-
   if (options.priorityMax !== undefined) {
     const max = Number.parseInt(options.priorityMax, 10);
     filtered = filtered.filter((item) => item.priority != null && item.priority <= max);
   }
-
   if (options.search) {
     filtered = filtered.filter((item) =>
       searchInFields(item, options.search!, ['taskId', 'teamName', 'machineName', 'bridgeName'])
     );
   }
-
   return filtered;
 }
 
@@ -434,7 +364,6 @@ function sortQueueItems(
   options: QueueListOptions
 ): GetTeamQueueItems_ResultSet1[] {
   if (!options.sort) return items;
-
   const sortField = options.sort as keyof GetTeamQueueItems_ResultSet1;
   return items.sort((a, b) => {
     const result = compareValues(a[sortField], b[sortField]);
@@ -457,10 +386,77 @@ function formatQueueItemForTable(item: GetTeamQueueItems_ResultSet1) {
   };
 }
 
+async function listAction(options: QueueListOptions, program: Command): Promise<void> {
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud') {
+    await authService.requireAuth();
+  }
+  validatePriorityRange(options.priorityMin, 'errors.invalidPriorityMin');
+  validatePriorityRange(options.priorityMax, 'errors.invalidPriorityMax');
+  const opts = await contextService.applyDefaults(options);
+  if (!opts.team) {
+    throw new ValidationError(t('errors.teamRequired'));
+  }
+  const rawItems = await withSpinner(
+    t('commands.queue.list.fetching'),
+    () =>
+      provider.queue.list({
+        teamName: opts.team as string,
+        maxRecords: Number.parseInt(options.limit, 10),
+      }),
+    t('commands.queue.list.success')
+  );
+  const filteredItems = applyQueueFilters(
+    rawItems as unknown as GetTeamQueueItems_ResultSet1[],
+    options
+  );
+  const sortedItems = sortQueueItems(filteredItems, options);
+  const format = program.opts().output as OutputFormat;
+  if (format === 'table' && sortedItems.length > 0) {
+    outputService.print(sortedItems.map(formatQueueItemForTable), format);
+  } else {
+    outputService.print(sortedItems, format);
+  }
+}
+
+async function deleteAction(taskId: string, options: { force?: boolean }): Promise<void> {
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud') {
+    await authService.requireAuth();
+  }
+  if (!options.force) {
+    const { askConfirm } = await import('../utils/prompt.js');
+    const confirm = await askConfirm(t('commands.queue.delete.confirm', { taskId }));
+    if (!confirm) {
+      outputService.info(t('prompts.cancelled'));
+      return;
+    }
+  }
+  await withSpinner(
+    t('commands.queue.delete.deleting', { taskId }),
+    () => provider.queue.delete(taskId),
+    t('commands.queue.delete.success')
+  );
+}
+
+const collectParam = (val: string, acc: string[]) => {
+  acc.push(val);
+  return acc;
+};
+
+function safe<T extends unknown[]>(fn: (...args: T) => Promise<void>) {
+  return async (...args: T) => {
+    try {
+      await fn(...args);
+    } catch (error) {
+      handleError(error);
+    }
+  };
+}
+
 export function registerQueueCommands(program: Command): void {
   const queue = program.command('queue').description(t('commands.queue.description'));
 
-  // queue list
   queue
     .command('list')
     .description(t('commands.queue.list.description'))
@@ -472,52 +468,8 @@ export function registerQueueCommands(program: Command): void {
     .option('--sort <field>', t('options.sortField'))
     .option('--desc', t('options.sortDesc'))
     .option('--limit <n>', t('options.limit'), '50')
-    .action(async (options: QueueListOptions) => {
-      try {
-        const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
-          await authService.requireAuth();
-        }
+    .action(safe(async (options: QueueListOptions) => listAction(options, program)));
 
-        validatePriorityRange(options.priorityMin, 'errors.invalidPriorityMin');
-        validatePriorityRange(options.priorityMax, 'errors.invalidPriorityMax');
-
-        const opts = await contextService.applyDefaults(options);
-
-        if (!opts.team) {
-          throw new ValidationError(t('errors.teamRequired'));
-        }
-
-        const rawItems = await withSpinner(
-          t('commands.queue.list.fetching'),
-          () =>
-            provider.queue.list({
-              teamName: opts.team as string,
-              maxRecords: Number.parseInt(options.limit, 10),
-            }),
-          t('commands.queue.list.success')
-        );
-
-        const filteredItems = applyQueueFilters(
-          rawItems as unknown as GetTeamQueueItems_ResultSet1[],
-          options
-        );
-        const sortedItems = sortQueueItems(filteredItems, options);
-
-        const format = program.opts().output as OutputFormat;
-
-        if (format === 'table' && sortedItems.length > 0) {
-          const formattedItems = sortedItems.map(formatQueueItemForTable);
-          outputService.print(formattedItems, format);
-        } else {
-          outputService.print(sortedItems, format);
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // queue create
   queue
     .command('create')
     .description(t('commands.queue.create.description'))
@@ -526,90 +478,34 @@ export function registerQueueCommands(program: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('-b, --bridge <name>', t('options.bridge'))
     .option('-p, --priority <1-5>', t('options.priority'), '3')
-    .option(
-      '--param <key=value>',
-      t('options.param'),
-      (val, acc: string[]) => {
-        acc.push(val);
-        return acc;
-      },
-      []
-    )
+    .option('--param <key=value>', t('options.param'), collectParam, [])
     .option('--vault <json>', t('options.rawVault'))
-    .action(async (options) => {
-      try {
+    .action(
+      safe(async (options) => {
         await createAction(options);
-      } catch (error) {
-        handleError(error);
-      }
-    });
+      })
+    );
 
-  // queue trace
   queue
     .command('trace <taskId>')
     .description(t('commands.queue.trace.description'))
     .option('-w, --watch', t('options.watchUpdates'))
     .option('--interval <ms>', t('options.pollInterval'), '2000')
-    .action(async (taskId, options) => {
-      try {
-        await traceAction(taskId, options, program);
-      } catch (error) {
-        handleError(error);
-      }
-    });
+    .action(safe(async (taskId, options) => traceAction(taskId, options, program)));
 
-  // queue cancel
   queue
     .command('cancel <taskId>')
     .description(t('commands.queue.cancel.description'))
-    .action(async (taskId) => {
-      try {
-        await cancelAction(taskId);
-      } catch (error) {
-        handleError(error);
-      }
-    });
+    .action(safe(async (taskId) => cancelAction(taskId)));
 
-  // queue retry
   queue
     .command('retry <taskId>')
     .description(t('commands.queue.retry.description'))
-    .action(async (taskId) => {
-      try {
-        await retryAction(taskId);
-      } catch (error) {
-        handleError(error);
-      }
-    });
+    .action(safe(async (taskId) => retryAction(taskId)));
 
-  // queue delete
   queue
     .command('delete <taskId>')
     .description(t('commands.queue.delete.description'))
     .option('-f, --force', t('options.force'))
-    .action(async (taskId, options) => {
-      try {
-        const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
-          await authService.requireAuth();
-        }
-
-        if (!options.force) {
-          const { askConfirm } = await import('../utils/prompt.js');
-          const confirm = await askConfirm(t('commands.queue.delete.confirm', { taskId }));
-          if (!confirm) {
-            outputService.info(t('prompts.cancelled'));
-            return;
-          }
-        }
-
-        await withSpinner(
-          t('commands.queue.delete.deleting', { taskId }),
-          () => provider.queue.delete(taskId),
-          t('commands.queue.delete.success')
-        );
-      } catch (error) {
-        handleError(error);
-      }
-    });
+    .action(safe(async (taskId, options) => deleteAction(taskId, options)));
 }

@@ -3,12 +3,12 @@
  * Execution still happens locally via renet subprocess (same as local mode).
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { authService } from '../services/auth.js';
 import { S3ClientService } from '../services/s3-client.js';
 import { S3QueueService, type S3QueueItem } from '../services/s3-queue.js';
 import { S3VaultService } from '../services/s3-vault.js';
-import type { NamedContext } from '../types/index.js';
 import type {
   IStateProvider,
   MachineProvider,
@@ -21,6 +21,7 @@ import type {
   VaultItem,
   VaultProvider,
 } from './types.js';
+import type { NamedContext } from '../types/index.js';
 
 interface MachineRecord {
   machineName: string;
@@ -53,8 +54,8 @@ interface RepositoryRecord {
 
 class S3MachineProvider implements MachineProvider {
   constructor(
-    private s3: S3ClientService,
-    private vaultService: S3VaultService
+    private readonly s3: S3ClientService,
+    private readonly vaultService: S3VaultService
   ) {}
 
   async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
@@ -130,7 +131,7 @@ class S3MachineProvider implements MachineProvider {
 }
 
 class S3QueueProvider implements QueueProvider {
-  constructor(private queueService: S3QueueService) {}
+  constructor(private readonly queueService: S3QueueService) {}
 
   async list(params: { teamName: string; maxRecords?: number }): Promise<ResourceRecord[]> {
     const items = await this.queueService.list({ limit: params.maxRecords });
@@ -144,7 +145,7 @@ class S3QueueProvider implements QueueProvider {
       bridgeName: params.bridgeName as string | undefined,
       teamName: params.teamName as string,
       vaultContent: params.vaultContent as string,
-      priority: (params.priority as number) ?? 3,
+      priority: (params.priority as number | undefined) ?? DEFAULTS.PRIORITY.QUEUE_PRIORITY,
       params: params.params as Record<string, unknown> | undefined,
     });
     return { taskId };
@@ -197,8 +198,8 @@ class S3QueueProvider implements QueueProvider {
 
 class S3StorageProvider implements StorageProvider {
   constructor(
-    private s3: S3ClientService,
-    private vaultService: S3VaultService
+    private readonly s3: S3ClientService,
+    private readonly vaultService: S3VaultService
   ) {}
 
   async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
@@ -244,18 +245,18 @@ class S3StorageProvider implements StorageProvider {
     return { success: true };
   }
 
-  async getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
+  getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
     // S3 mode doesn't have separate vault storage for storages; return empty
-    return [];
+    return Promise.resolve([]);
   }
 
-  async updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
-    return { success: true };
+  updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.resolve({ success: true });
   }
 }
 
 class S3RepositoryProvider implements RepositoryProvider {
-  constructor(private s3: S3ClientService) {}
+  constructor(private readonly s3: S3ClientService) {}
 
   async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
     const keys = await this.s3.listKeys('repositories/');
@@ -301,17 +302,17 @@ class S3RepositoryProvider implements RepositoryProvider {
     return { success: true };
   }
 
-  async getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
-    return [];
+  getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
+    return Promise.resolve([]);
   }
 
-  async updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
-    return { success: true };
+  updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
+    return Promise.resolve({ success: true });
   }
 }
 
 class S3VaultProvider implements VaultProvider {
-  constructor(private vaultService: S3VaultService) {}
+  constructor(private readonly vaultService: S3VaultService) {}
 
   async getTeamVault(_teamName: string): Promise<VaultData | null> {
     return this.vaultService.getTeamVault();

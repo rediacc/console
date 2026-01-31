@@ -1,17 +1,5 @@
 import { Command } from 'commander';
-import {
-  parseCreateMachine,
-  parseGetOrganizationVaults,
-  parseGetTeamMachines,
-} from '@rediacc/shared/api';
-import type {
-  CreateMachineParams,
-  DeleteMachineParams,
-  GetOrganizationVaults_ResultSet1,
-  UpdateMachineAssignedBridgeParams,
-  UpdateMachineNameParams,
-  UpdateMachineVaultParams,
-} from '@rediacc/shared/types';
+import type { UpdateMachineAssignedBridgeParams } from '@rediacc/shared/types';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { typedApi } from '../../services/api.js';
@@ -35,15 +23,15 @@ export function registerCrudCommands(parentCommand: Command): Command {
       },
       create: async (payload) => {
         const provider = await getStateProvider();
-        return provider.machines.create(payload as Record<string, unknown>);
+        return provider.machines.create(payload);
       },
       rename: async (payload) => {
         const provider = await getStateProvider();
-        return provider.machines.rename(payload as Record<string, unknown>);
+        return provider.machines.rename(payload);
       },
       delete: async (payload) => {
         const provider = await getStateProvider();
-        return provider.machines.delete(payload as Record<string, unknown>);
+        return provider.machines.delete(payload);
       },
     },
     createOptions: [
@@ -66,7 +54,7 @@ export function registerCrudCommands(parentCommand: Command): Command {
     vaultUpdateConfig: {
       update: async (payload) => {
         const provider = await getStateProvider();
-        return provider.machines.updateVault(payload as Record<string, unknown>);
+        return provider.machines.updateVault(payload);
       },
       vaultFieldName: 'vaultContent',
     },
