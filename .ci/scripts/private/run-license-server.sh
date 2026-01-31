@@ -24,30 +24,23 @@ fi
 
 cd "$LICENSE_SERVER_DIR"
 
+# Install deps if not already installed (e.g. by install-deps.sh)
+if [[ ! -d "node_modules" ]]; then
+    npm ci
+fi
+
 case "$STAGE" in
     quality)
         log_step "Running license-server quality checks..."
-        # Install deps if not already installed
-        if [[ ! -d "node_modules" ]]; then
-            npm ci
-        fi
         npm run typecheck
         npm run test
         ;;
     test)
         log_step "Running license-server tests..."
-        # Install deps if not already installed
-        if [[ ! -d "node_modules" ]]; then
-            npm ci
-        fi
         npm run test
         ;;
     deploy)
         log_step "Deploying license-server to Cloudflare..."
-        # Install deps if not already installed
-        if [[ ! -d "node_modules" ]]; then
-            npm ci
-        fi
         npx wrangler deploy
         ;;
     *)
