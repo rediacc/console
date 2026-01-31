@@ -73,7 +73,15 @@ class CloudQueueProvider implements QueueProvider {
   }
 
   async create(params: Record<string, unknown>): Promise<{ taskId?: string }> {
-    const response = await typedApi.CreateQueueItem(params as never);
+    // Only pass parameters accepted by the CreateQueueItem stored procedure.
+    // Extra fields (e.g. functionName used by S3 mode) cause a 400 error.
+    const response = await typedApi.CreateQueueItem({
+      teamName: params.teamName as string,
+      machineName: params.machineName as string,
+      bridgeName: params.bridgeName as string,
+      vaultContent: params.vaultContent as string,
+      priority: params.priority as number,
+    });
     const parsed = parseCreateQueueItem(response as never);
     return { taskId: parsed.taskId ?? undefined };
   }
