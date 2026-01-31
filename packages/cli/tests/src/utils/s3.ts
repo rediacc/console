@@ -13,6 +13,19 @@ export interface S3TestEnv {
 }
 
 /**
+ * Check whether S3 test environment variables are available.
+ * Returns true if all required S3_TEST_* vars are set.
+ */
+export function hasS3TestEnv(): boolean {
+  return !!(
+    process.env.S3_TEST_ENDPOINT &&
+    process.env.S3_TEST_ACCESS_KEY &&
+    process.env.S3_TEST_SECRET_KEY &&
+    process.env.S3_TEST_BUCKET
+  );
+}
+
+/**
  * Get S3 test environment from env vars.
  * Throws if any required variable is missing.
  */

@@ -12,9 +12,12 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
-import { generateS3ContextName, getS3TestEnv } from '../../src/utils/s3';
+import { generateS3ContextName, getS3TestEnv, hasS3TestEnv } from '../../src/utils/s3';
 
-const s3Env = getS3TestEnv();
+// Defer env var access — calling getS3TestEnv() at module level crashes
+// Playwright's test discovery when S3_TEST_* vars aren't set.
+const s3Available = hasS3TestEnv();
+const s3Env = s3Available ? getS3TestEnv() : ({ endpoint: '', accessKeyId: '', secretAccessKey: '', bucket: '' } as ReturnType<typeof getS3TestEnv>);
 const sshKeyPath = process.env.E2E_SSH_KEY ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
 
 // --- Encrypted mode (with master password) ---
@@ -24,6 +27,7 @@ const encMasterPassword = `test-master-pw-${Date.now()}`;
 const encPrefix = `pw-ctx-enc-${Date.now()}`;
 
 test.describe('S3 Context Commands (with master password) @cli @s3', () => {
+  test.skip(!s3Available, 'S3_TEST_* environment variables not set');
   const runner = new CliTestRunner();
 
   test.afterAll(async () => {
@@ -143,6 +147,7 @@ const ptContextName = generateS3ContextName('ctx-s3-pt');
 const ptPrefix = `pw-ctx-pt-${Date.now()}`;
 
 test.describe('S3 Context Commands (without master password) @cli @s3', () => {
+  test.skip(!s3Available, 'S3_TEST_* environment variables not set');
   const runner = new CliTestRunner();
 
   test.afterAll(async () => {

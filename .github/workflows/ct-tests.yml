@@ -190,6 +190,28 @@ jobs:
             echo "Pinggy tunnel verification failed (non-fatal)"
           fi
 
+      # Upload tunnel URLs immediately after verification (before CLI build / VM provisioning)
+      # so test jobs can start as soon as possible and artifacts survive cancellations.
+      - name: Upload Cloudflare Tunnel URL
+        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: tunnel-url
+          path: ${{ runner.temp }}/tunnel-url.txt
+          retention-days: 3
+
+      - name: Upload Pinggy Tunnel URL
+        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
+        run: |
+          mkdir -p ${{ runner.temp }}/pinggy-artifact
+          echo "${{ steps.pinggy-tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
+        with:
+          name: tunnel-url-pinggy
+          path: ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
+          retention-days: 3
+
       # Bridge tests
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
@@ -236,26 +258,6 @@ jobs:
           bridge-tag: ${{ inputs.bridge_tag }}
           vm-image-path: ${{ runner.temp }}/vm-image
           bridge-env-output: ${{ runner.temp }}/bridge.env
-
-      - name: Upload Cloudflare Tunnel URL
-        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
-        with:
-          name: tunnel-url
-          path: ${{ runner.temp }}/tunnel-url.txt
-          retention-days: 3
-
-      - name: Upload Pinggy Tunnel URL
-        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
-        run: |
-          mkdir -p ${{ runner.temp }}/pinggy-artifact
-          echo "${{ steps.pinggy-tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
-        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
-        with:
-          name: tunnel-url-pinggy
-          path: ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
-          retention-days: 3
 
       # Free disk space before long-running signal wait
       # Docker images, build cache, and npm cache consume most space
@@ -369,7 +371,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
