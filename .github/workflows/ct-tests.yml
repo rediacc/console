@@ -677,24 +677,28 @@ jobs:
           VM_BRIDGE: '1'
       - name: Wait for VM SSH readiness
         run: |
-          for i in {1..30}; do
-            if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@192.168.111.11 echo ready 2>/dev/null; then
-              echo "VM is SSH-ready"
-              # Add ALL host key types so Go's crypto/ssh finds a match
-              # regardless of which algorithm it negotiates
-              ssh-keyscan 192.168.111.11 >> ~/.ssh/known_hosts 2>/dev/null
-              echo "Host keys added via ssh-keyscan"
-              exit 0
-            fi
-            echo "Waiting for VM SSH... ($i/30)"
-            sleep 5
+          # Wait for both bridge (111.1) and worker (111.11) VMs
+          for vm in 192.168.111.1 192.168.111.11; do
+            echo "Waiting for $vm..."
+            for i in {1..30}; do
+              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@$vm echo ready 2>/dev/null; then
+                echo "VM $vm is SSH-ready"
+                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
+                echo "Host keys added for $vm"
+                break
+              fi
+              echo "Waiting for VM $vm SSH... ($i/30)"
+              sleep 5
+              if [[ $i -eq 30 ]]; then
+                echo "VM $vm SSH not ready after 150s"
+                exit 1
+              fi
+            done
           done
-          echo "VM SSH not ready after 150s"
-          exit 1
 
-      # Start RustFS for S3 integration tests
+      # Start RustFS for S3 integration tests (sudo required — renet data dir is root-owned)
       - name: Start RustFS
-        run: .ci/scripts/infra/start-rustfs.sh --bucket rediacc-test
+        run: sudo -E .ci/scripts/infra/start-rustfs.sh --bucket rediacc-test
         env:
           RENET_BINARY_PATH: /usr/bin/renet
 
