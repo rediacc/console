@@ -165,7 +165,6 @@ jobs:
 
       - name: Start Pinggy Tunnel
         id: pinggy-tunnel
-        continue-on-error: true
         run: |
           PINGGY_URL=$(.ci/scripts/tunnel/start-pinggy.sh --port 80 --timeout 60) || true
           echo "tunnel-url=${PINGGY_URL}" >> $GITHUB_OUTPUT
@@ -177,16 +176,19 @@ jobs:
 
       - name: Verify Pinggy Tunnel
         if: steps.pinggy-tunnel.outputs.tunnel-url != ''
-        continue-on-error: true
         run: |
+          VERIFIED=false
           for i in {1..5}; do
             if curl -sf --max-time 10 "${{ steps.pinggy-tunnel.outputs.tunnel-url }}/health"; then
               echo "Pinggy tunnel verified"
-              exit 0
+              VERIFIED=true
+              break
             fi
             sleep 3
           done
-          echo "Pinggy tunnel verification failed (non-fatal)"
+          if [[ "$VERIFIED" != "true" ]]; then
+            echo "Pinggy tunnel verification failed (non-fatal)"
+          fi
 
       # Bridge tests
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
@@ -393,7 +395,6 @@ jobs:
         shell: bash
       - name: Download Cloudflare Tunnel URL
         id: cf-tunnel
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -402,7 +403,6 @@ jobs:
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -457,7 +457,6 @@ jobs:
         run: .ci/scripts/setup/install-playwright.sh --browsers "chromium webkit ${{ env.E2E_BROWSERS }}"
       - name: Download Cloudflare Tunnel URL
         id: cf-tunnel
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -465,7 +464,6 @@ jobs:
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -555,7 +553,6 @@ jobs:
         run: .ci/scripts/setup/setup-display.sh
       - name: Download Cloudflare Tunnel URL
         id: cf-tunnel
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -564,7 +561,6 @@ jobs:
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
