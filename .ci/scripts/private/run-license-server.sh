@@ -5,8 +5,9 @@
 #   Stages: quality, test, deploy (default: quality)
 #
 # This is a thin wrapper that checks if the license-server directory exists
-# and runs the appropriate npm scripts. Format and lint checks are handled
-# by the root biome.json configuration.
+# and runs the appropriate npm scripts. Lint, format, and typecheck are
+# handled by root-level quality commands (check:lint, check:format,
+# check:types).
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,12 +31,7 @@ if [[ ! -d "node_modules" ]]; then
 fi
 
 case "$STAGE" in
-    quality)
-        log_step "Running license-server quality checks..."
-        npm run typecheck
-        npm run test
-        ;;
-    test)
+    quality|test)
         log_step "Running license-server tests..."
         npm run test
         ;;
