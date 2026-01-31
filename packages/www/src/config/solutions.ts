@@ -27,6 +27,11 @@ import trHero from '../assets/images/illustrations/threat-response-hero.svg';
 import trBlackBox from '../assets/images/illustrations/threat-response-infrastructureBlackBox.svg';
 import trOsVuln from '../assets/images/illustrations/threat-response-osVulnerability.svg';
 import trRansomware from '../assets/images/illustrations/threat-response-ransomwareBackups.svg';
+import pdAiAttackSpeed from '../assets/images/illustrations/preemptive-defense-aiAttackSpeed.svg';
+import pdBottom from '../assets/images/illustrations/preemptive-defense-bottom.svg';
+import pdHero from '../assets/images/illustrations/preemptive-defense-hero.svg';
+import pdPeriodicCompliance from '../assets/images/illustrations/preemptive-defense-periodicCompliance.svg';
+import pdProductionTesting from '../assets/images/illustrations/preemptive-defense-productionTesting.svg';
 import type { ImageMetadata } from 'astro';
 
 interface SectionImage {
@@ -187,6 +192,33 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
       deployment: {
         src: spDeployment.src,
         alt: 'Broken deployment gears versus clean working deployment',
+      },
+    },
+  },
+  'preemptive-defense': {
+    contentKey: 'preemptiveDefense',
+    heroImage: pdHero,
+    heroImageAlt:
+      'Clone-based security testing workflow showing production clone, AI pentesting shield, and vulnerability results',
+    bottomImage: pdBottom,
+    bottomImageAlt:
+      'Continuous clone-test-harden cycle with zero-copy cloning, AI scanning, hardening, and ephemeral destruction',
+    bottomImageVariant: 'dark',
+    problemKeys: ['aiAttackSpeed', 'productionTesting', 'periodicCompliance'],
+    ctaImageAlt: 'Rediacc preemptive defense infrastructure',
+    hasButtonHref: true,
+    sectionImages: {
+      aiAttackSpeed: {
+        src: pdAiAttackSpeed.src,
+        alt: 'AI attacker speed versus clone-based testing speed comparison',
+      },
+      productionTesting: {
+        src: pdProductionTesting.src,
+        alt: 'Production crashing from security testing versus safe clone-based testing',
+      },
+      periodicCompliance: {
+        src: pdPeriodicCompliance.src,
+        alt: 'Annual pentest gap versus continuous clone-based testing timeline',
       },
     },
   },

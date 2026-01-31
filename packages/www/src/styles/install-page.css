@@ -32,6 +32,24 @@
   line-height: var(--leading-normal);
 }
 
+.install-hero .hero-downloads-note {
+  font-size: clamp(14px, 1.2vw, 16px);
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: var(--space-4);
+  line-height: var(--leading-normal);
+}
+
+.install-hero .hero-downloads-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--transition-duration-base) ease;
+}
+
+.install-hero .hero-downloads-link:hover {
+  color: white;
+}
+
 /* Installation Methods Section */
 .install-methods {
   padding: var(--section-padding);
@@ -44,6 +62,9 @@
   flex-direction: column;
   gap: var(--space-8);
 }
+
+/* Platform Filter Tabs (shared) */
+@import './platform-tabs.css';
 
 /* Method Card */
 .method-card {
@@ -154,6 +175,29 @@
   background: #a6e3a1;
   color: #1e1e2e;
   border-color: #a6e3a1;
+}
+
+.copy-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: var(--space-1);
+  vertical-align: middle;
+}
+
+/* Method card visibility transition */
+.method-card--visible {
+  animation: methodCardFadeIn 0.2s ease-out;
+}
+
+@keyframes methodCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .code-block pre {

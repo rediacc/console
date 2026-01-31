@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d2d2d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="#f5f5f5"/>
+
+  <!-- Left: Production crashing -->
+  <g transform="translate(50, 40)">
+    <text x="150" y="0" text-anchor="middle" fill="#1a1a1a" font-size="14" font-family="sans-serif" font-weight="bold">TESTING ON PRODUCTION</text>
+
+    <!-- Production server -->
+    <g transform="translate(80, 25)" filter="url(#shadow)">
+      <rect x="0" y="0" width="130" height="160" rx="8" fill="url(#serverGrad)"/>
+      <rect x="0" y="0" width="130" height="8" rx="8" fill="#3d3d3d"/>
+      <text x="65" y="-8" text-anchor="middle" fill="#666" font-size="11" font-family="sans-serif">PRODUCTION</text>
+      <rect x="12" y="25" width="106" height="10" rx="2" fill="#1a1a1a"/>
+      <rect x="12" y="42" width="106" height="10" rx="2" fill="#1a1a1a"/>
+      <rect x="12" y="59" width="106" height="10" rx="2" fill="#1a1a1a"/>
+      <circle cx="22" cy="30" r="2.5" fill="#cc3333"/>
+      <circle cx="22" cy="47" r="2.5" fill="#cc3333"/>
+      <circle cx="22" cy="64" r="2.5" fill="#cc3333" opacity="0.4"/>
+      <rect x="12" y="80" width="106" height="10" rx="2" fill="#1a1a1a"/>
+      <rect x="12" y="97" width="106" height="10" rx="2" fill="#1a1a1a"/>
+      <circle cx="22" cy="85" r="2.5" fill="#cc3333" opacity="0.4"/>
+      <circle cx="22" cy="102" r="2.5" fill="#cc3333" opacity="0.4"/>
+      <rect x="12" y="125" width="22" height="7" rx="1" fill="#3d3d3d"/>
+      <rect x="42" y="125" width="22" height="7" rx="1" fill="#3d3d3d"/>
+      <rect x="72" y="125" width="22" height="7" rx="1" fill="#3d3d3d"/>
+    </g>
+
+    <!-- Crash explosion -->
+    <g transform="translate(100, 100)">
+      <text x="65" y="110" text-anchor="middle" fill="#cc3333" font-size="32" font-family="sans-serif" font-weight="bold">CRASH</text>
+    </g>
+
+    <!-- Lightning bolts (scanner attack) -->
+    <path d="M130,25 L125,60 L140,55 L130,90" fill="none" stroke="#cc3333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M200,25 L205,60 L190,55 L200,90" fill="none" stroke="#cc3333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Damage stats -->
+    <g transform="translate(30, 260)">
+      <text x="0" y="0" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; 8.5M devices crashed</text>
+      <text x="0" y="18" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; $10B+ in damages</text>
+      <text x="0" y="36" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; 30% fear own testing</text>
+      <text x="0" y="54" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; Services killed by scans</text>
+    </g>
+  </g>
+
+  <!-- VS divider -->
+  <line x1="400" y1="30" x2="400" y2="420" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="8,4"/>
+  <circle cx="400" cy="225" r="20" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="2"/>
+  <text x="400" y="230" text-anchor="middle" fill="#666" font-size="12" font-family="sans-serif" font-weight="bold">VS</text>
+
+  <!-- Right: Clone-based testing (safe) -->
+  <g transform="translate(430, 40)">
+    <text x="170" y="0" text-anchor="middle" fill="#556b2f" font-size="14" font-family="sans-serif" font-weight="bold">TESTING ON CLONES</text>
+
+    <!-- Production (protected) -->
+    <g transform="translate(20, 25)" filter="url(#shadow)">
+      <rect x="0" y="0" width="100" height="120" rx="6" fill="url(#serverGrad)"/>
+      <rect x="0" y="0" width="100" height="6" rx="6" fill="#3d3d3d"/>
+      <rect x="10" y="20" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <rect x="10" y="34" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <rect x="10" y="48" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <circle cx="18" cy="24" r="2" fill="#556b2f"/>
+      <circle cx="18" cy="38" r="2" fill="#556b2f"/>
+      <circle cx="18" cy="52" r="2" fill="#556b2f"/>
+      <rect x="10" y="65" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <rect x="10" y="79" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <circle cx="18" cy="69" r="2" fill="#556b2f"/>
+      <circle cx="18" cy="83" r="2" fill="#556b2f"/>
+      <text x="50" y="110" text-anchor="middle" fill="#e0e0e0" font-size="9" font-family="sans-serif">PRODUCTION</text>
+    </g>
+
+    <!-- Shield protecting production -->
+    <g transform="translate(35, 10)">
+      <path d="M35 0 L65 10 L65 25 C65 35 35 45 35 45 C35 45 5 35 5 25 L5 10 Z" fill="none" stroke="#556b2f" stroke-width="2"/>
+      <polyline points="22,18 32,28 48,12" fill="none" stroke="#556b2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Clone arrow -->
+    <g transform="translate(130, 70)">
+      <line x1="0" y1="0" x2="50" y2="0" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3"/>
+      <polygon points="50,-5 62,0 50,5" fill="#556b2f"/>
+      <text x="30" y="-8" text-anchor="middle" fill="#556b2f" font-size="9" font-family="sans-serif">CLONE</text>
+    </g>
+
+    <!-- Clone (attacked safely) -->
+    <g transform="translate(200, 25)" filter="url(#shadow)">
+      <rect x="0" y="0" width="100" height="120" rx="6" fill="url(#serverGrad)" opacity="0.85"/>
+      <rect x="0" y="0" width="100" height="6" rx="6" fill="#3d3d3d"/>
+      <rect x="10" y="20" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <rect x="10" y="34" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <rect x="10" y="48" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <circle cx="18" cy="24" r="2" fill="#556b2f" opacity="0.6"/>
+      <circle cx="18" cy="38" r="2" fill="#556b2f" opacity="0.6"/>
+      <circle cx="18" cy="52" r="2" fill="#556b2f" opacity="0.6"/>
+      <rect x="10" y="65" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <rect x="10" y="79" width="80" height="8" rx="1" fill="#1a1a1a"/>
+      <circle cx="18" cy="69" r="2" fill="#556b2f" opacity="0.6"/>
+      <circle cx="18" cy="83" r="2" fill="#556b2f" opacity="0.6"/>
+      <rect x="-2" y="-2" width="104" height="124" rx="8" fill="none" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="50" y="110" text-anchor="middle" fill="#556b2f" font-size="9" font-family="sans-serif">CLONE</text>
+    </g>
+
+    <!-- Attack arrows on clone (safe) -->
+    <g transform="translate(260, 35)">
+      <line x1="0" y1="10" x2="40" y2="10" stroke="#556b2f" stroke-width="1.5" opacity="0.5"/>
+      <line x1="0" y1="30" x2="45" y2="30" stroke="#556b2f" stroke-width="1.5" opacity="0.5"/>
+      <line x1="0" y1="50" x2="40" y2="50" stroke="#556b2f" stroke-width="1.5" opacity="0.5"/>
+      <text x="50" y="35" fill="#556b2f" font-size="10" font-family="sans-serif">SCAN</text>
+      <text x="50" y="50" fill="#556b2f" font-size="10" font-family="sans-serif">SAFELY</text>
+    </g>
+
+    <!-- Safety stats -->
+    <g transform="translate(20, 260)">
+      <text x="0" y="0" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Production untouched</text>
+      <text x="0" y="18" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Maximum aggression on clone</text>
+      <text x="0" y="36" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Instant reset via snapshots</text>
+      <text x="0" y="54" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Zero downtime risk</text>
+    </g>
+  </g>
+
+  <!-- Decorative -->
+  <circle cx="200" cy="420" r="25" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="650" cy="420" r="30" fill="#556b2f" opacity="0.08"/>
+</svg>

@@ -221,6 +221,46 @@ const DevelopmentEnvironmentsIcon = (
   </svg>
 );
 
+const PreemptiveDefenseIcon = (
+  <svg
+    width="48"
+    height="48"
+    viewBox="0 0 48 48"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    {/* Shield */}
+    <path
+      d="M24 4L8 12v12c0 11 16 20 16 20s16-9 16-20V12L24 4z"
+      stroke="currentColor"
+      strokeWidth="2"
+      fill="none"
+    />
+    {/* Clone servers inside shield */}
+    <rect x="16" y="16" width="7" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
+    <rect x="25" y="16" width="7" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
+    <path d="M19.5 19h-1M19.5 21h-1M19.5 23h-1" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+    <path d="M28.5 19h-1M28.5 21h-1M28.5 23h-1" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+    {/* Scanning beam */}
+    <path
+      d="M14 30l10 4 10-4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16 33l8 3 8-3"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      opacity="0.5"
+    />
+  </svg>
+);
+
 interface WindowWithImageModal extends Window {
   openImageModal?: (src: string, alt: string) => void;
 }
@@ -265,7 +305,7 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
         title: solutionsData[2]?.title ?? '',
         description: solutionsData[2]?.description ?? '',
         benefits: solutionsData[2]?.benefits ?? [],
-        href: `/${lang}/solutions/disaster-recovery`,
+        href: `/${lang}/solutions/threat-response`,
       },
       {
         number: 4,
@@ -282,6 +322,14 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
         description: solutionsData[4]?.description ?? '',
         benefits: solutionsData[4]?.benefits ?? [],
         href: `/${lang}/solutions/development-environments`,
+      },
+      {
+        number: 6,
+        icon: PreemptiveDefenseIcon,
+        title: solutionsData[5]?.title ?? '',
+        description: solutionsData[5]?.description ?? '',
+        benefits: solutionsData[5]?.benefits ?? [],
+        href: `/${lang}/solutions/preemptive-defense`,
       },
     ],
     [solutionsData, lang]

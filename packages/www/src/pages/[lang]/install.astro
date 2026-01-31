@@ -3,15 +3,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
-import { SITE_URL } from '../../config/constants';
+import InstallMethods from '../../components/InstallMethods';
 import '../../styles/install-page.css';
 
 export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
-
-const REPO_URL = SITE_URL;
 ---
 
 <BaseLayout
@@ -28,148 +26,17 @@ const REPO_URL = SITE_URL;
       <div class="install-hero-content">
         <h1>{t('pages.install.hero.title')}</h1>
         <p class="hero-subtitle">{t('pages.install.hero.subtitle')}</p>
+        <p class="hero-downloads-note">
+          {t('pages.install.hero.downloadsNote')}{' '}
+          <a href={`/${lang}/downloads`} class="hero-downloads-link">
+            {t('pages.install.hero.downloadsLink')} &rarr;
+          </a>
+        </p>
       </div>
     </section>
 
-    <!-- Installation Methods -->
-    <section class="install-methods section-light">
-      <div class="container">
-
-        <!-- Quick Install (One-liner) -->
-        <div class="method-card method-card-featured" id="quick">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.quick.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.quick.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="quick-unix">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-quick-unix">{`# Linux / macOS
-curl -fsSL https://www.rediacc.com/install.sh | bash`}</code></pre>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>powershell</span>
-              <button class="copy-btn" data-copy="quick-win">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-quick-win">{`# Windows (PowerShell)
-irm https://www.rediacc.com/install.ps1 | iex`}</code></pre>
-          </div>
-        </div>
-
-        <!-- Direct Binary Download -->
-        <div class="method-card" id="binary">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.binary.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.binary.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="binary">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-binary">{`# Linux x64
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-x64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/
-
-# Linux ARM64
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-linux-arm64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/
-
-# macOS (Apple Silicon)
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-arm64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/
-
-# macOS (Intel)
-curl -fsSL https://github.com/rediacc/console/releases/latest/download/rdc-mac-x64 -o rdc
-chmod +x rdc && sudo mv rdc /usr/local/bin/
-
-# Windows x64 (PowerShell) - installs to standard location
-$installDir = "$env:LOCALAPPDATA\\rediacc\\bin"; New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Invoke-WebRequest -Uri https://github.com/rediacc/console/releases/latest/download/rdc-win-x64.exe -OutFile "$installDir\\rdc.exe"
-# Add to PATH: [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$installDir", "User")
-
-# Windows ARM64 (PowerShell) - installs to standard location
-$installDir = "$env:LOCALAPPDATA\\rediacc\\bin"; New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Invoke-WebRequest -Uri https://github.com/rediacc/console/releases/latest/download/rdc-win-arm64.exe -OutFile "$installDir\\rdc.exe"
-# Add to PATH: [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$installDir", "User")`}</code></pre>
-          </div>
-        </div>
-
-        <!-- Docker -->
-        <div class="method-card" id="docker">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.docker.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.docker.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="docker">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-docker">{`# Pull the image
-docker pull ghcr.io/rediacc/elite/cli:latest
-
-# Run a command
-docker run --rm ghcr.io/rediacc/elite/cli:latest --version
-
-# Create an alias for convenience
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:latest'`}</code></pre>
-          </div>
-        </div>
-
-        <!-- APT (Debian/Ubuntu) -->
-        <div class="method-card" id="apt">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.apt.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.apt.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="apt">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-apt">{`curl -fsSL ${REPO_URL}/apt/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
-echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${REPO_URL}/apt stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
-sudo apt-get update && sudo apt-get install rediacc-cli`}</code></pre>
-          </div>
-        </div>
-
-        <!-- DNF (Fedora/RHEL) -->
-        <div class="method-card" id="dnf">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.dnf.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.dnf.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="dnf">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-dnf">{`sudo curl -fsSL ${REPO_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
-sudo dnf install rediacc-cli`}</code></pre>
-          </div>
-        </div>
-
-        <!-- Homebrew (macOS / Linux) -->
-        <div class="method-card" id="homebrew">
-          <div class="method-header">
-            <h2>{t('pages.install.methods.homebrew.title')}</h2>
-            <p class="method-description">{t('pages.install.methods.homebrew.description')}</p>
-          </div>
-          <div class="code-block">
-            <div class="code-header">
-              <span>bash</span>
-              <button class="copy-btn" data-copy="homebrew">{t('pages.install.copy')}</button>
-            </div>
-            <pre><code id="code-homebrew">brew install rediacc/tap/rediacc-cli</code></pre>
-          </div>
-        </div>
-
-      </div>
-    </section>
+    <!-- Installation Methods (React island) -->
+    <InstallMethods client:visible lang={lang} />
 
     <!-- Verify Installation -->
     <section class="verify-section section-dark">
@@ -263,10 +130,10 @@ sudo dnf install rediacc-cli`}</code></pre>
     </section>
   </article>
 
-  <!-- Copy-to-clipboard script -->
+  <!-- Copy-to-clipboard script for static sections (verify) -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const buttons = document.querySelectorAll<HTMLButtonElement>('.copy-btn');
+      const buttons = document.querySelectorAll<HTMLButtonElement>('.verify-section .copy-btn');
       buttons.forEach(btn => {
         btn.addEventListener('click', async () => {
           const target = btn.getAttribute('data-copy');
@@ -284,7 +151,6 @@ sudo dnf install rediacc-cli`}</code></pre>
               btn.classList.remove('copied');
             }, 2000);
           } catch {
-            // Fallback: select text
             const range = document.createRange();
             range.selectNodeContents(codeEl);
             const sel = window.getSelection();
