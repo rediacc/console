@@ -1,5 +1,5 @@
-import type { Platform } from '../config/install';
 import { formatBytes } from './format';
+import type { Platform } from '../config/install';
 
 export interface DownloadFile {
   platform: Platform;
@@ -56,13 +56,25 @@ export function detectCLIArch(filename: string): 'x64' | 'arm64' {
   return 'x64';
 }
 
-export function parseGitHubRelease(release: any, lang: string): ReleaseData {
+interface GitHubAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+
+interface GitHubRelease {
+  tag_name: string;
+  published_at: string;
+  assets: GitHubAsset[];
+}
+
+export function parseGitHubRelease(release: GitHubRelease, lang: string): ReleaseData {
   const desktopFiles: DownloadFile[] = release.assets
     .filter(
-      (asset: any) =>
+      (asset) =>
         asset.name.startsWith('rediacc-desktop-') && /\.(exe|dmg|AppImage|deb)$/.test(asset.name)
     )
-    .map((asset: any) => ({
+    .map((asset) => ({
       platform: detectFilePlatform(asset.name),
       arch: detectArch(asset.name),
       type: detectType(asset.name),
@@ -72,8 +84,8 @@ export function parseGitHubRelease(release: any, lang: string): ReleaseData {
     }));
 
   const cliFiles: CLIFile[] = release.assets
-    .filter((asset: any) => asset.name.startsWith('rdc-') && !asset.name.endsWith('.sha256'))
-    .map((asset: any) => ({
+    .filter((asset) => asset.name.startsWith('rdc-') && !asset.name.endsWith('.sha256'))
+    .map((asset) => ({
       platform: detectCLIPlatform(asset.name),
       arch: detectCLIArch(asset.name),
       url: asset.browser_download_url,

@@ -17,6 +17,11 @@ import drLimitedHistory from '../assets/images/illustrations/disaster-recovery-l
 import drSlowBackups from '../assets/images/illustrations/disaster-recovery-slowBackups.svg';
 // Section illustrations (SVGs from src/assets)
 import drUnverified from '../assets/images/illustrations/disaster-recovery-unverified.svg';
+import pdAiAttackSpeed from '../assets/images/illustrations/preemptive-defense-aiAttackSpeed.svg';
+import pdBottom from '../assets/images/illustrations/preemptive-defense-bottom.svg';
+import pdHero from '../assets/images/illustrations/preemptive-defense-hero.svg';
+import pdPeriodicCompliance from '../assets/images/illustrations/preemptive-defense-periodicCompliance.svg';
+import pdProductionTesting from '../assets/images/illustrations/preemptive-defense-productionTesting.svg';
 import spBottom from '../assets/images/illustrations/system-portability-bottom.svg';
 import spDeployment from '../assets/images/illustrations/system-portability-deployment.svg';
 import spHero from '../assets/images/illustrations/system-portability-hero.svg';
@@ -27,11 +32,6 @@ import trHero from '../assets/images/illustrations/threat-response-hero.svg';
 import trBlackBox from '../assets/images/illustrations/threat-response-infrastructureBlackBox.svg';
 import trOsVuln from '../assets/images/illustrations/threat-response-osVulnerability.svg';
 import trRansomware from '../assets/images/illustrations/threat-response-ransomwareBackups.svg';
-import pdAiAttackSpeed from '../assets/images/illustrations/preemptive-defense-aiAttackSpeed.svg';
-import pdBottom from '../assets/images/illustrations/preemptive-defense-bottom.svg';
-import pdHero from '../assets/images/illustrations/preemptive-defense-hero.svg';
-import pdPeriodicCompliance from '../assets/images/illustrations/preemptive-defense-periodicCompliance.svg';
-import pdProductionTesting from '../assets/images/illustrations/preemptive-defense-productionTesting.svg';
 import type { ImageMetadata } from 'astro';
 
 interface SectionImage {

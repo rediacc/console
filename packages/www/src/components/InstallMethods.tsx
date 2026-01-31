@@ -1,7 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useTranslation } from '../i18n/react';
-import type { Language } from '../i18n/types';
-import type { Platform, InstallMethod } from '../config/install';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   PLATFORMS,
   METHOD_META,
@@ -14,10 +11,13 @@ import {
   HOMEBREW_COMMAND,
   detectPlatform,
 } from '../config/install';
+import { useTranslation } from '../i18n/react';
 import { copyToClipboard } from '../utils/clipboard';
-import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import { CopyIcon, CheckIcon } from './icons/ClipboardIcons';
+import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import PlatformTabs from './PlatformTabs';
+import type { Platform, InstallMethod } from '../config/install';
+import type { Language } from '../i18n/types';
 
 interface InstallMethodsProps {
   lang: Language;
@@ -96,9 +96,8 @@ function getMethodBlocks(
         ].join('\n\n');
         return [{ id: 'binary', label: 'bash', code: combined }];
       }
-      const platform = filter as Platform;
-      const lang = platform === 'windows' ? 'powershell' : 'bash';
-      return [{ id: `binary-${platform}`, label: lang, code: BINARY_COMMANDS[platform] }];
+      const lang = filter === 'windows' ? 'powershell' : 'bash';
+      return [{ id: `binary-${filter}`, label: lang, code: BINARY_COMMANDS[filter] }];
     }
     case 'docker':
       return [{ id: 'docker', label: 'bash', code: DOCKER_COMMANDS }];
@@ -115,34 +114,28 @@ function getMethodBlocks(
 
 const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
   const { t } = useTranslation(lang);
-  const [filter, setFilter] = useState<FilterTab>('all');
-  const [initialized, setInitialized] = useState(false);
+
+  const [filter, setFilter] = useState<FilterTab>(() => {
+    if (typeof window === 'undefined') return 'all';
+    const hash = window.location.hash.replace('#', '');
+    if (hash && hash in ANCHOR_PLATFORM_MAP) {
+      // Scroll to the anchor after React render
+      requestAnimationFrame(() => {
+        const el = document.getElementById(hash);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      });
+      return ANCHOR_PLATFORM_MAP[hash];
+    }
+    return detectPlatform();
+  });
 
   const handleFilterChange = useCallback((tab: FilterTab) => {
     setFilter(tab);
   }, []);
 
-  // On mount: detect platform and handle URL hash for deep-linking
-  useEffect(() => {
-    const hash = window.location.hash.replace('#', '');
-    if (hash && ANCHOR_PLATFORM_MAP[hash]) {
-      setFilter(ANCHOR_PLATFORM_MAP[hash]);
-      // Scroll to the anchor after a short delay to let React render
-      requestAnimationFrame(() => {
-        const el = document.getElementById(hash);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
-      });
-    } else {
-      // Auto-detect platform and pre-select
-      const detected = detectPlatform();
-      setFilter(detected);
-    }
-    setInitialized(true);
-  }, []);
-
   // Filter methods: "all" shows everything, platform filter hides unsupported methods
   const visibleMethods = METHOD_META.filter(
-    (m) => filter === 'all' || m.platforms.includes(filter as Platform)
+    (m) => filter === 'all' || m.platforms.includes(filter)
   );
 
   const filterTabs: { key: FilterTab; label: string; icon?: React.FC }[] = [
@@ -174,7 +167,7 @@ const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
             <div
               key={method.id}
               id={method.anchor}
-              className={`method-card${method.featured ? ' method-card-featured' : ''}${initialized ? ' method-card--visible' : ''}`}
+              className={`method-card${method.featured ? ' method-card-featured' : ''} method-card--visible`}
             >
               <div className="method-header">
                 <h2>{t(`pages.install.methods.${method.id}.title`)}</h2>

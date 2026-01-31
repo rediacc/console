@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from '../i18n/react';
-import type { Language } from '../i18n/types';
-import type { Platform } from '../config/install';
+import React, { useState } from 'react';
 import { PLATFORMS, detectPlatform } from '../config/install';
-import type { ReleaseData, DownloadFile, CLIFile } from '../utils/release-parser';
+import { useTranslation } from '../i18n/react';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import PlatformTabs from './PlatformTabs';
+import type { Platform } from '../config/install';
+import type { Language } from '../i18n/types';
+import type { ReleaseData, DownloadFile, CLIFile } from '../utils/release-parser';
 
 interface DownloadsListProps {
   lang: Language;
@@ -23,11 +23,7 @@ function archLabel(t: (key: string) => string, file: DownloadFile | CLIFile): st
 
 const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
   const { t } = useTranslation(lang);
-  const [activePlatform, setActivePlatform] = useState<Platform>('linux');
-
-  useEffect(() => {
-    setActivePlatform(detectPlatform());
-  }, []);
+  const [activePlatform, setActivePlatform] = useState<Platform>(detectPlatform);
 
   const tabs = PLATFORMS.map(({ key }) => ({
     key,
