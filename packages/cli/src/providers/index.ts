@@ -45,10 +45,3 @@ export async function getStateProvider(): Promise<IStateProvider> {
   providerCache.set(contextName, provider);
   return provider;
 }
-
-/**
- * Clear the provider cache (useful for testing or context switches).
- */
-export function clearProviderCache(): void {
-  providerCache.clear();
-}

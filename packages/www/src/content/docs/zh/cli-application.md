@@ -351,7 +351,28 @@ rdc context set-ssh [options]
 | `--public-key <path>` | {{t:cli.options.sshPublicKey}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 2.17 set-renet
+### 2.17 create-s3
+
+{{t:cli.commands.context.createS3.description}}
+
+```bash
+rdc context create-s3 <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--endpoint <url>` | {{t:cli.commands.context.createS3.optionEndpoint}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--bucket <name>` | {{t:cli.commands.context.createS3.optionBucket}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--access-key-id <key>` | {{t:cli.commands.context.createS3.optionAccessKeyId}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--ssh-key <path>` | {{t:cli.options.sshPrivateKey}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--secret-access-key <key>` | {{t:cli.commands.context.createS3.optionSecretAccessKey}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--region <region>` | {{t:cli.commands.context.createS3.optionRegion}} | {{t:cli.docs.optionLabels.no}} | `auto` |
+| `--prefix <prefix>` | {{t:cli.commands.context.createS3.optionPrefix}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--renet-path <path>` | {{t:cli.commands.context.createS3.optionRenetPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--master-password <password>` | {{t:cli.commands.context.createS3.optionMasterPassword}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 2.18 set-renet
 
 {{t:cli.commands.context.setRenet.description}}
 
