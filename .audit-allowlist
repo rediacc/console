@@ -20,3 +20,7 @@
 # In yaml-language-server dependency chain via vscode extensions, can't upgrade
 1112453
 1112455
+
+# fast-xml-parser <=5.3.3 RangeError DoS Numeric Entities (GHSA-37qj-frw5-hhjh)
+# In @aws-sdk/xml-builder and @astrojs/rss dependency chains, can't upgrade
+1112708

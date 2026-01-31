@@ -8,10 +8,10 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
-import type { LocalMachineConfig } from '../types/index.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
+import type { LocalMachineConfig } from '../types/index.js';
 
 /** Options for renet spawning */
 export interface RenetSpawnOptions {

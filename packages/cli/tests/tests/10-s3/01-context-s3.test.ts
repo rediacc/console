@@ -20,7 +20,7 @@ const sshKeyPath = process.env.E2E_SSH_KEY ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
 // --- Encrypted mode (with master password) ---
 
 const encContextName = generateS3ContextName('ctx-s3-enc');
-const encMasterPassword = 'test-master-pw-' + Date.now();
+const encMasterPassword = `test-master-pw-${Date.now()}`;
 const encPrefix = `pw-ctx-enc-${Date.now()}`;
 
 test.describe('S3 Context Commands (with master password) @cli @s3', () => {

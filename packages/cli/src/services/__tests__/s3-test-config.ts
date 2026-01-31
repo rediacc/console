@@ -6,8 +6,8 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import type { S3Config } from '../../types/index.js';
 import { S3ClientService } from '../s3-client.js';
+import type { S3Config } from '../../types/index.js';
 
 export interface S3TestConfig {
   endpoint: string;

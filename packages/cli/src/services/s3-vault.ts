@@ -10,8 +10,8 @@ import type { S3ClientService } from './s3-client.js';
 
 export class S3VaultService {
   constructor(
-    private s3: S3ClientService,
-    private masterPassword: string | null
+    private readonly s3: S3ClientService,
+    private readonly masterPassword: string | null
   ) {}
 
   async readVault<T>(key: string): Promise<T | null> {

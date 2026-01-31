@@ -28,7 +28,7 @@ describe('S3VaultService (real S3)', () => {
     });
 
     it('should return null for non-existent vault', async () => {
-      const result = await vault.readVault('vaults/does-not-exist-' + Date.now() + '.json.enc');
+      const result = await vault.readVault(`vaults/does-not-exist-${Date.now()}.json.enc`);
       expect(result).toBeNull();
     });
 
@@ -168,7 +168,7 @@ describe('S3VaultService (plaintext mode - no master password)', () => {
   });
 
   it('should return null for non-existent vault in plaintext mode', async () => {
-    const result = await ptVault.readVault('vaults/pt-missing-' + Date.now() + '.json.enc');
+    const result = await ptVault.readVault(`vaults/pt-missing-${Date.now()}.json.enc`);
     expect(result).toBeNull();
   });
 

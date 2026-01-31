@@ -8,6 +8,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { S3ClientService } from './s3-client.js';
 
 export interface S3QueueItem {
@@ -41,7 +42,7 @@ const STATUS_DIRS: Record<S3QueueItem['status'], string> = {
 const ALL_STATUSES = Object.keys(STATUS_DIRS) as S3QueueItem['status'][];
 
 export class S3QueueService {
-  constructor(private s3: S3ClientService) {}
+  constructor(private readonly s3: S3ClientService) {}
 
   async create(item: Omit<S3QueueItem, 'taskId' | 'status' | 'retryCount' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const taskId = randomUUID();
@@ -135,19 +136,27 @@ export class S3QueueService {
   async list(options?: { status?: S3QueueItem['status']; limit?: number }): Promise<S3QueueItem[]> {
     const statuses = options?.status ? [options.status] : ALL_STATUSES;
     const items: S3QueueItem[] = [];
-    const limit = options?.limit ?? 50;
+    const limit = options?.limit ?? DEFAULTS.PRIORITY.QUEUE_LIST_LIMIT;
 
     for (const status of statuses) {
-      const keys = await this.s3.listKeys(`${STATUS_DIRS[status]}/`);
-      for (const key of keys) {
-        if (items.length >= limit) break;
-        const item = await this.s3.getJson<S3QueueItem>(key);
-        if (item) items.push(item);
-      }
       if (items.length >= limit) break;
+      await this.fetchStatusItems(status, limit, items);
     }
 
     return items;
+  }
+
+  private async fetchStatusItems(
+    status: S3QueueItem['status'],
+    limit: number,
+    items: S3QueueItem[]
+  ): Promise<void> {
+    const keys = await this.s3.listKeys(`${STATUS_DIRS[status]}/`);
+    for (const key of keys) {
+      if (items.length >= limit) break;
+      const item = await this.s3.getJson<S3QueueItem>(key);
+      if (item) items.push(item);
+    }
   }
 
   async retry(taskId: string): Promise<void> {

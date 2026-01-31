@@ -6,8 +6,7 @@
  *
  * Tests both encrypted (with master password) and plaintext (without) modes.
  *
- * Note: `queue trace` is not tested here because the CLI trace command
- * bypasses the state provider and calls the cloud API directly.
+ * Note: `queue trace` requires a task to exist in a known status directory.
  * Trace is covered in the Vitest integration tests (s3-queue.integration.test.ts).
  *
  * Requires S3_TEST_ENDPOINT, S3_TEST_ACCESS_KEY, S3_TEST_SECRET_KEY, S3_TEST_BUCKET.
@@ -23,7 +22,7 @@ const sshKeyPath = process.env.E2E_SSH_KEY ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
 
 /** Extract a UUID from CLI output text */
 function extractTaskId(output: string): string {
-  const match = output.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/);
+  const match = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/.exec(output);
   if (!match) throw new Error(`No UUID found in output: ${output}`);
   return match[1];
 }
@@ -31,7 +30,7 @@ function extractTaskId(output: string): string {
 // --- Encrypted mode (with master password) ---
 
 const encContextName = generateS3ContextName('q-s3-enc');
-const encMasterPassword = 'test-queue-pw-' + Date.now();
+const encMasterPassword = `test-queue-pw-${Date.now()}`;
 const encPrefix = `pw-queue-enc-${Date.now()}`;
 
 test.describe('S3 Queue Operations (with master password) @cli @s3', () => {

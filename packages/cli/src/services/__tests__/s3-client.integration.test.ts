@@ -39,7 +39,7 @@ describe('S3ClientService (real S3)', () => {
     });
 
     it('should return null for non-existent key', async () => {
-      const result = await client.getRaw('raw/does-not-exist-' + Date.now());
+      const result = await client.getRaw(`raw/does-not-exist-${Date.now()}`);
       expect(result).toBeNull();
     });
 
@@ -79,7 +79,7 @@ describe('S3ClientService (real S3)', () => {
     });
 
     it('should return null for non-existent key', async () => {
-      const result = await client.getJson('json/nope-' + Date.now());
+      const result = await client.getJson(`json/nope-${Date.now()}`);
       expect(result).toBeNull();
     });
   });
@@ -94,7 +94,7 @@ describe('S3ClientService (real S3)', () => {
 
     it('should be idempotent (delete non-existent is OK)', async () => {
       await expect(
-        client.deleteObject('del/never-existed-' + Date.now())
+        client.deleteObject(`del/never-existed-${Date.now()}`)
       ).resolves.toBeUndefined();
     });
   });
@@ -112,7 +112,7 @@ describe('S3ClientService (real S3)', () => {
     });
 
     it('should return empty array when no keys match', async () => {
-      const keys = await client.listKeys('no-such-prefix-' + Date.now() + '/');
+      const keys = await client.listKeys(`no-such-prefix-${Date.now()}/`);
       expect(keys).toEqual([]);
     });
 

@@ -26,9 +26,9 @@ export class S3OperationError extends Error {
 }
 
 export class S3ClientService {
-  private client: S3Client;
-  private bucket: string;
-  private prefix: string;
+  private readonly client: S3Client;
+  private readonly bucket: string;
+  private readonly prefix: string;
 
   constructor(config: S3Config) {
     this.client = new S3Client({
@@ -129,14 +129,7 @@ export class S3ClientService {
           })
         );
 
-        for (const obj of response.Contents ?? []) {
-          if (obj.Key) {
-            // Return keys relative to the configured prefix
-            const relativeKey = this.prefix ? obj.Key.slice(this.prefix.length) : obj.Key;
-            keys.push(relativeKey);
-          }
-        }
-
+        this.extractKeys(response.Contents, keys);
         continuationToken = response.NextContinuationToken;
       } while (continuationToken);
 
@@ -144,6 +137,18 @@ export class S3ClientService {
     } catch (error) {
       throw new S3OperationError(`Failed to list keys with prefix ${prefix}`, 'listKeys', error);
     }
+  }
+
+  private extractKeys(contents: { Key?: string }[] | undefined, keys: string[]): void {
+    for (const obj of contents ?? []) {
+      if (obj.Key) {
+        keys.push(this.stripPrefix(obj.Key));
+      }
+    }
+  }
+
+  private stripPrefix(key: string): string {
+    return this.prefix ? key.slice(this.prefix.length) : key;
   }
 
   async verifyAccess(): Promise<void> {
