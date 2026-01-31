@@ -10,3 +10,7 @@
 	path = private/homebrew-tap
 	url = https://github.com/rediacc/homebrew-tap.git
 	branch = main
+[submodule "private/license-server"]
+	path = private/license-server
+	url = https://github.com/rediacc/license-server.git
+	branch = main

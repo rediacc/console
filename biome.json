@@ -65,11 +65,32 @@
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts",
-      "!**/*.astro"
+      "!**/*.astro",
+      "private/license-server/src/**/*.ts",
+      "private/license-server/tests/**/*.ts",
+      "private/license-server/scripts/**/*.ts"
     ],
     "ignoreUnknown": true
   },
   "overrides": [
+    {
+      "includes": ["private/license-server/**/*.ts"],
+      "linter": {
+        "enabled": true,
+        "rules": {
+          "recommended": true
+        }
+      },
+      "assist": {
+        "actions": {
+          "source": {
+            "organizeImports": {
+              "level": "on"
+            }
+          }
+        }
+      }
+    },
     {
       "includes": ["packages/cli/tests/**/*.ts"],
       "assist": {
