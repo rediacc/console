@@ -101,7 +101,7 @@ jobs:
       - run: .ci/scripts/build/build-web.sh --type RELEASE
         env:
           VITE_APP_VERSION: ${{ inputs.web_tag }}
-          VITE_BASE_PATH: /
+          VITE_BASE_PATH: /console/
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: build-web-${{ github.sha }}
