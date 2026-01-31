@@ -57,6 +57,7 @@
     "@vitest/runner": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "@vitest/utils": "^4.0.18",
+    "commander": "^14.0.3",
     "dotenv": "^16.4.5",
     "react-i18next": "^16.5.4",
     "ssh2": "^1.16.0",
