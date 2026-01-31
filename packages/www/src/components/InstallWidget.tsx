@@ -25,7 +25,7 @@ const InstallWidget: React.FC<InstallWidgetProps> = ({ lang = 'en' }) => {
   const handleCopy = async () => {
     const success = await copyToClipboard(
       QUICK_INSTALL_COMMANDS[activePlatform],
-      codeRef.current ?? undefined,
+      codeRef.current ?? undefined
     );
     if (success) {
       setCopied(true);

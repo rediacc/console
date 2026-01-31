@@ -4,7 +4,11 @@ export type Platform = 'linux' | 'macos' | 'windows';
 
 export type InstallMethod = 'quick' | 'binary' | 'docker' | 'apt' | 'dnf' | 'homebrew';
 
-export const PLATFORMS: { key: Platform; iconId: 'linux' | 'apple' | 'windows'; labelKey: string }[] = [
+export const PLATFORMS: {
+  key: Platform;
+  iconId: 'linux' | 'apple' | 'windows';
+  labelKey: string;
+}[] = [
   { key: 'linux', iconId: 'linux', labelKey: 'hero.install.tabs.linux' },
   { key: 'macos', iconId: 'apple', labelKey: 'hero.install.tabs.macos' },
   { key: 'windows', iconId: 'windows', labelKey: 'hero.install.tabs.windows' },

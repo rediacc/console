@@ -668,9 +668,7 @@
                 "Standardimplementierung (9.999 $) oder gestaffelte Pakete (klein: 7.499 $, mittel: 14.999 $, groß: 29.999 $, benutzerdefiniert für Unternehmen)",
                 "Notfalleinsatz (29.999 $ auf Anfrage)"
               ],
-              "included": [
-                "Self-Service-Dokumentation, Video-Tutorials und Community-Forum"
-              ],
+              "included": ["Self-Service-Dokumentation, Video-Tutorials und Community-Forum"],
               "planId": "Gemeinschaft"
             },
             {
@@ -1004,10 +1002,7 @@
       },
       "trust": {
         "heading": "Sicherheit und Zuverlässigkeit auf Unternehmensniveau",
-        "items": [
-          "Verschlüsselung auf Bankebene",
-          "99,9 % Verfügbarkeitsgarantie"
-        ]
+        "items": ["Verschlüsselung auf Bankebene", "99,9 % Verfügbarkeitsgarantie"]
       },
       "ui": {
         "anchor": "Strategischer Anker",
@@ -1835,9 +1830,7 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. Verwendung Ihrer Daten",
-          "content": [
-            "Wir verwenden die erhobenen Daten für folgende Zwecke:"
-          ],
+          "content": ["Wir verwenden die erhobenen Daten für folgende Zwecke:"],
           "items": [
             "Beantwortung Ihrer Anfragen über das Kontaktformular",
             "Bereitstellung, Betrieb und Wartung der Rediacc-Plattform",
@@ -1873,9 +1866,7 @@
         "yourRights": {
           "id": "your-rights",
           "title": "6. Ihre Rechte",
-          "content": [
-            "Je nach Rechtsordnung haben Sie möglicherweise folgende Rechte:"
-          ],
+          "content": ["Je nach Rechtsordnung haben Sie möglicherweise folgende Rechte:"],
           "items": [
             "<strong>Auskunft:</strong> Kopie Ihrer personenbezogenen Daten anfordern",
             "<strong>Berichtigung:</strong> Korrektur unrichtiger Daten verlangen",
@@ -1906,9 +1897,7 @@
         "childrenPrivacy": {
           "id": "children-privacy",
           "title": "9. Datenschutz für Kinder",
-          "content": [
-            "Unsere Dienste richten sich nicht an Personen unter 16 Jahren."
-          ]
+          "content": ["Unsere Dienste richten sich nicht an Personen unter 16 Jahren."]
         },
         "changes": {
           "id": "changes",
@@ -2028,16 +2017,12 @@
         "governingLaw": {
           "id": "governing-law",
           "title": "13. Anwendbares Recht",
-          "content": [
-            "Diese Bedingungen unterliegen dem Recht der Republik Estland."
-          ]
+          "content": ["Diese Bedingungen unterliegen dem Recht der Republik Estland."]
         },
         "changes": {
           "id": "changes",
           "title": "14. Änderungen dieser Bedingungen",
-          "content": [
-            "Wir können diese Bedingungen von Zeit zu Zeit aktualisieren."
-          ]
+          "content": ["Wir können diese Bedingungen von Zeit zu Zeit aktualisieren."]
         }
       },
       "contact": {
@@ -2079,9 +2064,7 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. Von uns verwendete Cookies",
-          "content": [
-            "Wir verwenden nur einen einzigen Cookie:"
-          ],
+          "content": ["Wir verwenden nur einen einzigen Cookie:"],
           "subsections": {
             "languageCookie": {
               "title": "3.1 Spracheinstellungs-Cookie",
@@ -2127,9 +2110,7 @@
         "managingCookies": {
           "id": "managing-cookies",
           "title": "6. Cookies verwalten",
-          "content": [
-            "Sie können Cookies über Ihre Browsereinstellungen verwalten:"
-          ],
+          "content": ["Sie können Cookies über Ihre Browsereinstellungen verwalten:"],
           "items": [
             "<strong>Chrome:</strong> Einstellungen → Datenschutz und Sicherheit → Cookies",
             "<strong>Firefox:</strong> Einstellungen → Datenschutz & Sicherheit → Cookies",
@@ -2140,9 +2121,7 @@
         "changes": {
           "id": "changes",
           "title": "7. Änderungen dieser Richtlinie",
-          "content": [
-            "Bei Einführung zusätzlicher Cookies aktualisieren wir diese Richtlinie."
-          ]
+          "content": ["Bei Einführung zusätzlicher Cookies aktualisieren wir diese Richtlinie."]
         }
       },
       "contact": {
@@ -2177,9 +2156,7 @@
         "prohibitedActivities": {
           "id": "prohibited-activities",
           "title": "2. Verbotene Aktivitäten",
-          "content": [
-            "Sie dürfen die Rediacc-Plattform nicht verwenden für:"
-          ],
+          "content": ["Sie dürfen die Rediacc-Plattform nicht verwenden für:"],
           "items": [
             "Kryptowährungs-Mining oder ähnliche rechenintensive Aktivitäten",
             "Versand von Spam, Phishing-E-Mails oder schädlichen Inhalten",
@@ -2195,9 +2172,7 @@
         "resourceUsage": {
           "id": "resource-usage",
           "title": "3. Ressourcennutzung",
-          "content": [
-            "Um einen fairen Zugang für alle Nutzer sicherzustellen:"
-          ],
+          "content": ["Um einen fairen Zugang für alle Nutzer sicherzustellen:"],
           "items": [
             "Ressourcen gemäß Ihrem Abonnement nutzen",
             "Automatisierte Prozesse dürfen keine übermäßige Last erzeugen",
@@ -2208,9 +2183,7 @@
         "securityRequirements": {
           "id": "security-requirements",
           "title": "4. Sicherheitsanforderungen",
-          "content": [
-            "Sie sind für die Sicherheit Ihres Kontos verantwortlich:"
-          ],
+          "content": ["Sie sind für die Sicherheit Ihres Kontos verantwortlich:"],
           "items": [
             "Verwenden Sie starke, einzigartige Passwörter",
             "Teilen Sie keine Kontodaten",
@@ -2229,9 +2202,7 @@
         "enforcement": {
           "id": "enforcement",
           "title": "6. Durchsetzung",
-          "content": [
-            "Verstöße können zu folgenden Maßnahmen führen:"
-          ],
+          "content": ["Verstöße können zu folgenden Maßnahmen führen:"],
           "items": [
             "Schriftliche Verwarnung",
             "Vorübergehende Sperrung",
@@ -2239,9 +2210,7 @@
             "Dauerhafte Kontokündigung",
             "Meldung an Strafverfolgungsbehörden"
           ],
-          "content2": [
-            "Wir bemühen uns, Sie vor Maßnahmen zu benachrichtigen."
-          ]
+          "content2": ["Wir bemühen uns, Sie vor Maßnahmen zu benachrichtigen."]
         },
         "reporting": {
           "id": "reporting",
@@ -2253,9 +2222,7 @@
         "changes": {
           "id": "changes",
           "title": "8. Änderungen dieser Richtlinie",
-          "content": [
-            "Wir können diese AUP von Zeit zu Zeit aktualisieren."
-          ]
+          "content": ["Wir können diese AUP von Zeit zu Zeit aktualisieren."]
         }
       },
       "contact": {
@@ -2290,15 +2257,11 @@
         "platformSubscriptions": {
           "id": "platform-subscriptions",
           "title": "2. Plattformabonnements",
-          "content": [
-            "Rediacc bietet verschiedene Abonnementstufen:"
-          ],
+          "content": ["Rediacc bietet verschiedene Abonnementstufen:"],
           "subsections": {
             "freeTier": {
               "title": "2.1 Kostenlose Stufe",
-              "content": [
-                "Die Community-Stufe ist dauerhaft kostenlos."
-              ]
+              "content": ["Die Community-Stufe ist dauerhaft kostenlos."]
             },
             "paidTiers": {
               "title": "2.2 Bezahlte Stufen",
@@ -2344,9 +2307,7 @@
             "Grund der Erstattungsanfrage",
             "Relevante Bestell- oder Rechnungsnummern"
           ],
-          "content2": [
-            "Wir antworten innerhalb von 5 Werktagen."
-          ]
+          "content2": ["Wir antworten innerhalb von 5 Werktagen."]
         },
         "refundProcessing": {
           "id": "refund-processing",
@@ -2358,9 +2319,7 @@
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. Nicht erstattungsfähig",
-          "content": [
-            "Folgendes ist nicht erstattungsfähig:"
-          ],
+          "content": ["Folgendes ist nicht erstattungsfähig:"],
           "items": [
             "Abonnements nach dem 14-Tage-Fenster",
             "Nutzungsbasierte Gebühren für bereits verbrauchte Ressourcen",
@@ -2372,9 +2331,7 @@
         "changes": {
           "id": "changes",
           "title": "7. Änderungen dieser Richtlinie",
-          "content": [
-            "Wir können diese Erstattungsrichtlinie von Zeit zu Zeit aktualisieren."
-          ]
+          "content": ["Wir können diese Erstattungsrichtlinie von Zeit zu Zeit aktualisieren."]
         }
       },
       "contact": {
@@ -2410,9 +2367,7 @@
         "principles": {
           "id": "principles",
           "title": "2. Unsere Telemetrie-Grundsätze",
-          "content": [
-            "Die gesamte Telemetrieerfassung bei Rediacc folgt diesen Grundsätzen:"
-          ],
+          "content": ["Die gesamte Telemetrieerfassung bei Rediacc folgt diesen Grundsätzen:"],
           "items": [
             "<strong>Datenschutz durch Design:</strong> Persönliche Identifikatoren werden vor der Übertragung anonymisiert. E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht (SHA-256) und gekürzt, Passwörter und Geheimnisse werden niemals erfasst.",
             "<strong>Minimale Erfassung:</strong> Wir erfassen nur das, was zur Verbesserung der Produktqualität und zur Diagnose von Problemen erforderlich ist. Wir erfassen keine Dateiinhalte, Datenbankinhalte, Abfrageergebnisse oder Geschäftsdaten.",
@@ -2440,9 +2395,7 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 Erfasste Daten",
-              "content": [
-                "Die Webanwendung erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die Webanwendung erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Browserinformationen:</strong> Browsername und -version, bevorzugte Sprache, Plattform (z. B. Windows, macOS, Linux), Bildschirmauflösung, Farbtiefe, User-Agent-String, Gerätespeicher (falls verfügbar), Netzwerkverbindungstyp",
                 "<strong>Benutzerkontext:</strong> Sitzungs-ID (zufällig pro Sitzung generiert), nur E-Mail-Domain (der lokale Teil wird geschwärzt, z. B. <code>***@example.com</code>), Organisationsname, Teamname",
@@ -2456,9 +2409,7 @@
             },
             "webNotCollected": {
               "title": "4.2 Nicht erfasste Daten",
-              "content": [
-                "Die Webanwendung erfasst nicht:"
-              ],
+              "content": ["Die Webanwendung erfasst nicht:"],
               "items": [
                 "Vollständige E-Mail-Adressen (der lokale Teil wird immer geschwärzt)",
                 "Passwörter, Token oder Authentifizierungsdaten",
@@ -2486,9 +2437,7 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 Erfasste Daten",
-              "content": [
-                "Die CLI erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die CLI erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Befehlsnutzung:</strong> Befehlsname, CLI-Version, Exit-Code, Erfolgs- oder Fehlerstatus",
                 "<strong>Anonymisierte Argumente:</strong> Befehlsoptionen mit geschwärzten sensiblen Werten — Passwörter, Token, Geheimnisse, API-Schlüssel und Anmeldedaten werden durch <code>[REDACTED]</code> ersetzt",
@@ -2520,9 +2469,7 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 Erfasste Daten",
-              "content": [
-                "Die Middleware erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die Middleware erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Systeminformationen:</strong> Hostname, Betriebssystemversion, .NET-Laufzeitversion",
                 "<strong>API-Aufrufe:</strong> HTTP-Methode, Endpunktpfad, Antwortstatuscode, Anfragedauer",
@@ -2550,9 +2497,7 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 Erfasste Daten",
-              "content": [
-                "Die Bridge erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die Bridge erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Warteschlangenoperationen:</strong> Aufgaben-ID, Prioritätsstufe, Operationstyp, Ausführungsdauer, Erfolgs- oder Fehlerstatus",
                 "<strong>SSH-Operationen:</strong> Zielhost, Benutzername, Portnummer, Exit-Code, Ausführungsdauer (keine Befehlsinhalte oder Ausgaben werden erfasst)",

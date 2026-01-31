@@ -58,9 +58,9 @@ export function detectCLIArch(filename: string): 'x64' | 'arm64' {
 
 export function parseGitHubRelease(release: any, lang: string): ReleaseData {
   const desktopFiles: DownloadFile[] = release.assets
-    .filter((asset: any) =>
-      asset.name.startsWith('rediacc-desktop-') &&
-      /\.(exe|dmg|AppImage|deb)$/.test(asset.name)
+    .filter(
+      (asset: any) =>
+        asset.name.startsWith('rediacc-desktop-') && /\.(exe|dmg|AppImage|deb)$/.test(asset.name)
     )
     .map((asset: any) => ({
       platform: detectFilePlatform(asset.name),
@@ -68,7 +68,7 @@ export function parseGitHubRelease(release: any, lang: string): ReleaseData {
       type: detectType(asset.name),
       url: asset.browser_download_url,
       size: formatBytes(asset.size),
-      name: asset.name
+      name: asset.name,
     }));
 
   const cliFiles: CLIFile[] = release.assets
@@ -78,7 +78,7 @@ export function parseGitHubRelease(release: any, lang: string): ReleaseData {
       arch: detectCLIArch(asset.name),
       url: asset.browser_download_url,
       size: formatBytes(asset.size),
-      name: asset.name
+      name: asset.name,
     }));
 
   return {
@@ -86,9 +86,9 @@ export function parseGitHubRelease(release: any, lang: string): ReleaseData {
     publishedAt: new Date(release.published_at).toLocaleDateString(lang === 'en' ? 'en-US' : lang, {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     }),
     desktopFiles,
-    cliFiles
+    cliFiles,
   };
 }

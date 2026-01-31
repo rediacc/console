@@ -238,10 +238,38 @@ const PreemptiveDefenseIcon = (
       fill="none"
     />
     {/* Clone servers inside shield */}
-    <rect x="16" y="16" width="7" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
-    <rect x="25" y="16" width="7" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
-    <path d="M19.5 19h-1M19.5 21h-1M19.5 23h-1" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-    <path d="M28.5 19h-1M28.5 21h-1M28.5 23h-1" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+    <rect
+      x="16"
+      y="16"
+      width="7"
+      height="10"
+      rx="1"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      fill="none"
+    />
+    <rect
+      x="25"
+      y="16"
+      width="7"
+      height="10"
+      rx="1"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      fill="none"
+    />
+    <path
+      d="M19.5 19h-1M19.5 21h-1M19.5 23h-1"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeLinecap="round"
+    />
+    <path
+      d="M28.5 19h-1M28.5 21h-1M28.5 23h-1"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeLinecap="round"
+    />
     {/* Scanning beam */}
     <path
       d="M14 30l10 4 10-4"

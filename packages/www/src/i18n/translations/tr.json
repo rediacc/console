@@ -668,9 +668,7 @@
                 "Standart Uygulama (9.999 ABD Doları) veya katmanlı paketler (Küçük 7.499 ABD Doları · Orta 14.999 ABD Doları · Büyük 29.999 ABD Doları · Kurumsal özel)",
                 "Acil Durum Müdahale katılımı (talep üzerine 29.999 ABD doları)"
               ],
-              "included": [
-                "Self servis belgeler, video eğitimleri ve topluluk forumu"
-              ],
+              "included": ["Self servis belgeler, video eğitimleri ve topluluk forumu"],
               "planId": "toplum"
             },
             {
@@ -1004,10 +1002,7 @@
       },
       "trust": {
         "heading": "Kurumsal Düzeyde Güvenlik ve Güvenilirlik",
-        "items": [
-          "Banka düzeyinde şifreleme",
-          "%99,9 kesintisiz çalışma taahhüdü"
-        ]
+        "items": ["Banka düzeyinde şifreleme", "%99,9 kesintisiz çalışma taahhüdü"]
       },
       "ui": {
         "anchor": "Stratejik çapa",
@@ -1795,9 +1790,7 @@
         "informationWeCollect": {
           "id": "information-we-collect",
           "title": "2. Topladığımız Bilgiler",
-          "content": [
-            "Hizmetlerimizi sunmak için gereken minimum bilgiyi topluyoruz."
-          ],
+          "content": ["Hizmetlerimizi sunmak için gereken minimum bilgiyi topluyoruz."],
           "subsections": {
             "contactFormData": {
               "title": "2.1 İletişim Formu Verileri",
@@ -1835,9 +1828,7 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. Bilgilerinizi Nasıl Kullanıyoruz",
-          "content": [
-            "Topladığımız bilgileri şu amaçlarla kullanıyoruz:"
-          ],
+          "content": ["Topladığımız bilgileri şu amaçlarla kullanıyoruz:"],
           "items": [
             "Sorularınıza yanıt vermek",
             "Rediacc platformunu sağlamak, işletmek ve sürdürmek",
@@ -1851,9 +1842,7 @@
         "dataSharing": {
           "id": "data-sharing",
           "title": "4. Veri Paylaşımı ve Üçüncü Taraflar",
-          "content": [
-            "Kişisel verilerinizi üçüncü taraflara satmıyoruz veya kiralamıyoruz."
-          ],
+          "content": ["Kişisel verilerinizi üçüncü taraflara satmıyoruz veya kiralamıyoruz."],
           "items": [
             "Platformu işletmemize yardımcı olan <strong>hizmet sağlayıcılar</strong>",
             "Çerezsiz anonim web analitiği için <strong>Plausible Analytics</strong>",
@@ -1873,9 +1862,7 @@
         "yourRights": {
           "id": "your-rights",
           "title": "6. Haklarınız",
-          "content": [
-            "Yargı yetki alanınıza bağlı olarak aşağıdaki haklara sahip olabilirsiniz:"
-          ],
+          "content": ["Yargı yetki alanınıza bağlı olarak aşağıdaki haklara sahip olabilirsiniz:"],
           "items": [
             "<strong>Erişim:</strong> Kişisel verilerinizin bir kopyasını talep etme",
             "<strong>Düzeltme:</strong> Yanlış verilerin düzeltilmesini talep etme",
@@ -1906,9 +1893,7 @@
         "childrenPrivacy": {
           "id": "children-privacy",
           "title": "9. Çocukların Gizliliği",
-          "content": [
-            "Hizmetlerimiz 16 yaşın altındaki bireylere yönelik değildir."
-          ]
+          "content": ["Hizmetlerimiz 16 yaşın altındaki bireylere yönelik değildir."]
         },
         "changes": {
           "id": "changes",
@@ -1986,9 +1971,7 @@
         "intellectualProperty": {
           "id": "intellectual-property",
           "title": "7. Fikri Mülkiyet",
-          "content": [
-            "Hizmetler Rediacc'e aittir ve fikri mülkiyet yasalarıyla korunmaktadır."
-          ]
+          "content": ["Hizmetler Rediacc'e aittir ve fikri mülkiyet yasalarıyla korunmaktadır."]
         },
         "dataOwnership": {
           "id": "data-ownership",
@@ -2028,16 +2011,12 @@
         "governingLaw": {
           "id": "governing-law",
           "title": "13. Geçerli Hukuk",
-          "content": [
-            "Bu koşullar Estonya Cumhuriyeti yasalarına tabidir."
-          ]
+          "content": ["Bu koşullar Estonya Cumhuriyeti yasalarına tabidir."]
         },
         "changes": {
           "id": "changes",
           "title": "14. Bu Koşullardaki Değişiklikler",
-          "content": [
-            "Bu koşulları zaman zaman güncelleyebiliriz."
-          ]
+          "content": ["Bu koşulları zaman zaman güncelleyebiliriz."]
         }
       },
       "contact": {
@@ -2079,9 +2058,7 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. Kullandığımız Çerezler",
-          "content": [
-            "Yalnızca bir çerez kullanıyoruz:"
-          ],
+          "content": ["Yalnızca bir çerez kullanıyoruz:"],
           "subsections": {
             "languageCookie": {
               "title": "3.1 Dil Tercihi Çerezi",
@@ -2094,9 +2071,7 @@
         "whatWeDontUse": {
           "id": "what-we-dont-use",
           "title": "4. Kullanmadıklarımız",
-          "content": [
-            "Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"
-          ],
+          "content": ["Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"],
           "items": [
             "<strong>İzleme çerezleri</strong> — Google Analytics, Facebook Pixel veya izleme çerezi yok",
             "<strong>Üçüncü taraf çerezleri</strong> — Harici hizmetler çerez yerleştirmiyor",
@@ -2127,9 +2102,7 @@
         "managingCookies": {
           "id": "managing-cookies",
           "title": "6. Çerezleri Yönetme",
-          "content": [
-            "Çerezleri tarayıcı ayarlarınızdan yönetebilirsiniz:"
-          ],
+          "content": ["Çerezleri tarayıcı ayarlarınızdan yönetebilirsiniz:"],
           "items": [
             "<strong>Chrome:</strong> Ayarlar → Gizlilik ve güvenlik → Çerezler",
             "<strong>Firefox:</strong> Ayarlar → Gizlilik ve Güvenlik → Çerezler",
@@ -2140,9 +2113,7 @@
         "changes": {
           "id": "changes",
           "title": "7. Bu Politikadaki Değişiklikler",
-          "content": [
-            "Ek çerezler kullanmaya başlarsak, bu politikayı güncelleyeceğiz."
-          ]
+          "content": ["Ek çerezler kullanmaya başlarsak, bu politikayı güncelleyeceğiz."]
         }
       },
       "contact": {
@@ -2177,9 +2148,7 @@
         "prohibitedActivities": {
           "id": "prohibited-activities",
           "title": "2. Yasaklanan Faaliyetler",
-          "content": [
-            "Rediacc platformunu şu amaçlarla kullanamazsınız:"
-          ],
+          "content": ["Rediacc platformunu şu amaçlarla kullanamazsınız:"],
           "items": [
             "Kripto para madenciliği veya benzer yoğun hesaplama faaliyetleri",
             "Spam, kimlik avı veya kötü amaçlı içerik gönderme",
@@ -2195,9 +2164,7 @@
         "resourceUsage": {
           "id": "resource-usage",
           "title": "3. Kaynak Kullanımı",
-          "content": [
-            "Tüm kullanıcılara adil erişim sağlamak için:"
-          ],
+          "content": ["Tüm kullanıcılara adil erişim sağlamak için:"],
           "items": [
             "Kaynakları abonelik sınırlarınıza göre kullanın",
             "Otomatik süreçler aşırı yük oluşturmamalıdır",
@@ -2208,9 +2175,7 @@
         "securityRequirements": {
           "id": "security-requirements",
           "title": "4. Güvenlik Gereksinimleri",
-          "content": [
-            "Hesabınızın güvenliğinden siz sorumlusunuz:"
-          ],
+          "content": ["Hesabınızın güvenliğinden siz sorumlusunuz:"],
           "items": [
             "Güçlü, benzersiz parolalar kullanın",
             "Hesap bilgilerinizi paylaşmayın",
@@ -2229,9 +2194,7 @@
         "enforcement": {
           "id": "enforcement",
           "title": "6. Uygulama",
-          "content": [
-            "İhlaller şu sonuçlara yol açabilir:"
-          ],
+          "content": ["İhlaller şu sonuçlara yol açabilir:"],
           "items": [
             "Yazılı uyarı",
             "Geçici askıya alma",
@@ -2239,9 +2202,7 @@
             "Hesabın kalıcı olarak kapatılması",
             "Yetkililere bildirim"
           ],
-          "content2": [
-            "İşlem yapmadan önce sizi bilgilendirmek için makul çaba göstereceğiz."
-          ]
+          "content2": ["İşlem yapmadan önce sizi bilgilendirmek için makul çaba göstereceğiz."]
         },
         "reporting": {
           "id": "reporting",
@@ -2253,9 +2214,7 @@
         "changes": {
           "id": "changes",
           "title": "8. Bu Politikadaki Değişiklikler",
-          "content": [
-            "Bu AUP'yi zaman zaman güncelleyebiliriz."
-          ]
+          "content": ["Bu AUP'yi zaman zaman güncelleyebiliriz."]
         }
       },
       "contact": {
@@ -2290,21 +2249,15 @@
         "platformSubscriptions": {
           "id": "platform-subscriptions",
           "title": "2. Platform Abonelikleri",
-          "content": [
-            "Rediacc birden fazla abonelik seviyesi sunar:"
-          ],
+          "content": ["Rediacc birden fazla abonelik seviyesi sunar:"],
           "subsections": {
             "freeTier": {
               "title": "2.1 Ücretsiz Seviye",
-              "content": [
-                "Community seviyesi sonsuza kadar ücretsizdir."
-              ]
+              "content": ["Community seviyesi sonsuza kadar ücretsizdir."]
             },
             "paidTiers": {
               "title": "2.2 Ücretli Seviyeler",
-              "content": [
-                "Ücretli abonelikler genel olarak iade edilemez. İstisnalar:"
-              ],
+              "content": ["Ücretli abonelikler genel olarak iade edilemez. İstisnalar:"],
               "items": [
                 "<strong>İlk 14 gün:</strong> Yeni aboneler için tam iade",
                 "<strong>Hizmet kesintisi:</strong> Uzun süreli kesintiler için orantılı kredi (48 saatten fazla)",
@@ -2322,9 +2275,7 @@
         "professionalServices": {
           "id": "professional-services",
           "title": "3. Profesyonel Hizmetler",
-          "content": [
-            "Profesyonel hizmetler saatlik olarak faturalandırılır ($400–$1.200/saat):"
-          ],
+          "content": ["Profesyonel hizmetler saatlik olarak faturalandırılır ($400–$1.200/saat):"],
           "items": [
             "<strong>Çalışma başlamadan önce:</strong> Tam iade",
             "<strong>Çalışma süresince:</strong> Yalnızca çalışılan saatler faturalandırılır",
@@ -2344,23 +2295,17 @@
             "İade talebinizin nedeni",
             "İlgili sipariş veya fatura numaraları"
           ],
-          "content2": [
-            "5 iş günü içinde yanıt vereceğiz."
-          ]
+          "content2": ["5 iş günü içinde yanıt vereceğiz."]
         },
         "refundProcessing": {
           "id": "refund-processing",
           "title": "5. İade İşleme",
-          "content": [
-            "Onaylanan iadeler, orijinal ödeme yöntemine 10 iş günü içinde işlenecektir."
-          ]
+          "content": ["Onaylanan iadeler, orijinal ödeme yöntemine 10 iş günü içinde işlenecektir."]
         },
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. İade Edilemez Kalemler",
-          "content": [
-            "Aşağıdakiler iade kapsamında değildir:"
-          ],
+          "content": ["Aşağıdakiler iade kapsamında değildir:"],
           "items": [
             "14 günlük süreden sonra iptal edilen abonelikler",
             "Tüketilen kaynaklar için kullanım bazlı ücretler",
@@ -2372,9 +2317,7 @@
         "changes": {
           "id": "changes",
           "title": "7. Bu Politikadaki Değişiklikler",
-          "content": [
-            "Bu İade Politikasını zaman zaman güncelleyebiliriz."
-          ]
+          "content": ["Bu İade Politikasını zaman zaman güncelleyebiliriz."]
         }
       },
       "contact": {
@@ -2410,9 +2353,7 @@
         "principles": {
           "id": "principles",
           "title": "2. Telemetri İlkelerimiz",
-          "content": [
-            "Rediacc'taki tüm telemetri toplama işlemleri şu ilkeleri takip eder:"
-          ],
+          "content": ["Rediacc'taki tüm telemetri toplama işlemleri şu ilkeleri takip eder:"],
           "items": [
             "<strong>Tasarımdan gizlilik:</strong> Kişisel tanımlayıcılar iletim öncesinde anonimleştirilir. E-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir (SHA-256) ve kısaltılır, şifreler ve gizli bilgiler asla toplanmaz.",
             "<strong>Minimum toplama:</strong> Yalnızca ürün kalitesini artırmak ve sorunları teşhis etmek için gerekli olanı toplarız. Dosya içeriklerini, veritabanı içeriklerini, sorgu sonuçlarını veya iş verilerini toplamayız.",
@@ -2440,9 +2381,7 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 Toplanan Veriler",
-              "content": [
-                "Web Uygulaması aşağıdaki veri kategorilerini toplar:"
-              ],
+              "content": ["Web Uygulaması aşağıdaki veri kategorilerini toplar:"],
               "items": [
                 "<strong>Tarayıcı bilgileri:</strong> tarayıcı adı ve sürümü, tercih edilen dil, platform (ör. Windows, macOS, Linux), ekran çözünürlüğü, renk derinliği, kullanıcı aracı dizesi, cihaz belleği (varsa), ağ bağlantı türü",
                 "<strong>Kullanıcı bağlamı:</strong> oturum kimliği (her oturum için rastgele oluşturulur), yalnızca e-posta alan adı (yerel kısım gizlenir, ör. <code>***@example.com</code>), kuruluş adı, ekip adı",
@@ -2456,9 +2395,7 @@
             },
             "webNotCollected": {
               "title": "4.2 Toplanmayan Veriler",
-              "content": [
-                "Web Uygulaması şunları toplamaz:"
-              ],
+              "content": ["Web Uygulaması şunları toplamaz:"],
               "items": [
                 "Tam e-posta adresleri (yerel kısım her zaman gizlenir)",
                 "Şifreler, tokenlar veya kimlik doğrulama bilgileri",
@@ -2486,9 +2423,7 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 Toplanan Veriler",
-              "content": [
-                "CLI aşağıdaki veri kategorilerini toplar:"
-              ],
+              "content": ["CLI aşağıdaki veri kategorilerini toplar:"],
               "items": [
                 "<strong>Komut kullanımı:</strong> komut adı, CLI sürümü, çıkış kodu, başarı veya başarısızlık durumu",
                 "<strong>Anonimleştirilmiş argümanlar:</strong> hassas değerleri gizlenmiş komut seçenekleri — şifreler, tokenlar, gizli bilgiler, API anahtarları ve kimlik bilgileri <code>[REDACTED]</code> ile değiştirilir",
@@ -2520,9 +2455,7 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 Toplanan Veriler",
-              "content": [
-                "Middleware aşağıdaki veri kategorilerini toplar:"
-              ],
+              "content": ["Middleware aşağıdaki veri kategorilerini toplar:"],
               "items": [
                 "<strong>Sistem bilgileri:</strong> ana bilgisayar adı, işletim sistemi sürümü, .NET çalışma zamanı sürümü",
                 "<strong>API çağrıları:</strong> HTTP yöntemi, uç nokta yolu, yanıt durum kodu, istek süresi",
@@ -2550,9 +2483,7 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 Toplanan Veriler",
-              "content": [
-                "Bridge aşağıdaki veri kategorilerini toplar:"
-              ],
+              "content": ["Bridge aşağıdaki veri kategorilerini toplar:"],
               "items": [
                 "<strong>Kuyruk işlemleri:</strong> görev kimliği, öncelik düzeyi, işlem türü, yürütme süresi, başarı veya başarısızlık durumu",
                 "<strong>SSH işlemleri:</strong> hedef ana bilgisayar, kullanıcı adı, port numarası, çıkış kodu, yürütme süresi (komut içeriği veya çıktı toplanmaz)",
@@ -2676,20 +2607,12 @@
         "title": "Her Zaman Çoklu Bulut"
       },
       {
-        "benefits": [
-          "Otomatik doğrulama",
-          "Uzatılmış saklama",
-          "Dakikalar içinde kurtarın"
-        ],
+        "benefits": ["Otomatik doğrulama", "Uzatılmış saklama", "Dakikalar içinde kurtarın"],
         "description": "Doğrulanmış kurtarma garantilidir. Yedeklemeler test edildi. Tarihi tamamlayın.",
         "title": "Doğrulanmış Yedeklemeler"
       },
       {
-        "benefits": [
-          "Kontrol ettiğiniz şifreleme",
-          "Tam denetim izi",
-          "Taşıma açısından güvenli"
-        ],
+        "benefits": ["Kontrol ettiğiniz şifreleme", "Tam denetim izi", "Taşıma açısından güvenli"],
         "description": "Her şey şifrelendi. Her şey denetlendi. Tam kontrol.",
         "title": "Şifreleme Kontrolü"
       },

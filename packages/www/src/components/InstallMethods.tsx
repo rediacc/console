@@ -56,16 +56,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, label, code, copyText, copied
     <div className="code-block">
       <div className="code-header">
         <span>{label}</span>
-        <button
-          type="button"
-          className={`copy-btn${copied ? ' copied' : ''}`}
-          onClick={handleCopy}
-        >
+        <button type="button" className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
           <span className="copy-btn-icon">{copied ? <CheckIcon /> : <CopyIcon />}</span>
           <span>{copied ? copiedText : copyText}</span>
         </button>
       </div>
-      <pre><code id={`code-${id}`} ref={codeRef}>{code}</code></pre>
+      <pre>
+        <code id={`code-${id}`} ref={codeRef}>
+          {code}
+        </code>
+      </pre>
     </div>
   );
 };
@@ -73,7 +73,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, label, code, copyText, copied
 /** Return code blocks for a given method, optionally filtered by platform */
 function getMethodBlocks(
   method: InstallMethod,
-  filter: FilterTab,
+  filter: FilterTab
 ): { id: string; label: string; code: string }[] {
   switch (method) {
     case 'quick': {
@@ -142,7 +142,7 @@ const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
 
   // Filter methods: "all" shows everything, platform filter hides unsupported methods
   const visibleMethods = METHOD_META.filter(
-    (m) => filter === 'all' || m.platforms.includes(filter as Platform),
+    (m) => filter === 'all' || m.platforms.includes(filter as Platform)
   );
 
   const filterTabs: { key: FilterTab; label: string; icon?: React.FC }[] = [

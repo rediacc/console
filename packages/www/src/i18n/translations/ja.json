@@ -1004,10 +1004,7 @@
       },
       "trust": {
         "heading": "エンタープライズグレードのセキュリティと信頼性",
-        "items": [
-          "銀行レベルの暗号化",
-          "99.9% の稼働率を約束"
-        ]
+        "items": ["銀行レベルの暗号化", "99.9% の稼働率を約束"]
       },
       "ui": {
         "anchor": "戦略的アンカー",
@@ -1795,9 +1792,7 @@
         "informationWeCollect": {
           "id": "information-we-collect",
           "title": "2. 収集する情報",
-          "content": [
-            "当社はサービス提供に必要な最小限の情報を収集します。"
-          ],
+          "content": ["当社はサービス提供に必要な最小限の情報を収集します。"],
           "subsections": {
             "contactFormData": {
               "title": "2.1 お問い合わせフォームデータ",
@@ -1835,9 +1830,7 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. 情報の利用方法",
-          "content": [
-            "収集した情報は以下の目的で使用します："
-          ],
+          "content": ["収集した情報は以下の目的で使用します："],
           "items": [
             "お問い合わせへの対応",
             "Rediaccプラットフォームの提供・運営・維持",
@@ -1851,9 +1844,7 @@
         "dataSharing": {
           "id": "data-sharing",
           "title": "4. データ共有と第三者",
-          "content": [
-            "当社はお客様の個人データを第三者に販売・貸与しません。"
-          ],
+          "content": ["当社はお客様の個人データを第三者に販売・貸与しません。"],
           "items": [
             "プラットフォーム運営を支援する<strong>サービスプロバイダー</strong>",
             "Cookieレスの匿名ウェブ分析のための<strong>Plausible Analytics</strong>",
@@ -1873,9 +1864,7 @@
         "yourRights": {
           "id": "your-rights",
           "title": "6. お客様の権利",
-          "content": [
-            "管轄地域に応じて、以下の権利を有する場合があります："
-          ],
+          "content": ["管轄地域に応じて、以下の権利を有する場合があります："],
           "items": [
             "<strong>アクセス：</strong>個人データのコピーを請求する権利",
             "<strong>訂正：</strong>不正確なデータの訂正を請求する権利",
@@ -1906,9 +1895,7 @@
         "childrenPrivacy": {
           "id": "children-privacy",
           "title": "9. 児童のプライバシー",
-          "content": [
-            "当社のサービスは16歳未満の方を対象としていません。"
-          ]
+          "content": ["当社のサービスは16歳未満の方を対象としていません。"]
         },
         "changes": {
           "id": "changes",
@@ -1986,9 +1973,7 @@
         "intellectualProperty": {
           "id": "intellectual-property",
           "title": "7. 知的財産",
-          "content": [
-            "サービスはRediaccの所有物であり、知的財産法により保護されています。"
-          ]
+          "content": ["サービスはRediaccの所有物であり、知的財産法により保護されています。"]
         },
         "dataOwnership": {
           "id": "data-ownership",
@@ -2028,16 +2013,12 @@
         "governingLaw": {
           "id": "governing-law",
           "title": "13. 準拠法",
-          "content": [
-            "本規約はエストニア共和国の法律に準拠します。"
-          ]
+          "content": ["本規約はエストニア共和国の法律に準拠します。"]
         },
         "changes": {
           "id": "changes",
           "title": "14. 規約の変更",
-          "content": [
-            "本規約は随時更新される場合があります。"
-          ]
+          "content": ["本規約は随時更新される場合があります。"]
         }
       },
       "contact": {
@@ -2079,9 +2060,7 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. 使用するCookie",
-          "content": [
-            "当社が使用するCookieは1つだけです："
-          ],
+          "content": ["当社が使用するCookieは1つだけです："],
           "subsections": {
             "languageCookie": {
               "title": "3.1 言語設定Cookie",
@@ -2094,9 +2073,7 @@
         "whatWeDontUse": {
           "id": "what-we-dont-use",
           "title": "4. 使用しないもの",
-          "content": [
-            "以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："
-          ],
+          "content": ["以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："],
           "items": [
             "<strong>トラッキングCookie</strong> — Google Analytics、Facebook Pixelなどのトラッキングは不使用",
             "<strong>サードパーティCookie</strong> — 外部サービスによるCookieは設定されません",
@@ -2127,9 +2104,7 @@
         "managingCookies": {
           "id": "managing-cookies",
           "title": "6. Cookieの管理",
-          "content": [
-            "ブラウザの設定でCookieを管理できます："
-          ],
+          "content": ["ブラウザの設定でCookieを管理できます："],
           "items": [
             "<strong>Chrome：</strong>設定 → プライバシーとセキュリティ → Cookie",
             "<strong>Firefox：</strong>設定 → プライバシーとセキュリティ → Cookie",
@@ -2140,9 +2115,7 @@
         "changes": {
           "id": "changes",
           "title": "7. ポリシーの変更",
-          "content": [
-            "追加のCookieを導入する場合、このポリシーを更新します。"
-          ]
+          "content": ["追加のCookieを導入する場合、このポリシーを更新します。"]
         }
       },
       "contact": {
@@ -2177,9 +2150,7 @@
         "prohibitedActivities": {
           "id": "prohibited-activities",
           "title": "2. 禁止事項",
-          "content": [
-            "Rediaccプラットフォームを以下の目的で使用することはできません："
-          ],
+          "content": ["Rediaccプラットフォームを以下の目的で使用することはできません："],
           "items": [
             "暗号通貨マイニングまたは同様の計算集約的な活動",
             "スパム、フィッシング、悪意のあるコンテンツの送信",
@@ -2195,9 +2166,7 @@
         "resourceUsage": {
           "id": "resource-usage",
           "title": "3. リソース使用",
-          "content": [
-            "すべてのユーザーへの公平なアクセスを確保するために："
-          ],
+          "content": ["すべてのユーザーへの公平なアクセスを確保するために："],
           "items": [
             "サブスクリプション制限に従ってリソースを使用",
             "自動化プロセスは過度な負荷を生成してはなりません",
@@ -2208,9 +2177,7 @@
         "securityRequirements": {
           "id": "security-requirements",
           "title": "4. セキュリティ要件",
-          "content": [
-            "アカウントのセキュリティはお客様の責任です："
-          ],
+          "content": ["アカウントのセキュリティはお客様の責任です："],
           "items": [
             "強力でユニークなパスワードを使用",
             "アカウント資格情報を共有しない",
@@ -2229,9 +2196,7 @@
         "enforcement": {
           "id": "enforcement",
           "title": "6. 執行",
-          "content": [
-            "違反は以下の措置につながる場合があります："
-          ],
+          "content": ["違反は以下の措置につながる場合があります："],
           "items": [
             "書面による警告",
             "一時的な停止",
@@ -2239,9 +2204,7 @@
             "アカウントの永久停止",
             "法執行機関への報告"
           ],
-          "content2": [
-            "措置前に通知するよう合理的な努力をします。"
-          ]
+          "content2": ["措置前に通知するよう合理的な努力をします。"]
         },
         "reporting": {
           "id": "reporting",
@@ -2253,9 +2216,7 @@
         "changes": {
           "id": "changes",
           "title": "8. ポリシーの変更",
-          "content": [
-            "このAUPは随時更新される場合があります。"
-          ]
+          "content": ["このAUPは随時更新される場合があります。"]
         }
       },
       "contact": {
@@ -2290,21 +2251,15 @@
         "platformSubscriptions": {
           "id": "platform-subscriptions",
           "title": "2. プラットフォームサブスクリプション",
-          "content": [
-            "Rediaccは複数のサブスクリプションティアを提供しています："
-          ],
+          "content": ["Rediaccは複数のサブスクリプションティアを提供しています："],
           "subsections": {
             "freeTier": {
               "title": "2.1 無料ティア",
-              "content": [
-                "Communityティアは永久無料です。"
-              ]
+              "content": ["Communityティアは永久無料です。"]
             },
             "paidTiers": {
               "title": "2.2 有料ティア",
-              "content": [
-                "有料サブスクリプションは原則として返金不可です。例外："
-              ],
+              "content": ["有料サブスクリプションは原則として返金不可です。例外："],
               "items": [
                 "<strong>最初の14日間：</strong>新規加入者への全額返金",
                 "<strong>サービス障害：</strong>長時間の障害（48時間以上）に対する按分クレジット",
@@ -2322,9 +2277,7 @@
         "professionalServices": {
           "id": "professional-services",
           "title": "3. プロフェッショナルサービス",
-          "content": [
-            "プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："
-          ],
+          "content": ["プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："],
           "items": [
             "<strong>作業開始前：</strong>全額返金",
             "<strong>契約期間中：</strong>作業時間分のみ請求",
@@ -2344,23 +2297,17 @@
             "返金申請の理由",
             "関連する注文番号または請求書番号"
           ],
-          "content2": [
-            "5営業日以内にご返答いたします。"
-          ]
+          "content2": ["5営業日以内にご返答いたします。"]
         },
         "refundProcessing": {
           "id": "refund-processing",
           "title": "5. 返金処理",
-          "content": [
-            "承認された返金は10営業日以内に元の支払方法に処理されます。"
-          ]
+          "content": ["承認された返金は10営業日以内に元の支払方法に処理されます。"]
         },
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. 返金不可の項目",
-          "content": [
-            "以下は返金の対象外です："
-          ],
+          "content": ["以下は返金の対象外です："],
           "items": [
             "14日間の期間後にキャンセルされたサブスクリプション",
             "すでに消費されたリソースの使用量ベースの料金",
@@ -2372,9 +2319,7 @@
         "changes": {
           "id": "changes",
           "title": "7. ポリシーの変更",
-          "content": [
-            "この返金ポリシーは随時更新される場合があります。"
-          ]
+          "content": ["この返金ポリシーは随時更新される場合があります。"]
         }
       },
       "contact": {
@@ -2410,9 +2355,7 @@
         "principles": {
           "id": "principles",
           "title": "2. テレメトリの原則",
-          "content": [
-            "Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："
-          ],
+          "content": ["Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："],
           "items": [
             "<strong>プライバシー・バイ・デザイン：</strong>個人識別子は送信前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化（SHA-256）および切り詰められ、パスワードやシークレットは一切収集されません。",
             "<strong>最小限の収集：</strong>製品品質の向上と問題の診断に必要なデータのみを収集します。ファイル内容、データベース内容、クエリ結果、またはビジネスデータは収集しません。",
@@ -2440,9 +2383,7 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 収集データ",
-              "content": [
-                "Webアプリケーションは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["Webアプリケーションは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>ブラウザ情報：</strong>ブラウザ名とバージョン、優先言語、プラットフォーム（例：Windows、macOS、Linux）、画面解像度、色深度、ユーザーエージェント文字列、デバイスメモリ（利用可能な場合）、ネットワーク接続タイプ",
                 "<strong>ユーザーコンテキスト：</strong>セッションID（セッションごとにランダム生成）、メールドメインのみ（ローカル部分は除去、例：<code>***@example.com</code>）、組織名、チーム名",
@@ -2456,9 +2397,7 @@
             },
             "webNotCollected": {
               "title": "4.2 収集しないデータ",
-              "content": [
-                "Webアプリケーションは以下を収集しません："
-              ],
+              "content": ["Webアプリケーションは以下を収集しません："],
               "items": [
                 "完全なメールアドレス（ローカル部分は常に除去）",
                 "パスワード、トークン、または認証資格情報",
@@ -2486,9 +2425,7 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 収集データ",
-              "content": [
-                "CLIは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["CLIは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>コマンド使用状況：</strong>コマンド名、CLIバージョン、終了コード、成功または失敗ステータス",
                 "<strong>匿名化された引数：</strong>機密値が除去されたコマンドオプション — パスワード、トークン、シークレット、APIキー、および資格情報は<code>[REDACTED]</code>に置換されます",
@@ -2500,9 +2437,7 @@
             },
             "cliOptOut": {
               "title": "5.2 オプトアウト方法",
-              "content": [
-                "以下のいずれかの方法でCLIテレメトリを無効にできます："
-              ],
+              "content": ["以下のいずれかの方法でCLIテレメトリを無効にできます："],
               "items": [
                 "環境変数<code>REDIACC_TELEMETRY=off</code>を設定（<code>false</code>または<code>0</code>も使用可能）",
                 "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",
@@ -2520,9 +2455,7 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 収集データ",
-              "content": [
-                "ミドルウェアは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["ミドルウェアは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>システム情報：</strong>ホスト名、オペレーティングシステムバージョン、.NETランタイムバージョン",
                 "<strong>API呼び出し：</strong>HTTPメソッド、エンドポイントパス、レスポンスステータスコード、リクエスト所要時間",
@@ -2550,9 +2483,7 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 収集データ",
-              "content": [
-                "Bridgeは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["Bridgeは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>キュー操作：</strong>タスクID、優先度レベル、操作タイプ、実行所要時間、成功または失敗ステータス",
                 "<strong>SSH操作：</strong>ターゲットホスト、ユーザー名、ポート番号、終了コード、実行所要時間（コマンド内容や出力は収集されません）",
@@ -2563,9 +2494,7 @@
             },
             "bridgeOptOut": {
               "title": "7.2 オプトアウト方法",
-              "content": [
-                "以下のいずれかの方法でBridgeテレメトリを無効にできます："
-              ],
+              "content": ["以下のいずれかの方法でBridgeテレメトリを無効にできます："],
               "items": [
                 "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
                 "環境変数<code>DO_NOT_TRACK=1</code>を設定（<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>標準に準拠）"
@@ -2676,29 +2605,17 @@
         "title": "常にマルチクラウド"
       },
       {
-        "benefits": [
-          "自動検証",
-          "長期保存",
-          "数分で回復します"
-        ],
+        "benefits": ["自動検証", "長期保存", "数分で回復します"],
         "description": "検証済みの回復が保証されています。 テスト済みのバックアップ。 完全な履歴。",
         "title": "検証済みのバックアップ"
       },
       {
-        "benefits": [
-          "あなたが制御する暗号化",
-          "完全な監査証跡",
-          "移行しても安全"
-        ],
+        "benefits": ["あなたが制御する暗号化", "完全な監査証跡", "移行しても安全"],
         "description": "すべてが暗号化されています。 すべてが監査されました。 完全なコントロール。",
         "title": "暗号化制御"
       },
       {
-        "benefits": [
-          "60秒の環境プロビジョニング",
-          "本番環境と同一のクローン",
-          "自動 Git 統合"
-        ],
+        "benefits": ["60秒の環境プロビジョニング", "本番環境と同一のクローン", "自動 Git 統合"],
         "description": "インスタント本番クローン。 DevOps チケットはゼロです。 60秒環境。",
         "title": "開発環境"
       },
