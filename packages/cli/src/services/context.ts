@@ -483,6 +483,21 @@ class ContextService {
   }
 
   /**
+   * Require the current context to be in local or S3 mode.
+   * If a context name is provided, fetches it directly; otherwise uses the current context.
+   */
+  private async requireLocalOrS3Mode(contextName?: string): Promise<NamedContext> {
+    const context = contextName ? await this.get(contextName) : await this.getCurrent();
+    if (!context) {
+      throw new Error('No active context');
+    }
+    if (context.mode !== 'local' && context.mode !== 's3') {
+      throw new Error(`Context "${context.name}" is not in local or S3 mode`);
+    }
+    return context;
+  }
+
+  /**
    * Get local configuration for the current context.
    * Throws if context is not in local or s3 mode.
    */
@@ -491,13 +506,7 @@ class ContextService {
     ssh: LocalSSHConfig;
     renetPath: string;
   }> {
-    const context = await this.getCurrent();
-    if (!context) {
-      throw new Error('No active context');
-    }
-    if (context.mode !== 'local' && context.mode !== 's3') {
-      throw new Error(`Context "${context.name}" is not in local or S3 mode`);
-    }
+    const context = await this.requireLocalOrS3Mode();
     if (!context.machines || Object.keys(context.machines).length === 0) {
       throw new Error(`Context "${context.name}" has no machines configured`);
     }
@@ -551,10 +560,7 @@ class ContextService {
    */
   async addLocalMachine(machineName: string, config: LocalMachineConfig): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local' && context?.mode !== 's3') {
-      throw new Error('Current context is not in local or S3 mode');
-    }
+    const context = await this.requireLocalOrS3Mode(name);
 
     const existingMachines = context.machines ?? {};
     await this.update(name, {
@@ -570,10 +576,7 @@ class ContextService {
    */
   async removeLocalMachine(machineName: string): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local' && context?.mode !== 's3') {
-      throw new Error('Current context is not in local or S3 mode');
-    }
+    const context = await this.requireLocalOrS3Mode(name);
 
     if (!context.machines?.[machineName]) {
       throw new Error(`Machine "${machineName}" not found`);
@@ -588,13 +591,7 @@ class ContextService {
    * List machines in the current local/s3 context.
    */
   async listLocalMachines(): Promise<{ name: string; config: LocalMachineConfig }[]> {
-    const context = await this.getCurrent();
-    if (!context) {
-      throw new Error('No active context');
-    }
-    if (context.mode !== 'local' && context.mode !== 's3') {
-      throw new Error('Current context is not in local or S3 mode');
-    }
+    const context = await this.requireLocalOrS3Mode();
     return Object.entries(context.machines ?? {}).map(([name, config]) => ({
       name,
       config,
@@ -606,10 +603,7 @@ class ContextService {
    */
   async setLocalSSH(ssh: LocalSSHConfig): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local' && context?.mode !== 's3') {
-      throw new Error('Current context is not in local or S3 mode');
-    }
+    await this.requireLocalOrS3Mode(name);
     await this.update(name, { ssh });
   }
 
@@ -618,10 +612,7 @@ class ContextService {
    */
   async setRenetPath(renetPath: string): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local' && context?.mode !== 's3') {
-      throw new Error('Current context is not in local or S3 mode');
-    }
+    await this.requireLocalOrS3Mode(name);
     await this.update(name, { renetPath });
   }
 }
