@@ -298,10 +298,8 @@ export function registerContextCommands(program: Command): void {
           throw new ValidationError(t('commands.context.createS3.errorSecretAccessKeyRequired'));
         }
 
-        // Prompt for master password (optional — leave empty to skip encryption)
-        const masterPassword =
-          options.masterPassword ??
-          (await askPassword(t('commands.context.createS3.promptMasterPassword')));
+        // Master password is optional — omitting it means no encryption
+        const masterPassword: string | undefined = options.masterPassword;
 
         let storedSecretAccessKey: string;
         let encryptedMasterPassword: string | undefined;
