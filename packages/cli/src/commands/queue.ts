@@ -242,13 +242,56 @@ function handleTerminalStatus(summary: QueueTraceSummary, program: Command): voi
   printTrace(summary, program);
 }
 
-async function watchTraceLoop(taskId: string, interval: number, program: Command): Promise<void> {
+/**
+ * Fetch trace summary using the state provider abstraction.
+ * Works across cloud (API), S3, and local modes.
+ */
+async function fetchTraceSummary(
+  provider: import('../providers/types.js').IStateProvider,
+  taskId: string
+): Promise<QueueTraceSummary | null> {
+  if (provider.mode === 'cloud') {
+    const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
+    const trace = parseGetQueueItemTrace(apiResponse as never);
+    return mapTraceToSummary(trace);
+  }
+
+  // S3/local mode: use provider.queue.trace() which returns a flat record
+  const item = await provider.queue.trace(taskId);
+  if (!item) return null;
+
+  return {
+    taskId: (item.taskId as string) ?? undefined,
+    status: item.status as QueueTraceSummary['status'],
+    healthStatus: undefined,
+    progress: undefined,
+    consoleOutput: item.consoleOutput ? String(item.consoleOutput) : undefined,
+    errorMessage: item.errorMessage ? String(item.errorMessage) : undefined,
+    lastFailureReason: item.errorMessage ? String(item.errorMessage) : undefined,
+    priority: typeof item.priority === 'number' ? item.priority : undefined,
+    retryCount: typeof item.retryCount === 'number' ? item.retryCount : undefined,
+    ageInMinutes: item.createdAt
+      ? Math.round((Date.now() - new Date(item.createdAt as string).getTime()) / 60000)
+      : undefined,
+    hasResponse: !!(item.consoleOutput || item.exitCode !== undefined),
+    teamName: (item.teamName as string) ?? undefined,
+    machineName: (item.machineName as string) ?? undefined,
+    bridgeName: (item.bridgeName as string) ?? undefined,
+    createdTime: (item.createdAt as string) ?? undefined,
+    updatedTime: (item.updatedAt as string) ?? undefined,
+  };
+}
+
+async function watchTraceLoop(
+  provider: import('../providers/types.js').IStateProvider,
+  taskId: string,
+  interval: number,
+  program: Command
+): Promise<void> {
   const spinner = startSpinner(t('commands.queue.trace.watching'));
 
   for (;;) {
-    const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
-    const trace = parseGetQueueItemTrace(apiResponse as never);
-    const summary = mapTraceToSummary(trace);
+    const summary = await fetchTraceSummary(provider, taskId);
 
     if (!summary) {
       await new Promise((resolve) => setTimeout(resolve, interval));
@@ -268,17 +311,16 @@ async function watchTraceLoop(taskId: string, interval: number, program: Command
   }
 }
 
-async function singleFetchTrace(taskId: string, program: Command): Promise<void> {
-  const trace = await withSpinner(
+async function singleFetchTrace(
+  provider: import('../providers/types.js').IStateProvider,
+  taskId: string,
+  program: Command
+): Promise<void> {
+  const summary = await withSpinner(
     t('commands.queue.trace.fetching'),
-    async () => {
-      const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
-      return parseGetQueueItemTrace(apiResponse as never);
-    },
+    () => fetchTraceSummary(provider, taskId),
     t('commands.queue.trace.fetched')
   );
-
-  const summary = mapTraceToSummary(trace);
 
   if (!summary) {
     outputService.info(t('commands.queue.trace.noTrace'));
@@ -305,9 +347,9 @@ export async function traceAction(
 
   if (options.watch) {
     const interval = Number.parseInt(options.interval, 10);
-    await watchTraceLoop(taskId, interval, program);
+    await watchTraceLoop(provider, taskId, interval, program);
   } else {
-    await singleFetchTrace(taskId, program);
+    await singleFetchTrace(provider, taskId, program);
   }
 }
 

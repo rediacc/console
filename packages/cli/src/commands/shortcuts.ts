@@ -1,6 +1,3 @@
-import * as fs from 'node:fs/promises';
-import * as os from 'node:os';
-import * as path from 'node:path';
 import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
@@ -20,14 +17,6 @@ import { getStateProvider } from '../providers/index.js';
 import { contextService } from '../services/context.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
-import {
-  buildLocalVault,
-  getLocalRenetPath,
-  provisionRenetToRemote,
-  readOptionalSSHKey,
-  readSSHKey,
-} from '../services/renet-execution.js';
-import { spawnRenet } from '../services/renet-execution.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
 /**
@@ -87,7 +76,8 @@ async function runLocalMode(
 
 /**
  * Run function in S3 mode (local renet execution + S3 state tracking).
- * Creates a queue item in S3, executes via renet, writes result back.
+ * Creates a queue item in S3 for tracking, executes via renet
+ * (reusing localExecutorService), then cleans up the tracking record.
  */
 async function runS3Mode(
   functionName: string,
@@ -140,49 +130,29 @@ async function runS3Mode(
     outputService.info(`Task ID: ${taskId}`);
   }
 
-  // Execute via renet (same as local mode)
-  const config = await contextService.getLocalConfig();
-  const machine = await contextService.getLocalMachine(machineName);
-  const sshPrivateKey = await readSSHKey(config.ssh.privateKeyPath);
-  const sshPublicKey = await readOptionalSSHKey(config.ssh.publicKeyPath);
-  const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
-  const sshKnownHosts = await fs.readFile(knownHostsPath, 'utf-8').catch(() => '');
-
-  const vault = buildLocalVault({
+  // Execute via renet (reuse localExecutorService — same SSH/vault/spawn logic)
+  const result = await localExecutorService.execute({
     functionName,
     machineName,
-    machine,
-    sshPrivateKey,
-    sshPublicKey,
-    sshKnownHosts,
     params,
+    debug: options.debug,
   });
 
-  const renetPath = await getLocalRenetPath(config);
-  await provisionRenetToRemote(config, machine, sshPrivateKey, options);
-
-  const startTime = Date.now();
-  const result = await spawnRenet(renetPath, vault, options);
-  const durationMs = Date.now() - startTime;
-
-  // Write result back to S3 queue
+  // Clean up S3 queue tracking record after execution
   if (taskId) {
     try {
-      // Claim then complete the task
-      await provider.queue.trace(taskId); // Verify it exists
-      // Use S3 queue directly for state transition - the provider wraps it
-      // For simplicity, we delete and won't track intermediate state
+      await provider.queue.delete(taskId);
     } catch {
       // Queue tracking is best-effort
     }
   }
 
-  if (result.exitCode === 0) {
-    outputService.success(t('commands.shortcuts.run.completedLocal', { duration: durationMs }));
-  } else {
-    outputService.error(
-      t('commands.shortcuts.run.failedLocal', { error: `renet exited with code ${result.exitCode}` })
+  if (result.success) {
+    outputService.success(
+      t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
     );
+  } else {
+    outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
     process.exitCode = result.exitCode;
   }
 }
