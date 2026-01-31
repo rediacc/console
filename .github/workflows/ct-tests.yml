@@ -199,6 +199,7 @@ jobs:
           name: tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
           retention-days: 3
+          overwrite: true
 
       - name: Upload Pinggy Tunnel URL
         if: steps.pinggy-tunnel.outputs.tunnel-url != ''
@@ -211,6 +212,7 @@ jobs:
           name: tunnel-url-pinggy
           path: ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
           retention-days: 3
+          overwrite: true
 
       # Bridge tests
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
