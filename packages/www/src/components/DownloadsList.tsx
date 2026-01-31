@@ -51,7 +51,7 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
       <PlatformTabs
         tabs={tabs}
         activeTab={activePlatform}
-        onTabChange={(key) => setActivePlatform(key as Platform)}
+        onTabChange={setActivePlatform}
         ariaLabel={t('pages.install.platformFilter.label')}
       />
 

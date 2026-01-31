@@ -1,19 +1,24 @@
 import React from 'react';
 
-export interface PlatformTab {
-  key: string;
+export interface PlatformTab<T extends string> {
+  key: T;
   label: string;
   icon?: React.FC;
 }
 
-interface PlatformTabsProps {
-  tabs: PlatformTab[];
-  activeTab: string;
-  onTabChange: (key: string) => void;
+interface PlatformTabsProps<T extends string> {
+  tabs: PlatformTab<T>[];
+  activeTab: T;
+  onTabChange: (key: T) => void;
   ariaLabel: string;
 }
 
-const PlatformTabs: React.FC<PlatformTabsProps> = ({ tabs, activeTab, onTabChange, ariaLabel }) => (
+const PlatformTabs = <T extends string>({
+  tabs,
+  activeTab,
+  onTabChange,
+  ariaLabel,
+}: PlatformTabsProps<T>) => (
   <div className="platform-tabs" role="tablist" aria-label={ariaLabel}>
     {tabs.map(({ key, label, icon: Icon }) => (
       <button

@@ -154,7 +154,7 @@ const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
         <PlatformTabs
           tabs={filterTabs}
           activeTab={filter}
-          onTabChange={(key) => handleFilterChange(key as FilterTab)}
+          onTabChange={handleFilterChange}
           ariaLabel={t('pages.install.platformFilter.label')}
         />
 
