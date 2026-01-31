@@ -164,14 +164,20 @@ class CloudRepositoryProvider implements RepositoryProvider {
 class CloudVaultProvider implements VaultProvider {
   async getTeamVault(teamName: string): Promise<VaultData | null> {
     const response = await typedApi.GetOrganizationTeams({});
-    const teams = parseGetOrganizationTeams(response as never) as Array<{ teamName?: string; vaultContent?: string }>;
+    const teams = parseGetOrganizationTeams(response as never) as Array<{
+      teamName?: string;
+      vaultContent?: string;
+    }>;
     const team = teams.find((t: { teamName?: string }) => t.teamName === teamName);
     return parseVaultContent<VaultData>(team?.vaultContent) ?? null;
   }
 
   async getMachineVault(teamName: string, machineName: string): Promise<VaultData | null> {
     const response = await typedApi.GetTeamMachines({ teamName });
-    const machines = parseGetTeamMachines(response as never) as Array<{ machineName?: string; vaultContent?: string }>;
+    const machines = parseGetTeamMachines(response as never) as Array<{
+      machineName?: string;
+      vaultContent?: string;
+    }>;
     const machine = machines.find((m: { machineName?: string }) => m.machineName === machineName);
     return parseVaultContent<VaultData>(machine?.vaultContent) ?? null;
   }

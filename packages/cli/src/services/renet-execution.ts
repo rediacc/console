@@ -173,15 +173,21 @@ export async function spawnRenet(
     }, timeout);
 
     child.stdout?.on('data', (data: Buffer) => {
-      data.toString().split('\n').forEach((line) => {
-        if (line.trim()) process.stdout.write(`${line}\n`);
-      });
+      data
+        .toString()
+        .split('\n')
+        .forEach((line) => {
+          if (line.trim()) process.stdout.write(`${line}\n`);
+        });
     });
 
     child.stderr?.on('data', (data: Buffer) => {
-      data.toString().split('\n').forEach((line) => {
-        if (line.trim()) process.stderr.write(`${line}\n`);
-      });
+      data
+        .toString()
+        .split('\n')
+        .forEach((line) => {
+          if (line.trim()) process.stderr.write(`${line}\n`);
+        });
     });
 
     child.on('close', (code) => {

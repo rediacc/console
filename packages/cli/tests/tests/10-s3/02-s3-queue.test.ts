@@ -38,39 +38,37 @@ test.describe('S3 Queue Operations (with master password) @cli @s3', () => {
 
   test.beforeAll(async () => {
     const setupRunner = new CliTestRunner();
-    const createResult = await setupRunner.run([
-      'context',
-      'create-s3',
-      encContextName,
-      '--endpoint',
-      s3Env.endpoint,
-      '--bucket',
-      s3Env.bucket,
-      '--access-key-id',
-      s3Env.accessKeyId,
-      '--secret-access-key',
-      s3Env.secretAccessKey,
-      '--ssh-key',
-      sshKeyPath,
-      '--region',
-      'us-east-1',
-      '--prefix',
-      encPrefix,
-      '--master-password',
-      encMasterPassword,
-    ], { skipJsonParse: true });
+    const createResult = await setupRunner.run(
+      [
+        'context',
+        'create-s3',
+        encContextName,
+        '--endpoint',
+        s3Env.endpoint,
+        '--bucket',
+        s3Env.bucket,
+        '--access-key-id',
+        s3Env.accessKeyId,
+        '--secret-access-key',
+        s3Env.secretAccessKey,
+        '--ssh-key',
+        sshKeyPath,
+        '--region',
+        'us-east-1',
+        '--prefix',
+        encPrefix,
+        '--master-password',
+        encMasterPassword,
+      ],
+      { skipJsonParse: true }
+    );
     setupRunner.expectSuccess(createResult);
 
     const ctxRunner = CliTestRunner.withContext(encContextName);
-    const addResult = await ctxRunner.run([
-      'context',
-      'add-machine',
-      'test-vm',
-      '--ip',
-      '192.168.1.200',
-      '--user',
-      'root',
-    ], { skipJsonParse: true });
+    const addResult = await ctxRunner.run(
+      ['context', 'add-machine', 'test-vm', '--ip', '192.168.1.200', '--user', 'root'],
+      { skipJsonParse: true }
+    );
     ctxRunner.expectSuccess(addResult);
 
     runner = new CliTestRunner({
@@ -89,18 +87,21 @@ test.describe('S3 Queue Operations (with master password) @cli @s3', () => {
   });
 
   test('should create a queue item', async () => {
-    const result = await runner.run([
-      'queue',
-      'create',
-      '--function',
-      'test_function',
-      '--team',
-      'default',
-      '--machine',
-      'test-vm',
-      '--vault',
-      '{}',
-    ], { skipJsonParse: true });
+    const result = await runner.run(
+      [
+        'queue',
+        'create',
+        '--function',
+        'test_function',
+        '--team',
+        'default',
+        '--machine',
+        'test-vm',
+        '--vault',
+        '{}',
+      ],
+      { skipJsonParse: true }
+    );
 
     runner.expectSuccess(result);
     const output = result.stdout + result.stderr;
@@ -109,20 +110,42 @@ test.describe('S3 Queue Operations (with master password) @cli @s3', () => {
   });
 
   test('should list queue items', async () => {
-    await runner.run([
-      'queue', 'create', '--function', 'list_test',
-      '--team', 'default', '--machine', 'test-vm', '--vault', '{}',
-    ], { skipJsonParse: true });
+    await runner.run(
+      [
+        'queue',
+        'create',
+        '--function',
+        'list_test',
+        '--team',
+        'default',
+        '--machine',
+        'test-vm',
+        '--vault',
+        '{}',
+      ],
+      { skipJsonParse: true }
+    );
 
     const result = await runner.run(['queue', 'list', '--team', 'default']);
     runner.expectSuccess(result);
   });
 
   test('should cancel a queue item', async () => {
-    const createResult = await runner.run([
-      'queue', 'create', '--function', 'cancel_me',
-      '--team', 'default', '--machine', 'test-vm', '--vault', '{}',
-    ], { skipJsonParse: true });
+    const createResult = await runner.run(
+      [
+        'queue',
+        'create',
+        '--function',
+        'cancel_me',
+        '--team',
+        'default',
+        '--machine',
+        'test-vm',
+        '--vault',
+        '{}',
+      ],
+      { skipJsonParse: true }
+    );
     runner.expectSuccess(createResult);
     const taskId = extractTaskId(createResult.stdout + createResult.stderr);
 
@@ -131,17 +154,27 @@ test.describe('S3 Queue Operations (with master password) @cli @s3', () => {
   });
 
   test('should delete a queue item', async () => {
-    const createResult = await runner.run([
-      'queue', 'create', '--function', 'delete_me',
-      '--team', 'default', '--machine', 'test-vm', '--vault', '{}',
-    ], { skipJsonParse: true });
+    const createResult = await runner.run(
+      [
+        'queue',
+        'create',
+        '--function',
+        'delete_me',
+        '--team',
+        'default',
+        '--machine',
+        'test-vm',
+        '--vault',
+        '{}',
+      ],
+      { skipJsonParse: true }
+    );
     runner.expectSuccess(createResult);
     const taskId = extractTaskId(createResult.stdout + createResult.stderr);
 
-    const deleteResult = await runner.run(
-      ['queue', 'delete', taskId, '--force'],
-      { skipJsonParse: true }
-    );
+    const deleteResult = await runner.run(['queue', 'delete', taskId, '--force'], {
+      skipJsonParse: true,
+    });
     runner.expectSuccess(deleteResult);
   });
 });
@@ -156,37 +189,35 @@ test.describe('S3 Queue Operations (without master password) @cli @s3', () => {
 
   test.beforeAll(async () => {
     const setupRunner = new CliTestRunner();
-    const createResult = await setupRunner.run([
-      'context',
-      'create-s3',
-      ptContextName,
-      '--endpoint',
-      s3Env.endpoint,
-      '--bucket',
-      s3Env.bucket,
-      '--access-key-id',
-      s3Env.accessKeyId,
-      '--secret-access-key',
-      s3Env.secretAccessKey,
-      '--ssh-key',
-      sshKeyPath,
-      '--region',
-      'us-east-1',
-      '--prefix',
-      ptPrefix,
-    ], { skipJsonParse: true });
+    const createResult = await setupRunner.run(
+      [
+        'context',
+        'create-s3',
+        ptContextName,
+        '--endpoint',
+        s3Env.endpoint,
+        '--bucket',
+        s3Env.bucket,
+        '--access-key-id',
+        s3Env.accessKeyId,
+        '--secret-access-key',
+        s3Env.secretAccessKey,
+        '--ssh-key',
+        sshKeyPath,
+        '--region',
+        'us-east-1',
+        '--prefix',
+        ptPrefix,
+      ],
+      { skipJsonParse: true }
+    );
     setupRunner.expectSuccess(createResult);
 
     const ctxRunner = CliTestRunner.withContext(ptContextName);
-    const addResult = await ctxRunner.run([
-      'context',
-      'add-machine',
-      'test-vm',
-      '--ip',
-      '192.168.1.201',
-      '--user',
-      'root',
-    ], { skipJsonParse: true });
+    const addResult = await ctxRunner.run(
+      ['context', 'add-machine', 'test-vm', '--ip', '192.168.1.201', '--user', 'root'],
+      { skipJsonParse: true }
+    );
     ctxRunner.expectSuccess(addResult);
 
     // No master password needed — plaintext mode
@@ -203,18 +234,21 @@ test.describe('S3 Queue Operations (without master password) @cli @s3', () => {
   });
 
   test('should create a queue item without encryption', async () => {
-    const result = await runner.run([
-      'queue',
-      'create',
-      '--function',
-      'test_plain',
-      '--team',
-      'default',
-      '--machine',
-      'test-vm',
-      '--vault',
-      '{}',
-    ], { skipJsonParse: true });
+    const result = await runner.run(
+      [
+        'queue',
+        'create',
+        '--function',
+        'test_plain',
+        '--team',
+        'default',
+        '--machine',
+        'test-vm',
+        '--vault',
+        '{}',
+      ],
+      { skipJsonParse: true }
+    );
 
     runner.expectSuccess(result);
     const output = result.stdout + result.stderr;
@@ -223,10 +257,21 @@ test.describe('S3 Queue Operations (without master password) @cli @s3', () => {
   });
 
   test('should list queue items without encryption', async () => {
-    await runner.run([
-      'queue', 'create', '--function', 'list_plain',
-      '--team', 'default', '--machine', 'test-vm', '--vault', '{}',
-    ], { skipJsonParse: true });
+    await runner.run(
+      [
+        'queue',
+        'create',
+        '--function',
+        'list_plain',
+        '--team',
+        'default',
+        '--machine',
+        'test-vm',
+        '--vault',
+        '{}',
+      ],
+      { skipJsonParse: true }
+    );
 
     const result = await runner.run(['queue', 'list', '--team', 'default']);
     runner.expectSuccess(result);

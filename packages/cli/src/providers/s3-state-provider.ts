@@ -170,9 +170,7 @@ class S3QueueProvider implements QueueProvider {
 
   private toTraceFormat(item: S3QueueItem): ResourceRecord {
     const createdTime = item.createdAt ? new Date(item.createdAt).getTime() : undefined;
-    const ageInMinutes = createdTime
-      ? Math.floor((Date.now() - createdTime) / 60000)
-      : undefined;
+    const ageInMinutes = createdTime ? Math.floor((Date.now() - createdTime) / 60000) : undefined;
 
     return {
       summary: {

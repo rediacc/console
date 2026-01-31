@@ -33,10 +33,14 @@ export function registerContextCommands(program: Command): void {
         const displayData = contexts.map((ctx) => ({
           name: ctx.name,
           mode: ctx.mode ?? DEFAULTS.CONTEXT.MODE,
-          apiUrl: ctx.mode === 'local' ? '-' : ctx.mode === 's3' ? ctx.s3?.endpoint ?? '-' : ctx.apiUrl,
+          apiUrl:
+            ctx.mode === 'local' ? '-' : ctx.mode === 's3' ? (ctx.s3?.endpoint ?? '-') : ctx.apiUrl,
           userEmail: ctx.userEmail ?? '-',
           team: ctx.team ?? '-',
-          machines: ctx.mode === 'local' || ctx.mode === 's3' ? Object.keys(ctx.machines ?? {}).length.toString() : '-',
+          machines:
+            ctx.mode === 'local' || ctx.mode === 's3'
+              ? Object.keys(ctx.machines ?? {}).length.toString()
+              : '-',
         }));
 
         outputService.print(displayData, format);
@@ -260,7 +264,10 @@ export function registerContextCommands(program: Command): void {
     .option('--region <region>', 'S3 region', 'auto')
     .option('--prefix <prefix>', 'Key prefix/namespace in bucket')
     .option('--renet-path <path>', 'Path to renet binary')
-    .option('--master-password <password>', 'Master password for encryption (optional, leave empty to skip)')
+    .option(
+      '--master-password <password>',
+      'Master password for encryption (optional, leave empty to skip)'
+    )
     .action(async (name, options) => {
       try {
         // Expand ~ in SSH key path
@@ -277,8 +284,7 @@ export function registerContextCommands(program: Command): void {
 
         // Prompt for secret access key if not provided
         const secretAccessKey =
-          options.secretAccessKey ??
-          (await askPassword('S3 secret access key:'));
+          options.secretAccessKey ?? (await askPassword('S3 secret access key:'));
 
         if (!secretAccessKey) {
           throw new ValidationError('S3 secret access key is required');
@@ -294,7 +300,10 @@ export function registerContextCommands(program: Command): void {
 
         if (masterPassword) {
           storedSecretAccessKey = await nodeCryptoProvider.encrypt(secretAccessKey, masterPassword);
-          encryptedMasterPassword = await nodeCryptoProvider.encrypt(masterPassword, masterPassword);
+          encryptedMasterPassword = await nodeCryptoProvider.encrypt(
+            masterPassword,
+            masterPassword
+          );
         } else {
           storedSecretAccessKey = secretAccessKey;
           encryptedMasterPassword = undefined;

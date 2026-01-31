@@ -44,7 +44,9 @@ const ALL_STATUSES = Object.keys(STATUS_DIRS) as S3QueueItem['status'][];
 export class S3QueueService {
   constructor(private readonly s3: S3ClientService) {}
 
-  async create(item: Omit<S3QueueItem, 'taskId' | 'status' | 'retryCount' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async create(
+    item: Omit<S3QueueItem, 'taskId' | 'status' | 'retryCount' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     const taskId = randomUUID();
     const now = new Date().toISOString();
     const queueItem: S3QueueItem = {
@@ -79,7 +81,10 @@ export class S3QueueService {
     return updated;
   }
 
-  async complete(taskId: string, result: { exitCode: number; consoleOutput?: string; errorMessage?: string }): Promise<void> {
+  async complete(
+    taskId: string,
+    result: { exitCode: number; consoleOutput?: string; errorMessage?: string }
+  ): Promise<void> {
     const item = await this.s3.getJson<S3QueueItem>(`${STATUS_DIRS.ACTIVE}/${taskId}.json`);
     if (!item) {
       throw new Error(`Queue item ${taskId} not found in active state`);

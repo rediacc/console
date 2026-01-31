@@ -68,9 +68,7 @@ class LocalExecutorService {
       const machine = await contextService.getLocalMachine(options.machineName);
 
       if (options.debug) {
-        outputService.info(
-          `[local] Executing '${options.functionName}' on ${options.machineName}`
-        );
+        outputService.info(`[local] Executing '${options.functionName}' on ${options.machineName}`);
       }
 
       // Read SSH keys

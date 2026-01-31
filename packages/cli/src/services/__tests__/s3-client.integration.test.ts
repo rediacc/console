@@ -93,9 +93,7 @@ describe('S3ClientService (real S3)', () => {
     });
 
     it('should be idempotent (delete non-existent is OK)', async () => {
-      await expect(
-        client.deleteObject(`del/never-existed-${Date.now()}`)
-      ).resolves.toBeUndefined();
+      await expect(client.deleteObject(`del/never-existed-${Date.now()}`)).resolves.toBeUndefined();
     });
   });
 

@@ -498,7 +498,10 @@ export function registerQueueCommands(program: Command): void {
           t('commands.queue.list.success')
         );
 
-        const filteredItems = applyQueueFilters(rawItems as unknown as GetTeamQueueItems_ResultSet1[], options);
+        const filteredItems = applyQueueFilters(
+          rawItems as unknown as GetTeamQueueItems_ResultSet1[],
+          options
+        );
         const sortedItems = sortQueueItems(filteredItems, options);
 
         const format = program.opts().output as OutputFormat;

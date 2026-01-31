@@ -104,9 +104,7 @@ describe('S3QueueService (real S3)', () => {
     it('should throw for non-active item', async () => {
       const taskId = await queue.create(makeItem());
       // Still PENDING, not ACTIVE
-      await expect(queue.complete(taskId, { exitCode: 0 })).rejects.toThrow(
-        /not found in active/
-      );
+      await expect(queue.complete(taskId, { exitCode: 0 })).rejects.toThrow(/not found in active/);
     });
   });
 

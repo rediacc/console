@@ -121,8 +121,15 @@ cli
 
 // Cloud-only command names — these are not available in s3/local mode
 const CLOUD_ONLY_COMMANDS = new Set([
-  'auth', 'bridge', 'team', 'region', 'organization',
-  'user', 'permission', 'audit', 'ceph',
+  'auth',
+  'bridge',
+  'team',
+  'region',
+  'organization',
+  'user',
+  'permission',
+  'audit',
+  'ceph',
 ]);
 
 /**

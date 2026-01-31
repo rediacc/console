@@ -53,9 +53,7 @@ describe('S3VaultService (real S3)', () => {
       await vault.writeVault('vaults/test-wrong-pw.json.enc', data);
 
       const wrongVault = new S3VaultService(client, 'wrong-password');
-      await expect(
-        wrongVault.readVault('vaults/test-wrong-pw.json.enc')
-      ).rejects.toThrow();
+      await expect(wrongVault.readVault('vaults/test-wrong-pw.json.enc')).rejects.toThrow();
     });
   });
 
