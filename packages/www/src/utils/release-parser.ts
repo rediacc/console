@@ -25,19 +25,19 @@ export interface ReleaseData {
   cliFiles: CLIFile[];
 }
 
-export function detectFilePlatform(filename: string): Platform {
+function detectFilePlatform(filename: string): Platform {
   if (filename.includes('-win-')) return 'windows';
   if (filename.includes('-mac-')) return 'macos';
   return 'linux';
 }
 
-export function detectArch(filename: string): 'x64' | 'arm64' | 'armv7l' {
+function detectArch(filename: string): 'x64' | 'arm64' | 'armv7l' {
   if (filename.includes('-arm64')) return 'arm64';
   if (filename.includes('-armv7l')) return 'armv7l';
   return 'x64';
 }
 
-export function detectType(filename: string): 'exe' | 'dmg' | 'AppImage' | 'deb' {
+function detectType(filename: string): 'exe' | 'dmg' | 'AppImage' | 'deb' {
   if (filename.endsWith('.exe')) return 'exe';
   if (filename.endsWith('.dmg')) return 'dmg';
   if (filename.endsWith('.AppImage')) return 'AppImage';
@@ -45,13 +45,13 @@ export function detectType(filename: string): 'exe' | 'dmg' | 'AppImage' | 'deb'
   return 'AppImage';
 }
 
-export function detectCLIPlatform(filename: string): Platform {
+function detectCLIPlatform(filename: string): Platform {
   if (filename.includes('-win-')) return 'windows';
   if (filename.includes('-mac-')) return 'macos';
   return 'linux';
 }
 
-export function detectCLIArch(filename: string): 'x64' | 'arm64' {
+function detectCLIArch(filename: string): 'x64' | 'arm64' {
   if (filename.includes('-arm64')) return 'arm64';
   return 'x64';
 }
