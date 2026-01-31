@@ -74,7 +74,12 @@ create_tmux_session() {
         return 0
     fi
 
-    tmux new-session -d -s "$session_name" -c "$work_dir"
+    tmux new-session -d -s "$session_name" -n "$session_name" -c "$work_dir"
+
+    # New windows (Ctrl+b c) auto-layout: 75% top (claude) + 25% bottom (cli)
+    tmux set-hook -t "$session_name" after-new-window \
+        "split-window -v -l 25% -c '#{pane_current_path}' ; select-pane -U ; send-keys 'claude --dangerously-skip-permissions' C-m"
+
     log_info "Created tmux session: $session_name"
 }
 
@@ -165,12 +170,18 @@ worktree_create() {
     # Create tmux session
     create_tmux_session "$session_name" "$wt_path"
 
-    # Run npm install in the tmux session
+    # Run npm install + build shared packages, then set up panes:
+    #   +------------------+------------------+
+    #   | claude (pane 0)  | claude (pane 2)  |  75%
+    #   +------------------+------------------+
+    #   |           cli terminal (pane 1)     |  25%
+    #   +-------------------------------------+
     if command -v tmux &>/dev/null && tmux_session_exists "$session_name"; then
-        log_info "Running npm install in tmux session..."
-        tmux send-keys -t "$session_name" "npm install" C-m
+        log_info "Running npm install + build:packages in tmux session..."
+        tmux send-keys -t "${session_name}:0" \
+            "npm install && npm run build:packages && tmux split-window -v -l 25% -c '${wt_path}' && RIGHT_PANE=\$(tmux split-window -h -c '${wt_path}' -P -F '#{pane_id}') && tmux send-keys -t \"\$RIGHT_PANE\" 'claude --dangerously-skip-permissions' C-m && clear && claude --dangerously-skip-permissions" C-m
     else
-        log_info "Run 'npm install' in the worktree to set up dependencies"
+        log_info "Run 'npm install && npm run build:packages' in the worktree to set up dependencies"
     fi
 
     echo ""

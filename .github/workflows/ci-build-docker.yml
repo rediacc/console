@@ -57,6 +57,33 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-cli.sh
 
+      - name: Prepare CLI bundle artifact
+        run: |
+          mkdir -p bundle
+          cp packages/cli/dist/cli-bundle.cjs bundle/
+          cp packages/cli/package.json bundle/
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: cli-bundle-${{ github.sha }}
+          path: bundle/
+          retention-days: 3
+
+      - name: Create CLI npm package
+        working-directory: packages/cli
+        run: |
+          mkdir -p /tmp/cli-npm
+          npm pack --pack-destination /tmp/cli-npm
+          cd /tmp/cli-npm
+          CLI_PKG=$(ls rediacc-cli-*.tgz 2>/dev/null | head -1)
+          [ -n "$CLI_PKG" ] && cp "$CLI_PKG" rediacc-cli-latest.tgz
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        with:
+          name: cli-npm-${{ github.sha }}
+          path: /tmp/cli-npm/
+          retention-days: 3
+
   build-web:
     name: Web
     runs-on: ubuntu-slim
@@ -73,7 +100,7 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-web.sh --type RELEASE
         env:
-          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_APP_VERSION: ${{ inputs.web_tag }}
           VITE_BASE_PATH: /
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
@@ -159,15 +186,32 @@ jobs:
         run: echo "::notice::Skipping Docker build - plugins:${{ inputs.plugins_tag }} already exists in registry"
 
   build-web-docker:
-    name: Web & Docker
+    name: Web Docker
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: [build-web, build-www, build-cli]
+    if: inputs.web_exists != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
           token: ${{ secrets.GH_PAT }}
 
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: build-web-${{ github.sha }}
+          path: web-assets/
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: build-www-${{ github.sha }}
+          path: www-assets/
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: cli-npm-${{ github.sha }}
+          path: cli-npm/
+
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -176,105 +220,95 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GH_PAT }}
 
-      - name: Build & Push Web Docker image
-        if: inputs.web_exists != 'true'
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83  # v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ghcr.io/rediacc/elite/web:${{ inputs.web_tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            REDIACC_BUILD_TYPE=RELEASE
-            VITE_APP_VERSION=${{ inputs.web_tag }}
-
-      - name: Skip Docker build (cached)
-        if: inputs.web_exists == 'true'
-        run: echo "::notice::Skipping Docker build - web:${{ inputs.web_tag }} already exists in registry"
-
-  # CLI Docker: amd64
-  build-cli-docker-amd64:
-    name: CLI Docker (amd64)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
-
-      - name: Build & Push CLI image (amd64)
-        if: inputs.cli_exists != 'true'
+      - name: Build & push Web image (amd64)
         run: |
-          .ci/scripts/docker/build-image.sh \
-            --image cli \
-            --ci-tag "${{ inputs.cli_tag }}-amd64" \
-            --version "${{ inputs.next_version }}" \
-            --platform "linux/amd64" \
-            --push
+          docker buildx build \
+            --file Dockerfile.native \
+            --platform linux/amd64 \
+            --build-arg VITE_APP_VERSION=${{ inputs.web_tag }} \
+            --build-arg REDIACC_BUILD_TYPE=RELEASE \
+            --tag ghcr.io/rediacc/elite/web:${{ inputs.web_tag }}-amd64 \
+            --push \
+            .
 
-      - name: Skip Docker build (cached)
-        if: inputs.cli_exists == 'true'
-        run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
-
-  # CLI Docker: arm64
-  build-cli-docker-arm64:
-    name: CLI Docker (arm64)
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
-
-      - name: Build & Push CLI image (arm64)
-        if: inputs.cli_exists != 'true'
+      - name: Build & push Web image (arm64)
         run: |
-          .ci/scripts/docker/build-image.sh \
-            --image cli \
-            --ci-tag "${{ inputs.cli_tag }}-arm64" \
-            --version "${{ inputs.next_version }}" \
-            --platform "linux/arm64" \
-            --push
+          docker buildx build \
+            --file Dockerfile.native \
+            --platform linux/arm64 \
+            --build-arg VITE_APP_VERSION=${{ inputs.web_tag }} \
+            --build-arg REDIACC_BUILD_TYPE=RELEASE \
+            --tag ghcr.io/rediacc/elite/web:${{ inputs.web_tag }}-arm64 \
+            --push \
+            .
 
-      - name: Skip Docker build (cached)
-        if: inputs.cli_exists == 'true'
-        run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
+      - name: Create multi-arch manifest
+        run: |
+          .ci/scripts/docker/create-manifest.sh \
+            --image web \
+            --tag "${{ inputs.web_tag }}"
 
-  # CLI Docker: Manifest
-  build-cli-manifest:
-    name: CLI Manifest
+  build-web-docker-skip:
+    name: Web Docker (cached)
     runs-on: ubuntu-latest
-    needs: [build-cli-docker-amd64, build-cli-docker-arm64]
+    if: inputs.web_exists == 'true'
+    steps:
+      - run: echo "::notice::Skipping Docker build - web:${{ inputs.web_tag }} already exists in registry"
+
+  # CLI Docker: Build images from pre-built bundle on a single runner
+  # CLI bundle is JavaScript (platform-independent), so no per-arch compilation needed
+  build-cli-docker:
+    name: CLI Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build-cli]
     if: inputs.cli_exists != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: cli-bundle-${{ github.sha }}
+          path: bundle/
+
+      - uses: docker/setup-buildx-action@v3
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GH_PAT }}
+
+      - name: Build & push CLI image (amd64)
+        run: |
+          docker buildx build \
+            --file packages/cli/Dockerfile.native \
+            --platform linux/amd64 \
+            --tag ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }}-amd64 \
+            --push \
+            .
+
+      - name: Build & push CLI image (arm64)
+        run: |
+          docker buildx build \
+            --file packages/cli/Dockerfile.native \
+            --platform linux/arm64 \
+            --tag ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }}-arm64 \
+            --push \
+            .
 
       - name: Create multi-arch manifest
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image cli \
             --tag "${{ inputs.cli_tag }}"
+
+  build-cli-docker-skip:
+    name: CLI Docker (cached)
+    runs-on: ubuntu-latest
+    if: inputs.cli_exists == 'true'
+    steps:
+      - run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
 
   # ============================================================
   # MIDDLEWARE/API: Native Architecture Builds
@@ -340,35 +374,59 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      # Docker
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
-
-      - name: Build & Push API Docker image (amd64)
+      # Publish and obfuscate for Docker (only when image not cached)
+      - name: Publish self-contained (linux-x64)
         if: inputs.api_exists != 'true'
+        working-directory: private/middleware
         run: |
-          .ci/scripts/docker/build-image.sh \
-            --image api \
-            --ci-tag "${{ inputs.api_tag }}-amd64" \
-            --version "${{ inputs.next_version }}" \
-            --platform "linux/amd64" \
-            --push
+          dotnet publish middleware.csproj -c Release -o ./publish \
+            --self-contained=true \
+            --runtime linux-x64 \
+            -p:PublishSingleFile=false \
+            -p:PublishTrimmed=false \
+            -p:UseAppHost=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:Version=${{ inputs.next_version }} \
+            -p:REDIACC_BUILD_TYPE=RELEASE
 
-      - name: Skip Docker build (cached)
-        if: inputs.api_exists == 'true'
-        run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
+      - name: Obfuscate assemblies (amd64)
+        if: inputs.api_exists != 'true'
+        working-directory: private/middleware
+        run: |
+          dotnet tool install --global Obfuscar.GlobalTool
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          mkdir -p publish-final
+          cd publish
+          if obfuscar.console ../obfuscar.xml && [ -d "Obfuscated" ] && [ "$(ls -A Obfuscated)" ]; then
+            cp -r Obfuscated/* ../publish-final/
+            rm -f ../publish-final/Mapping.txt
+            # Copy non-assembly files that obfuscar doesn't process
+            for f in *.json *.so *.pdb middleware *.deps.json *.runtimeconfig.json; do
+              [ -f "$f" ] && [ ! -f "../publish-final/$f" ] && cp "$f" ../publish-final/
+            done
+            find . -maxdepth 1 -type d -name "runtimes" -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
+            find . -maxdepth 1 -type d -regex '\./[a-z][a-z]-[A-Z][A-Z]' -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
+            [ -d "translations" ] && cp -r translations ../publish-final/
+            [ -d "AppData" ] && cp -r AppData ../publish-final/
+            find . -maxdepth 1 -name "*.so" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
+          else
+            echo "::warning::Obfuscation skipped or failed, using unobfuscated build"
+            cp -r ./* ../publish-final/
+          fi
 
-  # Middleware (arm64): Build and Docker image only (no tests)
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: inputs.api_exists != 'true'
+        with:
+          name: middleware-publish-amd64-${{ github.sha }}
+          path: private/middleware/publish-final/
+          retention-days: 3
+
+  # Middleware (arm64): Build, publish, and obfuscate (no tests)
   # Azure SQL Edge on arm64 has TLS certificate issues - tests run on amd64 cover code behavior
   build-middleware-arm64:
     name: Middleware (arm64)
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -387,7 +445,77 @@ jobs:
       - name: Run middleware build
         run: .ci/scripts/private/run-middleware.sh build
 
-      # Docker
+      # Publish and obfuscate for Docker (only when image not cached)
+      - name: Publish self-contained (linux-arm64)
+        if: inputs.api_exists != 'true'
+        working-directory: private/middleware
+        run: |
+          dotnet publish middleware.csproj -c Release -o ./publish \
+            --self-contained=true \
+            --runtime linux-arm64 \
+            -p:PublishSingleFile=false \
+            -p:PublishTrimmed=false \
+            -p:UseAppHost=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:Version=${{ inputs.next_version }} \
+            -p:REDIACC_BUILD_TYPE=RELEASE
+
+      - name: Obfuscate assemblies (arm64)
+        if: inputs.api_exists != 'true'
+        working-directory: private/middleware
+        run: |
+          dotnet tool install --global Obfuscar.GlobalTool
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          mkdir -p publish-final
+          cd publish
+          if obfuscar.console ../obfuscar.xml && [ -d "Obfuscated" ] && [ "$(ls -A Obfuscated)" ]; then
+            cp -r Obfuscated/* ../publish-final/
+            rm -f ../publish-final/Mapping.txt
+            # Copy non-assembly files that obfuscar doesn't process
+            for f in *.json *.so *.pdb middleware *.deps.json *.runtimeconfig.json; do
+              [ -f "$f" ] && [ ! -f "../publish-final/$f" ] && cp "$f" ../publish-final/
+            done
+            find . -maxdepth 1 -type d -name "runtimes" -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
+            find . -maxdepth 1 -type d -regex '\./[a-z][a-z]-[A-Z][A-Z]' -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
+            [ -d "translations" ] && cp -r translations ../publish-final/
+            [ -d "AppData" ] && cp -r AppData ../publish-final/
+            find . -maxdepth 1 -name "*.so" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
+          else
+            echo "::warning::Obfuscation skipped or failed, using unobfuscated build"
+            cp -r ./* ../publish-final/
+          fi
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: inputs.api_exists != 'true'
+        with:
+          name: middleware-publish-arm64-${{ github.sha }}
+          path: private/middleware/publish-final/
+          retention-days: 3
+
+  # API Docker: Build images from pre-built binaries on a single runner
+  # Follows the same pattern as build-renet-docker (bridge)
+  build-middleware-docker:
+    name: API Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build-middleware-amd64, build-middleware-arm64]
+    if: inputs.api_exists != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: middleware-publish-amd64-${{ github.sha }}
+          path: publish/amd64/
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: middleware-publish-arm64-${{ github.sha }}
+          path: publish/arm64/
+
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -396,39 +524,40 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GH_PAT }}
 
-      - name: Build & Push API Docker image (arm64)
-        if: inputs.api_exists != 'true'
+      - name: Build & push API image (amd64)
         run: |
-          .ci/scripts/docker/build-image.sh \
-            --image api \
-            --ci-tag "${{ inputs.api_tag }}-arm64" \
-            --version "${{ inputs.next_version }}" \
-            --platform "linux/arm64" \
-            --push
+          docker buildx build \
+            --file private/middleware/Dockerfile.native \
+            --platform linux/amd64 \
+            --build-arg TARGETARCH=amd64 \
+            --build-arg VERSION=${{ inputs.next_version }} \
+            --tag ghcr.io/rediacc/elite/api:${{ inputs.api_tag }}-amd64 \
+            --push \
+            .
 
-      - name: Skip Docker build (cached)
-        if: inputs.api_exists == 'true'
-        run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
-
-  build-middleware-manifest:
-    name: Middleware Manifest
-    runs-on: ubuntu-latest
-    needs: [build-middleware-amd64, build-middleware-arm64]
-    if: inputs.api_exists != 'true'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
+      - name: Build & push API image (arm64)
+        run: |
+          docker buildx build \
+            --file private/middleware/Dockerfile.native \
+            --platform linux/arm64 \
+            --build-arg TARGETARCH=arm64 \
+            --build-arg VERSION=${{ inputs.next_version }} \
+            --tag ghcr.io/rediacc/elite/api:${{ inputs.api_tag }}-arm64 \
+            --push \
+            .
 
       - name: Create multi-arch manifest
         run: |
           .ci/scripts/docker/create-manifest.sh \
             --image api \
             --tag "${{ inputs.api_tag }}"
+
+  build-middleware-docker-skip:
+    name: API Docker (cached)
+    runs-on: ubuntu-latest
+    if: inputs.api_exists == 'true'
+    steps:
+      - run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
 
   # ============================================================
   # RENET/BRIDGE: Docker Images

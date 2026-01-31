@@ -117,6 +117,7 @@ export CI_MODE="${WORKFLOW_CI_MODE:-true}"
 # Export variables to GITHUB_ENV for subsequent workflow steps
 if [[ -n "${GITHUB_ENV:-}" ]]; then
     {
+        echo "DOCKER_REGISTRY=${DOCKER_REGISTRY}"
         echo "SYSTEM_DEFAULT_TEAM_NAME=${SYSTEM_DEFAULT_TEAM_NAME}"
         echo "SYSTEM_DEFAULT_REGION_NAME=${SYSTEM_DEFAULT_REGION_NAME}"
         echo "SYSTEM_DEFAULT_BRIDGE_NAME=${SYSTEM_DEFAULT_BRIDGE_NAME}"
