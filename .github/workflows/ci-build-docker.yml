@@ -404,6 +404,9 @@ jobs:
             for f in *.json *.so *.pdb middleware *.deps.json *.runtimeconfig.json; do
               [ -f "$f" ] && [ ! -f "../publish-final/$f" ] && cp "$f" ../publish-final/
             done
+            # Copy remaining .dll files that Obfuscar didn't include (runtime assemblies
+            # like System.Private.CoreLib.dll). Use -n to preserve obfuscated versions.
+            find . -maxdepth 1 -name "*.dll" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
             find . -maxdepth 1 -type d -name "runtimes" -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
             find . -maxdepth 1 -type d -regex '\./[a-z][a-z]-[A-Z][A-Z]' -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
             [ -d "translations" ] && cp -r translations ../publish-final/
@@ -475,6 +478,9 @@ jobs:
             for f in *.json *.so *.pdb middleware *.deps.json *.runtimeconfig.json; do
               [ -f "$f" ] && [ ! -f "../publish-final/$f" ] && cp "$f" ../publish-final/
             done
+            # Copy remaining .dll files that Obfuscar didn't include (runtime assemblies
+            # like System.Private.CoreLib.dll). Use -n to preserve obfuscated versions.
+            find . -maxdepth 1 -name "*.dll" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
             find . -maxdepth 1 -type d -name "runtimes" -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
             find . -maxdepth 1 -type d -regex '\./[a-z][a-z]-[A-Z][A-Z]' -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
             [ -d "translations" ] && cp -r translations ../publish-final/
