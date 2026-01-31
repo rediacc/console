@@ -14,42 +14,42 @@
 
   <!-- Top: Annual testing timeline -->
   <g transform="translate(50, 30)">
-    <text x="350" y="0" text-anchor="middle" fill="#1a1a1a" font-size="14" font-family="sans-serif" font-weight="bold">ANNUAL TESTING: THE COMPLIANCE ILLUSION</text>
+    <text x="350" y="0" text-anchor="middle" fill="#1a1a1a" font-size="14" font-family="Arial, sans-serif" font-weight="bold">ANNUAL TESTING: THE COMPLIANCE ILLUSION</text>
 
     <!-- Year timeline -->
     <line x1="0" y1="40" x2="700" y2="40" stroke="#e0e0e0" stroke-width="3"/>
 
     <!-- Jan marker -->
     <line x1="0" y1="30" x2="0" y2="50" stroke="#1a1a1a" stroke-width="2"/>
-    <text x="0" y="65" text-anchor="middle" fill="#666" font-size="10" font-family="sans-serif">JAN</text>
+    <text x="0" y="65" text-anchor="middle" fill="#999999" font-size="10" font-family="Arial, sans-serif">JAN</text>
 
     <!-- Pentest day (small green dot) -->
     <circle cx="175" cy="40" r="8" fill="#556b2f"/>
-    <text x="175" y="44" text-anchor="middle" fill="#fff" font-size="8" font-family="sans-serif">&#x2713;</text>
-    <text x="175" y="65" text-anchor="middle" fill="#556b2f" font-size="9" font-family="sans-serif">PENTEST</text>
-    <text x="175" y="77" text-anchor="middle" fill="#556b2f" font-size="9" font-family="sans-serif">DAY</text>
+    <text x="175" y="44" text-anchor="middle" fill="#fff" font-size="8" font-family="Arial, sans-serif">&#x2713;</text>
+    <text x="175" y="65" text-anchor="middle" fill="#556b2f" font-size="9" font-family="Arial, sans-serif">PENTEST</text>
+    <text x="175" y="77" text-anchor="middle" fill="#556b2f" font-size="9" font-family="Arial, sans-serif">DAY</text>
 
     <!-- Certified badge -->
     <g transform="translate(200, 15)">
       <rect x="0" y="0" width="70" height="18" rx="9" fill="#556b2f" opacity="0.2"/>
-      <text x="35" y="13" text-anchor="middle" fill="#556b2f" font-size="9" font-family="sans-serif" font-weight="bold">CERTIFIED</text>
+      <text x="35" y="13" text-anchor="middle" fill="#556b2f" font-size="9" font-family="Arial, sans-serif" font-weight="bold">CERTIFIED</text>
     </g>
 
     <!-- Vulnerable gap (red zone) -->
-    <rect x="185" y="35" width="505" height="10" rx="2" fill="#cc3333" opacity="0.15"/>
-    <text x="440" y="44" text-anchor="middle" fill="#cc3333" font-size="10" font-family="sans-serif">364 DAYS VULNERABLE</text>
+    <rect x="185" y="35" width="505" height="10" rx="2" fill="#dc3545" opacity="0.15"/>
+    <text x="440" y="44" text-anchor="middle" fill="#dc3545" font-size="10" font-family="Arial, sans-serif">364 DAYS VULNERABLE</text>
 
     <!-- Breach marker -->
     <g transform="translate(480, 15)">
-      <line x1="0" y1="15" x2="0" y2="35" stroke="#cc3333" stroke-width="2"/>
-      <circle cx="0" cy="40" r="6" fill="#cc3333"/>
-      <text x="0" y="43" text-anchor="middle" fill="#fff" font-size="8" font-family="sans-serif">!</text>
-      <text x="0" y="65" text-anchor="middle" fill="#cc3333" font-size="9" font-family="sans-serif">BREACH</text>
+      <line x1="0" y1="15" x2="0" y2="35" stroke="#dc3545" stroke-width="2"/>
+      <circle cx="0" cy="40" r="6" fill="#dc3545"/>
+      <text x="0" y="43" text-anchor="middle" fill="#fff" font-size="8" font-family="Arial, sans-serif">!</text>
+      <text x="0" y="65" text-anchor="middle" fill="#dc3545" font-size="9" font-family="Arial, sans-serif">BREACH</text>
     </g>
 
     <!-- Dec marker -->
     <line x1="700" y1="30" x2="700" y2="50" stroke="#1a1a1a" stroke-width="2"/>
-    <text x="700" y="65" text-anchor="middle" fill="#666" font-size="10" font-family="sans-serif">DEC</text>
+    <text x="700" y="65" text-anchor="middle" fill="#999999" font-size="10" font-family="Arial, sans-serif">DEC</text>
   </g>
 
   <!-- Divider -->
@@ -57,14 +57,14 @@
 
   <!-- Bottom: Continuous testing timeline -->
   <g transform="translate(50, 155)">
-    <text x="350" y="0" text-anchor="middle" fill="#556b2f" font-size="14" font-family="sans-serif" font-weight="bold">CONTINUOUS TESTING: ALWAYS DEFENDED</text>
+    <text x="350" y="0" text-anchor="middle" fill="#556b2f" font-size="14" font-family="Arial, sans-serif" font-weight="bold">CONTINUOUS TESTING: ALWAYS DEFENDED</text>
 
     <!-- Year timeline -->
     <line x1="0" y1="40" x2="700" y2="40" stroke="#e0e0e0" stroke-width="3"/>
 
     <!-- Jan marker -->
     <line x1="0" y1="30" x2="0" y2="50" stroke="#1a1a1a" stroke-width="2"/>
-    <text x="0" y="65" text-anchor="middle" fill="#666" font-size="10" font-family="sans-serif">JAN</text>
+    <text x="0" y="65" text-anchor="middle" fill="#999999" font-size="10" font-family="Arial, sans-serif">JAN</text>
 
     <!-- Continuous test dots -->
     <circle cx="20" cy="40" r="4" fill="#556b2f"/>
@@ -94,16 +94,17 @@
 
     <!-- Protected zone -->
     <rect x="0" y="35" width="700" height="10" rx="2" fill="#556b2f" opacity="0.12"/>
-    <text x="350" y="44" text-anchor="middle" fill="#556b2f" font-size="10" font-family="sans-serif">365 DAYS TESTED</text>
+    <rect x="280" y="36" width="140" height="14" rx="3" fill="#f5f5f5"/>
+    <text x="350" y="44" text-anchor="middle" fill="#556b2f" font-size="10" font-family="Arial, sans-serif">365 DAYS TESTED</text>
 
     <!-- Dec marker -->
     <line x1="700" y1="30" x2="700" y2="50" stroke="#1a1a1a" stroke-width="2"/>
-    <text x="700" y="65" text-anchor="middle" fill="#666" font-size="10" font-family="sans-serif">DEC</text>
+    <text x="700" y="65" text-anchor="middle" fill="#999999" font-size="10" font-family="Arial, sans-serif">DEC</text>
 
     <!-- Always certified -->
     <g transform="translate(290, 70)">
       <rect x="0" y="0" width="120" height="22" rx="11" fill="#556b2f" opacity="0.2"/>
-      <text x="60" y="15" text-anchor="middle" fill="#556b2f" font-size="10" font-family="sans-serif" font-weight="bold">ALWAYS CERTIFIED</text>
+      <text x="60" y="15" text-anchor="middle" fill="#556b2f" font-size="10" font-family="Arial, sans-serif" font-weight="bold">ALWAYS CERTIFIED</text>
     </g>
   </g>
 
@@ -111,23 +112,23 @@
   <g transform="translate(50, 300)">
     <!-- Annual box -->
     <rect x="0" y="0" width="330" height="120" rx="8" fill="#fff" stroke="#e0e0e0" stroke-width="1" filter="url(#shadow)"/>
-    <text x="165" y="25" text-anchor="middle" fill="#1a1a1a" font-size="12" font-family="sans-serif" font-weight="bold">Annual Pentest Reality</text>
+    <text x="165" y="25" text-anchor="middle" fill="#1a1a1a" font-size="12" font-family="Arial, sans-serif" font-weight="bold">Annual Pentest Reality</text>
     <line x1="15" y1="35" x2="315" y2="35" stroke="#e0e0e0" stroke-width="1"/>
-    <text x="20" y="55" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; PCI certified → breached in 2 months</text>
-    <text x="20" y="73" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; 100% of breached firms failed at breach time</text>
-    <text x="20" y="91" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; 32% test only once per year</text>
-    <text x="20" y="109" fill="#cc3333" font-size="11" font-family="sans-serif">&#8226; $248M+ in breach costs</text>
+    <text x="20" y="55" fill="#dc3545" font-size="11" font-family="Arial, sans-serif">&#8226; PCI certified → breached in 2 months</text>
+    <text x="20" y="73" fill="#dc3545" font-size="11" font-family="Arial, sans-serif">&#8226; 100% of breached firms failed at breach time</text>
+    <text x="20" y="91" fill="#dc3545" font-size="11" font-family="Arial, sans-serif">&#8226; 32% test only once per year</text>
+    <text x="20" y="109" fill="#dc3545" font-size="11" font-family="Arial, sans-serif">&#8226; $248M+ in breach costs</text>
   </g>
 
   <g transform="translate(420, 300)">
     <!-- Continuous box -->
     <rect x="0" y="0" width="330" height="120" rx="8" fill="#fff" stroke="#556b2f" stroke-width="1.5" filter="url(#shadow)"/>
-    <text x="165" y="25" text-anchor="middle" fill="#556b2f" font-size="12" font-family="sans-serif" font-weight="bold">Continuous Clone Testing</text>
+    <text x="165" y="25" text-anchor="middle" fill="#556b2f" font-size="12" font-family="Arial, sans-serif" font-weight="bold">Continuous Clone Testing</text>
     <line x1="15" y1="35" x2="315" y2="35" stroke="#e0e0e0" stroke-width="1"/>
-    <text x="20" y="55" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Test daily on zero-cost clones</text>
-    <text x="20" y="73" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Always compliant, always tested</text>
-    <text x="20" y="91" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Auto-trigger on every deployment</text>
-    <text x="20" y="109" fill="#556b2f" font-size="11" font-family="sans-serif">&#8226; Ephemeral clones auto-destroy</text>
+    <text x="20" y="55" fill="#556b2f" font-size="11" font-family="Arial, sans-serif">&#8226; Test daily on zero-cost clones</text>
+    <text x="20" y="73" fill="#556b2f" font-size="11" font-family="Arial, sans-serif">&#8226; Always compliant, always tested</text>
+    <text x="20" y="91" fill="#556b2f" font-size="11" font-family="Arial, sans-serif">&#8226; Auto-trigger on every deployment</text>
+    <text x="20" y="109" fill="#556b2f" font-size="11" font-family="Arial, sans-serif">&#8226; Ephemeral clones auto-destroy</text>
   </g>
 
   <!-- Decorative -->
