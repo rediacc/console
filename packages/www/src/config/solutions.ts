@@ -17,6 +17,11 @@ import drLimitedHistory from '../assets/images/illustrations/disaster-recovery-l
 import drSlowBackups from '../assets/images/illustrations/disaster-recovery-slowBackups.svg';
 // Section illustrations (SVGs from src/assets)
 import drUnverified from '../assets/images/illustrations/disaster-recovery-unverified.svg';
+import pdAiAttackSpeed from '../assets/images/illustrations/preemptive-defense-aiAttackSpeed.svg';
+import pdBottom from '../assets/images/illustrations/preemptive-defense-bottom.svg';
+import pdHero from '../assets/images/illustrations/preemptive-defense-hero.svg';
+import pdPeriodicCompliance from '../assets/images/illustrations/preemptive-defense-periodicCompliance.svg';
+import pdProductionTesting from '../assets/images/illustrations/preemptive-defense-productionTesting.svg';
 import spBottom from '../assets/images/illustrations/system-portability-bottom.svg';
 import spDeployment from '../assets/images/illustrations/system-portability-deployment.svg';
 import spHero from '../assets/images/illustrations/system-portability-hero.svg';
@@ -187,6 +192,33 @@ export const SOLUTIONS: Record<string, SolutionConfig> = {
       deployment: {
         src: spDeployment.src,
         alt: 'Broken deployment gears versus clean working deployment',
+      },
+    },
+  },
+  'preemptive-defense': {
+    contentKey: 'preemptiveDefense',
+    heroImage: pdHero,
+    heroImageAlt:
+      'Clone-based security testing workflow showing production clone, AI pentesting shield, and vulnerability results',
+    bottomImage: pdBottom,
+    bottomImageAlt:
+      'Continuous clone-test-harden cycle with zero-copy cloning, AI scanning, hardening, and ephemeral destruction',
+    bottomImageVariant: 'dark',
+    problemKeys: ['aiAttackSpeed', 'productionTesting', 'periodicCompliance'],
+    ctaImageAlt: 'Rediacc preemptive defense infrastructure',
+    hasButtonHref: true,
+    sectionImages: {
+      aiAttackSpeed: {
+        src: pdAiAttackSpeed.src,
+        alt: 'AI attacker speed versus clone-based testing speed comparison',
+      },
+      productionTesting: {
+        src: pdProductionTesting.src,
+        alt: 'Production crashing from security testing versus safe clone-based testing',
+      },
+      periodicCompliance: {
+        src: pdPeriodicCompliance.src,
+        alt: 'Annual pentest gap versus continuous clone-based testing timeline',
       },
     },
   },

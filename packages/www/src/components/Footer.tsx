@@ -121,13 +121,33 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link">
-                  {t('footer.legalLinks.termsOfUse')}
+                <a href={`/${currentLang}/terms-of-service`} className="footer-link">
+                  {t('footer.legalLinks.termsOfService')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link">
+                <a href={`/${currentLang}/privacy-policy`} className="footer-link">
                   {t('footer.legalLinks.privacyPolicy')}
+                </a>
+              </li>
+              <li>
+                <a href={`/${currentLang}/cookie-policy`} className="footer-link">
+                  {t('footer.legalLinks.cookiePolicy')}
+                </a>
+              </li>
+              <li>
+                <a href={`/${currentLang}/acceptable-use-policy`} className="footer-link">
+                  {t('footer.legalLinks.acceptableUsePolicy')}
+                </a>
+              </li>
+              <li>
+                <a href={`/${currentLang}/refund-policy`} className="footer-link">
+                  {t('footer.legalLinks.refundPolicy')}
+                </a>
+              </li>
+              <li>
+                <a href={`/${currentLang}/telemetry-policy`} className="footer-link">
+                  {t('footer.legalLinks.telemetryPolicy')}
                 </a>
               </li>
             </ul>

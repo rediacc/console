@@ -1,4 +1,5 @@
 /* Downloads Page Styles */
+@import './platform-tabs.css';
 
 /* Hero Section - Dark Gradient */
 .downloads-hero {
@@ -72,11 +73,6 @@
   transition:
     border-color var(--transition-duration-slow) ease,
     box-shadow var(--transition-duration-slow) ease;
-}
-
-.platform-section.recommended {
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px rgba(85, 107, 47, var(--opacity-10));
 }
 
 .platform-header {

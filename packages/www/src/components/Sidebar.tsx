@@ -37,9 +37,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       href: `/${currentLang}/solutions/development-environments`,
       label: t('navigation.solutions.developmentEnvironments'),
     },
+    {
+      href: `/${currentLang}/solutions/preemptive-defense`,
+      label: t('navigation.solutions.preemptiveDefense'),
+    },
   ];
 
   const bottomNavItems = [
+    { href: `/${currentLang}/pricing`, label: t('navigation.pricing') },
+    { href: `/${currentLang}/install`, label: t('navigation.install') },
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
     { href: `/${currentLang}/docs`, label: t('navigation.docs') },
     { href: `/${currentLang}/contact`, label: t('navigation.contact') },

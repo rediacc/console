@@ -29,7 +29,7 @@ const isOptimized = typeof imageSrc !== 'string';
           src={imageSrc as ImageMetadata}
           alt={imageAlt}
           class="solution-image"
-          width={1100}
+          width={800}
           loading="lazy"
           decoding="async"
           quality={90}
@@ -39,8 +39,8 @@ const isOptimized = typeof imageSrc !== 'string';
           src={imageSrc as string}
           alt={imageAlt}
           class="solution-image"
-          width="1100"
-          height="618"
+          width="800"
+          height="450"
           loading="lazy"
           decoding="async"
         />
@@ -86,11 +86,11 @@ const isOptimized = typeof imageSrc !== 'string';
 
   .solution-image-container {
     margin: 0 auto;
-    max-width: 1100px;
+    max-width: 800px;
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0, 0, 0, var(--opacity-10));
-    aspect-ratio: 1100 / 618;
+    aspect-ratio: 800 / 450;
     background-color: var(--color-bg);
   }
 

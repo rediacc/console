@@ -10,7 +10,8 @@
       "zoomIn": "Dar un golpe de zoom",
       "zoomOut": "alejar",
       "clickToEnlarge": "Haga clic para ampliar la imagen",
-      "opensInNewTab": "se abre en una nueva pestaña"
+      "opensInNewTab": "se abre en una nueva pestaña",
+      "imageViewer": "Visor de imágenes"
     },
     "buttons": {
       "close": "Cerrar",
@@ -50,7 +51,15 @@
     "theProblem": "El Problema",
     "contentNotAvailable": "Este contenido no está disponible en {{language}}. Mostrando versión en inglés.",
     "exploreSolutions": "Explorar otras soluciones",
-    "platformPreview": "Vista previa de la plataforma"
+    "platformPreview": "Vista previa de la plataforma",
+    "solutions": {
+      "developmentEnvironments": "Entornos de desarrollo",
+      "disasterRecovery": "Recuperación ante desastres",
+      "threatResponse": "Respuesta a amenazas",
+      "dataSecurity": "Seguridad de datos",
+      "systemPortability": "Portabilidad del sistema",
+      "preemptiveDefense": "Defensa Preventiva"
+    }
   },
   "testimonials": {
     "title": "Lo que dicen los equipos",
@@ -159,8 +168,12 @@
     },
     "copyright": "{{year}} Rediacc. Reservados todos los derechos.",
     "legalLinks": {
-      "privacyPolicy": "política de privacidad",
-      "termsOfUse": "Condiciones de uso"
+      "termsOfService": "Condiciones del servicio",
+      "privacyPolicy": "Política de privacidad",
+      "cookiePolicy": "Política de cookies",
+      "acceptableUsePolicy": "Política de uso aceptable",
+      "refundPolicy": "Política de reembolso",
+      "telemetryPolicy": "Política de telemetría"
     },
     "links": {
       "contactSupport": "Contactar con soporte",
@@ -228,6 +241,7 @@
     "downloads": "Downloads",
     "home": "Inicio",
     "install": "Instalar",
+    "pricing": "Precios",
     "login": "Acceso",
     "search": "Buscar",
     "selectLanguage": "Seleccionar idioma",
@@ -238,7 +252,8 @@
       "developmentEnvironments": "Entornos de desarrollo",
       "disasterRecovery": "Recuperación ante desastres",
       "systemPortability": "Portabilidad del sistema",
-      "threatResponse": "Respuesta a amenazas"
+      "threatResponse": "Respuesta a amenazas",
+      "preemptiveDefense": "Defensa Preventiva"
     },
     "toggleMenu": "Alternar menú"
   },
@@ -290,7 +305,9 @@
             }
           }
         },
-        "submit": "Empezar"
+        "submit": "Empezar",
+        "ariaLabel": "Formulario de contacto",
+        "legend": "Información de contacto"
       },
       "hero": {
         "subtitle": "Complete el formulario y nos comunicaremos con usted dentro de las 48 horas.",
@@ -432,12 +449,14 @@
       },
       "hero": {
         "title": "Instalar Rediacc CLI",
-        "subtitle": "Elija su método de instalación preferido"
+        "subtitle": "Elija su método de instalación preferido",
+        "downloadsNote": "¿Busca aplicaciones de escritorio o binarios directos?",
+        "downloadsLink": "Visite la página de descargas"
       },
       "methods": {
         "quick": {
-          "title": "Instalaci\u00f3n r\u00e1pida",
-          "description": "Recomendado - instalaci\u00f3n autom\u00e1tica con gesti\u00f3n de versiones"
+          "title": "Instalación rápida",
+          "description": "Recomendado - instalación automática con gestión de versiones"
         },
         "apt": {
           "title": "APT (Debian / Ubuntu)",
@@ -469,7 +488,11 @@
         "platform": "Plataforma"
       },
       "copy": "Copiar",
-      "copied": "¡Copiado!"
+      "copied": "¡Copiado!",
+      "platformFilter": {
+        "all": "Todos los métodos",
+        "label": "Filtrar por plataforma"
+      }
     },
     "notFound": {
       "actions": {
@@ -1574,6 +1597,102 @@
             "title": "El ransomware apunta a las copias de seguridad"
           }
         }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "Defensa Preventiva | Pruebas de Seguridad Continuas Basadas en Clones",
+          "description": "Los atacantes con IA explotan vulnerabilidades en minutos. Deje de probar anualmente en producción. Clone su infraestructura con Rediacc y ejecute pruebas de seguridad continuas impulsadas por IA de forma segura.",
+          "keywords": "defensa preventiva, pruebas de penetración con IA, pruebas de seguridad continuas, pentesting basado en clones, seguridad de clones de producción, ciberseguridad con IA"
+        },
+        "hero": {
+          "title": "Atacan en segundos. Usted todavía prueba una vez al año.",
+          "subtitle": "Clone su producción. Desate herramientas de seguridad con IA. Encuentre cada debilidad antes que los atacantes."
+        },
+        "problems": {
+          "aiAttackSpeed": {
+            "title": "Los ataques de IA se mueven a velocidad de máquina",
+            "subtitle": "Si conoces al enemigo y te conoces a ti mismo, no necesitas temer el resultado de cien batallas <small class='subtitle-attribution'>— Sun Tzu, El Arte de la Guerra</small>",
+            "problem": {
+              "description": "Los atacantes impulsados por IA vulneran sistemas en minutos. Los agentes autónomos operan con 80-90% de autonomía, realizando miles de solicitudes por segundo. El tiempo hasta la explotación de nuevas vulnerabilidades se desplomó de 32 días a solo 5 días.",
+              "story": "En noviembre de 2025, una importante empresa de IA reveló que hackers patrocinados por un estado armaron un asistente de IA para atacar aproximadamente 30 organizaciones, vulnerando exitosamente 4. La IA operó con 80-90% de autonomía con apenas 20 minutos de supervisión humana. <a href='https://www.anthropic.com/news/disrupting-AI-espionage' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.axios.com/2025/11/13/anthropic-china-claude-code-cyberattack' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Por separado, un framework ofensivo de IA de código abierto armó vulnerabilidades críticas de día cero en un dispositivo de red ampliamente utilizado en menos de 10 minutos de la divulgación pública. <a href='https://blog.checkpoint.com/executive-insights/hexstrike-ai-when-llms-meet-zero-day-exploitation/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> <a href='https://thehackernews.com/2025/09/threat-actors-weaponize-hexstrike-ai-to.html' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "Los agentes de IA vulneran organizaciones con 80-90% de autonomía con mínima dirección humana",
+                "Investigadores de seguridad registraron un tiempo de ruptura de 51 segundos desde el acceso inicial hasta el movimiento lateral",
+                "El tiempo hasta la explotación de nuevas vulnerabilidades se desplomó de 32 días a 5 días",
+                "El noventa y siete por ciento de las organizaciones están considerando pruebas de penetración impulsadas por IA",
+                "La IA realiza miles de solicitudes de reconocimiento por segundo superando la velocidad humana"
+              ]
+            },
+            "solution": {
+              "title": "Igualar la velocidad de la máquina con pruebas basadas en clones",
+              "description": "Clone la producción en segundos con copia cero. Ejecute herramientas ofensivas de IA en clones aislados a máxima velocidad. Los entornos efímeros se destruyen automáticamente después de cada ciclo de prueba.",
+              "benefits": [
+                "La clonación de copia cero crea objetivos de prueba fieles a producción en segundos",
+                "Ejecutar herramientas ofensivas de IA a máxima velocidad en clones aislados de forma segura",
+                "Los entornos efímeros se limpian automáticamente después de cada ciclo de prueba de seguridad",
+                "Probar contra datos y configuraciones reales de producción, no copias obsoletas",
+                "La portabilidad multi-nube permite probar en diferentes objetivos de infraestructura"
+              ]
+            }
+          },
+          "productionTesting": {
+            "title": "Las pruebas de seguridad colapsan la producción",
+            "subtitle": "Primero, no hacer daño <small class='subtitle-attribution'>— Tradición hipocrática (primum non nocere)</small>",
+            "problem": {
+              "description": "Los escáneres de seguridad y las pruebas de penetración colapsan los sistemas de producción. Los escáneres de vulnerabilidades colapsan equipos de red, eliminan servicios y desencadenan fallos en cascada. El peor desastre de TI de 2024 fue causado por la propia actualización de un proveedor de seguridad.",
+              "story": "El 19 de julio de 2024, un proveedor líder de ciberseguridad envió una actualización defectuosa de sensor a sistemas de producción en todo el mundo. 8,5 millones de dispositivos colapsaron simultáneamente, causando más de 10 mil millones de dólares en daños globales. <a href='https://en.wikipedia.org/wiki/2024_CrowdStrike-related_IT_outages' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.cisa.gov/news-events/alerts/2024/07/19/widespread-it-outage-due-crowdstrike-update' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Una aerolínea importante perdió 500 millones de dólares y canceló 7.000 vuelos. <a href='https://www.darkreading.com/cyberattacks-data-breaches/delta-launches-500m-lawsuit-crowdstrike' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> Una encuesta de 2025 encontró que el 30% de los líderes de seguridad temen interrupciones por sus propias pruebas de seguridad. <a href='https://pentera.io/blog/2025-state-of-pentesting-insights/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "Una actualización de un proveedor de seguridad líder colapsó 8,5 millones de dispositivos en un solo día",
+                "El treinta por ciento de los CISOs reportan temor a interrupciones por sus propias pruebas de seguridad",
+                "Los escáneres de vulnerabilidades colapsan switches de red centrales y hosts de virtualización",
+                "Las herramientas de seguridad causan exactamente el tiempo de inactividad que se supone deben prevenir",
+                "Las organizaciones limitan el alcance de las pruebas porque la producción no puede tolerar el riesgo"
+              ]
+            },
+            "solution": {
+              "title": "Probar en clones, proteger la producción",
+              "description": "Cree clones atómicos y fieles a producción mediante tecnología de copia cero. Ataque el clon con máxima agresividad—si colapsa, bien, encontró una debilidad. Las instantáneas de punto en el tiempo reinician el clon instantáneamente para nuevas pruebas.",
+              "benefits": [
+                "Los clones fieles a producción replican infraestructura real sin tocar la producción",
+                "La replicación atómica asegura que los clones coincidan exactamente con el estado de producción al momento de la prueba",
+                "Las instantáneas de punto en el tiempo permiten reiniciar y reprobar instantáneamente después de pruebas destructivas",
+                "El cifrado de conocimiento cero protege los datos clonados durante las pruebas de seguridad",
+                "Ejecutar los escáneres y exploits más agresivos sin ningún riesgo para la producción"
+              ]
+            }
+          },
+          "periodicCompliance": {
+            "title": "Las pruebas anuales son una ilusión de cumplimiento",
+            "subtitle": "En verdad, Alá no cambiará la condición de un pueblo hasta que ellos cambien lo que hay en sí mismos <small class='subtitle-attribution'>— Ar-Ra'd 13:11</small>",
+            "problem": {
+              "description": "Las organizaciones realizan pruebas de penetración una o dos veces al año para cumplimiento. Pasan, obtienen la certificación y luego son vulneradas semanas después. La certificación demuestra la seguridad de un día. Los atacantes explotan los otros 364 días.",
+              "story": "Un importante minorista estadounidense obtuvo la certificación PCI DSS en septiembre de 2013 y fue vulnerado solo dos meses después—110 millones de registros de clientes robados, 248 millones de dólares en costos. <a href='https://www.digitaltransactions.net/target-passed-a-pci-inspection-before-breach-will-spend-100-million-on-chip-card-effort/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Un procesador de pagos líder obtuvo la certificación PCI solo dos semanas antes de una brecha que expuso 100 millones de tarjetas de pago, costando 200 millones de dólares. <a href='https://www.secureworks.com/blog/general-pci-compliance-data-security-case-study-heartland' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> Una investigación forense independiente encontró que el 100% de las empresas certificadas PCI que sufrieron brechas habían dejado de cumplir para el momento real de la brecha. <a href='https://www.verizon.com/business/resources/reports/payment-security-report/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "El treinta y dos por ciento de las empresas realizan pruebas de penetración solo una vez al año",
+                "Un importante minorista fue certificado PCI dos meses antes del robo de 110 millones de registros",
+                "Un procesador de pagos fue certificado PCI dos semanas antes de la compromisión de 100 millones de tarjetas",
+                "El cien por ciento de las empresas certificadas PCI que fueron vulneradas no cumplían al momento de la brecha",
+                "El cumplimiento certifica un punto en el tiempo mientras los atacantes explotan cada otro día"
+              ]
+            },
+            "solution": {
+              "title": "Pruebas continuas en clones efímeros",
+              "description": "Clone la producción según un horario—diario, cada hora o por despliegue. Ejecute pruebas de penetración con IA en el clon. Destruir. Repetir. La copia cero significa que cada clon es gratuito hasta que se escriban cambios.",
+              "benefits": [
+                "La clonación bajo demanda permite ciclos de pruebas de seguridad diarios o cada hora",
+                "Los entornos efímeros se destruyen automáticamente después de las pruebas eliminando la superficie de ataque persistente",
+                "La tecnología de copia cero hace que cada clon sea gratuito hasta que se escriban cambios",
+                "El cifrado por repositorio asegura que los datos de prueba permanezcan protegidos durante todo el ciclo",
+                "La integración CI/CD activa automáticamente la clonación y prueba de seguridad en cada despliegue"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "¿Listo para defender antes de que ataquen?",
+          "subtitle": "Clonar. Probar. Endurecer. Repetir. Cada día, no una vez al año.",
+          "button": "Iniciar Defensa Preventiva"
+        }
       }
     },
     "team": {
@@ -1652,6 +1771,821 @@
           }
         }
       }
+    },
+    "privacyPolicy": {
+      "meta": {
+        "title": "Política de Privacidad — Rediacc",
+        "description": "Descubra cómo Rediacc recopila, utiliza y protege sus datos personales.",
+        "keywords": "política de privacidad, protección de datos, RGPD, Plausible Analytics, Rediacc"
+      },
+      "hero": {
+        "title": "Política de Privacidad",
+        "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026"
+      },
+      "toc": {
+        "title": "Tabla de contenidos"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introducción",
+          "content": [
+            "Rediacc (\"nosotros\") opera el sitio web <a href=\"https://www.rediacc.com\">www.rediacc.com</a> y la plataforma de automatización de infraestructura Rediacc. Esta Política de Privacidad explica cómo recopilamos, utilizamos, divulgamos y protegemos su información.",
+            "Nos comprometemos a proteger su privacidad. Si no está de acuerdo con esta Política de Privacidad, deje de utilizar nuestro sitio web y servicios."
+          ]
+        },
+        "informationWeCollect": {
+          "id": "information-we-collect",
+          "title": "2. Información que recopilamos",
+          "content": [
+            "Recopilamos la información mínima necesaria para proporcionar nuestros servicios."
+          ],
+          "subsections": {
+            "contactFormData": {
+              "title": "2.1 Datos del formulario de contacto",
+              "content": [
+                "Al enviar nuestro formulario de contacto, recopilamos su nombre, dirección de correo electrónico, asunto y contenido del mensaje."
+              ]
+            },
+            "accountData": {
+              "title": "2.2 Datos de la cuenta",
+              "content": [
+                "Al crear una cuenta Rediacc, recopilamos su nombre, correo electrónico, nombre de la organización e información de facturación."
+              ]
+            },
+            "analyticsData": {
+              "title": "2.3 Datos analíticos",
+              "content": [
+                "Utilizamos <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>, una herramienta de análisis sin cookies y respetuosa con la privacidad."
+              ]
+            },
+            "productTelemetry": {
+              "title": "2.5 Datos de telemetría del producto",
+              "content": [
+                "Nuestros productos de software (aplicación web, CLI, Middleware y Bridge) recopilan telemetría de uso anónima para mejorar la calidad, el rendimiento y la fiabilidad del producto. Los datos de telemetría incluyen información técnica como la versión de la aplicación, el sistema operativo, el tipo de navegador, métricas de rendimiento, patrones de uso de funciones e informes de errores. Los identificadores personales se anonimizan antes de la recopilación: las direcciones de correo electrónico se reducen solo al dominio, los ID de usuario se cifran con hash y se truncan, y las contraseñas o secretos nunca se recopilan.",
+                "La telemetría está habilitada de forma predeterminada en nuestra aplicación web y CLI, y puede deshabilitarse en todos los productos. Para obtener detalles completos sobre lo que recopila cada producto y cómo darse de baja, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
+              ]
+            },
+            "cookies": {
+              "title": "2.4 Cookies",
+              "content": [
+                "Utilizamos una única cookie funcional (<code>rediacc_lang</code>) para recordar su preferencia de idioma. Más detalles en nuestra <a href=\"cookie-policy\">Política de cookies</a>."
+              ]
+            }
+          }
+        },
+        "howWeUseInformation": {
+          "id": "how-we-use-information",
+          "title": "3. Cómo utilizamos su información",
+          "content": ["Utilizamos la información recopilada para:"],
+          "items": [
+            "Responder a sus consultas",
+            "Proporcionar y mantener la plataforma Rediacc",
+            "Procesar transacciones y enviar información de facturación",
+            "Enviar comunicaciones relacionadas con el servicio",
+            "Comprender los patrones de uso del sitio web",
+            "Diagnosticar errores, mejorar el rendimiento del producto y orientar el desarrollo del producto a través de telemetría de uso anonimizada (consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>)",
+            "Cumplir con las obligaciones legales"
+          ]
+        },
+        "dataSharing": {
+          "id": "data-sharing",
+          "title": "4. Intercambio de datos y terceros",
+          "content": ["No vendemos ni alquilamos sus datos personales a terceros."],
+          "items": [
+            "<strong>Proveedores de servicios</strong> que nos ayudan a operar la plataforma",
+            "<strong>Plausible Analytics</strong> para análisis web anónimos",
+            "<strong>Procesamiento de telemetría</strong> — los datos anonimizados de uso del producto se transmiten a nuestro propio punto de telemetría dentro de la UE para su agregación y análisis. Ningún dato de telemetría se comparte con terceros (consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>)",
+            "<strong>Autoridades legales</strong> cuando lo exija la ley"
+          ]
+        },
+        "dataRetention": {
+          "id": "data-retention",
+          "title": "5. Retención de datos",
+          "content": [
+            "Los datos del formulario de contacto se conservan en nuestro sistema de correo electrónico el tiempo necesario para responder a su consulta y mantener registros de correspondencia. Los datos de la cuenta se conservan durante la vigencia de su cuenta activa más 30 días después de la eliminación de la cuenta para permitir la recuperación. Los registros de facturación se conservan según lo requieran las leyes fiscales y contables aplicables.",
+            "Los datos analíticos de Plausible son agregados y no contienen datos personales, por lo que las políticas de retención de datos no se aplican a ellos.",
+            "Los datos de telemetría del producto se conservan como trazas sin procesar durante un máximo de 90 días con fines de depuración. Las métricas de telemetría agregadas se conservan durante un máximo de 12 meses y luego se eliminan. Para más detalles, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "6. Sus derechos",
+          "content": ["Según su jurisdicción, puede tener los siguientes derechos:"],
+          "items": [
+            "<strong>Acceso:</strong> Solicitar una copia de sus datos personales",
+            "<strong>Corrección:</strong> Solicitar la corrección de datos inexactos",
+            "<strong>Eliminación:</strong> Solicitar la eliminación de sus datos",
+            "<strong>Portabilidad:</strong> Solicitar una copia legible por máquina",
+            "<strong>Oposición:</strong> Oponerse al procesamiento de sus datos",
+            "<strong>Restricción:</strong> Solicitar la restricción del procesamiento",
+            "<strong>Darse de baja de la telemetría:</strong> Desactivar la telemetría del producto en cualquier momento utilizando los mecanismos descritos en nuestra <a href=\"telemetry-policy\">Política de telemetría</a>"
+          ],
+          "content2": [
+            "Contacte con nosotros en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> para ejercer sus derechos."
+          ]
+        },
+        "dataSecurity": {
+          "id": "data-security",
+          "title": "7. Seguridad de datos",
+          "content": [
+            "Implementamos medidas de seguridad estándar de la industria, incluyendo cifrado en tránsito y en reposo."
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "8. Transferencias internacionales de datos",
+          "content": [
+            "Su información puede ser transferida a otros países. Garantizamos las salvaguardas apropiadas."
+          ]
+        },
+        "childrenPrivacy": {
+          "id": "children-privacy",
+          "title": "9. Privacidad de los niños",
+          "content": ["Nuestros servicios no están dirigidos a menores de 16 años."]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "10. Cambios en esta política",
+          "content": [
+            "Podemos actualizar esta Política de Privacidad periódicamente. Los cambios se publicarán en esta página."
+          ]
+        }
+      },
+      "contact": {
+        "title": "¿Preguntas?",
+        "description": "Si tiene preguntas sobre esta Política de Privacidad, contáctenos en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Políticas relacionadas"
+      }
+    },
+    "termsOfService": {
+      "meta": {
+        "title": "Condiciones del Servicio — Rediacc",
+        "description": "Condiciones que rigen el uso del sitio web y la plataforma de automatización de infraestructura de Rediacc.",
+        "keywords": "condiciones del servicio, términos y condiciones, acuerdo de usuario, Rediacc"
+      },
+      "hero": {
+        "title": "Condiciones del Servicio",
+        "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026"
+      },
+      "toc": {
+        "title": "Tabla de contenidos"
+      },
+      "sections": {
+        "acceptance": {
+          "id": "acceptance",
+          "title": "1. Aceptación de las condiciones",
+          "content": [
+            "Al acceder o utilizar el sitio web de Rediacc (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) o la plataforma Rediacc, acepta estas Condiciones del Servicio."
+          ]
+        },
+        "serviceDescription": {
+          "id": "service-description",
+          "title": "2. Descripción de los servicios",
+          "content": [
+            "Rediacc proporciona una plataforma de automatización de infraestructura para operaciones impulsadas por IA."
+          ]
+        },
+        "accounts": {
+          "id": "accounts",
+          "title": "3. Cuentas y registro",
+          "content": [
+            "Debe proporcionar información precisa al registrarse y es responsable de todas las actividades bajo su cuenta."
+          ]
+        },
+        "subscriptions": {
+          "id": "subscriptions",
+          "title": "4. Suscripciones y pagos",
+          "content": [
+            "Las suscripciones de pago se facturan mensual o anualmente por adelantado. Reembolsos según nuestra <a href=\"refund-policy\">Política de reembolso</a>."
+          ]
+        },
+        "acceptableUse": {
+          "id": "acceptable-use",
+          "title": "5. Uso aceptable",
+          "content": [
+            "Acepta utilizar los servicios de acuerdo con nuestra <a href=\"acceptable-use-policy\">Política de uso aceptable</a>."
+          ]
+        },
+        "telemetry": {
+          "id": "telemetry",
+          "title": "6. Telemetría y recopilación de datos",
+          "content": [
+            "Nuestros productos de software recopilan telemetría de uso anonimizada para mejorar la calidad y el rendimiento del producto. Al utilizar los Servicios, usted reconoce que la recopilación de telemetría se realiza según lo descrito en nuestra <a href=\"telemetry-policy\">Política de telemetría</a>.",
+            "La telemetría está diseñada para preservar la privacidad: los identificadores personales se anonimizan antes de la transmisión y usted puede darse de baja de la telemetría en cualquier momento. La <a href=\"telemetry-policy\">Política de telemetría</a> describe los datos específicos recopilados por cada producto y los mecanismos para desactivar la recopilación."
+          ]
+        },
+        "intellectualProperty": {
+          "id": "intellectual-property",
+          "title": "7. Propiedad intelectual",
+          "content": [
+            "Los servicios son propiedad de Rediacc y están protegidos por leyes de propiedad intelectual."
+          ]
+        },
+        "dataOwnership": {
+          "id": "data-ownership",
+          "title": "8. Sus datos",
+          "content": [
+            "Sus datos son suyos. Detalles en nuestra <a href=\"privacy-policy\">Política de Privacidad</a>."
+          ]
+        },
+        "serviceAvailability": {
+          "id": "service-availability",
+          "title": "9. Disponibilidad del servicio",
+          "content": [
+            "Nos esforzamos por mantener una alta disponibilidad pero no garantizamos acceso ininterrumpido."
+          ]
+        },
+        "limitationOfLiability": {
+          "id": "limitation-of-liability",
+          "title": "10. Limitación de responsabilidad",
+          "content": [
+            "En la máxima medida permitida por la ley, Rediacc no será responsable de daños indirectos."
+          ]
+        },
+        "indemnification": {
+          "id": "indemnification",
+          "title": "11. Indemnización",
+          "content": [
+            "Acepta indemnizar a Rediacc de todas las reclamaciones derivadas de su uso de los servicios."
+          ]
+        },
+        "termination": {
+          "id": "termination",
+          "title": "12. Terminación",
+          "content": [
+            "Puede cancelar su cuenta en cualquier momento. Podemos suspender su acceso por violación de estas condiciones."
+          ]
+        },
+        "governingLaw": {
+          "id": "governing-law",
+          "title": "13. Ley aplicable",
+          "content": ["Estas condiciones se rigen por las leyes de la República de Estonia."]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "14. Cambios en estas condiciones",
+          "content": ["Podemos actualizar estas condiciones periódicamente."]
+        }
+      },
+      "contact": {
+        "title": "¿Preguntas?",
+        "description": "Si tiene preguntas sobre estas Condiciones del Servicio, contáctenos en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Políticas relacionadas"
+      }
+    },
+    "cookiePolicy": {
+      "meta": {
+        "title": "Política de Cookies — Rediacc",
+        "description": "Política de cookies de Rediacc. Una cookie funcional y Plausible Analytics sin cookies.",
+        "keywords": "política de cookies, cookies, Plausible Analytics, RGPD, Rediacc"
+      },
+      "hero": {
+        "title": "Política de Cookies",
+        "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026"
+      },
+      "toc": {
+        "title": "Tabla de contenidos"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introducción",
+          "content": [
+            "Esta Política de Cookies explica cómo Rediacc utiliza cookies en nuestro sitio web <a href=\"https://www.rediacc.com\">www.rediacc.com</a>."
+          ]
+        },
+        "whatAreCookies": {
+          "id": "what-are-cookies",
+          "title": "2. ¿Qué son las cookies?",
+          "content": [
+            "Las cookies son pequeños archivos de texto almacenados en su dispositivo al visitar un sitio web."
+          ]
+        },
+        "cookiesWeUse": {
+          "id": "cookies-we-use",
+          "title": "3. Cookies que utilizamos",
+          "content": ["Utilizamos solo una cookie:"],
+          "subsections": {
+            "languageCookie": {
+              "title": "3.1 Cookie de preferencia de idioma",
+              "content": [
+                "<strong>Nombre:</strong> <code>rediacc_lang</code><br><strong>Tipo:</strong> Primera parte, estrictamente necesaria<br><strong>Duración:</strong> 1 año<br><strong>Propósito:</strong> Almacena su idioma preferido."
+              ]
+            }
+          }
+        },
+        "whatWeDontUse": {
+          "id": "what-we-dont-use",
+          "title": "4. Lo que no utilizamos",
+          "content": [
+            "Las siguientes tecnologías <strong>no</strong> se utilizan en nuestro sitio web:"
+          ],
+          "items": [
+            "<strong>Cookies de rastreo</strong> — Sin Google Analytics, Facebook Pixel ni cookies de rastreo",
+            "<strong>Cookies de terceros</strong> — Ningún servicio externo establece cookies",
+            "<strong>Cookies publicitarias</strong> — Sin publicidad",
+            "<strong>Huella digital</strong> — Sin técnicas de huella digital del navegador"
+          ],
+          "content2": [
+            "Nota: Esta Política de Cookies se aplica al sitio web de marketing de Rediacc. Nuestros productos de software (aplicación web, CLI, Middleware, Bridge) recopilan telemetría de uso separada que no utiliza cookies. Para obtener detalles sobre la telemetría del producto, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
+          ]
+        },
+        "analytics": {
+          "id": "analytics",
+          "title": "5. Nuestro enfoque analítico",
+          "content": [
+            "Utilizamos <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>."
+          ],
+          "items": [
+            "<strong>No</strong> utiliza cookies",
+            "<strong>No</strong> recopila datos personales",
+            "<strong>No</strong> rastrea usuarios entre sitios",
+            "Alojado en la UE, compatible con RGPD",
+            "Solo métricas agregadas y anónimas"
+          ],
+          "content2": [
+            "Además de las analíticas del sitio web, nuestros productos de software recopilan telemetría de uso anonimizada mediante instrumentación basada en OpenTelemetry. Esto es independiente de las analíticas del sitio web, no utiliza cookies y se detalla en nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
+          ]
+        },
+        "managingCookies": {
+          "id": "managing-cookies",
+          "title": "6. Gestión de cookies",
+          "content": ["Puede gestionar las cookies a través de la configuración de su navegador:"],
+          "items": [
+            "<strong>Chrome:</strong> Configuración → Privacidad y seguridad → Cookies",
+            "<strong>Firefox:</strong> Configuración → Privacidad y seguridad → Cookies",
+            "<strong>Safari:</strong> Preferencias → Privacidad → Gestionar datos web",
+            "<strong>Edge:</strong> Configuración → Cookies y permisos del sitio"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. Cambios en esta política",
+          "content": ["Si introducimos cookies adicionales, actualizaremos esta política."]
+        }
+      },
+      "contact": {
+        "title": "¿Preguntas?",
+        "description": "Si tiene preguntas sobre nuestro uso de cookies, contáctenos en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Políticas relacionadas"
+      }
+    },
+    "acceptableUsePolicy": {
+      "meta": {
+        "title": "Política de Uso Aceptable — Rediacc",
+        "description": "La política de uso aceptable de Rediacc define las actividades prohibidas en nuestra plataforma.",
+        "keywords": "política de uso aceptable, AUP, usos prohibidos, Rediacc"
+      },
+      "hero": {
+        "title": "Política de Uso Aceptable",
+        "effectiveDate": "Fecha de vigencia: 1 de febrero de 2025"
+      },
+      "toc": {
+        "title": "Tabla de contenidos"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introducción",
+          "content": [
+            "Esta Política de Uso Aceptable (\"AUP\") rige su uso de la plataforma Rediacc y forma parte de nuestras <a href=\"terms-of-service\">Condiciones del Servicio</a>."
+          ]
+        },
+        "prohibitedActivities": {
+          "id": "prohibited-activities",
+          "title": "2. Actividades prohibidas",
+          "content": ["No puede utilizar la plataforma Rediacc para:"],
+          "items": [
+            "Minería de criptomonedas o actividades computacionales intensivas similares",
+            "Envío de spam, phishing o contenido malicioso",
+            "Alojamiento o distribución de malware",
+            "Ataques de red, incluyendo DoS/DDoS",
+            "Acceso no autorizado a cuentas o sistemas ajenos",
+            "Elusión de funciones de seguridad",
+            "Almacenamiento de contenido ilegal",
+            "Reventa del acceso a la plataforma sin autorización",
+            "Uso para construir un producto competidor"
+          ]
+        },
+        "resourceUsage": {
+          "id": "resource-usage",
+          "title": "3. Uso de recursos",
+          "content": ["Para garantizar un acceso justo para todos los usuarios:"],
+          "items": [
+            "Utilice los recursos según los límites de su suscripción",
+            "Los procesos automatizados no deben crear carga excesiva",
+            "El almacenamiento debe reflejar uso legítimo",
+            "Solucione problemas de recursos con prontitud"
+          ]
+        },
+        "securityRequirements": {
+          "id": "security-requirements",
+          "title": "4. Requisitos de seguridad",
+          "content": ["Usted es responsable de la seguridad de su cuenta:"],
+          "items": [
+            "Use contraseñas fuertes y únicas",
+            "No comparta credenciales de cuenta",
+            "Reporte vulnerabilidades a <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>",
+            "No realice pruebas de seguridad sin autorización escrita",
+            "Mantenga el software actualizado"
+          ]
+        },
+        "contentStandards": {
+          "id": "content-standards",
+          "title": "5. Estándares de contenido",
+          "content": [
+            "El contenido debe cumplir con las leyes aplicables. Usted es responsable de su contenido."
+          ]
+        },
+        "enforcement": {
+          "id": "enforcement",
+          "title": "6. Aplicación",
+          "content": ["Las violaciones pueden resultar en:"],
+          "items": [
+            "Advertencia escrita",
+            "Suspensión temporal",
+            "Restricción de funciones",
+            "Terminación permanente de la cuenta",
+            "Denuncia a las autoridades"
+          ],
+          "content2": ["Haremos esfuerzos razonables para notificarle antes de actuar."]
+        },
+        "reporting": {
+          "id": "reporting",
+          "title": "7. Reportar violaciones",
+          "content": [
+            "Reporte violaciones a <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "8. Cambios en esta política",
+          "content": ["Podemos actualizar esta AUP periódicamente."]
+        }
+      },
+      "contact": {
+        "title": "¿Preguntas?",
+        "description": "Si tiene preguntas sobre esta política, contáctenos en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Políticas relacionadas"
+      }
+    },
+    "refundPolicy": {
+      "meta": {
+        "title": "Política de Reembolso — Rediacc",
+        "description": "Política de reembolso de Rediacc para suscripciones y servicios profesionales.",
+        "keywords": "política de reembolso, cancelación, reembolso de suscripción, Rediacc"
+      },
+      "hero": {
+        "title": "Política de Reembolso",
+        "effectiveDate": "Fecha de vigencia: 1 de febrero de 2025"
+      },
+      "toc": {
+        "title": "Tabla de contenidos"
+      },
+      "sections": {
+        "overview": {
+          "id": "overview",
+          "title": "1. Descripción general",
+          "content": [
+            "Esta Política de Reembolso describe las condiciones para reembolsos de suscripciones y servicios profesionales de Rediacc."
+          ]
+        },
+        "platformSubscriptions": {
+          "id": "platform-subscriptions",
+          "title": "2. Suscripciones de la plataforma",
+          "content": ["Rediacc ofrece múltiples niveles de suscripción:"],
+          "subsections": {
+            "freeTier": {
+              "title": "2.1 Nivel gratuito",
+              "content": ["El nivel Community es gratuito para siempre."]
+            },
+            "paidTiers": {
+              "title": "2.2 Niveles de pago",
+              "content": [
+                "Las suscripciones de pago generalmente no son reembolsables. Excepciones:"
+              ],
+              "items": [
+                "<strong>Primeros 14 días:</strong> Reembolso completo para nuevos suscriptores",
+                "<strong>Interrupción del servicio:</strong> Crédito prorrateado por interrupciones prolongadas (más de 48 horas)",
+                "<strong>Errores de facturación:</strong> Reembolso completo por cargos incorrectos"
+              ]
+            },
+            "annualSubscriptions": {
+              "title": "2.3 Suscripciones anuales",
+              "content": [
+                "Las suscripciones anuales pueden cancelarse en cualquier momento. Sin reembolso parcial excepto en la ventana de 14 días."
+              ]
+            }
+          }
+        },
+        "professionalServices": {
+          "id": "professional-services",
+          "title": "3. Servicios profesionales",
+          "content": ["Los servicios profesionales se facturan por hora ($400–$1,200/hr):"],
+          "items": [
+            "<strong>Antes de iniciar el trabajo:</strong> Reembolso completo",
+            "<strong>Durante el compromiso:</strong> Facturación solo por horas trabajadas",
+            "<strong>Disputas de calidad:</strong> Contacte dentro de 7 días de la entrega",
+            "<strong>Compromiso mínimo:</strong> Algunos paquetes tienen un período mínimo"
+          ]
+        },
+        "howToRequest": {
+          "id": "how-to-request",
+          "title": "4. Cómo solicitar un reembolso",
+          "content": [
+            "Envíe un correo a <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> con:"
+          ],
+          "items": [
+            "Su dirección de correo de la cuenta",
+            "La suscripción o servicio en cuestión",
+            "El motivo de su solicitud",
+            "Números de pedido o factura relevantes"
+          ],
+          "content2": ["Responderemos dentro de 5 días hábiles."]
+        },
+        "refundProcessing": {
+          "id": "refund-processing",
+          "title": "5. Procesamiento de reembolsos",
+          "content": [
+            "Los reembolsos aprobados se procesarán en 10 días hábiles al método de pago original."
+          ]
+        },
+        "nonRefundable": {
+          "id": "non-refundable",
+          "title": "6. No reembolsable",
+          "content": ["Lo siguiente no es elegible para reembolso:"],
+          "items": [
+            "Suscripciones canceladas después de la ventana de 14 días",
+            "Cargos basados en uso por recursos ya consumidos",
+            "Horas de servicios profesionales ya entregadas",
+            "Tarifas de reactivación de cuenta",
+            "Cargos por violación de las <a href=\"terms-of-service\">Condiciones del Servicio</a>"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. Cambios en esta política",
+          "content": ["Podemos actualizar esta Política de Reembolso periódicamente."]
+        }
+      },
+      "contact": {
+        "title": "¿Preguntas?",
+        "description": "Si tiene preguntas sobre reembolsos, contáctenos en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Políticas relacionadas"
+      }
+    },
+    "telemetryPolicy": {
+      "meta": {
+        "title": "Política de Telemetría — Rediacc",
+        "description": "Detalles sobre qué datos de telemetría recopilan los productos de Rediacc, por qué, cómo se procesan y cómo darse de baja. Cubre la aplicación web, CLI, Middleware y Bridge.",
+        "keywords": "política de telemetría, recopilación de datos, OpenTelemetry, darse de baja, privacidad, RGPD, Rediacc"
+      },
+      "hero": {
+        "title": "Política de Telemetría",
+        "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026"
+      },
+      "toc": {
+        "title": "Tabla de contenidos"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introducción",
+          "content": [
+            "Los productos de software de Rediacc recopilan telemetría de uso anonimizada para ayudarnos a mejorar la calidad del producto, diagnosticar problemas y comprender cómo se utilizan nuestras herramientas. Esta Política de Telemetría describe exactamente qué datos se recopilan, por qué, cómo se procesan y cómo puede darse de baja.",
+            "Esta política cubre cuatro productos: la <strong>aplicación web de Rediacc</strong>, la <strong>CLI de Rediacc</strong>, el <strong>Middleware de Rediacc</strong> y el <strong>Bridge de Rediacc (Renet)</strong>. Las analíticas del sitio web (Plausible) se cubren por separado en nuestra <a href=\"privacy-policy\">Política de Privacidad</a> y <a href=\"cookie-policy\">Política de Cookies</a>."
+          ]
+        },
+        "principles": {
+          "id": "principles",
+          "title": "2. Nuestros principios de telemetría",
+          "content": ["Toda la recopilación de telemetría en Rediacc sigue estos principios:"],
+          "items": [
+            "<strong>Privacidad por diseño:</strong> Los identificadores personales se anonimizan antes de la transmisión. Las direcciones de correo electrónico se reducen solo al dominio, los ID de usuario se cifran con hash (SHA-256) y se truncan, las contraseñas y secretos nunca se recopilan.",
+            "<strong>Recopilación mínima:</strong> Solo recopilamos lo necesario para mejorar la calidad del producto y diagnosticar problemas. No recopilamos contenido de archivos, contenido de bases de datos, resultados de consultas ni datos comerciales.",
+            "<strong>Transparencia:</strong> Esta política enumera cada categoría de datos recopilados por cada producto. No hay flujos de datos ocultos.",
+            "<strong>Control del usuario:</strong> Cada producto proporciona un mecanismo para desactivar la telemetría por completo. La exclusión se respeta de forma inmediata y completa.",
+            "<strong>Agregación:</strong> Los datos de telemetría se analizan de forma agregada. No creamos perfiles de usuarios individuales a partir de la telemetría."
+          ]
+        },
+        "legalBasis": {
+          "id": "legal-basis",
+          "title": "3. Base legal para la recopilación",
+          "content": [
+            "Según el Reglamento General de Protección de Datos (RGPD) de la UE y la Directiva de privacidad electrónica, nuestra base legal para la recopilación de telemetría depende del contexto del producto:",
+            "Para la <strong>aplicación web</strong> (basada en navegador): la telemetría se recopila bajo <strong>interés legítimo</strong> (RGPD Art. 6(1)(f)) con el fin de mantener y mejorar la calidad del servicio. Puede darse de baja en cualquier momento.",
+            "Para la <strong>CLI, Middleware y Bridge</strong> (instalados en su infraestructura): la telemetría se recopila bajo <strong>interés legítimo</strong> con mecanismos claros de exclusión proporcionados. Puede desactivar la telemetría antes de que se envíe cualquier dato.",
+            "Para usuarios en jurisdicciones que requieren consentimiento explícito (por ejemplo, Corea del Sur bajo PIPA), la telemetría debe activarse explícitamente a través de la configuración del producto antes de que se transmitan datos."
+          ]
+        },
+        "webApp": {
+          "id": "web-app",
+          "title": "4. Telemetría de la aplicación web",
+          "content": [
+            "La aplicación web de Rediacc utiliza rastreo distribuido basado en OpenTelemetry. La telemetría se transmite a <code>https://www.rediacc.com/otlp</code>. En producción, solo se muestrea el <strong>10% de las sesiones</strong>."
+          ],
+          "subsections": {
+            "webDataCollected": {
+              "title": "4.1 Datos recopilados",
+              "content": ["La aplicación web recopila las siguientes categorías de datos:"],
+              "items": [
+                "<strong>Información del navegador:</strong> nombre y versión del navegador, idioma preferido, plataforma (por ejemplo, Windows, macOS, Linux), resolución de pantalla, profundidad de color, cadena de agente de usuario, memoria del dispositivo (si está disponible), tipo de conexión de red",
+                "<strong>Contexto del usuario:</strong> ID de sesión (generado aleatoriamente por sesión), solo dominio de correo electrónico (la parte local se redacta, por ejemplo, <code>***@example.com</code>), nombre de la organización, nombre del equipo",
+                "<strong>Vistas de página y navegación:</strong> páginas visitadas dentro de la aplicación, cambios de ruta, información de referencia",
+                "<strong>Interacciones del usuario:</strong> clics, envíos de formularios, apertura/cierre de modales, consultas de búsqueda, cambios de filtro, cambios de pestaña, descargas de archivos (los nombres de archivo no se recopilan)",
+                "<strong>Llamadas API:</strong> método HTTP, ruta URL, código de estado de respuesta, duración de la solicitud",
+                "<strong>Errores:</strong> tipo de error, mensaje de error, traza de pila (truncada a 1.000 caracteres), origen del error",
+                "<strong>Métricas de rendimiento:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), tiempos de recursos, uso de memoria (muestreado cada 30 segundos), detección de tareas largas",
+                "<strong>Ciclo de vida del componente:</strong> tiempos de montaje/desmontaje del componente, duración del renderizado"
+              ]
+            },
+            "webNotCollected": {
+              "title": "4.2 Datos NO recopilados",
+              "content": ["La aplicación web no recopila:"],
+              "items": [
+                "Direcciones de correo electrónico completas (la parte local siempre se redacta)",
+                "Contraseñas, tokens o credenciales de autenticación",
+                "Contenido de archivos, contenido de bases de datos o resultados de consultas",
+                "Valores de campos de formulario (solo se registra el hecho de que se envió un formulario)",
+                "Contenido del portapapeles o pulsaciones de teclas",
+                "Direcciones IP (no registradas por nuestro punto de telemetría)"
+              ]
+            },
+            "webOptOut": {
+              "title": "4.3 Cómo darse de baja",
+              "content": [
+                "Establezca el indicador de configuración <code>userConsent</code> en <code>false</code> en la configuración de su cuenta. La telemetría se detiene inmediatamente al darse de baja.",
+                "<strong>Aplicación de escritorio:</strong> La telemetría está completamente deshabilitada en la aplicación de escritorio (Electron) de forma predeterminada. No se recopilan ni transmiten datos."
+              ]
+            }
+          }
+        },
+        "cli": {
+          "id": "cli",
+          "title": "5. Telemetría de la CLI",
+          "content": [
+            "La CLI de Rediacc utiliza el SDK de Node de OpenTelemetry. La telemetría se transmite a <code>https://www.rediacc.com/otlp</code>."
+          ],
+          "subsections": {
+            "cliDataCollected": {
+              "title": "5.1 Datos recopilados",
+              "content": ["La CLI recopila las siguientes categorías de datos:"],
+              "items": [
+                "<strong>Uso de comandos:</strong> nombre del comando, versión de la CLI, código de salida, estado de éxito o fallo",
+                "<strong>Argumentos anonimizados:</strong> opciones de comando con valores sensibles redactados — contraseñas, tokens, secretos, claves API y credenciales se reemplazan con <code>[REDACTED]</code>",
+                "<strong>Entorno:</strong> tipo de sistema operativo, versión del entorno de ejecución Node.js, entorno de despliegue",
+                "<strong>Información de errores:</strong> tipo de error, mensaje de error y traza de pila limitada cuando los comandos fallan",
+                "<strong>Interacciones API:</strong> método HTTP, ruta URL, código de estado de respuesta, duración de la solicitud",
+                "<strong>Sesión:</strong> ID de sesión generado aleatoriamente, duración de ejecución del comando"
+              ]
+            },
+            "cliOptOut": {
+              "title": "5.2 Cómo darse de baja",
+              "content": [
+                "Puede desactivar la telemetría de la CLI utilizando cualquiera de estos métodos:"
+              ],
+              "items": [
+                "Establezca la variable de entorno <code>REDIACC_TELEMETRY=off</code> (también acepta <code>false</code> o <code>0</code>)",
+                "Establezca <code>telemetryEnabled: false</code> en su archivo de configuración de la CLI",
+                "La telemetría se <strong>desactiva automáticamente</strong> en entornos de CI (detectados mediante la variable de entorno <code>CI</code>)"
+              ]
+            }
+          }
+        },
+        "middleware": {
+          "id": "middleware",
+          "title": "6. Telemetría del Middleware",
+          "content": [
+            "El Middleware de Rediacc recopila telemetría operativa. La telemetría se transmite a <code>https://www.rediacc.com/otlp/v1/traces</code>."
+          ],
+          "subsections": {
+            "middlewareDataCollected": {
+              "title": "6.1 Datos recopilados",
+              "content": ["El Middleware recopila las siguientes categorías de datos:"],
+              "items": [
+                "<strong>Información del sistema:</strong> nombre del host, versión del sistema operativo, versión del entorno de ejecución .NET",
+                "<strong>Llamadas API:</strong> método HTTP, ruta del endpoint, código de estado de respuesta, duración de la solicitud",
+                "<strong>Operaciones de base de datos:</strong> nombre del procedimiento almacenado, duración de la ejecución, recuento de filas devueltas (sin contenido de consultas, parámetros ni datos de resultados)",
+                "<strong>Eventos de autenticación:</strong> solo identificador de usuario cifrado con hash — los ID de usuario se cifran con SHA-256 y una sal, luego se truncan a los primeros 12 caracteres. Los ID de usuario originales nunca se transmiten.",
+                "<strong>Verificaciones de estado:</strong> estado de disponibilidad de los componentes del servicio y tiempos de respuesta",
+                "<strong>Ciclo de vida de la aplicación:</strong> eventos de inicio, cierre y cambios de configuración",
+                "<strong>Información de errores:</strong> tipo de error, mensaje de error y contexto operativo"
+              ]
+            },
+            "middlewareOptOut": {
+              "title": "6.2 Cómo darse de baja",
+              "content": [
+                "Establezca <code>Telemetry:Enabled</code> en <code>false</code> en la configuración de su Middleware (appsettings.json o configuración específica del entorno)."
+              ]
+            }
+          }
+        },
+        "bridge": {
+          "id": "bridge",
+          "title": "7. Telemetría del Bridge (Renet)",
+          "content": [
+            "El Bridge de Rediacc (Renet) utiliza OpenTelemetry con exportación OTLP comprimida con gzip. La telemetría se transmite a <code>www.rediacc.com/otlp/v1/traces</code> en lotes (máximo 10 spans, vaciados cada 5 segundos)."
+          ],
+          "subsections": {
+            "bridgeDataCollected": {
+              "title": "7.1 Datos recopilados",
+              "content": ["El Bridge recopila las siguientes categorías de datos:"],
+              "items": [
+                "<strong>Operaciones de cola:</strong> ID de tarea, nivel de prioridad, tipo de operación, duración de ejecución, estado de éxito o fallo",
+                "<strong>Operaciones SSH:</strong> host de destino, nombre de usuario, número de puerto, código de salida, duración de ejecución (no se recopila contenido de comandos ni salida)",
+                "<strong>Llamadas API:</strong> nombre del procedimiento, duración de la solicitud",
+                "<strong>Operaciones de bóveda:</strong> tipo de operación y duración (no se recopilan valores secretos, claves ni contenido de la bóveda)",
+                "<strong>Ciclo de vida del Bridge:</strong> eventos de inicio, cierre y reconexión"
+              ]
+            },
+            "bridgeOptOut": {
+              "title": "7.2 Cómo darse de baja",
+              "content": [
+                "Puede desactivar la telemetría del Bridge utilizando cualquiera de estos métodos:"
+              ],
+              "items": [
+                "Establezca la variable de entorno <code>REDIACC_TELEMETRY_DISABLED=1</code>",
+                "Establezca la variable de entorno <code>DO_NOT_TRACK=1</code> (respeta el estándar <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>)"
+              ]
+            }
+          }
+        },
+        "dataProcessing": {
+          "id": "data-processing",
+          "title": "8. Procesamiento y almacenamiento de datos",
+          "content": [
+            "Todos los datos de telemetría se transmiten a través de conexiones cifradas (TLS 1.2+) a nuestro punto de telemetría. Los datos se procesan y almacenan de la siguiente manera:"
+          ],
+          "items": [
+            "<strong>Cifrado:</strong> Todos los datos se cifran en tránsito usando TLS. El Bridge además utiliza compresión gzip.",
+            "<strong>Retención:</strong> Las trazas de telemetría sin procesar se almacenan durante un máximo de 90 días para depuración e investigación de incidentes. Las métricas agregadas se conservan durante un máximo de 12 meses y luego se eliminan.",
+            "<strong>Acceso:</strong> Los datos de telemetría solo son accesibles para el personal de ingeniería y operaciones de Rediacc según la necesidad de conocer.",
+            "<strong>Sin compartir con terceros:</strong> Los datos de telemetría no se comparten, venden ni son accesibles para ningún tercero.",
+            "<strong>Infraestructura:</strong> Todos los datos de telemetría se procesan y almacenan en infraestructura ubicada dentro de la Unión Europea."
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "9. Transferencias internacionales de datos",
+          "content": [
+            "Los datos de telemetría se procesan y almacenan exclusivamente en servidores dentro de la Unión Europea. En el caso improbable de que los datos de telemetría necesiten ser transferidos fuera de la UE/EEE (por ejemplo, para recuperación ante desastres), se aplicarán las salvaguardas apropiadas, incluidas las Cláusulas Contractuales Tipo (CCT) aprobadas por la Comisión Europea."
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "10. Sus derechos",
+          "content": [
+            "Dado que nuestros datos de telemetría están anonimizados y agregados, generalmente no constituyen datos personales según el RGPD. Sin embargo, en la medida en que cualquier dato de telemetría pueda vincularse a usted personalmente, tiene derecho a:"
+          ],
+          "items": [
+            "<strong>Acceso:</strong> Solicitar información sobre qué datos de telemetría tenemos que puedan estar relacionados con usted",
+            "<strong>Eliminación:</strong> Solicitar la eliminación de cualquier dato de telemetría que pueda vincularse a usted",
+            "<strong>Darse de baja:</strong> Desactivar la telemetría en cualquier momento utilizando los mecanismos específicos del producto descritos anteriormente",
+            "<strong>Reclamación:</strong> Presentar una reclamación ante la Inspección de Protección de Datos de Estonia (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) o su autoridad supervisora local"
+          ],
+          "content2": [
+            "Para ejercer cualquiera de estos derechos, contáctenos en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Responderemos dentro de 30 días."
+          ]
+        },
+        "ccpa": {
+          "id": "ccpa",
+          "title": "11. Residentes de California (CCPA/CPRA)",
+          "content": [
+            "Si usted es residente de California, las siguientes divulgaciones adicionales se aplican según la Ley de Privacidad del Consumidor de California (CCPA) modificada por la Ley de Derechos de Privacidad de California (CPRA):"
+          ],
+          "items": [
+            "<strong>Categorías de información recopilada:</strong> Información de actividad de Internet o red electrónica (tipo de navegador, datos de interacción, registros de errores), identificadores de dispositivo (anonimizados), datos de geolocalización (solo a nivel de país, derivados de la dirección IP que no se almacena)",
+            "<strong>Propósito:</strong> Mejorar y mantener la calidad del servicio, depuración, monitoreo de rendimiento y seguridad",
+            "<strong>Venta/Compartición:</strong> No vendemos ni compartimos datos de telemetría según lo definido por la CCPA/CPRA",
+            "<strong>Derecho a darse de baja:</strong> Utilice los mecanismos de exclusión específicos del producto descritos en las secciones 4-7 anteriores. También respetamos la señal de Control Global de Privacidad (GPC) en nuestra aplicación web."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "12. Cambios en esta política",
+          "content": [
+            "Podemos actualizar esta Política de Telemetría cuando agreguemos nuevos productos, cambiemos los datos que se recopilan o modifiquemos nuestras prácticas de procesamiento. Los cambios se publicarán en esta página con una fecha de vigencia actualizada. Notificaremos a los usuarios de cambios importantes a través de las notas de la versión de nuestro producto y el sitio web."
+          ]
+        }
+      },
+      "contact": {
+        "title": "¿Preguntas?",
+        "description": "Si tiene preguntas sobre nuestras prácticas de telemetría o necesita ayuda para darse de baja, contáctenos en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Políticas relacionadas"
+      }
     }
   },
   "problem": {
@@ -1711,9 +2645,18 @@
         ],
         "description": "Clones de producción instantánea. Cero tickets de DevOps. Entornos de 60 segundos.",
         "title": "Entornos de desarrollo"
+      },
+      {
+        "title": "Defensa Preventiva",
+        "description": "Los atacantes con IA se mueven en segundos. Clonar. Probar. Endurecer. Repetir.",
+        "benefits": [
+          "Clonar producción para pentesting seguro con IA",
+          "Pruebas continuas sin riesgo de inactividad",
+          "Cerrar ventanas de vulnerabilidad antes de que lleguen los atacantes"
+        ]
       }
     ],
-    "subtitle": "Cinco soluciones integradas para una respuesta rápida cuando falla la infraestructura o surgen amenazas.",
+    "subtitle": "Seis soluciones integradas para una respuesta rápida cuando falla la infraestructura o surgen amenazas.",
     "title": "Cómo garantizamos la continuidad del negocio"
   }
 }

@@ -11,6 +11,7 @@
     "lint:css": "node scripts/check-unused-css.js",
     "lint:css-files": "node scripts/check-unused-css-files.js",
     "preview": "astro preview",
+    "scale:svg": "node scripts/scale-svg-viewbox.cjs",
     "validate:cli-docs": "node scripts/validate-cli-docs.js",
     "validate:content": "node scripts/validate-content.js",
     "validate:content:strict": "node scripts/validate-content.js --strict"
@@ -42,5 +43,8 @@
     "react-i18next": "^16.5.4",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "^0.8.11"
   }
 }
