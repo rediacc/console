@@ -4,9 +4,9 @@
  * with a clear error message.
  */
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { Command } from 'commander';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import type { Command } from 'commander';
 
 /**
  * Add a preAction hook that blocks the command in non-cloud modes.
