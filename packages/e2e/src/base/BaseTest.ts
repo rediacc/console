@@ -41,6 +41,13 @@ export const test = baseTest.extend<TestFixtures>({
       const video = page.video();
       if (!video) return;
 
+      // Close the page to finalize the video recording. video.saveAs() waits
+      // for the browser context to close, but fixture teardown runs BEFORE the
+      // page fixture closes it — causing a deadlock. Closing explicitly here
+      // lets saveAs() proceed immediately. page.close() is idempotent so the
+      // page fixture's subsequent close is a no-op.
+      await page.close();
+
       const testBasename = path.basename(testInfo.file, '.test.ts');
       const videosDir = path.resolve(__dirname, '../../videos/user-guide');
       await mkdir(videosDir, { recursive: true });
