@@ -77,7 +77,7 @@ artifact_exists() {
     fi
 
     local artifacts
-    artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
+    artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" \
         --jq "$jq_filter" 2>/dev/null || echo "")
 
     IFS=',' read -ra NAMES <<< "$ARTIFACT_NAMES"

@@ -66,7 +66,7 @@ trap 'rm -rf "$DOWNLOAD_DIR"' EXIT
 while [[ $ELAPSED -lt $MAX_WAIT ]]; do
     # Use the GitHub API to find the latest artifact by creation time.
     # This avoids downloading stale artifacts from previous retry attempts.
-    ARTIFACT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
+    ARTIFACT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" \
         --jq "[.artifacts[] | select(.name == \"$ARTIFACT_NAME\")] | sort_by(.created_at) | last | .id // empty" 2>/dev/null || echo "")
 
     if [[ -n "$ARTIFACT_ID" ]]; then
