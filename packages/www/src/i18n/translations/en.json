@@ -51,7 +51,15 @@
     "theProblem": "The Problem",
     "contentNotAvailable": "This content is not available in {{language}}. Showing English version.",
     "exploreSolutions": "Explore Other Solutions",
-    "platformPreview": "Platform Preview"
+    "platformPreview": "Platform Preview",
+    "solutions": {
+      "developmentEnvironments": "Development Environments",
+      "disasterRecovery": "Disaster Recovery",
+      "threatResponse": "Threat Response",
+      "dataSecurity": "Data Security",
+      "systemPortability": "System Portability",
+      "preemptiveDefense": "Preemptive Defense"
+    }
   },
   "navigation": {
     "home": "Home",
@@ -60,6 +68,7 @@
     "contact": "Contact",
     "downloads": "Downloads",
     "install": "Install",
+    "pricing": "Pricing",
     "toggleMenu": "Toggle menu",
     "search": "Search",
     "selectLanguage": "Select language",
@@ -72,7 +81,8 @@
       "threatResponse": "Threat Response",
       "dataSecurity": "Data Security",
       "systemPortability": "System Portability",
-      "developmentEnvironments": "Development Environments"
+      "developmentEnvironments": "Development Environments",
+      "preemptiveDefense": "Preemptive Defense"
     }
   },
   "footer": {
@@ -104,8 +114,12 @@
       "contactSupport": "Contact Support"
     },
     "legalLinks": {
-      "termsOfUse": "Terms of Use",
-      "privacyPolicy": "Privacy Policy"
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "cookiePolicy": "Cookie Policy",
+      "acceptableUsePolicy": "Acceptable Use Policy",
+      "refundPolicy": "Refund Policy",
+      "telemetryPolicy": "Telemetry Policy"
     }
   },
   "hero": {
@@ -155,7 +169,7 @@
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
-    "subtitle": "Five integrated solutions for rapid response when infrastructure fails or threats strike.",
+    "subtitle": "Six integrated solutions for rapid response when infrastructure fails or threats strike.",
     "items": [
       {
         "title": "Ransomware Survival",
@@ -188,6 +202,15 @@
           "60-second environment provisioning",
           "Production-identical clones",
           "Automatic Git integration"
+        ]
+      },
+      {
+        "title": "Preemptive Defense",
+        "description": "AI attackers move in seconds. Clone. Test. Harden. Repeat.",
+        "benefits": [
+          "Clone production for safe AI pentesting",
+          "Continuous testing without downtime risk",
+          "Close vulnerability windows before attackers arrive"
         ]
       }
     ]
@@ -358,7 +381,9 @@
             "placeholder": "Tell us about your needs..."
           }
         },
-        "submit": "Get Started"
+        "submit": "Get Started",
+        "ariaLabel": "Contact form",
+        "legend": "Contact information"
       }
     },
     "team": {
@@ -1107,7 +1132,9 @@
       },
       "hero": {
         "title": "Install Rediacc CLI",
-        "subtitle": "Choose your preferred installation method"
+        "subtitle": "Choose your preferred installation method",
+        "downloadsNote": "Looking for desktop apps or direct binaries?",
+        "downloadsLink": "Visit the Downloads page"
       },
       "methods": {
         "quick": {
@@ -1144,7 +1171,11 @@
         "platform": "Platform"
       },
       "copy": "Copy",
-      "copied": "Copied!"
+      "copied": "Copied!",
+      "platformFilter": {
+        "all": "All Methods",
+        "label": "Filter by platform"
+      }
     },
     "notFound": {
       "meta": {
@@ -1694,6 +1725,954 @@
           "subtitle": "Clone your first environment in seconds. Limited spots available.",
           "button": "Apply for Early Access"
         }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "Preemptive Defense | Clone-Based Continuous Security Testing",
+          "description": "AI attackers exploit vulnerabilities in minutes. Stop testing annually on production. Clone your infrastructure with Rediacc and run continuous AI-powered security testing safely.",
+          "keywords": "preemptive defense, AI penetration testing, continuous security testing, clone-based pentesting, production clone security, AI cybersecurity"
+        },
+        "hero": {
+          "title": "They Attack in Seconds. You Still Test Once a Year.",
+          "subtitle": "Clone your production. Unleash AI security tools. Find every weakness before attackers do."
+        },
+        "problems": {
+          "aiAttackSpeed": {
+            "title": "AI Attacks Move at Machine Speed",
+            "subtitle": "If you know the enemy and know yourself, you need not fear the result of a hundred battles <small class='subtitle-attribution'>— Sun Tzu, The Art of War</small>",
+            "problem": {
+              "description": "AI-powered attackers breach systems in minutes. Autonomous agents operate 80-90% autonomously, making thousands of requests per second. Time-to-exploit for new vulnerabilities collapsed from 32 days to just 5 days. Human security teams cannot keep pace with machine-speed reconnaissance, exploitation, and lateral movement.",
+              "story": "In November 2025, a major AI company disclosed that state-sponsored hackers weaponized an AI assistant to attack approximately 30 organizations, successfully breaching 4. The AI operated 80-90% autonomously with roughly 20 minutes of human oversight. <a href='https://www.anthropic.com/news/disrupting-AI-espionage' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.axios.com/2025/11/13/anthropic-china-claude-code-cyberattack' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Separately, an open-source AI offensive framework weaponized critical zero-day vulnerabilities in a widely-used network appliance in under 10 minutes of public disclosure. <a href='https://blog.checkpoint.com/executive-insights/hexstrike-ai-when-llms-meet-zero-day-exploitation/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> <a href='https://thehackernews.com/2025/09/threat-actors-weaponize-hexstrike-ai-to.html' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "AI agents breach organizations 80-90% autonomously with minimal human direction",
+                "Security researchers recorded a breakout time of 51 seconds from initial access to lateral movement",
+                "Time-to-exploit for new vulnerabilities collapsed from 32 days to 5 days",
+                "Ninety-seven percent of organizations are considering AI-powered penetration testing",
+                "AI makes thousands of reconnaissance requests per second dwarfing human speed"
+              ]
+            },
+            "solution": {
+              "title": "Match Machine Speed with Clone-Based Testing",
+              "description": "Clone production in seconds with zero-copy. Run AI offensive tools on isolated clones at full machine speed. Ephemeral environments auto-destroy after each test cycle, leaving no persistent attack surface.",
+              "benefits": [
+                "Zero-copy cloning creates production-faithful test targets in seconds",
+                "Run AI offensive tools at full speed on isolated clones safely",
+                "Ephemeral environments auto-cleanup after each security test cycle",
+                "Test against real production data and configurations not stale copies",
+                "Multi-cloud portability lets you test across different infrastructure targets"
+              ]
+            }
+          },
+          "productionTesting": {
+            "title": "Security Testing Crashes Production",
+            "subtitle": "First, do no harm <small class='subtitle-attribution'>— Hippocratic tradition (primum non nocere)</small>",
+            "problem": {
+              "description": "Security scanners and penetration tests crash production systems. Vulnerability scanners crash network equipment, kill services, and trigger cascading failures. The worst IT disaster of 2024 was caused by a security vendor's own update. Organizations face an impossible choice: test aggressively and risk outages, or test cautiously and miss vulnerabilities.",
+              "story": "On July 19, 2024, a leading cybersecurity vendor pushed a faulty sensor update to production systems worldwide. 8.5 million devices crashed simultaneously, causing over $10 billion in global damage. <a href='https://en.wikipedia.org/wiki/2024_CrowdStrike-related_IT_outages' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.cisa.gov/news-events/alerts/2024/07/19/widespread-it-outage-due-crowdstrike-update' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> One major airline alone lost $500 million and cancelled 7,000 flights. <a href='https://www.darkreading.com/cyberattacks-data-breaches/delta-launches-500m-lawsuit-crowdstrike' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> Meanwhile, a 2025 survey found 30% of security leaders fear outages from their own security testing. <a href='https://pentera.io/blog/2025-state-of-pentesting-insights/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "A leading security vendor update crashed 8.5 million devices in a single day",
+                "Thirty percent of CISOs report fear of outages from their own security testing",
+                "Vulnerability scanners crash core network switches and virtualization hosts",
+                "Security tools cause the exact downtime they are supposed to prevent",
+                "Organizations limit testing scope because production cannot tolerate the risk"
+              ]
+            },
+            "solution": {
+              "title": "Test on Clones, Protect Production",
+              "description": "Create atomic, production-faithful clones via zero-copy technology. Attack the clone with maximum aggression—if it crashes, good, you found a weakness. Point-in-time snapshots reset the clone instantly for retesting.",
+              "benefits": [
+                "Production-faithful clones replicate real infrastructure without touching production",
+                "Atomic replication ensures clones match production state exactly at test time",
+                "Point-in-time snapshots let you reset and retest instantly after destructive tests",
+                "Zero-knowledge encryption protects cloned data during security testing",
+                "Run the most aggressive scanners and exploits without any production risk"
+              ]
+            }
+          },
+          "periodicCompliance": {
+            "title": "Annual Testing Is a Compliance Illusion",
+            "subtitle": "Verily, Allah will not change the condition of a people until they change what is in themselves <small class='subtitle-attribution'>— Ar-Ra'd 13:11</small>",
+            "problem": {
+              "description": "Organizations penetration test once or twice a year for compliance. They pass, get certified, then get breached weeks later. The certification proves one day's security posture. Attackers exploit the other 364 days when nobody is testing.",
+              "story": "A major US retailer was PCI DSS certified in September 2013 and breached just two months later—110 million customer records stolen, $248 million in costs. <a href='https://www.digitaltransactions.net/target-passed-a-pci-inspection-before-breach-will-spend-100-million-on-chip-card-effort/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> A leading payment processor was PCI certified just two weeks before a breach exposed 100 million payment cards, costing $200 million. <a href='https://www.secureworks.com/blog/general-pci-compliance-data-security-case-study-heartland' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> Independent forensic research found that 100% of PCI-certified companies that suffered breaches had fallen out of compliance by the actual time of the breach. <a href='https://www.verizon.com/business/resources/reports/payment-security-report/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "Thirty-two percent of companies perform penetration testing only once per year",
+                "A major retailer was PCI certified two months before 110 million records were stolen",
+                "A payment processor was PCI certified two weeks before 100 million cards were compromised",
+                "One hundred percent of breached PCI-certified companies failed compliance at time of breach",
+                "Compliance certifies a point in time while attackers exploit every other day"
+              ]
+            },
+            "solution": {
+              "title": "Continuous Testing on Ephemeral Clones",
+              "description": "Clone production on schedule—daily, hourly, or per-deploy. Run AI penetration tests on the clone. Destroy. Repeat. Zero-copy means each clone is free until changes are written.",
+              "benefits": [
+                "On-demand cloning enables daily or hourly security testing cycles",
+                "Ephemeral environments auto-destroy after testing eliminating persistent attack surface",
+                "Zero-copy technology makes each clone free until changes are written",
+                "Per-repository encryption ensures test data stays protected throughout the cycle",
+                "CI/CD integration triggers security clone-and-test on every deployment automatically"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "Ready to Defend Before They Attack?",
+          "subtitle": "Clone. Test. Harden. Repeat. Every day, not once a year.",
+          "button": "Start Preemptive Defense"
+        }
+      }
+    },
+    "privacyPolicy": {
+      "meta": {
+        "title": "Privacy Policy — Rediacc",
+        "description": "Learn how Rediacc collects, uses, and protects your personal data. We use cookieless Plausible analytics and store minimal information.",
+        "keywords": "privacy policy, data protection, GDPR, CCPA, Plausible analytics, Rediacc"
+      },
+      "hero": {
+        "title": "Privacy Policy",
+        "effectiveDate": "Effective Date: February 1, 2026"
+      },
+      "toc": {
+        "title": "Table of Contents"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introduction",
+          "content": [
+            "Rediacc (\"we\", \"us\", or \"our\") operates the website <a href=\"https://www.rediacc.com\">www.rediacc.com</a> and the Rediacc infrastructure automation platform. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our services.",
+            "We are committed to protecting your privacy and handling your data transparently. If you do not agree with the terms of this Privacy Policy, please discontinue use of our website and services."
+          ]
+        },
+        "informationWeCollect": {
+          "id": "information-we-collect",
+          "title": "2. Information We Collect",
+          "content": [
+            "We collect minimal information necessary to provide our services. The categories of data we collect depend on how you interact with us."
+          ],
+          "subsections": {
+            "contactFormData": {
+              "title": "2.1 Contact Form Data",
+              "content": [
+                "When you submit our contact form, we collect your name, email address, subject of inquiry, and message content. This data is sent directly to our email address and is not stored in a database on our servers."
+              ]
+            },
+            "accountData": {
+              "title": "2.2 Account Data",
+              "content": [
+                "When you create a Rediacc account to use our platform, we collect your name, email address, organization name, and billing information. Payment processing is handled by our third-party payment processor; we do not store full credit card numbers."
+              ]
+            },
+            "analyticsData": {
+              "title": "2.3 Analytics Data",
+              "content": [
+                "We use <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>, a privacy-focused, cookieless analytics tool. Plausible does not use cookies, does not collect personal data, and is fully compliant with GDPR, CCPA, and PECR. Analytics data includes page views, referral sources, browser type, and country-level location — all without identifying individual visitors."
+              ]
+            },
+            "productTelemetry": {
+              "title": "2.5 Product Telemetry Data",
+              "content": [
+                "Our software products (Web Application, CLI, Middleware, and Bridge) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, browser type, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection — email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected.",
+                "Telemetry is enabled by default in our Web Application and CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+              ]
+            },
+            "cookies": {
+              "title": "2.4 Cookies",
+              "content": [
+                "We use a single functional cookie (<code>rediacc_lang</code>) to remember your language preference across visits. This cookie is strictly necessary for the website to function as expected and does not track you or collect personal data. For more details, see our <a href=\"cookie-policy\">Cookie Policy</a>."
+              ]
+            }
+          }
+        },
+        "howWeUseInformation": {
+          "id": "how-we-use-information",
+          "title": "3. How We Use Your Information",
+          "content": ["We use the information we collect for the following purposes:"],
+          "items": [
+            "To respond to your inquiries submitted through the contact form",
+            "To provide, operate, and maintain the Rediacc platform",
+            "To process transactions and send related billing information",
+            "To send service-related communications (e.g., security updates, maintenance notices)",
+            "To understand website usage patterns through aggregated, anonymous analytics",
+            "To diagnose errors, improve product performance, and guide product development through anonymized usage telemetry (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
+            "To comply with legal obligations and enforce our Terms of Service"
+          ]
+        },
+        "dataSharing": {
+          "id": "data-sharing",
+          "title": "4. Data Sharing and Third Parties",
+          "content": [
+            "We do not sell, trade, or rent your personal data to third parties. We may share information with:"
+          ],
+          "items": [
+            "<strong>Service providers</strong> who assist in operating our platform (e.g., cloud hosting, payment processing), bound by contractual obligations to protect your data",
+            "<strong>Plausible Analytics</strong> for cookieless, anonymized website analytics (no personal data is shared)",
+            "<strong>Telemetry processing</strong> — anonymized product usage data is transmitted to our own telemetry endpoint within the EU for aggregation and analysis. No telemetry data is shared with third parties (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
+            "<strong>Law enforcement</strong> if required by law, regulation, or valid legal process"
+          ]
+        },
+        "dataRetention": {
+          "id": "data-retention",
+          "title": "5. Data Retention",
+          "content": [
+            "Contact form submissions are retained in our email system for as long as necessary to respond to your inquiry and maintain correspondence records. Account data is retained for the duration of your active account plus 30 days after account deletion to allow for recovery. Billing records are retained as required by applicable tax and accounting laws.",
+            "Plausible analytics data is aggregated and does not contain personal data, so data retention policies do not apply to it.",
+            "Product telemetry data is retained as raw traces for up to 90 days for debugging purposes. Aggregated telemetry metrics are retained for up to 12 months and then deleted. For details, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "6. Your Rights",
+          "content": [
+            "Depending on your jurisdiction, you may have the following rights regarding your personal data:"
+          ],
+          "items": [
+            "<strong>Access:</strong> Request a copy of the personal data we hold about you",
+            "<strong>Correction:</strong> Request correction of inaccurate or incomplete data",
+            "<strong>Deletion:</strong> Request deletion of your personal data",
+            "<strong>Portability:</strong> Request a machine-readable copy of your data",
+            "<strong>Objection:</strong> Object to the processing of your data for specific purposes",
+            "<strong>Restriction:</strong> Request that we restrict processing of your data",
+            "<strong>Opt-out of telemetry:</strong> Disable product telemetry at any time using the mechanisms described in our <a href=\"telemetry-policy\">Telemetry Policy</a>"
+          ],
+          "content2": [
+            "To exercise any of these rights, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. We will respond within 30 days."
+          ]
+        },
+        "dataSecurity": {
+          "id": "data-security",
+          "title": "7. Data Security",
+          "content": [
+            "We implement industry-standard security measures to protect your data, including encryption in transit (TLS 1.2+), encryption at rest, access controls, and regular security audits. However, no method of electronic storage or transmission is 100% secure, and we cannot guarantee absolute security."
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "8. International Data Transfers",
+          "content": [
+            "Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. When we transfer data internationally, we ensure appropriate safeguards are in place, including Standard Contractual Clauses where applicable."
+          ]
+        },
+        "childrenPrivacy": {
+          "id": "children-privacy",
+          "title": "9. Children's Privacy",
+          "content": [
+            "Our services are not directed to individuals under the age of 16. We do not knowingly collect personal data from children. If we become aware that we have collected data from a child under 16, we will delete it promptly."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "10. Changes to This Policy",
+          "content": [
+            "We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date. We encourage you to review this policy periodically. Continued use of our website or services after changes constitutes acceptance of the updated policy."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Questions?",
+        "description": "If you have questions about this Privacy Policy or our data practices, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Related Policies"
+      }
+    },
+    "termsOfService": {
+      "meta": {
+        "title": "Terms of Service — Rediacc",
+        "description": "Terms governing your use of the Rediacc website and infrastructure automation platform. Covers accounts, subscriptions, intellectual property, and liability.",
+        "keywords": "terms of service, terms and conditions, user agreement, Rediacc, SaaS terms"
+      },
+      "hero": {
+        "title": "Terms of Service",
+        "effectiveDate": "Effective Date: February 1, 2026"
+      },
+      "toc": {
+        "title": "Table of Contents"
+      },
+      "sections": {
+        "acceptance": {
+          "id": "acceptance",
+          "title": "1. Acceptance of Terms",
+          "content": [
+            "By accessing or using the Rediacc website (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) or the Rediacc infrastructure automation platform (collectively, the \"Services\"), you agree to be bound by these Terms of Service (\"Terms\"). If you are using the Services on behalf of an organization, you represent that you have the authority to bind that organization to these Terms.",
+            "If you do not agree to these Terms, you must not access or use the Services."
+          ]
+        },
+        "serviceDescription": {
+          "id": "service-description",
+          "title": "2. Description of Services",
+          "content": [
+            "Rediacc provides an infrastructure automation platform designed for AI-driven operations, including zero-copy database cloning, disaster recovery, development environment provisioning, and related professional services. The specific features available to you depend on your subscription tier."
+          ]
+        },
+        "accounts": {
+          "id": "accounts",
+          "title": "3. Accounts and Registration",
+          "content": [
+            "To access certain features of the Services, you must create an account. You agree to provide accurate, current, and complete information during registration and to update your information to keep it accurate. You are responsible for safeguarding your account credentials and for all activities that occur under your account.",
+            "You must notify us immediately at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> if you suspect unauthorized access to your account."
+          ]
+        },
+        "subscriptions": {
+          "id": "subscriptions",
+          "title": "4. Subscriptions and Payment",
+          "content": [
+            "Rediacc offers multiple subscription tiers, including a free tier and paid tiers. Paid subscriptions are billed monthly or annually in advance. All fees are stated in US dollars and are non-refundable except as described in our <a href=\"refund-policy\">Refund Policy</a>.",
+            "We reserve the right to change our pricing with 30 days' notice. Price changes will not affect your current billing cycle. If you do not agree to a price change, you may cancel your subscription before the next billing cycle."
+          ]
+        },
+        "acceptableUse": {
+          "id": "acceptable-use",
+          "title": "5. Acceptable Use",
+          "content": [
+            "You agree to use the Services only for lawful purposes and in compliance with our <a href=\"acceptable-use-policy\">Acceptable Use Policy</a>. You must not use the Services in any way that could damage, disable, or impair the Services or interfere with other users' access."
+          ]
+        },
+        "telemetry": {
+          "id": "telemetry",
+          "title": "6. Telemetry and Data Collection",
+          "content": [
+            "Our software products collect anonymized usage telemetry to improve product quality and performance. By using the Services, you acknowledge that telemetry collection occurs as described in our <a href=\"telemetry-policy\">Telemetry Policy</a>.",
+            "Telemetry is designed to be privacy-preserving: personal identifiers are anonymized before transmission, and you may opt out of telemetry at any time. The <a href=\"telemetry-policy\">Telemetry Policy</a> describes the specific data collected by each product and the mechanisms for disabling collection."
+          ]
+        },
+        "intellectualProperty": {
+          "id": "intellectual-property",
+          "title": "7. Intellectual Property",
+          "content": [
+            "The Services, including all software, documentation, designs, text, graphics, and other content provided by Rediacc, are owned by Rediacc and protected by intellectual property laws. Your subscription grants you a limited, non-exclusive, non-transferable license to access and use the Services during your subscription term.",
+            "You retain all rights to your data and content that you upload, store, or process through the Services. By using the Services, you grant Rediacc a limited license to host, store, and process your data solely to provide the Services to you."
+          ]
+        },
+        "dataOwnership": {
+          "id": "data-ownership",
+          "title": "8. Your Data",
+          "content": [
+            "You own your data. We do not access, use, or share your data except as necessary to provide the Services, comply with the law, or as described in our <a href=\"privacy-policy\">Privacy Policy</a>. Upon termination of your account, you may export your data within 30 days. After 30 days, we will delete your data from our active systems."
+          ]
+        },
+        "serviceAvailability": {
+          "id": "service-availability",
+          "title": "9. Service Availability",
+          "content": [
+            "We strive to maintain high availability of the Services but do not guarantee uninterrupted access. The Services may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We will provide reasonable advance notice of planned maintenance."
+          ]
+        },
+        "limitationOfLiability": {
+          "id": "limitation-of-liability",
+          "title": "10. Limitation of Liability",
+          "content": [
+            "To the maximum extent permitted by law, Rediacc shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, data, use, or goodwill, arising out of or in connection with your use of the Services.",
+            "Our total aggregate liability for all claims arising out of or related to these Terms or the Services shall not exceed the total amount you paid to Rediacc during the twelve (12) months preceding the claim."
+          ]
+        },
+        "indemnification": {
+          "id": "indemnification",
+          "title": "11. Indemnification",
+          "content": [
+            "You agree to indemnify, defend, and hold harmless Rediacc, its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from your use of the Services, your violation of these Terms, or your violation of any rights of a third party."
+          ]
+        },
+        "termination": {
+          "id": "termination",
+          "title": "12. Termination",
+          "content": [
+            "You may terminate your account at any time by contacting us. We may suspend or terminate your access to the Services if you violate these Terms or the <a href=\"acceptable-use-policy\">Acceptable Use Policy</a>, with or without notice depending on the severity of the violation.",
+            "Upon termination, your right to use the Services ceases immediately. Sections relating to intellectual property, limitation of liability, indemnification, and governing law survive termination."
+          ]
+        },
+        "governingLaw": {
+          "id": "governing-law",
+          "title": "13. Governing Law",
+          "content": [
+            "These Terms are governed by and construed in accordance with the laws of the Republic of Estonia, without regard to conflict of law principles. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts located in Estonia."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "14. Changes to These Terms",
+          "content": [
+            "We may update these Terms from time to time. We will notify you of material changes by posting the updated Terms on our website with a new effective date. Your continued use of the Services after the changes take effect constitutes acceptance of the revised Terms."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Questions?",
+        "description": "If you have questions about these Terms of Service, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Related Policies"
+      }
+    },
+    "cookiePolicy": {
+      "meta": {
+        "title": "Cookie Policy — Rediacc",
+        "description": "Rediacc's cookie policy. We use one functional cookie for language preference and cookieless Plausible analytics. No tracking cookies.",
+        "keywords": "cookie policy, cookies, Plausible analytics, GDPR, ePrivacy, Rediacc"
+      },
+      "hero": {
+        "title": "Cookie Policy",
+        "effectiveDate": "Effective Date: February 1, 2026"
+      },
+      "toc": {
+        "title": "Table of Contents"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introduction",
+          "content": [
+            "This Cookie Policy explains how Rediacc (\"we\", \"us\", or \"our\") uses cookies on our website <a href=\"https://www.rediacc.com\">www.rediacc.com</a>. We are committed to transparency about the technologies we use and your options for controlling them."
+          ]
+        },
+        "whatAreCookies": {
+          "id": "what-are-cookies",
+          "title": "2. What Are Cookies?",
+          "content": [
+            "Cookies are small text files stored on your device when you visit a website. They serve various purposes, such as remembering your preferences, enabling functionality, and analyzing website usage. Cookies can be \"first-party\" (set by the website you visit) or \"third-party\" (set by external services)."
+          ]
+        },
+        "cookiesWeUse": {
+          "id": "cookies-we-use",
+          "title": "3. Cookies We Use",
+          "content": ["We use a minimal number of cookies. In fact, we use only one:"],
+          "subsections": {
+            "languageCookie": {
+              "title": "3.1 Language Preference Cookie",
+              "content": [
+                "<strong>Name:</strong> <code>rediacc_lang</code><br><strong>Type:</strong> First-party, strictly necessary<br><strong>Duration:</strong> 1 year<br><strong>Purpose:</strong> Stores your preferred language (e.g., \"en\", \"de\", \"fr\") so the website displays in your chosen language on return visits.",
+                "This cookie is classified as \"strictly necessary\" under the EU ePrivacy Directive because it is essential for the website to function as you have requested. No consent banner is required for this cookie."
+              ]
+            }
+          }
+        },
+        "whatWeDontUse": {
+          "id": "what-we-dont-use",
+          "title": "4. What We Don't Use",
+          "content": [
+            "We believe in privacy by default. The following technologies are <strong>not</strong> used on our website:"
+          ],
+          "items": [
+            "<strong>Tracking cookies</strong> — We do not use Google Analytics, Facebook Pixel, or any tracking cookies",
+            "<strong>Third-party cookies</strong> — No external services set cookies on our website",
+            "<strong>Advertising cookies</strong> — We do not serve or track advertisements",
+            "<strong>Fingerprinting</strong> — We do not use browser or device fingerprinting techniques"
+          ],
+          "content2": [
+            "Note: This Cookie Policy applies to the Rediacc marketing website. Our software products (Web Application, CLI, Middleware, Bridge) collect separate usage telemetry that does not use cookies. For details on product telemetry, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+          ]
+        },
+        "analytics": {
+          "id": "analytics",
+          "title": "5. Our Analytics Approach",
+          "content": [
+            "We use <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a> for understanding website usage. Plausible is a privacy-focused analytics tool that:",
+            "Because Plausible is cookieless and does not collect personal data, it is compliant with GDPR, CCPA, and PECR without requiring user consent."
+          ],
+          "items": [
+            "Does <strong>not</strong> use cookies of any kind",
+            "Does <strong>not</strong> collect personal data or personally identifiable information",
+            "Does <strong>not</strong> track users across websites or sessions",
+            "Is hosted in the EU and is fully GDPR-compliant",
+            "Provides only aggregated, anonymous metrics (page views, referral sources, browser types, country-level location)"
+          ],
+          "content2": [
+            "In addition to website analytics, our software products collect anonymized usage telemetry through OpenTelemetry-based instrumentation. This is separate from website analytics, does not use cookies, and is detailed in our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+          ]
+        },
+        "managingCookies": {
+          "id": "managing-cookies",
+          "title": "6. Managing Cookies",
+          "content": [
+            "Since we only use one strictly necessary cookie, there is no cookie consent banner on our website. However, you can manage cookies through your browser settings:",
+            "Please note that disabling the <code>rediacc_lang</code> cookie will cause the website to default to English on each visit rather than remembering your language preference."
+          ],
+          "items": [
+            "<strong>Chrome:</strong> Settings → Privacy and security → Cookies and other site data",
+            "<strong>Firefox:</strong> Settings → Privacy & Security → Cookies and Site Data",
+            "<strong>Safari:</strong> Preferences → Privacy → Manage Website Data",
+            "<strong>Edge:</strong> Settings → Cookies and site permissions → Manage and delete cookies"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. Changes to This Policy",
+          "content": [
+            "If we introduce additional cookies in the future, we will update this policy and implement an appropriate consent mechanism as required by law. We will notify you of material changes by posting the updated policy with a new effective date."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Questions?",
+        "description": "If you have questions about our use of cookies, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Related Policies"
+      }
+    },
+    "acceptableUsePolicy": {
+      "meta": {
+        "title": "Acceptable Use Policy — Rediacc",
+        "description": "Rediacc's acceptable use policy defines prohibited activities on our infrastructure automation platform, including abuse, unauthorized access, and resource misuse.",
+        "keywords": "acceptable use policy, AUP, prohibited uses, infrastructure platform, Rediacc"
+      },
+      "hero": {
+        "title": "Acceptable Use Policy",
+        "effectiveDate": "Effective Date: February 1, 2025"
+      },
+      "toc": {
+        "title": "Table of Contents"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introduction",
+          "content": [
+            "This Acceptable Use Policy (\"AUP\") governs your use of the Rediacc infrastructure automation platform and related services. This AUP is incorporated into and forms part of our <a href=\"terms-of-service\">Terms of Service</a>. By using our Services, you agree to comply with this policy."
+          ]
+        },
+        "prohibitedActivities": {
+          "id": "prohibited-activities",
+          "title": "2. Prohibited Activities",
+          "content": ["You may not use the Rediacc platform to:"],
+          "items": [
+            "Engage in cryptocurrency mining, blockchain validation, or similar computationally intensive activities unrelated to your legitimate use of the platform",
+            "Send unsolicited bulk communications (spam), phishing emails, or malicious content",
+            "Host, distribute, or link to malware, viruses, ransomware, or other malicious software",
+            "Conduct network attacks, including denial-of-service (DoS/DDoS) attacks, port scanning, or traffic flooding, against any target",
+            "Access or attempt to access accounts, systems, or data that do not belong to you without explicit authorization",
+            "Circumvent, disable, or interfere with security features, rate limits, or access controls of the platform",
+            "Store, process, or transmit content that violates applicable laws, including but not limited to child exploitation material, content promoting terrorism, or content that infringes intellectual property rights",
+            "Resell, sublicense, or redistribute access to the platform without written authorization from Rediacc",
+            "Use the platform to build a competing product or service, or to benchmark the platform for competitive purposes without written consent"
+          ]
+        },
+        "resourceUsage": {
+          "id": "resource-usage",
+          "title": "3. Resource Usage",
+          "content": [
+            "The Rediacc platform operates on shared and dedicated infrastructure. To ensure fair access for all users:"
+          ],
+          "items": [
+            "You must use platform resources (CPU, memory, storage, network) in accordance with your subscription tier limits",
+            "Automated processes (scripts, bots, CI/CD pipelines) must not create excessive load that degrades service for other users",
+            "Storage usage must reflect legitimate platform use; using the platform solely for bulk data storage unrelated to your environments is prohibited",
+            "You must promptly address any resource usage issues identified and communicated by Rediacc"
+          ]
+        },
+        "securityRequirements": {
+          "id": "security-requirements",
+          "title": "4. Security Requirements",
+          "content": ["You are responsible for the security of your account and environments:"],
+          "items": [
+            "Use strong, unique passwords and enable multi-factor authentication when available",
+            "Do not share account credentials between individuals; use team features for multi-user access",
+            "Report any security vulnerabilities you discover to <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> promptly",
+            "Do not attempt to probe, scan, or test the vulnerability of the platform or breach security measures without explicit written authorization from Rediacc",
+            "Maintain up-to-date software and configurations in your environments to prevent security risks"
+          ]
+        },
+        "contentStandards": {
+          "id": "content-standards",
+          "title": "5. Content Standards",
+          "content": [
+            "Content stored, processed, or transmitted through the platform must comply with applicable laws and regulations. You are solely responsible for the content in your environments. Rediacc does not actively monitor content but reserves the right to review content when we have reason to believe a violation has occurred."
+          ]
+        },
+        "enforcement": {
+          "id": "enforcement",
+          "title": "6. Enforcement",
+          "content": [
+            "Violation of this AUP may result in one or more of the following actions, at our sole discretion:"
+          ],
+          "items": [
+            "A written warning identifying the violation and requesting remediation",
+            "Temporary suspension of your access to the platform",
+            "Throttling or restricting specific platform features or resources",
+            "Permanent termination of your account",
+            "Reporting to appropriate law enforcement authorities"
+          ],
+          "content2": [
+            "We will make reasonable efforts to notify you before taking action, except where immediate action is necessary to protect the platform, other users, or comply with legal requirements."
+          ]
+        },
+        "reporting": {
+          "id": "reporting",
+          "title": "7. Reporting Violations",
+          "content": [
+            "If you believe a Rediacc user is violating this AUP, please report it to <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> with as much detail as possible. We take all reports seriously and will investigate promptly."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "8. Changes to This Policy",
+          "content": [
+            "We may update this AUP from time to time to address new threats, technologies, or platform features. Changes will be posted on this page with an updated effective date. Continued use of the Services after changes constitutes acceptance of the updated policy."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Questions?",
+        "description": "If you have questions about this Acceptable Use Policy, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Related Policies"
+      }
+    },
+    "refundPolicy": {
+      "meta": {
+        "title": "Refund Policy — Rediacc",
+        "description": "Rediacc's refund policy for platform subscriptions and professional services. Covers eligibility, process, and timelines for refund requests.",
+        "keywords": "refund policy, cancellation, subscription refund, professional services, Rediacc"
+      },
+      "hero": {
+        "title": "Refund Policy",
+        "effectiveDate": "Effective Date: February 1, 2025"
+      },
+      "toc": {
+        "title": "Table of Contents"
+      },
+      "sections": {
+        "overview": {
+          "id": "overview",
+          "title": "1. Overview",
+          "content": [
+            "This Refund Policy outlines the terms and conditions for refunds related to Rediacc platform subscriptions and professional services. We want you to be satisfied with our services, and we handle refund requests fairly and transparently."
+          ]
+        },
+        "platformSubscriptions": {
+          "id": "platform-subscriptions",
+          "title": "2. Platform Subscriptions",
+          "content": [
+            "Rediacc offers multiple subscription tiers for our infrastructure automation platform. The following terms apply to paid subscriptions:"
+          ],
+          "subsections": {
+            "freeTier": {
+              "title": "2.1 Free Tier",
+              "content": [
+                "The Community tier is free forever and does not require payment information. No refund applies as there is no charge."
+              ]
+            },
+            "paidTiers": {
+              "title": "2.2 Paid Tiers",
+              "content": [
+                "Paid subscriptions (Team, Business, and Enterprise tiers, ranging from $349 to $2,100+/month) are billed in advance on a monthly or annual basis. Because these services are delivered digitally and resources are provisioned immediately upon payment, subscriptions are generally non-refundable.",
+                "However, we offer refunds in the following circumstances:"
+              ],
+              "items": [
+                "<strong>First 14 days:</strong> If you are a new subscriber and request a refund within 14 days of your first payment, we will issue a full refund. This applies to your first subscription only.",
+                "<strong>Service outage:</strong> If the platform experiences extended downtime (more than 48 consecutive hours) not caused by scheduled maintenance, you may request a pro-rated credit for the affected period.",
+                "<strong>Billing errors:</strong> If you were charged incorrectly (e.g., duplicate charges, wrong tier), we will issue a full refund for the erroneous charge."
+              ]
+            },
+            "annualSubscriptions": {
+              "title": "2.3 Annual Subscriptions",
+              "content": [
+                "Annual subscriptions may be cancelled at any time. Upon cancellation, you will retain access until the end of your current billing period. No partial refunds are issued for the remaining months of an annual subscription, except within the 14-day window for first-time subscribers."
+              ]
+            }
+          }
+        },
+        "professionalServices": {
+          "id": "professional-services",
+          "title": "3. Professional Services",
+          "content": [
+            "Rediacc offers professional services including architecture reviews, migration assistance, custom integration development, and dedicated support, billed at hourly rates ($400–$1,200/hr depending on the service package). The following refund terms apply:"
+          ],
+          "items": [
+            "<strong>Before work begins:</strong> Full refund if you cancel before any work has been performed",
+            "<strong>During engagement:</strong> You will be billed only for hours worked. Any unused prepaid hours will be refunded",
+            "<strong>Quality disputes:</strong> If you are dissatisfied with the quality of work, contact us within 7 days of delivery. We will work to resolve the issue first; if resolution is not possible, we may offer a partial refund at our discretion",
+            "<strong>Minimum engagement:</strong> Some service packages have a minimum commitment. Cancellation before the minimum period may incur a cancellation fee as specified in your service agreement"
+          ]
+        },
+        "howToRequest": {
+          "id": "how-to-request",
+          "title": "4. How to Request a Refund",
+          "content": [
+            "To request a refund, email <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> with the following information:"
+          ],
+          "items": [
+            "Your account email address",
+            "The subscription or service for which you are requesting a refund",
+            "The reason for your refund request",
+            "Any relevant order or invoice numbers"
+          ],
+          "content2": ["We aim to respond to all refund requests within 5 business days."]
+        },
+        "refundProcessing": {
+          "id": "refund-processing",
+          "title": "5. Refund Processing",
+          "content": [
+            "Approved refunds will be processed to the original payment method within 10 business days. The actual time for the refund to appear on your statement depends on your payment provider and may take an additional 5–10 business days.",
+            "Refunds for annual subscriptions paid by wire transfer may take up to 30 business days to process."
+          ]
+        },
+        "nonRefundable": {
+          "id": "non-refundable",
+          "title": "6. Non-Refundable Items",
+          "content": ["The following are not eligible for refunds:"],
+          "items": [
+            "Subscriptions cancelled after the 14-day new subscriber window",
+            "Usage-based charges (e.g., overage fees) for resources already consumed",
+            "Professional services hours that have already been delivered and accepted",
+            "Account reactivation fees",
+            "Charges resulting from your violation of the <a href=\"terms-of-service\">Terms of Service</a> or <a href=\"acceptable-use-policy\">Acceptable Use Policy</a>"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. Changes to This Policy",
+          "content": [
+            "We may update this Refund Policy from time to time. Changes will be posted on this page with an updated effective date. The policy in effect at the time of your purchase applies to that transaction."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Questions?",
+        "description": "If you have questions about refunds or need assistance, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Related Policies"
+      }
+    },
+    "telemetryPolicy": {
+      "meta": {
+        "title": "Telemetry Policy — Rediacc",
+        "description": "Details on what telemetry data Rediacc products collect, why, how it is processed, and how to opt out. Covers Web App, CLI, Middleware, and Bridge.",
+        "keywords": "telemetry policy, data collection, OpenTelemetry, opt-out, privacy, GDPR, Rediacc"
+      },
+      "hero": {
+        "title": "Telemetry Policy",
+        "effectiveDate": "Effective Date: February 1, 2026"
+      },
+      "toc": {
+        "title": "Table of Contents"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Introduction",
+          "content": [
+            "Rediacc software products collect anonymized usage telemetry to help us improve product quality, diagnose issues, and understand how our tools are used. This Telemetry Policy describes exactly what data is collected, why, how it is processed, and how you can opt out.",
+            "This policy covers four products: the <strong>Rediacc Web Application</strong>, the <strong>Rediacc CLI</strong>, the <strong>Rediacc Middleware</strong>, and the <strong>Rediacc Bridge (Renet)</strong>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
+          ]
+        },
+        "principles": {
+          "id": "principles",
+          "title": "2. Our Telemetry Principles",
+          "content": ["All telemetry collection at Rediacc follows these principles:"],
+          "items": [
+            "<strong>Privacy by design:</strong> Personal identifiers are anonymized before transmission. Email addresses are reduced to domain only, user IDs are hashed (SHA-256) and truncated, passwords and secrets are never collected.",
+            "<strong>Minimal collection:</strong> We collect only what is necessary to improve product quality and diagnose issues. We do not collect file contents, database contents, query results, or business data.",
+            "<strong>Transparency:</strong> This policy lists every category of data collected by each product. There are no hidden data flows.",
+            "<strong>User control:</strong> Every product provides a mechanism to disable telemetry entirely. Opt-out is respected immediately and completely.",
+            "<strong>Aggregation:</strong> Telemetry data is analyzed in aggregate. We do not build individual user profiles from telemetry."
+          ]
+        },
+        "legalBasis": {
+          "id": "legal-basis",
+          "title": "3. Legal Basis for Collection",
+          "content": [
+            "Under the EU General Data Protection Regulation (GDPR) and the ePrivacy Directive, our legal basis for telemetry collection depends on the product context:",
+            "For the <strong>Web Application</strong> (browser-based): telemetry is collected under <strong>legitimate interest</strong> (GDPR Art. 6(1)(f)) for the purpose of maintaining and improving service quality. You can opt out at any time.",
+            "For the <strong>CLI, Middleware, and Bridge</strong> (installed on your infrastructure): telemetry is collected under <strong>legitimate interest</strong> with clear opt-out mechanisms provided. You can disable telemetry before any data is sent.",
+            "For users in jurisdictions requiring explicit consent (e.g., South Korea under PIPA), telemetry should be opted into explicitly through the product configuration before any data is transmitted."
+          ]
+        },
+        "webApp": {
+          "id": "web-app",
+          "title": "4. Web Application Telemetry",
+          "content": [
+            "The Rediacc Web Application uses OpenTelemetry-based distributed tracing. Telemetry is transmitted to <code>https://www.rediacc.com/otlp</code>. In production, only <strong>10% of sessions</strong> are sampled."
+          ],
+          "subsections": {
+            "webDataCollected": {
+              "title": "4.1 Data Collected",
+              "content": ["The Web Application collects the following categories of data:"],
+              "items": [
+                "<strong>Browser information:</strong> browser name and version, preferred language, platform (e.g., Windows, macOS, Linux), screen resolution, color depth, user agent string, device memory (if available), network connection type",
+                "<strong>User context:</strong> session ID (randomly generated per session), email domain only (local part is redacted, e.g., <code>***@example.com</code>), organization name, team name",
+                "<strong>Page views and navigation:</strong> pages visited within the application, route changes, referrer information",
+                "<strong>User interactions:</strong> clicks, form submissions, modal opens/closes, search queries, filter changes, tab switches, file downloads (file names are not collected)",
+                "<strong>API calls:</strong> HTTP method, URL path, response status code, request duration",
+                "<strong>Errors:</strong> error type, error message, stack trace (truncated to 1,000 characters), error source",
+                "<strong>Performance metrics:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), resource timing, memory usage (sampled every 30 seconds), long task detection",
+                "<strong>Component lifecycle:</strong> component mount/unmount timing, render duration"
+              ]
+            },
+            "webNotCollected": {
+              "title": "4.2 Data NOT Collected",
+              "content": ["The Web Application does not collect:"],
+              "items": [
+                "Full email addresses (local part is always redacted)",
+                "Passwords, tokens, or authentication credentials",
+                "File contents, database contents, or query results",
+                "Form field values (only the fact that a form was submitted is recorded)",
+                "Clipboard contents or keystrokes",
+                "IP addresses (not logged by our telemetry endpoint)"
+              ]
+            },
+            "webOptOut": {
+              "title": "4.3 How to Opt Out",
+              "content": [
+                "Set the <code>userConsent</code> configuration flag to <code>false</code> in your account settings. Telemetry stops immediately upon opt-out.",
+                "<strong>Desktop Application:</strong> Telemetry is completely disabled in the Desktop (Electron) application by default. No data is collected or transmitted."
+              ]
+            }
+          }
+        },
+        "cli": {
+          "id": "cli",
+          "title": "5. CLI Telemetry",
+          "content": [
+            "The Rediacc CLI uses the OpenTelemetry Node SDK. Telemetry is transmitted to <code>https://www.rediacc.com/otlp</code>."
+          ],
+          "subsections": {
+            "cliDataCollected": {
+              "title": "5.1 Data Collected",
+              "content": ["The CLI collects the following categories of data:"],
+              "items": [
+                "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
+                "<strong>Anonymized arguments:</strong> command options with sensitive values redacted — passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
+                "<strong>Environment:</strong> operating system type, Node.js runtime version, deployment environment",
+                "<strong>Error information:</strong> error type, error message, and limited stack trace when commands fail",
+                "<strong>API interactions:</strong> HTTP method, URL path, response status code, request duration",
+                "<strong>Session:</strong> randomly generated session ID, command execution duration"
+              ]
+            },
+            "cliOptOut": {
+              "title": "5.2 How to Opt Out",
+              "content": ["You can disable CLI telemetry using any of these methods:"],
+              "items": [
+                "Set the environment variable <code>REDIACC_TELEMETRY=off</code> (also accepts <code>false</code> or <code>0</code>)",
+                "Set <code>telemetryEnabled: false</code> in your CLI configuration file",
+                "Telemetry is <strong>automatically disabled</strong> in CI environments (detected via the <code>CI</code> environment variable)"
+              ]
+            }
+          }
+        },
+        "middleware": {
+          "id": "middleware",
+          "title": "6. Middleware Telemetry",
+          "content": [
+            "The Rediacc Middleware collects operational telemetry. Telemetry is transmitted to <code>https://www.rediacc.com/otlp/v1/traces</code>."
+          ],
+          "subsections": {
+            "middlewareDataCollected": {
+              "title": "6.1 Data Collected",
+              "content": ["The Middleware collects the following categories of data:"],
+              "items": [
+                "<strong>System information:</strong> hostname, operating system version, .NET runtime version",
+                "<strong>API calls:</strong> HTTP method, endpoint path, response status code, request duration",
+                "<strong>Database operations:</strong> stored procedure name, execution duration, row count returned (no query content, parameters, or result data)",
+                "<strong>Authentication events:</strong> hashed user identifier only — user IDs are hashed with SHA-256 and a salt, then truncated to the first 12 characters. Original user IDs are never transmitted.",
+                "<strong>Health checks:</strong> service component availability status and response times",
+                "<strong>Application lifecycle:</strong> startup, shutdown, and configuration change events",
+                "<strong>Error information:</strong> error type, error message, and operational context"
+              ]
+            },
+            "middlewareOptOut": {
+              "title": "6.2 How to Opt Out",
+              "content": [
+                "Set <code>Telemetry:Enabled</code> to <code>false</code> in your Middleware configuration (appsettings.json or environment-specific configuration)."
+              ]
+            }
+          }
+        },
+        "bridge": {
+          "id": "bridge",
+          "title": "7. Bridge (Renet) Telemetry",
+          "content": [
+            "The Rediacc Bridge (Renet) uses OpenTelemetry with gzip-compressed OTLP export. Telemetry is transmitted to <code>www.rediacc.com/otlp/v1/traces</code> in batches (maximum 10 spans, flushed every 5 seconds)."
+          ],
+          "subsections": {
+            "bridgeDataCollected": {
+              "title": "7.1 Data Collected",
+              "content": ["The Bridge collects the following categories of data:"],
+              "items": [
+                "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
+                "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
+                "<strong>API calls:</strong> procedure name, request duration",
+                "<strong>Vault operations:</strong> operation type and duration (no secret values, keys, or vault contents are collected)",
+                "<strong>Bridge lifecycle:</strong> startup, shutdown, and reconnection events"
+              ]
+            },
+            "bridgeOptOut": {
+              "title": "7.2 How to Opt Out",
+              "content": ["You can disable Bridge telemetry using either method:"],
+              "items": [
+                "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
+                "Set the environment variable <code>DO_NOT_TRACK=1</code> (respects the <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standard)"
+              ]
+            }
+          }
+        },
+        "dataProcessing": {
+          "id": "data-processing",
+          "title": "8. Data Processing and Storage",
+          "content": [
+            "All telemetry data is transmitted over encrypted connections (TLS 1.2+) to our telemetry endpoint. Data is processed and stored as follows:"
+          ],
+          "items": [
+            "<strong>Encryption:</strong> All data is encrypted in transit using TLS. The Bridge additionally uses gzip compression.",
+            "<strong>Retention:</strong> Raw telemetry traces are stored for up to 90 days for debugging and incident investigation. Aggregated metrics are retained for up to 12 months and then deleted.",
+            "<strong>Access:</strong> Telemetry data is accessible only to Rediacc engineering and operations staff on a need-to-know basis.",
+            "<strong>No third-party sharing:</strong> Telemetry data is not shared with, sold to, or accessible by any third party.",
+            "<strong>Infrastructure:</strong> All telemetry data is processed and stored on infrastructure located within the European Union."
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "9. International Data Transfers",
+          "content": [
+            "Telemetry data is processed and stored exclusively on servers within the European Union. In the unlikely event that telemetry data needs to be transferred outside the EU/EEA (e.g., for disaster recovery), appropriate safeguards will be in place, including Standard Contractual Clauses (SCCs) as approved by the European Commission."
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "10. Your Rights",
+          "content": [
+            "Because our telemetry data is anonymized and aggregated, it generally does not constitute personal data under GDPR. However, to the extent that any telemetry data can be linked to you personally, you have the right to:"
+          ],
+          "items": [
+            "<strong>Access:</strong> Request information about what telemetry data we hold that may relate to you",
+            "<strong>Deletion:</strong> Request deletion of any telemetry data that can be linked to you",
+            "<strong>Opt-out:</strong> Disable telemetry at any time using the product-specific mechanisms described above",
+            "<strong>Complaint:</strong> Lodge a complaint with the Estonian Data Protection Inspectorate (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) or your local supervisory authority"
+          ],
+          "content2": [
+            "To exercise any of these rights, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. We will respond within 30 days."
+          ]
+        },
+        "ccpa": {
+          "id": "ccpa",
+          "title": "11. California Residents (CCPA/CPRA)",
+          "content": [
+            "If you are a California resident, the following additional disclosures apply under the California Consumer Privacy Act (CCPA) as amended by the California Privacy Rights Act (CPRA):"
+          ],
+          "items": [
+            "<strong>Categories of information collected:</strong> Internet or electronic network activity information (browser type, interaction data, error logs), device identifiers (anonymized), geolocation data (country-level only, derived from IP address which is not stored)",
+            "<strong>Purpose:</strong> Improving and maintaining service quality, debugging, performance monitoring, and security",
+            "<strong>Sale/Sharing:</strong> We do not sell or share telemetry data as defined by the CCPA/CPRA",
+            "<strong>Right to opt out:</strong> Use the product-specific opt-out mechanisms described in sections 4–7 above. We also honor the Global Privacy Control (GPC) signal in our Web Application."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "12. Changes to This Policy",
+          "content": [
+            "We may update this Telemetry Policy when we add new products, change what data is collected, or modify our processing practices. Changes will be posted on this page with an updated effective date. We will notify users of material changes through our product release notes and website."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Questions?",
+        "description": "If you have questions about our telemetry practices or need help opting out, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Related Policies"
       }
     }
   },

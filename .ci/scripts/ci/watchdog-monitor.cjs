@@ -2,7 +2,8 @@
 // Polls every 15 seconds, exits only when the workflow run completes or a failure is detected.
 //
 // Auto-retry: On first failure (attempt 1), dispatches rerun-failed.yml to retry failed jobs
-// before force-cancelling. On attempt 2+, force-cancels without retry.
+// WITHOUT force-cancelling (so only truly failed jobs are retried, not cancelled bystanders).
+// On attempt 2+, force-cancels without retry.
 //
 // Required env vars:
 //   WATCHDOG_EXCLUDE_PATTERNS   - Comma-separated job name patterns to exclude from monitoring
@@ -62,7 +63,9 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
-  // Helper: log failure details and force-cancel the workflow run
+  // Helper: log failure details and handle the workflow run.
+  // On auto-retry (attempt 1): dispatches rerun without force-cancel so only truly
+  // failed jobs are retried. On final attempt: force-cancels the run.
   async function cancelOnFailure(job, reason, runAttempt) {
     const failureMsg = `${reason}: "${job.name}"`;
     console.log('');
@@ -82,11 +85,18 @@ module.exports = async ({ github, context, core }) => {
       return;
     }
 
-    // Auto-retry: dispatch rerun before cancelling on first attempt
+    // Auto-retry: dispatch rerun on first attempt, but do NOT force-cancel.
+    // Force-cancelling kills unrelated in-progress jobs, turning them into
+    // "cancelled". gh run rerun --failed reruns cancelled jobs too, causing
+    // a near-full pipeline rerun instead of retrying just the failed job.
+    // By skipping the cancel, other jobs finish naturally and the rerun
+    // workflow only picks up the truly failed job(s).
     const isNoRetryJob = noRetryPatterns.some(pattern => job.name.includes(pattern));
     if (runAttempt < MAX_ATTEMPTS && !skipAutoRetry && !isNoRetryJob) {
-      console.log(`Attempt ${runAttempt}/${MAX_ATTEMPTS} - triggering auto-retry before cancelling...`);
+      console.log(`Attempt ${runAttempt}/${MAX_ATTEMPTS} - triggering auto-retry (skipping force-cancel to avoid cascading reruns)...`);
       await dispatchRerun();
+      core.setFailed(failureMsg);
+      return;
     } else if (isNoRetryJob) {
       console.log(`Auto-retry skipped: "${job.name}" matches no-retry pattern`);
     } else if (skipAutoRetry) {
@@ -139,20 +149,26 @@ module.exports = async ({ github, context, core }) => {
     const elapsed = Date.now() - startTime;
     const elapsedMin = Math.round(elapsed / 60000);
 
-    // Check workflow run status first (to detect when run is truly complete)
-    const { data: run } = await github.rest.actions.getWorkflowRun({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      run_id: context.runId
-    });
+    // Fetch run status and jobs, retrying on transient API errors (e.g. 401 Bad credentials)
+    let run, allJobs;
+    try {
+      ({ data: run } = await github.rest.actions.getWorkflowRun({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        run_id: context.runId
+      }));
 
-    // Paginate to get ALL jobs (runs can have 60+ jobs with reusable workflows)
-    const allJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      run_id: context.runId,
-      per_page: 100
-    }, response => response.data);
+      allJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        run_id: context.runId,
+        per_page: 100
+      }, response => response.data);
+    } catch (e) {
+      console.log(`[${elapsedMin}m] API error (will retry next poll): ${e.message}`);
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      continue;
+    }
 
     // Filter out excluded jobs
     const monitoredJobs = allJobs.filter(j =>

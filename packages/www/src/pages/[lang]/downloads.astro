@@ -3,6 +3,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
+import { GITHUB_REPO } from '../../config/constants';
+import { parseGitHubRelease, type ReleaseData } from '../../utils/release-parser';
+import DownloadsList from '../../components/DownloadsList';
 import '../../styles/downloads-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -10,132 +13,19 @@ export const getStaticPaths = getLanguagePaths;
 const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
 
-// GitHub Release Data Fetching
-const GITHUB_REPO = 'rediacc/console';
-
-interface DownloadFile {
-  platform: 'windows' | 'macos' | 'linux';
-  arch: 'x64' | 'arm64' | 'armv7l';
-  type: 'exe' | 'dmg' | 'AppImage' | 'deb';
-  url: string;
-  size: string;
-  name: string;
-}
-
-interface CLIFile {
-  platform: 'windows' | 'macos' | 'linux';
-  arch: 'x64' | 'arm64';
-  url: string;
-  size: string;
-  name: string;
-}
-
-interface ReleaseData {
-  version: string;
-  publishedAt: string;
-  desktopFiles: DownloadFile[];
-  cliFiles: CLIFile[];
-}
-
-// Helper functions for file parsing
-function detectPlatform(filename: string): 'windows' | 'macos' | 'linux' {
-  if (filename.includes('-win-')) return 'windows';
-  if (filename.includes('-mac-')) return 'macos';
-  if (filename.includes('-linux')) return 'linux';
-  return 'linux';
-}
-
-function detectArch(filename: string): 'x64' | 'arm64' | 'armv7l' {
-  if (filename.includes('-arm64')) return 'arm64';
-  if (filename.includes('-armv7l')) return 'armv7l';
-  return 'x64';
-}
-
-function detectType(filename: string): 'exe' | 'dmg' | 'AppImage' | 'deb' {
-  if (filename.endsWith('.exe')) return 'exe';
-  if (filename.endsWith('.dmg')) return 'dmg';
-  if (filename.endsWith('.AppImage')) return 'AppImage';
-  if (filename.endsWith('.deb')) return 'deb';
-  return 'AppImage';
-}
-
-function detectCLIPlatform(filename: string): 'windows' | 'macos' | 'linux' {
-  if (filename.includes('-win-')) return 'windows';
-  if (filename.includes('-mac-')) return 'macos';
-  return 'linux';
-}
-
-function detectCLIArch(filename: string): 'x64' | 'arm64' {
-  if (filename.includes('-arm64')) return 'arm64';
-  return 'x64';
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-}
-
 // Fetch release data at build time
 let releaseData: ReleaseData | null = null;
 try {
   const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
   if (response.ok) {
     const release = await response.json();
-
-    const desktopFiles: DownloadFile[] = release.assets
-      .filter((asset: any) =>
-        asset.name.startsWith('rediacc-desktop-') &&
-        /\.(exe|dmg|AppImage|deb)$/.test(asset.name)
-      )
-      .map((asset: any) => ({
-        platform: detectPlatform(asset.name),
-        arch: detectArch(asset.name),
-        type: detectType(asset.name),
-        url: asset.browser_download_url,
-        size: formatBytes(asset.size),
-        name: asset.name
-      }));
-
-    const cliFiles: CLIFile[] = release.assets
-      .filter((asset: any) => asset.name.startsWith('rdc-'))
-      .map((asset: any) => ({
-        platform: detectCLIPlatform(asset.name),
-        arch: detectCLIArch(asset.name),
-        url: asset.browser_download_url,
-        size: formatBytes(asset.size),
-        name: asset.name
-      }));
-
-    releaseData = {
-      version: release.tag_name.replace('v', ''),
-      publishedAt: new Date(release.published_at).toLocaleDateString(lang === 'en' ? 'en-US' : lang, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }),
-      desktopFiles,
-      cliFiles
-    };
+    releaseData = parseGitHubRelease(release, lang);
   }
 } catch (error) {
   if (import.meta.env.DEV) {
     console.error('Failed to fetch GitHub release:', error);
   }
 }
-
-// Group desktop files by platform
-const windowsFiles = releaseData?.desktopFiles.filter(f => f.platform === 'windows') || [];
-const macosFiles = releaseData?.desktopFiles.filter(f => f.platform === 'macos') || [];
-const linuxAppImages = releaseData?.desktopFiles.filter(f => f.platform === 'linux' && f.type === 'AppImage') || [];
-const linuxDebs = releaseData?.desktopFiles.filter(f => f.platform === 'linux' && f.type === 'deb') || [];
-
-// Group CLI files by platform
-const cliWindows = releaseData?.cliFiles.filter(f => f.platform === 'windows') || [];
-const cliMacos = releaseData?.cliFiles.filter(f => f.platform === 'macos') || [];
-const cliLinux = releaseData?.cliFiles.filter(f => f.platform === 'linux') || [];
 ---
 
 <BaseLayout
@@ -165,177 +55,7 @@ const cliLinux = releaseData?.cliFiles.filter(f => f.platform === 'linux') || []
     <!-- Downloads Section -->
     <section class="downloads-content section-light">
       <div class="container">
-        {releaseData ? (
-          <>
-            <h2 class="section-heading">{t('pages.downloads.sections.desktop')}</h2>
-
-            <!-- Windows Section -->
-            <div class="platform-section" data-platform="windows">
-              <div class="platform-header">
-                <h2>{t('pages.downloads.platforms.windows')}</h2>
-              </div>
-              <div class="download-list">
-                {windowsFiles.map(file => (
-                  <div class="download-item">
-                    <div class="download-info">
-                      <span class="download-arch">{t(`pages.downloads.architectures.${file.arch}`)}</span>
-                      <span class="download-size">{file.size}</span>
-                    </div>
-                    <a href={file.url} class="btn btn-primary download-button">
-                      {t('pages.downloads.actions.download')} .{file.type}
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <!-- macOS Section -->
-            <div class="platform-section" data-platform="macos">
-              <div class="platform-header">
-                <h2>{t('pages.downloads.platforms.macos')}</h2>
-              </div>
-              <div class="download-list">
-                {macosFiles.map(file => (
-                  <div class="download-item">
-                    <div class="download-info">
-                      <span class="download-arch">
-                        {file.arch === 'arm64'
-                          ? t('pages.downloads.architectures.arm64_apple')
-                          : t('pages.downloads.architectures.x64_intel')}
-                      </span>
-                      <span class="download-size">{file.size}</span>
-                    </div>
-                    <a href={file.url} class="btn btn-primary download-button">
-                      {t('pages.downloads.actions.download')} .{file.type}
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <!-- Linux Section -->
-            <div class="platform-section" data-platform="linux">
-              <div class="platform-header">
-                <h2>{t('pages.downloads.platforms.linux')}</h2>
-              </div>
-
-              {linuxAppImages.length > 0 && (
-                <div class="linux-subsection">
-                  <h3>{t('pages.downloads.types.appimage')}</h3>
-                  <div class="download-list">
-                    {linuxAppImages.map(file => (
-                      <div class="download-item">
-                        <div class="download-info">
-                          <span class="download-arch">{t(`pages.downloads.architectures.${file.arch}`)}</span>
-                          <span class="download-size">{file.size}</span>
-                        </div>
-                        <a href={file.url} class="btn btn-primary download-button">
-                          {t('pages.downloads.actions.download')}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {linuxDebs.length > 0 && (
-                <div class="linux-subsection">
-                  <h3>{t('pages.downloads.types.deb')}</h3>
-                  <div class="download-list">
-                    {linuxDebs.map(file => (
-                      <div class="download-item">
-                        <div class="download-info">
-                          <span class="download-arch">{t(`pages.downloads.architectures.${file.arch}`)}</span>
-                          <span class="download-size">{file.size}</span>
-                        </div>
-                        <a href={file.url} class="btn btn-primary download-button">
-                          {t('pages.downloads.actions.download')}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <!-- CLI Section -->
-            {(cliWindows.length > 0 || cliMacos.length > 0 || cliLinux.length > 0) && (
-              <>
-                <h2 class="section-heading cli-section-heading">{t('pages.downloads.sections.cli')}</h2>
-                <p class="cli-description">{t('pages.downloads.cli.description')}</p>
-
-                {cliWindows.length > 0 && (
-                  <div class="platform-section cli-section" data-platform="windows">
-                    <div class="platform-header">
-                      <h2>{t('pages.downloads.platforms.windows')}</h2>
-                    </div>
-                    <div class="download-list">
-                      {cliWindows.map(file => (
-                        <div class="download-item">
-                          <div class="download-info">
-                            <span class="download-arch">{file.arch === 'arm64' ? 'ARM64' : 'x64 (64-bit)'}</span>
-                            <span class="download-size">{file.size}</span>
-                          </div>
-                          <a href={file.url} class="btn btn-primary download-button">
-                            {t('pages.downloads.actions.download')} {file.name}
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {cliMacos.length > 0 && (
-                  <div class="platform-section cli-section" data-platform="macos">
-                    <div class="platform-header">
-                      <h2>{t('pages.downloads.platforms.macos')}</h2>
-                    </div>
-                    <div class="download-list">
-                      {cliMacos.map(file => (
-                        <div class="download-item">
-                          <div class="download-info">
-                            <span class="download-arch">
-                              {file.arch === 'arm64' ? 'Apple Silicon (ARM64)' : 'Intel (x64)'}
-                            </span>
-                            <span class="download-size">{file.size}</span>
-                          </div>
-                          <a href={file.url} class="btn btn-primary download-button">
-                            {t('pages.downloads.actions.download')} {file.name}
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {cliLinux.length > 0 && (
-                  <div class="platform-section cli-section" data-platform="linux">
-                    <div class="platform-header">
-                      <h2>{t('pages.downloads.platforms.linux')}</h2>
-                    </div>
-                    <div class="download-list">
-                      {cliLinux.map(file => (
-                        <div class="download-item">
-                          <div class="download-info">
-                            <span class="download-arch">{file.arch === 'arm64' ? 'ARM64' : 'x64 (64-bit)'}</span>
-                            <span class="download-size">{file.size}</span>
-                          </div>
-                          <a href={file.url} class="btn btn-primary download-button">
-                            {t('pages.downloads.actions.download')} {file.name}
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        ) : (
-          <div class="no-releases">
-            <p>{t('pages.downloads.noReleases')}</p>
-          </div>
-        )}
+        <DownloadsList client:visible lang={lang} releaseData={releaseData} />
       </div>
     </section>
 
@@ -414,18 +134,4 @@ const cliLinux = releaseData?.cliFiles.filter(f => f.platform === 'linux') || []
     </section>
   </article>
 
-  <!-- Client-side platform detection -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const platform = userAgent.includes('win') ? 'windows'
-                     : userAgent.includes('mac') ? 'macos'
-                     : 'linux';
-
-      const platformSections = document.querySelectorAll(`[data-platform="${platform}"]`);
-      platformSections.forEach(section => {
-        section.classList.add('recommended');
-      });
-    });
-  </script>
 </BaseLayout>

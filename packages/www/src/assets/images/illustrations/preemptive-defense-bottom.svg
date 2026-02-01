@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d2d2d;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.3" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="#f5f5f5"/>
+
+  <!-- Decorative circles -->
+  <circle cx="66.7" cy="66.7" r="40" fill="#556b2f" opacity="0.08"/>
+  <circle cx="733.3" cy="383.3" r="53.3" fill="#556b2f" opacity="0.06"/>
+
+  <!-- Title -->
+  <text x="400" y="40" text-anchor="middle" fill="#1a1a1a" font-size="13.3" font-family="Arial, sans-serif" font-weight="bold">CONTINUOUS CLONE-TEST-HARDEN CYCLE</text>
+
+  <!-- Timeline bar -->
+  <rect x="66.7" y="213.3" width="666.7" height="2.7" rx="1.3" fill="#e0e0e0"/>
+
+  <!-- Cycle 1: Clone -->
+  <g transform="translate(100, 80)">
+    <rect x="0" y="0" width="80" height="93.3" rx="4" fill="url(#serverGrad)" filter="url(#shadow)"/>
+    <rect x="0" y="0" width="80" height="4" rx="4" fill="#3d3d3d"/>
+    <rect x="8" y="16.7" width="64" height="6.7" rx="1.3" fill="#1a1a1a"/>
+    <rect x="8" y="28" width="64" height="6.7" rx="1.3" fill="#1a1a1a"/>
+    <rect x="8" y="39.3" width="64" height="6.7" rx="1.3" fill="#1a1a1a"/>
+    <circle cx="14.7" cy="20" r="1.7" fill="#556b2f"/>
+    <circle cx="14.7" cy="31.3" r="1.7" fill="#556b2f"/>
+    <circle cx="14.7" cy="42.7" r="1.7" fill="#556b2f"/>
+    <rect x="8" y="53.3" width="64" height="6.7" rx="1.3" fill="#1a1a1a"/>
+    <rect x="8" y="64.7" width="64" height="6.7" rx="1.3" fill="#1a1a1a"/>
+    <circle cx="14.7" cy="56.7" r="1.7" fill="#556b2f"/>
+    <circle cx="14.7" cy="68" r="1.7" fill="#556b2f"/>
+    <rect x="8" y="78.7" width="13.3" height="4" rx="0.7" fill="#3d3d3d"/>
+    <rect x="26.7" y="78.7" width="13.3" height="4" rx="0.7" fill="#3d3d3d"/>
+    <rect x="45.3" y="78.7" width="13.3" height="4" rx="0.7" fill="#3d3d3d"/>
+    <!-- Clone label -->
+    <text x="40" y="113.3" text-anchor="middle" fill="#556b2f" font-size="8.7" font-family="Arial, sans-serif" font-weight="bold">CLONE</text>
+    <!-- Connector to timeline -->
+    <line x1="40" y1="123.3" x2="40" y2="133.3" stroke="#556b2f" stroke-width="1.3"/>
+    <circle cx="40" cy="133.3" r="5.3" fill="#556b2f"/>
+    <text x="40" y="136" text-anchor="middle" fill="#fff" font-size="6.7" font-family="Arial, sans-serif">1</text>
+  </g>
+
+  <!-- Arrow 1→2 -->
+  <line x1="206.7" y1="214.7" x2="253.3" y2="214.7" stroke="#556b2f" stroke-width="1.3" stroke-dasharray="4,2"/>
+  <polygon points="253.3,210.7 263.3,214.7 253.3,218.7" fill="#556b2f"/>
+
+  <!-- Cycle 2: Test -->
+  <g transform="translate(266.7, 93.3)">
+    <!-- Shield with scanning -->
+    <path d="M40 0 L73.3 13.3 L73.3 40 C73.3 63.3 40 83.3 40 83.3 C40 83.3 6.7 63.3 6.7 40 L6.7 13.3 Z" fill="#556b2f" opacity="0.8" stroke="#3d3d3d" stroke-width="1.3"/>
+    <path d="M40 8 L66.7 18.7 L66.7 38.7 C66.7 58.7 40 75.3 40 75.3 C40 75.3 13.3 58.7 13.3 38.7 L13.3 18.7 Z" fill="#f5f5f5"/>
+    <!-- Crosshair -->
+    <circle cx="40" cy="36.7" r="12" fill="none" stroke="#556b2f" stroke-width="1.3"/>
+    <circle cx="40" cy="36.7" r="4" fill="none" stroke="#556b2f" stroke-width="1"/>
+    <line x1="40" y1="22" x2="40" y2="28" stroke="#556b2f" stroke-width="1"/>
+    <line x1="40" y1="45.3" x2="40" y2="51.3" stroke="#556b2f" stroke-width="1"/>
+    <line x1="25.3" y1="36.7" x2="31.3" y2="36.7" stroke="#556b2f" stroke-width="1"/>
+    <line x1="48.7" y1="36.7" x2="54.7" y2="36.7" stroke="#556b2f" stroke-width="1"/>
+    <!-- Test label -->
+    <text x="40" y="98.7" text-anchor="middle" fill="#556b2f" font-size="8.7" font-family="Arial, sans-serif" font-weight="bold">TEST</text>
+    <!-- Connector to timeline -->
+    <line x1="40" y1="108.7" x2="40" y2="120" stroke="#556b2f" stroke-width="1.3"/>
+    <circle cx="40" cy="121.3" r="5.3" fill="#556b2f"/>
+    <text x="40" y="124" text-anchor="middle" fill="#fff" font-size="6.7" font-family="Arial, sans-serif">2</text>
+  </g>
+
+  <!-- Arrow 2→3 -->
+  <line x1="373.3" y1="214.7" x2="420" y2="214.7" stroke="#556b2f" stroke-width="1.3" stroke-dasharray="4,2"/>
+  <polygon points="420,210.7 430,214.7 420,218.7" fill="#556b2f"/>
+
+  <!-- Cycle 3: Harden -->
+  <g transform="translate(433.3, 100)">
+    <!-- Hardened shield -->
+    <rect x="6.7" y="0" width="66.7" height="73.3" rx="5.3" fill="#fff" stroke="#e0e0e0" stroke-width="0.7" filter="url(#shadow)"/>
+    <text x="40" y="16.7" text-anchor="middle" fill="#1a1a1a" font-size="7.3" font-family="Arial, sans-serif">PATCH LIST</text>
+    <line x1="16.7" y1="23.3" x2="63.3" y2="23.3" stroke="#e0e0e0" stroke-width="0.7"/>
+    <text x="23.3" y="34.7" fill="#556b2f" font-size="6.7" font-family="Arial, sans-serif">✓ CVE-2025-001</text>
+    <text x="23.3" y="44.7" fill="#556b2f" font-size="6.7" font-family="Arial, sans-serif">✓ CVE-2025-002</text>
+    <text x="23.3" y="54.7" fill="#556b2f" font-size="6.7" font-family="Arial, sans-serif">✓ CVE-2025-003</text>
+    <text x="23.3" y="64.7" fill="#556b2f" font-size="6.7" font-family="Arial, sans-serif">✓ CVE-2025-004</text>
+    <!-- Harden label -->
+    <text x="40" y="88" text-anchor="middle" fill="#556b2f" font-size="8.7" font-family="Arial, sans-serif" font-weight="bold">HARDEN</text>
+    <!-- Connector -->
+    <line x1="40" y1="98" x2="40" y2="113.3" stroke="#556b2f" stroke-width="1.3"/>
+    <circle cx="40" cy="114.7" r="5.3" fill="#556b2f"/>
+    <text x="40" y="117.3" text-anchor="middle" fill="#fff" font-size="6.7" font-family="Arial, sans-serif">3</text>
+  </g>
+
+  <!-- Arrow 3→4 -->
+  <line x1="540" y1="214.7" x2="586.7" y2="214.7" stroke="#556b2f" stroke-width="1.3" stroke-dasharray="4,2"/>
+  <polygon points="586.7,210.7 596.7,214.7 586.7,218.7" fill="#556b2f"/>
+
+  <!-- Cycle 4: Destroy & Repeat -->
+  <g transform="translate(600, 103.3)">
+    <!-- Ephemeral destroy -->
+    <circle cx="40" cy="33.3" r="26.7" fill="none" stroke="#556b2f" stroke-width="1.3" stroke-dasharray="3.3,2"/>
+    <path d="M26.7 23.3 L53.3 43.3 M53.3 23.3 L26.7 43.3" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <!-- Repeat arrow -->
+    <path d="M40 63.3 C66.7 63.3 73.3 53.3 73.3 40" fill="none" stroke="#556b2f" stroke-width="1.3"/>
+    <polygon points="72,43.3 76.7,36.7 70,36.7" fill="#556b2f"/>
+    <!-- Labels -->
+    <text x="40" y="83.3" text-anchor="middle" fill="#556b2f" font-size="8.7" font-family="Arial, sans-serif" font-weight="bold">DESTROY</text>
+    <!-- Connector -->
+    <line x1="40" y1="93.3" x2="40" y2="110" stroke="#556b2f" stroke-width="1.3"/>
+    <circle cx="40" cy="111.3" r="5.3" fill="#556b2f"/>
+    <text x="40" y="114" text-anchor="middle" fill="#fff" font-size="6.7" font-family="Arial, sans-serif">4</text>
+  </g>
+
+  <!-- Repeat cycle arc -->
+  <path d="M666.7 214.7 C700 214.7 720 186.7 720 146.7 C720 106.7 700 66.7 653.3 53.3 L186.7 53.3 C133.3 53.3 106.7 93.3 106.7 133.3" fill="none" stroke="#e0e0e0" stroke-width="1.3" stroke-dasharray="5.3,2.7"/>
+  <polygon points="103.3,133.3 106.7,143.3 110,133.3" fill="#e0e0e0"/>
+  <text x="400" y="56.7" text-anchor="middle" fill="#999999" font-size="8" font-family="Arial, sans-serif">REPEAT DAILY / HOURLY / PER-DEPLOY</text>
+
+  <!-- Bottom stats -->
+  <g transform="translate(66.7, 266.7)">
+    <rect x="0" y="0" width="146.7" height="46.7" rx="4" fill="#fff" stroke="#e0e0e0" stroke-width="0.7"/>
+    <text x="73.3" y="16.7" text-anchor="middle" fill="#1a1a1a" font-size="8" font-family="Arial, sans-serif">Zero-Copy Clones</text>
+    <text x="73.3" y="33.3" text-anchor="middle" fill="#556b2f" font-size="10.7" font-family="Arial, sans-serif" font-weight="bold">FREE until writes</text>
+  </g>
+
+  <g transform="translate(246.7, 266.7)">
+    <rect x="0" y="0" width="146.7" height="46.7" rx="4" fill="#fff" stroke="#e0e0e0" stroke-width="0.7"/>
+    <text x="73.3" y="16.7" text-anchor="middle" fill="#1a1a1a" font-size="8" font-family="Arial, sans-serif">Ephemeral Lifecycle</text>
+    <text x="73.3" y="33.3" text-anchor="middle" fill="#556b2f" font-size="10.7" font-family="Arial, sans-serif" font-weight="bold">Auto-cleanup</text>
+  </g>
+
+  <g transform="translate(426.7, 266.7)">
+    <rect x="0" y="0" width="146.7" height="46.7" rx="4" fill="#fff" stroke="#e0e0e0" stroke-width="0.7"/>
+    <text x="73.3" y="16.7" text-anchor="middle" fill="#1a1a1a" font-size="8" font-family="Arial, sans-serif">Encrypted Testing</text>
+    <text x="73.3" y="33.3" text-anchor="middle" fill="#556b2f" font-size="10.7" font-family="Arial, sans-serif" font-weight="bold">Zero-knowledge</text>
+  </g>
+
+  <g transform="translate(606.7, 266.7)">
+    <rect x="0" y="0" width="146.7" height="46.7" rx="4" fill="#fff" stroke="#e0e0e0" stroke-width="0.7"/>
+    <text x="73.3" y="16.7" text-anchor="middle" fill="#1a1a1a" font-size="8" font-family="Arial, sans-serif">CI/CD Integrated</text>
+    <text x="73.3" y="33.3" text-anchor="middle" fill="#556b2f" font-size="10.7" font-family="Arial, sans-serif" font-weight="bold">Auto-trigger</text>
+  </g>
+
+  <!-- Bottom decorative -->
+  <circle cx="40" cy="413.3" r="20" fill="#556b2f" opacity="0.1"/>
+  <circle cx="760" cy="346.7" r="26.7" fill="#556b2f" opacity="0.08"/>
+</svg>

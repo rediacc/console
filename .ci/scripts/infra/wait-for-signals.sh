@@ -43,6 +43,10 @@ require_var GH_TOKEN
 require_var GITHUB_REPOSITORY
 require_var GITHUB_RUN_ID
 
+# Run attempt for attempt-scoped artifact names (default: 1)
+RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-1}"
+ATTEMPT_SUFFIX="-attempt-${RUN_ATTEMPT}"
+
 # Define expected signals
 CLI_PLATFORMS=("Linux" "Windows" "macOS")
 # TODO: Re-enable when resolution/device tests are active
@@ -59,7 +63,7 @@ IFS=' ' read -ra E2E_BROWSERS_ARR <<< "$E2E_BROWSERS_STR"
 # Calculate expected count
 EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS_ARR[@]} + ${#E2E_RESOLUTIONS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
 
-log_step "Waiting for $EXPECTED_COUNT completion signals (timeout: ${TIMEOUT}s)..."
+log_step "Waiting for $EXPECTED_COUNT completion signals (attempt: ${RUN_ATTEMPT}, timeout: ${TIMEOUT}s)..."
 log_info "CLI platforms: ${CLI_PLATFORMS[*]}"
 log_info "E2E browsers: ${E2E_BROWSERS_ARR[*]}"
 # TODO: Re-enable when resolution/device tests are active
@@ -135,7 +139,7 @@ fetch_and_check_signals() {
 
     # Check CLI platforms
     for platform in "${CLI_PLATFORMS[@]}"; do
-        local artifact_name="test-complete-cli-${platform}"
+        local artifact_name="test-complete-cli-${platform}${ATTEMPT_SUFFIX}"
         if echo "$artifacts" | grep -q "^${artifact_name}$"; then
             if ! is_completed "cli-${platform}"; then
                 mark_completed "cli-${platform}"
@@ -147,7 +151,7 @@ fetch_and_check_signals() {
 
     # Check E2E browsers
     for browser in "${E2E_BROWSERS_ARR[@]}"; do
-        local artifact_name="test-complete-e2e-${browser}"
+        local artifact_name="test-complete-e2e-${browser}${ATTEMPT_SUFFIX}"
         if echo "$artifacts" | grep -q "^${artifact_name}$"; then
             if ! is_completed "e2e-${browser}"; then
                 mark_completed "e2e-${browser}"
@@ -159,21 +163,21 @@ fetch_and_check_signals() {
 
     # TODO: Re-enable when resolution tests are active
     # for resolution in "${E2E_RESOLUTIONS[@]}"; do
-    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${resolution}$"; then
+    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${resolution}${ATTEMPT_SUFFIX}$"; then
     #         mark_completed "e2e-${resolution}"
     #     fi
     # done
 
     # TODO: Re-enable when device tests are active
     # for device in "${E2E_DEVICES[@]}"; do
-    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${device}$"; then
+    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${device}${ATTEMPT_SUFFIX}$"; then
     #         mark_completed "e2e-${device}"
     #     fi
     # done
 
     # Check E2E Electron platforms
     for platform in "${E2E_ELECTRON[@]}"; do
-        local artifact_name="test-complete-e2e-${platform}"
+        local artifact_name="test-complete-e2e-${platform}${ATTEMPT_SUFFIX}"
         if echo "$artifacts" | grep -q "^${artifact_name}$"; then
             if ! is_completed "e2e-${platform}"; then
                 mark_completed "e2e-${platform}"

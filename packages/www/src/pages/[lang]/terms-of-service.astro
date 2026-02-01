@@ -1,0 +1,112 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import { CONTACT_EMAIL } from '../../config/constants';
+import type { Language } from '../../i18n/types';
+import '../../styles/legal-page.css';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t, to } = createTranslator(lang);
+
+const PAGE_KEY = 'pages.termsOfService';
+const sections = to(`${PAGE_KEY}.sections` as any) as Record<string, any>;
+const sectionKeys = Object.keys(sections);
+
+const relatedPages = [
+  { href: `/${lang}/privacy-policy`, label: t('footer.legalLinks.privacyPolicy') },
+  { href: `/${lang}/acceptable-use-policy`, label: t('footer.legalLinks.acceptableUsePolicy') },
+  { href: `/${lang}/refund-policy`, label: t('footer.legalLinks.refundPolicy') },
+  { href: `/${lang}/telemetry-policy`, label: t('footer.legalLinks.telemetryPolicy') },
+];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${PAGE_KEY}.meta.title`)}
+  description={t(`${PAGE_KEY}.meta.description`)}
+  keywords={t(`${PAGE_KEY}.meta.keywords`)}
+  ogType="website"
+>
+  <article class="legal-page">
+    <section class="legal-hero">
+      <div class="legal-hero-content">
+        <h1>{t(`${PAGE_KEY}.hero.title`)}</h1>
+        <p class="effective-date">{t(`${PAGE_KEY}.hero.effectiveDate`)}</p>
+      </div>
+    </section>
+
+    <div class="legal-content">
+      <div class="legal-layout">
+        <nav class="legal-toc" aria-label={t(`${PAGE_KEY}.toc.title`)}>
+          <h2>{t(`${PAGE_KEY}.toc.title`)}</h2>
+          <ol>
+            {sectionKeys.map((key) => (
+              <li>
+                <a href={`#${sections[key].id}`}>{sections[key].title}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        <div class="legal-body">
+          {sectionKeys.map((key) => {
+            const section = sections[key];
+            return (
+              <section id={section.id}>
+                <h2>{section.title}</h2>
+                {section.content?.map((p: string) => (
+                  <p set:html={p} />
+                ))}
+                {section.items && (
+                  <ul>
+                    {section.items.map((item: string) => (
+                      <li set:html={item} />
+                    ))}
+                  </ul>
+                )}
+                {section.subsections && Object.keys(section.subsections).map((subKey) => {
+                  const sub = section.subsections[subKey];
+                  return (
+                    <>
+                      <h3>{sub.title}</h3>
+                      {sub.content?.map((p: string) => (
+                        <p set:html={p} />
+                      ))}
+                      {sub.items && (
+                        <ul>
+                          {sub.items.map((item: string) => (
+                            <li set:html={item} />
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  );
+                })}
+                {section.content2?.map((p: string) => (
+                  <p set:html={p} />
+                ))}
+              </section>
+            );
+          })}
+
+          <div class="legal-contact">
+            <h2>{t(`${PAGE_KEY}.contact.title`)}</h2>
+            <p set:html={t(`${PAGE_KEY}.contact.description`)} />
+          </div>
+
+          <div class="legal-related">
+            <h2>{t(`${PAGE_KEY}.related.title`)}</h2>
+            <ul class="legal-related-links">
+              {relatedPages.map(({ href, label }) => (
+                <li><a href={href}>{label}</a></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

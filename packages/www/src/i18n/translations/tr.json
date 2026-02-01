@@ -10,7 +10,8 @@
       "zoomIn": "Yakınlaştır",
       "zoomOut": "Uzaklaştır",
       "clickToEnlarge": "Resmi büyütmek için tıklayın",
-      "opensInNewTab": "yeni sekmede açılır"
+      "opensInNewTab": "yeni sekmede açılır",
+      "imageViewer": "Resim görüntüleyici"
     },
     "buttons": {
       "close": "Kapat",
@@ -44,7 +45,15 @@
       "skipToNavigation": "Navigasyona atla"
     },
     "exploreSolutions": "Diğer Çözümleri Keşfedin",
-    "platformPreview": "Platform Önizleme"
+    "platformPreview": "Platform Önizleme",
+    "solutions": {
+      "developmentEnvironments": "Geliştirme Ortamları",
+      "disasterRecovery": "Felaket Kurtarma",
+      "threatResponse": "Tehdit Müdahalesi",
+      "dataSecurity": "Veri Güvenliği",
+      "systemPortability": "Sistem Taşınabilirliği",
+      "preemptiveDefense": "Önleyici Savunma"
+    }
   },
   "testimonials": {
     "title": "Ekipler ne diyor",
@@ -153,8 +162,12 @@
     },
     "copyright": "{{year}} Rediacc. Her hakkı saklıdır.",
     "legalLinks": {
+      "termsOfService": "Hizmet Koşulları",
       "privacyPolicy": "Gizlilik Politikası",
-      "termsOfUse": "Kullanım Koşulları"
+      "cookiePolicy": "Çerez Politikası",
+      "acceptableUsePolicy": "Kabul Edilebilir Kullanım Politikası",
+      "refundPolicy": "İade Politikası",
+      "telemetryPolicy": "Telemetri Politikası"
     },
     "links": {
       "contactSupport": "Destek Ekibiyle İletişime Geçin",
@@ -222,6 +235,7 @@
     "downloads": "Downloads",
     "home": "Ana Sayfa",
     "install": "Yükle",
+    "pricing": "Fiyatlandırma",
     "login": "Giriş",
     "search": "Ara",
     "selectLanguage": "Dil seçin",
@@ -231,7 +245,8 @@
       "developmentEnvironments": "Geliştirme Ortamları",
       "disasterRecovery": "Felaket Kurtarma",
       "systemPortability": "Sistem Taşınabilirliği",
-      "threatResponse": "Tehdit Yanıtı"
+      "threatResponse": "Tehdit Yanıtı",
+      "preemptiveDefense": "Önleyici Savunma"
     },
     "toggleMenu": "Menüyü değiştir"
   },
@@ -283,7 +298,9 @@
             }
           }
         },
-        "submit": "Başlayın"
+        "submit": "Başlayın",
+        "ariaLabel": "İletişim formu",
+        "legend": "İletişim bilgileri"
       },
       "hero": {
         "subtitle": "Formu doldurun, 48 saat içinde sizinle iletişime geçeceğiz.",
@@ -425,7 +442,9 @@
       },
       "hero": {
         "title": "Rediacc CLI Yükle",
-        "subtitle": "Tercih ettiğiniz kurulum yöntemini seçin"
+        "subtitle": "Tercih ettiğiniz kurulum yöntemini seçin",
+        "downloadsNote": "Masaüstü uygulamaları veya doğrudan ikili dosyalar mı arıyorsunuz?",
+        "downloadsLink": "İndirmeler sayfasını ziyaret edin"
       },
       "methods": {
         "quick": {
@@ -462,7 +481,11 @@
         "platform": "Platform"
       },
       "copy": "Kopyala",
-      "copied": "Kopyalandı!"
+      "copied": "Kopyalandı!",
+      "platformFilter": {
+        "all": "Tüm Yöntemler",
+        "label": "Platforma göre filtrele"
+      }
     },
     "notFound": {
       "actions": {
@@ -1567,6 +1590,102 @@
             "title": "Fidye Yazılımı Yedeklemeleri Hedefliyor"
           }
         }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "Önleyici Savunma | Klon Tabanlı Sürekli Güvenlik Testi",
+          "description": "Yapay zeka saldırganları güvenlik açıklarını dakikalar içinde istismar eder. Üretimde yıllık test yapmayı bırakın. Altyapınızı Rediacc ile klonlayın ve yapay zeka destekli sürekli güvenlik testlerini güvenle çalıştırın.",
+          "keywords": "önleyici savunma, yapay zeka sızma testi, sürekli güvenlik testi, klon tabanlı pentest, üretim klonu güvenliği, yapay zeka siber güvenlik"
+        },
+        "hero": {
+          "title": "Saniyeler içinde saldırıyorlar. Siz hâlâ yılda bir test ediyorsunuz.",
+          "subtitle": "Üretim ortamınızı klonlayın. Yapay zeka güvenlik araçlarını serbest bırakın. Saldırganlardan önce her zayıflığı bulun."
+        },
+        "problems": {
+          "aiAttackSpeed": {
+            "title": "Yapay Zeka Saldırıları Makine Hızında Hareket Eder",
+            "subtitle": "Düşmanını ve kendini bilirsen, yüz savaşın sonucundan korkman gerekmez <small class='subtitle-attribution'>— Sun Tzu, Savaş Sanatı</small>",
+            "problem": {
+              "description": "Yapay zeka destekli saldırganlar sistemleri dakikalar içinde ele geçirir. Otonom ajanlar %80-90 özerk çalışarak saniyede binlerce istek yapar. Yeni güvenlik açıklarının istismar süresi 32 günden sadece 5 güne düştü.",
+              "story": "Kasım 2025'te büyük bir yapay zeka şirketi, devlet destekli bilgisayar korsanlarının bir yapay zeka asistanını silah olarak kullanarak yaklaşık 30 kuruluşa saldırdığını ve 4'ünü başarıyla ele geçirdiğini açıkladı. Yapay zeka yaklaşık 20 dakikalık insan gözetimi ile %80-90 özerk çalıştı. <a href='https://www.anthropic.com/news/disrupting-AI-espionage' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.axios.com/2025/11/13/anthropic-china-claude-code-cyberattack' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Ayrı olarak, açık kaynaklı bir yapay zeka saldırı çerçevesi yaygın olarak kullanılan bir ağ cihazındaki kritik sıfır gün güvenlik açıklarını kamuya açıklanmasından 10 dakikadan kısa sürede silah haline getirdi. <a href='https://blog.checkpoint.com/executive-insights/hexstrike-ai-when-llms-meet-zero-day-exploitation/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> <a href='https://thehackernews.com/2025/09/threat-actors-weaponize-hexstrike-ai-to.html' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "Yapay zeka ajanları minimum insan yönlendirmesiyle kuruluşları %80-90 özerk olarak ele geçirir",
+                "Güvenlik araştırmacıları ilk erişimden yanal harekete 51 saniyelik çıkış süresi kaydetti",
+                "Yeni güvenlik açıklarının istismar süresi 32 günden 5 güne düştü",
+                "Kuruluşların yüzde doksan yedisi yapay zeka destekli sızma testini düşünüyor",
+                "Yapay zeka saniyede binlerce keşif isteği yaparak insan hızını gölgede bırakıyor"
+              ]
+            },
+            "solution": {
+              "title": "Klon Tabanlı Test ile Makine Hızına Ulaşın",
+              "description": "Sıfır kopyalama ile üretimi saniyeler içinde klonlayın. İzole klonlar üzerinde yapay zeka saldırı araçlarını tam hızda çalıştırın. Geçici ortamlar her test döngüsünden sonra otomatik olarak yok edilir.",
+              "benefits": [
+                "Sıfır kopyalama klonlama saniyeler içinde üretime sadık test hedefleri oluşturur",
+                "İzole klonlar üzerinde yapay zeka saldırı araçlarını tam hızda güvenle çalıştırın",
+                "Geçici ortamlar her güvenlik test döngüsünden sonra otomatik temizlenir",
+                "Eski kopyalar yerine gerçek üretim verileri ve yapılandırmalarına karşı test edin",
+                "Çoklu bulut taşınabilirliği farklı altyapı hedeflerinde test yapmanızı sağlar"
+              ]
+            }
+          },
+          "productionTesting": {
+            "title": "Güvenlik Testi Üretimi Çökertiyor",
+            "subtitle": "Önce zarar verme <small class='subtitle-attribution'>— Hipokrat geleneği (primum non nocere)</small>",
+            "problem": {
+              "description": "Güvenlik tarayıcıları ve sızma testleri üretim sistemlerini çökertiyor. Güvenlik açığı tarayıcıları ağ ekipmanlarını çökertiyor, hizmetleri durduruyor ve zincirleme arızalara yol açıyor. 2024'ün en kötü BT felaketi bir güvenlik satıcısının kendi güncellemesinden kaynaklandı.",
+              "story": "19 Temmuz 2024'te önde gelen bir siber güvenlik satıcısı dünya genelindeki üretim sistemlerine hatalı bir sensör güncellemesi gönderdi. 8,5 milyon cihaz aynı anda çökerek 10 milyar doların üzerinde küresel hasara neden oldu. <a href='https://en.wikipedia.org/wiki/2024_CrowdStrike-related_IT_outages' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.cisa.gov/news-events/alerts/2024/07/19/widespread-it-outage-due-crowdstrike-update' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Tek başına büyük bir havayolu şirketi 500 milyon dolar kaybetti ve 7.000 uçuşu iptal etti. <a href='https://www.darkreading.com/cyberattacks-data-breaches/delta-launches-500m-lawsuit-crowdstrike' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 2025 anketinde güvenlik liderlerinin %30'unun kendi güvenlik testlerinden kaynaklanan kesintilerden korktuğu ortaya çıktı. <a href='https://pentera.io/blog/2025-state-of-pentesting-insights/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "Önde gelen bir güvenlik satıcısı güncellemesi tek bir günde 8,5 milyon cihazı çökertti",
+                "CISO'ların yüzde otuzu kendi güvenlik testlerinden kaynaklanan kesintilerden korktuğunu bildiriyor",
+                "Güvenlik açığı tarayıcıları çekirdek ağ anahtarlarını ve sanallaştırma ana bilgisayarlarını çökertiyor",
+                "Güvenlik araçları önlemesi gereken kesinti süresinin tam olarak kendisine neden oluyor",
+                "Kuruluşlar üretimin riski tolere edemediği için test kapsamını sınırlıyor"
+              ]
+            },
+            "solution": {
+              "title": "Klonlarda Test Edin, Üretimi Koruyun",
+              "description": "Sıfır kopyalama teknolojisi ile atomik, üretime sadık klonlar oluşturun. Klonu maksimum saldırganlıkla saldırın—çökerse, iyi, bir zayıflık buldunuz. Zaman noktası anlık görüntüleri klonu yeniden test için anında sıfırlar.",
+              "benefits": [
+                "Üretime sadık klonlar üretime dokunmadan gerçek altyapıyı çoğaltır",
+                "Atomik çoğaltma klonların test zamanında üretim durumuna tam olarak uymasını sağlar",
+                "Zaman noktası anlık görüntüleri yıkıcı testlerden sonra anında sıfırlama ve yeniden test yapmanızı sağlar",
+                "Sıfır bilgi şifrelemesi güvenlik testi sırasında klonlanmış verileri korur",
+                "En agresif tarayıcıları ve istismarları üretim riski olmadan çalıştırın"
+              ]
+            }
+          },
+          "periodicCompliance": {
+            "title": "Yıllık Test Bir Uyumluluk Yanılsamasıdır",
+            "subtitle": "Şüphesiz ki Allah, bir toplum kendilerindekini değiştirmedikçe onların durumunu değiştirmez <small class='subtitle-attribution'>— Ra'd 13:11</small>",
+            "problem": {
+              "description": "Kuruluşlar uyumluluk için yılda bir veya iki kez sızma testi yapıyor. Geçiyorlar, sertifika alıyorlar, sonra haftalar sonra ihlal ediliyorlar. Sertifika bir günün güvenliğini kanıtlar. Saldırganlar diğer 364 günü istismar eder.",
+              "story": "Büyük bir ABD perakendecisi Eylül 2013'te PCI DSS sertifikası aldı ve sadece iki ay sonra ihlal edildi—110 milyon müşteri kaydı çalındı, 248 milyon dolar maliyet. <a href='https://www.digitaltransactions.net/target-passed-a-pci-inspection-before-breach-will-spend-100-million-on-chip-card-effort/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> Önde gelen bir ödeme işlemcisi, 100 milyon ödeme kartını açığa çıkaran bir ihlalden sadece iki hafta önce PCI sertifikalıydı, 200 milyon dolar maliyet. <a href='https://www.secureworks.com/blog/general-pci-compliance-data-security-case-study-heartland' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> Bağımsız adli araştırma, ihlal yaşayan PCI sertifikalı şirketlerin %100'ünün gerçek ihlal zamanında uyumluluktan çıktığını ortaya koydu. <a href='https://www.verizon.com/business/resources/reports/payment-security-report/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "Şirketlerin yüzde otuz ikisi sızma testini yılda yalnızca bir kez yapıyor",
+                "Büyük bir perakendeci 110 milyon kaydın çalınmasından iki ay önce PCI sertifikası almıştı",
+                "Bir ödeme işlemcisi 100 milyon kartın ele geçirilmesinden iki hafta önce PCI sertifikalıydı",
+                "İhlal edilen PCI sertifikalı şirketlerin yüzde yüzü ihlal zamanında uyumluluktan düşmüştü",
+                "Uyumluluk bir zaman noktasını sertifikalandırırken saldırganlar diğer her günü istismar eder"
+              ]
+            },
+            "solution": {
+              "title": "Geçici Klonlarda Sürekli Test",
+              "description": "Üretimi programa göre klonlayın—günlük, saatlik veya dağıtım başına. Klon üzerinde yapay zeka sızma testleri çalıştırın. Yok edin. Tekrarlayın. Sıfır kopyalama, değişiklikler yazılana kadar her klonun ücretsiz olduğu anlamına gelir.",
+              "benefits": [
+                "İsteğe bağlı klonlama günlük veya saatlik güvenlik test döngülerini mümkün kılar",
+                "Geçici ortamlar testten sonra otomatik olarak yok olarak kalıcı saldırı yüzeyini ortadan kaldırır",
+                "Sıfır kopyalama teknolojisi değişiklikler yazılana kadar her klonu ücretsiz yapar",
+                "Depo başına şifreleme test verilerinin döngü boyunca korunmasını sağlar",
+                "CI/CD entegrasyonu her dağıtımda güvenlik klonlama ve testini otomatik olarak tetikler"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "Saldırmadan Önce Savunmaya Hazır mısınız?",
+          "subtitle": "Klonla. Test et. Güçlendir. Tekrarla. Yılda bir değil, her gün.",
+          "button": "Önleyici Savunmayı Başlat"
+        }
       }
     },
     "team": {
@@ -1645,6 +1764,811 @@
           }
         }
       }
+    },
+    "privacyPolicy": {
+      "meta": {
+        "title": "Gizlilik Politikası — Rediacc",
+        "description": "Rediacc'in kişisel verilerinizi nasıl topladığını, kullandığını ve koruduğunu öğrenin.",
+        "keywords": "gizlilik politikası, veri koruma, GDPR, Plausible Analytics, Rediacc"
+      },
+      "hero": {
+        "title": "Gizlilik Politikası",
+        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026"
+      },
+      "toc": {
+        "title": "İçindekiler"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Giriş",
+          "content": [
+            "Rediacc (\"biz\"), <a href=\"https://www.rediacc.com\">www.rediacc.com</a> web sitesini ve Rediacc altyapı otomasyon platformunu işletmektedir. Bu Gizlilik Politikası, bilgilerinizi nasıl topladığımızı, kullandığımızı, ifşa ettiğimizi ve koruduğumuzu açıklar.",
+            "Gizliliğinizi korumaya kararlıyız. Bu Gizlilik Politikasını kabul etmiyorsanız, lütfen web sitemizi ve hizmetlerimizi kullanmayı bırakın."
+          ]
+        },
+        "informationWeCollect": {
+          "id": "information-we-collect",
+          "title": "2. Topladığımız Bilgiler",
+          "content": ["Hizmetlerimizi sunmak için gereken minimum bilgiyi topluyoruz."],
+          "subsections": {
+            "contactFormData": {
+              "title": "2.1 İletişim Formu Verileri",
+              "content": [
+                "İletişim formumuzu gönderdiğinizde adınızı, e-posta adresinizi, konuyu ve mesaj içeriğinizi topluyoruz."
+              ]
+            },
+            "accountData": {
+              "title": "2.2 Hesap Verileri",
+              "content": [
+                "Rediacc hesabı oluştururken adınızı, e-postanızı, kuruluş adınızı ve fatura bilgilerinizi topluyoruz."
+              ]
+            },
+            "analyticsData": {
+              "title": "2.3 Analiz Verileri",
+              "content": [
+                "Gizlilik odaklı, çerezsiz bir analiz aracı olan <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a> kullanıyoruz."
+              ]
+            },
+            "productTelemetry": {
+              "title": "2.5 Ürün Telemetri Verileri",
+              "content": [
+                "Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware ve Bridge), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, tarayıcı türü, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplama öncesinde anonimleştirilir — e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir ve kısaltılır, şifreler veya gizli bilgiler asla toplanmaz.",
+                "Telemetri, Web Uygulamamızda ve CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+              ]
+            },
+            "cookies": {
+              "title": "2.4 Çerezler",
+              "content": [
+                "Dil tercihinizi hatırlamak için tek bir işlevsel çerez (<code>rediacc_lang</code>) kullanıyoruz. Ayrıntılar için <a href=\"cookie-policy\">Çerez Politikamıza</a> bakın."
+              ]
+            }
+          }
+        },
+        "howWeUseInformation": {
+          "id": "how-we-use-information",
+          "title": "3. Bilgilerinizi Nasıl Kullanıyoruz",
+          "content": ["Topladığımız bilgileri şu amaçlarla kullanıyoruz:"],
+          "items": [
+            "Sorularınıza yanıt vermek",
+            "Rediacc platformunu sağlamak, işletmek ve sürdürmek",
+            "İşlemleri gerçekleştirmek ve fatura bilgilerini göndermek",
+            "Hizmetle ilgili iletişimleri göndermek",
+            "Web sitesi kullanım kalıplarını anlamak",
+            "Anonimleştirilmiş kullanım telemetrisi aracılığıyla hataları teşhis etmek, ürün performansını artırmak ve ürün geliştirmeye rehberlik etmek (bkz. <a href=\"telemetry-policy\">Telemetri Politikamız</a>)",
+            "Yasal yükümlülüklere uymak"
+          ]
+        },
+        "dataSharing": {
+          "id": "data-sharing",
+          "title": "4. Veri Paylaşımı ve Üçüncü Taraflar",
+          "content": ["Kişisel verilerinizi üçüncü taraflara satmıyoruz veya kiralamıyoruz."],
+          "items": [
+            "Platformu işletmemize yardımcı olan <strong>hizmet sağlayıcılar</strong>",
+            "Çerezsiz anonim web analitiği için <strong>Plausible Analytics</strong>",
+            "<strong>Telemetri işleme</strong> — anonimleştirilmiş ürün kullanım verileri, toplama ve analiz için AB içindeki kendi telemetri uç noktamıza iletilir. Telemetri verileri üçüncü taraflarla paylaşılmaz (bkz. <a href=\"telemetry-policy\">Telemetri Politikamız</a>)",
+            "Kanun gerektirdiğinde <strong>kolluk kuvvetleri</strong>"
+          ]
+        },
+        "dataRetention": {
+          "id": "data-retention",
+          "title": "5. Veri Saklama",
+          "content": [
+            "İletişim formu verileri gerekli olduğu sürece saklanır. Hesap verileri, hesabınız aktif olduğu süre boyunca ve silme işleminden sonra 30 gün saklanır.",
+            "Plausible analiz verileri toplu halde tutulur ve kişisel veri içermez, bu nedenle veri saklama politikaları bunlar için geçerli değildir.",
+            "Ürün telemetri verileri, hata ayıklama amacıyla ham izler olarak 90 güne kadar saklanır. Toplu telemetri metrikleri 12 aya kadar saklanır ve ardından silinir. Ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "6. Haklarınız",
+          "content": ["Yargı yetki alanınıza bağlı olarak aşağıdaki haklara sahip olabilirsiniz:"],
+          "items": [
+            "<strong>Erişim:</strong> Kişisel verilerinizin bir kopyasını talep etme",
+            "<strong>Düzeltme:</strong> Yanlış verilerin düzeltilmesini talep etme",
+            "<strong>Silme:</strong> Verilerinizin silinmesini talep etme",
+            "<strong>Taşınabilirlik:</strong> Makine tarafından okunabilir kopya talep etme",
+            "<strong>İtiraz:</strong> Verilerinizin işlenmesine itiraz etme",
+            "<strong>Kısıtlama:</strong> İşlemenin kısıtlanmasını talep etme",
+            "<strong>Telemetri devre dışı bırakma:</strong> <a href=\"telemetry-policy\">Telemetri Politikamızda</a> açıklanan mekanizmaları kullanarak ürün telemetrisini istediğiniz zaman devre dışı bırakabilirsiniz"
+          ],
+          "content2": [
+            "Haklarınızı kullanmak için <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
+          ]
+        },
+        "dataSecurity": {
+          "id": "data-security",
+          "title": "7. Veri Güvenliği",
+          "content": [
+            "İletim ve depolama sırasında şifreleme dahil endüstri standartı güvenlik önlemleri uyguluyoruz."
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "8. Uluslararası Veri Transferleri",
+          "content": [
+            "Bilgileriniz başka ülkelere aktarılabilir ve işlenebilir. Uygun güvenceleri sağlıyoruz."
+          ]
+        },
+        "childrenPrivacy": {
+          "id": "children-privacy",
+          "title": "9. Çocukların Gizliliği",
+          "content": ["Hizmetlerimiz 16 yaşın altındaki bireylere yönelik değildir."]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "10. Bu Politikadaki Değişiklikler",
+          "content": [
+            "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Değişiklikler bu sayfada yayınlanacaktır."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Sorularınız mı var?",
+        "description": "Bu Gizlilik Politikası hakkında sorularınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      }
+    },
+    "termsOfService": {
+      "meta": {
+        "title": "Hizmet Koşulları — Rediacc",
+        "description": "Rediacc web sitesi ve altyapı otomasyon platformunun kullanımını düzenleyen koşullar.",
+        "keywords": "hizmet koşulları, kullanım şartları, kullanıcı sözleşmesi, Rediacc"
+      },
+      "hero": {
+        "title": "Hizmet Koşulları",
+        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026"
+      },
+      "toc": {
+        "title": "İçindekiler"
+      },
+      "sections": {
+        "acceptance": {
+          "id": "acceptance",
+          "title": "1. Koşulların Kabulü",
+          "content": [
+            "Rediacc web sitesine (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) veya Rediacc platformuna erişerek bu Hizmet Koşullarını kabul etmiş olursunuz."
+          ]
+        },
+        "serviceDescription": {
+          "id": "service-description",
+          "title": "2. Hizmetlerin Tanımı",
+          "content": [
+            "Rediacc, yapay zeka destekli operasyonlar için altyapı otomasyon platformu sağlar."
+          ]
+        },
+        "accounts": {
+          "id": "accounts",
+          "title": "3. Hesaplar ve Kayıt",
+          "content": [
+            "Kayıt sırasında doğru bilgi vermeniz ve hesabınızdaki tüm faaliyetlerden sorumlu olmanız gerekmektedir."
+          ]
+        },
+        "subscriptions": {
+          "id": "subscriptions",
+          "title": "4. Abonelikler ve Ödeme",
+          "content": [
+            "Ücretli abonelikler aylık veya yıllık olarak peşin faturalandırılır. İadeler <a href=\"refund-policy\">İade Politikamıza</a> göre yapılır."
+          ]
+        },
+        "acceptableUse": {
+          "id": "acceptable-use",
+          "title": "5. Kabul Edilebilir Kullanım",
+          "content": [
+            "Hizmetleri <a href=\"acceptable-use-policy\">Kabul Edilebilir Kullanım Politikamıza</a> uygun olarak kullanmayı kabul edersiniz."
+          ]
+        },
+        "telemetry": {
+          "id": "telemetry",
+          "title": "6. Telemetri ve Veri Toplama",
+          "content": [
+            "Yazılım ürünlerimiz, ürün kalitesini ve performansını artırmak amacıyla anonimleştirilmiş kullanım telemetrisi toplar. Hizmetleri kullanarak, <a href=\"telemetry-policy\">Telemetri Politikamızda</a> açıklandığı şekilde telemetri toplamanın gerçekleştiğini kabul edersiniz.",
+            "Telemetri, gizliliği koruyacak şekilde tasarlanmıştır: kişisel tanımlayıcılar iletim öncesinde anonimleştirilir ve telemetriyi istediğiniz zaman devre dışı bırakabilirsiniz. <a href=\"telemetry-policy\">Telemetri Politikası</a>, her ürün tarafından toplanan belirli verileri ve toplama işlemini devre dışı bırakma mekanizmalarını açıklar."
+          ]
+        },
+        "intellectualProperty": {
+          "id": "intellectual-property",
+          "title": "7. Fikri Mülkiyet",
+          "content": ["Hizmetler Rediacc'e aittir ve fikri mülkiyet yasalarıyla korunmaktadır."]
+        },
+        "dataOwnership": {
+          "id": "data-ownership",
+          "title": "8. Verileriniz",
+          "content": [
+            "Verileriniz size aittir. Ayrıntılar <a href=\"privacy-policy\">Gizlilik Politikamızda</a>."
+          ]
+        },
+        "serviceAvailability": {
+          "id": "service-availability",
+          "title": "9. Hizmet Kullanılabilirliği",
+          "content": [
+            "Yüksek kullanılabilirliği sürdürmeye çalışıyoruz ancak kesintisiz erişimi garanti etmiyoruz."
+          ]
+        },
+        "limitationOfLiability": {
+          "id": "limitation-of-liability",
+          "title": "10. Sorumluluk Sınırlaması",
+          "content": [
+            "Yasaların izin verdiği azami ölçüde, Rediacc dolaylı zararlardan sorumlu olmayacaktır."
+          ]
+        },
+        "indemnification": {
+          "id": "indemnification",
+          "title": "11. Tazminat",
+          "content": [
+            "Hizmetleri kullanımınızdan kaynaklanan tüm taleplerden Rediacc'i tazmin etmeyi kabul edersiniz."
+          ]
+        },
+        "termination": {
+          "id": "termination",
+          "title": "12. Fesih",
+          "content": [
+            "Hesabınızı istediğiniz zaman kapatabilirsiniz. Bu koşulları ihlal etmeniz halinde erişiminizi askıya alabiliriz."
+          ]
+        },
+        "governingLaw": {
+          "id": "governing-law",
+          "title": "13. Geçerli Hukuk",
+          "content": ["Bu koşullar Estonya Cumhuriyeti yasalarına tabidir."]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "14. Bu Koşullardaki Değişiklikler",
+          "content": ["Bu koşulları zaman zaman güncelleyebiliriz."]
+        }
+      },
+      "contact": {
+        "title": "Sorularınız mı var?",
+        "description": "Bu Hizmet Koşulları hakkında sorularınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      }
+    },
+    "cookiePolicy": {
+      "meta": {
+        "title": "Çerez Politikası — Rediacc",
+        "description": "Rediacc çerez politikası. Bir işlevsel çerez ve çerezsiz Plausible Analytics.",
+        "keywords": "çerez politikası, çerezler, Plausible Analytics, GDPR, Rediacc"
+      },
+      "hero": {
+        "title": "Çerez Politikası",
+        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026"
+      },
+      "toc": {
+        "title": "İçindekiler"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Giriş",
+          "content": [
+            "Bu Çerez Politikası, Rediacc'in <a href=\"https://www.rediacc.com\">www.rediacc.com</a> web sitesinde çerezleri nasıl kullandığını açıklar."
+          ]
+        },
+        "whatAreCookies": {
+          "id": "what-are-cookies",
+          "title": "2. Çerezler Nedir?",
+          "content": [
+            "Çerezler, bir web sitesini ziyaret ettiğinizde cihazınıza kaydedilen küçük metin dosyalarıdır."
+          ]
+        },
+        "cookiesWeUse": {
+          "id": "cookies-we-use",
+          "title": "3. Kullandığımız Çerezler",
+          "content": ["Yalnızca bir çerez kullanıyoruz:"],
+          "subsections": {
+            "languageCookie": {
+              "title": "3.1 Dil Tercihi Çerezi",
+              "content": [
+                "<strong>Ad:</strong> <code>rediacc_lang</code><br><strong>Tür:</strong> Birinci taraf, kesinlikle gerekli<br><strong>Süre:</strong> 1 yıl<br><strong>Amaç:</strong> Tercih ettiğiniz dili saklar."
+              ]
+            }
+          }
+        },
+        "whatWeDontUse": {
+          "id": "what-we-dont-use",
+          "title": "4. Kullanmadıklarımız",
+          "content": ["Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"],
+          "items": [
+            "<strong>İzleme çerezleri</strong> — Google Analytics, Facebook Pixel veya izleme çerezi yok",
+            "<strong>Üçüncü taraf çerezleri</strong> — Harici hizmetler çerez yerleştirmiyor",
+            "<strong>Reklam çerezleri</strong> — Reklam sunulmamaktadır",
+            "<strong>Parmak izi</strong> — Tarayıcı parmak izi teknikleri kullanılmamaktadır"
+          ],
+          "content2": [
+            "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware, Bridge) çerez kullanmayan ayrı kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+          ]
+        },
+        "analytics": {
+          "id": "analytics",
+          "title": "5. Analiz Yaklaşımımız",
+          "content": [
+            "<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a> kullanıyoruz."
+          ],
+          "items": [
+            "Hiçbir çerez <strong>kullanmaz</strong>",
+            "Kişisel veri <strong>toplamaz</strong>",
+            "Kullanıcıları siteler arasında <strong>izlemez</strong>",
+            "AB'de barındırılır, GDPR uyumludur",
+            "Yalnızca toplu, anonim metrikler sağlar"
+          ],
+          "content2": [
+            "Web sitesi analitiğine ek olarak, yazılım ürünlerimiz OpenTelemetry tabanlı enstrümantasyon aracılığıyla anonimleştirilmiş kullanım telemetrisi toplar. Bu, web sitesi analitiğinden ayrıdır, çerez kullanmaz ve <a href=\"telemetry-policy\">Telemetri Politikamızda</a> ayrıntılı olarak açıklanmıştır."
+          ]
+        },
+        "managingCookies": {
+          "id": "managing-cookies",
+          "title": "6. Çerezleri Yönetme",
+          "content": ["Çerezleri tarayıcı ayarlarınızdan yönetebilirsiniz:"],
+          "items": [
+            "<strong>Chrome:</strong> Ayarlar → Gizlilik ve güvenlik → Çerezler",
+            "<strong>Firefox:</strong> Ayarlar → Gizlilik ve Güvenlik → Çerezler",
+            "<strong>Safari:</strong> Tercihler → Gizlilik → Web Sitesi Verilerini Yönet",
+            "<strong>Edge:</strong> Ayarlar → Çerezler ve site izinleri"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. Bu Politikadaki Değişiklikler",
+          "content": ["Ek çerezler kullanmaya başlarsak, bu politikayı güncelleyeceğiz."]
+        }
+      },
+      "contact": {
+        "title": "Sorularınız mı var?",
+        "description": "Çerez kullanımımız hakkında sorularınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      }
+    },
+    "acceptableUsePolicy": {
+      "meta": {
+        "title": "Kabul Edilebilir Kullanım Politikası — Rediacc",
+        "description": "Rediacc'in kabul edilebilir kullanım politikası, platformumuzda yasaklanan faaliyetleri tanımlar.",
+        "keywords": "kabul edilebilir kullanım politikası, AUP, yasaklanan kullanımlar, Rediacc"
+      },
+      "hero": {
+        "title": "Kabul Edilebilir Kullanım Politikası",
+        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2025"
+      },
+      "toc": {
+        "title": "İçindekiler"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Giriş",
+          "content": [
+            "Bu Kabul Edilebilir Kullanım Politikası (\"AUP\"), Rediacc platformunun kullanımını düzenler ve <a href=\"terms-of-service\">Hizmet Koşullarımızın</a> bir parçasıdır."
+          ]
+        },
+        "prohibitedActivities": {
+          "id": "prohibited-activities",
+          "title": "2. Yasaklanan Faaliyetler",
+          "content": ["Rediacc platformunu şu amaçlarla kullanamazsınız:"],
+          "items": [
+            "Kripto para madenciliği veya benzer yoğun hesaplama faaliyetleri",
+            "Spam, kimlik avı veya kötü amaçlı içerik gönderme",
+            "Kötü amaçlı yazılım barındırma veya dağıtma",
+            "DoS/DDoS dahil ağ saldırıları",
+            "Başkalarının hesaplarına veya sistemlerine yetkisiz erişim",
+            "Güvenlik özelliklerini atlatma",
+            "Yasadışı içerik depolama",
+            "İzinsiz platform erişimi satışı",
+            "Rakip ürün oluşturmak için kullanma"
+          ]
+        },
+        "resourceUsage": {
+          "id": "resource-usage",
+          "title": "3. Kaynak Kullanımı",
+          "content": ["Tüm kullanıcılara adil erişim sağlamak için:"],
+          "items": [
+            "Kaynakları abonelik sınırlarınıza göre kullanın",
+            "Otomatik süreçler aşırı yük oluşturmamalıdır",
+            "Depolama kullanımı meşru platform kullanımını yansıtmalıdır",
+            "Kaynak sorunlarını derhal çözün"
+          ]
+        },
+        "securityRequirements": {
+          "id": "security-requirements",
+          "title": "4. Güvenlik Gereksinimleri",
+          "content": ["Hesabınızın güvenliğinden siz sorumlusunuz:"],
+          "items": [
+            "Güçlü, benzersiz parolalar kullanın",
+            "Hesap bilgilerinizi paylaşmayın",
+            "Güvenlik açıklarını <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine bildirin",
+            "Yazılı izin olmadan güvenlik testi yapmayın",
+            "Yazılımı güncel tutun"
+          ]
+        },
+        "contentStandards": {
+          "id": "content-standards",
+          "title": "5. İçerik Standartları",
+          "content": [
+            "İçerik yürürlükteki yasalara uygun olmalıdır. İçeriğinizden siz sorumlusunuz."
+          ]
+        },
+        "enforcement": {
+          "id": "enforcement",
+          "title": "6. Uygulama",
+          "content": ["İhlaller şu sonuçlara yol açabilir:"],
+          "items": [
+            "Yazılı uyarı",
+            "Geçici askıya alma",
+            "Özelliklerin kısıtlanması",
+            "Hesabın kalıcı olarak kapatılması",
+            "Yetkililere bildirim"
+          ],
+          "content2": ["İşlem yapmadan önce sizi bilgilendirmek için makul çaba göstereceğiz."]
+        },
+        "reporting": {
+          "id": "reporting",
+          "title": "7. İhlalleri Bildirme",
+          "content": [
+            "İhlalleri <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine bildirin."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "8. Bu Politikadaki Değişiklikler",
+          "content": ["Bu AUP'yi zaman zaman güncelleyebiliriz."]
+        }
+      },
+      "contact": {
+        "title": "Sorularınız mı var?",
+        "description": "Bu politika hakkında sorularınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      }
+    },
+    "refundPolicy": {
+      "meta": {
+        "title": "İade Politikası — Rediacc",
+        "description": "Platform abonelikleri ve profesyonel hizmetler için Rediacc iade politikası.",
+        "keywords": "iade politikası, iptal, abonelik iadesi, Rediacc"
+      },
+      "hero": {
+        "title": "İade Politikası",
+        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2025"
+      },
+      "toc": {
+        "title": "İçindekiler"
+      },
+      "sections": {
+        "overview": {
+          "id": "overview",
+          "title": "1. Genel Bakış",
+          "content": [
+            "Bu İade Politikası, Rediacc abonelikleri ve profesyonel hizmetler için iade koşullarını açıklar."
+          ]
+        },
+        "platformSubscriptions": {
+          "id": "platform-subscriptions",
+          "title": "2. Platform Abonelikleri",
+          "content": ["Rediacc birden fazla abonelik seviyesi sunar:"],
+          "subsections": {
+            "freeTier": {
+              "title": "2.1 Ücretsiz Seviye",
+              "content": ["Community seviyesi sonsuza kadar ücretsizdir."]
+            },
+            "paidTiers": {
+              "title": "2.2 Ücretli Seviyeler",
+              "content": ["Ücretli abonelikler genel olarak iade edilemez. İstisnalar:"],
+              "items": [
+                "<strong>İlk 14 gün:</strong> Yeni aboneler için tam iade",
+                "<strong>Hizmet kesintisi:</strong> Uzun süreli kesintiler için orantılı kredi (48 saatten fazla)",
+                "<strong>Fatura hataları:</strong> Hatalı tahsilatlar için tam iade"
+              ]
+            },
+            "annualSubscriptions": {
+              "title": "2.3 Yıllık Abonelikler",
+              "content": [
+                "Yıllık abonelikler herhangi bir zamanda iptal edilebilir. 14 günlük süre dışında kısmi iade yapılmaz."
+              ]
+            }
+          }
+        },
+        "professionalServices": {
+          "id": "professional-services",
+          "title": "3. Profesyonel Hizmetler",
+          "content": ["Profesyonel hizmetler saatlik olarak faturalandırılır ($400–$1.200/saat):"],
+          "items": [
+            "<strong>Çalışma başlamadan önce:</strong> Tam iade",
+            "<strong>Çalışma süresince:</strong> Yalnızca çalışılan saatler faturalandırılır",
+            "<strong>Kalite anlaşmazlıkları:</strong> Teslimattan sonra 7 gün içinde bizimle iletişime geçin",
+            "<strong>Minimum taahhüt:</strong> Bazı paketlerin minimum süresi vardır"
+          ]
+        },
+        "howToRequest": {
+          "id": "how-to-request",
+          "title": "4. İade Nasıl Talep Edilir",
+          "content": [
+            "<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine şu bilgilerle e-posta gönderin:"
+          ],
+          "items": [
+            "Hesap e-posta adresiniz",
+            "İade talep edilen abonelik veya hizmet",
+            "İade talebinizin nedeni",
+            "İlgili sipariş veya fatura numaraları"
+          ],
+          "content2": ["5 iş günü içinde yanıt vereceğiz."]
+        },
+        "refundProcessing": {
+          "id": "refund-processing",
+          "title": "5. İade İşleme",
+          "content": ["Onaylanan iadeler, orijinal ödeme yöntemine 10 iş günü içinde işlenecektir."]
+        },
+        "nonRefundable": {
+          "id": "non-refundable",
+          "title": "6. İade Edilemez Kalemler",
+          "content": ["Aşağıdakiler iade kapsamında değildir:"],
+          "items": [
+            "14 günlük süreden sonra iptal edilen abonelikler",
+            "Tüketilen kaynaklar için kullanım bazlı ücretler",
+            "Teslim edilmiş profesyonel hizmet saatleri",
+            "Hesap yeniden etkinleştirme ücretleri",
+            "<a href=\"terms-of-service\">Hizmet Koşulları</a> ihlalinden kaynaklanan ücretler"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. Bu Politikadaki Değişiklikler",
+          "content": ["Bu İade Politikasını zaman zaman güncelleyebiliriz."]
+        }
+      },
+      "contact": {
+        "title": "Sorularınız mı var?",
+        "description": "İadeler hakkında sorularınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      }
+    },
+    "telemetryPolicy": {
+      "meta": {
+        "title": "Telemetri Politikası — Rediacc",
+        "description": "Rediacc ürünlerinin hangi telemetri verilerini topladığı, neden topladığı, nasıl işlendiği ve nasıl devre dışı bırakılacağı hakkında ayrıntılar. Web Uygulaması, CLI, Middleware ve Bridge'i kapsar.",
+        "keywords": "telemetri politikası, veri toplama, OpenTelemetry, devre dışı bırakma, gizlilik, GDPR, Rediacc"
+      },
+      "hero": {
+        "title": "Telemetri Politikası",
+        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026"
+      },
+      "toc": {
+        "title": "İçindekiler"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. Giriş",
+          "content": [
+            "Rediacc yazılım ürünleri, ürün kalitesini artırmamıza, sorunları teşhis etmemize ve araçlarımızın nasıl kullanıldığını anlamamıza yardımcı olmak için anonimleştirilmiş kullanım telemetrisi toplar. Bu Telemetri Politikası, tam olarak hangi verilerin toplandığını, neden toplandığını, nasıl işlendiğini ve nasıl devre dışı bırakabileceğinizi açıklar.",
+            "Bu politika dört ürünü kapsar: <strong>Rediacc Web Uygulaması</strong>, <strong>Rediacc CLI</strong>, <strong>Rediacc Middleware</strong> ve <strong>Rediacc Bridge (Renet)</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
+          ]
+        },
+        "principles": {
+          "id": "principles",
+          "title": "2. Telemetri İlkelerimiz",
+          "content": ["Rediacc'taki tüm telemetri toplama işlemleri şu ilkeleri takip eder:"],
+          "items": [
+            "<strong>Tasarımdan gizlilik:</strong> Kişisel tanımlayıcılar iletim öncesinde anonimleştirilir. E-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir (SHA-256) ve kısaltılır, şifreler ve gizli bilgiler asla toplanmaz.",
+            "<strong>Minimum toplama:</strong> Yalnızca ürün kalitesini artırmak ve sorunları teşhis etmek için gerekli olanı toplarız. Dosya içeriklerini, veritabanı içeriklerini, sorgu sonuçlarını veya iş verilerini toplamayız.",
+            "<strong>Şeffaflık:</strong> Bu politika, her ürün tarafından toplanan her veri kategorisini listeler. Gizli veri akışları yoktur.",
+            "<strong>Kullanıcı kontrolü:</strong> Her ürün, telemetriyi tamamen devre dışı bırakma mekanizması sağlar. Devre dışı bırakma hemen ve tamamen uygulanır.",
+            "<strong>Toplama:</strong> Telemetri verileri toplu olarak analiz edilir. Telemetriden bireysel kullanıcı profilleri oluşturmayız."
+          ]
+        },
+        "legalBasis": {
+          "id": "legal-basis",
+          "title": "3. Toplama için Yasal Dayanak",
+          "content": [
+            "AB Genel Veri Koruma Yönetmeliği (GDPR) ve eGizlilik Yönergesi kapsamında, telemetri toplama için yasal dayanağımız ürün bağlamına bağlıdır:",
+            "<strong>Web Uygulaması</strong> (tarayıcı tabanlı) için: telemetri, hizmet kalitesini sürdürme ve iyileştirme amacıyla <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. İstediğiniz zaman devre dışı bırakabilirsiniz.",
+            "<strong>CLI, Middleware ve Bridge</strong> (altyapınıza kurulan) için: telemetri, açık devre dışı bırakma mekanizmaları sağlanarak <strong>meşru menfaat</strong> kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz.",
+            "Açık onay gerektiren yargı alanlarındaki kullanıcılar için (örneğin PIPA kapsamında Güney Kore), telemetri, herhangi bir veri iletilmeden önce ürün yapılandırması aracılığıyla açıkça etkinleştirilmelidir."
+          ]
+        },
+        "webApp": {
+          "id": "web-app",
+          "title": "4. Web Uygulaması Telemetrisi",
+          "content": [
+            "Rediacc Web Uygulaması, OpenTelemetry tabanlı dağıtık izleme kullanır. Telemetri <code>https://www.rediacc.com/otlp</code> adresine iletilir. Üretimde yalnızca <strong>oturumların %10'u</strong> örneklenir."
+          ],
+          "subsections": {
+            "webDataCollected": {
+              "title": "4.1 Toplanan Veriler",
+              "content": ["Web Uygulaması aşağıdaki veri kategorilerini toplar:"],
+              "items": [
+                "<strong>Tarayıcı bilgileri:</strong> tarayıcı adı ve sürümü, tercih edilen dil, platform (ör. Windows, macOS, Linux), ekran çözünürlüğü, renk derinliği, kullanıcı aracı dizesi, cihaz belleği (varsa), ağ bağlantı türü",
+                "<strong>Kullanıcı bağlamı:</strong> oturum kimliği (her oturum için rastgele oluşturulur), yalnızca e-posta alan adı (yerel kısım gizlenir, ör. <code>***@example.com</code>), kuruluş adı, ekip adı",
+                "<strong>Sayfa görüntülemeleri ve gezinme:</strong> uygulama içinde ziyaret edilen sayfalar, rota değişiklikleri, yönlendiren bilgileri",
+                "<strong>Kullanıcı etkileşimleri:</strong> tıklamalar, form gönderimleri, modal açma/kapama, arama sorguları, filtre değişiklikleri, sekme geçişleri, dosya indirmeleri (dosya adları toplanmaz)",
+                "<strong>API çağrıları:</strong> HTTP yöntemi, URL yolu, yanıt durum kodu, istek süresi",
+                "<strong>Hatalar:</strong> hata türü, hata mesajı, yığın izleme (1.000 karaktere kısaltılır), hata kaynağı",
+                "<strong>Performans metrikleri:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), kaynak zamanlama, bellek kullanımı (her 30 saniyede örneklenir), uzun görev tespiti",
+                "<strong>Bileşen yaşam döngüsü:</strong> bileşen bağlama/ayırma zamanlaması, render süresi"
+              ]
+            },
+            "webNotCollected": {
+              "title": "4.2 Toplanmayan Veriler",
+              "content": ["Web Uygulaması şunları toplamaz:"],
+              "items": [
+                "Tam e-posta adresleri (yerel kısım her zaman gizlenir)",
+                "Şifreler, tokenlar veya kimlik doğrulama bilgileri",
+                "Dosya içerikleri, veritabanı içerikleri veya sorgu sonuçları",
+                "Form alan değerleri (yalnızca bir formun gönderildiği kaydedilir)",
+                "Pano içerikleri veya tuş vuruşları",
+                "IP adresleri (telemetri uç noktamız tarafından kaydedilmez)"
+              ]
+            },
+            "webOptOut": {
+              "title": "4.3 Nasıl Devre Dışı Bırakılır",
+              "content": [
+                "Hesap ayarlarınızda <code>userConsent</code> yapılandırma bayrağını <code>false</code> olarak ayarlayın. Devre dışı bırakma sonrasında telemetri hemen durur.",
+                "<strong>Masaüstü Uygulaması:</strong> Telemetri, Masaüstü (Electron) uygulamasında varsayılan olarak tamamen devre dışıdır. Hiçbir veri toplanmaz veya iletilmez."
+              ]
+            }
+          }
+        },
+        "cli": {
+          "id": "cli",
+          "title": "5. CLI Telemetrisi",
+          "content": [
+            "Rediacc CLI, OpenTelemetry Node SDK kullanır. Telemetri <code>https://www.rediacc.com/otlp</code> adresine iletilir."
+          ],
+          "subsections": {
+            "cliDataCollected": {
+              "title": "5.1 Toplanan Veriler",
+              "content": ["CLI aşağıdaki veri kategorilerini toplar:"],
+              "items": [
+                "<strong>Komut kullanımı:</strong> komut adı, CLI sürümü, çıkış kodu, başarı veya başarısızlık durumu",
+                "<strong>Anonimleştirilmiş argümanlar:</strong> hassas değerleri gizlenmiş komut seçenekleri — şifreler, tokenlar, gizli bilgiler, API anahtarları ve kimlik bilgileri <code>[REDACTED]</code> ile değiştirilir",
+                "<strong>Ortam:</strong> işletim sistemi türü, Node.js çalışma zamanı sürümü, dağıtım ortamı",
+                "<strong>Hata bilgileri:</strong> komutlar başarısız olduğunda hata türü, hata mesajı ve sınırlı yığın izleme",
+                "<strong>API etkileşimleri:</strong> HTTP yöntemi, URL yolu, yanıt durum kodu, istek süresi",
+                "<strong>Oturum:</strong> rastgele oluşturulmuş oturum kimliği, komut yürütme süresi"
+              ]
+            },
+            "cliOptOut": {
+              "title": "5.2 Nasıl Devre Dışı Bırakılır",
+              "content": [
+                "CLI telemetrisini şu yöntemlerden herhangi biriyle devre dışı bırakabilirsiniz:"
+              ],
+              "items": [
+                "<code>REDIACC_TELEMETRY=off</code> ortam değişkenini ayarlayın (<code>false</code> veya <code>0</code> da kabul edilir)",
+                "CLI yapılandırma dosyanızda <code>telemetryEnabled: false</code> olarak ayarlayın",
+                "Telemetri, CI ortamlarında (<code>CI</code> ortam değişkeni aracılığıyla algılanır) <strong>otomatik olarak devre dışı bırakılır</strong>"
+              ]
+            }
+          }
+        },
+        "middleware": {
+          "id": "middleware",
+          "title": "6. Middleware Telemetrisi",
+          "content": [
+            "Rediacc Middleware, operasyonel telemetri toplar. Telemetri <code>https://www.rediacc.com/otlp/v1/traces</code> adresine iletilir."
+          ],
+          "subsections": {
+            "middlewareDataCollected": {
+              "title": "6.1 Toplanan Veriler",
+              "content": ["Middleware aşağıdaki veri kategorilerini toplar:"],
+              "items": [
+                "<strong>Sistem bilgileri:</strong> ana bilgisayar adı, işletim sistemi sürümü, .NET çalışma zamanı sürümü",
+                "<strong>API çağrıları:</strong> HTTP yöntemi, uç nokta yolu, yanıt durum kodu, istek süresi",
+                "<strong>Veritabanı işlemleri:</strong> saklı yordam adı, yürütme süresi, dönen satır sayısı (sorgu içeriği, parametreler veya sonuç verileri yok)",
+                "<strong>Kimlik doğrulama olayları:</strong> yalnızca hashlenmiş kullanıcı tanımlayıcısı — kullanıcı kimlikleri SHA-256 ve bir tuz ile hashlenir, ardından ilk 12 karaktere kısaltılır. Orijinal kullanıcı kimlikleri asla iletilmez.",
+                "<strong>Sağlık kontrolleri:</strong> hizmet bileşeni kullanılabilirlik durumu ve yanıt süreleri",
+                "<strong>Uygulama yaşam döngüsü:</strong> başlatma, kapatma ve yapılandırma değişikliği olayları",
+                "<strong>Hata bilgileri:</strong> hata türü, hata mesajı ve operasyonel bağlam"
+              ]
+            },
+            "middlewareOptOut": {
+              "title": "6.2 Nasıl Devre Dışı Bırakılır",
+              "content": [
+                "Middleware yapılandırmanızda (appsettings.json veya ortama özgü yapılandırma) <code>Telemetry:Enabled</code> değerini <code>false</code> olarak ayarlayın."
+              ]
+            }
+          }
+        },
+        "bridge": {
+          "id": "bridge",
+          "title": "7. Bridge (Renet) Telemetrisi",
+          "content": [
+            "Rediacc Bridge (Renet), gzip sıkıştırmalı OTLP dışa aktarımı ile OpenTelemetry kullanır. Telemetri, toplu halde (maksimum 10 span, her 5 saniyede temizlenir) <code>www.rediacc.com/otlp/v1/traces</code> adresine iletilir."
+          ],
+          "subsections": {
+            "bridgeDataCollected": {
+              "title": "7.1 Toplanan Veriler",
+              "content": ["Bridge aşağıdaki veri kategorilerini toplar:"],
+              "items": [
+                "<strong>Kuyruk işlemleri:</strong> görev kimliği, öncelik düzeyi, işlem türü, yürütme süresi, başarı veya başarısızlık durumu",
+                "<strong>SSH işlemleri:</strong> hedef ana bilgisayar, kullanıcı adı, port numarası, çıkış kodu, yürütme süresi (komut içeriği veya çıktı toplanmaz)",
+                "<strong>API çağrıları:</strong> prosedür adı, istek süresi",
+                "<strong>Vault işlemleri:</strong> işlem türü ve süresi (gizli değerler, anahtarlar veya vault içerikleri toplanmaz)",
+                "<strong>Bridge yaşam döngüsü:</strong> başlatma, kapatma ve yeniden bağlanma olayları"
+              ]
+            },
+            "bridgeOptOut": {
+              "title": "7.2 Nasıl Devre Dışı Bırakılır",
+              "content": [
+                "Bridge telemetrisini şu yöntemlerden biriyle devre dışı bırakabilirsiniz:"
+              ],
+              "items": [
+                "<code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın",
+                "<code>DO_NOT_TRACK=1</code> ortam değişkenini ayarlayın (<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standardına uygundur)"
+              ]
+            }
+          }
+        },
+        "dataProcessing": {
+          "id": "data-processing",
+          "title": "8. Veri İşleme ve Depolama",
+          "content": [
+            "Tüm telemetri verileri, şifreli bağlantılar (TLS 1.2+) üzerinden telemetri uç noktamıza iletilir. Veriler aşağıdaki şekilde işlenir ve saklanır:"
+          ],
+          "items": [
+            "<strong>Şifreleme:</strong> Tüm veriler TLS kullanılarak iletim sırasında şifrelenir. Bridge ayrıca gzip sıkıştırma kullanır.",
+            "<strong>Saklama:</strong> Ham telemetri izleri, hata ayıklama ve olay araştırması için 90 güne kadar saklanır. Toplu metrikler 12 aya kadar saklanır ve ardından silinir.",
+            "<strong>Erişim:</strong> Telemetri verilerine yalnızca Rediacc mühendislik ve operasyon personeli, bilmesi gereken bazında erişebilir.",
+            "<strong>Üçüncü taraflarla paylaşım yok:</strong> Telemetri verileri herhangi bir üçüncü tarafla paylaşılmaz, satılmaz veya erişilemez.",
+            "<strong>Altyapı:</strong> Tüm telemetri verileri, Avrupa Birliği içinde bulunan altyapıda işlenir ve saklanır."
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "9. Uluslararası Veri Transferleri",
+          "content": [
+            "Telemetri verileri yalnızca Avrupa Birliği içindeki sunucularda işlenir ve saklanır. Telemetri verilerinin AB/AEA dışına aktarılmasının gerekebileceği olası olmayan durumlarda (ör. felaket kurtarma), Avrupa Komisyonu tarafından onaylanan Standart Sözleşme Maddeleri (SCCs) dahil uygun güvenceler sağlanacaktır."
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "10. Haklarınız",
+          "content": [
+            "Telemetri verilerimiz anonimleştirilmiş ve toplu halde olduğundan, GDPR kapsamında genellikle kişisel veri teşkil etmez. Ancak, herhangi bir telemetri verisinin sizinle kişisel olarak ilişkilendirilebildiği ölçüde, şu haklara sahipsiniz:"
+          ],
+          "items": [
+            "<strong>Erişim:</strong> Sizinle ilişkili olabilecek telemetri verileri hakkında bilgi talep etme",
+            "<strong>Silme:</strong> Sizinle ilişkilendirilebilen telemetri verilerinin silinmesini talep etme",
+            "<strong>Devre dışı bırakma:</strong> Yukarıda açıklanan ürüne özgü mekanizmaları kullanarak telemetriyi istediğiniz zaman devre dışı bırakma",
+            "<strong>Şikayet:</strong> Estonya Veri Koruma Müfettişliğine (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) veya yerel denetim otoritenize şikayette bulunma"
+          ],
+          "content2": [
+            "Bu haklarınızdan herhangi birini kullanmak için <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın. 30 gün içinde yanıt vereceğiz."
+          ]
+        },
+        "ccpa": {
+          "id": "ccpa",
+          "title": "11. Kaliforniya Sakinleri (CCPA/CPRA)",
+          "content": [
+            "Kaliforniya sakini iseniz, Kaliforniya Tüketici Gizlilik Yasası (CCPA) kapsamında Kaliforniya Gizlilik Hakları Yasası (CPRA) ile değiştirilmiş şekliyle aşağıdaki ek açıklamalar geçerlidir:"
+          ],
+          "items": [
+            "<strong>Toplanan bilgi kategorileri:</strong> İnternet veya elektronik ağ etkinlik bilgileri (tarayıcı türü, etkileşim verileri, hata günlükleri), cihaz tanımlayıcıları (anonimleştirilmiş), coğrafi konum verileri (yalnızca ülke düzeyinde, saklanmayan IP adresinden türetilir)",
+            "<strong>Amaç:</strong> Hizmet kalitesini sürdürme ve iyileştirme, hata ayıklama, performans izleme ve güvenlik",
+            "<strong>Satış/Paylaşım:</strong> CCPA/CPRA tarafından tanımlandığı şekliyle telemetri verilerini satmıyoruz veya paylaşmıyoruz",
+            "<strong>Devre dışı bırakma hakkı:</strong> Yukarıdaki 4-7 bölümlerinde açıklanan ürüne özgü devre dışı bırakma mekanizmalarını kullanın. Web Uygulamamızda Global Privacy Control (GPC) sinyalini de dikkate alırız."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "12. Bu Politikadaki Değişiklikler",
+          "content": [
+            "Yeni ürünler eklediğimizde, toplanan verileri değiştirdiğimizde veya işleme uygulamalarımızı güncellediğimizde bu Telemetri Politikasını güncelleyebiliriz. Değişiklikler bu sayfada güncellenmiş yürürlük tarihi ile yayınlanacaktır. Kullanıcıları önemli değişiklikler hakkında ürün sürüm notlarımız ve web sitemiz aracılığıyla bilgilendireceğiz."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Sorularınız mı var?",
+        "description": "Telemetri uygulamalarımız hakkında sorularınız varsa veya devre dışı bırakma konusunda yardıma ihtiyacınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      }
     }
   },
   "problem": {
@@ -1700,9 +2624,18 @@
         ],
         "description": "Anında üretim klonları. Sıfır DevOps bileti. 60 saniyelik ortamlar.",
         "title": "Geliştirme Ortamları"
+      },
+      {
+        "title": "Önleyici Savunma",
+        "description": "Yapay zeka saldırganları saniyeler içinde hareket eder. Klonla. Test et. Güçlendir. Tekrarla.",
+        "benefits": [
+          "Güvenli yapay zeka sızma testi için üretimi klonlayın",
+          "Kesinti riski olmadan sürekli test",
+          "Saldırganlar gelmeden güvenlik açığı pencerelerini kapatın"
+        ]
       }
     ],
-    "subtitle": "Altyapı arızalandığında veya tehditler ortaya çıktığında hızlı müdahale için beş entegre çözüm.",
+    "subtitle": "Altyapı arızalandığında veya tehditler ortaya çıktığında hızlı müdahale için altı entegre çözüm.",
     "title": "İş Sürekliliğini Nasıl Sağlıyoruz?"
   }
 }

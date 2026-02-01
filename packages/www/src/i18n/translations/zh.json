@@ -10,7 +10,8 @@
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "clickToEnlarge": "点击放大图片",
-      "opensInNewTab": "在新标签页中打开"
+      "opensInNewTab": "在新标签页中打开",
+      "imageViewer": "图片查看器"
     },
     "buttons": {
       "close": "关闭",
@@ -44,7 +45,15 @@
       "skipToNavigation": "跳至导航"
     },
     "exploreSolutions": "探索其他解决方案",
-    "platformPreview": "平台预览"
+    "platformPreview": "平台预览",
+    "solutions": {
+      "developmentEnvironments": "开发环境",
+      "disasterRecovery": "灾难恢复",
+      "threatResponse": "威胁响应",
+      "dataSecurity": "数据安全",
+      "systemPortability": "系统可移植性",
+      "preemptiveDefense": "先发制人防御"
+    }
   },
   "testimonials": {
     "title": "团队怎么说",
@@ -148,8 +157,12 @@
     },
     "copyright": "{{year}} Rediacc. 版权所有。",
     "legalLinks": {
+      "termsOfService": "服务条款",
       "privacyPolicy": "隐私政策",
-      "termsOfUse": "使用条款"
+      "cookiePolicy": "Cookie政策",
+      "acceptableUsePolicy": "可接受使用政策",
+      "refundPolicy": "退款政策",
+      "telemetryPolicy": "遥测策略"
     },
     "links": {
       "contactSupport": "联系支持人员",
@@ -217,6 +230,7 @@
     "downloads": "Downloads",
     "home": "首页",
     "install": "安装",
+    "pricing": "定价",
     "login": "登录",
     "search": "搜索",
     "selectLanguage": "选择语言",
@@ -226,7 +240,8 @@
       "developmentEnvironments": "开发环境",
       "disasterRecovery": "灾难恢复",
       "systemPortability": "系统可移植性",
-      "threatResponse": "威胁响应"
+      "threatResponse": "威胁响应",
+      "preemptiveDefense": "先发制人防御"
     },
     "toggleMenu": "切换菜单"
   },
@@ -278,7 +293,9 @@
             }
           }
         },
-        "submit": "开始使用"
+        "submit": "开始使用",
+        "ariaLabel": "联系表单",
+        "legend": "联系信息"
       },
       "hero": {
         "subtitle": "填写表格，我们将在 48 小时内与您联系。",
@@ -420,7 +437,9 @@
       },
       "hero": {
         "title": "安装 Rediacc CLI",
-        "subtitle": "选择您首选的安装方式"
+        "subtitle": "选择您首选的安装方式",
+        "downloadsNote": "正在寻找桌面应用或直接二进制文件？",
+        "downloadsLink": "访问下载页面"
       },
       "methods": {
         "quick": {
@@ -457,7 +476,11 @@
         "platform": "平台"
       },
       "copy": "复制",
-      "copied": "已复制！"
+      "copied": "已复制！",
+      "platformFilter": {
+        "all": "所有方法",
+        "label": "按平台筛选"
+      }
     },
     "notFound": {
       "actions": {
@@ -1551,6 +1574,102 @@
             "title": "勒索软件针对备份"
           }
         }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "先发制人防御 | 基于克隆的持续安全测试",
+          "description": "AI攻击者在几分钟内利用漏洞。停止在生产环境上进行年度测试。使用Rediacc克隆您的基础设施，安全地运行AI驱动的持续安全测试。",
+          "keywords": "先发制人防御、AI渗透测试、持续安全测试、基于克隆的渗透测试、生产克隆安全、AI网络安全"
+        },
+        "hero": {
+          "title": "他们在几秒内发起攻击。你还在每年测试一次。",
+          "subtitle": "克隆您的生产环境。释放AI安全工具。在攻击者之前发现每一个弱点。"
+        },
+        "problems": {
+          "aiAttackSpeed": {
+            "title": "AI攻击以机器速度移动",
+            "subtitle": "知己知彼，百战不殆 <small class='subtitle-attribution'>— 孙子，《孙子兵法》</small>",
+            "problem": {
+              "description": "AI驱动的攻击者在几分钟内突破系统。自主代理以80-90%的自主性运行，每秒发出数千个请求。新漏洞的利用时间从32天骤降至仅5天。",
+              "story": "2025年11月，一家大型AI公司披露，国家支持的黑客将AI助手武器化，攻击了约30个组织，成功突破了4个。AI以80-90%的自主性运行，仅需约20分钟的人工监督。 <a href='https://www.anthropic.com/news/disrupting-AI-espionage' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.axios.com/2025/11/13/anthropic-china-claude-code-cyberattack' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 另外，一个开源AI攻击框架在公开披露后不到10分钟内将广泛使用的网络设备中的关键零日漏洞武器化。 <a href='https://blog.checkpoint.com/executive-insights/hexstrike-ai-when-llms-meet-zero-day-exploitation/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> <a href='https://thehackernews.com/2025/09/threat-actors-weaponize-hexstrike-ai-to.html' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "AI代理以80-90%的自主性在最少的人工指导下突破组织",
+                "安全研究人员记录了从初始访问到横向移动仅51秒的突破时间",
+                "新漏洞的利用时间从32天骤降至5天",
+                "百分之九十七的组织正在考虑AI驱动的渗透测试",
+                "AI每秒发出数千个侦察请求，远超人类速度"
+              ]
+            },
+            "solution": {
+              "title": "用基于克隆的测试匹配机器速度",
+              "description": "通过零拷贝在几秒内克隆生产环境。在隔离的克隆上以全速运行AI攻击工具。临时环境在每个测试周期后自动销毁。",
+              "benefits": [
+                "零拷贝克隆在几秒内创建与生产一致的测试目标",
+                "在隔离的克隆上安全地以全速运行AI攻击工具",
+                "临时环境在每个安全测试周期后自动清理",
+                "针对真实的生产数据和配置进行测试，而非过时的副本",
+                "多云可移植性让您跨不同基础设施目标进行测试"
+              ]
+            }
+          },
+          "productionTesting": {
+            "title": "安全测试导致生产崩溃",
+            "subtitle": "首先，不造成伤害 <small class='subtitle-attribution'>— 希波克拉底传统（primum non nocere）</small>",
+            "problem": {
+              "description": "安全扫描器和渗透测试导致生产系统崩溃。漏洞扫描器导致网络设备崩溃、终止服务并引发级联故障。2024年最严重的IT灾难是由安全厂商自己的更新引起的。",
+              "story": "2024年7月19日，一家领先的网络安全厂商向全球生产系统推送了一个有缺陷的传感器更新。850万台设备同时崩溃，造成超过100亿美元的全球损失。 <a href='https://en.wikipedia.org/wiki/2024_CrowdStrike-related_IT_outages' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.cisa.gov/news-events/alerts/2024/07/19/widespread-it-outage-due-crowdstrike-update' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 仅一家大型航空公司就损失了5亿美元并取消了7,000个航班。 <a href='https://www.darkreading.com/cyberattacks-data-breaches/delta-launches-500m-lawsuit-crowdstrike' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 2025年的一项调查发现，30%的安全领导者担心自己的安全测试会导致中断。 <a href='https://pentera.io/blog/2025-state-of-pentesting-insights/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "一家领先安全厂商的更新在一天内导致850万台设备崩溃",
+                "百分之三十的CISO报告担心自己的安全测试导致中断",
+                "漏洞扫描器导致核心网络交换机和虚拟化主机崩溃",
+                "安全工具恰恰造成了它们本应防止的停机时间",
+                "组织限制测试范围，因为生产环境无法承受风险"
+              ]
+            },
+            "solution": {
+              "title": "在克隆上测试，保护生产",
+              "description": "通过零拷贝技术创建原子级的、与生产一致的克隆。以最大攻击性攻击克隆——如果它崩溃了，很好，你发现了一个弱点。时间点快照可以即时重置克隆进行重新测试。",
+              "benefits": [
+                "与生产一致的克隆在不触碰生产的情况下复制真实基础设施",
+                "原子复制确保克隆在测试时与生产状态完全匹配",
+                "时间点快照让您在破坏性测试后即时重置和重新测试",
+                "零知识加密在安全测试期间保护克隆数据",
+                "运行最具攻击性的扫描器和漏洞利用，完全没有生产风险"
+              ]
+            }
+          },
+          "periodicCompliance": {
+            "title": "年度测试是合规幻觉",
+            "subtitle": "真主不会改变一个民族的状况，直到他们改变自身的状况 <small class='subtitle-attribution'>— 雷霆章 13:11</small>",
+            "problem": {
+              "description": "组织每年进行一到两次渗透测试以满足合规要求。他们通过了，获得认证，然后几周后就被入侵了。认证只证明了一天的安全性。攻击者利用其余364天。",
+              "story": "一家美国大型零售商在2013年9月获得PCI DSS认证，仅两个月后就被入侵——1.1亿客户记录被盗，损失2.48亿美元。 <a href='https://www.digitaltransactions.net/target-passed-a-pci-inspection-before-breach-will-spend-100-million-on-chip-card-effort/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 一家领先的支付处理商在入侵暴露1亿张支付卡的仅两周前获得PCI认证，损失2亿美元。 <a href='https://www.secureworks.com/blog/general-pci-compliance-data-security-case-study-heartland' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 独立取证研究发现，100%遭受入侵的PCI认证公司在实际入侵时已不符合合规要求。 <a href='https://www.verizon.com/business/resources/reports/payment-security-report/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "百分之三十二的公司每年仅进行一次渗透测试",
+                "一家大型零售商在1.1亿记录被盗前两个月获得PCI认证",
+                "一家支付处理商在1亿张卡被盗前两周获得PCI认证",
+                "遭受入侵的PCI认证公司百分之百在入侵时不符合合规要求",
+                "合规认证的是一个时间点，而攻击者利用其他每一天"
+              ]
+            },
+            "solution": {
+              "title": "在临时克隆上持续测试",
+              "description": "按计划克隆生产——每天、每小时或每次部署。在克隆上运行AI渗透测试。销毁。重复。零拷贝意味着每个克隆在写入更改之前都是免费的。",
+              "benefits": [
+                "按需克隆支持每天或每小时的安全测试周期",
+                "临时环境在测试后自动销毁，消除持久攻击面",
+                "零拷贝技术使每个克隆在写入更改之前都是免费的",
+                "每个仓库的加密确保测试数据在整个周期中受到保护",
+                "CI/CD集成在每次部署时自动触发安全克隆和测试"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "准备好在攻击之前进行防御了吗？",
+          "subtitle": "克隆。测试。加固。重复。每天，而不是每年一次。",
+          "button": "开始先发制人防御"
+        }
       }
     },
     "team": {
@@ -1629,6 +1748,769 @@
           }
         }
       }
+    },
+    "privacyPolicy": {
+      "meta": {
+        "title": "隐私政策 — Rediacc",
+        "description": "了解Rediacc如何收集、使用和保护您的个人数据。",
+        "keywords": "隐私政策, 数据保护, GDPR, Plausible Analytics, Rediacc"
+      },
+      "hero": {
+        "title": "隐私政策",
+        "effectiveDate": "生效日期：2026年2月1日"
+      },
+      "toc": {
+        "title": "目录"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. 简介",
+          "content": [
+            "Rediacc（\"我们\"）运营网站<a href=\"https://www.rediacc.com\">www.rediacc.com</a>和Rediacc基础设施自动化平台。本隐私政策说明我们如何收集、使用、披露和保护您的信息。",
+            "我们致力于保护您的隐私。如果您不同意本隐私政策的条款，请停止使用我们的网站和服务。"
+          ]
+        },
+        "informationWeCollect": {
+          "id": "information-we-collect",
+          "title": "2. 我们收集的信息",
+          "content": ["我们仅收集提供服务所需的最少信息。"],
+          "subsections": {
+            "contactFormData": {
+              "title": "2.1 联系表单数据",
+              "content": ["当您提交联系表单时，我们会收集您的姓名、电子邮件地址、主题和消息内容。"]
+            },
+            "accountData": {
+              "title": "2.2 账户数据",
+              "content": ["创建Rediacc账户时，我们会收集您的姓名、电子邮件、组织名称和账单信息。"]
+            },
+            "analyticsData": {
+              "title": "2.3 分析数据",
+              "content": [
+                "我们使用<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>，一个注重隐私的无Cookie分析工具。"
+              ]
+            },
+            "productTelemetry": {
+              "title": "2.5 产品遥测数据",
+              "content": [
+                "我们的软件产品（Web 应用程序、CLI、中间件和 Bridge）收集匿名使用遥测数据，以提高产品质量、性能和可靠性。遥测数据包括技术信息，例如应用程序版本、操作系统、浏览器类型、性能指标、功能使用模式和错误报告。个人标识符在收集前进行匿名处理——电子邮件地址仅保留域名部分，用户 ID 经过哈希和截断处理，密码或机密信息绝不收集。",
+                "遥测功能在我们的 Web 应用程序和 CLI 中默认启用，并且可以在所有产品中禁用。有关每个产品收集的内容以及如何退出的完整详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+              ]
+            },
+            "cookies": {
+              "title": "2.4 Cookie",
+              "content": [
+                "我们使用一个功能性Cookie（<code>rediacc_lang</code>）来记住您的语言偏好。详情请参阅我们的<a href=\"cookie-policy\">Cookie政策</a>。"
+              ]
+            }
+          }
+        },
+        "howWeUseInformation": {
+          "id": "how-we-use-information",
+          "title": "3. 我们如何使用您的信息",
+          "content": ["我们将收集的信息用于以下目的："],
+          "items": [
+            "回复您的咨询",
+            "提供、运营和维护Rediacc平台",
+            "处理交易和发送账单信息",
+            "发送服务相关通知",
+            "了解网站使用模式",
+            "通过匿名使用遥测来诊断错误、改善产品性能并指导产品开发（请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>）",
+            "遵守法律义务"
+          ]
+        },
+        "dataSharing": {
+          "id": "data-sharing",
+          "title": "4. 数据共享与第三方",
+          "content": ["我们不会向第三方出售或出租您的个人数据。"],
+          "items": [
+            "协助我们运营平台的<strong>服务提供商</strong>",
+            "用于无Cookie匿名网络分析的<strong>Plausible Analytics</strong>",
+            "<strong>遥测处理</strong>——匿名产品使用数据传输至我们在欧盟的遥测端点进行聚合和分析。遥测数据不与第三方共享（请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>）",
+            "法律要求时的<strong>执法机关</strong>"
+          ]
+        },
+        "dataRetention": {
+          "id": "data-retention",
+          "title": "5. 数据保留",
+          "content": [
+            "联系表单数据在必要时保留。账户数据在账户有效期间及删除后30天内保留。",
+            "Plausible 分析数据是聚合的，不包含个人数据，因此数据保留政策不适用。",
+            "产品遥测数据作为原始追踪保留最多90天，用于调试目的。聚合遥测指标保留最多12个月，之后删除。详情请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "6. 您的权利",
+          "content": ["根据您所在的司法管辖区，您可能拥有以下权利："],
+          "items": [
+            "<strong>访问：</strong>要求获取您的个人数据副本",
+            "<strong>更正：</strong>要求更正不准确的数据",
+            "<strong>删除：</strong>要求删除您的数据",
+            "<strong>可移植性：</strong>要求获取机器可读的副本",
+            "<strong>反对：</strong>反对处理您的数据",
+            "<strong>限制：</strong>要求限制处理",
+            "<strong>退出遥测：</strong>随时使用我们<a href=\"telemetry-policy\">遥测策略</a>中描述的机制禁用产品遥测"
+          ],
+          "content2": [
+            "请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们以行使您的权利。"
+          ]
+        },
+        "dataSecurity": {
+          "id": "data-security",
+          "title": "7. 数据安全",
+          "content": ["我们实施行业标准的安全措施，包括传输和存储加密。"]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "8. 国际数据传输",
+          "content": ["您的信息可能会被传输到其他国家并在那里进行处理。我们确保适当的保障措施。"]
+        },
+        "childrenPrivacy": {
+          "id": "children-privacy",
+          "title": "9. 儿童隐私",
+          "content": ["我们的服务不面向16岁以下的个人。"]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "10. 本政策的变更",
+          "content": ["我们可能会不时更新本隐私政策。变更将在此页面上发布。"]
+        }
+      },
+      "contact": {
+        "title": "有疑问？",
+        "description": "如果您对本隐私政策有疑问，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。"
+      },
+      "related": {
+        "title": "相关政策"
+      }
+    },
+    "termsOfService": {
+      "meta": {
+        "title": "服务条款 — Rediacc",
+        "description": "管辖Rediacc网站和基础设施自动化平台使用的条款。",
+        "keywords": "服务条款, 使用条款, 用户协议, Rediacc"
+      },
+      "hero": {
+        "title": "服务条款",
+        "effectiveDate": "生效日期：2026年2月1日"
+      },
+      "toc": {
+        "title": "目录"
+      },
+      "sections": {
+        "acceptance": {
+          "id": "acceptance",
+          "title": "1. 接受条款",
+          "content": [
+            "访问或使用Rediacc网站（<a href=\"https://www.rediacc.com\">www.rediacc.com</a>）或Rediacc平台，即表示您同意本服务条款。"
+          ]
+        },
+        "serviceDescription": {
+          "id": "service-description",
+          "title": "2. 服务描述",
+          "content": ["Rediacc提供面向AI驱动运营的基础设施自动化平台。"]
+        },
+        "accounts": {
+          "id": "accounts",
+          "title": "3. 账户与注册",
+          "content": ["注册时您必须提供准确的信息，并对账户下的所有活动负责。"]
+        },
+        "subscriptions": {
+          "id": "subscriptions",
+          "title": "4. 订阅与付款",
+          "content": [
+            "付费订阅按月或按年预付。退款按照我们的<a href=\"refund-policy\">退款政策</a>处理。"
+          ]
+        },
+        "acceptableUse": {
+          "id": "acceptable-use",
+          "title": "5. 可接受使用",
+          "content": [
+            "您同意按照我们的<a href=\"acceptable-use-policy\">可接受使用政策</a>使用服务。"
+          ]
+        },
+        "telemetry": {
+          "id": "telemetry",
+          "title": "6. 遥测与数据收集",
+          "content": [
+            "我们的软件产品收集匿名使用遥测数据，以提高产品质量和性能。使用服务即表示您确认遥测收集按照我们的<a href=\"telemetry-policy\">遥测策略</a>中的描述进行。",
+            "遥测旨在保护隐私：个人标识符在传输前进行匿名处理，您可以随时退出遥测。<a href=\"telemetry-policy\">遥测策略</a>描述了每个产品收集的具体数据以及禁用收集的机制。"
+          ]
+        },
+        "intellectualProperty": {
+          "id": "intellectual-property",
+          "title": "7. 知识产权",
+          "content": ["服务归Rediacc所有，受知识产权法保护。"]
+        },
+        "dataOwnership": {
+          "id": "data-ownership",
+          "title": "8. 您的数据",
+          "content": ["您的数据属于您。详情请参阅我们的<a href=\"privacy-policy\">隐私政策</a>。"]
+        },
+        "serviceAvailability": {
+          "id": "service-availability",
+          "title": "9. 服务可用性",
+          "content": ["我们努力维持高可用性，但不保证无中断访问。"]
+        },
+        "limitationOfLiability": {
+          "id": "limitation-of-liability",
+          "title": "10. 责任限制",
+          "content": ["在法律允许的最大范围内，Rediacc不对间接损害承担责任。"]
+        },
+        "indemnification": {
+          "id": "indemnification",
+          "title": "11. 赔偿",
+          "content": ["您同意就因使用服务而产生的所有索赔对Rediacc进行赔偿。"]
+        },
+        "termination": {
+          "id": "termination",
+          "title": "12. 终止",
+          "content": ["您可以随时终止账户。如果您违反这些条款，我们可能会暂停您的访问。"]
+        },
+        "governingLaw": {
+          "id": "governing-law",
+          "title": "13. 适用法律",
+          "content": ["本条款受爱沙尼亚共和国法律管辖。"]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "14. 条款变更",
+          "content": ["我们可能会不时更新这些条款。"]
+        }
+      },
+      "contact": {
+        "title": "有疑问？",
+        "description": "如果您对本服务条款有疑问，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。"
+      },
+      "related": {
+        "title": "相关政策"
+      }
+    },
+    "cookiePolicy": {
+      "meta": {
+        "title": "Cookie政策 — Rediacc",
+        "description": "Rediacc的Cookie政策。一个功能性Cookie和无Cookie的Plausible Analytics。",
+        "keywords": "Cookie政策, Cookie, Plausible Analytics, GDPR, Rediacc"
+      },
+      "hero": {
+        "title": "Cookie政策",
+        "effectiveDate": "生效日期：2026年2月1日"
+      },
+      "toc": {
+        "title": "目录"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. 简介",
+          "content": [
+            "本Cookie政策说明Rediacc在网站<a href=\"https://www.rediacc.com\">www.rediacc.com</a>上如何使用Cookie。"
+          ]
+        },
+        "whatAreCookies": {
+          "id": "what-are-cookies",
+          "title": "2. 什么是Cookie？",
+          "content": ["Cookie是您访问网站时存储在设备上的小型文本文件。"]
+        },
+        "cookiesWeUse": {
+          "id": "cookies-we-use",
+          "title": "3. 我们使用的Cookie",
+          "content": ["我们只使用一个Cookie："],
+          "subsections": {
+            "languageCookie": {
+              "title": "3.1 语言偏好Cookie",
+              "content": [
+                "<strong>名称：</strong><code>rediacc_lang</code><br><strong>类型：</strong>第一方，严格必要<br><strong>有效期：</strong>1年<br><strong>用途：</strong>存储您的首选语言。"
+              ]
+            }
+          }
+        },
+        "whatWeDontUse": {
+          "id": "what-we-dont-use",
+          "title": "4. 我们不使用的内容",
+          "content": ["以下技术在我们的网站上<strong>未</strong>使用："],
+          "items": [
+            "<strong>跟踪Cookie</strong> — 无Google Analytics、Facebook Pixel或跟踪Cookie",
+            "<strong>第三方Cookie</strong> — 无外部服务设置Cookie",
+            "<strong>广告Cookie</strong> — 不投放广告",
+            "<strong>指纹识别</strong> — 不使用浏览器指纹技术"
+          ],
+          "content2": [
+            "注意：本Cookie政策适用于Rediacc营销网站。我们的软件产品（Web 应用程序、CLI、中间件、Bridge）收集不使用Cookie的单独使用遥测数据。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+          ]
+        },
+        "analytics": {
+          "id": "analytics",
+          "title": "5. 我们的分析方法",
+          "content": [
+            "我们使用<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>。"
+          ],
+          "items": [
+            "<strong>不</strong>使用Cookie",
+            "<strong>不</strong>收集个人数据",
+            "<strong>不</strong>跨站跟踪用户",
+            "托管在欧盟，符合GDPR",
+            "仅提供汇总的匿名指标"
+          ],
+          "content2": [
+            "除了网站分析外，我们的软件产品还通过基于 OpenTelemetry 的检测收集匿名使用遥测数据。这与网站分析是分开的，不使用Cookie，详情请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+          ]
+        },
+        "managingCookies": {
+          "id": "managing-cookies",
+          "title": "6. 管理Cookie",
+          "content": ["您可以通过浏览器设置管理Cookie："],
+          "items": [
+            "<strong>Chrome：</strong>设置 → 隐私和安全 → Cookie",
+            "<strong>Firefox：</strong>设置 → 隐私与安全 → Cookie",
+            "<strong>Safari：</strong>偏好设置 → 隐私 → 管理网站数据",
+            "<strong>Edge：</strong>设置 → Cookie和站点权限"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. 本政策的变更",
+          "content": ["如果我们引入额外的Cookie，将更新本政策。"]
+        }
+      },
+      "contact": {
+        "title": "有疑问？",
+        "description": "如果您对我们使用Cookie有疑问，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。"
+      },
+      "related": {
+        "title": "相关政策"
+      }
+    },
+    "acceptableUsePolicy": {
+      "meta": {
+        "title": "可接受使用政策 — Rediacc",
+        "description": "Rediacc的可接受使用政策定义了平台上的禁止活动。",
+        "keywords": "可接受使用政策, AUP, 禁止使用, Rediacc"
+      },
+      "hero": {
+        "title": "可接受使用政策",
+        "effectiveDate": "生效日期：2025年2月1日"
+      },
+      "toc": {
+        "title": "目录"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. 简介",
+          "content": [
+            "本可接受使用政策（\"AUP\"）管辖您对Rediacc平台的使用，是我们<a href=\"terms-of-service\">服务条款</a>的一部分。"
+          ]
+        },
+        "prohibitedActivities": {
+          "id": "prohibited-activities",
+          "title": "2. 禁止活动",
+          "content": ["您不得将Rediacc平台用于："],
+          "items": [
+            "加密货币挖矿或类似的计算密集型活动",
+            "发送垃圾邮件、网络钓鱼或恶意内容",
+            "托管或分发恶意软件",
+            "网络攻击，包括DoS/DDoS",
+            "未经授权访问他人的账户或系统",
+            "绕过安全功能",
+            "存储非法内容",
+            "未经授权转售平台访问权",
+            "用于构建竞争产品"
+          ]
+        },
+        "resourceUsage": {
+          "id": "resource-usage",
+          "title": "3. 资源使用",
+          "content": ["为确保所有用户的公平访问："],
+          "items": [
+            "按照订阅限额使用资源",
+            "自动化流程不得产生过度负载",
+            "存储使用应反映合法的平台使用",
+            "及时解决资源问题"
+          ]
+        },
+        "securityRequirements": {
+          "id": "security-requirements",
+          "title": "4. 安全要求",
+          "content": ["您对账户安全负责："],
+          "items": [
+            "使用强密码且不重复",
+            "不要共享账户凭据",
+            "向<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>报告安全漏洞",
+            "未经书面许可不进行安全测试",
+            "保持软件更新"
+          ]
+        },
+        "contentStandards": {
+          "id": "content-standards",
+          "title": "5. 内容标准",
+          "content": ["内容必须符合适用法律。您对您的内容负责。"]
+        },
+        "enforcement": {
+          "id": "enforcement",
+          "title": "6. 执行",
+          "content": ["违规可能导致："],
+          "items": ["书面警告", "临时暂停", "功能限制", "永久终止账户", "向有关部门报告"],
+          "content2": ["我们将在采取行动之前做出合理努力通知您。"]
+        },
+        "reporting": {
+          "id": "reporting",
+          "title": "7. 报告违规",
+          "content": [
+            "请向<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>报告违规行为。"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "8. 本政策的变更",
+          "content": ["我们可能会不时更新本AUP。"]
+        }
+      },
+      "contact": {
+        "title": "有疑问？",
+        "description": "如果您对本政策有疑问，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。"
+      },
+      "related": {
+        "title": "相关政策"
+      }
+    },
+    "refundPolicy": {
+      "meta": {
+        "title": "退款政策 — Rediacc",
+        "description": "Rediacc平台订阅和专业服务的退款政策。",
+        "keywords": "退款政策, 取消, 订阅退款, Rediacc"
+      },
+      "hero": {
+        "title": "退款政策",
+        "effectiveDate": "生效日期：2025年2月1日"
+      },
+      "toc": {
+        "title": "目录"
+      },
+      "sections": {
+        "overview": {
+          "id": "overview",
+          "title": "1. 概述",
+          "content": ["本退款政策描述了Rediacc订阅和专业服务的退款条件。"]
+        },
+        "platformSubscriptions": {
+          "id": "platform-subscriptions",
+          "title": "2. 平台订阅",
+          "content": ["Rediacc提供多个订阅层级："],
+          "subsections": {
+            "freeTier": {
+              "title": "2.1 免费层级",
+              "content": ["Community层级永久免费。"]
+            },
+            "paidTiers": {
+              "title": "2.2 付费层级",
+              "content": ["付费订阅通常不可退款。例外情况："],
+              "items": [
+                "<strong>前14天：</strong>新订阅者全额退款",
+                "<strong>服务中断：</strong>长时间中断（超过48小时）的按比例退款",
+                "<strong>账单错误：</strong>错误收费的全额退款"
+              ]
+            },
+            "annualSubscriptions": {
+              "title": "2.3 年度订阅",
+              "content": ["年度订阅可随时取消。除14天期限内外不提供部分退款。"]
+            }
+          }
+        },
+        "professionalServices": {
+          "id": "professional-services",
+          "title": "3. 专业服务",
+          "content": ["专业服务按小时收费（$400–$1,200/小时）："],
+          "items": [
+            "<strong>工作开始前：</strong>全额退款",
+            "<strong>合同期间：</strong>仅按实际工作小时收费",
+            "<strong>质量争议：</strong>交付后7天内联系我们",
+            "<strong>最低承诺：</strong>部分套餐有最低期限"
+          ]
+        },
+        "howToRequest": {
+          "id": "how-to-request",
+          "title": "4. 如何申请退款",
+          "content": [
+            "发送电子邮件至<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>，包含："
+          ],
+          "items": [
+            "您的账户电子邮件地址",
+            "申请退款的订阅或服务",
+            "退款申请原因",
+            "相关订单或发票编号"
+          ],
+          "content2": ["我们将在5个工作日内回复。"]
+        },
+        "refundProcessing": {
+          "id": "refund-processing",
+          "title": "5. 退款处理",
+          "content": ["批准的退款将在10个工作日内处理至原始付款方式。"]
+        },
+        "nonRefundable": {
+          "id": "non-refundable",
+          "title": "6. 不可退款项目",
+          "content": ["以下项目不符合退款条件："],
+          "items": [
+            "14天期限后取消的订阅",
+            "已消耗资源的使用费",
+            "已交付的专业服务时间",
+            "账户重新激活费用",
+            "因违反<a href=\"terms-of-service\">服务条款</a>产生的费用"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. 本政策的变更",
+          "content": ["我们可能会不时更新本退款政策。"]
+        }
+      },
+      "contact": {
+        "title": "有疑问？",
+        "description": "如果您对退款有疑问，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。"
+      },
+      "related": {
+        "title": "相关政策"
+      }
+    },
+    "telemetryPolicy": {
+      "meta": {
+        "title": "遥测策略 — Rediacc",
+        "description": "Rediacc产品收集的遥测数据的详细说明，包括收集原因、处理方式以及如何退出。涵盖Web应用程序、CLI、中间件和Bridge。",
+        "keywords": "遥测策略, 数据收集, OpenTelemetry, 退出, 隐私, GDPR, Rediacc"
+      },
+      "hero": {
+        "title": "遥测策略",
+        "effectiveDate": "生效日期：2026年2月1日"
+      },
+      "toc": {
+        "title": "目录"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. 简介",
+          "content": [
+            "Rediacc软件产品收集匿名使用遥测数据，以帮助我们改善产品质量、诊断问题并了解工具的使用情况。本遥测策略准确描述了收集的数据、原因、处理方式以及如何退出。",
+            "本策略涵盖四个产品：<strong>Rediacc Web 应用程序</strong>、<strong>Rediacc CLI</strong>、<strong>Rediacc 中间件</strong>和<strong>Rediacc Bridge (Renet)</strong>。网站分析（Plausible）在我们的<a href=\"privacy-policy\">隐私政策</a>和<a href=\"cookie-policy\">Cookie政策</a>中另行说明。"
+          ]
+        },
+        "principles": {
+          "id": "principles",
+          "title": "2. 我们的遥测原则",
+          "content": ["Rediacc的所有遥测收集均遵循以下原则："],
+          "items": [
+            "<strong>隐私优先设计：</strong>个人标识符在传输前进行匿名处理。电子邮件地址仅保留域名部分，用户ID经过哈希（SHA-256）和截断处理，密码和机密信息绝不收集。",
+            "<strong>最少收集：</strong>我们仅收集改善产品质量和诊断问题所必需的数据。我们不收集文件内容、数据库内容、查询结果或业务数据。",
+            "<strong>透明：</strong>本策略列出了每个产品收集的每个数据类别。没有隐藏的数据流。",
+            "<strong>用户控制：</strong>每个产品都提供完全禁用遥测的机制。退出即时且完全生效。",
+            "<strong>聚合：</strong>遥测数据以聚合方式进行分析。我们不会根据遥测数据建立个人用户档案。"
+          ]
+        },
+        "legalBasis": {
+          "id": "legal-basis",
+          "title": "3. 收集的法律依据",
+          "content": [
+            "根据欧盟《通用数据保护条例》（GDPR）和《电子隐私指令》，我们收集遥测数据的法律依据取决于产品场景：",
+            "对于<strong>Web 应用程序</strong>（基于浏览器）：遥测数据基于<strong>合法利益</strong>（GDPR第6(1)(f)条）收集，目的是维护和提高服务质量。您可以随时退出。",
+            "对于<strong>CLI、中间件和Bridge</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。",
+            "对于要求明确同意的司法管辖区的用户（例如韩国依据PIPA），应在传输任何数据之前通过产品配置明确选择加入遥测。"
+          ]
+        },
+        "webApp": {
+          "id": "web-app",
+          "title": "4. Web 应用程序遥测",
+          "content": [
+            "Rediacc Web 应用程序使用基于 OpenTelemetry 的分布式追踪。遥测数据传输至<code>https://www.rediacc.com/otlp</code>。在生产环境中，仅采样<strong>10%的会话</strong>。"
+          ],
+          "subsections": {
+            "webDataCollected": {
+              "title": "4.1 收集的数据",
+              "content": ["Web 应用程序收集以下类别的数据："],
+              "items": [
+                "<strong>浏览器信息：</strong>浏览器名称和版本、首选语言、平台（例如Windows、macOS、Linux）、屏幕分辨率、色彩深度、用户代理字符串、设备内存（如可用）、网络连接类型",
+                "<strong>用户上下文：</strong>会话ID（每次会话随机生成）、仅电子邮件域名（本地部分已编辑，例如<code>***@example.com</code>）、组织名称、团队名称",
+                "<strong>页面浏览和导航：</strong>应用程序内访问的页面、路由更改、来源信息",
+                "<strong>用户交互：</strong>点击、表单提交、模态框打开/关闭、搜索查询、筛选器更改、标签页切换、文件下载（不收集文件名）",
+                "<strong>API调用：</strong>HTTP方法、URL路径、响应状态码、请求持续时间",
+                "<strong>错误：</strong>错误类型、错误消息、堆栈追踪（截断至1,000个字符）、错误来源",
+                "<strong>性能指标：</strong>核心Web指标（LCP、FID、CLS、TTFB、INP）、资源计时、内存使用（每30秒采样）、长任务检测",
+                "<strong>组件生命周期：</strong>组件挂载/卸载计时、渲染持续时间"
+              ]
+            },
+            "webNotCollected": {
+              "title": "4.2 不收集的数据",
+              "content": ["Web 应用程序不收集："],
+              "items": [
+                "完整的电子邮件地址（本地部分始终被编辑）",
+                "密码、令牌或身份验证凭据",
+                "文件内容、数据库内容或查询结果",
+                "表单字段值（仅记录表单已提交的事实）",
+                "剪贴板内容或按键记录",
+                "IP地址（我们的遥测端点不记录）"
+              ]
+            },
+            "webOptOut": {
+              "title": "4.3 如何退出",
+              "content": [
+                "在您的账户设置中将<code>userConsent</code>配置标志设置为<code>false</code>。退出后遥测立即停止。",
+                "<strong>桌面应用程序：</strong>桌面（Electron）应用程序默认完全禁用遥测。不收集或传输任何数据。"
+              ]
+            }
+          }
+        },
+        "cli": {
+          "id": "cli",
+          "title": "5. CLI 遥测",
+          "content": [
+            "Rediacc CLI 使用 OpenTelemetry Node SDK。遥测数据传输至<code>https://www.rediacc.com/otlp</code>。"
+          ],
+          "subsections": {
+            "cliDataCollected": {
+              "title": "5.1 收集的数据",
+              "content": ["CLI 收集以下类别的数据："],
+              "items": [
+                "<strong>命令使用：</strong>命令名称、CLI版本、退出码、成功或失败状态",
+                "<strong>匿名化参数：</strong>命令选项中敏感值已编辑——密码、令牌、机密信息、API密钥和凭据被替换为<code>[REDACTED]</code>",
+                "<strong>环境：</strong>操作系统类型、Node.js运行时版本、部署环境",
+                "<strong>错误信息：</strong>命令失败时的错误类型、错误消息和有限的堆栈追踪",
+                "<strong>API交互：</strong>HTTP方法、URL路径、响应状态码、请求持续时间",
+                "<strong>会话：</strong>随机生成的会话ID、命令执行持续时间"
+              ]
+            },
+            "cliOptOut": {
+              "title": "5.2 如何退出",
+              "content": ["您可以使用以下任一方法禁用CLI遥测："],
+              "items": [
+                "设置环境变量<code>REDIACC_TELEMETRY=off</code>（也接受<code>false</code>或<code>0</code>）",
+                "在CLI配置文件中设置<code>telemetryEnabled: false</code>",
+                "在CI环境中遥测<strong>自动禁用</strong>（通过<code>CI</code>环境变量检测）"
+              ]
+            }
+          }
+        },
+        "middleware": {
+          "id": "middleware",
+          "title": "6. 中间件遥测",
+          "content": [
+            "Rediacc中间件收集运营遥测数据。遥测数据传输至<code>https://www.rediacc.com/otlp/v1/traces</code>。"
+          ],
+          "subsections": {
+            "middlewareDataCollected": {
+              "title": "6.1 收集的数据",
+              "content": ["中间件收集以下类别的数据："],
+              "items": [
+                "<strong>系统信息：</strong>主机名、操作系统版本、.NET运行时版本",
+                "<strong>API调用：</strong>HTTP方法、端点路径、响应状态码、请求持续时间",
+                "<strong>数据库操作：</strong>存储过程名称、执行持续时间、返回行数（无查询内容、参数或结果数据）",
+                "<strong>身份验证事件：</strong>仅哈希用户标识符——用户ID使用SHA-256和盐值进行哈希，然后截断为前12个字符。原始用户ID绝不传输。",
+                "<strong>健康检查：</strong>服务组件可用性状态和响应时间",
+                "<strong>应用程序生命周期：</strong>启动、关闭和配置更改事件",
+                "<strong>错误信息：</strong>错误类型、错误消息和运营上下文"
+              ]
+            },
+            "middlewareOptOut": {
+              "title": "6.2 如何退出",
+              "content": [
+                "在中间件配置（appsettings.json或特定环境配置）中将<code>Telemetry:Enabled</code>设置为<code>false</code>。"
+              ]
+            }
+          }
+        },
+        "bridge": {
+          "id": "bridge",
+          "title": "7. Bridge (Renet) 遥测",
+          "content": [
+            "Rediacc Bridge (Renet) 使用带有gzip压缩OTLP导出的OpenTelemetry。遥测数据以批次（最多10个span，每5秒刷新）传输至<code>www.rediacc.com/otlp/v1/traces</code>。"
+          ],
+          "subsections": {
+            "bridgeDataCollected": {
+              "title": "7.1 收集的数据",
+              "content": ["Bridge收集以下类别的数据："],
+              "items": [
+                "<strong>队列操作：</strong>任务ID、优先级、操作类型、执行持续时间、成功或失败状态",
+                "<strong>SSH操作：</strong>目标主机、用户名、端口号、退出码、执行持续时间（不收集命令内容或输出）",
+                "<strong>API调用：</strong>过程名称、请求持续时间",
+                "<strong>Vault操作：</strong>操作类型和持续时间（不收集密钥值、密钥或Vault内容）",
+                "<strong>Bridge生命周期：</strong>启动、关闭和重连事件"
+              ]
+            },
+            "bridgeOptOut": {
+              "title": "7.2 如何退出",
+              "content": ["您可以使用以下任一方法禁用Bridge遥测："],
+              "items": [
+                "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>",
+                "设置环境变量<code>DO_NOT_TRACK=1</code>（遵循<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>标准）"
+              ]
+            }
+          }
+        },
+        "dataProcessing": {
+          "id": "data-processing",
+          "title": "8. 数据处理和存储",
+          "content": [
+            "所有遥测数据通过加密连接（TLS 1.2+）传输至我们的遥测端点。数据按以下方式处理和存储："
+          ],
+          "items": [
+            "<strong>加密：</strong>所有数据在传输中使用TLS加密。Bridge还使用gzip压缩。",
+            "<strong>保留：</strong>原始遥测追踪保留最多90天，用于调试和事件调查。聚合指标保留最多12个月，之后删除。",
+            "<strong>访问：</strong>遥测数据仅限Rediacc工程和运营人员按需访问。",
+            "<strong>不与第三方共享：</strong>遥测数据不会与任何第三方共享、出售或提供给任何第三方。",
+            "<strong>基础设施：</strong>所有遥测数据在位于欧盟的基础设施上处理和存储。"
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "9. 国际数据传输",
+          "content": [
+            "遥测数据专门在欧盟境内的服务器上处理和存储。在极少数情况下，如果遥测数据需要传输到欧盟/欧洲经济区之外（例如用于灾难恢复），将采取适当的保障措施，包括欧盟委员会批准的标准合同条款（SCC）。"
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "10. 您的权利",
+          "content": [
+            "由于我们的遥测数据是匿名和聚合的，通常不构成GDPR下的个人数据。但是，如果任何遥测数据可以与您个人关联，您有权："
+          ],
+          "items": [
+            "<strong>访问：</strong>要求了解我们持有的可能与您相关的遥测数据信息",
+            "<strong>删除：</strong>要求删除任何可以与您关联的遥测数据",
+            "<strong>退出：</strong>随时使用上述产品特定机制禁用遥测",
+            "<strong>投诉：</strong>向爱沙尼亚数据保护监察局（<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>）或您当地的监管机构提出投诉"
+          ],
+          "content2": [
+            "要行使上述任何权利，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。我们将在30天内回复。"
+          ]
+        },
+        "ccpa": {
+          "id": "ccpa",
+          "title": "11. 加州居民（CCPA/CPRA）",
+          "content": [
+            "如果您是加州居民，根据《加州消费者隐私法》（CCPA）及其修正案《加州隐私权法》（CPRA），以下额外披露适用："
+          ],
+          "items": [
+            "<strong>收集的信息类别：</strong>互联网或电子网络活动信息（浏览器类型、交互数据、错误日志）、设备标识符（匿名化）、地理位置数据（仅限国家级别，来源于IP地址，但IP地址不存储）",
+            "<strong>目的：</strong>改善和维护服务质量、调试、性能监控和安全",
+            "<strong>出售/共享：</strong>我们不按照CCPA/CPRA的定义出售或共享遥测数据",
+            "<strong>退出权：</strong>使用上述第4-7节中描述的产品特定退出机制。我们的Web应用程序还支持全球隐私控制（GPC）信号。"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "12. 本策略的变更",
+          "content": [
+            "当我们添加新产品、更改收集的数据或修改处理实践时，我们可能会更新本遥测策略。变更将在此页面上发布并更新生效日期。我们将通过产品发布说明和网站通知用户重大变更。"
+          ]
+        }
+      },
+      "contact": {
+        "title": "有疑问？",
+        "description": "如果您对我们的遥测实践有疑问或需要帮助退出，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。"
+      },
+      "related": {
+        "title": "相关政策"
+      }
     }
   },
   "problem": {
@@ -1676,9 +2558,18 @@
         "benefits": ["60秒环境配置", "生产相同的克隆", "自动 Git 集成"],
         "description": "即时生产克隆。 零 DevOps 门票。 60 秒环境。",
         "title": "开发环境"
+      },
+      {
+        "title": "先发制人防御",
+        "description": "AI攻击者在几秒内行动。克隆。测试。加固。重复。",
+        "benefits": [
+          "克隆生产环境进行安全的AI渗透测试",
+          "无停机风险的持续测试",
+          "在攻击者到达之前关闭漏洞窗口"
+        ]
       }
     ],
-    "subtitle": "五种集成解决方案，可在基础设施故障或威胁袭来时快速响应。",
+    "subtitle": "六种集成解决方案，可在基础设施故障或威胁袭来时快速响应。",
     "title": "我们如何确保业务连续性"
   }
 }

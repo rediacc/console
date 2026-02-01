@@ -111,20 +111,36 @@
 
 /* Image modal responsive */
 @media (max-width: 48rem) {
-  /* 768px - standard mobile breakpoint */
   .image-modal-content {
     width: 100%;
-    max-height: 70vh;
-  }
-
-  .modal-image {
-    max-height: 70vh;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    padding: var(--space-2);
+    border-radius: 0;
+    border: none;
   }
 
   .image-modal-close {
     width: var(--touch-target-min);
     height: var(--touch-target-min);
     font-size: var(--font-size-xl);
+  }
+
+  .nav-prev {
+    inset-inline-start: var(--space-1);
+  }
+
+  .nav-next {
+    inset-inline-end: var(--space-1);
+  }
+
+  .zoom-controls {
+    bottom: var(--space-2);
+  }
+
+  .image-indicator {
+    top: var(--space-1);
   }
 }
 

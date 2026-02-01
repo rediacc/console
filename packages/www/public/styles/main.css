@@ -660,6 +660,20 @@ a[target='_blank']::after {
   width: auto;
 }
 
+@media (max-width: 48rem) {
+  .nav-container {
+    gap: var(--space-2);
+  }
+
+  .nav-right {
+    gap: var(--space-2);
+  }
+
+  .nav-brand .logo {
+    object-fit: contain;
+  }
+}
+
 .nav-brand:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
@@ -998,6 +1012,7 @@ a[target='_blank']::after {
 
 .hero-container {
   max-width: 900px;
+  min-width: 0;
   margin: 0 auto;
   padding: 0 var(--space-8);
   text-align: center;
@@ -1119,6 +1134,7 @@ a[target='_blank']::after {
 
 .install-code {
   flex: 1;
+  min-width: 0;
   font-family: var(
     --font-mono,
     'SFMono-Regular',
@@ -1410,6 +1426,26 @@ a[target='_blank']::after {
 
 .scenario-image:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .problem-illustration .image-button::after,
+  .solution-illustration .image-button::after {
+    content: '\2922';
+    position: absolute;
+    bottom: var(--space-3);
+    inset-inline-end: var(--space-3);
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: var(--font-size-base);
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    pointer-events: none;
+  }
 }
 
 /* ===== SECTION BRIDGE ===== */

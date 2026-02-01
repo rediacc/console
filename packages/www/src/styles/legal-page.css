@@ -1,0 +1,277 @@
+/* Legal Page Styles */
+
+/* Hero Section - Dark Gradient */
+.legal-hero {
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-dark);
+  color: white;
+  padding: var(--space-24) var(--space-6);
+  text-align: center;
+}
+
+.legal-hero-content {
+  max-width: var(--container-md);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.legal-hero h1 {
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-4);
+  color: white;
+  line-height: var(--leading-tight);
+}
+
+.legal-hero .effective-date {
+  font-size: var(--font-size-base);
+  color: rgba(255, 255, 255, var(--opacity-65));
+}
+
+/* Content Wrapper */
+.legal-content {
+  padding: var(--space-16) var(--space-6);
+  max-width: var(--container-2xl);
+  margin: 0 auto;
+}
+
+/* Two-Column Layout: TOC Sidebar + Body */
+.legal-layout {
+  display: grid;
+  grid-template-columns: 14rem 1fr;
+  gap: var(--space-12);
+  align-items: start;
+}
+
+/* Table of Contents Sidebar */
+.legal-toc {
+  position: sticky;
+  top: var(--space-8);
+}
+
+.legal-toc h2 {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-4);
+}
+
+.legal-toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.legal-toc a {
+  display: block;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  transition:
+    color var(--transition-duration-base) ease,
+    border-color var(--transition-duration-base) ease,
+    background var(--transition-duration-base) ease;
+}
+
+.legal-toc a:hover {
+  color: var(--color-brand-primary);
+  border-left-color: var(--color-brand-primary);
+  background: var(--color-bg-alt);
+}
+
+.legal-toc a:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* Body Content */
+.legal-body {
+  min-width: 0;
+}
+
+.legal-body section {
+  margin-bottom: var(--space-12);
+}
+
+.legal-body h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-4);
+}
+
+.legal-body h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+}
+
+.legal-body p {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-4);
+}
+
+.legal-body ul,
+.legal-body ol {
+  padding-left: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.legal-body li {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-2);
+}
+
+.legal-body a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+
+.legal-body a:hover {
+  text-decoration: underline;
+}
+
+.legal-body a:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Contact Info Box */
+.legal-contact {
+  margin-top: var(--space-12);
+  padding: var(--space-6);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.legal-contact h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: var(--space-3);
+}
+
+.legal-contact p {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: 0;
+}
+
+.legal-contact a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+
+.legal-contact a:hover {
+  text-decoration: underline;
+}
+
+/* Related Policies */
+.legal-related {
+  margin-top: var(--space-12);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--color-border);
+}
+
+.legal-related h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.legal-related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legal-related-links a {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-brand-primary);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  text-decoration: none;
+  transition:
+    background var(--transition-duration-base) ease,
+    border-color var(--transition-duration-base) ease;
+}
+
+.legal-related-links a:hover {
+  background: var(--color-bg-light);
+  border-color: var(--color-brand-primary);
+}
+
+.legal-related-links a:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* Responsive: collapse TOC on mobile */
+@media (max-width: 48rem) {
+  .legal-hero {
+    padding: var(--space-16) var(--space-4);
+  }
+
+  .legal-content {
+    padding: var(--space-10) var(--space-4);
+  }
+
+  .legal-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .legal-toc {
+    position: static;
+    padding: var(--space-4);
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .legal-toc a {
+    border-left: none;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .legal-toc a:hover {
+    border-left: none;
+  }
+
+  .legal-body section {
+    margin-bottom: var(--space-8);
+  }
+}

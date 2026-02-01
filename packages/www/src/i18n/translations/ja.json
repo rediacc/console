@@ -10,7 +10,8 @@
       "zoomIn": "ズームイン",
       "zoomOut": "ズームアウト",
       "clickToEnlarge": "クリックして画像を拡大",
-      "opensInNewTab": "新しいタブで開きます"
+      "opensInNewTab": "新しいタブで開きます",
+      "imageViewer": "画像ビューア"
     },
     "buttons": {
       "close": "閉じる",
@@ -44,7 +45,15 @@
       "skipToNavigation": "ナビゲーションにスキップ"
     },
     "exploreSolutions": "他のソリューションを探す",
-    "platformPreview": "プラットフォームプレビュー"
+    "platformPreview": "プラットフォームプレビュー",
+    "solutions": {
+      "developmentEnvironments": "開発環境",
+      "disasterRecovery": "災害復旧",
+      "threatResponse": "脅威対応",
+      "dataSecurity": "データセキュリティ",
+      "systemPortability": "システムの移植性",
+      "preemptiveDefense": "先制防御"
+    }
   },
   "testimonials": {
     "title": "チームの声",
@@ -153,8 +162,12 @@
     },
     "copyright": "{{year}} Rediacc。 無断転載を禁じます。",
     "legalLinks": {
+      "termsOfService": "利用規約",
       "privacyPolicy": "プライバシーポリシー",
-      "termsOfUse": "利用規約"
+      "cookiePolicy": "Cookieポリシー",
+      "acceptableUsePolicy": "利用規定",
+      "refundPolicy": "返金ポリシー",
+      "telemetryPolicy": "テレメトリポリシー"
     },
     "links": {
       "contactSupport": "サポートに連絡する",
@@ -222,6 +235,7 @@
     "downloads": "Downloads",
     "home": "ホーム",
     "install": "インストール",
+    "pricing": "料金",
     "login": "ログイン",
     "search": "検索",
     "selectLanguage": "言語を選択してください",
@@ -231,7 +245,8 @@
       "developmentEnvironments": "開発環境",
       "disasterRecovery": "災害復旧",
       "systemPortability": "システムの移植性",
-      "threatResponse": "脅威への対応"
+      "threatResponse": "脅威への対応",
+      "preemptiveDefense": "先制防御"
     },
     "toggleMenu": "メニューの切り替え"
   },
@@ -283,7 +298,9 @@
             }
           }
         },
-        "submit": "始めましょう"
+        "submit": "始めましょう",
+        "ariaLabel": "お問い合わせフォーム",
+        "legend": "連絡先情報"
       },
       "hero": {
         "subtitle": "フォームにご記入いただければ、48 時間以内にご連絡いたします。",
@@ -425,7 +442,9 @@
       },
       "hero": {
         "title": "Rediacc CLIをインストール",
-        "subtitle": "お好みのインストール方法を選択してください"
+        "subtitle": "お好みのインストール方法を選択してください",
+        "downloadsNote": "デスクトップアプリやバイナリをお探しですか？",
+        "downloadsLink": "ダウンロードページへ"
       },
       "methods": {
         "quick": {
@@ -462,7 +481,11 @@
         "platform": "プラットフォーム"
       },
       "copy": "コピー",
-      "copied": "コピーしました！"
+      "copied": "コピーしました！",
+      "platformFilter": {
+        "all": "すべての方法",
+        "label": "プラットフォームで絞り込み"
+      }
     },
     "notFound": {
       "actions": {
@@ -1569,6 +1592,102 @@
             "title": "ランサムウェアのターゲットのバックアップ"
           }
         }
+      },
+      "preemptiveDefense": {
+        "meta": {
+          "title": "先制防御 | クローンベースの継続的セキュリティテスト",
+          "description": "AI攻撃者は数分で脆弱性を悪用します。本番での年次テストをやめましょう。Rediaccでインフラストラクチャをクローンし、AIによる継続的なセキュリティテストを安全に実行しましょう。",
+          "keywords": "先制防御、AIペネトレーションテスト、継続的セキュリティテスト、クローンベースペンテスト、本番クローンセキュリティ、AIサイバーセキュリティ"
+        },
+        "hero": {
+          "title": "彼らは数秒で攻撃する。あなたはまだ年に一度しかテストしていない。",
+          "subtitle": "本番環境をクローン。AIセキュリティツールを解き放つ。攻撃者より先にすべての弱点を見つける。"
+        },
+        "problems": {
+          "aiAttackSpeed": {
+            "title": "AI攻撃はマシンスピードで動く",
+            "subtitle": "敵を知り己を知れば百戦危うからず <small class='subtitle-attribution'>— 孫子、兵法</small>",
+            "problem": {
+              "description": "AIを活用した攻撃者は数分でシステムを突破します。自律エージェントは80〜90%自律的に動作し、毎秒数千のリクエストを行います。新しい脆弱性の悪用までの時間は32日からわずか5日に崩壊しました。",
+              "story": "2025年11月、大手AI企業は、国家支援のハッカーがAIアシスタントを武器として約30の組織を攻撃し、4つの侵入に成功したことを明らかにしました。AIは80〜90%自律的に動作し、人間の監視はわずか約20分でした。 <a href='https://www.anthropic.com/news/disrupting-AI-espionage' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.axios.com/2025/11/13/anthropic-china-claude-code-cyberattack' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 別途、オープンソースのAI攻撃フレームワークが、広く使用されているネットワークアプライアンスの重大なゼロデイ脆弱性を公開から10分以内に武器化しました。 <a href='https://blog.checkpoint.com/executive-insights/hexstrike-ai-when-llms-meet-zero-day-exploitation/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> <a href='https://thehackernews.com/2025/09/threat-actors-weaponize-hexstrike-ai-to.html' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "AIエージェントは最小限の人間の指示で80〜90%自律的に組織を突破する",
+                "セキュリティ研究者は初期アクセスから横方向移動まで51秒のブレイクアウト時間を記録した",
+                "新しい脆弱性の悪用までの時間が32日から5日に崩壊した",
+                "97パーセントの組織がAIによるペネトレーションテストを検討している",
+                "AIは毎秒数千の偵察リクエストを行い、人間の速度を圧倒する"
+              ]
+            },
+            "solution": {
+              "title": "クローンベースのテストでマシンスピードに対抗",
+              "description": "ゼロコピーで数秒で本番をクローン。分離されたクローン上でAI攻撃ツールをフルスピードで実行。エフェメラル環境は各テストサイクル後に自動的に破棄されます。",
+              "benefits": [
+                "ゼロコピークローニングが本番に忠実なテストターゲットを数秒で作成",
+                "分離されたクローン上でAI攻撃ツールを安全にフルスピードで実行",
+                "エフェメラル環境は各セキュリティテストサイクル後に自動クリーンアップ",
+                "古いコピーではなく、実際の本番データと構成に対してテスト",
+                "マルチクラウドポータビリティにより異なるインフラストラクチャターゲットでテスト可能"
+              ]
+            }
+          },
+          "productionTesting": {
+            "title": "セキュリティテストが本番をクラッシュさせる",
+            "subtitle": "まず、害を与えないこと <small class='subtitle-attribution'>— ヒポクラテスの伝統（primum non nocere）</small>",
+            "problem": {
+              "description": "セキュリティスキャナーとペネトレーションテストは本番システムをクラッシュさせます。脆弱性スキャナーはネットワーク機器をクラッシュさせ、サービスを停止させ、連鎖的な障害を引き起こします。2024年最悪のIT災害は、セキュリティベンダー自身のアップデートによって引き起こされました。",
+              "story": "2024年7月19日、大手サイバーセキュリティベンダーが欠陥のあるセンサーアップデートを世界中の本番システムに配信しました。850万台のデバイスが同時にクラッシュし、100億ドル以上の世界的な損害を引き起こしました。 <a href='https://en.wikipedia.org/wiki/2024_CrowdStrike-related_IT_outages' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.cisa.gov/news-events/alerts/2024/07/19/widespread-it-outage-due-crowdstrike-update' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 大手航空会社1社だけで5億ドルの損失と7,000便の欠航が発生しました。 <a href='https://www.darkreading.com/cyberattacks-data-breaches/delta-launches-500m-lawsuit-crowdstrike' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 2025年の調査では、セキュリティリーダーの30%が自社のセキュリティテストによる障害を恐れていることが判明しました。 <a href='https://pentera.io/blog/2025-state-of-pentesting-insights/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "大手セキュリティベンダーのアップデートが1日で850万台のデバイスをクラッシュさせた",
+                "CISOの30パーセントが自社のセキュリティテストによる障害を恐れていると報告",
+                "脆弱性スキャナーがコアネットワークスイッチと仮想化ホストをクラッシュさせる",
+                "セキュリティツールが防ぐはずのダウンタイムを引き起こす",
+                "組織は本番がリスクに耐えられないためテスト範囲を制限する"
+              ]
+            },
+            "solution": {
+              "title": "クローンでテスト、本番を保護",
+              "description": "ゼロコピー技術でアトミックな本番忠実クローンを作成。最大の攻撃性でクローンを攻撃—クラッシュすれば、良いこと、弱点を発見しました。ポイントインタイムスナップショットでクローンを即座にリセットして再テスト。",
+              "benefits": [
+                "本番忠実クローンが本番に触れずに実際のインフラストラクチャを複製",
+                "アトミックレプリケーションによりテスト時にクローンが本番状態と正確に一致",
+                "ポイントインタイムスナップショットで破壊的テスト後に即座にリセットと再テストが可能",
+                "ゼロ知識暗号化がセキュリティテスト中のクローンデータを保護",
+                "本番リスクゼロで最も攻撃的なスキャナーとエクスプロイトを実行"
+              ]
+            }
+          },
+          "periodicCompliance": {
+            "title": "年次テストはコンプライアンスの幻想",
+            "subtitle": "まことに、アッラーは人々が自分自身の中にあるものを変えるまで、その状態を変えられない <small class='subtitle-attribution'>— アル・ラアド 13:11</small>",
+            "problem": {
+              "description": "組織はコンプライアンスのために年に1〜2回ペネトレーションテストを行います。合格し、認証を取得し、その数週間後に侵害されます。認証は1日のセキュリティを証明するだけです。攻撃者は他の364日を悪用します。",
+              "story": "米国の大手小売業者は2013年9月にPCI DSS認証を取得し、わずか2か月後に侵害されました—1億1,000万件の顧客レコードが盗まれ、2億4,800万ドルのコストが発生しました。 <a href='https://www.digitaltransactions.net/target-passed-a-pci-inspection-before-breach-will-spend-100-million-on-chip-card-effort/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 大手決済処理業者はPCI認証取得のわずか2週間前に1億枚の決済カードが漏洩し、2億ドルのコストが発生しました。 <a href='https://www.secureworks.com/blog/general-pci-compliance-data-security-case-study-heartland' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 独立したフォレンジック研究により、侵害を受けたPCI認証企業の100%が実際の侵害時点でコンプライアンスに違反していたことが判明しました。 <a href='https://www.verizon.com/business/resources/reports/payment-security-report/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
+              "additionalPoints": [
+                "32パーセントの企業がペネトレーションテストを年に1回しか実施していない",
+                "大手小売業者はPCI認証の2か月後に1億1,000万件のレコードが盗まれた",
+                "決済処理業者はPCI認証の2週間後に1億枚のカードが漏洩した",
+                "侵害されたPCI認証企業の100パーセントが侵害時点でコンプライアンスに違反していた",
+                "コンプライアンスはある時点を認証するが、攻撃者は他のすべての日を悪用する"
+              ]
+            },
+            "solution": {
+              "title": "エフェメラルクローンでの継続的テスト",
+              "description": "スケジュールに従って本番をクローン—毎日、毎時、またはデプロイごと。クローン上でAIペネトレーションテストを実行。破棄。繰り返し。ゼロコピーにより、変更が書き込まれるまで各クローンは無料です。",
+              "benefits": [
+                "オンデマンドクローニングにより毎日または毎時のセキュリティテストサイクルが可能",
+                "エフェメラル環境はテスト後に自動的に破棄され、永続的な攻撃面を排除",
+                "ゼロコピー技術により変更が書き込まれるまで各クローンは無料",
+                "リポジトリごとの暗号化によりサイクル全体を通じてテストデータを保護",
+                "CI/CD統合により各デプロイメントで自動的にセキュリティクローンアンドテストをトリガー"
+              ]
+            }
+          }
+        },
+        "cta": {
+          "title": "攻撃される前に防御する準備はできていますか？",
+          "subtitle": "クローン。テスト。強化。繰り返し。年に一度ではなく、毎日。",
+          "button": "先制防御を開始"
+        }
       }
     },
     "team": {
@@ -1647,6 +1766,807 @@
           }
         }
       }
+    },
+    "privacyPolicy": {
+      "meta": {
+        "title": "プライバシーポリシー — Rediacc",
+        "description": "Rediaccが個人データをどのように収集、使用、保護するかをご確認ください。",
+        "keywords": "プライバシーポリシー, データ保護, GDPR, Plausible Analytics, Rediacc"
+      },
+      "hero": {
+        "title": "プライバシーポリシー",
+        "effectiveDate": "発効日：2026年2月1日"
+      },
+      "toc": {
+        "title": "目次"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. はじめに",
+          "content": [
+            "Rediacc（「当社」）は、ウェブサイト<a href=\"https://www.rediacc.com\">www.rediacc.com</a>およびRediaccインフラ自動化プラットフォームを運営しています。このプライバシーポリシーは、当社がお客様の情報をどのように収集、使用、開示、保護するかを説明します。",
+            "当社はお客様のプライバシーの保護に取り組んでいます。このプライバシーポリシーに同意されない場合は、当社のウェブサイトおよびサービスのご利用をお控えください。"
+          ]
+        },
+        "informationWeCollect": {
+          "id": "information-we-collect",
+          "title": "2. 収集する情報",
+          "content": ["当社はサービス提供に必要な最小限の情報を収集します。"],
+          "subsections": {
+            "contactFormData": {
+              "title": "2.1 お問い合わせフォームデータ",
+              "content": [
+                "お問い合わせフォームを送信される際、お名前、メールアドレス、件名、メッセージ内容を収集します。"
+              ]
+            },
+            "accountData": {
+              "title": "2.2 アカウントデータ",
+              "content": [
+                "Rediaccアカウント作成時に、お名前、メールアドレス、組織名、請求情報を収集します。"
+              ]
+            },
+            "analyticsData": {
+              "title": "2.3 分析データ",
+              "content": [
+                "当社は、プライバシーに配慮したCookieレスの分析ツール<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>を使用しています。"
+              ]
+            },
+            "productTelemetry": {
+              "title": "2.5 製品テレメトリデータ",
+              "content": [
+                "当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、およびBridge）は、製品品質、パフォーマンス、信頼性の向上を目的として匿名の使用テレメトリを収集します。テレメトリデータには、アプリケーションバージョン、オペレーティングシステム、ブラウザタイプ、パフォーマンスメトリクス、機能使用パターン、エラーレポートなどの技術情報が含まれます。個人識別子は収集前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化および切り詰められ、パスワードやシークレットは一切収集されません。",
+                "テレメトリはWebアプリケーションおよびCLIではデフォルトで有効であり、すべての製品で無効にすることができます。各製品が収集するデータの詳細およびオプトアウト方法については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
+              ]
+            },
+            "cookies": {
+              "title": "2.4 Cookie",
+              "content": [
+                "言語設定を記憶するために、1つの機能的なCookie（<code>rediacc_lang</code>）を使用しています。詳細は<a href=\"cookie-policy\">Cookieポリシー</a>をご覧ください。"
+              ]
+            }
+          }
+        },
+        "howWeUseInformation": {
+          "id": "how-we-use-information",
+          "title": "3. 情報の利用方法",
+          "content": ["収集した情報は以下の目的で使用します："],
+          "items": [
+            "お問い合わせへの対応",
+            "Rediaccプラットフォームの提供・運営・維持",
+            "取引の処理と請求情報の送信",
+            "サービス関連の連絡",
+            "ウェブサイト利用パターンの把握",
+            "匿名化された使用テレメトリを通じたエラー診断、製品パフォーマンスの向上、および製品開発の指針（<a href=\"telemetry-policy\">テレメトリポリシー</a>を参照）",
+            "法的義務の遵守"
+          ]
+        },
+        "dataSharing": {
+          "id": "data-sharing",
+          "title": "4. データ共有と第三者",
+          "content": ["当社はお客様の個人データを第三者に販売・貸与しません。"],
+          "items": [
+            "プラットフォーム運営を支援する<strong>サービスプロバイダー</strong>",
+            "Cookieレスの匿名ウェブ分析のための<strong>Plausible Analytics</strong>",
+            "<strong>テレメトリ処理</strong> — 匿名化された製品使用データは、集計および分析のためにEU内の当社テレメトリエンドポイントに送信されます。テレメトリデータは第三者と共有されません（<a href=\"telemetry-policy\">テレメトリポリシー</a>を参照）",
+            "法律で要求される場合の<strong>法執行機関</strong>"
+          ]
+        },
+        "dataRetention": {
+          "id": "data-retention",
+          "title": "5. データ保持",
+          "content": [
+            "お問い合わせフォームデータは必要な期間保持されます。アカウントデータはアカウント有効期間中および削除後30日間保持されます。",
+            "Plausible分析データは集計されており個人データを含まないため、データ保持ポリシーは適用されません。",
+            "製品テレメトリデータは、デバッグ目的で最大90日間生のトレースとして保持されます。集計されたテレメトリメトリクスは最大12か月間保持された後、削除されます。詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "6. お客様の権利",
+          "content": ["管轄地域に応じて、以下の権利を有する場合があります："],
+          "items": [
+            "<strong>アクセス：</strong>個人データのコピーを請求する権利",
+            "<strong>訂正：</strong>不正確なデータの訂正を請求する権利",
+            "<strong>削除：</strong>データの削除を請求する権利",
+            "<strong>ポータビリティ：</strong>機械可読形式のコピーを請求する権利",
+            "<strong>異議：</strong>データ処理に異議を申し立てる権利",
+            "<strong>制限：</strong>処理の制限を請求する権利",
+            "<strong>テレメトリのオプトアウト：</strong><a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されているメカニズムを使用して、いつでも製品テレメトリを無効にできます"
+          ],
+          "content2": [
+            "権利行使については<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。"
+          ]
+        },
+        "dataSecurity": {
+          "id": "data-security",
+          "title": "7. データセキュリティ",
+          "content": [
+            "当社は転送時および保存時の暗号化を含む業界標準のセキュリティ対策を実施しています。"
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "8. 国際データ転送",
+          "content": [
+            "お客様の情報は他国に転送・処理される場合があります。適切な保護措置を確保しています。"
+          ]
+        },
+        "childrenPrivacy": {
+          "id": "children-privacy",
+          "title": "9. 児童のプライバシー",
+          "content": ["当社のサービスは16歳未満の方を対象としていません。"]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "10. ポリシーの変更",
+          "content": [
+            "当社はこのプライバシーポリシーを随時更新する場合があります。変更はこのページに掲載されます。"
+          ]
+        }
+      },
+      "contact": {
+        "title": "ご質問はありますか？",
+        "description": "このプライバシーポリシーについてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      }
+    },
+    "termsOfService": {
+      "meta": {
+        "title": "利用規約 — Rediacc",
+        "description": "Rediaccウェブサイトおよびインフラ自動化プラットフォームの利用に関する規約。",
+        "keywords": "利用規約, 利用条件, ユーザー契約, Rediacc"
+      },
+      "hero": {
+        "title": "利用規約",
+        "effectiveDate": "発効日：2026年2月1日"
+      },
+      "toc": {
+        "title": "目次"
+      },
+      "sections": {
+        "acceptance": {
+          "id": "acceptance",
+          "title": "1. 規約への同意",
+          "content": [
+            "Rediaccウェブサイト（<a href=\"https://www.rediacc.com\">www.rediacc.com</a>）またはRediaccプラットフォームにアクセスまたは使用することにより、本利用規約に同意したものとみなされます。"
+          ]
+        },
+        "serviceDescription": {
+          "id": "service-description",
+          "title": "2. サービスの説明",
+          "content": [
+            "RediaccはAI駆動のオペレーション向けインフラ自動化プラットフォームを提供しています。"
+          ]
+        },
+        "accounts": {
+          "id": "accounts",
+          "title": "3. アカウントと登録",
+          "content": [
+            "登録時に正確な情報を提供し、アカウントでのすべての活動に責任を持つ必要があります。"
+          ]
+        },
+        "subscriptions": {
+          "id": "subscriptions",
+          "title": "4. サブスクリプションと支払い",
+          "content": [
+            "有料サブスクリプションは月額または年額で前払いで請求されます。返金については<a href=\"refund-policy\">返金ポリシー</a>をご覧ください。"
+          ]
+        },
+        "acceptableUse": {
+          "id": "acceptable-use",
+          "title": "5. 利用規定",
+          "content": [
+            "<a href=\"acceptable-use-policy\">利用規定</a>に従ってサービスを使用することに同意するものとします。"
+          ]
+        },
+        "telemetry": {
+          "id": "telemetry",
+          "title": "6. テレメトリとデータ収集",
+          "content": [
+            "当社のソフトウェア製品は、製品品質とパフォーマンスの向上を目的として匿名化された使用テレメトリを収集します。サービスを使用することにより、<a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されているとおりテレメトリ収集が行われることを了承するものとします。",
+            "テレメトリはプライバシーを保護するよう設計されています。個人識別子は送信前に匿名化され、いつでもテレメトリをオプトアウトできます。<a href=\"telemetry-policy\">テレメトリポリシー</a>には、各製品が収集する具体的なデータおよび収集を無効にするメカニズムが記載されています。"
+          ]
+        },
+        "intellectualProperty": {
+          "id": "intellectual-property",
+          "title": "7. 知的財産",
+          "content": ["サービスはRediaccの所有物であり、知的財産法により保護されています。"]
+        },
+        "dataOwnership": {
+          "id": "data-ownership",
+          "title": "8. お客様のデータ",
+          "content": [
+            "お客様のデータはお客様のものです。詳細は<a href=\"privacy-policy\">プライバシーポリシー</a>をご覧ください。"
+          ]
+        },
+        "serviceAvailability": {
+          "id": "service-availability",
+          "title": "9. サービスの可用性",
+          "content": [
+            "高可用性の維持に努めていますが、中断のないアクセスを保証するものではありません。"
+          ]
+        },
+        "limitationOfLiability": {
+          "id": "limitation-of-liability",
+          "title": "10. 責任の制限",
+          "content": [
+            "法律で認められる最大限の範囲で、Rediaccは間接的な損害について責任を負いません。"
+          ]
+        },
+        "indemnification": {
+          "id": "indemnification",
+          "title": "11. 補償",
+          "content": [
+            "サービスの使用に起因するすべての請求からRediaccを補償することに同意するものとします。"
+          ]
+        },
+        "termination": {
+          "id": "termination",
+          "title": "12. 解約",
+          "content": [
+            "いつでもアカウントを解約できます。本規約に違反した場合、アクセスを停止する場合があります。"
+          ]
+        },
+        "governingLaw": {
+          "id": "governing-law",
+          "title": "13. 準拠法",
+          "content": ["本規約はエストニア共和国の法律に準拠します。"]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "14. 規約の変更",
+          "content": ["本規約は随時更新される場合があります。"]
+        }
+      },
+      "contact": {
+        "title": "ご質問はありますか？",
+        "description": "本利用規約についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      }
+    },
+    "cookiePolicy": {
+      "meta": {
+        "title": "Cookieポリシー — Rediacc",
+        "description": "RediaccのCookieポリシー。1つの機能的CookieとCookieレスのPlausible Analytics。",
+        "keywords": "Cookieポリシー, Cookie, Plausible Analytics, GDPR, Rediacc"
+      },
+      "hero": {
+        "title": "Cookieポリシー",
+        "effectiveDate": "発効日：2026年2月1日"
+      },
+      "toc": {
+        "title": "目次"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. はじめに",
+          "content": [
+            "このCookieポリシーは、Rediaccが当社ウェブサイト<a href=\"https://www.rediacc.com\">www.rediacc.com</a>でCookieをどのように使用するかを説明します。"
+          ]
+        },
+        "whatAreCookies": {
+          "id": "what-are-cookies",
+          "title": "2. Cookieとは",
+          "content": [
+            "Cookieとは、ウェブサイトを訪問した際にデバイスに保存される小さなテキストファイルです。"
+          ]
+        },
+        "cookiesWeUse": {
+          "id": "cookies-we-use",
+          "title": "3. 使用するCookie",
+          "content": ["当社が使用するCookieは1つだけです："],
+          "subsections": {
+            "languageCookie": {
+              "title": "3.1 言語設定Cookie",
+              "content": [
+                "<strong>名前：</strong><code>rediacc_lang</code><br><strong>種類：</strong>ファーストパーティ、必須<br><strong>期間：</strong>1年<br><strong>目的：</strong>お好みの言語を保存します。"
+              ]
+            }
+          }
+        },
+        "whatWeDontUse": {
+          "id": "what-we-dont-use",
+          "title": "4. 使用しないもの",
+          "content": ["以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："],
+          "items": [
+            "<strong>トラッキングCookie</strong> — Google Analytics、Facebook Pixelなどのトラッキングは不使用",
+            "<strong>サードパーティCookie</strong> — 外部サービスによるCookieは設定されません",
+            "<strong>広告Cookie</strong> — 広告は配信していません",
+            "<strong>フィンガープリンティング</strong> — ブラウザフィンガープリンティングは不使用"
+          ],
+          "content2": [
+            "注：このCookieポリシーはRediaccマーケティングウェブサイトに適用されます。当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、Bridge）は、Cookieを使用しない個別の使用テレメトリを収集します。製品テレメトリの詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
+          ]
+        },
+        "analytics": {
+          "id": "analytics",
+          "title": "5. 当社の分析アプローチ",
+          "content": [
+            "当社は<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>を使用しています。"
+          ],
+          "items": [
+            "Cookieを一切<strong>使用しません</strong>",
+            "個人データを<strong>収集しません</strong>",
+            "サイト間でユーザーを<strong>追跡しません</strong>",
+            "EUでホスティングされ、GDPR準拠",
+            "集計された匿名メトリクスのみ提供"
+          ],
+          "content2": [
+            "ウェブサイト分析に加え、当社のソフトウェア製品はOpenTelemetryベースの計測を通じて匿名化された使用テレメトリを収集します。これはウェブサイト分析とは別のもので、Cookieを使用せず、詳細は<a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されています。"
+          ]
+        },
+        "managingCookies": {
+          "id": "managing-cookies",
+          "title": "6. Cookieの管理",
+          "content": ["ブラウザの設定でCookieを管理できます："],
+          "items": [
+            "<strong>Chrome：</strong>設定 → プライバシーとセキュリティ → Cookie",
+            "<strong>Firefox：</strong>設定 → プライバシーとセキュリティ → Cookie",
+            "<strong>Safari：</strong>環境設定 → プライバシー → Webサイトデータを管理",
+            "<strong>Edge：</strong>設定 → Cookieとサイトのアクセス許可"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. ポリシーの変更",
+          "content": ["追加のCookieを導入する場合、このポリシーを更新します。"]
+        }
+      },
+      "contact": {
+        "title": "ご質問はありますか？",
+        "description": "Cookieの使用についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      }
+    },
+    "acceptableUsePolicy": {
+      "meta": {
+        "title": "利用規定 — Rediacc",
+        "description": "Rediaccの利用規定は、プラットフォーム上の禁止事項を定義します。",
+        "keywords": "利用規定, AUP, 禁止事項, Rediacc"
+      },
+      "hero": {
+        "title": "利用規定",
+        "effectiveDate": "発効日：2025年2月1日"
+      },
+      "toc": {
+        "title": "目次"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. はじめに",
+          "content": [
+            "この利用規定（「AUP」）はRediaccプラットフォームの利用を規定し、<a href=\"terms-of-service\">利用規約</a>の一部を構成します。"
+          ]
+        },
+        "prohibitedActivities": {
+          "id": "prohibited-activities",
+          "title": "2. 禁止事項",
+          "content": ["Rediaccプラットフォームを以下の目的で使用することはできません："],
+          "items": [
+            "暗号通貨マイニングまたは同様の計算集約的な活動",
+            "スパム、フィッシング、悪意のあるコンテンツの送信",
+            "マルウェアのホスティングまたは配布",
+            "DoS/DDoS攻撃を含むネットワーク攻撃",
+            "他者のアカウントやシステムへの不正アクセス",
+            "セキュリティ機能の回避",
+            "違法コンテンツの保存",
+            "無許可でのプラットフォームアクセスの転売",
+            "競合製品の構築のための使用"
+          ]
+        },
+        "resourceUsage": {
+          "id": "resource-usage",
+          "title": "3. リソース使用",
+          "content": ["すべてのユーザーへの公平なアクセスを確保するために："],
+          "items": [
+            "サブスクリプション制限に従ってリソースを使用",
+            "自動化プロセスは過度な負荷を生成してはなりません",
+            "ストレージ使用は正当なプラットフォーム利用を反映すること",
+            "リソース問題には速やかに対処すること"
+          ]
+        },
+        "securityRequirements": {
+          "id": "security-requirements",
+          "title": "4. セキュリティ要件",
+          "content": ["アカウントのセキュリティはお客様の責任です："],
+          "items": [
+            "強力でユニークなパスワードを使用",
+            "アカウント資格情報を共有しない",
+            "脆弱性を<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に報告",
+            "書面による許可なくセキュリティテストを行わない",
+            "ソフトウェアを最新に保つ"
+          ]
+        },
+        "contentStandards": {
+          "id": "content-standards",
+          "title": "5. コンテンツ基準",
+          "content": [
+            "コンテンツは適用法令に準拠する必要があります。コンテンツについてはお客様が責任を負います。"
+          ]
+        },
+        "enforcement": {
+          "id": "enforcement",
+          "title": "6. 執行",
+          "content": ["違反は以下の措置につながる場合があります："],
+          "items": [
+            "書面による警告",
+            "一時的な停止",
+            "機能の制限",
+            "アカウントの永久停止",
+            "法執行機関への報告"
+          ],
+          "content2": ["措置前に通知するよう合理的な努力をします。"]
+        },
+        "reporting": {
+          "id": "reporting",
+          "title": "7. 違反の報告",
+          "content": [
+            "違反を<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に報告してください。"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "8. ポリシーの変更",
+          "content": ["このAUPは随時更新される場合があります。"]
+        }
+      },
+      "contact": {
+        "title": "ご質問はありますか？",
+        "description": "この利用規定についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      }
+    },
+    "refundPolicy": {
+      "meta": {
+        "title": "返金ポリシー — Rediacc",
+        "description": "プラットフォームサブスクリプションおよびプロフェッショナルサービスに関するRediaccの返金ポリシー。",
+        "keywords": "返金ポリシー, キャンセル, サブスクリプション返金, Rediacc"
+      },
+      "hero": {
+        "title": "返金ポリシー",
+        "effectiveDate": "発効日：2025年2月1日"
+      },
+      "toc": {
+        "title": "目次"
+      },
+      "sections": {
+        "overview": {
+          "id": "overview",
+          "title": "1. 概要",
+          "content": [
+            "この返金ポリシーは、Rediaccサブスクリプションおよびプロフェッショナルサービスの返金条件を説明します。"
+          ]
+        },
+        "platformSubscriptions": {
+          "id": "platform-subscriptions",
+          "title": "2. プラットフォームサブスクリプション",
+          "content": ["Rediaccは複数のサブスクリプションティアを提供しています："],
+          "subsections": {
+            "freeTier": {
+              "title": "2.1 無料ティア",
+              "content": ["Communityティアは永久無料です。"]
+            },
+            "paidTiers": {
+              "title": "2.2 有料ティア",
+              "content": ["有料サブスクリプションは原則として返金不可です。例外："],
+              "items": [
+                "<strong>最初の14日間：</strong>新規加入者への全額返金",
+                "<strong>サービス障害：</strong>長時間の障害（48時間以上）に対する按分クレジット",
+                "<strong>請求エラー：</strong>誤った請求に対する全額返金"
+              ]
+            },
+            "annualSubscriptions": {
+              "title": "2.3 年間サブスクリプション",
+              "content": [
+                "年間サブスクリプションはいつでもキャンセルできます。14日間の期間を除き、部分返金はありません。"
+              ]
+            }
+          }
+        },
+        "professionalServices": {
+          "id": "professional-services",
+          "title": "3. プロフェッショナルサービス",
+          "content": ["プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："],
+          "items": [
+            "<strong>作業開始前：</strong>全額返金",
+            "<strong>契約期間中：</strong>作業時間分のみ請求",
+            "<strong>品質に関する異議：</strong>納品後7日以内にご連絡ください",
+            "<strong>最低契約期間：</strong>一部のパッケージには最低期間があります"
+          ]
+        },
+        "howToRequest": {
+          "id": "how-to-request",
+          "title": "4. 返金の申請方法",
+          "content": [
+            "<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に以下の情報をお送りください："
+          ],
+          "items": [
+            "アカウントのメールアドレス",
+            "対象のサブスクリプションまたはサービス",
+            "返金申請の理由",
+            "関連する注文番号または請求書番号"
+          ],
+          "content2": ["5営業日以内にご返答いたします。"]
+        },
+        "refundProcessing": {
+          "id": "refund-processing",
+          "title": "5. 返金処理",
+          "content": ["承認された返金は10営業日以内に元の支払方法に処理されます。"]
+        },
+        "nonRefundable": {
+          "id": "non-refundable",
+          "title": "6. 返金不可の項目",
+          "content": ["以下は返金の対象外です："],
+          "items": [
+            "14日間の期間後にキャンセルされたサブスクリプション",
+            "すでに消費されたリソースの使用量ベースの料金",
+            "すでに提供されたプロフェッショナルサービスの時間",
+            "アカウント再開手数料",
+            "<a href=\"terms-of-service\">利用規約</a>違反による料金"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "7. ポリシーの変更",
+          "content": ["この返金ポリシーは随時更新される場合があります。"]
+        }
+      },
+      "contact": {
+        "title": "ご質問はありますか？",
+        "description": "返金についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      }
+    },
+    "telemetryPolicy": {
+      "meta": {
+        "title": "テレメトリポリシー — Rediacc",
+        "description": "Rediacc製品が収集するテレメトリデータ、その理由、処理方法、およびオプトアウト方法の詳細。Webアプリ、CLI、ミドルウェア、Bridgeを対象とします。",
+        "keywords": "テレメトリポリシー, データ収集, OpenTelemetry, オプトアウト, プライバシー, GDPR, Rediacc"
+      },
+      "hero": {
+        "title": "テレメトリポリシー",
+        "effectiveDate": "発効日：2026年2月1日"
+      },
+      "toc": {
+        "title": "目次"
+      },
+      "sections": {
+        "introduction": {
+          "id": "introduction",
+          "title": "1. はじめに",
+          "content": [
+            "Rediaccソフトウェア製品は、製品品質の向上、問題の診断、ツールの使用状況の把握を目的として、匿名化された使用テレメトリを収集します。このテレメトリポリシーでは、収集されるデータ、その理由、処理方法、およびオプトアウト方法について正確に説明します。",
+            "このポリシーは4つの製品を対象としています：<strong>Rediacc Webアプリケーション</strong>、<strong>Rediacc CLI</strong>、<strong>Rediaccミドルウェア</strong>、および<strong>Rediacc Bridge（Renet）</strong>。ウェブサイト分析（Plausible）については、<a href=\"privacy-policy\">プライバシーポリシー</a>および<a href=\"cookie-policy\">Cookieポリシー</a>で別途説明しています。"
+          ]
+        },
+        "principles": {
+          "id": "principles",
+          "title": "2. テレメトリの原則",
+          "content": ["Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："],
+          "items": [
+            "<strong>プライバシー・バイ・デザイン：</strong>個人識別子は送信前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化（SHA-256）および切り詰められ、パスワードやシークレットは一切収集されません。",
+            "<strong>最小限の収集：</strong>製品品質の向上と問題の診断に必要なデータのみを収集します。ファイル内容、データベース内容、クエリ結果、またはビジネスデータは収集しません。",
+            "<strong>透明性：</strong>このポリシーには、各製品が収集するデータのすべてのカテゴリが記載されています。隠されたデータフローはありません。",
+            "<strong>ユーザーコントロール：</strong>すべての製品にテレメトリを完全に無効にするメカニズムが用意されています。オプトアウトは即座にかつ完全に尊重されます。",
+            "<strong>集計：</strong>テレメトリデータは集計して分析されます。テレメトリから個々のユーザープロファイルを構築することはありません。"
+          ]
+        },
+        "legalBasis": {
+          "id": "legal-basis",
+          "title": "3. 収集の法的根拠",
+          "content": [
+            "EU一般データ保護規則（GDPR）およびePrivacy指令の下で、テレメトリ収集の法的根拠は製品のコンテキストに依存します：",
+            "<strong>Webアプリケーション</strong>（ブラウザベース）の場合：テレメトリは、サービス品質の維持および向上を目的として、<strong>正当な利益</strong>（GDPR第6条(1)(f)）に基づいて収集されます。いつでもオプトアウトできます。",
+            "<strong>CLI、ミドルウェア、およびBridge</strong>（お客様のインフラにインストール）の場合：テレメトリは、明確なオプトアウトメカニズムが提供された<strong>正当な利益</strong>に基づいて収集されます。データが送信される前にテレメトリを無効にすることができます。",
+            "明示的な同意が必要な法域のユーザー（例：韓国のPIPA）については、データが送信される前に製品設定を通じてテレメトリに明示的にオプトインする必要があります。"
+          ]
+        },
+        "webApp": {
+          "id": "web-app",
+          "title": "4. Webアプリケーション テレメトリ",
+          "content": [
+            "Rediacc WebアプリケーションはOpenTelemetryベースの分散トレーシングを使用しています。テレメトリは<code>https://www.rediacc.com/otlp</code>に送信されます。本番環境では、<strong>セッションの10%のみ</strong>がサンプリングされます。"
+          ],
+          "subsections": {
+            "webDataCollected": {
+              "title": "4.1 収集データ",
+              "content": ["Webアプリケーションは以下のカテゴリのデータを収集します："],
+              "items": [
+                "<strong>ブラウザ情報：</strong>ブラウザ名とバージョン、優先言語、プラットフォーム（例：Windows、macOS、Linux）、画面解像度、色深度、ユーザーエージェント文字列、デバイスメモリ（利用可能な場合）、ネットワーク接続タイプ",
+                "<strong>ユーザーコンテキスト：</strong>セッションID（セッションごとにランダム生成）、メールドメインのみ（ローカル部分は除去、例：<code>***@example.com</code>）、組織名、チーム名",
+                "<strong>ページビューとナビゲーション：</strong>アプリケーション内で訪問したページ、ルート変更、リファラー情報",
+                "<strong>ユーザーインタラクション：</strong>クリック、フォーム送信、モーダルの開閉、検索クエリ、フィルター変更、タブ切り替え、ファイルダウンロード（ファイル名は収集されません）",
+                "<strong>API呼び出し：</strong>HTTPメソッド、URLパス、レスポンスステータスコード、リクエスト所要時間",
+                "<strong>エラー：</strong>エラータイプ、エラーメッセージ、スタックトレース（1,000文字に切り詰め）、エラーソース",
+                "<strong>パフォーマンスメトリクス：</strong>Core Web Vitals（LCP、FID、CLS、TTFB、INP）、リソースタイミング、メモリ使用量（30秒ごとにサンプリング）、ロングタスク検出",
+                "<strong>コンポーネントライフサイクル：</strong>コンポーネントのマウント/アンマウントタイミング、レンダリング所要時間"
+              ]
+            },
+            "webNotCollected": {
+              "title": "4.2 収集しないデータ",
+              "content": ["Webアプリケーションは以下を収集しません："],
+              "items": [
+                "完全なメールアドレス（ローカル部分は常に除去）",
+                "パスワード、トークン、または認証資格情報",
+                "ファイル内容、データベース内容、またはクエリ結果",
+                "フォームフィールドの値（フォームが送信されたという事実のみが記録されます）",
+                "クリップボードの内容またはキーストローク",
+                "IPアドレス（当社のテレメトリエンドポイントでは記録されません）"
+              ]
+            },
+            "webOptOut": {
+              "title": "4.3 オプトアウト方法",
+              "content": [
+                "アカウント設定で<code>userConsent</code>設定フラグを<code>false</code>に設定してください。オプトアウト後、テレメトリは即座に停止します。",
+                "<strong>デスクトップアプリケーション：</strong>デスクトップ（Electron）アプリケーションではテレメトリはデフォルトで完全に無効化されています。データの収集や送信は行われません。"
+              ]
+            }
+          }
+        },
+        "cli": {
+          "id": "cli",
+          "title": "5. CLIテレメトリ",
+          "content": [
+            "Rediacc CLIはOpenTelemetry Node SDKを使用しています。テレメトリは<code>https://www.rediacc.com/otlp</code>に送信されます。"
+          ],
+          "subsections": {
+            "cliDataCollected": {
+              "title": "5.1 収集データ",
+              "content": ["CLIは以下のカテゴリのデータを収集します："],
+              "items": [
+                "<strong>コマンド使用状況：</strong>コマンド名、CLIバージョン、終了コード、成功または失敗ステータス",
+                "<strong>匿名化された引数：</strong>機密値が除去されたコマンドオプション — パスワード、トークン、シークレット、APIキー、および資格情報は<code>[REDACTED]</code>に置換されます",
+                "<strong>環境：</strong>オペレーティングシステムタイプ、Node.jsランタイムバージョン、デプロイメント環境",
+                "<strong>エラー情報：</strong>コマンド失敗時のエラータイプ、エラーメッセージ、および限定的なスタックトレース",
+                "<strong>APIインタラクション：</strong>HTTPメソッド、URLパス、レスポンスステータスコード、リクエスト所要時間",
+                "<strong>セッション：</strong>ランダム生成されたセッションID、コマンド実行所要時間"
+              ]
+            },
+            "cliOptOut": {
+              "title": "5.2 オプトアウト方法",
+              "content": ["以下のいずれかの方法でCLIテレメトリを無効にできます："],
+              "items": [
+                "環境変数<code>REDIACC_TELEMETRY=off</code>を設定（<code>false</code>または<code>0</code>も使用可能）",
+                "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",
+                "CI環境では<strong>自動的に無効化</strong>されます（<code>CI</code>環境変数により検出）"
+              ]
+            }
+          }
+        },
+        "middleware": {
+          "id": "middleware",
+          "title": "6. ミドルウェア テレメトリ",
+          "content": [
+            "Rediaccミドルウェアは運用テレメトリを収集します。テレメトリは<code>https://www.rediacc.com/otlp/v1/traces</code>に送信されます。"
+          ],
+          "subsections": {
+            "middlewareDataCollected": {
+              "title": "6.1 収集データ",
+              "content": ["ミドルウェアは以下のカテゴリのデータを収集します："],
+              "items": [
+                "<strong>システム情報：</strong>ホスト名、オペレーティングシステムバージョン、.NETランタイムバージョン",
+                "<strong>API呼び出し：</strong>HTTPメソッド、エンドポイントパス、レスポンスステータスコード、リクエスト所要時間",
+                "<strong>データベース操作：</strong>ストアドプロシージャ名、実行所要時間、返却行数（クエリ内容、パラメータ、または結果データは含まれません）",
+                "<strong>認証イベント：</strong>ハッシュ化されたユーザー識別子のみ — ユーザーIDはSHA-256とソルトでハッシュ化され、最初の12文字に切り詰められます。元のユーザーIDは送信されません。",
+                "<strong>ヘルスチェック：</strong>サービスコンポーネントの可用性ステータスと応答時間",
+                "<strong>アプリケーションライフサイクル：</strong>起動、シャットダウン、および設定変更イベント",
+                "<strong>エラー情報：</strong>エラータイプ、エラーメッセージ、および運用コンテキスト"
+              ]
+            },
+            "middlewareOptOut": {
+              "title": "6.2 オプトアウト方法",
+              "content": [
+                "ミドルウェア設定（appsettings.jsonまたは環境固有の設定）で<code>Telemetry:Enabled</code>を<code>false</code>に設定してください。"
+              ]
+            }
+          }
+        },
+        "bridge": {
+          "id": "bridge",
+          "title": "7. Bridge（Renet）テレメトリ",
+          "content": [
+            "Rediacc Bridge（Renet）はgzip圧縮OTLPエクスポート付きのOpenTelemetryを使用しています。テレメトリは<code>www.rediacc.com/otlp/v1/traces</code>にバッチで送信されます（最大10スパン、5秒ごとにフラッシュ）。"
+          ],
+          "subsections": {
+            "bridgeDataCollected": {
+              "title": "7.1 収集データ",
+              "content": ["Bridgeは以下のカテゴリのデータを収集します："],
+              "items": [
+                "<strong>キュー操作：</strong>タスクID、優先度レベル、操作タイプ、実行所要時間、成功または失敗ステータス",
+                "<strong>SSH操作：</strong>ターゲットホスト、ユーザー名、ポート番号、終了コード、実行所要時間（コマンド内容や出力は収集されません）",
+                "<strong>API呼び出し：</strong>プロシージャ名、リクエスト所要時間",
+                "<strong>Vault操作：</strong>操作タイプと所要時間（シークレット値、キー、またはVault内容は収集されません）",
+                "<strong>Bridgeライフサイクル：</strong>起動、シャットダウン、および再接続イベント"
+              ]
+            },
+            "bridgeOptOut": {
+              "title": "7.2 オプトアウト方法",
+              "content": ["以下のいずれかの方法でBridgeテレメトリを無効にできます："],
+              "items": [
+                "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
+                "環境変数<code>DO_NOT_TRACK=1</code>を設定（<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>標準に準拠）"
+              ]
+            }
+          }
+        },
+        "dataProcessing": {
+          "id": "data-processing",
+          "title": "8. データ処理と保存",
+          "content": [
+            "すべてのテレメトリデータは暗号化された接続（TLS 1.2+）を介して当社のテレメトリエンドポイントに送信されます。データは以下のとおり処理・保存されます："
+          ],
+          "items": [
+            "<strong>暗号化：</strong>すべてのデータはTLSを使用して転送中に暗号化されます。Bridgeはさらにgzip圧縮を使用します。",
+            "<strong>保持：</strong>生のテレメトリトレースは、デバッグおよびインシデント調査のために最大90日間保存されます。集計されたメトリクスは最大12か月間保持された後、削除されます。",
+            "<strong>アクセス：</strong>テレメトリデータは、必要に応じてRediaccのエンジニアリングおよびオペレーションスタッフのみがアクセスできます。",
+            "<strong>第三者との共有なし：</strong>テレメトリデータは第三者と共有、販売、またはアクセスされることはありません。",
+            "<strong>インフラストラクチャ：</strong>すべてのテレメトリデータは欧州連合内のインフラストラクチャで処理・保存されます。"
+          ]
+        },
+        "internationalTransfers": {
+          "id": "international-transfers",
+          "title": "9. 国際データ転送",
+          "content": [
+            "テレメトリデータは欧州連合内のサーバーで排他的に処理・保存されます。テレメトリデータをEU/EEA外に転送する必要が生じた場合（例：災害復旧）、欧州委員会が承認した標準契約条項（SCC）を含む適切な保護措置が講じられます。"
+          ]
+        },
+        "yourRights": {
+          "id": "your-rights",
+          "title": "10. お客様の権利",
+          "content": [
+            "当社のテレメトリデータは匿名化および集計されているため、一般的にGDPRの下で個人データには該当しません。ただし、テレメトリデータがお客様個人に紐付けられる限りにおいて、お客様には以下の権利があります："
+          ],
+          "items": [
+            "<strong>アクセス：</strong>お客様に関連する可能性のあるテレメトリデータについて情報を請求する権利",
+            "<strong>削除：</strong>お客様に紐付けられるテレメトリデータの削除を請求する権利",
+            "<strong>オプトアウト：</strong>上記の製品固有のメカニズムを使用して、いつでもテレメトリを無効にする権利",
+            "<strong>苦情申立て：</strong>エストニアデータ保護監督局（<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>）またはお客様の地域の監督当局に苦情を申し立てる権利"
+          ],
+          "content2": [
+            "これらの権利を行使するには、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。30日以内にご返答いたします。"
+          ]
+        },
+        "ccpa": {
+          "id": "ccpa",
+          "title": "11. カリフォルニア州居住者（CCPA/CPRA）",
+          "content": [
+            "カリフォルニア州居住者の方には、カリフォルニア消費者プライバシー法（CCPA）およびカリフォルニアプライバシー権法（CPRA）に基づき、以下の追加開示が適用されます："
+          ],
+          "items": [
+            "<strong>収集される情報のカテゴリ：</strong>インターネットまたは電子ネットワーク活動情報（ブラウザタイプ、インタラクションデータ、エラーログ）、デバイス識別子（匿名化済み）、地理位置情報（国レベルのみ、保存されないIPアドレスから派生）",
+            "<strong>目的：</strong>サービス品質の向上・維持、デバッグ、パフォーマンス監視、およびセキュリティ",
+            "<strong>販売/共有：</strong>CCPA/CPRAで定義されるテレメトリデータの販売または共有は行いません",
+            "<strong>オプトアウトの権利：</strong>上記セクション4〜7に記載の製品固有のオプトアウトメカニズムを使用してください。Webアプリケーションではグローバルプライバシーコントロール（GPC）シグナルにも対応しています。"
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "12. ポリシーの変更",
+          "content": [
+            "新製品の追加、収集データの変更、または処理方法の変更に伴い、このテレメトリポリシーを更新する場合があります。変更はこのページに更新された発効日とともに掲載されます。重要な変更については、製品リリースノートおよびウェブサイトを通じてユーザーに通知します。"
+          ]
+        }
+      },
+      "contact": {
+        "title": "ご質問はありますか？",
+        "description": "テレメトリの取り扱いに関するご質問やオプトアウトに関するサポートが必要な場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      }
     }
   },
   "problem": {
@@ -1698,9 +2618,18 @@
         "benefits": ["60秒の環境プロビジョニング", "本番環境と同一のクローン", "自動 Git 統合"],
         "description": "インスタント本番クローン。 DevOps チケットはゼロです。 60秒環境。",
         "title": "開発環境"
+      },
+      {
+        "title": "先制防御",
+        "description": "AI攻撃者は数秒で動きます。クローン。テスト。強化。繰り返し。",
+        "benefits": [
+          "安全なAIペネトレーションテストのために本番をクローン",
+          "ダウンタイムリスクなしの継続的テスト",
+          "攻撃者が到着する前に脆弱性の窓を閉じる"
+        ]
       }
     ],
-    "subtitle": "インフラストラクチャに障害が発生した場合や脅威が発生した場合に迅速に対応するための 5 つの統合ソリューション。",
+    "subtitle": "インフラストラクチャに障害が発生した場合や脅威が発生した場合に迅速に対応するための 6 つの統合ソリューション。",
     "title": "ビジネス継続性を確保する方法"
   }
 }

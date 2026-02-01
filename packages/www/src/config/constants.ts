@@ -15,6 +15,11 @@ export const CONTACT_EMAIL = 'contact@rediacc.com';
 export const SITE_URL = 'https://www.rediacc.com';
 
 /**
+ * GitHub repository path for fetching releases
+ */
+export const GITHUB_REPO = 'rediacc/console';
+
+/**
  * External Links
  * Centralized configuration for important external URLs
  */

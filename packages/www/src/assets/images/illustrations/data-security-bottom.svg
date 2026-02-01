@@ -1,8 +1,8 @@
-<svg width="1100" height="618" viewBox="0 0 1100 618" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-      <feOffset dx="2" dy="4" result="offsetblur"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.9"/>
+      <feOffset dx="1.5" dy="2.9" result="offsetblur"/>
       <feComponentTransfer>
         <feFuncA type="linear" slope="0.2"/>
       </feComponentTransfer>
@@ -13,160 +13,159 @@
     </filter>
   </defs>
 
-  <rect width="1100" height="618" fill="#f5f5f5"/>
+  <rect width="800" height="449.5" fill="#f5f5f5"/>
 
   <!-- Decorative circles -->
-  <circle cx="80" cy="570" r="60" fill="#e0e0e0" opacity="0.3"/>
-  <circle cx="1020" cy="580" r="50" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="58.2" cy="414.5" r="43.6" fill="#e0e0e0" opacity="0.3"/>
+  <circle cx="741.8" cy="421.8" r="36.4" fill="#e0e0e0" opacity="0.3"/>
 
   <!-- Dashboard container -->
   <g filter="url(#drop-shadow)">
-    <rect x="60" y="30" width="980" height="540" rx="18" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+    <rect x="43.6" y="21.8" width="712.7" height="392.7" rx="13.1" fill="white" stroke="#e0e0e0" stroke-width="1.5"/>
     <!-- Header bar -->
-    <rect x="60" y="30" width="980" height="55" rx="18" fill="#2d2d2d"/>
-    <rect x="60" y="67" width="980" height="18" fill="#2d2d2d"/>
+    <rect x="43.6" y="21.8" width="712.7" height="40" rx="13.1" fill="#2d2d2d"/>
+    <rect x="43.6" y="48.7" width="712.7" height="13.1" fill="#2d2d2d"/>
     <!-- Header dots -->
-    <circle cx="95" cy="57" r="6" fill="#3d3d3d"/>
-    <circle cx="116" cy="57" r="6" fill="#3d3d3d"/>
-    <circle cx="137" cy="57" r="6" fill="#3d3d3d"/>
+    <circle cx="69.1" cy="41.5" r="4.4" fill="#3d3d3d"/>
+    <circle cx="84.4" cy="41.5" r="4.4" fill="#3d3d3d"/>
+    <circle cx="99.6" cy="41.5" r="4.4" fill="#3d3d3d"/>
   </g>
 
   <!-- Column separators -->
-  <line x1="387" y1="105" x2="387" y2="545" stroke="#e0e0e0" stroke-width="1.5"/>
-  <line x1="713" y1="105" x2="713" y2="545" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="281.5" y1="76.4" x2="281.5" y2="396.4" stroke="#e0e0e0" stroke-width="1.1"/>
+  <line x1="518.5" y1="76.4" x2="518.5" y2="396.4" stroke="#e0e0e0" stroke-width="1.1"/>
 
   <!-- Column 1: Migration -->
-  <g transform="translate(90, 105)">
-    <text x="148" y="30" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Migration</text>
+  <g transform="translate(65.5, 76.4)">
+    <text x="107.6" y="21.8" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="13.1" font-weight="bold">Migration</text>
 
     <!-- Progress ring -->
-    <circle cx="148" cy="150" r="65" fill="none" stroke="#e0e0e0" stroke-width="10"/>
-    <circle cx="148" cy="150" r="65" fill="none" stroke="#556b2f" stroke-width="10" stroke-linecap="round"
-      stroke-dasharray="408.4" stroke-dashoffset="0" transform="rotate(-90 148 150)"/>
-    <text x="148" y="155" text-anchor="middle" fill="#556b2f" font-family="Arial, sans-serif" font-size="30" font-weight="bold">100%</text>
-    <text x="148" y="175" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="12">Complete</text>
+    <circle cx="107.6" cy="109.1" r="47.3" fill="none" stroke="#e0e0e0" stroke-width="7.3"/>
+    <circle cx="107.6" cy="109.1" r="47.3" fill="none" stroke="#556b2f" stroke-width="7.3" stroke-linecap="round" stroke-dasharray="297" stroke-dashoffset="0" transform="rotate(-90, 107.6, 109.1)"/>
+    <text x="107.6" y="112.7" text-anchor="middle" fill="#556b2f" font-family="Arial, sans-serif" font-size="21.8" font-weight="bold">100%</text>
+    <text x="107.6" y="127.3" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="8.7">Complete</text>
 
     <!-- Status bar -->
-    <rect x="30" y="255" width="237" height="10" rx="5" fill="#e0e0e0"/>
-    <rect x="30" y="255" width="237" height="10" rx="5" fill="#556b2f"/>
+    <rect x="21.8" y="185.5" width="172.4" height="7.3" rx="3.6" fill="#e0e0e0"/>
+    <rect x="21.8" y="185.5" width="172.4" height="7.3" rx="3.6" fill="#556b2f"/>
 
     <!-- Status rows -->
-    <g transform="translate(30, 290)">
-      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
-      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Schema verified</text>
+    <g transform="translate(21.8, 210.9)">
+      <circle cx="4.4" cy="4.4" r="4.4" fill="#556b2f"/>
+      <text x="14.5" y="7.3" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="9.5">Schema verified</text>
     </g>
-    <g transform="translate(30, 320)">
-      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
-      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Data integrity check</text>
+    <g transform="translate(21.8, 232.7)">
+      <circle cx="4.4" cy="4.4" r="4.4" fill="#556b2f"/>
+      <text x="14.5" y="7.3" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="9.5">Data integrity check</text>
     </g>
-    <g transform="translate(30, 350)">
-      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
-      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Encryption active</text>
+    <g transform="translate(21.8, 254.5)">
+      <circle cx="4.4" cy="4.4" r="4.4" fill="#556b2f"/>
+      <text x="14.5" y="7.3" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="9.5">Encryption active</text>
     </g>
-    <g transform="translate(30, 380)">
-      <circle cx="6" cy="6" r="6" fill="#556b2f"/>
-      <text x="20" y="10" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="13">Zero downtime</text>
+    <g transform="translate(21.8, 276.4)">
+      <circle cx="4.4" cy="4.4" r="4.4" fill="#556b2f"/>
+      <text x="14.5" y="7.3" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="9.5">Zero downtime</text>
     </g>
   </g>
 
   <!-- Column 2: Audit Trail -->
-  <g transform="translate(410, 105)">
-    <text x="151" y="30" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Audit Trail</text>
+  <g transform="translate(298.2, 76.4)">
+    <text x="109.8" y="21.8" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="13.1" font-weight="bold">Audit Trail</text>
 
     <!-- Log entries -->
-    <g transform="translate(20, 60)">
-      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
-      <rect x="24" y="2" width="120" height="8" rx="4" fill="#e0e0e0"/>
-      <rect x="155" y="2" width="80" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
-      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:01</text>
+    <g transform="translate(14.5, 43.6)">
+      <circle cx="5.8" cy="5.8" r="4.4" fill="#556b2f"/>
+      <rect x="17.5" y="1.5" width="87.3" height="5.8" rx="2.9" fill="#e0e0e0"/>
+      <rect x="112.7" y="1.5" width="58.2" height="5.8" rx="2.9" fill="#e0e0e0" opacity="0.6"/>
+      <text x="17.5" y="20.4" fill="#3d3d3d" font-family="monospace" font-size="7.3">14:32:01</text>
     </g>
-    <g transform="translate(20, 110)">
-      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
-      <rect x="24" y="2" width="140" height="8" rx="4" fill="#e0e0e0"/>
-      <rect x="175" y="2" width="60" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
-      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:04</text>
+    <g transform="translate(14.5, 80)">
+      <circle cx="5.8" cy="5.8" r="4.4" fill="#556b2f"/>
+      <rect x="17.5" y="1.5" width="101.8" height="5.8" rx="2.9" fill="#e0e0e0"/>
+      <rect x="127.3" y="1.5" width="43.6" height="5.8" rx="2.9" fill="#e0e0e0" opacity="0.6"/>
+      <text x="17.5" y="20.4" fill="#3d3d3d" font-family="monospace" font-size="7.3">14:32:04</text>
     </g>
-    <g transform="translate(20, 160)">
-      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
-      <rect x="24" y="2" width="100" height="8" rx="4" fill="#e0e0e0"/>
-      <rect x="135" y="2" width="90" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
-      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:08</text>
+    <g transform="translate(14.5, 116.4)">
+      <circle cx="5.8" cy="5.8" r="4.4" fill="#556b2f"/>
+      <rect x="17.5" y="1.5" width="72.7" height="5.8" rx="2.9" fill="#e0e0e0"/>
+      <rect x="98.2" y="1.5" width="65.5" height="5.8" rx="2.9" fill="#e0e0e0" opacity="0.6"/>
+      <text x="17.5" y="20.4" fill="#3d3d3d" font-family="monospace" font-size="7.3">14:32:08</text>
     </g>
-    <g transform="translate(20, 210)">
-      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
-      <rect x="24" y="2" width="130" height="8" rx="4" fill="#e0e0e0"/>
-      <rect x="165" y="2" width="70" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
-      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:12</text>
+    <g transform="translate(14.5, 152.7)">
+      <circle cx="5.8" cy="5.8" r="4.4" fill="#556b2f"/>
+      <rect x="17.5" y="1.5" width="94.5" height="5.8" rx="2.9" fill="#e0e0e0"/>
+      <rect x="120" y="1.5" width="50.9" height="5.8" rx="2.9" fill="#e0e0e0" opacity="0.6"/>
+      <text x="17.5" y="20.4" fill="#3d3d3d" font-family="monospace" font-size="7.3">14:32:12</text>
     </g>
-    <g transform="translate(20, 260)">
-      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
-      <rect x="24" y="2" width="110" height="8" rx="4" fill="#e0e0e0"/>
-      <rect x="145" y="2" width="85" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
-      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:15</text>
+    <g transform="translate(14.5, 189.1)">
+      <circle cx="5.8" cy="5.8" r="4.4" fill="#556b2f"/>
+      <rect x="17.5" y="1.5" width="80" height="5.8" rx="2.9" fill="#e0e0e0"/>
+      <rect x="105.5" y="1.5" width="61.8" height="5.8" rx="2.9" fill="#e0e0e0" opacity="0.6"/>
+      <text x="17.5" y="20.4" fill="#3d3d3d" font-family="monospace" font-size="7.3">14:32:15</text>
     </g>
-    <g transform="translate(20, 310)">
-      <circle cx="8" cy="8" r="6" fill="#556b2f"/>
-      <rect x="24" y="2" width="145" height="8" rx="4" fill="#e0e0e0"/>
-      <rect x="180" y="2" width="55" height="8" rx="4" fill="#e0e0e0" opacity="0.6"/>
-      <text x="24" y="28" fill="#3d3d3d" font-family="monospace" font-size="10">14:32:19</text>
+    <g transform="translate(14.5, 225.5)">
+      <circle cx="5.8" cy="5.8" r="4.4" fill="#556b2f"/>
+      <rect x="17.5" y="1.5" width="105.5" height="5.8" rx="2.9" fill="#e0e0e0"/>
+      <rect x="130.9" y="1.5" width="40" height="5.8" rx="2.9" fill="#e0e0e0" opacity="0.6"/>
+      <text x="17.5" y="20.4" fill="#3d3d3d" font-family="monospace" font-size="7.3">14:32:19</text>
     </g>
 
     <!-- Vertical timeline line -->
-    <line x1="28" y1="76" x2="28" y2="326" stroke="#556b2f" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/>
+    <line x1="20.4" y1="55.3" x2="20.4" y2="237.1" stroke="#556b2f" stroke-width="1.1" stroke-dasharray="2.9 2.2" opacity="0.4"/>
   </g>
 
   <!-- Column 3: Security -->
-  <g transform="translate(736, 105)">
-    <text x="151" y="30" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Security</text>
+  <g transform="translate(535.3, 76.4)">
+    <text x="109.8" y="21.8" text-anchor="middle" fill="#1a1a1a" font-family="Arial, sans-serif" font-size="13.1" font-weight="bold">Security</text>
 
     <!-- Lock grid: 2 rows × 3 columns -->
     <!-- Row 1 -->
-    <g transform="translate(20, 60)">
+    <g transform="translate(14.5, 43.6)">
       <!-- Lock 1 -->
       <g transform="translate(0, 0)">
-        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
-        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
-        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">SOC 2</text>
+        <rect width="54.5" height="47.3" rx="7.3" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.1"/>
+        <rect x="16" y="16" width="21.8" height="20.4" rx="3.6" fill="none" stroke="#556b2f" stroke-width="1.8"/>
+        <path d="M21.8 16 v-5.8 a5.1 5.1 0 0 1 10.2 0 v5.8" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <text x="26.9" y="59.6" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="8" font-weight="bold">SOC 2</text>
       </g>
       <!-- Lock 2 -->
-      <g transform="translate(95, 0)">
-        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
-        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
-        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">ISO 27001</text>
+      <g transform="translate(69.1, 0)">
+        <rect width="54.5" height="47.3" rx="7.3" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.1"/>
+        <rect x="16" y="16" width="21.8" height="20.4" rx="3.6" fill="none" stroke="#556b2f" stroke-width="1.8"/>
+        <path d="M21.8 16 v-5.8 a5.1 5.1 0 0 1 10.2 0 v5.8" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <text x="26.9" y="59.6" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="8" font-weight="bold">ISO 27001</text>
       </g>
       <!-- Lock 3 -->
-      <g transform="translate(190, 0)">
-        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
-        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
-        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">GDPR</text>
+      <g transform="translate(138.2, 0)">
+        <rect width="54.5" height="47.3" rx="7.3" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.1"/>
+        <rect x="16" y="16" width="21.8" height="20.4" rx="3.6" fill="none" stroke="#556b2f" stroke-width="1.8"/>
+        <path d="M21.8 16 v-5.8 a5.1 5.1 0 0 1 10.2 0 v5.8" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <text x="26.9" y="59.6" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="8" font-weight="bold">GDPR</text>
       </g>
     </g>
 
     <!-- Row 2 -->
-    <g transform="translate(20, 205)">
+    <g transform="translate(14.5, 149.1)">
       <!-- Lock 4 -->
       <g transform="translate(0, 0)">
-        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
-        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
-        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">AES-256</text>
+        <rect width="54.5" height="47.3" rx="7.3" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.1"/>
+        <rect x="16" y="16" width="21.8" height="20.4" rx="3.6" fill="none" stroke="#556b2f" stroke-width="1.8"/>
+        <path d="M21.8 16 v-5.8 a5.1 5.1 0 0 1 10.2 0 v5.8" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <text x="26.9" y="59.6" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="8" font-weight="bold">AES-256</text>
       </g>
       <!-- Lock 5 -->
-      <g transform="translate(95, 0)">
-        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
-        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
-        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">TLS 1.3</text>
+      <g transform="translate(69.1, 0)">
+        <rect width="54.5" height="47.3" rx="7.3" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.1"/>
+        <rect x="16" y="16" width="21.8" height="20.4" rx="3.6" fill="none" stroke="#556b2f" stroke-width="1.8"/>
+        <path d="M21.8 16 v-5.8 a5.1 5.1 0 0 1 10.2 0 v5.8" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <text x="26.9" y="59.6" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="8" font-weight="bold">TLS 1.3</text>
       </g>
       <!-- Lock 6 -->
-      <g transform="translate(190, 0)">
-        <rect width="75" height="65" rx="10" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.5"/>
-        <rect x="22" y="22" width="30" height="28" rx="5" fill="none" stroke="#556b2f" stroke-width="2.5"/>
-        <path d="M30 22 v-8 a7 7 0 0 1 14 0 v8" stroke="#556b2f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <text x="37" y="82" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="11" font-weight="bold">RBAC</text>
+      <g transform="translate(138.2, 0)">
+        <rect width="54.5" height="47.3" rx="7.3" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1.1"/>
+        <rect x="16" y="16" width="21.8" height="20.4" rx="3.6" fill="none" stroke="#556b2f" stroke-width="1.8"/>
+        <path d="M21.8 16 v-5.8 a5.1 5.1 0 0 1 10.2 0 v5.8" stroke="#556b2f" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <text x="26.9" y="59.6" text-anchor="middle" fill="#3d3d3d" font-family="Arial, sans-serif" font-size="8" font-weight="bold">RBAC</text>
       </g>
     </g>
   </g>
