@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 904
+    "keyCount": 921
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -167,6 +167,23 @@
     "commands.context.createLocal.description": "801628b3",
     "commands.context.createLocal.nextStep": "668f4c63",
     "commands.context.createLocal.success": "73245fb2",
+    "commands.context.createS3.accessVerified": "fe7d84e2",
+    "commands.context.createS3.description": "b78d0425",
+    "commands.context.createS3.errorSecretAccessKeyRequired": "a7b773ee",
+    "commands.context.createS3.nextStep": "8f754c94",
+    "commands.context.createS3.optionAccessKeyId": "061889f5",
+    "commands.context.createS3.optionBucket": "2f7f0fba",
+    "commands.context.createS3.optionEndpoint": "a2e984c3",
+    "commands.context.createS3.optionMasterPassword": "1160474b",
+    "commands.context.createS3.optionPrefix": "19b08647",
+    "commands.context.createS3.optionRegion": "d78954ca",
+    "commands.context.createS3.optionRenetPath": "63355ef5",
+    "commands.context.createS3.optionSecretAccessKey": "aa58382d",
+    "commands.context.createS3.optionSshKey": "79056062",
+    "commands.context.createS3.promptMasterPassword": "9e562bb1",
+    "commands.context.createS3.promptSecretAccessKey": "dbae49e7",
+    "commands.context.createS3.success": "8584a787",
+    "commands.context.createS3.verifyingAccess": "7ad56f6c",
     "commands.context.current.description": "dc2ad309",
     "commands.context.current.noContext": "2f397b67",
     "commands.context.delete.confirm": "bdac7a3e",

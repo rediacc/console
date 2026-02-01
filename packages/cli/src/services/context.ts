@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configStorage } from '../adapters/storage.js';
-import type { LocalMachineConfig, LocalSSHConfig, NamedContext } from '../types/index.js';
+import type { LocalMachineConfig, LocalSSHConfig, NamedContext, S3Config } from '../types/index.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 
@@ -427,22 +427,86 @@ class ContextService {
     return context?.mode === 'local';
   }
 
+  // ============================================================================
+  // S3 Mode Support
+  // ============================================================================
+
+  /**
+   * Check if the current context is in S3 mode.
+   */
+  async isS3Mode(): Promise<boolean> {
+    const context = await this.getCurrent();
+    return context?.mode === 's3';
+  }
+
+  /**
+   * Get S3 configuration for the current context.
+   * Throws if context is not in S3 mode.
+   */
+  async getS3Config(): Promise<S3Config> {
+    const context = await this.getCurrent();
+    if (!context) {
+      throw new Error('No active context');
+    }
+    if (context.mode !== 's3') {
+      throw new Error(`Context "${context.name}" is not in S3 mode`);
+    }
+    if (!context.s3) {
+      throw new Error(`Context "${context.name}" has no S3 configuration`);
+    }
+    return context.s3;
+  }
+
+  /**
+   * Create a new S3 context.
+   */
+  async createS3(
+    name: string,
+    s3Config: S3Config,
+    sshKeyPath: string,
+    options?: { renetPath?: string; masterPassword?: string }
+  ): Promise<void> {
+    const context: NamedContext = {
+      name,
+      mode: 's3',
+      apiUrl: 's3://', // Not used in S3 mode but required by interface
+      s3: s3Config,
+      ssh: {
+        privateKeyPath: sshKeyPath,
+        publicKeyPath: `${sshKeyPath}.pub`,
+      },
+      machines: {},
+      renetPath: options?.renetPath,
+      masterPassword: options?.masterPassword,
+    };
+    await this.create(context);
+  }
+
+  /**
+   * Require the current context to be in local or S3 mode.
+   * If a context name is provided, fetches it directly; otherwise uses the current context.
+   */
+  private async requireLocalOrS3Mode(contextName?: string): Promise<NamedContext> {
+    const context = contextName ? await this.get(contextName) : await this.getCurrent();
+    if (!context) {
+      throw new Error('No active context');
+    }
+    if (context.mode !== 'local' && context.mode !== 's3') {
+      throw new Error(`Context "${context.name}" is not in local or S3 mode`);
+    }
+    return context;
+  }
+
   /**
    * Get local configuration for the current context.
-   * Throws if context is not in local mode.
+   * Throws if context is not in local or s3 mode.
    */
   async getLocalConfig(): Promise<{
     machines: Record<string, LocalMachineConfig | undefined>;
     ssh: LocalSSHConfig;
     renetPath: string;
   }> {
-    const context = await this.getCurrent();
-    if (!context) {
-      throw new Error('No active context');
-    }
-    if (context.mode !== 'local') {
-      throw new Error(`Context "${context.name}" is not in local mode`);
-    }
+    const context = await this.requireLocalOrS3Mode();
     if (!context.machines || Object.keys(context.machines).length === 0) {
       throw new Error(`Context "${context.name}" has no machines configured`);
     }
@@ -492,14 +556,11 @@ class ContextService {
   }
 
   /**
-   * Add a machine to the current local context.
+   * Add a machine to the current local/s3 context.
    */
   async addLocalMachine(machineName: string, config: LocalMachineConfig): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local') {
-      throw new Error('Current context is not in local mode');
-    }
+    const context = await this.requireLocalOrS3Mode(name);
 
     const existingMachines = context.machines ?? {};
     await this.update(name, {
@@ -511,14 +572,11 @@ class ContextService {
   }
 
   /**
-   * Remove a machine from the current local context.
+   * Remove a machine from the current local/s3 context.
    */
   async removeLocalMachine(machineName: string): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local') {
-      throw new Error('Current context is not in local mode');
-    }
+    const context = await this.requireLocalOrS3Mode(name);
 
     if (!context.machines?.[machineName]) {
       throw new Error(`Machine "${machineName}" not found`);
@@ -530,16 +588,10 @@ class ContextService {
   }
 
   /**
-   * List machines in the current local context.
+   * List machines in the current local/s3 context.
    */
   async listLocalMachines(): Promise<{ name: string; config: LocalMachineConfig }[]> {
-    const context = await this.getCurrent();
-    if (!context) {
-      throw new Error('No active context');
-    }
-    if (context.mode !== 'local') {
-      throw new Error('Current context is not in local mode');
-    }
+    const context = await this.requireLocalOrS3Mode();
     return Object.entries(context.machines ?? {}).map(([name, config]) => ({
       name,
       config,
@@ -547,26 +599,20 @@ class ContextService {
   }
 
   /**
-   * Update SSH configuration for the current local context.
+   * Update SSH configuration for the current local/s3 context.
    */
   async setLocalSSH(ssh: LocalSSHConfig): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local') {
-      throw new Error('Current context is not in local mode');
-    }
+    await this.requireLocalOrS3Mode(name);
     await this.update(name, { ssh });
   }
 
   /**
-   * Set renet binary path for the current local context.
+   * Set renet binary path for the current local/s3 context.
    */
   async setRenetPath(renetPath: string): Promise<void> {
     const name = this.getEffectiveContextName();
-    const context = await this.get(name);
-    if (context?.mode !== 'local') {
-      throw new Error('Current context is not in local mode');
-    }
+    await this.requireLocalOrS3Mode(name);
     await this.update(name, { renetPath });
   }
 }

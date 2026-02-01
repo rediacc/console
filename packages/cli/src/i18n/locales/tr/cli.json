@@ -279,6 +279,25 @@
         "nextStep": "Makineler ekleyin: rdc context add-machine <name> --ip <ip> --user <user>",
         "success": "\"{{name}}\" yerel bağlamı oluşturuldu"
       },
+      "createS3": {
+        "accessVerified": "S3 erişimi doğrulandı",
+        "description": "Yerel yürütme ile uzak durum için yeni bir S3/R2 bağlamı oluşturun",
+        "errorSecretAccessKeyRequired": "S3 gizli erişim anahtarı gereklidir",
+        "nextStep": "Sonraki adım: \"rdc context add-machine\" ile makineler ekleyin",
+        "optionAccessKeyId": "S3 erişim anahtarı kimliği",
+        "optionBucket": "S3 bucket adı",
+        "optionEndpoint": "S3 uç nokta URL'si",
+        "optionMasterPassword": "Şifreleme için ana parola (isteğe bağlı, atlamak için boş bırakın)",
+        "optionPrefix": "Bucket içindeki anahtar öneki/ad alanı",
+        "optionRegion": "S3 bölgesi",
+        "optionRenetPath": "renet ikili dosya yolu",
+        "optionSecretAccessKey": "S3 gizli erişim anahtarı (verilmezse sorulur)",
+        "optionSshKey": "SSH özel anahtar yolu",
+        "promptMasterPassword": "Şifreleme için ana parola (atlamak için boş bırakın):",
+        "promptSecretAccessKey": "S3 gizli erişim anahtarı:",
+        "success": "S3 bağlamı \"{{name}}\" oluşturuldu",
+        "verifyingAccess": "S3 erişimi doğrulanıyor..."
+      },
       "current": {
         "description": "Güncel bağlam adını gösterin",
         "noContext": "Etkin bağlam yok"

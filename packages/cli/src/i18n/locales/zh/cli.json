@@ -279,6 +279,25 @@
         "nextStep": "使用以下命令添加机器：rdc context add-machine <name> --ip <ip> --user <user>",
         "success": "本地上下文 \"{{name}}\" 已创建"
       },
+      "createS3": {
+        "accessVerified": "S3 访问已验证",
+        "description": "创建新的 S3/R2 上下文，用于本地执行的远程状态管理",
+        "errorSecretAccessKeyRequired": "S3 秘密访问密钥为必填项",
+        "nextStep": "下一步：使用 \"rdc context add-machine\" 添加机器",
+        "optionAccessKeyId": "S3 访问密钥 ID",
+        "optionBucket": "S3 存储桶名称",
+        "optionEndpoint": "S3 端点 URL",
+        "optionMasterPassword": "加密主密码（可选，留空跳过）",
+        "optionPrefix": "存储桶中的密钥前缀/命名空间",
+        "optionRegion": "S3 区域",
+        "optionRenetPath": "renet 二进制文件路径",
+        "optionSecretAccessKey": "S3 秘密访问密钥（未提供时会提示输入）",
+        "optionSshKey": "SSH 私钥路径",
+        "promptMasterPassword": "加密主密码（留空跳过）：",
+        "promptSecretAccessKey": "S3 秘密访问密钥：",
+        "success": "S3 上下文 \"{{name}}\" 已创建",
+        "verifyingAccess": "正在验证 S3 访问..."
+      },
       "current": {
         "description": "显示当前上下文名称",
         "noContext": "没有活跃的上下文"

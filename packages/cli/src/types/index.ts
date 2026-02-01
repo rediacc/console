@@ -31,9 +31,29 @@ export interface LocalSSHConfig {
 }
 
 /**
- * Context mode: 'cloud' uses middleware API, 'local' uses direct renet execution.
+ * S3/R2 configuration for S3 mode.
+ * Stores connection details for an S3-compatible bucket.
  */
-export type ContextMode = 'cloud' | 'local';
+export interface S3Config {
+  /** S3 endpoint URL (e.g., https://<accountId>.r2.cloudflarestorage.com) */
+  endpoint: string;
+  /** Bucket name */
+  bucket: string;
+  /** AWS region ('auto' for R2) */
+  region: string;
+  /** Access key ID */
+  accessKeyId: string;
+  /** Secret access key (encrypted via masterPassword if set, plaintext otherwise) */
+  secretAccessKey: string;
+  /** Optional key prefix/namespace within the bucket */
+  prefix?: string;
+}
+
+/**
+ * Context mode: 'cloud' uses middleware API, 'local' uses direct renet execution,
+ * 's3' uses S3-compatible storage for state with local renet execution.
+ */
+export type ContextMode = 'cloud' | 'local' | 's3';
 
 /**
  * A named context containing all configuration for a specific environment.
@@ -64,15 +84,22 @@ export interface NamedContext {
   language?: string;
 
   // ============================================================================
-  // Local Mode Configuration (only used when mode === 'local')
+  // Local/S3 Mode Configuration (used when mode === 'local' or mode === 's3')
   // ============================================================================
 
-  /** Machine configurations for local mode (name -> config) */
+  /** Machine configurations for local/s3 mode (name -> config) */
   machines?: Record<string, LocalMachineConfig>;
-  /** SSH configuration for local mode */
+  /** SSH configuration for local/s3 mode */
   ssh?: LocalSSHConfig;
   /** Path to renet binary (default: 'renet' in PATH) */
   renetPath?: string;
+
+  // ============================================================================
+  // S3 Mode Configuration (only used when mode === 's3')
+  // ============================================================================
+
+  /** S3/R2 bucket configuration for S3 mode */
+  s3?: S3Config;
 }
 
 /**

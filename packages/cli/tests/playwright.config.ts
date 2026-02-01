@@ -59,5 +59,6 @@ export default test.defineConfig({
     { name: 'edition', testMatch: '07-edition/**/*.test.ts' },
     { name: 'e2e', testMatch: '08-e2e/**/*.test.ts' },
     { name: 'vscode', testMatch: '09-vscode/**/*.test.ts' },
+    { name: 's3', testMatch: '10-s3/**/*.test.ts' },
   ],
 });

@@ -1,68 +1,47 @@
 import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
-  getValidationErrors,
-  isBridgeFunction,
-  safeValidateFunctionParams,
-} from '@rediacc/shared/queue-vault';
-import {
   type CreateActionOptions,
   cancelAction,
   createAction,
+  parseParamOptions,
   retryAction,
   traceAction,
+  validateFunctionParams,
 } from './queue.js';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
 import { contextService } from '../services/context.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
-/**
- * Run function in local mode (direct renet execution).
- */
-async function runLocalMode(
-  functionName: string,
-  options: { machine?: string; param?: string[]; debug?: boolean }
-): Promise<void> {
-  // Get default machine from context if not specified
-  const machineName = options.machine ?? (await contextService.getMachine());
+interface RunLocalOptions {
+  machine?: string;
+  param?: string[];
+  debug?: boolean;
+}
 
+/** Resolve machine name and parse+validate function params (shared by local and S3 modes). */
+async function resolveRunParams(
+  functionName: string,
+  options: RunLocalOptions
+): Promise<{ machineName: string; params: Record<string, unknown> }> {
+  const machineName = options.machine ?? (await contextService.getMachine());
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
+  const params: Record<string, unknown> = parseParamOptions(options.param);
+  validateFunctionParams(functionName, params);
+  return { machineName, params };
+}
 
-  // Parse parameters
-  const params: Record<string, unknown> = {};
-  for (const param of options.param ?? []) {
-    const [key, ...valueParts] = param.split('=');
-    params[key] = valueParts.join('=');
-  }
-
-  // Validate function parameters before execution (early error detection)
-  if (isBridgeFunction(functionName)) {
-    const validationResult = safeValidateFunctionParams(functionName, params);
-    if (!validationResult.success) {
-      throw new ValidationError(
-        t('errors.invalidFunctionParams', {
-          function: functionName,
-          errors: getValidationErrors(validationResult),
-        })
-      );
-    }
-  }
-
-  outputService.info(
-    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
-  );
-
-  const result = await localExecutorService.execute({
-    functionName,
-    machineName,
-    params,
-    debug: options.debug,
-  });
-
+function handleExecutionResult(result: {
+  success: boolean;
+  durationMs?: number;
+  error?: string;
+  exitCode?: number;
+}): void {
   if (result.success) {
     outputService.success(
       t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
@@ -71,6 +50,61 @@ async function runLocalMode(
     outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
     process.exitCode = result.exitCode;
   }
+}
+
+async function runLocalMode(functionName: string, options: RunLocalOptions): Promise<void> {
+  const { machineName, params } = await resolveRunParams(functionName, options);
+  outputService.info(
+    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
+  );
+  const result = await localExecutorService.execute({
+    functionName,
+    machineName,
+    params,
+    debug: options.debug,
+  });
+  handleExecutionResult(result);
+}
+
+/**
+ * Run function in S3 mode (local renet execution + S3 state tracking).
+ * Creates a queue item in S3 for tracking, executes via renet, then cleans up.
+ */
+async function runS3Mode(functionName: string, options: RunLocalOptions): Promise<void> {
+  const provider = await getStateProvider();
+  const { machineName, params } = await resolveRunParams(functionName, options);
+
+  const taskId = (
+    await provider.queue.create({
+      functionName,
+      machineName,
+      teamName: 's3',
+      vaultContent: '',
+      priority: 3,
+      params,
+    })
+  ).taskId;
+
+  outputService.info(
+    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
+  );
+  if (taskId) outputService.info(`Task ID: ${taskId}`);
+
+  const result = await localExecutorService.execute({
+    functionName,
+    machineName,
+    params,
+    debug: options.debug,
+  });
+
+  if (taskId) {
+    try {
+      await provider.queue.delete(taskId);
+    } catch {
+      /* best-effort cleanup */
+    }
+  }
+  handleExecutionResult(result);
 }
 
 /**
@@ -128,15 +162,19 @@ export function registerShortcuts(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (functionName, options) => {
       try {
-        // Check if we're in local mode
-        const isLocal = await contextService.isLocalMode();
+        const provider = await getStateProvider();
 
-        if (isLocal) {
-          // Local mode: Execute directly via renet
-          await runLocalMode(functionName, options);
-        } else {
-          // Cloud mode: Use existing queue-based flow
-          await runCloudMode(functionName, options, program);
+        switch (provider.mode) {
+          case 'local':
+            await runLocalMode(functionName, options);
+            break;
+          case 's3':
+            await runS3Mode(functionName, options);
+            break;
+          case 'cloud':
+          default:
+            await runCloudMode(functionName, options, program);
+            break;
         }
       } catch (error) {
         handleError(error);

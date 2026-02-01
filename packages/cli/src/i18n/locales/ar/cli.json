@@ -279,6 +279,25 @@
         "nextStep": "أضف الآلات باستخدام: rdc context add-machine <name> --ip <ip> --user <user>",
         "success": "تم إنشاء السياق المحلي \"{{name}}\""
       },
+      "createS3": {
+        "accessVerified": "تم التحقق من الوصول إلى S3",
+        "description": "إنشاء سياق S3/R2 جديد للحالة البعيدة مع التنفيذ المحلي",
+        "errorSecretAccessKeyRequired": "مفتاح الوصول السري لـ S3 مطلوب",
+        "nextStep": "التالي: أضف الأجهزة باستخدام \"rdc context add-machine\"",
+        "optionAccessKeyId": "معرف مفتاح الوصول لـ S3",
+        "optionBucket": "اسم حاوية S3",
+        "optionEndpoint": "عنوان URL لنقطة نهاية S3",
+        "optionMasterPassword": "كلمة المرور الرئيسية للتشفير (اختياري، اتركها فارغة للتخطي)",
+        "optionPrefix": "بادئة المفتاح/مساحة الاسم في الحاوية",
+        "optionRegion": "منطقة S3",
+        "optionRenetPath": "مسار ملف renet التنفيذي",
+        "optionSecretAccessKey": "مفتاح الوصول السري لـ S3 (يُطلب إذا لم يُعطَ)",
+        "optionSshKey": "مسار مفتاح SSH الخاص",
+        "promptMasterPassword": "كلمة المرور الرئيسية للتشفير (اتركها فارغة للتخطي):",
+        "promptSecretAccessKey": "مفتاح الوصول السري لـ S3:",
+        "success": "تم إنشاء سياق S3 \"{{name}}\"",
+        "verifyingAccess": "جارٍ التحقق من الوصول إلى S3..."
+      },
       "current": {
         "description": "عرض اسم السياق الحالي",
         "noContext": "لا يوجد سياق نشط"

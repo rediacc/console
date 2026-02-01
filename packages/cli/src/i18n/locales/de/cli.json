@@ -279,6 +279,25 @@
         "nextStep": "Fügen Sie Machines hinzu mit: rdc context add-machine <name> --ip <ip> --user <user>",
         "success": "Lokaler Kontext \"{{name}}\" erstellt"
       },
+      "createS3": {
+        "accessVerified": "S3-Zugriff verifiziert",
+        "description": "Erstellen Sie einen neuen S3/R2-Kontext für Remote-Status mit lokaler Ausführung",
+        "errorSecretAccessKeyRequired": "S3-Geheimschlüssel ist erforderlich",
+        "nextStep": "Nächster Schritt: Maschinen hinzufügen mit \"rdc context add-machine\"",
+        "optionAccessKeyId": "S3-Zugriffsschlüssel-ID",
+        "optionBucket": "S3-Bucket-Name",
+        "optionEndpoint": "S3-Endpunkt-URL",
+        "optionMasterPassword": "Master-Passwort für Verschlüsselung (optional, leer lassen zum Überspringen)",
+        "optionPrefix": "Schlüsselpräfix/Namespace im Bucket",
+        "optionRegion": "S3-Region",
+        "optionRenetPath": "Pfad zur renet-Binärdatei",
+        "optionSecretAccessKey": "S3-Geheimschlüssel (wird abgefragt, wenn nicht angegeben)",
+        "optionSshKey": "Pfad zum privaten SSH-Schlüssel",
+        "promptMasterPassword": "Master-Passwort für Verschlüsselung (leer lassen zum Überspringen):",
+        "promptSecretAccessKey": "S3-Geheimschlüssel:",
+        "success": "S3-Kontext \"{{name}}\" erstellt",
+        "verifyingAccess": "S3-Zugriff wird überprüft..."
+      },
       "current": {
         "description": "Namen des aktuellen Kontexts anzeigen",
         "noContext": "Kein aktiver Kontext"

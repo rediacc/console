@@ -279,6 +279,25 @@
         "nextStep": "マシンを追加: rdc context add-machine <name> --ip <ip> --user <user>",
         "success": "ローカルコンテキスト \"{{name}}\" が作成されました"
       },
+      "createS3": {
+        "accessVerified": "S3アクセスが確認されました",
+        "description": "ローカル実行でリモート状態を管理する新しいS3/R2コンテキストを作成する",
+        "errorSecretAccessKeyRequired": "S3シークレットアクセスキーが必要です",
+        "nextStep": "次のステップ: \"rdc context add-machine\" でマシンを追加してください",
+        "optionAccessKeyId": "S3アクセスキーID",
+        "optionBucket": "S3バケット名",
+        "optionEndpoint": "S3エンドポイントURL",
+        "optionMasterPassword": "暗号化用マスターパスワード（オプション、スキップするには空のままにしてください）",
+        "optionPrefix": "バケット内のキープレフィックス/名前空間",
+        "optionRegion": "S3リージョン",
+        "optionRenetPath": "renetバイナリのパス",
+        "optionSecretAccessKey": "S3シークレットアクセスキー（未指定の場合はプロンプトが表示されます）",
+        "optionSshKey": "SSH秘密鍵のパス",
+        "promptMasterPassword": "暗号化用マスターパスワード（スキップするには空のままにしてください）:",
+        "promptSecretAccessKey": "S3シークレットアクセスキー:",
+        "success": "S3コンテキスト \"{{name}}\" が作成されました",
+        "verifyingAccess": "S3アクセスを確認中..."
+      },
       "current": {
         "description": "現在のコンテキスト名を表示する",
         "noContext": "アクティブなコンテキストがありません"
