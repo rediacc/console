@@ -13,7 +13,7 @@ Web-based file browser powered by [FileBrowser](https://filebrowser.org/). Provi
 - No authentication required (secured by Rediacc)
 - Socket-based communication
 
-**Image:** `rediacc/plugin-browser`
+**Image:** `ghcr.io/rediacc/elite/plugin-browser`
 
 ### Terminal Plugin
 Web-based terminal emulator powered by [ttyd](https://github.com/tsl0922/ttyd). Access your repository environment directly from the browser with a full bash terminal.
@@ -24,7 +24,7 @@ Web-based terminal emulator powered by [ttyd](https://github.com/tsl0922/ttyd). 
 - Real-time terminal streaming
 - Socket-based communication
 
-**Image:** `rediacc/plugin-terminal`
+**Image:** `ghcr.io/rediacc/elite/plugin-terminal`
 
 ## Architecture
 
@@ -61,7 +61,7 @@ The CI workflow automatically builds and pushes plugins on:
 - Push to main branch
 - Version tags (e.g., `1.2.3`)
 
-Images are pushed to Docker Hub with tags:
+Images are pushed to GHCR with tags:
 - `latest` - Always updated
 - `YYYY-MM-DD` - Date-based tag
 - `vX.Y.Z` - Version tag (on release tags)

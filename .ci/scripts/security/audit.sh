@@ -28,7 +28,16 @@ main() {
 
     log_info "Running security audit"
 
-    npm audit --json > audit-report.json || true
+    # npm audit exits non-zero when vulnerabilities exist, so we capture the exit code
+    local audit_exit=0
+    npm audit --json > audit-report.json || audit_exit=$?
+
+    # Validate that npm audit produced valid JSON (exit code 1 = vulnerabilities found, which is expected)
+    if ! jq empty audit-report.json 2>/dev/null; then
+        log_error "npm audit failed to produce valid JSON (exit code: $audit_exit)"
+        log_error "This may indicate a network error or npm registry issue"
+        exit 1
+    fi
 
     # Load allowlist from shared config (strip comments and empty lines)
     local ALLOWED_ADVISORIES=()

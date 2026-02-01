@@ -19,7 +19,7 @@ on:
         required: true
         type: string
     secrets:
-      GH_PAT:
+      APP_PRIVATE_KEY:
         required: false
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT || github.token }}
+          password: ${{ github.token }}
 
       - name: Test Binary Download
         run: |
@@ -99,7 +99,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT || github.token }}
+          password: ${{ github.token }}
 
       - name: Test Binary Download
         run: |

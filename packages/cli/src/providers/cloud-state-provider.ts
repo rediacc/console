@@ -19,6 +19,7 @@ import { typedApi } from '../services/api.js';
 import type {
   IStateProvider,
   MachineProvider,
+  MachineWithVaultStatusData,
   MutationResult,
   QueueProvider,
   RepositoryProvider,
@@ -59,6 +60,17 @@ class CloudMachineProvider implements MachineProvider {
   async updateVault(params: Record<string, unknown>): Promise<MutationResult> {
     await typedApi.UpdateMachineVault(params as never);
     return { success: true };
+  }
+
+  async getWithVaultStatus(params: {
+    teamName: string;
+    machineName: string;
+  }): Promise<MachineWithVaultStatusData | null> {
+    const response = await typedApi.GetTeamMachines({ teamName: params.teamName });
+    const machines = parseGetTeamMachines(
+      response as never
+    ) as unknown as MachineWithVaultStatusData[];
+    return machines.find((m) => m.machineName === params.machineName) ?? null;
   }
 }
 

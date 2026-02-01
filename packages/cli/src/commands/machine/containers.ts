@@ -1,12 +1,7 @@
 import { Command } from 'commander';
-import { parseGetTeamMachines } from '@rediacc/shared/api';
-import {
-  type ContainerInfo,
-  getMachineContainers,
-  type MachineWithVaultStatus,
-} from '@rediacc/shared/services/machine';
+import { type ContainerInfo, getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
-import { typedApi } from '../../services/api.js';
+import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
 import { contextService } from '../../services/context.js';
 import { outputService } from '../../services/output.js';
@@ -55,21 +50,26 @@ export function registerContainersCommand(machine: Command, program: Command): v
     .option('--health-check', t('commands.machine.containers.healthCheck'))
     .action(async (name: string, options: { team?: string; healthCheck?: boolean }) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const apiResponse = await withSpinner(
+        const machine = await withSpinner(
           t('commands.machine.containers.fetching'),
-          () => typedApi.GetTeamMachines({ teamName: opts.team as string }),
+          () =>
+            provider.machines.getWithVaultStatus({
+              teamName: opts.team as string,
+              machineName: name,
+            }),
           t('commands.machine.containers.fetched')
         );
 
-        const machines = parseGetTeamMachines(apiResponse as never);
-        const machine = machines.find((m: MachineWithVaultStatus) => m.machineName === name);
         if (!machine) {
           throw new ValidationError(t('errors.machineNotFound', { name }));
         }

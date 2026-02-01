@@ -13,6 +13,7 @@ import { authService } from '../../services/auth.js';
 import { contextService } from '../../services/context.js';
 import { outputService } from '../../services/output.js';
 import { queueService } from '../../services/queue.js';
+import { addCloudOnlyGuard, markCloudOnly } from '../../utils/cloud-guard.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { askPassword } from '../../utils/prompt.js';
 import { startSpinner, stopSpinner, withSpinner } from '../../utils/spinner.js';
@@ -244,9 +245,14 @@ function shouldSaveKnownHosts(
 }
 
 export function registerTestConnectionCommand(machine: Command, program: Command): void {
-  machine
+  const testConnectionCmd = machine
     .command('test-connection')
-    .description(t('commands.machine.testConnection.description'))
+    .description(t('commands.machine.testConnection.description'));
+
+  addCloudOnlyGuard(testConnectionCmd);
+  markCloudOnly(testConnectionCmd);
+
+  testConnectionCmd
     .requiredOption('--ip <address>', t('options.machineIp'))
     .requiredOption('--user <name>', t('options.sshUser'))
     .option('-t, --team <name>', t('options.team'))

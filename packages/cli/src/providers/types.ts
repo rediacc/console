@@ -30,6 +30,15 @@ export interface VaultItem {
 // Sub-Provider Interfaces
 // ============================================================================
 
+/** Machine data including vaultStatus for health/containers/services/repos/vault-status commands */
+export interface MachineWithVaultStatusData {
+  machineName: string | null;
+  vaultStatus?: string | null;
+  vaultContent?: string | null;
+  vaultVersion?: number | null;
+  [key: string]: unknown;
+}
+
 export interface MachineProvider {
   list(params: { teamName: string }): Promise<ResourceRecord[]>;
   create(params: Record<string, unknown>): Promise<MutationResult>;
@@ -37,6 +46,11 @@ export interface MachineProvider {
   delete(params: Record<string, unknown>): Promise<MutationResult>;
   getVault(params: Record<string, unknown>): Promise<VaultItem[] | { vaults: VaultItem[] }>;
   updateVault(params: Record<string, unknown>): Promise<MutationResult>;
+  /** Get a single machine with vaultStatus data (for health/services/containers/repos/vault-status) */
+  getWithVaultStatus(params: {
+    teamName: string;
+    machineName: string;
+  }): Promise<MachineWithVaultStatusData | null>;
 }
 
 export interface QueueProvider {

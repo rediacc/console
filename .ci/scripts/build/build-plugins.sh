@@ -3,19 +3,20 @@
 # Usage: build-plugins.sh [--push] [--dry-run] [--registry <url>]
 #
 # Options:
-#   --push       Push images to registry (requires DOCKERHUB_USERNAME/TOKEN)
+#   --push       Push images to registry (requires GITHUB_TOKEN)
 #   --dry-run    Build without pushing (implies --no-push)
-#   --registry   Custom registry URL (default: docker.io)
+#   --registry   Custom registry URL (default: from constants.sh)
 #
 # Environment variables:
-#   DOCKERHUB_USERNAME - Docker Hub username (required for --push)
-#   DOCKERHUB_TOKEN    - Docker Hub token (required for --push)
+#   GITHUB_TOKEN       - GitHub token for GHCR authentication (required for --push)
+#   GITHUB_ACTOR       - GitHub username for GHCR login (optional, defaults to $(whoami))
 #   GITHUB_REF         - Git reference (for tag detection)
 #   BASE_IMAGE         - Base image to use (default: ubuntu:24.04)
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
+source "$SCRIPT_DIR/../../config/constants.sh"
 
 # Configuration
 BASE_IMAGE="${BASE_IMAGE:-ubuntu:24.04}"
@@ -45,7 +46,7 @@ determine_tags() {
     if [[ -n "$REGISTRY" ]]; then
         image_base="${REGISTRY}/rediacc/plugin-${plugin_name}"
     else
-        image_base="rediacc/plugin-${plugin_name}"
+        image_base="${PUBLISH_DOCKER_REGISTRY}/plugin-${plugin_name}"
     fi
 
     local tags="${image_base}:latest"
@@ -78,15 +79,15 @@ setup_buildx() {
     log_info "Buildx ready"
 }
 
-# Docker login
+# Docker login (GHCR)
 docker_login() {
-    if [[ -z "${DOCKERHUB_USERNAME:-}" ]] || [[ -z "${DOCKERHUB_TOKEN:-}" ]]; then
-        log_error "DOCKERHUB_USERNAME and DOCKERHUB_TOKEN must be set for push"
+    if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+        log_error "GITHUB_TOKEN must be set for push"
         exit 1
     fi
 
-    log_step "Logging into Docker Hub..."
-    echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    log_step "Logging into GHCR..."
+    echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${GITHUB_ACTOR:-$(whoami)}" --password-stdin
     log_info "Docker login successful"
 }
 
@@ -167,7 +168,7 @@ main() {
         exit 1
     fi
 
-    # Login to Docker Hub if pushing
+    # Login to GHCR if pushing
     if [[ "$PUSH" == "true" ]] && [[ "$DRY_RUN" != "true" ]]; then
         docker_login
     fi

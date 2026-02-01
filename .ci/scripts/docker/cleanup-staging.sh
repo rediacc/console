@@ -69,23 +69,38 @@ delete_staging_tag() {
 
     # Get version ID for the tag using GitHub API
     # First, list all versions and find the one with matching tag
-    local version_id
+    local version_id api_error
+    api_error=$(mktemp)
     version_id=$(gh api \
         "/orgs/${ORG}/packages/container/${package_name}/versions" \
         --paginate \
         --jq ".[] | select(.metadata.container.tags | index(\"${STAGING_TAG}\")) | .id" \
-        2>/dev/null || echo "")
+        2>"$api_error" || true)
 
     if [[ -z "$version_id" ]]; then
+        if [[ -s "$api_error" ]]; then
+            log_error "Failed to list package versions for $image_name: $(cat "$api_error")"
+            rm -f "$api_error"
+            return 1
+        fi
         log_warn "Staging tag not found for $image_name:$STAGING_TAG (may already be deleted)"
+        rm -f "$api_error"
         return 0
     fi
+    rm -f "$api_error"
 
     # Delete the version
-    if gh api -X DELETE "/orgs/${ORG}/packages/container/${package_name}/versions/${version_id}" 2>/dev/null; then
+    # NOTE: Requires a token with delete:packages scope (GITHUB_TOKEN packages:write is NOT sufficient)
+    local delete_error
+    delete_error=$(mktemp)
+    if gh api -X DELETE "/orgs/${ORG}/packages/container/${package_name}/versions/${version_id}" 2>"$delete_error"; then
         log_info "Deleted staging tag: $full_image"
+        rm -f "$delete_error"
     else
-        log_warn "Failed to delete staging tag for $image_name (may require elevated permissions)"
+        log_error "Failed to delete staging tag for $image_name: $(cat "$delete_error")"
+        log_error "Ensure GH_TOKEN has 'delete:packages' scope (GITHUB_TOKEN packages:write is not sufficient)"
+        rm -f "$delete_error"
+        return 1
     fi
 }
 
@@ -107,10 +122,11 @@ main() {
 
     # Summary
     echo ""
-    log_info "Cleanup summary: $deleted processed, $failed warnings"
-
-    # Don't fail on cleanup errors - staging tags are harmless if they remain
-    return 0
+    if [[ $failed -gt 0 ]]; then
+        log_error "Cleanup summary: $deleted succeeded, $failed failed"
+        return 1
+    fi
+    log_info "Cleanup summary: $deleted succeeded"
 }
 
 main "$@"
