@@ -214,13 +214,9 @@ has_failures() {
     [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]
 }
 
-# Condition: all signals received OR any failure detected
+# Condition: all signals received (wait for ALL, even if some report failure)
 all_signals_received() {
     fetch_and_check_signals
-    # Exit immediately on any failure - don't wait for remaining signals
-    if has_failures; then
-        return 0
-    fi
     [[ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ]]
 }
 
@@ -233,10 +229,10 @@ on_poll() {
 
 # Main wait loop using poll_with_watchdog
 if poll_with_watchdog "$TIMEOUT" "$INTERVAL" all_signals_received on_poll; then
-    # Check for failures (exits early on first failure detection)
+    # All signals received — check for failures
     if has_failures; then
         log_error "${#FAILED_SIGNALS[@]} signal(s) reported failure: ${FAILED_SIGNALS[*]}"
-        log_error "Exiting immediately — failed tests detected."
+        log_error "All $EXPECTED_COUNT signals received, but some reported failure."
         exit 1
     fi
     log_info "All $EXPECTED_COUNT signals received successfully!"
