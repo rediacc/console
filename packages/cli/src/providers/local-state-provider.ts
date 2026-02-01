@@ -7,6 +7,7 @@ import { contextService } from '../services/context.js';
 import type {
   IStateProvider,
   MachineProvider,
+  MachineWithVaultStatusData,
   MutationResult,
   QueueProvider,
   RepositoryProvider,
@@ -61,6 +62,12 @@ class LocalMachineProvider implements MachineProvider {
 
   updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
     return Promise.reject(new UnsupportedOperationError('machine vault update'));
+  }
+
+  getWithVaultStatus(
+    _params: { teamName: string; machineName: string }
+  ): Promise<MachineWithVaultStatusData | null> {
+    return Promise.reject(new UnsupportedOperationError('machine vault status'));
   }
 }
 

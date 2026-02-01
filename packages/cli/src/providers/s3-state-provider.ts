@@ -12,6 +12,7 @@ import { S3VaultService } from '../services/s3-vault.js';
 import type {
   IStateProvider,
   MachineProvider,
+  MachineWithVaultStatusData,
   MutationResult,
   QueueProvider,
   RepositoryProvider,
@@ -127,6 +128,21 @@ class S3MachineProvider implements MachineProvider {
     const data = JSON.parse(content) as Record<string, unknown>;
     await this.vaultService.setMachineVault(name, data);
     return { success: true };
+  }
+
+  async getWithVaultStatus(params: {
+    teamName: string;
+    machineName: string;
+  }): Promise<MachineWithVaultStatusData | null> {
+    const data = await this.s3.getJson<MachineRecord>(
+      `machines/${params.machineName}.json`
+    );
+    if (!data) return null;
+    return {
+      machineName: data.machineName,
+      vaultStatus: null, // S3 mode does not yet store vaultStatus
+      vaultContent: data.vaultContent ?? null,
+    };
   }
 }
 
