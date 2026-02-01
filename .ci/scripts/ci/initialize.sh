@@ -160,15 +160,21 @@ NEXT_VERSION=$(.ci/scripts/version/bump.sh --${BUMP_TYPE} --dry-run | tail -n 1)
 write_output "next_version" "$NEXT_VERSION"
 log_info "Next version: $NEXT_VERSION"
 
-# On push-to-main, append version to submodule tags to invalidate PR cache.
-# PR builds don't embed version, merge builds do — different tags ensure cache miss and rebuild.
+# On push-to-main, append version to ALL image tags to invalidate CI/merge-queue cache.
+# CI builds (merge_group event) don't embed version, CD builds (push event) do —
+# different tags ensure cache miss and rebuild with correct version.
 if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
-    API_TAG="${API_TAG}-${NEXT_VERSION}"
-    BRIDGE_TAG="${BRIDGE_TAG}-${NEXT_VERSION}"
-    write_output "api_tag" "$API_TAG"
-    write_output "bridge_tag" "$BRIDGE_TAG"
+    local_tags=("API" "BRIDGE" "PLUGINS" "WEB" "CLI")
+    log_parts=()
+    for prefix in "${local_tags[@]}"; do
+        var_name="${prefix}_TAG"
+        new_val="${!var_name}-${NEXT_VERSION}"
+        printf -v "$var_name" '%s' "$new_val"
+        write_output "${prefix,,}_tag" "$new_val"
+        log_parts+=("${prefix}: ${new_val}")
+    done
     write_output "image_tag" "$BRIDGE_TAG"
-    log_info "Push event: versioned tags - API: $API_TAG, Bridge: $BRIDGE_TAG"
+    log_info "Push event: versioned tags - $(IFS=', '; echo "${log_parts[*]}")"
 fi
 
 # =============================================================================
