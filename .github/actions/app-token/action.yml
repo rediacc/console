@@ -1,0 +1,55 @@
+name: Generate GitHub App Token
+description: >
+  Generates a short-lived GitHub App installation token with preset-based
+  permission scoping. Replaces long-lived GH_PAT for CI/CD operations.
+
+inputs:
+  app-id:
+    description: GitHub App ID
+    required: true
+  private-key:
+    description: GitHub App private key (PEM)
+    required: true
+  preset:
+    description: >
+      Permission preset: readonly (contents:read), ci (contents:write +
+      pull_requests:read + actions:write), cd (contents:write + actions:write)
+    required: false
+    default: readonly
+
+outputs:
+  token:
+    description: GitHub App installation token
+    value: ${{ steps.token.outputs.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve permissions from preset
+      id: perms
+      shell: bash
+      run: |
+        case "${{ inputs.preset }}" in
+          readonly)
+            echo "permissions=contents:read" >> "$GITHUB_OUTPUT"
+            ;;
+          ci)
+            echo "permissions=contents:write,pull_requests:read,actions:write" >> "$GITHUB_OUTPUT"
+            ;;
+          cd)
+            echo "permissions=contents:write,actions:write" >> "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "::error::Unknown preset: ${{ inputs.preset }}"
+            exit 1
+            ;;
+        esac
+
+    - name: Generate token
+      id: token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: ${{ github.repository_owner }}
+        permission: ${{ steps.perms.outputs.permissions }}

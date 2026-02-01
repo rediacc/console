@@ -43,7 +43,7 @@ on:
         description: 'Whether all validation passed'
         value: ${{ jobs.dry-run.outputs.passed }}
     secrets:
-      GH_PAT:
+      APP_PRIVATE_KEY:
         required: true
       GPG_PRIVATE_KEY:
         required: false
@@ -154,7 +154,7 @@ jobs:
             --output dist/pages \
             --max-versions 3
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ github.token }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
@@ -166,7 +166,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
+          password: ${{ github.token }}
 
       - name: Stage Docker images
         run: |
