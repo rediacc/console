@@ -91,7 +91,7 @@ if [[ -d "private" ]] || [[ -f ".gitmodules" ]]; then
     log_step "Attempting to initialize submodules..."
 
     # Configure git to use token for GitHub
-    git config --global url."https://${TOKEN}@github.com/".insteadOf "https://github.com/"
+    git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
 
     if git submodule update --init --recursive private/ 2>/dev/null; then
         # Verify initialization

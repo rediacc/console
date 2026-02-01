@@ -68,7 +68,7 @@ REPO_ROOT="$(get_repo_root)"
 
 # Ensure authenticated access for pushes in CI
 if [[ -n "${GITHUB_PAT:-}" ]]; then
-    git config --global url."https://${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
+    git config --global url."https://x-access-token:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
 fi
 
 sed_in_place() {

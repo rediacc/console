@@ -59,6 +59,8 @@ jobs:
       image_tag: ${{ steps.init.outputs.image_tag }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/app-token
         id: app-token
