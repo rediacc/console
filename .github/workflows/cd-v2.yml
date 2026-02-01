@@ -64,6 +64,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
+          repositories: console,middleware,renet,license-server,homebrew-tap
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -206,6 +207,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
+          repositories: console,middleware,renet,license-server,homebrew-tap
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -431,6 +433,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
+          repositories: console
 
       - name: Login to GHCR
         uses: docker/login-action@v3

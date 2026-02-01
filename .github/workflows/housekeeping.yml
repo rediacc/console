@@ -17,6 +17,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
+          repositories: console
       - name: Cleanup old releases, tags, and packages
         run: .ci/scripts/housekeeping/cleanup-versions.sh
         env:
