@@ -100,7 +100,7 @@ fi
 
 log_step "Extracting videos..."
 if command -v unzip &>/dev/null; then
-    unzip -o -q "$DOWNLOAD_DIR/artifact.zip" -d "$DOWNLOAD_DIR/extracted" 2>/dev/null
+    unzip -o -q "$DOWNLOAD_DIR/artifact.zip" -d "$DOWNLOAD_DIR/extracted"
 else
     python3 -c "
 import zipfile

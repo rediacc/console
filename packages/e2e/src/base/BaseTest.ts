@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { test as baseTest, expect } from '@playwright/test';
 import { TestDataManager } from '../utils/data/TestDataManager';
@@ -43,7 +43,7 @@ export const test = baseTest.extend<TestFixtures>({
 
       const testBasename = path.basename(testInfo.file, '.test.ts');
       const videosDir = path.resolve(__dirname, '../../videos/user-guide');
-      fs.mkdirSync(videosDir, { recursive: true });
+      await mkdir(videosDir, { recursive: true });
 
       const destPath = path.join(videosDir, `${testBasename}.webm`);
       try {
