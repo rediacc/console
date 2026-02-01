@@ -7,4 +7,4 @@
 
 // This is automatically updated during ./go deploy publish
 // DO NOT modify manually - changes will be overwritten
-export const VERSION = '0.4.80';
+export const VERSION = '0.4.81';
