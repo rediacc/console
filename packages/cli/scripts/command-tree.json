@@ -3012,6 +3012,75 @@
           "subcommands": []
         },
         {
+          "name": "create-s3",
+          "descriptionKey": "commands.context.createS3.description",
+          "options": [
+            {
+              "flags": "--endpoint <url>",
+              "descriptionKey": "commands.context.createS3.optionEndpoint",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bucket <name>",
+              "descriptionKey": "commands.context.createS3.optionBucket",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--access-key-id <key>",
+              "descriptionKey": "commands.context.createS3.optionAccessKeyId",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--ssh-key <path>",
+              "descriptionKey": "options.sshPrivateKey",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--secret-access-key <key>",
+              "descriptionKey": "commands.context.createS3.optionSecretAccessKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--region <region>",
+              "descriptionKey": "commands.context.createS3.optionRegion",
+              "mandatory": false,
+              "defaultValue": "auto"
+            },
+            {
+              "flags": "--prefix <prefix>",
+              "descriptionKey": "commands.context.createS3.optionPrefix",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--renet-path <path>",
+              "descriptionKey": "commands.context.createS3.optionRenetPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--master-password <password>",
+              "descriptionKey": "commands.context.createS3.optionMasterPassword",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "add-machine",
           "descriptionKey": "commands.context.addMachine.description",
           "options": [

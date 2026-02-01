@@ -197,6 +197,9 @@ export const PRIORITY_DEFAULTS = {
   /** Default queue priority */
   QUEUE_PRIORITY: 3,
 
+  /** Default queue list limit */
+  QUEUE_LIST_LIMIT: 50,
+
   /** Default CPU count for containers */
   CPU_COUNT: '0',
 } as const;

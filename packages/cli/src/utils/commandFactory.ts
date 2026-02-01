@@ -22,10 +22,22 @@ import {
 import { handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat } from '../types/index.js';
+
+/**
+ * Mode-aware authentication helper.
+ * Only requires cloud auth for cloud mode. S3/local modes authenticate differently.
+ */
+async function requireAuthForMode(): Promise<void> {
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud') {
+    await authService.requireAuth();
+  }
+}
 
 export interface ResourceCommandConfig {
   /** Resource name in singular form (e.g., 'machine', 'team', 'bridge') */
@@ -106,7 +118,7 @@ function setupListCommand(
     .option('--desc', t('options.sortDescending'));
   listCmd.action(async (options) => {
     try {
-      await authService.requireAuth();
+      await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
       if (!ctx.checkParent(opts)) process.exit(1);
       const params = buildListParams(ctx.hasParent, ctx.parentOption, opts);
@@ -142,7 +154,7 @@ function setupCreateCommand(
   createOptions?.forEach((opt) => createCmd.option(opt.flags, opt.description));
   createCmd.action(async (name, options) => {
     try {
-      await authService.requireAuth();
+      await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
 
       if (!ctx.checkParent(opts)) process.exit(1);
@@ -184,7 +196,7 @@ function setupRenameCommand(
   if (ctx.hasParent) renameCmd.option(ctx.parentFlag, ctx.parentDesc);
   renameCmd.action(async (oldName, newName, options) => {
     try {
-      await authService.requireAuth();
+      await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
       if (!ctx.checkParent(opts)) process.exit(1);
 
@@ -217,7 +229,7 @@ function setupDeleteCommand(
   if (ctx.hasParent) deleteCmd.option(ctx.parentFlag, ctx.parentDesc);
   deleteCmd.option('-f, --force', t('options.force')).action(async (name, options) => {
     try {
-      await authService.requireAuth();
+      await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
       if (!ctx.checkParent(opts)) process.exit(1);
       if (!options.force) {
@@ -257,7 +269,7 @@ function setupVaultGetCommand(
   if (ctx.hasParent) getCmd.option(ctx.parentFlag, ctx.parentDesc);
   getCmd.action(async (resourceItemName, options) => {
     try {
-      await authService.requireAuth();
+      await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
       if (!ctx.checkParent(opts)) process.exit(1);
       const params: Record<string, unknown> = { [ctx.nameField]: resourceItemName };
@@ -301,7 +313,7 @@ function setupVaultUpdateCommand(
 
   updateCmd.action(async (resourceItemName, options) => {
     try {
-      await authService.requireAuth();
+      await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
 
       if (!ctx.checkParent(opts)) {
@@ -428,7 +440,7 @@ export function addStatusCommand(
     .option(parentFlag, parentDesc)
     .action(async (name, options) => {
       try {
-        await authService.requireAuth();
+        await requireAuthForMode();
         const opts = await contextService.applyDefaults(options);
 
         if (!checkParent(opts)) {
@@ -483,7 +495,7 @@ export function addAssignCommand(
     .option(parentFlag, parentDesc)
     .action(async (resourceItemName, targetItemName, options) => {
       try {
-        await authService.requireAuth();
+        await requireAuthForMode();
         const opts = await contextService.applyDefaults(options);
 
         if (!checkParent(opts)) {

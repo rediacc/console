@@ -2,19 +2,25 @@
  * LocalExecutorService - Direct task execution without middleware.
  *
  * This service enables Console CLI to work directly with renet bridge
- * without going through middleware API. Used in "local mode" contexts.
+ * without going through middleware API. Used in "local mode" and "s3 mode" contexts.
+ *
+ * Delegates to shared utilities in renet-execution.ts.
  */
 
-import { type ChildProcess, execSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import { contextService } from './context.js';
-import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
-import { renetProvisioner } from './renet-provisioner.js';
-import type { LocalMachineConfig } from '../types/index.js';
+import {
+  buildLocalVault,
+  getLocalRenetPath,
+  provisionRenetToRemote,
+  readOptionalSSHKey,
+  readSSHKey,
+  spawnRenet,
+} from './renet-execution.js';
 
 /** Options for local execution */
 interface LocalExecuteOptions {
@@ -50,75 +56,6 @@ interface LocalExecuteResult {
  */
 class LocalExecutorService {
   /**
-   * Log debug message if debug mode is enabled.
-   */
-  private logDebug(options: Pick<LocalExecuteOptions, 'debug'>, message: string): void {
-    if (options.debug) {
-      outputService.info(message);
-    }
-  }
-
-  /**
-   * Read SSH public key, returning empty string on failure.
-   */
-  private async readOptionalSSHKey(keyPath: string | undefined): Promise<string> {
-    if (!keyPath) {
-      return '';
-    }
-    return this.readSSHKey(keyPath).catch(() => '');
-  }
-
-  /**
-   * Get the local path to the renet binary for spawning.
-   * In dev mode, uses the configured renetPath. In SEA mode, extracts the
-   * embedded binary to a local temp file.
-   */
-  private async getLocalRenetPath(config: { renetPath: string }): Promise<string> {
-    if (!isSEA()) {
-      return config.renetPath;
-    }
-    return extractRenetToLocal();
-  }
-
-  /**
-   * Provision renet binary to the remote machine.
-   * Ensures /usr/bin/renet exists on the remote with the correct version.
-   * Works in both SEA mode (embedded binary) and dev mode (local file).
-   */
-  private async provisionRenetToRemote(
-    config: { renetPath: string },
-    machine: LocalMachineConfig,
-    sshPrivateKey: string,
-    options: Pick<LocalExecuteOptions, 'debug'>
-  ): Promise<void> {
-    // Resolve bare command name to absolute path for file reading
-    let localBinaryPath: string | undefined;
-    if (!isSEA()) {
-      localBinaryPath = config.renetPath.startsWith('/')
-        ? config.renetPath
-        : execSync(`which ${config.renetPath}`, { encoding: 'utf-8' }).trim();
-    }
-
-    const result = await renetProvisioner.provision(
-      {
-        host: machine.ip,
-        port: machine.port ?? DEFAULTS.SSH.PORT,
-        username: machine.user,
-        privateKey: sshPrivateKey,
-      },
-      { localBinaryPath }
-    );
-
-    if (!result.success) {
-      throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
-    }
-
-    if (result.action === 'uploaded') {
-      this.logDebug(options, `[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
-    }
-  }
-
-  /**
    * Execute a function on a machine in local mode.
    * Spawns renet execute subprocess with vault JSON.
    */
@@ -130,21 +67,20 @@ class LocalExecutorService {
       const config = await contextService.getLocalConfig();
       const machine = await contextService.getLocalMachine(options.machineName);
 
-      this.logDebug(
-        options,
-        `[local] Executing '${options.functionName}' on ${options.machineName}`
-      );
+      if (options.debug) {
+        outputService.info(`[local] Executing '${options.functionName}' on ${options.machineName}`);
+      }
 
       // Read SSH keys
-      const sshPrivateKey = await this.readSSHKey(config.ssh.privateKeyPath);
-      const sshPublicKey = await this.readOptionalSSHKey(config.ssh.publicKeyPath);
+      const sshPrivateKey = await readSSHKey(config.ssh.privateKeyPath);
+      const sshPublicKey = await readOptionalSSHKey(config.ssh.publicKeyPath);
 
       // Read known_hosts from system (fallback to empty if not found)
       const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
       const sshKnownHosts = await fs.readFile(knownHostsPath, 'utf-8').catch(() => '');
 
       // Build vault JSON for renet execute
-      const vault = this.buildLocalVault({
+      const vault = buildLocalVault({
         functionName: options.functionName,
         machineName: options.machineName,
         machine,
@@ -155,13 +91,13 @@ class LocalExecutorService {
       });
 
       // Get local renet path (dev: from config, SEA: extract to temp)
-      const renetPath = await this.getLocalRenetPath(config);
+      const renetPath = await getLocalRenetPath(config);
 
       // Provision renet to remote machine (/usr/bin/renet)
-      await this.provisionRenetToRemote(config, machine, sshPrivateKey, options);
+      await provisionRenetToRemote(config, machine, sshPrivateKey, options);
 
       // Spawn renet execute locally
-      const result = await this.spawnRenet(renetPath, vault, options);
+      const result = await spawnRenet(renetPath, vault, options);
 
       return {
         success: result.exitCode === 0,
@@ -177,143 +113,6 @@ class LocalExecutorService {
         error: errorMessage,
         durationMs: Date.now() - startTime,
       };
-    }
-  }
-
-  /**
-   * Build QueueVaultV2 structure for local execution.
-   * This is a simplified vault without organization/team context.
-   */
-  private buildLocalVault(opts: {
-    functionName: string;
-    machineName: string;
-    machine: LocalMachineConfig;
-    sshPrivateKey: string;
-    sshPublicKey: string;
-    sshKnownHosts: string;
-    params: Record<string, unknown>;
-  }): string {
-    const vault = {
-      $schema: 'queue-vault-v2',
-      version: '2.0',
-      task: {
-        function: opts.functionName,
-        machine: opts.machineName,
-        team: 'local',
-        repository: (opts.params.repository ?? '') as string,
-      },
-      ssh: {
-        private_key: opts.sshPrivateKey,
-        public_key: opts.sshPublicKey,
-        known_hosts: opts.sshKnownHosts,
-        password: '',
-      },
-      machine: {
-        ip: opts.machine.ip,
-        user: opts.machine.user,
-        port: opts.machine.port ?? DEFAULTS.SSH.PORT,
-        datastore: opts.machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-        known_hosts: opts.sshKnownHosts,
-      },
-      params: opts.params,
-      extra_machines: {},
-      storage_systems: {},
-      repository_credentials: {},
-      repositories: {},
-      context: {
-        organization_id: '',
-        api_url: '',
-        universal_user_id: '7111',
-        universal_user_name: 'rediacc',
-      },
-    };
-
-    return JSON.stringify(vault);
-  }
-
-  /**
-   * Spawn renet execute process and stream output.
-   */
-  private async spawnRenet(
-    renetPath: string,
-    vault: string,
-    options: LocalExecuteOptions
-  ): Promise<{ exitCode: number }> {
-    return new Promise((resolve, reject) => {
-      const args = ['execute', '--vault', vault];
-
-      if (options.debug) {
-        args.push('--debug');
-      }
-      if (options.json) {
-        args.push('--json');
-      }
-
-      const timeout = options.timeout ?? 10 * 60 * 1000; // 10 minutes default
-
-      if (options.debug) {
-        outputService.info(`[local] Spawning: ${renetPath} execute ...`);
-      }
-
-      const child: ChildProcess = spawn(renetPath, args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env },
-      });
-
-      // Set timeout
-      const timeoutId = setTimeout(() => {
-        child.kill('SIGTERM');
-        reject(new Error(`Execution timed out after ${timeout}ms`));
-      }, timeout);
-
-      // Stream stdout
-      child.stdout?.on('data', (data: Buffer) => {
-        const text = data.toString();
-        // Output each line
-        text.split('\n').forEach((line) => {
-          if (line.trim()) {
-            // eslint-disable-next-line no-console
-            console.log(line);
-          }
-        });
-      });
-
-      // Stream stderr
-      child.stderr?.on('data', (data: Buffer) => {
-        const text = data.toString();
-        text.split('\n').forEach((line) => {
-          if (line.trim()) {
-            console.error(line);
-          }
-        });
-      });
-
-      child.on('close', (code) => {
-        clearTimeout(timeoutId);
-        resolve({ exitCode: code ?? 1 });
-      });
-
-      child.on('error', (err) => {
-        clearTimeout(timeoutId);
-        reject(new Error(`Failed to spawn renet: ${err.message}`));
-      });
-    });
-  }
-
-  /**
-   * Read SSH key from filesystem.
-   * Expands ~ to home directory.
-   */
-  private async readSSHKey(keyPath: string): Promise<string> {
-    const expandedPath = keyPath.startsWith('~')
-      ? path.join(os.homedir(), keyPath.slice(1))
-      : keyPath;
-
-    try {
-      const content = await fs.readFile(expandedPath, 'utf-8');
-      return content;
-    } catch (error) {
-      throw new Error(`Failed to read SSH key from ${expandedPath}: ${error}`);
     }
   }
 

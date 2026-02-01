@@ -14,9 +14,9 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
-import { getConnectionVaults } from '../utils/connectionDetails.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { SyncProgress } from '@rediacc/shared-desktop/types';
@@ -67,8 +67,9 @@ async function getRsyncConnectionDetails(
   machineName: string,
   repositoryName: string
 ): Promise<RsyncConnectionDetails> {
-  // Fetch vault data using type-safe API
-  const { machineVault, teamVault, repositoryVault } = await getConnectionVaults(
+  // Fetch vault data using state provider
+  const provider = await getStateProvider();
+  const { machineVault, teamVault, repositoryVault } = await provider.vaults.getConnectionVaults(
     teamName,
     machineName,
     repositoryName
@@ -422,7 +423,10 @@ export function registerSyncCommands(program: Command): void {
     .option('--dry-run', t('options.dryRun'))
     .action(async (options: SyncUploadOptions) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
         await syncUpload(options);
       } catch (error) {
         handleError(error);
@@ -444,7 +448,10 @@ export function registerSyncCommands(program: Command): void {
     .option('--dry-run', t('options.dryRun'))
     .action(async (options: SyncDownloadOptions) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
         await syncDownload(options);
       } catch (error) {
         handleError(error);
@@ -461,8 +468,10 @@ export function registerSyncCommands(program: Command): void {
     .option('--remote <path>', t('options.remotePath'))
     .action(async (options: SyncDownloadOptions) => {
       try {
-        await authService.requireAuth();
-        // Run dry-run to see differences
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
         await syncDownload({ ...options, dryRun: true });
       } catch (error) {
         handleError(error);

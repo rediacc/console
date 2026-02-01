@@ -279,6 +279,25 @@
         "nextStep": "Добавьте машины с помощью: rdc context add-machine <name> --ip <ip> --user <user>",
         "success": "Локальный контекст \"{{name}}\" создан"
       },
+      "createS3": {
+        "accessVerified": "Доступ к S3 подтверждён",
+        "description": "Создать новый контекст S3/R2 для удалённого состояния с локальным выполнением",
+        "errorSecretAccessKeyRequired": "Секретный ключ доступа S3 обязателен",
+        "nextStep": "Далее: Добавьте машины с помощью \"rdc context add-machine\"",
+        "optionAccessKeyId": "Идентификатор ключа доступа S3",
+        "optionBucket": "Имя корзины S3",
+        "optionEndpoint": "URL конечной точки S3",
+        "optionMasterPassword": "Мастер-пароль для шифрования (необязательно, оставьте пустым для пропуска)",
+        "optionPrefix": "Префикс ключа/пространство имён в корзине",
+        "optionRegion": "Регион S3",
+        "optionRenetPath": "Путь к исполняемому файлу renet",
+        "optionSecretAccessKey": "Секретный ключ доступа S3 (запрашивается, если не указан)",
+        "optionSshKey": "Путь к закрытому ключу SSH",
+        "promptMasterPassword": "Мастер-пароль для шифрования (оставьте пустым для пропуска):",
+        "promptSecretAccessKey": "Секретный ключ доступа S3:",
+        "success": "Контекст S3 \"{{name}}\" создан",
+        "verifyingAccess": "Проверка доступа к S3..."
+      },
       "current": {
         "description": "Показать имя текущего контекста",
         "noContext": "Нет активного контекста"
