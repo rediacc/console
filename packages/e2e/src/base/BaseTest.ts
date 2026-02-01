@@ -34,23 +34,26 @@ export const test = baseTest.extend<TestFixtures>({
   // Auto-save video with deterministic filename after each test.
   // Derives filename from test file path: 01-01-registration.test.ts → 01-01-registration.webm
   // Videos are saved to packages/e2e/videos/user-guide/ for CI artifact upload.
-  _videoSaver: [async ({ page }, use, testInfo) => {
-    await use(undefined);
+  _videoSaver: [
+    async ({ page }, use, testInfo) => {
+      await use(undefined);
 
-    const video = page.video();
-    if (!video) return;
+      const video = page.video();
+      if (!video) return;
 
-    const testBasename = path.basename(testInfo.file, '.test.ts');
-    const videosDir = path.resolve(__dirname, '../../videos/user-guide');
-    fs.mkdirSync(videosDir, { recursive: true });
+      const testBasename = path.basename(testInfo.file, '.test.ts');
+      const videosDir = path.resolve(__dirname, '../../videos/user-guide');
+      fs.mkdirSync(videosDir, { recursive: true });
 
-    const destPath = path.join(videosDir, `${testBasename}.webm`);
-    try {
-      await video.saveAs(destPath);
-    } catch {
-      // Video may not be available if browser crashed or test was skipped
-    }
-  }, { auto: true }],
+      const destPath = path.join(videosDir, `${testBasename}.webm`);
+      try {
+        await video.saveAs(destPath);
+      } catch {
+        // Video may not be available if browser crashed or test was skipped
+      }
+    },
+    { auto: true },
+  ],
 });
 /* eslint-enable react-hooks/rules-of-hooks */
 

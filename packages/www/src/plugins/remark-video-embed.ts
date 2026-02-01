@@ -17,29 +17,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { visit, SKIP } from 'unist-util-visit';
-import type { Root, Paragraph, Image, Emphasis, Text } from 'mdast';
+import type { Root, Paragraph, Image, Text } from 'mdast';
+import type { Node, Parent } from 'unist';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Path to the public directory (relative to this plugin at packages/www/src/plugins/)
 const PUBLIC_DIR = path.resolve(__dirname, '../../public');
 
-const VIDEO_EXTENSIONS = ['.webm', '.mp4'];
+const VIDEO_EXTENSIONS = ['.webm', '.mp4'] as const;
 
 /**
  * Escape special HTML characters to prevent XSS in generated HTML
  */
 function escapeHtml(text: string): string {
   return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }
 
 function isVideoUrl(url: string): boolean {
   const ext = path.extname(url).toLowerCase();
-  return VIDEO_EXTENSIONS.includes(ext);
+  return (VIDEO_EXTENSIONS as readonly string[]).includes(ext);
 }
 
 function getVideoMimeType(url: string): string {
@@ -53,24 +54,17 @@ function videoFileExists(urlPath: string): boolean {
 
 /**
  * Extract caption text from emphasis nodes following the image in a paragraph.
- * Handles the common markdown pattern:
- *   ![alt](video.webm)
- *   *(Caption text)*
  */
 function extractCaption(paragraph: Paragraph, imageIndex: number): string | null {
   for (let i = imageIndex + 1; i < paragraph.children.length; i++) {
     const child = paragraph.children[i];
-    if (child.type === 'emphasis' && child.children.length > 0) {
-      const textParts: string[] = [];
-      for (const emphChild of child.children) {
-        if (emphChild.type === 'text') {
-          textParts.push((emphChild as Text).value);
-        }
-      }
-      if (textParts.length > 0) {
-        return textParts.join('');
-      }
-    }
+    if (child.type !== 'emphasis' || child.children.length === 0) continue;
+
+    const textParts = child.children
+      .filter((c): c is Text => c.type === 'text')
+      .map((c) => c.value);
+
+    if (textParts.length > 0) return textParts.join('');
   }
   return null;
 }
@@ -78,9 +72,7 @@ function extractCaption(paragraph: Paragraph, imageIndex: number): string | null
 function buildVideoHtml(url: string, alt: string, caption: string | null): string {
   const mimeType = getVideoMimeType(url);
   const escapedAlt = escapeHtml(alt);
-  const captionHtml = caption
-    ? `\n  <em>${escapeHtml(caption)}</em>`
-    : '';
+  const captionHtml = caption ? `\n  <em>${escapeHtml(caption)}</em>` : '';
 
   return `<div class="video-container">
   <video controls preload="none" aria-label="${escapedAlt}">
@@ -92,9 +84,7 @@ function buildVideoHtml(url: string, alt: string, caption: string | null): strin
 
 function buildPlaceholderHtml(alt: string, caption: string | null): string {
   const escapedAlt = escapeHtml(alt);
-  const captionHtml = caption
-    ? `\n  <em>${escapeHtml(caption)}</em>`
-    : '';
+  const captionHtml = caption ? `\n  <em>${escapeHtml(caption)}</em>` : '';
 
   return `<div class="video-container">
   <div class="video-placeholder" aria-label="${escapedAlt}">
@@ -118,7 +108,7 @@ export function remarkVideoEmbed() {
 
       // Find an image child with a video file extension
       const imageIndex = node.children.findIndex(
-        (child) => child.type === 'image' && isVideoUrl((child as Image).url)
+        (child): child is Image => child.type === 'image' && isVideoUrl(child.url)
       );
 
       if (imageIndex === -1) return;
@@ -128,16 +118,16 @@ export function remarkVideoEmbed() {
 
       const exists = videoFileExists(imageNode.url);
       const html = exists
-        ? buildVideoHtml(imageNode.url, imageNode.alt || '', caption)
-        : buildPlaceholderHtml(imageNode.alt || '', caption);
+        ? buildVideoHtml(imageNode.url, imageNode.alt ?? '', caption)
+        : buildPlaceholderHtml(imageNode.alt ?? '', caption);
 
       // Replace the entire paragraph node with raw HTML
-      parent.children.splice(index, 1, {
+      (parent as Parent).children.splice(index, 1, {
         type: 'html',
         value: html,
-      } as any);
+      } as Node);
 
-      return [SKIP, index] as any;
+      return [SKIP, index] as const;
     });
   };
 }
