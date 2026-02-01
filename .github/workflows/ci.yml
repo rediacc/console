@@ -68,7 +68,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console
+          repositories: console,middleware,renet,license-server
 
       # PR Validation (PR events only)
       - name: Validate PR
