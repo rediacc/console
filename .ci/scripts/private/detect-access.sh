@@ -73,6 +73,7 @@ if [[ -f "private/middleware/.ci/ci.sh" ]] && [[ -f "private/renet/.ci/ci.sh" ]]
     # Sync each submodule to matching branch
     sync_submodule_branch "private/middleware" "$CURRENT_BRANCH"
     sync_submodule_branch "private/renet" "$CURRENT_BRANCH"
+    sync_submodule_branch "private/license-server" "$CURRENT_BRANCH"
 
     exit 0
 fi
@@ -101,6 +102,7 @@ if [[ -d "private" ]] || [[ -f ".gitmodules" ]]; then
             # Sync each submodule to matching branch
             sync_submodule_branch "private/middleware" "$CURRENT_BRANCH"
             sync_submodule_branch "private/renet" "$CURRENT_BRANCH"
+            sync_submodule_branch "private/license-server" "$CURRENT_BRANCH"
 
             exit 0
         fi

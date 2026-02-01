@@ -221,6 +221,14 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image cli --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
+      # Step 1b: Deploy License Server to Cloudflare
+      # -----------------------------------------------------------------------
+      - name: Deploy License Server
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: .ci/scripts/private/run-license-server.sh deploy
+
+      # -----------------------------------------------------------------------
       # Step 2: Bump version & commit (includes all submodules)
       # -----------------------------------------------------------------------
       - name: Download staging release artifact

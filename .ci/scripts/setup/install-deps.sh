@@ -51,4 +51,10 @@ if [[ ! -d "node_modules" ]]; then
     exit 1
 fi
 
+# Install license-server dependencies if submodule is available
+if [[ -f "private/license-server/package.json" ]]; then
+    log_step "Installing license-server dependencies..."
+    (cd private/license-server && npm ci)
+fi
+
 log_info "npm install complete"
