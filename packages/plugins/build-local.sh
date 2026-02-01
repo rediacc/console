@@ -18,9 +18,11 @@ if [[ -f "$MONOREPO_ROOT/.env" ]]; then
     source "$MONOREPO_ROOT/.env"
 fi
 
+# Load constants (provides DOCKER_REGISTRY default: ghcr.io/rediacc/elite)
+source "$SCRIPT_DIR/../../.ci/config/constants.sh"
+
 # Configuration
 BASE_IMAGE="${SYSTEM_BASE_IMAGE:-ubuntu:24.04}"
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-}"
 
 echo "Building Rediacc plugin Docker images..."
 echo "Base image: $BASE_IMAGE"
@@ -46,7 +48,7 @@ for folder in "$SCRIPT_DIR"/*/; do
                 image="${DOCKER_REGISTRY}/rediacc/plugin-$plugin_name"
             fi
         else
-            image="rediacc/plugin-$plugin_name"
+            image="ghcr.io/rediacc/elite/plugin-$plugin_name"
         fi
 
         echo "Building $image:latest..."

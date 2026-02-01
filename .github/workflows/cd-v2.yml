@@ -347,11 +347,19 @@ jobs:
           STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
           echo "## Cleanup Staging Tags" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
 
-          .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"
+          # NOTE: GH_PAT must have delete:packages scope for cleanup to work.
+          # GITHUB_TOKEN (packages:write) can push but NOT delete package versions.
+          # Cleanup is non-critical (staging tags are harmless if they remain),
+          # so we log failures to the step summary but don't fail the job.
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
+            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+            echo "Ensure GH_PAT has \`delete:packages\` scope." >> $GITHUB_STEP_SUMMARY
+          fi
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
 
       # -----------------------------------------------------------------------
       # Final summary
@@ -413,8 +421,12 @@ jobs:
           STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
           echo "## Cleanup Staging Tags (Failure)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Staging tag to cleanup:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
 
-          .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
+            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+            echo "Ensure GH_PAT has \`delete:packages\` scope." >> $GITHUB_STEP_SUMMARY
+          fi
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
