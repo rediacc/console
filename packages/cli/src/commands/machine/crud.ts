@@ -3,6 +3,7 @@ import type { UpdateMachineAssignedBridgeParams } from '@rediacc/shared/types';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { typedApi } from '../../services/api.js';
+import { addCloudOnlyGuard, markCloudOnly } from '../../utils/cloud-guard.js';
 import {
   addAssignCommand,
   addStatusCommand,
@@ -81,6 +82,13 @@ export function registerCrudCommands(parentCommand: Command): Command {
     perform: (payload) =>
       typedApi.UpdateMachineAssignedBridge(payload as unknown as UpdateMachineAssignedBridgeParams),
   });
+
+  // Guard assign-bridge as cloud-only
+  const assignBridgeCmd = machine.commands.find((c) => c.name() === 'assign-bridge');
+  if (assignBridgeCmd) {
+    addCloudOnlyGuard(assignBridgeCmd);
+    markCloudOnly(assignBridgeCmd);
+  }
 
   return machine;
 }

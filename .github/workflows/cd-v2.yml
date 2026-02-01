@@ -55,22 +55,32 @@ jobs:
       image_tag: ${{ steps.init.outputs.image_tag }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: cd
+          repositories: console,middleware,renet,license-server,homebrew-tap
 
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
+          password: ${{ github.token }}
 
       - name: Initialize CI
         id: init
         env:
-          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_ACTOR: ${{ github.actor }}
           COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
@@ -190,10 +200,20 @@ jobs:
       url: ${{ steps.pages-deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: cd
+          repositories: console,middleware,renet,license-server,homebrew-tap
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           fetch-depth: 0
           submodules: true
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -206,7 +226,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
+          password: ${{ github.token }}
 
       - name: Promote Docker images
         run: |
@@ -244,7 +264,7 @@ jobs:
         run: |
           .ci/scripts/version/bump-submodules.sh --version ${{ needs.init.outputs.next_version }} --stage-only
         env:
-          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
 
       - name: Update Homebrew formula
         run: |
@@ -253,7 +273,7 @@ jobs:
             --local-checksums dist/cli \
             --stage-only
         env:
-          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
 
       - name: Version commit
         id: commit
@@ -297,7 +317,7 @@ jobs:
           echo "Downloaded packages:"
           ls -la dist/release-pkgs/
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       # -----------------------------------------------------------------------
       # Step 5: Build final APT/RPM repo metadata (matching Release)
@@ -323,7 +343,7 @@ jobs:
             --output dist/pages \
             --max-versions 3
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
@@ -347,11 +367,17 @@ jobs:
           STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
           echo "## Cleanup Staging Tags" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
 
-          .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"
+          # Cleanup is non-critical (staging tags are harmless if they remain),
+          # so we log failures to the step summary but don't fail the job.
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
+            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+            echo "Staging tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
+          fi
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       # -----------------------------------------------------------------------
       # Final summary
@@ -401,20 +427,32 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: cd
+          repositories: console
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
+          password: ${{ github.token }}
 
       - name: Cleanup staging Docker tags
         run: |
           STAGING_TAG="${{ needs.init.outputs.staging_tag }}"
           echo "## Cleanup Staging Tags (Failure)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Staging tag to cleanup:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
 
-          .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"
+          if .ci/scripts/docker/cleanup-staging.sh --tag "$STAGING_TAG"; then
+            echo "**Staging tag cleaned up:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Failed to clean up staging tag:** $STAGING_TAG" >> $GITHUB_STEP_SUMMARY
+            echo "Staging tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
+          fi
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}

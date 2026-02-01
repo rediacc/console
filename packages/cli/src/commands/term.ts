@@ -4,9 +4,9 @@ import { getDefaultTerminalType, launchTerminal } from '@rediacc/shared-desktop/
 import { Command } from 'commander';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
-import { getConnectionVaults } from '../utils/connectionDetails.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
@@ -139,7 +139,7 @@ function buildMachineEnvironment(
 }
 
 /**
- * Gets SSH connection details from the API using type-safe endpoints
+ * Gets SSH connection details using the mode-aware state provider
  */
 async function getSSHConnectionDetails(
   teamName: string,
@@ -150,7 +150,8 @@ async function getSSHConnectionDetails(
     `Getting SSH connection details for team=${teamName}, machine=${machineName}, repository=${repositoryName ?? '(none)'}`
   );
 
-  const vaults = await getConnectionVaults(teamName, machineName, repositoryName);
+  const provider = await getStateProvider();
+  const vaults = await provider.vaults.getConnectionVaults(teamName, machineName, repositoryName);
   const { machineVault, teamVault } = vaults;
 
   debugLog(`Machine vault fields: ${Object.keys(machineVault).join(', ') || '(empty)'}`);
@@ -417,7 +418,10 @@ export function registerTermCommands(program: Command): void {
     .option('--external', t('options.external'))
     .action(async (options: TermConnectOptions) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
         await connectTerminal(options);
       } catch (error) {
         handleError(error);
@@ -442,7 +446,10 @@ export function registerTermCommands(program: Command): void {
         options: TermConnectOptions
       ) => {
         try {
-          await authService.requireAuth();
+          const provider = await getStateProvider();
+          if (provider.mode === 'cloud') {
+            await authService.requireAuth();
+          }
           await connectTerminal({
             ...options,
             machine: machine ?? options.machine,

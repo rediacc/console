@@ -1,16 +1,14 @@
 import { Command } from 'commander';
-import { parseGetTeamMachines } from '@rediacc/shared/api';
 import {
   getDeploymentSummary,
   getMachineSystemInfo,
-  type MachineWithVaultStatus,
   type ParsedVaultStatus,
   parseListResult,
   parseVaultStatus,
   type SystemInfo,
 } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
-import { typedApi } from '../../services/api.js';
+import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
 import { contextService } from '../../services/context.js';
 import { outputService } from '../../services/output.js';
@@ -95,21 +93,26 @@ export function registerVaultStatusCommand(machine: Command, program: Command): 
     .option('-t, --team <name>', t('options.team'))
     .action(async (name: string, options: { team?: string }) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
         const opts = await contextService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const apiResponse = await withSpinner(
+        const machine = await withSpinner(
           t('commands.machine.vaultStatus.fetching'),
-          () => typedApi.GetTeamMachines({ teamName: opts.team as string }),
+          () =>
+            provider.machines.getWithVaultStatus({
+              teamName: opts.team as string,
+              machineName: name,
+            }),
           t('commands.machine.vaultStatus.fetched')
         );
 
-        const machines = parseGetTeamMachines(apiResponse as never);
-        const machine = machines.find((m: MachineWithVaultStatus) => m.machineName === name);
         if (!machine) {
           throw new ValidationError(t('errors.machineNotFound', { name }));
         }

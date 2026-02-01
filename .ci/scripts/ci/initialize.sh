@@ -101,8 +101,8 @@ fi
 # =============================================================================
 log_step "Initializing private submodules..."
 
-# Configure git to use token for GitHub
-git config --global url."https://${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
+# Configure git to use token for GitHub (x-access-token works for both PATs and App tokens)
+git config --global url."https://x-access-token:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
 
 # Check if submodules are already initialized
 if [[ -f "private/middleware/.ci/ci.sh" ]] && [[ -f "private/renet/.ci/ci.sh" ]]; then

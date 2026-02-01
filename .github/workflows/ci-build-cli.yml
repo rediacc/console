@@ -7,7 +7,7 @@ on:
         required: true
         type: string
     secrets:
-      GH_PAT:
+      APP_PRIVATE_KEY:
         required: false
 
 # Note: Renet binaries are built by ci-build-renet.yml and downloaded as artifact

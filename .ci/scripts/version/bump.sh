@@ -329,7 +329,8 @@ main() {
     fi
 
     if [[ $failed -gt 0 ]]; then
-        log_warn "Failed to update $failed files"
+        log_error "Failed to update $failed files"
+        exit 1
     fi
 
     # Write version to output file if requested (for CI)
