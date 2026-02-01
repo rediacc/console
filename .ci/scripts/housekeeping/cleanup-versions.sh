@@ -479,6 +479,72 @@ cleanup_cf_pages() {
 }
 
 # =============================================================================
+# PHASE 6: GITHUB ENVIRONMENTS (PR previews)
+# =============================================================================
+
+cleanup_environments() {
+    log_step "Phase 6: Cleaning up stale GitHub preview environments"
+
+    for repo in "${DEPLOYMENT_REPOS[@]}"; do
+        local full_repo="$GITHUB_ORG/$repo"
+        log_step "  Processing environments for $full_repo"
+
+        # List all environments
+        local environments
+        environments="$(gh api "repos/$full_repo/environments" --jq '[.environments[] | {name: .name, created: .created_at, updated: .updated_at}]' 2>/dev/null || echo "[]")"
+
+        # Filter to only pr-* environments
+        local pr_envs
+        pr_envs="$(echo "$environments" | jq '[.[] | select(.name | test("^pr-[0-9]+$"))]')"
+
+        local total
+        total="$(echo "$pr_envs" | jq 'length')"
+        log_debug "  Found $total pr-* environments"
+
+        if [[ "$total" -eq 0 ]]; then
+            log_info "  No stale preview environments to clean up"
+            continue
+        fi
+
+        # Check each pr-* environment against open PRs
+        local deleted=0
+
+        while IFS= read -r env_entry; do
+            local env_name pr_number
+            env_name="$(echo "$env_entry" | jq -r '.name')"
+            pr_number="$(echo "$env_name" | sed 's/^pr-//')"
+
+            # Check if the PR is still open
+            local pr_state
+            pr_state="$(gh pr view "$pr_number" --repo "$full_repo" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
+
+            if [[ "$pr_state" == "OPEN" ]]; then
+                log_debug "  Keeping environment: $env_name (PR #$pr_number is open)"
+                continue
+            fi
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "  [DRY-RUN] Would delete environment: $env_name (PR #$pr_number state: $pr_state)"
+                deleted=$((deleted + 1))
+            else
+                if gh api -X DELETE "repos/$full_repo/environments/$env_name" 2>/dev/null; then
+                    log_debug "  Deleted environment: $env_name (PR #$pr_number state: $pr_state)"
+                    deleted=$((deleted + 1))
+                else
+                    log_warn "  Failed to delete environment: $env_name"
+                fi
+            fi
+        done < <(echo "$pr_envs" | jq -c '.[]')
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_info "  Environments ($full_repo): would delete $deleted of $total pr-* environments"
+        else
+            log_info "  Environments ($full_repo): deleted $deleted of $total pr-* environments"
+        fi
+    done
+}
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -498,6 +564,8 @@ echo ""
 cleanup_deployments
 echo ""
 cleanup_cf_pages
+echo ""
+cleanup_environments
 
 echo ""
 log_info "Housekeeping complete"
