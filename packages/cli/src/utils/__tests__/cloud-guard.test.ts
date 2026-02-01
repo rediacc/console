@@ -39,9 +39,10 @@ describe('utils/cloud-guard', () => {
       // Instead, we directly test the guard by simulating what commander does:
       // The preAction hook is called before the action runs.
       // We can access it via the internal _lifeCycleHooks map.
-      const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, Function[]> })
+      type HookFn = (thisCommand: Command, actionCommand: Command) => Promise<void> | void;
+      const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[]> })
         ._lifeCycleHooks;
-      const preActionHooks = hooks?.preAction ?? [];
+      const preActionHooks = hooks.preAction;
       for (const hook of preActionHooks) {
         await hook(cmd, cmd);
       }

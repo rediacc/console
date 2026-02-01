@@ -3,8 +3,8 @@
  * Blocks commands/subcommands from running in non-cloud (s3/local) modes
  * with a clear error message.
  */
-import type { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
+import type { Command } from 'commander';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 
