@@ -131,6 +131,52 @@ check_signal_status() {
     return 2  # Not found or download failed
 }
 
+# Try to find a signal artifact, falling back to previous attempts on rerun.
+# When "Rerun Failed Jobs" bumps github.run_attempt to N, jobs that already
+# succeeded in attempt N-1 are NOT rerun and will never produce attempt-N
+# artifacts.  We accept a previous attempt's SUCCESS signal as valid, but
+# ignore previous FAILURE signals (those jobs should be rerunning now).
+#
+# Arguments: $1 = signal name, $2 = artifact base name (without -attempt-N), $3 = artifacts list
+try_signal() {
+    local signal="$1"
+    local artifact_base="$2"
+    local artifacts="$3"
+
+    is_completed "$signal" && return 0
+
+    # 1. Try current attempt
+    local artifact_name="${artifact_base}${ATTEMPT_SUFFIX}"
+    if echo "$artifacts" | grep -q "^${artifact_name}$"; then
+        mark_completed "$signal"
+        check_signal_status "$signal" "$artifact_name" || true
+        return 0
+    fi
+
+    # 2. Fallback to previous attempts (newest first)
+    if [[ "$RUN_ATTEMPT" -gt 1 ]]; then
+        local attempt
+        for (( attempt = RUN_ATTEMPT - 1; attempt >= 1; attempt-- )); do
+            local fallback_name="${artifact_base}-attempt-${attempt}"
+            if echo "$artifacts" | grep -q "^${fallback_name}$"; then
+                local ret=0
+                check_signal_status "$signal" "$fallback_name" || ret=$?
+                if [[ $ret -eq 0 ]]; then
+                    # Previous attempt succeeded — job was not rerun, accept it
+                    mark_completed "$signal"
+                    return 0
+                fi
+                # ret == 1 (failure/cancelled): job should be rerunning now,
+                #          wait for the current attempt's artifact instead.
+                # ret == 2 (download error): try an even older attempt.
+                [[ $ret -eq 1 ]] && return 1
+            fi
+        done
+    fi
+
+    return 1
+}
+
 # Fetch artifacts and check for completion signals
 fetch_and_check_signals() {
     # Fetch current artifacts
@@ -139,52 +185,27 @@ fetch_and_check_signals() {
 
     # Check CLI platforms
     for platform in "${CLI_PLATFORMS[@]}"; do
-        local artifact_name="test-complete-cli-${platform}${ATTEMPT_SUFFIX}"
-        if echo "$artifacts" | grep -q "^${artifact_name}$"; then
-            if ! is_completed "cli-${platform}"; then
-                mark_completed "cli-${platform}"
-                # Check signal status
-                check_signal_status "cli-${platform}" "$artifact_name" || true
-            fi
-        fi
+        try_signal "cli-${platform}" "test-complete-cli-${platform}" "$artifacts"
     done
 
     # Check E2E browsers
     for browser in "${E2E_BROWSERS_ARR[@]}"; do
-        local artifact_name="test-complete-e2e-${browser}${ATTEMPT_SUFFIX}"
-        if echo "$artifacts" | grep -q "^${artifact_name}$"; then
-            if ! is_completed "e2e-${browser}"; then
-                mark_completed "e2e-${browser}"
-                # Check signal status
-                check_signal_status "e2e-${browser}" "$artifact_name" || true
-            fi
-        fi
+        try_signal "e2e-${browser}" "test-complete-e2e-${browser}" "$artifacts"
     done
 
     # TODO: Re-enable when resolution tests are active
     # for resolution in "${E2E_RESOLUTIONS[@]}"; do
-    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${resolution}${ATTEMPT_SUFFIX}$"; then
-    #         mark_completed "e2e-${resolution}"
-    #     fi
+    #     try_signal "e2e-${resolution}" "test-complete-e2e-${resolution}" "$artifacts"
     # done
 
     # TODO: Re-enable when device tests are active
     # for device in "${E2E_DEVICES[@]}"; do
-    #     if echo "$artifacts" | grep -q "^test-complete-e2e-${device}${ATTEMPT_SUFFIX}$"; then
-    #         mark_completed "e2e-${device}"
-    #     fi
+    #     try_signal "e2e-${device}" "test-complete-e2e-${device}" "$artifacts"
     # done
 
     # Check E2E Electron platforms
     for platform in "${E2E_ELECTRON[@]}"; do
-        local artifact_name="test-complete-e2e-${platform}${ATTEMPT_SUFFIX}"
-        if echo "$artifacts" | grep -q "^${artifact_name}$"; then
-            if ! is_completed "e2e-${platform}"; then
-                mark_completed "e2e-${platform}"
-                # Check signal status
-                check_signal_status "e2e-${platform}" "$artifact_name" || true
-            fi
-        fi
+        try_signal "e2e-${platform}" "test-complete-e2e-${platform}" "$artifacts"
     done
 }
 
