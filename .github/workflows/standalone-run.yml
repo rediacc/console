@@ -234,23 +234,15 @@ jobs:
 
       - name: Create Cloudflare Tunnel
         id: tunnel
-        uses: rediacc/action-cloudflare-tunnel@v1
-        with:
-          # When desktop is enabled, route through Caddy gateway on port 8080
-          url: ${{ inputs.desktop-environment != 'none' && 'http://localhost:8080' || 'http://localhost' }}
-          timeout: 30
-
-      - name: Verify Tunnel
         run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          echo "Verifying tunnel connectivity..."
-
-          # Wait for tunnel to be accessible
-          timeout 60 bash -c "until curl -sf '${TUNNEL_URL}/health' > /dev/null 2>&1; do sleep 2; done" || {
-            echo "WARNING: Tunnel health check failed, but continuing..."
-          }
-
-          echo "Tunnel verified: ${TUNNEL_URL}"
+          LOCAL_URL="${{ inputs.desktop-environment != 'none' && 'http://localhost:8080' || 'http://localhost' }}"
+          TUNNEL_URL=$(.ci/scripts/tunnel/start-cloudflare.sh --url "$LOCAL_URL" --timeout 60) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+          if [[ -n "$TUNNEL_URL" ]]; then
+            echo "Cloudflare tunnel: $TUNNEL_URL"
+          else
+            echo "::warning::Cloudflare tunnel failed — services available only via localhost"
+          fi
 
       - name: Display Access Information and Keep Services Alive
         run: |
@@ -395,10 +387,12 @@ jobs:
           fi
 
           # Stop cloudflared tunnel
-          TUNNEL_PID="${{ steps.tunnel.outputs.tunnel-pid }}"
-          if [ -n "$TUNNEL_PID" ] && ps -p $TUNNEL_PID > /dev/null 2>&1; then
-            echo "Stopping Cloudflare Tunnel (PID: $TUNNEL_PID)..."
-            kill $TUNNEL_PID || true
+          if [ -f "$RUNNER_TEMP/cloudflared.pid" ]; then
+            TUNNEL_PID=$(cat "$RUNNER_TEMP/cloudflared.pid")
+            if [ -n "$TUNNEL_PID" ] && ps -p $TUNNEL_PID > /dev/null 2>&1; then
+              echo "Stopping Cloudflare Tunnel (PID: $TUNNEL_PID)..."
+              kill $TUNNEL_PID || true
+            fi
           fi
 
           # Cleanup desktop processes
