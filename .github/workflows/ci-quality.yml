@@ -78,6 +78,9 @@ jobs:
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
@@ -87,7 +90,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run lint -- --max-warnings 0
+      - run: npm run check:lint
       - run: npm run lint:unused
 
   quality-format:
@@ -126,6 +129,9 @@ jobs:
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
@@ -219,6 +225,21 @@ jobs:
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
+
+  quality-license-server:
+    name: License Server
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+      - name: Run license-server tests
+        run: .ci/scripts/private/run-license-server.sh test
 
   quality-review-comments:
     name: Review Comments

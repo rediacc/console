@@ -99,7 +99,7 @@
       ]
     }
   },
-  "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts"],
+  "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts", "private/**"],
   "ignoreDependencies": [
     "@types/*",
     "@opentelemetry/instrumentation-*",
