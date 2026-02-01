@@ -31,13 +31,16 @@ runs:
       run: |
         case "${{ inputs.preset }}" in
           readonly)
-            echo "permissions=contents:read" >> "$GITHUB_OUTPUT"
+            echo "perm-contents=read" >> "$GITHUB_OUTPUT"
             ;;
           ci)
-            echo "permissions=contents:write,pull_requests:read,actions:write" >> "$GITHUB_OUTPUT"
+            echo "perm-contents=write" >> "$GITHUB_OUTPUT"
+            echo "perm-pull-requests=read" >> "$GITHUB_OUTPUT"
+            echo "perm-actions=write" >> "$GITHUB_OUTPUT"
             ;;
           cd)
-            echo "permissions=contents:write,actions:write" >> "$GITHUB_OUTPUT"
+            echo "perm-contents=write" >> "$GITHUB_OUTPUT"
+            echo "perm-actions=write" >> "$GITHUB_OUTPUT"
             ;;
           *)
             echo "::error::Unknown preset: ${{ inputs.preset }}"
@@ -52,4 +55,6 @@ runs:
         app-id: ${{ inputs.app-id }}
         private-key: ${{ inputs.private-key }}
         owner: ${{ github.repository_owner }}
-        permission: ${{ steps.perms.outputs.permissions }}
+        permission-contents: ${{ steps.perms.outputs.perm-contents }}
+        permission-pull-requests: ${{ steps.perms.outputs.perm-pull-requests }}
+        permission-actions: ${{ steps.perms.outputs.perm-actions }}
