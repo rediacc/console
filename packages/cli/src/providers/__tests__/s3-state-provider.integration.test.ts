@@ -17,7 +17,7 @@ import { S3StateProvider } from '../s3-state-provider.js';
 import type { NamedContext } from '../../types/index.js';
 
 const config = getS3TestConfig();
-const client = createTestS3Client();
+const client = createTestS3Client({ prefix: config.prefix });
 
 afterAll(async () => {
   await cleanupS3Prefix(client, '');
