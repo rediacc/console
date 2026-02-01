@@ -510,6 +510,14 @@ jobs:
           path: packages/e2e/reports/e2e/
           retention-days: 3
           if-no-files-found: ignore
+      # Upload e2e test videos for documentation embedding
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: always()
+        with:
+          name: e2e-videos-${{ github.sha }}
+          path: packages/e2e/videos/user-guide/
+          retention-days: 3
+          if-no-files-found: ignore
 
   test-e2e-electron:
     name: E2E Electron (${{ matrix.project }})
