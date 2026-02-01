@@ -102,6 +102,16 @@ is_signal_failed() {
     return 1
 }
 
+# Remove a signal from FAILED_SIGNALS (used when a newer attempt succeeds)
+clear_failed_signal() {
+    local signal="$1"
+    local new_failed=()
+    for s in "${FAILED_SIGNALS[@]:-}"; do
+        [[ "$s" != "$signal" ]] && new_failed+=("$s")
+    done
+    FAILED_SIGNALS=("${new_failed[@]}")
+}
+
 # Check signal status by downloading and reading artifact content
 check_signal_status() {
     local signal="$1"
@@ -149,7 +159,10 @@ try_signal() {
     local artifact_name="${artifact_base}${ATTEMPT_SUFFIX}"
     if echo "$artifacts" | grep -q "^${artifact_name}$"; then
         mark_completed "$signal"
-        check_signal_status "$signal" "$artifact_name" || true
+        if check_signal_status "$signal" "$artifact_name"; then
+            # Current attempt succeeded — clear any stale failure from previous attempts
+            clear_failed_signal "$signal"
+        fi
         return 0
     fi
 
