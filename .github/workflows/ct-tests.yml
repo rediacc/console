@@ -101,7 +101,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/tunnel/wait-for-artifact.sh --run-id ${{ github.run_id }}
+        run: .ci/scripts/tunnel/wait-for-artifact.sh --run-id ${{ github.run_id }} --artifact-name "tunnel-url-attempt-${{ github.run_attempt }},tunnel-url-pinggy-attempt-${{ github.run_attempt }}"
 
   infra-backend:
     name: Infra - Backend
@@ -146,22 +146,14 @@ jobs:
 
       - name: Create Cloudflare Tunnel
         id: tunnel
-        uses: rediacc/action-cloudflare-tunnel@v1
-        with:
-          url: http://localhost
-          timeout: 60
-
-      - name: Verify Cloudflare Tunnel
         run: |
-          TUNNEL_URL="${{ steps.tunnel.outputs.tunnel-url }}"
-          for i in {1..20}; do
-            if curl -sf "$TUNNEL_URL/health"; then
-              echo "Cloudflare tunnel verified"
-              exit 0
-            fi
-            sleep 3
-          done
-          exit 1
+          TUNNEL_URL=$(.ci/scripts/tunnel/start-cloudflare.sh --url http://localhost --timeout 60) || true
+          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
+          if [[ -n "$TUNNEL_URL" ]]; then
+            echo "Cloudflare tunnel: $TUNNEL_URL"
+          else
+            echo "::warning::Cloudflare tunnel failed (Pinggy fallback available)"
+          fi
 
       - name: Start Pinggy Tunnel
         id: pinggy-tunnel
@@ -190,13 +182,21 @@ jobs:
             echo "Pinggy tunnel verification failed (non-fatal)"
           fi
 
+      - name: Validate tunnel availability
+        if: steps.tunnel.outputs.tunnel-url == '' && steps.pinggy-tunnel.outputs.tunnel-url == ''
+        run: |
+          echo "::error::Both Cloudflare and Pinggy tunnels failed"
+          exit 1
+
       # Upload tunnel URLs immediately after verification (before CLI build / VM provisioning)
       # so test jobs can start as soon as possible and artifacts survive cancellations.
       - name: Upload Cloudflare Tunnel URL
+        if: steps.tunnel.outputs.tunnel-url != ''
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: steps.tunnel.outputs.tunnel-url != ''
         with:
-          name: tunnel-url
+          name: tunnel-url-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/tunnel-url.txt
           retention-days: 3
           overwrite: true
@@ -209,7 +209,7 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         if: steps.pinggy-tunnel.outputs.tunnel-url != ''
         with:
-          name: tunnel-url-pinggy
+          name: tunnel-url-pinggy-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
           retention-days: 3
           overwrite: true
@@ -282,6 +282,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
           E2E_BROWSERS: ${{ env.E2E_BROWSERS }}
 
       - name: Collect Backend Logs
@@ -403,7 +404,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }}) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
@@ -411,7 +412,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }}) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -433,7 +434,7 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         if: always()
         with:
-          name: test-complete-cli-${{ matrix.platform }}
+          name: test-complete-cli-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
           overwrite: true
@@ -464,14 +465,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }}) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }}) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -491,7 +492,7 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         if: always()
         with:
-          name: test-complete-e2e-chromium
+          name: test-complete-e2e-chromium-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
           overwrite: true
@@ -561,7 +562,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }}) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
@@ -569,7 +570,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }}) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -592,7 +593,7 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         if: always()
         with:
-          name: test-complete-e2e-${{ matrix.project }}
+          name: test-complete-e2e-${{ matrix.project }}-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
           overwrite: true
