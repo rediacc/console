@@ -15,7 +15,7 @@ jobs:
   rerun:
     name: Rerun Failed Jobs
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 100
     steps:
       - name: Validate and check attempt
         env:
