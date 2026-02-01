@@ -92,7 +92,7 @@
     "eslint-plugin-regexp": "^3.0.0",
     "eslint-plugin-sonarjs": "^3.0.6",
     "eslint-plugin-unicorn": "^62.0.0",
-    "globals": "^17.2.0",
+    "globals": "^17.3.0",
     "knip": "^5.76.3",
     "syncpack": "^13.0.4",
     "tsx": "^4.21.0",

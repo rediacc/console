@@ -222,7 +222,10 @@ test_binary_download() {
         chmod +x "$binary_name"
         local output
         output=$("./$binary_name" --version 2>&1 || true)
-        verify_version "$output" "$VERSION"
+        if ! verify_version "$output" "$VERSION"; then
+            log_error "Version mismatch: expected '$VERSION', got '$output'"
+            return 1
+        fi
     fi
 }
 
@@ -244,7 +247,10 @@ test_docker_pull_and_run() {
     docker pull "$image"
     local output
     output=$(docker run --rm "$image" --version 2>&1 || true)
-    verify_version "$output" "$VERSION"
+    if ! verify_version "$output" "$VERSION"; then
+        log_error "Version mismatch: expected '$VERSION', got '$output'"
+        return 1
+    fi
 }
 
 # =============================================================================
