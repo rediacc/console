@@ -306,13 +306,7 @@ worktree_prune() {
             if is_pr_merged "$branch"; then
                 found_merged=true
                 echo "  $wt_name (branch: $branch) - PR MERGED"
-
-                read -p "  Delete this worktree? (y/N): " response
-                if [[ "$response" =~ ^[yY]$ ]]; then
-                    remove_worktree "$wt_path" "$session_name" "$branch"
-                else
-                    log_info "Skipped $wt_name"
-                fi
+                remove_worktree "$wt_path" "$session_name" "$branch"
                 echo ""
             fi
         fi
