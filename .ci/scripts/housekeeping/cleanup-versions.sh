@@ -37,17 +37,33 @@ DEPLOYMENT_REPOS=("console")
 # Release repo
 RELEASE_REPO="rediacc/console"
 
+# Cloudflare Pages project for preview deployments
+CF_PAGES_PROJECT="rediacc"
+
 # =============================================================================
 # PREREQUISITES
 # =============================================================================
 
 require_cmd gh
 require_cmd jq
+require_cmd curl
 require_var GH_TOKEN
 
 # =============================================================================
 # HELPERS
 # =============================================================================
+
+# Cloudflare API request helper
+# Usage: cf_api <method> <endpoint>
+cf_api() {
+    local method="$1" endpoint="$2"
+    shift 2
+    curl -s -X "$method" \
+        "https://api.cloudflare.com/client/v4$endpoint" \
+        -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+        -H "Content-Type: application/json" \
+        "$@"
+}
 
 # Check if a version should be retained
 # Usage: should_retain <created_at_iso> <index_from_newest>
@@ -356,6 +372,113 @@ cleanup_deployments() {
 }
 
 # =============================================================================
+# PHASE 5: CLOUDFLARE PAGES PREVIEW DEPLOYMENTS
+# =============================================================================
+
+cleanup_cf_pages() {
+    log_step "Phase 5: Cleaning up Cloudflare Pages preview deployments"
+
+    # Soft prerequisite check -- skip if CF credentials are missing
+    if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] || [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+        log_warn "  CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set, skipping CF Pages cleanup"
+        return 0
+    fi
+
+    local project="$CF_PAGES_PROJECT"
+    log_step "  Processing CF Pages project: $project"
+
+    # Paginate through all preview deployments
+    local all_deployments="[]"
+    local page=1
+
+    while true; do
+        local response
+        response="$(cf_api GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$project/deployments?env=preview&per_page=25&page=$page" 2>/dev/null || echo '{"result":[]}')"
+
+        local success
+        success="$(echo "$response" | jq -r '.success // false')"
+        if [[ "$success" != "true" ]]; then
+            log_warn "  CF API request failed on page $page"
+            break
+        fi
+
+        local page_results
+        page_results="$(echo "$response" | jq '[.result[] | {id: .id, created_on: .created_on, branch: .deployment_trigger.metadata.branch}]')"
+
+        local count
+        count="$(echo "$page_results" | jq 'length')"
+
+        all_deployments="$(echo "$all_deployments" | jq ". + $page_results")"
+
+        if [[ "$count" -lt 25 ]]; then
+            break
+        fi
+        page=$((page + 1))
+    done
+
+    # Sort by created_on descending (newest first)
+    all_deployments="$(echo "$all_deployments" | jq 'sort_by(.created_on) | reverse')"
+
+    # Identify latest deployment per branch (CF API restriction: cannot delete these)
+    local branch_latest
+    branch_latest="$(echo "$all_deployments" | jq '[group_by(.branch)[] | .[0].id]')"
+
+    local total
+    total="$(echo "$all_deployments" | jq 'length')"
+    log_debug "  Found $total preview deployments"
+
+    local deleted=0
+    local skipped_latest=0
+    local index=0
+
+    while IFS= read -r deployment; do
+        local dep_id created_on branch
+        dep_id="$(echo "$deployment" | jq -r '.id')"
+        created_on="$(echo "$deployment" | jq -r '.created_on')"
+        branch="$(echo "$deployment" | jq -r '.branch')"
+
+        # Skip latest deployment per branch (undeletable)
+        local is_branch_latest
+        is_branch_latest="$(echo "$branch_latest" | jq --arg id "$dep_id" 'index($id) != null')"
+
+        if [[ "$is_branch_latest" == "true" ]]; then
+            log_debug "  Skipping (latest for branch '$branch'): $dep_id"
+            skipped_latest=$((skipped_latest + 1))
+            index=$((index + 1))
+            continue
+        fi
+
+        if should_retain "$created_on" "$index"; then
+            log_debug "  Keeping deployment: $dep_id (branch: $branch)"
+        else
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warn "  [DRY-RUN] Would delete CF deployment: $dep_id (branch: $branch, created: $created_on)"
+            else
+                local del_response
+                del_response="$(cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$project/deployments/$dep_id?force=true" 2>/dev/null || echo '{"success":false}')"
+                local del_success
+                del_success="$(echo "$del_response" | jq -r '.success // false')"
+
+                if [[ "$del_success" == "true" ]]; then
+                    log_debug "  Deleted CF deployment: $dep_id (branch: $branch)"
+                    deleted=$((deleted + 1))
+                else
+                    log_warn "  Failed to delete CF deployment: $dep_id (branch: $branch)"
+                fi
+            fi
+        fi
+
+        index=$((index + 1))
+    done < <(echo "$all_deployments" | jq -c '.[]')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "  CF Pages ($project): would delete $deleted of $total preview deployments ($skipped_latest latest-per-branch, skipped)"
+    else
+        log_info "  CF Pages ($project): deleted $deleted of $total preview deployments ($skipped_latest latest-per-branch, skipped)"
+    fi
+}
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -373,6 +496,8 @@ echo ""
 cleanup_packages
 echo ""
 cleanup_deployments
+echo ""
+cleanup_cf_pages
 
 echo ""
 log_info "Housekeeping complete"

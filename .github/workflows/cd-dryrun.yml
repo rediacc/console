@@ -38,6 +38,10 @@ on:
       cli_tag:
         required: true
         type: string
+      upload_pages:
+        required: false
+        type: boolean
+        default: false
     outputs:
       validation_passed:
         description: 'Whether all validation passed'
@@ -255,6 +259,21 @@ jobs:
             echo "**Status:** All validation passed. Ready for publish." >> $GITHUB_STEP_SUMMARY
           fi
           echo "passed=true" >> $GITHUB_OUTPUT
+
+      # -----------------------------------------------------------------------
+      # Upload preview pages artifact (dry-run mode for PR preview deploys)
+      # -----------------------------------------------------------------------
+      - name: Remove GitHub Pages files for preview deployment
+        if: ${{ inputs.upload_pages && inputs.dry_run }}
+        run: rm -f dist/pages/CNAME dist/pages/.nojekyll
+
+      - name: Upload preview pages artifact
+        if: ${{ inputs.upload_pages && inputs.dry_run }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: preview-pages-${{ github.sha }}
+          path: dist/pages/
+          retention-days: 1
 
       # -----------------------------------------------------------------------
       # Upload staging artifacts for publish job (only when !dry_run)

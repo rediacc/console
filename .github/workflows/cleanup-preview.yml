@@ -1,0 +1,22 @@
+name: Cleanup PR Preview
+
+on:
+  pull_request_target:
+    types: [closed]
+
+jobs:
+  cleanup:
+    name: Cleanup CF Pages Preview
+    runs-on: ubuntu-slim
+    # Skip fork PRs (no access to secrets)
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Cleanup preview deployments
+        run: .ci/scripts/housekeeping/cleanup-cf-preview.sh --branch "pr-${{ github.event.pull_request.number }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
