@@ -44,10 +44,7 @@ vi.mock('../../services/auth.js', () => ({
 }));
 
 vi.mock('../../services/api.js', () => ({
-  typedApi: new Proxy(
-    {},
-    { get: () => vi.fn().mockResolvedValue({}) }
-  ),
+  typedApi: new Proxy({}, { get: () => vi.fn().mockResolvedValue({}) }),
 }));
 
 vi.mock('../../providers/index.js', () => ({

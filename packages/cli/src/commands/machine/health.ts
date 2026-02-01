@@ -1,8 +1,5 @@
 import { Command } from 'commander';
-import {
-  getMachineHealth,
-  type MachineHealthResult,
-} from '@rediacc/shared/services/machine';
+import { getMachineHealth, type MachineHealthResult } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';

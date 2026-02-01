@@ -1,8 +1,5 @@
 import { Command } from 'commander';
-import {
-  type ContainerInfo,
-  getMachineContainers,
-} from '@rediacc/shared/services/machine';
+import { type ContainerInfo, getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';

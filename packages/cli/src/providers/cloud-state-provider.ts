@@ -67,7 +67,9 @@ class CloudMachineProvider implements MachineProvider {
     machineName: string;
   }): Promise<MachineWithVaultStatusData | null> {
     const response = await typedApi.GetTeamMachines({ teamName: params.teamName });
-    const machines = parseGetTeamMachines(response as never) as unknown as MachineWithVaultStatusData[];
+    const machines = parseGetTeamMachines(
+      response as never
+    ) as unknown as MachineWithVaultStatusData[];
     return machines.find((m) => m.machineName === params.machineName) ?? null;
   }
 }

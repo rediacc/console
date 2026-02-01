@@ -64,9 +64,10 @@ class LocalMachineProvider implements MachineProvider {
     return Promise.reject(new UnsupportedOperationError('machine vault update'));
   }
 
-  getWithVaultStatus(
-    _params: { teamName: string; machineName: string }
-  ): Promise<MachineWithVaultStatusData | null> {
+  getWithVaultStatus(_params: {
+    teamName: string;
+    machineName: string;
+  }): Promise<MachineWithVaultStatusData | null> {
     return Promise.reject(new UnsupportedOperationError('machine vault status'));
   }
 }

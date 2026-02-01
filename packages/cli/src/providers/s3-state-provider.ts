@@ -134,9 +134,7 @@ class S3MachineProvider implements MachineProvider {
     teamName: string;
     machineName: string;
   }): Promise<MachineWithVaultStatusData | null> {
-    const data = await this.s3.getJson<MachineRecord>(
-      `machines/${params.machineName}.json`
-    );
+    const data = await this.s3.getJson<MachineRecord>(`machines/${params.machineName}.json`);
     if (!data) return null;
     return {
       machineName: data.machineName,
