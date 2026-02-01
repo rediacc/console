@@ -268,6 +268,7 @@ jobs:
     uses: ./.github/workflows/cd-dryrun.yml
     with:
       dry_run: true
+      upload_pages: ${{ github.event_name == 'pull_request' }}
       next_version: ${{ needs.initialize.outputs.next_version }}
       staging_tag: dryrun-${{ github.sha }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
@@ -317,13 +318,54 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # COLUMN 5: DEPLOY PREVIEW
+  # Deploys pages preview to Cloudflare Pages for PR validation
+  # Dependencies: deploy-dryrun, tests, standalone-run-test (ALL must pass)
+  # Only runs on pull_request events
+  # ============================================================================
+  deploy-preview:
+    name: Deploy Preview
+    needs: [initialize, deploy-dryrun, tests, standalone-run-test]
+    runs-on: ubuntu-slim
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      needs.initialize.result == 'success' &&
+      needs.deploy-dryrun.result == 'success' &&
+      needs.tests.result == 'success' &&
+      needs.standalone-run-test.result == 'success'
+    environment:
+      name: pr-${{ github.event.pull_request.number }}
+      url: https://pr-${{ github.event.pull_request.number }}.rediacc.pages.dev
+    steps:
+      - name: Download preview pages artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: preview-pages-${{ github.sha }}
+          path: dist/pages/
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65  # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/pages/ --project-name=rediacc --branch=pr-${{ github.event.pull_request.number }}
+
+      - name: Deployment summary
+        run: |
+          echo "## Preview Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://pr-${{ github.event.pull_request.number }}.rediacc.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
   # CI COMPLETE - Gate for merge queue
   # This job only succeeds if ALL CI jobs pass
   # ============================================================================
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test]
+    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -334,6 +376,12 @@ jobs:
             REVIEW_GATE_OK="true"
           fi
 
+          # deploy-preview can be skipped for non-PR events
+          DEPLOY_PREVIEW_OK="false"
+          if [[ "${{ needs.deploy-preview.result }}" == "success" ]] || [[ "${{ needs.deploy-preview.result }}" == "skipped" ]]; then
+            DEPLOY_PREVIEW_OK="true"
+          fi
+
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
              [[ "${{ needs.quality.result }}" != "success" ]] || \
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
@@ -342,7 +390,8 @@ jobs:
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
              [[ "${{ needs.deploy-dryrun.result }}" != "success" ]] || \
              [[ "${{ needs.tests.result }}" != "success" ]] || \
-             [[ "${{ needs.standalone-run-test.result }}" != "success" ]]; then
+             [[ "${{ needs.standalone-run-test.result }}" != "success" ]] || \
+             [[ "$DEPLOY_PREVIEW_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
             echo "  quality: ${{ needs.quality.result }}"
@@ -353,6 +402,7 @@ jobs:
             echo "  deploy-dryrun: ${{ needs.deploy-dryrun.result }}"
             echo "  tests: ${{ needs.tests.result }}"
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
+            echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             exit 1
           fi
           echo "All CI jobs passed successfully!"
