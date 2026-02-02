@@ -25,6 +25,9 @@ Ce guide explique l'utilisation de base de l'interface web sur [https://www.redi
 
 ### 1.1 Inscription
 
+![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
+*(Vidéo: Complete registration flow from start to finish)*
+
 Pour commencer à utiliser la plateforme Rediacc, vous devez d'abord créer un compte.
 
 ![Page de connexion Rediacc - infrastructure toujours active](/assets/images/user-guide/01_login.png)
@@ -67,6 +70,9 @@ Pour commencer à utiliser la plateforme Rediacc, vous devez d'abord créer un c
 
 ### 1.2 Connexion
 
+![Sign in process walkthrough](/assets/videos/user-guide/01-02-login.webm)
+*(Vidéo: Complete sign in flow)*
+
 Une fois votre compte créé, vous pouvez vous connecter à la plateforme.
 
 1. Remplissez le champ **{{t:auth.login.email}}** (obligatoire si un avertissement rouge apparaît).
@@ -107,6 +113,9 @@ La gestion des utilisateurs vous permet de contrôler l'accès à la plateforme 
 
 ### 2.1.1 Ajout d'Utilisateurs
 
+![Adding users walkthrough](/assets/videos/user-guide/02-01-01-user-create.webm)
+*(Vidéo: Creating a new user)*
+
 1. Cliquez sur l'option **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** dans la barre latérale gauche.
 2. Visualisez la liste de tous les utilisateurs au format tableau.
 3. Chaque ligne d'utilisateur affiche l'email, le statut ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), le groupe de permissions et l'heure de dernière activité.
@@ -133,6 +142,9 @@ La gestion des utilisateurs vous permet de contrôler l'accès à la plateforme 
 
 ### 2.1.2 Attribution des Permissions Utilisateur
 
+![User permissions walkthrough](/assets/videos/user-guide/02-01-02-user-permissions.webm)
+*(Vidéo: Assigning permission groups to users)*
+
 Vous pouvez gérer les droits d'accès en attribuant des groupes de permissions spécifiques aux utilisateurs.
 
 1. Sélectionnez un utilisateur dans l'onglet **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}**.
@@ -152,6 +164,9 @@ Vous pouvez gérer les droits d'accès en attribuant des groupes de permissions 
 
 ### 2.1.3 Activation d'Utilisateur
 
+![User activation walkthrough](/assets/videos/user-guide/02-01-03-user-activation.webm)
+*(Vidéo: Activating an inactive user)*
+
 Vous pouvez réactiver les utilisateurs désactivés.
 
 1. Trouvez l'utilisateur avec le statut inactif dans la liste **Utilisateurs**.
@@ -168,6 +183,9 @@ Vous pouvez réactiver les utilisateurs désactivés.
 > **Astuce** : Cette action est réversible. Vous pouvez désactiver l'utilisateur de la même manière.
 
 ### 2.1.4 Traçabilité Utilisateur
+
+![User trace walkthrough](/assets/videos/user-guide/02-01-04-user-trace.webm)
+*(Vidéo: Viewing user activity trace)*
 
 Vous pouvez utiliser la fonction de traçabilité pour surveiller les activités des utilisateurs.
 
@@ -194,6 +212,9 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 
 ### 2.2.1 Création d'Équipes
 
+![Creating teams walkthrough](/assets/videos/user-guide/02-02-01-team-create.webm)
+*(Vidéo: Creating a new team)*
+
 1. Accédez à l'onglet **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationTeams}}**.
 2. Cliquez sur le bouton **"+"**.
 3. Entrez le nom de votre équipe dans le champ **{{t:common.vaultEditor.fields.TEAM.name.label}}**.
@@ -208,6 +229,9 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 
 ### 2.2.2 Modification d'Équipe
 
+![Team editing walkthrough](/assets/videos/user-guide/02-02-02-team-edit.webm)
+*(Vidéo: Editing team information)*
+
 1. Cliquez sur l'icône de crayon à côté de l'équipe que vous souhaitez modifier dans la liste des équipes.
 2. Changez le nom de l'équipe dans le champ **{{t:common.vaultEditor.fields.TEAM.name.label}}** si nécessaire.
 3. Mettez à jour les clés SSH dans la section **{{t:common.vaultEditor.vaultConfiguration}}**.
@@ -219,6 +243,9 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 > **Astuce** : La configuration de l'équipe est utilisée pour la structure organisationnelle. Les modifications prennent effet pour tous les membres de l'équipe.
 
 ### 2.2.3 Gestion des Membres de l'Équipe
+
+![Team members management walkthrough](/assets/videos/user-guide/02-02-03-team-members.webm)
+*(Vidéo: Managing team members)*
 
 1. Sélectionnez une équipe et cliquez sur l'icône d'utilisateur.
 2. Consultez les membres déjà assignés à l'équipe dans l'onglet **{{t:organization.teams.manageMembers.currentTab}}**.
@@ -233,6 +260,9 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 
 ### 2.2.4 Traçabilité de l'Équipe
 
+![Team trace walkthrough](/assets/videos/user-guide/02-02-04-team-trace.webm)
+*(Vidéo: Viewing team audit history)*
+
 1. Sélectionnez l'équipe que vous souhaitez tracer.
 2. Cliquez sur l'icône d'horloge/historique.
 3. Vérifiez les compteurs Enregistrements Totaux, Enregistrements Consultés et Dernière Activité dans la fenêtre **{{t:resources.audit.title}}**.
@@ -244,6 +274,9 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 > **Astuce** : L'historique d'audit est important pour la conformité et le contrôle de sécurité.
 
 ### 2.2.5 Suppression d'Équipe
+
+![Team deletion walkthrough](/assets/videos/user-guide/02-02-05-team-delete.webm)
+*(Vidéo: Deleting a team)*
 
 1. Cliquez sur l'icône de corbeille (rouge) à côté de l'équipe que vous souhaitez supprimer.
 2. Vérifiez que le nom de l'équipe est correct dans la boîte de dialogue de confirmation.
@@ -262,6 +295,9 @@ Le contrôle d'accès vous permet de gérer de manière centralisée les permiss
 
 ### 2.3.1 Création de Groupes de Permissions
 
+![Permission group creation walkthrough](/assets/videos/user-guide/02-03-01-permission-create.webm)
+*(Vidéo: Creating a permission group)*
+
 1. Accédez à l'onglet **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}**.
 2. Cliquez sur le bouton **"+"**.
 3. Entrez un nom significatif dans le champ **{{t:organization.access.modals.groupPlaceholder}}**.
@@ -273,6 +309,9 @@ Le contrôle d'accès vous permet de gérer de manière centralisée les permiss
 > **Astuce** : Les groupes de permissions sont utilisés pour organiser les utilisateurs avec des permissions similaires. Gardez les noms de groupes descriptifs (par exemple, "Admin", "Lecture Seule", "Gestionnaire de Dépôt").
 
 ### 2.3.2 Gestion des Permissions
+
+![Permission management walkthrough](/assets/videos/user-guide/02-03-02-permission-manage.webm)
+*(Vidéo: Managing permissions for a group)*
 
 1. Sélectionnez un Groupe de Permissions et cliquez sur l'option **{{t:organization.access.modals.managePermissionsTitle}}**.
 2. Consultez les droits d'accès du groupe dans l'onglet **{{t:organization.access.modals.currentPermissionsTab}}**.
@@ -291,6 +330,9 @@ Le contrôle d'accès vous permet de gérer de manière centralisée les permiss
 La section Machines vous permet de gérer vos serveurs et ressources de dépôt.
 
 ### 2.4.1 Ajout de Machines
+
+![Adding machines walkthrough](/assets/videos/user-guide/02-04-01-machine-create.webm)
+*(Vidéo: Adding a new machine)*
 
 1. Accédez à l'onglet **{{t:common.navigation.machines}}** depuis le menu de gauche.
 2. Cliquez sur le bouton **{{t:machines.createMachine}}** dans le coin supérieur droit.
@@ -324,6 +366,9 @@ La section Machines vous permet de gérer vos serveurs et ressources de dépôt.
 
 ### 2.4.2 Test de Connectivité
 
+![Connectivity test walkthrough](/assets/videos/user-guide/02-04-02-connectivity-test.webm)
+*(Vidéo: Running a connectivity test)*
+
 Vous pouvez vérifier l'état de connexion des machines existantes.
 
 1. Cliquez sur le bouton **{{t:machines.connectivityTest}}**.
@@ -342,12 +387,18 @@ Vous pouvez vérifier l'état de connexion des machines existantes.
 
 ### 2.4.3 Actualisation de la Liste des Machines
 
+![Machine list refresh walkthrough](/assets/videos/user-guide/02-04-03-machine-refresh.webm)
+*(Vidéo: Refreshing the machine list)*
+
 Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la liste des machines.
 
 ![Bouton Actualiser](/assets/images/user-guide/28_refresh.png)
 *(Figure 28 : Bouton Actualiser dans la barre d'outils d'actions de la machine)*
 
 ### 2.4.4 Détails de la Machine
+
+![Machine details walkthrough](/assets/videos/user-guide/02-04-04-machine-details.webm)
+*(Vidéo: Viewing machine details)*
 
 1. Sélectionnez la machine dont vous souhaitez voir les détails.
 2. Cliquez sur le bouton icône œil (**{{t:common.viewDetails}}**).
@@ -370,6 +421,9 @@ Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la li
 
 ### 2.4.5 Modification de Machine
 
+![Machine editing walkthrough](/assets/videos/user-guide/02-04-05-machine-edit.webm)
+*(Vidéo: Editing machine settings)*
+
 1. Sélectionnez la machine que vous souhaitez modifier.
 2. Cliquez sur le bouton icône crayon (**{{t:common.actions.edit}}**).
 
@@ -386,6 +440,9 @@ Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la li
 > **Astuce** : Exécutez toujours "Test Connection" après avoir modifié des paramètres critiques.
 
 ### 2.4.6 Traçabilité de la Machine
+
+![Machine trace walkthrough](/assets/videos/user-guide/02-04-06-machine-trace.webm)
+*(Vidéo: Viewing machine audit history)*
 
 1. Sélectionnez la machine et cliquez sur le bouton icône horloge (**{{t:common.actions.trace}}**).
 
@@ -405,6 +462,9 @@ Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la li
 
 ### 2.4.7 Suppression de Machine
 
+![Machine deletion walkthrough](/assets/videos/user-guide/02-04-07-machine-delete.webm)
+*(Vidéo: Deleting a machine)*
+
 1. Sélectionnez la machine que vous souhaitez supprimer.
 2. Cliquez sur le bouton icône corbeille (**{{t:common.delete}}**).
 
@@ -419,6 +479,9 @@ Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la li
 > **Avertissement** : Lorsqu'une machine est supprimée, toutes les définitions de dépôt qu'elle contient sont également supprimées. Cette action est irréversible.
 
 ### 2.4.8 Opérations à Distance
+
+![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
+*(Vidéo: Running remote operations on a machine)*
 
 Vous pouvez effectuer diverses opérations à distance sur les machines.
 
@@ -485,6 +548,9 @@ Les dépôts sont les unités fondamentales où vos données de sauvegarde sont 
 
 ### 2.5.1 Création de Dépôts
 
+![Repository creation walkthrough](/assets/videos/user-guide/02-05-01-repository-create.webm)
+*(Vidéo: Creating a new repository)*
+
 1. Sélectionnez une machine dans l'onglet **{{t:common.navigation.machines}}**.
 2. Cliquez sur le bouton **{{t:machines.createRepository}}** dans le coin supérieur droit.
 
@@ -518,6 +584,9 @@ Les dépôts sont les unités fondamentales où vos données de sauvegarde sont 
 
 ### 2.5.2 Fork de Dépôt
 
+![Repository fork walkthrough](/assets/videos/user-guide/02-05-02-repository-fork.webm)
+*(Vidéo: Forking a repository)*
+
 Vous pouvez créer un nouveau dépôt en copiant un dépôt existant.
 
 1. Sélectionnez le dépôt que vous souhaitez copier.
@@ -542,6 +611,9 @@ Vous pouvez créer un nouveau dépôt en copiant un dépôt existant.
 
 ### 2.5.3 Démarrage de Dépôt (Up)
 
+![Repository up walkthrough](/assets/videos/user-guide/02-05-03-repository-up.webm)
+*(Vidéo: Starting a repository)*
+
 Pour activer le dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **up**.
@@ -558,6 +630,9 @@ Pour activer le dépôt :
 
 ### 2.5.4 Arrêt de Dépôt (Down)
 
+![Repository down walkthrough](/assets/videos/user-guide/02-05-04-repository-down.webm)
+*(Vidéo: Stopping a repository)*
+
 Pour arrêter un dépôt actif :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **down**.
@@ -573,6 +648,9 @@ Pour arrêter un dépôt actif :
 > **Astuce** : L'opération "Down" arrête le dépôt en toute sécurité. Aucune donnée n'est perdue, seuls les services sont arrêtés.
 
 ### 2.5.5 Déploiement
+
+![Repository deploy walkthrough](/assets/videos/user-guide/02-05-05-repository-deploy.webm)
+*(Vidéo: Deploying a repository)*
 
 Pour déployer le dépôt vers un emplacement différent :
 
@@ -597,6 +675,9 @@ Pour déployer le dépôt vers un emplacement différent :
 > **Astuce** : Une fois l'opération deploy terminée, vous pouvez exécuter la commande "up" pour démarrer le dépôt sur les machines cibles.
 
 ### 2.5.6 Sauvegarde
+
+![Repository backup walkthrough](/assets/videos/user-guide/02-05-06-repository-backup.webm)
+*(Vidéo: Backing up a repository)*
 
 Pour sauvegarder le dépôt :
 
@@ -627,6 +708,9 @@ Pour sauvegarder le dépôt :
 
 ### 2.5.7 Application de Modèle
 
+![Template application walkthrough](/assets/videos/user-guide/02-05-07-repository-templates.webm)
+*(Vidéo: Applying a template to a repository)*
+
 Pour appliquer un nouveau modèle au dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:resources.templates.selectTemplate}}**.
@@ -650,6 +734,9 @@ Pour appliquer un nouveau modèle au dépôt :
 
 ### 2.5.8 Démontage
 
+![Repository unmount walkthrough](/assets/videos/user-guide/02-05-08-repository-unmount.webm)
+*(Vidéo: Unmounting a repository)*
+
 Pour déconnecter le dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}**.
@@ -665,6 +752,9 @@ Pour déconnecter le dépôt :
 > **Astuce** : Assurez-vous qu'il n'y a pas d'opérations actives sur le dépôt avant de démonter. Après démontage, le dépôt devient inaccessible.
 
 ### 2.5.9 Extension
+
+![Repository expand walkthrough](/assets/videos/user-guide/02-05-09-repository-expand.webm)
+*(Vidéo: Expanding repository size)*
 
 Pour augmenter la taille du dépôt :
 
@@ -689,6 +779,9 @@ Pour augmenter la taille du dépôt :
 
 ### 2.5.10 Renommage
 
+![Repository rename walkthrough](/assets/videos/user-guide/02-05-10-repository-rename.webm)
+*(Vidéo: Renaming a repository)*
+
 Pour changer le nom du dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:common.actions.rename}}**.
@@ -706,6 +799,9 @@ Pour changer le nom du dépôt :
 
 ### 2.5.11 Suppression de Dépôt
 
+![Repository deletion walkthrough](/assets/videos/user-guide/02-05-11-repository-delete.webm)
+*(Vidéo: Deleting a repository)*
+
 Pour supprimer définitivement le dépôt :
 
 1. Sélectionnez le dépôt et suivez le chemin **fx** > **{{t:resources.repositories.deleteRepository}}**.
@@ -718,6 +814,9 @@ Pour supprimer définitivement le dépôt :
 > **Avertissement** : La suppression du dépôt est irréversible. Assurez-vous que les données du dépôt sont sauvegardées avant de supprimer.
 
 ### 2.5.12 Détails du Dépôt
+
+![Repository details walkthrough](/assets/videos/user-guide/02-05-12-repository-details.webm)
+*(Vidéo: Viewing repository details)*
 
 Pour obtenir des informations détaillées sur le dépôt :
 
@@ -750,6 +849,9 @@ Vous pouvez vous connecter aux dépôts en utilisant différentes méthodes.
 
 ### 2.6.1 Connexion par Application de Bureau
 
+![Desktop connection walkthrough](/assets/videos/user-guide/02-06-01-desktop-connection.webm)
+*(Vidéo: Connecting via desktop application)*
+
 1. Cliquez sur le bouton **{{t:resources.localActions.local}}** dans la ligne du dépôt.
 
 ![Bouton de connexion Local](/assets/images/user-guide/73_repo_connection_local.png)
@@ -780,6 +882,9 @@ Vous pouvez vous connecter aux dépôts en utilisant différentes méthodes.
 Vous pouvez gérer votre profil et les paramètres système depuis la section Paramètres.
 
 ### 2.7.1 Changement de Mot de Passe
+
+![Password change walkthrough](/assets/videos/user-guide/02-07-03-password-change.webm)
+*(Vidéo: Changing your password)*
 
 1. Accédez à l'onglet **{{t:common.navigation.settings}}** > **{{t:common.navigation.settingsProfile}}** depuis le menu de gauche.
 
@@ -813,6 +918,9 @@ La section Stockage vous permet de gérer les zones physiques où vos données d
 
 ### 2.8.1 Ajout de Stockage
 
+![Storage creation walkthrough](/assets/videos/user-guide/02-08-01-storage-create.webm)
+*(Vidéo: Adding a storage location)*
+
 1. Accédez à l'onglet **{{t:common.navigation.storage}}** depuis le menu de gauche.
 2. Cliquez sur le bouton **{{t:resources.storage.createStorage}}**.
 
@@ -841,6 +949,9 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 
 ### 2.9.1 Modification d'Identifiants
 
+![Credential editing walkthrough](/assets/videos/user-guide/02-09-01-credential-edit.webm)
+*(Vidéo: Editing credentials)*
+
 1. Accédez à l'onglet **{{t:common.navigation.credentials}}** depuis le menu de gauche.
 2. Sélectionnez l'enregistrement que vous souhaitez modifier.
 3. Cliquez sur le bouton **{{t:common.actions.edit}}**.
@@ -858,6 +969,9 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 
 ### 2.9.2 Traçabilité des Identifiants
 
+![Credential trace walkthrough](/assets/videos/user-guide/02-09-02-credential-trace.webm)
+*(Vidéo: Viewing credential audit history)*
+
 1. Sélectionnez l'enregistrement que vous souhaitez tracer.
 2. Cliquez sur le bouton **{{t:common.actions.trace}}**.
 
@@ -873,6 +987,9 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 > **Astuce** : La fonction de traçabilité fournit un suivi d'utilisation des identifiants à des fins d'audit de sécurité.
 
 ### 2.9.3 Suppression d'Identifiants
+
+![Credential deletion walkthrough](/assets/videos/user-guide/02-09-03-credential-delete.webm)
+*(Vidéo: Deleting a credential)*
 
 1. Sélectionnez l'enregistrement que vous souhaitez supprimer.
 2. Cliquez sur le bouton rouge **{{t:common.delete}}**.
@@ -894,6 +1011,9 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 La section File d'Attente vous permet de suivre les opérations en attente et terminées dans le système.
 
 ### 2.10.1 Opérations de File d'Attente
+
+![Queue operations walkthrough](/assets/videos/user-guide/02-10-01-queue-operations.webm)
+*(Vidéo: Managing queue operations)*
 
 1. Cliquez sur l'onglet **{{t:common.navigation.queue}}** depuis le menu de gauche.
 
@@ -925,6 +1045,9 @@ La section File d'Attente vous permet de suivre les opérations en attente et te
 La section Audit conserve les enregistrements de toutes les opérations effectuées dans le système.
 
 ### 2.11.1 Enregistrements d'Audit
+
+![Audit records walkthrough](/assets/videos/user-guide/02-11-01-audit-records.webm)
+*(Vidéo: Viewing system audit records)*
 
 1. Cliquez sur l'onglet **{{t:common.navigation.audit}}** depuis le menu de gauche.
 

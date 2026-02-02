@@ -25,6 +25,9 @@ language: ar
 
 ### 1.1 التسجيل
 
+![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
+*(فيديو: Complete registration flow from start to finish)*
+
 لبدء استخدام منصة Rediacc، تحتاج أولاً إلى إنشاء حساب.
 
 ![صفحة تسجيل الدخول إلى Rediacc - البنية التحتية الدائمة](/assets/images/user-guide/01_login.png)
@@ -67,6 +70,9 @@ language: ar
 
 ### 1.2 تسجيل الدخول
 
+![Sign in process walkthrough](/assets/videos/user-guide/01-02-login.webm)
+*(فيديو: Complete sign in flow)*
+
 بعد إنشاء حسابك، يمكنك تسجيل الدخول إلى المنصة.
 
 1. املأ حقل **{{t:auth.login.email}}** (مطلوب إذا ظهر تحذير أحمر).
@@ -107,6 +113,9 @@ language: ar
 
 ### 2.1.1 إضافة المستخدمين
 
+![Adding users walkthrough](/assets/videos/user-guide/02-01-01-user-create.webm)
+*(فيديو: Creating a new user)*
+
 1. انقر على خيار **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** في الشريط الجانبي الأيسر.
 2. اعرض قائمة جميع المستخدمين بتنسيق جدول.
 3. يعرض كل صف مستخدم البريد الإلكتروني والحالة ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}) ومجموعة الأذونات ووقت آخر نشاط.
@@ -133,6 +142,9 @@ language: ar
 
 ### 2.1.2 تعيين أذونات المستخدم
 
+![User permissions walkthrough](/assets/videos/user-guide/02-01-02-user-permissions.webm)
+*(فيديو: Assigning permission groups to users)*
+
 يمكنك إدارة حقوق الوصول من خلال تعيين مجموعات أذونات محددة للمستخدمين.
 
 1. حدد مستخدماً من علامة التبويب **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}**.
@@ -152,6 +164,9 @@ language: ar
 
 ### 2.1.3 تفعيل المستخدم
 
+![User activation walkthrough](/assets/videos/user-guide/02-01-03-user-activation.webm)
+*(فيديو: Activating an inactive user)*
+
 يمكنك إعادة تفعيل المستخدمين المعطلين.
 
 1. ابحث عن المستخدم ذو الحالة غير النشطة في قائمة **المستخدمون**.
@@ -168,6 +183,9 @@ language: ar
 > **نصيحة**: هذا الإجراء قابل للعكس. يمكنك إلغاء تفعيل المستخدم بنفس الطريقة.
 
 ### 2.1.4 تتبع المستخدم
+
+![User trace walkthrough](/assets/videos/user-guide/02-01-04-user-trace.webm)
+*(فيديو: Viewing user activity trace)*
 
 يمكنك استخدام ميزة التتبع لمراقبة أنشطة المستخدم.
 
@@ -194,6 +212,9 @@ language: ar
 
 ### 2.2.1 إنشاء الفرق
 
+![Creating teams walkthrough](/assets/videos/user-guide/02-02-01-team-create.webm)
+*(فيديو: Creating a new team)*
+
 1. انتقل إلى علامة التبويب **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationTeams}}**.
 2. انقر على زر **"+"**.
 3. أدخل اسم فريقك في حقل **{{t:common.vaultEditor.fields.TEAM.name.label}}**.
@@ -208,6 +229,9 @@ language: ar
 
 ### 2.2.2 تحرير الفريق
 
+![Team editing walkthrough](/assets/videos/user-guide/02-02-02-team-edit.webm)
+*(فيديو: Editing team information)*
+
 1. انقر على أيقونة القلم بجوار الفريق الذي تريد تحريره في قائمة الفرق.
 2. غيّر اسم الفريق في حقل **{{t:common.vaultEditor.fields.TEAM.name.label}}** إذا لزم الأمر.
 3. قم بتحديث مفاتيح SSH في قسم **{{t:common.vaultEditor.vaultConfiguration}}**.
@@ -219,6 +243,9 @@ language: ar
 > **نصيحة**: يُستخدم تكوين الفريق للهيكل التنظيمي. تسري التغييرات على جميع أعضاء الفريق.
 
 ### 2.2.3 إدارة أعضاء الفريق
+
+![Team members management walkthrough](/assets/videos/user-guide/02-02-03-team-members.webm)
+*(فيديو: Managing team members)*
 
 1. حدد فريقاً وانقر على أيقونة المستخدم.
 2. اعرض الأعضاء المعينين بالفعل للفريق في علامة التبويب **{{t:organization.teams.manageMembers.currentTab}}**.
@@ -233,6 +260,9 @@ language: ar
 
 ### 2.2.4 تتبع الفريق
 
+![Team trace walkthrough](/assets/videos/user-guide/02-02-04-team-trace.webm)
+*(فيديو: Viewing team audit history)*
+
 1. حدد الفريق الذي تريد تتبعه.
 2. انقر على أيقونة الساعة/السجل.
 3. راجع إجمالي السجلات والسجلات المعروضة وعدد آخر نشاط في نافذة **{{t:resources.audit.title}}**.
@@ -244,6 +274,9 @@ language: ar
 > **نصيحة**: سجل التدقيق مهم للامتثال والتحكم في الأمان.
 
 ### 2.2.5 حذف الفريق
+
+![Team deletion walkthrough](/assets/videos/user-guide/02-02-05-team-delete.webm)
+*(فيديو: Deleting a team)*
 
 1. انقر على أيقونة سلة المهملات (الحمراء) بجوار الفريق الذي تريد حذفه.
 2. تحقق من صحة اسم الفريق في مربع حوار التأكيد.
@@ -262,6 +295,9 @@ language: ar
 
 ### 2.3.1 إنشاء مجموعات الأذونات
 
+![Permission group creation walkthrough](/assets/videos/user-guide/02-03-01-permission-create.webm)
+*(فيديو: Creating a permission group)*
+
 1. انتقل إلى علامة التبويب **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}**.
 2. انقر على زر **"+"**.
 3. أدخل اسماً ذا معنى في حقل **{{t:organization.access.modals.groupPlaceholder}}**.
@@ -273,6 +309,9 @@ language: ar
 > **نصيحة**: تُستخدم مجموعات الأذونات لتنظيم المستخدمين ذوي الأذونات المتشابهة. اجعل أسماء المجموعات وصفية (على سبيل المثال، "مسؤول"، "قراءة فقط"، "مدير المستودعات").
 
 ### 2.3.2 إدارة الأذونات
+
+![Permission management walkthrough](/assets/videos/user-guide/02-03-02-permission-manage.webm)
+*(فيديو: Managing permissions for a group)*
 
 1. حدد مجموعة أذونات وانقر على خيار **{{t:organization.access.modals.managePermissionsTitle}}**.
 2. اعرض حقوق وصول المجموعة في علامة التبويب **{{t:organization.access.modals.currentPermissionsTab}}**.
@@ -291,6 +330,9 @@ language: ar
 يتيح لك قسم الأجهزة إدارة الخوادم وموارد المستودعات الخاصة بك.
 
 ### 2.4.1 إضافة الأجهزة
+
+![Adding machines walkthrough](/assets/videos/user-guide/02-04-01-machine-create.webm)
+*(فيديو: Adding a new machine)*
 
 1. انتقل إلى علامة التبويب **{{t:common.navigation.machines}}** من القائمة اليسرى.
 2. انقر على زر **{{t:machines.createMachine}}** في الزاوية اليمنى العليا.
@@ -324,6 +366,9 @@ language: ar
 
 ### 2.4.2 اختبار الاتصال
 
+![Connectivity test walkthrough](/assets/videos/user-guide/02-04-02-connectivity-test.webm)
+*(فيديو: Running a connectivity test)*
+
 يمكنك التحقق من حالة اتصال الأجهزة الموجودة.
 
 1. انقر على زر **{{t:machines.connectivityTest}}**.
@@ -342,12 +387,18 @@ language: ar
 
 ### 2.4.3 تحديث قائمة الأجهزة
 
+![Machine list refresh walkthrough](/assets/videos/user-guide/02-04-03-machine-refresh.webm)
+*(فيديو: Refreshing the machine list)*
+
 انقر على زر **{{t:common.actions.refresh}}** لتحديث قائمة الأجهزة.
 
 ![زر التحديث](/assets/images/user-guide/28_refresh.png)
 *(الشكل 28: زر التحديث في شريط أدوات إجراءات الجهاز)*
 
 ### 2.4.4 تفاصيل الجهاز
+
+![Machine details walkthrough](/assets/videos/user-guide/02-04-04-machine-details.webm)
+*(فيديو: Viewing machine details)*
 
 1. حدد الجهاز الذي تريد رؤية تفاصيله.
 2. انقر على زر أيقونة العين (**{{t:common.viewDetails}}**).
@@ -370,6 +421,9 @@ language: ar
 
 ### 2.4.5 تحرير الجهاز
 
+![Machine editing walkthrough](/assets/videos/user-guide/02-04-05-machine-edit.webm)
+*(فيديو: Editing machine settings)*
+
 1. حدد الجهاز الذي تريد تحريره.
 2. انقر على زر أيقونة القلم (**{{t:common.actions.edit}}**).
 
@@ -386,6 +440,9 @@ language: ar
 > **نصيحة**: قم دائماً بتشغيل "اختبار الاتصال" بعد تغيير الإعدادات الحرجة.
 
 ### 2.4.6 تتبع الجهاز
+
+![Machine trace walkthrough](/assets/videos/user-guide/02-04-06-machine-trace.webm)
+*(فيديو: Viewing machine audit history)*
 
 1. حدد الجهاز وانقر على زر أيقونة الساعة (**{{t:common.actions.trace}}**).
 
@@ -405,6 +462,9 @@ language: ar
 
 ### 2.4.7 حذف الجهاز
 
+![Machine deletion walkthrough](/assets/videos/user-guide/02-04-07-machine-delete.webm)
+*(فيديو: Deleting a machine)*
+
 1. حدد الجهاز الذي تريد حذفه.
 2. انقر على زر أيقونة سلة المهملات (**{{t:common.delete}}**).
 
@@ -419,6 +479,9 @@ language: ar
 > **تحذير**: عند حذف جهاز، تتم إزالة جميع تعريفات المستودعات الموجودة عليه أيضاً. هذا الإجراء لا رجعة فيه.
 
 ### 2.4.8 العمليات عن بُعد
+
+![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
+*(فيديو: Running remote operations on a machine)*
 
 يمكنك إجراء عمليات مختلفة عن بُعد على الأجهزة.
 
@@ -485,6 +548,9 @@ language: ar
 
 ### 2.5.1 إنشاء المستودعات
 
+![Repository creation walkthrough](/assets/videos/user-guide/02-05-01-repository-create.webm)
+*(فيديو: Creating a new repository)*
+
 1. حدد جهازاً من علامة التبويب **{{t:common.navigation.machines}}**.
 2. انقر على زر **{{t:machines.createRepository}}** في الزاوية اليمنى العليا.
 
@@ -518,6 +584,9 @@ language: ar
 
 ### 2.5.2 تفريع المستودع
 
+![Repository fork walkthrough](/assets/videos/user-guide/02-05-02-repository-fork.webm)
+*(فيديو: Forking a repository)*
+
 يمكنك إنشاء مستودع جديد عن طريق نسخ مستودع موجود.
 
 1. حدد المستودع الذي تريد نسخه.
@@ -542,6 +611,9 @@ language: ar
 
 ### 2.5.3 تشغيل المستودع
 
+![Repository up walkthrough](/assets/videos/user-guide/02-05-03-repository-up.webm)
+*(فيديو: Starting a repository)*
+
 لتفعيل المستودع:
 
 1. حدد المستودع واتبع المسار **fx** > **up**.
@@ -558,6 +630,9 @@ language: ar
 
 ### 2.5.4 إيقاف المستودع
 
+![Repository down walkthrough](/assets/videos/user-guide/02-05-04-repository-down.webm)
+*(فيديو: Stopping a repository)*
+
 لإيقاف مستودع نشط:
 
 1. حدد المستودع واتبع المسار **fx** > **down**.
@@ -573,6 +648,9 @@ language: ar
 > **نصيحة**: عملية "الإيقاف" توقف المستودع بأمان. لا يتم فقدان أي بيانات، يتم إيقاف الخدمات فقط.
 
 ### 2.5.5 النشر
+
+![Repository deploy walkthrough](/assets/videos/user-guide/02-05-05-repository-deploy.webm)
+*(فيديو: Deploying a repository)*
 
 لنشر المستودع إلى موقع مختلف:
 
@@ -597,6 +675,9 @@ language: ar
 > **نصيحة**: بعد اكتمال عملية deploy، يمكنك تشغيل أمر "up" لبدء تشغيل المستودع على الأجهزة المستهدفة.
 
 ### 2.5.6 النسخ الاحتياطي
+
+![Repository backup walkthrough](/assets/videos/user-guide/02-05-06-repository-backup.webm)
+*(فيديو: Backing up a repository)*
 
 للنسخ الاحتياطي للمستودع:
 
@@ -627,6 +708,9 @@ language: ar
 
 ### 2.5.7 تطبيق القالب
 
+![Template application walkthrough](/assets/videos/user-guide/02-05-07-repository-templates.webm)
+*(فيديو: Applying a template to a repository)*
+
 لتطبيق قالب جديد على المستودع:
 
 1. حدد المستودع واتبع المسار **fx** > **{{t:resources.templates.selectTemplate}}**.
@@ -650,6 +734,9 @@ language: ar
 
 ### 2.5.8 إلغاء التثبيت
 
+![Repository unmount walkthrough](/assets/videos/user-guide/02-05-08-repository-unmount.webm)
+*(فيديو: Unmounting a repository)*
+
 لفصل المستودع:
 
 1. حدد المستودع واتبع المسار **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}**.
@@ -665,6 +752,9 @@ language: ar
 > **نصيحة**: تأكد من عدم وجود عمليات نشطة على المستودع قبل إلغاء التثبيت. بعد إلغاء التثبيت، يصبح المستودع غير قابل للوصول.
 
 ### 2.5.9 التوسيع
+
+![Repository expand walkthrough](/assets/videos/user-guide/02-05-09-repository-expand.webm)
+*(فيديو: Expanding repository size)*
 
 لزيادة حجم المستودع:
 
@@ -689,6 +779,9 @@ language: ar
 
 ### 2.5.10 إعادة التسمية
 
+![Repository rename walkthrough](/assets/videos/user-guide/02-05-10-repository-rename.webm)
+*(فيديو: Renaming a repository)*
+
 لتغيير اسم المستودع:
 
 1. حدد المستودع واتبع المسار **fx** > **{{t:common.actions.rename}}**.
@@ -706,6 +799,9 @@ language: ar
 
 ### 2.5.11 حذف المستودع
 
+![Repository deletion walkthrough](/assets/videos/user-guide/02-05-11-repository-delete.webm)
+*(فيديو: Deleting a repository)*
+
 لحذف المستودع بشكل دائم:
 
 1. حدد المستودع واتبع المسار **fx** > **{{t:resources.repositories.deleteRepository}}**.
@@ -718,6 +814,9 @@ language: ar
 > **تحذير**: حذف المستودع لا رجعة فيه. تأكد من نسخ بيانات المستودع احتياطياً قبل الحذف.
 
 ### 2.5.12 تفاصيل المستودع
+
+![Repository details walkthrough](/assets/videos/user-guide/02-05-12-repository-details.webm)
+*(فيديو: Viewing repository details)*
 
 للحصول على معلومات تفصيلية حول المستودع:
 
@@ -750,6 +849,9 @@ language: ar
 
 ### 2.6.1 اتصال تطبيق سطح المكتب
 
+![Desktop connection walkthrough](/assets/videos/user-guide/02-06-01-desktop-connection.webm)
+*(فيديو: Connecting via desktop application)*
+
 1. انقر على زر **{{t:resources.localActions.local}}** في صف المستودع.
 
 ![زر الاتصال المحلي](/assets/images/user-guide/73_repo_connection_local.png)
@@ -780,6 +882,9 @@ language: ar
 يمكنك إدارة ملفك الشخصي وإعدادات النظام من قسم الإعدادات.
 
 ### 2.7.1 تغيير كلمة المرور
+
+![Password change walkthrough](/assets/videos/user-guide/02-07-03-password-change.webm)
+*(فيديو: Changing your password)*
 
 1. انتقل إلى علامة التبويب **{{t:common.navigation.settings}}** > **{{t:common.navigation.settingsProfile}}** من القائمة اليسرى.
 
@@ -813,6 +918,9 @@ language: ar
 
 ### 2.8.1 إضافة التخزين
 
+![Storage creation walkthrough](/assets/videos/user-guide/02-08-01-storage-create.webm)
+*(فيديو: Adding a storage location)*
+
 1. انتقل إلى علامة التبويب **{{t:common.navigation.storage}}** من القائمة اليسرى.
 2. انقر على زر **{{t:resources.storage.createStorage}}**.
 
@@ -841,6 +949,9 @@ language: ar
 
 ### 2.9.1 تحرير بيانات الاعتماد
 
+![Credential editing walkthrough](/assets/videos/user-guide/02-09-01-credential-edit.webm)
+*(فيديو: Editing credentials)*
+
 1. انتقل إلى علامة التبويب **{{t:common.navigation.credentials}}** من القائمة اليسرى.
 2. حدد السجل الذي تريد تحريره.
 3. انقر على زر **{{t:common.actions.edit}}**.
@@ -858,6 +969,9 @@ language: ar
 
 ### 2.9.2 تتبع بيانات الاعتماد
 
+![Credential trace walkthrough](/assets/videos/user-guide/02-09-02-credential-trace.webm)
+*(فيديو: Viewing credential audit history)*
+
 1. حدد السجل الذي تريد تتبعه.
 2. انقر على زر **{{t:common.actions.trace}}**.
 
@@ -873,6 +987,9 @@ language: ar
 > **نصيحة**: توفر ميزة التتبع تتبع استخدام بيانات الاعتماد لأغراض تدقيق الأمان.
 
 ### 2.9.3 حذف بيانات الاعتماد
+
+![Credential deletion walkthrough](/assets/videos/user-guide/02-09-03-credential-delete.webm)
+*(فيديو: Deleting a credential)*
 
 1. حدد السجل الذي تريد حذفه.
 2. انقر على زر **{{t:common.delete}}** الأحمر.
@@ -894,6 +1011,9 @@ language: ar
 يتيح لك قسم قائمة الانتظار تتبع العمليات المعلقة والمكتملة في النظام.
 
 ### 2.10.1 عمليات قائمة الانتظار
+
+![Queue operations walkthrough](/assets/videos/user-guide/02-10-01-queue-operations.webm)
+*(فيديو: Managing queue operations)*
 
 1. انقر على علامة التبويب **{{t:common.navigation.queue}}** من القائمة اليسرى.
 
@@ -925,6 +1045,9 @@ language: ar
 يحتفظ قسم التدقيق بسجلات لجميع العمليات التي تم إجراؤها في النظام.
 
 ### 2.11.1 سجلات التدقيق
+
+![Audit records walkthrough](/assets/videos/user-guide/02-11-01-audit-records.webm)
+*(فيديو: Viewing system audit records)*
 
 1. انقر على علامة التبويب **{{t:common.navigation.audit}}** من القائمة اليسرى.
 
