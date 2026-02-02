@@ -25,6 +25,9 @@ language: zh
 
 ### 1.1 注册
 
+![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
+*(视频: Complete registration flow from start to finish)*
+
 要开始使用 Rediacc 平台，您首先需要创建一个账户。
 
 ![Rediacc 登录页面 - 始终在线的基础设施](/assets/images/user-guide/01_login.png)
@@ -67,6 +70,9 @@ language: zh
 
 ### 1.2 登录
 
+![Sign in process walkthrough](/assets/videos/user-guide/01-02-login.webm)
+*(视频: Complete sign in flow)*
+
 创建账户后，您可以登录平台。
 
 1. 填写 **{{t:auth.login.email}}** 字段（如果出现红色警告则必填）。
@@ -107,6 +113,9 @@ language: zh
 
 ### 2.1.1 添加用户
 
+![Adding users walkthrough](/assets/videos/user-guide/02-01-01-user-create.webm)
+*(视频: Creating a new user)*
+
 1. 在左侧边栏中点击 **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** 选项。
 2. 以表格格式查看所有用户的列表。
 3. 每个用户行显示电子邮件、状态（{{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}）、权限组和最后活动时间。
@@ -133,6 +142,9 @@ language: zh
 
 ### 2.1.2 分配用户权限
 
+![User permissions walkthrough](/assets/videos/user-guide/02-01-02-user-permissions.webm)
+*(视频: Assigning permission groups to users)*
+
 您可以通过向用户分配特定权限组来管理访问权限。
 
 1. 从 **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** 标签中选择用户。
@@ -152,6 +164,9 @@ language: zh
 
 ### 2.1.3 用户激活
 
+![User activation walkthrough](/assets/videos/user-guide/02-01-03-user-activation.webm)
+*(视频: Activating an inactive user)*
+
 您可以重新激活已禁用的用户。
 
 1. 在 **用户** 列表中找到状态为非活动的用户。
@@ -168,6 +183,9 @@ language: zh
 > **提示**：此操作是可逆的。您可以以相同方式停用用户。
 
 ### 2.1.4 用户追踪
+
+![User trace walkthrough](/assets/videos/user-guide/02-01-04-user-trace.webm)
+*(视频: Viewing user activity trace)*
 
 您可以使用追踪功能监控用户活动。
 
@@ -194,6 +212,9 @@ language: zh
 
 ### 2.2.1 创建团队
 
+![Creating teams walkthrough](/assets/videos/user-guide/02-02-01-team-create.webm)
+*(视频: Creating a new team)*
+
 1. 转到 **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationTeams}}** 标签。
 2. 点击 **"+"** 按钮。
 3. 在 **{{t:common.vaultEditor.fields.TEAM.name.label}}** 字段中输入您的团队名称。
@@ -208,6 +229,9 @@ language: zh
 
 ### 2.2.2 团队编辑
 
+![Team editing walkthrough](/assets/videos/user-guide/02-02-02-team-edit.webm)
+*(视频: Editing team information)*
+
 1. 在团队列表中点击要编辑的团队旁边的铅笔图标。
 2. 如需要，在 **{{t:common.vaultEditor.fields.TEAM.name.label}}** 字段中更改团队名称。
 3. 在 **{{t:common.vaultEditor.vaultConfiguration}}** 部分更新 SSH 密钥。
@@ -219,6 +243,9 @@ language: zh
 > **提示**：团队配置用于组织结构。更改对所有团队成员生效。
 
 ### 2.2.3 团队成员管理
+
+![Team members management walkthrough](/assets/videos/user-guide/02-02-03-team-members.webm)
+*(视频: Managing team members)*
 
 1. 选择团队并点击用户图标。
 2. 在 **{{t:organization.teams.manageMembers.currentTab}}** 标签页中查看已分配给团队的成员。
@@ -233,6 +260,9 @@ language: zh
 
 ### 2.2.4 团队追踪
 
+![Team trace walkthrough](/assets/videos/user-guide/02-02-04-team-trace.webm)
+*(视频: Viewing team audit history)*
+
 1. 选择要追踪的团队。
 2. 点击时钟/历史图标。
 3. 在 **{{t:resources.audit.title}}** 模态窗口中查看总记录数、已查看记录数和最后活动计数。
@@ -244,6 +274,9 @@ language: zh
 > **提示**：审计历史对于合规和安全控制很重要。
 
 ### 2.2.5 团队删除
+
+![Team deletion walkthrough](/assets/videos/user-guide/02-02-05-team-delete.webm)
+*(视频: Deleting a team)*
 
 1. 点击要删除的团队旁边的垃圾桶（红色）图标。
 2. 在确认对话框中验证团队名称正确。
@@ -262,6 +295,9 @@ language: zh
 
 ### 2.3.1 创建权限组
 
+![Permission group creation walkthrough](/assets/videos/user-guide/02-03-01-permission-create.webm)
+*(视频: Creating a permission group)*
+
 1. 转到 **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}** 标签。
 2. 点击 **"+"** 按钮。
 3. 在 **{{t:organization.access.modals.groupPlaceholder}}** 字段中输入有意义的名称。
@@ -273,6 +309,9 @@ language: zh
 > **提示**：权限组用于组织具有相似权限的用户。保持组名称描述性（例如，"管理员"、"只读"、"仓库管理员"）。
 
 ### 2.3.2 权限管理
+
+![Permission management walkthrough](/assets/videos/user-guide/02-03-02-permission-manage.webm)
+*(视频: Managing permissions for a group)*
 
 1. 选择权限组并点击 **{{t:organization.access.modals.managePermissionsTitle}}** 选项。
 2. 在 **{{t:organization.access.modals.currentPermissionsTab}}** 标签页中查看组的访问权限。
@@ -291,6 +330,9 @@ language: zh
 机器部分允许您管理服务器和仓库资源。
 
 ### 2.4.1 添加机器
+
+![Adding machines walkthrough](/assets/videos/user-guide/02-04-01-machine-create.webm)
+*(视频: Adding a new machine)*
 
 1. 从左侧菜单转到 **{{t:common.navigation.machines}}** 标签。
 2. 点击右上角的 **{{t:machines.createMachine}}** 按钮。
@@ -324,6 +366,9 @@ language: zh
 
 ### 2.4.2 连接测试
 
+![Connectivity test walkthrough](/assets/videos/user-guide/02-04-02-connectivity-test.webm)
+*(视频: Running a connectivity test)*
+
 您可以检查现有机器的连接状态。
 
 1. 点击 **{{t:machines.connectivityTest}}** 按钮。
@@ -342,12 +387,18 @@ language: zh
 
 ### 2.4.3 刷新机器列表
 
+![Machine list refresh walkthrough](/assets/videos/user-guide/02-04-03-machine-refresh.webm)
+*(视频: Refreshing the machine list)*
+
 点击 **{{t:common.actions.refresh}}** 按钮更新机器列表。
 
 ![刷新按钮](/assets/images/user-guide/28_refresh.png)
 *（图 28：机器操作工具栏中的刷新按钮）*
 
 ### 2.4.4 机器详情
+
+![Machine details walkthrough](/assets/videos/user-guide/02-04-04-machine-details.webm)
+*(视频: Viewing machine details)*
 
 1. 选择要查看详情的机器。
 2. 点击眼睛图标按钮（**{{t:common.viewDetails}}**）。
@@ -370,6 +421,9 @@ language: zh
 
 ### 2.4.5 机器编辑
 
+![Machine editing walkthrough](/assets/videos/user-guide/02-04-05-machine-edit.webm)
+*(视频: Editing machine settings)*
+
 1. 选择要编辑的机器。
 2. 点击铅笔图标按钮（**{{t:common.actions.edit}}**）。
 
@@ -386,6 +440,9 @@ language: zh
 > **提示**：更改关键设置后务必运行"测试连接"。
 
 ### 2.4.6 机器追踪
+
+![Machine trace walkthrough](/assets/videos/user-guide/02-04-06-machine-trace.webm)
+*(视频: Viewing machine audit history)*
 
 1. 选择机器并点击时钟图标按钮（**{{t:common.actions.trace}}**）。
 
@@ -405,6 +462,9 @@ language: zh
 
 ### 2.4.7 机器删除
 
+![Machine deletion walkthrough](/assets/videos/user-guide/02-04-07-machine-delete.webm)
+*(视频: Deleting a machine)*
+
 1. 选择要删除的机器。
 2. 点击垃圾桶图标按钮（**{{t:common.delete}}**）。
 
@@ -419,6 +479,9 @@ language: zh
 > **警告**：删除机器时，其上的所有仓库定义也会被删除。此操作不可逆。
 
 ### 2.4.8 远程操作
+
+![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
+*(视频: Running remote operations on a machine)*
 
 您可以在机器上执行各种远程操作。
 
@@ -485,6 +548,9 @@ language: zh
 
 ### 2.5.1 创建仓库
 
+![Repository creation walkthrough](/assets/videos/user-guide/02-05-01-repository-create.webm)
+*(视频: Creating a new repository)*
+
 1. 从 **{{t:common.navigation.machines}}** 标签中选择机器。
 2. 点击右上角的 **{{t:machines.createRepository}}** 按钮。
 
@@ -518,6 +584,9 @@ language: zh
 
 ### 2.5.2 仓库分叉
 
+![Repository fork walkthrough](/assets/videos/user-guide/02-05-02-repository-fork.webm)
+*(视频: Forking a repository)*
+
 您可以通过复制现有仓库来创建新仓库。
 
 1. 选择要复制的仓库。
@@ -542,6 +611,9 @@ language: zh
 
 ### 2.5.3 仓库启动
 
+![Repository up walkthrough](/assets/videos/user-guide/02-05-03-repository-up.webm)
+*(视频: Starting a repository)*
+
 激活仓库：
 
 1. 选择仓库并按照 **fx** > **up** 路径。
@@ -558,6 +630,9 @@ language: zh
 
 ### 2.5.4 仓库停止
 
+![Repository down walkthrough](/assets/videos/user-guide/02-05-04-repository-down.webm)
+*(视频: Stopping a repository)*
+
 停止活动仓库：
 
 1. 选择仓库并按照 **fx** > **down** 路径。
@@ -573,6 +648,9 @@ language: zh
 > **提示**："Down"操作安全地关闭仓库。不会丢失数据，仅停止服务。
 
 ### 2.5.5 部署
+
+![Repository deploy walkthrough](/assets/videos/user-guide/02-05-05-repository-deploy.webm)
+*(视频: Deploying a repository)*
 
 将仓库部署到不同位置：
 
@@ -597,6 +675,9 @@ language: zh
 > **提示**：部署操作完成后，您可以在目标机器上运行"up"命令启动仓库。
 
 ### 2.5.6 备份
+
+![Repository backup walkthrough](/assets/videos/user-guide/02-05-06-repository-backup.webm)
+*(视频: Backing up a repository)*
 
 备份仓库：
 
@@ -627,6 +708,9 @@ language: zh
 
 ### 2.5.7 模板应用
 
+![Template application walkthrough](/assets/videos/user-guide/02-05-07-repository-templates.webm)
+*(视频: Applying a template to a repository)*
+
 向仓库应用新模板：
 
 1. 选择仓库并按照 **fx** > **{{t:resources.templates.selectTemplate}}** 路径。
@@ -650,6 +734,9 @@ language: zh
 
 ### 2.5.8 卸载
 
+![Repository unmount walkthrough](/assets/videos/user-guide/02-05-08-repository-unmount.webm)
+*(视频: Unmounting a repository)*
+
 断开仓库连接：
 
 1. 选择仓库并按照 **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}** 路径操作。
@@ -665,6 +752,9 @@ language: zh
 > **提示**：卸载前确保仓库上没有活动操作。卸载后，仓库变得不可访问。
 
 ### 2.5.9 扩展
+
+![Repository expand walkthrough](/assets/videos/user-guide/02-05-09-repository-expand.webm)
+*(视频: Expanding repository size)*
 
 增加仓库大小：
 
@@ -689,6 +779,9 @@ language: zh
 
 ### 2.5.10 重命名
 
+![Repository rename walkthrough](/assets/videos/user-guide/02-05-10-repository-rename.webm)
+*(视频: Renaming a repository)*
+
 更改仓库名称：
 
 1. 选择仓库并按照 **fx** > **{{t:common.actions.rename}}** 路径操作。
@@ -706,6 +799,9 @@ language: zh
 
 ### 2.5.11 仓库删除
 
+![Repository deletion walkthrough](/assets/videos/user-guide/02-05-11-repository-delete.webm)
+*(视频: Deleting a repository)*
+
 永久删除仓库：
 
 1. 选择仓库并按照 **fx** > **{{t:resources.repositories.deleteRepository}}** 路径操作。
@@ -718,6 +814,9 @@ language: zh
 > **警告**：仓库删除不可逆。删除前确保仓库数据已备份。
 
 ### 2.5.12 仓库详情
+
+![Repository details walkthrough](/assets/videos/user-guide/02-05-12-repository-details.webm)
+*(视频: Viewing repository details)*
 
 获取有关仓库的详细信息：
 
@@ -750,6 +849,9 @@ language: zh
 
 ### 2.6.1 桌面应用程序连接
 
+![Desktop connection walkthrough](/assets/videos/user-guide/02-06-01-desktop-connection.webm)
+*(视频: Connecting via desktop application)*
+
 1. 点击仓库行中的 **{{t:resources.localActions.local}}** 按钮。
 
 ![本地连接按钮](/assets/images/user-guide/73_repo_connection_local.png)
@@ -780,6 +882,9 @@ language: zh
 您可以从设置部分管理个人资料和系统设置。
 
 ### 2.7.1 更改密码
+
+![Password change walkthrough](/assets/videos/user-guide/02-07-03-password-change.webm)
+*(视频: Changing your password)*
 
 1. 从左侧菜单转到 **{{t:common.navigation.settings}}** > **{{t:common.navigation.settingsProfile}}** 标签。
 
@@ -813,6 +918,9 @@ language: zh
 
 ### 2.8.1 添加存储
 
+![Storage creation walkthrough](/assets/videos/user-guide/02-08-01-storage-create.webm)
+*(视频: Adding a storage location)*
+
 1. 从左侧菜单转到 **{{t:common.navigation.storage}}** 标签。
 2. 点击 **{{t:resources.storage.createStorage}}** 按钮。
 
@@ -841,6 +949,9 @@ language: zh
 
 ### 2.9.1 凭证编辑
 
+![Credential editing walkthrough](/assets/videos/user-guide/02-09-01-credential-edit.webm)
+*(视频: Editing credentials)*
+
 1. 从左侧菜单转到 **{{t:common.navigation.credentials}}** 标签。
 2. 选择要编辑的记录。
 3. 点击 **{{t:common.actions.edit}}** 按钮。
@@ -858,6 +969,9 @@ language: zh
 
 ### 2.9.2 凭证追踪
 
+![Credential trace walkthrough](/assets/videos/user-guide/02-09-02-credential-trace.webm)
+*(视频: Viewing credential audit history)*
+
 1. 选择要追踪的记录。
 2. 点击 **{{t:common.actions.trace}}** 按钮。
 
@@ -873,6 +987,9 @@ language: zh
 > **提示**：追踪功能为安全审计目的提供凭证使用追踪。
 
 ### 2.9.3 凭证删除
+
+![Credential deletion walkthrough](/assets/videos/user-guide/02-09-03-credential-delete.webm)
+*(视频: Deleting a credential)*
 
 1. 选择要删除的记录。
 2. 点击红色 **{{t:common.delete}}** 按钮。
@@ -894,6 +1011,9 @@ language: zh
 队列部分允许您跟踪系统中的待处理和已完成操作。
 
 ### 2.10.1 队列操作
+
+![Queue operations walkthrough](/assets/videos/user-guide/02-10-01-queue-operations.webm)
+*(视频: Managing queue operations)*
 
 1. 从左侧菜单点击 **{{t:common.navigation.queue}}** 标签。
 
@@ -925,6 +1045,9 @@ language: zh
 审计部分维护系统中执行的所有操作的记录。
 
 ### 2.11.1 审计记录
+
+![Audit records walkthrough](/assets/videos/user-guide/02-11-01-audit-records.webm)
+*(视频: Viewing system audit records)*
 
 1. 从左侧菜单点击 **{{t:common.navigation.audit}}** 标签。
 

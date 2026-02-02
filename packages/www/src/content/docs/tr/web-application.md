@@ -25,6 +25,9 @@ Bu kılavuz, [https://www.rediacc.com/](https://www.rediacc.com/) adresindeki we
 
 ### 1.1 Kayıt Olma
 
+![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
+*(Video: Complete registration flow from start to finish)*
+
 Rediacc platformunu kullanmaya başlamak için öncelikle bir hesap oluşturmanız gerekmektedir.
 
 ![Rediacc giriş sayfası - her zaman ayakta kalan altyapı](/assets/images/user-guide/01_login.png)
@@ -67,6 +70,9 @@ Rediacc platformunu kullanmaya başlamak için öncelikle bir hesap oluşturman�
 
 ### 1.2 Giriş Yapma
 
+![Sign in process walkthrough](/assets/videos/user-guide/01-02-login.webm)
+*(Video: Complete sign in flow)*
+
 Hesabınız oluşturulduktan sonra platforma giriş yapabilirsiniz.
 
 1. **{{t:auth.login.email}}** alanını doldurun (kırmızı uyarı görünüyorsa gereklidir).
@@ -107,6 +113,9 @@ Kullanıcı yönetimi, organizasyonunuzdaki kişilerin platforma erişimini kont
 
 ### 2.1.1 Kullanıcı Ekleme
 
+![Adding users walkthrough](/assets/videos/user-guide/02-01-01-user-create.webm)
+*(Video: Creating a new user)*
+
 1. Sol sidebar'da **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** seçeneğini tıklayın.
 2. Tüm kullanıcıların listesini tablo formatında görüntüleyin.
 3. Her kullanıcı satırı e-posta, durum ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), izin grubu ve son aktivite zamanını gösterir.
@@ -133,6 +142,9 @@ Kullanıcı yönetimi, organizasyonunuzdaki kişilerin platforma erişimini kont
 
 ### 2.1.2 Kullanıcı İzinleri Atama
 
+![User permissions walkthrough](/assets/videos/user-guide/02-01-02-user-permissions.webm)
+*(Video: Assigning permission groups to users)*
+
 Kullanıcılara belirli izin grupları atayarak erişim yetkilerini yönetebilirsiniz.
 
 1. **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** sekmesinden bir kullanıcı seçin.
@@ -152,6 +164,9 @@ Kullanıcılara belirli izin grupları atayarak erişim yetkilerini yönetebilir
 
 ### 2.1.3 Kullanıcı Aktivasyonu
 
+![User activation walkthrough](/assets/videos/user-guide/02-01-03-user-activation.webm)
+*(Video: Activating an inactive user)*
+
 Devre dışı bırakılmış kullanıcıları tekrar aktif hale getirebilirsiniz.
 
 1. **Kullanıcılar** listesinden pasif durumundaki kullanıcıyı bulun.
@@ -168,6 +183,9 @@ Devre dışı bırakılmış kullanıcıları tekrar aktif hale getirebilirsiniz
 > **İpucu**: Bu işlem geri alınabilir. Kullanıcıyı pasif hale getirmek için aynı şekilde işlem yapabilirsiniz.
 
 ### 2.1.4 Kullanıcı Takibi (Trace)
+
+![User trace walkthrough](/assets/videos/user-guide/02-01-04-user-trace.webm)
+*(Video: Viewing user activity trace)*
 
 Kullanıcı aktivitelerini izlemek için takip özelliğini kullanabilirsiniz.
 
@@ -194,6 +212,9 @@ Takımlar, kullanıcıları gruplandırarak kaynaklara toplu erişim sağlamanı
 
 ### 2.2.1 Takım Oluşturma
 
+![Creating teams walkthrough](/assets/videos/user-guide/02-02-01-team-create.webm)
+*(Video: Creating a new team)*
+
 1. **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationTeams}}** sekmesine gidin.
 2. **"+"** düğmesine tıklayın.
 3. **{{t:common.vaultEditor.fields.TEAM.name.label}}** alanına takımınızın adını girin.
@@ -208,6 +229,9 @@ Takımlar, kullanıcıları gruplandırarak kaynaklara toplu erişim sağlamanı
 
 ### 2.2.2 Takım Düzenleme
 
+![Team editing walkthrough](/assets/videos/user-guide/02-02-02-team-edit.webm)
+*(Video: Editing team information)*
+
 1. Takımlar listesinden düzenlemek istediğiniz takımın yanındaki kalem simgesine tıklayın.
 2. **{{t:common.vaultEditor.fields.TEAM.name.label}}** alanında takımın adını gerekirse değiştirin.
 3. **{{t:common.vaultEditor.vaultConfiguration}}** bölümünde SSH anahtarlarını güncelleyin.
@@ -219,6 +243,9 @@ Takımlar, kullanıcıları gruplandırarak kaynaklara toplu erişim sağlamanı
 > **İpucu**: Takım yapılandırması organizasyonel yapı için kullanılır. Değişiklikler tüm takım üyeleri için etkili olur.
 
 ### 2.2.3 Takım Üyeleri Yönetimi
+
+![Team members management walkthrough](/assets/videos/user-guide/02-02-03-team-members.webm)
+*(Video: Managing team members)*
 
 1. Bir takım seçin ve kullanıcı simgesine tıklayın.
 2. **{{t:organization.teams.manageMembers.currentTab}}** sekmesinde takıma zaten atanmış üyeleri görüntüleyin.
@@ -233,6 +260,9 @@ Takımlar, kullanıcıları gruplandırarak kaynaklara toplu erişim sağlamanı
 
 ### 2.2.4 Takım Takibi
 
+![Team trace walkthrough](/assets/videos/user-guide/02-02-04-team-trace.webm)
+*(Video: Viewing team audit history)*
+
 1. Takip etmek istediğiniz takımı seçin.
 2. Saat/geçmiş simgesine tıklayın.
 3. **{{t:resources.audit.title}}** penceresinde Toplam Kayıt, Görüntülenen Kayıt ve Son Aktivite sayılarını inceleyin.
@@ -244,6 +274,9 @@ Takımlar, kullanıcıları gruplandırarak kaynaklara toplu erişim sağlamanı
 > **İpucu**: Denetim geçmişi uyum ve güvenlik kontrolü için önemlidir.
 
 ### 2.2.5 Takım Silme
+
+![Team deletion walkthrough](/assets/videos/user-guide/02-02-05-team-delete.webm)
+*(Video: Deleting a team)*
 
 1. Silmek istediğiniz takımın yanındaki çöp kutusu (kırmızı) simgesine tıklayın.
 2. Onay iletişim kutusunda takım adının doğru olduğunu kontrol edin.
@@ -262,6 +295,9 @@ Erişim kontrolü, izin grupları oluşturarak kullanıcı yetkilerini merkezi o
 
 ### 2.3.1 İzin Grubu Oluşturma
 
+![Permission group creation walkthrough](/assets/videos/user-guide/02-03-01-permission-create.webm)
+*(Video: Creating a permission group)*
+
 1. **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}** sekmesine gidin.
 2. **"+"** düğmesini tıklayın.
 3. **{{t:organization.access.modals.groupPlaceholder}}** alanına anlamlı bir ad girin.
@@ -273,6 +309,9 @@ Erişim kontrolü, izin grupları oluşturarak kullanıcı yetkilerini merkezi o
 > **İpucu**: İzin grupları, benzer izinlere sahip kullanıcıları organize etmek için kullanılır. Grup adlarını açıklayıcı tutun (örn: "Admin", "Okuma Yalnız", "Depo Yöneticisi").
 
 ### 2.3.2 İzin Yönetimi
+
+![Permission management walkthrough](/assets/videos/user-guide/02-03-02-permission-manage.webm)
+*(Video: Managing permissions for a group)*
 
 1. Bir İzin Grubu seçin ve **{{t:organization.access.modals.managePermissionsTitle}}** seçeneğine tıklayın.
 2. **{{t:organization.access.modals.currentPermissionsTab}}** sekmesinde grubun erişim haklarını görüntüleyin.
@@ -291,6 +330,9 @@ Erişim kontrolü, izin grupları oluşturarak kullanıcı yetkilerini merkezi o
 Makineler bölümü, sunucularınızı ve depo kaynaklarınızı yönetmenizi sağlar.
 
 ### 2.4.1 Makine Ekleme
+
+![Adding machines walkthrough](/assets/videos/user-guide/02-04-01-machine-create.webm)
+*(Video: Adding a new machine)*
 
 1. Sol menüden **{{t:common.navigation.machines}}** sekmesine gidin.
 2. Sağ üst köşedeki **{{t:machines.createMachine}}** düğmesine tıklayın.
@@ -324,6 +366,9 @@ Makineler bölümü, sunucularınızı ve depo kaynaklarınızı yönetmenizi sa
 
 ### 2.4.2 Bağlantı Testi
 
+![Connectivity test walkthrough](/assets/videos/user-guide/02-04-02-connectivity-test.webm)
+*(Video: Running a connectivity test)*
+
 Mevcut makinelerin bağlantı durumunu kontrol edebilirsiniz.
 
 1. **{{t:machines.connectivityTest}}** düğmesine tıklayın.
@@ -342,12 +387,18 @@ Mevcut makinelerin bağlantı durumunu kontrol edebilirsiniz.
 
 ### 2.4.3 Makine Listesini Yenileme
 
+![Machine list refresh walkthrough](/assets/videos/user-guide/02-04-03-machine-refresh.webm)
+*(Video: Refreshing the machine list)*
+
 Makine listesini güncellemek için **{{t:common.actions.refresh}}** düğmesine tıklayın.
 
 ![Yenile düğmesi](/assets/images/user-guide/28_refresh.png)
 *(Resim 28: Makine işlem araç çubuğundaki Yenile düğmesi)*
 
 ### 2.4.4 Makine Detayları
+
+![Machine details walkthrough](/assets/videos/user-guide/02-04-04-machine-details.webm)
+*(Video: Viewing machine details)*
 
 1. Detaylarını görmek istediğiniz makineyi seçin.
 2. Göz simgesi düğmesine (**{{t:common.viewDetails}}**) tıklayın.
@@ -370,6 +421,9 @@ Makine listesini güncellemek için **{{t:common.actions.refresh}}** düğmesine
 
 ### 2.4.5 Makine Düzenleme
 
+![Machine editing walkthrough](/assets/videos/user-guide/02-04-05-machine-edit.webm)
+*(Video: Editing machine settings)*
+
 1. Düzenlemek istediğiniz makineyi seçin.
 2. Kalem simgesi düğmesine (**{{t:common.actions.edit}}**) tıklayın.
 
@@ -386,6 +440,9 @@ Makine listesini güncellemek için **{{t:common.actions.refresh}}** düğmesine
 > **İpucu**: Kritik ayarları değiştirdikten sonra "Bağlantıyı Test Et" her zaman çalıştırın.
 
 ### 2.4.6 Makine Takibi
+
+![Machine trace walkthrough](/assets/videos/user-guide/02-04-06-machine-trace.webm)
+*(Video: Viewing machine audit history)*
 
 1. Makineyi seçin ve saat simgesi düğmesine (**{{t:common.actions.trace}}**) tıklayın.
 
@@ -405,6 +462,9 @@ Makine listesini güncellemek için **{{t:common.actions.refresh}}** düğmesine
 
 ### 2.4.7 Makine Silme
 
+![Machine deletion walkthrough](/assets/videos/user-guide/02-04-07-machine-delete.webm)
+*(Video: Deleting a machine)*
+
 1. Silmek istediğiniz makineyi seçin.
 2. Çöp kutusu simgesi düğmesine (**{{t:common.delete}}**) tıklayın.
 
@@ -419,6 +479,9 @@ Makine listesini güncellemek için **{{t:common.actions.refresh}}** düğmesine
 > **Dikkat**: Makine silindiğinde, üzerindeki tüm depo tanımlamaları da kaldırılır. Bu işlem geri alınamaz.
 
 ### 2.4.8 Uzaktan İşlemler
+
+![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
+*(Video: Running remote operations on a machine)*
 
 Makineler üzerinde uzaktan çeşitli işlemler gerçekleştirebilirsiniz.
 
@@ -485,6 +548,9 @@ Depolar, yedekleme verilerinizin saklandığı temel birimlerdir.
 
 ### 2.5.1 Depo Oluşturma
 
+![Repository creation walkthrough](/assets/videos/user-guide/02-05-01-repository-create.webm)
+*(Video: Creating a new repository)*
+
 1. **{{t:common.navigation.machines}}** sekmesinden bir makine seçin.
 2. Sağ üst köşedeki **{{t:machines.createRepository}}** düğmesine tıklayın.
 
@@ -518,6 +584,9 @@ Depolar, yedekleme verilerinizin saklandığı temel birimlerdir.
 
 ### 2.5.2 Depo Fork İşlemi
 
+![Repository fork walkthrough](/assets/videos/user-guide/02-05-02-repository-fork.webm)
+*(Video: Forking a repository)*
+
 Mevcut bir depoyu kopyalayarak yeni bir depo oluşturabilirsiniz.
 
 1. Kopyalamak istediğiniz depoyu seçin.
@@ -542,6 +611,9 @@ Mevcut bir depoyu kopyalayarak yeni bir depo oluşturabilirsiniz.
 
 ### 2.5.3 Depo Başlatma (Up)
 
+![Repository up walkthrough](/assets/videos/user-guide/02-05-03-repository-up.webm)
+*(Video: Starting a repository)*
+
 Depoyu aktif hale getirmek için:
 
 1. Depoyu seçin ve **fx** > **up** yolunu izleyin.
@@ -558,6 +630,9 @@ Depoyu aktif hale getirmek için:
 
 ### 2.5.4 Depo Durdurma (Down)
 
+![Repository down walkthrough](/assets/videos/user-guide/02-05-04-repository-down.webm)
+*(Video: Stopping a repository)*
+
 Aktif bir depoyu durdurmak için:
 
 1. Depoyu seçin ve **fx** > **down** yolunu izleyin.
@@ -573,6 +648,9 @@ Aktif bir depoyu durdurmak için:
 > **İpucu**: "Down" işlemi depoyu güvenli bir şekilde kapatır. Veri kaybı olmaz, sadece hizmetler durdurulur.
 
 ### 2.5.5 Dağıtım (Deploy)
+
+![Repository deploy walkthrough](/assets/videos/user-guide/02-05-05-repository-deploy.webm)
+*(Video: Deploying a repository)*
 
 Depoyu farklı bir konuma dağıtmak için:
 
@@ -597,6 +675,9 @@ Depoyu farklı bir konuma dağıtmak için:
 > **İpucu**: Deploy işlemi tamamlandıktan sonra hedef makinelerde depoyu başlatmak için "up" komutu çalıştırabilirsiniz.
 
 ### 2.5.6 Yedekleme (Backup)
+
+![Repository backup walkthrough](/assets/videos/user-guide/02-05-06-repository-backup.webm)
+*(Video: Backing up a repository)*
 
 Depoyu yedeklemek için:
 
@@ -627,6 +708,9 @@ Depoyu yedeklemek için:
 
 ### 2.5.7 Şablon Uygulama
 
+![Template application walkthrough](/assets/videos/user-guide/02-05-07-repository-templates.webm)
+*(Video: Applying a template to a repository)*
+
 Depoya yeni bir şablon uygulamak için:
 
 1. Depoyu seçin ve **fx** > **{{t:resources.templates.selectTemplate}}** yolunu izleyin.
@@ -650,6 +734,9 @@ Depoya yeni bir şablon uygulamak için:
 
 ### 2.5.8 Bağlantıyı Kesme (Unmount)
 
+![Repository unmount walkthrough](/assets/videos/user-guide/02-05-08-repository-unmount.webm)
+*(Video: Unmounting a repository)*
+
 Depo bağlantısını kesmek için:
 
 1. Depoyu seçin ve **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}** yolunu izleyin.
@@ -665,6 +752,9 @@ Depo bağlantısını kesmek için:
 > **İpucu**: Bağlantıyı kesmeden önce depo üzerinde etkin işlem olmadığından emin olun. Bağlantı kesme sonrasında depo erişilir olmaktan çıkar.
 
 ### 2.5.9 Genişletme (Expand)
+
+![Repository expand walkthrough](/assets/videos/user-guide/02-05-09-repository-expand.webm)
+*(Video: Expanding repository size)*
 
 Depo boyutunu artırmak için:
 
@@ -689,6 +779,9 @@ Depo boyutunu artırmak için:
 
 ### 2.5.10 Yeniden Adlandırma
 
+![Repository rename walkthrough](/assets/videos/user-guide/02-05-10-repository-rename.webm)
+*(Video: Renaming a repository)*
+
 Depo adını değiştirmek için:
 
 1. Depoyu seçin ve **fx** > **{{t:common.actions.rename}}** yolunu izleyin.
@@ -706,6 +799,9 @@ Depo adını değiştirmek için:
 
 ### 2.5.11 Depo Silme
 
+![Repository deletion walkthrough](/assets/videos/user-guide/02-05-11-repository-delete.webm)
+*(Video: Deleting a repository)*
+
 Depoyu kalıcı olarak silmek için:
 
 1. Depoyu seçin ve **fx** > **{{t:resources.repositories.deleteRepository}}** yolunu izleyin.
@@ -718,6 +814,9 @@ Depoyu kalıcı olarak silmek için:
 > **Dikkat**: Depo silme işlemi geri alınamaz. Silmeden önce depo verilerinin yedeklenmiş olduğundan emin olun.
 
 ### 2.5.12 Depo Detayları
+
+![Repository details walkthrough](/assets/videos/user-guide/02-05-12-repository-details.webm)
+*(Video: Viewing repository details)*
 
 Depo hakkında ayrıntılı bilgi almak için:
 
@@ -750,6 +849,9 @@ Depolara farklı yöntemlerle bağlanabilirsiniz.
 
 ### 2.6.1 Masaüstü Uygulaması ile Bağlantı
 
+![Desktop connection walkthrough](/assets/videos/user-guide/02-06-01-desktop-connection.webm)
+*(Video: Connecting via desktop application)*
+
 1. Depo satırında **{{t:resources.localActions.local}}** düğmesine tıklayın.
 
 ![Yerel bağlantı düğmesi](/assets/images/user-guide/73_repo_connection_local.png)
@@ -780,6 +882,9 @@ Depolara farklı yöntemlerle bağlanabilirsiniz.
 Ayarlar bölümünden profil ve sistem ayarlarınızı yönetebilirsiniz.
 
 ### 2.7.1 Parola Değiştirme
+
+![Password change walkthrough](/assets/videos/user-guide/02-07-03-password-change.webm)
+*(Video: Changing your password)*
 
 1. Sol menüden **{{t:common.navigation.settings}}** > **{{t:common.navigation.settingsProfile}}** sekmesine gidin.
 
@@ -813,6 +918,9 @@ Depolama bölümü, yedekleme verilerinizin saklanacağı fiziksel alanları yö
 
 ### 2.8.1 Depolama Ekleme
 
+![Storage creation walkthrough](/assets/videos/user-guide/02-08-01-storage-create.webm)
+*(Video: Adding a storage location)*
+
 1. Sol menüden **{{t:common.navigation.storage}}** sekmesine gidin.
 2. **{{t:resources.storage.createStorage}}** düğmesine tıklayın.
 
@@ -841,6 +949,9 @@ Kimlik bilgileri bölümü, depolarınızın erişim bilgilerini güvenli şekil
 
 ### 2.9.1 Kimlik Bilgisi Düzenleme
 
+![Credential editing walkthrough](/assets/videos/user-guide/02-09-01-credential-edit.webm)
+*(Video: Editing credentials)*
+
 1. Sol menüden **{{t:common.navigation.credentials}}** sekmesine gidin.
 2. Düzenlemek istediğiniz kaydı seçin.
 3. **{{t:common.actions.edit}}** düğmesine tıklayın.
@@ -858,6 +969,9 @@ Kimlik bilgileri bölümü, depolarınızın erişim bilgilerini güvenli şekil
 
 ### 2.9.2 Kimlik Bilgisi Takibi
 
+![Credential trace walkthrough](/assets/videos/user-guide/02-09-02-credential-trace.webm)
+*(Video: Viewing credential audit history)*
+
 1. Takip etmek istediğiniz kaydı seçin.
 2. **{{t:common.actions.trace}}** düğmesine tıklayın.
 
@@ -873,6 +987,9 @@ Kimlik bilgileri bölümü, depolarınızın erişim bilgilerini güvenli şekil
 > **İpucu**: Takip özelliği, güvenlik denetim amaçları için kimlik bilgilerinin kullanım izini sağlar.
 
 ### 2.9.3 Kimlik Bilgisi Silme
+
+![Credential deletion walkthrough](/assets/videos/user-guide/02-09-03-credential-delete.webm)
+*(Video: Deleting a credential)*
 
 1. Silmek istediğiniz kaydı seçin.
 2. Kırmızı **{{t:common.delete}}** düğmesine tıklayın.
@@ -894,6 +1011,9 @@ Kimlik bilgileri bölümü, depolarınızın erişim bilgilerini güvenli şekil
 Kuyruk bölümü, sistemde bekleyen ve tamamlanan işlemleri takip etmenizi sağlar.
 
 ### 2.10.1 Kuyruk İşlemleri
+
+![Queue operations walkthrough](/assets/videos/user-guide/02-10-01-queue-operations.webm)
+*(Video: Managing queue operations)*
 
 1. Sol menüden **{{t:common.navigation.queue}}** sekmesine tıklayın.
 
@@ -925,6 +1045,9 @@ Kuyruk bölümü, sistemde bekleyen ve tamamlanan işlemleri takip etmenizi sağ
 Denetim bölümü, sistemde yapılan tüm işlemlerin kayıtlarını tutar.
 
 ### 2.11.1 Denetim Kayıtları
+
+![Audit records walkthrough](/assets/videos/user-guide/02-11-01-audit-records.webm)
+*(Video: Viewing system audit records)*
 
 1. Sol menüden **{{t:common.navigation.audit}}** sekmesine tıklayın.
 

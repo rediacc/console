@@ -262,6 +262,69 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
       line-height: var(--leading-normal);
     }
 
+    /* Video container and placeholder styles (docs-specific) */
+    .article-content :global(.video-container) {
+      text-align: center;
+      margin: var(--space-6) 0 var(--space-8) 0;
+    }
+
+    .article-content :global(.video-container video) {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius-md);
+      display: block;
+      margin: 0 auto;
+      background-color: #000;
+    }
+
+    .article-content :global(.video-placeholder) {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius-md);
+      background-color: var(--color-bg-light);
+      border: 2px dashed var(--color-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      margin: 0 auto;
+    }
+
+    .article-content :global(.video-placeholder-icon) {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background-color: var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+    }
+
+    .article-content :global(.video-placeholder-icon svg) {
+      width: 2rem;
+      height: 2rem;
+      margin-inline-start: 0.15rem;
+    }
+
+    .article-content :global(.video-placeholder-text) {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .article-content :global(.video-container em) {
+      display: block;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin-top: var(--space-3);
+      font-style: italic;
+      line-height: var(--leading-normal);
+    }
+
     /* Responsive Design - TOC sidebar is hidden on tablets/phones (handled in sidebar-shared.css) */
     @media (max-width: 75rem) {
       /* 1200px */

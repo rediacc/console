@@ -331,6 +331,12 @@ jobs:
           name: staging-pages-${{ github.sha }}
           path: dist/pages/
 
+      # Inject E2E videos into pages (best-effort from latest CI run)
+      - name: Inject E2E videos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .ci/scripts/docs/inject-e2e-videos.sh --search-latest --output dist/pages/assets/videos/user-guide/ || true
+
       - name: Rebuild package metadata from Release packages
         run: |
           VERSION="${{ needs.init.outputs.next_version }}"

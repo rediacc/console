@@ -25,6 +25,9 @@ This guide explains the basic usage of the web interface at [https://www.rediacc
 
 ### 1.1 Registration
 
+![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
+*(Video: Complete registration flow from start to finish)*
+
 To start using the Rediacc platform, you first need to create an account.
 
 ![Rediacc login page - always-on infrastructure](/assets/images/user-guide/01_login.png)
@@ -67,6 +70,9 @@ To start using the Rediacc platform, you first need to create an account.
 
 ### 1.2 Signing In
 
+![Sign in process walkthrough](/assets/videos/user-guide/01-02-login.webm)
+*(Video: Complete sign in flow)*
+
 After your account is created, you can log in to the platform.
 
 1. Fill in the **{{t:auth.login.email}}** field (required if a red warning appears).
@@ -107,6 +113,9 @@ User management allows you to control access to the platform for people in your 
 
 ### 2.1.1 Adding Users
 
+![Adding users walkthrough](/assets/videos/user-guide/02-01-01-user-create.webm)
+*(Video: Creating a new user)*
+
 1. Click **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** option in the left sidebar.
 2. View the list of all users in table format.
 3. Each user row shows email, status ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), permission group, and last activity time.
@@ -133,6 +142,9 @@ User management allows you to control access to the platform for people in your 
 
 ### 2.1.2 Assigning User Permissions
 
+![User permissions walkthrough](/assets/videos/user-guide/02-01-02-user-permissions.webm)
+*(Video: Assigning permission groups to users)*
+
 You can manage access rights by assigning specific permission groups to users.
 
 1. Select a user from the **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** tab.
@@ -152,6 +164,9 @@ You can manage access rights by assigning specific permission groups to users.
 
 ### 2.1.3 User Activation
 
+![User activation walkthrough](/assets/videos/user-guide/02-01-03-user-activation.webm)
+*(Video: Activating an inactive user)*
+
 You can reactivate disabled users.
 
 1. Find the user with inactive status in the **Users** list.
@@ -168,6 +183,9 @@ You can reactivate disabled users.
 > **Tip**: This action is reversible. You can deactivate the user in the same way.
 
 ### 2.1.4 User Trace
+
+![User trace walkthrough](/assets/videos/user-guide/02-01-04-user-trace.webm)
+*(Video: Viewing user activity trace)*
 
 You can use the trace feature to monitor user activities.
 
@@ -194,6 +212,9 @@ Teams allow you to group users and provide bulk access to resources.
 
 ### 2.2.1 Creating Teams
 
+![Creating teams walkthrough](/assets/videos/user-guide/02-02-01-team-create.webm)
+*(Video: Creating a new team)*
+
 1. Go to **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationTeams}}** tab.
 2. Click the **"+"** button.
 3. Enter your team name in the **{{t:common.vaultEditor.fields.TEAM.name.label}}** field.
@@ -208,6 +229,9 @@ Teams allow you to group users and provide bulk access to resources.
 
 ### 2.2.2 Team Editing
 
+![Team editing walkthrough](/assets/videos/user-guide/02-02-02-team-edit.webm)
+*(Video: Editing team information)*
+
 1. Click the pencil icon next to the team you want to edit in the teams list.
 2. Change the team name in the **{{t:common.vaultEditor.fields.TEAM.name.label}}** field if needed.
 3. Update SSH keys in the **{{t:common.vaultEditor.vaultConfiguration}}** section.
@@ -219,6 +243,9 @@ Teams allow you to group users and provide bulk access to resources.
 > **Tip**: Team configuration is used for organizational structure. Changes take effect for all team members.
 
 ### 2.2.3 Team Members Management
+
+![Team members management walkthrough](/assets/videos/user-guide/02-02-03-team-members.webm)
+*(Video: Managing team members)*
 
 1. Select a team and click the user icon.
 2. View members already assigned to the team in the **{{t:organization.teams.manageMembers.currentTab}}** tab.
@@ -233,6 +260,9 @@ Teams allow you to group users and provide bulk access to resources.
 
 ### 2.2.4 Team Trace
 
+![Team trace walkthrough](/assets/videos/user-guide/02-02-04-team-trace.webm)
+*(Video: Viewing team audit history)*
+
 1. Select the team you want to trace.
 2. Click the clock/history icon.
 3. Review Total Records, Viewed Records, and Last Activity counts in the **{{t:resources.audit.title}}** modal.
@@ -244,6 +274,9 @@ Teams allow you to group users and provide bulk access to resources.
 > **Tip**: Audit history is important for compliance and security control.
 
 ### 2.2.5 Team Deletion
+
+![Team deletion walkthrough](/assets/videos/user-guide/02-02-05-team-delete.webm)
+*(Video: Deleting a team)*
 
 1. Click the trash can (red) icon next to the team you want to delete.
 2. Verify the team name is correct in the confirmation dialog.
@@ -262,6 +295,9 @@ Access control allows you to centrally manage user permissions by creating permi
 
 ### 2.3.1 Creating Permission Groups
 
+![Permission group creation walkthrough](/assets/videos/user-guide/02-03-01-permission-create.webm)
+*(Video: Creating a permission group)*
+
 1. Go to **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}** tab.
 2. Click the **"+"** button.
 3. Enter a meaningful name in the **{{t:organization.access.modals.groupPlaceholder}}** field.
@@ -273,6 +309,9 @@ Access control allows you to centrally manage user permissions by creating permi
 > **Tip**: Permission groups are used to organize users with similar permissions. Keep group names descriptive (e.g., "Admin", "Read Only", "Repository Manager").
 
 ### 2.3.2 Permission Management
+
+![Permission management walkthrough](/assets/videos/user-guide/02-03-02-permission-manage.webm)
+*(Video: Managing permissions for a group)*
 
 1. Select a Permission Group and click the **{{t:organization.access.modals.managePermissionsTitle}}** option.
 2. View the group's access rights in the **{{t:organization.access.modals.currentPermissionsTab}}** tab.
@@ -291,6 +330,9 @@ Access control allows you to centrally manage user permissions by creating permi
 The Machines section allows you to manage your servers and repository resources.
 
 ### 2.4.1 Adding Machines
+
+![Adding machines walkthrough](/assets/videos/user-guide/02-04-01-machine-create.webm)
+*(Video: Adding a new machine)*
 
 1. Go to the **{{t:common.navigation.machines}}** tab from the left menu.
 2. Click the **{{t:machines.createMachine}}** button in the top right corner.
@@ -324,6 +366,9 @@ The Machines section allows you to manage your servers and repository resources.
 
 ### 2.4.2 Connectivity Test
 
+![Connectivity test walkthrough](/assets/videos/user-guide/02-04-02-connectivity-test.webm)
+*(Video: Running a connectivity test)*
+
 You can check the connection status of existing machines.
 
 1. Click the **{{t:machines.connectivityTest}}** button.
@@ -342,12 +387,18 @@ You can check the connection status of existing machines.
 
 ### 2.4.3 Refreshing Machine List
 
+![Machine list refresh walkthrough](/assets/videos/user-guide/02-04-03-machine-refresh.webm)
+*(Video: Refreshing the machine list)*
+
 Click the **{{t:common.actions.refresh}}** button to update the machine list.
 
 ![Refresh button](/assets/images/user-guide/28_refresh.png)
 *(Figure 28: Refresh button in machine actions toolbar)*
 
 ### 2.4.4 Machine Details
+
+![Machine details walkthrough](/assets/videos/user-guide/02-04-04-machine-details.webm)
+*(Video: Viewing machine details)*
 
 1. Select the machine whose details you want to see.
 2. Click the eye icon button (**{{t:common.viewDetails}}**).
@@ -370,6 +421,9 @@ Click the **{{t:common.actions.refresh}}** button to update the machine list.
 
 ### 2.4.5 Machine Editing
 
+![Machine editing walkthrough](/assets/videos/user-guide/02-04-05-machine-edit.webm)
+*(Video: Editing machine settings)*
+
 1. Select the machine you want to edit.
 2. Click the pencil icon button (**{{t:common.actions.edit}}**).
 
@@ -386,6 +440,9 @@ Click the **{{t:common.actions.refresh}}** button to update the machine list.
 > **Tip**: Always run "Test Connection" after changing critical settings.
 
 ### 2.4.6 Machine Trace
+
+![Machine trace walkthrough](/assets/videos/user-guide/02-04-06-machine-trace.webm)
+*(Video: Viewing machine audit history)*
 
 1. Select the machine and click the clock icon button (**{{t:common.actions.trace}}**).
 
@@ -405,6 +462,9 @@ Click the **{{t:common.actions.refresh}}** button to update the machine list.
 
 ### 2.4.7 Machine Deletion
 
+![Machine deletion walkthrough](/assets/videos/user-guide/02-04-07-machine-delete.webm)
+*(Video: Deleting a machine)*
+
 1. Select the machine you want to delete.
 2. Click the trash can icon button (**{{t:common.delete}}**).
 
@@ -419,6 +479,9 @@ Click the **{{t:common.actions.refresh}}** button to update the machine list.
 > **Warning**: When a machine is deleted, all repository definitions on it are also removed. This action is irreversible.
 
 ### 2.4.8 Remote Operations
+
+![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
+*(Video: Running remote operations on a machine)*
 
 You can perform various remote operations on machines.
 
@@ -485,6 +548,9 @@ Repositories are the fundamental units where your backup data is stored.
 
 ### 2.5.1 Creating Repositories
 
+![Repository creation walkthrough](/assets/videos/user-guide/02-05-01-repository-create.webm)
+*(Video: Creating a new repository)*
+
 1. Select a machine from the **{{t:common.navigation.machines}}** tab.
 2. Click the **{{t:machines.createRepository}}** button in the top right corner.
 
@@ -518,6 +584,9 @@ Repositories are the fundamental units where your backup data is stored.
 
 ### 2.5.2 Repository Fork
 
+![Repository fork walkthrough](/assets/videos/user-guide/02-05-02-repository-fork.webm)
+*(Video: Forking a repository)*
+
 You can create a new repository by copying an existing one.
 
 1. Select the repository you want to copy.
@@ -542,6 +611,9 @@ You can create a new repository by copying an existing one.
 
 ### 2.5.3 Repository Up
 
+![Repository up walkthrough](/assets/videos/user-guide/02-05-03-repository-up.webm)
+*(Video: Starting a repository)*
+
 To activate the repository:
 
 1. Select the repository and follow the **fx** > **up** path.
@@ -558,6 +630,9 @@ To activate the repository:
 
 ### 2.5.4 Repository Down
 
+![Repository down walkthrough](/assets/videos/user-guide/02-05-04-repository-down.webm)
+*(Video: Stopping a repository)*
+
 To stop an active repository:
 
 1. Select the repository and follow the **fx** > **down** path.
@@ -573,6 +648,9 @@ To stop an active repository:
 > **Tip**: The "Down" operation safely shuts down the repository. No data is lost, only services are stopped.
 
 ### 2.5.5 Deploy
+
+![Repository deploy walkthrough](/assets/videos/user-guide/02-05-05-repository-deploy.webm)
+*(Video: Deploying a repository)*
 
 To deploy the repository to a different location:
 
@@ -597,6 +675,9 @@ To deploy the repository to a different location:
 > **Tip**: After the deploy operation completes, you can run the "up" command to start the repository on target machines.
 
 ### 2.5.6 Backup
+
+![Repository backup walkthrough](/assets/videos/user-guide/02-05-06-repository-backup.webm)
+*(Video: Backing up a repository)*
 
 To backup the repository:
 
@@ -627,6 +708,9 @@ To backup the repository:
 
 ### 2.5.7 Template Application
 
+![Template application walkthrough](/assets/videos/user-guide/02-05-07-repository-templates.webm)
+*(Video: Applying a template to a repository)*
+
 To apply a new template to the repository:
 
 1. Select the repository and follow the **fx** > **{{t:resources.templates.selectTemplate}}** path.
@@ -650,6 +734,9 @@ To apply a new template to the repository:
 
 ### 2.5.8 Unmount
 
+![Repository unmount walkthrough](/assets/videos/user-guide/02-05-08-repository-unmount.webm)
+*(Video: Unmounting a repository)*
+
 To disconnect the repository:
 
 1. Select the repository and follow the **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}** path.
@@ -665,6 +752,9 @@ To disconnect the repository:
 > **Tip**: Make sure there are no active operations on the repository before unmounting. After unmounting, the repository becomes inaccessible.
 
 ### 2.5.9 Expand
+
+![Repository expand walkthrough](/assets/videos/user-guide/02-05-09-repository-expand.webm)
+*(Video: Expanding repository size)*
 
 To increase the repository size:
 
@@ -689,6 +779,9 @@ To increase the repository size:
 
 ### 2.5.10 Rename
 
+![Repository rename walkthrough](/assets/videos/user-guide/02-05-10-repository-rename.webm)
+*(Video: Renaming a repository)*
+
 To change the repository name:
 
 1. Select the repository and follow the **fx** > **{{t:common.actions.rename}}** path.
@@ -706,6 +799,9 @@ To change the repository name:
 
 ### 2.5.11 Repository Deletion
 
+![Repository deletion walkthrough](/assets/videos/user-guide/02-05-11-repository-delete.webm)
+*(Video: Deleting a repository)*
+
 To permanently delete the repository:
 
 1. Select the repository and follow the **fx** > **{{t:resources.repositories.deleteRepository}}** path.
@@ -718,6 +814,9 @@ To permanently delete the repository:
 > **Warning**: Repository deletion is irreversible. Make sure repository data is backed up before deleting.
 
 ### 2.5.12 Repository Details
+
+![Repository details walkthrough](/assets/videos/user-guide/02-05-12-repository-details.webm)
+*(Video: Viewing repository details)*
 
 To get detailed information about the repository:
 
@@ -750,6 +849,9 @@ You can connect to repositories using different methods.
 
 ### 2.6.1 Desktop Application Connection
 
+![Desktop connection walkthrough](/assets/videos/user-guide/02-06-01-desktop-connection.webm)
+*(Video: Connecting via desktop application)*
+
 1. Click the **{{t:resources.localActions.local}}** button in the repository row.
 
 ![Local connection button](/assets/images/user-guide/73_repo_connection_local.png)
@@ -780,6 +882,9 @@ You can connect to repositories using different methods.
 You can manage your profile and system settings from the Settings section.
 
 ### 2.7.1 Password Change
+
+![Password change walkthrough](/assets/videos/user-guide/02-07-03-password-change.webm)
+*(Video: Changing your password)*
 
 1. Go to **{{t:common.navigation.settings}}** > **{{t:common.navigation.settingsProfile}}** tab from the left menu.
 
@@ -813,6 +918,9 @@ The Storage section allows you to manage the physical areas where your backup da
 
 ### 2.8.1 Adding Storage
 
+![Storage creation walkthrough](/assets/videos/user-guide/02-08-01-storage-create.webm)
+*(Video: Adding a storage location)*
+
 1. Go to the **{{t:common.navigation.storage}}** tab from the left menu.
 2. Click the **{{t:resources.storage.createStorage}}** button.
 
@@ -841,6 +949,9 @@ The Credentials section allows you to securely manage access information for you
 
 ### 2.9.1 Credential Editing
 
+![Credential editing walkthrough](/assets/videos/user-guide/02-09-01-credential-edit.webm)
+*(Video: Editing credentials)*
+
 1. Go to the **{{t:common.navigation.credentials}}** tab from the left menu.
 2. Select the record you want to edit.
 3. Click the **{{t:common.actions.edit}}** button.
@@ -858,6 +969,9 @@ The Credentials section allows you to securely manage access information for you
 
 ### 2.9.2 Credential Trace
 
+![Credential trace walkthrough](/assets/videos/user-guide/02-09-02-credential-trace.webm)
+*(Video: Viewing credential audit history)*
+
 1. Select the record you want to trace.
 2. Click the **{{t:common.actions.trace}}** button.
 
@@ -873,6 +987,9 @@ The Credentials section allows you to securely manage access information for you
 > **Tip**: The trace feature provides usage tracking of credentials for security audit purposes.
 
 ### 2.9.3 Credential Deletion
+
+![Credential deletion walkthrough](/assets/videos/user-guide/02-09-03-credential-delete.webm)
+*(Video: Deleting a credential)*
 
 1. Select the record you want to delete.
 2. Click the red **{{t:common.delete}}** button.
@@ -894,6 +1011,9 @@ The Credentials section allows you to securely manage access information for you
 The Queue section allows you to track pending and completed operations in the system.
 
 ### 2.10.1 Queue Operations
+
+![Queue operations walkthrough](/assets/videos/user-guide/02-10-01-queue-operations.webm)
+*(Video: Managing queue operations)*
 
 1. Click the **{{t:common.navigation.queue}}** tab from the left menu.
 
@@ -925,6 +1045,9 @@ The Queue section allows you to track pending and completed operations in the sy
 The Audit section maintains records of all operations performed in the system.
 
 ### 2.11.1 Audit Records
+
+![Audit records walkthrough](/assets/videos/user-guide/02-11-01-audit-records.webm)
+*(Video: Viewing system audit records)*
 
 1. Click the **{{t:common.navigation.audit}}** tab from the left menu.
 

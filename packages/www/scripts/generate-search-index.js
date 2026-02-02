@@ -51,7 +51,7 @@ function generateSearchIndex() {
 
     // Write search index
     const outputPath = path.join(projectRoot, 'public/search-index.json');
-    fs.writeFileSync(outputPath, JSON.stringify(searchIndex, null, 2));
+    fs.writeFileSync(outputPath, `${JSON.stringify(searchIndex, null, 2)}\n`);
 
     console.log(`✓ Search index generated: ${searchIndex.length} items`);
     return true;

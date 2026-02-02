@@ -102,6 +102,21 @@ is_signal_failed() {
     return 1
 }
 
+# Remove a signal from FAILED_SIGNALS (used when a newer attempt succeeds)
+clear_failed_signal() {
+    local signal="$1"
+    [[ ${#FAILED_SIGNALS[@]} -eq 0 ]] && return
+    local new_failed=()
+    for s in "${FAILED_SIGNALS[@]}"; do
+        [[ "$s" != "$signal" ]] && new_failed+=("$s")
+    done
+    if [[ ${#new_failed[@]} -gt 0 ]]; then
+        FAILED_SIGNALS=("${new_failed[@]}")
+    else
+        FAILED_SIGNALS=()
+    fi
+}
+
 # Check signal status by downloading and reading artifact content
 check_signal_status() {
     local signal="$1"
@@ -149,7 +164,10 @@ try_signal() {
     local artifact_name="${artifact_base}${ATTEMPT_SUFFIX}"
     if echo "$artifacts" | grep -q "^${artifact_name}$"; then
         mark_completed "$signal"
-        check_signal_status "$signal" "$artifact_name" || true
+        if check_signal_status "$signal" "$artifact_name"; then
+            # Current attempt succeeded — clear any stale failure from previous attempts
+            clear_failed_signal "$signal"
+        fi
         return 0
     fi
 
@@ -214,13 +232,9 @@ has_failures() {
     [[ ${#FAILED_SIGNALS[@]} -gt 0 ]]
 }
 
-# Condition: all signals received OR any failure detected
+# Condition: all signals received (wait for ALL, even if some report failure)
 all_signals_received() {
     fetch_and_check_signals
-    # Exit immediately on any failure - don't wait for remaining signals
-    if has_failures; then
-        return 0
-    fi
     [[ ${#COMPLETED[@]} -ge $EXPECTED_COUNT ]]
 }
 
@@ -233,10 +247,10 @@ on_poll() {
 
 # Main wait loop using poll_with_watchdog
 if poll_with_watchdog "$TIMEOUT" "$INTERVAL" all_signals_received on_poll; then
-    # Check for failures (exits early on first failure detection)
+    # All signals received — check for failures
     if has_failures; then
         log_error "${#FAILED_SIGNALS[@]} signal(s) reported failure: ${FAILED_SIGNALS[*]}"
-        log_error "Exiting immediately — failed tests detected."
+        log_error "All $EXPECTED_COUNT signals received, but some reported failure."
         exit 1
     fi
     log_info "All $EXPECTED_COUNT signals received successfully!"

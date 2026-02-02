@@ -338,11 +338,22 @@ jobs:
       name: pr-${{ github.event.pull_request.number }}
       url: https://pr-${{ github.event.pull_request.number }}.rediacc.pages.dev
     steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .ci/scripts/
+          submodules: false
+
       - name: Download preview pages artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         with:
           name: preview-pages-${{ github.sha }}
           path: dist/pages/
+
+      # Inject e2e test videos into pages for documentation embedding
+      - name: Inject E2E videos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .ci/scripts/docs/inject-e2e-videos.sh --run-id "${{ github.run_id }}" --artifact-name "e2e-videos-${{ github.sha }}" --output dist/pages/assets/videos/user-guide/ || true
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65  # v3

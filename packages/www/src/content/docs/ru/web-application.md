@@ -25,6 +25,9 @@ language: ru
 
 ### 1.1 Регистрация
 
+![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
+*(Видео: Complete registration flow from start to finish)*
+
 Чтобы начать использовать платформу Rediacc, вам сначала нужно создать учетную запись.
 
 ![Страница входа в Rediacc - всегда доступная инфраструктура](/assets/images/user-guide/01_login.png)
@@ -67,6 +70,9 @@ language: ru
 
 ### 1.2 Вход в систему
 
+![Sign in process walkthrough](/assets/videos/user-guide/01-02-login.webm)
+*(Видео: Complete sign in flow)*
+
 После создания учетной записи вы можете войти на платформу.
 
 1. Заполните поле **{{t:auth.login.email}}** (обязательно, если появляется красное предупреждение).
@@ -107,6 +113,9 @@ language: ru
 
 ### 2.1.1 Добавление пользователей
 
+![Adding users walkthrough](/assets/videos/user-guide/02-01-01-user-create.webm)
+*(Видео: Creating a new user)*
+
 1. Нажмите **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}** в левой боковой панели.
 2. Просмотрите список всех пользователей в табличном формате.
 3. Каждая строка пользователя показывает email, статус ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), группу разрешений и время последней активности.
@@ -133,6 +142,9 @@ language: ru
 
 ### 2.1.2 Назначение разрешений пользователям
 
+![User permissions walkthrough](/assets/videos/user-guide/02-01-02-user-permissions.webm)
+*(Видео: Assigning permission groups to users)*
+
 Вы можете управлять правами доступа, назначая определенные группы разрешений пользователям.
 
 1. Выберите пользователя на вкладке **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationUsers}}**.
@@ -152,6 +164,9 @@ language: ru
 
 ### 2.1.3 Активация пользователя
 
+![User activation walkthrough](/assets/videos/user-guide/02-01-03-user-activation.webm)
+*(Видео: Activating an inactive user)*
+
 Вы можете повторно активировать отключенных пользователей.
 
 1. Найдите пользователя с неактивным статусом в списке **Пользователи**.
@@ -168,6 +183,9 @@ language: ru
 > **Совет**: Это действие обратимо. Вы можете деактивировать пользователя таким же образом.
 
 ### 2.1.4 Отслеживание действий пользователя
+
+![User trace walkthrough](/assets/videos/user-guide/02-01-04-user-trace.webm)
+*(Видео: Viewing user activity trace)*
 
 Вы можете использовать функцию отслеживания для мониторинга действий пользователя.
 
@@ -194,6 +212,9 @@ language: ru
 
 ### 2.2.1 Создание команд
 
+![Creating teams walkthrough](/assets/videos/user-guide/02-02-01-team-create.webm)
+*(Видео: Creating a new team)*
+
 1. Перейдите на вкладку **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationTeams}}**.
 2. Нажмите кнопку **"+"**.
 3. Введите название вашей команды в поле **{{t:common.vaultEditor.fields.TEAM.name.label}}**.
@@ -208,6 +229,9 @@ language: ru
 
 ### 2.2.2 Редактирование команды
 
+![Team editing walkthrough](/assets/videos/user-guide/02-02-02-team-edit.webm)
+*(Видео: Editing team information)*
+
 1. Нажмите значок карандаша рядом с командой, которую вы хотите изменить, в списке команд.
 2. При необходимости измените название команды в поле **{{t:common.vaultEditor.fields.TEAM.name.label}}**.
 3. Обновите SSH-ключи в разделе **{{t:common.vaultEditor.vaultConfiguration}}**.
@@ -219,6 +243,9 @@ language: ru
 > **Совет**: Конфигурация команды используется для организационной структуры. Изменения вступают в силу для всех членов команды.
 
 ### 2.2.3 Управление членами команды
+
+![Team members management walkthrough](/assets/videos/user-guide/02-02-03-team-members.webm)
+*(Видео: Managing team members)*
 
 1. Выберите команду и нажмите значок пользователя.
 2. Просмотрите уже назначенных членов команды на вкладке **{{t:organization.teams.manageMembers.currentTab}}**.
@@ -233,6 +260,9 @@ language: ru
 
 ### 2.2.4 Отслеживание действий команды
 
+![Team trace walkthrough](/assets/videos/user-guide/02-02-04-team-trace.webm)
+*(Видео: Viewing team audit history)*
+
 1. Выберите команду, которую хотите отследить.
 2. Нажмите значок часов/истории.
 3. Проверьте показатели Всего записей, Просмотренных записей и Последней активности в окне **{{t:resources.audit.title}}**.
@@ -244,6 +274,9 @@ language: ru
 > **Совет**: История аудита важна для соблюдения требований и контроля безопасности.
 
 ### 2.2.5 Удаление команды
+
+![Team deletion walkthrough](/assets/videos/user-guide/02-02-05-team-delete.webm)
+*(Видео: Deleting a team)*
 
 1. Нажмите значок корзины (красный) рядом с командой, которую хотите удалить.
 2. Проверьте, что название команды правильное в диалоговом окне подтверждения.
@@ -262,6 +295,9 @@ language: ru
 
 ### 2.3.1 Создание групп разрешений
 
+![Permission group creation walkthrough](/assets/videos/user-guide/02-03-01-permission-create.webm)
+*(Видео: Creating a permission group)*
+
 1. Перейдите на вкладку **{{t:common.navigation.organization}}** > **{{t:common.navigation.organizationAccess}}**.
 2. Нажмите кнопку **"+"**.
 3. Введите осмысленное название в поле **{{t:organization.access.modals.groupPlaceholder}}**.
@@ -273,6 +309,9 @@ language: ru
 > **Совет**: Группы разрешений используются для организации пользователей с аналогичными разрешениями. Используйте описательные названия групп (например, "Admin", "Read Only", "Repository Manager").
 
 ### 2.3.2 Управление разрешениями
+
+![Permission management walkthrough](/assets/videos/user-guide/02-03-02-permission-manage.webm)
+*(Видео: Managing permissions for a group)*
 
 1. Выберите группу разрешений и нажмите опцию **{{t:organization.access.modals.managePermissionsTitle}}**.
 2. Просмотрите права доступа группы на вкладке **{{t:organization.access.modals.currentPermissionsTab}}**.
@@ -291,6 +330,9 @@ language: ru
 Раздел Машины позволяет управлять вашими серверами и ресурсами репозитория.
 
 ### 2.4.1 Добавление машин
+
+![Adding machines walkthrough](/assets/videos/user-guide/02-04-01-machine-create.webm)
+*(Видео: Adding a new machine)*
 
 1. Перейдите на вкладку **{{t:common.navigation.machines}}** из левого меню.
 2. Нажмите кнопку **{{t:machines.createMachine}}** в правом верхнем углу.
@@ -324,6 +366,9 @@ language: ru
 
 ### 2.4.2 Тест подключения
 
+![Connectivity test walkthrough](/assets/videos/user-guide/02-04-02-connectivity-test.webm)
+*(Видео: Running a connectivity test)*
+
 Вы можете проверить статус подключения существующих машин.
 
 1. Нажмите кнопку **{{t:machines.connectivityTest}}**.
@@ -342,12 +387,18 @@ language: ru
 
 ### 2.4.3 Обновление списка машин
 
+![Machine list refresh walkthrough](/assets/videos/user-guide/02-04-03-machine-refresh.webm)
+*(Видео: Refreshing the machine list)*
+
 Нажмите кнопку **{{t:common.actions.refresh}}** для обновления списка машин.
 
 ![Кнопка Обновить](/assets/images/user-guide/28_refresh.png)
 *(Рисунок 28: Кнопка Обновить на панели инструментов действий с машинами)*
 
 ### 2.4.4 Детали машины
+
+![Machine details walkthrough](/assets/videos/user-guide/02-04-04-machine-details.webm)
+*(Видео: Viewing machine details)*
 
 1. Выберите машину, детали которой хотите увидеть.
 2. Нажмите кнопку со значком глаза (**{{t:common.viewDetails}}**).
@@ -370,6 +421,9 @@ language: ru
 
 ### 2.4.5 Редактирование машины
 
+![Machine editing walkthrough](/assets/videos/user-guide/02-04-05-machine-edit.webm)
+*(Видео: Editing machine settings)*
+
 1. Выберите машину, которую хотите изменить.
 2. Нажмите кнопку со значком карандаша (**{{t:common.actions.edit}}**).
 
@@ -386,6 +440,9 @@ language: ru
 > **Совет**: Всегда запускайте "Тест подключения" после изменения критических настроек.
 
 ### 2.4.6 Отслеживание действий машины
+
+![Machine trace walkthrough](/assets/videos/user-guide/02-04-06-machine-trace.webm)
+*(Видео: Viewing machine audit history)*
 
 1. Выберите машину и нажмите кнопку со значком часов (**{{t:common.actions.trace}}**).
 
@@ -405,6 +462,9 @@ language: ru
 
 ### 2.4.7 Удаление машины
 
+![Machine deletion walkthrough](/assets/videos/user-guide/02-04-07-machine-delete.webm)
+*(Видео: Deleting a machine)*
+
 1. Выберите машину, которую хотите удалить.
 2. Нажмите кнопку со значком корзины (**{{t:common.delete}}**).
 
@@ -419,6 +479,9 @@ language: ru
 > **Предупреждение**: При удалении машины все определения репозитория на ней также удаляются. Это действие необратимо.
 
 ### 2.4.8 Удаленные операции
+
+![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
+*(Видео: Running remote operations on a machine)*
 
 Вы можете выполнять различные удаленные операции на машинах.
 
@@ -485,6 +548,9 @@ language: ru
 
 ### 2.5.1 Создание репозиториев
 
+![Repository creation walkthrough](/assets/videos/user-guide/02-05-01-repository-create.webm)
+*(Видео: Creating a new repository)*
+
 1. Выберите машину на вкладке **{{t:common.navigation.machines}}**.
 2. Нажмите кнопку **{{t:machines.createRepository}}** в правом верхнем углу.
 
@@ -518,6 +584,9 @@ language: ru
 
 ### 2.5.2 Форк репозитория
 
+![Repository fork walkthrough](/assets/videos/user-guide/02-05-02-repository-fork.webm)
+*(Видео: Forking a repository)*
+
 Вы можете создать новый репозиторий, скопировав существующий.
 
 1. Выберите репозиторий, который хотите скопировать.
@@ -542,6 +611,9 @@ language: ru
 
 ### 2.5.3 Запуск репозитория (Up)
 
+![Repository up walkthrough](/assets/videos/user-guide/02-05-03-repository-up.webm)
+*(Видео: Starting a repository)*
+
 Чтобы активировать репозиторий:
 
 1. Выберите репозиторий и следуйте по пути **fx** > **up**.
@@ -558,6 +630,9 @@ language: ru
 
 ### 2.5.4 Остановка репозитория (Down)
 
+![Repository down walkthrough](/assets/videos/user-guide/02-05-04-repository-down.webm)
+*(Видео: Stopping a repository)*
+
 Чтобы остановить активный репозиторий:
 
 1. Выберите репозиторий и следуйте по пути **fx** > **down**.
@@ -573,6 +648,9 @@ language: ru
 > **Совет**: Операция "down" безопасно останавливает репозиторий. Данные не теряются, останавливаются только сервисы.
 
 ### 2.5.5 Развертывание (Deploy)
+
+![Repository deploy walkthrough](/assets/videos/user-guide/02-05-05-repository-deploy.webm)
+*(Видео: Deploying a repository)*
 
 Чтобы развернуть репозиторий в другом месте:
 
@@ -597,6 +675,9 @@ language: ru
 > **Совет**: После завершения операции deploy вы можете запустить команду "up" для запуска репозитория на целевых машинах.
 
 ### 2.5.6 Резервное копирование (Backup)
+
+![Repository backup walkthrough](/assets/videos/user-guide/02-05-06-repository-backup.webm)
+*(Видео: Backing up a repository)*
 
 Чтобы создать резервную копию репозитория:
 
@@ -627,6 +708,9 @@ language: ru
 
 ### 2.5.7 Применение шаблона
 
+![Template application walkthrough](/assets/videos/user-guide/02-05-07-repository-templates.webm)
+*(Видео: Applying a template to a repository)*
+
 Чтобы применить новый шаблон к репозиторию:
 
 1. Выберите репозиторий и следуйте по пути **fx** > **{{t:resources.templates.selectTemplate}}**.
@@ -650,6 +734,9 @@ language: ru
 
 ### 2.5.8 Отключение (Unmount)
 
+![Repository unmount walkthrough](/assets/videos/user-guide/02-05-08-repository-unmount.webm)
+*(Видео: Unmounting a repository)*
+
 Чтобы отключить репозиторий:
 
 1. Выберите репозиторий и следуйте по пути **fx** > **{{t:common.actions.advanced}}** > **{{t:resources.repositories.unmount}}**.
@@ -665,6 +752,9 @@ language: ru
 > **Совет**: Убедитесь, что нет активных операций с репозиторием перед отключением. После отключения репозиторий становится недоступным.
 
 ### 2.5.9 Расширение (Expand)
+
+![Repository expand walkthrough](/assets/videos/user-guide/02-05-09-repository-expand.webm)
+*(Видео: Expanding repository size)*
 
 Чтобы увеличить размер репозитория:
 
@@ -689,6 +779,9 @@ language: ru
 
 ### 2.5.10 Переименование (Rename)
 
+![Repository rename walkthrough](/assets/videos/user-guide/02-05-10-repository-rename.webm)
+*(Видео: Renaming a repository)*
+
 Чтобы изменить имя репозитория:
 
 1. Выберите репозиторий и следуйте по пути **fx** > **{{t:common.actions.rename}}**.
@@ -706,6 +799,9 @@ language: ru
 
 ### 2.5.11 Удаление репозитория
 
+![Repository deletion walkthrough](/assets/videos/user-guide/02-05-11-repository-delete.webm)
+*(Видео: Deleting a repository)*
+
 Чтобы окончательно удалить репозиторий:
 
 1. Выберите репозиторий и следуйте по пути **fx** > **{{t:resources.repositories.deleteRepository}}**.
@@ -718,6 +814,9 @@ language: ru
 > **Предупреждение**: Удаление репозитория необратимо. Убедитесь, что данные репозитория резервно скопированы перед удалением.
 
 ### 2.5.12 Детали репозитория
+
+![Repository details walkthrough](/assets/videos/user-guide/02-05-12-repository-details.webm)
+*(Видео: Viewing repository details)*
 
 Чтобы получить подробную информацию о репозитории:
 
@@ -750,6 +849,9 @@ language: ru
 
 ### 2.6.1 Подключение через настольное приложение
 
+![Desktop connection walkthrough](/assets/videos/user-guide/02-06-01-desktop-connection.webm)
+*(Видео: Connecting via desktop application)*
+
 1. Нажмите кнопку **{{t:resources.localActions.local}}** в строке репозитория.
 
 ![Кнопка Локальное подключение](/assets/images/user-guide/73_repo_connection_local.png)
@@ -780,6 +882,9 @@ language: ru
 Вы можете управлять своим профилем и системными настройками из раздела Настройки.
 
 ### 2.7.1 Смена пароля
+
+![Password change walkthrough](/assets/videos/user-guide/02-07-03-password-change.webm)
+*(Видео: Changing your password)*
 
 1. Перейдите на вкладку **{{t:common.navigation.settings}}** > **{{t:common.navigation.settingsProfile}}** из левого меню.
 
@@ -813,6 +918,9 @@ language: ru
 
 ### 2.8.1 Добавление хранилища
 
+![Storage creation walkthrough](/assets/videos/user-guide/02-08-01-storage-create.webm)
+*(Видео: Adding a storage location)*
+
 1. Перейдите на вкладку **{{t:common.navigation.storage}}** из левого меню.
 2. Нажмите кнопку **{{t:resources.storage.createStorage}}**.
 
@@ -841,6 +949,9 @@ language: ru
 
 ### 2.9.1 Редактирование учетных данных
 
+![Credential editing walkthrough](/assets/videos/user-guide/02-09-01-credential-edit.webm)
+*(Видео: Editing credentials)*
+
 1. Перейдите на вкладку **{{t:common.navigation.credentials}}** из левого меню.
 2. Выберите запись, которую хотите изменить.
 3. Нажмите кнопку **{{t:common.actions.edit}}**.
@@ -858,6 +969,9 @@ language: ru
 
 ### 2.9.2 Отслеживание учетных данных
 
+![Credential trace walkthrough](/assets/videos/user-guide/02-09-02-credential-trace.webm)
+*(Видео: Viewing credential audit history)*
+
 1. Выберите запись, которую хотите отследить.
 2. Нажмите кнопку **{{t:common.actions.trace}}**.
 
@@ -873,6 +987,9 @@ language: ru
 > **Совет**: Функция отслеживания предоставляет отслеживание использования учетных данных для целей аудита безопасности.
 
 ### 2.9.3 Удаление учетных данных
+
+![Credential deletion walkthrough](/assets/videos/user-guide/02-09-03-credential-delete.webm)
+*(Видео: Deleting a credential)*
 
 1. Выберите запись, которую хотите удалить.
 2. Нажмите красную кнопку **{{t:common.delete}}**.
@@ -894,6 +1011,9 @@ language: ru
 Раздел Очередь позволяет отслеживать ожидающие и завершенные операции в системе.
 
 ### 2.10.1 Операции с очередью
+
+![Queue operations walkthrough](/assets/videos/user-guide/02-10-01-queue-operations.webm)
+*(Видео: Managing queue operations)*
 
 1. Нажмите вкладку **{{t:common.navigation.queue}}** из левого меню.
 
@@ -925,6 +1045,9 @@ language: ru
 Раздел Аудит ведет записи всех операций, выполненных в системе.
 
 ### 2.11.1 Записи аудита
+
+![Audit records walkthrough](/assets/videos/user-guide/02-11-01-audit-records.webm)
+*(Видео: Viewing system audit records)*
 
 1. Нажмите вкладку **{{t:common.navigation.audit}}** из левого меню.
 
