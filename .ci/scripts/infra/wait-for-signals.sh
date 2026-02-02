@@ -105,11 +105,16 @@ is_signal_failed() {
 # Remove a signal from FAILED_SIGNALS (used when a newer attempt succeeds)
 clear_failed_signal() {
     local signal="$1"
+    [[ ${#FAILED_SIGNALS[@]} -eq 0 ]] && return
     local new_failed=()
-    for s in "${FAILED_SIGNALS[@]:-}"; do
+    for s in "${FAILED_SIGNALS[@]}"; do
         [[ "$s" != "$signal" ]] && new_failed+=("$s")
     done
-    FAILED_SIGNALS=("${new_failed[@]}")
+    if [[ ${#new_failed[@]} -gt 0 ]]; then
+        FAILED_SIGNALS=("${new_failed[@]}")
+    else
+        FAILED_SIGNALS=()
+    fi
 }
 
 # Check signal status by downloading and reading artifact content
