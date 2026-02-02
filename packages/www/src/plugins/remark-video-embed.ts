@@ -2,28 +2,20 @@
  * Remark plugin to embed videos from markdown image syntax.
  *
  * Transforms image references with video file extensions (.webm, .mp4) into
- * HTML5 <video> elements. When the video file doesn't exist in the public
- * directory, renders a styled placeholder instead.
+ * HTML5 <video> elements. Video files are injected post-build by CI before
+ * deployment, so the plugin always renders <video> tags unconditionally.
  *
  * Example:
  *   Input:  ![Registration walkthrough](/assets/videos/user-guide/01-01-registration.webm)
  *           *(Video: Complete registration flow)*
  *
- *   Output (video exists):    <div class="video-container"><video ...>...</video><em>...</em></div>
- *   Output (video missing):   <div class="video-container"><div class="video-placeholder">...</div><em>...</em></div>
+ *   Output: <div class="video-container"><video ...>...</video><em>...</em></div>
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { visit, SKIP } from 'unist-util-visit';
 import type { Root, Paragraph, Image, Text } from 'mdast';
 import type { Node, Parent } from 'unist';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Path to the public directory (relative to this plugin at packages/www/src/plugins/)
-const PUBLIC_DIR = path.resolve(__dirname, '../../public');
 
 const VIDEO_EXTENSIONS = ['.webm', '.mp4'] as const;
 
@@ -46,11 +38,6 @@ function isVideoUrl(url: string): boolean {
 
 function getVideoMimeType(url: string): string {
   return url.endsWith('.mp4') ? 'video/mp4' : 'video/webm';
-}
-
-function videoFileExists(urlPath: string): boolean {
-  const fullPath = path.join(PUBLIC_DIR, urlPath);
-  return fs.existsSync(fullPath);
 }
 
 /**
@@ -83,22 +70,6 @@ function buildVideoHtml(url: string, alt: string, caption: string | null): strin
 </div>`;
 }
 
-function buildPlaceholderHtml(alt: string, caption: string | null): string {
-  const escapedAlt = escapeHtml(alt);
-  const captionHtml = caption ? `\n  <em>${escapeHtml(caption)}</em>` : '';
-
-  return `<div class="video-container">
-  <div class="video-placeholder" aria-label="${escapedAlt}">
-    <div class="video-placeholder-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
-    </div>
-    <span class="video-placeholder-text">Video coming soon</span>
-  </div>${captionHtml}
-</div>`;
-}
-
 /**
  * Remark plugin that transforms video image references into HTML5 video elements or placeholders
  */
@@ -117,10 +88,10 @@ export function remarkVideoEmbed() {
       const imageNode = node.children[imageIndex] as Image;
       const caption = extractCaption(node, imageIndex);
 
-      const exists = videoFileExists(imageNode.url);
-      const html = exists
-        ? buildVideoHtml(imageNode.url, imageNode.alt ?? '', caption)
-        : buildPlaceholderHtml(imageNode.alt ?? '', caption);
+      // Always render <video> elements — video files are injected post-build
+      // by CI (inject-e2e-videos.sh) before deployment. The browser handles
+      // missing sources gracefully (shows empty player).
+      const html = buildVideoHtml(imageNode.url, imageNode.alt ?? '', caption);
 
       // Replace the entire paragraph node with raw HTML
       (parent as Parent).children.splice(index, 1, {
