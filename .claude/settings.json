@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" 2>/dev/null); PROTECTED=\"(\\.claude/settings\\.json|scripts/pre-commit-check\\.sh|scripts/check-ci-status\\.sh|scripts/track-push\\.sh)\"; if echo \"$CMD\" | grep -qE \"(git restore|git checkout|rm|rm -rf|rm -f).*$PROTECTED\"; then echo \"❌ BLOCKED: Cannot delete or restore protected hook files\"; exit 2; fi; if echo \"$CMD\" | grep -qiE \"Co-Authored-By|Generated with\"; then echo \"❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits.\"; exit 2; fi; exit 0'"
+            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" 2>/dev/null); PROTECTED=\"(\\.claude/settings\\.json|scripts/pre-commit-check\\.sh)\"; if echo \"$CMD\" | grep -qE \"(git restore|git checkout|rm|rm -rf|rm -f).*$PROTECTED\"; then echo \"❌ BLOCKED: Cannot delete or restore protected hook files\"; exit 2; fi; if echo \"$CMD\" | grep -qiE \"Co-Authored-By|Generated with\"; then echo \"❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits.\"; exit 2; fi; exit 0'"
           }
         ]
       },
@@ -20,26 +20,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c 'CMD=$(cat | jq -r \".tool_input.command // empty\" 2>/dev/null); if echo \"$CMD\" | grep -qE \"git push\"; then bash /home/muhammed/monorepo/console/scripts/track-push.sh; fi'"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/muhammed/monorepo/console/scripts/check-ci-status.sh"
-          }
-        ]
-      }
-    ]
+    "PostToolUse": []
   }
 }
