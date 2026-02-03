@@ -75,14 +75,29 @@ runs:
           echo "::warning::KVM is NOT available - VM provisioning will be skipped"
         fi
 
-    # Step 2: Build renet from source (requires Go and submodules in parent workflow)
+    # Step 2: Pull bridge image for embedded assets (CRIU, rsync)
+    - name: Pull Bridge Image for Assets
+      if: steps.kvm-check.outputs.kvm_available == 'true'
+      shell: bash
+      run: |
+        echo "Pulling bridge image for embedded assets..."
+        # Pull the bridge image from GHCR
+        docker pull ghcr.io/rediacc/bridge:${{ inputs.bridge-tag }}
+        # Tag as rediacc/bridge:latest for embed_assets to find it
+        docker tag ghcr.io/rediacc/bridge:${{ inputs.bridge-tag }} rediacc/bridge:latest
+        echo "Bridge image ready for asset extraction"
+
+    # Step 3: Build renet from source with embedded assets
     - name: Build renet from source
       if: steps.kvm-check.outputs.kvm_available == 'true'
       shell: bash
       run: |
         echo "Building renet from source..."
         cd ${{ github.workspace }}/private/renet
-        go build -o /tmp/renet ./cmd/renet
+        # Use ./go dev which handles embedded assets and builds the binary
+        ./go dev
+        # Copy to /tmp for compatibility with existing steps
+        cp bin/renet /tmp/renet
         chmod +x /tmp/renet
         # Verify binary was created and is executable
         if [ ! -x /tmp/renet ]; then
