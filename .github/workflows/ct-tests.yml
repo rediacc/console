@@ -786,36 +786,29 @@ jobs:
       - name: Wait for VM SSH readiness
         run: |
           # renet ops up (run as root) creates SSH keys in $RENET_DATA_DIR/staging/.ssh/
-          # We must use that SSH config to connect to the VMs
+          # Copy the keys to user's ~/.ssh so we can use them without sudo
           SSH_DIR="$RENET_DATA_DIR/staging/.ssh"
-          SSH_CONFIG="$SSH_DIR/config"
 
-          # Debug: show what we're looking for
-          echo "Looking for SSH config at: $SSH_CONFIG"
-          echo "RENET_DATA_DIR=$RENET_DATA_DIR"
-          ls -la "$RENET_DATA_DIR" 2>/dev/null || echo "Data dir not accessible"
-          ls -la "$SSH_DIR" 2>/dev/null || echo "SSH dir not accessible"
-
-          # Files are owned by root, need sudo to read them
-          if ! sudo test -f "$SSH_CONFIG"; then
-            echo "::error::SSH config not found at $SSH_CONFIG"
+          echo "Copying SSH keys from $SSH_DIR to ~/.ssh..."
+          if ! sudo test -f "$SSH_DIR/id_rsa"; then
+            echo "::error::SSH key not found at $SSH_DIR/id_rsa"
+            sudo ls -la "$RENET_DATA_DIR" || true
+            sudo ls -la "$SSH_DIR" || true
             exit 1
           fi
-          echo "Found SSH config (owned by root)"
 
-          # Copy SSH keys to user's ~/.ssh with correct ownership
           sudo cp "$SSH_DIR/id_rsa" ~/.ssh/id_rsa
           sudo cp "$SSH_DIR/id_rsa.pub" ~/.ssh/id_rsa.pub
-          sudo cp "$SSH_CONFIG" ~/.ssh/renet_config
-          sudo chown $USER:$USER ~/.ssh/id_rsa ~/.ssh/id_rsa.pub ~/.ssh/renet_config
+          sudo chown $USER:$USER ~/.ssh/id_rsa ~/.ssh/id_rsa.pub
           chmod 600 ~/.ssh/id_rsa
-          echo "Copied renet SSH keys to ~/.ssh"
+          echo "SSH keys copied to ~/.ssh"
 
           # Wait for both bridge (111.1) and worker (111.11) VMs
+          # Use the copied identity file directly (config file references root-owned paths)
           for vm in 192.168.111.1 192.168.111.11; do
             echo "Waiting for $vm..."
             for i in {1..30}; do
-              if ssh -F ~/.ssh/renet_config -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@$vm echo ready 2>/dev/null; then
+              if ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null root@$vm echo ready 2>/dev/null; then
                 echo "VM $vm is SSH-ready"
                 break
               fi
@@ -823,6 +816,8 @@ jobs:
               sleep 5
               if [[ $i -eq 30 ]]; then
                 echo "VM $vm SSH not ready after 150s"
+                # Debug: try with verbose output
+                ssh -v -i ~/.ssh/id_rsa -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@$vm echo ready 2>&1 || true
                 exit 1
               fi
             done
