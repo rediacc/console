@@ -84,7 +84,12 @@ runs:
         cd ${{ github.workspace }}/private/renet
         go build -o /tmp/renet ./cmd/renet
         chmod +x /tmp/renet
-        /tmp/renet --version || echo "Built renet binary"
+        # Verify binary was created and is executable
+        if [ ! -x /tmp/renet ]; then
+          echo "::error::Failed to build renet binary"
+          exit 1
+        fi
+        echo "Successfully built renet binary: $(ls -la /tmp/renet)"
 
     # Step 3: Setup KVM host (installs libvirt, QEMU, etc.)
     - name: Setup KVM Host
