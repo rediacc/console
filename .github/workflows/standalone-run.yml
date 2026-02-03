@@ -131,8 +131,27 @@ jobs:
         vm-os: ${{ fromJSON(inputs.vm-os-list || format('["{0}"]', inputs.vm-os || 'none')) }}
 
     steps:
+      - name: Generate App Token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet
+
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Go
+        if: matrix.vm-os != 'none'
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
 
       - name: Set Image Tags
         run: |

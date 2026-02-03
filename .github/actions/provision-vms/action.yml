@@ -75,13 +75,16 @@ runs:
           echo "::warning::KVM is NOT available - VM provisioning will be skipped"
         fi
 
-    # Step 2: Extract renet binary from bridge Docker image
-    - name: Extract renet binary
+    # Step 2: Build renet from source (requires Go and submodules in parent workflow)
+    - name: Build renet from source
       if: steps.kvm-check.outputs.kvm_available == 'true'
       shell: bash
-      env:
-        RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ inputs.bridge-tag }}
-      run: ${{ github.action_path }}/../../../.ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
+      run: |
+        echo "Building renet from source..."
+        cd ${{ github.workspace }}/private/renet
+        go build -o /tmp/renet ./cmd/renet
+        chmod +x /tmp/renet
+        /tmp/renet --version || echo "Built renet binary"
 
     # Step 3: Setup KVM host (installs libvirt, QEMU, etc.)
     - name: Setup KVM Host
