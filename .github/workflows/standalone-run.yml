@@ -137,7 +137,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet
+          repositories: console,renet,middleware,license-server,homebrew-tap
 
       - name: Checkout Repository
         uses: actions/checkout@v4
