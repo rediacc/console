@@ -785,14 +785,21 @@ jobs:
           VM_BRIDGE: '1'
       - name: Wait for VM SSH readiness
         run: |
+          # renet ops up creates its own SSH keys in $RUNNER_TEMP/renet/staging/.ssh/
+          # We must use that SSH config to connect to the VMs
+          SSH_CONFIG="$RUNNER_TEMP/renet/staging/.ssh/config"
+          if [[ ! -f "$SSH_CONFIG" ]]; then
+            echo "::error::SSH config not found at $SSH_CONFIG"
+            exit 1
+          fi
+          echo "Using SSH config: $SSH_CONFIG"
+
           # Wait for both bridge (111.1) and worker (111.11) VMs
           for vm in 192.168.111.1 192.168.111.11; do
             echo "Waiting for $vm..."
             for i in {1..30}; do
-              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@$vm echo ready 2>/dev/null; then
+              if ssh -F "$SSH_CONFIG" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@$vm echo ready 2>/dev/null; then
                 echo "VM $vm is SSH-ready"
-                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
-                echo "Host keys added for $vm"
                 break
               fi
               echo "Waiting for VM $vm SSH... ($i/30)"
@@ -803,6 +810,12 @@ jobs:
               fi
             done
           done
+
+          # Copy renet SSH keys to ~/.ssh for subsequent steps (tests may use default SSH)
+          cp "$RUNNER_TEMP/renet/staging/.ssh/id_rsa" ~/.ssh/id_rsa
+          cp "$RUNNER_TEMP/renet/staging/.ssh/id_rsa.pub" ~/.ssh/id_rsa.pub
+          chmod 600 ~/.ssh/id_rsa
+          echo "Copied renet SSH keys to ~/.ssh for test compatibility"
 
       # Start RustFS for S3 integration tests (sudo required — renet data dir is root-owned)
       - name: Start RustFS
