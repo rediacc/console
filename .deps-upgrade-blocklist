@@ -14,3 +14,4 @@ antd # v6.x requires CSS-in-JS removal, component API changes, extensive migrati
 
 # Electron - v40.x has native module compatibility issues (cpu-features, nan)
 electron # v40.x breaks native module rebuild with nan library errors
+@electron/rebuild # v4.x requires Node 22.12+, npm reports v3.x as "latest" due to engine mismatch
