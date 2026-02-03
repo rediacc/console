@@ -75,17 +75,17 @@ runs:
           echo "::warning::KVM is NOT available - VM provisioning will be skipped"
         fi
 
-    # Step 2: Pull bridge image for embedded assets (CRIU, rsync)
-    - name: Pull Bridge Image for Assets
+    # Step 2: Tag bridge image for embed_assets (expects rediacc/bridge:latest)
+    # Note: The bridge image should already be pulled by the parent workflow with GHCR auth
+    - name: Tag Bridge Image for Asset Extraction
       if: steps.kvm-check.outputs.kvm_available == 'true'
       shell: bash
       run: |
-        echo "Pulling bridge image for embedded assets..."
-        # Pull the bridge image from GHCR
-        docker pull ghcr.io/rediacc/bridge:${{ inputs.bridge-tag }}
-        # Tag as rediacc/bridge:latest for embed_assets to find it
-        docker tag ghcr.io/rediacc/bridge:${{ inputs.bridge-tag }} rediacc/bridge:latest
-        echo "Bridge image ready for asset extraction"
+        echo "Tagging bridge image for embed_assets..."
+        # The parent workflow pulls ghcr.io/rediacc/elite/bridge:TAG
+        # Tag it as rediacc/bridge:latest for embed_assets to find it
+        docker tag ghcr.io/rediacc/elite/bridge:${{ inputs.bridge-tag }} rediacc/bridge:latest
+        echo "Bridge image tagged for asset extraction"
 
     # Step 3: Build renet from source with embedded assets
     - name: Build renet from source
