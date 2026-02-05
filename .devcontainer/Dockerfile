@@ -109,9 +109,10 @@ RUN uv tool install kimi-cli
 USER root
 
 # =============================================================================
-# Playwright system dependencies (browsers installed per-project at runtime)
+# Playwright system dependencies (browser binaries installed by postCreateCommand
+# as vscode user, ensuring version matches the project's @playwright/test)
 # =============================================================================
-RUN npx playwright install --with-deps chromium
+RUN npx playwright install-deps chromium
 
 # =============================================================================
 # Global npm tools

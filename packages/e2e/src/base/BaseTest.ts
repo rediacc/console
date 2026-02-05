@@ -10,6 +10,7 @@ interface TestFixtures {
   screenshotManager: ScreenshotManager;
   testReporter: TestReporter;
   testDataManager: TestDataManager;
+  _blockExternalTracking: undefined;
   _interactionHighlight: undefined;
   _videoSaver: undefined;
 }
@@ -32,6 +33,19 @@ export const test = baseTest.extend<TestFixtures>({
     const dataManager = new TestDataManager(workerId, testInfo.project.name);
     await use(dataManager);
   },
+
+  // Block external analytics/tracking domains that may be unreachable in CI or
+  // Codespaces, preventing them from blocking the page 'load' event.
+  _blockExternalTracking: [
+    async ({ page }, use) => {
+      await page.route(
+        (url) => url.hostname === 'plausible.rediacc.com',
+        (route) => route.abort()
+      );
+      await use(undefined);
+    },
+    { auto: true },
+  ],
 
   // Inject interaction highlight overlays (clicks, focus, keystrokes) into the page
   // so they appear in recorded videos.
