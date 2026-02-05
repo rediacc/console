@@ -138,6 +138,42 @@ RUN curl -fsSL https://claude.ai/install.sh | bash
 USER root
 
 # =============================================================================
+# VS Code Extensions (pre-installed from Open-VSX for fast startup)
+# Works for both GitHub Codespaces and self-hosted OpenVSCode Server
+# =============================================================================
+ENV VSCODE_EXTENSIONS_DIR=/opt/vscode-extensions
+
+COPY download-extensions.sh /tmp/
+RUN chmod +x /tmp/download-extensions.sh \
+    && /tmp/download-extensions.sh \
+    && rm /tmp/download-extensions.sh
+
+# =============================================================================
+# OpenVSCode Server (for self-hosted HTTP browser access)
+# https://github.com/gitpod-io/openvscode-server - MIT License
+# =============================================================================
+ARG OPENVSCODE_VERSION=1.106.3
+
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in amd64) OVSX_ARCH="x64" ;; arm64) OVSX_ARCH="arm64" ;; esac \
+    && echo "Installing OpenVSCode Server v${OPENVSCODE_VERSION} for ${OVSX_ARCH}..." \
+    && curl -fsSL "https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${OPENVSCODE_VERSION}/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}.tar.gz" \
+        | tar -xz -C /opt \
+    && mv "/opt/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}" /opt/openvscode-server \
+    && ln -sf /opt/openvscode-server/bin/openvscode-server /usr/local/bin/openvscode-server \
+    # Pre-install extensions into OpenVSCode Server
+    && echo "Installing extensions into OpenVSCode Server..." \
+    && for vsix in "$VSCODE_EXTENSIONS_DIR"/*.vsix; do \
+        [ -f "$vsix" ] && /opt/openvscode-server/bin/openvscode-server \
+            --install-extension "$vsix" \
+            --extensions-dir /opt/openvscode-server/extensions 2>/dev/null || true; \
+    done \
+    && chown -R vscode:vscode /opt/openvscode-server
+
+# Expose port for self-hosted VS Code browser access
+EXPOSE 8080
+
+# =============================================================================
 # Environment setup
 # =============================================================================
 RUN sed -i 's|^PATH=.*|PATH="/home/vscode/.local/bin:/usr/local/share/nvm/current/bin:/usr/local/go/bin:/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"|' /etc/environment \

@@ -9,11 +9,15 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "forwardPorts": [3000],
+  "forwardPorts": [3000, 8080],
   "portsAttributes": {
     "3000": {
       "label": "Console Dev Server",
       "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "VS Code (Self-Hosted)",
+      "onAutoForward": "ignore"
     }
   },
   "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages",
@@ -41,9 +45,7 @@
         "ms-azuretools.vscode-docker",
         "redhat.vscode-yaml",
         "eamodio.gitlens",
-        "ms-python.python",
-        "ms-vscode.vscode-typescript-next",
-        "ms-dotnettools.csharp"
+        "ms-python.python"
       ]
     }
   }
