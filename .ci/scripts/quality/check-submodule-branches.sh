@@ -189,7 +189,7 @@ get_pr_for_branch() {
         return 0
     fi
 
-    gh pr list --repo "$repo" --head "$branch" --state open --json number,url --jq '.[0] | "\(.number)|\(.url)"' 2>/dev/null || echo ""
+    gh pr list --repo "$repo" --head "$branch" --state open --json number,url --jq '.[0] // empty | "\(.number)|\(.url)"' 2>/dev/null || echo ""
 }
 
 # Get console PR description
