@@ -1,6 +1,11 @@
 {
   "name": "Rediacc Console",
   "image": "ghcr.io/rediacc/devcontainer:latest",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "32gb"
+  },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
@@ -11,7 +16,7 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages && npx playwright install",
+  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages",
   "postStartCommand": "npm install",
   "remoteEnv": {
     "PORT": "3000"

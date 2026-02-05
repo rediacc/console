@@ -200,7 +200,14 @@ jobs:
 
       # -----------------------------------------------------------------------
       # Step 1b: Deploy License Server to Cloudflare
+      # Build shared packages first (license-server imports from @rediacc/shared)
       # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
+
       - name: Deploy License Server
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
