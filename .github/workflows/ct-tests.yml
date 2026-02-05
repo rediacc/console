@@ -809,7 +809,8 @@ jobs:
 
       # Run tests
       - name: Create CLI local E2E env
-        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env
+        # Use current user (not root) since VMs are configured for SUDO_USER via renet
+        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE"
       - name: Append S3 test env
         run: .ci/scripts/env/create-cli-s3-env.sh --output packages/cli/tests/.env --vm-net-base "$VM_NET_BASE"
       - name: Run CLI local E2E tests
