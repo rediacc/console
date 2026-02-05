@@ -776,12 +776,13 @@ jobs:
       - name: Wait for VM SSH readiness
         run: |
           # Wait for both bridge and worker VMs
+          # Note: VMs are configured for the current user (not root) via SUDO_USER in renet
           BRIDGE_IP="${VM_NET_BASE}.1"
           WORKER_IP="${VM_NET_BASE}.11"
           for vm in $BRIDGE_IP $WORKER_IP; do
-            echo "Waiting for $vm..."
+            echo "Waiting for $vm as $USER..."
             for i in {1..30}; do
-              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@$vm echo ready 2>/dev/null; then
+              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
                 echo "VM $vm is SSH-ready"
                 ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
                 echo "Host keys added for $vm"
