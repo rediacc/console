@@ -192,6 +192,21 @@ get_pr_for_branch() {
     gh pr list --repo "$repo" --head "$branch" --state open --json number,url --jq '.[0] // empty | "\(.number)|\(.url)"' 2>/dev/null || echo ""
 }
 
+# Check if a merged PR exists for a branch in a repo
+# Returns 0 if merged PR exists, 1 otherwise
+branch_has_merged_pr() {
+    local repo="$1"
+    local branch="$2"
+
+    if ! command -v gh &>/dev/null; then
+        return 1
+    fi
+
+    local merged_count
+    merged_count=$(gh pr list --repo "$repo" --head "$branch" --state merged --json number --jq 'length' 2>/dev/null || echo "0")
+    [[ "$merged_count" -gt 0 ]]
+}
+
 # Get console PR description
 get_console_pr_body() {
     local pr_number="${PR_NUMBER:-}"
@@ -352,9 +367,14 @@ main() {
                     pr_info="$(get_pr_for_branch "$repo" "$current_branch")"
 
                     if [[ -z "$pr_info" ]]; then
-                        log_error "✗ $sm_path: no open PR found for branch '$current_branch' in $repo"
-                        log_error "  AI FIX: cd $sm_path && gh pr create --title 'Your PR title' --body 'Description'"
-                        ((errors++))
+                        # No open PR - check if PR was already merged (that's fine)
+                        if branch_has_merged_pr "$repo" "$current_branch"; then
+                            log_info "✓ $sm_path: PR for branch '$current_branch' was already merged"
+                        else
+                            log_error "✗ $sm_path: no open PR found for branch '$current_branch' in $repo"
+                            log_error "  AI FIX: cd $sm_path && gh pr create --title 'Your PR title' --body 'Description'"
+                            ((errors++))
+                        fi
                     else
                         submodule_pr_number="${pr_info%%|*}"
                         submodule_pr_url="${pr_info##*|}"
