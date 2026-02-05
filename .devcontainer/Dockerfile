@@ -95,10 +95,7 @@ ENV DOTNET_ROOT=/usr/share/dotnet
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV PATH="$PATH:$DOTNET_ROOT"
 
-RUN curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
-    && chmod +x /tmp/dotnet-install.sh \
-    && /tmp/dotnet-install.sh --channel 9.0 --install-dir "$DOTNET_ROOT" \
-    && rm /tmp/dotnet-install.sh \
+RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 --install-dir "$DOTNET_ROOT" \
     && ln -sf "$DOTNET_ROOT/dotnet" /usr/local/bin/dotnet
 
 # =============================================================================
