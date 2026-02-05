@@ -199,7 +199,7 @@ cleanup_tags() {
             if [[ -n "$tag_date" ]]; then
                 tag_data="$(echo "$tag_data" | jq --arg name "$tag_name" --arg date "$tag_date" '. + [{"name": $name, "date": $date}]')"
             fi
-        done <<< "$tags"
+        done <<<"$tags"
 
         # Sort by date descending and apply retention
         tag_data="$(echo "$tag_data" | jq 'sort_by(.date) | reverse')"
@@ -350,8 +350,8 @@ cleanup_deployments() {
                 else
                     # Must set deployment to inactive before deletion
                     if gh api "repos/$full_repo/deployments/$dep_id/statuses" \
-                        -X POST -f state=inactive >/dev/null 2>&1 && \
-                       retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/deployments/$dep_id" 2>/dev/null; then
+                        -X POST -f state=inactive >/dev/null 2>&1 &&
+                        retry_with_backoff 3 2 gh api -X DELETE "repos/$full_repo/deployments/$dep_id" 2>/dev/null; then
                         log_debug "  Deleted deployment: $dep_id ($environment)"
                         deleted=$((deleted + 1))
                     else

@@ -62,10 +62,10 @@ done
 # Auto-detect platform and arch if not specified
 if [[ -z "$PLATFORM" ]]; then
     case "$(detect_os)" in
-        linux)   PLATFORM="linux" ;;
-        macos)   PLATFORM="mac" ;;
+        linux) PLATFORM="linux" ;;
+        macos) PLATFORM="mac" ;;
         windows) PLATFORM="win" ;;
-        *)       PLATFORM="linux" ;;
+        *) PLATFORM="linux" ;;
     esac
 fi
 
@@ -150,8 +150,8 @@ get_binary_url() {
     local filename
     case "$platform" in
         linux) filename="rdc-linux-${arch}" ;;
-        mac)   filename="rdc-mac-${arch}" ;;
-        win)   filename="rdc-win-${arch}.exe" ;;
+        mac) filename="rdc-mac-${arch}" ;;
+        win) filename="rdc-win-${arch}.exe" ;;
     esac
 
     if [[ "$version" == "latest" ]]; then
@@ -393,7 +393,7 @@ echo ""
 # Validate requirements
 if [[ "$DRY_RUN" == "false" ]]; then
     case "$METHOD" in
-        docker|apt|dnf|quick|all)
+        docker | apt | dnf | quick | all)
             require_cmd docker
             ;;
     esac

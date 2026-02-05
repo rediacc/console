@@ -43,7 +43,7 @@ log_debug "Created container: $CONTAINER_ID"
 docker cp "$CONTAINER_ID:$BINARY_PATH" "$OUTPUT"
 
 # Remove container
-docker rm "$CONTAINER_ID" > /dev/null
+docker rm "$CONTAINER_ID" >/dev/null
 
 # Make executable
 chmod +x "$OUTPUT"
@@ -52,7 +52,7 @@ log_info "Extracted renet binary to: $OUTPUT"
 
 # Export for GitHub Actions
 if [[ -n "${GITHUB_ENV:-}" ]]; then
-    echo "RENET_BINARY_PATH=$OUTPUT" >> "$GITHUB_ENV"
+    echo "RENET_BINARY_PATH=$OUTPUT" >>"$GITHUB_ENV"
     log_info "Set RENET_BINARY_PATH in GITHUB_ENV"
 fi
 

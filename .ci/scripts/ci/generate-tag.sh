@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
             SELF_MODE=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Modes:"
@@ -120,13 +120,13 @@ fi
 
 # Output to file if requested
 if [[ -n "$OUTPUT_FILE" ]]; then
-    echo "$CI_TAG" > "$OUTPUT_FILE"
+    echo "$CI_TAG" >"$OUTPUT_FILE"
     log_info "Wrote CI tag to: $OUTPUT_FILE" >&2
 fi
 
 # Output to GITHUB_OUTPUT if requested
 if [[ "$GITHUB_OUTPUT_MODE" == "true" ]] && [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    echo "ci_tag=$CI_TAG" >> "$GITHUB_OUTPUT"
+    echo "ci_tag=$CI_TAG" >>"$GITHUB_OUTPUT"
     log_info "Set GITHUB_OUTPUT: ci_tag=$CI_TAG" >&2
 fi
 

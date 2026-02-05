@@ -41,10 +41,22 @@ SEARCH_LATEST="false"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --run-id)       RUN_ID="$2"; shift 2 ;;
-        --artifact-name) ARTIFACT_NAME="$2"; shift 2 ;;
-        --output)       OUTPUT_DIR="$2"; shift 2 ;;
-        --search-latest) SEARCH_LATEST="true"; shift ;;
+        --run-id)
+            RUN_ID="$2"
+            shift 2
+            ;;
+        --artifact-name)
+            ARTIFACT_NAME="$2"
+            shift 2
+            ;;
+        --output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --search-latest)
+            SEARCH_LATEST="true"
+            shift
+            ;;
         *) shift ;;
     esac
 done
@@ -93,7 +105,7 @@ DOWNLOAD_DIR="$(mktemp -d)"
 trap 'rm -rf "$DOWNLOAD_DIR"' EXIT
 
 log_step "Downloading artifact..."
-if ! gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > "$DOWNLOAD_DIR/artifact.zip" 2>/dev/null; then
+if ! gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" >"$DOWNLOAD_DIR/artifact.zip" 2>/dev/null; then
     log_error "Failed to download artifact $ARTIFACT_ID"
     exit 1
 fi

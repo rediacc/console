@@ -62,12 +62,12 @@ log_debug() {
 # Returns: linux, macos, or windows
 detect_os() {
     case "$(uname -s)" in
-        Linux*)     echo "linux" ;;
-        Darwin*)    echo "macos" ;;
-        CYGWIN*)    echo "windows" ;;
-        MINGW*)     echo "windows" ;;
-        MSYS*)      echo "windows" ;;
-        *)          echo "unknown" ;;
+        Linux*) echo "linux" ;;
+        Darwin*) echo "macos" ;;
+        CYGWIN*) echo "windows" ;;
+        MINGW*) echo "windows" ;;
+        MSYS*) echo "windows" ;;
+        *) echo "unknown" ;;
     esac
 }
 
@@ -77,9 +77,9 @@ detect_arch() {
     local arch
     arch="$(uname -m)"
     case "$arch" in
-        x86_64|amd64)   echo "x64" ;;
-        aarch64|arm64)  echo "arm64" ;;
-        *)              echo "unknown" ;;
+        x86_64 | amd64) echo "x64" ;;
+        aarch64 | arm64) echo "arm64" ;;
+        *) echo "unknown" ;;
     esac
 }
 
@@ -106,10 +106,10 @@ get_runner_os() {
         echo "$RUNNER_OS"
     else
         case "$(detect_os)" in
-            linux)   echo "Linux" ;;
-            macos)   echo "macOS" ;;
+            linux) echo "Linux" ;;
+            macos) echo "macOS" ;;
             windows) echo "Windows" ;;
-            *)       echo "Unknown" ;;
+            *) echo "Unknown" ;;
         esac
     fi
 }
@@ -143,7 +143,7 @@ require_var() {
 # Usage: require_cmd command_name
 require_cmd() {
     local cmd="$1"
-    if ! command -v "$cmd" &> /dev/null; then
+    if ! command -v "$cmd" &>/dev/null; then
         log_error "Required command '$cmd' is not available"
         exit 1
     fi
@@ -322,7 +322,7 @@ run_with_timeout() {
 
     # Check if killed by timeout (SIGTERM = 143)
     if [[ $exit_code -eq 143 ]]; then
-        return 124  # Standard timeout exit code
+        return 124 # Standard timeout exit code
     fi
 
     return "$exit_code"

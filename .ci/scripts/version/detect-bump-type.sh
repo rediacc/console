@@ -97,14 +97,14 @@ while IFS= read -r pr_num; do
     if echo "$labels" | grep -qx "bump-major"; then
         found_major=true
         verbose_log "Found bump-major label on PR #$pr_num"
-        break  # Short-circuit: major is highest priority
+        break # Short-circuit: major is highest priority
     fi
 
     if echo "$labels" | grep -qx "bump-minor"; then
         found_minor=true
         verbose_log "Found bump-minor label on PR #$pr_num"
     fi
-done <<< "$pr_numbers"
+done <<<"$pr_numbers"
 
 # Output highest priority
 if [[ "$found_major" == "true" ]]; then

@@ -72,7 +72,8 @@ else
     git config user.email "github-actions[bot]@users.noreply.github.com"
 fi
 git add package.json package-lock.json packages/*/package.json
-git commit -m "$(cat <<'EOF'
+git commit -m "$(
+    cat <<'EOF'
 chore(deps): auto-upgrade dependencies
 
 Automatically upgraded by CI.

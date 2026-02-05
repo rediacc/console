@@ -31,7 +31,7 @@ fi
 
 log_step "Appending S3 test env vars to: $OUTPUT"
 
-cat >> "$OUTPUT" << EOF
+cat >>"$OUTPUT" <<EOF
 
 # S3 Integration Tests (added by create-cli-s3-env.sh)
 S3_TEST_ENDPOINT=http://${VM_NET_BASE}.1:9000

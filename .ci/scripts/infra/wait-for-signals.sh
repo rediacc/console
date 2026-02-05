@@ -58,7 +58,7 @@ E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "
 
 # Parse E2E_BROWSERS from environment
 E2E_BROWSERS_STR="${E2E_BROWSERS:-chromium}"
-IFS=' ' read -ra E2E_BROWSERS_ARR <<< "$E2E_BROWSERS_STR"
+IFS=' ' read -ra E2E_BROWSERS_ARR <<<"$E2E_BROWSERS_STR"
 
 # Calculate expected count
 EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS_ARR[@]} + ${#E2E_RESOLUTIONS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
@@ -137,13 +137,13 @@ check_signal_status() {
                 FAILED_SIGNALS+=("$signal")
                 log_error "Signal $signal reported status: $status"
             fi
-            return 1  # Signal indicates failure
+            return 1 # Signal indicates failure
         fi
-        return 0  # Success
+        return 0 # Success
     fi
 
     rm -rf "$temp_dir"
-    return 2  # Not found or download failed
+    return 2 # Not found or download failed
 }
 
 # Try to find a signal artifact, falling back to previous attempts on rerun.
@@ -174,7 +174,7 @@ try_signal() {
     # 2. Fallback to previous attempts (newest first)
     if [[ "$RUN_ATTEMPT" -gt 1 ]]; then
         local attempt
-        for (( attempt = RUN_ATTEMPT - 1; attempt >= 1; attempt-- )); do
+        for ((attempt = RUN_ATTEMPT - 1; attempt >= 1; attempt--)); do
             local fallback_name="${artifact_base}-attempt-${attempt}"
             if echo "$artifacts" | grep -q "^${fallback_name}$"; then
                 local ret=0

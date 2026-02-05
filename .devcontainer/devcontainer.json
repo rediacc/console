@@ -1,17 +1,26 @@
 {
   "name": "Rediacc Console",
   "image": "ghcr.io/rediacc/devcontainer:latest",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "32gb"
+  },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "forwardPorts": [3000],
+  "forwardPorts": [3000, 8080],
   "portsAttributes": {
     "3000": {
       "label": "Console Dev Server",
       "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "VS Code (Self-Hosted)",
+      "onAutoForward": "ignore"
     }
   },
-  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages && npx playwright install",
+  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages",
   "postStartCommand": "npm install",
   "remoteEnv": {
     "PORT": "3000"
@@ -36,9 +45,7 @@
         "ms-azuretools.vscode-docker",
         "redhat.vscode-yaml",
         "eamodio.gitlens",
-        "ms-python.python",
-        "ms-vscode.vscode-typescript-next",
-        "ms-dotnettools.csharp"
+        "ms-python.python"
       ]
     }
   }

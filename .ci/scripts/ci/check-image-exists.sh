@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_VAR_NAME="$2"
             shift 2
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --image NAME --tag TAG [OPTIONS]"
             echo ""
             echo "Required:"
@@ -110,7 +110,7 @@ fi
 
 # Output to GITHUB_OUTPUT if requested
 if [[ "$GITHUB_OUTPUT_MODE" == "true" ]] && [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    echo "${OUTPUT_VAR_NAME}=${IMAGE_EXISTS}" >> "$GITHUB_OUTPUT"
+    echo "${OUTPUT_VAR_NAME}=${IMAGE_EXISTS}" >>"$GITHUB_OUTPUT"
     log_info "Set GITHUB_OUTPUT: ${OUTPUT_VAR_NAME}=${IMAGE_EXISTS}"
 fi
 

@@ -117,7 +117,7 @@ if [[ -n "$TRIGGER_TIME" ]]; then
         # Calculate remaining wait time instead of waiting full MAX_WAIT
         TIMEOUT=$((MAX_WAIT - TIME_SINCE_TRIGGER))
         if [[ "$TIMEOUT" -lt "$POLL_INTERVAL" ]]; then
-            TIMEOUT="$POLL_INTERVAL"  # At least one poll
+            TIMEOUT="$POLL_INTERVAL" # At least one poll
         fi
 
         log_info "Trigger posted ${TIME_SINCE_TRIGGER}s ago, will wait up to ${TIMEOUT}s more"

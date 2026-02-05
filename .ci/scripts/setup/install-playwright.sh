@@ -49,7 +49,7 @@ INSTALL_ARGS=()
 [[ "$WITH_DEPS" == "true" ]] && INSTALL_ARGS+=("--with-deps")
 
 # Deduplicate browsers
-IFS=' ' read -ra BROWSER_ARR <<< "$BROWSERS"
+IFS=' ' read -ra BROWSER_ARR <<<"$BROWSERS"
 declare -A SEEN_BROWSERS
 UNIQUE_BROWSERS=()
 for browser in "${BROWSER_ARR[@]}"; do

@@ -22,7 +22,7 @@ ANALYZE="${ARG_ANALYZE:-false}"
 
 # Validate build type
 case "$BUILD_TYPE" in
-    DEBUG|RELEASE) ;;
+    DEBUG | RELEASE) ;;
     *)
         log_error "Invalid build type: $BUILD_TYPE (must be DEBUG or RELEASE)"
         exit 1

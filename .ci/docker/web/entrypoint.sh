@@ -25,7 +25,7 @@ export JSON_URL="${JSON_URL:-/json}"
 # Generate config.js
 # =============================================================================
 generate_config_js() {
-    cat > /usr/share/nginx/html/config.js << EOCONFIG
+    cat >/usr/share/nginx/html/config.js <<EOCONFIG
 window.REDIACC_CONFIG = {
   instanceName: '${INSTANCE_NAME}',
   apiUrl: '${API_URL}',
@@ -57,7 +57,7 @@ generate_cli_packages_json() {
     _generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
     # Start JSON
-    cat > "$_json_file" << EOF
+    cat >"$_json_file" <<EOF
 {
   "generatedAt": "${_generated_at}",
   "cli": {
@@ -80,10 +80,10 @@ EOF
             if [ "$_first_pkg" = true ]; then
                 _first_pkg=false
             else
-                echo "," >> "$_json_file"
+                echo "," >>"$_json_file"
             fi
 
-            cat >> "$_json_file" << PKGEOF
+            cat >>"$_json_file" <<PKGEOF
       {
         "filename": "${_filename}",
         "url": "/npm/${_filename}",
@@ -96,7 +96,7 @@ PKGEOF
     fi
 
     # Close packages array, start binaries
-    cat >> "$_json_file" << EOF
+    cat >>"$_json_file" <<EOF
 
     ]
   },
@@ -122,10 +122,10 @@ EOF
             if [ "$_first_bin" = true ]; then
                 _first_bin=false
             else
-                echo "," >> "$_json_file"
+                echo "," >>"$_json_file"
             fi
 
-            cat >> "$_json_file" << BINEOF
+            cat >>"$_json_file" <<BINEOF
       {
         "filename": "${_filename}",
         "url": "/bin/${_filename}",
@@ -139,7 +139,7 @@ BINEOF
     fi
 
     # Close JSON
-    cat >> "$_json_file" << EOF
+    cat >>"$_json_file" <<EOF
 
     ]
   }
