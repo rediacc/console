@@ -54,14 +54,15 @@ done < <(grep -ohP '\$\{[A-Z0-9_]+:-[^}]+\}' "$COMPOSE_DIR"/docker-compose*.yml 
     grep -vP ':-\}$' |
     grep -oP '(?<=\$\{)[A-Z0-9_]+' | sort -u)
 
-# 3. Extract variables persisted in ci-env.sh (PERSISTED_ENV heredoc block)
-#    The heredoc uses plain KEY=VALUE lines (no echo prefix)
+# 3. Extract variables from the PERSISTED_ENV heredoc block in ci-env.sh
+#    Only parse between <<ENVBLOCK and ^ENVBLOCK to avoid matching exports
+#    or other assignments outside the persistence block.
 PERSISTED_VARS=()
 while IFS= read -r var; do
     [[ -z "$var" ]] && continue
     PERSISTED_VARS+=("$var")
-done < <(grep -oP '^[A-Z0-9_]+(?==)' "$CI_ENV" 2>/dev/null |
-    grep -vP '^(WORKFLOW_|KEYS|PERSISTED_ENV)' | sort -u)
+done < <(sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p' "$CI_ENV" |
+    grep -oP '^[A-Z0-9_]+(?==)' | sort -u)
 
 # 4. Validate: vars WITHOUT safe defaults must be persisted in ci-env.sh
 #    Vars with non-empty defaults (e.g., ${ENABLE_HTTPS:-false}) are safe even if
