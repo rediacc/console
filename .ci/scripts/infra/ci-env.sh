@@ -98,6 +98,43 @@ fi
 export CONNECTION_STRING="Server=sql,1433;Database=${REDIACC_DATABASE_NAME};User Id=${REDIACC_SQL_USERNAME};Password=\"${MSSQL_RA_PASSWORD}\";TrustServerCertificate=True;Application Name=${REDIACC_DATABASE_NAME};Max Pool Size=32;Min Pool Size=2;Connection Lifetime=120;Connection Timeout=15;Command Timeout=30;Pooling=true;MultipleActiveResultSets=false;Packet Size=32768"
 
 # =============================================================================
+# LICENSE SERVER CONFIGURATION
+# =============================================================================
+# Generate Ed25519 key pair for license signing if not provided
+if [[ -z "${ED25519_PRIVATE_KEY:-}" ]]; then
+    KEYS=$(node -e "
+        const crypto = require('crypto');
+        const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
+        console.log(JSON.stringify({
+            private: privateKey.export({type:'pkcs8',format:'der'}).toString('base64'),
+            public: publicKey.export({type:'spki',format:'der'}).toString('base64')
+        }));
+    ")
+    ED25519_PRIVATE_KEY=$(echo "$KEYS" | jq -r '.private')
+    ED25519_PUBLIC_KEY=$(echo "$KEYS" | jq -r '.public')
+fi
+export ED25519_PRIVATE_KEY ED25519_PUBLIC_KEY
+
+# License server API key (generate if not provided)
+export LICENSE_SERVER_API_KEY="${LICENSE_SERVER_API_KEY:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
+export LICENSE_SERVER_URL="${LICENSE_SERVER_URL:-http://license-server:3000}"
+
+# Stripe webhook secret for license-server integration tests
+export STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-whsec_test_$(openssl rand -hex 32)}"
+
+# RustFS credentials for S3-compatible storage
+export RUSTFS_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-rustfsadmin}"
+export RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-rustfsadmin}"
+
+# Mask sensitive values in GitHub Actions logs
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo "::add-mask::$ED25519_PRIVATE_KEY"
+    echo "::add-mask::$LICENSE_SERVER_API_KEY"
+    echo "::add-mask::$STRIPE_WEBHOOK_SECRET"
+    echo "::add-mask::$RUSTFS_SECRET_KEY"
+fi
+
+# =============================================================================
 # SYSTEM DEFAULTS
 # =============================================================================
 export SYSTEM_DOMAIN="${SYSTEM_DOMAIN:-localhost}"
@@ -107,6 +144,7 @@ export SYSTEM_ORGANIZATION_NAME="${SYSTEM_ORGANIZATION_NAME:-Default Organizatio
 export SYSTEM_DEFAULT_BRIDGE_NAME="${SYSTEM_DEFAULT_BRIDGE_NAME:-Global Bridges}"
 export SYSTEM_DEFAULT_REGION_NAME="${SYSTEM_DEFAULT_REGION_NAME:-Default Region}"
 export SYSTEM_DEFAULT_TEAM_NAME="${SYSTEM_DEFAULT_TEAM_NAME:-Private Team}"
+export SYSTEM_PLAN_CODE="${SYSTEM_PLAN_CODE:-COMMUNITY}"
 
 # CI mode configuration
 export CI_MODE="${WORKFLOW_CI_MODE:-true}"
@@ -127,6 +165,12 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
         echo "REDIACC_DATABASE_NAME=${REDIACC_DATABASE_NAME}"
         echo "REDIACC_SQL_USERNAME=${REDIACC_SQL_USERNAME}"
         echo "CONNECTION_STRING=${CONNECTION_STRING}"
+        echo "ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}"
+        echo "ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}"
+        echo "LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}"
+        echo "LICENSE_SERVER_URL=${LICENSE_SERVER_URL}"
+        echo "RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}"
+        echo "RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}"
     } >> "$GITHUB_ENV"
 fi
 
@@ -142,3 +186,4 @@ echo "  API Tag: $API_TAG"
 echo "  Bridge Tag: $BRIDGE_TAG"
 echo "  Web Tag: $WEB_TAG"
 echo "  Database: $REDIACC_DATABASE_NAME"
+echo "  License Server: $LICENSE_SERVER_URL"

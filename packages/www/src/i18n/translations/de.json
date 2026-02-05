@@ -177,7 +177,8 @@
       "overview": "Überblick",
       "pricing": "Preise",
       "professionalServices": "Professionelle Dienstleistungen",
-      "solutions": "Lösungen"
+      "solutions": "Lösungen",
+      "disasterRecovery": "Disaster Recovery"
     },
     "supportLinks": {
       "contactSupport": "Kontaktieren Sie den Support",
@@ -248,7 +249,8 @@
       "threatResponse": "Bedrohungsreaktion",
       "preemptiveDefense": "Präventive Verteidigung"
     },
-    "toggleMenu": "Menü umschalten"
+    "toggleMenu": "Menü umschalten",
+    "disasterRecovery": "Disaster Recovery"
   },
   "pages": {
     "blog": {
@@ -526,41 +528,32 @@
       "title": "Seite nicht gefunden"
     },
     "pricing": {
-      "enterpriseCta": {
-        "button": "Kontaktieren Sie den Vertrieb",
-        "description": "Erhalten Sie maßgeschneiderten Infrastrukturschutz für Ihr Unternehmen",
-        "heading": "Benötigen Sie eine maßgeschneiderte Unternehmenslösung?"
-      },
       "faq": {
         "heading": "Häufig gestellte Fragen",
         "items": [
           {
-            "answer": "Ja, Sie können Ihren Plan jederzeit ändern. Upgrades werden sofort wirksam und Downgrades gelten zu Beginn Ihres nächsten Abrechnungszeitraums.",
-            "question": "Kann ich meinen Plan upgraden oder downgraden?"
+            "question": "Kann ich meinen Plan upgraden oder downgraden?",
+            "answer": "Ja, Sie können Ihren Plan jederzeit ändern. Upgrades werden sofort wirksam, Downgrades gelten ab dem nächsten Abrechnungszeitraum."
           },
           {
-            "answer": "Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express) und unterstützen die rechnungsbasierte Abrechnung für jährliche Enterprise-Pläne.",
-            "question": "Welche Zahlungsmethoden akzeptieren Sie?"
+            "question": "Welche Zahlungsmethoden akzeptieren Sie?",
+            "answer": "Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express) und unterstützen Rechnungsstellung für jährliche Enterprise-Pläne."
           },
           {
-            "answer": "Unser Community-Plan ist für immer kostenlos. Für Geschäftspläne wenden Sie sich bitte an unser Vertriebsteam, um Testoptionen zu besprechen.",
-            "question": "Gibt es eine kostenlose Testversion?"
+            "question": "Gibt es eine kostenlose Testversion?",
+            "answer": "Unser Community-Plan ist für immer kostenlos. Für Business-Pläne kontaktieren Sie unser Vertriebsteam für Testoptionen."
           },
           {
-            "answer": "Der Community-Plan umfasst Community-Support und Self-Service-Dokumentation. Professional umfasst E-Mail- und Chat-Support. Das Unternehmen bietet telefonischen Support und einen engagierten Kundenerfolgsmanager. Enterprise umfasst 24/7/365 White-Glove-Support mit Eskalation durch Führungskräfte.",
-            "question": "Was ist im Support enthalten?"
+            "question": "Was ist im Support enthalten?",
+            "answer": "Der Community-Plan umfasst Community-Support und Self-Service-Dokumentation. Professional beinhaltet E-Mail- und Chat-Support. Business fügt Telefonsupport und einen dedizierten Customer Success Manager hinzu. Enterprise umfasst 24/7/365 White-Glove-Support mit Eskalation."
           },
           {
-            "answer": "Die Wiederherstellungszeit hängt von Ihrer Stufe ab: Community stellt die neuesten Snapshots in wenigen Minuten wieder her, Professional bietet eine Point-in-Time-Wiederherstellung (24 Stunden), Business bietet ein 4-Stunden-SLA und Enterprise liefert eine benutzerdefinierte RTO von 15–60 Minuten.",
-            "question": "Wie schnell kann ich mich von einer Katastrophe erholen?"
+            "question": "Wie funktioniert die jährliche Abrechnung?",
+            "answer": "Bei jährlicher Abrechnung zahlen Sie 10 Monate für 12 Monate Service und erhalten einen bedeutenden Rabatt. Sie können jederzeit zwischen monatlicher und jährlicher Abrechnung wechseln."
           },
           {
-            "answer": "Ja. Im Gegensatz zu herkömmlichen Backup-Systemen überprüfen wir Backups automatisch, indem wir Wiederherstellungsprozesse testen, sodass Sie wissen, dass sie funktionieren, bevor Sie sie im Notfall benötigen.",
-            "question": "Werden meine Backups tatsächlich getestet und verifiziert?"
-          },
-          {
-            "answer": "Ihre Daten bleiben verschlüsselt an dem von Ihnen gewählten Speicherort. Sie behalten die volle Kontrolle und können unabhängig von unseren Diensten auf verschlüsselte Backups zugreifen.",
-            "question": "Was passiert mit meinen Daten, wenn der Dienst ausfällt?"
+            "question": "Bieten Sie Rückerstattungen an?",
+            "answer": "Ja, wir bieten eine 14-tägige Geld-zurück-Garantie auf alle kostenpflichtigen Pläne. Kontaktieren Sie unser Support-Team für eine volle Rückerstattung."
           }
         ]
       },
@@ -569,87 +562,79 @@
           "startFree": "Kostenlos starten",
           "talkToSales": "Sprechen Sie mit dem Vertrieb"
         },
-        "description": "Beginnen Sie vom ersten Tag an mit dem Schutz Ihrer Infrastruktur",
+        "description": "Starten Sie noch heute mit Rediacc",
         "heading": "Bereit zum Einstieg?"
       },
       "hero": {
-        "subtitle": "Wählen Sie die Disaster-Recovery-Stufe, die Ihre Infrastruktur schon heute schützt und mit Ihrem Wachstum skaliert.",
+        "subtitle": "Wählen Sie den Plan, der zu Ihrem Team passt. Einfache Preise, keine versteckten Gebühren, jederzeit kündbar.",
         "title": "Einfache, transparente Preisgestaltung"
       },
       "meta": {
         "description": "Wählen Sie den richtigen Plan für Ihr Unternehmen. Vom kostenlosen Community-Zugang bis zum Schutz auf Unternehmensniveau. Keine versteckten Gebühren.",
-        "keywords": "Preise, Infrastrukturautomatisierung, Preise für Disaster Recovery, Backup-Preise, Geschäftskontinuitätspläne",
+        "keywords": "Preise, Infrastrukturautomatisierung, DevOps-Pläne, Aufgabenausführung",
         "title": "Preise | Einfacher, transparenter Infrastrukturschutz"
       },
       "plans": {
         "business": {
-          "description": "Einsatzkritischer Schutz + Experten-Setup",
+          "description": "Unternehmenskritische Infrastruktur mit Experten-Onboarding",
           "features": [
             "Alles in Professional +",
-            "9.999 $ Implementierungsunterstützung inklusive (Einführungsangebot)",
-            "Georedundanter Speicher (3 Regionen) – ein Ausfall kann Sie nicht aufhalten",
-            "Kontinuierlicher Datenschutz – kein Datenverlust",
-            "4-Stunden-Wiederherstellungs-SLA (garantiert)",
-            "500 CPU-Kerne – Unternehmens-Workloads mit 72-Stunden-Jobfenstern",
-            "Unbegrenzte Repositorys, jeweils 500 GB",
-            "7 aktive/3 reservierte Jobs",
-            "90-tägige Aufbewahrung des Prüfprotokolls",
-            "Rollenbasierte Zugriffskontrolle und umfassende Audit-Protokolle",
-            "Compliance-fähiges Audit-Reporting",
-            "Engagierter Kundenerfolgsmanager",
-            "Telefonsupport + Räume für die Zusammenarbeit"
+            "Unbegrenzte Repositories, je 500 GB",
+            "20 gleichzeitige Jobs, 20.000 Jobs/Monat",
+            "$9.999 Implementierungssupport inklusive (Einführungsangebot)",
+            "Geo-redundanter Speicher (3 Regionen)",
+            "Kontinuierlicher Datenschutz",
+            "4-Stunden-Wiederherstellungs-SLA",
+            "Rollenbasierte Zugriffskontrolle & Audit-Protokolle",
+            "Compliance-fähige Berichte",
+            "Dedizierter Kundenerfolgsmanager",
+            "Telefonsupport + Kollaborationsräume"
           ],
           "name": "Geschäft"
         },
         "community": {
-          "description": "Produktionsbereite Notfallwiederherstellung vom ersten Tag an – für immer kostenlos",
+          "description": "Produktionsreife Infrastrukturautomatisierung — Für immer kostenlos",
           "features": [
-            "Unbegrenzte Anzahl an Benutzern und Teams – frei zusammenarbeiten",
-            "Aktuelle Snapshot-Wiederherstellungen – Wiederherstellung nach Ausfällen in wenigen Minuten",
-            "10 CPU-Kerne – perfekt für kleine Arbeitslasten",
-            "10 Repositorys, jeweils 10 GB",
-            "2 Stunden Job-Timeout, 2 aktive/1 reservierte Jobs",
-            "7-tägige Aufbewahrung des Prüfprotokolls",
-            "Manuelle Backup-Planung",
-            "Community-Slack-Zugriff",
-            "Self-Service-Support und Dokumente",
-            "Quellenangabe „Powered by Rediacc“."
+            "Unbegrenzte Benutzer & Teams",
+            "Unbegrenzte Repositories, je 10 GB",
+            "1 gleichzeitiger Job, 500 Jobs/Monat",
+            "Unbegrenzte Maschinen",
+            "Snapshot-Wiederherstellungen",
+            "Manuelle Planung",
+            "Community Slack-Zugang",
+            "Selbstbedienungssupport & Dokumentation"
           ],
           "name": "Gemeinschaft"
         },
         "enterprise": {
-          "description": "Notwendige Notfallwiederherstellung für komplexe Unternehmensinfrastrukturen",
+          "description": "White-Glove-Support für komplexe Unternehmensinfrastruktur",
           "features": [
             "Alles in Business +",
-            "Maßgeschneidertes SLA (15–60 Minuten RTO) – Ihre Anforderungen, unser Engagement",
-            "Dedizierter Infrastrukturmieter – maximale Sicherheit und Leistung",
-            "24/7/365 White-Glove-Support",
-            "Über 1000 CPU-Kerne – unbegrenzte Skalierbarkeit für große Arbeitslasten",
             "Unbegrenzte Repositories, je 1 TB+",
-            "96+ Stunden-Jobfenster mit 10+ aktiven/5+ reservierten Jobs",
-            "1 Jahr+Aufbewahrung des Audit-Protokolls",
-            "Vierteljährliche Notfallwiederherstellungsübungen – geprüfte Bereitschaft",
-            "Eskalations-Hotline für Führungskräfte",
-            "Benutzerdefinierte Integrationen und Workflows",
-            "Unterstützung bei der Prüfungsdokumentation und Sicherheitsüberprüfungen"
+            "60 gleichzeitige Jobs, 100.000 Jobs/Monat",
+            "Benutzerdefinierte SLA mit garantierten Wiederherstellungszeiten",
+            "Dedizierter Infrastruktur-Mandant",
+            "24/7/365 White-Glove-Support",
+            "Vierteljährliche Bereitschaftsübungen",
+            "Executive Eskalations-Hotline",
+            "Benutzerdefinierte Integrationen & Workflows",
+            "Audit-Dokumentationsunterstützung & Sicherheitsüberprüfungen"
           ],
           "name": "Unternehmen",
           "priceNote": "*Beginnt um"
         },
         "professional": {
-          "description": "Professionelle Notfallwiederherstellung ohne Unternehmenskomplexität",
+          "description": "Professionelle Automatisierung und Planung für wachsende Teams",
           "features": [
             "Alles in Community +",
-            "Automatisierte Backup-Planung – einrichten und vergessen",
-            "Point-in-Time-Wiederherstellung (24 Stunden)",
-            "100 CPU-Kerne – bewältigen den Produktionsumfang",
-            "500 Repositorys, jeweils 100 GB",
-            "24-Stunden-Job-Timeout, 5 aktive/2 reservierte Jobs",
-            "30-tägige Aufbewahrung des Prüfprotokolls",
-            "E-Mail- und Chat-Support",
-            "Slack- und PagerDuty-Benachrichtigungen",
-            "Keine Angabe „Powered by Rediacc“.",
-            "Zugriff auf die Integrations-API"
+            "Unbegrenzte Repositories, je 100 GB",
+            "5 gleichzeitige Jobs, 5.000 Jobs/Monat",
+            "Automatisierte Planung",
+            "24-Stunden Point-in-Time-Wiederherstellung",
+            "E-Mail- + Chat-Support",
+            "Slack & PagerDuty-Benachrichtigungen",
+            "Kein \"Powered by Rediacc\" Hinweis",
+            "Integrations-API-Zugang"
           ],
           "name": "Professional"
         }
@@ -883,120 +868,49 @@
           ]
         }
       },
-      "psTeaser": {
-        "heading": "Benötigen Sie Expertenhilfe für den Einstieg?",
-        "packages": {
-          "emergency": {
-            "name": "Notfall",
-            "price": "29.999 $"
-          },
-          "priority": {
-            "name": "Priorität",
-            "price": "19.999 $"
-          },
-          "standard": {
-            "name": "Standard",
-            "price": "Ab 7.499 $"
-          }
-        },
-        "subtitle": "Professionelle Implementierungs- und Supportdienste für alle Ebenen verfügbar",
-        "viewDetails": "Entdecken Sie professionelle Dienstleistungen"
-      },
-      "strategy": {
-        "copy": "Wählen Sie heute den Plan, der zu Ihrer Betriebsphase passt, und skalieren Sie morgen, ohne die Plattform wechseln zu müssen.",
-        "distribution": [
-          "Community → Professionell: Wechseln Sie vom Experiment zur Produktion mit Automatisierung, Wiederherstellungspunkten und Live-Support.",
-          "Professionell → Business: Fügen Sie Sicherheits- und Prüffunktionen, Zusammenarbeit und schnellere Wiederherstellungsfenster hinzu, wenn Ihr Team wächst.",
-          "Business → Enterprise: Nutzen Sie maßgeschneiderte SLAs, dedizierte Mietverträge und erstklassige Partnerschaften, wenn es am meisten auf dem Spiel steht."
-        ],
-        "heading": "Gebaut für jede Bühne"
-      },
       "technicalSummary": {
-        "description": "Geben Sie Ihrem Plattformteam einen genauen Überblick über die Erwartungen an Durchsatz, Aufbewahrung und Wiederherstellung.",
-        "heading": "Technische Grenzen auf einen Blick",
+        "description": "Ein Vergleich der wichtigsten Infrastrukturlimits über alle Pläne hinweg.",
+        "heading": "Planvergleich",
         "metrics": [
-          {
-            "key": "cpuCore",
-            "label": "CPU-Kerne"
-          },
-          {
-            "key": "Repositories",
-            "label": "Repositories"
-          },
-          {
-            "key": "repoSize",
-            "label": "Beschränkung der Repository-Größe"
-          },
-          {
-            "key": "jobTimeout",
-            "label": "Maximale Jobdauer"
-          },
-          {
-            "key": "aktiveJobs",
-            "label": "Gleichzeitige Jobs"
-          },
-          {
-            "key": "reservierteJobs",
-            "label": "Tiefe der Auftragswarteschlange"
-          },
-          {
-            "key": "rpo",
-            "label": "Wiederherstellungspunktziel (RPO)"
-          },
-          {
-            "key": "rto",
-            "label": "Wiederherstellungszeitziel (RTO)"
-          },
-          {
-            "key": "auditWindow",
-            "label": "Aufbewahrung des Audit-Protokolls"
-          }
+          { "key": "activeJobs", "label": "Gleichzeitige Jobs" },
+          { "key": "jobsPerMonth", "label": "Jobs pro Monat" },
+          { "key": "repoSize", "label": "Beschränkung der Repository-Größe" },
+          { "key": "repositories", "label": "Repositories" },
+          { "key": "machines", "label": "Maschinen" },
+          { "key": "usersTeams", "label": "Benutzer & Teams" }
         ],
-        "recoveryNote": "RPO (Recovery Point Objective): Wie viele Daten Sie sich leisten können, zu verlieren – gemessen in der Zeit. Beispielsweise bedeutet ein RPO von 15 Minuten, dass Sie möglicherweise bis zu 15 Minuten der letzten Änderungen verlieren. \n\nRTO (Recovery Time Objective): Wie schnell Sie nach einer Katastrophe wieder online sein müssen. Beispielsweise bedeutet eine RTO von 4 Stunden, dass Ihre Systeme innerhalb von 4 Stunden wiederhergestellt werden.",
         "values": {
-          "business": {
-            "activeJobs": "7 aktiv",
-            "auditLogs": "90 Tage",
-            "cpuCore": "500 Kerne",
-            "jobTimeout": "72 Stunden",
-            "repoSize": "500 GB",
-            "repositories": "Unbegrenzt",
-            "reservedJobs": "3 reserviert",
-            "rpo": "~5 Minuten (kontinuierlich)",
-            "rto": "4 Stunden (garantiert)"
-          },
           "community": {
-            "activeJobs": "2 aktiv",
-            "auditLogs": "7 Tage",
-            "cpuCore": "10 Kerne",
-            "jobTimeout": "2 Stunden",
+            "activeJobs": "1",
+            "jobsPerMonth": "500",
             "repoSize": "10 GB",
-            "repositories": "10 Repos",
-            "reservedJobs": "1 reserviert",
-            "rpo": "Beste Anstrengung",
-            "rto": "Beste Anstrengung"
-          },
-          "enterprise": {
-            "activeJobs": "10+ aktiv",
-            "auditLogs": "1+ Jahr",
-            "cpuCore": "Über 1000 Kerne",
-            "jobTimeout": "96+ Stunden",
-            "repoSize": "1 TB+",
             "repositories": "Unbegrenzt",
-            "reservedJobs": "5+ reserviert",
-            "rpo": "Benutzerdefiniert (nahe Null)",
-            "rto": "15–60 Minuten (benutzerdefiniert)"
+            "machines": "Unbegrenzt",
+            "usersTeams": "Unbegrenzt"
           },
           "professional": {
-            "activeJobs": "5 aktiv",
-            "auditLogs": "30 Tage",
-            "cpuCore": "100 Kerne",
-            "jobTimeout": "24 Stunden",
+            "activeJobs": "5",
+            "jobsPerMonth": "5.000",
             "repoSize": "100 GB",
-            "repositories": "500 Repos",
-            "reservedJobs": "2 reserviert",
-            "rpo": "~15 Minuten",
-            "rto": "Point-in-Time-Wiederherstellung"
+            "repositories": "Unbegrenzt",
+            "machines": "Unbegrenzt",
+            "usersTeams": "Unbegrenzt"
+          },
+          "business": {
+            "activeJobs": "20",
+            "jobsPerMonth": "20.000",
+            "repoSize": "500 GB",
+            "repositories": "Unbegrenzt",
+            "machines": "Unbegrenzt",
+            "usersTeams": "Unbegrenzt"
+          },
+          "enterprise": {
+            "activeJobs": "60",
+            "jobsPerMonth": "100.000",
+            "repoSize": "1 TB+",
+            "repositories": "Unbegrenzt",
+            "machines": "Unbegrenzt",
+            "usersTeams": "Unbegrenzt"
           }
         }
       },
@@ -2582,6 +2496,517 @@
       },
       "related": {
         "title": "Verwandte Richtlinien"
+      }
+    },
+    "disasterRecovery": {
+      "enterpriseCta": {
+        "button": "Kontaktieren Sie den Vertrieb",
+        "description": "Erhalten Sie maßgeschneiderten Infrastrukturschutz für Ihr Unternehmen",
+        "heading": "Benötigen Sie eine maßgeschneiderte Unternehmenslösung?"
+      },
+      "faq": {
+        "heading": "Häufig gestellte Fragen",
+        "items": [
+          {
+            "answer": "Ja, Sie können Ihren Plan jederzeit ändern. Upgrades werden sofort wirksam und Downgrades gelten zu Beginn Ihres nächsten Abrechnungszeitraums.",
+            "question": "Kann ich meinen Plan upgraden oder downgraden?"
+          },
+          {
+            "answer": "Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express) und unterstützen die rechnungsbasierte Abrechnung für jährliche Enterprise-Pläne.",
+            "question": "Welche Zahlungsmethoden akzeptieren Sie?"
+          },
+          {
+            "answer": "Unser Community-Plan ist für immer kostenlos. Für Geschäftspläne wenden Sie sich bitte an unser Vertriebsteam, um Testoptionen zu besprechen.",
+            "question": "Gibt es eine kostenlose Testversion?"
+          },
+          {
+            "answer": "Der Community-Plan umfasst Community-Support und Self-Service-Dokumentation. Professional umfasst E-Mail- und Chat-Support. Das Unternehmen bietet telefonischen Support und einen engagierten Kundenerfolgsmanager. Enterprise umfasst 24/7/365 White-Glove-Support mit Eskalation durch Führungskräfte.",
+            "question": "Was ist im Support enthalten?"
+          },
+          {
+            "answer": "Die Wiederherstellungszeit hängt von Ihrer Stufe ab: Community stellt die neuesten Snapshots in wenigen Minuten wieder her, Professional bietet eine Point-in-Time-Wiederherstellung (24 Stunden), Business bietet ein 4-Stunden-SLA und Enterprise liefert eine benutzerdefinierte RTO von 15–60 Minuten.",
+            "question": "Wie schnell kann ich mich von einer Katastrophe erholen?"
+          },
+          {
+            "answer": "Ja. Im Gegensatz zu herkömmlichen Backup-Systemen überprüfen wir Backups automatisch, indem wir Wiederherstellungsprozesse testen, sodass Sie wissen, dass sie funktionieren, bevor Sie sie im Notfall benötigen.",
+            "question": "Werden meine Backups tatsächlich getestet und verifiziert?"
+          },
+          {
+            "answer": "Ihre Daten bleiben verschlüsselt an dem von Ihnen gewählten Speicherort. Sie behalten die volle Kontrolle und können unabhängig von unseren Diensten auf verschlüsselte Backups zugreifen.",
+            "question": "Was passiert mit meinen Daten, wenn der Dienst ausfällt?"
+          }
+        ]
+      },
+      "finalCta": {
+        "buttons": {
+          "startFree": "Kostenlos starten",
+          "talkToSales": "Sprechen Sie mit dem Vertrieb"
+        },
+        "description": "Beginnen Sie vom ersten Tag an mit dem Schutz Ihrer Infrastruktur",
+        "heading": "Bereit zum Einstieg?"
+      },
+      "hero": {
+        "subtitle": "Wählen Sie die Disaster-Recovery-Stufe, die Ihre Infrastruktur schon heute schützt und mit Ihrem Wachstum skaliert.",
+        "title": "Einfache, transparente Preisgestaltung"
+      },
+      "meta": {
+        "description": "Wählen Sie den richtigen Plan für Ihr Unternehmen. Vom kostenlosen Community-Zugang bis zum Schutz auf Unternehmensniveau. Keine versteckten Gebühren.",
+        "keywords": "disaster recovery pricing, backup pricing, business continuity plans, infrastructure protection, ransomware recovery",
+        "title": "Preise | Einfacher, transparenter Infrastrukturschutz"
+      },
+      "plans": {
+        "business": {
+          "description": "Einsatzkritischer Schutz + Experten-Setup",
+          "features": [
+            "Alles in Professional +",
+            "9.999 $ Implementierungsunterstützung inklusive (Einführungsangebot)",
+            "Georedundanter Speicher (3 Regionen) – ein Ausfall kann Sie nicht aufhalten",
+            "Kontinuierlicher Datenschutz – kein Datenverlust",
+            "4-Stunden-Wiederherstellungs-SLA (garantiert)",
+            "Unbegrenzte Repositorys, jeweils 500 GB",
+            "7 aktive/3 reservierte Jobs",
+            "90-tägige Aufbewahrung des Prüfprotokolls",
+            "Rollenbasierte Zugriffskontrolle und umfassende Audit-Protokolle",
+            "Compliance-fähiges Audit-Reporting",
+            "Engagierter Kundenerfolgsmanager",
+            "Telefonsupport + Räume für die Zusammenarbeit"
+          ],
+          "name": "Geschäft"
+        },
+        "community": {
+          "description": "Produktionsbereite Notfallwiederherstellung vom ersten Tag an – für immer kostenlos",
+          "features": [
+            "Unbegrenzte Anzahl an Benutzern und Teams – frei zusammenarbeiten",
+            "Aktuelle Snapshot-Wiederherstellungen – Wiederherstellung nach Ausfällen in wenigen Minuten",
+            "10 Repositorys, jeweils 10 GB",
+            "2 Stunden Job-Timeout, 2 aktive/1 reservierte Jobs",
+            "7-tägige Aufbewahrung des Prüfprotokolls",
+            "Manuelle Backup-Planung",
+            "Community-Slack-Zugriff",
+            "Self-Service-Support und Dokumente",
+            "Quellenangabe „Powered by Rediacc“."
+          ],
+          "name": "Gemeinschaft"
+        },
+        "enterprise": {
+          "description": "Notwendige Notfallwiederherstellung für komplexe Unternehmensinfrastrukturen",
+          "features": [
+            "Alles in Business +",
+            "Maßgeschneidertes SLA (15–60 Minuten RTO) – Ihre Anforderungen, unser Engagement",
+            "Dedizierter Infrastrukturmieter – maximale Sicherheit und Leistung",
+            "24/7/365 White-Glove-Support",
+            "Unbegrenzte Repositories, je 1 TB+",
+            "96+ Stunden-Jobfenster mit 10+ aktiven/5+ reservierten Jobs",
+            "1 Jahr+Aufbewahrung des Audit-Protokolls",
+            "Vierteljährliche Notfallwiederherstellungsübungen – geprüfte Bereitschaft",
+            "Eskalations-Hotline für Führungskräfte",
+            "Benutzerdefinierte Integrationen und Workflows",
+            "Unterstützung bei der Prüfungsdokumentation und Sicherheitsüberprüfungen"
+          ],
+          "name": "Unternehmen",
+          "priceNote": "*Beginnt um"
+        },
+        "professional": {
+          "description": "Professionelle Notfallwiederherstellung ohne Unternehmenskomplexität",
+          "features": [
+            "Alles in Community +",
+            "Automatisierte Backup-Planung – einrichten und vergessen",
+            "Point-in-Time-Wiederherstellung (24 Stunden)",
+            "500 Repositorys, jeweils 100 GB",
+            "24-Stunden-Job-Timeout, 5 aktive/2 reservierte Jobs",
+            "30-tägige Aufbewahrung des Prüfprotokolls",
+            "E-Mail- und Chat-Support",
+            "Slack- und PagerDuty-Benachrichtigungen",
+            "Keine Angabe „Powered by Rediacc“.",
+            "Zugriff auf die Integrations-API"
+          ],
+          "name": "Professional"
+        }
+      },
+      "professionalServices": {
+        "access": {
+          "description": "Hybrid-Abdeckung kombiniert enthaltenes Onboarding mit optionalen Add-ons, sodass jedes Team die richtige Hilfe zur richtigen Zeit erhalten kann.",
+          "heading": "Zugriff auf professionelle Dienstleistungen nach Stufe",
+          "labels": {
+            "available": "Verfügbare Add-ons",
+            "included": "Im Lieferumfang enthalten"
+          },
+          "tiers": [
+            {
+              "available": [
+                "Standardimplementierung (9.999 $) oder gestaffelte Pakete (klein: 7.499 $, mittel: 14.999 $, groß: 29.999 $, benutzerdefiniert für Unternehmen)",
+                "Notfalleinsatz (29.999 $ auf Anfrage)"
+              ],
+              "included": ["Self-Service-Dokumentation, Video-Tutorials und Community-Forum"],
+              "planId": "Gemeinschaft"
+            },
+            {
+              "available": [
+                "Vorrangige Implementierung (19.999 $)",
+                "Notfalleinsatz (29.999 $ auf Anfrage)",
+                "Benutzerdefinierte Integrationsprojekte (umfangreich)"
+              ],
+              "included": [
+                "E-Mail-Support",
+                "Standard-Onboarding-Sitzung (Setup-Anruf und Konfigurations-Walkthrough)"
+              ],
+              "planId": "Profi"
+            },
+            {
+              "available": [
+                "Priority Implementation Upgrade (19.999 $)",
+                "Notfalleinsatz (29.999 $ auf Anfrage)",
+                "Kundenspezifische Entwicklungs- und Sicherheitsarchitekturberatung"
+              ],
+              "included": [
+                "Vorrangiger E-Mail-/Chat-/Telefonsupport",
+                "Dediziertes Onboarding mit Konfiguration und Runbook-Übergabe",
+                "Standard-Implementierungspaket enthalten (Wert 9.999 $)",
+                "Vierteljährliche Erfolgskontrollen"
+              ],
+              "planId": "Geschäft"
+            },
+            {
+              "available": [
+                "Kundenspezifische Entwicklung und erweiterte Integrationen",
+                "Beratung zu Sicherheits- und Audit-Architektur",
+                "Honorar für Notfallmaßnahmen (5.000–7.500 $/Monat)"
+              ],
+              "included": [
+                "Rund-um-die-Uhr-Support und dedizierter CSM",
+                "Vorrangige Implementierung inbegriffen (Wert 19.999 $)",
+                "Vierteljährliche Tests zur Notfallwiederherstellung",
+                "Jährlicher Workshop zur Geschäftskontinuitätsplanung",
+                "Eskalations-Hotline für Führungskräfte"
+              ],
+              "planId": "Unternehmen"
+            }
+          ]
+        },
+        "advancedDetails": {
+          "description": "Servicepakete, Implementierungsstufen, Preisfaktoren und Einbehaltungsoptionen",
+          "heading": "Implementierungs- und Preisdetails"
+        },
+        "benefits": {
+          "description": "Unsere professionellen Dienstleistungen stellen sicher, dass Sie bei kritischen Infrastrukturherausforderungen nie allein sind.",
+          "heading": "Warum professionelle Dienstleistungen?",
+          "items": [
+            "Ein engagiertes Expertenteam wird Ihrem Projekt zugewiesen",
+            "Garantierte Reaktionszeiten mit SLA",
+            "Wechseln Sie nach Bedarf zwischen den Serviceebenen",
+            "24/7-Notfall-Hotline für die Notfallstufe"
+          ],
+          "statistics": [
+            "Die durchschnittlichen Kosten eines Ransomware-Angriffs betragen 4,62 Millionen US-Dollar (IBM Security, 2023).",
+            "Die durchschnittlichen Ausfallkosten betragen für Unternehmen 5.600 US-Dollar pro Minute"
+          ]
+        },
+        "cta": {
+          "button": "Termin für Beratung vereinbaren",
+          "description": "Unsere Experten sind bereit, Ihnen zum Erfolg zu verhelfen",
+          "heading": "Benötigen Sie professionelle Unterstützung?"
+        },
+        "header": {
+          "badge": "Beschleunigen Sie Ihren Erfolg mit professioneller Unterstützung",
+          "eligibility": "Professionelle Dienstleistungen passen sich über den Hybridzugang an jeden Plan an. Verwenden Sie die folgende Matrix, um zu sehen, was enthalten ist und was hinzugefügt werden kann.",
+          "subtitle": "Holen Sie sich kompetente Hilfe, wenn Sie sie am meisten brauchen",
+          "title": "Professionelle Servicepakete"
+        },
+        "packages": {
+          "emergency": {
+            "benefits": [
+              "Sofortiger Einsatz (unter 2 Stunden)",
+              "Forensik, Eindämmung und Wiederherstellungsplan",
+              "Stabilisierungsbericht mit Verhärtungsfahrplan"
+            ],
+            "description": "On-Demand-Team zur Reaktion auf Vorfälle, das bereit ist, kritische Systeme einzudämmen und wiederherzustellen.",
+            "name": "Notfall",
+            "price": "29.999 $",
+            "tiers": [],
+            "turnaround": "Am selben Tag"
+          },
+          "priority": {
+            "benefits": [
+              "Engagierter Engagement-Manager",
+              "Verfügbarkeit abends/am Wochenende",
+              "Unterstützung bei der Produktionsumstellung"
+            ],
+            "description": "Beschleunigte Lieferung mit erweiterter Verfügbarkeit und geführter Umstellungsunterstützung.",
+            "name": "Priorität",
+            "price": "19.999 $",
+            "tiers": [],
+            "turnaround": "24–48 Stunden"
+          },
+          "standard": {
+            "benefits": [
+              "Projektfindungs- und Erfolgsplan",
+              "Bereitstellung und Konfiguration der Umgebung",
+              "Validierungscheckliste und Wissenstransfer"
+            ],
+            "description": "Strukturierte Implementierung, die Architektur, Bereitstellung, Validierung und Aktivierung umfasst.",
+            "name": "Standard",
+            "price": "Ab 7.499 $",
+            "tierHeading": "Workload-basierte Implementierungspreise",
+            "tierNote": "Eine Arbeitslast stellt einen bestimmten Geschäftsprozess, eine bestimmte Anwendung oder einen bestimmten Dienst dar, der einen Backup- und Disaster-Recovery-Schutz erfordert. Die Implementierung umfasst Architekturdesign, Bereitstellung, Validierung und Teamaktivierung.",
+            "tiers": [
+              "Starter (1–4 Workloads): 7.499 $",
+              "Wachstum (5–10 Workloads): 14.999 $",
+              "Umfang (11–25 Workloads): 29.999 $",
+              "Unternehmen (25+ Workloads): Individuelles Angebot"
+            ],
+            "turnaround": "3-5 Werktage"
+          }
+        },
+        "pricingFactors": {
+          "factors": [
+            {
+              "description": "Anzahl der beteiligten Systeme, Integrationen und Abhängigkeiten",
+              "title": "Umfangskomplexität"
+            },
+            {
+              "description": "Standardlösungen vs. individuelle Entwicklungsanforderungen",
+              "title": "Anpassungsebene"
+            },
+            {
+              "description": "Einzelner Experte vs. voll engagiertes Spezialistenteam",
+              "title": "Teamgröße"
+            }
+          ],
+          "heading": "Preisgestaltung für professionelle Dienstleistungen verstehen",
+          "intro": "Die endgültigen Projektkosten werden bestimmt durch:",
+          "note": "Beispiel: Eine mittelgroße Implementierung (120 Maschinen) mit Überprüfung der Sicherheitsarchitektur kostet in der Regel zwischen 14.999 und 24.999 US-Dollar, je nach Integration und Retainer-Abdeckung."
+        },
+        "retainers": {
+          "description": "Bieten Sie Führungskräften garantierten Zugang zu unseren Spezialisten zu vorhersehbaren monatlichen Preisen.",
+          "heading": "Retainer-Optionen für ständige Verfügbarkeit",
+          "items": [
+            {
+              "bullets": [
+                "Garantierte Reaktionszeit von 2 Stunden",
+                "Vorrangiger Eskalationspfad mit War-Room-Koordination",
+                "Vierteljährliche Bereitschaftsüberprüfung und Playbook-Updates"
+              ],
+              "price": "5.000–7.500 $/Monat",
+              "title": "Retainer für Notfalleinsätze"
+            }
+          ]
+        },
+        "serviceTypes": {
+          "badgeLabels": {
+            "emergency": "Notfall",
+            "priority": "Priorität",
+            "standard": "Standard"
+          },
+          "heading": "Verfügbare Dienste",
+          "intro": "Klicken Sie auf einen beliebigen Dienst, um die Bearbeitungszeiten für jede Paketstufe anzuzeigen",
+          "services": [
+            {
+              "emergency": "Sofortige Bewertung + kritische Systeme online am selben Tag + vollständige Migration beginnt",
+              "id": "Datenmigration",
+              "name": "Datenmigration",
+              "priority": "Schnelle Einrichtung der Migrationspipeline + Übertragung der Kerndaten innerhalb von 48 Stunden",
+              "standard": "Vollständige End-to-End-Migration mit vollständiger Validierung"
+            },
+            {
+              "emergency": "Sofortige Eindämmung + Wiederherstellung kritischer Systeme am selben Tag + Beginn der vollständigen Wiederherstellung",
+              "id": "Ransomware-Wiederherstellung",
+              "name": "Ransomware-Wiederherstellung",
+              "priority": "Schnelle Bedrohungsanalyse + Wiederherstellung des Kernbetriebs innerhalb von 48 Stunden",
+              "standard": "Vollständige Wiederherstellung mit Forensik und Härtung"
+            },
+            {
+              "emergency": "Kritischer Schwachstellenscan + Hochrisiko-Patches werden noch am selben Tag bereitgestellt + vollständige Prüfung beginnt",
+              "id": "Sicherheitsbewertung",
+              "name": "Sicherheitsbewertung",
+              "priority": "Umfassende Schwachstellenbewertung + Sanierungsplan innerhalb von 48 Stunden",
+              "standard": "Vollständiges Sicherheitsaudit mit Implementierungs-Roadmap"
+            },
+            {
+              "emergency": "Kritische Ressourcen werden am selben Tag bereitgestellt + automatische Skalierung konfiguriert + der vollständige Plan beginnt",
+              "id": "Infrastruktur-Skalierung",
+              "name": "Skalierung der Infrastruktur",
+              "priority": "Schnelle Kapazitätssteigerung + Überwachungseinrichtung innerhalb von 48 Stunden",
+              "standard": "Komplette Neugestaltung der Infrastruktur mit Optimierung"
+            },
+            {
+              "emergency": "Einweisung in kritische Verfahren am selben Tag + Vorbereitung der Reaktion auf Vorfälle + Beginn des vollständigen Programms",
+              "id": "Teamtraining",
+              "name": "Teamtraining",
+              "priority": "Intensiver praktischer Workshop + wichtige Arbeitsabläufe innerhalb von 2 Tagen abgedeckt",
+              "standard": "Umfangreiches mehrtägiges Schulungsprogramm"
+            },
+            {
+              "emergency": "Kritischer Engpass erkannt + sofortiger Hotfix am selben Tag bereitgestellt + vollständige Optimierung beginnt",
+              "id": "Leistungsoptimierung",
+              "name": "Leistungsoptimierung",
+              "priority": "Schnelle Profilerstellung + wirkungsvolle Optimierungen, die innerhalb von 48 Stunden bereitgestellt werden",
+              "standard": "Tiefgreifende Analyse mit umfassender Leistungsoptimierung"
+            },
+            {
+              "emergency": "Kritische Verbindung wird am selben Tag hergestellt + grundlegender Datenfluss funktioniert + vollständige Entwicklung beginnt",
+              "id": "kundenspezifische Integration",
+              "name": "Benutzerdefinierte Integration",
+              "priority": "Kernintegrationsfunktionen und wesentliche Funktionen sind innerhalb von 48 Stunden verfügbar",
+              "standard": "Vollständige Integration mit Tests und Dokumentation"
+            }
+          ]
+        }
+      },
+      "psTeaser": {
+        "heading": "Benötigen Sie Expertenhilfe für den Einstieg?",
+        "packages": {
+          "emergency": {
+            "name": "Notfall",
+            "price": "29.999 $"
+          },
+          "priority": {
+            "name": "Priorität",
+            "price": "19.999 $"
+          },
+          "standard": {
+            "name": "Standard",
+            "price": "Ab 7.499 $"
+          }
+        },
+        "subtitle": "Professionelle Implementierungs- und Supportdienste für alle Ebenen verfügbar",
+        "viewDetails": "Entdecken Sie professionelle Dienstleistungen"
+      },
+      "strategy": {
+        "copy": "Wählen Sie heute den Plan, der zu Ihrer Betriebsphase passt, und skalieren Sie morgen, ohne die Plattform wechseln zu müssen.",
+        "distribution": [
+          "Professionell → Business: Fügen Sie georedundanten Speicher, kontinuierlichen Datenschutz, garantierte 4-Stunden-RTO und einen dedizierten Customer Success Manager hinzu, wenn Ihr Team wächst.",
+          "Business → Enterprise: Nutzen Sie maßgeschneiderte SLAs mit 15–60 Minuten RTO, dedizierte Infrastruktur-Mandantenfähigkeit und erstklassige Partnerschaften, wenn es am meisten auf dem Spiel steht."
+        ],
+        "heading": "Gebaut für jede Bühne"
+      },
+      "technicalSummary": {
+        "description": "Geben Sie Ihrem Plattformteam einen genauen Überblick über die Erwartungen an Durchsatz, Aufbewahrung und Wiederherstellung.",
+        "heading": "Technische Grenzen auf einen Blick",
+        "metrics": [
+          {
+            "key": "Repositories",
+            "label": "Repositories"
+          },
+          {
+            "key": "repoSize",
+            "label": "Beschränkung der Repository-Größe"
+          },
+          {
+            "key": "jobTimeout",
+            "label": "Maximale Jobdauer"
+          },
+          {
+            "key": "aktiveJobs",
+            "label": "Gleichzeitige Jobs"
+          },
+          {
+            "key": "reservierteJobs",
+            "label": "Tiefe der Auftragswarteschlange"
+          },
+          {
+            "key": "rpo",
+            "label": "Wiederherstellungspunktziel (RPO)"
+          },
+          {
+            "key": "rto",
+            "label": "Wiederherstellungszeitziel (RTO)"
+          },
+          {
+            "key": "auditWindow",
+            "label": "Aufbewahrung des Audit-Protokolls"
+          }
+        ],
+        "recoveryNote": "RPO (Recovery Point Objective): Wie viele Daten Sie sich leisten können, zu verlieren – gemessen in der Zeit. Beispielsweise bedeutet ein RPO von 15 Minuten, dass Sie möglicherweise bis zu 15 Minuten der letzten Änderungen verlieren. \n\nRTO (Recovery Time Objective): Wie schnell Sie nach einer Katastrophe wieder online sein müssen. Beispielsweise bedeutet eine RTO von 4 Stunden, dass Ihre Systeme innerhalb von 4 Stunden wiederhergestellt werden.",
+        "values": {
+          "business": {
+            "activeJobs": "20",
+            "auditLogs": "90 Tage",
+            "jobTimeout": "72 Stunden",
+            "repoSize": "500 GB",
+            "repositories": "Unbegrenzt",
+            "reservedJobs": "3 reserviert",
+            "rpo": "~5 Minuten (kontinuierlich)",
+            "rto": "4 Stunden (garantiert)"
+          },
+          "community": {
+            "activeJobs": "1",
+            "auditLogs": "7 Tage",
+            "jobTimeout": "2 Stunden",
+            "repoSize": "10 GB",
+            "repositories": "Unbegrenzt",
+            "reservedJobs": "1 reserviert",
+            "rpo": "Beste Anstrengung",
+            "rto": "Beste Anstrengung"
+          },
+          "enterprise": {
+            "activeJobs": "60",
+            "auditLogs": "1+ Jahr",
+            "jobTimeout": "96+ Stunden",
+            "repoSize": "1 TB+",
+            "repositories": "Unbegrenzt",
+            "reservedJobs": "5+ reserviert",
+            "rpo": "Benutzerdefiniert (nahe Null)",
+            "rto": "15–60 Minuten (benutzerdefiniert)"
+          },
+          "professional": {
+            "activeJobs": "5",
+            "auditLogs": "30 Tage",
+            "jobTimeout": "24 Stunden",
+            "repoSize": "100 GB",
+            "repositories": "Unbegrenzt",
+            "reservedJobs": "2 reserviert",
+            "rpo": "~15 Minuten",
+            "rto": "Point-in-Time-Wiederherstellung"
+          }
+        }
+      },
+      "trust": {
+        "heading": "Sicherheit und Zuverlässigkeit auf Unternehmensniveau",
+        "items": ["Verschlüsselung auf Bankebene", "99,9 % Verfügbarkeitsgarantie"]
+      },
+      "ui": {
+        "anchor": "Strategischer Anker",
+        "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+        "contactSales": "Kontaktieren Sie den Vertrieb",
+        "cta": {
+          "business": {
+            "guarantee": "14-tägige Geld-zurück-Garantie",
+            "launchBadge": "Begrenztes Einführungsangebot",
+            "primary": "Planen Sie einen Implementierungsanruf",
+            "secondary": "Kontaktieren Sie den Vertrieb",
+            "valueNote": "Inklusive Einrichtungsguthaben in Höhe von 9.999 $"
+          },
+          "community": {
+            "note": "Keine Kreditkarte erforderlich",
+            "primary": "Kostenlos starten",
+            "secondary": "Erfahren Sie mehr"
+          },
+          "enterprise": {
+            "guarantee": "14-tägige Geld-zurück-Garantie",
+            "primary": "Planen Sie eine Executive-Demo",
+            "secondary": "Kontaktieren Sie den Vertrieb",
+            "subtext": "Benutzerdefiniertes SLA · Dedizierter Support"
+          },
+          "professional": {
+            "guarantee": "14-tägige Geld-zurück-Garantie",
+            "primary": "Legen Sie los",
+            "secondary": "Kontaktieren Sie den Vertrieb"
+          }
+        },
+        "foreverFree": "Für immer frei",
+        "getStarted": "Legen Sie los",
+        "guarantees": {
+          "cancelAnytime": "Jederzeit kündbar",
+          "moneyBack": "14-tägige Geld-zurück-Garantie",
+          "noContracts": "Keine langfristigen Verträge"
+        },
+        "keyBenefits": "Hauptvorteile",
+        "learnMore": "Mehr erfahren",
+        "limitedOffer": "Begrenztes Einführungsangebot",
+        "monthOrYear": "pro Monat oder {{price}} pro Jahr",
+        "popular": "Am beliebtesten",
+        "startingAt": "*Beginnt um",
+        "whatsIncluded": "Was ist enthalten:"
       }
     }
   },

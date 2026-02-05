@@ -572,6 +572,11 @@ quality_shell() {
     "$ROOT_DIR/.ci/scripts/security/shellcheck.sh"
 }
 
+quality_submodules() {
+    log_step "Checking submodule branch alignment"
+    "$ROOT_DIR/.ci/scripts/quality/check-submodule-branches.sh"
+}
+
 # =============================================================================
 # FIX COMMANDS
 # =============================================================================
@@ -693,7 +698,7 @@ DEVELOPMENT COMMANDS:
   dev                 Start development server (auto-starts backend if needed)
   cli [args...]       Run CLI in dev mode (auto-builds renet with embeddings)
   sandbox             Start in sandbox mode (no backend required)
-  worktree <cmd>      Manage git worktrees (create, prune, list)
+  worktree <cmd>      Manage git worktrees (create, switch, prune, list)
   setup               Interactive setup wizard
 
 TEST COMMANDS:
@@ -721,6 +726,7 @@ QUALITY COMMANDS:
   quality lint        Run linting (ESLint + Knip)
   quality format      Check code formatting (Biome)
   quality types       Check TypeScript types
+  quality submodules  Check submodule branch alignment
   quality deps        Check for outdated dependencies
   quality audit       Run security audit (npm audit)
   quality shell       Run shellcheck on shell scripts
@@ -833,6 +839,7 @@ main() {
                 lint) quality_lint ;;
                 format) quality_format ;;
                 types) quality_types ;;
+                submodules) quality_submodules ;;
                 deps) quality_deps ;;
                 actions) quality_actions ;;
                 audit) quality_audit ;;
@@ -841,7 +848,7 @@ main() {
                 *)
                     log_error "Unknown quality command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh quality [lint|format|types|deps|actions|audit|shell|all]"
+                    echo "Usage: ./run.sh quality [lint|format|types|submodules|deps|actions|audit|shell|all]"
                     exit 1
                     ;;
             esac

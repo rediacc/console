@@ -24,3 +24,7 @@
 # fast-xml-parser <=5.3.3 RangeError DoS Numeric Entities (GHSA-37qj-frw5-hhjh)
 # In @aws-sdk/xml-builder and @astrojs/rss dependency chains, can't upgrade
 1112708
+
+# tar <=7.5.6 vulnerability
+# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
+1112954

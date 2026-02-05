@@ -2,6 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { test as baseTest, expect } from '@playwright/test';
 import { TestDataManager } from '../utils/data/TestDataManager';
+import { INTERACTION_HIGHLIGHT_SCRIPT } from '../utils/interaction-highlight';
 import { TestReporter } from '../utils/report/TestReporter';
 import { ScreenshotManager } from '../utils/screenshot/ScreenshotManager';
 
@@ -9,6 +10,7 @@ interface TestFixtures {
   screenshotManager: ScreenshotManager;
   testReporter: TestReporter;
   testDataManager: TestDataManager;
+  _interactionHighlight: undefined;
   _videoSaver: undefined;
 }
 
@@ -30,6 +32,16 @@ export const test = baseTest.extend<TestFixtures>({
     const dataManager = new TestDataManager(workerId, testInfo.project.name);
     await use(dataManager);
   },
+
+  // Inject interaction highlight overlays (clicks, focus, keystrokes) into the page
+  // so they appear in recorded videos.
+  _interactionHighlight: [
+    async ({ page }, use) => {
+      await page.context().addInitScript(INTERACTION_HIGHLIGHT_SCRIPT);
+      await use(undefined);
+    },
+    { auto: true },
+  ],
 
   // Auto-save video with deterministic filename after each test.
   // Derives filename from test file path: 01-01-registration.test.ts → 01-01-registration.webm

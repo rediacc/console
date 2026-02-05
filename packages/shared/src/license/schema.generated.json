@@ -1,0 +1,325 @@
+{
+  "version": 1,
+  "types": {
+    "PlanCode": {
+      "kind": "enum",
+      "values": ["COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"]
+    },
+    "LicenseStatus": {
+      "kind": "enum",
+      "values": ["ACTIVE", "INACTIVE", "EXPIRED", "SUSPENDED", "GRACE"]
+    },
+    "ResourceLimits": {
+      "kind": "struct",
+      "fields": {
+        "bridges": {
+          "type": "number",
+          "jsonKey": "bridges"
+        },
+        "maxActiveJobs": {
+          "type": "number",
+          "jsonKey": "maxActiveJobs"
+        },
+        "maxReservedJobs": {
+          "type": "number",
+          "jsonKey": "maxReservedJobs"
+        },
+        "jobTimeoutHours": {
+          "type": "number",
+          "jsonKey": "jobTimeoutHours"
+        },
+        "maxRepositorySizeGb": {
+          "type": "number",
+          "jsonKey": "maxRepositorySizeGb"
+        },
+        "maxJobsPerMonth": {
+          "type": "number",
+          "jsonKey": "maxJobsPerMonth"
+        },
+        "maxPendingPerUser": {
+          "type": "number",
+          "jsonKey": "maxPendingPerUser"
+        },
+        "maxTasksPerMachine": {
+          "type": "number",
+          "jsonKey": "maxTasksPerMachine"
+        },
+        "cephPoolsPerTeam": {
+          "type": "number",
+          "jsonKey": "cephPoolsPerTeam"
+        }
+      }
+    },
+    "FeatureFlags": {
+      "kind": "struct",
+      "fields": {
+        "permissionGroups": {
+          "type": "boolean",
+          "jsonKey": "permissionGroups"
+        },
+        "ceph": {
+          "type": "boolean",
+          "jsonKey": "ceph"
+        },
+        "queuePriority": {
+          "type": "boolean",
+          "jsonKey": "queuePriority"
+        },
+        "advancedAnalytics": {
+          "type": "boolean",
+          "jsonKey": "advancedAnalytics"
+        },
+        "prioritySupport": {
+          "type": "boolean",
+          "jsonKey": "prioritySupport"
+        },
+        "auditLog": {
+          "type": "boolean",
+          "jsonKey": "auditLog"
+        },
+        "advancedQueue": {
+          "type": "boolean",
+          "jsonKey": "advancedQueue"
+        },
+        "customBranding": {
+          "type": "boolean",
+          "jsonKey": "customBranding"
+        },
+        "dedicatedAccount": {
+          "type": "boolean",
+          "jsonKey": "dedicatedAccount"
+        }
+      }
+    },
+    "LicenseData": {
+      "kind": "struct",
+      "fields": {
+        "version": {
+          "type": "number",
+          "jsonKey": "version"
+        },
+        "licenseId": {
+          "type": "string",
+          "jsonKey": "licenseId"
+        },
+        "organizationId": {
+          "type": "number",
+          "jsonKey": "organizationId"
+        },
+        "customerId": {
+          "type": "string",
+          "jsonKey": "customerId"
+        },
+        "planCode": {
+          "type": "string",
+          "jsonKey": "planCode",
+          "nestedType": "PlanCode"
+        },
+        "status": {
+          "type": "string",
+          "jsonKey": "status",
+          "nestedType": "LicenseStatus"
+        },
+        "issuedAt": {
+          "type": "string",
+          "jsonKey": "issuedAt"
+        },
+        "expiresAt": {
+          "type": "string",
+          "jsonKey": "expiresAt"
+        },
+        "lastCheckIn": {
+          "type": "string",
+          "jsonKey": "lastCheckIn"
+        },
+        "gracePeriodEnds": {
+          "type": "string",
+          "jsonKey": "gracePeriodEnds"
+        },
+        "resources": {
+          "type": "object",
+          "jsonKey": "resources",
+          "nestedType": "ResourceLimits"
+        },
+        "features": {
+          "type": "object",
+          "jsonKey": "features",
+          "nestedType": "FeatureFlags"
+        },
+        "maxActivations": {
+          "type": "number",
+          "jsonKey": "maxActivations"
+        },
+        "activationCount": {
+          "type": "number",
+          "jsonKey": "activationCount"
+        }
+      }
+    },
+    "SignedLicenseBlob": {
+      "kind": "struct",
+      "fields": {
+        "payload": {
+          "type": "string",
+          "jsonKey": "payload"
+        },
+        "signature": {
+          "type": "string",
+          "jsonKey": "signature"
+        },
+        "publicKeyId": {
+          "type": "string",
+          "jsonKey": "publicKeyId"
+        }
+      }
+    },
+    "CachedLicenseData": {
+      "kind": "struct",
+      "fields": {
+        "planCode": {
+          "type": "string",
+          "jsonKey": "planCode",
+          "nestedType": "PlanCode"
+        },
+        "status": {
+          "type": "string",
+          "jsonKey": "status",
+          "nestedType": "LicenseStatus"
+        },
+        "resources": {
+          "type": "object",
+          "jsonKey": "resources",
+          "nestedType": "ResourceLimits"
+        },
+        "features": {
+          "type": "object",
+          "jsonKey": "features",
+          "nestedType": "FeatureFlags"
+        },
+        "expiresAt": {
+          "type": "string",
+          "jsonKey": "expiresAt"
+        },
+        "gracePeriodEnds": {
+          "type": "string",
+          "jsonKey": "gracePeriodEnds"
+        }
+      }
+    },
+    "OrganizationLicense": {
+      "kind": "struct",
+      "fields": {
+        "signedBlob": {
+          "type": "object",
+          "jsonKey": "signedBlob",
+          "nestedType": "SignedLicenseBlob",
+          "optional": true
+        },
+        "cachedData": {
+          "type": "object",
+          "jsonKey": "cachedData",
+          "nestedType": "CachedLicenseData",
+          "optional": true
+        }
+      }
+    }
+  },
+  "constants": {
+    "gracePeriodDays": 3,
+    "degradedPlan": "COMMUNITY",
+    "schemaVersion": 1,
+    "checkInIntervalHours": 24,
+    "planResources": {
+      "COMMUNITY": {
+        "bridges": 0,
+        "maxActiveJobs": 1,
+        "maxReservedJobs": 1,
+        "jobTimeoutHours": 2,
+        "maxRepositorySizeGb": 10,
+        "maxJobsPerMonth": 500,
+        "maxPendingPerUser": 5,
+        "maxTasksPerMachine": 1,
+        "cephPoolsPerTeam": 0
+      },
+      "PROFESSIONAL": {
+        "bridges": 1,
+        "maxActiveJobs": 5,
+        "maxReservedJobs": 2,
+        "jobTimeoutHours": 24,
+        "maxRepositorySizeGb": 100,
+        "maxJobsPerMonth": 5000,
+        "maxPendingPerUser": 10,
+        "maxTasksPerMachine": 2,
+        "cephPoolsPerTeam": 0
+      },
+      "BUSINESS": {
+        "bridges": 2,
+        "maxActiveJobs": 20,
+        "maxReservedJobs": 3,
+        "jobTimeoutHours": 72,
+        "maxRepositorySizeGb": 500,
+        "maxJobsPerMonth": 20000,
+        "maxPendingPerUser": 20,
+        "maxTasksPerMachine": 3,
+        "cephPoolsPerTeam": 1
+      },
+      "ENTERPRISE": {
+        "bridges": 10,
+        "maxActiveJobs": 60,
+        "maxReservedJobs": 5,
+        "jobTimeoutHours": 96,
+        "maxRepositorySizeGb": 1024,
+        "maxJobsPerMonth": 100000,
+        "maxPendingPerUser": 50,
+        "maxTasksPerMachine": 5,
+        "cephPoolsPerTeam": -1
+      }
+    },
+    "planFeatures": {
+      "COMMUNITY": {
+        "permissionGroups": false,
+        "ceph": false,
+        "queuePriority": false,
+        "advancedAnalytics": false,
+        "prioritySupport": false,
+        "auditLog": false,
+        "advancedQueue": false,
+        "customBranding": false,
+        "dedicatedAccount": false
+      },
+      "PROFESSIONAL": {
+        "permissionGroups": true,
+        "ceph": false,
+        "queuePriority": false,
+        "advancedAnalytics": false,
+        "prioritySupport": true,
+        "auditLog": true,
+        "advancedQueue": false,
+        "customBranding": true,
+        "dedicatedAccount": false
+      },
+      "BUSINESS": {
+        "permissionGroups": true,
+        "ceph": true,
+        "queuePriority": true,
+        "advancedAnalytics": true,
+        "prioritySupport": true,
+        "auditLog": true,
+        "advancedQueue": true,
+        "customBranding": true,
+        "dedicatedAccount": false
+      },
+      "ENTERPRISE": {
+        "permissionGroups": true,
+        "ceph": true,
+        "queuePriority": true,
+        "advancedAnalytics": true,
+        "prioritySupport": true,
+        "auditLog": true,
+        "advancedQueue": true,
+        "customBranding": true,
+        "dedicatedAccount": true
+      }
+    }
+  }
+}

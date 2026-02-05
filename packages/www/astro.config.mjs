@@ -78,10 +78,10 @@ export default defineConfig({
           item.priority = 0.9;
           item.changefreq = ChangeFreqEnum.MONTHLY;
         }
-        // Pricing page - high priority
-        else if (url.includes('/pricing')) {
-          item.priority = 0.9;
-          item.changefreq = ChangeFreqEnum.WEEKLY;
+        // Disaster recovery page - high priority
+        else if (url.includes('/disaster-recovery')) {
+          item.priority = 0.8;
+          item.changefreq = ChangeFreqEnum.MONTHLY;
         }
         // Blog listing pages - high priority, frequent updates
         else if (url.match(/\/blog\/?$/)) {

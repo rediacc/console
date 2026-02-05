@@ -7,11 +7,30 @@ import Testimonials from '../../components/Testimonials';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
+import { EXTERNAL_LINKS } from '../../config/constants';
+import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
-const { t } = createTranslator(lang);
+const { t, ta, to } = createTranslator(lang);
+
+const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+const formatPrice = (amount: number) => priceFormatter.format(amount);
+
+const technicalMetrics = ta('pages.pricing.technicalSummary.metrics');
+const technicalValues = to('pages.pricing.technicalSummary.values');
+
+const plans = [
+  { id: 'community', monthly: 0, yearly: 0, featured: true },
+  { id: 'professional', monthly: 349, yearly: 3490 },
+  { id: 'business', monthly: 699, yearly: 6990 },
+  { id: 'enterprise', monthly: 2100, yearly: 21000 },
+];
 ---
 
 <BaseLayout
@@ -35,6 +54,53 @@ const { t } = createTranslator(lang);
 
   <Solutions client:visible lang={lang} />
   <Testimonials client:visible lang={lang} />
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="cf-pricing-section">
+    <div class="cf-pricing-container">
+      <div class="pricing-section-header">
+        <h2>{t('pages.pricing.hero.title')}</h2>
+        <p>{t('pages.pricing.hero.subtitle')}</p>
+      </div>
+      <div class="cf-pricing-grid">
+        {plans.map(plan => (
+          <div class:list={['cf-pricing-card', { 'cf-featured': plan.featured }]}>
+            <h3 class="cf-plan-name">{t(`pages.pricing.plans.${plan.id}.name`)}</h3>
+            <div class="cf-price-block">
+              {plan.monthly === 0 ? (
+                <span class="cf-price">{formatPrice(0)}</span>
+              ) : (
+                <>
+                  <div class="cf-price-line">
+                    <span class="cf-price">{formatPrice(plan.monthly)}</span>
+                    <span class="cf-price-period">/mo</span>
+                  </div>
+                </>
+              )}
+            </div>
+            <ul class="cf-features">
+              {technicalMetrics.map((metric: any) => (
+                <li>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                  <span><strong>{technicalValues?.[plan.id]?.[metric.key] ?? '—'}</strong> {metric.label}</span>
+                </li>
+              ))}
+            </ul>
+            <a
+              href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+              target="_blank"
+              rel="noopener noreferrer"
+              class:list={['cf-cta-btn', { 'cf-cta-featured': plan.featured }]}
+            >
+              {plan.monthly === 0 ? t('pages.pricing.ui.cta.community.primary') : t('pages.pricing.ui.cta.professional.primary')}
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
 
   <!-- Success/Error Messages -->
   <div class="message-overlay" id="message-overlay" role="dialog" aria-hidden="true">

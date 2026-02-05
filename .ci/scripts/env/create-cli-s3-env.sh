@@ -1,15 +1,17 @@
 #!/bin/bash
 # Append S3 test environment variables to an existing .env file
-# Usage: create-cli-s3-env.sh --output <path>
+# Usage: create-cli-s3-env.sh --output <path> [options]
 #
 # Appends S3_TEST_* variables for CLI S3 integration tests.
 # The target .env file must already exist (created by create-cli-local-env.sh).
 #
 # Options:
-#   --output    Output .env file path (required)
+#   --output        Output .env file path (required)
+#   --vm-net-base   VM network base (default: 192.168.111)
 #
 # Example:
 #   .ci/scripts/env/create-cli-s3-env.sh --output packages/cli/tests/.env
+#   .ci/scripts/env/create-cli-s3-env.sh --output .env --vm-net-base 10.0.0
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,6 +21,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 parse_args "$@"
 
 OUTPUT="${ARG_OUTPUT:-}"
+VM_NET_BASE="${ARG_VM_NET_BASE:-192.168.111}"
 
 # Validate required arguments
 if [[ -z "$OUTPUT" ]]; then
@@ -28,10 +31,10 @@ fi
 
 log_step "Appending S3 test env vars to: $OUTPUT"
 
-cat >> "$OUTPUT" << 'EOF'
+cat >> "$OUTPUT" << EOF
 
 # S3 Integration Tests (added by create-cli-s3-env.sh)
-S3_TEST_ENDPOINT=http://192.168.111.1:9000
+S3_TEST_ENDPOINT=http://${VM_NET_BASE}.1:9000
 S3_TEST_ACCESS_KEY=rustfsadmin
 S3_TEST_SECRET_KEY=rustfsadmin
 S3_TEST_BUCKET=rediacc-test

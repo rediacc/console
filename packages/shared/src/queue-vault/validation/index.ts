@@ -105,18 +105,3 @@ export function assertPublicBridgeFunction(
     throw new Error(error.message);
   }
 }
-
-// =============================================================================
-// Legacy Compatibility Types
-// =============================================================================
-// These types are kept for backward compatibility with existing code.
-
-export interface QueueVaultValidationError {
-  path: string;
-  message: string;
-}
-
-export interface QueueVaultValidationResult {
-  valid: boolean;
-  errors: QueueVaultValidationError[];
-}

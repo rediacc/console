@@ -44,7 +44,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   const bottomNavItems = [
-    { href: `/${currentLang}/pricing`, label: t('navigation.pricing') },
+    { href: `/${currentLang}/#pricing`, label: t('navigation.pricing') },
+    { href: `/${currentLang}/disaster-recovery`, label: t('navigation.disasterRecovery') },
     { href: `/${currentLang}/install`, label: t('navigation.install') },
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
     { href: `/${currentLang}/docs`, label: t('navigation.docs') },

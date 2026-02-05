@@ -101,6 +101,7 @@
   },
   "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts", "private/**"],
   "ignoreDependencies": [
+    "@aws-sdk/client-s3",
     "@types/*",
     "@opentelemetry/instrumentation-*",
     "@opentelemetry/context-zone",

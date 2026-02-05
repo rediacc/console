@@ -75,8 +75,6 @@ export {
   assertQueueVaultV2,
   type BridgeFunctionError,
   isQueueVaultV2,
-  type QueueVaultValidationError,
-  type QueueVaultValidationResult,
   validateBridgeFunction,
   validateQueueVault,
 } from './validation';

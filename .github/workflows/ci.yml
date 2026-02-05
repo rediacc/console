@@ -1,6 +1,8 @@
 name: Console CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
   merge_group:
@@ -33,6 +35,10 @@ permissions:
 env:
   E2E_BROWSERS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
 
+concurrency:
+  group: ${{ github.event_name == 'push' && 'ci-main' || format('ci-{0}', github.run_id) }}
+  cancel-in-progress: false
+
 jobs:
   # ============================================================================
   # COLUMN 1: INITIALIZE
@@ -46,6 +52,8 @@ jobs:
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
+      bump_type: ${{ steps.init.outputs.bump_type }}
+      staging_tag: ${{ steps.staging.outputs.staging_tag }}
       api_tag: ${{ steps.init.outputs.api_tag }}
       api_exists: ${{ steps.init.outputs.api_exists }}
       bridge_tag: ${{ steps.init.outputs.bridge_tag }}
@@ -93,8 +101,18 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_ACTOR: ${{ github.actor }}
           COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
+
+      - name: Generate staging tag
+        id: staging
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "staging_tag=staging-${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "staging_tag=dryrun-${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
 
       # Upload CI tags as artifact for debugging
       - name: Upload CI Tags
@@ -138,6 +156,7 @@ jobs:
         env:
           WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
+          WATCHDOG_INDEPENDENT_PATTERNS: 'Build (CLI),Build (Desktop)'
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
@@ -267,10 +286,10 @@ jobs:
     if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success'
     uses: ./.github/workflows/cd-dryrun.yml
     with:
-      dry_run: true
+      dry_run: ${{ github.event_name != 'push' }}
       upload_pages: ${{ github.event_name == 'pull_request' }}
       next_version: ${{ needs.initialize.outputs.next_version }}
-      staging_tag: dryrun-${{ github.sha }}
+      staging_tag: ${{ needs.initialize.outputs.staging_tag }}
       api_tag: ${{ needs.initialize.outputs.api_tag }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}

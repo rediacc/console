@@ -8,6 +8,7 @@
 # Environment variables:
 #   GITHUB_EVENT_NAME - GitHub event type (e.g., 'pull_request')
 #   GITHUB_HEAD_REF - PR branch name (set by GitHub Actions)
+#   PR_AUTHOR - GitHub username of the PR author (optional, falls back to github-actions[bot])
 #
 # Exit codes:
 #   0 - Types are up-to-date (or auto-fixed on PR)
@@ -79,7 +80,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]] || [[ -z "${GITHUB_HEAD_REF:
 fi
 
 # Check for recent autofix commits to prevent loops (specific to renet types)
-RECENT_AUTOFIX=$(git log --oneline -5 --author="github-actions\[bot\]" --grep="auto-regenerate renet bridge types" 2>/dev/null | head -1 || true)
+RECENT_AUTOFIX=$(git log --oneline -5 --grep="auto-regenerate renet bridge types" 2>/dev/null | head -1 || true)
 if [[ -n "$RECENT_AUTOFIX" ]]; then
     log_error "Recent renet types autofix commit detected, cannot auto-fix again: $RECENT_AUTOFIX"
     log_error "Please manually regenerate types with: ./run.sh deploy prep"
@@ -115,8 +116,13 @@ if git diff --quiet "$OUTPUT_DIR/" 2>/dev/null; then
 fi
 
 log_step "Committing fix..."
-git config user.name "github-actions[bot]"
-git config user.email "github-actions[bot]@users.noreply.github.com"
+if [[ -n "${PR_AUTHOR:-}" ]]; then
+    git config user.name "$PR_AUTHOR"
+    git config user.email "${PR_AUTHOR}@users.noreply.github.com"
+else
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+fi
 git add "$OUTPUT_DIR/"
 git commit -m "$(cat <<'EOF'
 chore(types): auto-regenerate renet bridge types
