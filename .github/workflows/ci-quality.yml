@@ -38,6 +38,7 @@ jobs:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
   # NOTE: Gemini Review is now triggered by review-gate job in ci.yml
   # after all quality jobs pass, to avoid triggering reviews on code
@@ -271,10 +272,25 @@ jobs:
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+
+      - name: Check license schema consistency
+        run: .ci/scripts/quality/check-license-schema.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
   quality-license-server:
     name: License Server
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest  # Requires Docker for integration tests
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -291,8 +307,88 @@ jobs:
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
-      - name: Run license-server tests
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - name: Build shared package (required for license types)
+        run: |
+          npm ci --workspace=@rediacc/shared
+          npm run build --workspace=@rediacc/shared
+
+      - name: Start RustFS for integration tests
+        working-directory: private/license-server
+        run: |
+          npm ci
+          npm run test:setup
+
+      - name: Run license-server integration tests
         run: .ci/scripts/private/run-license-server.sh test
+
+      - name: Run Go cross-language signature tests
+        working-directory: private/renet
+        run: go test -v ./pkg/license/... -run TestCrossLanguage
+
+      - name: Stop RustFS
+        if: always()
+        working-directory: private/license-server
+        run: npm run test:teardown
+
+  # ==============================================================================
+  # SUBMODULE BRANCH VALIDATION
+  # ==============================================================================
+  # PURPOSE: Ensures submodule branches match console branch when coordinated
+  #          changes are expected (submodule pointer differs from origin/main),
+  #          verifies submodule PRs are linked, and checks review comments.
+  #
+  # AI TROUBLESHOOTING:
+  #   If this job fails, check the error message for specific fix commands.
+  #
+  #   Branch errors:
+  #   - Create missing branch: cd private/<sm> && git checkout -b <branch>
+  #   - Push branch: git push -u origin <branch>
+  #   - Checkout existing: cd private/<sm> && git checkout <branch>
+  #
+  #   PR linking errors:
+  #   - No open PR: cd private/<sm> && gh pr create --title "..." --body "..."
+  #   - PR not linked: Edit console PR description to include submodule PR URL
+  #
+  #   Review comment errors:
+  #   - Unreplied comments: Go to submodule PR and reply to all review comments
+  #   - Low-effort replies don't count (e.g., "ok", "done", "fixed")
+  #   - Must provide substantive responses explaining what was done
+  #
+  # WHEN SUBMODULES STAY ON MAIN:
+  #   If submodule pointer matches origin/main, no branch coordination needed.
+  #   The submodule will stay on main and this check passes.
+  # ==============================================================================
+  quality-submodule-branches:
+    name: Submodule Branches
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci  # Needs pull-requests:read for gh pr list
+          repositories: console,middleware,renet,license-server
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          fetch-depth: 0
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Validate submodule branches
+        run: .ci/scripts/quality/check-submodule-branches.sh
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
   quality-review-comments:
     name: Review Comments

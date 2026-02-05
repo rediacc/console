@@ -1,17 +1,7 @@
 {
   "name": "Rediacc Console",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "image": "ghcr.io/rediacc/devcontainer:latest",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "22"
-    },
-    "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.24"
-    },
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.13"
-    },
-    "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "forwardPorts": [3000],
@@ -21,16 +11,34 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": "npm install && npm run build:packages && curl -fsSL https://claude.ai/install.sh | bash && npm i -g @openai/codex && pip install uv && uv tool install kimi-cli",
+  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages && npx playwright install",
   "postStartCommand": "npm install",
   "remoteEnv": {
     "PORT": "3000"
   },
   "customizations": {
+    "codespaces": {
+      "repositories": {
+        "rediacc/middleware": { "permissions": { "contents": "write" } },
+        "rediacc/renet": { "permissions": { "contents": "write" } },
+        "rediacc/homebrew-tap": { "permissions": { "contents": "write" } },
+        "rediacc/license-server": { "permissions": { "contents": "write" } }
+      }
+    },
     "vscode": {
       "extensions": [
         "biomejs.biome",
-        "dbaeumer.vscode-eslint"
+        "dbaeumer.vscode-eslint",
+        "GitHub.vscode-github-actions",
+        "ms-playwright.playwright",
+        "astro-build.astro-vscode",
+        "golang.go",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "eamodio.gitlens",
+        "ms-python.python",
+        "ms-vscode.vscode-typescript-next",
+        "ms-dotnettools.csharp"
       ]
     }
   }

@@ -44,6 +44,7 @@ void i18n.init({
     escapeValue: false, // Not needed for CLI output
   },
   initImmediate: false, // Synchronous initialization
+  showSupportNotice: false, // Suppress locize promotional message (breaks JSON output)
 });
 
 /**

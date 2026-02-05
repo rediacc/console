@@ -1,0 +1,262 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PricingCard from '../../components/PricingCard.astro';
+import FAQSection from '../../components/FAQSection.astro';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import { EXTERNAL_LINKS } from '../../config/constants';
+import '../../styles/disaster-recovery-page.css';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t, ta, to } = createTranslator(lang);
+
+const ns = 'pages.disasterRecovery';
+
+const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+
+const formatPrice = (amount: number) => priceFormatter.format(amount);
+
+const buildPlan = ({
+  id,
+  monthlyPrice,
+  description,
+  isPopular = false,
+  badgeLabel,
+  badgeVariant,
+  priceNote,
+}: {
+  id: string;
+  monthlyPrice: number;
+  description: string;
+  isPopular?: boolean;
+  badgeLabel?: string;
+  badgeVariant?: string;
+  priceNote?: string | null;
+}) => {
+  const yearlyPrice = monthlyPrice * 10;
+  const price = formatPrice(monthlyPrice);
+  const yearlyPriceFormatted = formatPrice(yearlyPrice);
+
+  let period = monthlyPrice > 0
+    ? t(`${ns}.ui.monthOrYear`, { price: yearlyPriceFormatted })
+    : t(`${ns}.ui.foreverFree`);
+
+  if (id === 'enterprise' && monthlyPrice > 0) {
+    period = period.replace(yearlyPriceFormatted, `${yearlyPriceFormatted}*`);
+  }
+
+  return {
+    id,
+    name: t(`${ns}.plans.${id}.name`),
+    price,
+    priceNote: priceNote ?? (id === 'enterprise' ? t(`${ns}.plans.enterprise.priceNote`) : undefined),
+    period,
+    description,
+    isPopular,
+    badgeLabel,
+    badgeVariant,
+    features: ta(`${ns}.plans.${id}.features`)
+  };
+};
+
+// Pricing plans data
+const allPlans = [
+  buildPlan({
+    id: 'professional',
+    monthlyPrice: 1299,
+    description: t(`${ns}.plans.professional.description`)
+  }),
+  buildPlan({
+    id: 'business',
+    monthlyPrice: 3999,
+    description: t(`${ns}.plans.business.description`),
+    isPopular: true,
+    badgeLabel: `${t(`${ns}.ui.bestValue`)} · ${t(`${ns}.ui.limitedOffer`)}`,
+    badgeVariant: 'popular'
+  }),
+  buildPlan({
+    id: 'enterprise',
+    monthlyPrice: 9999,
+    description: t(`${ns}.plans.enterprise.description`),
+    badgeLabel: t(`${ns}.ui.anchor`),
+    badgeVariant: 'anchor',
+    priceNote: t(`${ns}.plans.enterprise.priceNote`)
+  })
+];
+
+const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
+const technicalValues = to(`${ns}.technicalSummary.values`);
+
+type PlanId = 'professional' | 'business' | 'enterprise';
+const technicalCards = allPlans.map(plan => ({
+  id: plan.id,
+  name: plan.name,
+  metrics: technicalMetrics.map((metric: any) => ({
+    label: metric.label,
+    value: technicalValues?.[plan.id as PlanId]?.[metric.key as keyof typeof technicalValues[PlanId]] ?? '—'
+  }))
+}));
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${ns}.meta.title`)}
+  description={t(`${ns}.meta.description`)}
+  keywords={t(`${ns}.meta.keywords`)}
+  ogType="website"
+  structuredDataType="organization"
+>
+  <article class="pricing-page">
+    <!-- Hero Section -->
+    <section id="pricing-plans" class="pricing-hero section-dark">
+      <div class="pricing-hero-content">
+        <h1>{t(`${ns}.hero.title`)}</h1>
+        <p class="hero-subtitle">{t(`${ns}.hero.subtitle`)}</p>
+      </div>
+    </section>
+
+    <!-- Pricing Toggle & Cards -->
+    <section id="plans" class="pricing-content section-light">
+      <div class="container">
+        <div class="pricing-overview">
+          <div class="pricing-overview-copy">
+            <h2>{t(`${ns}.strategy.heading`)}</h2>
+            <p>{t(`${ns}.strategy.copy`)}</p>
+          </div>
+          <ul class="pricing-distribution">
+            {ta(`${ns}.strategy.distribution`).map((item: string) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="pricing-grid active three-up">
+          {allPlans.map(plan => (
+            <PricingCard plan={plan} lang={lang} />
+          ))}
+        </div>
+
+        <!-- Trust Section -->
+        <div class="trust-section">
+          <div class="trust-badges">
+            <div class="trust-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+              </svg>
+              <span>{t(`${ns}.trust.items.0`)}</span>
+            </div>
+            <div class="trust-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <span>{t(`${ns}.trust.items.1`)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <FAQSection lang={lang} faqs={to(`${ns}.faq.items`)} heading={t(`${ns}.faq.heading`)} />
+
+    <!-- Professional Services Teaser Section -->
+    <section class="ps-teaser-section section-dark">
+      <div class="container">
+        <div class="ps-teaser-content">
+          <h2>{t(`${ns}.psTeaser.heading`)}</h2>
+          <p class="ps-teaser-subtitle">{t(`${ns}.psTeaser.subtitle`)}</p>
+
+          <div class="ps-teaser-packages">
+            <div class="ps-teaser-card">
+              <h3>{t(`${ns}.psTeaser.packages.standard.name`)}</h3>
+              <p class="teaser-price">{t(`${ns}.psTeaser.packages.standard.price`)}</p>
+            </div>
+            <div class="ps-teaser-card popular">
+              <div class="popular-badge">{t(`${ns}.ui.popular`)}</div>
+              <h3>{t(`${ns}.psTeaser.packages.priority.name`)}</h3>
+              <p class="teaser-price">{t(`${ns}.psTeaser.packages.priority.price`)}</p>
+            </div>
+            <div class="ps-teaser-card">
+              <h3>{t(`${ns}.psTeaser.packages.emergency.name`)}</h3>
+              <p class="teaser-price">{t(`${ns}.psTeaser.packages.emergency.price`)}</p>
+            </div>
+          </div>
+
+          <a href={`/${lang}/professional-services`} class="btn btn-primary btn-large">
+            {t(`${ns}.psTeaser.viewDetails`)}
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Enterprise CTA Section -->
+    <section class="pricing-content section-light">
+      <div class="container">
+        <div class="enterprise-cta">
+          <div class="enterprise-content">
+            <h2>{t(`${ns}.enterpriseCta.heading`)}</h2>
+            <p>{t(`${ns}.enterpriseCta.description`)}</p>
+          </div>
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t(`${ns}.enterpriseCta.button`)} (${t('common.aria.opensInNewTab')})`}>
+            {t(`${ns}.enterpriseCta.button`)}
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technical Summary (For Technical Buyers) -->
+    <section class="technical-details section-light">
+      <div class="container">
+        <div class="technical-summary">
+          <div class="technical-summary-header">
+            <h2>{t(`${ns}.technicalSummary.heading`)}</h2>
+            <p>{t(`${ns}.technicalSummary.description`)}</p>
+          </div>
+
+          <div class="technical-grid">
+            {technicalCards.map(card => (
+              <div class="technical-card">
+                <h3>{card.name}</h3>
+                <dl class="technical-metrics">
+                  {card.metrics.map(metric => (
+                    <div class="technical-metric">
+                      <dt>{metric.label}</dt>
+                      <dd>{metric.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
+          </div>
+
+          <div class="technical-summary-header recovery-note">
+            <p>{t(`${ns}.technicalSummary.recoveryNote`)}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="get-started" class="pricing-cta section-dark">
+      <div class="container">
+        <h2>{t(`${ns}.finalCta.heading`)}</h2>
+        <p>{t(`${ns}.finalCta.description`)}</p>
+        <div class="cta-actions">
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-large" aria-label={`${t(`${ns}.finalCta.buttons.startFree`)} (${t('common.aria.opensInNewTab')})`}>
+            {t(`${ns}.finalCta.buttons.startFree`)}
+          </a>
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-large" aria-label={`${t(`${ns}.finalCta.buttons.talkToSales`)} (${t('common.aria.opensInNewTab')})`}>
+            {t(`${ns}.finalCta.buttons.talkToSales`)}
+          </a>
+        </div>
+      </div>
+    </section>
+  </article>
+</BaseLayout>

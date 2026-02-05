@@ -9,6 +9,7 @@
 # Environment variables:
 #   GITHUB_EVENT_NAME - GitHub event type (e.g., 'pull_request')
 #   GITHUB_HEAD_REF - PR branch name (set by GitHub Actions)
+#   PR_AUTHOR - GitHub username of the PR author (optional, falls back to github-actions[bot])
 #
 # Exit codes:
 #   0 - All files are up-to-date (or auto-fixed on PR)
@@ -158,7 +159,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]] || [[ -z "${GITHUB_HEAD_REF:
 fi
 
 # Check for recent autofix commits to prevent loops (specific to API types)
-RECENT_AUTOFIX=$(git log --oneline -5 --author="github-actions\[bot\]" --grep="auto-regenerate middleware API types" 2>/dev/null | head -1 || true)
+RECENT_AUTOFIX=$(git log --oneline -5 --grep="auto-regenerate middleware API types" 2>/dev/null | head -1 || true)
 if [[ -n "$RECENT_AUTOFIX" ]]; then
     log_error "Recent API types autofix commit detected, cannot auto-fix again: $RECENT_AUTOFIX"
     log_error "Please manually regenerate with: ./run.sh deploy prep"
@@ -236,16 +237,26 @@ if [[ "$SUBMODULE_CHANGED" == "false" ]] && [[ "$CONSOLE_CHANGED" == "false" ]];
 fi
 
 log_step "Committing fix..."
-git config user.name "github-actions[bot]"
-git config user.email "github-actions[bot]@users.noreply.github.com"
+if [[ -n "${PR_AUTHOR:-}" ]]; then
+    git config user.name "$PR_AUTHOR"
+    git config user.email "${PR_AUTHOR}@users.noreply.github.com"
+else
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+fi
 
 # Handle submodule commit first (stored-procedures.json is in middleware submodule)
 if [[ "$SUBMODULE_CHANGED" == "true" ]]; then
     log_info "Committing submodule changes..."
     (
         cd "$MIDDLEWARE_DIR"
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+        if [[ -n "${PR_AUTHOR:-}" ]]; then
+            git config user.name "$PR_AUTHOR"
+            git config user.email "${PR_AUTHOR}@users.noreply.github.com"
+        else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+        fi
         git add "AppData/stored-procedures.json"
         git commit -m "chore: regenerate stored-procedures.json"
     )

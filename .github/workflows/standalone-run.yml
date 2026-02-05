@@ -125,7 +125,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 420  # 7 hours max
     strategy:
-      fail-fast: false
       matrix:
         # When vm-os-list is provided (CI), use it as matrix; otherwise wrap single vm-os input
         vm-os: ${{ fromJSON(inputs.vm-os-list || format('["{0}"]', inputs.vm-os || 'none')) }}
@@ -133,6 +132,19 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,middleware,renet,license-server
+
+      - name: Checkout with Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Set Image Tags
         run: |
@@ -367,6 +379,9 @@ jobs:
           echo ""
           echo "Final Container Status:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
+          echo ""
+          echo "Recent License Server Logs (last 50 lines):"
+          docker logs rediacc-license-server --tail=50 2>&1 || true
           echo ""
           echo "Recent API Logs (last 30 lines):"
           docker logs rediacc-api --tail=30 2>&1 || true

@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "inputs": [
+        {
+            "id": "tunnelUrl",
+            "type": "promptString",
+            "description": "Enter the Cloudflare Tunnel URL (e.g., https://xxx.trycloudflare.com)",
+            "default": ""
+        }
+    ],
+    "tasks": [
+        {
+            "label": "E2E: Set Tunnel URL",
+            "type": "shell",
+            "command": "cd packages/e2e && cp -n .env.example .env 2>/dev/null; if grep -q '^VITE_API_URL=' .env; then sed -i 's|^VITE_API_URL=.*|VITE_API_URL=${input:tunnelUrl}|' .env; else echo 'VITE_API_URL=${input:tunnelUrl}' >> .env; fi && echo '✔ VITE_API_URL set to ${input:tunnelUrl}'",
+            "problemMatcher": [],
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "E2E: Run with Tunnel",
+            "type": "shell",
+            "command": "npm test -w @rediacc/e2e -- --project=chromium",
+            "problemMatcher": [],
+            "group": "test",
+            "dependsOn": "E2E: Set Tunnel URL",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

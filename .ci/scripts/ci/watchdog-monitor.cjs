@@ -8,6 +8,7 @@
 // Required env vars:
 //   WATCHDOG_EXCLUDE_PATTERNS   - Comma-separated job name patterns to exclude from monitoring
 //   WATCHDOG_NO_RETRY_PATTERNS  - Comma-separated job name patterns that should never auto-retry
+//   WATCHDOG_INDEPENDENT_PATTERNS - Comma-separated job name patterns whose failures don't cancel siblings (optional)
 //
 // Labels (PR context only):
 //   no-cancel-failure  - Skip cancellation on job failure (workflow continues)
@@ -38,6 +39,11 @@ module.exports = async ({ github, context, core }) => {
 
   // Jobs that should not trigger auto-retry (failures are never transient)
   const noRetryPatterns = process.env.WATCHDOG_NO_RETRY_PATTERNS.split(',').map(s => s.trim());
+
+  // Jobs whose failures should not cancel sibling jobs (optional env var)
+  const independentPatterns = (process.env.WATCHDOG_INDEPENDENT_PATTERNS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  let independentRerunDispatched = false;
 
   // Helper: dispatch rerun-failed.yml to retry failed jobs
   async function dispatchRerun() {
@@ -143,6 +149,9 @@ module.exports = async ({ github, context, core }) => {
   console.log('Watchdog started - monitoring jobs for failures...');
   console.log(`Exclude patterns: ${excludePatterns.join(', ')}`);
   console.log(`No-retry patterns: ${noRetryPatterns.join(', ')}`);
+  if (independentPatterns.length > 0) {
+    console.log(`Independent patterns (no sibling cancellation): ${independentPatterns.join(', ')}`);
+  }
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
   while (Date.now() - startTime < maxRuntime) {
@@ -189,16 +198,48 @@ module.exports = async ({ github, context, core }) => {
       return;
     }
 
-    // Check for ANY failure - cancel immediately
-    if (failed.length > 0) {
-      await cancelOnFailure(failed[0], 'Job failed', run.run_attempt);
+    // Separate independent failures from critical failures
+    const independentFailed = failed.filter(j =>
+      independentPatterns.some(p => j.name.includes(p)));
+    const criticalFailed = failed.filter(j =>
+      !independentPatterns.some(p => j.name.includes(p)));
+
+    // Log independent failures, dispatch auto-retry once, but don't cancel siblings
+    if (independentFailed.length > 0 && !independentRerunDispatched) {
+      for (const job of independentFailed) {
+        console.log(`[${elapsedMin}m] Independent job failed (no sibling cancellation): "${job.name}"`);
+      }
+      // Still auto-retry independent failures (handles flaky infra like SSL errors)
+      const isNoRetryJob = noRetryPatterns.some(p => independentFailed[0].name.includes(p));
+      if (run.run_attempt < MAX_ATTEMPTS && !skipAutoRetry && !isNoRetryJob) {
+        console.log(`Dispatching auto-retry for independent job failure...`);
+        await dispatchRerun();
+      }
+      independentRerunDispatched = true;
+    } else if (independentFailed.length > 0) {
+      console.log(`[${elapsedMin}m] Independent failures (already handled): ${independentFailed.map(j => j.name).join(', ')}`);
+    }
+
+    // Cancel on critical failures
+    if (criticalFailed.length > 0) {
+      await cancelOnFailure(criticalFailed[0], 'Job failed', run.run_attempt);
       return;
+    }
+
+    // Same treatment for cancelled jobs
+    const independentCancelled = cancelled.filter(j =>
+      independentPatterns.some(p => j.name.includes(p)));
+    const criticalCancelled = cancelled.filter(j =>
+      !independentPatterns.some(p => j.name.includes(p)));
+
+    if (independentCancelled.length > 0) {
+      console.log(`[${elapsedMin}m] Independent job cancelled (no action): ${independentCancelled.map(j => j.name).join(', ')}`);
     }
 
     // Check for individually cancelled jobs (e.g., timeout-killed).
     // Mass cancellation is already handled above.
-    if (cancelled.length > 0) {
-      await cancelOnFailure(cancelled[0], 'Job cancelled (likely timeout)', run.run_attempt);
+    if (criticalCancelled.length > 0) {
+      await cancelOnFailure(criticalCancelled[0], 'Job cancelled (likely timeout)', run.run_attempt);
       return;
     }
 

@@ -37,7 +37,7 @@ To start using the Rediacc platform, you first need to create an account.
 2. Click the **{{t:auth.login.signIn}}** button in the top right corner of the page.
 3. Choose **Get Started** for free access or **Request Demo** for a demonstration.
 
-> **Tip**: You can create a free account without requiring any credit card. Includes 10 CPU cores and unlimited teams.
+> **Tip**: You can create a free account without requiring any credit card. Includes unlimited teams.
 
 ![Rediacc Sign In form - email and password fields](/assets/images/user-guide/02_register.png)
 *(Figure 2: Sign In screen for existing users)*

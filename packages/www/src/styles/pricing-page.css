@@ -144,8 +144,19 @@
   display: grid;
 }
 
+.pricing-grid.three-up {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
 .pricing-grid.four-up {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+@media (min-width: 64rem) {
+  /* 1024px - respects user font size */
+  .pricing-grid.three-up {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 75rem) {
@@ -1399,12 +1410,266 @@
   }
 }
 
+/* Comparison Table */
+.comparison-section {
+  padding: var(--space-12) 0;
+}
+
+.comparison-header {
+  max-width: 40rem;
+  margin: 0 auto var(--space-8);
+  text-align: center;
+}
+
+.comparison-header h2 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-3);
+  color: var(--color-text);
+}
+
+.comparison-header p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.comparison-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.1));
+}
+
+.comparison-table thead th {
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg-alt, rgba(0, 0, 0, 0.02));
+  position: sticky;
+  top: 0;
+}
+
+.comparison-table .metric-label {
+  text-align: left;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.comparison-table tbody tr:hover {
+  background: var(--color-bg-alt, rgba(0, 0, 0, 0.02));
+}
+
+@media (max-width: 48rem) {
+  .comparison-table {
+    font-size: 0.8125rem;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+/* Pricing section header (homepage embed) */
+.pricing-section-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.pricing-section-header h2 {
+  font-size: clamp(1.75rem, 3.5vw, 3rem);
+  margin-bottom: var(--space-3);
+  color: var(--color-text);
+}
+
+.pricing-section-header p {
+  color: var(--color-text-secondary);
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  max-width: var(--container-xs);
+  margin: 0 auto;
+  line-height: var(--leading-normal);
+}
+
+/* ── Cloudflare-style pricing cards (homepage embed) ── */
+.cf-pricing-section {
+  padding: var(--section-padding);
+  background: var(--color-bg);
+}
+
+.cf-pricing-container {
+  max-width: var(--container-2xl);
+  margin: 0 auto;
+}
+
+.cf-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+@media (min-width: 75rem) {
+  .cf-pricing-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.cf-pricing-card {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--box-border-radius);
+  padding: var(--box-padding);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--box-shadow);
+  transition:
+    transform var(--transition-duration-base),
+    box-shadow var(--transition-duration-base);
+}
+
+@media (hover: hover) {
+  .cf-pricing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.cf-pricing-card:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.cf-pricing-card.cf-featured {
+  border-color: var(--color-brand-primary);
+  border-width: 2px;
+}
+
+.cf-plan-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+.cf-price-block {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cf-price {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.cf-price-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.cf-price-period {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+}
+
+.cf-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-6);
+  display: grid;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.cf-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.cf-features li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-brand-primary);
+}
+
+.cf-features li strong {
+  color: var(--color-text);
+}
+
+.cf-cta-btn {
+  display: block;
+  text-align: center;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: var(--color-bg);
+  transition:
+    background var(--transition-duration-base),
+    border-color var(--transition-duration-base);
+  margin-top: auto;
+}
+
+.cf-cta-btn:hover {
+  background: var(--color-bg-alt);
+  border-color: var(--color-text-secondary);
+}
+
+.cf-cta-btn.cf-cta-featured {
+  background: var(--color-brand-primary);
+  color: white;
+  border-color: var(--color-brand-primary);
+}
+
+.cf-cta-btn.cf-cta-featured:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 64rem) {
+  .cf-pricing-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .cf-pricing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cf-pricing-section {
+    padding: var(--space-16) var(--space-4);
+  }
+}
+
 /* Reduced motion: remove hover transforms */
 @media (prefers-reduced-motion: reduce) {
   .ps-teaser-card:hover,
   .pricing-card:hover,
   .pricing-card.popular:hover,
-  .service-package-card:hover {
+  .service-package-card:hover,
+  .cf-pricing-card:hover {
     transform: none;
   }
 }

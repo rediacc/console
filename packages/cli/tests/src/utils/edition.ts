@@ -180,8 +180,6 @@ export const EditionErrorPatterns = {
 
   // Specific resource limit messages
   BRIDGE_LIMIT_EXCEEDED: 'Resource limit exceeded for customer bridges',
-  MACHINE_LIMIT_EXCEEDED: 'Resource limit exceeded for machines',
-  REPOSITORY_LIMIT_EXCEEDED: 'Resource limit exceeded',
 
   // 429 Too Many Requests - Rate limits
   TOO_MANY_PENDING_ITEMS: 'too many pending queue items',
@@ -196,49 +194,45 @@ export const EditionErrorPatterns = {
 export const RESOURCE_LIMITS = {
   COMMUNITY: {
     bridges: 0,
-    machines: 5,
-    repositories: 10,
-    maxActiveJobs: 2,
+    maxActiveJobs: 1,
     maxReservedJobs: 1,
     jobTimeoutHours: 2,
     maxRepositorySizeGb: 10,
     maxPendingPerUser: 5,
     maxTasksPerMachine: 1,
+    maxJobsPerMonth: 500,
   },
   PROFESSIONAL: {
     bridges: 1,
-    machines: 20,
-    repositories: 50,
     maxActiveJobs: 5,
     maxReservedJobs: 2,
     jobTimeoutHours: 24,
-    maxRepositorySizeGb: 50,
+    maxRepositorySizeGb: 100,
     maxPendingPerUser: 10,
     maxTasksPerMachine: 2,
+    maxJobsPerMonth: 5000,
   },
   BUSINESS: {
     bridges: 2,
-    machines: 100,
-    repositories: 250,
-    maxActiveJobs: 7,
+    maxActiveJobs: 20,
     maxReservedJobs: 3,
     jobTimeoutHours: 72,
-    maxRepositorySizeGb: 250,
+    maxRepositorySizeGb: 500,
     maxPendingPerUser: 20,
     maxTasksPerMachine: 3,
     cephPoolsPerTeam: 1,
+    maxJobsPerMonth: 20000,
   },
   ENTERPRISE: {
     bridges: 10,
-    machines: 400,
-    repositories: 1000,
-    maxActiveJobs: 10,
+    maxActiveJobs: 60,
     maxReservedJobs: 5,
     jobTimeoutHours: 96,
     maxRepositorySizeGb: 1024,
     maxPendingPerUser: 50,
     maxTasksPerMachine: 5,
     cephPoolsPerTeam: -1, // Unlimited
+    maxJobsPerMonth: 100000,
   },
 } as const;
 

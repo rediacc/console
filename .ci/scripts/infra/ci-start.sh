@@ -135,10 +135,40 @@ wait_for_web() {
     return 1
 }
 
+# Wait for License Server
+wait_for_license_server() {
+    local timeout=60
+    local elapsed=0
+    local interval=2
+
+    echo "  Waiting for License Server..."
+    while [[ $elapsed -lt $timeout ]]; do
+        if curl -sf http://localhost:3000/health &>/dev/null; then
+            echo "  License Server is ready"
+            return 0
+        fi
+        # Also check via docker if port mapping isn't exposed
+        if docker exec rediacc-license-server node -e "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)})" &>/dev/null; then
+            echo "  License Server is ready (via container)"
+            return 0
+        fi
+        sleep $interval
+        elapsed=$((elapsed + interval))
+    done
+    echo "  License Server failed to start within ${timeout}s"
+    return 1
+}
+
 # Execute health checks in sequence
 wait_for_sql || {
     echo "Service startup failed: SQL Server"
     docker compose logs
+    exit 1
+}
+
+wait_for_license_server || {
+    echo "Service startup failed: License Server"
+    docker compose logs license-server license-rustfs
     exit 1
 }
 

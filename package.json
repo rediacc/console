@@ -76,7 +76,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.13",
+    "@biomejs/biome": "^2.3.14",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^1.0.0",
     "@types/proper-lockfile": "^4.1.4",
@@ -93,7 +93,7 @@
     "eslint-plugin-sonarjs": "^3.0.6",
     "eslint-plugin-unicorn": "^62.0.0",
     "globals": "^17.3.0",
-    "knip": "^5.76.3",
+    "knip": "^5.83.0",
     "syncpack": "^13.0.4",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
