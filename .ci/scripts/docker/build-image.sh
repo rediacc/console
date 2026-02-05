@@ -68,7 +68,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 [--image NAME | --all] [--version X.Y.Z] [--push] [--dry-run]"
             echo ""
             echo "Available images: ${PUBLISH_IMAGES[*]}"

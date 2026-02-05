@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --version X.Y.Z [--push | --stage-only] [--local-checksums <dir>] [--dry-run]"
             exit 0
             ;;
@@ -146,7 +146,7 @@ calculate_local_checksums() {
             log_error "Missing local binary matching ${name}* in $dir"
             exit 1
         fi
-        sha256sum "$found" > "$outdir/${name}.sha256"
+        sha256sum "$found" >"$outdir/${name}.sha256"
         log_info "  ${name}: $(awk '{print $1}' "$outdir/${name}.sha256")"
     done
 
@@ -230,7 +230,7 @@ update_formula() {
         }
     }
     { print }
-    ' "$FORMULA_FILE" > "$tmpfile"
+    ' "$FORMULA_FILE" >"$tmpfile"
 
     mv "$tmpfile" "$FORMULA_FILE"
 
@@ -315,8 +315,8 @@ update_formula "$CHECKSUM_DIR"
 
 # Commit and optionally push / stage
 if [[ "$STAGE_ONLY" == "true" ]]; then
-    commit_and_push          # commits inside the homebrew-tap submodule
-    stage_submodule_pointer  # stages the pointer in the parent repo
+    commit_and_push         # commits inside the homebrew-tap submodule
+    stage_submodule_pointer # stages the pointer in the parent repo
 elif [[ "$PUSH" == "true" ]]; then
     commit_and_push
     update_submodule_pointer

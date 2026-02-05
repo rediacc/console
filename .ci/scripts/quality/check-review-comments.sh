@@ -56,16 +56,16 @@ is_low_effort_reply() {
     # Check against patterns
     for pattern in "${LOW_EFFORT_PATTERNS[@]}"; do
         if [[ "$normalized" == "$pattern" ]]; then
-            return 0  # Is low-effort
+            return 0 # Is low-effort
         fi
     done
 
     # Also reject very short replies (less than 10 chars after normalization)
     if [[ ${#normalized} -lt 10 ]]; then
-        return 0  # Is low-effort
+        return 0 # Is low-effort
     fi
 
-    return 1  # Is substantive
+    return 1 # Is substantive
 }
 
 # Validate required environment variables
@@ -158,7 +158,7 @@ echo "============================================================"
 
 if [[ ${#UNREPLIED[@]} -gt 0 ]]; then
     HAS_ISSUES=true
-    UNREPLIED_COUNT=$(( ${#UNREPLIED[@]} / 2 ))
+    UNREPLIED_COUNT=$((${#UNREPLIED[@]} / 2))
     echo ""
     echo "UNREPLIED COMMENTS (${UNREPLIED_COUNT}):"
     echo ""
@@ -169,7 +169,7 @@ fi
 
 if [[ ${#LOW_EFFORT_REPLIES[@]} -gt 0 ]]; then
     HAS_ISSUES=true
-    LOW_EFFORT_COUNT=$(( ${#LOW_EFFORT_REPLIES[@]} / 3 ))
+    LOW_EFFORT_COUNT=$((${#LOW_EFFORT_REPLIES[@]} / 3))
     echo ""
     echo "LOW-EFFORT REPLIES (${LOW_EFFORT_COUNT}):"
     echo "These replies don't count as addressing the feedback:"

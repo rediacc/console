@@ -59,20 +59,20 @@ else
 fi
 
 jq -n \
-  --arg version "$VERSION" \
-  --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --argjson amd64Size "$AMD64_SIZE" \
-  --arg amd64Sha256 "$AMD64_SHA256" \
-  --argjson arm64Size "$ARM64_SIZE" \
-  --arg arm64Sha256 "$ARM64_SHA256" \
-  '{
+    --arg version "$VERSION" \
+    --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --argjson amd64Size "$AMD64_SIZE" \
+    --arg amd64Sha256 "$AMD64_SHA256" \
+    --argjson arm64Size "$ARM64_SIZE" \
+    --arg arm64Sha256 "$ARM64_SHA256" \
+    '{
     version: $version,
     generatedAt: $generatedAt,
     binaries: {
       amd64: { size: $amd64Size, sha256: $amd64Sha256 },
       arm64: { size: $arm64Size, sha256: $arm64Sha256 }
     }
-  }' > "$CLI_ASSETS_DIR/renet-metadata.json"
+  }' >"$CLI_ASSETS_DIR/renet-metadata.json"
 
 log_info "Metadata written to $CLI_ASSETS_DIR/renet-metadata.json"
 log_info "  Version: $VERSION"

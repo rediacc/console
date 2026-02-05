@@ -53,9 +53,9 @@ rm -f "$TARBALL"
 log_info "CLI installed globally"
 
 # Verify installation
-if command -v rdc &> /dev/null; then
+if command -v rdc &>/dev/null; then
     log_info "CLI available as 'rdc'"
-elif command -v rediacc &> /dev/null; then
+elif command -v rediacc &>/dev/null; then
     log_info "CLI available as 'rediacc'"
 else
     log_warn "CLI command not found in PATH (may need to restart shell)"

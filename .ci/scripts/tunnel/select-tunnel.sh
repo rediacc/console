@@ -61,7 +61,7 @@ log_step "Selecting tunnel from ${#VALID_URLS[@]} candidate(s)..." >&2
 for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
     for url in "${VALID_URLS[@]}"; do
         HEALTH_URL="${url%/}/health"
-        if curl -sf --max-time 10 "$HEALTH_URL" > /dev/null 2>&1; then
+        if curl -sf --max-time 10 "$HEALTH_URL" >/dev/null 2>&1; then
             log_info "Selected tunnel: $url (attempt $attempt)" >&2
             echo "$url"
             exit 0

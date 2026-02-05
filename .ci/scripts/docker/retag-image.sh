@@ -32,14 +32,35 @@ DRY_RUN="${DRY_RUN:-false}"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --image) IMAGE_NAME="$2"; shift 2 ;;
-        --all) RETAG_ALL=true; shift ;;
-        --from) FROM_TAG="$2"; shift 2 ;;
-        --to) TO_TAG="$2"; shift 2 ;;
-        --push-latest) PUSH_LATEST=true; shift ;;
-        --skip-if-exists) SKIP_IF_EXISTS=true; shift ;;
-        --dry-run) DRY_RUN=true; shift ;;
-        -h|--help)
+        --image)
+            IMAGE_NAME="$2"
+            shift 2
+            ;;
+        --all)
+            RETAG_ALL=true
+            shift
+            ;;
+        --from)
+            FROM_TAG="$2"
+            shift 2
+            ;;
+        --to)
+            TO_TAG="$2"
+            shift 2
+            ;;
+        --push-latest)
+            PUSH_LATEST=true
+            shift
+            ;;
+        --skip-if-exists)
+            SKIP_IF_EXISTS=true
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h | --help)
             echo "Usage: $0 --image NAME --from CI_TAG --to VERSION [--push-latest]"
             echo "       $0 --all --from CI_TAG --to VERSION [--push-latest]"
             echo ""
@@ -55,14 +76,26 @@ while [[ $# -gt 0 ]]; do
             echo "Available images: ${PUBLISH_IMAGES[*]}"
             exit 0
             ;;
-        *) log_error "Unknown option: $1"; exit 1 ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
     esac
 done
 
 # Validate required arguments
-[[ -z "$FROM_TAG" ]] && { log_error "--from is required"; exit 1; }
-[[ -z "$TO_TAG" ]] && { log_error "--to is required"; exit 1; }
-[[ "$RETAG_ALL" == "false" ]] && [[ -z "$IMAGE_NAME" ]] && { log_error "--image or --all required"; exit 1; }
+[[ -z "$FROM_TAG" ]] && {
+    log_error "--from is required"
+    exit 1
+}
+[[ -z "$TO_TAG" ]] && {
+    log_error "--to is required"
+    exit 1
+}
+[[ "$RETAG_ALL" == "false" ]] && [[ -z "$IMAGE_NAME" ]] && {
+    log_error "--image or --all required"
+    exit 1
+}
 
 retag_image() {
     local name="$1"
@@ -82,7 +115,7 @@ retag_image() {
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Verifying source image: $src"
-        if ! docker buildx imagetools inspect "$src" > /dev/null; then
+        if ! docker buildx imagetools inspect "$src" >/dev/null; then
             log_error "[DRY-RUN] Failed to inspect source image: $src"
             return 1
         fi

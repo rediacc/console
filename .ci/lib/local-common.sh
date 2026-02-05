@@ -44,8 +44,8 @@ check_middleware() {
 # Smart dependency installation (only if needed)
 # Checks if node_modules is up-to-date before running npm install
 ensure_deps() {
-    if [[ ! -d "$LOCAL_ROOT_DIR/node_modules" ]] || \
-       [[ "$LOCAL_ROOT_DIR/package-lock.json" -nt "$LOCAL_ROOT_DIR/node_modules" ]]; then
+    if [[ ! -d "$LOCAL_ROOT_DIR/node_modules" ]] ||
+        [[ "$LOCAL_ROOT_DIR/package-lock.json" -nt "$LOCAL_ROOT_DIR/node_modules" ]]; then
         log_step "Installing dependencies..."
         (cd "$LOCAL_ROOT_DIR" && npm install)
     else
@@ -60,8 +60,8 @@ ensure_packages_built() {
     local shared_src="$LOCAL_ROOT_DIR/packages/shared/src"
 
     # Check if shared package needs rebuilding
-    if [[ ! -d "$shared_dist" ]] || \
-       [[ "$shared_src" -nt "$shared_dist" ]]; then
+    if [[ ! -d "$shared_dist" ]] ||
+        [[ "$shared_src" -nt "$shared_dist" ]]; then
         log_step "Building shared packages..."
         "$LOCAL_CI_DIR/scripts/setup/build-packages.sh"
     else

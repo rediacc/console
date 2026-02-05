@@ -30,7 +30,7 @@ main() {
 
     # npm audit exits non-zero when vulnerabilities exist, so we capture the exit code
     local audit_exit=0
-    npm audit --json > audit-report.json || audit_exit=$?
+    npm audit --json >audit-report.json || audit_exit=$?
 
     # Validate that npm audit produced valid JSON (exit code 1 = vulnerabilities found, which is expected)
     if ! jq empty audit-report.json 2>/dev/null; then
@@ -43,10 +43,10 @@ main() {
     local ALLOWED_ADVISORIES=()
     if [[ -f ".audit-allowlist" ]]; then
         while IFS= read -r line; do
-            line="${line%%#*}"  # Remove comments
-            line="${line// /}"  # Remove spaces
+            line="${line%%#*}" # Remove comments
+            line="${line// /}" # Remove spaces
             [[ -n "$line" ]] && ALLOWED_ADVISORIES+=("$line")
-        done < .audit-allowlist
+        done <.audit-allowlist
     fi
 
     # Get all unique advisory IDs from vulnerabilities

@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --binary PATH --version VER --arch {x86_64|aarch64} [--output DIR] [--dry-run]"
             exit 0
             ;;
@@ -119,7 +119,7 @@ mkdir -p "$RPMBUILD_DIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 cp "$BINARY" "$RPMBUILD_DIR/SOURCES/$PKG_BINARY_NAME"
 
 # Write spec file
-cat > "$RPMBUILD_DIR/SPECS/${PKG_NAME}.spec" <<EOF
+cat >"$RPMBUILD_DIR/SPECS/${PKG_NAME}.spec" <<EOF
 Name:           ${PKG_NAME}
 Version:        ${VERSION}
 Release:        1
@@ -162,7 +162,7 @@ if [[ ! -f "$OUTPUT_DIR/$RPM_FILE" ]]; then
     exit 1
 fi
 
-PACKAGE_SIZE=$(wc -c < "$OUTPUT_DIR/$RPM_FILE")
+PACKAGE_SIZE=$(wc -c <"$OUTPUT_DIR/$RPM_FILE")
 log_info "Package built: $RPM_FILE ($((PACKAGE_SIZE / 1024))KB)"
 
 # =============================================================================
@@ -206,7 +206,7 @@ if [[ -n "${GPG_PRIVATE_KEY:-}" ]]; then
     fi
 
     # Create RPM macros for signing (passphrase passed via fd, not written to file)
-    cat > "$HOME/.rpmmacros" <<MACROS
+    cat >"$HOME/.rpmmacros" <<MACROS
 %_signature gpg
 %_gpg_path $GNUPGHOME
 %_gpg_name $GPG_KEY_ID

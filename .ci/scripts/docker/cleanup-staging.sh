@@ -22,9 +22,15 @@ DRY_RUN="${DRY_RUN:-false}"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --tag) STAGING_TAG="$2"; shift 2 ;;
-        --dry-run) DRY_RUN=true; shift ;;
-        -h|--help)
+        --tag)
+            STAGING_TAG="$2"
+            shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h | --help)
             echo "Usage: $0 --tag STAGING_TAG [--dry-run]"
             echo ""
             echo "Delete staging Docker tags from GHCR registry."
@@ -36,12 +42,18 @@ while [[ $# -gt 0 ]]; do
             echo "Images to clean: ${PUBLISH_IMAGES[*]}"
             exit 0
             ;;
-        *) log_error "Unknown option: $1"; exit 1 ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
     esac
 done
 
 # Validate required arguments
-[[ -z "$STAGING_TAG" ]] && { log_error "--tag is required"; exit 1; }
+[[ -z "$STAGING_TAG" ]] && {
+    log_error "--tag is required"
+    exit 1
+}
 
 # Validate staging tag format
 if [[ ! "$STAGING_TAG" =~ ^staging- ]]; then
@@ -51,9 +63,9 @@ fi
 
 # Extract org and package base from registry URL
 # PUBLISH_DOCKER_REGISTRY is typically "ghcr.io/rediacc/elite"
-REGISTRY_PATH="${PUBLISH_DOCKER_REGISTRY#ghcr.io/}"  # Remove ghcr.io/ prefix
-ORG="${REGISTRY_PATH%%/*}"  # Get org (rediacc)
-PACKAGE_BASE="${REGISTRY_PATH#*/}"  # Get package base (elite)
+REGISTRY_PATH="${PUBLISH_DOCKER_REGISTRY#ghcr.io/}" # Remove ghcr.io/ prefix
+ORG="${REGISTRY_PATH%%/*}"                          # Get org (rediacc)
+PACKAGE_BASE="${REGISTRY_PATH#*/}"                  # Get package base (elite)
 
 delete_staging_tag() {
     local image_name="$1"

@@ -19,10 +19,22 @@ REGISTRY="ghcr.io/rediacc/elite"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --tag) TAG="$2"; shift 2 ;;
-        --output) OUTPUT_DIR="$2"; shift 2 ;;
-        --registry) REGISTRY="$2"; shift 2 ;;
-        *) log_error "Unknown option: $1"; exit 1 ;;
+        --tag)
+            TAG="$2"
+            shift 2
+            ;;
+        --output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --registry)
+            REGISTRY="$2"
+            shift 2
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
     esac
 done
 
@@ -62,7 +74,7 @@ docker cp "$CONTAINER_ID:/opt/renet/renet-linux-arm64" "$OUTPUT_DIR/"
 OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
-sha256sum renet-linux-* > checksums.sha256
+sha256sum renet-linux-* >checksums.sha256
 
 log_info "Renet binaries extracted successfully:"
 ls -la renet-linux-*

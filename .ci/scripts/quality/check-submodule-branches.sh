@@ -132,16 +132,16 @@ is_low_effort_reply() {
     # Check against patterns
     for pattern in "${LOW_EFFORT_PATTERNS[@]}"; do
         if [[ "$normalized" == "$pattern" ]]; then
-            return 0  # Is low-effort
+            return 0 # Is low-effort
         fi
     done
 
     # Also reject very short replies (less than 10 chars after normalization)
     if [[ ${#normalized} -lt 10 ]]; then
-        return 0  # Is low-effort
+        return 0 # Is low-effort
     fi
 
-    return 1  # Is substantive
+    return 1 # Is substantive
 }
 
 # Get current branch name

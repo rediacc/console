@@ -46,7 +46,7 @@ for arg in "$@"; do
         --config)
             CURRENT_ARG="config"
             ;;
-        --filter|--grep)
+        --filter | --grep)
             CURRENT_ARG="filter"
             ;;
         --grep-invert)

@@ -27,7 +27,7 @@ require_file "$DESKTOP_DIR/externals.json"
 EXTERNALS=()
 while IFS= read -r mod; do
     [[ -n "$mod" ]] && EXTERNALS+=("$mod")
-done <<< "$(cd "$DESKTOP_DIR" && node -e "
+done <<<"$(cd "$DESKTOP_DIR" && node -e "
   const cfg = JSON.parse(require('fs').readFileSync('./externals.json', 'utf8'));
   cfg.externals.forEach(m => console.log(m));
 ")"
@@ -66,7 +66,7 @@ copy_module_tree() {
 
     if [[ -d "$LOCAL_NM/$mod" ]]; then
         mark_copied "$mod"
-        return  # Already exists
+        return # Already exists
     fi
 
     cp -r "$ROOT_NM/$mod" "$LOCAL_NM/$mod"

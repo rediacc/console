@@ -80,7 +80,7 @@ fi
 
 # Add CNAME for custom domain
 log_step "Adding CNAME..."
-echo "www.rediacc.com" > "$OUTPUT_DIR/CNAME"
+echo "www.rediacc.com" >"$OUTPUT_DIR/CNAME"
 
 # Add .nojekyll to prevent Jekyll processing
 log_step "Adding .nojekyll..."
