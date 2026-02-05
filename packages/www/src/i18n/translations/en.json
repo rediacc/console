@@ -83,7 +83,8 @@
       "systemPortability": "System Portability",
       "developmentEnvironments": "Development Environments",
       "preemptiveDefense": "Preemptive Defense"
-    }
+    },
+    "disasterRecovery": "Disaster Recovery"
   },
   "footer": {
     "tagline": "Infrastructure Automation Platform for AI-Driven Operations",
@@ -102,7 +103,8 @@
       "solutions": "Solutions",
       "overview": "Overview",
       "pricing": "Pricing",
-      "professionalServices": "Professional Services"
+      "professionalServices": "Professional Services",
+      "disasterRecovery": "Disaster Recovery"
     },
     "organizationLinks": {
       "aboutUs": "About Us",
@@ -131,7 +133,7 @@
       "learnMore": "Learn More",
       "bookDemo": "Book Demo",
       "freeBadge": "FREE FOREVER • No credit card",
-      "benefits": "10 CPU cores • Unlimited teams • $0",
+      "benefits": "Unlimited teams • $0",
       "seeDetails": "See full details"
     },
     "install": {
@@ -496,42 +498,38 @@
     },
     "pricing": {
       "meta": {
-        "title": "Pricing | Simple, Transparent Infrastructure Protection",
-        "description": "Choose the right plan for your business. From free community access to enterprise-grade protection. No hidden fees.",
-        "keywords": "pricing, infrastructure automation, disaster recovery pricing, backup pricing, business continuity plans"
+        "title": "Pricing | Simple, Transparent Plans",
+        "description": "Choose the right plan for your business. From free community access to enterprise-grade infrastructure. No hidden fees.",
+        "keywords": "pricing, infrastructure automation, CI/CD pricing, DevOps plans, task execution"
       },
       "hero": {
         "title": "Simple, Transparent Pricing",
-        "subtitle": "Choose the disaster recovery tier that protects your infrastructure today and scales as you grow."
+        "subtitle": "Choose the plan that fits your team. Simple pricing, no hidden fees, cancel anytime."
       },
       "plans": {
         "community": {
           "name": "Community",
-          "description": "Production-ready disaster recovery from day one—Free forever",
+          "description": "Production-ready infrastructure automation — Free forever",
           "features": [
-            "Unlimited users & teams—collaborate freely",
-            "Latest snapshot restores—recover from failures in minutes",
-            "10 CPU cores—perfect for small workloads",
-            "10 Repositories, 10 GB each",
-            "2-hour job timeout, 2 active/1 reserved jobs",
-            "7-day audit log retention",
-            "Manual backup scheduling",
+            "Unlimited users & teams",
+            "Unlimited repositories, 10 GB each",
+            "1 concurrent job, 500 jobs/month",
+            "Unlimited machines",
+            "Snapshot restores",
+            "Manual scheduling",
             "Community Slack access",
-            "Self-service support & docs",
-            "\"Powered by Rediacc\" attribution"
+            "Self-service support & docs"
           ]
         },
         "professional": {
           "name": "Professional",
-          "description": "Professional-grade disaster recovery without enterprise complexity",
+          "description": "Professional automation and scheduling for growing teams",
           "features": [
             "Everything in Community +",
-            "Automated backup scheduling—set it and forget it",
-            "Point-in-time recovery (24h)",
-            "100 CPU cores—handle production scale",
-            "500 Repositories, 100 GB each",
-            "24-hour job timeout, 5 active/2 reserved jobs",
-            "30-day audit log retention",
+            "Unlimited repositories, 100 GB each",
+            "5 concurrent jobs, 5,000 jobs/month",
+            "Automated scheduling",
+            "24-hour point-in-time restore",
             "Email + chat support",
             "Slack & PagerDuty notifications",
             "No \"Powered by Rediacc\" attribution",
@@ -540,75 +538,38 @@
         },
         "business": {
           "name": "Business",
-          "description": "Mission-Critical Protection + Expert Setup",
+          "description": "Mission-critical infrastructure with expert onboarding",
           "features": [
             "Everything in Professional +",
+            "Unlimited repositories, 500 GB each",
+            "20 concurrent jobs, 20,000 jobs/month",
             "$9,999 implementation support included (Launch Offer)",
-            "Geo-redundant storage (3 regions)—one failure won't stop you",
-            "Continuous data protection—zero data loss",
-            "4-hour recovery SLA (guaranteed)",
-            "500 CPU cores—enterprise workloads with 72-hour job windows",
-            "Unlimited Repositories, 500 GB each",
-            "7 active/3 reserved jobs",
-            "90-day audit log retention",
-            "Role-based access control & comprehensive audit logs",
-            "Compliance-ready audit reporting",
+            "Geo-redundant storage (3 regions)",
+            "Continuous data protection",
+            "4-hour restore SLA",
+            "Role-based access control & audit logs",
+            "Compliance-ready reporting",
             "Dedicated customer success manager",
             "Phone support + collaboration spaces"
           ]
         },
         "enterprise": {
           "name": "Enterprise",
-          "description": "White-glove disaster recovery for complex enterprise infrastructure",
+          "description": "White-glove support for complex enterprise infrastructure",
           "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
-            "Custom SLA (15-60 minute RTO)—your requirements, our commitment",
-            "Dedicated infrastructure tenant—maximum security & performance",
+            "Unlimited repositories, 1 TB+ each",
+            "60 concurrent jobs, 100,000 jobs/month",
+            "Custom SLA with guaranteed restore times",
+            "Dedicated infrastructure tenant",
             "24/7/365 white-glove support",
-            "1000+ CPU cores—unlimited scale for massive workloads",
-            "Unlimited Repositories, 1TB+ each",
-            "96+ hour job windows with 10+ active/5+ reserved jobs",
-            "1 Year+ audit log retention",
-            "Quarterly disaster recovery exercises—tested readiness",
+            "Quarterly readiness exercises",
             "Executive escalation hotline",
             "Custom integrations & workflows",
             "Audit documentation support & security reviews"
           ]
         }
-      },
-      "psTeaser": {
-        "heading": "Need Expert Help Getting Started?",
-        "subtitle": "Professional implementation and support services available for all tiers",
-        "viewDetails": "Explore Professional Services",
-        "packages": {
-          "standard": {
-            "name": "Standard",
-            "price": "From $7,499"
-          },
-          "priority": {
-            "name": "Priority",
-            "price": "$19,999"
-          },
-          "emergency": {
-            "name": "Emergency",
-            "price": "$29,999"
-          }
-        }
-      },
-      "strategy": {
-        "heading": "Built for every stage",
-        "copy": "Choose the plan that fits your operational stage today and scale without switching platforms tomorrow.",
-        "distribution": [
-          "Community → Professional: Move from experiments to production with automation, recovery points, and live support.",
-          "Professional → Business: Add security & audit features, collaboration, and faster recovery windows as your team grows.",
-          "Business → Enterprise: Unlock custom SLAs, dedicated tenancy, and white-glove partnership when stakes are highest."
-        ]
-      },
-      "enterpriseCta": {
-        "heading": "Need a Custom Enterprise Solution?",
-        "description": "Get tailored infrastructure protection for your organization",
-        "button": "Contact Sales"
       },
       "professionalServices": {
         "header": {
@@ -859,22 +820,18 @@
             "answer": "The Community plan includes community support and self-service documentation. Professional includes email and chat support. Business adds phone support and a dedicated customer success manager. Enterprise includes 24/7/365 white-glove support with executive escalation."
           },
           {
-            "question": "How fast can I recover from a disaster?",
-            "answer": "Recovery time depends on your tier: Community restores latest snapshots in minutes, Professional offers point-in-time recovery (24h), Business provides 4-hour SLA, and Enterprise delivers 15-60 minute custom RTO."
+            "question": "How does annual billing work?",
+            "answer": "Annual billing is priced at 10 months for 12 months of service, giving you a meaningful discount. You can switch between monthly and annual billing at any time."
           },
           {
-            "question": "Are my backups actually tested and verified?",
-            "answer": "Yes. Unlike traditional backup systems, we automatically verify backups by testing restoration processes, so you know they work before you need them in an emergency."
-          },
-          {
-            "question": "What happens to my data if the service goes down?",
-            "answer": "Your data stays encrypted in your chosen storage location. You maintain full control and can access encrypted backups independently of our services."
+            "question": "Do you offer refunds?",
+            "answer": "Yes, we offer a 14-day money-back guarantee on all paid plans. If you're not satisfied, contact our support team for a full refund."
           }
         ]
       },
       "finalCta": {
         "heading": "Ready to Get Started?",
-        "description": "Start protecting your infrastructure from day one",
+        "description": "Start building with Rediacc today",
         "buttons": {
           "startFree": "Start Free",
           "talkToSales": "Talk to Sales"
@@ -929,91 +886,66 @@
         }
       },
       "technicalSummary": {
-        "heading": "Technical limits at a glance",
-        "description": "Give your platform team a precise view of throughput, retention, and recovery expectations.",
-        "recoveryNote": "RPO (Recovery Point Objective): How much data you can afford to lose—measured in time. For example, 15-minute RPO means you might lose up to 15 minutes of recent changes.\n\nRTO (Recovery Time Objective): How quickly you need to be back online after a disaster. For example, 4-hour RTO means your systems will be restored within 4 hours.",
+        "heading": "Plan comparison",
+        "description": "A side-by-side view of key infrastructure limits across all plans.",
         "metrics": [
           {
-            "key": "cpuCore",
-            "label": "CPU Cores"
+            "key": "activeJobs",
+            "label": "Concurrent jobs"
           },
           {
-            "key": "repositories",
-            "label": "Repositories"
+            "key": "jobsPerMonth",
+            "label": "Jobs per month"
           },
           {
             "key": "repoSize",
             "label": "Repository size limit"
           },
           {
-            "key": "jobTimeout",
-            "label": "Max job duration"
+            "key": "repositories",
+            "label": "Repositories"
           },
           {
-            "key": "activeJobs",
-            "label": "Concurrent jobs"
+            "key": "machines",
+            "label": "Machines"
           },
           {
-            "key": "reservedJobs",
-            "label": "Job queue depth"
-          },
-          {
-            "key": "rpo",
-            "label": "Recovery Point Objective (RPO)"
-          },
-          {
-            "key": "rto",
-            "label": "Recovery Time Objective (RTO)"
-          },
-          {
-            "key": "auditLogs",
-            "label": "Audit log retention"
+            "key": "usersTeams",
+            "label": "Users & Teams"
           }
         ],
         "values": {
           "community": {
-            "cpuCore": "10 cores",
-            "repositories": "10 repos",
+            "activeJobs": "1",
+            "jobsPerMonth": "500",
             "repoSize": "10 GB",
-            "jobTimeout": "2 hours",
-            "activeJobs": "2 active",
-            "reservedJobs": "1 reserved",
-            "rpo": "Best effort",
-            "rto": "Best effort",
-            "auditLogs": "7 days"
+            "repositories": "Unlimited",
+            "machines": "Unlimited",
+            "usersTeams": "Unlimited"
           },
           "professional": {
-            "cpuCore": "100 cores",
-            "repositories": "500 repos",
+            "activeJobs": "5",
+            "jobsPerMonth": "5,000",
             "repoSize": "100 GB",
-            "jobTimeout": "24 hours",
-            "activeJobs": "5 active",
-            "reservedJobs": "2 reserved",
-            "rpo": "~15 minutes",
-            "rto": "Point-in-time restore",
-            "auditLogs": "30 days"
+            "repositories": "Unlimited",
+            "machines": "Unlimited",
+            "usersTeams": "Unlimited"
           },
           "business": {
-            "cpuCore": "500 cores",
-            "repositories": "Unlimited",
+            "activeJobs": "20",
+            "jobsPerMonth": "20,000",
             "repoSize": "500 GB",
-            "jobTimeout": "72 hours",
-            "activeJobs": "7 active",
-            "reservedJobs": "3 reserved",
-            "rpo": "~5 minutes (continuous)",
-            "rto": "4 hours (guaranteed)",
-            "auditLogs": "90 days"
+            "repositories": "Unlimited",
+            "machines": "Unlimited",
+            "usersTeams": "Unlimited"
           },
           "enterprise": {
-            "cpuCore": "1000+ cores",
-            "repositories": "Unlimited",
+            "activeJobs": "60",
+            "jobsPerMonth": "100,000",
             "repoSize": "1 TB+",
-            "jobTimeout": "96+ hours",
-            "activeJobs": "10+ active",
-            "reservedJobs": "5+ reserved",
-            "rpo": "Custom (near-zero)",
-            "rto": "15-60 minutes (custom)",
-            "auditLogs": "1+ year"
+            "repositories": "Unlimited",
+            "machines": "Unlimited",
+            "usersTeams": "Unlimited"
           }
         }
       }
@@ -2673,6 +2605,517 @@
       },
       "related": {
         "title": "Related Policies"
+      }
+    },
+    "disasterRecovery": {
+      "meta": {
+        "title": "Disaster Recovery Pricing | Rediacc",
+        "description": "Choose the right disaster recovery plan for your business. From free community access to enterprise-grade protection. No hidden fees.",
+        "keywords": "disaster recovery pricing, backup pricing, business continuity plans, infrastructure protection, ransomware recovery"
+      },
+      "hero": {
+        "title": "Simple, Transparent Pricing",
+        "subtitle": "Choose the disaster recovery tier that protects your infrastructure today and scales as you grow."
+      },
+      "plans": {
+        "community": {
+          "name": "Community",
+          "description": "Production-ready disaster recovery from day one—Free forever",
+          "features": [
+            "Unlimited users & teams—collaborate freely",
+            "Latest snapshot restores—recover from failures in minutes",
+            "10 Repositories, 10 GB each",
+            "2-hour job timeout, 2 active/1 reserved jobs",
+            "7-day audit log retention",
+            "Manual backup scheduling",
+            "Community Slack access",
+            "Self-service support & docs",
+            "\"Powered by Rediacc\" attribution"
+          ]
+        },
+        "professional": {
+          "name": "Professional",
+          "description": "Professional-grade disaster recovery without enterprise complexity",
+          "features": [
+            "Everything in Community +",
+            "Automated backup scheduling—set it and forget it",
+            "Point-in-time recovery (24h)",
+            "500 Repositories, 100 GB each",
+            "24-hour job timeout, 5 active/2 reserved jobs",
+            "30-day audit log retention",
+            "Email + chat support",
+            "Slack & PagerDuty notifications",
+            "No \"Powered by Rediacc\" attribution",
+            "Integrations API access"
+          ]
+        },
+        "business": {
+          "name": "Business",
+          "description": "Mission-Critical Protection + Expert Setup",
+          "features": [
+            "Everything in Professional +",
+            "$9,999 implementation support included (Launch Offer)",
+            "Geo-redundant storage (3 regions)—one failure won't stop you",
+            "Continuous data protection—zero data loss",
+            "4-hour recovery SLA (guaranteed)",
+            "Unlimited Repositories, 500 GB each",
+            "7 active/3 reserved jobs",
+            "90-day audit log retention",
+            "Role-based access control & comprehensive audit logs",
+            "Compliance-ready audit reporting",
+            "Dedicated customer success manager",
+            "Phone support + collaboration spaces"
+          ]
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "White-glove disaster recovery for complex enterprise infrastructure",
+          "priceNote": "*Starting at",
+          "features": [
+            "Everything in Business +",
+            "Custom SLA (15-60 minute RTO)—your requirements, our commitment",
+            "Dedicated infrastructure tenant—maximum security & performance",
+            "24/7/365 white-glove support",
+            "Unlimited Repositories, 1TB+ each",
+            "96+ hour job windows with 10+ active/5+ reserved jobs",
+            "1 Year+ audit log retention",
+            "Quarterly disaster recovery exercises—tested readiness",
+            "Executive escalation hotline",
+            "Custom integrations & workflows",
+            "Audit documentation support & security reviews"
+          ]
+        }
+      },
+      "psTeaser": {
+        "heading": "Need Expert Help Getting Started?",
+        "subtitle": "Professional implementation and support services available for all tiers",
+        "viewDetails": "Explore Professional Services",
+        "packages": {
+          "standard": {
+            "name": "Standard",
+            "price": "From $7,499"
+          },
+          "priority": {
+            "name": "Priority",
+            "price": "$19,999"
+          },
+          "emergency": {
+            "name": "Emergency",
+            "price": "$29,999"
+          }
+        }
+      },
+      "strategy": {
+        "heading": "Built for every stage",
+        "copy": "Choose the plan that fits your operational stage today and scale without switching platforms tomorrow.",
+        "distribution": [
+          "Professional → Business: Add geo-redundant storage, continuous data protection, guaranteed 4-hour RTO, and dedicated customer success as your team grows.",
+          "Business → Enterprise: Unlock custom SLAs with 15-60 minute RTO, dedicated infrastructure tenancy, and white-glove partnership when stakes are highest."
+        ]
+      },
+      "enterpriseCta": {
+        "heading": "Need a Custom Enterprise Solution?",
+        "description": "Get tailored infrastructure protection for your organization",
+        "button": "Contact Sales"
+      },
+      "professionalServices": {
+        "header": {
+          "title": "Professional Service Packages",
+          "subtitle": "Get expert help when you need it most",
+          "badge": "Fast-track your success with professional assistance",
+          "eligibility": "Professional services align to every plan via hybrid access. Use the matrix below to see what’s included and what can be added on."
+        },
+        "packages": {
+          "standard": {
+            "name": "Standard",
+            "turnaround": "3-5 Business Days",
+            "description": "Structured implementation that covers architecture, deployment, validation, and enablement.",
+            "benefits": [
+              "Project discovery and success plan",
+              "Environment provisioning and configuration",
+              "Validation checklist and knowledge transfer"
+            ],
+            "price": "From $7,499",
+            "tiers": [
+              "Starter (1-4 workloads): $7,499",
+              "Growth (5-10 workloads): $14,999",
+              "Scale (11-25 workloads): $29,999",
+              "Enterprise (25+ workloads): Custom quote"
+            ],
+            "tierHeading": "Workload-Based Implementation Pricing",
+            "tierNote": "A workload represents a distinct business process, application, or service requiring backup and disaster recovery protection. Implementation includes architecture design, deployment, validation, and team enablement."
+          },
+          "priority": {
+            "name": "Priority",
+            "turnaround": "24-48 Hours",
+            "description": "Accelerated delivery with extended availability and guided cutover support.",
+            "benefits": [
+              "Dedicated engagement manager",
+              "Evening/weekend availability",
+              "Production cutover assistance"
+            ],
+            "price": "$19,999",
+            "tiers": []
+          },
+          "emergency": {
+            "name": "Emergency",
+            "turnaround": "Same Day",
+            "description": "On-demand incident response team ready to contain and restore critical systems.",
+            "benefits": [
+              "Immediate engagement (under 2 hours)",
+              "Forensics, containment, and recovery plan",
+              "Stabilization report with hardening roadmap"
+            ],
+            "price": "$29,999",
+            "tiers": []
+          }
+        },
+        "pricingFactors": {
+          "heading": "Understanding Professional Service Pricing",
+          "intro": "Final project costs are determined by:",
+          "factors": [
+            {
+              "title": "Scope Complexity",
+              "description": "Number of systems, integrations, and dependencies involved"
+            },
+            {
+              "title": "Customization Level",
+              "description": "Off-the-shelf solutions vs. custom development requirements"
+            },
+            {
+              "title": "Team Size",
+              "description": "Single expert vs. full dedicated team of specialists"
+            }
+          ],
+          "note": "Example: A mid-sized implementation (120 machines) with security architecture review typically ranges from $14,999–$24,999 depending on integrations and retainer coverage."
+        },
+        "serviceTypes": {
+          "heading": "Available Services",
+          "intro": "Click any service to see turnaround times for each package tier",
+          "badgeLabels": {
+            "standard": "Standard",
+            "priority": "Priority",
+            "emergency": "Emergency"
+          },
+          "services": [
+            {
+              "name": "Data Migration",
+              "standard": "Complete end-to-end migration with full validation",
+              "priority": "Rapid migration pipeline setup + core data transferred within 48h",
+              "emergency": "Immediate assessment + critical systems online same-day + full migration begins",
+              "id": "data-migration"
+            },
+            {
+              "name": "Ransomware Recovery",
+              "standard": "Complete recovery with forensics and hardening",
+              "priority": "Rapid threat assessment + core operations restored within 48h",
+              "emergency": "Immediate containment + critical systems restored same-day + full recovery begins",
+              "id": "ransomware-recovery"
+            },
+            {
+              "name": "Security Assessment",
+              "standard": "Full security audit with implementation roadmap",
+              "priority": "Comprehensive vulnerability assessment + remediation plan within 48h",
+              "emergency": "Critical vulnerability scan + high-risk patches deployed same-day + full audit begins",
+              "id": "security-assessment"
+            },
+            {
+              "name": "Infrastructure Scaling",
+              "standard": "Complete infrastructure redesign with optimization",
+              "priority": "Rapid capacity increase + monitoring setup within 48h",
+              "emergency": "Critical resources provisioned same-day + auto-scaling configured + full plan begins",
+              "id": "infrastructure-scaling"
+            },
+            {
+              "name": "Team Training",
+              "standard": "Comprehensive multi-day training program",
+              "priority": "Intensive hands-on workshop + key workflows covered within 2 days",
+              "emergency": "Critical procedures briefing same-day + incident response prep + full program begins",
+              "id": "team-training"
+            },
+            {
+              "name": "Performance Optimization",
+              "standard": "Deep analysis with comprehensive performance tuning",
+              "priority": "Quick profiling + high-impact optimizations deployed within 48h",
+              "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full optimization begins",
+              "id": "performance-optimization"
+            },
+            {
+              "name": "Custom Integration",
+              "standard": "Complete integration with testing and documentation",
+              "priority": "Core integration functional + essential features live within 48h",
+              "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
+              "id": "custom-integration"
+            }
+          ]
+        },
+        "benefits": {
+          "heading": "Why Professional Services?",
+          "statistics": [
+            "The average cost of a ransomware attack is $4.62 million (IBM Security, 2023)",
+            "The average downtime cost is $5,600 per minute for enterprises"
+          ],
+          "description": "Our professional services ensure you're never alone when facing critical infrastructure challenges.",
+          "items": [
+            "Dedicated team of experts assigned to your project",
+            "Guaranteed response times with SLA",
+            "Switch between service tiers as needed",
+            "24/7 emergency hotline for Emergency tier"
+          ]
+        },
+        "cta": {
+          "heading": "Need Professional Assistance?",
+          "description": "Our experts are ready to help you succeed",
+          "button": "Schedule Consultation"
+        },
+        "access": {
+          "heading": "Professional services access by tier",
+          "description": "Hybrid coverage combines included onboarding with optional add-ons so every team can get the right help at the right time.",
+          "labels": {
+            "included": "Included",
+            "available": "Available add-ons"
+          },
+          "tiers": [
+            {
+              "planId": "community",
+              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "available": [
+                "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
+                "Emergency Response engagement ($29,999 on-demand)"
+              ]
+            },
+            {
+              "planId": "pro",
+              "included": [
+                "Email support",
+                "Standard onboarding session (setup call and configuration walkthrough)"
+              ],
+              "available": [
+                "Priority Implementation ($19,999)",
+                "Emergency Response engagement ($29,999 on-demand)",
+                "Custom integration projects (scoped)"
+              ]
+            },
+            {
+              "planId": "business",
+              "included": [
+                "Priority email/chat/phone support",
+                "Dedicated onboarding with configuration and runbook handoff",
+                "Standard Implementation package included ($9,999 value)",
+                "Quarterly success reviews"
+              ],
+              "available": [
+                "Priority Implementation upgrade ($19,999)",
+                "Emergency Response engagement ($29,999 on-demand)",
+                "Custom development and security architecture consulting"
+              ]
+            },
+            {
+              "planId": "enterprise",
+              "included": [
+                "24/7/365 white-glove support and dedicated CSM",
+                "Priority Implementation included ($19,999 value)",
+                "Quarterly disaster recovery testing",
+                "Annual business continuity planning workshop",
+                "Executive escalation hotline"
+              ],
+              "available": [
+                "Custom development and advanced integrations",
+                "Security & audit architecture consulting",
+                "Emergency Response retainer ($5,000-$7,500/month)"
+              ]
+            }
+          ]
+        },
+        "retainers": {
+          "heading": "Retainer options for always-on readiness",
+          "description": "Give executive stakeholders guaranteed access to our specialists with predictable monthly pricing.",
+          "items": [
+            {
+              "title": "Emergency Response Retainer",
+              "price": "$5,000–$7,500/month",
+              "bullets": [
+                "Guaranteed 2-hour response time",
+                "Priority escalation path with war-room coordination",
+                "Quarterly readiness review and playbook updates"
+              ]
+            }
+          ]
+        },
+        "advancedDetails": {
+          "heading": "Implementation & Pricing Details",
+          "description": "Service packages, implementation tiers, pricing factors, and retainer options"
+        }
+      },
+      "faq": {
+        "heading": "Frequently Asked Questions",
+        "items": [
+          {
+            "question": "Can I upgrade or downgrade my plan?",
+            "answer": "Yes, you can change your plan at any time. Upgrades take effect immediately, and downgrades will apply at the start of your next billing cycle."
+          },
+          {
+            "question": "What payment methods do you accept?",
+            "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and support invoice-based billing for annual Enterprise plans."
+          },
+          {
+            "question": "Is there a free trial available?",
+            "answer": "Our Community plan is free forever. For business plans, contact our sales team to discuss trial options."
+          },
+          {
+            "question": "What's included in support?",
+            "answer": "The Community plan includes community support and self-service documentation. Professional includes email and chat support. Business adds phone support and a dedicated customer success manager. Enterprise includes 24/7/365 white-glove support with executive escalation."
+          },
+          {
+            "question": "How fast can I recover from a disaster?",
+            "answer": "Recovery time depends on your tier: Community restores latest snapshots in minutes, Professional offers point-in-time recovery (24h), Business provides 4-hour SLA, and Enterprise delivers 15-60 minute custom RTO."
+          },
+          {
+            "question": "Are my backups actually tested and verified?",
+            "answer": "Yes. Unlike traditional backup systems, we automatically verify backups by testing restoration processes, so you know they work before you need them in an emergency."
+          },
+          {
+            "question": "What happens to my data if the service goes down?",
+            "answer": "Your data stays encrypted in your chosen storage location. You maintain full control and can access encrypted backups independently of our services."
+          }
+        ]
+      },
+      "finalCta": {
+        "heading": "Ready to Get Started?",
+        "description": "Start protecting your infrastructure from day one",
+        "buttons": {
+          "startFree": "Start Free",
+          "talkToSales": "Talk to Sales"
+        }
+      },
+      "trust": {
+        "heading": "Enterprise-Grade Security & Reliability",
+        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+      },
+      "ui": {
+        "popular": "Most popular",
+        "bestValue": "Best Value",
+        "limitedOffer": "Limited Launch Offer",
+        "anchor": "Strategic anchor",
+        "whatsIncluded": "What's included:",
+        "getStarted": "Get Started",
+        "learnMore": "Learn More",
+        "contactSales": "Contact Sales",
+        "startingAt": "*Starting at",
+        "keyBenefits": "Key Benefits",
+        "monthOrYear": "per month or {{price}} per year",
+        "foreverFree": "Forever free",
+        "cta": {
+          "community": {
+            "primary": "Start Free",
+            "secondary": "Learn More",
+            "note": "No credit card required"
+          },
+          "professional": {
+            "primary": "Get Started",
+            "secondary": "Contact Sales",
+            "guarantee": "Money Back Guarantee"
+          },
+          "business": {
+            "primary": "Book Setup Call",
+            "secondary": "Contact Sales",
+            "guarantee": "Money Back Guarantee",
+            "valueNote": "Includes $9,999 setup credit",
+            "launchBadge": "Limited Launch Offer"
+          },
+          "enterprise": {
+            "primary": "Book Demo",
+            "secondary": "Contact Sales",
+            "guarantee": "Money Back Guarantee",
+            "subtext": "Custom SLA · Dedicated support"
+          }
+        },
+        "guarantees": {
+          "moneyBack": "14-Day Money Payback Guarantee",
+          "cancelAnytime": "Cancel anytime",
+          "noContracts": "No long-term contracts"
+        }
+      },
+      "technicalSummary": {
+        "heading": "Technical limits at a glance",
+        "description": "Give your platform team a precise view of throughput, retention, and recovery expectations.",
+        "recoveryNote": "RPO (Recovery Point Objective): How much data you can afford to lose—measured in time. For example, 15-minute RPO means you might lose up to 15 minutes of recent changes.\n\nRTO (Recovery Time Objective): How quickly you need to be back online after a disaster. For example, 4-hour RTO means your systems will be restored within 4 hours.",
+        "metrics": [
+          {
+            "key": "repositories",
+            "label": "Repositories"
+          },
+          {
+            "key": "repoSize",
+            "label": "Repository size limit"
+          },
+          {
+            "key": "jobTimeout",
+            "label": "Max job duration"
+          },
+          {
+            "key": "activeJobs",
+            "label": "Concurrent jobs"
+          },
+          {
+            "key": "reservedJobs",
+            "label": "Job queue depth"
+          },
+          {
+            "key": "rpo",
+            "label": "Recovery Point Objective (RPO)"
+          },
+          {
+            "key": "rto",
+            "label": "Recovery Time Objective (RTO)"
+          },
+          {
+            "key": "auditLogs",
+            "label": "Audit log retention"
+          }
+        ],
+        "values": {
+          "community": {
+            "repositories": "Unlimited",
+            "repoSize": "10 GB",
+            "jobTimeout": "2 hours",
+            "activeJobs": "1",
+            "reservedJobs": "1 reserved",
+            "rpo": "Best effort",
+            "rto": "Best effort",
+            "auditLogs": "7 days"
+          },
+          "professional": {
+            "repositories": "Unlimited",
+            "repoSize": "100 GB",
+            "jobTimeout": "24 hours",
+            "activeJobs": "5",
+            "reservedJobs": "2 reserved",
+            "rpo": "~15 minutes",
+            "rto": "Point-in-time restore",
+            "auditLogs": "30 days"
+          },
+          "business": {
+            "repositories": "Unlimited",
+            "repoSize": "500 GB",
+            "jobTimeout": "72 hours",
+            "activeJobs": "20",
+            "reservedJobs": "3 reserved",
+            "rpo": "~5 minutes (continuous)",
+            "rto": "4 hours (guaranteed)",
+            "auditLogs": "90 days"
+          },
+          "enterprise": {
+            "repositories": "Unlimited",
+            "repoSize": "1 TB+",
+            "jobTimeout": "96+ hours",
+            "activeJobs": "60",
+            "reservedJobs": "5+ reserved",
+            "rpo": "Custom (near-zero)",
+            "rto": "15-60 minutes (custom)",
+            "auditLogs": "1+ year"
+          }
+        }
       }
     }
   },

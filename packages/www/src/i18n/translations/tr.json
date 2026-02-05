@@ -177,7 +177,8 @@
       "overview": "Genel Bakış",
       "pricing": "Fiyatlandırma",
       "professionalServices": "Profesyonel Hizmetler",
-      "solutions": "Çözümler"
+      "solutions": "Çözümler",
+      "disasterRecovery": "Felaket Kurtarma"
     },
     "supportLinks": {
       "contactSupport": "Destek Ekibiyle İletişime Geçin",
@@ -248,7 +249,8 @@
       "threatResponse": "Tehdit Yanıtı",
       "preemptiveDefense": "Önleyici Savunma"
     },
-    "toggleMenu": "Menüyü değiştir"
+    "toggleMenu": "Menüyü değiştir",
+    "disasterRecovery": "Felaket Kurtarma"
   },
   "pages": {
     "blog": {
@@ -526,41 +528,32 @@
       "title": "Sayfa Bulunamadı"
     },
     "pricing": {
-      "enterpriseCta": {
-        "button": "Satış Ekibiyle İletişime Geçin",
-        "description": "Kuruluşunuza özel altyapı koruması elde edin",
-        "heading": "Özel Bir Kurumsal Çözüme mi ihtiyacınız var?"
-      },
       "faq": {
         "heading": "Sıkça Sorulan Sorular",
         "items": [
           {
-            "answer": "Evet, planınızı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen geçerli olur ve düşürmeler bir sonraki faturalandırma döngünüzün başlangıcında geçerli olur.",
-            "question": "Planımı yükseltebilir veya düşürebilir miyim?"
+            "question": "Planımı yükseltebilir veya düşürebilir miyim?",
+            "answer": "Evet, planınızı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen yürürlüğe girer, düşürmeler bir sonraki fatura döneminin başında uygulanır."
           },
           {
-            "answer": "Tüm önemli kredi kartlarını (Visa, MasterCard, American Express) kabul ediyoruz ve yıllık Kurumsal planlar için faturaya dayalı faturalandırmayı destekliyoruz.",
-            "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?"
+            "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?",
+            "answer": "Tüm büyük kredi kartlarını (Visa, MasterCard, American Express) kabul ediyoruz ve yıllık Enterprise planları için fatura bazlı ödemeyi destekliyoruz."
           },
           {
-            "answer": "Topluluk planımız sonsuza kadar ücretsizdir. İş planları için deneme seçeneklerini görüşmek üzere satış ekibimizle iletişime geçin.",
-            "question": "Ücretsiz deneme mevcut mu?"
+            "question": "Ücretsiz deneme var mı?",
+            "answer": "Community planımız sonsuza kadar ücretsizdir. İş planları için deneme seçeneklerini görüşmek üzere satış ekibimizle iletişime geçin."
           },
           {
-            "answer": "Topluluk planı topluluk desteğini ve self-servis belgeleri içerir. Profesyonel, e-posta ve sohbet desteğini içerir. İşletme, telefon desteği ve özel bir müşteri başarısı yöneticisi ekler. Kurumsal, yönetici kademelendirmeyle birlikte 7/24/365 teknik destek içerir.",
-            "question": "Desteğe neler dahildir?"
+            "question": "Destek neleri içerir?",
+            "answer": "Community planı topluluk desteği ve self-servis belgeleri içerir. Professional e-posta ve sohbet desteği içerir. Business telefon desteği ve özel müşteri başarı yöneticisi ekler. Enterprise 7/24/365 beyaz eldiven desteği ile yönetici eskalasyonu içerir."
           },
           {
-            "answer": "Kurtarma süresi, katmanınıza bağlıdır: Topluluk, en son anlık yedekleri dakikalar içinde geri yükler, Professional, belirli bir noktaya kurtarma (24 saat) sunar, Business, 4 saatlik SLA sağlar ve Enterprise, 15-60 dakikalık özel RTO sunar.",
-            "question": "Bir felaketten ne kadar hızlı kurtulabilirim?"
+            "question": "Yıllık faturalandırma nasıl çalışır?",
+            "answer": "Yıllık faturalandırma, 12 aylık hizmet için 10 aylık ücret olarak fiyatlandırılır ve size önemli bir indirim sağlar. Aylık ve yıllık faturalandırma arasında istediğiniz zaman geçiş yapabilirsiniz."
           },
           {
-            "answer": "Evet. Geleneksel yedekleme sistemlerinden farklı olarak, geri yükleme süreçlerini test ederek yedeklemeleri otomatik olarak doğrularız, böylece acil bir durumda onlara ihtiyaç duymadan önce onların çalıştıklarını bilirsiniz.",
-            "question": "Yedeklemelerim gerçekten test edildi ve doğrulandı mı?"
-          },
-          {
-            "answer": "Verileriniz seçtiğiniz depolama konumunda şifrelenmiş olarak kalır. Tam kontrol sizdedir ve şifrelenmiş yedeklemelere hizmetlerimizden bağımsız olarak erişebilirsiniz.",
-            "question": "Hizmet kesilirse verilerime ne olur?"
+            "question": "İade sunuyor musunuz?",
+            "answer": "Evet, tüm ücretli planlarda 14 günlük para iade garantisi sunuyoruz. Memnun değilseniz, tam iade için destek ekibimizle iletişime geçin."
           }
         ]
       },
@@ -569,67 +562,61 @@
           "startFree": "Ücretsiz Başlayın",
           "talkToSales": "Satışla Konuşun"
         },
-        "description": "Altyapınızı ilk günden korumaya başlayın",
+        "description": "Bugün Rediacc ile inşa etmeye başlayın",
         "heading": "Başlamaya Hazır mısınız?"
       },
       "hero": {
-        "subtitle": "Altyapınızı bugün koruyan ve siz büyüdükçe ölçeklenen olağanüstü durum kurtarma katmanını seçin.",
+        "subtitle": "Ekibinize uygun planı seçin. Basit fiyatlandırma, gizli ücret yok, istediğiniz zaman iptal edin.",
         "title": "Basit, Şeffaf Fiyatlandırma"
       },
       "meta": {
         "description": "İşletmeniz için doğru planı seçin. Ücretsiz topluluk erişiminden kurumsal düzeyde korumaya kadar. Gizli ücret yok.",
-        "keywords": "fiyatlandırma, altyapı otomasyonu, felaket kurtarma fiyatlandırması, yedekleme fiyatlandırması, iş sürekliliği planları",
+        "keywords": "fiyatlandırma, altyapı otomasyonu, DevOps planları, görev yürütme",
         "title": "Fiyatlandırma | Basit, Şeffaf Altyapı Koruması"
       },
       "plans": {
         "business": {
-          "description": "Görev Açısından Kritik Koruma + Uzman Kurulumu",
+          "description": "Uzman kurulumu ile kritik görev altyapısı",
           "features": [
-            "Profesyoneldeki her şey +",
-            "9.999 $ uygulama desteği dahildir (Lansman Teklifi)",
-            "Coğrafi olarak yedekli depolama (3 bölge) — tek bir hata sizi durduramaz",
-            "Sürekli veri koruması; sıfır veri kaybı",
-            "4 saatlik kurtarma HDS'si (garantili)",
-            "500 CPU çekirdeği — 72 saatlik iş pencereleriyle kurumsal iş yükleri",
-            "Sınırsız Depo, her biri 500 GB",
-            "7 aktif/3 ayrılmış iş",
-            "90 günlük denetim günlüğü saklama",
-            "Rol tabanlı erişim kontrolü ve kapsamlı denetim günlükleri",
-            "Uyumluluğa hazır denetim raporlaması",
-            "Özel müşteri başarısı yöneticisi",
-            "Telefon desteği + ortak çalışma alanları"
+            "Professional'daki her şey +",
+            "Sınırsız depo, her biri 500 GB",
+            "20 eşzamanlı iş, 20.000 iş/ay",
+            "$9.999 uygulama desteği dahil (Lansman Teklifi)",
+            "Coğrafi yedekli depolama (3 bölge)",
+            "Sürekli veri koruması",
+            "4 saatlik geri yükleme SLA'sı",
+            "Rol tabanlı erişim kontrolü ve denetim günlükleri",
+            "Uyumluluk hazır raporlama",
+            "Özel müşteri başarı yöneticisi",
+            "Telefon desteği + işbirliği alanları"
           ],
           "name": "İşletme"
         },
         "community": {
-          "description": "İlk günden itibaren üretime hazır felaket kurtarma - Sonsuza kadar ücretsiz",
+          "description": "Üretime hazır altyapı otomasyonu — Sonsuza kadar ücretsiz",
           "features": [
-            "Sınırsız kullanıcı ve ekip; özgürce işbirliği yapın",
-            "En son anlık görüntü geri yüklemeleri; arızalardan dakikalar içinde kurtulma",
-            "10 CPU çekirdeği—küçük iş yükleri için mükemmel",
-            "10 Depo, her biri 10 GB",
-            "2 saatlik iş zaman aşımı, 2 etkin/1 ayrılmış iş",
-            "7 günlük denetim günlüğü saklama",
-            "Manuel yedekleme planlama",
+            "Sınırsız kullanıcı ve takım",
+            "Sınırsız depo, her biri 10 GB",
+            "1 eşzamanlı iş, 500 iş/ay",
+            "Sınırsız makine",
+            "Anlık görüntü geri yüklemeleri",
+            "Manuel zamanlama",
             "Topluluk Slack erişimi",
-            "Self servis destek ve dokümanlar",
-            "\"Powered by Rediacc\" özelliği"
+            "Self-servis destek ve belgeler"
           ],
           "name": "Toplum"
         },
         "enterprise": {
-          "description": "Karmaşık kurumsal altyapı için beyaz eldiven felaket kurtarma",
+          "description": "Karmaşık kurumsal altyapı için beyaz eldiven desteği",
           "features": [
-            "İş Hayatındaki Her Şey +",
-            "Özel SLA (15-60 dakikalık RTO)—sizin gereksinimleriniz, taahhüdümüz",
-            "Özel altyapı kiracısı—maksimum güvenlik ve performans",
-            "7/24/365 beyaz eldiven desteği",
-            "1000'den fazla CPU çekirdeği—çok büyük iş yükleri için sınırsız ölçek",
-            "Sınırsız Depo, her biri 1TB+",
-            "10'dan fazla aktif/5'ten fazla rezerve edilmiş iş ile 96+ saatlik iş aralığı",
-            "1 Yıldan fazla denetim günlüğü saklama",
-            "Üç ayda bir gerçekleşen olağanüstü durum kurtarma çalışmaları – test edilmiş hazırlık",
-            "Yöneticilere iletme hattı",
+            "Business'taki her şey +",
+            "Sınırsız depo, her biri 1 TB+",
+            "60 eşzamanlı iş, 100.000 iş/ay",
+            "Garantili geri yükleme süreleriyle özel SLA",
+            "Özel altyapı kiracısı",
+            "7/24/365 white-glove destek",
+            "Üç aylık hazırlık tatbikatları",
+            "Yönetici yükseltme hattı",
             "Özel entegrasyonlar ve iş akışları",
             "Denetim belgeleri desteği ve güvenlik incelemeleri"
           ],
@@ -637,18 +624,16 @@
           "priceNote": "*Başlangıç ​​tarihi:"
         },
         "professional": {
-          "description": "Kurumsal karmaşıklık olmadan profesyonel düzeyde felaket kurtarma",
+          "description": "Büyüyen ekipler için profesyonel otomasyon ve planlama",
           "features": [
-            "Topluluktaki her şey +",
-            "Otomatik yedekleme planlaması; ayarlayın ve unutun",
-            "Belirli bir noktaya kurtarma (24 saat)",
-            "100 CPU çekirdeği — üretim ölçeğini yönetin",
-            "500 Depo, her biri 100 GB",
-            "24 saatlik iş zaman aşımı, 5 etkin/2 ayrılmış iş",
-            "30 günlük denetim günlüğü saklama",
+            "Community'deki her şey +",
+            "Sınırsız depo, her biri 100 GB",
+            "5 eşzamanlı iş, 5.000 iş/ay",
+            "Otomatik zamanlama",
+            "24 saatlik belirli bir noktaya geri yükleme",
             "E-posta + sohbet desteği",
             "Slack ve PagerDuty bildirimleri",
-            "\"Powered by Rediacc\" özelliği yok",
+            "\"Powered by Rediacc\" ifadesi yok",
             "Entegrasyon API erişimi"
           ],
           "name": "Profesyonel"
@@ -883,120 +868,49 @@
           ]
         }
       },
-      "psTeaser": {
-        "heading": "Başlarken Uzman Yardımına mı ihtiyacınız var?",
-        "packages": {
-          "emergency": {
-            "name": "Acil durum",
-            "price": "29.999$"
-          },
-          "priority": {
-            "name": "Öncelik",
-            "price": "19.999$"
-          },
-          "standard": {
-            "name": "Standart",
-            "price": "7.499$'dan başlayan fiyatlarla"
-          }
-        },
-        "subtitle": "Tüm katmanlar için profesyonel uygulama ve destek hizmetleri mevcuttur",
-        "viewDetails": "Profesyonel Hizmetleri Keşfedin"
-      },
-      "strategy": {
-        "copy": "Bugün operasyon aşamanıza uygun olan planı seçin ve yarın platform değiştirmeden ölçeklendirin.",
-        "distribution": [
-          "Topluluk → Profesyonel: Otomasyon, kurtarma noktaları ve canlı destek ile denemelerden üretime geçin.",
-          "Profesyonel → İş: Ekibiniz büyüdükçe güvenlik ve denetim özellikleri, işbirliği ve daha hızlı kurtarma pencereleri ekleyin.",
-          "İş → Kurumsal: Riskler en yüksek olduğunda özel SLA'ların, özel kiracılığın ve beyaz eldiven ortaklığının kilidini açın."
-        ],
-        "heading": "Her aşama için tasarlandı"
-      },
       "technicalSummary": {
-        "description": "Platform ekibinize aktarım hızı, elde tutma ve kurtarma beklentilerine ilişkin kesin bir görünüm sağlayın.",
-        "heading": "Bir bakışta teknik sınırlar",
+        "description": "Tüm planlar için temel altyapı sınırlarının karşılaştırması.",
+        "heading": "Plan karşılaştırması",
         "metrics": [
-          {
-            "key": "CPUÇekirdek",
-            "label": "CPU Çekirdekleri"
-          },
-          {
-            "key": "depolar",
-            "label": "Depolar"
-          },
-          {
-            "key": "repoSize",
-            "label": "Kod deposu boyutu sınırı"
-          },
-          {
-            "key": "işzaman aşımı",
-            "label": "Maksimum iş süresi"
-          },
-          {
-            "key": "aktif İşler",
-            "label": "Eşzamanlı işler"
-          },
-          {
-            "key": "ayrılmışİşler",
-            "label": "İş kuyruğu derinliği"
-          },
-          {
-            "key": "rpo",
-            "label": "Kurtarma Noktası Hedefi (RPO)"
-          },
-          {
-            "key": "rto",
-            "label": "Kurtarma Süresi Hedefi (RTO)"
-          },
-          {
-            "key": "denetim penceresi",
-            "label": "Denetim günlüğü tutma"
-          }
+          { "key": "activeJobs", "label": "Eşzamanlı işler" },
+          { "key": "jobsPerMonth", "label": "Aylık iş sayısı" },
+          { "key": "repoSize", "label": "Depo boyutu sınırı" },
+          { "key": "repositories", "label": "Depolar" },
+          { "key": "machines", "label": "Makineler" },
+          { "key": "usersTeams", "label": "Kullanıcılar ve Takımlar" }
         ],
-        "recoveryNote": "RPO (Kurtarma Noktası Hedefi): Ne kadar veriyi kaybetmeyi göze alabileceğiniz, zaman içinde ölçülür. Örneğin, 15 dakikalık RPO, son değişikliklerin 15 dakikaya kadarını kaybedebileceğiniz anlamına gelir. \n\nRTO (Kurtarma Süresi Hedefi): Bir felaketten sonra ne kadar hızlı tekrar çevrimiçi olmanız gerekir. Örneğin 4 saatlik RTO, sistemlerinizin 4 saat içinde geri yükleneceği anlamına gelir.",
         "values": {
-          "business": {
-            "activeJobs": "7 aktif",
-            "auditLogs": "90 gün",
-            "cpuCore": "500 çekirdek",
-            "jobTimeout": "72 saat",
-            "repoSize": "500 GB",
-            "repositories": "Sınırsız",
-            "reservedJobs": "3 ayrılmış",
-            "rpo": "~5 dakika (sürekli)",
-            "rto": "4 saat (garantili)"
-          },
           "community": {
-            "activeJobs": "2 aktif",
-            "auditLogs": "7 gün",
-            "cpuCore": "10 çekirdek",
-            "jobTimeout": "2 saat",
-            "repoSize": "10GB",
-            "repositories": "10 depo",
-            "reservedJobs": "1 rezerve edildi",
-            "rpo": "En iyi çaba",
-            "rto": "En iyi çaba"
-          },
-          "enterprise": {
-            "activeJobs": "10+ aktif",
-            "auditLogs": "1+ yıl",
-            "cpuCore": "1000'den fazla çekirdek",
-            "jobTimeout": "96+ saat",
-            "repoSize": "1 TB+",
+            "activeJobs": "1",
+            "jobsPerMonth": "500",
+            "repoSize": "10 GB",
             "repositories": "Sınırsız",
-            "reservedJobs": "5+ ayrılmış",
-            "rpo": "Özel (sıfıra yakın)",
-            "rto": "15-60 dakika (özel)"
+            "machines": "Sınırsız",
+            "usersTeams": "Sınırsız"
           },
           "professional": {
-            "activeJobs": "5 aktif",
-            "auditLogs": "30 gün",
-            "cpuCore": "100 çekirdek",
-            "jobTimeout": "24 saat",
-            "repoSize": "100GB",
-            "repositories": "500 repo",
-            "reservedJobs": "2 rezerve edildi",
-            "rpo": "~15 dakika",
-            "rto": "Belirli bir noktaya geri yükleme"
+            "activeJobs": "5",
+            "jobsPerMonth": "5.000",
+            "repoSize": "100 GB",
+            "repositories": "Sınırsız",
+            "machines": "Sınırsız",
+            "usersTeams": "Sınırsız"
+          },
+          "business": {
+            "activeJobs": "20",
+            "jobsPerMonth": "20.000",
+            "repoSize": "500 GB",
+            "repositories": "Sınırsız",
+            "machines": "Sınırsız",
+            "usersTeams": "Sınırsız"
+          },
+          "enterprise": {
+            "activeJobs": "60",
+            "jobsPerMonth": "100.000",
+            "repoSize": "1 TB+",
+            "repositories": "Sınırsız",
+            "machines": "Sınırsız",
+            "usersTeams": "Sınırsız"
           }
         }
       },
@@ -2568,6 +2482,521 @@
       },
       "related": {
         "title": "İlgili Politikalar"
+      }
+    },
+    "disasterRecovery": {
+      "enterpriseCta": {
+        "button": "Satış Ekibiyle İletişime Geçin",
+        "description": "Kuruluşunuza özel altyapı koruması elde edin",
+        "heading": "Özel Bir Kurumsal Çözüme mi ihtiyacınız var?"
+      },
+      "faq": {
+        "heading": "Sıkça Sorulan Sorular",
+        "items": [
+          {
+            "answer": "Evet, planınızı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen geçerli olur ve düşürmeler bir sonraki faturalandırma döngünüzün başlangıcında geçerli olur.",
+            "question": "Planımı yükseltebilir veya düşürebilir miyim?"
+          },
+          {
+            "answer": "Tüm önemli kredi kartlarını (Visa, MasterCard, American Express) kabul ediyoruz ve yıllık Kurumsal planlar için faturaya dayalı faturalandırmayı destekliyoruz.",
+            "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?"
+          },
+          {
+            "answer": "Topluluk planımız sonsuza kadar ücretsizdir. İş planları için deneme seçeneklerini görüşmek üzere satış ekibimizle iletişime geçin.",
+            "question": "Ücretsiz deneme mevcut mu?"
+          },
+          {
+            "answer": "Topluluk planı topluluk desteğini ve self-servis belgeleri içerir. Profesyonel, e-posta ve sohbet desteğini içerir. İşletme, telefon desteği ve özel bir müşteri başarısı yöneticisi ekler. Kurumsal, yönetici kademelendirmeyle birlikte 7/24/365 teknik destek içerir.",
+            "question": "Desteğe neler dahildir?"
+          },
+          {
+            "answer": "Kurtarma süresi, katmanınıza bağlıdır: Topluluk, en son anlık yedekleri dakikalar içinde geri yükler, Professional, belirli bir noktaya kurtarma (24 saat) sunar, Business, 4 saatlik SLA sağlar ve Enterprise, 15-60 dakikalık özel RTO sunar.",
+            "question": "Bir felaketten ne kadar hızlı kurtulabilirim?"
+          },
+          {
+            "answer": "Evet. Geleneksel yedekleme sistemlerinden farklı olarak, geri yükleme süreçlerini test ederek yedeklemeleri otomatik olarak doğrularız, böylece acil bir durumda onlara ihtiyaç duymadan önce onların çalıştıklarını bilirsiniz.",
+            "question": "Yedeklemelerim gerçekten test edildi ve doğrulandı mı?"
+          },
+          {
+            "answer": "Verileriniz seçtiğiniz depolama konumunda şifrelenmiş olarak kalır. Tam kontrol sizdedir ve şifrelenmiş yedeklemelere hizmetlerimizden bağımsız olarak erişebilirsiniz.",
+            "question": "Hizmet kesilirse verilerime ne olur?"
+          }
+        ]
+      },
+      "finalCta": {
+        "buttons": {
+          "startFree": "Ücretsiz Başlayın",
+          "talkToSales": "Satışla Konuşun"
+        },
+        "description": "Altyapınızı ilk günden korumaya başlayın",
+        "heading": "Başlamaya Hazır mısınız?"
+      },
+      "hero": {
+        "subtitle": "Altyapınızı bugün koruyan ve siz büyüdükçe ölçeklenen olağanüstü durum kurtarma katmanını seçin.",
+        "title": "Basit, Şeffaf Fiyatlandırma"
+      },
+      "meta": {
+        "description": "İşletmeniz için doğru planı seçin. Ücretsiz topluluk erişiminden kurumsal düzeyde korumaya kadar. Gizli ücret yok.",
+        "keywords": "disaster recovery pricing, backup pricing, business continuity plans, infrastructure protection, ransomware recovery",
+        "title": "Fiyatlandırma | Basit, Şeffaf Altyapı Koruması"
+      },
+      "plans": {
+        "business": {
+          "description": "Görev Açısından Kritik Koruma + Uzman Kurulumu",
+          "features": [
+            "Profesyoneldeki her şey +",
+            "9.999 $ uygulama desteği dahildir (Lansman Teklifi)",
+            "Coğrafi olarak yedekli depolama (3 bölge) — tek bir hata sizi durduramaz",
+            "Sürekli veri koruması; sıfır veri kaybı",
+            "4 saatlik kurtarma HDS'si (garantili)",
+            "Sınırsız Depo, her biri 500 GB",
+            "7 aktif/3 ayrılmış iş",
+            "90 günlük denetim günlüğü saklama",
+            "Rol tabanlı erişim kontrolü ve kapsamlı denetim günlükleri",
+            "Uyumluluğa hazır denetim raporlaması",
+            "Özel müşteri başarısı yöneticisi",
+            "Telefon desteği + ortak çalışma alanları"
+          ],
+          "name": "İşletme"
+        },
+        "community": {
+          "description": "İlk günden itibaren üretime hazır felaket kurtarma - Sonsuza kadar ücretsiz",
+          "features": [
+            "Sınırsız kullanıcı ve ekip; özgürce işbirliği yapın",
+            "En son anlık görüntü geri yüklemeleri; arızalardan dakikalar içinde kurtulma",
+            "10 Depo, her biri 10 GB",
+            "2 saatlik iş zaman aşımı, 2 etkin/1 ayrılmış iş",
+            "7 günlük denetim günlüğü saklama",
+            "Manuel yedekleme planlama",
+            "Topluluk Slack erişimi",
+            "Self servis destek ve dokümanlar",
+            "\"Powered by Rediacc\" özelliği"
+          ],
+          "name": "Toplum"
+        },
+        "enterprise": {
+          "description": "Karmaşık kurumsal altyapı için beyaz eldiven felaket kurtarma",
+          "features": [
+            "İş Hayatındaki Her Şey +",
+            "Özel SLA (15-60 dakikalık RTO)—sizin gereksinimleriniz, taahhüdümüz",
+            "Özel altyapı kiracısı—maksimum güvenlik ve performans",
+            "7/24/365 beyaz eldiven desteği",
+            "Sınırsız Depo, her biri 1TB+",
+            "10'dan fazla aktif/5'ten fazla rezerve edilmiş iş ile 96+ saatlik iş aralığı",
+            "1 Yıldan fazla denetim günlüğü saklama",
+            "Üç ayda bir gerçekleşen olağanüstü durum kurtarma çalışmaları – test edilmiş hazırlık",
+            "Yöneticilere iletme hattı",
+            "Özel entegrasyonlar ve iş akışları",
+            "Denetim belgeleri desteği ve güvenlik incelemeleri"
+          ],
+          "name": "Girişim",
+          "priceNote": "*Başlangıç ​​tarihi:"
+        },
+        "professional": {
+          "description": "Kurumsal karmaşıklık olmadan profesyonel düzeyde felaket kurtarma",
+          "features": [
+            "Topluluktaki her şey +",
+            "Otomatik yedekleme planlaması; ayarlayın ve unutun",
+            "Belirli bir noktaya kurtarma (24 saat)",
+            "500 Depo, her biri 100 GB",
+            "24 saatlik iş zaman aşımı, 5 etkin/2 ayrılmış iş",
+            "30 günlük denetim günlüğü saklama",
+            "E-posta + sohbet desteği",
+            "Slack ve PagerDuty bildirimleri",
+            "\"Powered by Rediacc\" özelliği yok",
+            "Entegrasyon API erişimi"
+          ],
+          "name": "Profesyonel"
+        }
+      },
+      "professionalServices": {
+        "access": {
+          "description": "Hibrit kapsam, dahil edilen katılım sürecini isteğe bağlı eklentilerle birleştirir, böylece her ekip doğru zamanda doğru yardımı alabilir.",
+          "heading": "Katmana göre profesyonel hizmet erişimi",
+          "labels": {
+            "available": "Mevcut eklentiler",
+            "included": "Dahil"
+          },
+          "tiers": [
+            {
+              "available": [
+                "Standart Uygulama (9.999 ABD Doları) veya katmanlı paketler (Küçük 7.499 ABD Doları · Orta 14.999 ABD Doları · Büyük 29.999 ABD Doları · Kurumsal özel)",
+                "Acil Durum Müdahale katılımı (talep üzerine 29.999 ABD doları)"
+              ],
+              "included": ["Self servis belgeler, video eğitimleri ve topluluk forumu"],
+              "planId": "toplum"
+            },
+            {
+              "available": [
+                "Öncelikli Uygulama (19.999 ABD Doları)",
+                "Acil Durum Müdahale katılımı (talep üzerine 29.999 ABD doları)",
+                "Özel entegrasyon projeleri (kapsamlı)"
+              ],
+              "included": [
+                "E-posta desteği",
+                "Standart katılım oturumu (kurulum çağrısı ve yapılandırma kılavuzu)"
+              ],
+              "planId": "profesyonel"
+            },
+            {
+              "available": [
+                "Öncelikli Uygulama yükseltmesi (19.999 ABD doları)",
+                "Acil Durum Müdahale katılımı (talep üzerine 29.999 ABD doları)",
+                "Özel geliştirme ve güvenlik mimarisi danışmanlığı"
+              ],
+              "included": [
+                "Öncelikli e-posta/sohbet/telefon desteği",
+                "Yapılandırma ve runbook aktarımıyla özel katılım",
+                "Standart Uygulama paketi dahil (9.999 ABD doları değerinde)",
+                "Üç aylık başarı değerlendirmeleri"
+              ],
+              "planId": "işletme"
+            },
+            {
+              "available": [
+                "Özel geliştirme ve gelişmiş entegrasyonlar",
+                "Güvenlik ve denetim mimarisi danışmanlığı",
+                "Acil Durum Müdahale ücreti (5.000-7.500$/ay)"
+              ],
+              "included": [
+                "7/24/365 beyaz eldiven desteği ve özel CSM",
+                "Öncelikli Uygulama dahil (19.999 ABD doları değerinde)",
+                "Üç ayda bir olağanüstü durum kurtarma testi",
+                "Yıllık iş sürekliliği planlama çalıştayı",
+                "Yöneticilere iletme hattı"
+              ],
+              "planId": "girişim"
+            }
+          ]
+        },
+        "advancedDetails": {
+          "description": "Hizmet paketleri, uygulama katmanları, fiyatlandırma faktörleri ve hizmet tutma seçenekleri",
+          "heading": "Uygulama ve Fiyatlandırma Detayları"
+        },
+        "benefits": {
+          "description": "Profesyonel hizmetlerimiz, kritik altyapı sorunlarıyla karşılaştığınızda asla yalnız kalmamanızı sağlar.",
+          "heading": "Neden Profesyonel Hizmetler?",
+          "items": [
+            "Projenize atanan uzmanlardan oluşan özel ekip",
+            "SLA ile garantili yanıt süreleri",
+            "Gerektiğinde hizmet katmanları arasında geçiş yapın",
+            "Acil durum kademesi için 7/24 acil yardım hattı"
+          ],
+          "statistics": [
+            "Bir fidye yazılımı saldırısının ortalama maliyeti 4,62 milyon ABD dolarıdır (IBM Security, 2023)",
+            "İşletmeler için ortalama kesinti maliyeti dakika başına 5.600 ABD dolarıdır"
+          ]
+        },
+        "cta": {
+          "button": "Planlama Danışmanlığı",
+          "description": "Uzmanlarımız başarılı olmanıza yardımcı olmaya hazır",
+          "heading": "Profesyonel Yardıma mı ihtiyacınız var?"
+        },
+        "header": {
+          "badge": "Başarınızı profesyonel yardımla hızlandırın",
+          "eligibility": "Profesyonel hizmetler, hibrit erişim aracılığıyla her plana uyum sağlar. Nelerin dahil olduğunu ve nelerin eklenebileceğini görmek için aşağıdaki matrisi kullanın.",
+          "subtitle": "En çok ihtiyaç duyduğunuz anda uzman yardımı alın",
+          "title": "Profesyonel Hizmet Paketleri"
+        },
+        "packages": {
+          "emergency": {
+            "benefits": [
+              "Anında katılım (2 saatin altında)",
+              "Adli tıp, kontrol altına alma ve kurtarma planı",
+              "Sağlamlaştırma yol haritasını içeren stabilizasyon raporu"
+            ],
+            "description": "Talep üzerine olay müdahale ekibi, kritik sistemleri kontrol altına almaya ve geri yüklemeye hazır.",
+            "name": "Acil durum",
+            "price": "29.999$",
+            "tiers": [],
+            "turnaround": "Aynı Gün"
+          },
+          "priority": {
+            "benefits": [
+              "Özel görev yöneticisi",
+              "Akşam/hafta sonu müsaitliği",
+              "Üretim kesintisi yardımı"
+            ],
+            "description": "Genişletilmiş kullanılabilirlik ve yönlendirmeli geçiş desteği ile hızlandırılmış teslimat.",
+            "name": "Öncelik",
+            "price": "19.999$",
+            "tiers": [],
+            "turnaround": "24-48 Saat"
+          },
+          "standard": {
+            "benefits": [
+              "Proje keşfi ve başarı planı",
+              "Ortam sağlama ve yapılandırma",
+              "Doğrulama kontrol listesi ve bilgi aktarımı"
+            ],
+            "description": "Mimariyi, dağıtımı, doğrulamayı ve etkinleştirmeyi kapsayan yapılandırılmış uygulama.",
+            "name": "Standart",
+            "price": "7.499$'dan başlayan fiyatlarla",
+            "tierHeading": "İş Yüküne Dayalı Uygulama Fiyatlandırması",
+            "tierNote": "İş yükü, yedekleme ve olağanüstü durum kurtarma koruması gerektiren ayrı bir iş sürecini, uygulamayı veya hizmeti temsil eder. Uygulama, mimari tasarımı, dağıtımı, doğrulamayı ve ekibin etkinleştirilmesini içerir.",
+            "tiers": [
+              "Başlangıç ​​(1-4 iş yükü): 7.499 USD",
+              "Büyüme (5-10 iş yükü): 14.999 ABD doları",
+              "Ölçek (11-25 iş yükü): 29.999 ABD doları",
+              "Kurumsal (25+ iş yükü): Özel fiyat teklifi"
+            ],
+            "turnaround": "3-5 İş Günü"
+          }
+        },
+        "pricingFactors": {
+          "factors": [
+            {
+              "description": "İlgili sistem, entegrasyon ve bağımlılıkların sayısı",
+              "title": "Kapsam Karmaşıklığı"
+            },
+            {
+              "description": "Kullanıma hazır çözümler ve özel geliştirme gereksinimleri",
+              "title": "Özelleştirme Düzeyi"
+            },
+            {
+              "description": "Tek uzman ve tam adanmış uzman ekibi",
+              "title": "Takım Boyutu"
+            }
+          ],
+          "heading": "Profesyonel Hizmet Fiyatlandırmasını Anlamak",
+          "intro": "Nihai proje maliyetleri şu şekilde belirlenir:",
+          "note": "Örnek: Güvenlik mimarisi incelemesine sahip orta ölçekli bir uygulama (120 makine), entegrasyonlara ve hizmet kapsamına bağlı olarak genellikle 14.999 ABD Doları ile 24.999 ABD Doları arasında değişir."
+        },
+        "retainers": {
+          "description": "Öngörülebilir aylık fiyatlandırmayla yönetici paydaşlarımıza uzmanlarımıza garantili erişim sağlayın.",
+          "heading": "Her zaman hazır olma için tutucu seçenekleri",
+          "items": [
+            {
+              "bullets": [
+                "Garantili 2 saatlik yanıt süresi",
+                "Savaş odası koordinasyonu ile öncelikli yükseltme yolu",
+                "Üç ayda bir hazırlık incelemesi ve başucu kitabı güncellemeleri"
+              ],
+              "price": "5.000$–7.500$/ay",
+              "title": "Acil Durum Müdahale Tutucusu"
+            }
+          ]
+        },
+        "serviceTypes": {
+          "badgeLabels": {
+            "emergency": "Acil durum",
+            "priority": "Öncelik",
+            "standard": "Standart"
+          },
+          "heading": "Mevcut Hizmetler",
+          "intro": "Her paket katmanına ilişkin geri dönüş sürelerini görmek için herhangi bir hizmeti tıklayın",
+          "services": [
+            {
+              "emergency": "Anında değerlendirme + kritik sistemler aynı gün çevrimiçi + tam geçiş başlıyor",
+              "id": "veri taşıma",
+              "name": "Veri Taşıma",
+              "priority": "Hızlı geçiş hattı kurulumu + 48 saat içinde aktarılan temel veriler",
+              "standard": "Tam doğrulamayla uçtan uca geçişi tamamlayın"
+            },
+            {
+              "emergency": "Derhal kontrol altına alma + kritik sistemler aynı gün içinde onarılır + tam kurtarma başlar",
+              "id": "fidye yazılımı kurtarma",
+              "name": "Fidye Yazılımı Kurtarma",
+              "priority": "Hızlı tehdit değerlendirmesi + temel operasyonlar 48 saat içinde geri yüklendi",
+              "standard": "Adli tıp ve sertleştirmeyle tam iyileşme"
+            },
+            {
+              "emergency": "Kritik güvenlik açığı taraması + yüksek riskli yamalar aynı gün dağıtılır + tam denetim başlar",
+              "id": "güvenlik değerlendirmesi",
+              "name": "Güvenlik Değerlendirmesi",
+              "priority": "Kapsamlı güvenlik açığı değerlendirmesi + 48 saat içinde iyileştirme planı",
+              "standard": "Uygulama yol haritasıyla birlikte tam güvenlik denetimi"
+            },
+            {
+              "emergency": "Kritik kaynaklar aynı gün sağlandı + otomatik ölçeklendirme yapılandırıldı + tam plan başlıyor",
+              "id": "altyapı ölçeklendirme",
+              "name": "Altyapı Ölçeklendirmesi",
+              "priority": "Hızlı kapasite artışı + 48 saat içinde izleme kurulumu",
+              "standard": "Optimizasyonla komple altyapı yeniden tasarımı"
+            },
+            {
+              "emergency": "Aynı gün içinde kritik prosedürler brifingi + olay müdahale hazırlığı + tam program başlıyor",
+              "id": "takım eğitimi",
+              "name": "Takım Eğitimi",
+              "priority": "Yoğun uygulamalı atölye çalışması + 2 gün içinde tamamlanan önemli iş akışları",
+              "standard": "Kapsamlı, çok günlük eğitim programı"
+            },
+            {
+              "emergency": "Kritik darboğaz belirlendi + aynı gün anında düzeltme uygulandı + tam optimizasyon başlıyor",
+              "id": "performans optimizasyonu",
+              "name": "Performans Optimizasyonu",
+              "priority": "Hızlı profil oluşturma + 48 saat içinde devreye alınan yüksek etkili optimizasyonlar",
+              "standard": "Kapsamlı performans ayarıyla derin analiz"
+            },
+            {
+              "emergency": "Kritik bağlantı aynı gün kuruldu + temel veri akışı çalışıyor + tam geliştirme başlıyor",
+              "id": "özel entegrasyon",
+              "name": "Özel Entegrasyon",
+              "priority": "Temel entegrasyon fonksiyonel + temel özellikler 48 saat içinde yayınlanır",
+              "standard": "Test ve dokümantasyonla tam entegrasyon"
+            }
+          ]
+        }
+      },
+      "psTeaser": {
+        "heading": "Başlarken Uzman Yardımına mı ihtiyacınız var?",
+        "packages": {
+          "emergency": {
+            "name": "Acil durum",
+            "price": "29.999$"
+          },
+          "priority": {
+            "name": "Öncelik",
+            "price": "19.999$"
+          },
+          "standard": {
+            "name": "Standart",
+            "price": "7.499$'dan başlayan fiyatlarla"
+          }
+        },
+        "subtitle": "Tüm katmanlar için profesyonel uygulama ve destek hizmetleri mevcuttur",
+        "viewDetails": "Profesyonel Hizmetleri Keşfedin"
+      },
+      "strategy": {
+        "copy": "Bugün operasyon aşamanıza uygun olan planı seçin ve yarın platform değiştirmeden ölçeklendirin.",
+        "distribution": [
+          "Profesyonel → İş: Ekibiniz büyüdükçe coğrafi yedekli depolama, sürekli veri koruma, garantili 4 saatlik RTO ve özel müşteri başarı yöneticisi ekleyin.",
+          "İş → Kurumsal: Riskler en yüksek olduğunda 15-60 dakikalık RTO ile özel SLA’ların, özel altyapı kiracılığının ve beyaz eldiven ortaklığının kilidini açın."
+        ],
+        "heading": "Her aşama için tasarlandı"
+      },
+      "technicalSummary": {
+        "description": "Platform ekibinize aktarım hızı, elde tutma ve kurtarma beklentilerine ilişkin kesin bir görünüm sağlayın.",
+        "heading": "Bir bakışta teknik sınırlar",
+        "metrics": [
+          {
+            "key": "CPUÇekirdek",
+            "label": "CPU Çekirdekleri"
+          },
+          {
+            "key": "depolar",
+            "label": "Depolar"
+          },
+          {
+            "key": "repoSize",
+            "label": "Kod deposu boyutu sınırı"
+          },
+          {
+            "key": "işzaman aşımı",
+            "label": "Maksimum iş süresi"
+          },
+          {
+            "key": "aktif İşler",
+            "label": "Eşzamanlı işler"
+          },
+          {
+            "key": "ayrılmışİşler",
+            "label": "İş kuyruğu derinliği"
+          },
+          {
+            "key": "rpo",
+            "label": "Kurtarma Noktası Hedefi (RPO)"
+          },
+          {
+            "key": "rto",
+            "label": "Kurtarma Süresi Hedefi (RTO)"
+          },
+          {
+            "key": "denetim penceresi",
+            "label": "Denetim günlüğü tutma"
+          }
+        ],
+        "recoveryNote": "RPO (Kurtarma Noktası Hedefi): Ne kadar veriyi kaybetmeyi göze alabileceğiniz, zaman içinde ölçülür. Örneğin, 15 dakikalık RPO, son değişikliklerin 15 dakikaya kadarını kaybedebileceğiniz anlamına gelir. \n\nRTO (Kurtarma Süresi Hedefi): Bir felaketten sonra ne kadar hızlı tekrar çevrimiçi olmanız gerekir. Örneğin 4 saatlik RTO, sistemlerinizin 4 saat içinde geri yükleneceği anlamına gelir.",
+        "values": {
+          "business": {
+            "activeJobs": "20",
+            "auditLogs": "90 gün",
+            "jobTimeout": "72 saat",
+            "repoSize": "500 GB",
+            "repositories": "Sınırsız",
+            "reservedJobs": "3 ayrılmış",
+            "rpo": "~5 dakika (sürekli)",
+            "rto": "4 saat (garantili)"
+          },
+          "community": {
+            "activeJobs": "1",
+            "auditLogs": "7 gün",
+            "jobTimeout": "2 saat",
+            "repoSize": "10GB",
+            "repositories": "Sınırsız",
+            "reservedJobs": "1 rezerve edildi",
+            "rpo": "En iyi çaba",
+            "rto": "En iyi çaba"
+          },
+          "enterprise": {
+            "activeJobs": "60",
+            "auditLogs": "1+ yıl",
+            "jobTimeout": "96+ saat",
+            "repoSize": "1 TB+",
+            "repositories": "Sınırsız",
+            "reservedJobs": "5+ ayrılmış",
+            "rpo": "Özel (sıfıra yakın)",
+            "rto": "15-60 dakika (özel)"
+          },
+          "professional": {
+            "activeJobs": "5",
+            "auditLogs": "30 gün",
+            "jobTimeout": "24 saat",
+            "repoSize": "100GB",
+            "repositories": "Sınırsız",
+            "reservedJobs": "2 rezerve edildi",
+            "rpo": "~15 dakika",
+            "rto": "Belirli bir noktaya geri yükleme"
+          }
+        }
+      },
+      "trust": {
+        "heading": "Kurumsal Düzeyde Güvenlik ve Güvenilirlik",
+        "items": ["Banka düzeyinde şifreleme", "%99,9 kesintisiz çalışma taahhüdü"]
+      },
+      "ui": {
+        "anchor": "Stratejik çapa",
+        "bestValue": "En İyi Değer",
+        "contactSales": "Satış Ekibiyle İletişime Geçin",
+        "cta": {
+          "business": {
+            "guarantee": "14 Günlük Para İade Garantisi",
+            "launchBadge": "Sınırlı Lansman Teklifi",
+            "primary": "Uygulama Çağrısını Planlayın",
+            "secondary": "Satış Ekibiyle İletişime Geçin",
+            "valueNote": "9.999$ kurulum kredisi içerir"
+          },
+          "community": {
+            "note": "Kredi kartına gerek yok",
+            "primary": "Ücretsiz Başlayın",
+            "secondary": "Daha fazla bilgi edin"
+          },
+          "enterprise": {
+            "guarantee": "14 Günlük Para İade Garantisi",
+            "primary": "Yönetici Demosunu Planlayın",
+            "secondary": "Satış Ekibiyle İletişime Geçin",
+            "subtext": "Özel SLA · Özel destek"
+          },
+          "professional": {
+            "guarantee": "14 Günlük Para İade Garantisi",
+            "primary": "Başlayın",
+            "secondary": "Satış Ekibiyle İletişime Geçin"
+          }
+        },
+        "foreverFree": "Sonsuza kadar ücretsiz",
+        "getStarted": "Başlayın",
+        "guarantees": {
+          "cancelAnytime": "İstediğiniz zaman iptal edin",
+          "moneyBack": "14 Günlük Para İade Garantisi",
+          "noContracts": "Uzun vadeli sözleşme yok"
+        },
+        "keyBenefits": "Temel Faydalar",
+        "learnMore": "Daha Fazla Bilgi",
+        "limitedOffer": "Sınırlı Lansman Teklifi",
+        "monthOrYear": "ayda veya yılda {{price}}",
+        "popular": "En popüler",
+        "startingAt": "*Başlangıç ​​tarihi:",
+        "whatsIncluded": "Neler dahil:"
       }
     }
   },

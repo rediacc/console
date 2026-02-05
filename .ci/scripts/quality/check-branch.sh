@@ -9,6 +9,7 @@
 #   GITHUB_BASE_REF - Base branch name (e.g., 'main') - set by GitHub Actions
 #   GITHUB_HEAD_REF - PR branch name - set by GitHub Actions
 #   GITHUB_EVENT_NAME - GitHub event type (e.g., 'pull_request')
+#   PR_AUTHOR - GitHub username of the PR author (optional, falls back to github-actions[bot])
 #
 # Exit codes:
 #   0 - Branch is up-to-date and has no conflicts
@@ -55,8 +56,13 @@ echo ""
 log_step "Checking if auto-rebase is possible..."
 
 # Configure git identity BEFORE rebase (required for rebase to work)
-git config user.name "github-actions[bot]"
-git config user.email "github-actions[bot]@users.noreply.github.com"
+if [[ -n "${PR_AUTHOR:-}" ]]; then
+    git config user.name "$PR_AUTHOR"
+    git config user.email "${PR_AUTHOR}@users.noreply.github.com"
+else
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+fi
 
 # Try rebase - verbose output helps diagnose issues if it fails
 ORIGINAL_HEAD=$(git rev-parse HEAD)

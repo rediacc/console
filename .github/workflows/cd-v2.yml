@@ -1,17 +1,23 @@
 name: Console CD v2
 
-# Simplified CD workflow with 2 main deployment jobs:
-# 1. dry-run: Build and validate everything without publishing
-# 2. publish: Actually publish (GitHub Release, GitHub Pages, Docker images)
+# Publish-only CD workflow triggered when CI completes on main.
+# All builds run in CI; CD only publishes artifacts produced by CI.
+# 1. init: Resolve CI run context, recalculate version, guard against duplicates
+# 2. publish: Promote Docker images, create Release, deploy Pages
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
+      ci_run_id:
+        description: 'CI workflow run ID to publish from'
+        required: true
+        type: string
       dry_run:
-        description: 'Run in dry-run mode (validate without publishing)'
+        description: 'Dry-run mode (validate without publishing)'
         required: false
         type: boolean
         default: false
@@ -32,27 +38,22 @@ concurrency:
 jobs:
   # ============================================================================
   # INITIALIZE
+  # Resolve CI run context, recalculate version, guard against duplicate publish
   # ============================================================================
   init:
     name: Initialize
     runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push')
     outputs:
-      is_bot: ${{ steps.init.outputs.is_bot }}
+      ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
+      ci_sha: ${{ steps.resolve.outputs.ci_sha }}
       next_version: ${{ steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
       staging_tag: ${{ steps.staging.outputs.staging_tag }}
-      api_tag: ${{ steps.init.outputs.api_tag }}
-      api_exists: ${{ steps.init.outputs.api_exists }}
-      bridge_tag: ${{ steps.init.outputs.bridge_tag }}
-      bridge_exists: ${{ steps.init.outputs.bridge_exists }}
-      plugins_tag: ${{ steps.init.outputs.plugins_tag }}
-      plugins_exists: ${{ steps.init.outputs.plugins_exists }}
-      web_tag: ${{ steps.init.outputs.web_tag }}
-      web_exists: ${{ steps.init.outputs.web_exists }}
-      cli_tag: ${{ steps.init.outputs.cli_tag }}
-      cli_exists: ${{ steps.init.outputs.cli_exists }}
-      image_tag: ${{ steps.init.outputs.image_tag }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -66,13 +67,26 @@ jobs:
           preset: cd
           repositories: console,middleware,renet,license-server,homebrew-tap
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+      # Resolve CI run context from workflow_run event or workflow_dispatch input
+      - name: Resolve CI run context
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "ci_run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+            echo "ci_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+            echo "Resolved from workflow_run: run=${{ github.event.workflow_run.id }}, sha=${{ github.event.workflow_run.head_sha }}"
+          else
+            CI_RUN_ID="${{ inputs.ci_run_id }}"
+            # Fetch the SHA from the specified CI run
+            CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha')
+            echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
+            echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
+            echo "Resolved from workflow_dispatch: run=${CI_RUN_ID}, sha=${CI_SHA}"
+          fi
 
+      # Recalculate version independently (reads current version from git)
       - name: Initialize CI
         id: init
         env:
@@ -87,11 +101,23 @@ jobs:
       - name: Generate staging tag
         id: staging
         run: |
-          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "staging_tag=dryrun-${{ github.sha }}" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "staging_tag=dryrun-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
           else
-            echo "staging_tag=staging-${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "staging_tag=staging-${{ steps.resolve.outputs.ci_sha }}" >> $GITHUB_OUTPUT
           fi
+
+      # Version guard: fail early if this version was already published
+      - name: Check for existing release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          VERSION="${{ steps.init.outputs.next_version }}"
+          if gh release view "v${VERSION}" --repo "${{ github.repository }}" &>/dev/null; then
+            echo "::error::Release v${VERSION} already exists. Aborting to prevent duplicate publish."
+            exit 1
+          fi
+          echo "Version v${VERSION} is available for publishing."
 
   # ============================================================================
   # CD WATCHDOG - monitors jobs, auto-retries transient build failures
@@ -116,85 +142,17 @@ jobs:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
   # ============================================================================
-  # BUILD (parallel reusable workflows)
-  # ============================================================================
-
-  # Unified renet build - produces full binaries with embedded CRIU/rsync
-  # Used by BOTH CLI (SEA embedding) and Docker (bridge images)
-  build-renet:
-    name: Build (Renet)
-    needs: [init]
-    uses: ./.github/workflows/ci-build-renet.yml
-    with:
-      next_version: ${{ needs.init.outputs.next_version }}
-      skip_build: ${{ needs.init.outputs.bridge_exists == 'true' }}
-      bridge_tag: ${{ needs.init.outputs.bridge_tag }}
-    secrets: inherit
-
-  build-docker:
-    name: Build (Docker)
-    needs: [init, build-renet]
-    uses: ./.github/workflows/ci-build-docker.yml
-    with:
-      next_version: ${{ needs.init.outputs.next_version }}
-      api_tag: ${{ needs.init.outputs.api_tag }}
-      api_exists: ${{ needs.init.outputs.api_exists }}
-      bridge_tag: ${{ needs.init.outputs.bridge_tag }}
-      bridge_exists: ${{ needs.init.outputs.bridge_exists }}
-      plugins_tag: ${{ needs.init.outputs.plugins_tag }}
-      plugins_exists: ${{ needs.init.outputs.plugins_exists }}
-      web_tag: ${{ needs.init.outputs.web_tag }}
-      web_exists: ${{ needs.init.outputs.web_exists }}
-      cli_tag: ${{ needs.init.outputs.cli_tag }}
-      cli_exists: ${{ needs.init.outputs.cli_exists }}
-    secrets: inherit
-
-  build-desktop:
-    name: Build (Desktop)
-    needs: [init]
-    uses: ./.github/workflows/ci-build-desktop.yml
-    with:
-      next_version: ${{ needs.init.outputs.next_version }}
-    secrets: inherit
-
-  build-cli:
-    name: Build (CLI)
-    needs: [init, build-renet]
-    uses: ./.github/workflows/ci-build-cli.yml
-    with:
-      next_version: ${{ needs.init.outputs.next_version }}
-    secrets: inherit
-
-  # ============================================================================
-  # JOB 1: DRY-RUN (Reusable Workflow)
-  # Build and validate everything without publishing
-  # Uses shared cd-dryrun.yml workflow (same as CI uses)
-  # ============================================================================
-  dry-run:
-    name: Dry-Run
-    needs: [init, build-docker, build-desktop, build-cli]
-    uses: ./.github/workflows/cd-dryrun.yml
-    with:
-      dry_run: ${{ inputs.dry_run || false }}
-      next_version: ${{ needs.init.outputs.next_version }}
-      staging_tag: ${{ needs.init.outputs.staging_tag }}
-      api_tag: ${{ needs.init.outputs.api_tag }}
-      bridge_tag: ${{ needs.init.outputs.bridge_tag }}
-      plugins_tag: ${{ needs.init.outputs.plugins_tag }}
-      web_tag: ${{ needs.init.outputs.web_tag }}
-      cli_tag: ${{ needs.init.outputs.cli_tag }}
-    secrets: inherit
-
-  # ============================================================================
-  # JOB 2: PUBLISH
+  # PUBLISH
   # Actually publish to GitHub Release, Docker, Pages
-  # Only runs if dry-run succeeds AND not in dry_run mode
+  # Downloads artifacts cross-workflow from the CI run using --run-id
   # ============================================================================
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    needs: [init, dry-run]
-    if: success() && !inputs.dry_run
+    needs: [init]
+    if: >-
+      success() &&
+      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     environment:
       name: github-pages
       url: ${{ steps.pages-deploy.outputs.page_url }}
@@ -254,8 +212,10 @@ jobs:
       - name: Download staging release artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         with:
-          name: staging-release-${{ github.sha }}
+          name: staging-release-${{ needs.init.outputs.ci_sha }}
           path: dist/
+          run-id: ${{ needs.init.outputs.ci_run_id }}
+          github-token: ${{ github.token }}
 
       - name: Version bump
         run: .ci/scripts/version/bump.sh --version ${{ needs.init.outputs.next_version }}
@@ -328,14 +288,20 @@ jobs:
       - name: Download staging pages artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         with:
-          name: staging-pages-${{ github.sha }}
+          name: staging-pages-${{ needs.init.outputs.ci_sha }}
           path: dist/pages/
+          run-id: ${{ needs.init.outputs.ci_run_id }}
+          github-token: ${{ github.token }}
 
-      # Inject E2E videos into pages (best-effort from latest CI run)
+      # Inject E2E videos from the same CI run that produced staging artifacts
       - name: Inject E2E videos
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/docs/inject-e2e-videos.sh --search-latest --output dist/pages/assets/videos/user-guide/ || true
+        run: >-
+          .ci/scripts/docs/inject-e2e-videos.sh
+          --run-id "${{ needs.init.outputs.ci_run_id }}"
+          --artifact-name "e2e-videos-${{ needs.init.outputs.ci_sha }}"
+          --output dist/pages/assets/videos/user-guide/
 
       - name: Rebuild package metadata from Release packages
         run: |
@@ -397,6 +363,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** v${{ needs.init.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Release SHA:** ${{ steps.commit.outputs.release_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**CI Run:** ${{ needs.init.outputs.ci_run_id }} (sha: ${{ needs.init.outputs.ci_sha }})" >> $GITHUB_STEP_SUMMARY
           echo "**Pages URL:** ${{ steps.pages-deploy.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Docker images:**" >> $GITHUB_STEP_SUMMARY
@@ -413,23 +380,25 @@ jobs:
   validate-install-methods:
     name: Validate Install Methods
     needs: [init, publish]
-    if: success() && !inputs.dry_run
+    if: >-
+      success() &&
+      !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.init.outputs.next_version }}
     secrets: inherit
 
   # ============================================================================
-  # CLEANUP ON FAILURE - Remove staging artifacts if dry-run or publish fails
+  # CLEANUP ON FAILURE - Remove staging artifacts if publish fails
   # ============================================================================
   cleanup-on-failure:
     name: Cleanup (on failure)
     runs-on: ubuntu-latest
-    needs: [init, dry-run, publish]
+    needs: [init, publish]
     if: |
       always() &&
-      !inputs.dry_run &&
-      (needs.dry-run.result == 'failure' || needs.publish.result == 'failure')
+      !(github.event_name == 'workflow_dispatch' && inputs.dry_run) &&
+      needs.publish.result == 'failure'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 

@@ -12,7 +12,10 @@
       "version": "3.13"
     },
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "9.0"
+    }
   },
   "forwardPorts": [3000],
   "portsAttributes": {
@@ -21,16 +24,34 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": "npm install && npm run build:packages && curl -fsSL https://claude.ai/install.sh | bash && npm i -g @openai/codex && pip install uv && uv tool install kimi-cli",
+  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages && npx playwright install && curl -fsSL https://claude.ai/install.sh | bash && npm i -g @openai/codex && pip install uv && uv tool install kimi-cli",
   "postStartCommand": "npm install",
   "remoteEnv": {
     "PORT": "3000"
   },
   "customizations": {
+    "codespaces": {
+      "repositories": {
+        "rediacc/middleware": { "permissions": { "contents": "write" } },
+        "rediacc/renet": { "permissions": { "contents": "write" } },
+        "rediacc/homebrew-tap": { "permissions": { "contents": "write" } },
+        "rediacc/license-server": { "permissions": { "contents": "write" } }
+      }
+    },
     "vscode": {
       "extensions": [
         "biomejs.biome",
-        "dbaeumer.vscode-eslint"
+        "dbaeumer.vscode-eslint",
+        "GitHub.vscode-github-actions",
+        "ms-playwright.playwright",
+        "astro-build.astro-vscode",
+        "golang.go",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "eamodio.gitlens",
+        "ms-python.python",
+        "ms-vscode.vscode-typescript-next",
+        "ms-dotnettools.csharp"
       ]
     }
   }

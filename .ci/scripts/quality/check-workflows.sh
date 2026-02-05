@@ -5,6 +5,7 @@
 # violate CI design principles:
 #   - continue-on-error: Silently ignores step/job failures
 #   - script: |          Inline scripts violate multi-CI design (use .ci/scripts/)
+#   - fail-fast:         Watchdog handles failure cancellation; GitHub defaults to false
 #
 # Usage: check-workflows.sh
 
@@ -62,6 +63,11 @@ check_pattern \
     "script:[[:space:]]*|" \
     "inline script: |" \
     "Move script to .ci/scripts/ and use: script: return await require('./.ci/scripts/ci/my-script.cjs')({github, context, core})"
+
+check_pattern \
+    "fail-fast" \
+    "fail-fast" \
+    "Remove fail-fast — the watchdog handles failure cancellation. GitHub defaults to false when omitted"
 
 if [[ $ERRORS -gt 0 ]]; then
     echo ""

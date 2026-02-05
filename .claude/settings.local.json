@@ -11,7 +11,9 @@
       "Bash(xargs basename:*)",
       "Bash(grep:*)",
       "Bash(xargs:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(journalctl:*)",
+      "WebFetch(domain:hoop.dev)"
     ],
     "deny": [],
     "ask": []

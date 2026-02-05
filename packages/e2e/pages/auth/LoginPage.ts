@@ -27,7 +27,7 @@ export class LoginPage extends BasePage {
     this.loginButton = page.locator('[data-testid="login-submit-button"]');
     this.registerLink = page.locator('[data-testid="login-register-link"]');
     this.errorMessage = page.locator('[data-testid="login-error-alert"]');
-    this.loadingSpinner = page.locator('.ant-spin');
+    this.loadingSpinner = page.locator('.ant-spin').first();
     this.registrationOrganizationInput = page.locator(
       '[data-testid="registration-organization-input"]'
     );

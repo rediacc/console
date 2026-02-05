@@ -344,7 +344,6 @@ jobs:
     name: VSCode (${{ matrix.os }})
     timeout-minutes: 15
     strategy:
-      fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -381,7 +380,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
-      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -525,7 +523,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
-      fail-fast: true
       matrix:
         include:
           - os: ubuntu-latest
@@ -618,7 +615,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
-      fail-fast: false
       matrix:
         os-image:
           - ubuntu-24.04
@@ -739,6 +735,7 @@ jobs:
     timeout-minutes: 30
     env:
       CI: 'true'
+      VM_NET_BASE: '192.168.111'
       RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -772,13 +769,16 @@ jobs:
       - name: Provision VM
         run: sudo -E /tmp/renet ops up --force --parallel
         env:
+          VM_NET_BASE: ${{ env.VM_NET_BASE }}
           VM_WORKERS: '11'
           VM_CEPH_NODES: ''
           VM_BRIDGE: '1'
       - name: Wait for VM SSH readiness
         run: |
-          # Wait for both bridge (111.1) and worker (111.11) VMs
-          for vm in 192.168.111.1 192.168.111.11; do
+          # Wait for both bridge and worker VMs
+          BRIDGE_IP="${VM_NET_BASE}.1"
+          WORKER_IP="${VM_NET_BASE}.11"
+          for vm in $BRIDGE_IP $WORKER_IP; do
             echo "Waiting for $vm..."
             for i in {1..30}; do
               if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 root@$vm echo ready 2>/dev/null; then
@@ -806,7 +806,7 @@ jobs:
       - name: Create CLI local E2E env
         run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env
       - name: Append S3 test env
-        run: .ci/scripts/env/create-cli-s3-env.sh --output packages/cli/tests/.env
+        run: .ci/scripts/env/create-cli-s3-env.sh --output packages/cli/tests/.env --vm-net-base "$VM_NET_BASE"
       - name: Run CLI local E2E tests
         run: .ci/scripts/test/run-cli-local.sh
 
@@ -814,7 +814,7 @@ jobs:
         working-directory: packages/cli
         run: npx vitest run --config vitest.s3.config.ts --reporter=verbose
         env:
-          S3_TEST_ENDPOINT: http://192.168.111.1:9000
+          S3_TEST_ENDPOINT: http://${{ env.VM_NET_BASE }}.1:9000
           S3_TEST_ACCESS_KEY: rustfsadmin
           S3_TEST_SECRET_KEY: rustfsadmin
           S3_TEST_BUCKET: rediacc-test

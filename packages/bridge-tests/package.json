@@ -43,6 +43,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.982.0",
     "@opentelemetry/context-zone": "^2.5.0",
     "@opentelemetry/core": "^2.5.0",
     "@opentelemetry/instrumentation": "^0.211.0",

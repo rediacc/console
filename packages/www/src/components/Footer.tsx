@@ -59,8 +59,13 @@ const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/pricing`} className="footer-link">
+                <a href={`/${currentLang}/#pricing`} className="footer-link">
                   {t('footer.productLinks.pricing')}
+                </a>
+              </li>
+              <li>
+                <a href={`/${currentLang}/disaster-recovery`} className="footer-link">
+                  {t('footer.productLinks.disasterRecovery')}
                 </a>
               </li>
               <li>

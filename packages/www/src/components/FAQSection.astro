@@ -7,19 +7,21 @@ interface Props {
     question: string;
     answer: string;
   }>;
+  heading?: string;
   lang?: Language;
 }
 
-const { lang = 'en', faqs } = Astro.props;
+const { lang = 'en', faqs, heading } = Astro.props;
 const { t, to } = createTranslator(lang);
 
 // Use provided FAQs or fall back to translations
 const faqData = faqs || to('pages.pricing.faq.items');
+const faqHeading = heading || t('pages.pricing.faq.heading');
 ---
 
 <section class="faq-section section-light">
   <div class="container">
-    <h2>{t('pages.pricing.faq.heading')}</h2>
+    <h2>{faqHeading}</h2>
 
     <div class="faq-grid">
       {faqData.map((faq) => (

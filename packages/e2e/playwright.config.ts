@@ -30,6 +30,7 @@ const E2E_DEFAULTS = {
  * - PAGE_TIMEOUT: Navigation timeout in ms (default: 30000)
  * - STOP_ON_FAILURE: Stop on first failure (default: false)
  * - VM_DEPLOYMENT: Enable VM-dependent tests (default: false)
+ * - E2E_HIGHLIGHT: Show interaction highlights in video recordings (default: false)
  * - PWSLOWMO: Slow down browser actions by N milliseconds (for debugging)
  *
  * @see https://playwright.dev/docs/test-configuration
@@ -49,6 +50,9 @@ export default test.defineConfig({
 
   /* No retries - tests should pass consistently */
   retries: 0,
+
+  /* 90s per test to accommodate PWSLOWMO pacing in CI video recordings */
+  timeout: 90000,
 
   /* Single worker for maximum stability and resource isolation */
   workers: 1,
@@ -82,7 +86,7 @@ export default test.defineConfig({
       10
     ),
     navigationTimeout: Number.parseInt(
-      process.env.PAGE_TIMEOUT ?? String(E2E_DEFAULTS.CONNECTION_TIMEOUT),
+      process.env.PAGE_TIMEOUT ?? String(E2E_DEFAULTS.CONNECTION_TIMEOUT * 2),
       10
     ),
 
@@ -100,7 +104,7 @@ export default test.defineConfig({
     {
       name: 'setup',
       testMatch: /global\.setup\.ts/,
-      use: { ...test.devices['Desktop Chrome'] },
+      use: { ...test.devices['Desktop Chrome'], launchOptions: { slowMo: 0 } },
       // Setup needs more time: wait for Vite + registration flow + slower Windows runners
       // Increased to 180s to accommodate Windows tunnel latency (60s health + 60s registration + 30s buffer)
       timeout: 180000,
