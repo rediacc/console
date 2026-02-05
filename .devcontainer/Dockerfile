@@ -77,9 +77,26 @@ RUN go install golang.org/x/tools/gopls@latest \
 USER root
 
 # =============================================================================
-# Python packages
+# .NET 9.0 SDK (from Microsoft package repository)
 # =============================================================================
-RUN pip install --no-cache-dir --break-system-packages pyyaml
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
+    && dpkg -i packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends dotnet-sdk-9.0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# =============================================================================
+# Python packages + uv + kimi-cli
+# =============================================================================
+RUN pip install --no-cache-dir --break-system-packages pyyaml uv
+
+USER vscode
+RUN uv tool install kimi-cli
+USER root
 
 # =============================================================================
 # Playwright system dependencies (browsers installed per-project at runtime)
@@ -89,7 +106,7 @@ RUN npx --yes playwright install-deps
 # =============================================================================
 # Global npm tools
 # =============================================================================
-RUN npm install -g @openai/codex \
+RUN npm install -g @openai/codex @google/gemini-cli \
     && npm cache clean --force
 
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
