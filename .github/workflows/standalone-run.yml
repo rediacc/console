@@ -235,7 +235,7 @@ jobs:
         run: |
           echo "Starting Caddy gateway for desktop routing..."
           cd .ci/docker/ci
-          docker compose -f docker-compose.yml -f docker-compose.desktop.yml up -d gateway
+          docker compose -f docker-compose.yml -f docker-compose.desktop.yml up -d --no-recreate gateway
 
           # Wait for gateway to be ready
           timeout 30 bash -c 'until curl -sf http://localhost:8080/health > /dev/null 2>&1; do sleep 1; done' || {
