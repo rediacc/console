@@ -36,8 +36,8 @@ COMPOSE_VARS=()
 while IFS= read -r var; do
     [[ -z "$var" ]] && continue
     COMPOSE_VARS+=("$var")
-done < <(grep -ohP '\$\{[A-Z0-9_]+' "$COMPOSE_DIR"/docker-compose*.yml 2>/dev/null \
-    | sed 's/\${//' | sort -u)
+done < <(grep -ohP '\$\{[A-Z0-9_]+' "$COMPOSE_DIR"/docker-compose*.yml 2>/dev/null |
+    sed 's/\${//' | sort -u)
 
 if [[ ${#COMPOSE_VARS[@]} -eq 0 ]]; then
     log_error "No env var references found in compose files — check parse logic"
@@ -50,9 +50,9 @@ SAFE_DEFAULT_VARS=()
 while IFS= read -r var; do
     [[ -z "$var" ]] && continue
     SAFE_DEFAULT_VARS+=("$var")
-done < <(grep -ohP '\$\{[A-Z0-9_]+:-[^}]+\}' "$COMPOSE_DIR"/docker-compose*.yml 2>/dev/null \
-    | grep -vP ':-\}$' \
-    | grep -oP '(?<=\$\{)[A-Z0-9_]+' | sort -u)
+done < <(grep -ohP '\$\{[A-Z0-9_]+:-[^}]+\}' "$COMPOSE_DIR"/docker-compose*.yml 2>/dev/null |
+    grep -vP ':-\}$' |
+    grep -oP '(?<=\$\{)[A-Z0-9_]+' | sort -u)
 
 # 3. Extract variables persisted in ci-env.sh (PERSISTED_ENV heredoc block)
 #    The heredoc uses plain KEY=VALUE lines (no echo prefix)
@@ -60,8 +60,8 @@ PERSISTED_VARS=()
 while IFS= read -r var; do
     [[ -z "$var" ]] && continue
     PERSISTED_VARS+=("$var")
-done < <(grep -oP '^[A-Z0-9_]+(?==)' "$CI_ENV" 2>/dev/null \
-    | grep -vP '^(WORKFLOW_|KEYS|PERSISTED_ENV)' | sort -u)
+done < <(grep -oP '^[A-Z0-9_]+(?==)' "$CI_ENV" 2>/dev/null |
+    grep -vP '^(WORKFLOW_|KEYS|PERSISTED_ENV)' | sort -u)
 
 # 4. Validate: vars WITHOUT safe defaults must be persisted in ci-env.sh
 #    Vars with non-empty defaults (e.g., ${ENABLE_HTTPS:-false}) are safe even if
