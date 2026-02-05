@@ -773,6 +773,10 @@ jobs:
           VM_WORKERS: '11'
           VM_CEPH_NODES: ''
           VM_BRIDGE: '1'
+      - name: Fix renet data dir ownership
+        # Renet creates staging folder as root (via sudo), but CLI tests run as runner
+        # Fix ownership so runner can access SSH keys for renet commands in tests
+        run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
       - name: Wait for VM SSH readiness
         run: |
           # Wait for both bridge and worker VMs
