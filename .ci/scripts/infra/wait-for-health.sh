@@ -39,7 +39,7 @@ log_step "Waiting for $URL (timeout: ${TIMEOUT}s)..."
 
 ELAPSED=0
 while [[ $ELAPSED -lt $TIMEOUT ]]; do
-    if curl -sf "$URL" > /dev/null 2>&1; then
+    if curl -sf "$URL" >/dev/null 2>&1; then
         log_info "$MESSAGE"
         exit 0
     fi

@@ -29,7 +29,10 @@ PLUGINS_DIR="$(get_repo_root)/packages/plugins"
 for arg in "$@"; do
     case "$arg" in
         --push) PUSH=true ;;
-        --dry-run) DRY_RUN=true; PUSH=false ;;
+        --dry-run)
+            DRY_RUN=true
+            PUSH=false
+            ;;
         --registry=*) REGISTRY="${arg#*=}" ;;
         --registry)
             shift
@@ -113,7 +116,7 @@ build_plugin() {
 
     # Convert comma-separated tags to multiple -t flags
     local tag_flags=""
-    IFS=',' read -ra TAG_ARRAY <<< "$tags"
+    IFS=',' read -ra TAG_ARRAY <<<"$tags"
     for tag in "${TAG_ARRAY[@]}"; do
         tag_flags="${tag_flags} -t ${tag}"
     done

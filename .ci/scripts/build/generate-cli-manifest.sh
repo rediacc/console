@@ -39,7 +39,7 @@ while [[ $# -gt 0 ]]; do
             REPO="$2"
             shift 2
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --version VERSION [--input DIR] [--output PATH] [--repo REPO]"
             exit 0
             ;;
@@ -119,6 +119,6 @@ done
 
 # Write pretty-printed manifest
 mkdir -p "$(dirname "$OUTPUT_PATH")"
-echo "$MANIFEST" | jq . > "$OUTPUT_PATH"
+echo "$MANIFEST" | jq . >"$OUTPUT_PATH"
 
 log_info "Manifest generated: $OUTPUT_PATH"

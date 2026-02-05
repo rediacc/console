@@ -71,8 +71,8 @@ SYSTEM_DEFAULT_TEAM_NAME="${SYSTEM_DEFAULT_TEAM_NAME:-Private Team}"
 readonly API_URL_LOCAL="http://localhost/api"
 readonly API_URL_SANDBOX="https://sandbox.rediacc.com/api"
 readonly API_HEALTH_ENDPOINT="/health"
-readonly API_HEALTH_TIMEOUT=120  # seconds
-readonly API_HEALTH_INTERVAL=2   # seconds between retries
+readonly API_HEALTH_TIMEOUT=120 # seconds
+readonly API_HEALTH_INTERVAL=2  # seconds between retries
 
 # =============================================================================
 # BACKEND PRESETS (for --backend parameter)
@@ -205,10 +205,10 @@ readonly DESKTOP_RESOLUTION="${DESKTOP_RESOLUTION:-1600x900}"
 # =============================================================================
 # TIMEOUTS
 # =============================================================================
-readonly TIMEOUT_DOCKER_PULL=300      # 5 minutes
-readonly TIMEOUT_DOCKER_START=60      # 1 minute
-readonly TIMEOUT_DOCKER_STOP=30       # 30 seconds
-readonly TIMEOUT_NPM_INSTALL=600      # 10 minutes
+readonly TIMEOUT_DOCKER_PULL=300 # 5 minutes
+readonly TIMEOUT_DOCKER_START=60 # 1 minute
+readonly TIMEOUT_DOCKER_STOP=30  # 30 seconds
+readonly TIMEOUT_NPM_INSTALL=600 # 10 minutes
 
 # =============================================================================
 # VALIDATION

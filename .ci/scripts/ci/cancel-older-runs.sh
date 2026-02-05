@@ -87,7 +87,7 @@ force_cancel_run() {
 START_TIME=$(date +%s)
 
 while true; do
-    ELAPSED=$(( $(date +%s) - START_TIME ))
+    ELAPSED=$(($(date +%s) - START_TIME))
 
     if [[ $ELAPSED -ge $TIMEOUT ]]; then
         log_warn "Timeout reached (${TIMEOUT}s) - some older runs may not have been cancelled"

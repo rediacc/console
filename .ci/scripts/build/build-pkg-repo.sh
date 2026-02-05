@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --version VER --local-pkgs DIR --output DIR [--max-versions N] [--dry-run]"
             exit 0
             ;;
@@ -130,8 +130,8 @@ if [[ -f "$PUBLIC_KEY_FILE" ]]; then
     cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/rpm/gpg.key"
     log_info "Copied public key from $PUBLIC_KEY_FILE"
 else
-    gpg --armor --export "$GPG_KEY_ID" > "$OUTPUT_DIR/apt/gpg.key"
-    gpg --armor --export "$GPG_KEY_ID" > "$OUTPUT_DIR/rpm/gpg.key"
+    gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/apt/gpg.key"
+    gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/rpm/gpg.key"
     log_warn "No public key file found at $PUBLIC_KEY_FILE, exported from keyring"
 fi
 
@@ -154,7 +154,7 @@ if command -v gh &>/dev/null && [[ -n "${GH_TOKEN:-}" ]]; then
         if [[ "$ver" != "$VERSION" ]]; then
             VERSIONS+=("$ver")
         fi
-    done <<< "$RELEASE_TAGS"
+    done <<<"$RELEASE_TAGS"
 
     log_info "Found ${#VERSIONS[@]} historical versions: ${VERSIONS[*]:-none}"
 else
@@ -230,8 +230,8 @@ else
     for arch in amd64 arm64; do
         log_info "Generating Packages for $arch..."
         cd "$APT_WORK_DIR"
-        dpkg-scanpackages --arch "$arch" pool/ > "$DISTS_DIR/main/binary-${arch}/Packages"
-        gzip -9c "$DISTS_DIR/main/binary-${arch}/Packages" > "$DISTS_DIR/main/binary-${arch}/Packages.gz"
+        dpkg-scanpackages --arch "$arch" pool/ >"$DISTS_DIR/main/binary-${arch}/Packages"
+        gzip -9c "$DISTS_DIR/main/binary-${arch}/Packages" >"$DISTS_DIR/main/binary-${arch}/Packages.gz"
         cd - >/dev/null
     done
 
@@ -255,26 +255,26 @@ else
         echo "Components: main"
         echo "Description: Rediacc CLI package repository"
         echo "MD5Sum:"
-    } > "$DISTS_DIR/Release"
+    } >"$DISTS_DIR/Release"
 
     # Add checksums for all files in dists
     cd "$DISTS_DIR"
     for f in main/binary-*/Packages main/binary-*/Packages.gz; do
         [[ -f "$f" ]] || continue
-        size=$(wc -c < "$f")
+        size=$(wc -c <"$f")
         md5=$(md5sum "$f" | cut -d' ' -f1)
-        echo " $md5 $size $f" >> Release
+        echo " $md5 $size $f" >>Release
     done
 
     {
         echo "SHA256:"
-    } >> Release
+    } >>Release
 
     for f in main/binary-*/Packages main/binary-*/Packages.gz; do
         [[ -f "$f" ]] || continue
-        size=$(wc -c < "$f")
+        size=$(wc -c <"$f")
         sha256=$(sha256sum "$f" | cut -d' ' -f1)
-        echo " $sha256 $size $f" >> Release
+        echo " $sha256 $size $f" >>Release
     done
     cd - >/dev/null
 
@@ -331,7 +331,7 @@ else
 fi
 
 # Write .repo file for DNF/YUM
-cat > "$RPM_DIR/rediacc.repo" <<EOF
+cat >"$RPM_DIR/rediacc.repo" <<EOF
 [rediacc]
 name=Rediacc CLI Repository
 baseurl=https://www.rediacc.com/rpm/

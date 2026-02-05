@@ -31,7 +31,7 @@ if [[ ! -d "node_modules" ]]; then
 fi
 
 case "$STAGE" in
-    quality|test)
+    quality | test)
         log_step "Running license-server tests..."
         npm run test
         ;;

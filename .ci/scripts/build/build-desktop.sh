@@ -31,7 +31,7 @@ fi
 
 # Validate platform
 case "$PLATFORM" in
-    linux|mac|win) ;;
+    linux | mac | win) ;;
     *)
         log_error "Invalid platform: $PLATFORM (must be linux, mac, or win)"
         exit 1
@@ -40,7 +40,7 @@ esac
 
 # Validate architecture
 case "$ARCH" in
-    x64|arm64) ;;
+    x64 | arm64) ;;
     *)
         log_error "Invalid architecture: $ARCH (must be x64 or arm64)"
         exit 1
@@ -90,7 +90,7 @@ case "$PLATFORM" in
         (cd "$DESKTOP_DIR" && npm run dist:linux -- --$ARCH --publish never)
         ;;
     mac)
-        export CSC_IDENTITY_AUTO_DISCOVERY=false  # Skip code signing in CI
+        export CSC_IDENTITY_AUTO_DISCOVERY=false # Skip code signing in CI
         (cd "$DESKTOP_DIR" && npm run dist:mac -- --$ARCH --publish never)
         ;;
     win)

@@ -33,10 +33,10 @@ if ! command -v cloudflared &>/dev/null; then
 fi
 
 # Start cloudflared tunnel in background, capture output
-cloudflared tunnel --url "$URL" > "$LOG_FILE" 2>&1 &
+cloudflared tunnel --url "$URL" >"$LOG_FILE" 2>&1 &
 
 CF_PID=$!
-echo "$CF_PID" > "$(get_temp_dir)/cloudflared.pid"
+echo "$CF_PID" >"$(get_temp_dir)/cloudflared.pid"
 
 # Wait for HTTPS URL to appear in output
 ELAPSED=0

@@ -72,8 +72,8 @@ docker logout ghcr.io 2>/dev/null || true
 if [[ -f "$HOME/.docker/config.json" ]]; then
     # Only remove GHCR credentials, keep other registries
     if command -v jq &>/dev/null; then
-        jq 'del(.auths["ghcr.io"])' "$HOME/.docker/config.json" > "$HOME/.docker/config.json.tmp" 2>/dev/null && \
-            mv "$HOME/.docker/config.json.tmp" "$HOME/.docker/config.json" || \
+        jq 'del(.auths["ghcr.io"])' "$HOME/.docker/config.json" >"$HOME/.docker/config.json.tmp" 2>/dev/null &&
+            mv "$HOME/.docker/config.json.tmp" "$HOME/.docker/config.json" ||
             rm -f "$HOME/.docker/config.json.tmp"
     fi
 fi

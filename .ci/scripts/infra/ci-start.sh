@@ -107,7 +107,7 @@ wait_for_api() {
         fi
         sleep $interval
         elapsed=$((elapsed + interval))
-        if (( elapsed % 20 == 0 )); then
+        if ((elapsed % 20 == 0)); then
             echo "    Still waiting... (${elapsed}s / ${timeout}s)"
         fi
     done
@@ -191,8 +191,8 @@ echo "All services are ready!"
 # OUTPUT FOR GITHUB ACTIONS
 # =============================================================================
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    echo "api-url=http://localhost" >> "$GITHUB_OUTPUT"
-    echo "deployment-target=runner" >> "$GITHUB_OUTPUT"
+    echo "api-url=http://localhost" >>"$GITHUB_OUTPUT"
+    echo "deployment-target=runner" >>"$GITHUB_OUTPUT"
 fi
 
 # Show running containers

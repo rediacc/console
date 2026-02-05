@@ -56,9 +56,9 @@ artifact_exists() {
     artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" \
         --jq '.artifacts[].name' 2>/dev/null || echo "")
 
-    IFS=',' read -ra NAMES <<< "$ARTIFACT_NAMES"
+    IFS=',' read -ra NAMES <<<"$ARTIFACT_NAMES"
     for name in "${NAMES[@]}"; do
-        name="$(echo "$name" | xargs)"  # trim whitespace
+        name="$(echo "$name" | xargs)" # trim whitespace
         if echo "$artifacts" | grep -q "^${name}$"; then
             return 0
         fi

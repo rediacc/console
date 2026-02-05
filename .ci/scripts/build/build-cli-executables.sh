@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 [--platform PLATFORM] [--arch ARCH] [--output DIR] [--dry-run]"
             exit 0
             ;;
@@ -59,9 +59,9 @@ done
 # Auto-detect platform if not specified
 if [[ -z "$PLATFORM" ]]; then
     case "$(uname -s)" in
-        Linux*)  PLATFORM="linux" ;;
+        Linux*) PLATFORM="linux" ;;
         Darwin*) PLATFORM="mac" ;;
-        MINGW*|MSYS*|CYGWIN*) PLATFORM="win" ;;
+        MINGW* | MSYS* | CYGWIN*) PLATFORM="win" ;;
         *)
             log_error "Cannot detect platform from: $(uname -s)"
             exit 1
@@ -73,8 +73,8 @@ fi
 # Auto-detect architecture if not specified
 if [[ -z "$ARCH" ]]; then
     case "$(uname -m)" in
-        x86_64|amd64) ARCH="x64" ;;
-        aarch64|arm64) ARCH="arm64" ;;
+        x86_64 | amd64) ARCH="x64" ;;
+        aarch64 | arm64) ARCH="arm64" ;;
         *)
             log_error "Cannot detect architecture from: $(uname -m)"
             exit 1
@@ -114,7 +114,7 @@ log_step "Building CLI bundle..."
 cd "$CLI_DIR"
 node bundle.mjs
 require_file "$CLI_DIR/dist/cli-bundle.cjs"
-log_info "Bundle created: $(wc -c < dist/cli-bundle.cjs) bytes"
+log_info "Bundle created: $(wc -c <dist/cli-bundle.cjs) bytes"
 
 # Step 1.5: Prepare embedded assets (renet binaries)
 log_step "Preparing embedded renet assets..."
@@ -124,7 +124,7 @@ log_step "Preparing embedded renet assets..."
 log_step "Generating SEA blob..."
 node --experimental-sea-config sea-config.json
 require_file "$CLI_DIR/dist/sea-prep.blob"
-log_info "SEA blob created: $(wc -c < dist/sea-prep.blob) bytes"
+log_info "SEA blob created: $(wc -c <dist/sea-prep.blob) bytes"
 
 # Step 3: Copy node binary
 log_step "Copying node binary..."
@@ -144,7 +144,7 @@ fi
 if [[ "$PLATFORM" == "linux" ]]; then
     log_step "Stripping debug symbols..."
     strip --strip-all "$OUTPUT_DIR/$BINARY_NAME"
-    log_info "Stripped binary: $(wc -c < "$OUTPUT_DIR/$BINARY_NAME") bytes"
+    log_info "Stripped binary: $(wc -c <"$OUTPUT_DIR/$BINARY_NAME") bytes"
 fi
 
 # Step 6: Inject SEA blob
@@ -171,15 +171,15 @@ fi
 
 # Verify
 log_step "Verifying executable..."
-BINARY_SIZE=$(wc -c < "$OUTPUT_DIR/$BINARY_NAME")
+BINARY_SIZE=$(wc -c <"$OUTPUT_DIR/$BINARY_NAME")
 log_info "Binary size: $((BINARY_SIZE / 1024 / 1024))MB ($BINARY_SIZE bytes)"
 
 # Generate SHA256 checksum
 log_step "Generating SHA256 checksum..."
 if command -v sha256sum &>/dev/null; then
-    (cd "$OUTPUT_DIR" && sha256sum "$BINARY_NAME" > "${BINARY_NAME}.sha256")
+    (cd "$OUTPUT_DIR" && sha256sum "$BINARY_NAME" >"${BINARY_NAME}.sha256")
 elif command -v shasum &>/dev/null; then
-    (cd "$OUTPUT_DIR" && shasum -a 256 "$BINARY_NAME" > "${BINARY_NAME}.sha256")
+    (cd "$OUTPUT_DIR" && shasum -a 256 "$BINARY_NAME" >"${BINARY_NAME}.sha256")
 else
     log_warn "No sha256sum or shasum available - skipping checksum"
 fi
@@ -188,8 +188,8 @@ if [[ -f "$OUTPUT_DIR/${BINARY_NAME}.sha256" ]]; then
 fi
 
 # Quick smoke tests (skip on cross-platform CI where binary may not run)
-if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] && \
-   [[ "$ARCH" == "$(detect_arch)" ]]; then
+if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
+    [[ "$ARCH" == "$(detect_arch)" ]]; then
 
     # Test 1: --version
     log_step "Running smoke test: --version"

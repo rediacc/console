@@ -78,7 +78,7 @@ backend_start() {
     log_info "Backend services started"
 
     # Save backend state
-    echo "started=$(date +%s)" > "$BACKEND_STATE_FILE"
+    echo "started=$(date +%s)" >"$BACKEND_STATE_FILE"
 }
 
 # Wait for backend health check
@@ -100,7 +100,7 @@ backend_health() {
         elapsed=$((elapsed + interval))
 
         # Progress indicator
-        if (( elapsed % 10 == 0 )); then
+        if ((elapsed % 10 == 0)); then
             log_debug "Waiting... (${elapsed}s / ${timeout}s)"
         fi
     done
@@ -150,7 +150,7 @@ backend_logs() {
         web)
             docker logs -f "$CI_CONTAINER_WEB"
             ;;
-        all|"")
+        all | "")
             log_info "Showing logs for all services (Ctrl+C to exit)"
             docker logs -f "$CI_CONTAINER_API" 2>&1 &
             docker logs -f "$CI_CONTAINER_SQL" 2>&1 &
@@ -209,7 +209,7 @@ backend_status() {
         started=$(grep "^started=" "$BACKEND_STATE_FILE" | cut -d= -f2)
         if [[ -n "$started" ]]; then
             local uptime=$(($(date +%s) - started))
-            echo "Uptime: $(printf '%02d:%02d:%02d' $((uptime/3600)) $((uptime%3600/60)) $((uptime%60)))"
+            echo "Uptime: $(printf '%02d:%02d:%02d' $((uptime / 3600)) $((uptime % 3600 / 60)) $((uptime % 60)))"
         fi
     fi
 }

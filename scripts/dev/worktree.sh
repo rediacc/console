@@ -202,11 +202,11 @@ worktree_create() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --with-submodule-branches|-s)
+            --with-submodule-branches | -s)
                 with_submodule_branches=true
                 shift
                 ;;
-            --help|-h)
+            --help | -h)
                 echo "Usage: ./run.sh worktree create [--with-submodule-branches]"
                 echo ""
                 echo "Options:"
@@ -420,7 +420,7 @@ worktree_switch() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --help|-h)
+            --help | -h)
                 echo "Usage: ./run.sh worktree switch <branch>"
                 echo ""
                 echo "Switch the current repo to <branch> and sync submodules."
@@ -465,8 +465,8 @@ worktree_switch() {
     }
 
     # Safety: check for uncommitted changes in main repo
-    if ! git -C "$repo_dir" diff --quiet 2>/dev/null || \
-       ! git -C "$repo_dir" diff --cached --quiet 2>/dev/null; then
+    if ! git -C "$repo_dir" diff --quiet 2>/dev/null ||
+        ! git -C "$repo_dir" diff --cached --quiet 2>/dev/null; then
         log_warn "You have uncommitted changes in $repo_dir"
         log_warn "Please commit or stash them before switching branches."
         exit 1
@@ -476,8 +476,8 @@ worktree_switch() {
     for sm_path in $(cd "$repo_dir" && list_submodules); do
         local full_sm_path="$repo_dir/$sm_path"
         if [[ -d "$full_sm_path/.git" ]] || [[ -f "$full_sm_path/.git" ]]; then
-            if ! git -C "$full_sm_path" diff --quiet 2>/dev/null || \
-               ! git -C "$full_sm_path" diff --cached --quiet 2>/dev/null; then
+            if ! git -C "$full_sm_path" diff --quiet 2>/dev/null ||
+                ! git -C "$full_sm_path" diff --cached --quiet 2>/dev/null; then
                 log_warn "Submodule $sm_path has uncommitted changes"
                 log_warn "Please commit or stash them before switching branches."
                 exit 1
@@ -490,8 +490,8 @@ worktree_switch() {
     git -C "$repo_dir" fetch origin --quiet
 
     # Verify the target branch exists
-    if ! git -C "$repo_dir" rev-parse --verify "origin/$branch" &>/dev/null && \
-       ! git -C "$repo_dir" rev-parse --verify "$branch" &>/dev/null; then
+    if ! git -C "$repo_dir" rev-parse --verify "origin/$branch" &>/dev/null &&
+        ! git -C "$repo_dir" rev-parse --verify "$branch" &>/dev/null; then
         log_error "Branch '$branch' not found (checked both local and origin)"
         exit 1
     fi
@@ -518,7 +518,7 @@ worktree_switch() {
             setup_submodule_branch "$sm_path" "$branch"
         else
             log_info "  $sm_path: no pointer changes, updating to recorded commit"
-            git submodule update --init -- "$sm_path" 2>/dev/null || \
+            git submodule update --init -- "$sm_path" 2>/dev/null ||
                 log_warn "  Could not update submodule $sm_path"
         fi
     done
@@ -584,7 +584,7 @@ main() {
         prune)
             worktree_prune
             ;;
-        help|--help|-h)
+        help | --help | -h)
             show_help
             ;;
         "")

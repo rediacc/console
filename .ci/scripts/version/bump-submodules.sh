@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --version X.Y.Z [--tag | --no-tag] [--stage-only] [--dry-run]"
             exit 0
             ;;

@@ -33,7 +33,8 @@ DOCKER_NETWORK=""
 # =============================================================================
 
 run_test() {
-    local name="$1"; shift
+    local name="$1"
+    shift
     log_step "TEST: $name"
     if "$@"; then
         log_info "PASS: $name"
@@ -46,7 +47,8 @@ run_test() {
 }
 
 docker_run() {
-    local image="$1"; shift
+    local image="$1"
+    shift
     docker run --rm \
         -v "$TEST_DIR:/packages:ro" \
         "$image" \
@@ -62,7 +64,7 @@ phase1_build_dummy_binary() {
 
     # Create a dummy binary (shell script that outputs version)
     local dummy_bin="$TEST_DIR/rdc-dummy"
-    cat > "$dummy_bin" <<'SCRIPT'
+    cat >"$dummy_bin" <<'SCRIPT'
 #!/bin/sh
 echo "rdc version 99.0.0-test"
 SCRIPT
@@ -202,20 +204,44 @@ phase4_validate_apt_metadata() {
 
     # Validate APT structure
     local release_file="$repo_out/apt/dists/stable/Release"
-    [[ -f "$release_file" ]] || { log_error "Release file missing"; return 1; }
-    grep -q "Origin: Rediacc" "$release_file" || { log_error "Release missing Origin"; return 1; }
-    grep -q "Architectures:" "$release_file" || { log_error "Release missing Architectures"; return 1; }
+    [[ -f "$release_file" ]] || {
+        log_error "Release file missing"
+        return 1
+    }
+    grep -q "Origin: Rediacc" "$release_file" || {
+        log_error "Release missing Origin"
+        return 1
+    }
+    grep -q "Architectures:" "$release_file" || {
+        log_error "Release missing Architectures"
+        return 1
+    }
 
     local packages_gz="$repo_out/apt/dists/stable/main/binary-amd64/Packages.gz"
-    [[ -f "$packages_gz" ]] || { log_error "Packages.gz missing"; return 1; }
-    gzip -t "$packages_gz" || { log_error "Packages.gz invalid gzip"; return 1; }
+    [[ -f "$packages_gz" ]] || {
+        log_error "Packages.gz missing"
+        return 1
+    }
+    gzip -t "$packages_gz" || {
+        log_error "Packages.gz invalid gzip"
+        return 1
+    }
 
     # Validate Packages content
     local packages_content
     packages_content=$(zcat "$packages_gz")
-    echo "$packages_content" | grep -q "Package: ${PKG_NAME}" || { log_error "Packages missing Package field"; return 1; }
-    echo "$packages_content" | grep -q "Filename:" || { log_error "Packages missing Filename field"; return 1; }
-    echo "$packages_content" | grep -q "SHA256:" || { log_error "Packages missing SHA256 field"; return 1; }
+    echo "$packages_content" | grep -q "Package: ${PKG_NAME}" || {
+        log_error "Packages missing Package field"
+        return 1
+    }
+    echo "$packages_content" | grep -q "Filename:" || {
+        log_error "Packages missing Filename field"
+        return 1
+    }
+    echo "$packages_content" | grep -q "SHA256:" || {
+        log_error "Packages missing SHA256 field"
+        return 1
+    }
 
     log_info "  APT metadata validated: Release, Packages.gz, checksums"
 }
@@ -231,17 +257,35 @@ phase4_validate_rpm_metadata() {
 
     # Check repomd.xml
     local repomd="$repo_out/rpm/repodata/repomd.xml"
-    [[ -f "$repomd" ]] || { log_error "repomd.xml missing"; return 1; }
-    grep -q "<repomd" "$repomd" || { log_error "repomd.xml invalid XML"; return 1; }
+    [[ -f "$repomd" ]] || {
+        log_error "repomd.xml missing"
+        return 1
+    }
+    grep -q "<repomd" "$repomd" || {
+        log_error "repomd.xml invalid XML"
+        return 1
+    }
 
     # Check .repo file
     local repo_file="$repo_out/rpm/rediacc.repo"
-    [[ -f "$repo_file" ]] || { log_error "rediacc.repo missing"; return 1; }
-    grep -q "baseurl=https://www.rediacc.com/rpm/" "$repo_file" || { log_error ".repo baseurl wrong"; return 1; }
-    grep -q "gpgkey=https://www.rediacc.com/rpm/gpg.key" "$repo_file" || { log_error ".repo gpgkey wrong"; return 1; }
+    [[ -f "$repo_file" ]] || {
+        log_error "rediacc.repo missing"
+        return 1
+    }
+    grep -q "baseurl=https://www.rediacc.com/rpm/" "$repo_file" || {
+        log_error ".repo baseurl wrong"
+        return 1
+    }
+    grep -q "gpgkey=https://www.rediacc.com/rpm/gpg.key" "$repo_file" || {
+        log_error ".repo gpgkey wrong"
+        return 1
+    }
 
     # Check gpg.key
-    [[ -f "$repo_out/rpm/gpg.key" ]] || { log_error "gpg.key missing"; return 1; }
+    [[ -f "$repo_out/rpm/gpg.key" ]] || {
+        log_error "gpg.key missing"
+        return 1
+    }
 
     log_info "  RPM metadata validated: repomd.xml, rediacc.repo, gpg.key"
 }
@@ -257,7 +301,10 @@ phase5_apt_flow() {
     fi
 
     local repo_out="$TEST_DIR/repo-real"
-    [[ -d "$repo_out/apt" ]] || { log_error "APT repo not built (phase 4 must pass first)"; return 1; }
+    [[ -d "$repo_out/apt" ]] || {
+        log_error "APT repo not built (phase 4 must pass first)"
+        return 1
+    }
 
     # Create Docker network for nginx <-> client communication
     DOCKER_NETWORK="pkg-test-$$"
@@ -274,7 +321,11 @@ phase5_apt_flow() {
     # Wait for nginx to be ready
     local retries=10
     while ! docker exec "$nginx_container" wget -q -O /dev/null http://localhost/ 2>/dev/null; do
-        ((retries--)) || { docker stop "$nginx_container" 2>/dev/null; docker network rm "$DOCKER_NETWORK" 2>/dev/null; return 1; }
+        ((retries--)) || {
+            docker stop "$nginx_container" 2>/dev/null
+            docker network rm "$DOCKER_NETWORK" 2>/dev/null
+            return 1
+        }
         sleep 1
     done
 

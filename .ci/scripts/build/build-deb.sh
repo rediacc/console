@@ -46,7 +46,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --binary PATH --version VER --arch {amd64|arm64} [--output DIR] [--dry-run]"
             exit 0
             ;;
@@ -117,7 +117,7 @@ cp "$BINARY" "$STAGING_DIR/usr/local/bin/$PKG_BINARY_NAME"
 chmod 755 "$STAGING_DIR/usr/local/bin/$PKG_BINARY_NAME"
 
 # Write control file
-cat > "$STAGING_DIR/DEBIAN/control" <<EOF
+cat >"$STAGING_DIR/DEBIAN/control" <<EOF
 Package: ${PKG_NAME}
 Version: ${VERSION}
 Section: ${PKG_SECTION}
@@ -133,5 +133,5 @@ mkdir -p "$OUTPUT_DIR"
 dpkg-deb --build --root-owner-group "$STAGING_DIR" "$OUTPUT_DIR/$DEB_FILE"
 
 # Verify
-PACKAGE_SIZE=$(wc -c < "$OUTPUT_DIR/$DEB_FILE")
+PACKAGE_SIZE=$(wc -c <"$OUTPUT_DIR/$DEB_FILE")
 log_info "Package built: $DEB_FILE ($((PACKAGE_SIZE / 1024))KB)"

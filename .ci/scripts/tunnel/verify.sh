@@ -32,7 +32,7 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
     log_debug "Attempt $attempt/$MAX_ATTEMPTS..."
 
     # Use curl on Unix, handle both success and HTTP status
-    if curl -sf --max-time 10 "$HEALTH_URL" > /dev/null 2>&1; then
+    if curl -sf --max-time 10 "$HEALTH_URL" >/dev/null 2>&1; then
         log_info "Tunnel connectivity verified"
         exit 0
     fi

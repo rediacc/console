@@ -48,7 +48,7 @@ check_pattern() {
                 echo "  Fix:  $fix_hint"
                 echo ""
                 ((ERRORS++))
-            done <<< "$matches"
+            done <<<"$matches"
         fi
     done
 }

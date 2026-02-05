@@ -19,7 +19,7 @@ source "$ROOT_DIR/.ci/scripts/lib/common.sh"
 
 # Backward compatibility: Load parent .env if exists
 if [[ -f "$ROOT_DIR/../.env" ]]; then
-    set +u  # Disable unset variable errors temporarily
+    set +u # Disable unset variable errors temporarily
     source "$ROOT_DIR/../.env"
     set -u
 fi
@@ -109,8 +109,8 @@ prompt_continue() {
 
 # Ensure npm dependencies are installed
 ensure_deps() {
-    if [[ ! -d "$ROOT_DIR/node_modules" ]] || \
-       [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
+    if [[ ! -d "$ROOT_DIR/node_modules" ]] ||
+        [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
         log_step "Installing dependencies..."
         npm install
     fi
@@ -122,8 +122,8 @@ ensure_packages_built() {
     local shared_src="$ROOT_DIR/packages/shared/src"
 
     # Check if shared package needs rebuilding
-    if [[ ! -d "$shared_dist" ]] || \
-       [[ -n "$(find "$shared_src" -newer "$shared_dist" -type f 2>/dev/null | head -1)" ]]; then
+    if [[ ! -d "$shared_dist" ]] ||
+        [[ -n "$(find "$shared_src" -newer "$shared_dist" -type f 2>/dev/null | head -1)" ]]; then
         log_step "Building shared packages..."
         "$ROOT_DIR/.ci/scripts/setup/build-packages.sh"
     else
@@ -358,7 +358,7 @@ sandbox() {
         # Build the Docker image
         log_info "Building Docker image"
         docker build -t rediacc-console:sandbox \
-          --build-arg REDIACC_BUILD_TYPE=DEBUG . || {
+            --build-arg REDIACC_BUILD_TYPE=DEBUG . || {
             log_error "Docker build failed"
             return 1
         }
@@ -370,12 +370,12 @@ sandbox() {
         # Run the container
         log_info "Starting container on port ${DOCKER_PORT}"
         docker run -d \
-          --name rediacc-console-sandbox \
-          -p ${DOCKER_PORT}:80 \
-          -e INSTANCE_NAME=sandbox \
-          -e BUILD_TYPE=DEBUG \
-          -e ENABLE_DEBUG=true \
-          rediacc-console:sandbox
+            --name rediacc-console-sandbox \
+            -p ${DOCKER_PORT}:80 \
+            -e INSTANCE_NAME=sandbox \
+            -e BUILD_TYPE=DEBUG \
+            -e ENABLE_DEBUG=true \
+            rediacc-console:sandbox
 
         # Wait for container to be ready
         local ready=false
@@ -570,6 +570,7 @@ quality_audit() {
 
 quality_shell() {
     "$ROOT_DIR/.ci/scripts/security/shellcheck.sh"
+    "$ROOT_DIR/.ci/scripts/security/shfmt.sh"
 }
 
 quality_submodules() {
@@ -597,6 +598,21 @@ fix_all() {
     check_node_version
     log_step "Auto-fixing all issues"
     npm run fix:all
+}
+
+fix_shell() {
+    log_step "Auto-fixing shell script formatting"
+    if ! command -v shfmt &>/dev/null; then
+        log_error "shfmt is not installed"
+        log_info "Install with: go install mvdan.cc/sh/v3/cmd/shfmt@latest"
+        exit 1
+    fi
+    find .ci -name "*.sh" -type f -exec shfmt -i 4 -ci -w {} +
+    shfmt -i 4 -ci -w ./run.sh
+    if [[ -d "scripts/dev" ]]; then
+        find scripts/dev -name "*.sh" -type f -exec shfmt -i 4 -ci -w {} +
+    fi
+    log_success "Shell scripts formatted"
 }
 
 # =============================================================================
@@ -735,6 +751,7 @@ QUALITY COMMANDS:
 FIX COMMANDS:
   fix format          Auto-fix code formatting
   fix lint            Auto-fix linting issues
+  fix shell           Auto-fix shell script formatting (shfmt)
   fix all             Auto-fix all issues
 
 CHECK COMMANDS (PRE-PUSH):
@@ -772,10 +789,16 @@ main() {
         backend)
             shift
             case "${1:-}" in
-                start) shift; backend_start "$@" ;;
+                start)
+                    shift
+                    backend_start "$@"
+                    ;;
                 stop) backend_stop ;;
                 status) backend_status ;;
-                logs) shift; backend_logs "$@" ;;
+                logs)
+                    shift
+                    backend_logs "$@"
+                    ;;
                 health) backend_health ;;
                 pull) backend_pull ;;
                 reset) backend_reset ;;
@@ -790,19 +813,40 @@ main() {
 
         # Development
         dev) dev ;;
-        cli) shift; cli "$@" ;;
-        sandbox) shift; sandbox "$@" ;;
-        worktree) shift; "$ROOT_DIR/scripts/dev/worktree.sh" "$@" ;;
+        cli)
+            shift
+            cli "$@"
+            ;;
+        sandbox)
+            shift
+            sandbox "$@"
+            ;;
+        worktree)
+            shift
+            "$ROOT_DIR/scripts/dev/worktree.sh" "$@"
+            ;;
         setup) setup ;;
 
         # Tests
         test)
             shift
             case "${1:-}" in
-                unit) shift; test_unit "$@" ;;
-                cli) shift; test_cli "$@" ;;
-                e2e) shift; test_e2e "$@" ;;
-                bridge) shift; test_bridge "$@" ;;
+                unit)
+                    shift
+                    test_unit "$@"
+                    ;;
+                cli)
+                    shift
+                    test_cli "$@"
+                    ;;
+                e2e)
+                    shift
+                    test_e2e "$@"
+                    ;;
+                bridge)
+                    shift
+                    test_bridge "$@"
+                    ;;
                 all) test_all ;;
                 *)
                     log_error "Unknown test command: ${1:-}"
@@ -822,7 +866,7 @@ main() {
                 renet) build_renet ;;
                 desktop) build_desktop ;;
                 packages) build_packages ;;
-                all|"") build_all ;;
+                all | "") build_all ;;
                 *)
                     log_error "Unknown build command: ${1:-}"
                     echo ""
@@ -844,7 +888,7 @@ main() {
                 actions) quality_actions ;;
                 audit) quality_audit ;;
                 shell) quality_shell ;;
-                all|"") quality_all ;;
+                all | "") quality_all ;;
                 *)
                     log_error "Unknown quality command: ${1:-}"
                     echo ""
@@ -860,11 +904,12 @@ main() {
             case "${1:-}" in
                 format) fix_format ;;
                 lint) fix_lint ;;
-                all|"") fix_all ;;
+                shell) fix_shell ;;
+                all | "") fix_all ;;
                 *)
                     log_error "Unknown fix command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh fix [format|lint|all]"
+                    echo "Usage: ./run.sh fix [format|lint|shell|all]"
                     exit 1
                     ;;
             esac
@@ -887,7 +932,7 @@ main() {
 
         # Maintenance
         clean) clean ;;
-        help|--help|-h|"") show_help ;;
+        help | --help | -h | "") show_help ;;
 
         *)
             log_error "Unknown command: $1"

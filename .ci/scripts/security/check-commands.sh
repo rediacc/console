@@ -92,9 +92,12 @@ main() {
                         break
                     fi
                 done
-            done <<< "$matches"
+            done <<<"$matches"
         fi
-    done < <(find .ci -name "*.sh" -type f 2>/dev/null; echo "./run.sh")
+    done < <(
+        find .ci -name "*.sh" -type f 2>/dev/null
+        echo "./run.sh"
+    )
 
     if [[ $total_errors -gt 0 ]]; then
         echo ""

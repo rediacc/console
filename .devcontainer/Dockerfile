@@ -5,9 +5,9 @@
 # Build:  docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/rediacc/devcontainer:latest .
 # Usage:  Referenced by devcontainer.json
 #
-# Rebuild cadence: Weekly via CI, or on push to .devcontainer/Dockerfile
+# Rebuild: On PR (build only) or push to main (build + publish)
 
-FROM mcr.microsoft.com/devcontainers/base:ubuntu
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
 ARG NODE_VERSION=22
 ARG GO_VERSION=1.24.12
@@ -27,6 +27,17 @@ RUN apt-get update \
         wget \
         unzip \
         xdg-utils \
+        tmux \
+        vim \
+        # X11/Xvfb for E2E testing
+        xvfb \
+        libgtk-3-0 \
+        libnotify4 \
+        libnss3 \
+        libxss1 \
+        libxtst6 \
+        libatspi2.0-0 \
+        libsecret-1-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -72,22 +83,21 @@ RUN go install golang.org/x/tools/gopls@latest \
     && go install honnef.co/go/tools/cmd/staticcheck@latest \
     && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
     && go install golang.org/x/tools/cmd/goimports@latest \
+    && go install mvdan.cc/sh/v3/cmd/shfmt@latest \
     && rm -rf /home/vscode/.cache/go-build \
     && rm -rf "$GOPATH/pkg/mod/cache"
 USER root
 
 # =============================================================================
-# .NET 9.0 SDK (from Microsoft package repository)
+# .NET 9.0 SDK (via official install script - supports amd64 + arm64)
+# https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual
 # =============================================================================
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget \
-    && wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-    && dpkg -i packages-microsoft-prod.deb \
-    && rm packages-microsoft-prod.deb \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends dotnet-sdk-9.0 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
+ENV PATH="$PATH:$DOTNET_ROOT"
+
+RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 --install-dir "$DOTNET_ROOT" \
+    && ln -sf "$DOTNET_ROOT/dotnet" /usr/local/bin/dotnet
 
 # =============================================================================
 # Python packages + uv + kimi-cli
@@ -101,7 +111,7 @@ USER root
 # =============================================================================
 # Playwright system dependencies (browsers installed per-project at runtime)
 # =============================================================================
-RUN npx --yes playwright install-deps
+RUN npx playwright install --with-deps chromium
 
 # =============================================================================
 # Global npm tools
@@ -128,6 +138,42 @@ RUN curl -fsSL https://claude.ai/install.sh | bash
 USER root
 
 # =============================================================================
+# VS Code Extensions (pre-installed from Open-VSX for fast startup)
+# Works for both GitHub Codespaces and self-hosted OpenVSCode Server
+# =============================================================================
+ENV VSCODE_EXTENSIONS_DIR=/opt/vscode-extensions
+
+COPY download-extensions.sh /tmp/
+RUN chmod +x /tmp/download-extensions.sh \
+    && /tmp/download-extensions.sh \
+    && rm /tmp/download-extensions.sh
+
+# =============================================================================
+# OpenVSCode Server (for self-hosted HTTP browser access)
+# https://github.com/gitpod-io/openvscode-server - MIT License
+# =============================================================================
+ARG OPENVSCODE_VERSION=1.106.3
+
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in amd64) OVSX_ARCH="x64" ;; arm64) OVSX_ARCH="arm64" ;; esac \
+    && echo "Installing OpenVSCode Server v${OPENVSCODE_VERSION} for ${OVSX_ARCH}..." \
+    && curl -fsSL "https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${OPENVSCODE_VERSION}/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}.tar.gz" \
+        | tar -xz -C /opt \
+    && mv "/opt/openvscode-server-v${OPENVSCODE_VERSION}-linux-${OVSX_ARCH}" /opt/openvscode-server \
+    && ln -sf /opt/openvscode-server/bin/openvscode-server /usr/local/bin/openvscode-server \
+    # Pre-install extensions into OpenVSCode Server
+    && echo "Installing extensions into OpenVSCode Server..." \
+    && for vsix in "$VSCODE_EXTENSIONS_DIR"/*.vsix; do \
+        [ -f "$vsix" ] && /opt/openvscode-server/bin/openvscode-server \
+            --install-extension "$vsix" \
+            --extensions-dir /opt/openvscode-server/extensions 2>/dev/null || true; \
+    done \
+    && chown -R vscode:vscode /opt/openvscode-server
+
+# Expose port for self-hosted VS Code browser access
+EXPOSE 8080
+
+# =============================================================================
 # Environment setup
 # =============================================================================
 RUN sed -i 's|^PATH=.*|PATH="/home/vscode/.local/bin:/usr/local/share/nvm/current/bin:/usr/local/go/bin:/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"|' /etc/environment \
@@ -135,7 +181,9 @@ RUN sed -i 's|^PATH=.*|PATH="/home/vscode/.local/bin:/usr/local/share/nvm/curren
     && echo 'GOPATH="/go"' >> /etc/environment \
     && echo 'NVM_DIR="/usr/local/share/nvm"' >> /etc/environment \
     && echo 'NVM_SYMLINK_CURRENT="true"' >> /etc/environment \
-    && echo 'DOCKER_BUILDKIT="1"' >> /etc/environment
+    && echo 'DOCKER_BUILDKIT="1"' >> /etc/environment \
+    && echo 'DOTNET_ROOT="/usr/share/dotnet"' >> /etc/environment \
+    && echo 'DOTNET_CLI_TELEMETRY_OPTOUT="1"' >> /etc/environment
 
 # OCI Labels
 LABEL org.opencontainers.image.title="Rediacc Console Devcontainer" \

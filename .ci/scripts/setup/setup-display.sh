@@ -52,7 +52,7 @@ export DISPLAY=:99
 
 # If running in GitHub Actions, append to GITHUB_ENV
 if [[ -n "${GITHUB_ENV:-}" ]]; then
-    echo "DISPLAY=:99" >> "$GITHUB_ENV"
+    echo "DISPLAY=:99" >>"$GITHUB_ENV"
     log_info "Added DISPLAY=:99 to GITHUB_ENV"
 fi
 

@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             case "$2" in
-                patch|minor|major)
+                patch | minor | major)
                     BUMP_TYPE_LABEL="$2"
                     ;;
                 *)
@@ -73,7 +73,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 [--version X.Y.Z] [--bump-type TYPE] [--push] [--include-submodules] [--dry-run]"
             echo ""
             echo "Options:"

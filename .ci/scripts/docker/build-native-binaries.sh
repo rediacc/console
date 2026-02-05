@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --output DIR [--cross-rsync] [--criu-only] [--dry-run]"
             echo ""
             echo "Build native binaries for renet embedded assets"
@@ -84,8 +84,14 @@ fi
 # Detect architecture
 ARCH=$(detect_arch)
 case "$ARCH" in
-    x64) ARCH_SUFFIX="amd64"; OTHER_ARCH="arm64" ;;
-    arm64) ARCH_SUFFIX="arm64"; OTHER_ARCH="amd64" ;;
+    x64)
+        ARCH_SUFFIX="amd64"
+        OTHER_ARCH="arm64"
+        ;;
+    arm64)
+        ARCH_SUFFIX="arm64"
+        OTHER_ARCH="amd64"
+        ;;
     *)
         log_error "Unsupported architecture: $ARCH"
         exit 1

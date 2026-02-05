@@ -18,7 +18,7 @@ for arg in "$@"; do
 done
 
 # Check if VS Code is already installed
-if command -v code &> /dev/null; then
+if command -v code &>/dev/null; then
     log_info "VS Code is already installed"
     code --version
     exit 0
@@ -37,12 +37,12 @@ case "$CI_OS" in
         sudo apt-get update -qq
 
         # Add Microsoft GPG key
-        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/packages.microsoft.gpg
+        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >/tmp/packages.microsoft.gpg
         sudo install -D -o root -g root -m 644 /tmp/packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
 
         # Add VS Code repository
-        echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | \
-            sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+        echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" |
+            sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
 
         # Install VS Code
         sudo apt-get update -qq
@@ -54,7 +54,7 @@ case "$CI_OS" in
 
     macos)
         log_step "Installing VS Code via Homebrew..."
-        if ! command -v brew &> /dev/null; then
+        if ! command -v brew &>/dev/null; then
             log_error "Homebrew is not installed"
             exit 1
         fi
@@ -63,7 +63,7 @@ case "$CI_OS" in
 
     windows)
         log_step "Installing VS Code via Chocolatey..."
-        if ! command -v choco &> /dev/null; then
+        if ! command -v choco &>/dev/null; then
             log_error "Chocolatey is not installed"
             exit 1
         fi
@@ -83,7 +83,7 @@ case "$CI_OS" in
 esac
 
 # Verify installation
-if command -v code &> /dev/null; then
+if command -v code &>/dev/null; then
     log_info "VS Code installed successfully"
     code --version
 else

@@ -19,7 +19,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Simple argument parsing (portable, no bash 4+ features)
 RUN_ID=""
 ARTIFACT_NAME="tunnel-url"
-MAX_WAIT="120"  # Gateway job guarantees artifact exists; this is a safety buffer
+MAX_WAIT="120" # Gateway job guarantees artifact exists; this is a safety buffer
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -72,7 +72,7 @@ while [[ $ELAPSED -lt $MAX_WAIT ]]; do
     if [[ -n "$ARTIFACT_ID" ]]; then
         # Download the specific artifact by ID using the zip endpoint
         rm -rf "${DOWNLOAD_DIR:?}"/*
-        if gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > "$DOWNLOAD_DIR/artifact.zip" 2>/dev/null; then
+        if gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" >"$DOWNLOAD_DIR/artifact.zip" 2>/dev/null; then
             # Extract the zip
             if command -v unzip &>/dev/null; then
                 unzip -o -q "$DOWNLOAD_DIR/artifact.zip" -d "$DOWNLOAD_DIR/extracted" 2>/dev/null || true
@@ -93,7 +93,7 @@ z.extractall('$DOWNLOAD_DIR/extracted')
             fi
 
             if [[ -n "$TUNNEL_FILE" ]] && [[ -f "$TUNNEL_FILE" ]]; then
-                TUNNEL_URL="$(tr -d '\n\r' < "$TUNNEL_FILE")"
+                TUNNEL_URL="$(tr -d '\n\r' <"$TUNNEL_FILE")"
                 if [[ -n "$TUNNEL_URL" ]]; then
                     log_info "Downloaded tunnel URL: $TUNNEL_URL (artifact ID: $ARTIFACT_ID)" >&2
                     echo "$TUNNEL_URL"

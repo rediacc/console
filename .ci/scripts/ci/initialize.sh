@@ -44,7 +44,7 @@ write_output() {
     local key="$1"
     local value="$2"
     if [[ -n "$OUTPUT_FILE" ]]; then
-        echo "${key}=${value}" >> "$OUTPUT_FILE"
+        echo "${key}=${value}" >>"$OUTPUT_FILE"
     fi
     echo "${key}=${value}"
 }
@@ -132,7 +132,7 @@ BRIDGE_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
 PLUGINS_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 
-CLI_TAG="$WEB_TAG"  # Same console commit hash
+CLI_TAG="$WEB_TAG" # Same console commit hash
 
 write_output "api_tag" "$API_TAG"
 write_output "bridge_tag" "$BRIDGE_TAG"
@@ -174,7 +174,10 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
         log_parts+=("${prefix}: ${new_val}")
     done
     write_output "image_tag" "$BRIDGE_TAG"
-    log_info "Push event: versioned tags - $(IFS=', '; echo "${log_parts[*]}")"
+    log_info "Push event: versioned tags - $(
+        IFS=', '
+        echo "${log_parts[*]}"
+    )"
 fi
 
 # =============================================================================

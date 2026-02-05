@@ -36,9 +36,9 @@ mkdir -p "$OUTPUT_DIR"
 
 # Create completion signal file with status
 SIGNAL_FILE="$OUTPUT_DIR/complete-${NAME}.txt"
-echo "$STATUS" > "$SIGNAL_FILE"
+echo "$STATUS" >"$SIGNAL_FILE"
 
 log_info "Created completion signal: $SIGNAL_FILE (status: $STATUS)"
 
 # Also create a generic complete.txt for simple cases
-echo "$STATUS" > "$OUTPUT_DIR/complete.txt"
+echo "$STATUS" >"$OUTPUT_DIR/complete.txt"

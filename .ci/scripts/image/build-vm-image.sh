@@ -35,17 +35,17 @@ parse_args "$@"
 # OS image configuration
 # Maps OS name to (image URL, virt-install os-variant)
 declare -A OS_IMAGES=(
-  ["ubuntu-24.04"]="https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img"
-  ["debian-12"]="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
-  ["fedora-43"]="https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
-  ["opensuse-15.6"]="https://download.opensuse.org/distribution/leap/15.6/appliances/openSUSE-Leap-15.6-Minimal-VM.x86_64-Cloud.qcow2"
+    ["ubuntu-24.04"]="https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img"
+    ["debian-12"]="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+    ["fedora-43"]="https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+    ["opensuse-15.6"]="https://download.opensuse.org/distribution/leap/15.6/appliances/openSUSE-Leap-15.6-Minimal-VM.x86_64-Cloud.qcow2"
 )
 
 declare -A OS_VARIANTS=(
-  ["ubuntu-24.04"]="ubuntu24.04"
-  ["debian-12"]="debian12"
-  ["fedora-43"]="fedora-unknown"
-  ["opensuse-15.6"]="opensuse15.5"
+    ["ubuntu-24.04"]="ubuntu24.04"
+    ["debian-12"]="debian12"
+    ["fedora-43"]="fedora-unknown"
+    ["opensuse-15.6"]="opensuse15.5"
 )
 
 # Configuration
@@ -54,9 +54,9 @@ OS_NAME="${ARG_OS:-ubuntu-24.04}"
 
 # Validate OS name
 if [[ -z "${OS_IMAGES[$OS_NAME]:-}" ]]; then
-  log_error "Unknown OS: $OS_NAME"
-  log_error "Supported: ${!OS_IMAGES[*]}"
-  exit 1
+    log_error "Unknown OS: $OS_NAME"
+    log_error "Supported: ${!OS_IMAGES[*]}"
+    exit 1
 fi
 
 # Use explicit base-image if provided, otherwise use OS mapping
@@ -161,7 +161,7 @@ USER_DATA="$BUILD_DIR/user-data"
 META_DATA="$BUILD_DIR/meta-data"
 SEED_ISO="$BUILD_DIR/seed.iso"
 
-cat > "$USER_DATA" << EOF
+cat >"$USER_DATA" <<EOF
 #cloud-config
 users:
   - default
@@ -180,7 +180,7 @@ ssh_pwauth: true
 
 EOF
 
-cat > "$META_DATA" << EOF
+cat >"$META_DATA" <<EOF
 instance-id: renet-image-builder
 local-hostname: renet-builder
 EOF
@@ -224,7 +224,7 @@ while [[ $RETRIES -gt 0 ]]; do
         if [[ -n "$VM_IP" ]]; then
             # Try SSH connection
             if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                   -i "$BUILD_KEY" "builder@$VM_IP" true 2>/dev/null; then
+                -i "$BUILD_KEY" "builder@$VM_IP" true 2>/dev/null; then
                 log_info "VM is ready at $VM_IP"
                 break
             fi
@@ -291,7 +291,7 @@ fi
 
 # Undefine VM (keep the disk)
 sudo virsh undefine "$VM_NAME" 2>/dev/null || true
-VM_NAME=""  # Clear so cleanup doesn't try again
+VM_NAME="" # Clear so cleanup doesn't try again
 
 log_info "VM shut down"
 

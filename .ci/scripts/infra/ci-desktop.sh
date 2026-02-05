@@ -187,9 +187,9 @@ install_nodejs() {
 install_vscode() {
     echo "Installing VS Code..."
     sudo apt-get install -y -qq wget gpg
-    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/packages.microsoft.gpg
+    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >/tmp/packages.microsoft.gpg
     sudo install -D -o root -g root -m 644 /tmp/packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-    echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+    echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
     rm -f /tmp/packages.microsoft.gpg
     sudo apt-get update -qq
     sudo apt-get install -y -qq code
@@ -211,7 +211,7 @@ install_rediacc_desktop() {
     cli_packages=$(curl -sf "${base_url}/cli-packages.json") || true
 
     # Check if desktop packages are available
-    if ! echo "$cli_packages" | jq -e '.packages.desktop' > /dev/null 2>&1; then
+    if ! echo "$cli_packages" | jq -e '.packages.desktop' >/dev/null 2>&1; then
         echo "Desktop packages not embedded in this distribution"
         echo "Skipping Rediacc Desktop installation"
         return 0
@@ -243,7 +243,7 @@ install_rediacc_desktop() {
 
     # Create desktop shortcut
     mkdir -p ~/Desktop
-    cat > ~/Desktop/rediacc-console-app.desktop << EOF
+    cat >~/Desktop/rediacc-console-app.desktop <<EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -264,7 +264,7 @@ EOF
 configure_chromium() {
     echo "Configuring Chromium policies..."
     sudo mkdir -p /etc/chromium/policies/managed
-    sudo tee /etc/chromium/policies/managed/no-first-run.json > /dev/null << 'EOF'
+    sudo tee /etc/chromium/policies/managed/no-first-run.json >/dev/null <<'EOF'
 {
     "BrowserSignin": 0,
     "SyncDisabled": true,
@@ -284,7 +284,7 @@ EOF
 create_desktop_shortcut() {
     echo "Creating desktop shortcut..."
     mkdir -p ~/Desktop
-    cat > ~/Desktop/rediacc-console.desktop << 'EOF'
+    cat >~/Desktop/rediacc-console.desktop <<'EOF'
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -385,8 +385,7 @@ COLOR_DEPTH="${DESKTOP_COLOR_DEPTH:-24}"
 
 # Validate desktop environment
 case "$DESKTOP_ENVIRONMENT" in
-    xfce|gnome|mate)
-        ;;
+    xfce | gnome | mate) ;;
     *)
         echo "ERROR: Unknown desktop environment: $DESKTOP_ENVIRONMENT"
         echo "   Supported: xfce, gnome, mate"
@@ -455,7 +454,7 @@ start_vnc
 start_novnc
 
 # Save PIDs for cleanup
-cat > /tmp/desktop-pids.txt << EOF
+cat >/tmp/desktop-pids.txt <<EOF
 XVFB_PID=$XVFB_PID
 DE_PID=$DE_PID
 WEBSOCKIFY_PID=$WEBSOCKIFY_PID
@@ -471,9 +470,9 @@ echo "================================================================"
 
 # Output for GitHub Actions
 if [ -n "$GITHUB_OUTPUT" ]; then
-    echo "desktop-port=${NOVNC_PORT}" >> $GITHUB_OUTPUT
-    echo "desktop-url=http://localhost:${NOVNC_PORT}/vnc.html" >> $GITHUB_OUTPUT
-    echo "desktop-environment=${DESKTOP_ENVIRONMENT}" >> $GITHUB_OUTPUT
+    echo "desktop-port=${NOVNC_PORT}" >>$GITHUB_OUTPUT
+    echo "desktop-url=http://localhost:${NOVNC_PORT}/vnc.html" >>$GITHUB_OUTPUT
+    echo "desktop-environment=${DESKTOP_ENVIRONMENT}" >>$GITHUB_OUTPUT
 fi
 
 # If keep-running mode, clear the trap (already not set, but be explicit)

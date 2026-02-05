@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
             ENV_FILE_MODE=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Derive Docker image tag from Git ref or explicit input."
@@ -111,7 +111,7 @@ fi
 # Output to GITHUB_OUTPUT if requested
 if [[ "$GITHUB_OUTPUT_MODE" == "true" ]]; then
     if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+        echo "tag=$TAG" >>"$GITHUB_OUTPUT"
         log_info "Set GITHUB_OUTPUT: tag=$TAG" >&2
     else
         log_warn "GITHUB_OUTPUT not set, skipping --github-output" >&2
@@ -126,7 +126,7 @@ if [[ "$ENV_FILE_MODE" == "true" ]]; then
             echo "API_TAG=$TAG"
             echo "WEB_TAG=$TAG"
             echo "BRIDGE_TAG=$TAG"
-        } >> "$GITHUB_ENV"
+        } >>"$GITHUB_ENV"
         log_info "Set GITHUB_ENV: TAG=$TAG, API_TAG=$TAG, WEB_TAG=$TAG, BRIDGE_TAG=$TAG" >&2
     else
         log_warn "GITHUB_ENV not set, skipping --env-file" >&2

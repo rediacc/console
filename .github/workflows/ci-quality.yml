@@ -196,7 +196,12 @@ jobs:
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - name: Install shfmt
+        run: |
+          curl -sS https://webi.sh/shfmt | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - run: .ci/scripts/security/shellcheck.sh
+      - run: .ci/scripts/security/shfmt.sh
       - run: .ci/scripts/security/check-commands.sh
 
   quality-workflows:

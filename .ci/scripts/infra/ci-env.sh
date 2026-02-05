@@ -171,7 +171,7 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
         echo "LICENSE_SERVER_URL=${LICENSE_SERVER_URL}"
         echo "RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}"
         echo "RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}"
-    } >> "$GITHUB_ENV"
+    } >>"$GITHUB_ENV"
 fi
 
 # =============================================================================

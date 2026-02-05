@@ -1,0 +1,61 @@
+# =============================================================================
+# Self-Hosted Devcontainer with VS Code Browser Access
+# =============================================================================
+#
+# NOTE: This is for SELF-HOSTED deployments only.
+# Do NOT use inside GitHub Codespaces - it already provides VS Code access.
+#
+# Usage:
+#   cd .devcontainer
+#   docker compose -f docker-compose.server.yml up -d
+#   Open http://localhost:8080 in browser
+#
+# With authentication:
+#   CONNECTION_TOKEN=your-secret docker compose -f docker-compose.server.yml up -d
+#
+# Stop:
+#   docker compose -f docker-compose.server.yml down
+
+services:
+  devcontainer:
+    image: ghcr.io/rediacc/devcontainer:latest
+    container_name: rediacc-devcontainer
+    hostname: rediacc-devcontainer
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080" # VS Code browser access
+      - "3000:3000" # Console dev server
+    environment:
+      - HOME=/home/vscode
+      - PORT=3000
+    user: vscode
+    working_dir: /workspace
+    command: >
+      bash -c "
+        # Check for Codespaces environment
+        if [ \"$${CODESPACES:-}\" = 'true' ]; then
+          echo '========================================'
+          echo 'ERROR: Running inside GitHub Codespaces'
+          echo '========================================'
+          echo ''
+          echo 'This docker-compose file is for self-hosted deployments only.'
+          echo 'In Codespaces, use the native VS Code access instead.'
+          exit 1
+        fi
+
+        if [ -n \"$${CONNECTION_TOKEN:-}\" ]; then
+          echo 'Starting OpenVSCode Server with token authentication...'
+          exec openvscode-server --host 0.0.0.0 --port 8080 --connection-token \"$$CONNECTION_TOKEN\" /workspace
+        else
+          echo 'Starting OpenVSCode Server without authentication...'
+          echo 'WARNING: Use CONNECTION_TOKEN env var for production!'
+          exec openvscode-server --host 0.0.0.0 --port 8080 --without-connection-token /workspace
+        fi
+      "
+    restart: unless-stopped
+
+networks:
+  default:
+    name: rediacc-devcontainer

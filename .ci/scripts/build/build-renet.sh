@@ -24,11 +24,23 @@ SKIP_EMBED=false
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --version) VERSION="$2"; shift 2 ;;
-        --assets-dir) ASSETS_DIR="$2"; shift 2 ;;
-        --output) OUTPUT_DIR="$2"; shift 2 ;;
-        --skip-embed) SKIP_EMBED=true; shift ;;
-        -h|--help)
+        --version)
+            VERSION="$2"
+            shift 2
+            ;;
+        --assets-dir)
+            ASSETS_DIR="$2"
+            shift 2
+            ;;
+        --output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --skip-embed)
+            SKIP_EMBED=true
+            shift
+            ;;
+        -h | --help)
             echo "Usage: $0 --version VERSION [--assets-dir DIR] [--output DIR] [--skip-embed]"
             echo ""
             echo "Build full renet binaries with embedded CRIU/rsync assets"
@@ -40,11 +52,17 @@ while [[ $# -gt 0 ]]; do
             echo "  --skip-embed         Build without embedded assets"
             exit 0
             ;;
-        *) log_error "Unknown option: $1"; exit 1 ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
     esac
 done
 
-[[ -z "$VERSION" ]] && { log_error "--version is required"; exit 1; }
+[[ -z "$VERSION" ]] && {
+    log_error "--version is required"
+    exit 1
+}
 
 REPO_ROOT="$(get_repo_root)"
 OUTPUT_DIR="${OUTPUT_DIR:-$REPO_ROOT/private/bin}"
@@ -74,7 +92,7 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     for asset in criu-linux-amd64 criu-linux-arm64 rsync-linux-amd64 rsync-linux-arm64; do
         if [[ -f "$ASSETS_DIR/$asset" ]]; then
             log_info "Embedding $asset..."
-            gzip -c "$ASSETS_DIR/$asset" > "$EMBED_DIR/$asset.gz"
+            gzip -c "$ASSETS_DIR/$asset" >"$EMBED_DIR/$asset.gz"
         else
             log_error "Missing asset: $ASSETS_DIR/$asset"
             exit 1
@@ -104,7 +122,7 @@ done
 # Generate checksums
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
-sha256sum renet-linux-* > checksums.sha256
+sha256sum renet-linux-* >checksums.sha256
 
 log_info "Renet binaries built successfully:"
 ls -la "$OUTPUT_DIR"/renet-linux-*

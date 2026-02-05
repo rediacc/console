@@ -24,8 +24,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 # Configuration
-MIN_COMMITS=3                    # Minimum commits before requiring update
-STALE_THRESHOLD_MINUTES=30       # How old description can be (in minutes)
+MIN_COMMITS=3              # Minimum commits before requiring update
+STALE_THRESHOLD_MINUTES=30 # How old description can be (in minutes)
 
 # Validate environment
 require_var PR_NUMBER
@@ -68,7 +68,8 @@ OWNER="${GITHUB_REPOSITORY%%/*}"
 REPO="${GITHUB_REPOSITORY##*/}"
 
 # Use heredoc to safely construct the GraphQL query (avoids bash ! escaping issues)
-GRAPHQL_QUERY=$(cat <<'GRAPHQL'
+GRAPHQL_QUERY=$(
+    cat <<'GRAPHQL'
 query($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
@@ -82,8 +83,8 @@ GRAPHQL
 
 DESCRIPTION_TIME=$(gh api graphql \
     -F owner="$OWNER" -F repo="$REPO" -F number="$PR_NUMBER" \
-    -f query="$GRAPHQL_QUERY" 2>/dev/null \
-    | jq -r '.data.repository.pullRequest | .lastEditedAt // .createdAt')
+    -f query="$GRAPHQL_QUERY" 2>/dev/null |
+    jq -r '.data.repository.pullRequest | .lastEditedAt // .createdAt')
 
 if [[ -z "$DESCRIPTION_TIME" ]] || [[ "$DESCRIPTION_TIME" == "null" ]]; then
     log_warn "Could not get PR description edit time - skipping check"
@@ -91,10 +92,10 @@ if [[ -z "$DESCRIPTION_TIME" ]] || [[ "$DESCRIPTION_TIME" == "null" ]]; then
 fi
 
 # Convert to epoch for comparison
-COMMIT_EPOCH=$(date -d "$LATEST_COMMIT_TIME" +%s 2>/dev/null || \
-               date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LATEST_COMMIT_TIME" +%s 2>/dev/null || echo "0")
-DESC_EPOCH=$(date -d "$DESCRIPTION_TIME" +%s 2>/dev/null || \
-             date -j -f "%Y-%m-%dT%H:%M:%SZ" "$DESCRIPTION_TIME" +%s 2>/dev/null || echo "0")
+COMMIT_EPOCH=$(date -d "$LATEST_COMMIT_TIME" +%s 2>/dev/null ||
+    date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LATEST_COMMIT_TIME" +%s 2>/dev/null || echo "0")
+DESC_EPOCH=$(date -d "$DESCRIPTION_TIME" +%s 2>/dev/null ||
+    date -j -f "%Y-%m-%dT%H:%M:%SZ" "$DESCRIPTION_TIME" +%s 2>/dev/null || echo "0")
 
 if [[ "$COMMIT_EPOCH" == "0" ]] || [[ "$DESC_EPOCH" == "0" ]]; then
     log_warn "Could not parse timestamps - skipping check"

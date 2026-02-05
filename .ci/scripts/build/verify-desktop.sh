@@ -23,13 +23,13 @@ REQUIRED_EXTERNALS=()
 OPTIONAL_EXTERNALS=()
 while IFS= read -r mod; do
     [[ -n "$mod" ]] && REQUIRED_EXTERNALS+=("$mod")
-done <<< "$(cd "$DESKTOP_DIR" && node -e "
+done <<<"$(cd "$DESKTOP_DIR" && node -e "
   const cfg = JSON.parse(require('fs').readFileSync('./externals.json', 'utf8'));
   cfg.externals.forEach(m => console.log(m));
 ")"
 while IFS= read -r mod; do
     [[ -n "$mod" ]] && OPTIONAL_EXTERNALS+=("$mod")
-done <<< "$(cd "$DESKTOP_DIR" && node -e "
+done <<<"$(cd "$DESKTOP_DIR" && node -e "
   const cfg = JSON.parse(require('fs').readFileSync('./externals.json', 'utf8'));
   (cfg.optional || []).forEach(m => console.log(m));
 ")"

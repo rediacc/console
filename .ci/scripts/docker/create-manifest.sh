@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 --image NAME --tag TAG [--push-latest] [--dry-run]"
             echo ""
             echo "Create multi-arch Docker manifest from architecture-specific images"

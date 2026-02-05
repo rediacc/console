@@ -71,7 +71,7 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_FILE="$2"
             shift 2
             ;;
-        -h|--help)
+        -h | --help)
             echo "Usage: $0 [--auto | --patch | --minor | --major | --version X.Y.Z] [--dry-run] [--output file]"
             echo ""
             echo "Options:"
@@ -122,21 +122,21 @@ validate_semver() {
 increment_patch() {
     local version="$1"
     local major minor patch
-    IFS='.' read -r major minor patch <<< "$version"
+    IFS='.' read -r major minor patch <<<"$version"
     echo "${major}.${minor}.$((patch + 1))"
 }
 
 increment_minor() {
     local version="$1"
     local major minor _patch
-    IFS='.' read -r major minor _patch <<< "$version"
+    IFS='.' read -r major minor _patch <<<"$version"
     echo "${major}.$((minor + 1)).0"
 }
 
 increment_major() {
     local version="$1"
     local major _minor _patch
-    IFS='.' read -r major _minor _patch <<< "$version"
+    IFS='.' read -r major _minor _patch <<<"$version"
     echo "$((major + 1)).0.0"
 }
 
@@ -168,7 +168,7 @@ update_package_json() {
 
     local tmp_file
     tmp_file=$(mktemp)
-    jq --arg v "$version" '.version = $v' "$file" > "$tmp_file"
+    jq --arg v "$version" '.version = $v' "$file" >"$tmp_file"
     mv "$tmp_file" "$file"
     log_info "Updated $file"
 }
@@ -335,7 +335,7 @@ main() {
 
     # Write version to output file if requested (for CI)
     if [[ -n "$OUTPUT_FILE" ]]; then
-        echo "$new_version" > "$OUTPUT_FILE"
+        echo "$new_version" >"$OUTPUT_FILE"
         log_info "Wrote version to $OUTPUT_FILE"
     fi
 
