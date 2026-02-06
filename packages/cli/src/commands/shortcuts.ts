@@ -68,7 +68,9 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     for (const entry of options.extraMachine) {
       const parts = entry.split(':');
       if (parts.length < 3) {
-        throw new ValidationError(`Invalid --extra-machine format: '${entry}'. Expected name:ip:user`);
+        throw new ValidationError(
+          `Invalid --extra-machine format: '${entry}'. Expected name:ip:user`
+        );
       }
       const [name, ip, user] = parts;
       extraMachines[name] = { ip, user };

@@ -115,16 +115,12 @@ export class SSHValidator {
   // --- Docker/container checks ---
 
   async containerRunning(name: string): Promise<boolean> {
-    const result = await this.exec(
-      `sudo docker ps --format '{{.Names}}' | grep -w '${name}'`
-    );
+    const result = await this.exec(`sudo docker ps --format '{{.Names}}' | grep -w '${name}'`);
     return result.success && result.stdout.trim().length > 0;
   }
 
   async containerExists(name: string): Promise<boolean> {
-    const result = await this.exec(
-      `sudo docker ps -a --format '{{.Names}}' | grep -w '${name}'`
-    );
+    const result = await this.exec(`sudo docker ps -a --format '{{.Names}}' | grep -w '${name}'`);
     return result.success && result.stdout.trim().length > 0;
   }
 
@@ -136,9 +132,7 @@ export class SSHValidator {
   }
 
   async containerState(name: string): Promise<string> {
-    const result = await this.exec(
-      `sudo docker inspect --format '{{.State.Status}}' ${name}`
-    );
+    const result = await this.exec(`sudo docker inspect --format '{{.State.Status}}' ${name}`);
     return result.stdout.trim();
   }
 
@@ -177,13 +171,13 @@ export class SSHValidator {
   async writeFile(filePath: string, content: string): Promise<void> {
     // Use heredoc via SSH to write content
     const escapedContent = content.replace(/'/g, "'\\''");
-    await this.exec(`sudo mkdir -p $(dirname ${filePath}) && echo '${escapedContent}' | sudo tee ${filePath} > /dev/null`);
+    await this.exec(
+      `sudo mkdir -p $(dirname ${filePath}) && echo '${escapedContent}' | sudo tee ${filePath} > /dev/null`
+    );
   }
 
   async createTestFile(filePath: string, sizeMB: number): Promise<void> {
-    await this.exec(
-      `sudo dd if=/dev/urandom of=${filePath} bs=1M count=${sizeMB} 2>/dev/null`
-    );
+    await this.exec(`sudo dd if=/dev/urandom of=${filePath} bs=1M count=${sizeMB} 2>/dev/null`);
   }
 
   async removeFile(filePath: string): Promise<void> {
