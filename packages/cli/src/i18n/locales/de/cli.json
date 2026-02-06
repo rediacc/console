@@ -1223,6 +1223,7 @@
     "excludePatterns": "Von der Synchronisierung auszuschließende Muster",
     "expires": "Ablauf in Stunden (1-720)",
     "external": "Erzwinge Start in externem Terminal-Fenster",
+    "extraMachine": "Zusätzliche Maschine für Multi-Maschinen-Operationen (Name:IP:Benutzer)",
     "filterStatus": "Nach Status filtern",
     "folder": "Pfad zum Remote-Ordner zum Öffnen",
     "follow": "Logs-Ausgabe folgen",
