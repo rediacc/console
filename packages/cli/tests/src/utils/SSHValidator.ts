@@ -170,7 +170,7 @@ export class SSHValidator {
 
   async writeFile(filePath: string, content: string): Promise<void> {
     // Use heredoc via SSH to write content
-    const escapedContent = content.replace(/'/g, "'\\''");
+    const escapedContent = content.replaceAll("'", "'\\''");
     await this.exec(
       `sudo mkdir -p $(dirname ${filePath}) && echo '${escapedContent}' | sudo tee ${filePath} > /dev/null`
     );

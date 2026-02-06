@@ -45,7 +45,7 @@ export async function createRepo(
 /**
  * Delete a repository on a machine. Does not throw on failure.
  */
-export async function deleteRepo(
+export function deleteRepo(
   machine: string,
   repoName: string,
   contextName?: string

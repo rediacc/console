@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { E2E } from '../../src/utils/e2e-constants';
 import {
   assertSuccess,
   getE2EConfig,
@@ -6,7 +7,6 @@ import {
   setupE2EEnvironment,
 } from '../../src/utils/local';
 import { SSHValidator } from '../../src/utils/SSHValidator';
-import { E2E } from '../../src/utils/e2e-constants';
 
 /**
  * Phase 8: Ceph Operations (22 ops)

@@ -1,12 +1,12 @@
 import { Command } from 'commander';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { FUNCTION_DEFINITIONS } from '@rediacc/shared/queue-vault/data/definitions';
 import {
   getValidationErrors,
   isBridgeFunction,
   safeValidateFunctionParams,
 } from '@rediacc/shared/queue-vault';
+import { FUNCTION_DEFINITIONS } from '@rediacc/shared/queue-vault/data/definitions';
 import type {
   GetTeamQueueItems_ResultSet1,
   QueueTrace,
@@ -125,21 +125,20 @@ export function coerceCliParams(
 ): Record<string, unknown> {
   if (!isBridgeFunction(functionName)) return params;
   const def = FUNCTION_DEFINITIONS[functionName];
-  if (!def?.params) return params;
 
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(params)) {
-    const paramDef = def.params[key];
-    if (!paramDef) {
+    if (!(key in def.params)) {
       result[key] = value;
       continue;
     }
+    const paramDef = def.params[key];
     switch (paramDef.type) {
       case 'bool':
         result[key] = value === 'true' || value === '1' || value === 'yes';
         break;
       case 'int':
-        result[key] = parseInt(value, 10);
+        result[key] = Number.parseInt(value, 10);
         break;
       default:
         result[key] = value;
