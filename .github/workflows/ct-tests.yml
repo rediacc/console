@@ -900,18 +900,22 @@ jobs:
       - name: Add renet to PATH
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
-      # VM provisioning (bridge + 3 Ceph nodes = ~13.3 GB, fits 14 GB runner)
+      # VM + Ceph provisioning (bridge + 3 Ceph nodes = ~13.3 GB, fits 14 GB runner)
+      # Renet manages its own SSH keys — do NOT generate keypair before ops up
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
-      - name: Generate SSH keypair
-        run: |
-          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
-          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
-          cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
       - name: Provision VMs
         run: sudo -E $RENET_BINARY ops up --force --parallel
+      - name: Provision Ceph cluster
+        run: sudo -E $RENET_BINARY ops ceph provision
       - name: Fix renet data dir ownership
         run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
+      - name: Setup SSH key for CLI tests
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          cp $RUNNER_TEMP/renet/staging/.ssh/id_rsa ~/.ssh/id_rsa
+          cp $RUNNER_TEMP/renet/staging/.ssh/id_rsa.pub ~/.ssh/id_rsa.pub
+          chmod 600 ~/.ssh/id_rsa
       - name: Wait for VM SSH readiness
         run: |
           for vm in ${VM_NET_BASE}.21 ${VM_NET_BASE}.22 ${VM_NET_BASE}.23; do
@@ -931,9 +935,6 @@ jobs:
             done
           done
 
-      # Ceph cluster provisioning
-      - name: Provision Ceph cluster
-        run: sudo -E $RENET_BINARY ops ceph provision
       - name: Post-Ceph setup
         run: |
           CEPH_IP="${VM_NET_BASE}.21"
