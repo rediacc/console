@@ -93,7 +93,7 @@
     "eslint-plugin-sonarjs": "^3.0.6",
     "eslint-plugin-unicorn": "^62.0.0",
     "globals": "^17.3.0",
-    "knip": "^5.83.0",
+    "knip": "^5.83.1",
     "syncpack": "^13.0.4",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
