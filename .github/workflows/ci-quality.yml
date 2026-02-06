@@ -212,6 +212,14 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - run: .ci/scripts/quality/check-workflows.sh
 
+  quality-compose-env:
+    name: Compose Env
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - run: .ci/scripts/quality/check-compose-env.sh
+
   quality-middleware:
     name: Middleware
     runs-on: ubuntu-latest
