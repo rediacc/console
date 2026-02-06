@@ -656,12 +656,14 @@ jobs:
 
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
 
       - name: Create Bridge Test Environment
-        run: .ci/scripts/env/create-bridge-env.sh --output packages/bridge-tests/.env
+        run: .ci/scripts/env/create-bridge-env.sh --renet-path /usr/bin/renet --output packages/bridge-tests/.env
 
       - name: Run Bridge Tests (Workers)
         run: .ci/scripts/test/run-bridge.sh --workers 1
@@ -720,12 +722,14 @@ jobs:
 
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
 
       - name: Create Bridge Test Environment
-        run: .ci/scripts/env/create-bridge-env.sh --ceph --output packages/bridge-tests/.env
+        run: .ci/scripts/env/create-bridge-env.sh --ceph --renet-path /usr/bin/renet --output packages/bridge-tests/.env
 
       - name: Run Bridge Tests (Ceph)
         run: .ci/scripts/test/run-bridge.sh --workers 1 --config playwright.ceph.config.ts
