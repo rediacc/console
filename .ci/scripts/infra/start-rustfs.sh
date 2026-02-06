@@ -11,7 +11,7 @@
 #   --timeout           Timeout in seconds (default: 120)
 #
 # Prerequisites:
-#   - renet binary must be available at RENET_BINARY_PATH or /tmp/renet
+#   - renet binary must be available at RENET_BINARY or /usr/bin/renet
 #   - VMs must be running
 #
 # Example:
@@ -31,10 +31,10 @@ BUCKET="${ARG_BUCKET:-rediacc-test}"
 TIMEOUT="${ARG_TIMEOUT:-120}"
 
 # Find renet binary
-RENET="${RENET_BINARY_PATH:-/tmp/renet}"
+RENET="${RENET_BINARY:-/usr/bin/renet}"
 if [[ ! -x "$RENET" ]]; then
     log_error "renet binary not found at $RENET"
-    log_error "Set RENET_BINARY_PATH or ensure /tmp/renet exists"
+    log_error "Set RENET_BINARY or ensure /usr/bin/renet exists"
     exit 1
 fi
 

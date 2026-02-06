@@ -13,7 +13,7 @@
 #   --vm-ceph-nodes Ceph node VM IDs, space-separated (default: "21 22 23" if --ceph)
 #   --ceph          Enable Ceph mode (no workers, only Ceph nodes)
 #   --timeout       Bridge timeout in ms (default: BRIDGE_TIMEOUT env or 120000)
-#   --renet-path    Path to renet binary (default: RENET_BINARY_PATH env)
+#   --renet-path    Path to renet binary (default: RENET_BINARY env or source build)
 #   --vm-image      OS image name (default: VM_IMAGE env or "ubuntu-24.04")
 #
 # Example:
@@ -33,7 +33,7 @@ VM_NET_BASE="${ARG_VM_NET_BASE:-192.168.111}"
 VM_NET_OFFSET="${ARG_VM_NET_OFFSET:-0}"
 VM_BRIDGE="${ARG_VM_BRIDGE:-1}"
 TIMEOUT="${ARG_TIMEOUT:-${BRIDGE_TIMEOUT:-120000}}"
-RENET_PATH="${ARG_RENET_PATH:-${RENET_BINARY_PATH:-}}"
+RENET_PATH="${ARG_RENET_PATH:-${RENET_BINARY:-$(get_repo_root)/private/renet/bin/renet}}"
 
 # Handle Ceph mode
 # Note: PROVISION_CEPH_CLUSTER is now inferred from VM_CEPH_NODES (if set, Ceph provisioning is enabled)

@@ -829,8 +829,6 @@ jobs:
       # Start RustFS for S3 integration tests (sudo required — renet data dir is root-owned)
       - name: Start RustFS
         run: sudo -E .ci/scripts/infra/start-rustfs.sh --bucket rediacc-test
-        env:
-          RENET_BINARY_PATH: /usr/bin/renet
 
       # Run tests
       - name: Create CLI local E2E env
