@@ -89,7 +89,7 @@ EOF
 
 # Propagate Ceph node configuration from environment
 if [[ -n "${VM_CEPH_NODES:-}" ]]; then
-    echo "E2E_CEPH_NODES=$VM_CEPH_NODES" >> "$OUTPUT"
+    echo "E2E_CEPH_NODES=$VM_CEPH_NODES" >>"$OUTPUT"
 fi
 
 log_info "Created CLI local E2E env: $OUTPUT"
@@ -111,7 +111,7 @@ if [[ "$SKIP_KEYSCAN" != "true" ]]; then
         if ssh-keygen -F "$vm_ip" &>/dev/null; then
             log_debug "Host key already known for $vm_ip"
         else
-            if ssh-keyscan -T 5 "$vm_ip" >> "$HOME/.ssh/known_hosts" 2>/dev/null; then
+            if ssh-keyscan -T 5 "$vm_ip" >>"$HOME/.ssh/known_hosts" 2>/dev/null; then
                 log_info "Added host key for $vm_ip"
             else
                 log_warn "Could not scan host key for $vm_ip (VM may not be running)"
