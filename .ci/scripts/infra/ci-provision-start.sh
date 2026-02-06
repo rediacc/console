@@ -152,4 +152,5 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     echo "worker_ips=$WORKER_IPS" >>"$GITHUB_OUTPUT"
     echo "machine_user=$USER" >>"$GITHUB_OUTPUT"
     echo "machine_password=$VM_PASSWORD" >>"$GITHUB_OUTPUT"
+    echo "vm_image_path=$VM_IMAGE_DIR" >>"$GITHUB_OUTPUT"
 fi

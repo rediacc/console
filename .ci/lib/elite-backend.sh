@@ -207,10 +207,14 @@ provision_status() {
     # Check state file
     if [[ -f "$PROVISION_STATE_FILE" ]]; then
         local bridge_ip worker_ips vm_os started
-        bridge_ip=$(grep "^bridge_ip=" "$PROVISION_STATE_FILE" | cut -d= -f2)
-        worker_ips=$(grep "^worker_ips=" "$PROVISION_STATE_FILE" | cut -d= -f2)
-        vm_os=$(grep "^vm_os=" "$PROVISION_STATE_FILE" | cut -d= -f2)
-        started=$(grep "^started=" "$PROVISION_STATE_FILE" | cut -d= -f2)
+        while IFS='=' read -r key value; do
+            case "$key" in
+                bridge_ip) bridge_ip="$value" ;;
+                worker_ips) worker_ips="$value" ;;
+                vm_os) vm_os="$value" ;;
+                started) started="$value" ;;
+            esac
+        done <"$PROVISION_STATE_FILE"
 
         echo "  OS:         ${vm_os:-unknown}"
         echo "  Bridge IP:  ${bridge_ip:-unknown}"
