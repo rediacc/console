@@ -34,7 +34,7 @@ on:
         default: true
       desktop-environment:
         type: string
-        default: 'xfce'
+        default: 'none'
       desktop-resolution:
         type: string
         default: '1600x900'
@@ -82,7 +82,7 @@ on:
       desktop-environment:
         description: 'Desktop environment (none = disabled)'
         type: choice
-        default: 'xfce'
+        default: 'none'
         options:
           - 'none'
           - 'xfce'
