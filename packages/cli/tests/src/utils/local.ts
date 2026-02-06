@@ -23,6 +23,8 @@ export interface E2EConfig {
   sshUser: string;
   /** Path to SSH private key */
   sshKeyPath: string;
+  /** Path to renet binary (for local execution) */
+  renetPath: string;
   /** Whether E2E tests are enabled */
   enabled: boolean;
 }
@@ -36,6 +38,7 @@ export function getE2EConfig(): E2EConfig {
   const vm2Ip = process.env.E2E_VM2_IP;
   const sshUser = process.env.E2E_SSH_USER;
   const sshKeyPath = process.env.E2E_SSH_KEY ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
+  const renetPath = process.env.E2E_RENET_PATH ?? process.env.RENET_BINARY ?? 'renet';
 
   const enabled = !!(vm1Ip && sshUser);
 
@@ -44,6 +47,7 @@ export function getE2EConfig(): E2EConfig {
     vm2Ip: vm2Ip ?? VM_NETWORK.WORKER_IPS[1],
     sshUser: sshUser ?? DEFAULTS.CLI_TEST.VM_USER,
     sshKeyPath,
+    renetPath,
     enabled,
   };
 }
@@ -109,9 +113,10 @@ export async function setupE2EEnvironment(
     return null;
   }
 
-  // Create local context with real SSH key
+  // Create local context with real SSH key and renet path
   await createTestLocalContext(contextName, {
     sshKeyPath: config.sshKeyPath,
+    renetPath: config.renetPath,
   });
 
   // Add real VMs
@@ -136,6 +141,7 @@ export function runLocalFunction(
   options?: {
     contextName?: string;
     params?: Record<string, string>;
+    extraMachines?: string[];
     debug?: boolean;
     timeout?: number;
   }
@@ -149,6 +155,12 @@ export function runLocalFunction(
   if (options?.params) {
     for (const [key, value] of Object.entries(options.params)) {
       args.push('--param', `${key}=${value}`);
+    }
+  }
+
+  if (options?.extraMachines) {
+    for (const entry of options.extraMachines) {
+      args.push('--extra-machine', entry);
     }
   }
 

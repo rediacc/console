@@ -747,7 +747,7 @@ jobs:
   test-cli-local:
     name: CLI Local E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       CI: 'true'
       VM_NET_BASE: '192.168.111'
@@ -794,7 +794,7 @@ jobs:
         run: sudo -E $RENET_BINARY ops up --force --parallel
         env:
           VM_NET_BASE: ${{ env.VM_NET_BASE }}
-          VM_WORKERS: '11'
+          VM_WORKERS: '11 12'
           VM_CEPH_NODES: ''
           VM_BRIDGE: '1'
       - name: Fix renet data dir ownership
@@ -803,11 +803,12 @@ jobs:
         run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
       - name: Wait for VM SSH readiness
         run: |
-          # Wait for both bridge and worker VMs
+          # Wait for bridge and worker VMs
           # Note: VMs are configured for the current user (not root) via SUDO_USER in renet
           BRIDGE_IP="${VM_NET_BASE}.1"
-          WORKER_IP="${VM_NET_BASE}.11"
-          for vm in $BRIDGE_IP $WORKER_IP; do
+          WORKER1_IP="${VM_NET_BASE}.11"
+          WORKER2_IP="${VM_NET_BASE}.12"
+          for vm in $BRIDGE_IP $WORKER1_IP $WORKER2_IP; do
             echo "Waiting for $vm as $USER..."
             for i in {1..30}; do
               if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
@@ -834,7 +835,7 @@ jobs:
       # Run tests
       - name: Create CLI local E2E env
         # Use current user (not root) since VMs are configured for SUDO_USER via renet
-        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE"
+        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE" --vm-workers "11 12"
       - name: Append S3 test env
         run: .ci/scripts/env/create-cli-s3-env.sh --output packages/cli/tests/.env --vm-net-base "$VM_NET_BASE"
       - name: Run CLI local E2E tests
@@ -858,6 +859,104 @@ jobs:
         if: always()
         with:
           name: test-cli-local-${{ github.sha }}
+          path: packages/cli/tests/reports/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  test-cli-local-ceph:
+    name: CLI Local Ceph
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      VM_NET_BASE: '192.168.111'
+      VM_WORKERS: '11'
+      VM_CEPH_NODES: '21 22 23'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,middleware,renet,license-server
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+
+      # Renet setup
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh
+      - name: Add renet to PATH
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # VM provisioning (1 worker + 3 Ceph nodes = 4 VMs, fits 16 GB)
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+      - name: Generate SSH keypair
+        run: |
+          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
+          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
+          cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
+      - name: Provision VMs
+        run: sudo -E $RENET_BINARY ops up --force --parallel
+      - name: Fix renet data dir ownership
+        run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
+      - name: Wait for VM SSH readiness
+        run: |
+          for vm in ${VM_NET_BASE}.11 ${VM_NET_BASE}.21 ${VM_NET_BASE}.22 ${VM_NET_BASE}.23; do
+            echo "Waiting for $vm as $USER..."
+            for i in {1..30}; do
+              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
+                echo "VM $vm is SSH-ready"
+                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
+                break
+              fi
+              echo "Waiting for VM $vm SSH... ($i/30)"
+              sleep 5
+              if [[ $i -eq 30 ]]; then
+                echo "VM $vm SSH not ready after 150s"
+                exit 1
+              fi
+            done
+          done
+
+      # Ceph cluster provisioning
+      - name: Provision Ceph cluster
+        run: sudo -E $RENET_BINARY ops ceph provision
+      - name: Post-Ceph setup
+        run: |
+          WORKER_IP="${VM_NET_BASE}.11"
+          # Create 'rbd' pool used by CLI local tests (provisioner creates 'rediacc_rbd_pool')
+          ssh $USER@$WORKER_IP "sudo ceph osd pool create rbd 32"
+          ssh $USER@$WORKER_IP "sudo ceph osd pool application enable rbd rbd"
+          # Create cluster name symlinks (bridge uses --cluster rediacc, config files are ceph.*)
+          ssh $USER@$WORKER_IP "sudo ln -sf /etc/ceph/ceph.conf /etc/ceph/rediacc.conf"
+          ssh $USER@$WORKER_IP "sudo ln -sf /etc/ceph/ceph.client.admin.keyring /etc/ceph/rediacc.client.admin.keyring"
+
+      # Run Ceph E2E tests (non-Ceph tests auto-skip since only 1 worker VM)
+      - name: Create CLI local Ceph E2E env
+        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE" --vm-workers "$VM_WORKERS"
+      - name: Run CLI local Ceph E2E tests
+        run: .ci/scripts/test/run-cli-local.sh
+
+      # Artifacts
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        if: always()
+        with:
+          name: test-cli-local-ceph-${{ github.sha }}
           path: packages/cli/tests/reports/
           retention-days: 3
           if-no-files-found: ignore

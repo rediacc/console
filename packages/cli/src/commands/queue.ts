@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { FUNCTION_DEFINITIONS } from '@rediacc/shared/queue-vault/data/definitions';
 import {
   getValidationErrors,
   isBridgeFunction,
@@ -111,6 +112,40 @@ export function parseParamOptions(paramOptions: string[] | undefined): Record<st
     params[key] = valueParts.join('=');
   }
   return params;
+}
+
+/**
+ * Coerce CLI string params to their expected types based on FUNCTION_DEFINITIONS.
+ * CLI --param key=value always produces strings, but Zod schemas expect native types
+ * (boolean, number). This bridges the gap using the generated type metadata.
+ */
+export function coerceCliParams(
+  functionName: string,
+  params: Record<string, string>
+): Record<string, unknown> {
+  if (!isBridgeFunction(functionName)) return params;
+  const def = FUNCTION_DEFINITIONS[functionName];
+  if (!def?.params) return params;
+
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(params)) {
+    const paramDef = def.params[key];
+    if (!paramDef) {
+      result[key] = value;
+      continue;
+    }
+    switch (paramDef.type) {
+      case 'bool':
+        result[key] = value === 'true' || value === '1' || value === 'yes';
+        break;
+      case 'int':
+        result[key] = parseInt(value, 10);
+        break;
+      default:
+        result[key] = value;
+    }
+  }
+  return result;
 }
 
 export function validateFunctionParams(
