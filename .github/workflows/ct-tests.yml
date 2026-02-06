@@ -868,7 +868,7 @@ jobs:
     env:
       CI: 'true'
       VM_NET_BASE: '192.168.111'
-      VM_WORKERS: '11'
+      VM_WORKERS: ''
       VM_CEPH_NODES: '21 22 23'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -900,7 +900,7 @@ jobs:
       - name: Add renet to PATH
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
-      # VM provisioning (1 worker + 3 Ceph nodes = 4 VMs, fits 16 GB)
+      # VM provisioning (bridge + 3 Ceph nodes = ~13.3 GB, fits 14 GB runner)
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
       - name: Generate SSH keypair
@@ -914,7 +914,7 @@ jobs:
         run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
       - name: Wait for VM SSH readiness
         run: |
-          for vm in ${VM_NET_BASE}.11 ${VM_NET_BASE}.21 ${VM_NET_BASE}.22 ${VM_NET_BASE}.23; do
+          for vm in ${VM_NET_BASE}.21 ${VM_NET_BASE}.22 ${VM_NET_BASE}.23; do
             echo "Waiting for $vm as $USER..."
             for i in {1..30}; do
               if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
@@ -936,17 +936,17 @@ jobs:
         run: sudo -E $RENET_BINARY ops ceph provision
       - name: Post-Ceph setup
         run: |
-          WORKER_IP="${VM_NET_BASE}.11"
+          CEPH_IP="${VM_NET_BASE}.21"
           # Create 'rbd' pool used by CLI local tests (provisioner creates 'rediacc_rbd_pool')
-          ssh $USER@$WORKER_IP "sudo ceph osd pool create rbd 32"
-          ssh $USER@$WORKER_IP "sudo ceph osd pool application enable rbd rbd"
+          ssh $USER@$CEPH_IP "sudo ceph osd pool create rbd 32"
+          ssh $USER@$CEPH_IP "sudo ceph osd pool application enable rbd rbd"
           # Create cluster name symlinks (bridge uses --cluster rediacc, config files are ceph.*)
-          ssh $USER@$WORKER_IP "sudo ln -sf /etc/ceph/ceph.conf /etc/ceph/rediacc.conf"
-          ssh $USER@$WORKER_IP "sudo ln -sf /etc/ceph/ceph.client.admin.keyring /etc/ceph/rediacc.client.admin.keyring"
+          ssh $USER@$CEPH_IP "sudo ln -sf /etc/ceph/ceph.conf /etc/ceph/rediacc.conf"
+          ssh $USER@$CEPH_IP "sudo ln -sf /etc/ceph/ceph.client.admin.keyring /etc/ceph/rediacc.client.admin.keyring"
 
-      # Run Ceph E2E tests (non-Ceph tests auto-skip since only 1 worker VM)
+      # Run Ceph E2E tests
       - name: Create CLI local Ceph E2E env
-        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE" --vm-workers "$VM_WORKERS"
+        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE" --vm-workers "21"
       - name: Run CLI local Ceph E2E tests
         run: .ci/scripts/test/run-cli-local.sh
 
