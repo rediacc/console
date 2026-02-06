@@ -92,3 +92,6 @@ packages/cli/reports/
 
 # CI backend data (SQL Server volumes)
 .ci/docker/ci/mssql/
+
+# Git worktrees
+.worktrees/
