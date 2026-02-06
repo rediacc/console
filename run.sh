@@ -169,85 +169,6 @@ ensure_renet_built() {
 }
 
 # =============================================================================
-# BACKEND COMMANDS
-# =============================================================================
-
-backend_start() {
-    local mode="${BACKEND_MODE_DEFAULT}"
-
-    # Parse --source flag
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --source)
-                mode="$2"
-                shift 2
-                ;;
-            --source=*)
-                mode="${1#*=}"
-                shift
-                ;;
-            *)
-                shift
-                ;;
-        esac
-    done
-
-    log_step "Starting backend (mode: $mode)"
-
-    # Ensure elite repo exists
-    elite_clone || exit 1
-
-    # Mode-specific preparation
-    case "$mode" in
-        "$BACKEND_MODE_GHCR")
-            elite_pull_images || exit 1
-            ;;
-        "$BACKEND_MODE_LOCAL")
-            elite_update || exit 1
-            elite_build_images || exit 1
-            ;;
-        *)
-            log_error "Unknown backend mode: $mode"
-            log_info "Valid modes: $BACKEND_MODE_GHCR, $BACKEND_MODE_LOCAL"
-            exit 1
-            ;;
-    esac
-
-    # Start services
-    elite_start "$mode" || exit 1
-
-    # Wait for health check
-    elite_health || exit 1
-
-    log_info "Backend is ready!"
-    log_info "API URL: $API_URL_LOCAL"
-}
-
-backend_stop() {
-    elite_stop
-}
-
-backend_status() {
-    elite_status
-}
-
-backend_logs() {
-    elite_logs "$@"
-}
-
-backend_health() {
-    elite_health
-}
-
-backend_pull() {
-    elite_pull_images
-}
-
-backend_reset() {
-    elite_reset
-}
-
-# =============================================================================
 # DEVELOPMENT COMMANDS
 # =============================================================================
 
@@ -255,16 +176,14 @@ dev() {
     check_node_version
 
     # Check if backend is running
-    if ! elite_health &>/dev/null; then
+    if ! backend_health &>/dev/null; then
         log_warn "Backend is not running"
         log_info ""
-        log_info "Start backend with:"
-        log_info "  ./run.sh backend start        # Use ghcr images (CI mode)"
-        log_info "  ./run.sh backend start --source local # Build from source"
+        log_info "Start backend with: ./run.sh backend start"
         log_info ""
 
-        if prompt_continue "Start backend now (ghcr mode)"; then
-            backend_start --source "$BACKEND_MODE_GHCR"
+        if prompt_continue "Start backend now"; then
+            backend_start
         else
             exit 1
         fi
@@ -445,7 +364,7 @@ test_e2e() {
 
     # Only require local backend if --backend not specified
     if [[ "$has_backend" == "false" ]]; then
-        if ! elite_health &>/dev/null; then
+        if ! backend_health &>/dev/null; then
             log_error "Backend is not running or unhealthy"
             log_info "E2E tests require a running backend"
             log_info "Start backend with: ./run.sh backend start"
@@ -658,22 +577,8 @@ setup() {
     log_info "Installing npm dependencies"
     npm install
 
-    # Choose backend mode
-    echo ""
-    echo "Select backend mode:"
-    echo "  1) ghcr - Pull from ghcr.io (CI mode, fastest)"
-    echo "  2) local - Build from elite source (for elite development)"
-    echo ""
-    read -p "Choice [1-2]: " choice
-
-    local mode="$BACKEND_MODE_GHCR"
-    case "$choice" in
-        2) mode="$BACKEND_MODE_LOCAL" ;;
-        *) mode="$BACKEND_MODE_GHCR" ;;
-    esac
-
     # Start backend
-    backend_start --source "$mode"
+    backend_start
 
     log_info ""
     log_info "Setup complete!"
@@ -702,13 +607,18 @@ show_help() {
 Usage: ./run.sh [COMMAND] [OPTIONS]
 
 BACKEND COMMANDS:
-  backend start [--source ghcr|local]  Start backend services
-  backend stop                         Stop backend services
-  backend status                       Show backend status
-  backend logs [service]               Show service logs (api, sql, web, all)
-  backend health                       Check backend health
-  backend pull                         Pull latest ghcr images
-  backend reset                        Reset backend (deletes data)
+  backend start              Start backend services
+  backend stop               Stop backend services
+  backend status             Show backend status
+  backend logs [service]     Show service logs (api, sql, web, all)
+  backend health             Check backend health
+  backend pull               Pull latest ghcr images
+  backend reset              Reset backend (deletes data)
+
+PROVISION COMMANDS:
+  provision start            Provision KVM VMs (bridge + workers)
+  provision stop             Destroy all VMs
+  provision status           Show VM status
 
 DEVELOPMENT COMMANDS:
   dev                 Start development server (auto-starts backend if needed)
@@ -764,7 +674,7 @@ MAINTENANCE:
   help                Show this help message
 
 QUICK START:
-  ./run.sh setup          # One-time setup (chooses backend mode)
+  ./run.sh setup          # One-time setup
   ./run.sh dev            # Start web development
   ./run.sh cli auth login # Run CLI command in dev mode
 
@@ -775,7 +685,6 @@ REQUIREMENTS:
 
 ENVIRONMENT:
   GITHUB_TOKEN        GitHub personal access token (for ghcr.io auth)
-  ELITE_LOCAL_PATH    Elite repository location (default: ~/.rediacc/elite)
 EOF
 }
 
@@ -800,12 +709,31 @@ main() {
                     backend_logs "$@"
                     ;;
                 health) backend_health ;;
-                pull) backend_pull ;;
+                pull) backend_pull_images ;;
                 reset) backend_reset ;;
                 *)
                     log_error "Unknown backend command: ${1:-}"
                     echo ""
                     echo "Usage: ./run.sh backend [start|stop|status|logs|health|pull|reset]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # VM Provisioning
+        provision)
+            shift
+            case "${1:-}" in
+                start)
+                    shift
+                    provision_start "$@"
+                    ;;
+                stop) provision_stop ;;
+                status) provision_status ;;
+                *)
+                    log_error "Unknown provision command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh provision [start|stop|status]"
                     exit 1
                     ;;
             esac
