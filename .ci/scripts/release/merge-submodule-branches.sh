@@ -133,14 +133,19 @@ process_submodule() {
             all_prs=$(gh pr list --repo "$repo" --state open --base main \
                 --json number,headRefName,headRefOid 2>/dev/null || echo "[]")
 
+            # Batch-fetch all PR branches in one network call
+            local branches_to_fetch
+            branches_to_fetch=$(echo "$all_prs" | jq -r '.[].headRefName | select(.)' | tr '\n' ' ')
+            if [[ -n "$branches_to_fetch" ]]; then
+                # shellcheck disable=SC2086
+                git -C "$sm_path" fetch origin $branches_to_fetch --quiet 2>/dev/null || true
+            fi
+
             while IFS= read -r pr_entry; do
                 [[ -z "$pr_entry" ]] && continue
-                local branch_name head_oid
+                local branch_name
                 branch_name=$(echo "$pr_entry" | jq -r '.headRefName')
-                head_oid=$(echo "$pr_entry" | jq -r '.headRefOid')
 
-                # Fetch the PR branch and check if tracked commit is reachable from it
-                git -C "$sm_path" fetch origin "$branch_name" --quiet 2>/dev/null || continue
                 if git -C "$sm_path" merge-base --is-ancestor "$tracked_commit" "origin/$branch_name" 2>/dev/null; then
                     pr_json="$pr_entry"
                     break
