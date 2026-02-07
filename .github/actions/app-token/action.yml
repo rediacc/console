@@ -13,7 +13,8 @@ inputs:
   preset:
     description: >
       Permission preset: readonly (contents:read), ci (contents:write +
-      pull_requests:read + actions:write), cd (contents:write + actions:write)
+      pull_requests:read + actions:write), cd (contents:write +
+      pull_requests:write + actions:write)
     required: false
     default: readonly
   repositories:
@@ -46,6 +47,7 @@ runs:
             ;;
           cd)
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
+            echo "perm-pull-requests=write" >> "$GITHUB_OUTPUT"
             echo "perm-actions=write" >> "$GITHUB_OUTPUT"
             ;;
           *)
